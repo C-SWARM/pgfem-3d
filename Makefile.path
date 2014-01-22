@@ -2,11 +2,11 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk
+top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
-pfem_lib_ext	= $(pfem_lib_dir)/external
+pfem_lib_ext	= $(pfem_lib_dir)/external/ext
 pfem_incl_dir	= $(top_level_dir)/include
 pfem_src_dir	= $(top_level_dir)/src
 

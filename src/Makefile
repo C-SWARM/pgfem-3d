@@ -135,35 +135,35 @@ depend:
 	makedepend -- $(INCLUDES) $(LOC_INCL) $(CFLAGS) -- $(SRCS)
 # DO NOT DELETE
 
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ALM.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ALM.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 ALM.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/cdefs.h
 ALM.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 ALM.o: /usr/include/gnu/stubs-64.h /usr/include/bits/types.h
 ALM.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 ALM.o: /usr/include/_G_config.h /usr/include/wchar.h
 ALM.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
 ALM.o: /usr/include/math.h /usr/include/bits/huge_val.h
 ALM.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 ALM.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 ALM.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 ALM.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 ALM.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 ALM.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -171,22 +171,22 @@ ALM.o: /usr/include/sys/types.h /usr/include/time.h /usr/include/sys/select.h
 ALM.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 ALM.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 ALM.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_residuals.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_residuals.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 ALM.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 ALM.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 ALM.o: /usr/include/bits/posix2_lim.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Arc_length.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+ALM.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Arc_length.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 Arc_length.o: /usr/include/stdio.h /usr/include/features.h
 Arc_length.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Arc_length.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -194,8 +194,8 @@ Arc_length.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 Arc_length.o: /usr/include/libio.h /usr/include/_G_config.h
 Arc_length.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 Arc_length.o: /usr/include/bits/sys_errlist.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 Arc_length.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 Arc_length.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 Arc_length.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -203,19 +203,19 @@ Arc_length.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 Arc_length.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 Arc_length.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 Arc_length.o: /usr/include/bits/mathcalls.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 Arc_length.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 Arc_length.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 Arc_length.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -224,61 +224,61 @@ Arc_length.o: /usr/include/sys/select.h /usr/include/bits/select.h
 Arc_length.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 Arc_length.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 Arc_length.o: /usr/include/alloca.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 Arc_length.o: /usr/include/string.h /usr/include/xlocale.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
 Arc_length.o: /usr/include/sys/time.h /usr/include/sys/resource.h
 Arc_length.o: /usr/include/bits/resource.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/solve_system.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ALM.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_increment.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_residuals.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vol_damage_int_alg.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/LINE.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macroscopic_load_AL.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/out.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/press_theta.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/res_fini_def.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmat_fd.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/subdivision.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/boomerAMGInterface.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/solve_system.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ALM.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_increment.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_residuals.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vol_damage_int_alg.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/LINE.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macroscopic_load_AL.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/out.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/press_theta.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/res_fini_def.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmat_fd.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/subdivision.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+Arc_length.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/boomerAMGInterface.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 boomerAMGInterface.o: /usr/include/stdlib.h /usr/include/features.h
 boomerAMGInterface.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 boomerAMGInterface.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -300,20 +300,20 @@ boomerAMGInterface.o: /usr/include/bits/huge_valf.h
 boomerAMGInterface.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 boomerAMGInterface.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 boomerAMGInterface.o: /usr/include/bits/mathcalls.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 boomerAMGInterface.o: /usr/include/string.h /usr/include/xlocale.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/GRedist_node.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+boomerAMGInterface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/GRedist_node.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
 GRedist_node.o: /usr/include/stdlib.h /usr/include/features.h
 GRedist_node.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 GRedist_node.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -325,20 +325,20 @@ GRedist_node.o: /usr/include/time.h /usr/include/sys/select.h
 GRedist_node.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 GRedist_node.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 GRedist_node.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 GRedist_node.o: /usr/include/stdio.h /usr/include/libio.h
 GRedist_node.o: /usr/include/_G_config.h /usr/include/wchar.h
 GRedist_node.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/LINE.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+GRedist_node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/LINE.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 LINE.o: /usr/include/math.h /usr/include/features.h /usr/include/sys/cdefs.h
 LINE.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 LINE.o: /usr/include/gnu/stubs-64.h /usr/include/bits/huge_val.h
@@ -346,50 +346,50 @@ LINE.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 LINE.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 LINE.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
 LINE.o: /usr/include/string.h /usr/include/xlocale.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 LINE.o: /usr/include/stdio.h /usr/include/bits/types.h
 LINE.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 LINE.o: /usr/include/_G_config.h /usr/include/wchar.h
 LINE.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vol_damage_int_alg.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vol_damage_int_alg.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 LINE.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 LINE.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 LINE.o: /usr/include/bits/posix2_lim.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_residuals.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ALM.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macroscopic_load_AL.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element_utils.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Newton_Raphson.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_residuals.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ALM.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macroscopic_load_AL.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+LINE.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element_utils.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Newton_Raphson.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 Newton_Raphson.o: /usr/include/stdio.h /usr/include/features.h
 Newton_Raphson.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Newton_Raphson.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -397,8 +397,8 @@ Newton_Raphson.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 Newton_Raphson.o: /usr/include/libio.h /usr/include/_G_config.h
 Newton_Raphson.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 Newton_Raphson.o: /usr/include/bits/sys_errlist.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 Newton_Raphson.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 Newton_Raphson.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 Newton_Raphson.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -406,36 +406,36 @@ Newton_Raphson.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 Newton_Raphson.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 Newton_Raphson.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 Newton_Raphson.o: /usr/include/bits/mathcalls.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_force_on_model_ent.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_force_on_model_ent.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 Newton_Raphson.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 Newton_Raphson.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 Newton_Raphson.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -444,46 +444,46 @@ Newton_Raphson.o: /usr/include/sys/select.h /usr/include/bits/select.h
 Newton_Raphson.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 Newton_Raphson.o: /usr/include/sys/sysmacros.h
 Newton_Raphson.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 Newton_Raphson.o: /usr/include/string.h /usr/include/xlocale.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 Newton_Raphson.o: /usr/include/sys/time.h /usr/include/sys/resource.h
 Newton_Raphson.o: /usr/include/bits/resource.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_increment.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_residuals.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vol_damage_int_alg.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/LINE.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/load.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/press_theta.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/res_fini_def.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmat_fd.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/subdivision.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matrix_printing.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_reactions.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element_utils.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/solve_system.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vtk_output.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_list.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macro_micro_functions.h
-Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_job_intercomm.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLC.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_increment.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_residuals.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vol_damage_int_alg.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/LINE.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/load.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/press_theta.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/res_fini_def.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmat_fd.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/subdivision.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matrix_printing.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_reactions.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element_utils.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/solve_system.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vtk_output.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_list.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macro_micro_functions.h
+Newton_Raphson.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_job_intercomm.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLC.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
 PLC.o: /usr/include/math.h /usr/include/features.h /usr/include/sys/cdefs.h
 PLC.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 PLC.o: /usr/include/gnu/stubs-64.h /usr/include/bits/huge_val.h
@@ -491,15 +491,15 @@ PLC.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 PLC.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 PLC.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
 PLC.o: /usr/include/string.h /usr/include/xlocale.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 PLC.o: /usr/include/stdio.h /usr/include/bits/types.h
 PLC.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 PLC.o: /usr/include/_G_config.h /usr/include/wchar.h
 PLC.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+PLC.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 PLC.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 PLC.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 PLC.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -507,9 +507,9 @@ PLC.o: /usr/include/sys/types.h /usr/include/time.h /usr/include/sys/select.h
 PLC.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 PLC.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 PLC.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLoc_Sparse.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLoc_Sparse.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 PLoc_Sparse.o: /usr/include/stdio.h /usr/include/features.h
 PLoc_Sparse.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 PLoc_Sparse.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -517,8 +517,8 @@ PLoc_Sparse.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 PLoc_Sparse.o: /usr/include/libio.h /usr/include/_G_config.h
 PLoc_Sparse.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 PLoc_Sparse.o: /usr/include/bits/sys_errlist.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 PLoc_Sparse.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 PLoc_Sparse.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 PLoc_Sparse.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -526,20 +526,20 @@ PLoc_Sparse.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 PLoc_Sparse.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 PLoc_Sparse.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 PLoc_Sparse.o: /usr/include/bits/mathcalls.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 PLoc_Sparse.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 PLoc_Sparse.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 PLoc_Sparse.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -548,24 +548,24 @@ PLoc_Sparse.o: /usr/include/sys/select.h /usr/include/bits/select.h
 PLoc_Sparse.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 PLoc_Sparse.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 PLoc_Sparse.o: /usr/include/alloca.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 PLoc_Sparse.o: /usr/include/string.h /usr/include/xlocale.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Psparse_ApAi.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+PLoc_Sparse.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Psparse_ApAi.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 Psparse_ApAi.o: /usr/include/stdio.h /usr/include/features.h
 Psparse_ApAi.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Psparse_ApAi.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -573,20 +573,20 @@ Psparse_ApAi.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 Psparse_ApAi.o: /usr/include/libio.h /usr/include/_G_config.h
 Psparse_ApAi.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 Psparse_ApAi.o: /usr/include/bits/sys_errlist.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 Psparse_ApAi.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 Psparse_ApAi.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 Psparse_ApAi.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -594,10 +594,10 @@ Psparse_ApAi.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 Psparse_ApAi.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 Psparse_ApAi.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 Psparse_ApAi.o: /usr/include/bits/mathcalls.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 Psparse_ApAi.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 Psparse_ApAi.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 Psparse_ApAi.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -606,15 +606,15 @@ Psparse_ApAi.o: /usr/include/sys/select.h /usr/include/bits/select.h
 Psparse_ApAi.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 Psparse_ApAi.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 Psparse_ApAi.o: /usr/include/alloca.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/RNPsparse_ApAi.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+Psparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/RNPsparse_ApAi.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 RNPsparse_ApAi.o: /usr/include/stdio.h /usr/include/features.h
 RNPsparse_ApAi.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 RNPsparse_ApAi.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -622,21 +622,21 @@ RNPsparse_ApAi.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 RNPsparse_ApAi.o: /usr/include/libio.h /usr/include/_G_config.h
 RNPsparse_ApAi.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 RNPsparse_ApAi.o: /usr/include/bits/sys_errlist.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 RNPsparse_ApAi.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 RNPsparse_ApAi.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 RNPsparse_ApAi.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -644,10 +644,10 @@ RNPsparse_ApAi.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 RNPsparse_ApAi.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 RNPsparse_ApAi.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 RNPsparse_ApAi.o: /usr/include/bits/mathcalls.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 RNPsparse_ApAi.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 RNPsparse_ApAi.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 RNPsparse_ApAi.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -656,12 +656,12 @@ RNPsparse_ApAi.o: /usr/include/sys/select.h /usr/include/bits/select.h
 RNPsparse_ApAi.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 RNPsparse_ApAi.o: /usr/include/sys/sysmacros.h
 RNPsparse_ApAi.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-Re1_Re2_Re3.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Re1_Re2_Re3.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+RNPsparse_ApAi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+Re1_Re2_Re3.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Re1_Re2_Re3.h
 Re1_Re2_Re3.o: /usr/include/math.h /usr/include/features.h
 Re1_Re2_Re3.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Re1_Re2_Re3.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -669,25 +669,25 @@ Re1_Re2_Re3.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 Re1_Re2_Re3.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 Re1_Re2_Re3.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 Re1_Re2_Re3.o: /usr/include/bits/mathcalls.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/TA_GA.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/TA_GA.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
 TA_GA.o: /usr/include/math.h /usr/include/features.h /usr/include/sys/cdefs.h
 TA_GA.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 TA_GA.o: /usr/include/gnu/stubs-64.h /usr/include/bits/huge_val.h
 TA_GA.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 TA_GA.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 TA_GA.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 TA_GA.o: /usr/include/stdio.h /usr/include/bits/types.h
 TA_GA.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 TA_GA.o: /usr/include/_G_config.h /usr/include/wchar.h
 TA_GA.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+TA_GA.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 TA_GA.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 TA_GA.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 TA_GA.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -696,10 +696,10 @@ TA_GA.o: /usr/include/sys/select.h /usr/include/bits/select.h
 TA_GA.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 TA_GA.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 TA_GA.o: /usr/include/alloca.h
-addresses.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/addresses.h
-build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/build_distribution.h
-build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+addresses.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/addresses.h
+build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/build_distribution.h
+build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+build_distribution.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 build_distribution.o: /usr/include/stdio.h /usr/include/features.h
 build_distribution.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 build_distribution.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -707,8 +707,8 @@ build_distribution.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 build_distribution.o: /usr/include/libio.h /usr/include/_G_config.h
 build_distribution.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 build_distribution.o: /usr/include/bits/sys_errlist.h
-def_grad.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-def_grad.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+def_grad.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+def_grad.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 def_grad.o: /usr/include/stdlib.h /usr/include/features.h
 def_grad.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 def_grad.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -720,10 +720,10 @@ def_grad.o: /usr/include/time.h /usr/include/sys/select.h
 def_grad.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 def_grad.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 def_grad.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/differentiation_of_UU.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/differentiation_of_UU.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 differentiation_of_UU.o: /usr/include/stdio.h /usr/include/features.h
 differentiation_of_UU.o: /usr/include/sys/cdefs.h
 differentiation_of_UU.o: /usr/include/bits/wordsize.h
@@ -733,57 +733,57 @@ differentiation_of_UU.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 differentiation_of_UU.o: /usr/include/_G_config.h /usr/include/wchar.h
 differentiation_of_UU.o: /usr/include/bits/stdio_lim.h
 differentiation_of_UU.o: /usr/include/bits/sys_errlist.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
 differentiation_of_UU.o: /usr/include/math.h /usr/include/bits/huge_val.h
 differentiation_of_UU.o: /usr/include/bits/huge_valf.h
 differentiation_of_UU.o: /usr/include/bits/huge_vall.h
 differentiation_of_UU.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 differentiation_of_UU.o: /usr/include/bits/mathdef.h
 differentiation_of_UU.o: /usr/include/bits/mathcalls.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UFconfig/UFconfig.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UFconfig/UFconfig.h
 differentiation_of_UU.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 differentiation_of_UU.o: /usr/include/bits/local_lim.h
 differentiation_of_UU.o: /usr/include/linux/limits.h
 differentiation_of_UU.o: /usr/include/bits/posix2_lim.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_solve.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_defaults.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_qsymbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_wsolve.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_triplet_to_col.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_col_to_triplet.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_transpose.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_scale.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_lunz.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_determinant.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_status.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_info.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_control.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_matrix.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_triplet.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_vector.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_symbolic.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_numeric.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_perm.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_timer.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_tictoc.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/AMD/Include/amd.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_global.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_solve.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_defaults.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_qsymbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_wsolve.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_triplet_to_col.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_col_to_triplet.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_transpose.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_scale.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_lunz.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_determinant.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_status.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_info.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_control.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_matrix.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_triplet.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_vector.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_symbolic.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_numeric.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_perm.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_timer.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_tictoc.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/AMD/Include/amd.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_global.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 differentiation_of_UU.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 differentiation_of_UU.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 differentiation_of_UU.o: /usr/include/bits/endian.h
@@ -794,38 +794,38 @@ differentiation_of_UU.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 differentiation_of_UU.o: /usr/include/sys/sysmacros.h
 differentiation_of_UU.o: /usr/include/bits/pthreadtypes.h
 differentiation_of_UU.o: /usr/include/alloca.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/null.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLC.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/TA_GA.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/null.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLC.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/TA_GA.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+differentiation_of_UU.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 elem3d.o: /usr/include/stdio.h /usr/include/features.h
 elem3d.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 elem3d.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 elem3d.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 elem3d.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
 elem3d.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 elem3d.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 elem3d.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 elem3d.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -834,20 +834,20 @@ elem3d.o: /usr/include/sys/select.h /usr/include/bits/select.h
 elem3d.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 elem3d.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 elem3d.o: /usr/include/alloca.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/quadrature_rules.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/localizat.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/quadrature_rules.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/localizat.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 elem3d.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 elem3d.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 elem3d.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -855,12 +855,12 @@ elem3d.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 elem3d.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 elem3d.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 elem3d.o: /usr/include/bits/mathcalls.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resice.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_increment.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+elem3d.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resice.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_increment.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 fd_increment.o: /usr/include/stdio.h /usr/include/features.h
 fd_increment.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 fd_increment.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -868,13 +868,13 @@ fd_increment.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 fd_increment.o: /usr/include/libio.h /usr/include/_G_config.h
 fd_increment.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 fd_increment.o: /usr/include/bits/sys_errlist.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 fd_increment.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 fd_increment.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 fd_increment.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -883,24 +883,24 @@ fd_increment.o: /usr/include/sys/select.h /usr/include/bits/select.h
 fd_increment.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 fd_increment.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 fd_increment.o: /usr/include/alloca.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/TA_GA.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/TA_GA.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 fd_increment.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 fd_increment.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 fd_increment.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -908,14 +908,14 @@ fd_increment.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 fd_increment.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 fd_increment.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 fd_increment.o: /usr/include/bits/mathcalls.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/fd_residuals.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+fd_increment.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/fd_residuals.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 fd_residuals.o: /usr/include/stdio.h /usr/include/features.h
 fd_residuals.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 fd_residuals.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -923,8 +923,8 @@ fd_residuals.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 fd_residuals.o: /usr/include/libio.h /usr/include/_G_config.h
 fd_residuals.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 fd_residuals.o: /usr/include/bits/sys_errlist.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 fd_residuals.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 fd_residuals.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 fd_residuals.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -932,10 +932,10 @@ fd_residuals.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 fd_residuals.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 fd_residuals.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 fd_residuals.o: /usr/include/bits/mathcalls.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 fd_residuals.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 fd_residuals.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 fd_residuals.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -944,30 +944,30 @@ fd_residuals.o: /usr/include/sys/select.h /usr/include/bits/select.h
 fd_residuals.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 fd_residuals.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 fd_residuals.o: /usr/include/alloca.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resid_on_elem.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resid_on_elem.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+fd_residuals.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
 homogen.o: /usr/include/math.h /usr/include/features.h
 homogen.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 homogen.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -975,20 +975,20 @@ homogen.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 homogen.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 homogen.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 homogen.o: /usr/include/bits/mathcalls.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 homogen.o: /usr/include/stdio.h /usr/include/bits/types.h
 homogen.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 homogen.o: /usr/include/_G_config.h /usr/include/wchar.h
 homogen.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 homogen.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 homogen.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 homogen.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -997,18 +997,18 @@ homogen.o: /usr/include/sys/select.h /usr/include/bits/select.h
 homogen.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 homogen.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 homogen.o: /usr/include/alloca.h
-homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+homogen.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 hypre_interface.o: /usr/include/stdlib.h /usr/include/features.h
 hypre_interface.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 hypre_interface.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1029,37 +1029,37 @@ hypre_interface.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 hypre_interface.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 hypre_interface.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 hypre_interface.o: /usr/include/bits/mathcalls.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 hypre_interface.o: /usr/include/string.h /usr/include/xlocale.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/boomerAMGInterface.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/in.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/boomerAMGInterface.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+hypre_interface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/in.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 in.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/cdefs.h
 in.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 in.o: /usr/include/gnu/stubs-64.h /usr/include/bits/types.h
 in.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 in.o: /usr/include/_G_config.h /usr/include/wchar.h
 in.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 in.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 in.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 in.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1067,11 +1067,11 @@ in.o: /usr/include/sys/types.h /usr/include/time.h /usr/include/sys/select.h
 in.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 in.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 in.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 in.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 in.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 in.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1079,12 +1079,12 @@ in.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 in.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 in.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 in.o: /usr/include/bits/mathcalls.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/initial_guess.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+in.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/initial_guess.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 initial_guess.o: /usr/include/stdio.h /usr/include/features.h
 initial_guess.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 initial_guess.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1092,14 +1092,14 @@ initial_guess.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 initial_guess.o: /usr/include/libio.h /usr/include/_G_config.h
 initial_guess.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 initial_guess.o: /usr/include/bits/sys_errlist.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
 initial_guess.o: /usr/include/math.h /usr/include/bits/huge_val.h
 initial_guess.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 initial_guess.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 initial_guess.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 initial_guess.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 initial_guess.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 initial_guess.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1108,9 +1108,9 @@ initial_guess.o: /usr/include/sys/select.h /usr/include/bits/select.h
 initial_guess.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 initial_guess.o: /usr/include/sys/sysmacros.h
 initial_guess.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+initial_guess.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
 integration.o: /usr/include/math.h /usr/include/features.h
 integration.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 integration.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1119,57 +1119,57 @@ integration.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 integration.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 integration.o: /usr/include/bits/mathcalls.h /usr/include/string.h
 integration.o: /usr/include/xlocale.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UFconfig/UFconfig.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UFconfig/UFconfig.h
 integration.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 integration.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 integration.o: /usr/include/bits/posix2_lim.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_solve.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_defaults.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_qsymbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_wsolve.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_triplet_to_col.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_col_to_triplet.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_transpose.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_scale.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_lunz.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_determinant.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_status.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_info.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_control.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_matrix.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_triplet.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_vector.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_symbolic.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_numeric.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_perm.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_timer.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_tictoc.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/AMD/Include/amd.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_global.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_solve.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_free_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_defaults.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_qsymbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_wsolve.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_triplet_to_col.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_col_to_triplet.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_transpose.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_scale.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_lunz.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_save_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_load_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_get_determinant.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_status.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_info.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_control.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_matrix.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_triplet.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_vector.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_symbolic.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_numeric.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_report_perm.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_timer.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_tictoc.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/AMD/Include/amd.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/suitesparse/UMFPACK/Include/umfpack_global.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 integration.o: /usr/include/stdio.h /usr/include/bits/types.h
 integration.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 integration.o: /usr/include/_G_config.h /usr/include/wchar.h
 integration.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 integration.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 integration.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 integration.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1178,45 +1178,45 @@ integration.o: /usr/include/sys/select.h /usr/include/bits/select.h
 integration.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 integration.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 integration.o: /usr/include/alloca.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/initial_guess.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/differentiation_of_UU.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/null.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/TA_GA.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/load.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/initial_guess.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/differentiation_of_UU.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/null.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/TA_GA.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+integration.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/load.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 load.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/cdefs.h
 load.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 load.o: /usr/include/gnu/stubs-64.h /usr/include/bits/types.h
 load.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 load.o: /usr/include/_G_config.h /usr/include/wchar.h
 load.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 load.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 load.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 load.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1225,25 +1225,25 @@ load.o: /usr/include/sys/select.h /usr/include/bits/select.h
 load.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 load.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 load.o: /usr/include/alloca.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmatel_fd.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmatel_fd.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 load.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 load.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 load.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1251,16 +1251,16 @@ load.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 load.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 load.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 load.o: /usr/include/bits/mathcalls.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-localizat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/localizat.h
-macroscopic_load_AL.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macroscopic_load_AL.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+localizat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/localizat.h
+macroscopic_load_AL.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macroscopic_load_AL.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 matice.o: /usr/include/math.h /usr/include/features.h
 matice.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 matice.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1268,18 +1268,18 @@ matice.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 matice.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 matice.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 matice.o: /usr/include/bits/mathcalls.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 matice.o: /usr/include/stdio.h /usr/include/bits/types.h
 matice.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 matice.o: /usr/include/_G_config.h /usr/include/wchar.h
 matice.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 matice.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 matice.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 matice.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1288,8 +1288,8 @@ matice.o: /usr/include/sys/select.h /usr/include/bits/select.h
 matice.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 matice.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 matice.o: /usr/include/alloca.h
-matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resice.h
-matrix_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matrix_printing.h
+matice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resice.h
+matrix_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matrix_printing.h
 matrix_printing.o: /usr/include/stdlib.h /usr/include/features.h
 matrix_printing.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 matrix_printing.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1302,13 +1302,13 @@ matrix_printing.o: /usr/include/sys/select.h /usr/include/bits/select.h
 matrix_printing.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 matrix_printing.o: /usr/include/sys/sysmacros.h
 matrix_printing.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-matrix_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+matrix_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 matrix_printing.o: /usr/include/stdio.h /usr/include/libio.h
 matrix_printing.o: /usr/include/_G_config.h /usr/include/wchar.h
 matrix_printing.o: /usr/include/bits/stdio_lim.h
 matrix_printing.o: /usr/include/bits/sys_errlist.h
-metis_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/metis_printing.h
-metis_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+metis_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/metis_printing.h
+metis_printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 metis_printing.o: /usr/include/stdio.h /usr/include/features.h
 metis_printing.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 metis_printing.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1316,9 +1316,9 @@ metis_printing.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 metis_printing.o: /usr/include/libio.h /usr/include/_G_config.h
 metis_printing.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 metis_printing.o: /usr/include/bits/sys_errlist.h
-null.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/null.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/out.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+null.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/null.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/out.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 out.o: /usr/include/sys/time.h /usr/include/features.h
 out.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 out.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1326,29 +1326,29 @@ out.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 out.o: /usr/include/time.h /usr/include/bits/time.h /usr/include/sys/select.h
 out.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 out.o: /usr/include/sys/resource.h /usr/include/bits/resource.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 out.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
 out.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 out.o: /usr/include/bits/sys_errlist.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 out.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 out.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 out.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
 out.o: /usr/include/sys/types.h /usr/include/sys/sysmacros.h
 out.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 out.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 out.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 out.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1356,22 +1356,22 @@ out.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 out.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 out.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 out.o: /usr/include/bits/mathcalls.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/press_theta.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+out.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/press_theta.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 press_theta.o: /usr/include/stdio.h /usr/include/features.h
 press_theta.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 press_theta.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1379,10 +1379,10 @@ press_theta.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 press_theta.o: /usr/include/libio.h /usr/include/_G_config.h
 press_theta.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 press_theta.o: /usr/include/bits/sys_errlist.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 press_theta.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 press_theta.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 press_theta.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1391,16 +1391,16 @@ press_theta.o: /usr/include/sys/select.h /usr/include/bits/select.h
 press_theta.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 press_theta.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 press_theta.o: /usr/include/alloca.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Re1_Re2_Re3.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Re1_Re2_Re3.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 press_theta.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 press_theta.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 press_theta.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1408,10 +1408,10 @@ press_theta.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 press_theta.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 press_theta.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 press_theta.o: /usr/include/bits/mathcalls.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-pressu_shape.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+press_theta.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+pressu_shape.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
 pressu_shape.o: /usr/include/stdlib.h /usr/include/features.h
 pressu_shape.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 pressu_shape.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1423,12 +1423,12 @@ pressu_shape.o: /usr/include/time.h /usr/include/sys/select.h
 pressu_shape.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 pressu_shape.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 pressu_shape.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-pressu_shape.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+pressu_shape.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 pressu_shape.o: /usr/include/stdio.h /usr/include/libio.h
 pressu_shape.o: /usr/include/_G_config.h /usr/include/wchar.h
 pressu_shape.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-Printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Printing.h
-Printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+Printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Printing.h
+Printing.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 Printing.o: /usr/include/stdio.h /usr/include/features.h
 Printing.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Printing.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1436,8 +1436,8 @@ Printing.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 Printing.o: /usr/include/libio.h /usr/include/_G_config.h
 Printing.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 Printing.o: /usr/include/bits/sys_errlist.h
-print_dist.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/print_dist.h
-print_dist.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+print_dist.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/print_dist.h
+print_dist.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 print_dist.o: /usr/include/stdio.h /usr/include/features.h
 print_dist.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 print_dist.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1445,8 +1445,8 @@ print_dist.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 print_dist.o: /usr/include/libio.h /usr/include/_G_config.h
 print_dist.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 print_dist.o: /usr/include/bits/sys_errlist.h
-read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_cryst_plast.h
-read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_cryst_plast.h
+read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 read_cryst_plast.o: /usr/include/stdio.h /usr/include/features.h
 read_cryst_plast.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 read_cryst_plast.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1454,8 +1454,8 @@ read_cryst_plast.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 read_cryst_plast.o: /usr/include/libio.h /usr/include/_G_config.h
 read_cryst_plast.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 read_cryst_plast.o: /usr/include/bits/sys_errlist.h
-read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+read_cryst_plast.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 read_cryst_plast.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 read_cryst_plast.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 read_cryst_plast.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1464,14 +1464,14 @@ read_cryst_plast.o: /usr/include/sys/select.h /usr/include/bits/select.h
 read_cryst_plast.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 read_cryst_plast.o: /usr/include/sys/sysmacros.h
 read_cryst_plast.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/renumber_ID.h
-renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/res_fini_def.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/renumber_ID.h
+renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+renumber_ID.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/res_fini_def.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 res_fini_def.o: /usr/include/stdio.h /usr/include/features.h
 res_fini_def.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 res_fini_def.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1479,10 +1479,10 @@ res_fini_def.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 res_fini_def.o: /usr/include/libio.h /usr/include/_G_config.h
 res_fini_def.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 res_fini_def.o: /usr/include/bits/sys_errlist.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resice.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+res_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resice.h
 resice.o: /usr/include/math.h /usr/include/features.h
 resice.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 resice.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1490,10 +1490,10 @@ resice.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 resice.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 resice.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 resice.o: /usr/include/bits/mathcalls.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 resice.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 resice.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 resice.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1503,25 +1503,25 @@ resice.o: /usr/include/sys/select.h /usr/include/bits/select.h
 resice.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 resice.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 resice.o: /usr/include/alloca.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 resice.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
 resice.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 resice.o: /usr/include/bits/sys_errlist.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 resice.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 resice.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 resice.o: /usr/include/bits/posix2_lim.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resid_on_elem.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+resice.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resid_on_elem.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 resid_on_elem.o: /usr/include/stdio.h /usr/include/features.h
 resid_on_elem.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 resid_on_elem.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1529,24 +1529,24 @@ resid_on_elem.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 resid_on_elem.o: /usr/include/libio.h /usr/include/_G_config.h
 resid_on_elem.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 resid_on_elem.o: /usr/include/bits/sys_errlist.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
 resid_on_elem.o: /usr/include/math.h /usr/include/bits/huge_val.h
 resid_on_elem.o: /usr/include/bits/huge_valf.h /usr/include/bits/huge_vall.h
 resid_on_elem.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 resid_on_elem.o: /usr/include/bits/mathdef.h /usr/include/bits/mathcalls.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 resid_on_elem.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 resid_on_elem.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 resid_on_elem.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1555,13 +1555,13 @@ resid_on_elem.o: /usr/include/sys/select.h /usr/include/bits/select.h
 resid_on_elem.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 resid_on_elem.o: /usr/include/sys/sysmacros.h
 resid_on_elem.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integration.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Re1_Re2_Re3.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
-resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/rn_skyline.h
-rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integration.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Re1_Re2_Re3.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
+resid_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/rn_skyline.h
+rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 rn_skyline.o: /usr/include/stdlib.h /usr/include/features.h
 rn_skyline.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 rn_skyline.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1573,11 +1573,11 @@ rn_skyline.o: /usr/include/time.h /usr/include/sys/select.h
 rn_skyline.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 rn_skyline.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 rn_skyline.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/rowlength.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+rn_skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/rowlength.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 rowlength.o: /usr/include/stdio.h /usr/include/features.h
 rowlength.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 rowlength.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1585,7 +1585,7 @@ rowlength.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 rowlength.o: /usr/include/libio.h /usr/include/_G_config.h
 rowlength.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 rowlength.o: /usr/include/bits/sys_errlist.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
 rowlength.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 rowlength.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 rowlength.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1594,12 +1594,12 @@ rowlength.o: /usr/include/sys/select.h /usr/include/bits/select.h
 rowlength.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 rowlength.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 rowlength.o: /usr/include/alloca.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 rowlength.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 rowlength.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 rowlength.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1607,14 +1607,14 @@ rowlength.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 rowlength.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 rowlength.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 rowlength.o: /usr/include/bits/mathcalls.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/set_fini_def.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+rowlength.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/set_fini_def.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 set_fini_def.o: /usr/include/stdio.h /usr/include/features.h
 set_fini_def.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 set_fini_def.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1622,20 +1622,20 @@ set_fini_def.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 set_fini_def.o: /usr/include/libio.h /usr/include/_G_config.h
 set_fini_def.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 set_fini_def.o: /usr/include/bits/sys_errlist.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
 set_fini_def.o: /usr/include/string.h /usr/include/xlocale.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/SetGlobalNodeNumbers.h
-SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+set_fini_def.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/SetGlobalNodeNumbers.h
+SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 SetGlobalNodeNumbers.o: /usr/include/stdio.h /usr/include/features.h
 SetGlobalNodeNumbers.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 SetGlobalNodeNumbers.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1644,7 +1644,7 @@ SetGlobalNodeNumbers.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 SetGlobalNodeNumbers.o: /usr/include/_G_config.h /usr/include/wchar.h
 SetGlobalNodeNumbers.o: /usr/include/bits/stdio_lim.h
 SetGlobalNodeNumbers.o: /usr/include/bits/sys_errlist.h
-SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+SetGlobalNodeNumbers.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 SetGlobalNodeNumbers.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 SetGlobalNodeNumbers.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 SetGlobalNodeNumbers.o: /usr/include/bits/endian.h
@@ -1654,15 +1654,15 @@ SetGlobalNodeNumbers.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 SetGlobalNodeNumbers.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 SetGlobalNodeNumbers.o: /usr/include/bits/pthreadtypes.h
 SetGlobalNodeNumbers.o: /usr/include/alloca.h
-skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/skyline.h
-skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/skyline.h
+skyline.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 skyline.o: /usr/include/stdio.h /usr/include/features.h
 skyline.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 skyline.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 skyline.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 skyline.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
 skyline.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
 stabilized.o: /usr/include/time.h /usr/include/bits/types.h
 stabilized.o: /usr/include/features.h /usr/include/sys/cdefs.h
 stabilized.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
@@ -1670,11 +1670,11 @@ stabilized.o: /usr/include/gnu/stubs-64.h /usr/include/bits/typesizes.h
 stabilized.o: /usr/include/string.h /usr/include/xlocale.h
 stabilized.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 stabilized.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 stabilized.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 stabilized.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 stabilized.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1682,17 +1682,17 @@ stabilized.o: /usr/include/sys/types.h /usr/include/sys/select.h
 stabilized.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 stabilized.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 stabilized.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/new_potentials.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/new_potentials.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 stabilized.o: /usr/include/stdio.h /usr/include/libio.h
 stabilized.o: /usr/include/_G_config.h /usr/include/wchar.h
 stabilized.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 stabilized.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 stabilized.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 stabilized.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1700,20 +1700,20 @@ stabilized.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 stabilized.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 stabilized.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 stabilized.o: /usr/include/bits/mathcalls.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/two_field_element.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmat_fd.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/two_field_element.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+stabilized.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmat_fd.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 stiffmat_fd.o: /usr/include/stdio.h /usr/include/features.h
 stiffmat_fd.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 stiffmat_fd.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1721,8 +1721,8 @@ stiffmat_fd.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 stiffmat_fd.o: /usr/include/libio.h /usr/include/_G_config.h
 stiffmat_fd.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 stiffmat_fd.o: /usr/include/bits/sys_errlist.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 stiffmat_fd.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 stiffmat_fd.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 stiffmat_fd.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1730,18 +1730,18 @@ stiffmat_fd.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 stiffmat_fd.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 stiffmat_fd.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 stiffmat_fd.o: /usr/include/bits/mathcalls.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 stiffmat_fd.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 stiffmat_fd.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 stiffmat_fd.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1750,44 +1750,44 @@ stiffmat_fd.o: /usr/include/sys/select.h /usr/include/bits/select.h
 stiffmat_fd.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 stiffmat_fd.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 stiffmat_fd.o: /usr/include/alloca.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLoc_Sparse.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLoc_Sparse.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 stiffmat_fd.o: /usr/include/string.h /usr/include/xlocale.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmatel_fd.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmatel_fd.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmatel_fd.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+stiffmat_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmatel_fd.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 stiffmatel_fd.o: /usr/include/stdio.h /usr/include/features.h
 stiffmatel_fd.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 stiffmatel_fd.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1795,8 +1795,8 @@ stiffmatel_fd.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 stiffmatel_fd.o: /usr/include/libio.h /usr/include/_G_config.h
 stiffmatel_fd.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 stiffmatel_fd.o: /usr/include/bits/sys_errlist.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 stiffmatel_fd.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 stiffmatel_fd.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 stiffmatel_fd.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1805,20 +1805,20 @@ stiffmatel_fd.o: /usr/include/sys/select.h /usr/include/bits/select.h
 stiffmatel_fd.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 stiffmatel_fd.o: /usr/include/sys/sysmacros.h
 stiffmatel_fd.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pressu_shape.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pressu_shape.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 stiffmatel_fd.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 stiffmatel_fd.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 stiffmatel_fd.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1826,10 +1826,10 @@ stiffmatel_fd.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 stiffmatel_fd.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 stiffmatel_fd.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 stiffmatel_fd.o: /usr/include/bits/mathcalls.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-stress_strain.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stress_strain.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+stiffmatel_fd.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+stress_strain.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stress_strain.h
 stress_strain.o: /usr/include/math.h /usr/include/features.h
 stress_strain.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 stress_strain.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1837,8 +1837,8 @@ stress_strain.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 stress_strain.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 stress_strain.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 stress_strain.o: /usr/include/bits/mathcalls.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/subdivision.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/subdivision.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 subdivision.o: /usr/include/math.h /usr/include/features.h
 subdivision.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 subdivision.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1846,24 +1846,24 @@ subdivision.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 subdivision.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 subdivision.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 subdivision.o: /usr/include/bits/mathcalls.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 subdivision.o: /usr/include/stdio.h /usr/include/bits/types.h
 subdivision.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 subdivision.o: /usr/include/_G_config.h /usr/include/wchar.h
 subdivision.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/res_fini_def.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/res_fini_def.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+subdivision.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
 tensors.o: /usr/include/math.h /usr/include/features.h
 tensors.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 tensors.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1871,19 +1871,19 @@ tensors.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 tensors.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 tensors.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 tensors.o: /usr/include/bits/mathcalls.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 tensors.o: /usr/include/stdio.h /usr/include/bits/types.h
 tensors.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 tensors.o: /usr/include/_G_config.h /usr/include/wchar.h
 tensors.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 tensors.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 tensors.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 tensors.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1892,18 +1892,18 @@ tensors.o: /usr/include/sys/select.h /usr/include/bits/select.h
 tensors.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 tensors.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 tensors.o: /usr/include/alloca.h
-tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/null.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+tensors.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/null.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 utils.o: /usr/include/stdio.h /usr/include/features.h
 utils.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 utils.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 utils.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 utils.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
 utils.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 utils.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 utils.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 utils.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -1911,27 +1911,27 @@ utils.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 utils.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 utils.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 utils.o: /usr/include/bits/mathcalls.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
 utils.o: /usr/include/assert.h /usr/include/string.h /usr/include/xlocale.h
 utils.o: /usr/include/time.h
 utils.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 utils.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
 utils.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_lapack.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 utils.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 utils.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 utils.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1939,29 +1939,29 @@ utils.o: /usr/include/sys/types.h /usr/include/sys/select.h
 utils.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 utils.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 utils.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/localizat.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resice.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/localizat.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resice.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 incl.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/cdefs.h
 incl.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 incl.o: /usr/include/gnu/stubs-64.h /usr/include/bits/types.h
 incl.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 incl.o: /usr/include/_G_config.h /usr/include/wchar.h
 incl.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 incl.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 incl.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 incl.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -1970,13 +1970,13 @@ incl.o: /usr/include/sys/select.h /usr/include/bits/select.h
 incl.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 incl.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 incl.o: /usr/include/alloca.h /usr/include/string.h /usr/include/xlocale.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-profiler.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/profiler.h
-profiler.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+incl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+profiler.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/profiler.h
+profiler.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 profiler.o: /usr/include/stdio.h /usr/include/features.h
 profiler.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 profiler.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1984,8 +1984,8 @@ profiler.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 profiler.o: /usr/include/libio.h /usr/include/_G_config.h
 profiler.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 profiler.o: /usr/include/bits/sys_errlist.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/potential.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/potential.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
 potential.o: /usr/include/math.h /usr/include/features.h
 potential.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 potential.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -1993,13 +1993,13 @@ potential.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 potential.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 potential.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 potential.o: /usr/include/bits/mathcalls.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 potential.o: /usr/include/stdio.h /usr/include/bits/types.h
 potential.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 potential.o: /usr/include/_G_config.h /usr/include/wchar.h
 potential.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 potential.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 potential.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 potential.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2008,21 +2008,21 @@ potential.o: /usr/include/sys/select.h /usr/include/bits/select.h
 potential.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 potential.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 potential.o: /usr/include/alloca.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 potential.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 potential.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 potential.o: /usr/include/bits/posix2_lim.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroF.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+potential.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroF.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 computeMacroF.o: /usr/include/stdio.h /usr/include/features.h
 computeMacroF.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 computeMacroF.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2030,13 +2030,13 @@ computeMacroF.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 computeMacroF.o: /usr/include/libio.h /usr/include/_G_config.h
 computeMacroF.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 computeMacroF.o: /usr/include/bits/sys_errlist.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 computeMacroF.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 computeMacroF.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 computeMacroF.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2045,11 +2045,11 @@ computeMacroF.o: /usr/include/sys/select.h /usr/include/bits/select.h
 computeMacroF.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 computeMacroF.o: /usr/include/sys/sysmacros.h
 computeMacroF.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 computeMacroF.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 computeMacroF.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 computeMacroF.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2057,16 +2057,16 @@ computeMacroF.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 computeMacroF.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 computeMacroF.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 computeMacroF.o: /usr/include/bits/mathcalls.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroS.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+computeMacroF.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroS.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 computeMacroS.o: /usr/include/stdio.h /usr/include/features.h
 computeMacroS.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 computeMacroS.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2074,14 +2074,14 @@ computeMacroS.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 computeMacroS.o: /usr/include/libio.h /usr/include/_G_config.h
 computeMacroS.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 computeMacroS.o: /usr/include/bits/sys_errlist.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
 computeMacroS.o: /usr/include/string.h /usr/include/xlocale.h
 computeMacroS.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 computeMacroS.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 computeMacroS.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 computeMacroS.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 computeMacroS.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2090,12 +2090,12 @@ computeMacroS.o: /usr/include/sys/select.h /usr/include/bits/select.h
 computeMacroS.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 computeMacroS.o: /usr/include/sys/sysmacros.h
 computeMacroS.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 computeMacroS.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 computeMacroS.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 computeMacroS.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2103,13 +2103,13 @@ computeMacroS.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 computeMacroS.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 computeMacroS.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 computeMacroS.o: /usr/include/bits/mathcalls.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vtk_output.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+computeMacroS.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vtk_output.h
 vtk_output.o: /usr/include/string.h /usr/include/features.h
 vtk_output.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 vtk_output.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2122,25 +2122,25 @@ vtk_output.o: /usr/include/time.h /usr/include/sys/select.h
 vtk_output.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 vtk_output.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 vtk_output.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/VTK_IO/include/PGFem3D_to_VTK.hpp
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/VTK_IO/include/PGFem3D_to_VTK.hpp
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 vtk_output.o: /usr/include/stdio.h /usr/include/libio.h
 vtk_output.o: /usr/include/_G_config.h /usr/include/wchar.h
 vtk_output.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 vtk_output.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 vtk_output.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 vtk_output.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2148,11 +2148,11 @@ vtk_output.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 vtk_output.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 vtk_output.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 vtk_output.o: /usr/include/bits/mathcalls.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+vtk_output.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
 MINI_element.o: /usr/include/stdlib.h /usr/include/features.h
 MINI_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 MINI_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2168,17 +2168,17 @@ MINI_element.o: /usr/include/assert.h /usr/include/string.h
 MINI_element.o: /usr/include/xlocale.h
 MINI_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 MINI_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 MINI_element.o: /usr/include/stdio.h /usr/include/libio.h
 MINI_element.o: /usr/include/_G_config.h /usr/include/wchar.h
 MINI_element.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/two_field_element.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/two_field_element.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 MINI_element.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 MINI_element.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 MINI_element.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2186,27 +2186,27 @@ MINI_element.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 MINI_element.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 MINI_element.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 MINI_element.o: /usr/include/bits/mathcalls.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/potential.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/potential.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+MINI_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
 MINI_3f_element.o: /usr/include/stdlib.h /usr/include/features.h
 MINI_3f_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 MINI_3f_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2226,17 +2226,17 @@ MINI_3f_element.o: /usr/include/asm/errno.h /usr/include/asm-generic/errno.h
 MINI_3f_element.o: /usr/include/asm-generic/errno-base.h
 MINI_3f_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 MINI_3f_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 MINI_3f_element.o: /usr/include/stdio.h /usr/include/libio.h
 MINI_3f_element.o: /usr/include/_G_config.h /usr/include/wchar.h
 MINI_3f_element.o: /usr/include/bits/stdio_lim.h
 MINI_3f_element.o: /usr/include/bits/sys_errlist.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Hu_Washizu_element.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Hu_Washizu_element.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 MINI_3f_element.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 MINI_3f_element.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 MINI_3f_element.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2244,23 +2244,23 @@ MINI_3f_element.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 MINI_3f_element.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 MINI_3f_element.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 MINI_3f_element.o: /usr/include/bits/mathcalls.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/new_potentials.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/two_field_element.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/new_potentials.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+MINI_3f_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/two_field_element.h
 two_field_element.o: /usr/include/stdlib.h /usr/include/features.h
 two_field_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 two_field_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2276,18 +2276,18 @@ two_field_element.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
 two_field_element.o: /usr/include/string.h /usr/include/xlocale.h
 two_field_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 two_field_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 two_field_element.o: /usr/include/stdio.h /usr/include/libio.h
 two_field_element.o: /usr/include/_G_config.h /usr/include/wchar.h
 two_field_element.o: /usr/include/bits/stdio_lim.h
 two_field_element.o: /usr/include/bits/sys_errlist.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 two_field_element.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 two_field_element.o: /usr/include/bits/local_lim.h
 two_field_element.o: /usr/include/linux/limits.h
@@ -2297,25 +2297,25 @@ two_field_element.o: /usr/include/bits/huge_valf.h
 two_field_element.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 two_field_element.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 two_field_element.o: /usr/include/bits/mathcalls.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Hu_Washizu_element.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+two_field_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Hu_Washizu_element.h
 Hu_Washizu_element.o: /usr/include/string.h /usr/include/features.h
 Hu_Washizu_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 Hu_Washizu_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 Hu_Washizu_element.o: /usr/include/xlocale.h
 Hu_Washizu_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 Hu_Washizu_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 Hu_Washizu_element.o: /usr/include/stdio.h /usr/include/bits/types.h
 Hu_Washizu_element.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 Hu_Washizu_element.o: /usr/include/_G_config.h /usr/include/wchar.h
 Hu_Washizu_element.o: /usr/include/bits/stdio_lim.h
 Hu_Washizu_element.o: /usr/include/bits/sys_errlist.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 Hu_Washizu_element.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 Hu_Washizu_element.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 Hu_Washizu_element.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2324,11 +2324,11 @@ Hu_Washizu_element.o: /usr/include/sys/select.h /usr/include/bits/select.h
 Hu_Washizu_element.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 Hu_Washizu_element.o: /usr/include/sys/sysmacros.h
 Hu_Washizu_element.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 Hu_Washizu_element.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 Hu_Washizu_element.o: /usr/include/bits/local_lim.h
 Hu_Washizu_element.o: /usr/include/linux/limits.h
@@ -2338,11 +2338,11 @@ Hu_Washizu_element.o: /usr/include/bits/huge_valf.h
 Hu_Washizu_element.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 Hu_Washizu_element.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 Hu_Washizu_element.o: /usr/include/bits/mathcalls.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/new_potentials.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+Hu_Washizu_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/new_potentials.h
 new_potentials.o: /usr/include/math.h /usr/include/features.h
 new_potentials.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 new_potentials.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2353,13 +2353,13 @@ new_potentials.o: /usr/include/bits/mathcalls.h /usr/include/string.h
 new_potentials.o: /usr/include/xlocale.h
 new_potentials.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 new_potentials.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 new_potentials.o: /usr/include/stdio.h /usr/include/bits/types.h
 new_potentials.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 new_potentials.o: /usr/include/_G_config.h /usr/include/wchar.h
 new_potentials.o: /usr/include/bits/stdio_lim.h
 new_potentials.o: /usr/include/bits/sys_errlist.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 new_potentials.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 new_potentials.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 new_potentials.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2368,19 +2368,19 @@ new_potentials.o: /usr/include/sys/select.h /usr/include/bits/select.h
 new_potentials.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 new_potentials.o: /usr/include/sys/sysmacros.h
 new_potentials.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 new_potentials.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 new_potentials.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 new_potentials.o: /usr/include/bits/posix2_lim.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+new_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
 displacement_based_element.o: /usr/include/string.h /usr/include/features.h
 displacement_based_element.o: /usr/include/sys/cdefs.h
 displacement_based_element.o: /usr/include/bits/wordsize.h
@@ -2401,28 +2401,28 @@ displacement_based_element.o: /usr/include/bits/mathdef.h
 displacement_based_element.o: /usr/include/bits/mathcalls.h
 displacement_based_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 displacement_based_element.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 displacement_based_element.o: /usr/include/stdio.h /usr/include/bits/types.h
 displacement_based_element.o: /usr/include/bits/typesizes.h
 displacement_based_element.o: /usr/include/libio.h /usr/include/_G_config.h
 displacement_based_element.o: /usr/include/wchar.h
 displacement_based_element.o: /usr/include/bits/stdio_lim.h
 displacement_based_element.o: /usr/include/bits/sys_errlist.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 displacement_based_element.o: /usr/include/limits.h
 displacement_based_element.o: /usr/include/bits/posix1_lim.h
 displacement_based_element.o: /usr/include/bits/local_lim.h
 displacement_based_element.o: /usr/include/linux/limits.h
 displacement_based_element.o: /usr/include/bits/posix2_lim.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 displacement_based_element.o: /usr/include/stdlib.h
 displacement_based_element.o: /usr/include/bits/waitflags.h
 displacement_based_element.o: /usr/include/bits/waitstatus.h
@@ -2437,25 +2437,25 @@ displacement_based_element.o: /usr/include/bits/time.h
 displacement_based_element.o: /usr/include/sys/sysmacros.h
 displacement_based_element.o: /usr/include/bits/pthreadtypes.h
 displacement_based_element.o: /usr/include/alloca.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/new_potentials.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/transform_coordinates.h
-displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/new_potentials.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/transform_coordinates.h
+displacement_based_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
 PGFem3D_options.o: /usr/include/getopt.h /usr/include/ctype.h
 PGFem3D_options.o: /usr/include/features.h /usr/include/sys/cdefs.h
 PGFem3D_options.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
@@ -2470,9 +2470,9 @@ PGFem3D_options.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 PGFem3D_options.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 PGFem3D_options.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
 PGFem3D_options.o: /usr/include/string.h
-PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
+PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+PGFem3D_options.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
 gen_path.o: /usr/include/sys/types.h /usr/include/features.h
 gen_path.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 gen_path.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2490,12 +2490,12 @@ gen_path.o: /usr/include/asm-generic/errno-base.h /usr/include/stdlib.h
 gen_path.o: /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h
 gen_path.o: /usr/include/alloca.h /usr/include/string.h
 gen_path.o: /usr/include/xlocale.h
-gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 gen_path.o: /usr/include/stdio.h /usr/include/libio.h
 gen_path.o: /usr/include/_G_config.h /usr/include/wchar.h
 gen_path.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-volumetric_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
+gen_path.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+volumetric_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
 volumetric_damage.o: /usr/include/math.h /usr/include/features.h
 volumetric_damage.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 volumetric_damage.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2513,14 +2513,14 @@ volumetric_damage.o: /usr/include/sys/select.h /usr/include/bits/select.h
 volumetric_damage.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 volumetric_damage.o: /usr/include/sys/sysmacros.h
 volumetric_damage.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-volumetric_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+volumetric_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 volumetric_damage.o: /usr/include/stdio.h /usr/include/libio.h
 volumetric_damage.o: /usr/include/_G_config.h /usr/include/wchar.h
 volumetric_damage.o: /usr/include/bits/stdio_lim.h
 volumetric_damage.o: /usr/include/bits/sys_errlist.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/initialize_damage.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/initialize_damage.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 initialize_damage.o: /usr/include/stdio.h /usr/include/features.h
 initialize_damage.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 initialize_damage.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2528,9 +2528,9 @@ initialize_damage.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 initialize_damage.o: /usr/include/libio.h /usr/include/_G_config.h
 initialize_damage.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 initialize_damage.o: /usr/include/bits/sys_errlist.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
 initialize_damage.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 initialize_damage.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 initialize_damage.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2539,30 +2539,30 @@ initialize_damage.o: /usr/include/sys/select.h /usr/include/bits/select.h
 initialize_damage.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 initialize_damage.o: /usr/include/sys/sysmacros.h
 initialize_damage.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vol_damage_int_alg.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+initialize_damage.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vol_damage_int_alg.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 vol_damage_int_alg.o: /usr/include/string.h /usr/include/features.h
 vol_damage_int_alg.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 vol_damage_int_alg.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 vol_damage_int_alg.o: /usr/include/xlocale.h
 vol_damage_int_alg.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 vol_damage_int_alg.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 vol_damage_int_alg.o: /usr/include/stdio.h /usr/include/bits/types.h
 vol_damage_int_alg.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 vol_damage_int_alg.o: /usr/include/_G_config.h /usr/include/wchar.h
 vol_damage_int_alg.o: /usr/include/bits/stdio_lim.h
 vol_damage_int_alg.o: /usr/include/bits/sys_errlist.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 vol_damage_int_alg.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 vol_damage_int_alg.o: /usr/include/bits/local_lim.h
 vol_damage_int_alg.o: /usr/include/linux/limits.h
@@ -2572,10 +2572,10 @@ vol_damage_int_alg.o: /usr/include/bits/huge_valf.h
 vol_damage_int_alg.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 vol_damage_int_alg.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 vol_damage_int_alg.o: /usr/include/bits/mathcalls.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 vol_damage_int_alg.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 vol_damage_int_alg.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 vol_damage_int_alg.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2584,21 +2584,21 @@ vol_damage_int_alg.o: /usr/include/sys/select.h /usr/include/bits/select.h
 vol_damage_int_alg.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 vol_damage_int_alg.o: /usr/include/sys/sysmacros.h
 vol_damage_int_alg.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cast_macros.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/def_grad.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/new_potentials.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cast_macros.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/def_grad.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/new_potentials.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+vol_damage_int_alg.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
 interface_macro.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 interface_macro.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
 interface_macro.o: /usr/include/string.h /usr/include/features.h
@@ -2609,8 +2609,8 @@ interface_macro.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 interface_macro.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 interface_macro.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 interface_macro.o: /usr/include/bits/mathcalls.h
-interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+interface_macro.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 interface_macro.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 interface_macro.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 interface_macro.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2620,12 +2620,12 @@ interface_macro.o: /usr/include/sys/select.h /usr/include/bits/select.h
 interface_macro.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 interface_macro.o: /usr/include/sys/sysmacros.h
 interface_macro.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_reactions.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_reactions.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 compute_reactions.o: /usr/include/stdio.h /usr/include/features.h
 compute_reactions.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 compute_reactions.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2633,10 +2633,10 @@ compute_reactions.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 compute_reactions.o: /usr/include/libio.h /usr/include/_G_config.h
 compute_reactions.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 compute_reactions.o: /usr/include/bits/sys_errlist.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 compute_reactions.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 compute_reactions.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 compute_reactions.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2645,11 +2645,11 @@ compute_reactions.o: /usr/include/sys/select.h /usr/include/bits/select.h
 compute_reactions.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 compute_reactions.o: /usr/include/sys/sysmacros.h
 compute_reactions.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 compute_reactions.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 compute_reactions.o: /usr/include/bits/local_lim.h
 compute_reactions.o: /usr/include/linux/limits.h
@@ -2659,24 +2659,24 @@ compute_reactions.o: /usr/include/bits/huge_valf.h
 compute_reactions.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 compute_reactions.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 compute_reactions.o: /usr/include/bits/mathcalls.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/resid_on_elem.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stabilized.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_element.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/MINI_3f_element.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/resid_on_elem.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stabilized.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_element.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/MINI_3f_element.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+compute_reactions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 bounding_element.o: /usr/include/stdlib.h /usr/include/features.h
 bounding_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 bounding_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2689,17 +2689,17 @@ bounding_element.o: /usr/include/sys/select.h /usr/include/bits/select.h
 bounding_element.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 bounding_element.o: /usr/include/sys/sysmacros.h
 bounding_element.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element_utils.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+bounding_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element_utils.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 bounding_element_utils.o: /usr/include/stdio.h /usr/include/features.h
 bounding_element_utils.o: /usr/include/sys/cdefs.h
 bounding_element_utils.o: /usr/include/bits/wordsize.h
@@ -2710,8 +2710,8 @@ bounding_element_utils.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 bounding_element_utils.o: /usr/include/_G_config.h /usr/include/wchar.h
 bounding_element_utils.o: /usr/include/bits/stdio_lim.h
 bounding_element_utils.o: /usr/include/bits/sys_errlist.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 bounding_element_utils.o: /usr/include/limits.h
 bounding_element_utils.o: /usr/include/bits/posix1_lim.h
 bounding_element_utils.o: /usr/include/bits/local_lim.h
@@ -2723,19 +2723,19 @@ bounding_element_utils.o: /usr/include/bits/huge_vall.h
 bounding_element_utils.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 bounding_element_utils.o: /usr/include/bits/mathdef.h
 bounding_element_utils.o: /usr/include/bits/mathcalls.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/transform_coordinates.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/transform_coordinates.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+bounding_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 bounding_element_utils.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 bounding_element_utils.o: /usr/include/bits/waitstatus.h
 bounding_element_utils.o: /usr/include/endian.h /usr/include/bits/endian.h
@@ -2747,13 +2747,13 @@ bounding_element_utils.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 bounding_element_utils.o: /usr/include/sys/sysmacros.h
 bounding_element_utils.o: /usr/include/bits/pthreadtypes.h
 bounding_element_utils.o: /usr/include/alloca.h
-get_dof_ids_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
+get_dof_ids_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
 get_dof_ids_on_elem.o: /usr/include/string.h /usr/include/features.h
 get_dof_ids_on_elem.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 get_dof_ids_on_elem.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 get_dof_ids_on_elem.o: /usr/include/xlocale.h
-get_ndof_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-transform_coordinates.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/transform_coordinates.h
+get_ndof_on_elem.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+transform_coordinates.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/transform_coordinates.h
 transform_coordinates.o: /usr/include/string.h /usr/include/features.h
 transform_coordinates.o: /usr/include/sys/cdefs.h
 transform_coordinates.o: /usr/include/bits/wordsize.h
@@ -2772,12 +2772,12 @@ transform_coordinates.o: /usr/include/bits/pthreadtypes.h
 transform_coordinates.o: /usr/include/alloca.h
 transform_coordinates.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 transform_coordinates.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-transform_coordinates.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/generate_dof_ids.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+transform_coordinates.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/generate_dof_ids.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 generate_dof_ids.o: /usr/include/stdio.h /usr/include/features.h
 generate_dof_ids.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 generate_dof_ids.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2785,10 +2785,10 @@ generate_dof_ids.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 generate_dof_ids.o: /usr/include/libio.h /usr/include/_G_config.h
 generate_dof_ids.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 generate_dof_ids.o: /usr/include/bits/sys_errlist.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
 generate_dof_ids.o: /usr/include/string.h /usr/include/xlocale.h
 generate_dof_ids.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 generate_dof_ids.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
@@ -2798,11 +2798,11 @@ generate_dof_ids.o: /usr/include/sys/select.h /usr/include/bits/select.h
 generate_dof_ids.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 generate_dof_ids.o: /usr/include/sys/sysmacros.h
 generate_dof_ids.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/GRedist_node.h
-generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/GRedist_node.h
+generate_dof_ids.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+node.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 node.o: /usr/include/stdlib.h /usr/include/features.h
 node.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 node.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2814,17 +2814,17 @@ node.o: /usr/include/time.h /usr/include/sys/select.h
 node.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 node.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 node.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 element.o: /usr/include/stdio.h /usr/include/features.h
 element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 element.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 element.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
 element.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 element.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 element.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 element.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -2833,9 +2833,9 @@ element.o: /usr/include/sys/select.h /usr/include/bits/select.h
 element.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 element.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 element.o: /usr/include/alloca.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/solve_system.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/solve_system.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 solve_system.o: /usr/include/stdio.h /usr/include/features.h
 solve_system.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 solve_system.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2843,8 +2843,8 @@ solve_system.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 solve_system.o: /usr/include/libio.h /usr/include/_G_config.h
 solve_system.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 solve_system.o: /usr/include/bits/sys_errlist.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 solve_system.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 solve_system.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 solve_system.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -2852,29 +2852,29 @@ solve_system.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 solve_system.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 solve_system.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 solve_system.o: /usr/include/bits/mathcalls.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_parcsr_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+solve_system.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_HYPRE_preconditioners.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_parcsr_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/stdio.h /usr/include/features.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/sys/cdefs.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/bits/wordsize.h
@@ -2901,18 +2901,18 @@ PGFEM_HYPRE_preconditioners.o: /usr/include/sys/sysmacros.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/bits/pthreadtypes.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/alloca.h /usr/include/string.h
 PGFEM_HYPRE_preconditioners.o: /usr/include/xlocale.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/seq_mv.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_force_on_model_ent.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/seq_mv.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+PGFEM_HYPRE_preconditioners.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_force_on_model_ent.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 compute_force_on_model_ent.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 compute_force_on_model_ent.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 compute_force_on_model_ent.o: /usr/include/stdio.h /usr/include/features.h
 compute_force_on_model_ent.o: /usr/include/sys/cdefs.h
 compute_force_on_model_ent.o: /usr/include/bits/wordsize.h
@@ -2924,8 +2924,8 @@ compute_force_on_model_ent.o: /usr/include/libio.h /usr/include/_G_config.h
 compute_force_on_model_ent.o: /usr/include/wchar.h
 compute_force_on_model_ent.o: /usr/include/bits/stdio_lim.h
 compute_force_on_model_ent.o: /usr/include/bits/sys_errlist.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 compute_force_on_model_ent.o: /usr/include/limits.h
 compute_force_on_model_ent.o: /usr/include/bits/posix1_lim.h
 compute_force_on_model_ent.o: /usr/include/bits/local_lim.h
@@ -2938,17 +2938,17 @@ compute_force_on_model_ent.o: /usr/include/bits/huge_vall.h
 compute_force_on_model_ent.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 compute_force_on_model_ent.o: /usr/include/bits/mathdef.h
 compute_force_on_model_ent.o: /usr/include/bits/mathcalls.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 compute_force_on_model_ent.o: /usr/include/stdlib.h
 compute_force_on_model_ent.o: /usr/include/bits/waitflags.h
 compute_force_on_model_ent.o: /usr/include/bits/waitstatus.h
@@ -2963,9 +2963,9 @@ compute_force_on_model_ent.o: /usr/include/bits/time.h
 compute_force_on_model_ent.o: /usr/include/sys/sysmacros.h
 compute_force_on_model_ent.o: /usr/include/bits/pthreadtypes.h
 compute_force_on_model_ent.o: /usr/include/alloca.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+compute_force_on_model_ent.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 allocation.o: /usr/include/stdlib.h /usr/include/features.h
 allocation.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 allocation.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -2977,17 +2977,17 @@ allocation.o: /usr/include/time.h /usr/include/sys/select.h
 allocation.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 allocation.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 allocation.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 allocation.o: /usr/include/string.h /usr/include/xlocale.h
 allocation.o: /usr/include/unistd.h /usr/include/bits/posix_opt.h
 allocation.o: /usr/include/bits/environments.h /usr/include/bits/confname.h
 allocation.o: /usr/include/getopt.h /usr/include/ctype.h
-allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+allocation.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 allocation.o: /usr/include/stdio.h /usr/include/libio.h
 allocation.o: /usr/include/_G_config.h /usr/include/wchar.h
 allocation.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 cohesive_element_utils.o: /usr/include/math.h /usr/include/features.h
 cohesive_element_utils.o: /usr/include/sys/cdefs.h
 cohesive_element_utils.o: /usr/include/bits/wordsize.h
@@ -2999,13 +2999,13 @@ cohesive_element_utils.o: /usr/include/bits/huge_vall.h
 cohesive_element_utils.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 cohesive_element_utils.o: /usr/include/bits/mathdef.h
 cohesive_element_utils.o: /usr/include/bits/mathcalls.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 cohesive_element_utils.o: /usr/include/stdio.h /usr/include/bits/types.h
 cohesive_element_utils.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 cohesive_element_utils.o: /usr/include/_G_config.h /usr/include/wchar.h
 cohesive_element_utils.o: /usr/include/bits/stdio_lim.h
 cohesive_element_utils.o: /usr/include/bits/sys_errlist.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 cohesive_element_utils.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 cohesive_element_utils.o: /usr/include/bits/waitstatus.h
 cohesive_element_utils.o: /usr/include/endian.h /usr/include/bits/endian.h
@@ -3017,22 +3017,22 @@ cohesive_element_utils.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 cohesive_element_utils.o: /usr/include/sys/sysmacros.h
 cohesive_element_utils.o: /usr/include/bits/pthreadtypes.h
 cohesive_element_utils.o: /usr/include/alloca.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tensors.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+cohesive_element_utils.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tensors.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 cohesive_element.o: /usr/include/stdio.h /usr/include/features.h
 cohesive_element.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 cohesive_element.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3040,8 +3040,8 @@ cohesive_element.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 cohesive_element.o: /usr/include/libio.h /usr/include/_G_config.h
 cohesive_element.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 cohesive_element.o: /usr/include/bits/sys_errlist.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 cohesive_element.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 cohesive_element.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 cohesive_element.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3050,12 +3050,12 @@ cohesive_element.o: /usr/include/bits/huge_valf.h
 cohesive_element.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 cohesive_element.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 cohesive_element.o: /usr/include/bits/mathcalls.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 cohesive_element.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 cohesive_element.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 cohesive_element.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3064,9 +3064,9 @@ cohesive_element.o: /usr/include/sys/select.h /usr/include/bits/select.h
 cohesive_element.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 cohesive_element.o: /usr/include/sys/sysmacros.h
 cohesive_element.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+cohesive_element.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
 cohesive_potentials.o: /usr/include/math.h /usr/include/features.h
 cohesive_potentials.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 cohesive_potentials.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3076,7 +3076,7 @@ cohesive_potentials.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 cohesive_potentials.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 cohesive_potentials.o: /usr/include/bits/mathcalls.h /usr/include/string.h
 cohesive_potentials.o: /usr/include/xlocale.h
-cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 cohesive_potentials.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 cohesive_potentials.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 cohesive_potentials.o: /usr/include/bits/endian.h
@@ -3087,11 +3087,11 @@ cohesive_potentials.o: /usr/include/sys/select.h /usr/include/bits/select.h
 cohesive_potentials.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 cohesive_potentials.o: /usr/include/sys/sysmacros.h
 cohesive_potentials.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/quadrature_rules.h
-quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+cohesive_potentials.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/quadrature_rules.h
+quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 quadrature_rules.o: /usr/include/stdio.h /usr/include/features.h
 quadrature_rules.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 quadrature_rules.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3099,7 +3099,7 @@ quadrature_rules.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 quadrature_rules.o: /usr/include/libio.h /usr/include/_G_config.h
 quadrature_rules.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 quadrature_rules.o: /usr/include/bits/sys_errlist.h
-quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+quadrature_rules.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 quadrature_rules.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 quadrature_rules.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 quadrature_rules.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3108,23 +3108,23 @@ quadrature_rules.o: /usr/include/sys/select.h /usr/include/bits/select.h
 quadrature_rules.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 quadrature_rules.o: /usr/include/sys/sysmacros.h
 quadrature_rules.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integrate_surface.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integrate_surface.h
 integrate_surface.o: /usr/include/string.h /usr/include/features.h
 integrate_surface.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 integrate_surface.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 integrate_surface.o: /usr/include/xlocale.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 integrate_surface.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 integrate_surface.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 integrate_surface.o: /usr/include/stdio.h /usr/include/bits/types.h
 integrate_surface.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 integrate_surface.o: /usr/include/_G_config.h /usr/include/wchar.h
 integrate_surface.o: /usr/include/bits/stdio_lim.h
 integrate_surface.o: /usr/include/bits/sys_errlist.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/quadrature_rules.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/quadrature_rules.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 integrate_surface.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 integrate_surface.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 integrate_surface.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3133,11 +3133,11 @@ integrate_surface.o: /usr/include/sys/select.h /usr/include/bits/select.h
 integrate_surface.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 integrate_surface.o: /usr/include/sys/sysmacros.h
 integrate_surface.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 integrate_surface.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 integrate_surface.o: /usr/include/bits/local_lim.h
 integrate_surface.o: /usr/include/linux/limits.h
@@ -3147,11 +3147,11 @@ integrate_surface.o: /usr/include/bits/huge_valf.h
 integrate_surface.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 integrate_surface.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 integrate_surface.o: /usr/include/bits/mathcalls.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/applied_traction.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+integrate_surface.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/applied_traction.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 applied_traction.o: /usr/include/stdio.h /usr/include/features.h
 applied_traction.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 applied_traction.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3159,9 +3159,9 @@ applied_traction.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 applied_traction.o: /usr/include/libio.h /usr/include/_G_config.h
 applied_traction.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 applied_traction.o: /usr/include/bits/sys_errlist.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 applied_traction.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 applied_traction.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 applied_traction.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3170,12 +3170,12 @@ applied_traction.o: /usr/include/sys/select.h /usr/include/bits/select.h
 applied_traction.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 applied_traction.o: /usr/include/sys/sysmacros.h
 applied_traction.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 applied_traction.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 applied_traction.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 applied_traction.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3184,17 +3184,17 @@ applied_traction.o: /usr/include/bits/huge_valf.h
 applied_traction.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 applied_traction.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 applied_traction.o: /usr/include/bits/mathcalls.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/integrate_surface.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-pgfem_comm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-pgfem_comm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/integrate_surface.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+applied_traction.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+pgfem_comm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+pgfem_comm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 pgfem_comm.o: /usr/include/stdlib.h /usr/include/features.h
 pgfem_comm.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 pgfem_comm.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3206,16 +3206,16 @@ pgfem_comm.o: /usr/include/time.h /usr/include/sys/select.h
 pgfem_comm.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 pgfem_comm.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 pgfem_comm.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-tfa.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+tfa.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 hommat.o: /usr/include/stdio.h /usr/include/features.h
 hommat.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 hommat.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 hommat.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 hommat.o: /usr/include/libio.h /usr/include/_G_config.h /usr/include/wchar.h
 hommat.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+hommat.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 hommat.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 hommat.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 hommat.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3224,17 +3224,17 @@ hommat.o: /usr/include/sys/select.h /usr/include/bits/select.h
 hommat.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 hommat.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 hommat.o: /usr/include/alloca.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 sig.o: /usr/include/stdio.h /usr/include/features.h /usr/include/sys/cdefs.h
 sig.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 sig.o: /usr/include/gnu/stubs-64.h /usr/include/bits/types.h
 sig.o: /usr/include/bits/typesizes.h /usr/include/libio.h
 sig.o: /usr/include/_G_config.h /usr/include/wchar.h
 sig.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 sig.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 sig.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 sig.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3242,12 +3242,12 @@ sig.o: /usr/include/sys/types.h /usr/include/time.h /usr/include/sys/select.h
 sig.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 sig.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 sig.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-supp.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-supp.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+sig.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+supp.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+supp.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 supp.o: /usr/include/stdlib.h /usr/include/features.h
 supp.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 supp.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3259,8 +3259,8 @@ supp.o: /usr/include/time.h /usr/include/sys/select.h
 supp.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 supp.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 supp.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 mesh_load.o: /usr/include/stdio.h /usr/include/features.h
 mesh_load.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 mesh_load.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3268,7 +3268,7 @@ mesh_load.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 mesh_load.o: /usr/include/libio.h /usr/include/_G_config.h
 mesh_load.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 mesh_load.o: /usr/include/bits/sys_errlist.h
-mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+mesh_load.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 mesh_load.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 mesh_load.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 mesh_load.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3277,11 +3277,11 @@ mesh_load.o: /usr/include/sys/select.h /usr/include/bits/select.h
 mesh_load.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 mesh_load.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 mesh_load.o: /usr/include/alloca.h
-material.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+material.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 eps.o: /usr/include/stdlib.h /usr/include/features.h /usr/include/sys/cdefs.h
 eps.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
 eps.o: /usr/include/gnu/stubs-64.h /usr/include/bits/waitflags.h
@@ -3293,17 +3293,17 @@ eps.o: /usr/include/sys/select.h /usr/include/bits/select.h
 eps.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 eps.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 eps.o: /usr/include/alloca.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/elem3d.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/elem3d.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 eps.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
 eps.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 eps.o: /usr/include/bits/sys_errlist.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-matgeom.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-matgeom.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+eps.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+matgeom.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+matgeom.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 matgeom.o: /usr/include/stdlib.h /usr/include/features.h
 matgeom.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 matgeom.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3315,8 +3315,8 @@ matgeom.o: /usr/include/time.h /usr/include/sys/select.h
 matgeom.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 matgeom.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 matgeom.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-crpl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-crpl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+crpl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+crpl.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 crpl.o: /usr/include/stdlib.h /usr/include/features.h
 crpl.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 crpl.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3328,8 +3328,8 @@ crpl.o: /usr/include/time.h /usr/include/sys/select.h
 crpl.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 crpl.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 crpl.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-ensight.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-ensight.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+ensight.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+ensight.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 ensight.o: /usr/include/stdlib.h /usr/include/features.h
 ensight.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 ensight.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3341,12 +3341,12 @@ ensight.o: /usr/include/time.h /usr/include/sys/select.h
 ensight.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 ensight.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 ensight.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_input_file.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_input_file.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 read_input_file.o: /usr/include/stdio.h /usr/include/features.h
 read_input_file.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 read_input_file.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3354,12 +3354,12 @@ read_input_file.o: /usr/include/bits/types.h /usr/include/bits/typesizes.h
 read_input_file.o: /usr/include/libio.h /usr/include/_G_config.h
 read_input_file.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 read_input_file.o: /usr/include/bits/sys_errlist.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 read_input_file.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 read_input_file.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 read_input_file.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3368,9 +3368,9 @@ read_input_file.o: /usr/include/sys/select.h /usr/include/bits/select.h
 read_input_file.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 read_input_file.o: /usr/include/sys/sysmacros.h
 read_input_file.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/in.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+read_input_file.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/in.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 microscale_information.o: /usr/include/stdlib.h /usr/include/features.h
 microscale_information.o: /usr/include/sys/cdefs.h
 microscale_information.o: /usr/include/bits/wordsize.h
@@ -3388,28 +3388,28 @@ microscale_information.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 microscale_information.o: /usr/include/sys/sysmacros.h
 microscale_information.o: /usr/include/bits/pthreadtypes.h
 microscale_information.o: /usr/include/alloca.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_input_file.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_input_file.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 microscale_information.o: /usr/include/stdio.h /usr/include/libio.h
 microscale_information.o: /usr/include/_G_config.h /usr/include/wchar.h
 microscale_information.o: /usr/include/bits/stdio_lim.h
 microscale_information.o: /usr/include/bits/sys_errlist.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 microscale_information.o: /usr/include/limits.h
 microscale_information.o: /usr/include/bits/posix1_lim.h
 microscale_information.o: /usr/include/bits/local_lim.h
@@ -3421,26 +3421,26 @@ microscale_information.o: /usr/include/bits/huge_vall.h
 microscale_information.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 microscale_information.o: /usr/include/bits/mathdef.h
 microscale_information.o: /usr/include/bits/mathcalls.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/set_fini_def.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/generate_dof_ids.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Psparse_ApAi.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/initialize_damage.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_par_matvec.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/set_fini_def.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/generate_dof_ids.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Psparse_ApAi.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/initialize_damage.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+microscale_information.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_par_matvec.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
 ms_cohe_job_info.o: /usr/include/stdlib.h /usr/include/features.h
 ms_cohe_job_info.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 ms_cohe_job_info.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3454,16 +3454,16 @@ ms_cohe_job_info.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 ms_cohe_job_info.o: /usr/include/sys/sysmacros.h
 ms_cohe_job_info.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
 ms_cohe_job_info.o: /usr/include/string.h /usr/include/xlocale.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 ms_cohe_job_info.o: /usr/include/stdio.h /usr/include/libio.h
 ms_cohe_job_info.o: /usr/include/_G_config.h /usr/include/wchar.h
 ms_cohe_job_info.o: /usr/include/bits/stdio_lim.h
 ms_cohe_job_info.o: /usr/include/bits/sys_errlist.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 ms_cohe_job_info.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 ms_cohe_job_info.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 ms_cohe_job_info.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3472,11 +3472,11 @@ ms_cohe_job_info.o: /usr/include/bits/huge_valf.h
 ms_cohe_job_info.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 ms_cohe_job_info.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 ms_cohe_job_info.o: /usr/include/bits/mathcalls.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_list.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+ms_cohe_job_info.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_list.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
 ms_cohe_job_list.o: /usr/include/stdlib.h /usr/include/features.h
 ms_cohe_job_list.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 ms_cohe_job_list.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3489,20 +3489,20 @@ ms_cohe_job_list.o: /usr/include/sys/select.h /usr/include/bits/select.h
 ms_cohe_job_list.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 ms_cohe_job_list.o: /usr/include/sys/sysmacros.h
 ms_cohe_job_list.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/quadrature_rules.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/quadrature_rules.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 ms_cohe_job_list.o: /usr/include/stdio.h /usr/include/libio.h
 ms_cohe_job_list.o: /usr/include/_G_config.h /usr/include/wchar.h
 ms_cohe_job_list.o: /usr/include/bits/stdio_lim.h
 ms_cohe_job_list.o: /usr/include/bits/sys_errlist.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 ms_cohe_job_list.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 ms_cohe_job_list.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 ms_cohe_job_list.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3511,35 +3511,35 @@ ms_cohe_job_list.o: /usr/include/bits/huge_valf.h
 ms_cohe_job_list.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 ms_cohe_job_list.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 ms_cohe_job_list.o: /usr/include/bits/mathcalls.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_ms_cohe_job.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_ms_cohe_job.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 ms_cohe_job_list.o: /usr/include/string.h /usr/include/xlocale.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLoc_Sparse.h
-ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_par_matvec.h
-PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLoc_Sparse.h
+ms_cohe_job_list.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_par_matvec.h
+PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
 PGFEM_par_matvec.o: /usr/include/stdlib.h /usr/include/features.h
 PGFEM_par_matvec.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 PGFEM_par_matvec.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3555,25 +3555,25 @@ PGFEM_par_matvec.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
 PGFEM_par_matvec.o: /usr/include/string.h /usr/include/xlocale.h
 PGFEM_par_matvec.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 PGFEM_par_matvec.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 PGFEM_par_matvec.o: /usr/include/stdio.h /usr/include/libio.h
 PGFEM_par_matvec.o: /usr/include/_G_config.h /usr/include/wchar.h
 PGFEM_par_matvec.o: /usr/include/bits/stdio_lim.h
 PGFEM_par_matvec.o: /usr/include/bits/sys_errlist.h
-PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_ms_cohe_job.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+PGFEM_par_matvec.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_ms_cohe_job.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 compute_ms_cohe_job.o: /usr/include/stdlib.h /usr/include/features.h
 compute_ms_cohe_job.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 compute_ms_cohe_job.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3596,54 +3596,54 @@ compute_ms_cohe_job.o: /usr/include/bits/huge_valf.h
 compute_ms_cohe_job.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 compute_ms_cohe_job.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 compute_ms_cohe_job.o: /usr/include/bits/mathcalls.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 compute_ms_cohe_job.o: /usr/include/string.h /usr/include/xlocale.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
 compute_ms_cohe_job.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_cblas.h
 compute_ms_cohe_job.o: /afs/crc.nd.edu/x86_64_linux/intel/12.1/mkl/include/mkl_types.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vtk_output.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vtk_output.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 compute_ms_cohe_job.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 compute_ms_cohe_job.o: /usr/include/bits/local_lim.h
 compute_ms_cohe_job.o: /usr/include/linux/limits.h
 compute_ms_cohe_job.o: /usr/include/bits/posix2_lim.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/index_macros.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Newton_Raphson.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_force_on_model_ent.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_par_matvec.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmat_fd.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_ndof_on_elem.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/get_dof_ids_on_elem.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/displacement_based_element.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/solve_system.h
-PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/index_macros.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Newton_Raphson.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_force_on_model_ent.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_par_matvec.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmat_fd.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_ndof_on_elem.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/get_dof_ids_on_elem.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/displacement_based_element.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+compute_ms_cohe_job.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/solve_system.h
+PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 PGFEM_io.o: /usr/include/stdio.h /usr/include/features.h
 PGFEM_io.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 PGFEM_io.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3652,8 +3652,8 @@ PGFEM_io.o: /usr/include/libio.h /usr/include/_G_config.h
 PGFEM_io.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 PGFEM_io.o: /usr/include/bits/sys_errlist.h /usr/include/string.h
 PGFEM_io.o: /usr/include/xlocale.h
-PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+PGFEM_io.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 PGFEM_io.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 PGFEM_io.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 PGFEM_io.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3662,8 +3662,8 @@ PGFEM_io.o: /usr/include/sys/select.h /usr/include/bits/select.h
 PGFEM_io.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 PGFEM_io.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 PGFEM_io.o: /usr/include/alloca.h
-PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 PGFEM_mpi.o: /usr/include/stdlib.h /usr/include/features.h
 PGFEM_mpi.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 PGFEM_mpi.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3675,16 +3675,16 @@ PGFEM_mpi.o: /usr/include/time.h /usr/include/sys/select.h
 PGFEM_mpi.o: /usr/include/bits/select.h /usr/include/bits/sigset.h
 PGFEM_mpi.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 PGFEM_mpi.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+PGFEM_mpi.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 PGFEM_mpi.o: /usr/include/stdio.h /usr/include/libio.h
 PGFEM_mpi.o: /usr/include/_G_config.h /usr/include/wchar.h
 PGFEM_mpi.o: /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_job_intercomm.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_job_intercomm.h
 ms_job_intercomm.o: /usr/include/string.h /usr/include/features.h
 ms_job_intercomm.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 ms_job_intercomm.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
 ms_job_intercomm.o: /usr/include/xlocale.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
 ms_job_intercomm.o: /usr/include/stdlib.h /usr/include/bits/waitflags.h
 ms_job_intercomm.o: /usr/include/bits/waitstatus.h /usr/include/endian.h
 ms_job_intercomm.o: /usr/include/bits/endian.h /usr/include/bits/byteswap.h
@@ -3694,16 +3694,16 @@ ms_job_intercomm.o: /usr/include/sys/select.h /usr/include/bits/select.h
 ms_job_intercomm.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 ms_job_intercomm.o: /usr/include/sys/sysmacros.h
 ms_job_intercomm.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
 ms_job_intercomm.o: /usr/include/stdio.h /usr/include/libio.h
 ms_job_intercomm.o: /usr/include/_G_config.h /usr/include/wchar.h
 ms_job_intercomm.o: /usr/include/bits/stdio_lim.h
 ms_job_intercomm.o: /usr/include/bits/sys_errlist.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 ms_job_intercomm.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 ms_job_intercomm.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 ms_job_intercomm.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3712,12 +3712,12 @@ ms_job_intercomm.o: /usr/include/bits/huge_valf.h
 ms_job_intercomm.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 ms_job_intercomm.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 ms_job_intercomm.o: /usr/include/bits/mathcalls.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macro_micro_functions.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+ms_job_intercomm.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macro_micro_functions.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
 macro_micro_functions.o: /usr/include/stdlib.h /usr/include/features.h
 macro_micro_functions.o: /usr/include/sys/cdefs.h
 macro_micro_functions.o: /usr/include/bits/wordsize.h
@@ -3733,20 +3733,20 @@ macro_micro_functions.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 macro_micro_functions.o: /usr/include/sys/sysmacros.h
 macro_micro_functions.o: /usr/include/bits/pthreadtypes.h
 macro_micro_functions.o: /usr/include/alloca.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_job_intercomm.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_ms_cohe_job.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_job_intercomm.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_ms_cohe_job.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
 macro_micro_functions.o: /usr/include/stdio.h /usr/include/libio.h
 macro_micro_functions.o: /usr/include/_G_config.h /usr/include/wchar.h
 macro_micro_functions.o: /usr/include/bits/stdio_lim.h
@@ -3757,35 +3757,35 @@ macro_micro_functions.o: /usr/include/bits/huge_vall.h
 macro_micro_functions.o: /usr/include/bits/inf.h /usr/include/bits/nan.h
 macro_micro_functions.o: /usr/include/bits/mathdef.h
 macro_micro_functions.o: /usr/include/bits/mathcalls.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 macro_micro_functions.o: /usr/include/string.h /usr/include/xlocale.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PLoc_Sparse.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PLoc_Sparse.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 macro_micro_functions.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 macro_micro_functions.o: /usr/include/bits/local_lim.h
 macro_micro_functions.o: /usr/include/linux/limits.h
 macro_micro_functions.o: /usr/include/bits/posix2_lim.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/quadrature_rules.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element_utils.h
-macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/stiffmat_fd.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PFEM3d.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/quadrature_rules.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element_utils.h
+macro_micro_functions.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/stiffmat_fd.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PFEM3d.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
 macro_micro_main.o: /usr/include/time.h /usr/include/bits/types.h
 macro_micro_main.o: /usr/include/features.h /usr/include/sys/cdefs.h
 macro_micro_main.o: /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h
@@ -3799,23 +3799,23 @@ macro_micro_main.o: /usr/include/bits/time.h /usr/include/sys/sysmacros.h
 macro_micro_main.o: /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
 macro_micro_main.o: /usr/include/sys/time.h /usr/include/sys/resource.h
 macro_micro_main.o: /usr/include/bits/resource.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumbering.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/check_num_procs.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/remove_diagonal.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumber.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/sort_container.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/domain_container.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/switch_domains.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumber_utils.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/comm_profiler.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumbering.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/check_num_procs.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/remove_diagonal.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumber.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/sort_container.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/domain_container.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/switch_domains.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumber_utils.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/comm_profiler.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 macro_micro_main.o: /usr/include/stdio.h /usr/include/libio.h
 macro_micro_main.o: /usr/include/_G_config.h /usr/include/wchar.h
 macro_micro_main.o: /usr/include/bits/stdio_lim.h
 macro_micro_main.o: /usr/include/bits/sys_errlist.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 macro_micro_main.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 macro_micro_main.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 macro_micro_main.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3824,76 +3824,76 @@ macro_micro_main.o: /usr/include/bits/huge_valf.h
 macro_micro_main.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 macro_micro_main.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 macro_micro_main.o: /usr/include/bits/mathcalls.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Arc_length.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Arc_length.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 macro_micro_main.o: /usr/include/string.h /usr/include/xlocale.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/build_distribution.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/in.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/load.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matrix_printing.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Newton_Raphson.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_force_on_model_ent.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/out.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Printing.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/print_dist.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/profiler.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Psparse_ApAi.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_cryst_plast.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/renumber_ID.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/RNPsparse_ApAi.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/set_fini_def.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/skyline.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/SetGlobalNodeNumbers.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroF.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroS.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vtk_output.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_list.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/applied_traction.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/macro_micro_functions.h
-macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_job_intercomm.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PFEM3d.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/enumerations.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/build_distribution.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/in.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/load.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matrix_printing.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Newton_Raphson.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_force_on_model_ent.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/out.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Printing.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/print_dist.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/profiler.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Psparse_ApAi.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_cryst_plast.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/renumber_ID.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/RNPsparse_ApAi.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/set_fini_def.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/skyline.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/SetGlobalNodeNumbers.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroF.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroS.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vtk_output.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_list.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/applied_traction.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/macro_micro_functions.h
+macro_micro_main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_job_intercomm.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PFEM3d.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/enumerations.h
 main.o: /usr/include/time.h /usr/include/bits/types.h /usr/include/features.h
 main.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 main.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
@@ -3906,22 +3906,22 @@ main.o: /usr/include/bits/sigset.h /usr/include/bits/time.h
 main.o: /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h
 main.o: /usr/include/alloca.h /usr/include/sys/time.h
 main.o: /usr/include/sys/resource.h /usr/include/bits/resource.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumbering.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/check_num_procs.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/remove_diagonal.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumber.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/sort_container.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/domain_container.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/switch_domains.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/renumber_utils.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/Renumbering/include/comm_profiler.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumbering.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/check_num_procs.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/remove_diagonal.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumber.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/sort_container.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/domain_container.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/switch_domains.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/renumber_utils.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/Renumbering/include/comm_profiler.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSprivate.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSdepend.h
 main.o: /usr/include/stdio.h /usr/include/libio.h /usr/include/_G_config.h
 main.o: /usr/include/wchar.h /usr/include/bits/stdio_lim.h
 main.o: /usr/include/bits/sys_errlist.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSsparse.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BMmsg.h
 main.o: /usr/include/limits.h /usr/include/bits/posix1_lim.h
 main.o: /usr/include/bits/local_lim.h /usr/include/linux/limits.h
 main.o: /usr/include/bits/posix2_lim.h /usr/include/math.h
@@ -3929,77 +3929,77 @@ main.o: /usr/include/bits/huge_val.h /usr/include/bits/huge_valf.h
 main.o: /usr/include/bits/huge_vall.h /usr/include/bits/inf.h
 main.o: /usr/include/bits/nan.h /usr/include/bits/mathdef.h
 main.o: /usr/include/bits/mathcalls.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_io.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/allocation.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Arc_length.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFEM_mpi.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hypre_global.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSmy_blas.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/BlockSolve95/include/BSlog.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_io.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/allocation.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Arc_length.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFEM_mpi.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hypre_global.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_mv.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_utilities.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_config.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_seq_mv.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_IJ_mv.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_parcsr_ls.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/krylov.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/HYPRE_krylov.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/lib/external/ext/hypre-2.4.0b/include/_hypre_utilities.h
 main.o: /usr/include/string.h /usr/include/xlocale.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/incl.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/element.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/sig.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/eps.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/volumetric_damage.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/crpl.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/PGFem3D_options.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/supp.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/hommat.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matgeom.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/pgfem_comm.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_element.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/node.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/cohesive_potentials.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ensight.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/build_distribution.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/homogen.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/material.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/tfa.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/in.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/mesh_load.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/load.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matice.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/matrix_printing.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Newton_Raphson.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_force_on_model_ent.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/out.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Printing.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/print_dist.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/profiler.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/Psparse_ApAi.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_cryst_plast.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/renumber_ID.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/RNPsparse_ApAi.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/set_fini_def.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/skyline.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/utils.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/SetGlobalNodeNumbers.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/interface_macro.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroF.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/computeMacroS.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/vtk_output.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/gen_path.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/initialize_damage.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/bounding_element_utils.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/generate_dof_ids.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/applied_traction.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/read_input_file.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/microscale_information.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_list.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/ms_cohe_job_info.h
-main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d_cswarm/trunk/include/compute_ms_cohe_job.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/incl.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/element.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/sig.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/eps.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/volumetric_damage.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/crpl.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/PGFem3D_options.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/supp.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/hommat.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matgeom.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/pgfem_comm.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_element.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/node.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/cohesive_potentials.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ensight.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/build_distribution.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/homogen.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/material.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/tfa.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/in.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/mesh_load.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/load.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matice.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/matrix_printing.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Newton_Raphson.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_force_on_model_ent.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/out.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Printing.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/print_dist.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/profiler.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/Psparse_ApAi.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_cryst_plast.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/renumber_ID.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/RNPsparse_ApAi.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/set_fini_def.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/skyline.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/utils.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/SetGlobalNodeNumbers.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/interface_macro.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroF.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/computeMacroS.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/vtk_output.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/gen_path.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/initialize_damage.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/bounding_element_utils.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/generate_dof_ids.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/applied_traction.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/read_input_file.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/microscale_information.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_list.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/ms_cohe_job_info.h
+main.o: /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk/include/compute_ms_cohe_job.h
 super_main.o: /usr/include/stdio.h /usr/include/features.h
 super_main.o: /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h
 super_main.o: /usr/include/gnu/stubs.h /usr/include/gnu/stubs-64.h
