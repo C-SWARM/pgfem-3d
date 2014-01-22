@@ -1,0 +1,20 @@
+This directory contains code to write PGFem3D output using the VTK
+libraries. The VTK libraries provide optimized output routines with
+the capability to write in binary format. Additionally, the output is
+100% conformant to the VTK formats for which documentation is sparse.
+
+OVERALL DESIGN
+- Written in c++ for interface with VTK library, but should not use
+  much c++ in functions which are to be called from the PGFem3D main
+  code.
+- Converter functions to create VTK objects from PGFem3D objecs and vice-versa
+- Write function with option to output in binary or ASCII format.
+
+FUTURE PLANS
+The design of this wrapper is such that all mesh-related information
+is passed to the read/write functions with the intention that future
+versions will write EVERYTHING to compressed VTK format, allowing for
+restart from output files through reader/allocator
+functions. Additionally, all data could be visualized/inspected in
+ParaView etc. rather than inspecting ASCII files (which is virtually
+useless anyhow).

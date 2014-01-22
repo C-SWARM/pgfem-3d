@@ -1,0 +1,79 @@
+/* HEADER */
+#ifndef VOLUMETRIC_DAMAGE_H
+#define VOLUMETRIC_DAMAGE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+  /** Define volumetric damage variables */
+  typedef struct DAMAGE_PARAMS{
+    /* Weibull distribution parameters */
+    double Yin, p1, p2;
+    /* Viscous regularization parameter */
+    double mu;
+  } damage_params;
+
+  typedef double (*vd_fun)(const double Ybar, const damage_params *params);
+
+  typedef struct DAMAGE{
+    /* *** damage parameters*** */
+    damage_params params;
+
+    /* *** damage variables *** */
+    double wn,w; /* isotropic damage variable */
+    double Hn,H; /* isotropic damage tangent */
+    double Hpn,Hp; /* isotropic damage tangent rate (H') */
+    double Xn,X; /* softening parameter */
+    double dmu; /* dt*params.mu so I dont have to pass around dt */
+    int damaged_n,damaged;  /* damage propagation flag */
+    int broken;
+    /* *** functions *** */
+    vd_fun function;
+    vd_fun evolution;
+    vd_fun evolution_rate;
+  } damage;
+
+  /** initialize the damage structure */
+  void init_damage(damage *dam,
+		   vd_fun function,
+		   vd_fun evolution,
+		   vd_fun evolution_rate,
+		   const double *params,
+		   const int len);
+
+  /** initialize the damage structure using flags to set the function
+      and evolution equations. */
+  void init_damagef(damage *dam,
+		    const int eq_flag,
+		    const double *params,
+		    const int len);
+
+  /** Reset the damage variables to n (e.g. after restart). */
+  void reset_damage(damage *dam);
+
+  /** Update the damage variables to n+1 (e.g. after completed step). */
+  void update_damage(damage *dam);
+ 
+  /** Damage integration algorithm */
+  double damage_int_alg(damage *dam,
+			const double Ybar,
+			const double dt);
+
+  /* *** Damage Equations *** */
+  double weibull_function(const double Ybar,
+			  const damage_params *params);
+
+  /* *** Damage Evolution Equations *** */
+  double weibull_evolution(const double Ybar,
+			   const damage_params *params);
+
+  /* *** Damage Evolution Rate Equations *** */
+  double weibull_evolution_rate(const double Ybar,
+				const damage_params *params);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
+#endif /* #ifndef VOLUMETRIC_DAMAGE_H */

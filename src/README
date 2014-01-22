@@ -1,0 +1,10 @@
+Notes on PFEM working:
+
+-Renumbering requires a larger number of nodes on each processor.  If
+ PFEM3d fails, try increasing the number of nodes in the system.  If
+ this does not work, then there is a bug.  Please notify Matt Mosby.
+
+-At this point, renumbering has been shown to be robust.  If you still
+ encounter problems, please let me know. 7/29/2010
+
+-I have begun splitting up some of the files for robust-ness
