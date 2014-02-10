@@ -182,6 +182,8 @@
 #include "compute_ms_cohe_job.h"
 #endif
 
+#include "TextFile2.h"
+
 #ifndef DEBUG_MULTISCALE
 #define DEBUG_MULTISCALE 0
 #endif
@@ -1218,6 +1220,8 @@ int single_scale_main(int argc,char *argv[])
 	  RR[i] = RRn[i];
 	  R[i] = 0.0;
 	}
+
+	nulld(sup_defl,sup->npd);
       }/* end NR */
 
       /*=== ARC LENGTH ===*/
@@ -1254,6 +1258,8 @@ int single_scale_main(int argc,char *argv[])
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
       GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
       GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);
+
+      //xx_solve_FEM(elem,ne,node,nn);
 
       /* print GF & GS to file */
       if(myrank == 0){

@@ -617,6 +617,7 @@ int multi_scale_main(int argc, char **argv)
 	  s->R[i] = 0.0;
 	}
 
+	nulld(sup_defl,c->supports->npd);
       }/* end NR */
 
       /*=== ARC LENGTH ===*/
