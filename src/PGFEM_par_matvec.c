@@ -428,7 +428,8 @@ int PGFEM_par_matrix_set_values(const int n_entries,
   if(n_entries <= 0) return 0;
 
   entry *e = NULL;
-  err += get_sorted_list_of_entries(n_entries,row_idx,col_idx,values,&e);
+  err += get_sorted_list_of_entries(n_entries,row_idx,col_idx,
+				    values,&e);
 
   /* get aliases to send information */
   comm_info *send = (comm_info *) mat->send_info;
@@ -854,6 +855,7 @@ static int get_sorted_list_of_entries(const int n_entries,
     set_entry(row_idx[i],col_idx[i],vals[i],*e+i);
   }
   qsort(*e,n_entries,sizeof(entry),compare_entry_row);
+
   return err;
 }
 

@@ -40,7 +40,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->elem_id = -1; /* poisoned value */
   info->proc_id = -1; /* poisoned value */
   info->job_type = -1; /* poisoned value */
-  info->print_flag = 1; /* print output */
+  info->print_flag = 0; /* print output */
 
   info->int_wt = 0.0;
 

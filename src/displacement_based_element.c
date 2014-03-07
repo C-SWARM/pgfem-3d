@@ -2667,7 +2667,7 @@ static int compute_K_10_e_at_ip(double *K_10_e,
 	for(int g=0; g<macro_ndofn; g++){
 	  const int abwg = idx_K_gen(a,b,w,g,macro_nnode,
 				     macro_ndofn,nne,ndn);
-	  K_10_e[abwg] = macro_int_wt*macro_shape_func[w]*micro_term_ab[g];
+	  K_10_e[abwg] = macro_shape_func[w]*micro_term_ab[g];
 	}
       }
       free(micro_term_ab);

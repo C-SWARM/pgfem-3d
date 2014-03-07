@@ -155,7 +155,7 @@
 /* #define xstr(a) #a */
 /* #define mgs 4 */
 
-static const int ndim = 0;
+static const int ndim = 3;
 
 int multi_scale_main(int argc, char **argv)
 {
@@ -342,14 +342,13 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
     double *nodal_forces = PGFEM_calloc(c->ndofd,sizeof(double));
+    SUR_TRAC_ELEM *ste = NULL;
+    int n_feats = 0;
+    int n_sur_trac_elem = 0;
     { 
-      int n_feats = 0;
-      int n_sur_trac_elem = 0;
       int *feat_type = NULL;
       int *feat_id = NULL;
       double *loads = NULL;
-      SUR_TRAC_ELEM *ste = NULL;
-
       char *trac_fname = NULL;
       alloc_sprintf(&trac_fname,"%s/traction.in",macro->opts->ipath);
 
@@ -381,7 +380,6 @@ int multi_scale_main(int argc, char **argv)
       free(feat_id);
       free(loads);
       free(trac_fname);
-      destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
     }
 
     /* push nodal_forces to s->R */
@@ -617,6 +615,7 @@ int multi_scale_main(int argc, char **argv)
 	  s->R[i] = 0.0;
 	}
 
+	/* null the prescribed displacement increment */
 	nulld(sup_defl,c->supports->npd);
       }/* end NR */
 
@@ -661,37 +660,24 @@ int multi_scale_main(int argc, char **argv)
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (c->ne,s->sig_e,s->eps,macro->opts->analysis_type);
 
-      /*=== fully coupled, so why do this? ===*/
-      /* /\* Calculate macro deformation gradient *\/ */
-      /* double *GF = computeMacroF(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->eps,c->VVolume,c->mpi_comm); */
-      /* double *GS = computeMacroS(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->sig_e,c->VVolume,c->mpi_comm); */
-      /* double *GP = computeMacroP(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->sig_e,s->eps,c->VVolume,c->mpi_comm); */
-
-      /* /\* print GF & GS to file *\/ */
-      /* if(mpi_comm->rank_macro == 0){ */
-      /* 	FILE *out = NULL; */
-      /* 	sprintf(filename,"%s/%s_macro.out.%d",macro->opts->opath, */
-      /* 		macro->opts->ofname,s->tim); */
-      /* 	out = PGFEM_fopen(filename,"w"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]); */
-      /* 	PGFEM_fprintf(out,"\n"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]); */
-      /* 	PGFEM_fprintf(out,"\n"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]); */
-      /* 	fclose(out); */
-      /* } */
-
-      /* free(GF); */
-      /* free(GS); */
-      /* free(GP); */
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,c->node,c->elem,
+				  s->sig_e,s->eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
+	  if(mpi_comm->rank_macro == 0){
+	    PGFEM_printf("Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
+	  }
+	}
+	free(sur_forces);
+      }
 
       if (print[s->tim] == 1 && macro->opts->vis_format != VIS_NONE ) {
 	/* NOTE: null d_r is sent for print job because jump is
@@ -787,6 +773,7 @@ int multi_scale_main(int argc, char **argv)
     free(print);
     free(forces);
     destroy_model_entity(entities);
+    destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
   } /*=== END OF COMPUTATIONS ===*/
 
   /*=== PRINT TIME OF ANALYSIS ===*/

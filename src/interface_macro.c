@@ -26,14 +26,19 @@ int read_interface_macro_normal_lc(char *in_dir,
   }
 
   /* open file and read */
-  FILE *in = fopen(in_name,"r");
+  FILE *in = PGFEM_fopen(in_name,"r");
   if(in == NULL){
     err++;
   } else {
-    int n_matched = fscanf(in,"%lf %lf %lf %lf",&sup->lc,
+    int n_matched = fscanf(in,"%lf %lf %lf %lf %lf",
+			   &sup->v0,&sup->lc,
 			   &sup->N0[0],&sup->N0[1],&sup->N0[2]);
-    if(n_matched != 4){
+    if(n_matched != 5){
       PGFEM_printerr("Error reading file! (%s)\n",in_name);
+      err++;
+    }
+    if(sup->v0 == 0.0){
+      PGFEM_printerr("ERROR: specified 0.0 volume! (%s)\n",in_name);
       err++;
     }
   }

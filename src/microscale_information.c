@@ -53,6 +53,10 @@
 #include "initialize_damage.h"
 #endif
 
+#ifndef IN_H
+#include "in.h"
+#endif
+
 #ifndef PGFEM_PAR_MATVEC_H
 #include "PGFEM_par_matvec.h"
 #endif
@@ -365,8 +369,20 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     destroy_zatelem(zele_s,nle_s);
     destroy_zatelem(zele_v,nle_v);
 
+    /* override prescribed displacements */
+    if(opts->override_pre_disp){
+      if(override_prescribed_displacements(common->supports,opts) != 0){
+	PGFEM_printerr("[%d]ERROR: an error was encountered when"
+		       " reading the displacement override file.\n"
+		       "Be sure that there are enough prescribed"
+		       " displacements in the file.\n",myrank);
+	PGFEM_Abort();
+      }
+    }
+
     /* read microscale normal/thickness */
     if(opts->multi_scale){
+      common->supports->multi_scale = opts->multi_scale;
       err = read_interface_macro_normal_lc(opts->ipath,common->supports);
       if(err != 0){
 	PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
@@ -468,9 +484,13 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 		   opts->maxit,common->lin_err,common->SOLVER,opts,
 		   mpi_comm);
 
+  if(!common->supports->multi_scale){
   common->VVolume = T_VOLUME (common->ne,ndim,common->elem,common->node);
   MPI_Allreduce(MPI_IN_PLACE,&common->VVolume,1,MPI_DOUBLE,
 		MPI_SUM,mpi_comm);
+  } else {
+    common->VVolume = common->supports->v0;
+  }
 
   free(in_fname);
 
@@ -506,6 +526,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     PGFEM_printf ("Total number of degrees of freedom       : %ld\n",mesh_info[5]);
     PGFEM_printf ("Total number of nonzeros in the matrix   : %ld\n",mesh_info[6]);
     PGFEM_printf ("\n");
+    PGFEM_printf ("Volume: %f\n\n",common->VVolume);
   }
 }
 

@@ -874,47 +874,46 @@ int single_scale_main(int argc,char *argv[])
 
     /*=== TESTING ===*/
     double *nodal_forces = PGFEM_calloc(ndofd,sizeof(double));
-    /* { */
-    /*   int n_feats = 0; */
-    /*   int n_sur_trac_elem = 0; */
-    /*   int *feat_type = NULL; */
-    /*   int *feat_id = NULL; */
-    /*   double *loads = NULL; */
-    /*   SUR_TRAC_ELEM *ste = NULL; */
+    int n_feats = 0;
+    int n_sur_trac_elem = 0;
+    SUR_TRAC_ELEM *ste = NULL;
+    {
+      int *feat_type = NULL;
+      int *feat_id = NULL;
+      double *loads = NULL;
 
-    /*   char *trac_fname = NULL; */
-    /*   alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath); */
+      char *trac_fname = NULL;
+      alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
 
-    /*   read_applied_surface_tractions_fname(trac_fname,&n_feats, */
-    /* 					   &feat_type,&feat_id,&loads); */
+      read_applied_surface_tractions_fname(trac_fname,&n_feats,
+    					   &feat_type,&feat_id,&loads);
 
-    /*   generate_applied_surface_traction_list(ne,elem, */
-    /* 					     n_feats,feat_type, */
-    /* 					     feat_id,&n_sur_trac_elem, */
-    /* 					     &ste); */
+      generate_applied_surface_traction_list(ne,elem,
+    					     n_feats,feat_type,
+    					     feat_id,&n_sur_trac_elem,
+    					     &ste);
 
-    /*   compute_applied_traction_res(ndofn,node,elem, */
-    /* 				   n_sur_trac_elem,ste, */
-    /* 				   n_feats,loads, */
-    /* 				   nodal_forces); */
+      compute_applied_traction_res(ndofn,node,elem,
+    				   n_sur_trac_elem,ste,
+    				   n_feats,loads,
+    				   nodal_forces);
 
-    /*   double tmp_sum = 0.0; */
-    /*   for(int i=0; i<ndofd; i++){ */
-    /* 	tmp_sum += nodal_forces[i]; */
-    /*   } */
-    /*   MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE, */
-    /* 		    MPI_SUM,mpi_comm); */
+      double tmp_sum = 0.0;
+      for(int i=0; i<ndofd; i++){
+    	tmp_sum += nodal_forces[i];
+      }
+      MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
+    		    MPI_SUM,mpi_comm);
 
-    /*   if(myrank == 0){ */
-    /* 	PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum); */
-    /*   } */
+      if(myrank == 0){
+    	PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
+      }
 
-    /*   free(feat_type); */
-    /*   free(feat_id); */
-    /*   free(loads); */
-    /*   free(trac_fname); */
-    /*   destroy_applied_surface_traction_list(n_sur_trac_elem,ste); */
-    /* } */
+      free(feat_type);
+      free(feat_id);
+      free(loads);
+      free(trac_fname);
+    }
 
     /* push nodal_forces to s->R */
     vvplus  (R,nodal_forces,ndofd);
@@ -1219,6 +1218,7 @@ int single_scale_main(int argc,char *argv[])
 	  R[i] = 0.0;
 	}
 
+	/* null the prescribed displacement increment */
 	nulld(sup_defl,sup->npd);
       }/* end NR */
 
@@ -1251,6 +1251,25 @@ int single_scale_main(int argc,char *argv[])
       /*=== OUTPUT ===*/
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (ne,sig_e,eps,options.analysis_type);
+
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,node,elem,
+				  sig_e,eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm);
+	  if(myrank == 0){
+	    PGFEM_printf("Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
+	  }
+	}
+	free(sur_forces);
+      }
 
       /* Calculate macro deformation gradient */
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
@@ -1386,7 +1405,7 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (BS_U);
     dealoc1 (BS_DK);
     dealoc1 (BS_dR);
-
+    destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
   }
 
   /* Deallocate */

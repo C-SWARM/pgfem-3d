@@ -41,11 +41,48 @@ typedef int (*My_HYPRE_ptr_iter_func)(HYPRE_Solver solver,
 typedef int (*My_HYPRE_ptr_norm_func)(HYPRE_Solver solver,
 				      double *norm);
 
+/** get function handles for preconditioner based on iterations and
+    options */
+static int get_HYPRE_precond_funcs(My_HYPRE_ptr_solve_func *precond_solve,
+				   My_HYPRE_ptr_solve_func *precond_setup,
+				   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				   SOLVER_INFO *info,
+				   const PGFem3D_opt *opts,
+				   const int iter);
+
+/** get function handles for solver based on options */
+static int get_HYPRE_solver_funcs(My_HYPRE_ptr_solve_func *solver_solve,
+				  My_HYPRE_ptr_solve_func *solver_setup,
+				  My_HYPRE_ptr_set_pre_func *set_precond,
+				  My_HYPRE_ptr_check_pre_func *get_precond,
+				  My_HYPRE_ptr_iter_func *get_num_iter,
+				  My_HYPRE_ptr_norm_func *get_res_norm,
+				  PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				  SOLVER_INFO *info,
+				  const PGFem3D_opt *opts);
+
+/** setup the HYPRE solver environment */
+static int setup_HYPRE_solver_env(My_HYPRE_ptr_solve_func precond_solve,
+				  My_HYPRE_ptr_solve_func precond_setup,
+				  My_HYPRE_ptr_solve_func solver_solve,
+				  My_HYPRE_ptr_solve_func solver_setup,
+				  My_HYPRE_ptr_set_pre_func set_precond,
+				  My_HYPRE_ptr_check_pre_func get_precond,
+				  PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				  SOLVER_INFO *info,
+				  const PGFem3D_opt *opts);
+
+/** solve using the HYPRE environment */
+static int HYPRE_solve(My_HYPRE_ptr_solve_func solver_solve,
+		       My_HYPRE_ptr_iter_func get_num_iter,
+		       My_HYPRE_ptr_norm_func get_res_norm,
+		       PGFEM_HYPRE_solve_info *PGFEM_hypre,
+		       SOLVER_INFO *info);
+
 /* This function handles the setup and solve for the various solver
    libraries (currently only HYPRE and BlockSolve95). The important
    solver information is passed out of the function through the
    SOLVER_INFO structure defined in the header file */
-
 double solve_system(const PGFem3D_opt *opts,
 		    double *loc_rhs,
 		    double *loc_sol,
@@ -152,124 +189,33 @@ double solve_system(const PGFem3D_opt *opts,
       My_HYPRE_ptr_iter_func get_num_iter = NULL;
       My_HYPRE_ptr_norm_func get_res_norm = NULL;
 
-      switch(PGFEM_hypre->precond_type){
-      case PARA_SAILS:
-	if(iter <= 1){
-	  HYPRE_ParaSailsSetReuse (PGFEM_hypre->hypre_pc,0);
-	} else {
-	  HYPRE_ParaSailsSetReuse (PGFEM_hypre->hypre_pc,1);
-	}
-	precond_solve = HYPRE_ParCSRParaSailsSolve;
-	precond_setup = HYPRE_ParCSRParaSailsSetup;
-	break;
-
-      case PILUT:
-	precond_solve = HYPRE_ParCSRPilutSolve;
-	precond_setup = HYPRE_ParCSRPilutSetup;
-	break;
-
-      case EUCLID:
-	precond_solve = HYPRE_EuclidSolve;
-	precond_setup = HYPRE_EuclidSetup;
-	break;
-
-      case BOOMER:
-	precond_solve = HYPRE_BoomerAMGSolve;
-	precond_setup = HYPRE_BoomerAMGSetup;
-	break;
-
-      case DIAG_SCALE:
-	precond_solve = PGFEM_HYPRE_ScaleDiagSolve;
-	precond_setup = PGFEM_HYPRE_ScaleDiagSetup;
-	break;
-
-      case JACOBI:
-	precond_solve = PGFEM_HYPRE_JacobiSolve;
-	precond_setup = PGFEM_HYPRE_JacobiSetup;
-	break;
-
-      case NONE:
-	break;
-
-      default:
-	info->err = UNREC_PRECOND;
-	return 0.0;
-      }
-	
-      switch(PGFEM_hypre->solver_type){
-      case HYPRE_GMRES:
-	set_precond = HYPRE_ParCSRGMRESSetPrecond;
-	get_precond = HYPRE_ParCSRGMRESGetPrecond;
-	solver_setup = HYPRE_ParCSRGMRESSetup;
-	solver_solve = HYPRE_ParCSRGMRESSolve;
-	get_num_iter = HYPRE_ParCSRGMRESGetNumIterations;
-	get_res_norm = HYPRE_ParCSRGMRESGetFinalRelativeResidualNorm;
-	break;
-
-      case HYPRE_BCG_STAB:
-	set_precond = HYPRE_ParCSRBiCGSTABSetPrecond;
-	get_precond = HYPRE_ParCSRBiCGSTABGetPrecond;
-	solver_setup = HYPRE_ParCSRBiCGSTABSetup;
-	solver_solve = HYPRE_ParCSRBiCGSTABSolve;
-	get_num_iter = HYPRE_ParCSRBiCGSTABGetNumIterations;
-	get_res_norm = HYPRE_ParCSRBiCGSTABGetFinalRelativeResidualNorm;
-	break;
-
-      case HYPRE_AMG:
-	/* no preconditioner */
-	solver_setup = HYPRE_BoomerAMGSetup;
-	solver_solve = HYPRE_BoomerAMGSolve;
-	get_num_iter = HYPRE_BoomerAMGGetNumIterations;
-	get_res_norm = HYPRE_BoomerAMGGetFinalRelativeResidualNorm;
-	get_num_iter = HYPRE_ParCSRFlexGMRESGetNumIterations;
-	get_res_norm = HYPRE_ParCSRFlexGMRESGetFinalRelativeResidualNorm;
-	break;
-
-      case HYPRE_FLEX:
-	set_precond = HYPRE_ParCSRFlexGMRESSetPrecond;
-	get_precond = HYPRE_ParCSRFlexGMRESGetPrecond;
-	solver_setup = HYPRE_ParCSRFlexGMRESSetup;
-	solver_solve = HYPRE_ParCSRFlexGMRESSolve;
-	get_num_iter = HYPRE_ParCSRFlexGMRESGetNumIterations;
-	get_res_norm = HYPRE_ParCSRFlexGMRESGetFinalRelativeResidualNorm;
-	break;
-
-      case HYPRE_HYBRID:
-	set_precond = HYPRE_ParCSRHybridSetPrecond;
-	solver_setup = HYPRE_ParCSRHybridSetup;
-	solver_solve = HYPRE_ParCSRHybridSolve;
-	get_num_iter = HYPRE_ParCSRHybridGetNumIterations;
-	get_res_norm = HYPRE_ParCSRHybridGetFinalRelativeResidualNorm;
-	break;
-
-      default:
-	info->err = UNREC_SOLVER_TYPE;
+      /* get preconditioner functions */
+      if(get_HYPRE_precond_funcs(&precond_solve,&precond_setup,
+				 PGFEM_hypre,info,opts,iter)){
 	return 0.0;
       }
 
-      /* do actual setup and solve */
-      if(PGFEM_hypre->precond_type != NONE 
-	 && PGFEM_hypre->solver_type != HYPRE_AMG){
-	set_precond(PGFEM_hypre->hypre_solver,precond_solve,precond_setup,
-		    PGFEM_hypre->hypre_pc);
-	if(opts->solver != HYPRE_HYBRID) {/* does not have get function */
-	  get_precond(PGFEM_hypre->hypre_solver,
-		      &PGFEM_hypre->hypre_pc_gotten);
-	  if(PGFEM_hypre->hypre_pc_gotten != PGFEM_hypre->hypre_pc) {
-	    info->err = BAD_PRECOND;
-	    return 0.0;
-	  }
-	}
+      /* Get solver functions */
+      if(get_HYPRE_solver_funcs(&solver_solve,&solver_setup,
+				&set_precond,&get_precond,
+				&get_num_iter,&get_res_norm,
+				PGFEM_hypre,info,opts)){
+	return 0.0;
       }
 
-      solver_setup(PGFEM_hypre->hypre_solver,PGFEM_hypre->hypre_pk,
-		   PGFEM_hypre->hypre_prhs,PGFEM_hypre->hypre_psol);
-      info->err = solver_solve(PGFEM_hypre->hypre_solver,
-			       PGFEM_hypre->hypre_pk,
-			       PGFEM_hypre->hypre_prhs,
-			       PGFEM_hypre->hypre_psol);
-      get_num_iter(PGFEM_hypre->hypre_solver,&(info->n_iter));
-      get_res_norm(PGFEM_hypre->hypre_solver,&(info->res_norm));
+      /* Setup the solver */
+      if(setup_HYPRE_solver_env(precond_solve,precond_setup,
+				solver_solve,solver_setup,
+				set_precond,get_precond,
+				PGFEM_hypre,info,opts)){
+	return 0.0;
+      }
+
+      /* Solve */
+      HYPRE_solve(solver_solve,get_num_iter,get_res_norm,
+		  PGFEM_hypre,info);
+
+      /* Get the solution */
       HYPRE_IJVectorGetValues(PGFEM_hypre->hypre_sol,DomDof[myrank],
 			      &PGFEM_hypre->grows[0],loc_sol);
 
@@ -283,6 +229,81 @@ double solve_system(const PGFem3D_opt *opts,
     info->err = UNREC_SOLVER;
     return 0.0;
   }
+  /* update timer and return */
+  func_time += MPI_Wtime();
+  return func_time;
+}
+
+double solve_system_no_setup(const PGFem3D_opt *opts,
+			     double *loc_rhs,
+			     double *loc_sol,
+			     const int tim,
+			     const int iter,
+			     const long *DomDof,
+			     SOLVER_INFO *info,
+			     PGFEM_HYPRE_solve_info *PGFEM_hypre,
+			     BSprocinfo *BSinfo,
+			     BSspmat *k,
+			     BSpar_mat **pk,
+			     BSpar_mat **f_pk,
+			     MPI_Comm mpi_comm)
+{
+  double func_time = -MPI_Wtime();
+  int myrank=0;
+  MPI_Comm_rank(mpi_comm,&myrank);
+
+  switch(opts->solverpackage){
+  case BLOCKSOLVE:
+    PGFEM_printerr("ERROR: Blocksolve not supported in %s!\n",__func__);
+    PGFEM_Abort();
+    return 0.0;
+
+  case HYPRE:
+    {
+     /* Assemble the rhs and solution vector */
+      nulld(loc_sol,DomDof[myrank]);
+      HYPRE_IJVectorSetValues(PGFEM_hypre->hypre_rhs,DomDof[myrank],
+			      &PGFEM_hypre->grows[0],loc_rhs);
+      HYPRE_IJVectorSetValues(PGFEM_hypre->hypre_sol,DomDof[myrank],
+			      &PGFEM_hypre->grows[0],loc_sol);
+      HYPRE_IJVectorAssemble(PGFEM_hypre->hypre_rhs);
+      HYPRE_IJVectorAssemble(PGFEM_hypre->hypre_sol);
+
+      /* set the solver and preconditioner function pointers*/
+      My_HYPRE_ptr_solve_func solver_solve = NULL;
+      My_HYPRE_ptr_solve_func solver_setup = NULL;
+
+      My_HYPRE_ptr_set_pre_func set_precond = NULL;
+      My_HYPRE_ptr_check_pre_func get_precond = NULL;
+      My_HYPRE_ptr_iter_func get_num_iter = NULL;
+      My_HYPRE_ptr_norm_func get_res_norm = NULL;
+
+      /* Get solver functions */
+      if(get_HYPRE_solver_funcs(&solver_solve,&solver_setup,
+				&set_precond,&get_precond,
+				&get_num_iter,&get_res_norm,
+				PGFEM_hypre,info,opts)){
+	return 0.0;
+      }
+
+      /* solver should already be set up, just call solve */
+      HYPRE_solve(solver_solve,get_num_iter,get_res_norm,
+		  PGFEM_hypre,info);
+
+      /* Get the solution */
+      HYPRE_IJVectorGetValues(PGFEM_hypre->hypre_sol,DomDof[myrank],
+			      &PGFEM_hypre->grows[0],loc_sol);
+
+      /* reset hypre error flag so we can restart cleanly based on OUR
+	 error tolerances etc. */
+      hypre__global_error = 0;
+    }
+    break;
+  default:
+   info->err = UNREC_SOLVER;
+    return 0.0;
+  }
+
   /* update timer and return */
   func_time += MPI_Wtime();
   return func_time;
@@ -314,4 +335,171 @@ int solve_system_check_error(FILE *out,
 	    info.err);
     return 1;
   }
+}
+
+static int get_HYPRE_precond_funcs(My_HYPRE_ptr_solve_func *precond_solve,
+				   My_HYPRE_ptr_solve_func *precond_setup,
+				   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				   SOLVER_INFO *info,
+				   const PGFem3D_opt *opts,
+				   const int iter)
+{
+  int err = 0;
+  switch(PGFEM_hypre->precond_type){
+  case PARA_SAILS:
+    if(iter <= 1){
+      HYPRE_ParaSailsSetReuse (PGFEM_hypre->hypre_pc,0);
+    } else {
+      HYPRE_ParaSailsSetReuse (PGFEM_hypre->hypre_pc,1);
+    }
+    *precond_solve = HYPRE_ParCSRParaSailsSolve;
+    *precond_setup = HYPRE_ParCSRParaSailsSetup;
+    break;
+
+  case PILUT:
+    *precond_solve = HYPRE_ParCSRPilutSolve;
+    *precond_setup = HYPRE_ParCSRPilutSetup;
+    break;
+
+  case EUCLID:
+    *precond_solve = HYPRE_EuclidSolve;
+    *precond_setup = HYPRE_EuclidSetup;
+    break;
+
+  case BOOMER:
+    *precond_solve = HYPRE_BoomerAMGSolve;
+    *precond_setup = HYPRE_BoomerAMGSetup;
+    break;
+
+  case DIAG_SCALE:
+    *precond_solve = PGFEM_HYPRE_ScaleDiagSolve;
+    *precond_setup = PGFEM_HYPRE_ScaleDiagSetup;
+    break;
+
+  case JACOBI:
+    *precond_solve = PGFEM_HYPRE_JacobiSolve;
+    *precond_setup = PGFEM_HYPRE_JacobiSetup;
+    break;
+
+  case NONE:
+    break;
+
+  default:
+    info->err = UNREC_PRECOND;
+    err = 1;
+  }
+  return err;
+}
+
+static int get_HYPRE_solver_funcs(My_HYPRE_ptr_solve_func *solver_solve,
+				  My_HYPRE_ptr_solve_func *solver_setup,
+				  My_HYPRE_ptr_set_pre_func *set_precond,
+				  My_HYPRE_ptr_check_pre_func *get_precond,
+				  My_HYPRE_ptr_iter_func *get_num_iter,
+				  My_HYPRE_ptr_norm_func *get_res_norm,
+				  PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				  SOLVER_INFO *info,
+				  const PGFem3D_opt *opts)
+{
+  int err = 0;
+  switch(PGFEM_hypre->solver_type){
+  case HYPRE_GMRES:
+    *set_precond = HYPRE_ParCSRGMRESSetPrecond;
+    *get_precond = HYPRE_ParCSRGMRESGetPrecond;
+    *solver_setup = HYPRE_ParCSRGMRESSetup;
+    *solver_solve = HYPRE_ParCSRGMRESSolve;
+    *get_num_iter = HYPRE_ParCSRGMRESGetNumIterations;
+    *get_res_norm = HYPRE_ParCSRGMRESGetFinalRelativeResidualNorm;
+    break;
+
+  case HYPRE_BCG_STAB:
+    *set_precond = HYPRE_ParCSRBiCGSTABSetPrecond;
+    *get_precond = HYPRE_ParCSRBiCGSTABGetPrecond;
+    *solver_setup = HYPRE_ParCSRBiCGSTABSetup;
+    *solver_solve = HYPRE_ParCSRBiCGSTABSolve;
+    *get_num_iter = HYPRE_ParCSRBiCGSTABGetNumIterations;
+    *get_res_norm = HYPRE_ParCSRBiCGSTABGetFinalRelativeResidualNorm;
+    break;
+
+  case HYPRE_AMG:
+    /* no preconditioner */
+    *solver_setup = HYPRE_BoomerAMGSetup;
+    *solver_solve = HYPRE_BoomerAMGSolve;
+    *get_num_iter = HYPRE_BoomerAMGGetNumIterations;
+    *get_res_norm = HYPRE_BoomerAMGGetFinalRelativeResidualNorm;
+    *get_num_iter = HYPRE_ParCSRFlexGMRESGetNumIterations;
+    *get_res_norm = HYPRE_ParCSRFlexGMRESGetFinalRelativeResidualNorm;
+    break;
+
+  case HYPRE_FLEX:
+    *set_precond = HYPRE_ParCSRFlexGMRESSetPrecond;
+    *get_precond = HYPRE_ParCSRFlexGMRESGetPrecond;
+    *solver_setup = HYPRE_ParCSRFlexGMRESSetup;
+    *solver_solve = HYPRE_ParCSRFlexGMRESSolve;
+    *get_num_iter = HYPRE_ParCSRFlexGMRESGetNumIterations;
+    *get_res_norm = HYPRE_ParCSRFlexGMRESGetFinalRelativeResidualNorm;
+    break;
+
+  case HYPRE_HYBRID:
+    *set_precond = HYPRE_ParCSRHybridSetPrecond;
+    *solver_setup = HYPRE_ParCSRHybridSetup;
+    *solver_solve = HYPRE_ParCSRHybridSolve;
+    *get_num_iter = HYPRE_ParCSRHybridGetNumIterations;
+    *get_res_norm = HYPRE_ParCSRHybridGetFinalRelativeResidualNorm;
+    break;
+
+  default:
+    info->err = UNREC_SOLVER_TYPE;
+    err = 1;
+  }
+  return err;
+}
+
+static int setup_HYPRE_solver_env(My_HYPRE_ptr_solve_func precond_solve,
+				  My_HYPRE_ptr_solve_func precond_setup,
+				  My_HYPRE_ptr_solve_func solver_solve,
+				  My_HYPRE_ptr_solve_func solver_setup,
+				  My_HYPRE_ptr_set_pre_func set_precond,
+				  My_HYPRE_ptr_check_pre_func get_precond,
+				  PGFEM_HYPRE_solve_info *PGFEM_hypre,
+				  SOLVER_INFO *info,
+				  const PGFem3D_opt *opts)
+{
+  int err = 0;
+  /* set preconditioner */
+  if(PGFEM_hypre->precond_type != NONE 
+     && PGFEM_hypre->solver_type != HYPRE_AMG){
+    set_precond(PGFEM_hypre->hypre_solver,precond_solve,precond_setup,
+		PGFEM_hypre->hypre_pc);
+    if(opts->solver != HYPRE_HYBRID) {/* does not have get function */
+      get_precond(PGFEM_hypre->hypre_solver,
+		  &PGFEM_hypre->hypre_pc_gotten);
+      if(PGFEM_hypre->hypre_pc_gotten != PGFEM_hypre->hypre_pc) {
+	info->err = BAD_PRECOND;
+	err = 1;
+      }
+    }
+  }
+
+  /* call setup on the solver environment */
+  solver_setup(PGFEM_hypre->hypre_solver,PGFEM_hypre->hypre_pk,
+	       PGFEM_hypre->hypre_prhs,PGFEM_hypre->hypre_psol);
+
+  return err;
+}
+
+static int HYPRE_solve(My_HYPRE_ptr_solve_func solver_solve,
+		       My_HYPRE_ptr_iter_func get_num_iter,
+		       My_HYPRE_ptr_norm_func get_res_norm,
+		       PGFEM_HYPRE_solve_info *PGFEM_hypre,
+		       SOLVER_INFO *info)
+{
+  int err = 0;
+  info->err = solver_solve(PGFEM_hypre->hypre_solver,
+			   PGFEM_hypre->hypre_pk,
+			   PGFEM_hypre->hypre_prhs,
+			   PGFEM_hypre->hypre_psol);
+  get_num_iter(PGFEM_hypre->hypre_solver,&(info->n_iter));
+  get_res_norm(PGFEM_hypre->hypre_solver,&(info->res_norm));
+  return err;
 }

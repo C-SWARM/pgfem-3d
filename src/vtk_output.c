@@ -175,6 +175,8 @@ void VTK_print_cohesive_master(char *path,
 
   /* Cell Data */
   PGFEM_fprintf(out,"<PCellData>\n");
+  PGFEM_fprintf(out,"<PDataArray type=\"Int64\" Name=\"Property\""
+	  " NumberOfComponents=\"1\"/>\n");
   PGFEM_fprintf(out,"<PDataArray type=\"Float64\" Name=\"OpeningDisp\""
 	  " NumberOfComponents=\"3\"/>\n");
   PGFEM_fprintf(out,"<PDataArray type=\"Float64\" Name=\"Tractions\""
@@ -521,6 +523,12 @@ void VTK_print_cohesive_vtu(char *path,
 
   /* CELL DATA */
   PGFEM_fprintf(out,"<CellData>\n");
+  PGFEM_fprintf(out,"<DataArray type=\"Int64\" Name=\"Property\""
+		" NumberOfComponents=\"1\">\n");
+  for(int i=0; i<nce; i++){
+    PGFEM_fprintf(out,"%ld\n",coel[i].pr);
+  }
+  PGFEM_fprintf(out,"</DataArray>\n");
 
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"OpeningDisp\""
 	  " NumberOfComponents=\"3\">\n");

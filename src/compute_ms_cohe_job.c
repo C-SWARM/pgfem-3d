@@ -621,35 +621,81 @@ static int compute_elem_micro_terms(const int elem_id,
   cblas_daxpy(ndim,1.0,traction_e,1,job->traction,1);
 
   /* K_01 & K_10 */
+  /* { */
+  /*   for(int a=0; a<macro_nnode; a++){ */
+  /*     for(int b=0; b<macro_ndofn; b++){ */
+  /* 	for(int w=0; w<nne; w++){ */
+  /* 	  for(int g=0; g<ndim; g++){ */
+  /* 	    /\* column idx is simply the index of the macro dof *\/ */
+  /* 	    const int col_idx = idx_2_gen(a,b,macro_nnode,macro_ndofn); */
+
+  /* 	    /\* row idx is the global dof id *\/ */
+  /* 	    const int row_idx = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1; */
+
+  /* 	    /\* skip if boundary condition *\/  */
+  /* 	    if(row_idx < 0) continue; */
+
+  /* 	    /\* get indices *\/ */
+  /* 	    const int idx_01 = idx_K_gen(a,b,w,g,macro_nnode, */
+  /* 					 macro_ndofn,nne,ndim); */
+  /* 	    const int idx_10 = idx_K_gen(w,g,a,b,nne,ndim, */
+  /* 					 macro_nnode,macro_ndofn); */
+
+  /* 	    /\* add values to distributed matrix *\/ */
+  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
+  /* 						  K_01_e + idx_01,K_01); */
+  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
+  /* 						  K_10_e + idx_10,K_10); */
+  /* 	  } */
+  /* 	} */
+  /*     } */
+  /*   } */
+  /* } */
+
   {
+    /* allocate enough space for full matrix */
+    double *val_01 = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(double));
+    double *val_10 = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(double));
+    int *row = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(int));
+    int *col = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(int));
+    int idx = 0;
+
+    /* get list */
     for(int a=0; a<macro_nnode; a++){
       for(int b=0; b<macro_ndofn; b++){
-	for(int w=0; w<nne; w++){
-	  for(int g=0; g<ndim; g++){
-	    /* column idx is simply the index of the macro dof */
-	    const int col_idx = idx_2_gen(a,b,macro_nnode,macro_ndofn);
+  	for(int w=0; w<nne; w++){
+  	  for(int g=0; g<ndim; g++){
+  	    /* row idx is the global dof id */
+  	    row[idx] = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1;
 
-	    /* row idx is the global dof id */
-	    const int row_idx = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1;
+  	    /* skip if boundary condition */
+  	    if(row[idx] < 0) continue;
+	    else {
+	      /* column idx is simply the index of the macro dof */
+	      col[idx] = idx_2_gen(a,b,macro_nnode,macro_ndofn);
 
-	    /* skip if boundary condition */ 
-	    if(row_idx < 0) continue;
-
-	    /* get indices */
-	    const int idx_01 = idx_K_gen(a,b,w,g,macro_nnode,
-					 macro_ndofn,nne,ndim);
-	    const int idx_10 = idx_K_gen(w,g,a,b,nne,ndim,
-					 macro_nnode,macro_ndofn);
-
-	    /* add values to distributed matrix */
-	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx,
-						  K_01_e + idx_01,K_01);
-	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx,
-						  K_10_e + idx_10,K_10);
+	      /* get values */
+	      val_01[idx] = *(K_01_e + idx_K_gen(a,b,w,g,macro_nnode,
+						 macro_ndofn,nne,ndim));
+	      val_10[idx] = *(K_10_e + idx_K_gen(w,g,a,b,nne,ndim,
+						 macro_nnode,macro_ndofn));
+	      /* increment counter */
+	      idx++;
+	    }
 	  }
 	}
       }
     }
+
+    /* add list to matrices */
+    err += PGFEM_par_matrix_add_to_values(idx,row,col,val_01,K_01);
+    err += PGFEM_par_matrix_add_to_values(idx,row,col,val_10,K_10);
+
+    /* free memory */
+    free(val_01);
+    free(val_10);
+    free(row);
+    free(col);
   }
 
   /* deallocate function-scope information */
@@ -708,8 +754,14 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
     err += PGFEM_par_matrix_get_column(K_10,i,loc_rhs);
 
     /* compute loc_sol = K_11^{-1} K_10{i} */
-    solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-  		 c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+    if(i == 0){
+      /* only setup solver for first time through */
+      solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
+		   c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+    } else {
+      solve_system_no_setup(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
+			    c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+    }
 
     /* check solver error status and print solve information */
     err += solve_system_check_error(PGFEM_stderr,*info);

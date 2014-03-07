@@ -184,7 +184,7 @@ dUdJFuncPtr getDUdJFunc(const int flag,
     return dUdJ_Doll_Schweizerhof_8;
 
   default:
-     PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
+    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
     abort();
   }
 }

@@ -567,6 +567,10 @@ static int create_local_ms_cohe_job_list(const long nce,
       job->proc_id = myrank_macro;
       job->job_type = JOB_NO_COMPUTE_EQUILIBRIUM;
 
+      /* set print flag equal to property. Non-zero value will cause
+	 microscale output. */
+      job->print_flag = cel->pr;
+
       (*local_buffer_size) += compute_MS_COHE_JOB_INFO_size(job);
 
       job_id++;

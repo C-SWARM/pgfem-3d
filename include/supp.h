@@ -32,10 +32,11 @@ extern "C" {
     /** multiscale information. For interfaces, the displacement jump
 	vector is computed from the first six (6) prescribed
 	displacements */
-    double *F0; /*< macroscale deformation gradient contribution */
-    double *N0; /*< macroscale unit normal */
-    double lc; /*< multiscale scaling parameter. For interfaces, is the
+    double *F0; /**< macroscale deformation gradient contribution */
+    double *N0; /**< macroscale unit normal */
+    double lc; /**< multiscale scaling parameter. For interfaces, is the
 		 thickness of the unit cell/interface layer. */
+    double v0; /**< Volume of microstructure V = B U H [Miehe 2002]*/
     int multi_scale; /*< flag for whether or not multiscale routines
 		       should be executed. */
   };
