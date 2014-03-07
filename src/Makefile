@@ -137,6 +137,7 @@ tags:
 	etags $(SRCS)
 
 depend:
-	makedepend -- $(INCLUDES) $(LOC_INCL) $(CFLAGS) -- $(SRCS)
-# DO NOT DELETE
+	makedepend -f- -- $(INCLUDES) $(LOC_INCL) $(CFLAGS) -- $(SRCS) > Makefile.depend
 
+# DO NOT DELETE
+-include Makefile.depend

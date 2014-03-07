@@ -27,7 +27,8 @@ realclean: clean
 tags:
 	etags $(SRC)
 depend:
-	makedepend -- $(INCLUDES) $(CFLAGS) -- $(SRC)
+	makedepend -f- -- $(INCLUDES) $(CFLAGS) -- $(SRC) >  Makefile.depend
 
 
 # DO NOT DELETE
+-include Makefile.depend
