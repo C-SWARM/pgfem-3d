@@ -14,173 +14,51 @@
 
 /* Extra libs */
 #include "renumbering.h"
-#include "BSprivate.h"
+#include "blocksolve_interface.h"
 
 
 /*=== PFEM3d headers ===*/
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ARC_LENGTH_H
 #include "Arc_length.h"
-#endif
-
-#ifndef BUILD_DISTRIBUTION_H
 #include "build_distribution.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef OUT_H
 #include "out.h"
-#endif
-
-#ifndef PRINTING_H
 #include "Printing.h"
-#endif
-
-#ifndef PRINT_DIST_H
 #include "print_dist.h"
-#endif
-
-#ifndef PROFILER_H
 #include "profiler.h"
-#endif
-
-#ifndef PSPARSE_APAI_H
 #include "Psparse_ApAi.h"
-#endif
-
-#ifndef READ_CRYST_PLAST_H
 #include "read_cryst_plast.h"
-#endif
-
-#ifndef RENUMBER_ID_H
 #include "renumber_ID.h"
-#endif
-
-#ifndef RNPSPARSE_APAI_H
 #include "RNPsparse_ApAi.h"
-#endif
-
-#ifndef SET_FINI_DEF_H
 #include "set_fini_def.h"
-#endif
-
-#ifndef SKYLINE_H
 #include "skyline.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef SETGLOBALNODENUMBERS_H
 #include "SetGlobalNodeNumbers.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_MACRO_F_H
 #include "computeMacroF.h"
-#endif
-
-#ifndef COMPUTE_MACRO_S_H
 #include "computeMacroS.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef INITIALIZE_DAMAGE_H
 #include "initialize_damage.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_UTILS_H
 #include "bounding_element_utils.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef GENERATE_DOF_IDS_H
 #include "generate_dof_ids.h"
-#endif
-
-#ifndef COMPUTE_FORCE_ON_MODEL_ENT_H
 #include "compute_force_on_model_ent.h"
-#endif
-
-#ifndef APPLIED_TRACTION_H
 #include "applied_traction.h"
-#endif
-
-#ifndef READ_INPUT_FILE_H
 #include "read_input_file.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef COMPUTE_MS_COHE_JOB_H
 #include "compute_ms_cohe_job.h"
-#endif
 
 #ifndef DEBUG_MULTISCALE
 #define DEBUG_MULTISCALE 0
@@ -240,7 +118,6 @@ int single_scale_main(int argc,char *argv[])
   double NORM = 0.0;
   double VVolume = 0.0;
 
-  FILE *in = NULL;
   FILE *in1 = NULL;
   FILE *out = NULL;
   NODE *node = NULL;
@@ -265,7 +142,6 @@ int single_scale_main(int argc,char *argv[])
   long gem = 0;
   long temp_int = 0;
   long sky = 0;
-  long rn_sky = 0;
   
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = NULL;
@@ -363,15 +239,10 @@ int single_scale_main(int argc,char *argv[])
   
   /* HYPRE specific */
   PGFEM_HYPRE_solve_info *PGFEM_hypre = NULL;
-  int crank = 0;
   
   /* Ensight */
   ENSIGHT ensight;
 
-  /* Renumbering */
-  int *sizes = NULL;
-  int *l_order = NULL;
-  int *g_order = NULL;
   int *dist = NULL;
 
   /* original volume */
@@ -409,8 +280,6 @@ int single_scale_main(int argc,char *argv[])
   total_time -= MPI_Wtime();
 
   MPI_Errhandler_set(mpi_comm,MPI_ERRORS_ARE_FATAL);
-
-  int debug_wait=0;
 
   if(myrank == 0) {
     PGFEM_printf("\n\nInitializing PFEM3d\n\n");
@@ -1130,9 +999,9 @@ int single_scale_main(int argc,char *argv[])
 	char *dir_name = PGFEM_calloc(dir_len,sizeof(char));
 	sprintf(dir_name,"%s/log",microscale->opts->opath);
 	make_path(dir_name,DIR_MODE);
-	dir_len = snprintf(NULL,0,"%s/group_%0.5d",dir_name,group_id)+1;
+	dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
 	char *fname = PGFEM_calloc(dir_len,sizeof(char));
-	sprintf(fname,"%s/group_%0.5d",dir_name,group_id);
+	sprintf(fname,"%s/group_%05d",dir_name,group_id);
 	PGFEM_initialize_io(NULL,fname);
 	free(dir_name);
 	free(fname);

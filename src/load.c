@@ -1,70 +1,19 @@
-/*******************************************
- * Program FEM3d ver. 2.0                  *
- * FEM - 3D analysis                       *
- * Karel Matous & Jaroslav Kruis           *
- *******************************************/
-
-/*****************/
-/* November 2000 */
-/*****************/
+/* HEADER */
 
 #include "load.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-/* #ifndef INCL_H */
-/* #include "incl.h" */
-/* #endif */
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMATEL_FD_H
 #include "stiffmatel_fd.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
 
 long* compute_times_load (FILE *in1,
 			  long nt,
@@ -295,7 +244,6 @@ int load_vec_node_defl (double *f,
     const ELEMENT *ptr_ve = &elem[ve_id];
     const long *ve_nod = ptr_ve->nod;
     const int nne_ve = ptr_ve->toe;
-    const int nne_ve_t = nne_ve + ptr_ve->n_bub;
 
     /* get ndofs on element */
     int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);

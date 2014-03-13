@@ -1,27 +1,21 @@
+/* HEADER */
+#pragma once
 #ifndef DIFFERENTIATION_OF_UU_H
 #define DIFFERENTIATION_OF_UU_H
 
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * @todo describe this function.  It has something to do with
+   * crystal plasticity.
+   */
   void differentiation_of_UU (long ii,
 			      long ip,
 			      long mat,

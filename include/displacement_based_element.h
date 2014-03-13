@@ -1,45 +1,25 @@
 /* HEADER */
 
-/** This file declares the functions for the displacement-based TOTAL
-    LAGRANGIAN element. Note that there are several helper functions
-    which are defined in the definitions file which are not listed
-    here.  This is on purpose as these functions should ONLY be used
-    within the diplacement based element context. */
-
+/**
+ * @file
+ * This file declares the functions for the displacement-based TOTAL
+ * LAGRANGIAN element. Note that there are several helper functions
+ * which are defined in the definitions file which are not listed
+ * here.  This is on purpose as these functions should ONLY be used
+ * within the diplacement based element context.
+ */
+#pragma once
 #ifndef DISP_BASED_ELEM_H
 #define DISP_BASED_ELEM_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

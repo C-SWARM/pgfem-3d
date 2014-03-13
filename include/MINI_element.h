@@ -1,38 +1,16 @@
 /* HEADER */
+#pragma once
 #ifndef MINI_ELEMENT_H
 #define MINI_ELEMENT_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,19 +1,9 @@
 /* HEADER */
 #include "ms_job_intercomm.h"
 #include <string.h>
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif 
-
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 static int create_ms_job_intercomm_micro(const int nproc_macro,
@@ -180,7 +170,6 @@ static int create_ms_job_intercomm_macro(const int n_jobs,
 
   /* the number of micro workers is... */
   const int nproc_micro = nproc_inter - nproc_macro;
-  const int remainder = n_jobs%nproc_micro;
 
   /* initialize send */
   int *n_job_send = PGFEM_calloc(nproc_inter,sizeof(int));

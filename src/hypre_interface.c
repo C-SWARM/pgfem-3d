@@ -1,20 +1,9 @@
+/* HEADER */
 #include "hypre_global.h"
-
-#ifndef BOOMER_AMG_INTERFACE_H
 #include "boomerAMGInterface.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef PGFEM_HYPRE_PRECOND_H
 #include "PGFEM_HYPRE_preconditioners.h"
-#endif
 
 #ifndef PFEM_HYPRE_DEBUG
 #define PFEM_HYPRE_DEBUG 0
@@ -95,8 +84,7 @@ void hypre_initialize(int *Ap,
 		      const PGFem3D_opt *options,
 		      MPI_Comm mpi_comm)
 {
-  double thresh,filter,loadbal,pilut_tol,pilut_row;
-  int nlevel,sym,kdim;
+  int kdim = 0;
   int *diag_sizes = NULL;
   int *offd_sizes = NULL;
   int i = 0;
@@ -455,7 +443,7 @@ static int create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 
   /* ParaSails */
   int sym     = 0;
-  double nlevel  = 1;
+  int nlevel  = 1;
   double thresh  = 0.1;
   double filter  = 0.05;
   double loadbal = 0.9;
@@ -486,7 +474,7 @@ static int create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre,
   err += MPI_Comm_rank(mpi_comm,&myrank);
 
   double pilut_tol = 0.1;
-  double pilut_row = 20;
+  int pilut_row = 20;
   int pilut_maxit = 50;
 
   /* if(myrank == 0){ */

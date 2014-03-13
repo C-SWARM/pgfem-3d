@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef INTEGRATE_SURFACE_H
 #define INTEGRATE_SURFACE_H
 

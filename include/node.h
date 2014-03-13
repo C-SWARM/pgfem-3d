@@ -1,14 +1,11 @@
 /* HEADER */
+
+#pragma once
 #ifndef NODE_H
 #define NODE_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

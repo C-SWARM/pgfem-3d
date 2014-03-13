@@ -1,32 +1,13 @@
-/************************************
- *  Alocation and Dealocation fun.  *
- *  Karel Matous                    *
- ************************************/
-
-/* PFem3d */
-
+/* HEADER */
+#pragma once
 #ifndef INCL_H
 #define INCL_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
 
 void build_elem_inelas (long ne,
 			ELEMENT *elem);

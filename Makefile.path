@@ -72,7 +72,7 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
 	     	  -Wl,--end-group -lpthread
 
 # Math libraries
-MATH_lib	=  -limf -lm
+# MATH_lib	=  -limf -lm
 
 # Totalview
 #TOTALVIEW_lib	= -L$(TOTALVIEW)/lib/libdbfork_64
@@ -85,4 +85,4 @@ MATH_lib	=  -limf -lm
 # MKL_lib	= $(pfem_cblas_lib) $(pfem_lapack_lib)
 
 # if not using intel compiler, uncomment following line
-# MATH_lib	= -lm
+MATH_lib	= -lm

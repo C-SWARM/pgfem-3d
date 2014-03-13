@@ -1,4 +1,8 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 #ifndef PGFEM_PAR_MATVEC_H
 #define PGFEM_PAR_MATVEC_H
 

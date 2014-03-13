@@ -1,69 +1,30 @@
 #ifndef NEWTON_RAPHSON_H
 #define NEWTON_RAPHSON_H
 
-#include "BSprivate.h"
-
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef COMPUTE_FORCE_ON_MODEL_ENT
 #include "compute_force_on_model_ent.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
 
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
+#include "blocksolve_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Newton-Raphson solutionn algorithm.
+   */
   double Newton_Raphson (const int print_level,
 			 long ne,
 			 int n_be,

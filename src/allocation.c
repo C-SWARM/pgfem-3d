@@ -8,9 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
 
 #ifdef NDEBUG
 #define DEBUG_PGFEM_ALLOC 0
@@ -19,10 +17,6 @@
 #define DEBUG_PGFEM_ALLOC 1
 #define DEBUG_PGFEM_ALLOC_LOG 0
 #endif
-
-static enum{PGFEM_ARG_ERROR,
-	    PGFEM_MEM_ERR,
-	    PGFEM_FILE_ERR} PGFEM_ERRORS;
 
 static const size_t ptr_size = sizeof(void*);
 

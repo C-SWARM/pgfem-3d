@@ -1,56 +1,23 @@
+/* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ * Karel Matous
+ */
 #include "stiffmat_fd.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef PLOC_SPARSE_H
 #include "PLoc_Sparse.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMATEL_FD_H
 #include "stiffmatel_fd.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -436,7 +403,7 @@ static int bnd_el_stiffmat(int belem_id,
 			   double dt,
 			   CRPL *crpl,
 			   double stab,
-			   double FNR,
+			   long FNR,
 			   double lm,
 			   double *f_u,
 			   int myrank,
@@ -468,7 +435,7 @@ static int bnd_el_stiffmat(int belem_id,
   }
 
   /* get the local and global dof id's */
-  double ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);
+  int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);
 
   long *cn_ve = aloc1l(ndof_ve);
   long *Gcn_ve = aloc1l(ndof_ve);
@@ -578,9 +545,8 @@ int stiffmat_fd (BSspmat *K,
 		 const PGFem3D_opt *opts)
 {
   int err = 0;
-  long i,j,k,ndofc;
+  long i,ndofc;
   int *Ddof;
-  long KK;
   double **Lk,**recieve;
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;

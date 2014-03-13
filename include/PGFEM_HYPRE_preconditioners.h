@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef PGFEM_HYPRE_PRECOND_H
 #define PGFEM_HYPRE_PRECOND_H
 

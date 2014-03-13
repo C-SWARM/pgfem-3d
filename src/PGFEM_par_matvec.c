@@ -1,21 +1,17 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 #include "PGFEM_par_matvec.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 /*=== ENTRY ===*/
 typedef struct entry{
@@ -183,7 +179,6 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     r_req = PGFEM_calloc(nproc-1,sizeof(MPI_Request));
     r_stat = PGFEM_calloc(nproc-1,sizeof(MPI_Status));
     {
-      int idx = 0;
       int req_idx = 0;
       for(int i=0; i<nproc; i++){
 	if(i == myrank) continue;
@@ -236,7 +231,6 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   int *s_off_proc_rows = PGFEM_calloc(nproc,sizeof(int));
   {
     int idx = n_dup;
-    int total_rows = 0;
     for(int i=0; i<nproc; i++){
       while(idx < n_entries){
 	/* break loop if row owned by other dom */
@@ -782,7 +776,6 @@ static int add_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */
     int n_rec_row = recv->n_info[i];
@@ -805,7 +798,6 @@ static int set_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
   int row_len = n_col*sizeof(double);
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */
@@ -830,7 +822,7 @@ static inline void set_entry(const int row,
   e->val = val;
 }
 
-static inline void destroy_entry(entry *e){};
+static inline void destroy_entry(entry *e){}
 static inline void destroy_entries(const int n_entry,
 				   entry *e)
 {
@@ -963,12 +955,12 @@ static void print_comm_info_graph(const int myrank,
   for(int i=0; i<2; i++){
     switch(i){
     case 0: /* send */
-      sprintf(fname,"send_info_%0.3d.log",myrank);
+      sprintf(fname,"send_info_%03d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = send;
       break;
     case 1: /* recv */
-      sprintf(fname,"recv_info_%0.3d.log",myrank);
+      sprintf(fname,"recv_info_%03d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = recv;
       break;

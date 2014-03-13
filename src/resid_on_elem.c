@@ -1,45 +1,16 @@
+/* HEADER */
 #include "resid_on_elem.h"
 #include <math.h>
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef INTEGRATION_H
 #include "integration.h"
-#endif
-
-#ifndef PRESSU_SHAPE_H
 #include "pressu_shape.h"
-#endif
-
-#ifndef RE1_RE2_RE3_H
 #include "Re1_Re2_Re3.h"
-#endif
-
-#ifndef STRESS_STRAIN_H
 #include "stress_strain.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
 
 static const int periodic = 0;
 
@@ -179,9 +150,9 @@ int resid_on_elem (long ii,
 	
 	shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
 	def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr); 
-	def_grad_inv (Fr,Fr_I);
-	Jr = def_grad_det (Fr);
-	Jn = def_grad_det (Fn);
+	def_grad_inv (CCONST_2(double) Fr,Fr_I);
+	Jr = def_grad_det (CCONST_2(double) Fr);
+	Jn = def_grad_det (CCONST_2(double) Fn);
 	
 	/* Check determinants and cleanly exit with error if inverted
 	   element */
@@ -224,7 +195,7 @@ int resid_on_elem (long ii,
 	    S[2][1] = eps[ii].il[ip].Fp[7];
 	    S[2][2] = eps[ii].il[ip].Fp[8];
 	    
-	    def_grad_inv (S,FnB);
+	    def_grad_inv (CCONST_2(double) S,FnB);
 	  }/* analysis == FS_CRPL */
 	  else{
 	    for (N=0;N<3;N++){
@@ -242,8 +213,8 @@ int resid_on_elem (long ii,
 	    }
 	  }
 	  
-	  Jr = def_grad_det (Fr);
-	  def_grad_inv (Fr,Fr_I);
+	  Jr = def_grad_det (CCONST_2(double) Fr);
+	  def_grad_inv (CCONST_2(double) Fr,Fr_I);
 	  Jn = Tn = 1.;
 	  
 	}/* end PERIODIC */

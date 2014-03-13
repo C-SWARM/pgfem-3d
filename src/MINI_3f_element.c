@@ -1,58 +1,28 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 #include "MINI_3f_element.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef HU_WASHIZU_ELEMENT_H
 #include "Hu_Washizu_element.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef NEW_POTENTIALS_H
 #include "new_potentials.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 #ifndef MINI_3F_DEBUG
 #define MINI_3F_DEBUG 0
@@ -189,7 +159,6 @@ int MINI_3f_stiffmat_el(double *Ks,            /**< Element stiffmat */
   
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   double *disp, *p;
@@ -271,8 +240,8 @@ int MINI_3f_stiffmat_el(double *Ks,            /**< Element stiffmat */
   L = aloc1(81);
   S = aloc1(9);
 
-  /* integration point in natural coords */
-  double ksi, eta, zet, wt;
+  /* element integration */
+  double wt = 0.0;
 
   /* pressure */
   double pressure, Upp, Tn, Tr;
@@ -583,7 +552,6 @@ int MINI_3f_resid_el(double *Res,         /**< Element residual */
   
   int n_bub = elem[ii].n_bub;
   int n_bub_dofs = elem[ii].n_bub_dofs;
-  int total_ndofe = ndofe + n_bub*n_bub_dofs;
   int total_nne = nne + n_bub;
 
   double *disp, *p;
@@ -669,7 +637,7 @@ int MINI_3f_resid_el(double *Res,         /**< Element residual */
   Ktt = aloc1(nVol*nVol);
 
   /* integration point in natural coords */
-  double ksi, eta, zet, wt;
+  double wt;
 
   /* pressure */
   double pressure, Up, Upp, Tn, Tr;
@@ -987,7 +955,6 @@ int MINI_3f_update_bubble_el(ELEMENT *elem,
 
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   /* stuff for debugging purposes */
@@ -1090,7 +1057,7 @@ int MINI_3f_update_bubble_el(ELEMENT *elem,
   S = aloc1(9);
 
   /* integration point in natural coords */
-  double ksi, eta, zet, wt;
+  double wt;
 
   /* pressure */
   double pressure, Tr, Tn, Up, Upp;
@@ -1330,7 +1297,6 @@ int MINI_3f_update_bubble(ELEMENT *elem,
 			  const double *dsol, /* sol from current iter */
 			  const int iter)
 {
-  const int ndn = 3;
   int err = 0;
 
   int nne, mat, nne_t;
@@ -1431,7 +1397,6 @@ void MINI_3f_increment_el(ELEMENT *elem,
   const int mat = elem[ii].mat[2];
   const int nPres = nne;
   const int nVol = 4;
-  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
   int count; /* ALWAYS reset before use */
 
@@ -1443,7 +1408,6 @@ void MINI_3f_increment_el(ELEMENT *elem,
 
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   double *disp, *p;
@@ -1522,7 +1486,7 @@ void MINI_3f_increment_el(ELEMENT *elem,
   ident[0] = ident[4] = ident[8] = 1.0;
 
   /* integration point in natural coords */
-  double ksi, eta, zet, wt;
+  double wt;
 
   /* pressure */
   double pressure,Tr,Tn;
@@ -1682,7 +1646,6 @@ void MINI_3f_increment(ELEMENT *elem,
 		       const MPI_Comm mpi_comm)
 {
   const int ndn = 3;
-  int err = 0;
   int nne, mat, nne_t, II;
 
   long *nod, *cn;
@@ -1809,7 +1772,6 @@ void MINI_3f_check_resid(const int ndofn,
 
     const int n_bub = elem[ii].n_bub;
     const int n_bub_dofs = elem[ii].n_bub_dofs;
-    const int total_ndofe = ndofe + n_bub*n_bub_dofs;
     const int mat = elem[ii].mat[2];
     const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
@@ -1928,10 +1890,10 @@ void MINI_3f_check_resid(const int ndofn,
     Rt = aloc1(nne);
 
     /* integration point in natural coords */
-    double ksi, eta, zet, wt;
+    double wt;
 
     /* pressure */
-    double pressure, Up, Upp, Tn, Tr;
+    double pressure, Up, Tn, Tr;
  
     memcpy(Fn,eps[ii].il[0].F,9*sizeof(double));
     const double Jn = getJacobian(Fn,ii,&err);

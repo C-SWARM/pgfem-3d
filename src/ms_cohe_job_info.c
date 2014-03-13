@@ -1,14 +1,8 @@
 /* HEADER */
 #include "ms_cohe_job_info.h"
 #include <string.h>
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
 
 #ifndef DEBUG_MS_JOB_INFO
 #define DEBUG_MS_JOB_INFO 0
@@ -64,7 +58,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   /* allocate other */
   info->times = PGFEM_calloc(3,sizeof(double));
 
-  return 0;
+  return err;
 }
 
 int build_MS_COHE_JOB_INFO_buffer(const size_t buff_len,

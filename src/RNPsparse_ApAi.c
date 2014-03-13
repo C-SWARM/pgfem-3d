@@ -1,32 +1,12 @@
+/* HEADER */
 #include "RNPsparse_ApAi.h"
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -64,7 +44,7 @@ int* RNPsparse_ApAi (int nproc,
   long i,j,k,II,JJ,*cnL,*cnG,nne,ndofe,*nod,*ap,**AA,*ap1,**ID,
        *LG,Nrs=0,*GL,LI1,LI2,KK,*cncL,*cncG,ndofc,*nodc;
   long *send,NRr=0,*GNRr,*ApRr,**GIDRr,**RECI,**SEND;
-  int l,*Ddof,*Ai;
+  int *Ddof,*Ai;
   MPI_Status stat,*sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
 

@@ -1,56 +1,25 @@
-/****************************
- *  Program FEM3d ver. 3.0  *
- *  FEM - 3D analysis       *
- *  Karel Matous            *
- ****************************/
+/* HEADER */
+/**
+ * Authors:
+ * Karel Matous
+ * Matthew Mosby
+ */
 #include "stabilized.h"
 #include <time.h>
 #include <string.h>
+#include <math.h>
 #include "mkl_cblas.h"
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef NEW_POTENTIALS_H
 #include "new_potentials.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef TWO_FIELD_ELEMENT_H
 #include "two_field_element.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
 
 #ifndef STAB_DEBUG
 #define STAB_DEBUG 0
@@ -999,12 +968,9 @@ int st_increment (long ne,
 		  double *pores,
 		  MPI_Comm mpi_comm,
 		  const int coh)
-/*
-  
-*/
 {
   int err = 0;
-  long ndn,ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,ndofc,*cn;
+  long ndn,ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
   double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],*X,*Y,PL,EL_e,
     FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
@@ -1643,7 +1609,6 @@ static int get_material_lin_pres(double *Upp,
 {
   int err = 0;
   d2UdJ2FuncPtr upp_func = getD2UdJ2Func(0,mat);
-  double upp_val = 0.0;
   upp_func(Jn*Jr,mat,Upp);
 
   return err;
@@ -1993,7 +1958,7 @@ static int get_Kpp_stab_at_ip(double *Kpp,
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
 	      3,3,3,stab*Jr,Fr_I,3,Fr_I,3,0.0,AA,3);
 
-  double H = 0.0;
+  /* double H = 0.0; */
   /* if(dam->damaged){ */
   /*   H = (dam->dmu/(1.+dam->dmu)*dam->evolution(Ybar,&dam->params) */
   /* 	 *(Jr*Jn-Jn_1)/6.); */

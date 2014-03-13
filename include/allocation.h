@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef _PGFEM_ALLOCATION_H_
 #define _PGFEM_ALLOCATION_H_
 #define ALLOCATION_H

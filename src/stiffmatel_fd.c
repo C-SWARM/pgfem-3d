@@ -1,44 +1,16 @@
+/* HEADER */
 #include "stiffmatel_fd.h"
-
-#ifndef PGFEM_IO_H
+#include <math.h>
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef PRESSU_SHAPE_H
 #include "pressu_shape.h"
-#endif
-
-#ifndef STRESS_STRAIN_H
 #include "stress_strain.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
 
 static const int periodic = 0;
 
@@ -235,9 +207,9 @@ int stiffmatel_fd (long ii,
 	
 	shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
 	def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
-	def_grad_inv (Fr,Fr_I);
-	Jr = def_grad_det (Fr);
-	Jn = def_grad_det (Fn);
+	def_grad_inv (CCONST_2(double) Fr,Fr_I);
+	Jr = def_grad_det (CCONST_2(double) Fr);
+	Jn = def_grad_det (CCONST_2(double) Fn);
 
 	/* Check determinants and exit cleanly with error if
 	   negative */
@@ -278,7 +250,7 @@ int stiffmatel_fd (long ii,
 	    S[2][1] = eps[ii].il[ip].Fp[7];
 	    S[2][2] = eps[ii].il[ip].Fp[8];
 	    
-	    def_grad_inv (S,FnB);
+	    def_grad_inv (CCONST_2(double) S,FnB);
 	  }/* end analysis == FS_CRPL */
 	  else{
 	    for (N=0;N<3;N++){
@@ -297,8 +269,8 @@ int stiffmatel_fd (long ii,
 	      Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
 	  }
 	  
-	  Jr = def_grad_det (Fr);
-	  def_grad_inv (Fr,Fr_I);
+	  Jr = def_grad_det (CCONST_2(double) Fr);
+	  def_grad_inv (CCONST_2(double) Fr,Fr_I);
 	  Jn = Tn = 1.;
 	  
 	  if (FNR == 2 || FNR == 3){

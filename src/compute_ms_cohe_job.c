@@ -3,61 +3,20 @@
 #include <string.h>
 #include "mkl_cblas.h"
 
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef PGFEM_PAR_MATVEC_H
 #include "PGFEM_par_matvec.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef SOLVE_SYSTEM_H
 #include "solve_system.h"
-#endif
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
@@ -543,7 +502,6 @@ static int compute_elem_micro_terms(const int elem_id,
   const int macro_nnode = job->nnode;
   const int macro_ndofn = ndim;
   const int macro_ndof = job->ndofe;
-  const long *macro_dof_id = job->g_dof_ids;
   const double *macro_shape_func = job->shape;
   const double *macro_normal = job->normal;
   const double macro_int_wt = job->int_wt;
@@ -784,7 +742,7 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
   /* copy (++) block to others */
   for(int i=0; i<2; i++){
     for(int j=0; j<2; j++){
-      const int sign = ((i==j)? 1.0:-1.0);
+      const int sign = ((i==j)? 1:-1);
       for(int k=0; k<block_ndof; k++){
   	for(int m=0; m<block_ndof; m++){
   	  const int idx = idx_K(i,k,j,m,2,block_ndof);

@@ -1,50 +1,15 @@
-/******************************
- * Program FEM3d ver. 2.0     *
- * 3D FEM analysis            *
- * Karel Matous               *
- ******************************/
-
-/*****************/
-/* November 2000 */
-/*****************/
+/* HEADER */
 
 #include "elem3d.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef QUADRATURE_RULES_H
 #include "quadrature_rules.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef LOCALIZAT_H
 #include "localizat.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef RESICE_H
 #include "resice.h"
-#endif
 
 #ifndef NO_BUBBLE
 #define NO_BUBBLE 0
@@ -233,7 +198,7 @@ void int_tetra_24(double *gk,
   /* Formula from Keast 1985. Note that the factor of 1/6 is already
      incorperated into the weights */
 
-  double a1, a2, a3, a4, W;
+  double a1, a2, a3, a4;
 
   /* block 1 */
   w[0] = w[1] = w[2] = w[3] = 0.665379170969464506e-2;
@@ -705,12 +670,8 @@ double Jacobi (const double ksi,
 	       const double *dx,
 	       const double *dy,
 	       const double *dz)
-     /*
-       
-     */
 {
   double J;
-  long i;
   
   J = ((dx[0]*dy[1]*dz[2]) +
        (dy[0]*dz[1]*dx[2]) + 
@@ -720,7 +681,8 @@ double Jacobi (const double ksi,
        (dy[0]*dx[1]*dz[2]));
   
   if (J <= 0.0) {
-    PGFEM_printf ("Negative determinant is isoparametric mapping : J = %12.12e || Bye Bye\n",J);
+    PGFEM_printf ("Negative determinant is isoparametric"
+		  " mapping : J = %12.12e || Bye Bye\n",J);
     PGFEM_Abort();
   }
   

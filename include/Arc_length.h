@@ -1,65 +1,31 @@
+/* HEADER */
+
+#pragma once
 #ifndef ARC_LENGTH_H
 #define ARC_LENGTH_H
 
-#include "BSprivate.h"
-
-#ifndef PGFEM_MPI_H
+#include "blocksolve_interface.h"
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Arc length procedure.
+   */
   double Arc_length (long ne,
 		     int n_be,
 		     long nn,

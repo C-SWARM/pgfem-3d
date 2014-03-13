@@ -193,20 +193,6 @@ static int integration_help(const int elem_id,
 			    double *C_I,
 			    double *J);
 
-/** Compute constant quantities from volume element */
-static int compute_constant_quantities_res(double *F,
-					   double *Sbar,
-					   double *ST,
-					   const int ndofn,
-					   const int ve_id,
-					   const ELEMENT *ptr_ve,
-					   const double *vol_disp,
-					   const NODE *node,
-					   const SUPP sup,
-					   const EPS *eps,
-					   const double kappa,
-					   const HOMMAT *ptr_mat);
-
 /** helper function which handles all of the domain mapping and
     computes function values at the 2D integration points */
 static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
@@ -249,26 +235,6 @@ static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
 
 /** compute microscale contribution to K_00_e at an integration
     point */
-static int compute_K_00_e_at_ip(double *K_00_e,
-				/* macro information */
-				const int macro_nnode,
-				const int macro_ndofn,
-				const double macro_int_wt,
-				const double *macro_shape_func,
-				const double *macro_normal,
-				const double layer_thickness,
-				const double *gNoxN,
-				/* micro information */
-				const int nne,
-				const double micro_volume0,
-				const double jj,
-				const double wt,
-				const double *F,
-				const double *ST,
-				const damage *p_dam,
-				const double *Sbar,
-				const double *L);
-
 static int compute_K_00_e_at_ip_2(double *K_00_e,
 				  /* macro information */
 				  const int macro_nnode,
@@ -1242,13 +1208,6 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 	    one loop. This was not done originally for simplified
 	    testing/proof of concept code */
 
-	  /* compute K_00_e */
-	  /* err += compute_K_00_e_at_ip(K_00_e,macro_nnode,macro_ndofn, */
-	  /* 			      macro_int_wt,macro_shape_func, */
-	  /* 			      macro_normal,layer_thickness, */
-	  /* 			      gNoxN,nne,micro_volume0, */
-	  /* 			      jj,wt,F,ST,p_dam,Sbar,L); */
-
 	  err += compute_K_00_e_at_ip_2(K_00_e,macro_nnode,macro_ndofn,
 					macro_int_wt,macro_shape_func,
 					macro_normal,layer_thickness,
@@ -1838,76 +1797,6 @@ static int integration_help(const int elem_id,
   return err;
 }/* integration_help */
 
-static int compute_constant_quantities_res(double *F,
-					   double *Sbar,
-					   double *ST,
-					   const int ndofn,
-					   const int ve_id,
-					   const ELEMENT *ptr_ve,
-					   const double *vol_disp,
-					   const NODE *node,
-					   const SUPP sup,
-					   const EPS *eps,
-					   const double kappa,
-					   const HOMMAT *ptr_mat)
-{
-  int err = 0;
-
-  const int nne = ptr_ve->toe;
-
-  double *x = aloc1(nne);
-  double *y = aloc1(nne);
-  double *z = aloc1(nne);
-  nodecoord_total(nne,ptr_ve->nod,node,x,y,z);  
-
-  long n_pt_z = 0;
-  int_point(nne,&n_pt_z);
-
-  double *int_pt_ksi = aloc1(n_pt_z);
-  double *int_pt_eta = aloc1(n_pt_z);
-  double *int_pt_zet = aloc1(n_pt_z);
-  double *weights = aloc1(n_pt_z);
-
-  double *Na = aloc1(nne);
-  double *N_x = aloc1(nne);
-  double *N_y = aloc1(nne);
-  double *N_z = aloc1(nne);
-
-  double *C = aloc1(9);
-  double *C_I = aloc1(9);
-
-  double J = 0.0;
-  double jj = 0.0;
-  double wt = 0.0;
-
-  /* Compute F (along with others) at the single integration point in
-     a linear tetra */
-  err += integration_help(ve_id,nne,ndofn,0,0,0,x,y,z,
-			  int_pt_ksi,int_pt_eta,int_pt_zet,
-			  weights,vol_disp,sup,&wt,&jj,Na,
-			  N_x,N_y,N_z,ST,F,C,C_I,&J);
-
-  get_material_stress(kappa,ptr_mat,C,C_I,J,Sbar);
-
-  free(x);
-  free(y);
-  free(z);
-
-  free(int_pt_ksi);
-  free(int_pt_eta);
-  free(int_pt_zet);
-  free(weights);
-  free(Na);
-  free(N_x);
-  free(N_y);
-  free(N_z);
-  free(C);
-  free(C_I);
-
-  return err;
-}/* compute_constant_quantites_res() */
-
-
 static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
 				const ELEMENT *ptr_ve,
 				const damage *ptr_dam,
@@ -2195,91 +2084,6 @@ static void disp_based_bnd_Kul_Klu_at_ip(double *Kul,
   free(FSTab);
 }/* disp_based_bnd_Kul_Klu_at_ip() */
 
-
-static int compute_K_00_e_at_ip(double *K_00_e,
-				/* macro information */
-				const int macro_nnode,
-				const int macro_ndofn,
-				const double macro_int_wt,
-				const double *macro_shape_func,
-				const double *macro_normal,
-				const double layer_thickness,
-				const double *gNoxN,
-				/* micro information */
-				const int nne,
-				const double micro_volume0,
-				const double jj,
-				const double wt,
-				const double *F,
-				const double *ST,
-				const damage *p_dam,
-				const double *Sbar,
-				const double *L)
-{
-  int err = 0;
-
-  /* allocate space */
-  double *t0wg = PGFEM_calloc(ndn,sizeof(double));
-  double *LL = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *FNN = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *FNN_sym = PGFEM_calloc(ndn*ndn,sizeof(double));
-
-  for(int w=0; w<macro_nnode; w++){
-    for(int g=0; g<macro_ndofn; g++){
-      /* get pointer to current gNoxN block */
-      int idx = idx_4_gen(w,g,0,0,macro_nnode,
-			  macro_ndofn,ndn,ndn);
-      const double *p_gNoxN = gNoxN + idx;
-
-      /* compute sym(F'gNoxN) */
-      cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1,
-		  F,3,p_gNoxN,3,0.0,FNN,3);
-      symmetric_part(FNN_sym,FNN,3);
-
-      /* compute LL = L:FNN_sym */
-      for(int i=0; i<ndn*ndn; i++){
-	if(FNN_sym[i] == 0) continue;
-	for(int j=0; j<ndn*ndn; j++){
-	  LL[j] += L[ndn*ndn*j+i]*FNN_sym[i];
-	}
-      }
-
-      /* compute t0wg (integrate at microscale) */
-      for(int i=0; i<ndn; i++){
-	t0wg[i] = 0.0;
-	for(int j=0; j<ndn; j++){
-	  const int ij = idx_2(i,j);
-	  for(int k=0; k<ndn; k++){
-	    const int jk = idx_2(j,k);
-	    t0wg[i] += (jj*wt*macro_normal[k]/
-			(layer_thickness*micro_volume0)
-			*((1-p_dam->w)*gNoxN[ij]*Sbar[jk] + F[ij]*LL[jk]));
-	  }
-	}
-      }
-
-      /* compute K_00_e (integrate at macroscale) */
-      for(int i=0; i<ndn; i++){
-	for(int b=0; b<macro_ndofn; b++){
-	  if(i != b) continue;  /* N^a_{i,b} = N^a d_{i,b} */
-	  for(int a=0; a<macro_nnode; a++){
-	    int idx = idx_K(a,b,w,g,macro_nnode,macro_ndofn);
-	    K_00_e[idx] += (macro_int_wt*macro_shape_func[a]*t0wg[i]);
-	  }
-	}
-      }
-    }
-  }
-
-  /* clean up */
-  free(t0wg);
-  free(LL);
-  free(FNN);
-  free(FNN_sym);
-
-  return err;
-}
-
 static int compute_K_00_e_at_ip_2(double *K_00_e,
 				/* macro information */
 				const int macro_nnode,
@@ -2344,25 +2148,6 @@ static int compute_K_00_e_at_ip_2(double *K_00_e,
       }
     }
   }
-
-  /* TESTING */
-  /* { */
-  /*   static int first = 1; */
-  /*   if(first){ */
-  /*     int myrank = 0; */
-  /*     MPI_Comm_rank(MPI_COMM_WORLD,&myrank); */
-  /*     char *fname = NULL; */
-  /*     alloc_sprintf(&fname,"testing_%d.log",myrank); */
-  /*     FILE *out = PGFEM_fopen(fname,"w"); */
-  /*     PGFEM_fprintf(out,"Term_I:\n"); */
-  /*     print_array_d(out,term_I,ndn*ndn,ndn,ndn); */
-  /*     PGFEM_fprintf(out,"Term_II:\n"); */
-  /*     print_array_d(out,term_II,ndn*ndn,ndn,ndn); */
-  /*     fclose(out); */
-  /*     free(fname); */
-  /*     first = 0; */
-  /*   } */
-  /* } */
 
   /* integrate at macroscale */
   for(int b=0; b<ndn; b++){
@@ -2480,62 +2265,6 @@ static int compute_K_01_e_at_ip(double *K_01_e,
 
   return err;
 
-  /* double *t1wg = PGFEM_calloc(ndn,sizeof(double)); */
-  /* double *LL = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* for(int w=0; w<nne; w++){ */
-  /*   for(int g=0; g<ndn /\*ndofn *\/; g++){ */
-  /*     /\* get pointer to current gNoxN block *\/ */
-  /*     int idx = idx_4_gen(w,g,0,0,nnode,ndn,ndn,ndn); */
-  /*     const double *p_ST = ST + idx; */
-
-  /*     /\* compute sym(F'ST_wg) *\/ */
-  /*     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1, */
-  /* 		  F,3,p_ST,3,0.0,FA,3); */
-  /*     symmetric_part(FA_sym,FA,3); */
-
-  /*     /\* compute LL = L:FA_sym *\/ */
-  /*     for(int i=0; i<ndn*ndn; i++){ */
-  /* 	if(FA_sym[i] == 0) continue; */
-  /* 	for(int j=0; j<ndn*ndn; j++){ */
-  /* 	  LL[j] += L[ndn*ndn*j+i]*FA_sym[i]; */
-  /* 	} */
-  /*     } */
-
-  /*     /\* compute t1wg at the microscale *\/ */
-  /*     for(int i=0; i<ndn; i++){ */
-  /* 	t1wg[i] = 0.0; */
-  /* 	for(int j=0; j<ndn; j++){ */
-  /* 	  const int ij = idx_2(i,j); */
-  /* 	  for(int k=0; k<ndn; k++){ */
-  /* 	    const int jk = idx_2(j,k); */
-  /* 	    t1wg[i] += (jj*wt*macro_normal[k]/micro_volume0 */
-  /* 			*((1-p_dam->w)*p_ST[ij]*Sbar[jk] */
-  /* 			  + F[ij]*LL[jk])); */
-  /* 	  } */
-  /* 	} */
-  /*     } */
-
-  /*     /\* integrate at macroscale *\/ */
-  /*     for(int i=0; i<ndn; i++){ */
-  /* 	for(int b=0; b<macro_ndofn; b++){ */
-  /* 	  if(i != b) continue; */
-  /* 	  for(int a=0; a<macro_nnode; a++){ */
-  /* 	    int idx = idx_K_gen(a,b,w,g,macro_nnode,macro_ndofn,nne,ndn); */
-  /* 	    K_01_e[idx] += (macro_int_wt */
-  /* 			    *macro_shape_func[a]*t1wg[i]); */
-  /* 	  } */
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-
-  /* free(t1wg); */
-  /* free(LL); */
-  /* free(FA); */
-  /* free(FA_sym); */
-  /* return err; */
 }
 
 static int compute_K_10_micro_term(double *result,
@@ -2630,64 +2359,4 @@ static int compute_K_10_e_at_ip(double *K_10_e,
   }
 
   return err;
-
-  /* double *TMP = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *NNA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FNN_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *LL = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* for(int a=0; a<nne; a++){ */
-  /*   for(int b=0; b<ndn /\*ndofn *\/; b++){ */
-  /*     const double *p_ST = ST + idx_4_gen(a,b,0,0,nne, */
-  /* 					  ndn,ndn,ndn); */
-
-  /*     /\* compute sym(F'ST) *\/ */
-  /*     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		  F,3,p_ST,3,0.0,TMP,3); */
-  /*     symmetric_part(FA_sym,TMP,3); */
-
-  /*     for(int w=0; w<macro_nnode; w++){ */
-  /* 	for(int g=0; g<macro_ndofn; g++){ */
-  /* 	  const double *p_gNoxN = gNoxN + idx_4_gen(w,g,0,0,macro_nnode, */
-  /* 						    macro_ndofn,ndn,ndn); */
-
-  /* 	  /\* compute sym(gNoxN'ST) *\/ */
-  /* 	  cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		      p_gNoxN,3,p_ST,3,0.0,TMP,3); */
-  /* 	  symmetric_part(NNA_sym,TMP,3); */
-
-  /* 	  /\* compute sym(F'gNoxN) *\/ */
-  /* 	  cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		      F,3,p_gNoxN,3,0.0,TMP,3); */
-  /* 	  symmetric_part(FNN_sym,TMP,3); */
-
-  /* 	  /\* compute LL = L:FNN_sym *\/ */
-  /* 	  for(int i=0; i<ndn*ndn; i++){ */
-  /* 	    if(FNN_sym[i] == 0) continue; */
-  /* 	    for(int j=0; j<ndn*ndn; j++){ */
-  /* 	      LL[j] += L[ndn*ndn*j+i]*FNN_sym[i]; */
-  /* 	    } */
-  /* 	  } */
-
-  /* 	  /\* compute contribution to K_01 *\/ */
-  /* 	  const int idx = idx_K_gen(a,b,w,g,nne,ndn, */
-  /* 				    macro_nnode,macro_ndofn); */
-  /* 	  for(int i=0; i<ndn*ndn; i++){ */
-  /* 	    K_10_e[idx] += (jj*wt/micro_volume0 */
-  /* 			    *((1-p_dam->w)*Sbar[i]*NNA_sym[i] */
-  /* 			      +FA_sym[i]*LL[i])); */
-  /* 	  } */
-
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-
-  /* free(TMP); */
-  /* free(NNA_sym); */
-  /* free(FA_sym); */
-  /* free(FNN_sym); */
-  /* free(LL); */
-
-  /* return err; */
 }

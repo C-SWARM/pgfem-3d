@@ -1,32 +1,12 @@
+/* HEADER */
 #include "Psparse_ApAi.h"
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -59,20 +39,23 @@ int* Psparse_ApAi (int nproc,
 		   MPI_Comm Comm_Orig,
 		   const int cohesive)
 {
-  char name[50],jmeno[200];
+  char jmeno[200];
   FILE *out=NULL;
-  long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL,
-    **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL,LI1,LI2,KK,*cncL=NULL,
-    *cncG=NULL,ndofc,*nodc=NULL;
-  long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL,**RECI=NULL,**SEND=NULL;
-  int l,*Ddof=NULL,*Ai=NULL;
-  MPI_Status stat,*sta_s=NULL,*sta_r=NULL;
-  MPI_Request *req_s=NULL,*req_r=NULL;
+  long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
+  long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
+  long LI1,LI2,KK,*cncL=NULL,*cncG=NULL,ndofc,*nodc=NULL;
+  long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
+  long **RECI=NULL,**SEND=NULL;
+  int *Ddof = NULL;
+  int *Ai = NULL;
+  MPI_Status stat, *sta_s=NULL, *sta_r=NULL;
+  MPI_Request *req_s=NULL, *req_r=NULL;
 
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
     sprintf (jmeno,"%s%d.report","ApAi_",myrank);
     if ((out = fopen(jmeno,"w")) == NULL ){
-      PGFEM_printf("Output file is not possible to open on processor [%d]\n",myrank);
+      PGFEM_printf("Output file is not possible to"
+		   " open on processor [%d]\n",myrank);
       PGFEM_printf("Check the output file and run program again\n");
       return (0);
     } 

@@ -1,9 +1,15 @@
 /* HEADER */
 
-/** This file declares the element tangent and residual martices and
-    vectors for updated lagrangian formulation of three-field
-    Hu-Washizu hyperelasticity. */
+/**
+ * @file This file declares the element tangent and residual martices
+ * and vectors for updated lagrangian formulation of three-field
+ * Hu-Washizu hyperelasticity. 
+ *
+ * AUTHORS:
+ * Matthew Mosby
+*/
 
+#pragma once
 #ifndef HU_WASHIZU_ELEMENT_H
 #define HU_WASHIZU_ELEMENT_H
 

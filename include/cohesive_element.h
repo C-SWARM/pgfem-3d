@@ -1,32 +1,19 @@
+/* HEADER */
+#pragma once
 #ifndef COHESIVE_ELEMENT_H
 #define COHESIVE_ELEMENT_H
 
-/* This file describes the cohesive element and generic functions
-   regarding its use. */
+/**
+ * @file This file describes the cohesive element and generic
+ * functions regarding its use.
+ */
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef COHESIVE_POTENTIALS_H
 #include "cohesive_potentials.h"
-#endif
-
-#ifndef ENSIGHT_H
 #include "ensight.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

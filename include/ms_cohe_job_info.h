@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef MS_COHE_JOB_INFO_H
 #define MS_COHE_JOB_INFO_H
 
@@ -7,10 +8,7 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #include <stdlib.h> /* for size_t */
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
 
   /* Job types */
   enum{JOB_NO_COMPUTE_EQUILIBRIUM, /**< do not compute micro equilibrium */

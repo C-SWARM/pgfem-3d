@@ -1,37 +1,14 @@
 #include "subdivision.h"
 #include <math.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef RES_FINI_DEF_H
 #include "res_fini_def.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
 
 static const int MAX_STEP = 200;
 static const double MIN_D_TIME = 1.0e-10;
@@ -518,8 +495,8 @@ double subdiv_arc (long INFO,
   /************************************************************/
   if (TYPE == 1){/* Arc-length subdivision procedure */
 
-    I1 = *ITT;
-    I2 = iter_max; //round1((iter_max+2)/2.);
+    I1 = (double) *ITT;
+    I2 = (double) iter_max; //round1((iter_max+2)/2.);
         
     if (INFO == 0) {
       if (tim == 0){

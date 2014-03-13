@@ -3,109 +3,32 @@
 #include <sys/time.h> 
 #include <sys/resource.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef FD_INCREMENT_H
 #include "fd_increment.h"
-#endif
-
-#ifndef FD_RESIDUALS_H
 #include "fd_residuals.h"
-#endif
-
-#ifndef INTEGRATION_H
 #include "integration.h"
-#endif
-
-#ifndef VOL_DAMAGE_INT_ALG_H
 #include "vol_damage_int_alg.h"
-#endif
-
-#ifndef LINE_H
 #include "LINE.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef PRESS_THETA_H
 #include "press_theta.h"
-#endif
-
-#ifndef RES_FINI_DEF_H
 #include "res_fini_def.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
-
-#ifndef SUBDIVISION_H
 #include "subdivision.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef  MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef  MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_REACTIONS_H
 #include "compute_reactions.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_UTILS_H
 #include "bounding_element_utils.h"
-#endif
-
-#ifndef SOLVE_SYSTEM_H
 #include "solve_system.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef MACRO_MICRO_FUNCTIONS_H
 #include "macro_micro_functions.h"
-#endif
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -138,12 +61,6 @@
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
    any print_level > MINIMAL_OUTPUT, normal output is used. */
 enum{MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT} PRINT_LEVEL;
-
-/* /\* This is temporary hard-coded dimensions & normal for MS modeling of */
-/*    interfaces. *\/ */
-/* static const double macro_lc=100.0; */
-/* static const double macro_normal[3]={0.0,0.0,1.0}; */
-/* static const int multi_scale=1; */
 
 static const int periodic = 0;
 
@@ -249,14 +166,8 @@ double Newton_Raphson (const int print_level,
   /* damage dissipation */
   double dissipation = 0.0;
  
-  /* BlockSolve 95 */
-  BScomm *kcomm, *k_comm;
   double BS_nor=0.0;
-  double BS_diag;
   int BS_iter;
-  int BS_perm = 0;
-
-  int HYPRE_ERR = 0;
 
   /* MPI stuff */
   int nproc,myrank;
@@ -360,7 +271,6 @@ double Newton_Raphson (const int print_level,
       PGFEM_printf ("\nSTEP = %ld :: NS =  %ld || Time %f | dt = %10.10f\n",
 	      DIV,STEP,times[tim+1],dt);
     }
-    double sum = 0.0;
     bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
     if (periodic == 1){
       /* Plane strain deviatoric tension */
@@ -1065,11 +975,4 @@ double Newton_Raphson (const int print_level,
 
   return (solve_time);
 
-}
-
-static int print_iter()
-{
-  int err = 0;
-
-  return err;
 }

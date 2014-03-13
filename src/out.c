@@ -1,44 +1,15 @@
-/************************************
- *  Program FEM3d ver. 2.0          *
- *  FEM - 3D analysis               *
- *  Karel Matous                    *
- ************************************/
-
-/*****************/
-/* November 2000 */
-/*****************/
-
 #include "out.h"
 #include <sys/time.h> 
 #include <sys/resource.h>
-
-#ifndef ENUMERATIONS_H
+#include <math.h>
 #include "enumerations.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ELEM3D_H 
 #include "elem3d.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
+#include "cast_macros.h"
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -214,7 +185,8 @@ void macro_fields_out (FILE *out,EPS *eps,const PGFem3D_opt *opts)
     }
   }
   
-  J = def_grad_det (F); def_grad_inv (F,F_I);
+  J = def_grad_det (CCONST_2(double) F);
+  def_grad_inv (CCONST_2(double) F,F_I);
   
   for (M=0;M<3;M++){
     for (N=0;N<3;N++){

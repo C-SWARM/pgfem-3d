@@ -1,18 +1,10 @@
+/* HEADER */
 #include "PLoc_Sparse.h"
 #include <string.h>
 #include "PGFEM_mpi.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -35,8 +27,6 @@ void PLoc_Sparse (BSspmat *K,
 		  PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		  const int analysis)
 {
-  char debug_print[100];
-
   long LI1 = PGFEM_hypre->ilower;
   long LI2 = PGFEM_hypre->iupper;
 
@@ -97,15 +87,9 @@ void PLoc_Sparse (BSspmat *K,
     values = aloc1(1);
   }
 
-/*   for(int i=0; i<ncols; i++){ */
-/*     col_idx[i] = gDofID[cols[i]]; */
-/*   } */
-
   for(int i=0; i<nrows; i++){
     row_idx[i] = gDofID[rows[i]];
     n_cols[i] = ncols;
-    /* Column indicies are the same for each row */
-    //    memcpy(&col_idx[i*ncols],&col_idx[0],ncols*sizeof(int));
     for(int j=0; j<ncols; j++){
       values[i*ncols + j] = lk[rows[i]*ndofe + cols[j]];
       col_idx[i*ncols + j] = gDofID[cols[j]];

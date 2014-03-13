@@ -1,54 +1,18 @@
-/*******************************************
- * Program FEM3d ver. 2.0                  *
- * FEM  - 3D analysis                      *
- * CTU, Department of Structural Mechanics *
- * Karel Matous & Jaroslav Kruis           *
- *******************************************/
-
-/*****************/
-/* November 2000 */
-/*****************/
-
+/* HEADER */
+#pragma once
 #ifndef OUT_H
 #define OUT_H
 
 #include "PGFEM_mpi.h"
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef ENSIGHT_H
 #include "ensight.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 void logo (FILE *out);
 

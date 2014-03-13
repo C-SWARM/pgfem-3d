@@ -2,93 +2,28 @@
 #include <sys/time.h> 
 #include <sys/resource.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef SOLVE_SYSTEM_H
 #include "solve_system.h"
-#endif
-
-#ifndef ALM_H
 #include "ALM.h"
-#endif 
-
-#ifndef FD_INCREMENT_H
 #include "fd_increment.h"
-#endif
-
-#ifndef FD_RESIDUALS_H
 #include "fd_residuals.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef INTEGRATION_H
 #include "integration.h"
-#endif
-
-#ifndef VOL_DAMAGE_INT_ALG_H
 #include "vol_damage_int_alg.h"
-#endif
-
-#ifndef LINE_H
 #include "LINE.h"
-#endif
-
-#ifndef MACROSCOPIC_LOAD_AL
 #include "macroscopic_load_AL.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef OUT_H
 #include "out.h"
-#endif
-
-#ifndef PRESS_THETA_H
 #include "press_theta.h"
-#endif
-
-#ifndef RES_FINI_DEF_H
 #include "res_fini_def.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
-
-#ifndef SUBDIVISION_H
 #include "subdivision.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef  MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef  MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
 
 #ifndef ARC_DEBUG
 #define ARC_DEBUG 0
@@ -224,9 +159,8 @@ double Arc_length (long ne,
   double dissipation = 0.0;
 
   /* BlockSolve 95 */
-  BScomm *kcomm, *k_comm;
-  double BS_nor=0.0,BS_diag;
-  int BS_iter,BS_perm = 0;  
+  double BS_nor=0.0;
+  int BS_iter;
 
   /* TEMPORARY bounding element compile testing */
   /* int n_be = 0; */

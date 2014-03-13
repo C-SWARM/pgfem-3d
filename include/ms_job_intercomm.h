@@ -1,14 +1,13 @@
 /* HEADER */
+#pragma once
 #ifndef MS_JOB_INTERCOMM_H
 #define MS_JOB_INTERCOMM_H
+
+#include "PGFEM_mpi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-#ifndef PGFEM_MPI_H
-#include "PGFEM_mpi.h"
-#endif
 
   /** Job intercommunicator structure */
   typedef struct PGFEM_ms_job_intercomm{
@@ -32,11 +31,3 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */
-
-/* include  block
-
-#ifndef MS_JOB_INTERCOMM_H
-#include "ms_job_intercomm.h"
-#endif
-
-*/

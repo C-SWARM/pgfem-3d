@@ -1,29 +1,26 @@
+/* HEADER */
+#pragma once
 #ifndef PLOC_SPARSE_H
 #define PLOC_SPARSE_H
 
-#include "BSprivate.h"
+#include "pgfem_comm.h"
+#include "hypre_global.h"
+#include "blocksolve_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef PGFEM_COMM_H
-#include "pgfem_comm.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
-#include "hypre_global.h"
-#endif
-
-  /** Sparse nonsymmetric row storage format.
-  
-      A->rows[i]->nz = (FLOAT *) calloc (A->rows[i]->length,sizeof(FLOAT));
-  
-           (j)
-          xxxxxx
-      (i) xxxxxx
-          xxxxxx
-  */
+  /**
+   * Sparse nonsymmetric row storage format.
+   *
+   * A->rows[i]->nz = (FLOAT *) calloc (A->rows[i]->length,sizeof(FLOAT));
+   *
+   *       (j)
+   *      xxxxxx
+   *  (i) xxxxxx
+   *      xxxxxx
+   */
 
   void PLoc_Sparse (BSspmat *K, /**< UNUSED */
 		    double **Lk,
@@ -64,11 +61,3 @@ void PLoc_Sparse_rec (double **Lk,
 #endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef PLOC_SPARSE_H */
-
-/* include block
-
-#ifndef PLOC_SPARSE_H
-#include "PLoc_Sparse.h"
-#endif
-
- */

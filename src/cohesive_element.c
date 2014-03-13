@@ -1,34 +1,14 @@
 /* HEADER */
 #include "cohesive_element.h"
+#include <math.h>
 #include "PGFEM_mpi.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
 
 static void update_state_variables_co (COEL *cel, /* ptr to single el */
 				       double *x,
@@ -303,11 +283,12 @@ void stiff_mat_coh (long ii,
 */
 {
   long ip,i,j,II,JJ,M,N,P,R,U,ndofe;
-  double ****Kt,****Kn,*gk,*ge,*w,ksi,eta,ai,aj,*Nf,*N_x,*N_y,
-    *xl,*yl,*zl,**TX,***AA,**TN,***Nxb,*xb,*yb,*zb,*Xi,Xxi,*e1,
-    *e2,*e2h,*n,txi,H1,Xn,dij;
-  double EE1,EE2,**STIFF,**Flam,**Xlam,**FXlam,*Plam,*Tlam,**Rlam,
-    **Glam,*Nlam,bet,J=0.0,Jjn;
+  double ****Kt,****Kn,*gk,*ge,*w,
+    ksi,eta,ai,aj,*Nf,*N_x,*N_y,
+    *xl,*yl,*zl,**TX,***AA,**TN,
+    ***Nxb,*xb,*yb,*zb,*Xi,*e1,
+    *e2,*e2h,*n;
+  double **STIFF,bet,J=0.0,Jjn;
   
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
@@ -392,27 +373,6 @@ void stiff_mat_coh (long ii,
 
       /* Get diplacement jump */
       get_jump (nne,x,y,z,r_e,Nf,Xi);
-      
-      /* /\* Normal opening displacement *\/ */
-      /* Xn = ss (Xi,n,3); */
-      
-      /* /\* Get effective opening displacement *\/ */
-      /* Xxi = get_Xxi (bet,Xi,n,Xn); */
-      
-      /* /\* Get effective traction t *\/ */
-      /* txi = get_t (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip],nor_min); */
-      
-      /* /\* Get derivative of t *\/ */
-      /* H1 = get_dt (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip],nor_min); */
-      
-      /* /\* Stiffness matrix constants *\/ */
-      /* if (Xxi == 0.0) {EE1 = H1; EE2 = 0.0;} */
-      /* else{ /\* Loading  + Unloading (For unloading EE2 = 0.0) + Contact *\/ */
-      /* 	EE1 = txi/Xxi; EE2 = (H1*Xxi-txi)/(Xxi*Xxi*Xxi); */
-      /* } */
-      
 
       /* compute the traction and tangents */
       int err = 0;
@@ -432,36 +392,16 @@ void stiff_mat_coh (long ii,
 
       /* Get dN/dxb */
       dN_dxb (nne,ksi,eta,e1,e2h,n,Nxb);
-
-      /*=== TX => mat_tan || TN => geo_tan ===*/
-
-      /* for (M=0;M<ndn;M++){ */
-      /* 	for (N=0;N<ndn;N++){ */
-      /* 	  if (M == N) dij = 1.0; */
-      /* 	  else dij = 0.0; */
-
-      /* 	  TX[M][N] = (EE2*(bet*bet*Xi[N] + (1.-bet*bet)*Xn*n[N]) */
-      /* 		      *(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]) */
-      /* 		      + EE1*(bet*bet*dij + (1.-bet*bet)*n[N]*n[M])); */
-
-      /* 	  TN[M][N] = (EE2*(bet*bet*Xn*Xn*n[N] + (1.-bet*bet)*Xn*Xi[N]) */
-      /* 		      *(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]) */
-      /* 		      + EE1*(1.-bet*bet)*(Xi[N]*n[M] + Xn*dij)); */
-      /* 	} */
-      /* } */
-
       for (M=0;M<ndn;M++){
       	for (N=0;N<ndn;N++){
       	  for (P=0;P<nne;P++){
 	    
       	    AA[M][N][P] = 0.0;
       	    for (U=0;U<ndn;U++){
-	      /* AA[M][N][P] += TN[M][U]*Nxb[U][N][P]; */
 	      AA[M][N][P] += geo_tan[idx_2(M,U)]*Nxb[U][N][P];
 	    }
 	    
       	    for (R=0;R<nne;R++){
-	      /* Kt[M][N][P][R] += ai*aj*J * Jjn*TX[M][N]*Nf[P]*Nf[R]; */
 	      Kt[M][N][P][R] += (ai*aj*J*Jjn*mat_tan[idx_2(M,N)]
 				 *Nf[P]*Nf[R]);
       	    }
@@ -558,8 +498,8 @@ void resid_co_elem (long ii,
 {
   long ip,i,j,II,JJ,ndofe,M,N;
   double *gk,*ge,*w,ksi,eta,ai,aj,*T,**Rc,*Nf,*N_x,*N_y,
-    *xl,*yl,*zl,*xb,*yb,*zb,*Xi,Xxi,*e1,*e2,*e2h,
-    *n,txi,Xn,bet,J,Jjn,EE1,H1;
+    *xl,*yl,*zl,*xb,*yb,*zb,*Xi,*e1,*e2,*e2h,
+    *n,bet,J,Jjn;
   
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
@@ -639,32 +579,6 @@ void resid_co_elem (long ii,
       /* Get diplacement jump */
       get_jump (nne,x,y,z,r_e,Nf,Xi);
       
-      /* /\* Normal opening displacement *\/ */
-      /* Xn = ss (Xi,n,3); */
-      
-      /* /\* Get effective opening displacement *\/ */
-      /* Xxi = get_Xxi (bet,Xi,n,Xn); */
-      
-      /* /\* Get effective traction t *\/ */
-      /* txi = get_t (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip], */
-      /* 		   nor_min);  */
-      
-      /* /\* Get derivative of t *\/ */
-      /* H1 = get_dt (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip], */
-      /* 		   nor_min); */
-
-      /* /\* Stiffness matrix constants *\/ */
-      /* if (Xxi == 0.0) {EE1 = H1;} */
-      /* else            {EE1 = txi/Xxi;} */
-      
-      /* /\* Remove damaged elements *\/ */
-      /* if (Xn > 0.0 && Xxi > coel[ii].Xc && txi < coel[ii].Sc/100.0) { */
-      /* 	ip++; */
-      /* 	continue; */
-      /* } */
-
       /* compute the traction and tangents */
       int err = 0;
       err += props->get_traction(traction,Xi,n,props->props,cel->vars[ip]);
@@ -678,14 +592,8 @@ void resid_co_elem (long ii,
 		__FILE__,__func__,__LINE__);
       }
 
-      /*=== T => traction ===*/
-      /* for (M=0;M<ndn;M++){ */
-      /* 	T[M] = EE1*(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]); */
-      /* } */
-      
       for (M=0;M<ndn;M++){
 	for (N=0;N<nne;N++){
-	  /* Rc[M][N] += ai*aj*J * Jjn*T[M]*Nf[N]; */
           Rc[M][N] += ai*aj*J * Jjn*traction[M]*Nf[N];
 	}
       }
@@ -738,7 +646,6 @@ int increment_cohesive_elements(const int nce,
   for (int i=0;i<nce;i++){
     COEL *cel = &coel[i];
     const int nne_t = cel->toe;
-    const int nne = nne_t/2;
     const int ndofe = nne_t*ndofc;
       
     double *r_e = aloc1 (ndofe);
@@ -785,7 +692,6 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
 {
   static const int ndn = 3;
   const int nne = cel->toe/2;
-  const long *nod = cel->nod;
 
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);

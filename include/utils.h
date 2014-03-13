@@ -1,57 +1,23 @@
-/*****************************
- * Program FEM3d ver. 2.0    *
- * FEM - 3D analysis         *
- * Karel Matous              *
- *****************************/
+/* HEADER */
 
-/*****************/
-/* November 2000 */
-/*****************/
+/**
+ * @file This file declares utility functions for PGFem3D.
+ */
 
+#pragma once
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "BSprivate.h"
-
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATERIAL_H
 #include "material.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
 
 /** Dynamically allocate and populate a formated string */
 int alloc_sprintf(char **str,
@@ -227,14 +193,6 @@ long* times_print (FILE *in1,
 		   const long nt,
 		   const long n_p);
 
-/** Write a BlockSolve95 matrix to a file in MATLAB sparse format */
-void write_mat_matlab(char *str,
-		      BSspmat *A,
-		      BSprocinfo  *procinfo);
-
-/** Set all entries in a BlockSolve95 matrix to 0.0 */
-void null_BSspmat (BSspmat *K);
-
 /** Get the global partition (Gf) of the data (f)for the process. */
 void LToG (const double *f,
 	   double *Gf,
@@ -256,12 +214,6 @@ void GToL (const double *Gr,
 	   const long GDof,
 	   const COMMUN comm,
 	   const MPI_Comm mpi_comm);
-
-BSspmat *BSalloc_A (int start_num,
-		    int n,
-		    int *rp,
-		    int *cval,
-		    BSprocinfo *procinfo);
 
 MPI_Comm* CreateGraph (int nproc,
 		       int myrank,
@@ -540,7 +492,7 @@ double new_arc_length (long iter,
 		       double dAL,
 		       double dAL0);
 
-/*****************************************************************************************/
+/***************************************************************/
 
 void check_equi (double *fu,
 		 long ne,
@@ -564,7 +516,7 @@ double* Energy_functional (long ne,
 			   double *r,
 			   const int analysis);
 
-/*****************************  NONSYMMETRIC SPARSE SOLVER  *******************************/
+/*********************  NONSYMMETRIC SPARSE SOLVER  ****************/
 
 long* sparse_ApAi (long ne,
 		   long ndofd,
@@ -573,7 +525,7 @@ long* sparse_ApAi (long ne,
 		   NODE *node,
 		   long *Ap);
 
-/******************************************************************************************/
+/****************************************************************/
 
 void tensor_9x9 (double **K,
 		 double A[3][3][3][3],

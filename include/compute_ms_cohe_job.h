@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef COMPUTE_MS_COHE_JOB_H
 #define COMPUTE_MS_COHE_JOB_H
 

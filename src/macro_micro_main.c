@@ -15,145 +15,43 @@
 
 /* Extra libs */
 #include "renumbering.h"
-#include "BSprivate.h"
+#include "blocksolve_interface.h"
 
 
 /*=== PFEM3d headers ===*/
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ARC_LENGTH_H
 #include "Arc_length.h"
-#endif
-
-#ifndef BUILD_DISTRIBUTION_H
 #include "build_distribution.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef OUT_H
 #include "out.h"
-#endif
-
-#ifndef PRINTING_H
 #include "Printing.h"
-#endif
-
-#ifndef PRINT_DIST_H
 #include "print_dist.h"
-#endif
-
-#ifndef PROFILER_H
 #include "profiler.h"
-#endif
-
-#ifndef PSPARSE_APAI_H
 #include "Psparse_ApAi.h"
-#endif
-
-#ifndef READ_CRYST_PLAST_H
 #include "read_cryst_plast.h"
-#endif
-
-#ifndef RENUMBER_ID_H
 #include "renumber_ID.h"
-#endif
-
-#ifndef RNPSPARSE_APAI_H
 #include "RNPsparse_ApAi.h"
-#endif
-
-#ifndef SET_FINI_DEF_H
 #include "set_fini_def.h"
-#endif
-
-#ifndef SKYLINE_H
 #include "skyline.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef SETGLOBALNODENUMBERS_H
 #include "SetGlobalNodeNumbers.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_MACRO_F_H
 #include "computeMacroF.h"
-#endif
-
-#ifndef COMPUTE_MACRO_S_H
 #include "computeMacroS.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef APPLIED_TRACTION_H
 #include "applied_traction.h"
-#endif
-
-#ifndef MACRO_MICRO_FUNCTIONS_H
 #include "macro_micro_functions.h"
-#endif
-
-/* #define str(a) xstr(a) */
-/* #define xstr(a) #a */
-/* #define mgs 4 */
 
 static const int ndim = 3;
 
@@ -233,9 +131,9 @@ int multi_scale_main(int argc, char **argv)
       char *dir_name = PGFEM_calloc(dir_len,sizeof(char));
       sprintf(dir_name,"%s/log",micro->opts->opath);
       make_path(dir_name,DIR_MODE);
-      dir_len = snprintf(NULL,0,"%s/group_%0.5d",dir_name,group_id)+1;
+      dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
       char *fname = PGFEM_calloc(dir_len,sizeof(char));
-      sprintf(fname,"%s/group_%0.5d",dir_name,group_id);
+      sprintf(fname,"%s/group_%05d",dir_name,group_id);
 
       /* reinitialize I/O */
       PGFEM_finalize_io();

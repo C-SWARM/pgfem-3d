@@ -1,40 +1,15 @@
+/* HEADER */
 #include "bounding_element_utils.h"
-
-#ifndef ENUMERATIONS_H
+#include <math.h>
 #include "enumerations.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef TRANSFORM_COORDINATES_H
 #include "transform_coordinates.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
 
 #ifndef DEBUG_BE_UTILS
 #define DEBUG_BE_UTILS 0
@@ -289,7 +264,6 @@ int bounding_element_communicate_damage(const int n_be,
   if(DEBUG_BE_UTILS && !repeat){
     FILE *out;
     char fname[100];
-    const int new_line = 10;
     sprintf(fname,"%s_%05d.log",__func__,myrank);
     out = fopen(fname,"w");
     PGFEM_fprintf(out,"=== src_dest structure ===\n");

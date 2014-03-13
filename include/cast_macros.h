@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef CAST_MACROS_H
 #define CAST_MACROS_H
 
@@ -8,5 +9,7 @@
 #define CONST_2(type) (const type **)
 #define CONST_3(type) (const type ***)
 #define CONST_4(type) (const type ****)
+
+#define CCONST_2(type) (const type *const *)
 
 #endif /* #ifndef CAST_MACROS_H */

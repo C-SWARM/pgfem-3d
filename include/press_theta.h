@@ -1,47 +1,28 @@
+/* HEADER */
+#pragma once
 #ifndef PRESS_THETA_H
 #define PRESS_THETA_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Update condende variables in the original three field
+   * formulation. This is used for qudratic tetrahedra and trininear
+   * hexahedron elements. This function will be reimplemented using
+   * the Hu_Washizu_element functions in the future.
+   */
   void press_theta (long ne,
 		    long ndofn,
 		    long npres,

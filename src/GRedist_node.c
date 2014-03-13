@@ -1,21 +1,10 @@
 #include "GRedist_node.h"
 #include <stdlib.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
 
 #ifndef DOF_DEBUG
 #define DOF_DEBUG 0
@@ -50,7 +39,6 @@ long GRedist_node (const int nproc,
   long need=0;
   long *hu3 = NULL;
   long *LoNo = NULL;
-  long pom = 0;
   long *Ipom = NULL;
 
   for (i=0;i<nn;i++){

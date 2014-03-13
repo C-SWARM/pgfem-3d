@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef 
 #define 
 

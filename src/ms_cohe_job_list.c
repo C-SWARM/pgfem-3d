@@ -1,36 +1,12 @@
 #include "ms_cohe_job_list.h"
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef PGFEM_QUADRRATURE_RULES_H
 #include "quadrature_rules.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef COMPUTE_MS_COHE_JOB_H
 #include "compute_ms_cohe_job.h"
-#endif
-
-#ifndef PLOC_SPARSE_H
 #include "PLoc_Sparse.h"
-#endif
 
 static const int ndim = 3;
 
@@ -49,22 +25,7 @@ static int CHECK_WARNING(const int err_code,
   return err_code;
 }
 
-/** print diagnostic message and abort via PGFEM_Abort() */
-static void CHECK_ERROR(const int err_code,
-			const int rank,
-			const char *func,
-			const char *file,
-			const int line)
-{
-  if(err_code){
-    PGFEM_printerr("[%d]ERROR: received error code %d! %s:%s:%d\n",
-		   rank,err_code,func,file,line);
-  }
-  PGFEM_Abort();
-}
-
 #define check_warning(err_code,rank) CHECK_WARNING(err_code,rank,__func__,__FILE__,__LINE__)
-#define check_error(err_code,rank) CHECK_ERROR(err_code,rank,__func__,__FILE__,__LINE__)
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 
@@ -287,7 +248,6 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   int micro_rank = 0;
   COMMON_MICROSCALE *c = microscale->common;
   PGFEM_HYPRE_solve_info *micro_solver = c->SOLVER;
-  MICROSCALE_SOLUTION *sols = microscale->sol;
   const int n_sols = microscale->n_solutions;
   const int analysis = microscale->opts->analysis_type;
 

@@ -7,14 +7,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
 
 /* Generated at http://patorjk.com/software/taag/ */
 static const char *prog_name=
@@ -446,9 +440,9 @@ void re_parse_command_line(const int myrank,
 	options->solverpackage = HYPRE;
 	options->solver = HYPRE_HYBRID;
       } else if(strcmp("kdim",opts[opts_idx].name) == 0){
-	options->kdim = atof(optarg);
+	options->kdim = (int) atof(optarg);
       } else if(strcmp("maxit",opts[opts_idx].name) == 0){
-	options->maxit = atof(optarg);
+	options->maxit = (int) atof(optarg);
       }
       break;
 
