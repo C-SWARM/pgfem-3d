@@ -1,4 +1,8 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 
 /** This is the element definition for a TOTAL LAGRANGIAN
     displacement-based formulation. */
@@ -8,61 +12,20 @@
 #include <math.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef NEW_POTENTIALS_H
 #include "new_potentials.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef TRANSFORM_COORDINATES_H
 #include "transform_coordinates.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 #ifndef DISP_DEBUG
 #define DISP_DEBUG 0
@@ -409,7 +372,6 @@ int DISP_stiffmat_el(double *Ks,
 		     const SUPP sup,
 		     const double *disp) 
 {
-  int count; /* always reset before use! */
   int err = 0;
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
@@ -511,7 +473,6 @@ int DISP_resid_el(double *R,
 		  const SUPP sup,
 		  const double *disp)
 {
-  int count; /* always reset before use! */
   int err = 0;
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
@@ -615,7 +576,6 @@ int DISP_resid_bnd_el(double *R,
      functions */
 
   int err = 0;
-  int count = 0; /* always reset before use */
 
   /* Get const pointers */
   const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
@@ -762,7 +722,6 @@ int DISP_stiffmat_bnd_el(double *Ks,
      other than linear tetra. */
 
   int err = 0;
-  int count = 0; /* always reset before use */
 
   /* Get const pointers */
   const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
@@ -909,7 +868,6 @@ void DISP_increment_el(const ELEMENT *elem,
 		       const HOMMAT *hommat,
 		       const double *disp)
 {
-  int count; /* always reset before use! */
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
 
@@ -1079,7 +1037,6 @@ void DISP_increment(const ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     const ELEMENT *ptr_elem = &elem[i];
     const int nne = ptr_elem->toe;
-    const int mat = ptr_elem->mat[2];
     const int ndofe = nne*ndofn;
 
     /* allocate */
@@ -1407,7 +1364,6 @@ static void get_material_stiffness(const double kappa,
   SoxS = (double*) PGFEM_calloc (81,sizeof(double));
 
   /* Get the potential stuff */
-  double Ybar = 0.0;
   double H = 0.0;
   double dUdJ = 0.0;
   double d2UdJ2 = 0.0;
@@ -1579,7 +1535,7 @@ static void disp_based_resid_at_ip(double *R,
 				   const double jj,
 				   const double wt)
 {
-  double *AA, *BB;
+  double *AA;
   AA = aloc1(9);
 
   for(int a=0; a<nne; a++){
@@ -1787,7 +1743,6 @@ static void disp_based_bnd_tan_at_ip(double *K,
   for(int row=0; row<ndofe; row++){
     for(int col=0; col<ndofe; col++){
       const int idx = idx_2_gen(row,col,ndofe,ndofe);
-      const int idx_t = idx_2_gen(col,row,ndofe,ndofe);
       if(row<node_dof && col<node_dof){ /* Kuu */
   	const int idx_Kuu = idx_2_gen(row,col,node_dof,node_dof);
   	K[idx] += Kuu[idx_Kuu];
@@ -2624,7 +2579,7 @@ static int compute_K_10_micro_term(double *result,
       result[p] += (1.0-damage)*Sbar[ij]*pNST[ij];
       const double *Lij = L + ij*ndn*ndn;
       for(int lm=0; lm<ndn*ndn; lm++){
-	result[p] += FSTs[ij]*Lij[lm]*FN[lm];
+	result[p] += FSTs[ij]*Lij[lm]*pFN[lm];
       }
     }
     result[p] *= int_and_scale;
