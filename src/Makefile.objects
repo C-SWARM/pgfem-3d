@@ -1,6 +1,7 @@
 OBJS = ALM.o \
 Arc_length.o \
 boomerAMGInterface.o \
+blocksolve_interface.o \
 GRedist_node.o \
 LINE.o \
 Newton_Raphson.o \
