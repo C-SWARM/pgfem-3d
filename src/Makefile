@@ -26,7 +26,7 @@ LINK = mpicxx
 # compiler for correct strict warnings
 CFLAGS_INTEL	= -Wcheck
 #CFLAGS_GCC	= -pedantic
-CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
+CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 DFLAGS		= #-DNDEBUG
 #DFLAGS		+= -DNO_VTK_LIB=1

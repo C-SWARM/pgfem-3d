@@ -3,7 +3,7 @@
  * \file This header defines the structure(s) for the microscale solutions.
  *
  * AUTHORS:
- *    Matthew Mosby, UNiversity of Notre Dame, <mmosby1 (at) nd.edu>
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 (at) nd.edu>
  */
 #pragma once
 #ifndef MICROSCALE_INFORMATION_H
@@ -71,6 +71,9 @@ extern "C" {
     void *K_01;
     void *K_10;
 
+    /* buffer for solution stuff */
+    void *solution_buffer;
+
   } COMMON_MICROSCALE;
 
   /** This structure contains the information for the
@@ -86,9 +89,12 @@ extern "C" {
     double *coel_state_info;
 
     /* solution information */
+    double *rn; /**< solution vector r at macro time n */
+
+    /** The following are pointers to a shared buffer elsewhere! The
+	buffers are used purely as a workspace. */
     /* local vectors */
     double *r;
-    double *rn; /**< solution vector r at macro time n */
     double *f;
     double *d_r;
     double *rr;

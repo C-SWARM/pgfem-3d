@@ -34,6 +34,49 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 					const COMMON_MICROSCALE *common,
 					const int analysis);
 
+static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
+					      const int local_len,
+					      const int global_len);
+
+static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer);
+
+/**
+ * \brief Private data type for storing common solution buffers.
+ *
+ * This portion is allocated and held by COMMON_MICROSCALE and
+ * MICROSCALE_SOLUTION simply holds pointers to the various buffers.
+ */
+typedef struct MICROSCALE_SOLUTION_BUFFERS{
+    /* local vectors */
+    double *r;
+    double *f;
+    double *d_r;
+    double *rr;
+    double *D_R;
+    double *R;
+    double *RR;
+    double *f_u;
+    double *f_defl;
+    double *RRn;
+    double *U;
+    double *DK;
+    double *dR;
+
+    /* global vectors */
+    double *BS_f;
+    double *BS_x;
+    double *BS_RR;
+    double *BS_f_u;
+    double *BS_d_r;
+    double *BS_D_R;
+    double *BS_rr;
+    double *BS_R;
+    double *BS_U;
+    double *BS_DK;
+    double *BS_dR;
+} MICROSCALE_SOLUTION_BUFFERS;
+
+
 /*==== API FUNCTIONS ====*/
 void initialize_MICROSCALE(MICROSCALE **microscale)
 {
@@ -252,6 +295,9 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   /* mixed tangents */
   common->K_01 = NULL;
   common->K_10 = NULL;
+
+  /* solution buffers */
+  common->solution_buffer = NULL;
 }
 
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
@@ -448,6 +494,12 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     common->VVolume = common->supports->v0;
   }
 
+  /* allocate solution_buffers */
+  common->solution_buffer = PGFEM_calloc(1,sizeof(MICROSCALE_SOLUTION_BUFFERS));
+  build_MICROSCALE_SOLUTION_BUFFERS(common->solution_buffer,
+				    common->ndofd,common->DomDof[myrank]);
+
+
   free(in_fname);
 
   /* compute/print summary information */
@@ -506,6 +558,8 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_cohesive_props(common->n_co_props,common->co_props);
   destroy_PGFEM_par_matrix((PGFEM_par_matrix *) common->K_01);
   destroy_PGFEM_par_matrix((PGFEM_par_matrix *) common->K_10);
+  destroy_MICROSCALE_SOLUTION_BUFFERS(common->solution_buffer);
+  free(common->solution_buffer);
 }
 
 static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
@@ -586,7 +640,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   set_fini_def (common->ne,sol->npres,common->elem,
 		sol->eps,sol->sig_e,analysis);
 
-  /* crystal plasticity is not currently supported */
+  /*=== crystal plasticity is not currently supported ===*/
   /* if (analysis == FS_CRPL) { */
   /*   sol->crpl = PGFEM_calloc (common->nhommat,sizeof(CRPL)); */
   /*   read_cryst_plast (in1,common->nhommat,sol->crpl,plc); */
@@ -597,32 +651,65 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* } */
 
   /* local solution vectors */
-  sol->r = PGFEM_calloc(local_len,len_double);
   sol->rn = PGFEM_calloc(local_len,len_double);
-  sol->f = PGFEM_calloc(local_len,len_double);
-  sol->d_r = PGFEM_calloc(local_len,len_double);
-  sol->rr = PGFEM_calloc(local_len,len_double);
-  sol->D_R = PGFEM_calloc(local_len,len_double);
-  sol->R = PGFEM_calloc(local_len,len_double);
-  sol->f_defl = PGFEM_calloc(local_len,len_double);
-  sol->RR = PGFEM_calloc(local_len,len_double);
-  sol->f_u = PGFEM_calloc(local_len,len_double);
-  sol->RRn = PGFEM_calloc(local_len,len_double);
-  sol->U = PGFEM_calloc(local_len,len_double);
-  sol->DK = PGFEM_calloc(local_len,len_double);
-  sol->dR = PGFEM_calloc(local_len,len_double);
 
-  sol->BS_f = PGFEM_calloc(global_len,len_double);
-  sol->BS_f_u = PGFEM_calloc(global_len,len_double);
-  sol->BS_x = PGFEM_calloc(global_len,len_double);
-  sol->BS_RR = PGFEM_calloc(global_len,len_double);
-  sol->BS_d_r = PGFEM_calloc(global_len,len_double);
-  sol->BS_D_R = PGFEM_calloc(global_len,len_double);
-  sol->BS_rr = PGFEM_calloc(global_len,len_double);
-  sol->BS_R = PGFEM_calloc(global_len,len_double);
-  sol->BS_U = PGFEM_calloc(global_len,len_double);
-  sol->BS_DK = PGFEM_calloc(global_len,len_double);
-  sol->BS_dR = PGFEM_calloc(global_len,len_double);
+  /* sol->r = PGFEM_calloc(local_len,len_double); */
+  /* sol->f = PGFEM_calloc(local_len,len_double); */
+  /* sol->d_r = PGFEM_calloc(local_len,len_double); */
+  /* sol->rr = PGFEM_calloc(local_len,len_double); */
+  /* sol->D_R = PGFEM_calloc(local_len,len_double); */
+  /* sol->R = PGFEM_calloc(local_len,len_double); */
+  /* sol->f_defl = PGFEM_calloc(local_len,len_double); */
+  /* sol->RR = PGFEM_calloc(local_len,len_double); */
+  /* sol->f_u = PGFEM_calloc(local_len,len_double); */
+  /* sol->RRn = PGFEM_calloc(local_len,len_double); */
+  /* sol->U = PGFEM_calloc(local_len,len_double); */
+  /* sol->DK = PGFEM_calloc(local_len,len_double); */
+  /* sol->dR = PGFEM_calloc(local_len,len_double); */
+
+  /* sol->BS_f = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_f_u = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_x = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_RR = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_d_r = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_D_R = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_rr = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_R = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_U = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_DK = PGFEM_calloc(global_len,len_double); */
+  /* sol->BS_dR = PGFEM_calloc(global_len,len_double); */
+
+  /* Get pointers to the shared solution workspace */
+  {
+    MICROSCALE_SOLUTION_BUFFERS *buff =
+      (MICROSCALE_SOLUTION_BUFFERS *) common->solution_buffer;
+
+    sol->r	= buff->r     ;
+    sol->f	= buff->f     ;
+    sol->d_r	= buff->d_r   ;
+    sol->rr	= buff->rr    ;
+    sol->D_R	= buff->D_R   ;
+    sol->R	= buff->R     ;
+    sol->f_defl = buff->f_defl;
+    sol->RR	= buff->RR    ;
+    sol->f_u	= buff->f_u   ;
+    sol->RRn	= buff->RRn   ;
+    sol->U	= buff->U     ;
+    sol->DK	= buff->DK    ;
+    sol->dR	= buff->dR    ;
+
+    sol->BS_f	= buff->BS_f  ;
+    sol->BS_f_u = buff->BS_f_u;
+    sol->BS_x	= buff->BS_x  ;
+    sol->BS_RR	= buff->BS_RR ;
+    sol->BS_d_r = buff->BS_d_r;
+    sol->BS_D_R = buff->BS_D_R;
+    sol->BS_rr	= buff->BS_rr ;
+    sol->BS_R	= buff->BS_R  ;
+    sol->BS_U	= buff->BS_U  ;
+    sol->BS_DK	= buff->BS_DK ;
+    sol->BS_dR	= buff->BS_dR ;
+  }
 
   sol->dt = 0.0;
   sol->times = PGFEM_calloc(3,len_double);
@@ -634,32 +721,32 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 					const COMMON_MICROSCALE *common,
 					const int analysis)
 {
-  free(sol->r);
+  /* free(sol->r); */
   free(sol->rn);
-  free(sol->f);
-  free(sol->d_r);
-  free(sol->rr);
-  free(sol->D_R);
-  free(sol->R);
-  free(sol->f_defl);
-  free(sol->RR);
-  free(sol->f_u);
-  free(sol->RRn);
-  free(sol->U);
-  free(sol->DK);
-  free(sol->dR);
+  /* free(sol->f); */
+  /* free(sol->d_r); */
+  /* free(sol->rr); */
+  /* free(sol->D_R); */
+  /* free(sol->R); */
+  /* free(sol->f_defl); */
+  /* free(sol->RR); */
+  /* free(sol->f_u); */
+  /* free(sol->RRn); */
+  /* free(sol->U); */
+  /* free(sol->DK); */
+  /* free(sol->dR); */
 
-  free(sol->BS_f);
-  free(sol->BS_f_u);
-  free(sol->BS_x);
-  free(sol->BS_RR);
-  free(sol->BS_d_r);
-  free(sol->BS_D_R);
-  free(sol->BS_rr);
-  free(sol->BS_R);
-  free(sol->BS_U);
-  free(sol->BS_DK);
-  free(sol->BS_dR);
+  /* free(sol->BS_f); */
+  /* free(sol->BS_f_u); */
+  /* free(sol->BS_x); */
+  /* free(sol->BS_RR); */
+  /* free(sol->BS_d_r); */
+  /* free(sol->BS_D_R); */
+  /* free(sol->BS_rr); */
+  /* free(sol->BS_R); */
+  /* free(sol->BS_U); */
+  /* free(sol->BS_DK); */
+  /* free(sol->BS_dR); */
   free(sol->times);
 
   destroy_sig_il(sol->sig_e,common->elem,common->ne,analysis);
@@ -668,4 +755,70 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   //destroy_crpl
   free(sol->elem_state_info);
   free(sol->coel_state_info);
+}
+
+static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
+					      const int local_len,
+					      const int global_len)
+{
+  MICROSCALE_SOLUTION_BUFFERS *buff = (MICROSCALE_SOLUTION_BUFFERS*) buffer;
+  const unsigned long len_double = sizeof(double);
+
+ /* local solution vectors */
+  buff->r = PGFEM_calloc(local_len,len_double);
+  buff->f = PGFEM_calloc(local_len,len_double);
+  buff->d_r = PGFEM_calloc(local_len,len_double);
+  buff->rr = PGFEM_calloc(local_len,len_double);
+  buff->D_R = PGFEM_calloc(local_len,len_double);
+  buff->R = PGFEM_calloc(local_len,len_double);
+  buff->f_defl = PGFEM_calloc(local_len,len_double);
+  buff->RR = PGFEM_calloc(local_len,len_double);
+  buff->f_u = PGFEM_calloc(local_len,len_double);
+  buff->RRn = PGFEM_calloc(local_len,len_double);
+  buff->U = PGFEM_calloc(local_len,len_double);
+  buff->DK = PGFEM_calloc(local_len,len_double);
+  buff->dR = PGFEM_calloc(local_len,len_double);
+
+  /* global solution vectors */
+  buff->BS_f = PGFEM_calloc(global_len,len_double);
+  buff->BS_f_u = PGFEM_calloc(global_len,len_double);
+  buff->BS_x = PGFEM_calloc(global_len,len_double);
+  buff->BS_RR = PGFEM_calloc(global_len,len_double);
+  buff->BS_d_r = PGFEM_calloc(global_len,len_double);
+  buff->BS_D_R = PGFEM_calloc(global_len,len_double);
+  buff->BS_rr = PGFEM_calloc(global_len,len_double);
+  buff->BS_R = PGFEM_calloc(global_len,len_double);
+  buff->BS_U = PGFEM_calloc(global_len,len_double);
+  buff->BS_DK = PGFEM_calloc(global_len,len_double);
+  buff->BS_dR = PGFEM_calloc(global_len,len_double);
+}
+
+static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer)
+{
+  MICROSCALE_SOLUTION_BUFFERS *buff = (MICROSCALE_SOLUTION_BUFFERS*) buffer;
+  free(buff->r);
+  free(buff->f);
+  free(buff->d_r);
+  free(buff->rr);
+  free(buff->D_R);
+  free(buff->R);
+  free(buff->f_defl);
+  free(buff->RR);
+  free(buff->f_u);
+  free(buff->RRn);
+  free(buff->U);
+  free(buff->DK);
+  free(buff->dR);
+
+  free(buff->BS_f);
+  free(buff->BS_f_u);
+  free(buff->BS_x);
+  free(buff->BS_RR);
+  free(buff->BS_d_r);
+  free(buff->BS_D_R);
+  free(buff->BS_rr);
+  free(buff->BS_R);
+  free(buff->BS_U);
+  free(buff->BS_DK);
+  free(buff->BS_dR);
 }
