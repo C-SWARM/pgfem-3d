@@ -18,9 +18,9 @@ include ../Makefile.path
 CC = mpicc
 LINK = mpicxx
 
-# TAU_OPTS = -optKeepFiles -tau_options=-optTauSelectFile=tau_instrument.txt
-# CC = tau_cc.sh $(TAU_OPTS)
-# LINK = tau_cxx.sh $(TAU_OPTS)
+#TAU_OPTS = -optKeepFiles -tau_options=-optTauSelectFile=tau_instrument.txt
+#CC = tau_cc.sh $(TAU_OPTS)
+#LINK = tau_cxx.sh $(TAU_OPTS)
 
 # Un/comment the appropriate CFLAGS variable for using intel or GNU
 # compiler for correct strict warnings
@@ -29,6 +29,7 @@ CFLAGS_INTEL	= -Wcheck
 CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 DFLAGS		= #-DNDEBUG
+#DFLAGS		+= -DNO_VTK_LIB=1
 #DFLAGS		+= -DDISP_DEBUG=1
 #DFLAGS		+= -DVD_INT_ALG_DEBUG=1
 #DFLAGS		+= -DSTAB_DEBUG=1

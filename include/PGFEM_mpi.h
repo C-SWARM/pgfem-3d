@@ -1,6 +1,7 @@
 /* HEADER */
 /*** This file contains wrapper functions for MPI calls. If the
      communication framework is changed, this is where to start */
+#pragma once
 #ifndef PGFEM_MPI_H
 #define PGFEM_MPI_H
 

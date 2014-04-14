@@ -1,34 +1,22 @@
 #include "vtk_output.h"
 #include <string.h>
 #include <stdlib.h>
-#include "PGFem3D_to_VTK.hpp"
+#include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
+
+#ifndef NO_VTK_LIB
+#include "PGFem3D_to_VTK.hpp"
 #endif
 
 static const char *out_dir = "VTK";
 static const char *step_dir = "STEP_";
+static const int ndim = 3;
 
 void VTK_print_master(char *path,
 		      char *base_name,
@@ -239,7 +227,7 @@ void VTK_print_vtu(char *path,
   filename = (char*) PGFEM_calloc(500, sizeof(char));
   sprintf(filename,"%s/%s_%d_%d.vtu",dir_name,base_name,myrank,time);
 
-#ifdef _PGFEM_TO_VTK_HPP_
+#ifndef NO_VTK_LIB
   /* USE VTK LIBRARY FOR OUTPUT */
   void *grid = PGFem3D_to_vtkUnstructuredGrid(nn,ne,node,elem,sup,sig,
 					      eps,r,opts->analysis_type);
@@ -288,10 +276,10 @@ void VTK_print_vtu(char *path,
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"MacroDisplacement\""
 	    " NumberOfComponents=\"3\" format=\"ascii\">\n");
     double *jump = aloc1(3);
-    compute_interface_macro_jump_u(jump,sup);
+    compute_interface_macro_jump_u(jump,sup,opts->analysis_type);
     compute_interface_macro_grad_u(sup->F0,sup->lc,jump,sup->N0);
     for(int i=0; i<nn; i++){
-      compute_interface_macro_disp_at_node(jump,&node[i],sup->F0);
+      compute_interface_macro_disp_at_node(jump,&node[i],sup->F0,opts->analysis_type);
       PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",jump[0],jump[1],jump[2]);
     }
     free(jump);
@@ -299,14 +287,18 @@ void VTK_print_vtu(char *path,
   }
 
   /* Pressure */
-  if(analysis == STABILIZED
-     || analysis == MINI
-     || analysis == MINI_3F){
+  switch(opts->analysis_type){
+  case STABILIZED:
+  case MINI:
+  case MINI_3F:
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"Pressure\" format=\"ascii\">\n");
     for (int i=0; i<nn; i++){
       PGFEM_fprintf(out,"%12.12e\n",r[node[i].id[3]-1]);
     }
     PGFEM_fprintf(out,"</DataArray>\n");
+    break;
+  default:
+    break;
   }
 
   /* Cell Data */
@@ -364,6 +356,55 @@ void VTK_print_vtu(char *path,
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"Chi\" format=\"ascii\">\n");
   for (int i=0; i<ne; i++){
     PGFEM_fprintf(out,"%12.12e\n",eps[i].dam[0].Xn); /* Linear element has 1 ip */
+  }
+  PGFEM_fprintf(out,"</DataArray>\n");
+
+  PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"F\""
+		" NumberOfComponents=\"9\" format=\"ascii\"/>\n");
+  for(int i = 0; i < ne; i++){
+    const double *F = eps[i].il[0].F;
+    PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e"
+		  " %12.12e %12.12e %12.12e %12.12e %12.12e\n",
+		  *(F+0),*(F+1),*(F+2),*(F+3),*(F+4),*(F+5),
+		  *(F+6),*(F+7),*(F+8));
+  }
+  PGFEM_fprintf(out,"</DataArray>\n");
+  
+  PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"P\""
+		" NumberOfComponents=\"9\" format=\"ascii\"/>\n");
+  {
+    double *S = PGFEM_calloc(9,sizeof(double));
+    double *P = PGFEM_calloc(9,sizeof(double));
+    for(int i = 0; i < ne; i++){
+      const double *F = eps[i].il[0].F;
+      S[0] = sig[i].il[0].o[0];
+      S[1] = sig[i].il[0].o[5];
+      S[2] = sig[i].il[0].o[4];
+      
+      S[3] = sig[i].il[0].o[5];
+      S[4] = sig[i].il[0].o[1];
+      S[5] = sig[i].il[0].o[3];
+
+      S[6] = sig[i].il[0].o[3];
+      S[7] = sig[i].il[0].o[4];
+      S[8] = sig[i].il[0].o[2];
+
+      cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ndim,ndim,ndim,
+		  1.0,F,ndim,S,ndim,0.0,P,ndim);
+
+      PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e"
+		    " %12.12e %12.12e %12.12e %12.12e %12.12e\n",
+		    *(P+0),*(P+1),*(P+2),*(P+3),*(P+4),*(P+5),
+		    *(P+6),*(P+7),*(P+8));
+    }
+    free(S);
+    free(P);
+  }
+  PGFEM_fprintf(out,"</DataArray>\n");
+  
+  PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"W\" format=\"ascii\"/>\n");
+  for(int i = 0; i < ne; i++){
+    PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
 

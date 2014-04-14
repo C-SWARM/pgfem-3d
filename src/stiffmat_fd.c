@@ -700,20 +700,6 @@ int stiffmat_fd (BSspmat *K,
  send:
   err += send_stiffmat_comm(&sta_s,&req_s,Lk,mpi_comm,comm);
 
-  /* /\* Allocate status fields *\/ */
-  /* if (comm->Ns == 0) */
-  /*   KK = 1; */
-  /* else */
-  /*   KK = comm->Ns; */
-  /* sta_s = (MPI_Status*) PGFEM_calloc (KK,sizeof(MPI_Status)); */
-  /* req_s = (MPI_Request*) PGFEM_calloc (KK,sizeof(MPI_Request)); */
-
-  /* /\* Send data *\/ */
-  /* for (i=0;i<comm->Ns;i++){ */
-  /*   KK = comm->Nss[i]; */
-  /*   MPI_Isend (Lk[KK],comm->AS[KK],MPI_DOUBLE,KK,myrank,mpi_comm,&req_s[i]); */
-  /* }/\* end i < nproc *\/ */
-
   /* If error, complete communication and exit */
   if(err != 0) goto wait;
 
@@ -783,81 +769,6 @@ int stiffmat_fd (BSspmat *K,
  wait:
   err += assemble_nonlocal_stiffmat(comm,sta_r,req_r,PGFEM_hypre,recieve);
   err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,comm);
-
-  /* /\* Wait to complete the comunications *\/ */
-  /* MPI_Waitall (comm->Ns,req_s,sta_s); */
-  /* MPI_Waitall (comm->Nr,req_r,sta_r); */
-
-  /* /\* If there is an error, return after completed send *\/ */
-  /* if(err != 0) goto exit_function; */
-
-  /* /\* Add Received data *\/ */
-
-  /* /\* Currently, the comm datatype has longs, so everything must be */
-  /*    copied.  In the future, all int/long will be Index_t and we can */
-  /*    just use pointers.  For now, intelligently allocate/copy/assemble */
-  /*    for each processor received from. *\/ */
-
-  /* int proc; */
-  /* int nrows, *row_idx, *ncols, *col_idx; */
-  /* for (i=0;i<comm->Nr;i++){ */
-  /*   proc = comm->Nrr[i]; */
-  /*   nrows = comm->R[proc]; */
-  /*   row_idx = aloc1i(nrows); */
-  /*   ncols = aloc1i(nrows); */
-  /*   col_idx = aloc1i(comm->AR[proc]); */
-
-  /*   idx = 0; /\* counter for col_idx index *\/ */
-  /*   for(j=0; j<comm->R[proc]; j++){ */
-  /*     row_idx[j] = comm->RGID[proc][j]; */
-  /*     ncols[j] = comm->RAp[proc][j]; */
-  /*     for(k=0; k<comm->RAp[proc][j]; k++){ */
-  /* 	col_idx[idx] = comm->RGRId[proc][idx]; */
-  /* 	++idx; */
-  /*     } */
-  /*   } */
-
-  /*   if(PFEM_DEBUG){ */
-  /*     char ofile[50]; */
-  /*     switch(opts->analysis_type){ */
-  /*     case STABILIZED: */
-  /* 	sprintf(ofile,"stab_assem_rec_%d.log",myrank); */
-  /* 	break; */
-  /*     case MINI: */
-  /* 	sprintf(ofile,"MINI_assem_rec_%d.log",myrank); */
-  /* 	break; */
-  /*     case MINI_3F: */
-  /* 	sprintf(ofile,"MINI_3f_assem_rec_%d.log",myrank); */
-  /* 	break; */
-  /*     default: */
-  /* 	sprintf(ofile,"el_assem_rec_%d.log",myrank); */
-  /* 	break; */
-  /*     } */
-
-  /*     FILE *out; */
-  /*     out = fopen(ofile,"a"); */
-  /*     PGFEM_fprintf(out,"********************************************\n"); */
-  /*     print_array_i(out,ncols,nrows,1,nrows); */
-  /*     print_array_i(out,row_idx,nrows,1,nrows); */
-  /*     print_array_i(out,col_idx,comm->AR[proc],1,comm->AR[proc]); */
-  /*     print_array_d(out,recieve[proc],comm->AR[proc],1,comm->AR[proc]); */
-  /*     fclose(out); */
-  /*   } */
-
-  /*   /\* Add this processor's info to the matrix *\/ */
-  /*   int hy_err = HYPRE_IJMatrixAddToValues(PGFEM_hypre->hypre_k, */
-  /* 					   nrows,ncols, */
-  /* 					   row_idx,col_idx, */
-  /* 					   recieve[proc]); */
-  /*   if(hy_err != 0){ */
-  /*     PGFEM_printerr("[%d]WARNING: HYPRE_IJMatrixAddToValues returned error. %s:%s:%d\n", */
-  /* 	      myrank,__func__,__FILE__,__LINE__); */
-  /*   } */
-
-  /*   free(row_idx); */
-  /*   free(ncols); */
-  /*   free(col_idx); */
-  /* } */
     
  /* exit_function: */
   /* Deallocate recieve */

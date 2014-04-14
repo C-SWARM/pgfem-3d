@@ -2606,8 +2606,9 @@ void LToG (const double *f,
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
   
-  for (i=0;i<DomDof[myrank];i++)
-    Gf[i] = 0.0;
+  /* for (i=0;i<DomDof[myrank];i++) */
+  /*   Gf[i] = 0.0; */
+  nulld(Gf,DomDof[myrank]);
   
   /* Sort Global Dof */
   for (i=0;i<DomDof[myrank];i++){
@@ -2747,7 +2748,8 @@ void GToL (const double *Gr,
 
 
   
-  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  nulld(r,ndofd);
   
   /* Sort Global Dof */
   for (j=0;j<ndofd;j++){

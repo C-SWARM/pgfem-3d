@@ -44,9 +44,10 @@ int read_applied_surface_tractions_fname(char *fname,
 					 double **loads)
 {
   int err = 0;
-  FILE *in = PGFEM_fopen(fname,"r");
+  FILE *in = fopen(fname,"r");
   err = read_applied_surface_tractions(in,n_feats,feat_type,feat_id,loads);
   PGFEM_fclose(in);
+
   return err;
 }
 
@@ -64,17 +65,19 @@ int read_applied_surface_tractions(FILE *in,
 
   /* read number of features and allocate */
   fscanf(in,"%d",n_feats);
-  (*feat_type) = PGFEM_calloc(*n_feats,sizeof(int));
-  (*feat_id) = PGFEM_calloc(*n_feats,sizeof(int));
-  (*loads) = PGFEM_calloc(3*(*n_feats),sizeof(double));
+  if(*n_feats > 0){
+    (*feat_type) = PGFEM_calloc(*n_feats,sizeof(int));
+    (*feat_id) = PGFEM_calloc(*n_feats,sizeof(int));
+    (*loads) = PGFEM_calloc(3*(*n_feats),sizeof(double));
 
-  int *ft = &(*feat_type)[0];
-  int *fi = &(*feat_id)[0];
-  double *ld = &(*loads)[0];
-  for(int i=0; i<*n_feats; i++){
-    int idx = idx_2_gen(i,0,*n_feats,3);
-    fscanf(in,"%d %d %lf %lf %lf",
-	   ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
+    int *ft = &(*feat_type)[0];
+    int *fi = &(*feat_id)[0];
+    double *ld = &(*loads)[0];
+    for(int i=0; i<*n_feats; i++){
+      int idx = idx_2_gen(i,0,*n_feats,3);
+      fscanf(in,"%d %d %lf %lf %lf",
+	     ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
+    }
   }
 
   return err;

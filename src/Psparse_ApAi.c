@@ -338,6 +338,8 @@ int* Psparse_ApAi (int nproc,
     }
   }
 
+  /* replace with non-blocking/waitany loop
+   *============================================= */
   /* SEND TO WHOM I WILL TALK TO */
   for (i=0;i<nproc;i++){
     if (i == myrank)
@@ -352,7 +354,10 @@ int* Psparse_ApAi (int nproc,
     MPI_Recv (&j,1,MPI_INT,i,MPI_ANY_TAG,Comm_Orig,&stat);
     comm->R[i]=j;
   }
+  /*============================================= */
   
+  /* OVERLAP WITH COMM
+   *============================================== */
   /* Compute how much to send and recieve */
   comm->Ns = 0;
   for (i=0;i<nproc;i++){
@@ -360,6 +365,8 @@ int* Psparse_ApAi (int nproc,
       continue;
     comm->Ns++;
   }
+  /*============================================== */
+
   comm->Nr = 0;
   for (i=0;i<nproc;i++){
     if (i == myrank || comm->R[i] == 0)
@@ -408,7 +415,8 @@ int* Psparse_ApAi (int nproc,
     comm->AS[i] = 2*comm->S[i];
   }
  
-
+  /* Replaces with NON-BLOCKING 
+   * =======================================================*/
   /******** Does this need to happen??? wouldn't comm->AR[KK] =
 	    2*comm->R[KK] ? ******/ 
   /* Send allocation information */
@@ -423,7 +431,10 @@ int* Psparse_ApAi (int nproc,
     MPI_Recv (&j,1,MPI_LONG,KK,MPI_ANY_TAG,Comm_Orig,&stat);
     comm->AR[KK]=j;
   }
+  /* =======================================================*/
   
+  /* Overlay with communication
+   * =======================================================*/
   /* Allocate status and request fields */
   if (comm->Ns == 0)
     KK = 1;
@@ -442,6 +453,8 @@ int* Psparse_ApAi (int nproc,
   /* Allocate recieve */
   SEND = (long**) PGFEM_calloc (nproc,sizeof(long*));
   RECI = (long**) PGFEM_calloc (nproc,sizeof(long*));
+  /* =======================================================*/
+
   for (i=0;i<nproc;i++) {
     if (comm->AS[i] == 0)
       JJ = 1;
@@ -503,6 +516,7 @@ int* Psparse_ApAi (int nproc,
 
   null_quit((void*) comm->RGID,0);
   
+  /* CHANGE TO WAIT ANY */
   /* Wait to complete the communications */
   MPI_Waitall (comm->Ns,req_s,sta_s);
   MPI_Waitall (comm->Nr,req_r,sta_r);
@@ -550,6 +564,7 @@ int* Psparse_ApAi (int nproc,
     comm->AS[i] = k;
   }
   
+  /* NONBLOCKING */
   /* Send allocation information */
   for (i=0;i<comm->Ns;i++){
     KK = comm->Nss[i];
@@ -562,6 +577,8 @@ int* Psparse_ApAi (int nproc,
     MPI_Recv (&j,1,MPI_LONG,KK,MPI_ANY_TAG,Comm_Orig,&stat);
     comm->AR[KK]=j;
   }
+
+  /* OVERLAY */
   /*************/
   /* Send data */
   /*************/
@@ -631,6 +648,7 @@ int* Psparse_ApAi (int nproc,
 
   null_quit((void*) comm->RGRId,0);
   
+  /* WAIT ANY and unpack */
   /* Wait to complete the communications */
   MPI_Waitall (comm->Ns,req_s,sta_s);
   MPI_Waitall (comm->Nr,req_r,sta_r);

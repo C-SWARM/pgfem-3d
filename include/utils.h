@@ -193,7 +193,13 @@ long* times_print (FILE *in1,
 		   const long nt,
 		   const long n_p);
 
-/** Get the global partition (Gf) of the data (f)for the process. */
+/**
+ * Get the global partition (Gf) of the data (f)for the process.
+ *
+ * \param[out] Gf Contains the global DOF values owned by the domin in Gid-order
+ *
+ * Side effects: point-to-point communication according to comm.
+ */
 void LToG (const double *f,
 	   double *Gf,
 	   const int myrank,
@@ -204,7 +210,14 @@ void LToG (const double *f,
 	   const COMMUN comm,
 	   const MPI_Comm mpi_comm);
 
-/** Get the local part (r) of the global data (Gf). */
+/**
+ * Get the local part (r) of the global data (Gr).
+ *
+ * \param[out] r Contains the DOF values on the domain, including
+ * information from other domains.
+ *
+ * Side effects: point-to-point communication according to comm.
+ */
 void GToL (const double *Gr,
 	   double *r,
 	   const int myrank,
