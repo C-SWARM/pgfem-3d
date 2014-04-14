@@ -1,4 +1,11 @@
 /* HEADER */
+
+/**
+ * AUTHORS:
+ *    Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
 #pragma once
 #ifndef PSPARSE_APAI_H
 #define PSPARSE_APAI_H

@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef MESH_LOAD_H
 #define MESH_LOAD_H
 

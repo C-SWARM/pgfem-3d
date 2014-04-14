@@ -1,5 +1,6 @@
 /* HEADER */
 
+#pragma once
 #ifndef ENUMERATIONS_H
 #define ENUMERATIONS_H
 

@@ -1,65 +1,21 @@
 /* HEADER */
 #include "microscale_information.h"
 
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef MESH_LOAD_H
 #include "mesh_load.h"
-#endif
-
-#ifndef MATERIAL_H
 #include "material.h"
-#endif
-
-#ifndef READ_INPUT_FILE_H
 #include "read_input_file.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef SET_FINI_DEF_H
 #include "set_fini_def.h"
-#endif
-
-#ifndef GENERATE_DOF_IDS_H
 #include "generate_dof_ids.h"
-#endif
-
-#ifndef PSPARSE_APAI_H
 #include "Psparse_ApAi.h"
-#endif
-
-#ifndef INITIALIZE_DAMAGE_H
 #include "initialize_damage.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
-
-#ifndef PGFEM_PAR_MATVEC_H
 #include "PGFEM_par_matvec.h"
-#endif
 
 static const int ndim = 3;
 

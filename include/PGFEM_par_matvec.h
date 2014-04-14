@@ -1,8 +1,11 @@
 /* HEADER */
+
 /**
  * AUTHORS:
- * Matthew Mosby
+ * Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
  */
+
+#pragma once
 #ifndef PGFEM_PAR_MATVEC_H
 #define PGFEM_PAR_MATVEC_H
 

@@ -1,56 +1,26 @@
 /* HEADER */
-/* This header defines the structure(s) for the microscale
-   solutions. */
+/**
+ * \file This header defines the structure(s) for the microscale solutions.
+ *
+ * AUTHORS:
+ *    Matthew Mosby, UNiversity of Notre Dame, <mmosby1 (at) nd.edu>
+ */
+#pragma once
 #ifndef MICROSCALE_INFORMATION_H
 #define MICROSCALE_INFORMATION_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,23 +47,23 @@ extern "C" {
     int GDof; /* last global dof on dom */
 
     /* mesh info */
-    long nn; /* no. nodes */
-    long ne; /* no. elements */
-    long nce; /* no. cohesive elements */
-    long ndofn; /* no. dof on each node */
-    long npres; /* no. pressure nodes on elem */
-    double VVolume; /* original volume */
+    long nn; /**< no. nodes */
+    long ne; /**< no. elements */
+    long nce; /**< no. cohesive elements */
+    long ndofn; /**< no. dof on each node */
+    long npres; /**< no. pressure nodes on elem */
+    double VVolume; /**< original volume */
     NODE *node;
     ELEMENT *elem; /* NOTE: state/solution information is copied from
 		      solution structure */
     COEL *coel; /* NOTE: state/solution information is copied from
 		   solution structure */
     long n_orient;
-    MATGEOM matgeom; /* !pointer */
+    MATGEOM matgeom; /**< !pointer */
     long nhommat;
     HOMMAT *hommat;
-    ENSIGHT ensight; /* !pointer */
-    SUPP supports; /* !pointer */
+    ENSIGHT ensight; /**< !pointer */
+    SUPP supports; /**< !pointer */
     int n_co_props;
     cohesive_props *co_props;
 
@@ -118,7 +88,7 @@ extern "C" {
     /* solution information */
     /* local vectors */
     double *r;
-    double *rn; /* solution vector r at macro time n */
+    double *rn; /**< solution vector r at macro time n */
     double *f;
     double *d_r;
     double *rr;
