@@ -48,7 +48,6 @@ static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer);
  */
 typedef struct MICROSCALE_SOLUTION_BUFFERS{
     /* local vectors */
-    double *r;
     double *f;
     double *d_r;
     double *rr;
@@ -652,8 +651,8 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* local solution vectors */
   sol->rn = PGFEM_calloc(local_len,len_double);
+  sol->r = PGFEM_calloc(local_len,len_double);
 
-  /* sol->r = PGFEM_calloc(local_len,len_double); */
   /* sol->f = PGFEM_calloc(local_len,len_double); */
   /* sol->d_r = PGFEM_calloc(local_len,len_double); */
   /* sol->rr = PGFEM_calloc(local_len,len_double); */
@@ -684,7 +683,6 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
     MICROSCALE_SOLUTION_BUFFERS *buff =
       (MICROSCALE_SOLUTION_BUFFERS *) common->solution_buffer;
 
-    sol->r	= buff->r     ;
     sol->f	= buff->f     ;
     sol->d_r	= buff->d_r   ;
     sol->rr	= buff->rr    ;
@@ -721,7 +719,7 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 					const COMMON_MICROSCALE *common,
 					const int analysis)
 {
-  /* free(sol->r); */
+  free(sol->r);
   free(sol->rn);
   /* free(sol->f); */
   /* free(sol->d_r); */
@@ -765,7 +763,6 @@ static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
   const unsigned long len_double = sizeof(double);
 
  /* local solution vectors */
-  buff->r = PGFEM_calloc(local_len,len_double);
   buff->f = PGFEM_calloc(local_len,len_double);
   buff->d_r = PGFEM_calloc(local_len,len_double);
   buff->rr = PGFEM_calloc(local_len,len_double);
@@ -796,7 +793,6 @@ static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
 static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer)
 {
   MICROSCALE_SOLUTION_BUFFERS *buff = (MICROSCALE_SOLUTION_BUFFERS*) buffer;
-  free(buff->r);
   free(buff->f);
   free(buff->d_r);
   free(buff->rr);

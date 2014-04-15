@@ -90,11 +90,11 @@ extern "C" {
 
     /* solution information */
     double *rn; /**< solution vector r at macro time n */
+    double *r; /**< current solution r at macro time n+1 */
 
     /** The following are pointers to a shared buffer elsewhere! The
 	buffers are used purely as a workspace. */
     /* local vectors */
-    double *r;
     double *f;
     double *d_r;
     double *rr;
