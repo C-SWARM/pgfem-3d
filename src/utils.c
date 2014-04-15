@@ -487,7 +487,11 @@ int inverse(double const* A,
     memcpy(A_I,A,M*M*sizeof(double));
 
     /* Factor into U matrix */
+#ifdef ARCH_BGQ
+    dgetrf(M,M,A_I,M,iPerm,&info);
+#else
     dgetrf(&M,&M,A_I,&M,iPerm,&info);
+#endif
     if(info<0){
       PGFEM_printerr("WARNING: illegal parameter given"
 	      " to dgetrf at position %d.\n",info);
@@ -496,7 +500,11 @@ int inverse(double const* A,
     }
 
     /* Compute inverse using factored matrix */
+#ifdef ARCH_BGQ
+    dgetri(M,A_I,M,iPerm,work,lwork,&info);
+#else
     dgetri(&M,A_I,&M,iPerm,work,&lwork,&info);
+#endif
     if(info<0){
       PGFEM_printerr("WARNING: illegal parameter given"
 	      " to dgetri at position %d.\n",info);
