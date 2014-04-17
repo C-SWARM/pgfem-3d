@@ -8,7 +8,6 @@ Newton_Raphson.o \
 PLC.o \
 PLoc_Sparse.o \
 Psparse_ApAi.o \
-RNPsparse_ApAi.o \
 Re1_Re2_Re3.o \
 TA_GA.o \
 addresses.o \
