@@ -344,14 +344,14 @@ int* Psparse_ApAi (int nproc,
   for (i=0;i<nproc;i++){
     if (i == myrank)
       continue;
-    MPI_Send (&comm->S[i],1,MPI_INT,i,myrank,Comm_Orig);
+    MPI_Send (&comm->S[i],1,MPI_LONG,i,myrank,Comm_Orig);
   }
   
   /* RECIEVE FROM SENDER */
   for (i=0;i<nproc;i++){
     if (i == myrank)
       continue;
-    MPI_Recv (&j,1,MPI_INT,i,MPI_ANY_TAG,Comm_Orig,&stat);
+    MPI_Recv (&j,1,MPI_LONG,i,MPI_ANY_TAG,Comm_Orig,&stat);
     comm->R[i]=j;
   }
   /*============================================= */
