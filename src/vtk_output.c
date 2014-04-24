@@ -360,7 +360,7 @@ void VTK_print_vtu(char *path,
   PGFEM_fprintf(out,"</DataArray>\n");
 
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"F\""
-		" NumberOfComponents=\"9\" format=\"ascii\"/>\n");
+		" NumberOfComponents=\"9\" format=\"ascii\">\n");
   for(int i = 0; i < ne; i++){
     const double *F = eps[i].il[0].F;
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e"
