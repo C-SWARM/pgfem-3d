@@ -44,7 +44,7 @@ int read_applied_surface_tractions_fname(char *fname,
 					 double **loads)
 {
   int err = 0;
-  FILE *in = fopen(fname,"r");
+  FILE *in = PGFEM_fopen(fname,"r");
   err = read_applied_surface_tractions(in,n_feats,feat_type,feat_id,loads);
   PGFEM_fclose(in);
 

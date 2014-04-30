@@ -179,7 +179,7 @@ void VTK_print_cohesive_master(char *path,
 
   /* Points */
   PGFEM_fprintf(out,"<PPoints>\n");
-  PGFEM_fprintf(out,"<PDataArray type=\"Float64\" NumberOfComponents=\"3\"/>\n");
+  PGFEM_fprintf(out,"<PDataArray type=\"Float32\" NumberOfComponents=\"3\"/>\n");
   PGFEM_fprintf(out,"</PPoints>\n");
 
   /* write piece list */
@@ -371,7 +371,7 @@ void VTK_print_vtu(char *path,
   PGFEM_fprintf(out,"</DataArray>\n");
   
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"P\""
-		" NumberOfComponents=\"9\" format=\"ascii\"/>\n");
+		" NumberOfComponents=\"9\" format=\"ascii\">\n");
   {
     double *S = PGFEM_calloc(9,sizeof(double));
     double *P = PGFEM_calloc(9,sizeof(double));
@@ -402,7 +402,7 @@ void VTK_print_vtu(char *path,
   }
   PGFEM_fprintf(out,"</DataArray>\n");
   
-  PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"W\" format=\"ascii\"/>\n");
+  PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"W\" format=\"ascii\">\n");
   for(int i = 0; i < ne; i++){
     PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
   }
@@ -413,7 +413,7 @@ void VTK_print_vtu(char *path,
 
   /* Nodes */
   PGFEM_fprintf(out,"<Points>\n");
-  PGFEM_fprintf(out,"<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n");
+  PGFEM_fprintf(out,"<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
   for(int i=0; i<nn; i++){
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",
 	    node[i].x1_fd,node[i].x2_fd,node[i].x3_fd);
@@ -627,7 +627,7 @@ void VTK_print_cohesive_vtu(char *path,
 
   /* Nodes */
   PGFEM_fprintf(out,"<Points>\n");
-  PGFEM_fprintf(out,"<DataArray type=\"Float64\" NumberOfComponents=\"3\""
+  PGFEM_fprintf(out,"<DataArray type=\"Float32\" NumberOfComponents=\"3\""
 	  " format=\"ascii\">\n");
   /* NOTE: tractions are in reference configuration, thus coordinates
      are in undeformed config. Can be warped using the Displacements
