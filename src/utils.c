@@ -2618,16 +2618,6 @@ void LToG (const double *f,
   /*   Gf[i] = 0.0; */
   nulld(Gf,DomDof[myrank]);
   
-  /* Sort Global Dof */
-  for (i=0;i<DomDof[myrank];i++){
-    for (j=0;j<ndofd;j++){
-      if (i == comm->LG[j] - GDof){
-	Gf[i] = f[j];
-	break;
-      }
-    }
-  }
-  
   /* Allocate recieve */
   send = (double**) PGFEM_calloc (nproc,sizeof(double*));
   recieve = (double**) PGFEM_calloc (nproc,sizeof(double*));
@@ -2636,13 +2626,6 @@ void LToG (const double *f,
     send[i] = (double*) PGFEM_calloc (KK,sizeof(double));
     if (comm->R[i] == 0) KK = 1; else KK = comm->R[i];
     recieve[i] = (double*) PGFEM_calloc (KK,sizeof(double));
-  }
-
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR allocating memory for \'send\'\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR allocating memory for \'recieve\'\n",myrank);
   }
 
   /* Allocate status and request fields */
@@ -2676,15 +2659,6 @@ void LToG (const double *f,
     MPI_Irecv (recieve[KK],comm->R[KK],MPI_DOUBLE,KK,
 	       MPI_ANY_TAG,mpi_comm,&req_r[i]);
   }
-  
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Irecv\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Irecv\n",myrank);
-  }
-
-  /* MPI_Barrier(mpi_comm); */
 
   /*************/
   /* Send data */
@@ -2698,30 +2672,18 @@ void LToG (const double *f,
 		myrank,mpi_comm,&req_s[i]);
   }
 
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Irsend\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Irsend\n",myrank);
-  }
+  pgfem_comm_get_owned_global_dof_values(comm,f,Gf);
 
   /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Ns,req_s,sta_s);
   MPI_Waitall (comm->Nr,req_r,sta_r);
   
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Waitall\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Waitall\n",myrank);
-  }
-
   for (i=0;i<comm->Nr;i++){
     KK = comm->Nrr[i];
     for (j=0;j<comm->R[KK];j++)
       Gf[comm->RGID[KK][j] - GDof] += recieve[KK][j];
   }
   
+  MPI_Waitall (comm->Ns,req_s,sta_s);
   /* Deallocate send and recieve */
   for (i=0;i<nproc;i++) {
     free(send[i]);
@@ -2758,16 +2720,6 @@ void GToL (const double *Gr,
   
   //  for (i=0;i<ndofd;i++) r[i] = 0.0;
   nulld(r,ndofd);
-  
-  /* Sort Global Dof */
-  for (j=0;j<ndofd;j++){
-    for (i=0;i<DomDof[myrank];i++){
-      if (j == comm->GL[i]) {
-	r[j] = Gr[i];
-	break;
-      }
-    }
-  }
 
   /* Allocate recieve */
   send = (double**) PGFEM_calloc (nproc,sizeof(double*));
@@ -2810,8 +2762,9 @@ void GToL (const double *Gr,
 	       myrank,mpi_comm,&req_s[i]);
   }
   
+  pgfem_comm_get_local_dof_values_from_global(comm,Gr,r);
+
   /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Nr,req_s,sta_s);
   MPI_Waitall (comm->Ns,req_r,sta_r);
   
   for (i=0;i<comm->Ns;i++){
@@ -2820,6 +2773,7 @@ void GToL (const double *Gr,
       r[comm->SLID[KK][j]] = recieve[KK][j];
   }
   
+  MPI_Waitall (comm->Nr,req_s,sta_s);
   /* Deallocate send and recieve */
   for (i=0;i<nproc;i++) {
     free(send[i]);

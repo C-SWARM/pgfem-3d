@@ -44,7 +44,7 @@ extern "C" {
     long *bndel; /* bnd elem ids */
     long ndofd; /* dof on dom */
     long *DomDof; /* global dof on dom */
-    int GDof; /* last global dof on dom */
+    int GDof; /* first global dof id on dom */
 
     /* mesh info */
     long nn; /**< no. nodes */

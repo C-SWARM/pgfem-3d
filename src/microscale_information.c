@@ -475,11 +475,14 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
   /* global stiffness pattern and communication structure */
   common->Ap = PGFEM_calloc(common->DomDof[myrank]+1,sizeof(int));
   common->pgfem_comm = PGFEM_calloc (1,sizeof(COMMUN_1));
+  initialize_commun(common->pgfem_comm);
   common->Ai = Psparse_ApAi(nproc,myrank,common->ne,0,common->nn,
 			    common->ndofn,common->ndofd,common->elem,
 			    NULL,common->node,common->Ap,common->nce,
 			    common->coel,common->DomDof,&common->GDof,
 			    common->pgfem_comm,mpi_comm,opts->cohesive);
+  pgfem_comm_build_fast_maps(common->pgfem_comm,common->ndofd,
+			     common->DomDof[myrank],common->GDof);
 
   hypre_initialize(common->Ap,common->Ai,common->DomDof[myrank],
 		   opts->maxit,common->lin_err,common->SOLVER,opts,
