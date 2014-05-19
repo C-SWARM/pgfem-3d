@@ -138,11 +138,6 @@ void** PGFEM_CALLOC_2(const long nelem1,
   void **val = NULL;
   long n = nelem1;
   long m = nelem2;
-  long namelen = strlen(function) + strlen(file)
-    + 20/*max char from line*/
-    + strlen(__func__) + 5;
-  char *func = PGFEM_calloc(namelen,sizeof(char));
-  sprintf(func,"%s:%s:%ld->%s",function,file,line,__func__);
   if(nelem1 == 0) n = 1;
   if(nelem2 == 0) m = 1;
 
@@ -159,9 +154,9 @@ void** PGFEM_CALLOC_2(const long nelem1,
 
     switch(err){
     case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,size,func,__FILE__,__LINE__);
+	val[i] = PGFEM_CALLOC(m,size,function,__FILE__,__LINE__);
       }
       break;
     case 1:
@@ -179,13 +174,11 @@ void** PGFEM_CALLOC_2(const long nelem1,
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
     for(long i=0; i<n; i++){
-      val[i] = PGFEM_CALLOC(m,size,func,__FILE__,__LINE__);
+      val[i] = PGFEM_CALLOC(m,size,function,__FILE__,__LINE__);
     }
   }
-
-  free(func);
   return val;
 }
 
@@ -203,11 +196,6 @@ void*** PGFEM_CALLOC_3(const long nelem1,
   long n = nelem1;
   long m = nelem2;
   long p = nelem3;
-  long namelen = strlen(function) + strlen(file)
-    + 20/*max char from line*/
-    + strlen(__func__) + 5;
-  char *func = PGFEM_calloc(namelen,sizeof(char));
-  sprintf(func,"%s:%s:%ld->%s",function,file,line,__func__);
   if(nelem1 == 0) n = 1;
   if(nelem2 == 0) m = 1;
   if(nelem3 == 0) p = 1;
@@ -225,11 +213,11 @@ void*** PGFEM_CALLOC_3(const long nelem1,
 
     switch(err){
     case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,ptr_size,func,__FILE__,__LINE__);
+	val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
 	for(long j=0; j<m; j++){
-	  val[i][j] = PGFEM_CALLOC(p,size,func,__FILE__,__LINE__);
+	  val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
 	}
       }
       break;
@@ -248,16 +236,15 @@ void*** PGFEM_CALLOC_3(const long nelem1,
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
     for(long i=0; i<n; i++){
-      val[i] = PGFEM_CALLOC(m,ptr_size,func,__FILE__,__LINE__);
+      val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
       for(long j=0; j<m; j++){
-	val[i][j] = PGFEM_CALLOC(p,size,func,__FILE__,__LINE__);
+	val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
       }
     }
   }
 
-  free(func);
   return val;
 }
 
@@ -277,11 +264,6 @@ void**** PGFEM_CALLOC_4(const long nelem1,
   long m = nelem2;
   long p = nelem3;
   long r = nelem4;
-  long namelen = strlen(function) + strlen(file)
-    + 20/*max char from line*/
-    + strlen(__func__) + 5;
-  char *func = PGFEM_calloc(namelen,sizeof(char));
-  sprintf(func,"%s:%s:%ld->%s",function,file,line,__func__);
   if(nelem1 == 0) n = 1;
   if(nelem2 == 0) m = 1;
   if(nelem3 == 0) p = 1;
@@ -301,13 +283,13 @@ void**** PGFEM_CALLOC_4(const long nelem1,
 
     switch(err){
     case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,ptr_size,func,__FILE__,__LINE__);
+	val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
 	for(long j=0; j<m; j++){
-	  val[i][j] = PGFEM_CALLOC(p,ptr_size,func,__FILE__,__LINE__);
+	  val[i][j] = PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__);
 	  for(long k=0; k<p; k++){
-	    val[i][j][k] = PGFEM_CALLOC(r,size,func,__FILE__,__LINE__);
+	    val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
 	  }
 	}
       }
@@ -327,19 +309,18 @@ void**** PGFEM_CALLOC_4(const long nelem1,
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,func,__FILE__,__LINE__);
+    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
     for(long i=0; i<n; i++){
-      val[i] = PGFEM_CALLOC(m,ptr_size,func,__FILE__,__LINE__);
+      val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
       for(long j=0; j<m; j++){
-	val[i][j] = PGFEM_CALLOC(p,ptr_size,func,__FILE__,__LINE__);
+	val[i][j] = PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__);
 	for(long k=0; k<p; k++){
-	  val[i][j][k] = PGFEM_CALLOC(r,size,func,__FILE__,__LINE__);
+	  val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
 	}
       }
     }
   }
 
-  free(func);
   return val;
 }
 

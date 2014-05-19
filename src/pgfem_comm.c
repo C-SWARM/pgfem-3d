@@ -1,8 +1,48 @@
-#include "pgfem_comm.h"
+/* HEADER */
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ */
 
-#ifndef ALLOCATION_H
+#include "pgfem_comm.h"
 #include "allocation.h"
-#endif
+#include "PGFEM_io.h"
+
+/**
+ * Structure for containing an index map.
+ *
+ * \param n_map The number of mapped indices.
+ * \param maps The index mapping stored in two consecutive
+ * elements. Example: the i-th map is INDEX maps[i*2] maps to INDEX
+ * maps[i*2+1].
+ */
+typedef struct pgfem_comm_fast_map{
+  int n_maps; /**< number of maps */
+  size_t *maps; /**< mapping stored in two consecutive elements */
+} fast_map;
+
+static void destroy_fast_map(fast_map *map)
+{
+  free(map->maps);
+}
+
+void initialize_commun(COMMUN comm)
+{
+  comm->S = NULL;
+  comm->R = NULL;
+  comm->AS = NULL;
+  comm->SLID = NULL;
+  comm->RGID = NULL;
+  comm->LG = NULL;
+  comm->SAp = NULL;
+  comm->SGRId = NULL;
+  comm->RAp = NULL;
+  comm->RGRId = NULL;
+  comm->Nss = NULL;
+  comm->Nrr = NULL;
+  comm->fast_LG_map = NULL;
+  comm->fast_GL_map = NULL;
+}
 
 void destroy_commun(COMMUN comm,long nproc)
 {
@@ -28,6 +68,16 @@ void destroy_commun(COMMUN comm,long nproc)
   free(comm->RGRId);
   free(comm->Nss);
   free(comm->Nrr);
+
+  /* destroy maps */
+  if(comm->fast_LG_map != NULL)
+    destroy_fast_map((fast_map*) comm->fast_LG_map);
+  if(comm->fast_GL_map != NULL)
+    destroy_fast_map((fast_map*) comm->fast_GL_map);
+
+  free(comm->fast_LG_map);
+  free(comm->fast_GL_map);
+
   free(comm);
 }
 
@@ -135,5 +185,137 @@ int finalize_stiffmat_comm(MPI_Status *sta_s,
   int err = 0;
   err += MPI_Waitall(pgfem_comm->Nr,req_r,sta_r);
   err += MPI_Waitall(pgfem_comm->Ns,req_s,sta_s);
+  return err;
+}
+
+static int build_fast_LG_map(COMMUN pgfem_comm,
+			     const long ndofd,
+			     const long ngdof_owned,
+			     const long start_gdof_id)
+{
+  int err = 0;
+  pgfem_comm->fast_LG_map = PGFEM_calloc(1,sizeof(fast_map));
+  fast_map *LG = pgfem_comm->fast_LG_map;
+  LG->n_maps = 0;
+
+ /* deterimine the local indices that map to global indices on the
+     local domain and the corresponding number of maps */
+  long *local_idx = PGFEM_calloc(ndofd,sizeof(long));
+  long *global_idx = PGFEM_calloc(ndofd,sizeof(long));
+  for(int i=0; i<ndofd; i++){
+    global_idx[i] = pgfem_comm->LG[i] - start_gdof_id;
+
+    /* store mapping if I own the global dof */
+    if(global_idx[i] >= 0 && global_idx[i] < ngdof_owned){
+      local_idx[LG->n_maps] = i;
+      LG->n_maps++;
+    }
+  }
+
+  /* sanity check */
+  if(LG->n_maps > ngdof_owned){
+    int myrank = 0;
+    PGFEM_Error_rank(&myrank);
+    PGFEM_printerr("[%d] ERROR: too many mappings! %s:%s:%d\n",
+		   myrank,__func__,__FILE__,__LINE__);
+    PGFEM_Abort();
+  }
+
+  LG->maps = PGFEM_calloc(2*LG->n_maps,sizeof(size_t));
+  for(int i=0; i<LG->n_maps; i++){
+    LG->maps[2*i] = local_idx[i];
+    LG->maps[2*i+1] = global_idx[local_idx[i]];
+  }
+
+  free(local_idx);
+  free(global_idx);
+
+  return err;
+}
+
+static int build_fast_GL_map(COMMUN pgfem_comm,
+			     const long ndofd,
+			     const long ngdof_owned)
+{
+  int err = 0;
+  pgfem_comm->fast_GL_map = PGFEM_calloc(1,sizeof(fast_map));
+  fast_map *GL = pgfem_comm->fast_GL_map;
+  GL->n_maps = 0;
+
+  long *global_idx = PGFEM_calloc(ngdof_owned,sizeof(long));
+  long *local_idx = PGFEM_calloc(ngdof_owned,sizeof(long));
+
+  /* NOTE: may be able to replace. Should be identical to comm->GL? */
+  for(int i=0; i< ngdof_owned; i++){
+    local_idx[i] = pgfem_comm->GL[i];
+    if(local_idx[i]>= 0 && local_idx[i] < ndofd){
+      global_idx[GL->n_maps] = i;
+      GL->n_maps++;
+    }
+  }
+
+  GL->maps = PGFEM_calloc(2*GL->n_maps,sizeof(size_t));
+  for(int i=0; i<GL->n_maps; i++){
+    GL->maps[2*i] = global_idx[i];
+    GL->maps[2*i+1] = local_idx[global_idx[i]];
+  }
+
+  free(global_idx);
+  free(local_idx);
+
+  return err;
+}
+
+int pgfem_comm_build_fast_maps(COMMUN pgfem_comm,
+			       const long ndofd,
+			       const long ngdof_owned,
+			       const long start_gdof_id)
+{
+  int err = 0;
+ 
+  err += build_fast_LG_map(pgfem_comm,ndofd,ngdof_owned,
+			   start_gdof_id);
+  err += build_fast_GL_map(pgfem_comm,ndofd,ngdof_owned);
+
+  return err;
+}
+
+/* maps A to B */
+static int get_mapped_values(const fast_map *map,
+			     const double *A,
+			     double *B)
+{
+  int err = 0;
+
+  for(int i=0; i<map->n_maps; i++){
+    B[map->maps[2*i+1]] = A[map->maps[2*i]];
+  }
+
+  return err;
+}
+
+int pgfem_comm_get_owned_global_dof_values(const COMMUN pgfem_comm,
+					   const double *local_dofs,
+					   double *global_dofs)
+{
+  int err = 0;
+
+  err += get_mapped_values(pgfem_comm->fast_LG_map,
+			   local_dofs,
+			   global_dofs);
+
+  return err;
+}
+
+int pgfem_comm_get_local_dof_values_from_global(const COMMUN pgfem_comm,
+						const double *global_dofs,
+						double *local_dofs)
+{
+  int err = 0;
+
+  err += get_mapped_values(pgfem_comm->fast_GL_map,
+			   global_dofs,
+			   local_dofs);
+
   return err;
 }
