@@ -20,9 +20,9 @@ LINK = mpicxx
 DFLAGS		= #-DNDEBUG
 
 # BG/Q machines
-CC = mpixlc_r
-LINK = mpixlf77_r
-DFLAGS	+= -DARCH_BGQ
+#CC = mpixlc_r
+#LINK = mpixlf77_r
+#DFLAGS	+= -DARCH_BGQ
 
 #TAU_OPTS = -optKeepFiles -tau_options=-optTauSelectFile=tau_instrument.txt
 #CC = tau_cc.sh $(TAU_OPTS)
@@ -30,8 +30,8 @@ DFLAGS	+= -DARCH_BGQ
 
 # Un/comment the appropriate CFLAGS variable for using intel or GNU
 # compiler for correct strict warnings
-#CFLAGS_INTEL	= -Wcheck
-CFLAGS_GCC	= -pedantic
+CFLAGS_INTEL	= -Wcheck
+#CFLAGS_GCC	= -pedantic
 CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 #DFLAGS		+= -DNO_VTK_LIB=1

@@ -63,16 +63,18 @@ VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 
 # Intel MKL: MKLROOT must be defined or define it here
 MKL_incl	= -I$(MKLROOT)/include
-MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
-	     	  -Wl,--start-group \
-	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
-	     	  -Wl,--end-group -lpthread
+# MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
+# 	     	  -Wl,--start-group \
+# 	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
+# 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
+# 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
+# 	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
+# 	     	  -Wl,--end-group -lpthread
+
+MKL_lib		= -mkl
 
 # Math libraries
-# MATH_lib	=  -limf -lm
+MATH_lib	=  -limf -lm
 
 # Totalview
 #TOTALVIEW_lib	= -L$(TOTALVIEW)/lib/libdbfork_64
@@ -85,4 +87,4 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
 # MKL_lib	= $(pfem_cblas_lib) $(pfem_lapack_lib)
 
 # if not using intel compiler, uncomment following line
-MATH_lib	= -lm
+# MATH_lib	= -lm
