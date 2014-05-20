@@ -683,10 +683,13 @@ int single_scale_main(int argc,char *argv[])
     /* ALlocate Ap, Ai */
     Ap = aloc1i (DomDof[myrank]+1);
     comm = (COMMUN) PGFEM_calloc (1,sizeof(COMMUN_1));
+    initialize_commun(comm);
 
     Ai = Psparse_ApAi (nproc,myrank,ne,n_be,nn,ndofn,ndofd,
 		       elem,b_elems,node,Ap,nce,coel,DomDof,
 		       &GDof,comm,mpi_comm,options.cohesive);
+
+    pgfem_comm_build_fast_maps(comm,ndofd,DomDof[myrank],GDof);
 
     /* Total number of nonzeros and skyline */
     MPI_Reduce (&Ap[DomDof[myrank]],&APP,1,MPI_INT,MPI_SUM,0,mpi_comm);

@@ -1,18 +1,18 @@
 /* HEADER */
 
-/** functions to compute the macroscopic deformation gradient and
-    macroscopic displacements */
-
+/**
+ * \file functions to compute the macroscopic deformation gradient and
+ *  macroscopic displacements
+ *
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+#pragma once
 #ifndef INTERFACE_MACRO_H
 #define INTERFACE_MACRO_H
 
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

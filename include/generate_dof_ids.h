@@ -1,4 +1,12 @@
 /* HEADER */
+/**
+ * \file Routines for assigning DOF ids on nodes and elements.
+ *
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
+#pragma once
 #ifndef GENERATE_DOF_IDS_H
 #define GENERATE_DOF_IDS_H
 

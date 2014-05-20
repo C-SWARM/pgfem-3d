@@ -34,7 +34,7 @@ extern "C" {
   } SUR_TRAC_ELEM;
  
   /** Reads the list of features and loads to apply from a
-      file. Returns allocated arrays and error flag (SUCCESS = 0) */
+      file. Returns allocated arrays and error flag (SUCCESS = 0). */
   int read_applied_surface_tractions_fname(char *fname,
 					   int *n_feats,
 					   int **feat_type,

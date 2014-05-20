@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef SUPP_H
 #define SUPP_H
 

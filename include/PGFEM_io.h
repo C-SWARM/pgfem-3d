@@ -1,6 +1,14 @@
 /* HEADER */
-/* This is a short wrapper to handle Micro-Macro output to stdout and
-   stderr. Other GENERAL I/O functions may be put here as well. */
+
+/**
+ * \file This is a short wrapper to handle Micro-Macro output to stdout and
+ *  stderr. Other GENERAL I/O functions may be put here as well.
+ *
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
+#pragma once
 #ifndef PGFEM_IO_H
 #define PGFEM_IO_H
 
@@ -8,10 +16,7 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef INCLUDED_STDIO_H
 #include <stdio.h>
-#define INCLUDED_STDIO_H
-#endif
 
   /* FILE pointers that get switched about */
   extern FILE *PGFEM_stdout;
