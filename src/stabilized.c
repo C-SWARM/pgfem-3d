@@ -50,6 +50,7 @@ static int integration_help(const int ip,
 			    const double *pn,
 			    const double *p,
 			    const double *Fn,
+			    const SUPP sup,
 			    double *wt,
 			    double *jj,
 			    double *Na,
@@ -86,6 +87,7 @@ static int quadradic_integration_help(const int ip,
 				      const double *disp,
 				      const double *pn,
 				      const double *p,
+				      const SUPP sup,
 				      double *wt,
 				      double *jj,
 				      double *Na,
@@ -276,20 +278,21 @@ static int get_Kpp_stab_at_ip(double *Kpp,
 			      const double wt);
 
 /* increment an element */
-static double st_incr_elem (long ii,
-			    long nne,
-			    long ndofn,
-			    double *x,
-			    double *y,
-			    double *z,
-			    double *r_u,
-			    double *a_a,
-			    double *p,
-			    double dt,
-			    HOMMAT *hommat,
-			    ELEMENT *elem,
+static double st_incr_elem (const long ii,
+			    const long nne,
+			    const long ndofn,
+			    const double *x,
+			    const double *y,
+			    const double *z,
+			    const double *r_u,
+			    const double *a_a,
+			    const double *p,
+			    const double dt,
+			    const HOMMAT *hommat,
+			    const ELEMENT *elem,
 			    EPS *eps,
-			    SIG *sig);
+			    SIG *sig,
+			    const SUPP sup);
 
 /*=======================================*/
 /*   Main API function definitions       */
@@ -379,6 +382,7 @@ int resid_st_elem (long ii,
 		   double *z,
 		   EPS *eps,
 		   SIG *sig,
+		   SUPP sup,
 		   double *r_e,
 		   double nor_min,
 		   double *fe,
@@ -473,7 +477,7 @@ int resid_st_elem (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,disp,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
 				C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,grad_delP,
 				grad_P);
 
@@ -519,7 +523,7 @@ int resid_st_elem (long ii,
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,disp,sig[ii].p,p,&wt,&jj,
+					  weights,disp,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* compute Up = (1-w)Up(n+1) - (1-wn)Upn(n) */
@@ -632,6 +636,7 @@ int stiffmatel_st (long ii,
 		   NODE *node,
 		   SIG *sig,
 		   EPS *eps,
+		   SUPP sup,
 		   double *r_e,
 		   long npres,
 		   double nor_min,
@@ -738,7 +743,7 @@ int stiffmatel_st (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,disp,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
 				C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,grad_delP,
 				grad_P);
 
@@ -809,7 +814,7 @@ int stiffmatel_st (long ii,
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,disp,sig[ii].p,p,&wt,&jj,
+					  weights,disp,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* get Pn_1 */
@@ -1059,7 +1064,7 @@ int st_increment (long ne,
     
     /* Update the element quantities */
     EL_e += st_incr_elem (ii,nne,ndofn,x,y,z,r_u,a_a,
-			  p,dt,hommat,elem,eps,sig);
+			  p,dt,hommat,elem,eps,sig,sup);
     
     /* PRESSURE CHANGES */
     for (M=0;M<nne;M++){
@@ -1297,6 +1302,7 @@ static int integration_help(const int ip,
 			    const double *pn,
 			    const double *p,
 			    const double *Fn,
+			    const SUPP sup,
 			    double *wt,
 			    double *jj,
 			    double *Na,
@@ -1404,6 +1410,7 @@ static int quadradic_integration_help(const int ip,
 				      const double *disp,
 				      const double *pn,
 				      const double *p,
+				      const SUPP sup,
 				      double *wt,
 				      double *jj,
 				      double *Na,
@@ -1987,20 +1994,21 @@ static int get_Kpp_stab_at_ip(double *Kpp,
   return err;
 }/* static int get_Kpp_stab_tan_at_ip() */
 
-static double st_incr_elem (long ii,
-			    long nne,
-			    long ndofn,
-			    double *x,
-			    double *y,
-			    double *z,
-			    double *r_u,
-			    double *a_a,
-			    double *p,
-			    double dt,
-			    HOMMAT *hommat,
-			    ELEMENT *elem,
+static double st_incr_elem (const long ii,
+			    const long nne,
+			    const long ndofn,
+			    const double *x,
+			    const double *y,
+			    const double *z,
+			    const double *r_u,
+			    const double *a_a,
+			    const double *p,
+			    const double dt,
+			    const HOMMAT *hommat,
+			    const ELEMENT *elem,
 			    EPS *eps,
-			    SIG *sig)
+			    SIG *sig,
+			    const SUPP sup)
 {
   double result = 0.0;
   /* compute constants */
@@ -2075,7 +2083,7 @@ static double st_incr_elem (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,r_u,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,
 				F,C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,
 				grad_delP,grad_P);
 
@@ -2191,7 +2199,7 @@ static double st_incr_elem (long ii,
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,r_u,sig[ii].p,p,&wt,&jj,
+					  weights,r_u,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* get Pn_1 */

@@ -2716,8 +2716,6 @@ void GToL (const double *Gr,
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
 
-
-  
   //  for (i=0;i<ndofd;i++) r[i] = 0.0;
   nulld(r,ndofd);
 

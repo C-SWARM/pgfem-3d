@@ -1,8 +1,8 @@
 /* HEADER */
 /**
  * AUTHORS:
- * Matthew Mosby
- * Karel Matous
+ * Matthew Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
 #include "stiffmat_fd.h"
 #include "enumerations.h"
@@ -136,7 +136,7 @@ static int el_stiffmat (int i, /* Element ID */
   switch(analysis){
   case STABILIZED:
     err = stiffmatel_st (i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
-			 r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
+			 sup,r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
     break;
   case MINI:
     err = MINI_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,

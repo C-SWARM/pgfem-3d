@@ -622,7 +622,6 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   MPI_Comm_size(common->mpi_comm,&nproc);
 
   const long local_len = common->ndofd;
-  const long global_len = common->DomDof[myrank];
   const size_t len_double = sizeof(double);
 
   sol->sig_e = build_sig_il(common->ne,analysis,common->elem);

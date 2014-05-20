@@ -16,11 +16,8 @@
 #include "displacement_based_element.h"
 
 long* compute_times_load (FILE *in1,
-			  long nt,
-			  long nlod_tim)
-     /*
-       
-     */
+			  const long nt,
+			  const long nlod_tim)
 {
   long i,j,*tim_load;
   long *help;
@@ -55,10 +52,10 @@ long* compute_times_load (FILE *in1,
 }
 
 void load_vec_node (double *f,
-		    long nln,
-		    long ndofn,
-		    ZATNODE *znode,
-		    NODE *node)
+		    const long nln,
+		    const long ndofn,
+		    const ZATNODE *znode,
+		    const NODE *node)
 	  /*
 	    
 	  */
@@ -92,9 +89,6 @@ int load_vec_node_defl (double *f,
 			double stab,
 			double *r,
 			const PGFem3D_opt *opts)
-     /*
-       
-     */
 {
   int err = 0;
   double *fe = NULL;
@@ -163,7 +157,7 @@ int load_vec_node_defl (double *f,
       break;
     case STABILIZED:
       stiffmatel_st (sup->lepd[i],ndofn,nne,x,y,z,elem,
-		     hommat,nod,node,sig,eps,r_e,npres,
+		     hommat,nod,node,sig,eps,sup,r_e,npres,
 		     nor_min,lk,dt,stab,0,0.0,fe);
       break;
     case MINI:
@@ -332,14 +326,9 @@ int load_vec_node_defl (double *f,
 }
 
 void load_vec_elem_sur (double *f,
-			long nle_s,
-			long ndofn,
-			ELEMENT *elem,
-			ZATELEM *zele_s)
-     /*
-       NOT IMPLIMENTED
-     */
+			const long nle_s,
+			const long ndofn,
+			const ELEMENT *elem,
+			const ZATELEM *zele_s)
 {
-  
-  
 }

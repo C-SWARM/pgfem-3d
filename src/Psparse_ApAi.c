@@ -96,12 +96,11 @@ int* Psparse_ApAi (int nproc,
   FILE *out=NULL;
   long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
-  long LI1,LI2,KK,*cncL=NULL,*cncG=NULL,ndofc,*nodc=NULL;
+  long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc,*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
-  long **RECI=NULL,**SEND=NULL;
   int *Ddof = NULL;
   int *Ai = NULL;
-  MPI_Status stat, *sta_s=NULL, *sta_r=NULL;
+  MPI_Status *sta_s=NULL, *sta_r=NULL;
   MPI_Request *req_s=NULL, *req_r=NULL;
 
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
