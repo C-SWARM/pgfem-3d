@@ -160,6 +160,7 @@ static int get_Ru_at_ip(double *Ru,
     point. NOTE: This formulation requires quadradic integration on
     this term */
 static int get_Rp_at_ip(double *Rp,
+			const int TL,
 			const int nne,
 			const double *Np,
 			const double kappa,
@@ -172,6 +173,7 @@ static int get_Rp_at_ip(double *Rp,
 
 /** Compute the stabilization term for the residual */
 static int get_Rp_stab_at_ip(double *Rp,
+			     const int TL,
 			     const int nne,
 			     const double *Np_x,/* Np_x [ndn x nne] */
 			     const double *grad_delP,
@@ -248,6 +250,7 @@ static int get_Kpp_at_ip(double *Kpp,
 
 /** Compute the stabilization term for the Kpu tangent */
 static int get_Kpu_stab_at_ip(double *Kpu,
+			      const int TL,
 			      const int nne,
 			      const double *ST,
 			      const double *Np_x,
@@ -336,9 +339,6 @@ void res_stab_def (long ne,
 		   EPS *eps,
 		   SIG *sig,
 		   double stab)
-/*
-  
-*/
 {
   long ii,ip,i,nne,II,mat;
   for (ii=0;ii<ne;ii++){
@@ -391,7 +391,7 @@ int resid_st_elem (long ii,
 		   double stab)
 {
   /* compute constants */
-  const int ndn = 3;
+  static const int ndn = 3;
   const int mat = elem[ii].mat[2];
   const double  kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   const HOMMAT *ptrMat = &hommat[mat];
@@ -496,7 +496,7 @@ int resid_st_elem (long ii,
 			    /*n+1*/ pressure,ptrDam,jj,wt);
 
 	/* compute Rp stabilization contribution at integration point */
-	err += get_Rp_stab_at_ip(Rp,nne,Np_x,grad_delP,grad_P,Jr,
+	err += get_Rp_stab_at_ip(Rp,sup->multi_scale,nne,Np_x,grad_delP,grad_P,Jr,
 				 Fr_I,SStab,ptrDam,jj,wt);
 
 	/* increment ip counter */
@@ -543,7 +543,7 @@ int resid_st_elem (long ii,
 	err += get_material_pres(&Up,Jn,Jr,ptrMat,ptrDam);
 
 	/* compute contribution to Rp from integration point */
-	err += get_Rp_at_ip(Rp,nne,Na,kappa,Up,delP,Pn+delP,ptrDam,jj,wt);
+	err += get_Rp_at_ip(Rp,sup->multi_scale,nne,Na,kappa,Up,delP,Pn+delP,ptrDam,jj,wt);
 
 	/* increment ip counter */
 	ip++;
@@ -795,7 +795,7 @@ int stiffmatel_st (long ii,
 	err += get_Kpu_at_ip(Kpu,nne,Na,ST,Fr_I,Jn,Jr,kappa,Upp,UP,
 			     pressure,SS,ptrDam,jj,wt);
 
-	err += get_Kpu_stab_at_ip(Kpu,nne,ST,Np_x,Fr,Fr_I,Jr,grad_delP,
+	err += get_Kpu_stab_at_ip(Kpu,sup->multi_scale,nne,ST,Np_x,Fr,Fr_I,Jr,grad_delP,
 				  grad_P,SStab,ptrDam,SS,jj,wt);
 
 	err += get_Kpp_stab_at_ip(Kpp,nne,Na,Np_x,Fr_I,Jn_1,Jn,Jr,SStab,
@@ -1351,6 +1351,7 @@ static int integration_help(const int ip,
   /* compute the pressure gradient operator and pressure */
   *Pn_1 = *Pn = *pressure = 0.0;
   memset(grad_delP,0,3*sizeof(double));
+  memset(grad_P,0,3*sizeof(double));
   for(int i=0; i<nne; i++){
     Np_x[idx_2_gen(0,i,3,nne)] = N_x[i];
     Np_x[idx_2_gen(1,i,3,nne)] = N_y[i];
@@ -1673,6 +1674,7 @@ static int get_Ru_at_ip(double *Ru,
 
 
 static int get_Rp_at_ip(double *Rp,
+			const int TL,
 			const int nne,
 			const double *Np,
 			const double kappa,
@@ -1687,6 +1689,7 @@ static int get_Rp_at_ip(double *Rp,
 
   /* compute dP for residual */
   double dP = (1.-dam->wn)*deltaPres + (dam->wn - dam->w)*P;
+  if(TL) dP = (1.-dam->w)*P;
 
   /* add contribution of integration point to Rp */
   UL_Rp_at_ip(Rp,nne,Np,kappa,deltaUp,dP,jj,wt);
@@ -1696,6 +1699,7 @@ static int get_Rp_at_ip(double *Rp,
 
 
 static int get_Rp_stab_at_ip(double *Rp,
+			     const int TL,
 			     const int nne,
 			     const double *Np_x,/* Np_x [ndn x nne] */
 			     const double *grad_delP,
@@ -1721,8 +1725,14 @@ static int get_Rp_stab_at_ip(double *Rp,
 	      3,3,3,stab*Jr,Fr_I,3,Fr_I,3,0.0,FrFr,3);
 
   /* compute damage gradP */
-  for(int i=0; i<3; i++){
-    gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn - dam->w)*grad_P[i];
+  if(TL){
+    for(int i=0; i<3; i++){
+      gradP[i] = (1.-dam->w)*grad_P[i];
+    }
+  } else {
+    for(int i=0; i<3; i++){
+      gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn - dam->w)*grad_P[i];
+    }
   }
 
   /* add contribution of stabilization term to Rp at the integration
@@ -1855,6 +1865,7 @@ static int get_Kpp_at_ip(double *Kpp,
 
 
 static int get_Kpu_stab_at_ip(double *Kpu,
+			      const int TL,
 			      const int nne,
 			      const double *ST,
 			      const double *Np_x,
@@ -1886,8 +1897,14 @@ static int get_Kpu_stab_at_ip(double *Kpu,
 	      3,3,3,1.0,Fr_I,3,Fr_I,3,0.0,Cr_I,3);
 
   /* compute damage grad P */
-  for(int i=0; i<3; i++){
-    dam_gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn-dam->w)*grad_P[i];
+  if(TL){
+    for(int i=0; i<3; i++){
+      dam_gradP[i] = (1.-dam->w)*grad_P[i];
+    }
+  } else {
+    for(int i=0; i<3; i++){
+      dam_gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn-dam->w)*grad_P[i];
+    }
   }
 
   for(int a=0; a<nne; a++){
