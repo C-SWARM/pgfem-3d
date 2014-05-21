@@ -29,6 +29,7 @@
 
 static const int periodic = 0;
 static const double PII = 3.141592653589793238462643;
+static const double identity[9]={1,0,0,0,1,0,0,0,1};
 
 /*=== Declare the static helper functions ===*/
 /** Compute common quantities used in integration */
@@ -467,8 +468,14 @@ int resid_st_elem (long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -515,8 +522,14 @@ int resid_st_elem (long ii,
 
 	/* get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].st[ip].Fpp;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	const damage *ptrDam = &eps[ii].st[ip].dam;
 
@@ -729,8 +742,14 @@ int stiffmatel_st (long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -803,8 +822,15 @@ int stiffmatel_st (long ii,
 	/* declare fresh variables for integration */
 	double Jr,delP,jj,wt,Pn_1,Pn,UP,H;
 
-	const double *Fn = eps[ii].st[ip].Fpp;
-	const double Jn = getJacobian(Fn,ii,&err);
+	double Jn = 0.0;
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn =  eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].st[ip].dam;
@@ -1263,12 +1289,22 @@ int st_increment (long ne,
     *pores = Gpores;
   }
  
+  /* reset the coordinates for multi-scale (TOTAL LAGRANGIAN
+     FORMULATION) */
+  if (sup->multi_scale){
+    for(int n=0; n<nn; n++){
+      node[n].x1 = node[n].x1_fd;
+      node[n].x2 = node[n].x2_fd;
+      node[n].x3 = node[n].x3_fd;
+    }
+  }
+
   if (myrank == 0) {
     if (coh == 0){
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f\n",GPL);
     } else {
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f || Volume of voids %12.12f || Vv/V = %12.12f\n",
-	      GPL,*pores,*pores/GPL);
+		    GPL,*pores,*pores/GPL);
       /*VVolume --> GPL*/ /* VVolume doesn't make sense...*/
     }
   }
@@ -1322,7 +1358,7 @@ static int integration_help(const int ip,
 			    double *grad_delP,
 			    double *grad_P)
 {
-  const int ndn = 3;
+  static const int ndn = 3;
   int err = 0;
   double ksi,eta,zet;
 
@@ -1378,6 +1414,14 @@ static int integration_help(const int ip,
   /* compute F and C */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
 	      3,3,3,1.0,Fr,3,Fn,3,0.0,F,3);
+
+  /* Add multiscale contribution */
+  if(sup->multi_scale){
+    for(int i=0; i<ndn*ndn; i++){
+      F[i] += sup->F0[i];
+    }
+  }
+
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
 	      3,3,3,1.0,F,3,F,3,0.0,C,3);
 
@@ -1423,7 +1467,7 @@ static int quadradic_integration_help(const int ip,
 				      double *delP,
 				      double *Pn)
 {
-  const int ndn = 3;
+  static const int ndn = 3;
   int err = 0;
   double ksi,eta,zet;
 
@@ -1454,6 +1498,13 @@ static int quadradic_integration_help(const int ip,
   /* compute the current deformation gradient */
   def_grad_get(nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
   mat2array(Fr,CONST_2(double) Fr_mat,3,3);
+
+  /* Add multiscale contribution */
+  if(sup->multi_scale){
+    for(int i=0; i<ndn*ndn; i++){
+      Fr[i] += sup->F0[i];
+    }
+  }
 
   /* compute delP */
   *Pn = *delP = 0.0;
@@ -2073,8 +2124,14 @@ static double st_incr_elem (const long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -2190,8 +2247,15 @@ static double st_incr_elem (const long ii,
 	/* declare fresh variables for integration */
 	double Jr,delP,jj,wt,Pn;
 
-	const double *Fn = eps[ii].st[ip].Fpp;
-	double Jn = getJacobian(Fn,ii,&err);
+	double Jn = 0.0;
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn =  eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	double Un_1 = eps[ii].st[ip].Un_1;
 	double Jn_1 = eps[ii].st[ip].Jn_1;
