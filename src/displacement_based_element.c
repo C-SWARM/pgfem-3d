@@ -1039,14 +1039,6 @@ void DISP_increment(const ELEMENT *elem,
     free(disp);
   } /* For each element */
 
-  /* Increment the prescribed displacements. This is done here because
-     it is a total lagrangian formulation and we need to compute the
-     total displacements. */
-
-  for(int i=0; i<sup->npd; i++){
-    sup->defl[i] += sup->defl_d[i];
-  }
-
   /*** Update the coordinates FOR COMPUTING CURRENT VOLUME ONLY ***/
   /* Total Lagrangian formaulation takes gradients w.r.t. xi_fd */
   for (int ii=0;ii<nnodes;ii++){
@@ -1059,16 +1051,36 @@ void DISP_increment(const ELEMENT *elem,
       }
       if (II < 0){
 	if (i == 0) node[ii].x1 = (node[ii].x1_fd
-				   + sup->defl[abs(II)-1]);
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
 
 	if (i == 1) node[ii].x2 = (node[ii].x2_fd
-				   + sup->defl[abs(II)-1]);
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
 
 	if (i == 2) node[ii].x3 = (node[ii].x3_fd
-				   + sup->defl[abs(II)-1]);
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
       }
     }
   }/* end ii < nn */
+
+  /* update the coordinates including macroscale deformations */
+  if(sup->multi_scale){
+    const double *F = sup->F0;
+    double X[ndn];
+    double Y[ndn];
+    for(int i=0; i<nnodes; i++){
+      X[0] = node[i].x1_fd;
+      X[1] = node[i].x2_fd;
+      X[2] = node[i].x3_fd;
+      cblas_dgemv(CblasRowMajor,CblasNoTrans,ndn,ndn,1.0,
+		  F,ndn,X,1,0.0,Y,1);
+      node[i].x1 += Y[0];
+      node[i].x2 += Y[1];
+      node[i].x3 += Y[2];
+    }
+  }
 
   double PL, GPL;
   int myrank;

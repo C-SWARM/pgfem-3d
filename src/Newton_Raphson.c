@@ -851,18 +851,9 @@ double Newton_Raphson (const int print_level,
     vvplus (r,d_r,ndofd);
     
     /* Null prescribed increment deformation */
-    switch(opts->analysis_type){
-    default:
-      for (i=0;i<sup->npd;i++){  
-	sup->defl[i] += sup->defl_d[i];
-	sup->defl_d[i] = 0.0;
-      }
-      break;
-    case DISP:
-      for (i=0;i<sup->npd;i++){      
-	sup->defl_d[i] = 0.0;
-      }
-      break;
+    for (i=0;i<sup->npd;i++){  
+      sup->defl[i] += sup->defl_d[i];
+      sup->defl_d[i] = 0.0;
     }
 
     for (i=0;i<ndofd;i++) {
