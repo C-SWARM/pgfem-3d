@@ -1101,23 +1101,43 @@ void def_elem (const long *cn,
 	       double *r_e,
 	       const SUPP sup,
 	       const long TYPE)
-/*
-  ii - element
-  jj - layer
-  Function sorts vector of nodal unknowns on ELEMENT
-  u_1, u_2, u_3
-*/
 { 
+  enum{UPDATED=0,TOTAL=1,OTHER=2};
   long i,j;
-  
+
   for (i=0;i<ndofe;i++){
     j = cn[i];
-    if (j == 0) r_e[i] = 0.0;
-    if (j > 0)  r_e[i] = r[j-1];
-    if (j < 0)  {
-      if (TYPE == 0) r_e[i] = sup->defl_d[abs(j)-1];
-      if (TYPE == 1) r_e[i] = sup->defl[abs(j)-1];
-      if (TYPE == 2) r_e[i] = 0.0;
+    if (j == 0){
+      r_e[i] = 0.0;
+    } else if (j > 0){
+      r_e[i] = r[j-1];
+    } else { /* if (j < 0)  { */
+      if (TYPE == UPDATED) r_e[i] = sup->defl_d[abs(j)-1];
+      if (TYPE == TOTAL) r_e[i] = sup->defl[abs(j)-1];
+      if (TYPE == OTHER) r_e[i] = 0.0;
+    }
+  }
+}
+
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e)
+{
+  for(int i=0; i< ndofe; i++){
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0){
+      r_e[i] = 0.0;
+    } else if (id > 0){
+      r_e[i] = r[aid] + d_r[aid];
+    } else {
+      r_e[i] = sup->defl[aid] + sup->defl_d[aid];
     }
   }
 }

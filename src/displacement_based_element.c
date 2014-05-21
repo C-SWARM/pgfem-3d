@@ -1023,9 +1023,7 @@ void DISP_increment(const ELEMENT *elem,
     nodecoord_total(nne,nod,node,x,y,z);
 
     /* TOTAL LAGRANGIAN: get the TOTAL displacement */
-    def_elem(cn,ndofe,sol_incr,elem,node,disp_incr,sup,0);
-    def_elem(cn,ndofe,sol,elem,node,disp,sup,1);
-    cblas_daxpy(ndofe,1.0,disp_incr,1,disp,1);
+    def_elem_total(cn,ndofe,sol,sol_incr,elem,node,sup,disp);
 
     /* increment the element quantities */
     DISP_increment_el(elem,i,nne,node,nod,ndofn,
@@ -1046,21 +1044,21 @@ void DISP_increment(const ELEMENT *elem,
       int II = node[ii].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + sol[II-1] + sol_incr[II-1];
-	if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];
-	if (i == 2) node[ii].x3 = node[ii].x3_fd + sol[II-1] + sol_incr[II-1];
+	else if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];
+	else if (i == 2) node[ii].x3 = node[ii].x3_fd + sol[II-1] + sol_incr[II-1];
       }
-      if (II < 0){
+      else if (II < 0){
 	if (i == 0) node[ii].x1 = (node[ii].x1_fd
 				   + sup->defl[abs(II)-1]
 				   + sup->defl_d[abs(II)-1]);
 
-	if (i == 1) node[ii].x2 = (node[ii].x2_fd
-				   + sup->defl[abs(II)-1]
-				   + sup->defl_d[abs(II)-1]);
+	else if (i == 1) node[ii].x2 = (node[ii].x2_fd
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
 
-	if (i == 2) node[ii].x3 = (node[ii].x3_fd
-				   + sup->defl[abs(II)-1]
-				   + sup->defl_d[abs(II)-1]);
+	else if (i == 2) node[ii].x3 = (node[ii].x3_fd
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
       }
     }
   }/* end ii < nn */

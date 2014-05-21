@@ -102,14 +102,14 @@ int load_vec_node_defl (double *f,
     int nne = elem[sup->lepd[i]].toe;
     int nne_t = nne + elem[sup->lepd[i]].n_bub;
     /* Nodes on element */
-    long *nod = aloc1l (nne);
-    elemnodes (sup->lepd[i],nne,nod,elem);
+    long *nod = elem[sup->lepd[i]].nod;
     
     /* Element Dof */
     int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
-
-    /* Allocation */
     long *cn = aloc1l (ndofe);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+
+    /* element tangent */
     double *lk= aloc1 (ndofe*ndofe);
 
     double *x,*y,*z;
@@ -126,28 +126,29 @@ int load_vec_node_defl (double *f,
 
     double *floc = aloc1 (ndofe);
     double *rloc = aloc1 (ndofe); 
-    
+    double *r_e = aloc1 (ndofe); 
+
     /* Coordinates of nodes */
-    switch(opts->analysis_type){
-    case DISP:
-      nodecoord_total (nne,nod,node,x,y,z);    
-      break;
-    default:
-      nodecoord_updated (nne,nod,node,x,y,z);    
-      break;
+    if(sup->multi_scale){
+      nodecoord_total (nne,nod,node,x,y,z);
+      def_elem (cn,ndofe,r,elem,node,r_e,sup,1);
+    } else {
+      switch(opts->analysis_type){
+      case DISP:
+	nodecoord_total (nne,nod,node,x,y,z);
+	def_elem (cn,ndofe,r,elem,node,r_e,sup,1); 
+	break;
+      default:
+	nodecoord_updated (nne,nod,node,x,y,z);    
+	break;
+      }
     }
+
     if (opts->analysis_type == MINI
 	|| opts->analysis_type == MINI_3F){ /* P1+B/P1 */
       element_center(nne,x,y,z);
     }
-   
-    nulld (lk,ndofe*ndofe);
-    double *r_e, *r_r;
 
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
-    
-    r_e = aloc1 (ndofe); 
-    r_r = aloc1 (ndofe); /* for TOTAL LAGRANGIAN */
     switch(opts->analysis_type){
     case FS_CRPL:
     case FINITE_STRAIN:
@@ -169,19 +170,14 @@ int load_vec_node_defl (double *f,
 			  hommat,nod,node,eps,sig,r_e);
       break;
     case DISP:
-	/* Total a-vector */
-	def_elem (cn,ndofe,r,elem,node,r_r,sup,1);
 	err = DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
-			       hommat,nod,node,eps,sig,sup,r_r);
+			       hommat,nod,node,eps,sig,sup,r_e);
       break;
     default:
       stiffmatel (sup->lepd[i],x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
       break;
     } /* switch analysis */
-    dealoc1 (r_e);
-    dealoc1 (r_r);
-  
-    
+      
     /* get the disp increment from BC */
     {
       int k = 0;
@@ -217,14 +213,14 @@ int load_vec_node_defl (double *f,
 
     /*  dealocation  */
     dealoc1l (cn);
-    dealoc1l (nod);
     dealoc1 (lk);
     dealoc1 (x);
     dealoc1 (y);
     dealoc1 (z);
     dealoc1(floc);
     dealoc1(rloc);
-    
+    dealoc1 (r_e);
+
     if(err != 0) return err;
   }/* end i (each volume element) */
 

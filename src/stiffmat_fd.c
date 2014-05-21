@@ -100,13 +100,22 @@ static int el_stiffmat (int i, /* Element ID */
   }
     
   /* Coordinates of nodes */
-  switch(analysis){
-  case DISP:
+  /*
+   * The coordinates define the configuration for computing gradients. 
+   */
+  if(sup->multi_scale){
+    /* multi-scale analysis is TOTAL LAGRANGIAN for all element
+       formulations */
     nodecoord_total (nne,nod,node,x,y,z);
-    break;
-  default:
-    nodecoord_updated (nne,nod,node,x,y,z);
-    break;
+  } else {
+    switch(analysis){
+    case DISP:
+      nodecoord_total (nne,nod,node,x,y,z);
+      break;
+    default:
+      nodecoord_updated (nne,nod,node,x,y,z);
+      break;
+    }
   }
 
   /* if P1+B/P1, get element centroid coords */
@@ -118,7 +127,9 @@ static int el_stiffmat (int i, /* Element ID */
   get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cnL);
   get_dof_ids_on_elem_nodes(1,nne,ndofn,nod,node,cnG);
     
-  /* deformation on element */
+  /*=== deformation on element ===*/
+
+  /* set the increment of applied def=0 on first iter */
   if (iter == 0) {
     for (j=0;j<sup->npd;j++){
       sup_def[j] = sup->defl_d[j];
@@ -126,7 +137,23 @@ static int el_stiffmat (int i, /* Element ID */
     }
   }
 
-  def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+  /* get the deformation on the element */
+  if(sup->multi_scale){
+    /* multi-scale analysis is TOTAL LAGRANGIAN for all element
+       formulations */
+    def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+  } else {
+    switch(analysis){
+    case DISP: /* TOTAL LAGRANGIAN */
+      def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+      break;
+    default:
+      def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+      break;
+    }
+  }
+
+  /* recover thei increment of applied def on first iter */
   if (iter == 0){
     for (j=0;j<sup->npd;j++)
       sup->defl_d[j] = sup_def[j];
@@ -147,17 +174,8 @@ static int el_stiffmat (int i, /* Element ID */
 			      hommat,nod,node,eps,sig,r_e);
     break;
   case DISP:
-    {
-      /* Get TOTAL deformation on element; r_e already contains
-	 INCREMENT of deformation, add the deformation from previous. */
-      double *r_en;
-      r_en = aloc1(ndofe);
-      def_elem (cnL,ndofe,r,elem,node,r_en,sup,1);
-      vvplus(r_e,r_en,ndofe);
-      err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-			     hommat,nod,node,eps,sig,sup,r_e);
-      free(r_en);
-    } 
+    err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			   hommat,nod,node,eps,sig,sup,r_e);
     break;
   default:
     err = stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
@@ -282,6 +300,10 @@ static void coel_stiffmat(int i, /* coel ID */
     nod[j] = coel[i].nod[j];
 
   /* Coordinates */
+  /* 
+   * NOTE: get updated coordinates for all formulations, computes jump
+   * based on both coordinates and deformation.
+   */
   nodecoord_updated (coel[i].toe,nod,node,x,y,z);
       
   /* code numbers on element */

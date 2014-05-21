@@ -661,7 +661,7 @@ int stiffmatel_st (long ii,
 		   double *fe)
 {
   /* compute constants */
-  const int ndn = 3;
+  static const int ndn = 3;
   const int mat = elem[ii].mat[2];
   const double  kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   const HOMMAT *ptrMat = &hommat[mat];
@@ -1000,20 +1000,16 @@ int st_increment (long ne,
 		  MPI_Comm mpi_comm,
 		  const int coh)
 {
+  static const int ndn = 3;
   int err = 0;
-  long ndn,ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
-  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],*X,*Y,PL,EL_e,
+  long ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
+  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e,
     FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
   
   int myrank,nproc;
   MPI_Comm_size(mpi_comm,&nproc);
   MPI_Comm_rank(mpi_comm,&myrank);
-
-  /* 3D */ ndn = 3;
-  
-  /* Allocate */
-  X = aloc1 (3); Y = aloc1 (3);
   
   /************ UNIT CELL APPROACH + GFEM - TOTAL LAGRANGIAN *******/
   if (periodic == 1){
@@ -1055,14 +1051,17 @@ int st_increment (long ne,
     a_a = aloc1 (ndn*nne);
     a = aloc1 (ndofe);
     
-    /* Coordinates of element */
-    nodecoord_updated (nne,nod,node,x,y,z);
-    
     /* Id numbers */
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
-    
-    /* deformation on element */
-    def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+
+    /* Coordinates/deformation on element */
+    if(sup->multi_scale){
+      nodecoord_total (nne,nod,node,x,y,z);
+      def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    } else {
+      nodecoord_updated (nne,nod,node,x,y,z);
+      def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+    }
 
     /* Null fields */
     for (k=0;k<6;k++){
@@ -1218,67 +1217,46 @@ int st_increment (long ne,
   /*********************/
   /* Coordinate update */
   /*********************/
-  if (periodic == 1){
-    for (ii=0;ii<nn;ii++){
-
-      if (periodic == 1){
-	X[0] = node[ii].x1_fd;
-	X[1] = node[ii].x2_fd;
-	X[2] = node[ii].x3_fd;
-	for (P=0;P<3;P++){
-	  Y[P] = 0.0;
-	  for (R=0;R<3;R++){
-	    Y[P] += eps[0].F[P][R]*X[R];
-	  }
-	}
+   for (ii=0;ii<nn;ii++){
+    for (i=0;i<ndn;i++){
+      II = node[ii].id[i];
+      if (II > 0){
+	if (i == 0) node[ii].x1 = node[ii].x1_fd + r[II-1] + d_r[II-1];
+	else if (i == 1) node[ii].x2 = node[ii].x2_fd + r[II-1] + d_r[II-1];
+	else if (i == 2) node[ii].x3 = node[ii].x3_fd + r[II-1] + d_r[II-1];
       }
-      
-      for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
-	
-	if (periodic == 1){
-	  if (i == 0) node[ii].x1 = Y[i];
-	  if (i == 1) node[ii].x2 = Y[i];
-	  if (i == 2) node[ii].x3 = Y[i];
-	  
-	  if (II > 0){
-	    if (i == 0) node[ii].x1 += r[II-1] + d_r[II-1];
-	    if (i == 1) node[ii].x2 += r[II-1] + d_r[II-1];
-	    if (i == 2) node[ii].x3 += r[II-1] + d_r[II-1];
-	  }
-	}/* periodic update */
-	else {
-	  if (II > 0){
-	    if (i == 0) node[ii].x1 += d_r[II-1];
-	    if (i == 1) node[ii].x2 += d_r[II-1];
-	    if (i == 2) node[ii].x3 += d_r[II-1];
-	  }
-	  if (II < 0){
-	    if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-	    if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-	    if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
-	  }
-	}/* gem update */
+      else if (II < 0){
+	if (i == 0) node[ii].x1 = (node[ii].x1_fd
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
+
+	else if (i == 1) node[ii].x2 = (node[ii].x2_fd 
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
+
+	else if (i == 2) node[ii].x3 = (node[ii].x3_fd
+					+ sup->defl[abs(II)-1] 
+					+ sup->defl_d[abs(II)-1]);
       }
     }
-  }/* end PERIODIC */
-  else{
-    for (ii=0;ii<nn;ii++){
-      for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
-	if (II > 0){
-	  if (i == 0) node[ii].x1 += d_r[II-1];
-	  if (i == 1) node[ii].x2 += d_r[II-1];
-	  if (i == 2) node[ii].x3 += d_r[II-1];
-	}
-	if (II < 0){
-	  if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-	  if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-	  if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
-	}
-      }
-    }/* end ii < nn */
-  }
+  }/* end ii < nn */
+
+   /* update the coordinates including macroscale deformations */
+   if(sup->multi_scale){
+     const double *F = sup->F0;
+     double X[ndn];
+     double Y[ndn];
+     for(int i=0; i<nn; i++){
+       X[0] = node[i].x1_fd;
+       X[1] = node[i].x2_fd;
+       X[2] = node[i].x3_fd;
+       cblas_dgemv(CblasRowMajor,CblasNoTrans,ndn,ndn,1.0,
+		   F,ndn,X,1,0.0,Y,1);
+       node[i].x1 += Y[0];
+       node[i].x2 += Y[1];
+       node[i].x3 += Y[2];
+     }
+   }
   
   PL = T_VOLUME (ne,ndofn-1,elem,node);
   /* Gather Volume from all domains */
@@ -1287,16 +1265,6 @@ int st_increment (long ne,
   if (coh == 1) {
     MPI_Allreduce(pores,&Gpores,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
     *pores = Gpores;
-  }
- 
-  /* reset the coordinates for multi-scale (TOTAL LAGRANGIAN
-     FORMULATION) */
-  if (sup->multi_scale){
-    for(int n=0; n<nn; n++){
-      node[n].x1 = node[n].x1_fd;
-      node[n].x2 = node[n].x2_fd;
-      node[n].x3 = node[n].x3_fd;
-    }
   }
 
   if (myrank == 0) {
@@ -1309,8 +1277,6 @@ int st_increment (long ne,
     }
   }
   
-    dealoc1 (X);
-    dealoc1 (Y);
     return err;
 }
 
@@ -1411,15 +1377,19 @@ static int integration_help(const int ip,
   def_grad_get(nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
   mat2array(Fr,CONST_2(double) Fr_mat,3,3);
 
-  /* compute F and C */
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-	      3,3,3,1.0,Fr,3,Fn,3,0.0,F,3);
-
-  /* Add multiscale contribution */
+  /*=== compute F and C ===*/
+  /*
+   * Add multiscale contribution. 
+   * For multi-scale analysis, Fn = Identity, F = Fr
+   */
   if(sup->multi_scale){
     for(int i=0; i<ndn*ndn; i++){
-      F[i] += sup->F0[i];
+      Fr[i] +=  sup->F0[i];
     }
+    memcpy(F,Fr,ndn*ndn*sizeof(double));
+  } else {
+    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+		3,3,3,1.0,Fr,3,Fn,3,0.0,F,3);
   }
 
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,

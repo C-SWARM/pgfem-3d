@@ -294,6 +294,17 @@ void def_elem (const long *cn,
 	       const SUPP sup,
 	       const long TYPE);
 
+/** Compute the TOTAL deformation on an element using r, d_r, and
+    sup->{defl,defl_d} and store in r_e */
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e);
+
 /** Returns the local node numbers in a given element in nod[]. */
 void elemnodes (const long ii,
 		const long nne,

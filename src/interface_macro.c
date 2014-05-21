@@ -66,18 +66,18 @@ int compute_interface_macro_jump_u(double *jump_u,
     memset(jump_u,0,3*sizeof(double));
     err = 1;
   } else {
-    if(analysis == DISP){ /* get total jump */
+    /* if(analysis == DISP){ /\* get total jump *\/ */
       jump_u[0] = ((sup->defl[0] + sup->defl_d[0])
 		   -(sup->defl[3] + sup->defl_d[3]));
       jump_u[1] = ((sup->defl[1] + sup->defl_d[1])
 		   -(sup->defl[4] + sup->defl_d[4]));
       jump_u[2] = ((sup->defl[2] + sup->defl_d[2])
 		   -(sup->defl[5] + sup->defl_d[5]));
-    } else { /* get jump increment */
-      jump_u[0] = (sup->defl_d[0] - sup->defl_d[3]);
-      jump_u[1] = (sup->defl_d[1] - sup->defl_d[4]);
-      jump_u[2] = (sup->defl_d[2] - sup->defl_d[5]);
-    }
+    /* } else { /\* get jump increment *\/ */
+    /*   jump_u[0] = (sup->defl_d[0] - sup->defl_d[3]); */
+    /*   jump_u[1] = (sup->defl_d[1] - sup->defl_d[4]); */
+    /*   jump_u[2] = (sup->defl_d[2] - sup->defl_d[5]); */
+    /* } */
   }
 
   return err;
@@ -127,7 +127,8 @@ int compute_macro_grad_u(double *F0,
   int err = 0;
   if(sup->npd >= 9){ /* Bulk grad(u0) */
     switch(analysis){
-    case DISP:
+    default:
+    /* case DISP: */
       F0[0] = sup->defl[0] + sup->defl_d[0];
       F0[1] = sup->defl[1] + sup->defl_d[1];
       F0[2] = sup->defl[2] + sup->defl_d[2];
@@ -140,19 +141,19 @@ int compute_macro_grad_u(double *F0,
       F0[7] = sup->defl[7] + sup->defl_d[7];
       F0[8] = sup->defl[8] + sup->defl_d[8];
       break;
-    default:
-      F0[0] = sup->defl_d[0];
-      F0[1] = sup->defl_d[1];
-      F0[2] = sup->defl_d[2];
+    /* default: */
+    /*   F0[0] = sup->defl_d[0]; */
+    /*   F0[1] = sup->defl_d[1]; */
+    /*   F0[2] = sup->defl_d[2]; */
       
-      F0[3] = sup->defl_d[3];
-      F0[4] = sup->defl_d[4];
-      F0[5] = sup->defl_d[5];
+    /*   F0[3] = sup->defl_d[3]; */
+    /*   F0[4] = sup->defl_d[4]; */
+    /*   F0[5] = sup->defl_d[5]; */
 
-      F0[6] = sup->defl_d[6];
-      F0[7] = sup->defl_d[7];
-      F0[8] = sup->defl_d[8];
-      break;
+    /*   F0[6] = sup->defl_d[6]; */
+    /*   F0[7] = sup->defl_d[7]; */
+    /*   F0[8] = sup->defl_d[8]; */
+    /*   break; */
     }
   } else if(sup->npd >= 6){ /* interface grad(u0) */
     double *ju = PGFEM_calloc(3,sizeof(double));
