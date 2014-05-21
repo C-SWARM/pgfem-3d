@@ -1,3 +1,9 @@
+/* HEADER */
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ */
+#pragma once
 #ifndef COHESIVE_ELEMENT_UTILS_H
 #define COHESIVE_ELEMENT_UTILS_H
 
