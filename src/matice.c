@@ -6,13 +6,8 @@
 #include "matice.h"
 #include <math.h>
 
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef RESICE_H
 #include "resice.h"
-#endif
 
 #define SIGN(a,b) ((b)<0 ? -fabs(a) : fabs(a))
 

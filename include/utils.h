@@ -311,16 +311,6 @@ void elemnodes (const long ii,
 		long *nod,
 		const ELEMENT *elem);
 
-/** Returns the coordinates of the nodes on the element in element
-    connectivity order. NOTE: returns undeformed configuration
-    if(periodic == 1 || analysis == DISP). */
-/* void nodecoord (const long nne, */
-/* 		const long *nod, */
-/* 		const NODE *node, */
-/* 		double *x, */
-/* 		double *y, */
-/* 		double *z); */
-
 /** returns node coords for total Lagrangian formulation
     (i.e. undeformed) */
 void nodecoord_total (const long nne,
@@ -479,9 +469,9 @@ void aver_stress (long ii,
 		  SIG *sig,
 		  EPS *eps);
 
-/*******************************************************************************************/
-/*****************************  ARC-LENGTH PROCEDURES  *************************************/
-/*******************************************************************************************/
+/***************************************************************/
+/*************  ARC-LENGTH PROCEDURES  *************************/
+/***************************************************************/
 
 long diag_K (double *k,
 	     long *adr,
@@ -490,26 +480,6 @@ long diag_K (double *k,
 double det_K (double *k,
 	      long *adr,
 	      long ndofd);
-
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0);
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL);
-*/
 
 double new_arc_length (long iter,
 		       long iter_des,

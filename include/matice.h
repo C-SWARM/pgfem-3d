@@ -1,8 +1,10 @@
-/***********************************
- *  Matrix and Vectors operations  *
- *  Karel Matous & Jaroslav Kruis  *
- ***********************************/
+/* HEADER */
+/**
+ * AUTHORS:
+ * Karel Matous, UNiversity of Notre Dame, kmatous [at] nd.edu
+ */
 
+#pragma once
 #ifndef MATICE_H
 #define MATICE_H
 

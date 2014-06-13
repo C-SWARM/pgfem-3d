@@ -2953,124 +2953,6 @@ double det_K (double *k,
   return (DET);
 }
 
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0)
-  / *
-       
-  * /
-  {
-  double s1,s2,b,znam,DLM;
-  DLM = 0.0;  b = 0.0;
-  
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  DLM = dAL/sqrt (s1 + b*b*s2);
-  
-  if (dlm0 == 0) znam = 1.0;
-  else             znam = dlm0/fabs(dlm0);
-  
-  if (PD > 0.0){
-  if (DET0 > 0.0 && DET < 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [1] | PD > 0\n\n");}
-  if (DET0 < 0.0 && DET > 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [2] | PD > 0\n\n");}
-  }
-  if (PD < 0.0){
-  if (DET0 > 0.0 && DET > 0.0 && PD0 > 0.0){ znam *= -1.0; PGFEM_printf("\nChanging sign - [3] | PD < 0\n\n");}
-  }
-  
-  DLM *= znam;
-  
-  return (DLM);
-  }
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL)
-  / *
-       
-  * /
-  {
-  long i;
-  double s1,s2,b,a1,a2,a3,LIN,DLM,x1,x2,*dR,*p1,*p2;
-  DLM = 0.0;  b = 0.0;
-  
-  dR = aloc1 (ndofd);  p1 = aloc1 (ndofd);  p2 = aloc1 (ndofd);
-  
-  for (i=0;i<ndofd;i++) dR[i] = d_r[i] + D_R[i];
-  
-  / ****** /
-  / * A1 * /
-  / ****** /
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  a1 = s1 + b*b*s2;
-  
-  / ****** /
-  / * A2 * /
-  / ****** /
-  s1 = ss (rr,dR,ndofd);
-  a2 = 2*(b*b*dlm*s2 + s1);
-  
-  / ****** /
-  / * A3 * /
-  / ****** /
-  s1 = ss (dR,dR,ndofd);
-  a3 = s1 - dAL*dAL + b*b*dlm*dlm*s2;
-  
-  if ((a2*a2 - 4*a1*a3) < 0.0 || 2*a1 == 0.0){
-  DLM = -1000000; return (DLM);
-  }
-  
-  / **** x1,2 = (-b +- sqrt(b^2 - 4*a*c))/(2*a) **** /
-  x1 = (-1.*a2 + sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  x2 = (-1.*a2 - sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  
-  for (i=0;i<ndofd;i++){
-  p1[i] = d_r[i] + D_R[i] + x1*rr[i];
-  p2[i] = d_r[i] + D_R[i] + x2*rr[i];
-  }
-  
-  s1 = ss (p1,d_r,ndofd);
-  s2 = ss (p2,d_r,ndofd);
-  
-  if (s1 < 0.0 && s2 > 0.0)
-  DLM = x2;
-  if (s2 < 0.0 && s1 > 0.0)
-  DLM = x1;
-  
-  LIN = -1.*a3/a2;
-  
-  if (s1 > 0.0 && s2 > 0.0){
-    
-  s1 = sqrt ((x1 - LIN)*(x1 - LIN));
-  s2 = sqrt ((x2 - LIN)*(x2 - LIN));
-    
-  if (s1 <= s2)  DLM = x1;
-  else           DLM = x2;
-  }
-  
-  if (s1 == 0.0 && s2 == 0.0)  DLM = 0.0;
-  
-  if (-1e+40 > DLM || DLM > 1e+40) DLM = -1000000;
-  
-  dealoc1 (dR); dealoc1 (p1); dealoc1 (p2);
-  
-  return (DLM);
-  }**/
-
 double new_arc_length (long iter,
 		       long iter_des,
 		       double dAL,
@@ -3090,15 +2972,10 @@ double new_arc_length (long iter,
   return (NEW);
 }
 
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
 
-/************************************************************************************************/
-/*****************************  NONSYMMETRIC SPARSE SOLVER  *************************************/
-/************************************************************************************************/
+/***********************************************************/
+/************  NONSYMMETRIC SPARSE SOLVER  *****************/
+/***********************************************************/
 
 long* sparse_ApAi (long ne,
 		   long ndofd,
