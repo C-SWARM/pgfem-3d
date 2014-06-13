@@ -1202,7 +1202,8 @@ int single_scale_main(int argc,char *argv[])
 	  if (options.cohesive == 1){
 	    if(myrank == 0){
 	      VTK_print_cohesive_master(options.opath,
-					options.ofname,tim,nproc);
+					options.ofname,tim,nproc,
+					&options);
 	    }
 
 	    VTK_print_cohesive_vtu(options.opath,options.ofname,

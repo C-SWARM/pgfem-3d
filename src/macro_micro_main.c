@@ -625,7 +625,7 @@ int multi_scale_main(int argc, char **argv)
 	    if(mpi_comm->rank_macro == 0){
 	      VTK_print_cohesive_master(macro->opts->opath,
 					macro->opts->ofname,
-					s->tim,nproc_macro);
+					s->tim,nproc_macro,macro->opts);
 	    }
 
 	    VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,

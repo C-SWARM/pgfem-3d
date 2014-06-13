@@ -25,6 +25,22 @@
 
 static const int periodic = 0;
 
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b))
+{
+  int count = 0;
+  char *copy = malloc(n_elem*size);
+  memcpy(copy,arr,n_elem*size);
+  qsort(copy,n_elem,size,compare);
+  for(size_t i=1; i<n_elem; i++){
+    if(compare(copy+(i-1)*size,copy+i*size) >= 0) count++;
+  }
+  free(copy);
+  return count;
+}
+
 int alloc_sprintf(char **str,
 		  const char *format,
 		  ...)

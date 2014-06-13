@@ -19,6 +19,20 @@
 #include "sig.h"
 #include "eps.h"
 
+/**
+ * \brief Determine the number of duplicate values in an array.
+ *
+ * A copy of arr is sorted according to the compare function. The
+ * sorted array is then checked for duplicates using the compare
+ * function again.
+ *
+ * \return number of duplicate values.
+ */
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b));
+
 /** Dynamically allocate and populate a formated string */
 int alloc_sprintf(char **str,
 		  const char *format,

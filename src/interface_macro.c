@@ -103,15 +103,15 @@ int compute_interface_macro_disp_at_node(double *u_0,
   int err = 0;
   double coord[3];
 
-  if(analysis == DISP){ /* get reference coords */
+  /* if(analysis == DISP){ /\* get reference coords *\/ */
     coord[0] = ptrNode->x1_fd;
     coord[1] = ptrNode->x2_fd;
     coord[2] = ptrNode->x3_fd;
-  } else { /* get current coords */
-    coord[0] = ptrNode->x1;
-    coord[1] = ptrNode->x2;
-    coord[2] = ptrNode->x3;
-  }
+  /* } else { /\* get current coords *\/ */
+  /*   coord[0] = ptrNode->x1; */
+  /*   coord[1] = ptrNode->x2; */
+  /*   coord[2] = ptrNode->x3; */
+  /* } */
 
   /* u_0 = F_0{=grad(u_0)} * X */
   cblas_dgemv(CblasRowMajor,CblasNoTrans,
