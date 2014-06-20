@@ -215,7 +215,7 @@ int* Psparse_ApAi (int nproc,
       }
     }
   }/* end i < ne */
- 
+
   /* COHESIVE ELEMENTS */
   if (cohesive == 1){
     for (i=0;i<nce;i++){
@@ -253,6 +253,16 @@ int* Psparse_ApAi (int nproc,
       if (AA[k][j] < AA[k][j+1])
 	ap[k]++;
     ap[k]++;
+  }
+
+  {
+    int n_dup = number_of_duplicates(comm->LG,ndofd,sizeof(long),compare_long);
+    if(n_dup){
+      PGFEM_printerr("[%d]:ERROR comm->LG contains %d duplicate values!\n",
+		     myrank,n_dup);
+    }
+    /* MPI_Barrier(Comm_Orig); */
+    /* if(n_dup) PGFEM_Abort(); */
   }
   
   ID = (long**) PGFEM_calloc (ndofd,sizeof(long*));
