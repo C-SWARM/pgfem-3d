@@ -100,8 +100,8 @@ long GRedist_node (const int nproc,
     size_t k = 0;
     for (size_t i=0; i<NBN*(ndofn+1); i+=ndofn+1){
       if (Gnn_Gid[i] != k){
-	PGFEM_printf ("Error in global node numbers\n");
-	PGFEM_Comm_abort (Comm);
+	PGFEM_printf ("Error in global node numbers (%ld)\n",k);
+	//PGFEM_Comm_abort (Comm);
       } else k++;
     }
   }
