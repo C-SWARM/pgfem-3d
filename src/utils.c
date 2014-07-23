@@ -2755,6 +2755,10 @@ void GToL (const double *Gr,
   //  for (i=0;i<ndofd;i++) r[i] = 0.0;
   nulld(r,ndofd);
 
+  
+  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  nulld(r,ndofd);
+
   /* Allocate recieve */
   send = (double**) PGFEM_calloc (nproc,sizeof(double*));
   recieve = (double**) PGFEM_calloc (nproc,sizeof(double*));
