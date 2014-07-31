@@ -1,16 +1,9 @@
 #include "eps.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
+
+#include <string.h>
 
 static const int periodic = 0;
 
@@ -42,46 +35,12 @@ EPS* build_eps_il (const long ne,
 
     /* IL0 */
     p_pom->il = NULL;
-    /* p_pom->il.o = NULL; */
-    /* p_pom->il.f = NULL; */
-    /* p_pom->il.m = NULL; */
-    /* p_pom->il.d = NULL; */
-    /* p_pom->il.i = NULL; */
-    /* p_pom->Un_1 = 0; */
-    /* p_pom->Un = 0; */
-    /* p_pom->Jn_1 = 0; */
-    /* p_pom->Y = 0; */
-    /* p_pom->eff = 0; */
-    /* p_pom->GAMA = 0; */
-    /* p_pom->lam = 0; */
-    /* p_pom->F = NULL; */
-    /* p_pom->Fp = NULL; */
-    /* p_pom->UU = NULL; */
-    /* p_pom->dUU_Fr = NULL */
-    /* p_pom->dUU_Tr = NULL; */
-    /* p_pom->dUU_Fr_n = NULL; */
-    /* p_pom->dUU_Tr_n = NULL; */
-    /* p_pom->Fe = NULL; */
-    /* p_pom->Fe1 = NULL; */
-    /* p_pom->GA = NULL; */
-    /* p_pom->GA1 = NULL; */
-    /* p_pom->PLC_B = NULL; */
 
     /* IL1 */
     p_pom->d_il = NULL;
-    /* p_pom->d_il.o = NULL; */
-    /* p_pom->d_il.f = NULL; */
-    /* p_pom->d_il.m = NULL; */
-    /* p_pom->d_il.d = NULL; */
-    /* p_pom->d_il.i = NULL; */
 
     /* IL2 */
     p_pom->st = NULL;
-    /* p_pom->st.Fpp = NULL; */
-    /* p_pom->st.Un_1 = 0; */
-    /* p_pom->st.Un = 0; */
-    /* p_pom->st.Jn_1 = 0; */
-    /* leave st.dam unuilitialized */
 
     p_pom->dam = NULL;
     p_pom->T = NULL;
@@ -239,6 +198,33 @@ EPS* build_eps_il (const long ne,
   }/* end i < ne */
 
   return pom;
+}
+
+static void copy_IL0_eps(IL0_eps *restrict dest,
+			 const IL0_eps *restrict src)
+{
+
+}
+
+static void copy_IL1_eps(IL1_eps *restrict dest,
+			 const IL1_eps *restrict src)
+{
+
+}
+
+static void copy_IL2_eps(IL2_eps *restrict dest,
+			 const IL2_eps *restrict src)
+{
+
+}
+
+void copy_eps(EPS *restrict dest,
+	      const EPS *restrict src,
+	      const long ne,
+	      const ELEMENT *elem,
+	      const int analysis)
+{
+
 }
 
 static void destroy_IL0_eps(IL0_eps *p_il0)

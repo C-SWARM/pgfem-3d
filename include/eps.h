@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef EPS_H
 #define EPS_H
 
@@ -6,13 +7,8 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef VOLUMETRIC_DAMAGE_H
 #include "volumetric_damage.h"
-#endif
 
   /** Structure of strains EPS */
   typedef struct { /* Inelastic strain in all integration points */
@@ -100,11 +96,21 @@ extern "C" {
   };
   typedef struct EPS EPS;
 
-  EPS* build_eps_el (const long ne);
-
   EPS* build_eps_il (const long ne,
 		     const ELEMENT *elem,
 		     const int analysis);
+
+  /**
+   * Copy one EPS object into another. The src and dest must satisfy
+   * the restrict qualifier, otherwise undefined behavior results. The
+   * variables src and dest should be allocated with identical calls
+   * to build_eps_*.
+   */
+  void copy_eps(EPS *restrict dest,
+		const EPS *restrict src,
+		const long ne,
+		const ELEMENT *elem,
+		const int analysis);
 
   /*** MUST be called before destroy_elem */
   void destroy_eps_il(EPS* eps,
