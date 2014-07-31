@@ -14,28 +14,6 @@
 
 static const int periodic = 0;
 
-EPS* build_eps_el (const long ne)
-/*
-  ELASTIC: THIS FUNCTION IS NOT USED
-*/
-{
-  EPS *pom;
-  long i;
-  
-  pom = (EPS*) PGFEM_calloc (ne, sizeof(EPS));
-  
-  for (i=0;i<ne;i++){
-    pom[i].el.o  = (double *) PGFEM_calloc (6,sizeof(double ));
-  }
-  
-  if (pom == NULL){
-    PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__);
-    abort ();
-  }
-  
-  return (pom);
-}
-
 EPS* build_eps_il (const long ne,
 		   const ELEMENT *elem,
 		   const int analysis)
