@@ -25,6 +25,42 @@
 
 static const int periodic = 0;
 
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size)
+{
+  for(int i=0; i<nrow; i++){
+    memcpy(dest[i],src[i],ncol*elem_size);
+  }
+}
+
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_2mat(dest[i],src[i],n_2,n_3,elem_size);
+  }
+}
+
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_3mat(dest[i],src[i],n_2,n_3,n_4,elem_size);
+  }
+}
+
 int alloc_sprintf(char **str,
 		  const char *format,
 		  ...)

@@ -19,6 +19,27 @@
 #include "sig.h"
 #include "eps.h"
 
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size);
+
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size);
+
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size);
+
 /** Dynamically allocate and populate a formated string */
 int alloc_sprintf(char **str,
 		  const char *format,

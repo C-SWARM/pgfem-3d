@@ -6,6 +6,9 @@
 #include <string.h>
 
 static const int periodic = 0;
+static const int SYM_TENSOR = 6;
+static const int NDN = 3;
+static const int TENSOR_2 = 9; /* NDN*NDN */
 
 EPS* build_eps_il (const long ne,
 		   const ELEMENT *elem,
