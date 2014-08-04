@@ -213,9 +213,6 @@ static void copy_IL0_eps(IL0_eps *dest,
 			 const IL0_eps *src,
 			 const int analysis)
 {
-  /* exit if src and dest point to the same places */
-  if(src == dest) return;
-
   static const size_t d = sizeof(double);
   memcpy(dest->o,src->o,SYM_TENSOR*d);
   memcpy(dest->F,src->F,TENSOR_2*d);
@@ -270,9 +267,6 @@ static void copy_IL1_eps(IL1_eps *dest,
 			 const IL1_eps *src,
 			 const int analysis)
 {
-  /* exit if src and dest point to the same places */
-  if(src == dest) return;
-
   static const size_t d = sizeof(double);
   if(analysis == TP_ELASTO_PLASTIC){
     memcpy(dest->o,src->o,SYM_TENSOR*d);
@@ -287,8 +281,6 @@ static void copy_IL2_eps(IL2_eps *dest,
 			 const IL2_eps *src,
 			 const int analysis)
 {
-  /* exit if src and dest point to the same places */
-  if(src == dest) return;
   static const size_t d = sizeof(double);
 
   copy_damage(&(dest->dam),&(src->dam));
@@ -306,14 +298,13 @@ static void copy_eps_local(EPS *dest,
 			   const EPS *src,
 			   const int analysis)
 {
-  /* exit if src and dest point to the same places */
-  if(src == dest) return;
   static const size_t d = sizeof(double);
 
   switch(analysis){
   default:
     memcpy(dest->el.o,src->el.o,SYM_TENSOR*d);
     memcpy(dest->pl.o,src->pl.o,SYM_TENSOR*d);
+    memcpy(dest->pl.eq,src->pl.eq,2*d);
     /* skipping periodic stuff since deprecated (periodic == 0) */
     break;
   case ELASTIC:
@@ -329,10 +320,15 @@ static void copy_eps_local(EPS *dest,
   }
 }
 
-void copy_eps(EPS *dest,
-	      const EPS *src,
-	      const ELEMENT *elem,
-	      const int analysis)
+/**
+ * Copy one EPS object into another. if src == dest, then no copy is
+ * performed. In this function, all pointers are to corresponding
+ * entries in the list.
+ */
+static void copy_eps(EPS *dest,
+		     const EPS *src,
+		     const ELEMENT *elem,
+		     const int analysis)
 {
   static const size_t d = sizeof(double);
   if(dest == src) return;

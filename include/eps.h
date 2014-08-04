@@ -101,18 +101,8 @@ extern "C" {
 		     const int analysis);
 
   /**
-   * Copy one EPS object into another. if src == dest, then no copy is
-   * performed. In this function, all pointers are to corresponding
-   * entries in the list.
-   */
-  void copy_eps(EPS *dest,
-		const EPS *src,
-		const ELEMENT *elem,
-		const int analysis);
-
-  /**
    * Copy EPS for all elements. Additionally copies the rate of
-   * plastic strain (which is stored only on the 0-th element. The
+   * plastic strain (which is stored only on the 0-th element). The
    * lists src and dest should be constructed by identical calls to
    * build_eps_il.
    */
