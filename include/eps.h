@@ -101,16 +101,26 @@ extern "C" {
 		     const int analysis);
 
   /**
-   * Copy one EPS object into another. The src and dest must satisfy
-   * the restrict qualifier, otherwise undefined behavior results. The
-   * variables src and dest should be allocated with identical calls
-   * to build_eps_*.
+   * Copy one EPS object into another. if src == dest, then no copy is
+   * performed. In this function, all pointers are to corresponding
+   * entries in the list.
    */
-  void copy_eps(EPS *restrict dest,
-		const EPS *restrict src,
-		const long ne,
+  void copy_eps(EPS *dest,
+		const EPS *src,
 		const ELEMENT *elem,
 		const int analysis);
+
+  /**
+   * Copy EPS for all elements. Additionally copies the rate of
+   * plastic strain (which is stored only on the 0-th element. The
+   * lists src and dest should be constructed by identical calls to
+   * build_eps_il.
+   */
+  void copy_eps_list(EPS *dest,
+		     const EPS *src,
+		     const int ne,
+		     const ELEMENT *elem,
+		     const int analysis);
 
   /*** MUST be called before destroy_elem */
   void destroy_eps_il(EPS* eps,

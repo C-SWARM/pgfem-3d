@@ -19,12 +19,14 @@
 #include "sig.h"
 #include "eps.h"
 
+/** src and dest must be unique */
 void copy_2mat(void **dest,
 	       const void **src,
 	       const int nrow,
 	       const int ncol,
 	       const size_t elem_size);
 
+/** src and dest must be unique */
 void copy_3mat(void ***dest,
 	       const void ***src,
 	       const int n_1,
@@ -32,6 +34,7 @@ void copy_3mat(void ***dest,
 	       const int n_3,
 	       const size_t elem_size);
 
+/** src and dest must be unique */
 void copy_4mat(void ****dest,
 	       const void ****src,
 	       const int n_1,
