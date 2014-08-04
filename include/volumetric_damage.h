@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef VOLUMETRIC_DAMAGE_H
 #define VOLUMETRIC_DAMAGE_H
 
@@ -29,6 +30,7 @@ extern "C" {
     int damaged_n,damaged;  /* damage propagation flag */
     int broken;
     /* *** functions *** */
+    int eq_flag;
     vd_fun function;
     vd_fun evolution;
     vd_fun evolution_rate;
@@ -48,6 +50,10 @@ extern "C" {
 		    const int eq_flag,
 		    const double *params,
 		    const int len);
+
+  /** Re-assign the damage functions according to eq_flag */
+  void reset_damage_functions(damage *dam,
+			      const int eq_flag);
 
   /** Reset the damage variables to n (e.g. after restart). */
   void reset_damage(damage *dam);
