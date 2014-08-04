@@ -55,6 +55,11 @@ extern "C" {
   void reset_damage_functions(damage *dam,
 			      const int eq_flag);
 
+  /** Copy the data from src to dest. The functions are reset
+      according to src->eq_flag */
+  void copy_damage(damage * restrict dest,
+		   const damage * restrict src);
+
   /** Reset the damage variables to n (e.g. after restart). */
   void reset_damage(damage *dam);
 

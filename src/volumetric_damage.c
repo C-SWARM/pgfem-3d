@@ -2,6 +2,7 @@
 #include "volumetric_damage.h"
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "PGFEM_io.h"
 
 #ifndef VD_DEBUG
@@ -113,6 +114,15 @@ void reset_damage_functions(damage *dam,
   if(ferr+eerr+ererr != 0){
     abort();
   }
+}
+
+void copy_damage(damage *restrict dest,
+		 const damage *restrict src)
+{
+  if(dest == src) return;
+  memcpy(dest,src,sizeof(*src));
+  /* may not be necessary, but do it anyhow */
+  reset_damage_functions(dest,dest->eq_flag);
 }
 
 void reset_damage(damage *dam){
