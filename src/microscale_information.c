@@ -627,6 +627,13 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   sol->sig_e = build_sig_il(common->ne,analysis,common->elem);
   sol->eps = build_eps_il(common->ne,common->elem,analysis);
+  sol->eps_n = build_eps_il(common->ne,common->elem,analysis);
+
+  /*
+   * TEMPORARY FOR DEBUGING
+   */
+  copy_eps_list(sol->eps_n,sol->eps,common->ne,common->elem,analysis);
+
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
 
@@ -753,6 +760,7 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   destroy_sig_il(sol->sig_e,common->elem,common->ne,analysis);
   /* destroy sig_n */
   destroy_eps_il(sol->eps,common->elem,common->ne,analysis);
+  destroy_eps_il(sol->eps_n,common->elem,common->ne,analysis);
   //destroy_crpl
   free(sol->elem_state_info);
   free(sol->coel_state_info);

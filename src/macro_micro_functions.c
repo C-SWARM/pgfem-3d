@@ -122,8 +122,12 @@ int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
       err += MPI_Cancel(&(recv->req[i]));
     }
     for(int i=0; i<send->n_comms; i++){
-      err += MPI_Cancel(&(send->req[i]));
+      if(send->req[i] != MPI_REQUEST_NULL){
+	err += MPI_Cancel(&(send->req[i]));
+      }
     }
+    MPI_Waitall(recv->n_comms,recv->req,MPI_STATUS_IGNORE);
+    MPI_Waitall(send->n_comms,send->req,MPI_STATUS_IGNORE);
 
     /* cleanup */
     err += destroy_PGFEM_server_ctx(send);

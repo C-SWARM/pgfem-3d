@@ -220,7 +220,6 @@ int multi_scale_main(int argc, char **argv)
     err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->send_info,send);
     err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->recv_info,recv);
 
-
     /* compute the inital tangent from the microscale */
     err += start_macroscale_compute_jobs(intercomm,macro,
 					 JOB_NO_COMPUTE_EQUILIBRIUM,
@@ -485,7 +484,6 @@ int multi_scale_main(int argc, char **argv)
 	  vvplus  (s->R,nodal_forces,c->ndofd);
 
 	} /* end load increment */
-
 
 
 	hypre_time += Newton_Raphson ( 1,c->ne,0,c->nn,
