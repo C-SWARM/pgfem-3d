@@ -26,11 +26,6 @@ static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 
-/** reset the microscale state variables at n */
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol);
-
 /** Wrapper for Newton Raphson. */
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
@@ -133,9 +128,6 @@ int compute_ms_cohe_job(const int job_id,
     /* reset the microscale solution to macro time (n) */
     err += reset_MICROSCALE_SOLUTION(sol,common->ndofd,
 				     common->DomDof[myrank]);
-
-    /* reset the state variables to macroscopic time (n) */
-    err += reset_micro_state_variables(p_job,common,sol);
 
     /* reset the supports to contain the previous jump and current
        increment */
@@ -254,22 +246,6 @@ int assemble_ms_cohe_job_res(const int job_id,
 /*=====================================*/
 /*==== STATIC FUNCTION DEFINITIONS ====*/
 /*=====================================*/
-
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol)
-{
-  int err = 0;
-
-  /* reset nodal values */
-
-  /* reset element values */
-
-  /* reset supports */
-
-  return err;
-}/* reset_micro_state_variables() */
-
 
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
