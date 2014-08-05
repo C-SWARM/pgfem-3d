@@ -50,10 +50,6 @@
 #define PFEM_DEBUG_ALL 0
 #endif
 
-#ifndef DEBUG_MULTISCALE
-#define DEBUG_MULTISCALE 0
-#endif
-
 #ifndef DEBUG_MULTISCALE_SERVER
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
@@ -237,12 +233,6 @@ double Newton_Raphson (const int print_level,
 		 sup,sup_defl,rr,d_r,f_defl,f,RRn,R,&GAMA,
 		 &DT,&OME,stab,iter,iter_max,alpha,mpi_comm,
 		 opts->analysis_type);
-
-    /* TEMP */
-    /* if(STEP > 1){ */
-    /*   PGFEM_printerr("DEBUGING: abort on substep.\n"); */
-    /*   PGFEM_Comm_code_abort(mpi_comm,0); */
-    /* } */
     
     gam = ART = 0;
 
@@ -402,30 +392,11 @@ double Newton_Raphson (const int print_level,
 	    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	  }
 
-	  /* null the matrix only on the 1st iteration */
-	  if(DEBUG_MULTISCALE && iter == 0){
-	    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	  }
-
 	  stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		       node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
 		       iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
 		       myrank,nproc,DomDof,GDof,
 		       comm,mpi_comm,PGFEM_hypre,opts);
-
-	  if(DEBUG_MULTISCALE && microscale != NULL){
-	    ART = 1; /* turn off line search */
-	    MICROSCALE *m = (MICROSCALE *) microscale;
-	    MS_COHE_JOB_INFO *jobs = (MS_COHE_JOB_INFO *) ms_job_list;
-	    int ms_err = 0;
-	    /* compute initial stiffness */
-	    if(iter == 0){
-	      ms_err += compute_ms_cohe_tan_res(iter,comm,mpi_comm,jobs,
-						PGFEM_hypre,m);
-	    }
-	    if(ms_err != 0)
-	      PGFEM_printerr("Received error from compute_ms_cohe_job\n");
-	  }
 
 	  /* turn off line search for server-style multiscale */
 	  if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
@@ -438,16 +409,6 @@ double Newton_Raphson (const int print_level,
 
 	  /* Matrix assmbly */
 	  INFO = HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-
-	  /* if( tim == 0 && iter == 0){ */
-	  /*   if(microscale != NULL){ */
-	  /*     HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test"); */
-	  /*   }else{ */
-	  /*     HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_ms"); */
-	  /*   } */
-	  /*   print_array_d(PGFEM_stdout,BS_f,DomDof[myrank],1,DomDof[myrank]); */
-	  /* } */
-
 	}	
       }
 
@@ -577,32 +538,6 @@ double Newton_Raphson (const int print_level,
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
 	finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
 				       ctx->send,ctx->recv);
-	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-      }
-
-      if(DEBUG_MULTISCALE && microscale != NULL){
-	MICROSCALE *m = (MICROSCALE *) microscale;
-	MS_COHE_JOB_INFO *jobs = (MS_COHE_JOB_INFO *) ms_job_list;
-	int ms_err = 0;
-
-	/* zero the macroscale tangent */
-	ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-
-	/* reset the microscale state to macro state n */
-	ms_err += reset_MICROSCALE(m);
-
-	/* compute the jumps in displacement for each job */
-	ms_err += update_group_ms_cohe_job_list(nce,coel,node,sup,f,
-						m->common->mpi_comm,
-						jobs);
-
-	/* compute the microscale contributions to the tangent and
-	   residual. Assemble contributions to tangent */
-	ms_err += compute_ms_cohe_tan_res(iter+1,comm,mpi_comm,jobs,
-					  PGFEM_hypre,m);
-
-	/* Assemble contibutions to the residual */
-	ms_err += assemble_ms_cohe_res(m,jobs,mpi_comm,f_u);
       }
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -878,11 +813,6 @@ double Newton_Raphson (const int print_level,
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
       finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
 				     ctx->send,ctx->recv);
-    }
-
-    /* microscale update */
-    if(DEBUG_MULTISCALE && microscale != NULL){
-      update_MICROSCALE((MICROSCALE *) microscale);
     }
 
     /************* TEST THE UPDATE FROM N TO N+1  *************/
