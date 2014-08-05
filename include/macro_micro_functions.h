@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef MACRO_MICRO_FUNCTIONS_H
 #define MACRO_MICRO_FUNCTIONS_H
 
@@ -8,10 +9,7 @@ extern "C" {
 
 #include "microscale_information.h"
 #include "ms_cohe_job_info.h"
-
-#ifndef MS_JOB_INTERCOMM_H
 #include "ms_job_intercomm.h"
-#endif
 
   typedef struct MS_SERVER_CTX{
     int n_jobs;

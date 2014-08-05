@@ -629,11 +629,6 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   sol->eps = build_eps_il(common->ne,common->elem,analysis);
   sol->eps_n = build_eps_il(common->ne,common->elem,analysis);
 
-  /*
-   * TEMPORARY FOR DEBUGING
-   */
-  copy_eps_list(sol->eps_n,sol->eps,common->ne,common->elem,analysis);
-
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
 
@@ -662,31 +657,6 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* local solution vectors */
   sol->rn = PGFEM_calloc(local_len,len_double);
   sol->r = PGFEM_calloc(local_len,len_double);
-
-  /* sol->f = PGFEM_calloc(local_len,len_double); */
-  /* sol->d_r = PGFEM_calloc(local_len,len_double); */
-  /* sol->rr = PGFEM_calloc(local_len,len_double); */
-  /* sol->D_R = PGFEM_calloc(local_len,len_double); */
-  /* sol->R = PGFEM_calloc(local_len,len_double); */
-  /* sol->f_defl = PGFEM_calloc(local_len,len_double); */
-  /* sol->RR = PGFEM_calloc(local_len,len_double); */
-  /* sol->f_u = PGFEM_calloc(local_len,len_double); */
-  /* sol->RRn = PGFEM_calloc(local_len,len_double); */
-  /* sol->U = PGFEM_calloc(local_len,len_double); */
-  /* sol->DK = PGFEM_calloc(local_len,len_double); */
-  /* sol->dR = PGFEM_calloc(local_len,len_double); */
-
-  /* sol->BS_f = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_f_u = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_x = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_RR = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_d_r = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_D_R = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_rr = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_R = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_U = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_DK = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_dR = PGFEM_calloc(global_len,len_double); */
 
   /* Get pointers to the shared solution workspace */
   {
@@ -731,36 +701,14 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 {
   free(sol->r);
   free(sol->rn);
-  /* free(sol->f); */
-  /* free(sol->d_r); */
-  /* free(sol->rr); */
-  /* free(sol->D_R); */
-  /* free(sol->R); */
-  /* free(sol->f_defl); */
-  /* free(sol->RR); */
-  /* free(sol->f_u); */
-  /* free(sol->RRn); */
-  /* free(sol->U); */
-  /* free(sol->DK); */
-  /* free(sol->dR); */
-
-  /* free(sol->BS_f); */
-  /* free(sol->BS_f_u); */
-  /* free(sol->BS_x); */
-  /* free(sol->BS_RR); */
-  /* free(sol->BS_d_r); */
-  /* free(sol->BS_D_R); */
-  /* free(sol->BS_rr); */
-  /* free(sol->BS_R); */
-  /* free(sol->BS_U); */
-  /* free(sol->BS_DK); */
-  /* free(sol->BS_dR); */
   free(sol->times);
 
   destroy_sig_il(sol->sig_e,common->elem,common->ne,analysis);
   /* destroy sig_n */
+
   destroy_eps_il(sol->eps,common->elem,common->ne,analysis);
   destroy_eps_il(sol->eps_n,common->elem,common->ne,analysis);
+
   //destroy_crpl
   free(sol->elem_state_info);
   free(sol->coel_state_info);
