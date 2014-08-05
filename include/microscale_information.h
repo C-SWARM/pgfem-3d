@@ -157,23 +157,13 @@ extern "C" {
 
   void destroy_MICROSCALE(MICROSCALE *microscale);
 
-  /** Reset the microscale solution to the macroscale n state */
-  int reset_MICROSCALE(MICROSCALE *m);
-
-  /** Update the microscale solution to the macroscale n+1 state */
-  int update_MICROSCALE(MICROSCALE *m);
-
-  /** see reset_MICROSCALE, operates on single MICROSCALE_SOLUTION
-      object */
+  /** resets a single MICROSCALE_SOLUTION to time (n) */
   int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				const int loc_ndof,
-				const int g_ndof);
+				const MICROSCALE *micro);
 
-  /** see update_MICROSCALE, operates on single MICROSCALE_SOLUTION
-      object */
+  /** updates a single MICROSCALE_SOLUTION to time (n+1) */
   int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				 const int loc_ndof,
-				 const int g_ndof);
+				 const MICROSCALE *micro);
 
   /**=== Aliases for MACROSCALE ===*/
   typedef COMMON_MICROSCALE COMMON_MACROSCALE;
