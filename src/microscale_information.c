@@ -161,47 +161,15 @@ void destroy_MICROSCALE(MICROSCALE *microscale)
   free(microscale);
 } /* destroy_MICROSCALE */
 
-int reset_MICROSCALE(MICROSCALE *m)
-{
-  int err = 0;
-  int myrank = 0;
-  COMMON_MICROSCALE *c = m->common;
-  err += MPI_Comm_rank(c->mpi_comm,&myrank);
-
-  const long loc_ndof = c->ndofd;
-  const long g_ndof = c->DomDof[myrank];
-
-  for(int i=0; i<m->n_solutions; i++){
-    MICROSCALE_SOLUTION *sol = m->sol+i;
-    err += reset_MICROSCALE_SOLUTION(sol,loc_ndof,g_ndof);
-  }
-
-  return err;
-}/* reset_MICROSCALE_SOLUTION */
-
-int update_MICROSCALE(MICROSCALE *m)
-{
-  int err = 0;
-  int myrank = 0;
-  COMMON_MICROSCALE *c = m->common;
-  err += MPI_Comm_rank(c->mpi_comm,&myrank);
-
-  const long loc_ndof = c->ndofd;
-  const long g_ndof = c->DomDof[myrank];
-
-  for(int i=0; i<m->n_solutions; i++){
-    MICROSCALE_SOLUTION *sol = m->sol+i;
-    err += update_MICROSCALE_SOLUTION(sol,loc_ndof,g_ndof);
-  }
-
-  return err;
-} /* update_MICROSCALE_SOLUTION */
-
 int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-			      const int loc_ndof,
-			      const int g_ndof)
+			      const MICROSCALE *micro)
 {
   int err = 0;
+  int myrank = 0;
+  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  const int loc_ndof = micro->common->ndofd;
+  const int g_ndof = micro->common->DomDof[myrank];
+
   /* reset displacement (solution) vector */
   memcpy(sol->r,sol->rn,loc_ndof*sizeof(double));
 
@@ -233,23 +201,33 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   nulld(sol->BS_dR,g_ndof);
 
   /* reset state variables */
-  /*** NOT YET IMPLEMENTED ***/
+  copy_eps_list(sol->eps,sol->eps_n,
+		micro->common->ne,
+		micro->common->elem,
+		micro->opts->analysis_type);
 
   return err;
 }/* reset_MICROSCALE_SOLUTION */
 
 int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-			       const int loc_ndof,
-			       const int g_ndof)
+			       const MICROSCALE *micro)
 {
   int err = 0;
+  int myrank = 0;
+  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  const int loc_ndof = micro->common->ndofd;
+  const int g_ndof = micro->common->DomDof[myrank];
+
   /* copy r -> rn  */
   memcpy(sol->rn,sol->r,loc_ndof*sizeof(double));
 
   /* leave other solution vectors alone */
 
   /* update state variables */
-  /*** NOT IMPLEMENTED YET ***/
+  copy_eps_list(sol->eps_n,sol->eps,
+		micro->common->ne,
+		micro->common->elem,
+		micro->opts->analysis_type);
 
   return err;
 }/* update_MICROSCALE_SOLUTION */

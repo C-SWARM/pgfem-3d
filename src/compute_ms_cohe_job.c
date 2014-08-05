@@ -126,8 +126,7 @@ int compute_ms_cohe_job(const int job_id,
 
   default: /* reset state to macro time (n) */
     /* reset the microscale solution to macro time (n) */
-    err += reset_MICROSCALE_SOLUTION(sol,common->ndofd,
-				     common->DomDof[myrank]);
+    err += reset_MICROSCALE_SOLUTION(sol,microscale);
 
     /* reset the supports to contain the previous jump and current
        increment */
@@ -186,8 +185,8 @@ int compute_ms_cohe_job(const int job_id,
 
   case JOB_UPDATE:
     /* update the solution and state variables state n <- n+1 */
-    err += update_MICROSCALE_SOLUTION(sol,common->ndofd,
-				      common->DomDof[myrank]);
+    err += update_MICROSCALE_SOLUTION(sol,microscale);
+
     /* job->jump_n <-- job->jump */
     memcpy(p_job->jump_n,p_job->jump,ndim*sizeof(double));
 
