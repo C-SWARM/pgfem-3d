@@ -604,11 +604,15 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   const size_t len_double = sizeof(double);
 
   sol->sig_e = build_sig_il(common->ne,analysis,common->elem);
-  sol->eps = build_eps_il(common->ne,common->elem,analysis);
-  sol->eps_n = build_eps_il(common->ne,common->elem,analysis);
 
+  sol->eps = build_eps_il(common->ne,common->elem,analysis);
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
+
+  /* initialize state variables at macro time (n) */
+  sol->eps_n = build_eps_il(common->ne,common->elem,analysis);
+  initialize_damage(common->ne,common->elem,common->hommat,
+		    sol->eps_n,analysis);
 
   /* need to figure out elem/coel_state_info indexing */
 
