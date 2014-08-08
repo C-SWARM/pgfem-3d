@@ -5,32 +5,23 @@
  */
 
 #include "load_list.h"
-#include <math.h>
-#include <assert.h>
+#include "load_balancer_utils.h"
 #include <string.h>
 
 /* LOAD FUNCTIONS */
 static int load_time_comp(const void *lhs,
 			  const void *rhs)
 {
-  double diff = ((LOAD *) lhs)->time - ((LOAD *) rhs)->time;
-  if(diff < 0.0) return -1;
-  else if(diff > 0.0) return 1;
-  else return 0;
+  return double_comp((void*) &(((LOAD *) lhs)->time),
+		     (void*) &(((LOAD *) rhs)->time));
 }
 
 static int load_server_comp(const void *lhs,
 			    const void *rhs)
 {
-  return (int) (((LOAD *) lhs)->server_proc
-		- ((LOAD *) rhs)->server_proc);
+  return size_t_comp((void*) &(((LOAD *) lhs)->server_proc),
+		     (void*) &(((LOAD *) rhs)->server_proc));
 }
-
-/* static int load_server_comp_reverse(const void *lhs, */
-/* 				  const void *rhs) */
-/* { */
-/*   return load_server_comp(rhs,lhs); */
-/* } */
 
 static int load_time_comp_reverse(const void *lhs,
 				  const void *rhs)
@@ -46,45 +37,13 @@ static void load_print(FILE *out,
 }
 
 /* STATS FUNCTIONS */
-static int double_comp(const void *lhs,
-		       const void *rhs)
-{
-  double diff = *((double *) lhs) - *((double *) rhs);
-  if(diff < 0.0) return -1;
-  else if(diff > 0.0) return 1;
-  else return 0;
-}
-
-static double compute_avg(double *restrict arr,
-			  const size_t len)
-{
-  double avg = 0.0;
-  for(size_t i=0; i<len; i++){
-    avg += arr[i];
-  }
-  avg /= len;
-  return avg;
-}
-
-static double compute_std(double *restrict arr,
-			  const size_t len,
-			  const double avg)
-{
-  assert(len > 0);
-  double std = 0;
-  for(size_t i=0; i<len; i++){
-    std += (arr[i] - avg)*(arr[i]-avg);
-  }
-  std = sqrt(std/len);
-  return std;
-}
-
 void stats_compute(STATS *stats,
 		   double *arr,
 		   const size_t len)
 {
   qsort(arr,len,sizeof(*arr),double_comp);
   stats->avg = compute_avg(arr,len);
+  stats->total = stats->avg*len;
   stats->std = compute_std(arr,len,stats->avg);
   stats->min = arr[0];
   stats->max = arr[len-1];
@@ -95,14 +54,22 @@ void stats_reset(STATS *stats)
   memset(stats,0,sizeof(*stats));
 }
 
+void stats_print(FILE *out,
+		 const STATS *stats)
+{
+  printf("Minimum time:   %f\n",stats->min);
+  printf("Maximum time:   %f\n",stats->max);
+  printf("Average time:   %f\n",stats->avg);
+  printf("Std. Dev. time: %f\n",stats->std);
+  printf("Total time:     %f\n",stats->total);
+}
+
 /* LOAD_LIST FUNCTIONS */
 void build_LOAD_LIST(LOAD_LIST *list,
-		     const size_t n_loads,
-		     const size_t n_servers)
+		     const size_t n_loads)
 {
   list->loads = calloc(n_loads,sizeof(*(list->loads)));
   list->n_loads = n_loads;
-  list->n_servers = n_servers;
 }
 
 void destroy_LOAD_LIST(LOAD_LIST *list)
@@ -143,11 +110,7 @@ void load_list_print(FILE *out,
 {
   const LOAD *loads = list->loads;
   fprintf(out,"Number of loads:   %ld\n",list->n_loads);
-  fprintf(out,"Number of servers: %ld\n",list->n_servers);
-  printf("Minimum time:   %f\n",list->time_stats.min);
-  printf("Maximum time:   %f\n",list->time_stats.max);
-  printf("Average time:   %f\n",list->time_stats.avg);
-  printf("Std. Dev. time: %f\n",list->time_stats.std);
+  stats_print(out,&list->time_stats);
   fprintf(out,"LOADS:\n");
   for(int i=0, end=list->n_loads; i<end; i++){
     load_print(out,loads + i);

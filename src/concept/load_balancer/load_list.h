@@ -21,6 +21,7 @@ typedef struct STATS{
   double std;
   double min;
   double max;
+  double total;
 }STATS;
 
 /**
@@ -34,10 +35,13 @@ void stats_compute(STATS *stats,
 /** Reset stats object to zeros. */
 void stats_reset(STATS *stats);
 
+/** print statistics info to file */
+void stats_print(FILE *out,
+		 const STATS *stats);
+
 typedef struct LOAD_LIST{
   LOAD *loads;
   size_t n_loads;
-  size_t n_servers;
   STATS time_stats;
 }LOAD_LIST;
 
@@ -48,8 +52,7 @@ typedef struct LOAD_LIST{
  * 0.
  */
 void build_LOAD_LIST(LOAD_LIST *list,
-		     const size_t n_loads,
-		     const size_t n_servers);
+		     const size_t n_loads);
 
 /** Free memory associated with a LOAD LIST object */
 void destroy_LOAD_LIST(LOAD_LIST *list);

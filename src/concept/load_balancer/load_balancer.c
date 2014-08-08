@@ -5,11 +5,13 @@
  */
 
 #include "load_balancer.h"
-#include <stdlib.h>
 
-int load_balancer(LOAD_LIST *list)
+int load_balancer(LOAD_LIST *servers,
+		  const size_t n_servers)
 {
-  load_list_sort_load_time(list);
-  load_list_compute_stats(list);
+  for(size_t i=0; i<n_servers; i++){
+    load_list_sort_load_time(servers + i);
+    load_list_compute_stats(servers + i);
+  }
   return 0;
 }

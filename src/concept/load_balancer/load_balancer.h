@@ -10,6 +10,7 @@
 
 #include "load_list.h"
 
-int load_balancer(LOAD_LIST *list);
+int load_balancer(LOAD_LIST *servers,
+		  const size_t n_servers);
 
 #endif
