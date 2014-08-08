@@ -8,6 +8,8 @@
 #ifndef LOAD_BALANCER_H
 #define LOAD_BALANCER_H
 
-int load_balancer();
+#include "load_list.h"
+
+int load_balancer(LOAD_LIST *list);
 
 #endif

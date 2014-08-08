@@ -4,13 +4,17 @@ CC = gcc
 CFLAGS = -Wall -Werror -std=c99 -g -O0
 PROGRAM = load_bal
 
-SRC = main.c load_balancer.c
+SRC = main.c load_balancer.c load_list.c
+LIB = -lm
+
+# should not need to modify below
 OBJ = $(SRC:.c=.o)
 depfile = Makefile.depend
+
 all: $(PROGRAM)
 
 $(PROGRAM): $(OBJ)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ $(LIB)
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $<
