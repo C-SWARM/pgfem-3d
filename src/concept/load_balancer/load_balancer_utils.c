@@ -7,6 +7,7 @@
 #include "load_balancer_utils.h"
 #include <math.h>
 #include <assert.h>
+#include <float.h>
 
 int double_comp(const void *lhs,
 		const void *rhs)
@@ -55,4 +56,19 @@ double compute_std(double *restrict arr,
   }
   std = sqrt(std/len);
   return std;
+}
+
+
+size_t min_arr(const double *restrict arr,
+	       const size_t len)
+{
+  double min = DBL_MAX;
+  size_t idx = -1;
+  for(size_t i=0; i<len; i++){
+    if(min > arr[i]){
+      min = arr[i];
+      idx = i;
+    }
+  }
+  return idx;
 }

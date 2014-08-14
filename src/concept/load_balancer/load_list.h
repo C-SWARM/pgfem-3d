@@ -16,6 +16,9 @@ typedef struct LOAD{
   size_t server_proc;
 }LOAD;
 
+void copy_LOAD(LOAD *restrict dest,
+	       const LOAD *restrict src);
+
 typedef struct STATS{
   double avg;
   double std;

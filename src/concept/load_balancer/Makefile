@@ -1,7 +1,7 @@
 # This is a makefile to compile the load balancer concept code
 
 CC = gcc
-CFLAGS = -Wall -Werror -std=c99 -g -O0
+CFLAGS = -Wall -std=c99 -g -O0
 PROGRAM = load_bal
 
 SRC = main.c load_balancer.c load_list.c load_balancer_utils.c

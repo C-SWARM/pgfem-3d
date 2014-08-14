@@ -31,4 +31,8 @@ double compute_std(double *restrict arr,
 		   const size_t len,
 		   const double avg);
 
+/** return the index of the minimum value */
+size_t min_arr(const double *restrict arr,
+	       const size_t len);
+
 #endif

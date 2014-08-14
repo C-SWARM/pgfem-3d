@@ -9,6 +9,12 @@
 #include <string.h>
 
 /* LOAD FUNCTIONS */
+void copy_LOAD(LOAD *restrict dest,
+	       const LOAD *restrict src)
+{
+  memcpy(dest,src,sizeof(*dest));
+}
+
 static int load_time_comp(const void *lhs,
 			  const void *rhs)
 {

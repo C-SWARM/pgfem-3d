@@ -34,5 +34,11 @@ int main(int argc, char **argv)
     load_list_print(stdout,server +i);
     printf("\n");
   }
+
+
+  /* destroy server loads */
+  for(size_t i=0; i<n_servers; i++){
+    destroy_LOAD_LIST(server+i);
+  }
   return 0;
 }
