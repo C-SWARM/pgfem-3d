@@ -59,8 +59,8 @@ double compute_std(double *restrict arr,
 }
 
 
-size_t min_arr(const double *restrict arr,
-	       const size_t len)
+size_t min_arr_idx(const double *restrict arr,
+		   const size_t len)
 {
   double min = DBL_MAX;
   size_t idx = -1;

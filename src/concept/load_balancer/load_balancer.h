@@ -8,9 +8,6 @@
 #ifndef LOAD_BALANCER_H
 #define LOAD_BALANCER_H
 
-#include "load_list.h"
-
-int load_balancer(LOAD_LIST *servers,
-		  const size_t n_servers);
+#include "partition.h"
 
 #endif

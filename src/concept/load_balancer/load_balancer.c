@@ -9,141 +9,68 @@
 #include <string.h>
 #include <stdio.h>
 #include <float.h>
+#include <assert.h>
 
-static int get_loads_from_servers(LOAD_LIST *global,
-				  const LOAD_LIST *servers,
-				  const size_t n_servers)
+static void add_to_partition(PARTITION *S,
+			     PARTITION *P,
+			     double *sum)
 {
-  size_t n_loads = 0;
-  for(size_t i=0; i<n_servers; i++){
-    n_loads += servers[i].n_loads;
-  }
-  build_LOAD_LIST(global,n_loads);
-
-  size_t idx = 0;
-  for(size_t i=0; i<n_servers; i++){
-    n_loads = servers[i].n_loads;
-    memcpy(global->loads+idx,servers[i].loads,
-	   n_loads*sizeof(*(global->loads)));
-    idx += n_loads;
-  }
-  return 0;
-}
-
-/** reassign loads by round robin assuming decreasing order in global
-    list. */
-static void round_robin_reassignment(const LOAD_LIST *global,
-				     const size_t n_servers,
-				     LOAD **dest,
-				     LOAD **ends)
-{
-  for(size_t i=0, end = global->n_loads; i<end; i++){
-    for(size_t j = 0; j<n_servers; j++){
-      if(dest[j] != ends[j]){
-	copy_LOAD(dest[j],global->loads+i);
-	dest[j]++; /* increment pointer */
-	i++; /* increment global counter */
-      }
-    }
-  }
-}
-
-
-/** greedy reassignment. THis is not working quite properly... */
-static void greedy_reassignment(const LOAD_LIST *global,
-				const size_t n_servers,
-				const size_t K_greedy,
-				LOAD **dest,
-				LOAD **ends)
-{
-  double *sum = calloc(n_servers,sizeof(*sum));
-  const size_t n_loads = global->n_loads;
-
-  if(K_greedy == 0){
-    round_robin_reassignment(global,n_servers,dest,ends);
+  const LOAD *ld = PARTITION_top_load(S);
+  if( ! PARTITION_is_full(P) ){
+    PARTITION_push_load(P, ld);
+    *sum += ld->load;
+    PARTITION_pop_load(S); /* invalidates ld */
   } else {
-    if(n_loads < n_servers*K_greedy) abort();
-
-    size_t load_idx = 0;
-    for(size_t i=0; i<n_servers; i++){
-      for(size_t j=0; j<K_greedy; j++){
-	copy_LOAD(dest[i],global->loads + load_idx);
-	sum[i] += dest[i]->time;
-	dest[i]++;
-	load_idx++;
-      }
-    }
-
-    for(; load_idx < n_loads; load_idx++){
-      size_t server_idx = min_arr(sum,n_servers);
-      if(dest[server_idx] != ends[server_idx]){
-	copy_LOAD(dest[server_idx],global->loads + load_idx);
-	sum[server_idx] += dest[server_idx]->time;
-	dest[server_idx]++;
-      } else {
-	sum[server_idx] = DBL_MAX;
-      }
-    }
-
-    free(sum);
+    *sum = DBL_MAX;
   }
 }
 
-/* From G. Horton, "A multi-level diffusion method for dynamic load
-   balancing", Parallel Computing, 19(2)L1993, 209--218 
-
-   !! requires pow(2) servers !!
-*/
-/* Assume that global is sorted */
-/* static void multi_level_balancer(const LOAD_LIST *global, */
-/* 				 const size_t n_servers, */
-/* 				 const size_t n_levels, */
-/* 				 const size_t level, */
-/* 				 LOAD **dest, */
-/* 				 LOAD **ends) */
-/* { */
-/*   if(global->n_loads == 1) return; */
-
-/*   /\* recursively balance *\/ */
-/*   if(level < n_levels){ */
-/*     /\* */
-/*       multi_level_balancer(lhs ... level + 1); */
-/*       multi_level_balancer(rhs ... level + 1); */
-/*     *\/ */
-/*   } */
-/* } */
-
-				
-
-int load_balancer(LOAD_LIST *servers,
-		  const size_t n_servers)
+/**
+ * Re-balance the PARTITION_LIST using the greedy heuristic.
+ *
+ * Given an initial partition list PL, generate the S = union of P_i
+ * in PL. Re-assign the elements of S to P_i in PL according to the
+ * greedy heuristic. Returns 0 on success. May call abort() on
+ * internal error.
+ */
+int load_balancer_greedy(PARTITION_LIST *PL)
 {
-  /* compile loads into single list */
-  LOAD_LIST global;
-  get_loads_from_servers(&global,servers,n_servers);
-  load_list_sort_load_time(&global);
-  load_list_compute_stats(&global);
-  load_list_print(stdout,&global);
-  printf("\n\n\n");
+  int err = 0;
+  const size_t set_size = PARTITION_LIST_total_size(PL);
+  const size_t n_parts = PL->n_parts;
+  PARTITION *parts = PL->partitions; /* alias */
+  assert(set_size >= n_parts);
 
-  /* array of pointers to current server load */
-  LOAD **dest = calloc(n_servers,sizeof(*dest));
-  LOAD **ends = calloc(n_servers,sizeof(*ends));
-  for(size_t i=0; i<n_servers; i++){
-    ends[i] = servers[i].loads + servers[i].n_loads;
-    dest[i] = servers[i].loads;
+  /* Allocate the set */
+  PARTITION *S = calloc(1,sizeof(*S));
+  PARTITION_build(S,set_size);
+
+  /* Fill the set from the partitions */
+  for(size_t i=0; i<n_parts; i++){
+    /* append partitions to the set */
+    PARTITION_push_partition(S,parts + i);
+
+    /* reset the partitions to empty */
+    parts[i].size = 0;
   }
 
-  /* round_robin_reassignment(&global,n_servers,dest,ends); */
-  greedy_reassignment(&global,n_servers,1,dest,ends);
+  /* sort the set by load */
+  PARTITION_sort_load(S);
 
-  for(size_t i=0; i<n_servers; i++){
-    load_list_compute_stats(servers+i);
+  /* set initial partitions */
+  double *sums = calloc(n_parts,sizeof(*sums));
+  for(size_t i=0; i<n_parts; i++){
+    add_to_partition(S,parts + i,sums + i);    
   }
 
-  destroy_LOAD_LIST(&global);
-  free(dest);
-  free(ends);
-  return 0;
+  /* proceed with greedy partitioning */
+  while ( ! PARTITION_is_empty(S) ){
+    size_t idx = min_arr_idx(sums,n_parts);
+    add_to_partition(S, parts + idx, sums + idx);
+  }
+
+  PARTITION_destroy(S);
+  free(S);
+  free(sums);
+  return err;
 }
-

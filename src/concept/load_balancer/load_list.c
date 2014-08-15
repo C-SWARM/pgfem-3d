@@ -8,33 +8,6 @@
 #include "load_balancer_utils.h"
 #include <string.h>
 
-/* LOAD FUNCTIONS */
-void copy_LOAD(LOAD *restrict dest,
-	       const LOAD *restrict src)
-{
-  memcpy(dest,src,sizeof(*dest));
-}
-
-static int load_time_comp(const void *lhs,
-			  const void *rhs)
-{
-  return double_comp((void*) &(((LOAD *) lhs)->time),
-		     (void*) &(((LOAD *) rhs)->time));
-}
-
-static int load_server_comp(const void *lhs,
-			    const void *rhs)
-{
-  return size_t_comp((void*) &(((LOAD *) lhs)->server_proc),
-		     (void*) &(((LOAD *) rhs)->server_proc));
-}
-
-static int load_time_comp_reverse(const void *lhs,
-				  const void *rhs)
-{
-  return load_time_comp(rhs,lhs);
-}
-
 static void load_print(FILE *out,
 		       const LOAD *load)
 {
@@ -42,33 +15,6 @@ static void load_print(FILE *out,
 	  load->client_proc,load->server_proc);
 }
 
-/* STATS FUNCTIONS */
-void stats_compute(STATS *stats,
-		   double *arr,
-		   const size_t len)
-{
-  qsort(arr,len,sizeof(*arr),double_comp);
-  stats->avg = compute_avg(arr,len);
-  stats->total = stats->avg*len;
-  stats->std = compute_std(arr,len,stats->avg);
-  stats->min = arr[0];
-  stats->max = arr[len-1];
-}
-
-void stats_reset(STATS *stats)
-{
-  memset(stats,0,sizeof(*stats));
-}
-
-void stats_print(FILE *out,
-		 const STATS *stats)
-{
-  printf("Minimum time:   %f\n",stats->min);
-  printf("Maximum time:   %f\n",stats->max);
-  printf("Average time:   %f\n",stats->avg);
-  printf("Std. Dev. time: %f\n",stats->std);
-  printf("Total time:     %f\n",stats->total);
-}
 
 /* LOAD_LIST FUNCTIONS */
 void build_LOAD_LIST(LOAD_LIST *list,

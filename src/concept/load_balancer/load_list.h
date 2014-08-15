@@ -10,37 +10,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef struct LOAD{
-  double time;
-  size_t client_proc;
-  size_t server_proc;
-}LOAD;
-
-void copy_LOAD(LOAD *restrict dest,
-	       const LOAD *restrict src);
-
-typedef struct STATS{
-  double avg;
-  double std;
-  double min;
-  double max;
-  double total;
-}STATS;
-
-/**
- * Compute min, mav, avg, and std. of arr. Variable arr is sorted in
- * ascending order on exit
- */
-void stats_compute(STATS *stats,
-		   double *arr,
-		   const size_t len);
-
-/** Reset stats object to zeros. */
-void stats_reset(STATS *stats);
-
-/** print statistics info to file */
-void stats_print(FILE *out,
-		 const STATS *stats);
 
 typedef struct LOAD_LIST{
   LOAD *loads;
