@@ -6,6 +6,7 @@
 
 #include "partition.h"
 #include "load.h"
+#include "lb_transfer.h"
 #include "load_balancer.h"
 #include <stdlib.h>
 #include <assert.h>
@@ -94,8 +95,14 @@ int main(int argc, char **argv)
   /* print the new partitions */
   PARTITION_LIST_print(stdout,PL);
 
+  TRANSFER_LIST *TL = calloc(1,sizeof(*TL));
+  TRANSFER_LIST_compute(PL,TL);
+  TRANSFER_LIST_print(stdout,TL);
+
   /* clean up and exit */
   PARTITION_LIST_destroy(PL);
   free(PL);
+  TRANSFER_LIST_destroy(TL);
+  free(TL);
   return 0;
 }

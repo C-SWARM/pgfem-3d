@@ -48,7 +48,8 @@ int PARTITION_push_partition(PARTITION *A,
 			     const PARTITION *B)
 {
   if(A->size + B->size <= A->max_size){
-    memcpy(A->loads + A->size,B->loads,(B->size)*sizeof(*(A->loads)));
+    memcpy((A->loads) + A->size,B->loads,
+	   (B->size)*sizeof(*(A->loads)));
     A->size += B->size;
     return 0;
   } else return 1;
@@ -58,7 +59,7 @@ int PARTITION_push_load(PARTITION *P,
 			const LOAD *load)
 {
   if(P->size >= P->max_size) return -1;
-  LOAD_copy(P->loads + P->size,load);
+  LOAD_copy((P->loads) + P->size,load);
   P->size++;
   return 0;
 }
@@ -74,7 +75,7 @@ int PARTITION_pop_load(PARTITION *P)
 const LOAD *PARTITION_top_load(const PARTITION *P)
 {
   if(P->size == 0) return NULL;
-  else return (P->loads + P->size - 1);
+  else return ((P->loads) + P->size - 1);
 }
 
 int PARTITION_remove_load(PARTITION *P,
@@ -83,7 +84,7 @@ int PARTITION_remove_load(PARTITION *P,
   if(idx >= P->size) return -1;
 
   /* only move the currently valid data, (P->size - idx -1) */
-  memmove(P->loads + idx,P->loads + idx + 1,
+  memmove((P->loads) + idx,(P->loads) + idx + 1,
 	  (P->size - idx -1)*sizeof(*(P->loads)));
   P->size--;
   return 0;
@@ -96,9 +97,9 @@ int PARTITION_insert_load(PARTITION *P,
   if(P->size >= P->max_size) return -1;
   if(idx >= P->size) return PARTITION_push_load(P,load);
 
-  memmove(P->loads + idx + 1, P->loads + idx,
+  memmove((P->loads) + idx + 1, (P->loads) + idx,
 	  (P->size - idx)*sizeof(*(P->loads)));
-  LOAD_copy(P->loads + idx,load);
+  LOAD_copy((P->loads) + idx,load);
   P->size++;
   return 0;
 }
@@ -164,9 +165,9 @@ int PARTITION_compute_intersection(const PARTITION *A,
 
   /* search for intersection from smallest partition */
   if(A->size <= B->size){
-   err = private_PARTITION_search_intersection(A,B,max_size,*A_idx,*B_idx,size);
+    err = private_PARTITION_search_intersection(A,B,max_size,*A_idx,*B_idx,size);
   } else {
-   err = private_PARTITION_search_intersection(B,A,max_size,*B_idx,*A_idx,size);
+    err = private_PARTITION_search_intersection(B,A,max_size,*B_idx,*A_idx,size);
   }
 
   return err;

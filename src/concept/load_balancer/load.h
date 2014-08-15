@@ -22,6 +22,9 @@ struct LOAD_ID{
 typedef struct LOAD_ID LOAD_ID;
 #endif
 
+void LOAD_ID_copy(LOAD_ID *dest,
+		  const LOAD_ID *src);
+
 /**
  * Compare two LOAD_ID objects.
  * 

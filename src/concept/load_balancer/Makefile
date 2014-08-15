@@ -5,7 +5,7 @@ CFLAGS = -Wall -g -O0
 CSTD =  -std=c99
 PROGRAM = load_bal
 
-SRC = load.c partition.c stats.c load_balancer_utils.c load_balancer.c main.c
+SRC = load.c partition.c stats.c load_balancer_utils.c load_balancer.c lb_transfer.c main.c
 LIB = -lm
 
 # should not need to modify below

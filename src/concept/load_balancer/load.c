@@ -8,6 +8,13 @@
 #include "load_balancer_utils.h"
 #include <string.h>
 
+void LOAD_ID_copy(LOAD_ID *dest,
+		  const LOAD_ID *src)
+{
+  if(src == dest) return;
+  memcpy(dest,src,sizeof(*dest));
+}
+
 int LOAD_ID_compare(const void *a,
 		    const void *b)
 {
@@ -25,7 +32,7 @@ int LOAD_ID_compare(const void *a,
 void LOAD_ID_print(FILE *out,
 		   const LOAD_ID *id)
 {
-  fprintf(out,"id: %ld::%ld",id->proc,id->elem);
+  fprintf(out,"id: %3ld::%ld",id->proc,id->elem);
 }
 
 /* LOAD FUNCTIONS */
@@ -59,6 +66,6 @@ int LOAD_compare_r_load(const void *a,
 void LOAD_print(FILE *out,
 		const LOAD *load)
 {
-  fprintf(out,"%11.3e p: %ld ",load->load,load->part_id);
+  fprintf(out,"%11.3e p: %3ld ",load->load,load->part_id);
   LOAD_ID_print(out,&(load->id));
 }
