@@ -5,7 +5,6 @@
  */
 
 #include "load_balancer.h"
-#include "load_list.h"
 
 #include <stdlib.h>
 

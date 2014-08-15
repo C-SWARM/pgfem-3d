@@ -6,7 +6,7 @@ PROGRAM = load_bal
 
 SRC = load.c partition.c stats.c load_balancer_utils.c load_balancer.c
 
-#main.c load_balancer.c load_list.c load_balancer_utils.c load.c partition.c
+#main.c load_list.c 
 LIB = -lm
 
 # should not need to modify below
