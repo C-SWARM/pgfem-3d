@@ -13,9 +13,11 @@ int LOAD_ID_compare(const void *a,
 {
   const LOAD_ID *restrict A = (const LOAD_ID *)a;
   const LOAD_ID *restrict B = (const LOAD_ID *)b;
-  int result = size_t_comp((void*) &(A->proc),(void*) &(B->proc));
+  int result = size_t_comp((const void*) &(A->proc),
+			   (const void*) &(B->proc));
   if(!result){
-    result = size_t_comp((void*) &(A->elem),(void*) &(B->elem));
+    result = size_t_comp((const void*) &(A->elem),
+			 (const void*) &(B->elem));
   }
   return result;
 }
@@ -57,6 +59,6 @@ int LOAD_compare_r_load(const void *a,
 void LOAD_print(FILE *out,
 		const LOAD *load)
 {
-  fprintf(out,"%11.3e ",load->load);
-  LOAD_ID_print(out,&load->id);
+  fprintf(out,"%11.3e p: %ld ",load->load,load->part_id);
+  LOAD_ID_print(out,&(load->id));
 }

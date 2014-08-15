@@ -7,17 +7,26 @@
 #ifndef PARTITION_H
 #define PARTITION_H
 
-#include "load.h"
-#include "stats.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "stats.h"
 
-typedef struct PARTITION{
+struct LOAD;
+#ifndef TYPEDEF_LOAD
+#define TYPEDEF_LOAD
+typedef struct LOAD LOAD;
+#endif
+
+struct PARTITION{
   LOAD *loads;
   STATS stats;
   size_t size;
   size_t max_size;
-} PARTITION;
+};
+#ifndef TYPEDEF_PARTITION
+#define TYPEDEF_PARTITION
+typedef struct PARTITION PARTITION;
+#endif
 
 void PARTITION_build(PARTITION *P,
 		     const size_t max_size);
@@ -26,6 +35,12 @@ void PARTITION_destroy(PARTITION *P);
 
 void PARTITION_copy(PARTITION *dest,
 		    const PARTITION *src);
+
+/**
+ * Reset the partition number for all loads in the partition.
+ */
+void PARTITION_set_load_part_id(PARTITION *P,
+				const size_t idx);
 
 /**
  * Append the partition B onto A, i.e., A += B.
@@ -139,11 +154,15 @@ void PARTITION_print(FILE *out,
 		     const PARTITION *P);
 
 /** Container of PARTITION objects */
-typedef struct PARTITION_LIST{
-  PARTITION *partitions;
-  size_t n_parts;
-  size_t n_loads;
-} PARTITION_LIST;
+struct PARTITION_LIST{
+PARTITION *partitions;
+size_t n_parts;
+size_t n_loads;
+};
+#ifndef TYPEDEF_PARTITION_LIST
+#define TYPEDEF_PARTITION_LIST
+typedef struct PARTITION_LIST PARTITION_LIST;
+#endif
 
 void PARTITION_LIST_build(PARTITION_LIST *PL,
 			  const size_t n_parts,

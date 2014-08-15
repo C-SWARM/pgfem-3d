@@ -1,26 +1,27 @@
 # This is a makefile to compile the load balancer concept code
 
 CC = gcc
-CFLAGS = -Wall -std=c99 -g -O0
+CFLAGS = -Wall -g -O0
+CSTD =  -std=c99
 PROGRAM = load_bal
 
-SRC = load.c partition.c stats.c load_balancer_utils.c load_balancer.c
-
-#main.c load_list.c 
+SRC = load.c partition.c stats.c load_balancer_utils.c load_balancer.c main.c
 LIB = -lm
 
 # should not need to modify below
 OBJ = $(SRC:.c=.o)
 depfile = Makefile.depend
 
-all: $(OBJ) #$(PROGRAM)
+all: $(OBJ) $(PROGRAM)
 
 $(PROGRAM): $(OBJ)
 	$(CC) -o $@ $^ $(LIB)
 
 %.o : %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(CSTD) -c $<
 
+main.o : main.c # cannot compile with -std=c99 becasue of getopt
+	$(CC) $(CFLAGS) -std=gnu99 -c $<
 clean:
 	rm -rf *.o *~ $(depfile) TAGS
 

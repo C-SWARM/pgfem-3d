@@ -36,6 +36,14 @@ void PARTITION_copy(PARTITION *dest,
 	 (dest->size)*sizeof(*(dest->loads)));
 }
 
+void PARTITION_set_load_part_id(PARTITION *P,
+				const size_t idx)
+{
+  for(size_t i=0, end = P->size; i<end; i++){
+    P->loads[i].part_id = idx;
+  }
+}
+
 int PARTITION_push_partition(PARTITION *A,
 			     const PARTITION *B)
 {
@@ -179,6 +187,7 @@ void PARTITION_compute_stats(PARTITION *P)
   STATS_reset(&P->stats);
   double *load = PARTITION_extract_loads(P);
   STATS_compute(&P->stats,load,P->size);
+  free(load);
 }
 
 inline double PARTITION_stats_total(const PARTITION *P)
@@ -224,15 +233,19 @@ void PARTITION_LIST_destroy(PARTITION_LIST *PL)
 void PARTITION_LIST_print(FILE *out,
 			  const PARTITION_LIST *PL)
 {
-  fprintf(out,"No. Partitions: %ld\n",PL->n_parts);
-  double *restrict totals = calloc(PL->n_parts,sizeof(*totals));
   size_t  n_parts = PL->n_parts; 
+  fprintf(out,"No. Partitions: %ld\n",n_parts);
+  PARTITION *parts = PL->partitions; /* alias */
+  double *restrict totals = calloc(n_parts,sizeof(*totals));
   for(size_t i=0; i<n_parts; i++){
-    PARTITION_print(out,PL->partitions + i); /* calls stats_compute */
-    totals[i] = PARTITION_stats_total(PL->partitions + i);
+    PARTITION_compute_stats(parts + i);
+    PARTITION_print(out,parts + i);
+    totals[i] = PARTITION_stats_total(parts + i);
   }
   qsort(totals,n_parts,sizeof(*totals),double_comp);
-  fprintf(out,"Max. Diff.: %11.3e\n\n",totals[n_parts-1] - totals[0]);
+  fprintf(out,"Max. Diff.: %11.3e\n",totals[n_parts-1] - totals[0]);
+  fprintf(out,"==============================\n\n");
+  free(totals);
 }
 
 size_t PARTITION_LIST_total_size(const PARTITION_LIST *PL)

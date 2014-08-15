@@ -8,13 +8,17 @@
 #define STATS_H
 #include <stdio.h>
 
-typedef struct STATS{
+struct STATS{
   double avg;
   double std;
   double min;
   double max;
   double total;
-}STATS;
+};
+#ifndef TYPEDEF_STATS
+#define TYPEDEF_STATS
+typedef struct STATS STATS;
+#endif
 
 /**
  * Compute min, mav, avg, and std. of arr. Variable arr is sorted in

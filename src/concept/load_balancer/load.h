@@ -13,10 +13,14 @@
 /**
  * Internal ideintifying structure for a LOAD object.
  */
-typedef struct LOAD_ID{
+struct LOAD_ID{
   size_t proc;
   size_t elem;
-}LOAD_ID;
+};
+#ifndef TYPEDEF_LOAD_ID
+#define TYPEDEF_LOAD_ID
+typedef struct LOAD_ID LOAD_ID;
+#endif
 
 /**
  * Compare two LOAD_ID objects.
@@ -33,10 +37,15 @@ int LOAD_ID_compare(const void *a,
 void LOAD_ID_print(FILE *out,
 		   const LOAD_ID *id);
 
-typedef struct LOAD{
+struct LOAD{
   double load;
+  size_t part_id;
   LOAD_ID id;
-} LOAD;
+};
+#ifndef TYPEDEF_LOAD
+#define TYPEDEF_LOAD
+typedef struct LOAD LOAD;
+#endif
 
 /**
  * Copy _single_ LOAD object from src to dest. Does nothing if src ==
