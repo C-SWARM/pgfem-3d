@@ -35,4 +35,13 @@ double compute_std(double *restrict arr,
 size_t min_arr_idx(const double *restrict arr,
 		   const size_t len);
 
+/**
+ * Get pointer to the first entry in arr that compares >= *val using
+ * the compare function. Returns NULL if a lower bound does not exist.
+ */
+void *lower_bound(const void *val,
+		  void *arr,
+		  const size_t nmemb,
+		  const size_t size,
+		  int (*compare)(const void*,const void*));
 #endif

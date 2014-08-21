@@ -7,6 +7,8 @@
 #include "load.h"
 #include "load_balancer_utils.h"
 #include <string.h>
+#include <math.h>
+#include <assert.h>
 
 void LOAD_ID_copy(LOAD_ID *dest,
 		  const LOAD_ID *src)
@@ -50,6 +52,24 @@ int LOAD_compare_id(const void *a,
 			 (void*) &(((const LOAD*)b)->id));
 }
 
+inline int LOAD_compare_part_id(const void *a,
+				const void *b)
+{
+  return size_t_comp((void*) &(((const LOAD*)a)->part_id),
+		     (void*) &(((const LOAD*)a)->part_id));
+}
+
+int LOAD_compare_part_id_load(const void *a,
+			      const void *b)
+{
+  int part_id = LOAD_compare_part_id(a,b);
+  if(part_id == 0){
+    return LOAD_compare_load(a,b);
+  } else {
+    return part_id;
+  }
+}
+
 inline int LOAD_compare_load(const void *a,
 			     const void *b)
 {
@@ -61,6 +81,14 @@ int LOAD_compare_r_load(const void *a,
 			const void *b)
 {
   return LOAD_compare_load(b,a);
+}
+
+int LOAD_approx_equal(const LOAD *a,
+		      const LOAD *b,
+		      const double tol)
+{
+  assert(tol >= 0.0);
+  return (fabs(a->load - b->load) >= tol);
 }
 
 void LOAD_print(FILE *out,

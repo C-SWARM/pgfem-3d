@@ -126,6 +126,11 @@ void PARTITION_sort_load(PARTITION *P)
   qsort(P->loads,P->size,sizeof(*(P->loads)),LOAD_compare_load);
 }
 
+void PARTITION_sort_load_part_id(PARTITION *P)
+{
+ qsort(P->loads,P->size,sizeof(*(P->loads)),LOAD_compare_part_id_load);
+}
+
 static int private_PARTITION_search_intersection(const PARTITION *A,
 						  const PARTITION *B,
 						  const size_t max_int_size,

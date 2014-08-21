@@ -25,4 +25,14 @@ typedef struct PARTITION_LIST PARTITION_LIST;
  */
 int load_balancer_greedy(PARTITION_LIST *PL);
 
+/**
+ * Swap jobs that require communication for those that don't if they
+ * take approximately the same time (within some _absolute_ tolerance,
+ * tol > 0).
+ *
+ * Modifies the PARTITION_LIST, indices to internal data may become
+ * invalid. Returns 0 on success. May call abort() on internal error.
+ */
+int load_balancer_reduce_comm(PARTITION_LIST *PL,
+			      const double tol);
 #endif

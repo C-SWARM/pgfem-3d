@@ -115,6 +115,11 @@ void PARTITION_sort_load_id(PARTITION *P);
 void PARTITION_sort_load(PARTITION *P);
 
 /**
+ * Sort PARTITION loads by part_id.
+ */
+void PARTITION_sort_load_part_id(PARTITION *P);
+
+/**
  * Compute the indices of intersection between two partitions based on
  * LOAD_ID.
  *

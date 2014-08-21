@@ -79,6 +79,27 @@ int LOAD_compare_r_load(const void *a,
 			const void *b);
 
 /**
+ * Compare the part_id of two LOAD objects. See also size_t_comp.
+ */
+int LOAD_compare_part_id(const void *a,
+			 const void *b);
+
+/**
+ * Compare by part_id, then by load.
+ */
+int LOAD_compare_part_id_load(const void *a,
+			      const void *b);
+/**
+ * Determine whether two LOAD objects are equal within some absolute
+ * tolerance (tol >= 0).
+ *
+ * Return |a - b| >= tol.
+ */
+int LOAD_approx_equal(const LOAD *a,
+		      const LOAD *b,
+		      const double tol);
+
+/**
  * Print a _single_ LOAD object to a file.
  */
 void LOAD_print(FILE *out,

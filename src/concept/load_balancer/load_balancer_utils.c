@@ -72,3 +72,18 @@ size_t min_arr_idx(const double *restrict arr,
   }
   return idx;
 }
+
+void *lower_bound(const void *val,
+		  void *arr,
+		  const size_t nmemb,
+		  const size_t size,
+		  int (*compare)(const void*,const void*))
+{
+  char *c = arr;
+  for(size_t i=0; i<nmemb; i++){
+    c += i*size;
+    if(compare(c,val) >= 0) return c;
+  }
+  return NULL;
+}
+		  
