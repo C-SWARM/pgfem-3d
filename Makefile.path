@@ -2,7 +2,7 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d/branches/fe2_damage
+top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d/branches/fe2_new_comm_layer
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
