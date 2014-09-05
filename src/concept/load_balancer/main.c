@@ -8,6 +8,7 @@
 #include "load.h"
 #include "lb_transfer.h"
 #include "load_balancer.h"
+#include "load_balancer_utils.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
@@ -20,12 +21,6 @@ static const char *usage =
   "\t-l (int >= 1)   \t number of loads > number of partitions\n"
   "\t-f (flt >= 1.0) \t factor for maximum number of loads per partition.\n"
   "\t                  \t Gives max_size = factor*n_load/n_part\n\n";
-
-static double get_rand_in_range(const double min,
-				const double max)
-{
-  return ((max-min) * rand())/RAND_MAX - min;
-}
 
 int main(int argc, char **argv)
 {
@@ -58,11 +53,11 @@ int main(int argc, char **argv)
   PARTITION_LIST_build(PL,n_part,factor*n_load/n_part);
 
   /* set initial partitions */
+  const double min = 0.0;
+  const double max = 100.0;
   {
     srand(1); /* seed random number generator */
     LOAD tl;
-    const double min = 0.0;
-    const double max = 1000.0;
     PARTITION *parts = PL->partitions;
 
     /* quotient */
@@ -87,17 +82,51 @@ int main(int argc, char **argv)
   }
 
   /* print the partition list */
+  printf("\n*** Initail partitioning of the system ***\n\n");
   PARTITION_LIST_print(stdout,PL);
 
   /* load balance */
   load_balancer_greedy(PL);
 
   /* print the new partitions */
+  printf("\n*** Re-balanced partitions ***\n\n");
   PARTITION_LIST_print(stdout,PL);
 
   TRANSFER_LIST *TL = calloc(1,sizeof(*TL));
   TRANSFER_LIST_compute(PL,TL);
   TRANSFER_LIST_print(stdout,TL);
+
+  /* attempt to reduce communication */
+  load_balancer_reduce_comm(PL,10.0);
+
+  printf("\n*** Re-balanced partitions with reduced communication ***\n\n");
+  PARTITION_LIST_print(stdout,PL);
+  TRANSFER_LIST_compute(PL,TL);
+  TRANSFER_LIST_print(stdout,TL);
+
+  printf("\n*** Adding entropy to the balanced system ***\n\n");
+  PARTITION_LIST_introduce_entropy(PL,5.0);
+  PARTITION_LIST_reset_partition_ids(PL);
+  PARTITION_LIST_print(stdout,PL);
+
+  /* load balance */
+  load_balancer_greedy(PL);
+
+  /* print the new partitions */
+  printf("\n*** Re-balanced partitions (after entropy) ***\n\n");
+  PARTITION_LIST_print(stdout,PL);
+  TRANSFER_LIST_compute(PL,TL);
+  /* TRANSFER_LIST_print(stdout,TL); */
+  TRANSFER_LIST_print_comm_graph(TL);
+
+  /* attempt to reduce communication */
+  load_balancer_reduce_comm(PL,10.0);
+
+  printf("\n*** Re-balanced partitions with reduced communication (after entropy) ***\n\n");
+  PARTITION_LIST_print(stdout,PL);
+  TRANSFER_LIST_compute(PL,TL);
+  TRANSFER_LIST_print(stdout,TL);
+  /* TRANSFER_LIST_print_comm_graph(TL); */
 
   /* clean up and exit */
   PARTITION_LIST_destroy(PL);

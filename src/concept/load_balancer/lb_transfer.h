@@ -85,4 +85,8 @@ int TRANSFER_LIST_is_empty(const TRANSFER_LIST *TL);
 void TRANSFER_LIST_print(FILE *out,
 			 const TRANSFER_LIST *TL);
 
+/**
+ * Print the TRANSFER_LIST object to a file for visualization of the communication graph.
+ */ 
+void TRANSFER_LIST_print_comm_graph(const TRANSFER_LIST *TL);
 #endif

@@ -45,6 +45,15 @@ void LOAD_copy(LOAD *dest,
     memcpy(dest,src,sizeof(*dest));
 }
 
+void LOAD_swap(LOAD *A,
+	       LOAD *B)
+{
+  LOAD buffer;
+  LOAD_copy(&buffer,A);
+  LOAD_copy(A,B);
+  LOAD_copy(B,&buffer);
+}
+
 int LOAD_compare_id(const void *a,
 		    const void *b)
 {
@@ -56,7 +65,7 @@ inline int LOAD_compare_part_id(const void *a,
 				const void *b)
 {
   return size_t_comp((void*) &(((const LOAD*)a)->part_id),
-		     (void*) &(((const LOAD*)a)->part_id));
+		     (void*) &(((const LOAD*)b)->part_id));
 }
 
 int LOAD_compare_part_id_load(const void *a,

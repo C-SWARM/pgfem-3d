@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <float.h>
+#include <math.h>
 #include <assert.h>
 
 static void greedy_add_to_partition(PARTITION *S,
@@ -78,27 +79,70 @@ int load_balancer_greedy(PARTITION_LIST *PL)
  * equivalent loads in B previously belonging to A (at time n). If
  * found, swap jobs.
  */
-static size_t reduce_comm_swap(PARTITION *restrict A,
-			       PARTITION *restrict B,
+static size_t reduce_comm_swap(PARTITION *A,
+			       PARTITION *B,
 			       const size_t A_id,
 			       const size_t B_id,
 			       const double tol)
 {
-  /* get pointers to min/max loads */
-  LOAD *AL = lower_bound(&B_id,A->loads,A->size,sizeof(*AL),LOAD_compare_part_id);
-  LOAD *AL_end = lower_bound(&(B_id+1),A->loads,A->size,sizeof(*AL),LOAD_compare_part_id);
-  if(AL_end == NULL) AL_end = A->loads + A->size;
+  size_t err = 0;
+  /* sort partition by owner then load */
+  PARTITION_sort_load_part_id(A);
+  PARTITION_sort_load_part_id(B);
 
-  LOAD *BL = lower_bound(&A_id,B->loads,B->size,sizeof(*BL),LOAD_compare_part_id);
-  LOAD *BL_end = lower_bound(&(B_id+1),B->loads,B->size,sizeof(*BL),LOAD_compare_part_id);
-  if(BL_end == NULL) BL_end = B->loads + B->size;
+  LOAD match;
+  match.load = 0.0;
+  match.part_id = B_id;
+  const size_t a_lower = lower_bound_idx(&match,A->loads,A->size,sizeof(*A),LOAD_compare_part_id);
+  match.part_id ++;
+  const size_t a_upper = lower_bound_idx(&match,A->loads,A->size,sizeof(*A),LOAD_compare_part_id);
+  /* return early if none in range */
+  if(a_lower == a_upper || a_lower == A->size) return err;
 
-  for(; AL != AL_end; AL++){
-    for(; BL != BL_end; BL++){
+  match.part_id = A_id;
+  const size_t b_lower = lower_bound_idx(&match,B->loads,B->size,sizeof(*B),LOAD_compare_part_id);
+  match.part_id ++;
+  const size_t b_upper = lower_bound_idx(&match,B->loads,B->size,sizeof(*B),LOAD_compare_part_id);
+  /* return if none in range */
+  if(b_lower == b_upper || b_lower == B->size) return err;
 
+  /* aliases */
+  LOAD *A_load = A->loads;
+  LOAD *B_load = B->loads;
+
+  /* skip array */
+  size_t b_len = b_upper - b_lower;
+  size_t *restrict skip_arr = calloc(b_len,sizeof(*skip_arr));
+  size_t n_skip = 0;
+
+  /* loop through range in A */
+  for(size_t i = a_lower; i < a_upper; i++){
+    /* break if no possible matches */
+    if(n_skip >= b_len) break;
+    int swap_idx = -1;
+    double min = tol;
+    /* loop through range in B */
+    for(size_t j = b_lower; j < b_upper; j++){
+      /* search for minimum index */
+      if(!skip_arr[j - b_lower]){
+	double diff = fabs(A_load[i].load - B_load[j].load);
+	if(diff < min){
+	  min = diff;
+	  swap_idx = j;
+	}
+      }
     }
-    if(BL == BL_end) break;
+
+    if(swap_idx >= 0){
+      skip_arr[swap_idx - b_lower] ++; /* mark index to skip */
+      n_skip ++;
+      LOAD_swap(A_load + i, B_load + swap_idx);
+    }
+
   }
+
+  free(skip_arr);
+  return err;
 }			       
 
 int load_balancer_reduce_comm(PARTITION_LIST *PL,
@@ -112,11 +156,11 @@ int load_balancer_reduce_comm(PARTITION_LIST *PL,
 
   /* alias to partitions */
   PARTITION *parts = PL->partitions;
-
-  /* sort each PARTITION's loads by part_id (from previous step) */
   for(size_t i=0; i<n_part; i++){
-    PARTITION_sort_load_part_id(parts + i);
+    for(size_t j=0; j<n_part; j++){
+      if(i == j) continue;
+      reduce_comm_swap(parts + i,parts + j,i,j,tol);
+    }
   }
-
   return err;
 }

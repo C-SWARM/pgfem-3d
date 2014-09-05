@@ -99,3 +99,24 @@ void TRANSFER_LIST_print(FILE *out,
   }
   fprintf(out,"\n");
 }
+
+void TRANSFER_LIST_print_comm_graph(const TRANSFER_LIST *TL)
+{
+  /* print symmetric to->from columns to data file */
+  FILE *out = fopen("comm_graph.dat","w");
+  TRANSFER *restrict t = TL->transfers;
+  for(size_t i=0, end = TL->size; i<end; i++){
+    fprintf(out,"%ld %ld\n%ld %ld\n",t[i].to,t[i].from,t[i].from,t[i].to);
+  }
+  fclose(out);
+
+  /* print a matlab script to print the communication graph */
+  out = fopen("comm_graph.m","w");
+  fprintf(out,
+	  "function comm_graph\n"
+	  "dat = load('comm_graph.dat','-ascii');\n"
+	  "dat = dat + 1;\n"
+	  "comm = sparse(dat(:,1),dat(:,2),ones(length(dat),1));\n"
+	  "spy(comm);\n");
+  fclose(out);
+}

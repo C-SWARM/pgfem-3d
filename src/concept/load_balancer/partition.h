@@ -182,4 +182,10 @@ size_t PARTITION_LIST_total_size(const PARTITION_LIST *PL);
 
 void PARTITION_LIST_copy(PARTITION_LIST *dest,
 			 const PARTITION_LIST *src);
+
+/** Randomly perturb load values in partitions */
+void PARTITION_LIST_introduce_entropy(PARTITION_LIST *PL,
+				      const double bound);
+
+void PARTITION_LIST_reset_partition_ids(PARTITION_LIST *PL);
 #endif

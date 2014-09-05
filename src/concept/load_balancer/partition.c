@@ -245,6 +245,7 @@ void PARTITION_LIST_print(FILE *out,
   double *restrict totals = calloc(n_parts,sizeof(*totals));
   for(size_t i=0; i<n_parts; i++){
     PARTITION_compute_stats(parts + i);
+    PARTITION_sort_load_part_id(parts + i);
     PARTITION_print(out,parts + i);
     totals[i] = PARTITION_stats_total(parts + i);
   }
@@ -274,5 +275,24 @@ void PARTITION_LIST_copy(PARTITION_LIST *dest,
   for(size_t i=0, end = dest->n_parts; i<end; i++){
     dest->partitions[i].loads = NULL; /* allows free without error */
     PARTITION_copy(dest->partitions + i, src->partitions + i);
+  }
+}
+
+void PARTITION_LIST_introduce_entropy(PARTITION_LIST *PL,
+				      const double bound)
+{
+  for(PARTITION *parts = PL->partitions, *p_end = (PL->partitions) + (PL->n_parts);
+      parts != p_end; ++parts){
+    for(LOAD *restrict loads = parts->loads, *l_end = (parts->loads) + (parts->size);
+	loads != l_end; ++loads){
+      loads->load += get_rand_in_range(-bound,bound);
+    }
+  }
+}
+
+void PARTITION_LIST_reset_partition_ids(PARTITION_LIST *PL)
+{
+  for(size_t i=0, end = PL->n_parts; i<end; i++){
+    PARTITION_set_load_part_id((PL->partitions) + i,i);
   }
 }

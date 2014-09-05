@@ -57,6 +57,13 @@ typedef struct LOAD LOAD;
 void LOAD_copy(LOAD *dest,
 	       const LOAD *src);
 
+
+/**
+ * Swap _single_ LOAD object A with _single_ LOAD object B. Does nothing if A == B.
+ */
+void LOAD_swap(LOAD *A,
+	       LOAD *B);
+
 /**
  * See compare_LOAD_ID, but called on LOAD object.
  */

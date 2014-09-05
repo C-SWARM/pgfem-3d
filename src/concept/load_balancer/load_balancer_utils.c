@@ -87,3 +87,23 @@ void *lower_bound(const void *val,
   return NULL;
 }
 		  
+size_t lower_bound_idx(const void *val,
+		  void *arr,
+		  const size_t nmemb,
+		  const size_t size,
+		  int (*compare)(const void*,const void*))
+{
+  size_t idx = 0;
+  char *c = arr;
+  for(; idx<nmemb; idx++){
+    c += idx*size;
+    if(compare(c,val) >= 0) return idx;
+  }
+  return nmemb;
+}
+
+double get_rand_in_range(const double min,
+			 const double max)
+{
+  return ((max-min) * rand())/RAND_MAX - min;
+}
