@@ -1,4 +1,8 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ *  Matthew Mosby, University of Notre Dame
+ */
 #pragma once
 #ifndef MACRO_MICRO_FUNCTIONS_H
 #define MACRO_MICRO_FUNCTIONS_H

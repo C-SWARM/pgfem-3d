@@ -5,10 +5,7 @@
 #ifndef PGFEM_MPI_H
 #define PGFEM_MPI_H
 
-#ifndef INCLUDED_MPI_H
 #include "mpi.h"
-#define INCLUDED_MPI_H
-#endif
 
 /** Future, write #define wrappers for MPI functions and
     find/replace in code */
