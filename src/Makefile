@@ -20,9 +20,9 @@ LINK = mpicxx
 DFLAGS		= #-DNDEBUG
 
 # BG/Q machines
-#CC = mpixlc_r
-#LINK = mpixlf77_r
-#DFLAGS	+= -DARCH_BGQ
+# CC = mpixlc_r
+# LINK = mpixlf77_r
+# DFLAGS	+= -DARCH_BGQ
 
 #TAU_OPTS = -optKeepFiles -tau_options=-optTauSelectFile=tau_instrument.txt
 #CC = tau_cc.sh $(TAU_OPTS)

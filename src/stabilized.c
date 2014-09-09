@@ -29,6 +29,7 @@
 
 static const int periodic = 0;
 static const double PII = 3.141592653589793238462643;
+static const double identity[9]={1,0,0,0,1,0,0,0,1};
 
 /*=== Declare the static helper functions ===*/
 /** Compute common quantities used in integration */
@@ -50,6 +51,7 @@ static int integration_help(const int ip,
 			    const double *pn,
 			    const double *p,
 			    const double *Fn,
+			    const SUPP sup,
 			    double *wt,
 			    double *jj,
 			    double *Na,
@@ -86,6 +88,7 @@ static int quadradic_integration_help(const int ip,
 				      const double *disp,
 				      const double *pn,
 				      const double *p,
+				      const SUPP sup,
 				      double *wt,
 				      double *jj,
 				      double *Na,
@@ -157,6 +160,7 @@ static int get_Ru_at_ip(double *Ru,
     point. NOTE: This formulation requires quadradic integration on
     this term */
 static int get_Rp_at_ip(double *Rp,
+			const int TL,
 			const int nne,
 			const double *Np,
 			const double kappa,
@@ -169,6 +173,7 @@ static int get_Rp_at_ip(double *Rp,
 
 /** Compute the stabilization term for the residual */
 static int get_Rp_stab_at_ip(double *Rp,
+			     const int TL,
 			     const int nne,
 			     const double *Np_x,/* Np_x [ndn x nne] */
 			     const double *grad_delP,
@@ -245,6 +250,7 @@ static int get_Kpp_at_ip(double *Kpp,
 
 /** Compute the stabilization term for the Kpu tangent */
 static int get_Kpu_stab_at_ip(double *Kpu,
+			      const int TL,
 			      const int nne,
 			      const double *ST,
 			      const double *Np_x,
@@ -276,20 +282,21 @@ static int get_Kpp_stab_at_ip(double *Kpp,
 			      const double wt);
 
 /* increment an element */
-static double st_incr_elem (long ii,
-			    long nne,
-			    long ndofn,
-			    double *x,
-			    double *y,
-			    double *z,
-			    double *r_u,
-			    double *a_a,
-			    double *p,
-			    double dt,
-			    HOMMAT *hommat,
-			    ELEMENT *elem,
+static double st_incr_elem (const long ii,
+			    const long nne,
+			    const long ndofn,
+			    const double *x,
+			    const double *y,
+			    const double *z,
+			    const double *r_u,
+			    const double *a_a,
+			    const double *p,
+			    const double dt,
+			    const HOMMAT *hommat,
+			    const ELEMENT *elem,
 			    EPS *eps,
-			    SIG *sig);
+			    SIG *sig,
+			    const SUPP sup);
 
 /*=======================================*/
 /*   Main API function definitions       */
@@ -332,9 +339,6 @@ void res_stab_def (long ne,
 		   EPS *eps,
 		   SIG *sig,
 		   double stab)
-/*
-  
-*/
 {
   long ii,ip,i,nne,II,mat;
   for (ii=0;ii<ne;ii++){
@@ -379,6 +383,7 @@ int resid_st_elem (long ii,
 		   double *z,
 		   EPS *eps,
 		   SIG *sig,
+		   SUPP sup,
 		   double *r_e,
 		   double nor_min,
 		   double *fe,
@@ -386,7 +391,7 @@ int resid_st_elem (long ii,
 		   double stab)
 {
   /* compute constants */
-  const int ndn = 3;
+  static const int ndn = 3;
   const int mat = elem[ii].mat[2];
   const double  kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   const HOMMAT *ptrMat = &hommat[mat];
@@ -463,8 +468,14 @@ int resid_st_elem (long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -473,7 +484,7 @@ int resid_st_elem (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,disp,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
 				C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,grad_delP,
 				grad_P);
 
@@ -485,7 +496,7 @@ int resid_st_elem (long ii,
 			    /*n+1*/ pressure,ptrDam,jj,wt);
 
 	/* compute Rp stabilization contribution at integration point */
-	err += get_Rp_stab_at_ip(Rp,nne,Np_x,grad_delP,grad_P,Jr,
+	err += get_Rp_stab_at_ip(Rp,sup->multi_scale,nne,Np_x,grad_delP,grad_P,Jr,
 				 Fr_I,SStab,ptrDam,jj,wt);
 
 	/* increment ip counter */
@@ -511,22 +522,28 @@ int resid_st_elem (long ii,
 
 	/* get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].st[ip].Fpp;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	const damage *ptrDam = &eps[ii].st[ip].dam;
 
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,disp,sig[ii].p,p,&wt,&jj,
+					  weights,disp,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* compute Up = (1-w)Up(n+1) - (1-wn)Upn(n) */
 	err += get_material_pres(&Up,Jn,Jr,ptrMat,ptrDam);
 
 	/* compute contribution to Rp from integration point */
-	err += get_Rp_at_ip(Rp,nne,Na,kappa,Up,delP,Pn+delP,ptrDam,jj,wt);
+	err += get_Rp_at_ip(Rp,sup->multi_scale,nne,Na,kappa,Up,delP,Pn+delP,ptrDam,jj,wt);
 
 	/* increment ip counter */
 	ip++;
@@ -632,6 +649,7 @@ int stiffmatel_st (long ii,
 		   NODE *node,
 		   SIG *sig,
 		   EPS *eps,
+		   SUPP sup,
 		   double *r_e,
 		   long npres,
 		   double nor_min,
@@ -643,7 +661,7 @@ int stiffmatel_st (long ii,
 		   double *fe)
 {
   /* compute constants */
-  const int ndn = 3;
+  static const int ndn = 3;
   const int mat = elem[ii].mat[2];
   const double  kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   const HOMMAT *ptrMat = &hommat[mat];
@@ -724,8 +742,14 @@ int stiffmatel_st (long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -738,7 +762,7 @@ int stiffmatel_st (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,disp,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,F,
 				C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,grad_delP,
 				grad_P);
 
@@ -771,7 +795,7 @@ int stiffmatel_st (long ii,
 	err += get_Kpu_at_ip(Kpu,nne,Na,ST,Fr_I,Jn,Jr,kappa,Upp,UP,
 			     pressure,SS,ptrDam,jj,wt);
 
-	err += get_Kpu_stab_at_ip(Kpu,nne,ST,Np_x,Fr,Fr_I,Jr,grad_delP,
+	err += get_Kpu_stab_at_ip(Kpu,sup->multi_scale,nne,ST,Np_x,Fr,Fr_I,Jr,grad_delP,
 				  grad_P,SStab,ptrDam,SS,jj,wt);
 
 	err += get_Kpp_stab_at_ip(Kpp,nne,Na,Np_x,Fr_I,Jn_1,Jn,Jr,SStab,
@@ -798,8 +822,15 @@ int stiffmatel_st (long ii,
 	/* declare fresh variables for integration */
 	double Jr,delP,jj,wt,Pn_1,Pn,UP,H;
 
-	const double *Fn = eps[ii].st[ip].Fpp;
-	const double Jn = getJacobian(Fn,ii,&err);
+	double Jn = 0.0;
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn =  eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].st[ip].dam;
@@ -809,7 +840,7 @@ int stiffmatel_st (long ii,
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,disp,sig[ii].p,p,&wt,&jj,
+					  weights,disp,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* get Pn_1 */
@@ -969,20 +1000,16 @@ int st_increment (long ne,
 		  MPI_Comm mpi_comm,
 		  const int coh)
 {
+  static const int ndn = 3;
   int err = 0;
-  long ndn,ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
-  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],*X,*Y,PL,EL_e,
+  long ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
+  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e,
     FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
   
   int myrank,nproc;
   MPI_Comm_size(mpi_comm,&nproc);
   MPI_Comm_rank(mpi_comm,&myrank);
-
-  /* 3D */ ndn = 3;
-  
-  /* Allocate */
-  X = aloc1 (3); Y = aloc1 (3);
   
   /************ UNIT CELL APPROACH + GFEM - TOTAL LAGRANGIAN *******/
   if (periodic == 1){
@@ -1024,14 +1051,17 @@ int st_increment (long ne,
     a_a = aloc1 (ndn*nne);
     a = aloc1 (ndofe);
     
-    /* Coordinates of element */
-    nodecoord_updated (nne,nod,node,x,y,z);
-    
     /* Id numbers */
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
-    
-    /* deformation on element */
-    def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+
+    /* Coordinates/deformation on element */
+    if(sup->multi_scale){
+      nodecoord_total (nne,nod,node,x,y,z);
+      def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    } else {
+      nodecoord_updated (nne,nod,node,x,y,z);
+      def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+    }
 
     /* Null fields */
     for (k=0;k<6;k++){
@@ -1059,7 +1089,7 @@ int st_increment (long ne,
     
     /* Update the element quantities */
     EL_e += st_incr_elem (ii,nne,ndofn,x,y,z,r_u,a_a,
-			  p,dt,hommat,elem,eps,sig);
+			  p,dt,hommat,elem,eps,sig,sup);
     
     /* PRESSURE CHANGES */
     for (M=0;M<nne;M++){
@@ -1187,67 +1217,46 @@ int st_increment (long ne,
   /*********************/
   /* Coordinate update */
   /*********************/
-  if (periodic == 1){
-    for (ii=0;ii<nn;ii++){
-
-      if (periodic == 1){
-	X[0] = node[ii].x1_fd;
-	X[1] = node[ii].x2_fd;
-	X[2] = node[ii].x3_fd;
-	for (P=0;P<3;P++){
-	  Y[P] = 0.0;
-	  for (R=0;R<3;R++){
-	    Y[P] += eps[0].F[P][R]*X[R];
-	  }
-	}
+   for (ii=0;ii<nn;ii++){
+    for (i=0;i<ndn;i++){
+      II = node[ii].id[i];
+      if (II > 0){
+	if (i == 0) node[ii].x1 = node[ii].x1_fd + r[II-1] + d_r[II-1];
+	else if (i == 1) node[ii].x2 = node[ii].x2_fd + r[II-1] + d_r[II-1];
+	else if (i == 2) node[ii].x3 = node[ii].x3_fd + r[II-1] + d_r[II-1];
       }
-      
-      for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
-	
-	if (periodic == 1){
-	  if (i == 0) node[ii].x1 = Y[i];
-	  if (i == 1) node[ii].x2 = Y[i];
-	  if (i == 2) node[ii].x3 = Y[i];
-	  
-	  if (II > 0){
-	    if (i == 0) node[ii].x1 += r[II-1] + d_r[II-1];
-	    if (i == 1) node[ii].x2 += r[II-1] + d_r[II-1];
-	    if (i == 2) node[ii].x3 += r[II-1] + d_r[II-1];
-	  }
-	}/* periodic update */
-	else {
-	  if (II > 0){
-	    if (i == 0) node[ii].x1 += d_r[II-1];
-	    if (i == 1) node[ii].x2 += d_r[II-1];
-	    if (i == 2) node[ii].x3 += d_r[II-1];
-	  }
-	  if (II < 0){
-	    if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-	    if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-	    if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
-	  }
-	}/* gem update */
+      else if (II < 0){
+	if (i == 0) node[ii].x1 = (node[ii].x1_fd
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
+
+	else if (i == 1) node[ii].x2 = (node[ii].x2_fd 
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
+
+	else if (i == 2) node[ii].x3 = (node[ii].x3_fd
+					+ sup->defl[abs(II)-1] 
+					+ sup->defl_d[abs(II)-1]);
       }
     }
-  }/* end PERIODIC */
-  else{
-    for (ii=0;ii<nn;ii++){
-      for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
-	if (II > 0){
-	  if (i == 0) node[ii].x1 += d_r[II-1];
-	  if (i == 1) node[ii].x2 += d_r[II-1];
-	  if (i == 2) node[ii].x3 += d_r[II-1];
-	}
-	if (II < 0){
-	  if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-	  if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-	  if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
-	}
-      }
-    }/* end ii < nn */
-  }
+  }/* end ii < nn */
+
+   /* update the coordinates including macroscale deformations */
+   if(sup->multi_scale){
+     const double *F = sup->F0;
+     double X[ndn];
+     double Y[ndn];
+     for(int i=0; i<nn; i++){
+       X[0] = node[i].x1_fd;
+       X[1] = node[i].x2_fd;
+       X[2] = node[i].x3_fd;
+       cblas_dgemv(CblasRowMajor,CblasNoTrans,ndn,ndn,1.0,
+		   F,ndn,X,1,0.0,Y,1);
+       node[i].x1 += Y[0];
+       node[i].x2 += Y[1];
+       node[i].x3 += Y[2];
+     }
+   }
   
   PL = T_VOLUME (ne,ndofn-1,elem,node);
   /* Gather Volume from all domains */
@@ -1257,19 +1266,17 @@ int st_increment (long ne,
     MPI_Allreduce(pores,&Gpores,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
     *pores = Gpores;
   }
- 
+
   if (myrank == 0) {
     if (coh == 0){
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f\n",GPL);
     } else {
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f || Volume of voids %12.12f || Vv/V = %12.12f\n",
-	      GPL,*pores,*pores/GPL);
+		    GPL,*pores,*pores/GPL);
       /*VVolume --> GPL*/ /* VVolume doesn't make sense...*/
     }
   }
   
-    dealoc1 (X);
-    dealoc1 (Y);
     return err;
 }
 
@@ -1297,6 +1304,7 @@ static int integration_help(const int ip,
 			    const double *pn,
 			    const double *p,
 			    const double *Fn,
+			    const SUPP sup,
 			    double *wt,
 			    double *jj,
 			    double *Na,
@@ -1316,7 +1324,7 @@ static int integration_help(const int ip,
 			    double *grad_delP,
 			    double *grad_P)
 {
-  const int ndn = 3;
+  static const int ndn = 3;
   int err = 0;
   double ksi,eta,zet;
 
@@ -1343,6 +1351,7 @@ static int integration_help(const int ip,
   /* compute the pressure gradient operator and pressure */
   *Pn_1 = *Pn = *pressure = 0.0;
   memset(grad_delP,0,3*sizeof(double));
+  memset(grad_P,0,3*sizeof(double));
   for(int i=0; i<nne; i++){
     Np_x[idx_2_gen(0,i,3,nne)] = N_x[i];
     Np_x[idx_2_gen(1,i,3,nne)] = N_y[i];
@@ -1369,9 +1378,21 @@ static int integration_help(const int ip,
   def_grad_get(nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
   mat2array(Fr,CONST_2(double) Fr_mat,3,3);
 
-  /* compute F and C */
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-	      3,3,3,1.0,Fr,3,Fn,3,0.0,F,3);
+  /*=== compute F and C ===*/
+  /*
+   * Add multiscale contribution. 
+   * For multi-scale analysis, Fn = Identity, F = Fr
+   */
+  if(sup->multi_scale){
+    for(int i=0; i<ndn*ndn; i++){
+      Fr[i] +=  sup->F0[i];
+    }
+    memcpy(F,Fr,ndn*ndn*sizeof(double));
+  } else {
+    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+		3,3,3,1.0,Fr,3,Fn,3,0.0,F,3);
+  }
+
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
 	      3,3,3,1.0,F,3,F,3,0.0,C,3);
 
@@ -1404,6 +1425,7 @@ static int quadradic_integration_help(const int ip,
 				      const double *disp,
 				      const double *pn,
 				      const double *p,
+				      const SUPP sup,
 				      double *wt,
 				      double *jj,
 				      double *Na,
@@ -1416,7 +1438,7 @@ static int quadradic_integration_help(const int ip,
 				      double *delP,
 				      double *Pn)
 {
-  const int ndn = 3;
+  static const int ndn = 3;
   int err = 0;
   double ksi,eta,zet;
 
@@ -1447,6 +1469,13 @@ static int quadradic_integration_help(const int ip,
   /* compute the current deformation gradient */
   def_grad_get(nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
   mat2array(Fr,CONST_2(double) Fr_mat,3,3);
+
+  /* Add multiscale contribution */
+  if(sup->multi_scale){
+    for(int i=0; i<ndn*ndn; i++){
+      Fr[i] += sup->F0[i];
+    }
+  }
 
   /* compute delP */
   *Pn = *delP = 0.0;
@@ -1645,6 +1674,7 @@ static int get_Ru_at_ip(double *Ru,
 
 
 static int get_Rp_at_ip(double *Rp,
+			const int TL,
 			const int nne,
 			const double *Np,
 			const double kappa,
@@ -1659,6 +1689,7 @@ static int get_Rp_at_ip(double *Rp,
 
   /* compute dP for residual */
   double dP = (1.-dam->wn)*deltaPres + (dam->wn - dam->w)*P;
+  if(TL) dP = (1.-dam->w)*P;
 
   /* add contribution of integration point to Rp */
   UL_Rp_at_ip(Rp,nne,Np,kappa,deltaUp,dP,jj,wt);
@@ -1668,6 +1699,7 @@ static int get_Rp_at_ip(double *Rp,
 
 
 static int get_Rp_stab_at_ip(double *Rp,
+			     const int TL,
 			     const int nne,
 			     const double *Np_x,/* Np_x [ndn x nne] */
 			     const double *grad_delP,
@@ -1693,8 +1725,14 @@ static int get_Rp_stab_at_ip(double *Rp,
 	      3,3,3,stab*Jr,Fr_I,3,Fr_I,3,0.0,FrFr,3);
 
   /* compute damage gradP */
-  for(int i=0; i<3; i++){
-    gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn - dam->w)*grad_P[i];
+  if(TL){
+    for(int i=0; i<3; i++){
+      gradP[i] = (1.-dam->w)*grad_P[i];
+    }
+  } else {
+    for(int i=0; i<3; i++){
+      gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn - dam->w)*grad_P[i];
+    }
   }
 
   /* add contribution of stabilization term to Rp at the integration
@@ -1827,6 +1865,7 @@ static int get_Kpp_at_ip(double *Kpp,
 
 
 static int get_Kpu_stab_at_ip(double *Kpu,
+			      const int TL,
 			      const int nne,
 			      const double *ST,
 			      const double *Np_x,
@@ -1858,8 +1897,14 @@ static int get_Kpu_stab_at_ip(double *Kpu,
 	      3,3,3,1.0,Fr_I,3,Fr_I,3,0.0,Cr_I,3);
 
   /* compute damage grad P */
-  for(int i=0; i<3; i++){
-    dam_gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn-dam->w)*grad_P[i];
+  if(TL){
+    for(int i=0; i<3; i++){
+      dam_gradP[i] = (1.-dam->w)*grad_P[i];
+    }
+  } else {
+    for(int i=0; i<3; i++){
+      dam_gradP[i] = (1.-dam->wn)*grad_delP[i] + (dam->wn-dam->w)*grad_P[i];
+    }
   }
 
   for(int a=0; a<nne; a++){
@@ -1987,20 +2032,21 @@ static int get_Kpp_stab_at_ip(double *Kpp,
   return err;
 }/* static int get_Kpp_stab_tan_at_ip() */
 
-static double st_incr_elem (long ii,
-			    long nne,
-			    long ndofn,
-			    double *x,
-			    double *y,
-			    double *z,
-			    double *r_u,
-			    double *a_a,
-			    double *p,
-			    double dt,
-			    HOMMAT *hommat,
-			    ELEMENT *elem,
+static double st_incr_elem (const long ii,
+			    const long nne,
+			    const long ndofn,
+			    const double *x,
+			    const double *y,
+			    const double *z,
+			    const double *r_u,
+			    const double *a_a,
+			    const double *p,
+			    const double dt,
+			    const HOMMAT *hommat,
+			    const ELEMENT *elem,
 			    EPS *eps,
-			    SIG *sig)
+			    SIG *sig,
+			    const SUPP sup)
 {
   double result = 0.0;
   /* compute constants */
@@ -2065,8 +2111,14 @@ static double st_incr_elem (long ii,
 
 	/* Get pointer to Fn and compute Jn */
 	/* DO NOT free Fn!!! */
-	const double *Fn = eps[ii].il[ip].F;
-	Jn = getJacobian(Fn,ii,&err);
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn = eps[ii].il[ip].F;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	/* get pointer to damage object */
 	const damage *ptrDam = &eps[ii].dam[ip];
@@ -2075,7 +2127,7 @@ static double st_incr_elem (long ii,
 	err += integration_help(ip,ii,nne,i,j,k,x,y,z,
 				int_pt_ksi,int_pt_eta,int_pt_zet,
 				weights,r_u,sig[ii].pn_1,sig[ii].p,p,
-				Fn,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,
+				Fn,sup,&wt,&jj,Na,N_x,N_y,N_z,Np_x,ST,Fr,
 				F,C,Fr_I,&Jr,&Pn_1,&Pn,&pressure,
 				grad_delP,grad_P);
 
@@ -2182,8 +2234,15 @@ static double st_incr_elem (long ii,
 	/* declare fresh variables for integration */
 	double Jr,delP,jj,wt,Pn;
 
-	const double *Fn = eps[ii].st[ip].Fpp;
-	double Jn = getJacobian(Fn,ii,&err);
+	double Jn = 0.0;
+	const double *Fn = NULL;
+	if (sup->multi_scale){
+	  Fn = identity;
+	  Jn = 1.0;
+	} else {
+	  Fn =  eps[ii].st[ip].Fpp;
+	  Jn = getJacobian(Fn,ii,&err);
+	}
 
 	double Un_1 = eps[ii].st[ip].Un_1;
 	double Jn_1 = eps[ii].st[ip].Jn_1;
@@ -2191,7 +2250,7 @@ static double st_incr_elem (long ii,
 	/* compute various quantities for integration */
 	err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
 					  int_pt_ksi,int_pt_eta,int_pt_zet,
-					  weights,r_u,sig[ii].p,p,&wt,&jj,
+					  weights,r_u,sig[ii].p,p,sup,&wt,&jj,
 					  Na,N_x,N_y,N_z,ST,Fr,&Jr,&delP,&Pn);
 
 	/* get Pn_1 */

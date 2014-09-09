@@ -38,7 +38,7 @@ extern "C" {
     double lc; /**< multiscale scaling parameter. For interfaces, is the
 		 thickness of the unit cell/interface layer. */
     double v0; /**< Volume of microstructure V = B U H [Miehe 2002]*/
-    int multi_scale; /*< flag for whether or not multiscale routines
+    int multi_scale; /**< flag for whether or not multiscale routines
 		       should be executed. */
   };
   typedef struct SUPP_1 SUPP_1;

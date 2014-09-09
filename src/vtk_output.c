@@ -118,7 +118,8 @@ void VTK_print_master(char *path,
 void VTK_print_cohesive_master(char *path,
 			       char *base_name,
 			       int time,
-			       int nproc)
+			       int nproc,
+			       const PGFem3D_opt *opts)
 {
   /* Print the master file wich points to all the data files and
      declares the datatypes */
@@ -157,6 +158,10 @@ void VTK_print_cohesive_master(char *path,
   /* write datatypes */
   /* Point Data */
   PGFEM_fprintf(out,"<PPointData>\n");
+  if(opts->multi_scale){
+    PGFEM_fprintf(out,"<PDataArray type=\"Float64\" Name=\"MacroDisplacement\""
+		  " NumberOfComponents=\"3\"/>\n");
+  }
   PGFEM_fprintf(out,"<PDataArray type=\"Float64\" Name=\"Displacement\""
 	  " NumberOfComponents=\"3\"/>\n");
   PGFEM_fprintf(out,"</PPointData>\n");
@@ -516,6 +521,19 @@ void VTK_print_cohesive_vtu(char *path,
 
   /* POINT DATA */
   PGFEM_fprintf(out,"<PointData>\n");
+  if(opts->multi_scale){
+    PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"MacroDisplacement\""
+		  " NumberOfComponents=\"3\">\n");
+    double u[3] = {0.0,0.0,0.0};
+    for (int i=0; i<ensight->ncn;i++){
+      /* total lagrangian, need only one of the nodes (coincide at time 0) */
+      compute_interface_macro_disp_at_node(u,&node[ensight->Sm[i]],
+					   sup->F0,opts->analysis_type);
+      PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",u[0],u[1],u[2]);
+    }
+    PGFEM_fprintf(out,"</DataArray>\n");
+  }
+
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"Displacement\""
 	  " NumberOfComponents=\"3\">\n");
   for (int i=0;i<ensight->ncn;i++){

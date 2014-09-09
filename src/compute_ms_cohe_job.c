@@ -798,7 +798,7 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 
     if(o->cohesive){
       if(myrank == 0){
-	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc);
+	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc,o);
       }
       VTK_print_cohesive_vtu(o->opath,ofname,s->p_tim,myrank,c->nce,c->node,
 			     c->coel,c->supports,s->r,c->ensight,o);

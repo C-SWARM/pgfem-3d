@@ -4,25 +4,11 @@
 #include "PGFEM_mpi.h"
 #include <math.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif 
 
 static const int ndn = 3;
 
