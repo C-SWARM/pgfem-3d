@@ -25,6 +25,22 @@
 
 static const int periodic = 0;
 
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b))
+{
+  int count = 0;
+  char *copy = malloc(n_elem*size);
+  memcpy(copy,arr,n_elem*size);
+  qsort(copy,n_elem,size,compare);
+  for(size_t i=1; i<n_elem; i++){
+    if(compare(copy+(i-1)*size,copy+i*size) >= 0) count++;
+  }
+  free(copy);
+  return count;
+}
+
 int alloc_sprintf(char **str,
 		  const char *format,
 		  ...)
@@ -1101,23 +1117,43 @@ void def_elem (const long *cn,
 	       double *r_e,
 	       const SUPP sup,
 	       const long TYPE)
-/*
-  ii - element
-  jj - layer
-  Function sorts vector of nodal unknowns on ELEMENT
-  u_1, u_2, u_3
-*/
 { 
+  enum{UPDATED=0,TOTAL=1,OTHER=2};
   long i,j;
-  
+
   for (i=0;i<ndofe;i++){
     j = cn[i];
-    if (j == 0) r_e[i] = 0.0;
-    if (j > 0)  r_e[i] = r[j-1];
-    if (j < 0)  {
-      if (TYPE == 0) r_e[i] = sup->defl_d[abs(j)-1];
-      if (TYPE == 1) r_e[i] = sup->defl[abs(j)-1];
-      if (TYPE == 2) r_e[i] = 0.0;
+    if (j == 0){
+      r_e[i] = 0.0;
+    } else if (j > 0){
+      r_e[i] = r[j-1];
+    } else { /* if (j < 0)  { */
+      if (TYPE == UPDATED) r_e[i] = sup->defl_d[abs(j)-1];
+      if (TYPE == TOTAL) r_e[i] = sup->defl[abs(j)-1];
+      if (TYPE == OTHER) r_e[i] = 0.0;
+    }
+  }
+}
+
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e)
+{
+  for(int i=0; i< ndofe; i++){
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0){
+      r_e[i] = 0.0;
+    } else if (id > 0){
+      r_e[i] = r[aid] + d_r[aid];
+    } else {
+      r_e[i] = sup->defl[aid] + sup->defl_d[aid];
     }
   }
 }
@@ -2716,6 +2752,8 @@ void GToL (const double *Gr,
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
 
+  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  nulld(r,ndofd);
 
   
   //  for (i=0;i<ndofd;i++) r[i] = 0.0;
@@ -2935,124 +2973,6 @@ double det_K (double *k,
   return (DET);
 }
 
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0)
-  / *
-       
-  * /
-  {
-  double s1,s2,b,znam,DLM;
-  DLM = 0.0;  b = 0.0;
-  
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  DLM = dAL/sqrt (s1 + b*b*s2);
-  
-  if (dlm0 == 0) znam = 1.0;
-  else             znam = dlm0/fabs(dlm0);
-  
-  if (PD > 0.0){
-  if (DET0 > 0.0 && DET < 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [1] | PD > 0\n\n");}
-  if (DET0 < 0.0 && DET > 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [2] | PD > 0\n\n");}
-  }
-  if (PD < 0.0){
-  if (DET0 > 0.0 && DET > 0.0 && PD0 > 0.0){ znam *= -1.0; PGFEM_printf("\nChanging sign - [3] | PD < 0\n\n");}
-  }
-  
-  DLM *= znam;
-  
-  return (DLM);
-  }
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL)
-  / *
-       
-  * /
-  {
-  long i;
-  double s1,s2,b,a1,a2,a3,LIN,DLM,x1,x2,*dR,*p1,*p2;
-  DLM = 0.0;  b = 0.0;
-  
-  dR = aloc1 (ndofd);  p1 = aloc1 (ndofd);  p2 = aloc1 (ndofd);
-  
-  for (i=0;i<ndofd;i++) dR[i] = d_r[i] + D_R[i];
-  
-  / ****** /
-  / * A1 * /
-  / ****** /
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  a1 = s1 + b*b*s2;
-  
-  / ****** /
-  / * A2 * /
-  / ****** /
-  s1 = ss (rr,dR,ndofd);
-  a2 = 2*(b*b*dlm*s2 + s1);
-  
-  / ****** /
-  / * A3 * /
-  / ****** /
-  s1 = ss (dR,dR,ndofd);
-  a3 = s1 - dAL*dAL + b*b*dlm*dlm*s2;
-  
-  if ((a2*a2 - 4*a1*a3) < 0.0 || 2*a1 == 0.0){
-  DLM = -1000000; return (DLM);
-  }
-  
-  / **** x1,2 = (-b +- sqrt(b^2 - 4*a*c))/(2*a) **** /
-  x1 = (-1.*a2 + sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  x2 = (-1.*a2 - sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  
-  for (i=0;i<ndofd;i++){
-  p1[i] = d_r[i] + D_R[i] + x1*rr[i];
-  p2[i] = d_r[i] + D_R[i] + x2*rr[i];
-  }
-  
-  s1 = ss (p1,d_r,ndofd);
-  s2 = ss (p2,d_r,ndofd);
-  
-  if (s1 < 0.0 && s2 > 0.0)
-  DLM = x2;
-  if (s2 < 0.0 && s1 > 0.0)
-  DLM = x1;
-  
-  LIN = -1.*a3/a2;
-  
-  if (s1 > 0.0 && s2 > 0.0){
-    
-  s1 = sqrt ((x1 - LIN)*(x1 - LIN));
-  s2 = sqrt ((x2 - LIN)*(x2 - LIN));
-    
-  if (s1 <= s2)  DLM = x1;
-  else           DLM = x2;
-  }
-  
-  if (s1 == 0.0 && s2 == 0.0)  DLM = 0.0;
-  
-  if (-1e+40 > DLM || DLM > 1e+40) DLM = -1000000;
-  
-  dealoc1 (dR); dealoc1 (p1); dealoc1 (p2);
-  
-  return (DLM);
-  }**/
-
 double new_arc_length (long iter,
 		       long iter_des,
 		       double dAL,
@@ -3072,15 +2992,10 @@ double new_arc_length (long iter,
   return (NEW);
 }
 
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
 
-/************************************************************************************************/
-/*****************************  NONSYMMETRIC SPARSE SOLVER  *************************************/
-/************************************************************************************************/
+/***********************************************************/
+/************  NONSYMMETRIC SPARSE SOLVER  *****************/
+/***********************************************************/
 
 long* sparse_ApAi (long ne,
 		   long ndofd,

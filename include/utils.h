@@ -19,6 +19,20 @@
 #include "sig.h"
 #include "eps.h"
 
+/**
+ * \brief Determine the number of duplicate values in an array.
+ *
+ * A copy of arr is sorted according to the compare function. The
+ * sorted array is then checked for duplicates using the compare
+ * function again.
+ *
+ * \return number of duplicate values.
+ */
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b));
+
 /** Dynamically allocate and populate a formated string */
 int alloc_sprintf(char **str,
 		  const char *format,
@@ -294,21 +308,22 @@ void def_elem (const long *cn,
 	       const SUPP sup,
 	       const long TYPE);
 
+/** Compute the TOTAL deformation on an element using r, d_r, and
+    sup->{defl,defl_d} and store in r_e */
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e);
+
 /** Returns the local node numbers in a given element in nod[]. */
 void elemnodes (const long ii,
 		const long nne,
 		long *nod,
 		const ELEMENT *elem);
-
-/** Returns the coordinates of the nodes on the element in element
-    connectivity order. NOTE: returns undeformed configuration
-    if(periodic == 1 || analysis == DISP). */
-/* void nodecoord (const long nne, */
-/* 		const long *nod, */
-/* 		const NODE *node, */
-/* 		double *x, */
-/* 		double *y, */
-/* 		double *z); */
 
 /** returns node coords for total Lagrangian formulation
     (i.e. undeformed) */
@@ -468,9 +483,9 @@ void aver_stress (long ii,
 		  SIG *sig,
 		  EPS *eps);
 
-/*******************************************************************************************/
-/*****************************  ARC-LENGTH PROCEDURES  *************************************/
-/*******************************************************************************************/
+/***************************************************************/
+/*************  ARC-LENGTH PROCEDURES  *************************/
+/***************************************************************/
 
 long diag_K (double *k,
 	     long *adr,
@@ -479,26 +494,6 @@ long diag_K (double *k,
 double det_K (double *k,
 	      long *adr,
 	      long ndofd);
-
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0);
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL);
-*/
 
 double new_arc_length (long iter,
 		       long iter_des,

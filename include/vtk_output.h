@@ -49,7 +49,8 @@ extern "C" {
   void VTK_print_cohesive_master(char *path,
 				 char *base_name,
 				 int time,
-				 int nproc);
+				 int nproc,
+				 const PGFem3D_opt *opts);
 
   /** Print the individual vtu files */
   void VTK_print_vtu(char *path,
