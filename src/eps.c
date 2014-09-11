@@ -380,6 +380,404 @@ void copy_eps_list(EPS *dest,
   }
 }
 
+static size_t sizeof_IL0_eps(const int analysis)
+{
+  static IL0_eps src;
+  size_t s = 0;
+  s = (SYM_TENSOR*sizeof(*(src.o)) + TENSOR_2*sizeof(*(src.F))
+       + sizeof(src.Un_1) + sizeof(src.Un) + sizeof(src.Jn_1)
+       + sizeof(src.Y));
+
+  if(analysis == TP_ELASTO_PLASTIC){
+    s += SYM_TENSOR*(sizeof(*(src.f)) + sizeof(*(src.m))
+		     + sizeof(*(src.d)) + sizeof(*(src.i)));
+  }
+
+  if (analysis == FS_CRPL){
+    s += (sizeof(src.lam) + sizeof(src.eff) + sizeof(src.GAMA)
+	  + TENSOR_2*(sizeof(*(src.Fp)) + sizeof(*(src.UU)))
+	  + NDN*NDN*(sizeof(**(src.dUU_Tr)) + sizeof(**(src.dUU_Tr_n))
+		     + NDN*NDN*(sizeof(****(src.dUU_Fr))
+				+ sizeof(****(src.dUU_Fr_n))))
+	  );
+  }
+
+  return s;
+}
+
+static size_t sizeof_IL1_eps(const int analysis)
+{
+  static IL1_eps src;
+  size_t s = 0;
+  if(analysis == TP_ELASTO_PLASTIC){
+    s = SYM_TENSOR*(sizeof(*(src.o)) + sizeof(*(src.f))
+		    + sizeof(*(src.m)) + sizeof(*(src.d))
+		    + sizeof(*(src.i)));
+  }
+  return s;
+}
+
+static size_t sizeof_IL2_eps(const int analysis)
+{
+  static IL2_eps src;
+  size_t s = 0;
+  s = (sizeof(src.dam) + sizeof(src.Un_1)
+       + sizeof(src.Un) + sizeof(src.Jn_1));
+
+  if(analysis == STABILIZED
+     || analysis == MINI){
+    s += TENSOR_2*sizeof(*(src.Fpp));
+  }
+  return s;
+}
+
+static size_t sizeof_eps_local(const int analysis)
+{
+  static EPS src;
+  size_t s = 0;
+  switch(analysis){
+  default:
+    s = (SYM_TENSOR*(sizeof(*(src.el.o)) + sizeof(*(src.pl.o)))
+	 + 2*sizeof(*(src.pl.eq)));
+    /* skipping periodic stuff since deprecated (periodic == 0) */
+    break;
+  case ELASTIC:
+    s = SYM_TENSOR*sizeof(*(src.el.o));
+    break;
+  case TP_ELASTO_PLASTIC:
+    s = SYM_TENSOR*(sizeof(*(src.el.o)) + sizeof(*(src.el.f))
+		    + sizeof(*(src.el.d)) + sizeof(*(src.el.m))
+		    + sizeof(*(src.el.i)));
+    break;
+  }
+  return s;
+}
+
+/** return the size of a particular EPS object */
+static size_t sizeof_eps(const EPS *eps,
+			 const ELEMENT *elem,
+			 const int analysis)
+{
+  size_t s = 0;
+  long pt_I = 0;
+  long pt_J = 0;
+
+  /* Get number of integration points */
+  int_point(elem->toe,&pt_I);
+  switch(analysis){
+  default: int_point(10,&pt_J); break;
+  case MINI: case MINI_3F: int_point(5,&pt_J); break;
+  }
+
+  s += sizeof_eps_local(analysis);
+  if(pt_I > 0){
+    s += pt_I * (sizeof_IL0_eps(analysis)
+		 + sizeof_IL1_eps(analysis)
+		 + sizeof(*(eps->dam)));
+  }
+
+  if(pt_J > 0){
+    s += pt_J * sizeof_IL2_eps(analysis);
+  }
+
+  return s;
+}
+
+size_t sizeof_eps_list(const EPS *src,
+		       const int ne,
+		       const ELEMENT *elem,
+		       const int analysis)
+{
+  size_t s = 0;
+  switch(analysis){
+  default:
+    s += NDN*NDN*sizeof(double);
+    break;
+  case ELASTIC: break;
+  case TP_ELASTO_PLASTIC: break;
+  }
+
+  for(int i=0; i<ne; i++){
+    s += sizeof_eps(src+i,elem+i,analysis);
+  }
+  return s;
+}
+
+
+static void pack_IL0_eps(const IL0_eps *src,
+			 const int analysis,
+			 char *buffer,
+			 size_t *pos)
+{
+  pack_data(src->o,buffer,pos,SYM_TENSOR,sizeof(*(src->o)));
+  pack_data(src->F,buffer,pos,TENSOR_2,sizeof(*(src->F)));
+  pack_data(&(src->Un_1),buffer,pos,1,sizeof(src->Un_1));
+  pack_data(&(src->Un),buffer,pos,1,sizeof(src->Un));
+  pack_data(&(src->Jn_1),buffer,pos,1,sizeof(src->Jn_1));
+  pack_data(&(src->Y),buffer,pos,1,sizeof(src->Y));
+
+  if(analysis == TP_ELASTO_PLASTIC){
+    pack_data(src->f,buffer,pos,SYM_TENSOR,sizeof(*(src->f)));
+    pack_data(src->m,buffer,pos,SYM_TENSOR,sizeof(*(src->m)));
+    pack_data(src->d,buffer,pos,SYM_TENSOR,sizeof(*(src->d)));
+    pack_data(src->i,buffer,pos,SYM_TENSOR,sizeof(*(src->i)));
+  }
+
+  if (analysis == FS_CRPL){
+    pack_data(&(src->lam),buffer,pos,1,sizeof(src->lam));
+    pack_data(&(src->eff),buffer,pos,1,sizeof(src->eff));
+    pack_data(&(src->GAMA),buffer,pos,1,sizeof(src->GAMA));
+    pack_data(src->Fp,buffer,pos,TENSOR_2,sizeof(*(src->Fp)));
+    pack_data(src->UU,buffer,pos,TENSOR_2,sizeof(*(src->UU)));
+    pack_2mat(cast_const_V2 src->dUU_Tr,NDN,NDN,sizeof(**(src->dUU_Tr)),buffer,pos);
+    pack_2mat(cast_const_V2 src->dUU_Tr_n,NDN,NDN,sizeof(**(src->dUU_Tr_n)),buffer,pos);
+    pack_4mat(cast_const_V4 src->dUU_Fr,NDN,NDN,NDN,NDN,sizeof(****(src->dUU_Fr)),buffer,pos);
+    pack_4mat(cast_const_V4 src->dUU_Fr_n,NDN,NDN,NDN,NDN,sizeof(****(src->dUU_Fr_n)),buffer,pos);
+  }
+}
+
+static void unpack_IL0_eps(IL0_eps *dest,
+			   const int analysis,
+			   const char *buffer,
+			   size_t *pos)
+{
+  unpack_data(buffer,dest->o,pos,SYM_TENSOR,sizeof(*(dest->o)));
+  unpack_data(buffer,dest->F,pos,TENSOR_2,sizeof(*(dest->F)));
+  unpack_data(buffer,&(dest->Un_1),pos,1,sizeof(dest->Un_1));
+  unpack_data(buffer,&(dest->Un),pos,1,sizeof(dest->Un));
+  unpack_data(buffer,&(dest->Jn_1),pos,1,sizeof(dest->Jn_1));
+  unpack_data(buffer,&(dest->Y),pos,1,sizeof(dest->Y));
+
+  if(analysis == TP_ELASTO_PLASTIC){
+    unpack_data(buffer,dest->f,pos,SYM_TENSOR,sizeof(*(dest->f)));
+    unpack_data(buffer,dest->m,pos,SYM_TENSOR,sizeof(*(dest->m)));
+    unpack_data(buffer,dest->d,pos,SYM_TENSOR,sizeof(*(dest->d)));
+    unpack_data(buffer,dest->i,pos,SYM_TENSOR,sizeof(*(dest->i)));
+  }
+
+  if (analysis == FS_CRPL){
+    unpack_data(buffer,&(dest->lam),pos,1,sizeof(dest->lam));
+    unpack_data(buffer,&(dest->eff),pos,1,sizeof(dest->eff));
+    unpack_data(buffer,&(dest->GAMA),pos,1,sizeof(dest->GAMA));
+    unpack_data(buffer,dest->Fp,pos,TENSOR_2,sizeof(*(dest->Fp)));
+    unpack_data(buffer,dest->UU,pos,TENSOR_2,sizeof(*(dest->UU)));
+    unpack_2mat(cast_V2 dest->dUU_Tr,NDN,NDN,sizeof(**(dest->dUU_Tr)),buffer,pos);
+    unpack_2mat(cast_V2 dest->dUU_Tr_n,NDN,NDN,sizeof(**(dest->dUU_Tr_n)),buffer,pos);
+    unpack_4mat(cast_V4 dest->dUU_Fr,NDN,NDN,NDN,NDN,sizeof(****(dest->dUU_Fr)),buffer,pos);
+    unpack_4mat(cast_V4 dest->dUU_Fr_n,NDN,NDN,NDN,NDN,sizeof(****(dest->dUU_Fr_n)),buffer,pos);
+  }
+}
+
+static void pack_IL1_eps(const IL1_eps *src,
+			 const int analysis,
+			 char *buffer,
+			 size_t *pos)
+{
+  if(analysis == TP_ELASTO_PLASTIC){
+    pack_data(src->o,buffer,pos,SYM_TENSOR,sizeof(*(src->o)));
+    pack_data(src->f,buffer,pos,SYM_TENSOR,sizeof(*(src->f)));
+    pack_data(src->m,buffer,pos,SYM_TENSOR,sizeof(*(src->m)));
+    pack_data(src->d,buffer,pos,SYM_TENSOR,sizeof(*(src->d)));
+    pack_data(src->i,buffer,pos,SYM_TENSOR,sizeof(*(src->i)));
+  }
+}
+
+static void unpack_IL1_eps(IL1_eps *dest,
+			   const int analysis,
+			   const char *buffer,
+			   size_t *pos)
+{
+  if(analysis == TP_ELASTO_PLASTIC){
+    unpack_data(buffer,dest->o,pos,SYM_TENSOR,sizeof(*(dest->o)));
+    unpack_data(buffer,dest->f,pos,SYM_TENSOR,sizeof(*(dest->f)));
+    unpack_data(buffer,dest->m,pos,SYM_TENSOR,sizeof(*(dest->m)));
+    unpack_data(buffer,dest->d,pos,SYM_TENSOR,sizeof(*(dest->d)));
+    unpack_data(buffer,dest->i,pos,SYM_TENSOR,sizeof(*(dest->i)));
+  }
+}
+
+static void pack_IL2_eps(const IL2_eps *src,
+			 const int analysis,
+			 char *buffer,
+			 size_t *pos)
+{
+  pack_damage(&(src->dam),buffer,pos);
+  pack_data(&(src->Un_1),buffer,pos,1,sizeof(src->Un_1));
+  pack_data(&(src->Un),buffer,pos,1,sizeof(src->Un));
+  pack_data(&(src->Jn_1),buffer,pos,1,sizeof(src->Jn_1));
+
+  if(analysis == STABILIZED
+     || analysis == MINI){
+    pack_data(src->Fpp,buffer,pos,TENSOR_2,sizeof(*(src->Fpp)));
+  }
+}
+
+static void unpack_IL2_eps(IL2_eps *dest,
+			   const int analysis,
+			   const char *buffer,
+			   size_t *pos)
+{
+  unpack_damage(&(dest->dam),buffer,pos);
+  unpack_data(buffer,&(dest->Un_1),pos,1,sizeof(dest->Un_1));
+  unpack_data(buffer,&(dest->Un),pos,1,sizeof(dest->Un));
+  unpack_data(buffer,&(dest->Jn_1),pos,1,sizeof(dest->Jn_1));
+
+  if(analysis == STABILIZED
+     || analysis == MINI){
+    unpack_data(buffer,dest->Fpp,pos,TENSOR_2,sizeof(*(dest->Fpp)));
+  }
+}
+
+static void pack_eps_local(const EPS *src,
+			   const int analysis,
+			   char *buffer,
+			   size_t *pos)
+{
+  switch(analysis){
+  default:
+    pack_data(src->el.o,buffer,pos,SYM_TENSOR,sizeof(*(src->el.o)));
+    pack_data(src->pl.o,buffer,pos,SYM_TENSOR,sizeof(*(src->pl.o)));
+    pack_data(src->pl.eq,buffer,pos,2,sizeof(*(src->pl.eq)));
+    break;
+  case ELASTIC:
+    pack_data(src->el.o,buffer,pos,SYM_TENSOR,sizeof(*(src->el.o)));
+    break;
+  case TP_ELASTO_PLASTIC:
+    pack_data(src->el.o,buffer,pos,SYM_TENSOR,sizeof(*(src->el.o)));
+    pack_data(src->el.f,buffer,pos,SYM_TENSOR,sizeof(*(src->el.f)));
+    pack_data(src->el.d,buffer,pos,SYM_TENSOR,sizeof(*(src->el.d)));
+    pack_data(src->el.m,buffer,pos,SYM_TENSOR,sizeof(*(src->el.m)));
+    pack_data(src->el.i,buffer,pos,SYM_TENSOR,sizeof(*(src->el.i)));
+    break;
+  } 
+}
+
+static void unpack_eps_local(EPS *dest,
+			     const int analysis,
+			     const char *buffer,
+			     size_t *pos)
+{
+  switch(analysis){
+  default:
+    unpack_data(buffer,dest->el.o,pos,SYM_TENSOR,sizeof(*(dest->el.o)));
+    unpack_data(buffer,dest->pl.o,pos,SYM_TENSOR,sizeof(*(dest->pl.o)));
+    unpack_data(buffer,dest->pl.eq,pos,2,sizeof(*(dest->pl.eq)));
+    break;
+  case ELASTIC:
+    unpack_data(buffer,dest->el.o,pos,SYM_TENSOR,sizeof(*(dest->el.o)));
+    break;
+  case TP_ELASTO_PLASTIC:
+    unpack_data(buffer,dest->el.o,pos,SYM_TENSOR,sizeof(*(dest->el.o)));
+    unpack_data(buffer,dest->el.f,pos,SYM_TENSOR,sizeof(*(dest->el.f)));
+    unpack_data(buffer,dest->el.d,pos,SYM_TENSOR,sizeof(*(dest->el.d)));
+    unpack_data(buffer,dest->el.m,pos,SYM_TENSOR,sizeof(*(dest->el.m)));
+    unpack_data(buffer,dest->el.i,pos,SYM_TENSOR,sizeof(*(dest->el.i)));
+    break;
+  } 
+}
+
+/** Pack a single EPS object */
+static void pack_eps(const EPS *src,
+		     const ELEMENT *elem,
+		     const int analysis,
+		     char *buffer,
+		     size_t *pos)
+{
+  long pt_I = 0;
+  long pt_J = 0;
+
+  /* Get number of integration points */
+  int_point(elem->toe,&pt_I);
+  switch(analysis){
+  default: int_point(10,&pt_J); break;
+  case MINI: case MINI_3F: int_point(5,&pt_J); break;
+  }
+
+  pack_eps_local(src,analysis,buffer,pos);
+
+  for(int i=0; i<pt_I; i++){
+    pack_damage((src->dam)+i,buffer,pos);
+    pack_IL0_eps((src->il)+i,analysis,buffer,pos);
+    pack_IL1_eps((src->d_il)+i,analysis,buffer,pos);
+  }
+
+  for(int j=0; j<pt_J; j++){
+    pack_IL2_eps((src->st)+j,analysis,buffer,pos);
+  }
+}
+
+/** Unpack a single EPS object */
+static void unpack_eps(EPS *dest,
+		       const ELEMENT *elem,
+		       const int analysis,
+		       const char *buffer,
+		       size_t *pos)
+{
+  long pt_I = 0;
+  long pt_J = 0;
+
+  /* Get number of integration points */
+  int_point(elem->toe,&pt_I);
+  switch(analysis){
+  default: int_point(10,&pt_J); break;
+  case MINI: case MINI_3F: int_point(5,&pt_J); break;
+  }
+
+  unpack_eps_local(dest,analysis,buffer,pos);
+
+  for(int i=0; i<pt_I; i++){
+    unpack_damage((dest->dam)+i,buffer,pos);
+    unpack_IL0_eps((dest->il)+i,analysis,buffer,pos);
+    unpack_IL1_eps((dest->d_il)+i,analysis,buffer,pos);
+  }
+
+  for(int j=0; j<pt_J; j++){
+    unpack_IL2_eps((dest->st)+j,analysis,buffer,pos);
+  }
+}
+
+void pack_eps_list(const EPS *src,
+		   const int ne,
+		   const ELEMENT *elem,
+		   const int analysis,
+		   char *buffer,
+		   size_t *pos)
+{
+  switch(analysis){
+  default:
+    pack_2mat(cast_const_V2 src[0].Dp,NDN,NDN,
+	      sizeof(**(src[0].Dp)),buffer,pos);
+    break;
+  case ELASTIC: break;
+  case TP_ELASTO_PLASTIC: break;
+  }
+
+  for(int n=0; n<ne; n++){
+    pack_eps(src+n,elem+n,analysis,buffer,pos);
+  }
+}
+
+void unpack_eps_list(EPS *dest,
+		     const int ne,
+		     const ELEMENT *elem,
+		     const int analysis,
+		     const char *buffer,
+		     size_t *pos)
+{
+  switch(analysis){
+  default:
+    unpack_2mat(cast_V2 dest[0].Dp,NDN,NDN,
+	      sizeof(**(dest[0].Dp)),buffer,pos);
+    break;
+  case ELASTIC: break;
+  case TP_ELASTO_PLASTIC: break;
+  }
+
+  for(int n=0; n<ne; n++){
+    unpack_eps(dest+n,elem+n,analysis,buffer,pos);
+  }
+}
+
 static void destroy_IL0_eps(IL0_eps *p_il0)
 {
   free(p_il0->o);
