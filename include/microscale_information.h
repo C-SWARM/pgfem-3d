@@ -85,13 +85,13 @@ extern "C" {
     EPS *eps;
     CRPL *crpl;
     long npres;
-    double *elem_state_info;
-    double *coel_state_info;
 
     /* solution information */
-    double *rn; /**< solution vector r at macro time n */
     double *r; /**< current solution r at macro time n+1 */
-    EPS *eps_n; /**< state vector eps at macro time n */
+
+    /* State variables at time n */
+    size_t packed_state_var_len;
+    char *packed_state_var_n;
 
     /** The following are pointers to a shared buffer elsewhere! The
 	buffers are used purely as a workspace. */
