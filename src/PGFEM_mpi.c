@@ -126,6 +126,17 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
 			  rank_micro_all,&(pgfem_mpi_comm->micro));
     err += MPI_Comm_rank(pgfem_mpi_comm->micro,
 			 &(pgfem_mpi_comm->rank_micro));
+
+    /*Create inter-micro communicators between equivalent procs on
+       different microstructures. This allows direct communication
+       between workers using the rank as the server id. Split
+       micro_all communicator by rank in micro using rank_micro as the
+       color and rank_micro_all as the key. */
+    err += MPI_Comm_split(pgfem_mpi_comm->micro,pgfem_mpi_comm->rank_micro,
+			  pgfem_mpi_comm->rank_micro_all,
+			  &(pgfem_mpi_comm->worker_inter));
+    err += MPI_Comm_rank(pgfem_mpi_comm->worker_inter,
+			 &(pgfem_mpi_comm->server_id));
   } else {
     pgfem_mpi_comm->micro = MPI_COMM_NULL;
     pgfem_mpi_comm->valid_micro = 0;

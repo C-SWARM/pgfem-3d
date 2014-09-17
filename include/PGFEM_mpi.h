@@ -32,6 +32,8 @@ extern "C" {
     MPI_Comm micro_all;
     MPI_Comm micro;
     MPI_Comm mm_inter;
+    MPI_Comm worker_inter; /* equivalent workers on different
+			      microscales */
 
     /* stored ranks on respective communicators */
     int rank_world;
@@ -40,6 +42,7 @@ extern "C" {
     int rank_micro;
     /* NOTE: micro procs have rank_mm_inter >= size(macro) */
     int rank_mm_inter;
+    int server_id; /* rank on worker_inter */
 
     /* boolean valid communicator flag.
        NOTE: world is *ALWAYS* valid */
