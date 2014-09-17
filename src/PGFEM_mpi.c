@@ -56,6 +56,7 @@ int destroy_PGFEM_mpi_comm(PGFEM_mpi_comm *pgfem_mpi_comm)
 
   if(pgfem_mpi_comm->valid_micro){
     err += MPI_Comm_free(&pgfem_mpi_comm->micro);
+    err += MPI_Comm_free(&pgfem_mpi_comm->worker_inter);
   }
 
   if(pgfem_mpi_comm->valid_mm_inter){
