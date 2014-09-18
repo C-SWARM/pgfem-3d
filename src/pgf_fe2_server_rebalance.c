@@ -152,23 +152,24 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
 {
   int err = 0;
 
+  /* alias to solution index map */
+  sol_idx_map *pmap = &(micro->idx_map);
+
   const size_t buff_size = micro->sol[0].packed_state_var_len;
   const int n_send = pgf_FE2_server_rebalance_n_send(t);
   const int *send_id = pgf_FE2_server_rebalance_send_buff(t);
   const int *send_to = pgf_FE2_server_rebalance_send_dest(t);
- 
+
   /* allocate file local buffer for send */
   allocate_send_workspace(n_send,buff_size);
 
   /* copy and send information */
   for(int i=0; i<n_send; i++){
-    /* search micro solutions list for matching id. */
+    /* search micro solutions list for matching id and mark as available. */
+    int sol_idx = sol_idx_map_get_idx_reset_id(pmap,send_id[i],-1);
 
     /* copy state at n to buffer */
-    /* memcpy(send_wkspc->buffers[i],micro->sol[sol_idx].packed_state_var_n,buff_size); */
-
-    /* mark solution space as available */
-    /* micro->sol[sol_idx].id = -1; */
+    memcpy(send_wkspc->buffers[i],micro->sol[sol_idx].packed_state_var_n,buff_size);
 
     /* post non-blocking send of the data */
     err += MPI_Isend(send_wkspc->buffers[i],
@@ -177,9 +178,6 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
 		     mpi_comm->worker_inter,
 		     &(send_wkspc->reqs[i]));
   }
-
-  /* sort microscale solutions by id. Available should be first. */
-  /* qsort(micro->sol,micro->n_solutions,sizeof(*(micro->sol)),compare_micro_sol_id); */
 
   const int n_recv = pgf_FE2_server_rebalance_n_recv(t);
   const int *recv_id = pgf_FE2_server_rebalance_recv_buff(t);
@@ -190,13 +188,11 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
 
   /* set workspace buffers to point to solution space and post receives */
   for(int i=0; i<n_recv; i++){
-    /* search micro solutions list for available solution space. */
+    /* search micro solutions list for available solution space and assign new id */
+    int sol_idx = sol_idx_map_get_idx_reset_id(pmap,-1,recv_id[i]);
 
-    /* set workspace buffer to point to the state at n buffer */
-    /* recv_wkspc->buffers[i] = micro->sol[sol_idx].packed_state_var_n; */
-
-    /* mark solution space with new id */
-    /* micro->sol[sol_idx].id = recv_id[i]; */
+    /* set workspace buffer to _point_ to the state at n buffer */
+    recv_wkspc->buffers[i] = micro->sol[sol_idx].packed_state_var_n;
 
     /* post non-blocking receive of the data */
     err += MPI_Irecv(recv_wkspc->buffers[i],

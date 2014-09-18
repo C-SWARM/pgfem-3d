@@ -134,6 +134,20 @@ int sol_idx_map_idx_get_id(const sol_idx_map *map,
   size_t len = map->size;
   return *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
 }
+
+int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
+				 const int cur_id,
+				 const int new_id)
+{
+  int val[2] = {0,0}; val[0] = cur_id;
+  size_t len = map->size;
+
+  /* get pointer to matching pair */
+  int *ptr = lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first);
+  ptr[0] = new_id;
+  return ptr[1];
+}
+
 void sol_idx_map_idx_set_id(sol_idx_map *map,
 			    const int idx,
 			    const int id)
