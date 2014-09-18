@@ -122,22 +122,25 @@ void sol_idx_map_sort_idx(sol_idx_map *map)
 int sol_idx_map_id_get_idx(const sol_idx_map *map,
 			   const int id)
 {
+  int val[2] = {0,0}; val[0] = id;
   size_t len = map->size;
-  return *((int *) lfind(&id,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1);
+  return *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1);
 }
 
 int sol_idx_map_idx_get_id(const sol_idx_map *map,
 			   const int idx)
 {
+  int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
-  return *((int *) lfind(&idx,map->map,&len,2*sizeof(*(map->map)),sort_second));
+  return *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
 }
 void sol_idx_map_idx_set_id(sol_idx_map *map,
 			    const int idx,
 			    const int id)
 {
+  int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
-  *((int *) lfind(&idx,map->map,&len,2*sizeof(*(map->map)),sort_second)) = id;
+  *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second)) = id;
 }
 
 void initialize_MICROSCALE(MICROSCALE **microscale)
