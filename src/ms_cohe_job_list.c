@@ -248,7 +248,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   int micro_rank = 0;
   COMMON_MICROSCALE *c = microscale->common;
   PGFEM_HYPRE_solve_info *micro_solver = c->SOLVER;
-  const int n_sols = microscale->n_solutions;
+  const int n_sols = microscale->idx_map.size;
   const int analysis = microscale->opts->analysis_type;
 
   /* get MPI ranks */
@@ -369,7 +369,7 @@ int assemble_ms_cohe_res(const MICROSCALE *micro,
   /* assemble the residual from each job on the local part of the
      macroscale residual. Assembly takes place on the macro owning
      process only!! */
-  for(int i=0; i<micro->n_solutions; i++){
+  for(int i=0, e = micro->idx_map.size; i < e; i++){
     err += assemble_ms_cohe_job_res(i,jobs+i,
 				    micro->common->mpi_comm,
 				    macro_mpi_comm,

@@ -107,7 +107,7 @@ int compute_ms_cohe_job(const int job_id,
   MPI_Comm_rank(common->mpi_comm,&myrank);
   if(myrank == 0){
     PGFEM_printf("=== MICROSCALE cell %d of %d ===\n",
-		 job_id+1,microscale->n_solutions);
+		 job_id+1,microscale->idx_map.size);
   /*   PGFEM_printf("Jump (n):\t"); */
   /*   print_array_d(PGFEM_stdout,p_job->jump_n,ndim,1,ndim); */
   /*   PGFEM_printf("Jump (n+1):\t"); */

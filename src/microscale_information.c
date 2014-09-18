@@ -17,6 +17,9 @@
 #include "in.h"
 #include "PGFEM_par_matvec.h"
 
+#include <stdlib.h>
+#include <search.h>
+
 static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
@@ -77,12 +80,71 @@ typedef struct MICROSCALE_SOLUTION_BUFFERS{
 
 
 /*==== API FUNCTIONS ====*/
+static int sort_first(const void *a, const void *b)
+{
+  return *((const int*)a) - *((const int*) b);
+}
+
+static int sort_second(const void *a, const void *b)
+{
+  return *((const int*)a+1) - *((const int*)b+1);
+}
+
+void sol_idx_map_build(sol_idx_map *map,
+		       const size_t size)
+{
+  /* map stores id : idx pairs */
+  map->size = size;
+  map->map = malloc(2*size*sizeof(*(map->map)));
+  for(size_t i=0; i<2*size; i += 2){
+    map->map[i] = -1;
+    map->map[i+1] = i/2;
+  }
+}
+
+void sol_idx_map_destroy(sol_idx_map *map)
+{
+  map->size = 0;
+  free(map->map);
+  map->map = NULL;
+}
+
+void sol_idx_map_sort_id(sol_idx_map *map)
+{
+  qsort(map->map,map->size,sizeof(*(map->map)),sort_first);
+}
+
+void sol_idx_map_sort_idx(sol_idx_map *map)
+{
+  qsort(map->map,map->size,sizeof(*(map->map)),sort_second);
+}
+
+int sol_idx_map_id_get_idx(const sol_idx_map *map,
+			   const int id)
+{
+  size_t len = map->size;
+  return *((int *) lfind(&id,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1);
+}
+
+int sol_idx_map_idx_get_id(const sol_idx_map *map,
+			   const int idx)
+{
+  size_t len = map->size;
+  return *((int *) lfind(&idx,map->map,&len,2*sizeof(*(map->map)),sort_second));
+}
+void sol_idx_map_idx_set_id(sol_idx_map *map,
+			    const int idx,
+			    const int id)
+{
+  size_t len = map->size;
+  *((int *) lfind(&idx,map->map,&len,2*sizeof(*(map->map)),sort_second)) = id;
+}
+
 void initialize_MICROSCALE(MICROSCALE **microscale)
 {
   *microscale = PGFEM_calloc(1,sizeof(MICROSCALE));
   (*microscale)->opts = PGFEM_calloc(1,sizeof(PGFem3D_opt));
   (*microscale)->common = PGFEM_calloc(1,sizeof(COMMON_MICROSCALE));
-  (*microscale)->n_solutions = 0;
   (*microscale)->sol = NULL;
 
   set_default_options((*microscale)->opts);
@@ -136,7 +198,7 @@ void build_MICROSCALE_solutions(const int n_solutions,
 				MICROSCALE *microscale)
 {
   /*=== BUILD SOLUTIONS ===*/
-  microscale->n_solutions = n_solutions;
+  sol_idx_map_build(&(microscale->idx_map),n_solutions);
   microscale->sol = PGFEM_calloc(n_solutions,sizeof(MICROSCALE_SOLUTION));
   for(int i=0; i<n_solutions; i++){
     initialize_MICROSCALE_SOLUTION(microscale->sol + i);
@@ -148,7 +210,8 @@ void build_MICROSCALE_solutions(const int n_solutions,
 void destroy_MICROSCALE(MICROSCALE *microscale)
 {
   if(microscale != NULL){
-    for(int i=0; i<microscale->n_solutions; i++){
+    for(int i = 0, e = microscale->idx_map.size;
+	i < e; i++){
       destroy_MICROSCALE_SOLUTION(microscale->sol+i,
 				  microscale->common,
 				  microscale->opts->analysis_type);
@@ -157,6 +220,7 @@ void destroy_MICROSCALE(MICROSCALE *microscale)
     destroy_COMMON_MICROSCALE(microscale->common);
     free(microscale->common);
     free(microscale->opts);
+    sol_idx_map_destroy(&(microscale->idx_map));
   }
   free(microscale);
 } /* destroy_MICROSCALE */

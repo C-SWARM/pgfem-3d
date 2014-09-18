@@ -130,11 +130,27 @@ extern "C" {
     double NORM;
   } MICROSCALE_SOLUTION;
 
+  typedef struct{
+    size_t size;
+    int *map;
+  } sol_idx_map;
+  void sol_idx_map_build(sol_idx_map *map,
+			 const size_t size);
+  void sol_idx_map_destroy(sol_idx_map *map);
+  void sol_idx_map_sort_id(sol_idx_map *map);
+  void sol_idx_map_sort_idx(sol_idx_map *map);
+  int sol_idx_map_id_get_idx(const sol_idx_map *map,
+			     const int id);
+  int sol_idx_map_idx_get_id(const sol_idx_map *map,
+			     const int idx);
+  void sol_idx_map_idx_set_id(sol_idx_map *map,
+			      const int idx,
+			      const int id);
   /** structure to contain all microscale information */
   typedef struct MICROSCALE{
     PGFem3D_opt *opts;
     COMMON_MICROSCALE *common;
-    int n_solutions;
+    sol_idx_map idx_map;
     MICROSCALE_SOLUTION *sol;
   } MICROSCALE;
 
