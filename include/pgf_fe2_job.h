@@ -10,50 +10,6 @@
 #include <stdlib.h>
 
 /**
- * Structure to identify a microstructure in terms of the macroscale
- * domain and microscale solution.
- */
-struct pgf_FE2_job_id{
-  int tag;
-  size_t micro_sol_idx;
-};
-#ifndef TYPEDEF_pgf_FE2_job_id
-#define TYPEDEF_pgf_FE2_job_id
-typedef struct pgf_FE2_job_id pgf_FE2_job_id;
-#endif
-
-void pgf_FE2_job_id_init(pgf_FE2_job_id *id);
-void pgf_FE2_job_id_destroy(pgf_FE2_job_id *id);
-
-/**
- * Set the job id using uniqie macroscale identifiers.
- *
- * The maximum number of macroscale processors for the encoding is
- * 2147. The maximum number of elements is 999,999 per processor and
- * the maximum number of integration points per element is 99.
- */
-void pgf_FE2_job_id_set(pgf_FE2_job_id *id,
-			const size_t proc_id,
-			const size_t elem_id,
-			const size_t int_pt);
-
-/**
- * Extract the macroscale information associated with a job id.
- */
-void pgf_FE2_job_id_get_info(const pgf_FE2_job_id *id,
-			     size_t *proc_id,
-			     size_t *elem_id,
-			     size_t *int_pt);
-
-/**
- * Computed an encoded tag for use as id or communication. See also
- * pgf_FE2_job_id_set.
- */
-int compute_pgf_FE2_encoded_tag(const size_t proc_id,
-				const size_t elem_id,
-				const size_t int_pt);
-
-/**
  * Structure to maintain the job status in terms of progress and time
  * to completion.
  */
@@ -110,7 +66,8 @@ void pgf_FE2_job_data_destroy(pgf_FE2_job_data *data);
  * structure to maintain a FE2 microscale job.
  */
 struct pgf_FE2_job{
-  pgf_FE2_job_id id;
+  size_t id;
+  size_t micro_sol_idx;
   pgf_FE2_job_status status;
   pgf_FE2_job_data data;
 };
@@ -122,5 +79,28 @@ typedef struct pgf_FE2_job pgf_FE2_job;
 void pgf_FE2_job_init(pgf_FE2_job *job);
 void pgf_FE2_job_destroy(pgf_FE2_job *job);
 
+/**
+ * Compute an encoded integer id from the macroscale proc_id, elem_id
+ * and element int_pt.
+ *
+ * Restrictions: proc_id <= INT_MAX/1e6, elem_id < 1e6, int_pt < 1e2
+ * \return encoded integer id.
+ */
+int pgf_FE2_job_compute_encoded_id(const size_t proc_id,
+				   const size_t elem_id,
+				   const size_t int_pt);
+
+/**
+ * Decode an integer id and return the macroscale information.
+ */
+void pgf_FE2_job_decode_id(const int id,
+			   size_t *proc_id,
+			   size_t *elem_id,
+			   size_t *int_pt);
+
+/**
+ * Extract only the macroscale proc_id from an encoded integer id.
+ */
+int pgf_FE2_job_decode_id_proc(const int id);
 
 #endif

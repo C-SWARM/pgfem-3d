@@ -8,54 +8,6 @@
 #include <limits.h>
 #include <assert.h>
 
-void pgf_FE2_job_id_init(pgf_FE2_job_id *id)
-{
-  /* poison values */
-  id->tag = INT_MIN;
-  id->micro_sol_idx = -1;
-}
-
-void pgf_FE2_job_id_destroy(pgf_FE2_job_id *id)
-{
-  /* do nothing */
-}
-
-static const int encode_proc_offset = 1e6;
-static const int encode_elem_offset = 1e2;
-
-void pgf_FE2_job_id_set(pgf_FE2_job_id *id,
-			const size_t proc_id,
-			const size_t elem_id,
-			const size_t int_pt)
-{
-  id->tag = compute_pgf_FE2_encoded_tag(proc_id,elem_id,int_pt);
-}
-
-void pgf_FE2_job_id_get_info(const pgf_FE2_job_id *id,
-			     size_t *proc_id,
-			     size_t *elem_id,
-			     size_t *int_pt)
-{
-  assert(id->tag >= 0);
-  *proc_id = id->tag / encode_proc_offset;
-  *elem_id = id->tag % encode_proc_offset;
-  *int_pt = *elem_id % encode_elem_offset;
-  *elem_id /= encode_elem_offset;
-}
-
-int compute_pgf_FE2_encoded_tag(const size_t proc_id,
-				const size_t elem_id,
-				const size_t int_pt)
-{
-  assert(proc_id <= INT_MAX/encode_proc_offset);
-  assert(elem_id < encode_proc_offset);
-  assert(int_pt < encode_elem_offset);
- 
-  return (proc_id * encode_proc_offset
-	  + elem_id * encode_elem_offset
-	  + int_pt);
-}
-
 enum pgf_FE2_job_status_state{
   FE2_STATUS_UNDEFINED=-1,
   FE2_STATUS_READY,
@@ -117,14 +69,50 @@ void pgf_FE2_job_data_destroy(pgf_FE2_job_data *data)
 
 void pgf_FE2_job_init(pgf_FE2_job *job)
 {
-  pgf_FE2_job_id_init(&(job->id));
+  /* poison values */
+  job->id = -1;
+  job->micro_sol_idx = -1;
+
+  /* initialize contained objects */
   pgf_FE2_job_status_init(&(job->status));
   pgf_FE2_job_data_init(&(job->data));
 }
 
 void pgf_FE2_job_destroy(pgf_FE2_job *job)
 {
-  pgf_FE2_job_id_destroy(&(job->id));
   pgf_FE2_job_status_destroy(&(job->status));
   pgf_FE2_job_data_destroy(&(job->data));
+}
+
+static const int encode_proc_offset = 1e6;
+static const int encode_elem_offset = 1e2;
+int pgf_FE2_job_compute_encoded_tag(const size_t proc_id,
+				    const size_t elem_id,
+				    const size_t int_pt)
+{
+  assert(proc_id <= INT_MAX/encode_proc_offset);
+  assert(elem_id < encode_proc_offset);
+  assert(int_pt < encode_elem_offset);
+ 
+  return (proc_id * encode_proc_offset
+	  + elem_id * encode_elem_offset
+	  + int_pt);
+}
+
+void pgf_FE2_job_decode_id(const int id,
+			   size_t *proc_id,
+			   size_t *elem_id,
+			   size_t *int_pt)
+{
+  assert(id >= 0);
+  *proc_id = pgf_FE2_job_decode_id_proc(id);
+  *elem_id = id % encode_proc_offset;
+  *int_pt = *elem_id % encode_elem_offset;
+  *elem_id /= encode_elem_offset;
+}
+
+int pgf_FE2_job_decode_id_proc(const int id)
+{
+  assert(id >= 0);
+  return id / encode_proc_offset;
 }
