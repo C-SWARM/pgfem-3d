@@ -111,6 +111,7 @@ ms_job_intercomm.o \
 macro_micro_functions.o \
 macro_micro_main.o \
 micro_server.o \
+pgf_fe2_job.o \
 main.o \
 super_main.o
 

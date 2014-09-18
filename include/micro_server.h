@@ -9,57 +9,74 @@
 #define MICRO_SERVER_H
 
 #include <stdlib.h>
-#include "mpi.h"
-//#include "PGFEM_mpi.h" /* include after prelim testing */
+#include "PGFEM_mpi.h"
+#include "pgf_fe2_job.h"
 
-/**
- * Uniquely identify a microscale job.
- */
-struct pgf_job_id{
-  size_t proc_id;
-  size_t el_id;
-  size_t int_pt;
+struct pgf_FE2_server_stats{
+  double avg;
+  double std;
+  double min;
+  double max;
 };
-#ifndef TYPEDEF_pgf_job_id
-#define TYPEDEF_pgf_job_id
-typedef struct pgf_job_id pgf_job_id;
-#endif
+typedef struct pgf_FE2_server_stats pgf_FE2_server_stats;
 
-/**
- * Micro server job object.
- */ 
-struct pgf_micro_server_job{
-  pgf_job_id job_id;
-  size_t have_info;
-  int status;
-  char *buf;
-};
-#ifndef TYPEDEF_pgf_micro_server_job
-#define TYPEDEF_pgf_micro_server_job
-typedef struct pgf_micro_server_job pgf_micro_server_job;
-#endif
-
-/**
- * Object to manage list of jobs.
- */
-struct pgf_server_job_pool{
-  pgf_micro_server_job *jobs;
+struct pgf_FE2_server_job_list{
   size_t n_jobs;
-  size_t max_n_jobs;
+  pgf_FE2_job *jobs;
+  pgf_FE2_server_stats stats;
 };
-#ifndef TYPEDEF_pgf_server_job_pool
-#define TYPEDEF_pgf_server_job_pool
-typedef struct pgf_server_job_pool pgf_server_job_pool;
-#endif
+typedef struct pgf_FE2_server_job_list pgf_FE2_server_job_list;
+
+typedef int* pgf_FE2_server_rebalance;
+
+void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
+				    const size_t n_keep,
+				    const size_t n_send,
+				    const size_t n_recv);
+
+void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t);
 
 /**
- * Structure to identify and monitor the transfer of data among
- * microscale servers.
+ * Get the number of jobs to keep.
  */
-struct pgf_worker_transfer_status{
-  size_t comm_type; /** send or receive */
-  MPI_Request *request;
-  MPI_Status *status;
-};
+int pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get pointer to beginning of buffer containing job ids to keep.
+ */
+int* pgf_FE2_server_rebalance_keep_buff(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get the number of jobs to send.
+ */
+int pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get pointer to beginning of buffer containing job ids to send.
+ */
+int* pgf_FE2_server_rebalance_send_buff(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get pointer to beginning of buffer contining destinations of
+ * communication.
+ */
+int* pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get the number of jobs to receive.
+ */
+int pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get pointer to beginning of buffer containing job ids to recv.
+ */
+int* pgf_FE2_server_rebalance_recv_buff(const pgf_FE2_server_rebalance *t);
+
+/**
+ * Get pointer to beginning of buffer contining sources of
+ * communication.
+ */
+int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
+
 
 #endif
