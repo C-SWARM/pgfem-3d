@@ -10,121 +10,43 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct work_queue{
-  pgf_FE2_job *jobs;
-  size_t current;
-  size_t size;
-  size_t max_size;
-};
-typedef struct work_queue work_queue;
-
-/**
- * Initialize a work queue object.
- */
-void work_queue_init(work_queue *queue)
+void pgf_FE2_micro_server_init(pgf_FE2_micro_server *server)
 {
-  queue->jobs = NULL;
-  queue->current = 0;
-  queue->size = 0;
-  queue->max_size = 0;
+  server->n_jobs = 0;
+  server->jobs = NULL;
 }
 
-/**
- * Destroy a work queue object.
- */
-void work_queue_destroy(work_queue *queue)
+void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
+				const pgf_FE2_server_rebalance *rebal)
 {
-  free(queue->jobs);
-}
-
-/**
- * Add a job to the end of the work queue.
- */
-void work_queue_push(work_queue *queue,
-		     const pgf_FE2_job *job)
-{
-  static size_t increment = 4;
-  if(queue->size >= queue->max_size){
-    queue->max_size += increment;
-    queue->jobs = realloc(queue->jobs,queue->max_size*sizeof(*(queue->jobs)));
+  const size_t keep = pgf_FE2_server_rebalance_n_keep(rebal);
+  const size_t recv = pgf_FE2_server_rebalance_n_recv(rebal);
+  server->n_jobs = keep + recv;
+  
+  server->jobs = malloc(server->n_jobs*sizeof(*(server->jobs)));
+  
+  /* initialize the jobs that do not need rebalancing */
+  const int *job_ids_keep = pgf_FE2_server_rebalance_keep_buf(rebal);
+  for(size_t i=0; i<keep; i++){
+    pgf_FE2_job_init((server->jobs) + i,job_ids_keep[i],FE2_STATE_NEED_INFO);
   }
-  memcpy((queue->jobs) + queue->size,job,sizeof(*job));
-  queue->size++;
-}
 
-/**
- * Return true if queue is empty.
- */
-int work_queue_is_empty(const work_queue *queue)
-{
-  return (queue->size <= 0);
-}
-
-/**
- * Get pointer to current job. Returns NULL if queue is empty.
- */
-pgf_FE2_job* work_queue_get_current_job(work_queue *queue)
-{
-  if(!work_queue_is_empty(queue)){
-    return (queue->jobs) + queue->current;
-  } else {
-    return NULL;
+  /* initialize the jobs that do no need rebalancing */
+  const int *job_ids_recv = pgf_FE2_server_rebalance_recv_buf(rebal);
+  for(size_t i=0; i<recv; i++){
+    pgf_FE2_job_init((server->jobs) + keep + i,job_ids_keep[i],
+		     FE2_STATE_NEED_INFO_REBALANCE);
   }
 }
 
-/**
- * Make first job current and return pointer. Returns NULL if queue is
- * empty.
- */
-pgf_FE2_job* work_queue_first(work_queue *queue)
+void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server)
 {
-  queue->current = 0;
-  return work_queue_get_current_job(queue);
-}
-
-/**
- * Make last job current and return pointer. Returns NULL if queue is
- * empty.
- */
-pgf_FE2_job* work_queue_last(work_queue *queue)
-{
-  queue->current = queue->size - 1;
-  return work_queue_get_current_job(queue);
-}
-
-/**
- * Make next job in queue current. Returns true if queue is not empty.
- */
-int work_queue_next(work_queue *queue)
-{
-  queue->current++;
-  if(queue->current >= queue->size) queue->current = 0;
-  return (!work_queue_is_empty(queue));
-}
-
-/**
- * Remove the current job from the queue.
- */
-void work_queue_pop(work_queue *queue)
-{
-  /* move valid entries after current position to current position. */
-  memmove((queue->jobs) + queue->current,
-	  (queue->jobs) + queue->current + 1,
-	  (queue->size - (queue->current + 1))*sizeof(*(queue->jobs)));
-
-  /* decrement the size -- number of valid jobs in queue */
-  queue->size--;
-}
-
-/**
- * Sort the work queue jobs according to the sort function.
- */
-void work_queue_sort(work_queue *queue,
-		     int (*sort)(const void *, const void *))
-{
-  if(!work_queue_is_empty(queue)){
-    qsort(queue->jobs,queue->size,sizeof(*(queue->jobs)),sort);
+  for(size_t i=0,e=server->n_jobs; i<e; i++){
+    pgf_FE2_job_destroy((server->jobs) + i);
   }
+  server->n_jobs = 0;
+  free(server->jobs);
+  server->jobs = NULL;
 }
 
 int pgf_new_micro_server_master(const PGFEM_mpi_comm *comm)

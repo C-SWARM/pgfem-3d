@@ -8,80 +8,81 @@
 #include <limits.h>
 #include <assert.h>
 
-enum pgf_FE2_job_status_state{
-  FE2_STATUS_UNDEFINED=-1,
-  FE2_STATUS_READY,
-  FE2_STATUS_REBALANCE,
-  FE2_STATUS_NEED_INFO,
-  FE2_STATUS_REPLY,
-  FE2_STATUS_DONE};
-
-void pgf_FE2_job_status_init(pgf_FE2_job_status *status)
+/*** FE2_job_comm_buf ***/
+void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf)
 {
-  status->time = 0.0;
-  status->have_info = 0;
-  status->state = FE2_STATUS_UNDEFINED;
+  buf->buffer_len = 0;
+  buf->buffer = NULL;
 }
 
-void pgf_FE2_job_status_destroy(pgf_FE2_job_status *status)
+void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
+				const size_t buffer_len)
 {
-  /* do nothing */
+  buf->buffer_len = buffer_len;
+  buf->buffer = malloc(buffer_len*sizeof(*(buf->buffer)));
 }
 
-int pgf_FE2_job_status_compare_state(const void *a,
-				     const void *b)
+void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf)
 {
-  const pgf_FE2_job_status *A = a;
-  const pgf_FE2_job_status *B = b;
-  return A->state - B->state;
+  free(buf->buffer);
 }
 
-int pgf_FE2_job_status_compare_time(const void *a,
-				    const void *b)
+/*** FE2_job ***/
+
+static inline int pgf_FE2_job_private_compare_int(const int *a,
+						  const int *b)
 {
-  const pgf_FE2_job_status *A = a;
-  const pgf_FE2_job_status *B = b;
-  return (A->time > B->time) - (A->time < B->time);
+  return (*a < *b) - (*a > *b);
 }
 
-void pgf_FE2_job_data_init(pgf_FE2_job_data *data)
+static inline int pgf_FE2_job_private_compare_size_t(const size_t *a,
+						     const size_t *b)
 {
-  data->len = 0;
-  data->max_len = 0;
-  data->buffer = NULL;
+  return (int) ((*a < *b) - (*a > *b));
 }
 
-void pgf_FE2_job_data_resize(pgf_FE2_job_data *data,
-			     const size_t len)
+int pgf_FE2_job_compare_state(const void *a,
+			      const void *b)
 {
-  if(len > data->max_len){
-    data->buffer = realloc(data->buffer,len*sizeof(*(data->buffer)));
-    data->max_len = len;
-  } else {
-    data->len = len;
-  }
+  const pgf_FE2_job *A = a;
+  const pgf_FE2_job *B = b;
+  return pgf_FE2_job_private_compare_int(&(A->state),&(B->state));
 }
 
-void pgf_FE2_job_data_destroy(pgf_FE2_job_data *data)
+int pgf_FE2_job_compare_time(const void *a,
+			     const void *b)
 {
-  free(data->buffer);
+  const pgf_FE2_job *A = a;
+  const pgf_FE2_job *B = b;
+  return pgf_FE2_job_private_compare_size_t(&(A->time),&(B->time));
 }
 
-void pgf_FE2_job_init(pgf_FE2_job *job)
+
+int pgf_FE2_job_compare_id(const void *a,
+			   const void *b)
+{
+  const pgf_FE2_job *A = a;
+  const pgf_FE2_job *B = b;
+  return pgf_FE2_job_private_compare_size_t(&(A->id),&(B->id));
+}
+
+void pgf_FE2_job_init(pgf_FE2_job *job,
+		      const int id,
+		      const int state)
 {
   /* poison values */
-  job->id = -1;
-  job->micro_sol_idx = -1;
-
-  /* initialize contained objects */
-  pgf_FE2_job_status_init(&(job->status));
-  pgf_FE2_job_data_init(&(job->data));
+  job->id = id;
+  job->time = 0;
+  job->state = state;
+  job->comm_buf = malloc(sizeof(*(job->comm_buf)));
+  pgf_FE2_job_comm_buf_init(job->comm_buf);
 }
 
 void pgf_FE2_job_destroy(pgf_FE2_job *job)
 {
-  pgf_FE2_job_status_destroy(&(job->status));
-  pgf_FE2_job_data_destroy(&(job->data));
+  pgf_FE2_job_comm_buf_destroy(job->comm_buf);
+  free(job->comm_buf);
+  job->comm_buf = NULL;
 }
 
 static const int encode_proc_offset = 1e6;
@@ -115,4 +116,50 @@ int pgf_FE2_job_decode_id_proc(const int id)
 {
   assert(id >= 0);
   return id / encode_proc_offset;
+}
+
+/**
+ * Check the status level and attempt to send or receive information
+ * from macroscale if needed. Returns job state on exit.
+ */
+int pgf_FE2_job_state_check_info(pgf_FE2_job *job,
+				 PGFEM_mpi_comm *mpi_comm)
+{
+  /* Already have the info to compute, return state */
+  if(job->state != FE2_STATE_NEED_INFO_REBALANCE 
+     && job->state != FE2_STATE_NEED_INFO) return job->state;
+
+  /* probe for message based on job id */
+  size_t proc = 0;
+  size_t elem = 0;
+  size_t int_pt = 0;
+  MPI_Status status;
+  int msg_waiting = 0;
+  pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
+  MPI_Iprobe(proc,job->id,mpi_comm->mm_inter,&msg_waiting,&status);
+
+  /* if there is a message, allocate the comm_buf and post the
+     matching receive. */
+  if(msg_waiting){
+    int len = 0;
+    MPI_Get_count(&status,MPI_CHAR,&len);
+    pgf_FE2_job_comm_buf_build(job->comm_buf,len);
+
+    /* post blocking receive since we can't move on until we get it
+       and the message is for sure there. */
+    MPI_Recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
+	     MPI_CHAR,proc,job->id,mpi_comm->mm_inter,&status);
+
+    /* update the job state */
+    switch(job->state){
+    case FE2_STATE_NEED_INFO_REBALANCE:
+      job->state = FE2_STATE_HAVE_INFO_REBALANCE;
+      break;
+    case FE2_STATE_NEED_INFO:
+      job->state = FE2_STATE_COMPUTE_READY;
+      break;
+    default:  /* should never get here */ assert(0); break;
+    }
+  }
+  return job->state;
 }

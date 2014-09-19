@@ -13,6 +13,7 @@ enum {REBAL_N_KEEP=0,
       REBAL_SEND_OFF,
       REBAL_RECV_OFF,
       REBAL_N_META};
+
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
 				    const size_t n_keep,
 				    const size_t n_send,
@@ -47,7 +48,7 @@ int pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t)
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_keep_buff(const pgf_FE2_server_rebalance *t)
+int* pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t)
 {
   if(*t != NULL) return *t + (*t)[REBAL_KEEP_OFF];
   else return NULL;
@@ -59,7 +60,7 @@ int pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t)
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_send_buff(const pgf_FE2_server_rebalance *t)
+int* pgf_FE2_server_rebalance_send_buf(const pgf_FE2_server_rebalance *t)
 {
   if(*t != NULL) return (*t) + (*t)[REBAL_SEND_OFF];
   else return NULL;
@@ -77,7 +78,7 @@ int pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t)
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_recv_buff(const pgf_FE2_server_rebalance *t)
+int* pgf_FE2_server_rebalance_recv_buf(const pgf_FE2_server_rebalance *t)
 {
   if(*t != NULL) return (*t) + (*t)[REBAL_RECV_OFF];
   else return NULL;
@@ -157,7 +158,7 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
 
   const size_t buff_size = micro->sol[0].packed_state_var_len;
   const int n_send = pgf_FE2_server_rebalance_n_send(t);
-  const int *send_id = pgf_FE2_server_rebalance_send_buff(t);
+  const int *send_id = pgf_FE2_server_rebalance_send_buf(t);
   const int *send_to = pgf_FE2_server_rebalance_send_dest(t);
 
   /* allocate file local buffer for send */
@@ -180,7 +181,7 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
   }
 
   const int n_recv = pgf_FE2_server_rebalance_n_recv(t);
-  const int *recv_id = pgf_FE2_server_rebalance_recv_buff(t);
+  const int *recv_id = pgf_FE2_server_rebalance_recv_buf(t);
   const int *recv_from = pgf_FE2_server_rebalance_recv_src(t);
 
   /* allocate file local buffer for recv */

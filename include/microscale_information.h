@@ -141,6 +141,9 @@ extern "C" {
   void sol_idx_map_sort_idx(sol_idx_map *map);
   int sol_idx_map_id_get_idx(const sol_idx_map *map,
 			     const int id);
+  int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
+				   const int cur_id,
+				   const int new_id);
   int sol_idx_map_idx_get_id(const sol_idx_map *map,
 			     const int idx);
   void sol_idx_map_idx_set_id(sol_idx_map *map,
