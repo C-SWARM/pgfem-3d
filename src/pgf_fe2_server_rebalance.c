@@ -37,6 +37,23 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
   (*t)[REBAL_RECV_OFF] = (*t)[4] + 2*n_send; /* recv_offset */
 }
 
+void pgf_FE2_server_rebalance_build_from_message(pgf_FE2_server_rebalance *t,
+						 const PGFEM_mpi_comm *mpi_comm)
+{
+  /* look for rebalancing message */
+  MPI_Status rebal_stat;
+  MPI_Probe(MPI_ANY_SOURCE,-1,mpi_comm->mm_inter,&rebal_stat);
+
+  /* post appropriate receive for partition information from
+     macroscale. Blocking receive is used since we cannot progress
+     until we have this information. */
+  int len = 0;
+  MPI_Get_count(&rebal_stat,MPI_INT,&len);
+  *t = calloc(len,sizeof(**t));
+  MPI_Recv(*t,len,MPI_INT,rebal_stat.MPI_SOURCE,rebal_stat.MPI_TAG,
+	   mpi_comm->mm_inter,MPI_STATUS_IGNORE);
+}
+
 void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
 {
   free(*t);
@@ -148,7 +165,7 @@ static void destroy_send_workspace()
 }
 
 int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
-					   const PGFEM_mpi_comm *mpi_comm,					   
+					   const PGFEM_mpi_comm *mpi_comm,
 					   MICROSCALE *micro)
 {
   int err = 0;

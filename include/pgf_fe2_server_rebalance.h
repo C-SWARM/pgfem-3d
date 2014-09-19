@@ -30,6 +30,8 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
 				    const size_t n_send,
 				    const size_t n_recv);
 
+void pgf_FE2_server_rebalance_build_from_message(pgf_FE2_server_rebalance *t,
+						 const PGFEM_mpi_comm *mpi_comm);
 /**
  * Destroy the data strucuture.
  */

@@ -118,12 +118,8 @@ int pgf_FE2_job_decode_id_proc(const int id)
   return id / encode_proc_offset;
 }
 
-/**
- * Check the status level and attempt to send or receive information
- * from macroscale if needed. Returns job state on exit.
- */
-int pgf_FE2_job_state_check_info(pgf_FE2_job *job,
-				 PGFEM_mpi_comm *mpi_comm)
+int pgf_FE2_job_get_info(pgf_FE2_job *job,
+			 const PGFEM_mpi_comm *mpi_comm)
 {
   /* Already have the info to compute, return state */
   if(job->state != FE2_STATE_NEED_INFO_REBALANCE 
@@ -161,5 +157,61 @@ int pgf_FE2_job_state_check_info(pgf_FE2_job *job,
     default:  /* should never get here */ assert(0); break;
     }
   }
+  return job->state;
+}
+
+int pgf_FE2_job_compute(pgf_FE2_job *job,
+			MICROSCALE *micro,
+			const PGFEM_mpi_comm *mpi_comm)
+{
+  /* return immediately if not ready to compute */
+  if(job->state != FE2_STATE_COMPUTE_READY) return job->state;
+
+  /* broadcast information to the microscale */
+  assert(mpi_comm->rank_mm_inter == 0);
+  static const int n_meta = 2;
+  size_t meta[n_meta];
+  meta[0] = job->comm_buf->buffer_len;
+  meta[1] = job->id;
+  MPI_Bcast(meta,n_meta,MPI_LONG,0,mpi_comm->mm_inter);
+  MPI_Bcast(job->comm_buf->buffer,meta[0],MPI_CHAR,0,mpi_comm->mm_inter);
+
+  /* compute stuff, call existing functions */
+
+  job->state = FE2_STATE_REPLY_READY;
+  return pgf_FE2_job_reply(job,mpi_comm);
+}
+
+int pgf_FE2_job_reply(pgf_FE2_job *job,
+		      const PGFEM_mpi_comm *mpi_comm)
+{
+  /* return immediately if not ready to reply */
+  if(job->state != FE2_STATE_REPLY_READY) return job->state;
+
+  /* post non-blocking send of information to the macroscale */
+  size_t proc = 0, elem = 0, int_pt = 0;
+  pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
+  MPI_Isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
+	    MPI_CHAR,proc,job->id,mpi_comm->mm_inter,
+	    &(job->comm_buf->request));
+
+  job->state = FE2_STATE_REPLY;
+  return job->state;
+}
+
+int pgf_FE2_job_complete(pgf_FE2_job *job)
+{
+  /* return immediately if not ready to reply */
+  if(job->state != FE2_STATE_REPLY) return job->state;
+
+  int finished = 0;
+  MPI_Test(&(job->comm_buf->request),&finished,MPI_STATUS_IGNORE);
+  if(finished){
+    /* destroy the comm_buffer rendering it unusable for erroneous
+       further communication. */
+    pgf_FE2_job_comm_buf_destroy(job->comm_buf);
+    job->state = FE2_STATE_DONE;
+  }
+
   return job->state;
 }

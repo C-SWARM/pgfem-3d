@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include "PGFEM_mpi.h"
+#include "microscale_information.h"
 
 struct pgf_FE2_job_comm_buf{
   size_t buffer_len;
@@ -94,5 +95,31 @@ int pgf_FE2_job_compare_time(const void *a,
 int pgf_FE2_job_compare_id(const void *a,
 			   const void *b);
 
+/**
+ * Check the job state and attempt to get information from macroscale
+ * if needed. Returns job state on exit.
+ */
+int pgf_FE2_job_get_info(pgf_FE2_job *job,
+			 const PGFEM_mpi_comm *mpi_comm);
+
+/**
+ * Check the job state and compute if possible. Returns job state on
+ * exit.
+ */
+int pgf_FE2_job_compute(pgf_FE2_job *job,
+			MICROSCALE *micro,
+			const PGFEM_mpi_comm *mpi_comm);
+
+/**
+ * Check the job state and reply to the macroscale if
+ * possible. Returns job state on exit.*/
+int pgf_FE2_job_reply(pgf_FE2_job *job,
+		      const PGFEM_mpi_comm *mpi_comm);
+
+/**
+ * Check the job state and complete if possible. Returns job state on
+ * exit.
+ */
+int pgf_FE2_job_complete(pgf_FE2_job *job);
 
 #endif
