@@ -111,6 +111,13 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 			const PGFEM_mpi_comm *mpi_comm);
 
 /**
+ * Initiates computing a job on a worker process (non-master).
+ */
+void pgf_FE2_job_compute_worker(const size_t job_id,
+				const size_t buffer_len,
+				MICROSCALE *micro);
+
+/**
  * Check the job state and reply to the macroscale if
  * possible. Returns job state on exit.*/
 int pgf_FE2_job_reply(pgf_FE2_job *job,

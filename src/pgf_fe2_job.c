@@ -5,6 +5,7 @@
  */
 
 #include "pgf_fe2_job.h"
+#include "macro_micro_functions.h"
 #include <limits.h>
 #include <assert.h>
 
@@ -160,6 +161,22 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
   return job->state;
 }
 
+void pgf_FE2_job_compute_worker(const size_t job_id,
+				const size_t buffer_len,
+				MICROSCALE *micro)
+{
+  /* allocate and receive job buffer */
+  char *buf = malloc(buffer_len*sizeof(*buf));
+  MPI_Bcast(buf,buffer_len,MPI_CHAR,0,micro->common->mpi_comm);
+
+  /* determine solution index from job id and compute */
+  int idx = sol_idx_map_id_get_idx(&(micro->idx_map),job_id);
+  int exit_server = 0; /* unused in this implementation */
+  microscale_compute_job(idx,buffer_len,buf,micro,&exit_server);
+  assert(exit_server == 0);
+  free(buf);
+}
+
 int pgf_FE2_job_compute(pgf_FE2_job *job,
 			MICROSCALE *micro,
 			const PGFEM_mpi_comm *mpi_comm)
@@ -173,11 +190,18 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   size_t meta[n_meta];
   meta[0] = job->comm_buf->buffer_len;
   meta[1] = job->id;
-  MPI_Bcast(meta,n_meta,MPI_LONG,0,mpi_comm->mm_inter);
-  MPI_Bcast(job->comm_buf->buffer,meta[0],MPI_CHAR,0,mpi_comm->mm_inter);
+  MPI_Bcast(meta,n_meta,MPI_LONG,0,micro->common->mpi_comm);
+  MPI_Bcast(job->comm_buf->buffer,meta[0],MPI_CHAR,0,
+	    micro->common->mpi_comm);
 
-  /* compute stuff, call existing functions */
+  /* determine solution index from job id and compute */
+  int idx = sol_idx_map_id_get_idx(&(micro->idx_map),meta[1]);
+  int exit_server = 0; /* unused in this implementation */
+  microscale_compute_job(idx,meta[0],job->comm_buf->buffer,
+			 micro,&exit_server);
+  assert(exit_server == 0);
 
+  /* increment state and post communication to macroscale */
   job->state = FE2_STATE_REPLY_READY;
   return pgf_FE2_job_reply(job,mpi_comm);
 }
