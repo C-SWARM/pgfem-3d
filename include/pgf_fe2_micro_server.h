@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include "PGFEM_mpi.h"
+#include "microscale_information.h"
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 
@@ -45,5 +46,19 @@ struct pgf_FE2_micro_server{
   pgf_FE2_micro_server_stats *stats;
 };
 typedef struct pgf_FE2_micro_server pgf_FE2_micro_server;
+
+
+void pgf_FE2_micro_server_init(pgf_FE2_micro_server *server);
+void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
+				const pgf_FE2_server_rebalance *rebal);
+void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
+
+/**
+ * This is the main function that starts the master/worker server
+ * processes.
+ */
+int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
+			       MICROSCALE *micro);
+
 
 #endif

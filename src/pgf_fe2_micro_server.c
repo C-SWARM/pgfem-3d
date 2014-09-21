@@ -5,7 +5,6 @@
  */
 
 #include "pgf_fe2_micro_server.h"
-#include "microscale_information.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -165,8 +164,8 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
 }
 
 
-int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
-				MICROSCALE *micro)
+static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
+				       MICROSCALE *micro)
 {
   int err = 0;
   pgf_FE2_micro_server *server = malloc(sizeof(*server));
@@ -219,8 +218,8 @@ int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 /**
  * Worker busy loop. Some logic as to which jobs to initiate.
  */
-int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
-				MICROSCALE *micro)
+static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
+				       MICROSCALE *micro)
 {
   int err = 0;
   int exit_server = 0;
