@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <search.h>
+#include <assert.h>
 
 static const int ndim = 3;
 
@@ -124,7 +125,8 @@ int sol_idx_map_id_get_idx(const sol_idx_map *map,
 {
   int val[2] = {0,0}; val[0] = id;
   size_t len = map->size;
-  return *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1);
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1); 
+  return (ptr == NULL)? -1 : *ptr;
 }
 
 int sol_idx_map_idx_get_id(const sol_idx_map *map,
@@ -132,7 +134,8 @@ int sol_idx_map_idx_get_id(const sol_idx_map *map,
 {
   int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
-  return *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second)); 
+  return (ptr == NULL)? -1 : *ptr;
 }
 
 int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
@@ -144,6 +147,7 @@ int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
 
   /* get pointer to matching pair */
   int *ptr = lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first);
+  assert(ptr != NULL);
   ptr[0] = new_id;
   return ptr[1];
 }
@@ -154,7 +158,9 @@ void sol_idx_map_idx_set_id(sol_idx_map *map,
 {
   int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
-  *((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second)) = id;
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
+  assert(ptr != NULL);
+  *ptr = id;
 }
 
 void initialize_MICROSCALE(MICROSCALE **microscale)

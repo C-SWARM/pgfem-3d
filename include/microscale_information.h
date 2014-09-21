@@ -139,16 +139,35 @@ extern "C" {
   void sol_idx_map_destroy(sol_idx_map *map);
   void sol_idx_map_sort_id(sol_idx_map *map);
   void sol_idx_map_sort_idx(sol_idx_map *map);
+
+  /**
+   * Get solution idx from job id. Returns -1 if job id not found in
+   * the map.
+   */
   int sol_idx_map_id_get_idx(const sol_idx_map *map,
 			     const int id);
+
+  /**
+   * Get the idx from the job id and then assign a new id. Aborts if
+   * the current id is not valid.
+   */
   int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
 				   const int cur_id,
 				   const int new_id);
+
+  /**
+   * Get the job id from the idx. Return -1 if not found.
+   */
   int sol_idx_map_idx_get_id(const sol_idx_map *map,
 			     const int idx);
+
+  /**
+   * Set the id at the given idx. Aborts if the idx is not found.
+   */
   void sol_idx_map_idx_set_id(sol_idx_map *map,
 			      const int idx,
 			      const int id);
+
   /** structure to contain all microscale information */
   typedef struct MICROSCALE{
     PGFem3D_opt *opts;
