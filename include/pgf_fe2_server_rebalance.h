@@ -30,8 +30,14 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
 				    const size_t n_send,
 				    const size_t n_recv);
 
-void pgf_FE2_server_rebalance_build_from_message(pgf_FE2_server_rebalance *t,
-						 const PGFEM_mpi_comm *mpi_comm);
+/**
+ * Initialize a pgf_FE2_server_rebalance from a buffer. Invalidates
+ * the handle 'buffer' on exit. Any memory pointed to by buffer is
+ * destroyed on a call to ..._destroy(t);
+ */
+void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance *t,
+						void *buffer);
+
 /**
  * Destroy the data strucuture.
  */
@@ -93,6 +99,6 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
  * buffers. Need to extend this functionality to overlab with further
  * computation.
  */
-int pgf_FE2_server_rebalance_finalize_exchange();
+int pgf_FE2_server_rebalance_finalize_exchange(const PGFEM_mpi_comm *mpi_comm);
 
 #endif

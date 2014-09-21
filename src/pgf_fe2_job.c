@@ -188,16 +188,17 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   assert(mpi_comm->rank_mm_inter == 0);
   static const int n_meta = 2;
   size_t meta[n_meta];
-  meta[0] = job->comm_buf->buffer_len;
-  meta[1] = job->id;
+  meta[0] = job->id;
+  meta[1] = job->comm_buf->buffer_len;
   MPI_Bcast(meta,n_meta,MPI_LONG,0,micro->common->mpi_comm);
   MPI_Bcast(job->comm_buf->buffer,meta[0],MPI_CHAR,0,
 	    micro->common->mpi_comm);
 
   /* determine solution index from job id and compute */
-  int idx = sol_idx_map_id_get_idx(&(micro->idx_map),meta[1]);
+  int idx = sol_idx_map_id_get_idx(&(micro->idx_map),meta[0]);
+  assert(idx >= 0);
   int exit_server = 0; /* unused in this implementation */
-  microscale_compute_job(idx,meta[0],job->comm_buf->buffer,
+  microscale_compute_job(idx,meta[1],job->comm_buf->buffer,
 			 micro,&exit_server);
   assert(exit_server == 0);
 
