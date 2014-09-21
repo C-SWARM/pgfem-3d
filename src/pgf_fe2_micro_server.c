@@ -4,7 +4,7 @@
  *  Matt Mosby, University of Notre Dame
  */
 
-#include "micro_server.h"
+#include "pgf_fe2_micro_server.h"
 #include "microscale_information.h"
 
 #include <stdlib.h>
