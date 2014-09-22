@@ -6,9 +6,11 @@
 
 #include "pgf_fe2_micro_server.h"
 
+#include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 void pgf_FE2_micro_server_init(pgf_FE2_micro_server *server)
 {
@@ -91,6 +93,7 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
 }
 
 
+
 /**
  * On the MASTER server process look for info from the macroscale and
  * propogate to the workers.
@@ -143,6 +146,9 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
   case FE2_MICRO_SERVER_EXIT:
     /* set flag and move on to exit function */
     *exit_server = 1;
+
+    /* free the buffer */
+    free(buf);
     break;
  
  case FE2_MICRO_SERVER_REBALANCE:
@@ -156,13 +162,112 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
     /* build server list */
     pgf_FE2_micro_server_build(server,rebal);
 
+    /* do not free the buffer. Maintain access through rebal. Buffer
+       is free'd when rebal is destroyed */
     break;
   default: assert(0); /* should never get here */ break;
   }
+}
 
+static void pgf_FE2_micro_server_compute_stats(pgf_FE2_micro_server *server)
+{
+  /* aliases */
+  pgf_FE2_micro_server_stats *s = server->stats;
+  pgf_FE2_job *j = server->jobs;
+
+  /* initialization */
+  const size_t njob = server->n_jobs;
+  s->total = s->avg = s->std = 0.0;
+
+  /* total, min, max, and average */
+  double total = 0.0;
+  double min = INT_MAX;
+  double max = 0.0;
+  for(size_t i=0; i<njob; i++){
+    double cur = (double) j[i].time;
+    total += cur;
+    if(min > cur) min = cur;
+    if(max < cur) max = cur;
+  }
+  const double avg = total / njob;
+
+  /* standard deviation */
+  double std = 0.0;
+  for(size_t i=0; i<njob; i++){
+    double cur = (double) j[i].time;
+    std += (cur-avg)*(cur-avg);
+  }
+  s->total = total;
+  s->avg = avg;
+  s->std = sqrt(1./njob*std);
+  s->min = min;
+  s->max = max;
+}					     
+
+/**
+ * Make a fairly shallow copy of the job data into a communication
+ * buffer.
+ */
+static void pgf_FE2_micro_server_pack_summary(pgf_FE2_micro_server *server,
+					      size_t *buf_len,
+					      char **buf)
+{
+  /* compute stats */
+  pgf_FE2_micro_server_compute_stats(server);
+
+  /* compute buffer length and allocate */
+  const size_t n_jobs = server->n_jobs;
+  static const size_t size_job = sizeof(*(server->jobs));
+  static const size_t size_stats = sizeof(*(server->stats));
+  *buf_len = sizeof(server->n_jobs) + n_jobs*size_job + size_stats;
+  (*buf) = malloc(*buf_len);
+
+  /* pack the server job summary */
+  size_t pos = 0;
+  pack_data(&n_jobs,*buf,&pos,1,sizeof(n_jobs));
+  pack_data(server->stats,*buf,&pos,1,size_stats);
+  pack_data(server->jobs,*buf,&pos,n_jobs,size_job);
+}
+
+static void pgf_FE2_micro_server_finish_cycle(const PGFEM_mpi_comm *mpi_comm,
+					      pgf_FE2_micro_server *server)
+{
+  int n_micro_proc = 0;
+  int n_macro_proc = 0;
+  MPI_Comm_size(mpi_comm->worker_inter,&n_micro_proc);
+  MPI_Comm_size(mpi_comm->mm_inter,&n_macro_proc);
+  n_macro_proc -= n_micro_proc;
+  MPI_Request *req = malloc(n_macro_proc*sizeof(*req));
+  char *buf = NULL;
+  size_t buf_len = 0;
+  pgf_FE2_micro_server_pack_summary(server,&buf_len,&buf);
+
+  for(int i=0; i<n_macro_proc; i++){
+    MPI_Isend(buf,buf_len,MPI_CHAR,i,
+	      FE2_MICRO_SERVER_REBALANCE,
+	      mpi_comm->mm_inter,req+i);
+  }
+
+  MPI_Waitall(n_macro_proc,req,MPI_STATUS_IGNORE);
+  free(req);
   free(buf);
 }
 
+void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server *server,
+					 const char *buf)
+{
+  /* avoid memory leaks */
+  pgf_FE2_micro_server_destroy(server);
+  static const size_t size_jobs = sizeof(*(server->jobs));
+  static const size_t size_stats = sizeof(*(server->stats));
+
+  server->stats = malloc(size_stats);
+  size_t pos = 0;
+  unpack_data(buf,&(server->n_jobs),&pos,1,sizeof(server->n_jobs));
+  server->jobs = malloc(server->n_jobs*size_jobs);
+  unpack_data(buf,server->stats,&pos,1,size_stats);
+  unpack_data(buf,server->jobs,&pos,server->n_jobs,size_jobs);
+}
 
 static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 				       MICROSCALE *micro)
@@ -204,12 +309,15 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
       pgf_FE2_micro_server_compute_ready(server,micro,mpi_comm);
 
     }
+
+    /* send server/job statistics to macroscale for rebalancing */
+    pgf_FE2_micro_server_finish_cycle(mpi_comm,server);
+
+    pgf_FE2_micro_server_destroy(server);
+    pgf_FE2_server_rebalance_destroy(rebal);
   }
 
-  pgf_FE2_micro_server_destroy(server);
   free(server);
-
-  pgf_FE2_server_rebalance_destroy(rebal);
   free(rebal);
 
   return err;

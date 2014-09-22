@@ -60,5 +60,6 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
 			       MICROSCALE *micro);
 
-
+void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server *server,
+					 const char *buf);
 #endif
