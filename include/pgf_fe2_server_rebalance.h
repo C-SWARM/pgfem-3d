@@ -37,7 +37,6 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
  */
 void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance *t,
 						void *buffer);
-
 /**
  * Destroy the data strucuture.
  */

@@ -236,7 +236,7 @@ int pgf_FE2_job_reply(pgf_FE2_job *job,
 
 int pgf_FE2_job_complete(pgf_FE2_job *job)
 {
-  /* return immediately if not ready to reply */
+  /* return immediately if reply not in progress */
   if(job->state != FE2_STATE_REPLY) return job->state;
 
   int finished = 0;

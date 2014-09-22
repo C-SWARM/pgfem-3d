@@ -113,6 +113,7 @@ macro_micro_main.o \
 pgf_fe2_micro_server.o \
 pgf_fe2_job.o \
 pgf_fe2_server_rebalance.o \
+pgf_fe2_rebalancer.o \
 main.o \
 super_main.o
 
