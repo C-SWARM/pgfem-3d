@@ -6,6 +6,7 @@
 
 #include "pgf_fe2_job.h"
 #include "macro_micro_functions.h"
+#include <time.h>
 #include <limits.h>
 #include <assert.h>
 
@@ -184,6 +185,10 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   /* return immediately if not ready to compute */
   if(job->state != FE2_STATE_COMPUTE_READY) return job->state;
 
+  /* record time of job */
+  time_t start, finish;
+  time(&start);
+
   /* broadcast information to the microscale */
   assert(mpi_comm->rank_mm_inter == 0);
   static const int n_meta = 2;
@@ -204,6 +209,11 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 
   /* increment state and post communication to macroscale */
   job->state = FE2_STATE_REPLY_READY;
+
+  /* time to complete job */
+  time(&finish);
+  job->time = difftime(finish,start);
+
   return pgf_FE2_job_reply(job,mpi_comm);
 }
 
