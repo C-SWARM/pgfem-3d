@@ -25,7 +25,8 @@ typedef struct new_partition{
 
 /*** static function declarations ***/
 /**
- * compare two objects of helper structure new_partition by time.
+ * compare two objects of helper structure new_partition by
+ * time. (decreasing order)
  */
 static int new_partition_buf_compare_time(const void *a,
 					  const void *b);
@@ -219,8 +220,8 @@ static int new_partition_buf_compare_time(const void *a,
 {
   const size_t *A = a;
   const size_t *B = b;
-  return ((A[NEW_PART_TIME] > B[NEW_PART_TIME])
-	  - (A[NEW_PART_TIME] < B[NEW_PART_TIME]));
+  return ((A[NEW_PART_TIME] < B[NEW_PART_TIME])
+	  - (A[NEW_PART_TIME] > B[NEW_PART_TIME]));
 }
 
 static void new_partition_build(new_partition *np,

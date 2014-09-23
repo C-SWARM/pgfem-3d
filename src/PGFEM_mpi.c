@@ -279,6 +279,7 @@ int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
     ctx->n_comms = 0;
     ctx->procs = NULL;
     ctx->sizes = NULL;
+    ctx->tags = NULL;
     ctx->buffer = NULL;
     ctx->req = NULL;
     ctx->stat = NULL;
@@ -300,11 +301,13 @@ int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
 
   /* allocate if necessary */
   if(ctx->n_comms > 0){
+    ctx->tags = malloc(ctx->n_comms*sizeof(*(ctx->tags)));
     ctx->req = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Request));
     ctx->stat = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Status));
 
     ctx->buffer = PGFEM_calloc(ctx->n_comms,sizeof(char*));
     for(int i=0; i<ctx->n_comms; i++){
+      ctx->tags[i] = MPI_ANY_TAG;
       ctx->buffer[i] = PGFEM_calloc(ctx->sizes[i],sizeof(char));
       ctx->req[i] = MPI_REQUEST_NULL;
     }

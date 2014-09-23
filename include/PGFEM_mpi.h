@@ -100,10 +100,11 @@ extern "C" {
 
   /** a context for a server-type operation */
   typedef struct PGFEM_server_ctx{
-    int n_comms;
-    int *procs;
-    int *sizes;
-    char **buffer;
+    int n_comms; /**< How many communications */
+    int *procs; /**< where they are going */
+    int *sizes; /**< how big the messages are (in bytes) */
+    int *tags; /**< tag (default MPI_ANY_TAG) */
+    char **buffer; /**< buffer for communication */
     int in_process; /**< flag for if communication is in process */
     MPI_Request *req;
     MPI_Status *stat;
