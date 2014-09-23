@@ -119,6 +119,43 @@ extern "C" {
 						  *info,
 						  PGFEM_server_ctx *ctx);
 
+  /**
+   * Return the indices for communication associated with tag
+   * (messages with MPI_ANY_TAG match any tag). The number of matches
+   * and their indices are returned in count and indices
+   * respectively. Note, indices should be an array at least as large
+   * as the number of cummunications described by ctx.
+   */
+  int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
+					const int tag,
+					int *count,
+					int *indices);
+
+  /**
+   * Set the processor id for the message described at index idx.
+   */
+  int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
+				       const int proc,
+				       const int idx);
+
+  /**
+   * Set the tag for the message described at index idx.
+   */
+  int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
+				      const int tag,
+				      const int idx);
+
+  /**
+   * Get message info from server context at index.
+   */
+  int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
+				   const int idx,
+				   void *buf,
+				   int *len,
+				   int *proc,
+				   int *tag,
+				   MPI_Request *req);
+
   /** Destroy a PGFEM_server_ctx object */
   int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx);
 
@@ -127,11 +164,3 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */
-
-/* include block
-
-#ifndef PGFEM_MPI_H
-#include "PGFEM_mpi.h"
-#endif
-
- */
