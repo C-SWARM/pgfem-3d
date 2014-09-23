@@ -525,6 +525,7 @@ static int create_local_ms_cohe_job_list(const long nce,
       job->int_wt = wt;
       job->elem_id = i;
       job->proc_id = myrank_macro;
+      job->int_pt = ip;
       job->job_type = JOB_NO_COMPUTE_EQUILIBRIUM;
 
       /* set print flag equal to property. Non-zero value will cause

@@ -12,7 +12,7 @@ static const int ndim = 3;
 
 inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
-  size_t result = (6*sizeof(int)
+  size_t result = (7*sizeof(int)
 		   + sizeof(double)
 		   + 4*ndim*sizeof(double)
 		   + info->nnode*sizeof(double)
@@ -33,6 +33,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->ndofe = nnode*ndim;
   info->elem_id = -1; /* poisoned value */
   info->proc_id = -1; /* poisoned value */
+  info->int_pt = -1; /* poisoned value */
   info->job_type = -1; /* poisoned value */
   info->print_flag = 0; /* print output */
 
@@ -124,6 +125,7 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->ndofe,buffer,&pos,1,sizeof(int));
   pack_data(&info->elem_id,buffer,&pos,1,sizeof(int));
   pack_data(&info->proc_id,buffer,&pos,1,sizeof(int));
+  pack_data(&info->int_pt,buffer,&pos,1,sizeof(int));
   pack_data(&info->job_type,buffer,&pos,1,sizeof(int));
   pack_data(&info->print_flag,buffer,&pos,1,sizeof(int));
   pack_data(&info->int_wt,buffer,&pos,1,sizeof(double));
@@ -171,6 +173,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->ndofe,&pos,1,sizeof(int));
   unpack_data(buffer,&info->elem_id,&pos,1,sizeof(int));
   unpack_data(buffer,&info->proc_id,&pos,1,sizeof(int));
+  unpack_data(buffer,&info->int_pt,&pos,1,sizeof(int));
   unpack_data(buffer,&info->job_type,&pos,1,sizeof(int));
   unpack_data(buffer,&info->print_flag,&pos,1,sizeof(int));
   unpack_data(buffer,&info->int_wt,&pos,1,sizeof(double));
@@ -229,6 +232,7 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"NDOFE:   %d\n",info->ndofe);
   PGFEM_fprintf(out,"ELEM_ID: %d\n",info->elem_id);
   PGFEM_fprintf(out,"PROC_ID: %d\n",info->proc_id);
+  PGFEM_fprintf(out,"INT_PT:  %d\n",info->int_pt);
 
   job_type_str(info->job_type,&job_str);
   PGFEM_fprintf(out,"JOB TYPE: %s\n",job_str);
