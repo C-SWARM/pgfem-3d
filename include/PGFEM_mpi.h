@@ -113,6 +113,13 @@ extern "C" {
   /** Initialize a PGFEM_server_ctx object */
   int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx);
 
+  /**
+   * Build a server context
+   */
+  void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
+			      const int n_comm,
+			      const int *buf_sizes);
+
   /** construct a PGFEM_server_ctx object based on a PGFEM_comm_info
       object */
   int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info
@@ -146,12 +153,13 @@ extern "C" {
 				      const int idx);
 
   /**
-   * Get message info from server context at index.
+   * Get message info from server context at index. Note that the
+   * buffer may be modified through the returned pointer.
    */
   int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
 				   const int idx,
 				   void *buf,
-				   int *len,
+				   int *n_bytes,
 				   int *proc,
 				   int *tag,
 				   MPI_Request *req);

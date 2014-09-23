@@ -89,9 +89,9 @@ void pgf_FE2_job_destroy(pgf_FE2_job *job)
 
 static const int encode_proc_offset = 1e6;
 static const int encode_elem_offset = 1e2;
-int pgf_FE2_job_compute_encoded_tag(const size_t proc_id,
-				    const size_t elem_id,
-				    const size_t int_pt)
+int pgf_FE2_job_compute_encoded_id(const size_t proc_id,
+				   const size_t elem_id,
+				   const size_t int_pt)
 {
   assert(proc_id <= INT_MAX/encode_proc_offset);
   assert(elem_id < encode_proc_offset);

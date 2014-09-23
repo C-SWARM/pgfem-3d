@@ -9,6 +9,8 @@
 
 #include <stdlib.h>
 #include "PGFEM_mpi.h"
+#include "microscale_information.h"
+#include "ms_cohe_job_info.h"
 
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
@@ -28,8 +30,9 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
  * Get/create list of jobs owned by the client and to be computed by
  * one of the servers.
  */
-void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client
-					  /* TBD */);
+void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
+					  const MACROSCALE *macro,
+					  const PGFEM_mpi_comm *mpi_comm);
 
 /**
  * Assign jobs to servers before first computation.

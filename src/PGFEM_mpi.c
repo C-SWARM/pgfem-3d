@@ -287,6 +287,27 @@ int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
   return err;
 }
 
+void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
+			    const int n_comm,
+			    const int *buf_sizes)
+{
+  ctx->n_comms = n_comm;
+  ctx->procs = PGFEM_calloc(n_comm,sizeof(*(ctx->procs)));
+  ctx->sizes = malloc(n_comm*sizeof(*(ctx->sizes)));
+  ctx->tags = malloc(n_comm*sizeof(*(ctx->tags)));
+  ctx->buffer = malloc(n_comm*sizeof(*(ctx->buffer)));
+  ctx->req = PGFEM_calloc(n_comm,sizeof(*(ctx->req)));
+  ctx->stat = PGFEM_calloc(n_comm,sizeof(*(ctx->stat)));
+
+  /* set tags to MPI_ANY_TAG, allocate individual buffers, and copy
+     buffer sizes */
+  for(int i=0; i<n_comm; i++){
+    ctx->sizes[i] = buf_sizes[i];
+    ctx->buffer[i] = malloc(buf_sizes[i]);
+    ctx->tags[i] = MPI_ANY_TAG;
+  }
+}
+
 int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
 						PGFEM_server_ctx *ctx)
 {
@@ -358,7 +379,7 @@ int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
 int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
 				 const int idx,
 				 void *buf,
-				 int *len,
+				 int *n_bytes,
 				 int *proc,
 				 int *tag,
 				 MPI_Request *req)
@@ -366,7 +387,7 @@ int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
   int err = 0;
   if(idx >= ctx->n_comms) return ++err;
   buf = ctx->buffer[idx];
-  *len = ctx->sizes[idx];
+  *n_bytes = ctx->sizes[idx];
   *proc = ctx->procs[idx];
   *tag = ctx->tags[idx];
   req = ctx->req + idx;
@@ -379,6 +400,7 @@ int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
   if(ctx != NULL){
     free(ctx->procs);
     free(ctx->sizes);
+    free(ctx->tags);
     free(ctx->req);
     free(ctx->stat);
     for(int i=0; i<ctx->n_comms; i++) free(ctx->buffer[i]);
