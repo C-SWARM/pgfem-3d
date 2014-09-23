@@ -315,6 +315,64 @@ int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
   return err;
 }
 
+int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
+				      const int tag,
+				      int *count,
+				      int *indices)
+{
+  int err = 0;
+  *count = 0;
+  for(int i=0, e=ctx->n_comms; i<e; i++){
+    if(ctx->tags[i] == tag || ctx->tags[i] == MPI_ANY_TAG){
+      indices[*count] = i;
+      *count++;
+    }
+  }
+  return err;
+}
+
+int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
+				     const int proc,
+				     const int idx)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  /* can modify if comm is in process since it does not affect already
+     posted comm. */
+  ctx->procs[idx] = proc;
+  return err;
+}
+
+int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
+				    const int tag,
+				    const int idx)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  /* can modify if comm is in process since it does not affect already
+     posted comm. */
+  ctx->tags[idx] = tag;
+  return err;
+}
+
+int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
+				 const int idx,
+				 void *buf,
+				 int *len,
+				 int *proc,
+				 int *tag,
+				 MPI_Request *req)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  buf = ctx->buffer[idx];
+  *len = ctx->sizes[idx];
+  *proc = ctx->procs[idx];
+  *tag = ctx->tags[idx];
+  req = ctx->req + idx;
+  return err;
+}
+
 int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
 {
   int err = 0;
