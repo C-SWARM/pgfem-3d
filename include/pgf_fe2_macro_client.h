@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
-#include "ms_cohe_job_info.h"
+#include "pgf_fe2_rebalancer.h"
 
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
@@ -31,11 +31,12 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
  * one of the servers.
  */
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
+					  const int n_jobs_max,
 					  const MACROSCALE *macro,
 					  const PGFEM_mpi_comm *mpi_comm);
 
 /**
- * Assign jobs to servers before first computation.
+ * Generate initial partitioning of jobs to compute on servers.
  */
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client
 						 /* TBD */);
@@ -43,7 +44,10 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client
 /**
  * Reassign jobs to balance load on servers. Send new assignment
  * information to servers to allow data migration while macroscale
- * does other stuff.
+ * does other stuff. Either this function or pgf_FE2_macro_client_send
+ * exit MUST be called after each call to
+ * pgf_FE2_macro_client_recv_jobs before
+ * pgf_FE2_macro_client_send_jobs can be executed.
  */
 void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client
 					    /* TBD */);

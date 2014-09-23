@@ -11,6 +11,15 @@
 #include <string.h>
 
 /* a helper structure */
+enum new_partition_idx{
+  NEW_PART_JOB_ID,
+  NEW_PART_TIME,
+  NEW_PART_SR,
+  NEW_PART_NUMEL
+};
+
+static const size_t NEW_PART_JOB_SIZE = NEW_PART_NUMEL*sizeof(size_t);
+
 typedef struct new_partition{
   size_t max_size;
   size_t n_job;
@@ -104,12 +113,6 @@ static void rebalance_partitions_assign_job(const size_t *job,
 static size_t get_smallest_part_idx(const size_t n_parts,
 				    const new_partition *parts);
 
-/**
- * Greedy algorithm for partitioning the jobs.
- */
-static void rebalance_partitions_greedy(const size_t n_parts,
-					new_partition *all_parts,
-					new_partition *parts);
 
 /**
  * Keeps the same partitioning as the previous step.
@@ -124,6 +127,102 @@ static void rebalance_partitions_none(const size_t n_parts,
 static void new_partition_extract_server_as_keep(new_partition *all_parts,
 						 const size_t server_id,
 						 const pgf_FE2_micro_server *server);
+
+/*** API ***/
+/**
+ * Very ugly initialization of data structure I don't want to keep around...
+ */
+void new_partition_build_set_keep(void **np,
+				  const size_t max_n_job,
+				  const size_t n_job,
+				  const int *job_id,
+				  const int *job_time,
+				  const int *proc_id)
+{
+  *np = malloc(sizeof(new_partition));
+  new_partition_build(*np,max_n_job);
+
+  ((new_partition*) *np)->n_keep = n_job;
+  for(size_t i=0; i<n_job; i++){
+    size_t *ptr = new_partition_get_ptr_to_job_keep(*np,i);
+    ptr[NEW_PART_JOB_ID] = job_id[i];
+    ptr[NEW_PART_TIME] = job_time[i];
+    ptr[NEW_PART_SR] = proc_id[i];
+  }
+}
+
+/**
+ * destroy via opaque handle
+ */
+void new_partition_destroy_void(void *np)
+{
+  new_partition_destroy(np);
+  free(np);
+  np = NULL;
+}
+
+void new_partitions_void(void **parts,
+			 const size_t n_parts,
+			 const size_t n_max_job)
+{
+  *parts = malloc(n_parts*sizeof(new_partition));
+  new_partition *NP = *parts; /* alias */
+  for(size_t i=0; i<n_parts; i++){
+    new_partition_build(NP,n_max_job);
+  }
+}
+
+void new_partitions_destroy_void(void *np,
+				 const size_t n_parts)
+{
+  new_partition *NP = np;
+  for(size_t i=0; i<n_parts; i++){
+    new_partition_destroy(NP+i);
+  }
+  free(np);
+  np = NULL;
+}
+
+void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
+						     const void *np,
+						     pgf_FE2_server_rebalance *rb)
+{
+  const new_partition *NP = np;
+  for(int i=0; i<n_parts; i++){
+    new_partition_to_pgf_FE2_server_rebalance(NP + i,rb + i);
+  }
+}
+
+void rebalance_partitions_greedy(const size_t n_parts,
+				 void *All_parts,
+				 void *Parts)
+{
+  /* cast pointers */
+  new_partition *all_parts = All_parts;
+  new_partition *parts = Parts;
+  /* sort the full job list by time */
+  new_partition_sort_keep_time(all_parts);
+
+  /* reset the partitions */
+  for(int i=0; i<n_parts; i++){
+    new_partition_set_empty(parts + i);
+  }
+
+  for(size_t i=0; i<n_parts; i++){
+    const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
+    rebalance_partitions_assign_job(job,i,n_parts,parts);
+  }
+
+  for(size_t i=n_parts, total_n_jobs = all_parts->max_size;
+      i<total_n_jobs; i++){
+    const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
+    const size_t part_id = get_smallest_part_idx(n_parts,parts);
+    rebalance_partitions_assign_job(job,part_id,n_parts,parts);
+  }
+
+  /* compute stats on rebalanced partitions */
+  /* ... */
+}
 
 void pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 			const size_t total_n_jobs,
@@ -206,15 +305,6 @@ void pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 }
 
 /*** STATIC FUNCTIONS ****/
-enum new_partition_idx{
-  NEW_PART_JOB_ID,
-  NEW_PART_TIME,
-  NEW_PART_SR,
-  NEW_PART_NUMEL
-};
-
-static const size_t NEW_PART_JOB_SIZE = NEW_PART_NUMEL*sizeof(size_t);
-
 static int new_partition_buf_compare_time(const void *a,
 					  const void *b)
 {
@@ -355,35 +445,6 @@ static size_t get_smallest_part_idx(const size_t n_parts,
     }
   }
   return idx;
-}
-
-
-static void rebalance_partitions_greedy(const size_t n_parts,
-					new_partition *all_parts,
-					new_partition *parts)
-{
-  /* sort the full job list by time */
-  new_partition_sort_keep_time(all_parts);
-
-  /* reset the partitions */
-  for(int i=0; i<n_parts; i++){
-    new_partition_set_empty(parts + i);
-  }
-
-  for(size_t i=0; i<n_parts; i++){
-    const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
-    rebalance_partitions_assign_job(job,i,n_parts,parts);
-  }
-
-  for(size_t i=n_parts, total_n_jobs = all_parts->max_size;
-      i<total_n_jobs; i++){
-    const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
-    const size_t part_id = get_smallest_part_idx(n_parts,parts);
-    rebalance_partitions_assign_job(job,part_id,n_parts,parts);
-  }
-
-  /* compute stats on rebalanced partitions */
-  /* ... */
 }
 
 static void rebalance_partitions_none(const size_t n_parts,
