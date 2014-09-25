@@ -382,8 +382,8 @@ void stiff_mat_coh (long ii,
 
       /* Remove damaged elements */
       if(err >= 100){ /* Killed element */
-	ip++;
-	continue;
+      	/* ip++; */
+      	/* continue; */
       } else if(err != 0){
 	PGFEM_printerr("Error in %s:%s(%d)\n",
 		__FILE__,__func__,__LINE__);
@@ -585,8 +585,8 @@ void resid_co_elem (long ii,
 
       /* Remove damaged elements */
       if(err >= 100){ /* Killed element */
-	ip++;
-	continue;
+	/* ip++; */
+	/* continue; */
       } else if(err != 0){
 	PGFEM_printerr("Error in %s:%s(%d)\n",
 		__FILE__,__func__,__LINE__);
