@@ -49,8 +49,9 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
  * pgf_FE2_macro_client_recv_jobs before
  * pgf_FE2_macro_client_send_jobs can be executed.
  */
-void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client
-					    /* TBD */);
+void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
+					    const PGFEM_mpi_comm *mpi_comm,
+					    const int heuristic);
 
 /**
  * Send jobs to servers to be computed.

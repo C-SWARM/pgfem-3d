@@ -23,6 +23,11 @@
 typedef int* pgf_FE2_server_rebalance;
 
 /**
+ * Return the size fo the rebalance object in bytes.
+ */
+size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t);
+
+/**
  * Build the data structure and set metadata.
  */
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
