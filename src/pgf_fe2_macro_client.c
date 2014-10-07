@@ -15,6 +15,52 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/**
+ * Comparator function for array of ints as object. Compares n-th in
+ * array object.
+ */
+static int compare_nth_int(const void *n,
+			   const void *a,
+			   const void *b)
+{
+  const size_t N = *(const size_t*) n;
+  return ((int*) a)[N] - ((int*) b)[N];
+}
+
+
+/**
+ * Comparator function for array of ints as object. Compares first in
+ * array object.
+ */
+static int compare_first_int(const void *a,
+			     const void *b)
+{
+  static const int n = 0;
+  return compare_nth_int(&n,a,b);
+}
+
+/**
+ * Comparator function for array of ints as object. Compares second in
+ * array object.
+ */
+static int compare_second_int(const void *a,
+			      const void *b)
+{
+  static const int n = 1;
+  return compare_nth_int(&n,a,b);
+}
+
+/**
+ * Comparator function for array of ints as object. Compares third in
+ * array object.
+ */
+static int compare_third_int(const void *a,
+			     const void *b)
+{
+  static const int n = 2;
+  return compare_nth_int(&n,a,b);
+}
+
 /* fully define the macro client structure */
 struct pgf_FE2_macro_client{
   size_t n_jobs_loc;
@@ -27,6 +73,91 @@ struct pgf_FE2_macro_client{
   PGFEM_server_ctx *send;
   PGFEM_server_ctx *recv;
 };
+
+static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
+						 const pgf_FE2_server_rebalance *rb,
+						 const size_t nproc_macro)
+{
+  int err = 0;
+
+  /* Get list of tags from ctx. Put into tuple for {tag, idx, server} */
+  const size_t len = 3;
+  const size_t s_tags_len = len*client->send->n_comms;
+  int *s_tags = malloc(s_tags_len*sizeof(*s_tags));
+  for(size_t i = 0; i < s_tags_len; i += len){
+    s_tags[i] = client->send->tags[i%len];
+    s_tags[i+1] = i%len;
+    s_tags[i+2] = -1;
+  }
+
+  /* sort tags by {tag} */
+  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_first_int);
+
+  /* loop through each rebalance and extract list of jobs on the
+     server. */
+  for(size_t i = 0, e = client->n_server; i<e; i++){
+    const size_t n_keep = pgf_FE2_server_rebalance_n_keep(&(rb[i]));
+    const size_t n_recv = pgf_FE2_server_rebalance_n_recv(&(rb[i]));
+    const size_t serv_tags_len = (n_keep + n_recv);
+    int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
+    const int *k = pgf_FE2_server_rebalance_keep_buf(&(rb[i]));
+    const int *r = pgf_FE2_server_rebalance_recv_buf(&(rb[i]));
+    memcpy(serv_tags,k,n_keep*sizeof(*serv_tags));
+    memcpy(serv_tags + n_keep,r,n_recv*sizeof(*serv_tags));
+
+    /* sort by job id */
+    qsort(serv_tags,serv_tags_len,sizeof(*serv_tags),compare_first_int);
+
+    for(size_t j = 0; j < s_tags_len; j += len){
+      /* do not search for match if already found */
+      if(s_tags[j+2] >= nproc_macro) continue;
+
+      void *ptr = bsearch(s_tags + j,serv_tags,serv_tags_len,
+			  sizeof(*serv_tags),compare_first_int);
+
+      /* Check for match, set src/dest proc id */
+      if(ptr != NULL){
+	s_tags[j+2] = i + nproc_macro;
+      }
+    }
+    free(serv_tags);
+  }
+
+#ifndef NDEBUG
+  /* sanity check/debugging. ensure that the src/dest is valid */
+  /* sort s_tags by {server} */
+  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_third_int);
+
+  /* ensure that the smallest server id is valid, i.e., we assigned all
+     jobs on this domain. */
+  assert(s_tags[2] >= nproc_macro);
+
+  /* checking upper bound requires more information passed to function */
+  /* assert(s_tags[s_tags_len - 1] < nproc_inter); */
+#endif
+
+  /* sort s_tags by {idx} */
+  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_second_int);
+
+  /* assign proc on send and recv */
+  for(size_t i = 0; i < s_tags_len; i += len){
+    const int tag = s_tags[i];
+    const int idx = s_tags[i+1];
+    const int proc = s_tags[i+2];
+
+    /* error checking. Compiled out with NDEBUG */
+    assert(client->send->tags[idx] == tag);
+    assert(client->recv->tags[idx] == tag);
+
+    /* set procs for send and recv */
+    PGFEM_server_ctx_set_proc_at_idx(client->send,proc,idx);
+    PGFEM_server_ctx_set_proc_at_idx(client->recv,proc,idx);
+  }
+
+  free(s_tags);
+
+  return err;
+}
 
 void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client)
 {
@@ -183,6 +314,9 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   /* cleanup */
   new_partition_destroy_void(all_part);
   new_partitions_destroy_void(parts,client->n_server);
+
+  /* Update server context (who I am sending to)*/
+  pgf_FE2_macro_client_update_send_recv(client,rb,nproc_macro);
 
   /* final cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){

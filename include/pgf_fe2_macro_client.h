@@ -38,8 +38,8 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 /**
  * Generate initial partitioning of jobs to compute on servers.
  */
-void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client
-						 /* TBD */);
+void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
+						 const PGFEM_mpi_comm *mpi_comm);
 
 /**
  * Reassign jobs to balance load on servers. Send new assignment
