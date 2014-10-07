@@ -63,11 +63,11 @@ static int compare_third_int(const void *a,
 
 /* fully define the macro client structure */
 struct pgf_FE2_macro_client{
-  size_t n_jobs_loc;
-  size_t n_jobs_glob;
-  size_t n_jobs_max;
-  size_t n_server;
-  MS_COHE_JOB_INFO *jobs;  /* macroscale job(s) */
+  size_t n_jobs_loc;      /* how many jobs are on THIS macro-domain */
+  size_t n_jobs_glob;     /* how many jobs are on ALL macro-domains */
+  size_t n_jobs_max;      /* maximum number of jobs on each server */
+  size_t n_server;        /* number of servers */
+  MS_COHE_JOB_INFO *jobs; /* macroscale job(s) */
 
   /* communication buffers */
   PGFEM_server_ctx *send;
@@ -75,7 +75,7 @@ struct pgf_FE2_macro_client{
 };
 
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
-						 const pgf_FE2_server_rebalance *rb,
+						 const pgf_FE2_server_rebalance *rb_list,
 						 const size_t nproc_macro)
 {
   int err = 0;
@@ -96,12 +96,12 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* loop through each rebalance and extract list of jobs on the
      server. */
   for(size_t i = 0, e = client->n_server; i<e; i++){
-    const size_t n_keep = pgf_FE2_server_rebalance_n_keep(&(rb[i]));
-    const size_t n_recv = pgf_FE2_server_rebalance_n_recv(&(rb[i]));
+    const size_t n_keep = pgf_FE2_server_rebalance_n_keep(&(rb_list[i]));
+    const size_t n_recv = pgf_FE2_server_rebalance_n_recv(&(rb_list[i]));
     const size_t serv_tags_len = (n_keep + n_recv);
     int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
-    const int *k = pgf_FE2_server_rebalance_keep_buf(&(rb[i]));
-    const int *r = pgf_FE2_server_rebalance_recv_buf(&(rb[i]));
+    const int *k = pgf_FE2_server_rebalance_keep_buf(&(rb_list[i]));
+    const int *r = pgf_FE2_server_rebalance_recv_buf(&(rb_list[i]));
     memcpy(serv_tags,k,n_keep*sizeof(*serv_tags));
     memcpy(serv_tags + n_keep,r,n_recv*sizeof(*serv_tags));
 
