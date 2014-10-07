@@ -5,6 +5,7 @@
  */
 
 #include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
 #include "PGFEM_mpi.h"
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
@@ -35,7 +36,7 @@ static int compare_nth_int(const void *n,
 static int compare_first_int(const void *a,
 			     const void *b)
 {
-  static const int n = 0;
+  static const size_t n = 0;
   return compare_nth_int(&n,a,b);
 }
 
@@ -46,7 +47,7 @@ static int compare_first_int(const void *a,
 static int compare_second_int(const void *a,
 			      const void *b)
 {
-  static const int n = 1;
+  static const size_t n = 1;
   return compare_nth_int(&n,a,b);
 }
 
@@ -131,9 +132,7 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* ensure that the smallest server id is valid, i.e., we assigned all
      jobs on this domain. */
   assert(s_tags[2] >= nproc_macro);
-
-  /* checking upper bound requires more information passed to function */
-  /* assert(s_tags[s_tags_len - 1] < nproc_inter); */
+  assert(s_tags[s_tags_len - 1] < nproc_macro + client->n_server);
 #endif
 
   /* sort s_tags by {idx} */
@@ -155,6 +154,55 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   }
 
   free(s_tags);
+
+  return err;
+}
+
+/**
+ * Send the rebalancing information to the servers.
+ *
+ * Rebalancing information sent from servers in round-robin. Not all
+ * macro-clients may perform communication.
+ */
+static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *client,
+						       const pgf_FE2_server_rebalance *rb_list,
+						       const PGFEM_mpi_comm *mpi_comm)
+{
+  int err = 0;
+  const size_t rank = mpi_comm->rank_macro;
+  const size_t n_server = client->n_server;
+
+  /* exit early if this domain does not need to send information */
+  if(rank >= n_server) return err;
+
+  /* determine how many servers this domain will send to */
+  int nproc_macro = 0;
+  int nproc_inter = 0;
+  int n_send = 0;
+  MPI_Comm_size(mpi_comm->macro,&nproc_macro);
+  MPI_Comm_size(mpi_comm->mm_inter,&nproc_inter);
+  if(nproc_macro >= n_server) n_send = 1;
+  else {
+    n_send = n_server/nproc_macro;
+    int rem = n_server % nproc_macro;
+    if(rem > 0 && rem > rank) n_send++;
+  }
+
+  /* should put request et al. in local buffer for overlay of
+     comp/comm but will just waitall for now. */
+  MPI_Request *req = malloc(n_send*sizeof(*req));
+  for(size_t i = 0, idx = rank; i < n_send; i++, idx += nproc_macro){
+    assert(idx < client->n_server);
+    size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list + idx);
+    size_t proc = idx + nproc_macro;
+    assert(proc < nproc_inter);
+    err += MPI_Isend(rb_list + idx,len,MPI_CHAR,proc,
+		     FE2_MICRO_SERVER_REBALANCE,
+		     mpi_comm->mm_inter,req+i);
+  }
+
+  err += MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
+  free(req);
 
   return err;
 }
@@ -318,6 +366,9 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   /* Update server context (who I am sending to)*/
   pgf_FE2_macro_client_update_send_recv(client,rb,nproc_macro);
 
+  /* Broadcast the rebalancing information to the servers */
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb,mpi_comm);
+
   /* final cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
     pgf_FE2_server_rebalance_destroy(rb + i);
@@ -325,10 +376,30 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   free(rb);
 }
 
-void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client
-					    /* TBD */)
+void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
+					    const PGFEM_mpi_comm *mpi_comm,
+					    const int heuristic)
 {
-  /* receive message and rebalance according to flag (NONE or GREEDY) */
+  int nproc_macro = 0;
+  MPI_Comm_rank(mpi_comm->macro,&nproc_macro);
+
+  /* receive message and rebalance according to heuristic */
+  pgf_FE2_server_rebalance *rb_list = pgf_FE2_rebalancer(mpi_comm,
+							 client->n_jobs_glob,
+							 client->n_jobs_max,
+							 heuristic);
+
+  /* update the server context (send/recv) */
+  pgf_FE2_macro_client_update_send_recv(client,rb_list,nproc_macro);
+
+  /* Broadcast rebalancing info to servers */
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_list,mpi_comm);
+
+  /* cleanup */
+  for(size_t i=0, e=client->n_server; i<e; i++){
+    pgf_FE2_server_rebalance_destroy(rb_list + i);
+  }
+  free(rb_list);
 }
 
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client

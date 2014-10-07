@@ -14,6 +14,20 @@ enum {REBAL_N_KEEP=0,
       REBAL_RECV_OFF,
       REBAL_N_META};
 
+static size_t get_size(const size_t n_keep,
+		       const size_t n_send,
+		       const size_t n_recv)
+{
+  return ((size_t) REBAL_N_META) + n_keep + 2*(n_send + n_recv);
+}
+
+size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t)
+{
+  return get_size((*t)[REBAL_N_KEEP],
+		  (*t)[REBAL_N_SEND],
+		  (*t)[REBAL_N_RECV]);
+}
+
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
 				    const size_t n_keep,
 				    const size_t n_send,
@@ -24,7 +38,7 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
      data described in the code below. */
 
   /* allocate buffer */
-  *t = calloc(REBAL_N_META + n_keep + 2*(n_send + n_recv),sizeof(**t));
+  *t = calloc(get_size(n_keep,n_send,n_recv),sizeof(**t));
 
   /* encode separate buffer sizes */
   (*t)[REBAL_N_KEEP] = n_keep;

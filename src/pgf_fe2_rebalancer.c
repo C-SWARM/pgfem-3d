@@ -9,6 +9,7 @@
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_micro_server.h"
 #include <string.h>
+#include <assert.h>
 
 /* a helper structure */
 enum new_partition_idx{
@@ -224,9 +225,10 @@ void rebalance_partitions_greedy(const size_t n_parts,
   /* ... */
 }
 
-void pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
-			const size_t total_n_jobs,
-			const size_t max_n_jobs)
+pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
+					     const size_t total_n_jobs,
+					     const size_t max_n_jobs,
+					     const int heuristic)
 {
   /* get rank and number of macro and micro porcs. */
   int rank_macro = mpi_comm->rank_macro;
@@ -280,8 +282,19 @@ void pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
     n_finished++;
   }
 
-  /* rebalance partitions according to the "greedy" algorithm */
-  rebalance_partitions_greedy(n_micro_proc,all_parts,parts);
+  /* rebalance partitions according to the heuristic */
+  switch(heuristic){
+  case FE2_REBALANCE_NONE:
+    rebalance_partitions_none(n_micro_proc,all_parts,parts);
+    break;
+  case FE2_REBALANCE_GREEDY:
+    rebalance_partitions_greedy(n_micro_proc,all_parts,parts);
+    break;
+  default:
+    /* Should not get here */
+    assert(0);
+    break;
+  }
 
   /* push new_partitions to rebalance data structure for communication */
   pgf_FE2_server_rebalance *rb = malloc(n_micro_proc*sizeof(*rb));
@@ -293,15 +306,16 @@ void pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   for(int i=0; i<n_micro_proc; i++){
     free(buf[i]);
     new_partition_destroy(parts+i);
-    pgf_FE2_server_rebalance_destroy(rb+i);
+    /* pgf_FE2_server_rebalance_destroy(rb+i); */
   }
   free(buf);
   free(req);
   free(server);
   free(parts);
-  free(rb);
+  /* free(rb); */
   new_partition_destroy(all_parts);
   free(all_parts);
+  return rb;
 }
 
 /*** STATIC FUNCTIONS ****/
