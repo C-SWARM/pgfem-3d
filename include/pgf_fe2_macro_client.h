@@ -67,6 +67,6 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client
 /**
  * Send signal to servers to exit.
  */
-void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client
-				     /* TBD */);
+void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
+				    const PGFEM_mpi_comm *mpi_comm);
 #endif

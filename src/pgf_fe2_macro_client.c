@@ -455,9 +455,23 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client
   /* see finish_macroscale_compute_jobs */
 }
 
-void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client
-				     /* TBD */)
+void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
+				    const PGFEM_mpi_comm *mpi_comm)
 {
+  size_t n_send = 0;
+  int *ranks = NULL;
+  void *empty = NULL;
+  pgf_FE2_macro_client_bcast_list(mpi_comm,&n_send,&ranks);
 
+  MPI_Request *req = malloc(n_send*sizeof(*req));
+  for(size_t i=0; i<n_send; i++){
+    MPI_Isend(empty,0,MPI_CHAR,ranks[i],FE2_MICRO_SERVER_EXIT,
+	      mpi_comm->mm_inter,req + i);
+  }
+
+  /* wait for exit code to be received */
+  MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
+  free(req);
+  free(ranks);
 }
 
