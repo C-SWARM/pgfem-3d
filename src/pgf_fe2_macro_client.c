@@ -73,6 +73,14 @@ struct pgf_FE2_macro_client{
   /* communication buffers */
   PGFEM_server_ctx *send;
   PGFEM_server_ctx *recv;
+
+  /* for broadcasting */
+  struct BCAST{
+    size_t active;
+    size_t n_comm;
+    int *ranks;
+    MPI_Request *req;
+  } bcast;
 };
 
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
@@ -162,49 +170,47 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
  * Determine what servers this domain is responsible for broadcasting
  * information to.
  *
- * Returns number of messages and allocated list of process ids on
- * mpi_comm->mm_inter.
+ * Initializes client->bcast.
  */
-static int pgf_FE2_macro_client_bcast_list(const PGFEM_mpi_comm *mpi_comm,
-					   size_t *n_comm,
-					   int **ranks)
+static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
+					   const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
   const size_t rank = mpi_comm->rank_macro;
+  const size_t n_server = client->n_server;
+
+  /* exit early if not responsible for signaling servers */
+  if(rank >= n_server) return err;
+
+  int n_comm = 0;
   int nproc_macro = 0;
   int nproc_inter = 0;
-  int n_server = 0;
   err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
   err += MPI_Comm_size(mpi_comm->mm_inter,&nproc_inter);
-  n_server = nproc_inter - nproc_macro;
 
-  if(rank >= n_server){
-    /* this domain is not responsible for broadcasting any information */
-    *n_comm = 0;
-    *ranks = NULL;
-  } else {
-    /* determine what ranks (in mm_inter) this domain is responsible
-       for broadcasting info to. */
-    if(nproc_macro >= n_server) *n_comm = 1;
-    else {
-      *n_comm = n_server/nproc_macro;
-      int rem = n_server % nproc_macro;
-      if(rem > 0 && rem > rank) (*n_comm)++;
-    }
-
-    /* allocate/populate ranks  */
-    *ranks = malloc((*n_comm)*sizeof(**ranks));
-    {
-      int * restrict r = *ranks; /* restrict alias */
-      r[0] = rank;
-      for(size_t i=1, e=*n_comm; i<e; i++){
-	r[i] = r[i-1] + nproc_macro;
-      }
-    }
-
-    /* check max rank for validity */
-    assert((*ranks)[*n_comm - 1] < nproc_inter);
+  /* determine what ranks (in mm_inter) this domain is responsible
+     for broadcasting info to. */
+  if(nproc_macro >= n_server) n_comm = 1;
+  else {
+    n_comm = n_server/nproc_macro;
+    int rem = n_server % nproc_macro;
+    if(rem > 0 && rem > rank) n_comm++;
   }
+
+  /* allocate/populate client->bcast */
+  client->bcast.n_comm = n_comm;
+  client->bcast.ranks = malloc(n_comm*sizeof(*(client->bcast.ranks)));
+  client->bcast.req = calloc(n_comm,sizeof(*(client->bcast.req)));
+  {
+    int * restrict r = client->bcast.ranks; /* restrict alias */
+    r[0] = rank;
+    for(size_t i=1; i<n_comm; i++){
+      r[i] = r[i-1] + nproc_macro;
+    }
+  }
+
+  /* check max rank for validity */
+  assert(client->bcast.ranks[n_comm - 1] < nproc_inter);
 
   return err;
 }
@@ -222,16 +228,18 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
 {
   int err = 0;
 
-  size_t n_send = 0;
-  int *ranks = NULL;
-  err += pgf_FE2_macro_client_bcast_list(mpi_comm,&n_send,&ranks);
+  /* get aliases */
+  const size_t n_send = client->bcast.n_comm;
+  const int *ranks = client->bcast.ranks;
+  MPI_Request *req = client->bcast.req;
 
   /* should put request et al. in local buffer for overlay of
      comp/comm but will just waitall for now. */
   int nproc_macro = 0;
   const int rank = mpi_comm->rank_macro;
   err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-  MPI_Request *req = malloc(n_send*sizeof(*req));
+
+  client->bcast.active = 1;
   for(size_t i = 0; i < n_send; i++){
     size_t idx = rank + i*nproc_macro;
     assert(idx < client->n_server);
@@ -242,9 +250,8 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
   }
 
   err += MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
+  client->bcast.active = 0;
 
-  free(req);
-  free(ranks);
   return err;
 }
 
@@ -263,6 +270,12 @@ void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client)
   initialize_PGFEM_server_ctx((*client)->send);
   initialize_PGFEM_server_ctx((*client)->recv);
 
+  /* bcast */
+  (*client)->bcast.active = 0;
+  (*client)->bcast.n_comm = 0;
+  (*client)->bcast.ranks = NULL;
+  (*client)->bcast.req = NULL;
+
   /* other initialization stuff */
 }
 
@@ -277,7 +290,14 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
     destroy_MS_COHE_JOB_INFO((client->jobs) + i);
   }
   free(client->jobs);
+
   /* destroy internal objects */
+  if(client->bcast.active){
+    /* complete communication before destruction */
+    MPI_Waitall(client->bcast.n_comm,client->bcast.req,MPI_STATUS_IGNORE);
+  }
+  free(client->bcast.ranks);
+  free(client->bcast.req);
 
   /* destroy the handle */
   free(client);
@@ -328,7 +348,8 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   build_PGFEM_server_ctx(client->send,client->n_jobs_loc,job_buf_sizes);
   build_PGFEM_server_ctx(client->recv,client->n_jobs_loc,job_buf_sizes);
 
-  /* do initial server assignment here? */
+  /* setup the bcast list */
+  pgf_FE2_macro_client_bcast_list(client,mpi_comm);
 
   /* set tags for jobs */
   {
@@ -458,12 +479,12 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
 				    const PGFEM_mpi_comm *mpi_comm)
 {
-  size_t n_send = 0;
-  int *ranks = NULL;
-  void *empty = NULL;
-  pgf_FE2_macro_client_bcast_list(mpi_comm,&n_send,&ranks);
+  const size_t n_send = client->bcast.n_comm;
+  const int *ranks = client->bcast.ranks;
+  MPI_Request *req = client->bcast.req;
 
-  MPI_Request *req = malloc(n_send*sizeof(*req));
+  client->bcast.active = 1;
+  void *empty = NULL;
   for(size_t i=0; i<n_send; i++){
     MPI_Isend(empty,0,MPI_CHAR,ranks[i],FE2_MICRO_SERVER_EXIT,
 	      mpi_comm->mm_inter,req + i);
@@ -471,7 +492,6 @@ void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
 
   /* wait for exit code to be received */
   MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
-  free(req);
-  free(ranks);
+  client->bcast.active = 0;
 }
 
