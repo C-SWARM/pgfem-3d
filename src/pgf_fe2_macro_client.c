@@ -75,6 +75,9 @@ struct pgf_FE2_macro_client{
   PGFEM_server_ctx *recv;
 
   /* for broadcasting */
+  /* When using this datastructure to communicate with servers, set
+     active to true before 1st communication and set to 0 after
+     communication compled by MPI_Test/Wait functions. */
   struct BCAST{
     size_t active;
     size_t n_comm;
@@ -464,10 +467,62 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
   free(rb_list);
 }
 
-void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client
-				    /* TBD */)
+void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
+				    const PGFEM_mpi_comm *mpi_comm,
+				    const MACROSCALE *macro,
+				    const int job_type,
+				    const double *loc_sol)
 {
+  int err = 0;
   /* see start_macroscale_compute_jobs */
+
+  /* Get aliases from client object etc. */
+  PGFEM_server_ctx *send = client->send;
+  PGFEM_server_ctx *recv = client->recv;
+  MS_COHE_JOB_INFO *job_list = client->jobs;
+
+  MPI_Comm comm = mpi_comm->mm_inter;
+  /* Wait to complete any pending communcication. The error flag is
+     incremented as this should only occur by a logical/programming
+     error. Note that buffers may be overwritten. If the communication
+     is completed but the flags have not been reset to 0, the
+     MPI_Wait* commands should return immediately */
+  if(send->in_process || recv->in_process){
+    PGFEM_printerr("WARNING: communication in progress!(%s:%s:%d)\n",
+		   __func__,__FILE__,__LINE__);
+    err++;
+    err += MPI_Waitall(recv->n_comms,recv->req,recv->stat);
+    err += MPI_Waitall(send->n_comms,send->req,send->stat);
+    recv->in_process = 0;
+    send->in_process = 0;
+  }
+
+
+  /* post recieves (from the running server) */
+  for(int i=0; i<recv->n_comms; i++){
+    err += MPI_Irecv(recv->buffer[i],recv->sizes[i],MPI_CHAR,
+		     recv->procs[i],recv->tags[i],comm,
+		     &(recv->req[i]));
+  }
+
+  for(int i=0; i<send->n_comms; i++){
+    /* update the job information according to job_type */
+    err += macroscale_update_job_info(macro,job_type,loc_sol,job_list+i);
+
+    /* pack the job info into the buffer to send */
+    err += pack_MS_COHE_JOB_INFO(job_list + i,send->sizes[i],
+				 send->buffer[i]);
+
+    /* post the send (to the running server) */
+    err += MPI_Isend(send->buffer[i],send->sizes[i],MPI_CHAR,
+		     send->procs[i],send->tags[i],comm,
+		     &(send->req[i]));
+  }
+
+  /* set in_process flags to true (1) */
+  recv->in_process = 1;
+  send->in_process = 1;
+
 }
 
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client

@@ -56,8 +56,12 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 /**
  * Send jobs to servers to be computed.
  */
-void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client
-				    /* TBD */);
+void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
+				    const PGFEM_mpi_comm *mpi_comm,
+				    const MACROSCALE *macro,
+				    const int job_type,
+				    const double *loc_sol);
+
 /**
  * Receive finished jobs from the servers.
  */
