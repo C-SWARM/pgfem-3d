@@ -12,6 +12,8 @@
 #include "ms_cohe_job_info.h"
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
+#include "PLoc_Sparse.h"
+#include "stiffmat_fd.h"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -470,8 +472,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 				    const PGFEM_mpi_comm *mpi_comm,
 				    const MACROSCALE *macro,
-				    const int job_type,
-				    const double *loc_sol)
+				    const int job_type)
 {
   int err = 0;
   /* see start_macroscale_compute_jobs */
@@ -507,7 +508,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 
   for(int i=0; i<send->n_comms; i++){
     /* update the job information according to job_type */
-    err += macroscale_update_job_info(macro,job_type,loc_sol,job_list+i);
+    err += macroscale_update_job_info(macro,job_type,macro->sol->f,job_list+i);
 
     /* pack the job info into the buffer to send */
     err += pack_MS_COHE_JOB_INFO(job_list + i,send->sizes[i],
@@ -525,10 +526,105 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 
 }
 
-void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client
-				    /* TBD */)
+void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
+				    MACROSCALE *macro)
 {
+  int err = 0;
+  /* Get aliases from client object etc. */
+  PGFEM_server_ctx *send = client->send;
+  PGFEM_server_ctx *recv = client->recv;
+  MS_COHE_JOB_INFO *job_list = client->jobs;
+
   /* see finish_macroscale_compute_jobs */
+
+  COMMON_MACROSCALE *c = macro->common;
+  MACROSCALE_SOLUTION *s = macro->sol;
+  int rank_macro = 0;
+  int nproc_macro = 0;
+
+  /* exit early if !*->in_process */
+  if(!recv->in_process && !send->in_process) return;
+
+  err += MPI_Comm_rank(c->mpi_comm,&rank_macro);
+  err += MPI_Comm_size(c->mpi_comm,&nproc_macro);
+
+  /* if expecting to receive buffers */
+  if(recv->in_process){
+    /* set up the stiffness matrix communication */
+    double **Lk = NULL;
+    double **receive = NULL;
+    MPI_Request *req_r = NULL;
+    MPI_Status *sta_r = NULL;
+    err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
+				       c->mpi_comm,c->pgfem_comm);
+
+    /* assemble jobs as they are received */
+    for(int i=0; i<recv->n_comms; i++){
+      int idx = 0;
+      err += MPI_Waitany(recv->n_comms,recv->req,&idx,recv->stat);
+      MS_COHE_JOB_INFO *job = job_list + idx;
+      err += unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
+				     recv->buffer[idx]);
+
+      /* finish jobs based on job_type */
+      switch(job->job_type){
+      case JOB_COMPUTE_EQUILIBRIUM:
+	/* assemble residual (local) */
+	for(int j=0; j<job->ndofe; j++){
+	  int dof_id = job->loc_dof_ids[j] - 1;
+	  if(dof_id < 0) continue; /* boundary condition */
+	  s->f_u[dof_id] += job->traction_res[j];
+	}
+	/*** Deliberate drop through ***/
+      case JOB_NO_COMPUTE_EQUILIBRIUM:
+	/* assemble tangent to local and off-proc buffers */
+	PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
+		    c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
+	break;
+      case JOB_UPDATE:
+	/* update cohesive elements */
+	err += macroscale_update_coel(job,macro);
+	break;
+      default: /* do nothing */ break;
+      }
+    }
+
+    /* send/finalize communication of the stiffness matrix */
+    MPI_Status *sta_s = NULL;
+    MPI_Request *req_s = NULL;
+    err += send_stiffmat_comm(&sta_s,&req_s,Lk,c->mpi_comm,c->pgfem_comm);
+
+    err += assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
+				      c->SOLVER,receive);
+
+    err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,c->pgfem_comm);
+
+    /* re-initialize preconditioner ? */
+    /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mpi_comm); */
+
+    /* clean up memory */
+    for(int i=0; i<nproc_macro; i++){
+      if(Lk != NULL) free(Lk[i]);
+      if(receive != NULL) free(receive[i]);
+    }
+    free(Lk);
+    free(receive);
+    free(sta_r);
+    free(req_r);
+    free(sta_s);
+    free(req_s);
+
+    /* set in_process to false (0) */
+    recv->in_process = 0;
+  }/* end if(recv->in_process) */
+
+  /* wait for any pending send communication to finish */
+  if(send->in_process){
+    MPI_Waitall(send->n_comms,send->req,send->stat);
+    send->in_process = 0;
+  }
+
 }
 
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
