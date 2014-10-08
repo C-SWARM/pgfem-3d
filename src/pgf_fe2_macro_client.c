@@ -159,6 +159,58 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
 }
 
 /**
+ * Determine what servers this domain is responsible for broadcasting
+ * information to.
+ *
+ * Returns number of messages and allocated list of process ids on
+ * mpi_comm->mm_inter.
+ */
+static int pgf_FE2_macro_client_bcast_list(const PGFEM_mpi_comm *mpi_comm,
+					   size_t *n_comm,
+					   int **ranks)
+{
+  int err = 0;
+  const size_t rank = mpi_comm->rank_macro;
+  int nproc_macro = 0;
+  int nproc_inter = 0;
+  int n_server = 0;
+  err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
+  err += MPI_Comm_size(mpi_comm->mm_inter,&nproc_inter);
+  n_server = nproc_inter - nproc_macro;
+
+  if(rank >= n_server){
+    /* this domain is not responsible for broadcasting any information */
+    *n_comm = 0;
+    *ranks = NULL;
+  } else {
+    /* determine what ranks (in mm_inter) this domain is responsible
+       for broadcasting info to. */
+    if(nproc_macro >= n_server) *n_comm = 1;
+    else {
+      *n_comm = n_server/nproc_macro;
+      int rem = n_server % nproc_macro;
+      if(rem > 0 && rem > rank) (*n_comm)++;
+    }
+
+    /* allocate/populate ranks  */
+    *ranks = malloc((*n_comm)*sizeof(**ranks));
+    {
+      int * restrict r = *ranks; /* restrict alias */
+      r[0] = rank;
+      for(size_t i=1, e=*n_comm; i<e; i++){
+	r[i] = r[i-1] + nproc_macro;
+      }
+    }
+
+    /* check max rank for validity */
+    assert((*ranks)[*n_comm - 1] < nproc_inter);
+  }
+
+  return err;
+}
+					   
+
+/**
  * Send the rebalancing information to the servers.
  *
  * Rebalancing information sent from servers in round-robin. Not all
@@ -169,41 +221,30 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
 						       const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
-  const size_t rank = mpi_comm->rank_macro;
-  const size_t n_server = client->n_server;
 
-  /* exit early if this domain does not need to send information */
-  if(rank >= n_server) return err;
-
-  /* determine how many servers this domain will send to */
-  int nproc_macro = 0;
-  int nproc_inter = 0;
-  int n_send = 0;
-  MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-  MPI_Comm_size(mpi_comm->mm_inter,&nproc_inter);
-  if(nproc_macro >= n_server) n_send = 1;
-  else {
-    n_send = n_server/nproc_macro;
-    int rem = n_server % nproc_macro;
-    if(rem > 0 && rem > rank) n_send++;
-  }
+  size_t n_send = 0;
+  int *ranks = NULL;
+  err += pgf_FE2_macro_client_bcast_list(mpi_comm,&n_send,&ranks);
 
   /* should put request et al. in local buffer for overlay of
      comp/comm but will just waitall for now. */
+  int nproc_macro = 0;
+  const int rank = mpi_comm->rank_macro;
+  err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
   MPI_Request *req = malloc(n_send*sizeof(*req));
-  for(size_t i = 0, idx = rank; i < n_send; i++, idx += nproc_macro){
+  for(size_t i = 0; i < n_send; i++){
+    size_t idx = rank + i*nproc_macro;
     assert(idx < client->n_server);
     size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list + idx);
-    size_t proc = idx + nproc_macro;
-    assert(proc < nproc_inter);
-    err += MPI_Isend(rb_list + idx,len,MPI_CHAR,proc,
+    err += MPI_Isend(rb_list + idx,len,MPI_CHAR,ranks[i],
 		     FE2_MICRO_SERVER_REBALANCE,
 		     mpi_comm->mm_inter,req+i);
   }
 
   err += MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
-  free(req);
 
+  free(req);
+  free(ranks);
   return err;
 }
 
@@ -405,13 +446,13 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client
 				    /* TBD */)
 {
-
+  /* see start_macroscale_compute_jobs */
 }
 
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client
 				    /* TBD */)
 {
-
+  /* see finish_macroscale_compute_jobs */
 }
 
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client
