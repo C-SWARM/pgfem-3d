@@ -307,7 +307,6 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   int myrank = 0;
   err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
   const int loc_ndof = micro->common->ndofd;
-  const int g_ndof = micro->common->DomDof[myrank];
   size_t pos = 0;
 
   /* copy r -> rn  */

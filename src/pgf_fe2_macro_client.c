@@ -249,7 +249,7 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
     size_t idx = rank + i*nproc_macro;
     assert(idx < client->n_server);
     size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list + idx);
-    err += MPI_Isend(rb_list + idx,len,MPI_CHAR,ranks[i],
+    err += MPI_Isend(rb_list[idx],len,MPI_CHAR,ranks[i],
 		     FE2_MICRO_SERVER_REBALANCE,
 		     mpi_comm->mm_inter,req+i);
   }

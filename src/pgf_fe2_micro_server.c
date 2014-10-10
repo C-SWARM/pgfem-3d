@@ -40,7 +40,7 @@ void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
   /* initialize the jobs that do no need rebalancing */
   const int *job_ids_recv = pgf_FE2_server_rebalance_recv_buf(rebal);
   for(size_t i=0; i<recv; i++){
-    pgf_FE2_job_init((server->jobs) + keep + i,job_ids_keep[i],
+    pgf_FE2_job_init((server->jobs) + keep + i,job_ids_recv[i],
 		     FE2_STATE_NEED_INFO_REBALANCE);
   }
 }

@@ -342,13 +342,14 @@ int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
 				      int *indices)
 {
   int err = 0;
-  *count = 0;
+  int c = 0;
   for(int i=0, e=ctx->n_comms; i<e; i++){
     if(ctx->tags[i] == tag || ctx->tags[i] == MPI_ANY_TAG){
-      indices[*count] = i;
-      *count++;
+      indices[c] = i;
+      c++;
     }
   }
+  *count = c;
   return err;
 }
 

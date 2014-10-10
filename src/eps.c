@@ -330,7 +330,6 @@ static void copy_eps(EPS *dest,
 		     const ELEMENT *elem,
 		     const int analysis)
 {
-  static const size_t d = sizeof(double);
   if(dest == src) return;
   long pt_I = 0;
   long pt_J = 0;

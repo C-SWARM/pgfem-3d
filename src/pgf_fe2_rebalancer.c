@@ -231,7 +231,6 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 					     const int heuristic)
 {
   /* get rank and number of macro and micro porcs. */
-  int rank_macro = mpi_comm->rank_macro;
   int n_macro_proc = 0;
   int n_micro_proc = 0;
   MPI_Comm_size(mpi_comm->mm_inter,&n_micro_proc);

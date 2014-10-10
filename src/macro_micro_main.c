@@ -154,11 +154,6 @@ int multi_scale_main(int argc, char **argv)
     PGFEM_Abort();
   }
 
-  /*=== BEGIN DEPRECATED ===*/
-  PGFEM_ms_job_intercomm *intercomm = NULL;
-  int n_jobs = 0;
-  /*=== END DEPRECATED ===*/
-
   /*=== build the macroscacle clients ===*/
   pgf_FE2_macro_client *client = NULL;
   /* hard-code n_jobs_max, needs to be command line opt and/or scaled
@@ -170,11 +165,14 @@ int multi_scale_main(int argc, char **argv)
     /* allocate space for maximum number of jobs to be computed. */
     build_MICROSCALE_solutions(n_jobs_max,micro);
 
-    /* start the microscale servers. Servers exit on message passed
-       form macroscale via pgf_FE2_macro_client_send_exit */
+    /* start the microscale servers. This function does not exit until
+       a signal is passed from the macroscale via
+       pgf_FE2_macro_client_send_exit */
     err += pgf_FE2_micro_server_START(mpi_comm,micro);
 
-    /* proceed to cleanup and exit */
+    /* destroy the microscale */
+    destroy_MICROSCALE(micro);
+
   } else { /*=== MACROSCALE ===*/
     /* initialize the client */
     pgf_FE2_macro_client_init(&client);
@@ -634,6 +632,12 @@ int multi_scale_main(int argc, char **argv)
     free(forces);
     destroy_model_entity(entities);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
+
+    /* destroy the macroscale client */
+    pgf_FE2_macro_client_destroy(client);
+
+    /* destroy the macroscale */
+    destroy_MACROSCALE(macro);
   } /*=== END OF COMPUTATIONS ===*/
 
   /*=== PRINT TIME OF ANALYSIS ===*/
@@ -648,15 +652,7 @@ int multi_scale_main(int argc, char **argv)
 		  usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
   }
 
-  /* destroy the scale information */
-  destroy_MACROSCALE(macro);
-  destroy_MICROSCALE(micro);
-
-  /* destroy the intercommunicator */
-  destroy_PGFEM_ms_job_intercomm(intercomm);
-  free(intercomm);
-
-  /* destroy the communicator */
+  /* destroy the PGFEM communicator */
   err += destroy_PGFEM_mpi_comm(mpi_comm);
   free(mpi_comm);
 
