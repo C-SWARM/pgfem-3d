@@ -48,7 +48,7 @@ struct pgf_FE2_micro_server{
 typedef struct pgf_FE2_micro_server pgf_FE2_micro_server;
 
 
-void pgf_FE2_micro_server_init(pgf_FE2_micro_server *server);
+void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server);
 void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
 				const pgf_FE2_server_rebalance *rebal);
 void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);

@@ -345,9 +345,16 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 
   /* compute total number of jobs and set maximum number of jobs per
      server */
-  MPI_Allreduce(MPI_IN_PLACE,&n_jobs,1,MPI_INT,MPI_SUM,mpi_comm->macro);
-  client->n_jobs_glob = n_jobs;
+  MPI_Allreduce(MPI_IN_PLACE,&Gn_jobs,1,MPI_INT,MPI_SUM,mpi_comm->macro);
+  client->n_jobs_glob = Gn_jobs;
   client->n_jobs_max = n_jobs_max;
+
+  /* make sure sufficient resources to compute solution */
+  if(client->n_server * client->n_jobs_max < Gn_jobs){
+    PGFEM_printerr("ERROR: insufficent microscale resources!\n"
+		   "Increase n_jobs_max or number of servers and try again!\n");
+    PGFEM_Abort();
+  }
 
   /* create server contexts for send/recv of job information. */
   build_PGFEM_server_ctx(client->send,client->n_jobs_loc,job_buf_sizes);

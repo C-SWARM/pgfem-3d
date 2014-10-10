@@ -12,11 +12,13 @@
 #include <assert.h>
 #include <limits.h>
 
-void pgf_FE2_micro_server_init(pgf_FE2_micro_server *server)
+void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server)
 {
-  server->n_jobs = 0;
-  server->jobs = NULL;
-  server->stats = NULL;
+  *server = malloc(sizeof(**server));
+
+  (*server)->n_jobs = 0;
+  (*server)->jobs = NULL;
+  (*server)->stats = NULL;
 }
 
 void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
@@ -48,11 +50,10 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server)
   for(size_t i=0,e=server->n_jobs; i<e; i++){
     pgf_FE2_job_destroy((server->jobs) + i);
   }
-  server->n_jobs = 0;
   free(server->jobs);
   free(server->stats);
-  server->jobs = NULL;
-  server->stats = NULL;
+  free(server);
+  server = NULL;
 }
 
 /**
@@ -273,8 +274,8 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 				       MICROSCALE *micro)
 {
   int err = 0;
-  pgf_FE2_micro_server *server = malloc(sizeof(*server));
-  pgf_FE2_micro_server_init(server);
+  pgf_FE2_micro_server *server = NULL;
+  pgf_FE2_micro_server_init(&server);
   pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
   int exit_server = 0;
 

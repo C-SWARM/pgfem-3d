@@ -255,7 +255,8 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   }
 
   /* build some helper data structures */
-  pgf_FE2_micro_server *server = malloc(sizeof(*server));
+  pgf_FE2_micro_server *server = NULL;
+  pgf_FE2_micro_server_init(&server);
   pgf_FE2_micro_server_stats *all_stats = malloc(n_micro_proc*sizeof(*all_stats));
   new_partition *all_parts = malloc(sizeof(*all_parts));
   new_partition_build(all_parts,total_n_jobs);
