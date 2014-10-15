@@ -195,16 +195,9 @@ int multi_scale_main(int argc, char **argv)
 
     /* Create a context for passing stuff to Newton Raphson */
     MS_SERVER_CTX *ctx = PGFEM_calloc(1,sizeof(MS_SERVER_CTX));
-
-    /*=== BEGIN DEPRECATED (implementation) ===*/
-    /* ctx->n_jobs = n_jobs; */
-    /* ctx->job_list = job_list; */
-    /* ctx->send = send; */
-    /* ctx->recv = recv; */
-    /* ctx->intercomm = intercomm */;
+    ctx->client = client;
+    ctx->mpi_comm = mpi_comm;
     ctx->macro = macro;
-    /*=== END DEPRECATED ===*/
-
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
     double *nodal_forces = PGFEM_calloc(c->ndofd,sizeof(double));

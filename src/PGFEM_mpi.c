@@ -133,7 +133,7 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
        between workers using the rank as the server id. Split
        micro_all communicator by rank in micro using rank_micro as the
        color and rank_micro_all as the key. */
-    err += MPI_Comm_split(pgfem_mpi_comm->micro,pgfem_mpi_comm->rank_micro,
+    err += MPI_Comm_split(pgfem_mpi_comm->micro_all,pgfem_mpi_comm->rank_micro,
 			  pgfem_mpi_comm->rank_micro_all,
 			  &(pgfem_mpi_comm->worker_inter));
     err += MPI_Comm_rank(pgfem_mpi_comm->worker_inter,
@@ -283,6 +283,7 @@ int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
     ctx->buffer = NULL;
     ctx->req = NULL;
     ctx->stat = NULL;
+    ctx->in_process = 0;
   } else err++;
   return err;
 }

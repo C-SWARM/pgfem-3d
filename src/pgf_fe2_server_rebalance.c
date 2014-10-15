@@ -25,7 +25,7 @@ size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t)
 {
   return get_size((*t)[REBAL_N_KEEP],
 		  (*t)[REBAL_N_SEND],
-		  (*t)[REBAL_N_RECV]);
+		  (*t)[REBAL_N_RECV])*sizeof(**t);
 }
 
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
@@ -66,6 +66,7 @@ void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance *t,
 void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
 {
   free(*t);
+  *t = NULL;
 }
 
 int pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t)
@@ -128,8 +129,8 @@ pgf_FE2_server_rebalance_workspace *send_wkspc = NULL, *recv_wkspc = NULL;
 static void allocate_workspace(pgf_FE2_server_rebalance_workspace **wkspc,
 			       const size_t n_comm)
 {
-  (*wkspc)->count = n_comm;
   *wkspc = malloc(sizeof(**wkspc));
+  (*wkspc)->count = n_comm; 
   (*wkspc)->reqs = malloc(n_comm*sizeof(*((*wkspc)->reqs)));
   (*wkspc)->buffers = malloc(n_comm*sizeof(*((*wkspc)->buffers)));
 }
@@ -177,10 +178,32 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
 					   const PGFEM_mpi_comm *mpi_comm,
 					   MICROSCALE *micro)
 {
+  static int sol_id_initialized = 0;
   int err = 0;
 
   /* alias to solution index map */
   sol_idx_map *pmap = &(micro->idx_map);
+
+  /* initialize ids of solutions from keep buffer. This is done once at
+     startup and assumes that we are not sending/receiving info from
+     other servers. */
+  if(!sol_id_initialized){
+    int n_keep = pgf_FE2_server_rebalance_n_keep(t);
+    const int *keep_id = pgf_FE2_server_rebalance_keep_buf(t);
+
+    /* set first n_keep ids to match tags */
+    for(int i=0; i<n_keep; i++){
+      sol_idx_map_idx_set_id(pmap,i,keep_id[i]);
+    }
+
+    /* ensure all others are -1 (available) */
+    for(int i=n_keep, e=pmap->size; i<e; i++){
+      sol_idx_map_idx_set_id(pmap,i,-1);
+    }
+
+    /* increment flag so we do not do this initialization again */
+    sol_id_initialized++;
+  }
 
   const size_t buff_size = micro->sol[0].packed_state_var_len;
   const int n_send = pgf_FE2_server_rebalance_n_send(t);

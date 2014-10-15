@@ -141,11 +141,12 @@ void new_partition_build_set_keep(void **np,
 				  const int *proc_id)
 {
   *np = malloc(sizeof(new_partition));
-  new_partition_build(*np,max_n_job);
+  new_partition *NP = *np;
+  new_partition_build(NP,max_n_job);
 
-  ((new_partition*) *np)->n_keep = n_job;
+  NP->n_keep = n_job;
   for(size_t i=0; i<n_job; i++){
-    size_t *ptr = new_partition_get_ptr_to_job_keep(*np,i);
+    size_t *ptr = new_partition_get_ptr_to_job_keep(NP,i);
     ptr[NEW_PART_JOB_ID] = job_id[i];
     ptr[NEW_PART_TIME] = job_time[i];
     ptr[NEW_PART_SR] = proc_id[i];
@@ -169,7 +170,7 @@ void new_partitions_void(void **parts,
   *parts = malloc(n_parts*sizeof(new_partition));
   new_partition *NP = *parts; /* alias */
   for(size_t i=0; i<n_parts; i++){
-    new_partition_build(NP,n_max_job);
+    new_partition_build(NP + i,n_max_job);
   }
 }
 
@@ -205,16 +206,18 @@ void rebalance_partitions_greedy(const size_t n_parts,
   new_partition_sort_keep_time(all_parts);
 
   /* reset the partitions */
-  for(int i=0; i<n_parts; i++){
+  for(size_t i=0; i<n_parts; i++){
     new_partition_set_empty(parts + i);
   }
 
+  /* give each partition one job */
   for(size_t i=0; i<n_parts; i++){
     const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
     rebalance_partitions_assign_job(job,i,n_parts,parts);
   }
 
-  for(size_t i=n_parts, total_n_jobs = all_parts->max_size;
+  /* assign remaining jobs iteratively to smallest partition */
+  for(size_t i=n_parts, total_n_jobs = all_parts->n_keep;
       i<total_n_jobs; i++){
     const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
     const size_t part_id = get_smallest_part_idx(n_parts,parts);
@@ -255,7 +258,6 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 
   /* build some helper data structures */
   pgf_FE2_micro_server *server = NULL;
-  pgf_FE2_micro_server_init(&server);
   pgf_FE2_micro_server_stats *all_stats = malloc(n_micro_proc*sizeof(*all_stats));
   new_partition *all_parts = malloc(sizeof(*all_parts));
   new_partition_build(all_parts,total_n_jobs);
@@ -269,7 +271,7 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   while(n_finished < n_micro_proc){
     int idx = 0;
     MPI_Waitany(n_micro_proc,req,&idx,MPI_STATUS_IGNORE);
-    pgf_FE2_micro_server_unpack_summary(server,buf[idx]);
+    pgf_FE2_micro_server_unpack_summary(&server,buf[idx]);
 
     /* copy the server stats */
     memcpy(all_stats+idx,server->stats,sizeof(*all_stats));
@@ -310,11 +312,11 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   }
   free(buf);
   free(req);
-  free(server);
   free(parts);
   /* free(rb); */
   new_partition_destroy(all_parts);
   free(all_parts);
+  free(all_stats);
   return rb;
 }
 
@@ -381,7 +383,8 @@ static size_t new_partition_get_offset_recv(const new_partition *np)
 static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
 						 const size_t idx)
 {
-  return (np->keep) + idx * NEW_PART_NUMEL;
+  const size_t i = idx * NEW_PART_NUMEL;
+  return (np->keep + i);
 }
 
 
@@ -451,7 +454,7 @@ static size_t get_smallest_part_idx(const size_t n_parts,
 {
   size_t idx = -1; /* poisoned */
   size_t min = -1; /* overflow --> max */
-  for(size_t i=0; 1<n_parts; i++){
+  for(size_t i=0; i<n_parts; i++){
     size_t t = parts[i].total_time;
     if(t < min && parts[i].n_job < parts[i].max_size){
       min = t;
@@ -471,7 +474,7 @@ static void rebalance_partitions_none(const size_t n_parts,
     new_partition_set_empty(parts + i);
   }
 
-  for(size_t i=n_parts, total_n_jobs = all_parts->max_size;
+  for(size_t i=0, total_n_jobs = all_parts->max_size;
       i<total_n_jobs; i++){
     const size_t *job = new_partition_get_ptr_to_job_keep(all_parts,i);
     const size_t part_id = job[NEW_PART_SR];
@@ -489,7 +492,7 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
   const pgf_FE2_job *j = server->jobs;
   size_t *restrict keep = all_parts->keep;
   for(size_t i=0, e=server->n_jobs; i<e; i++){
-    size_t off = new_partition_get_offset_keep(all_parts) + i;
+    size_t off = new_partition_get_offset_keep(all_parts);
     keep[off + NEW_PART_JOB_ID] = j[i].id;
     keep[off + NEW_PART_TIME] = j[i].time;
     keep[off + NEW_PART_SR] = server_id;

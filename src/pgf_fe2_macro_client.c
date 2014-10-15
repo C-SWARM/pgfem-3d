@@ -60,7 +60,7 @@ static int compare_second_int(const void *a,
 static int compare_third_int(const void *a,
 			     const void *b)
 {
-  static const int n = 2;
+  static const size_t n = 2;
   return compare_nth_int(&n,a,b);
 }
 
@@ -93,19 +93,20 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
 						 const size_t nproc_macro)
 {
   int err = 0;
+  assert(nproc_macro > 0);
 
   /* Get list of tags from ctx. Put into tuple for {tag, idx, server} */
   const size_t len = 3;
-  const size_t s_tags_len = len*client->send->n_comms;
-  int *s_tags = malloc(s_tags_len*sizeof(*s_tags));
-  for(size_t i = 0; i < s_tags_len; i += len){
-    s_tags[i] = client->send->tags[i%len];
-    s_tags[i+1] = i%len;
-    s_tags[i+2] = -1;
+  const size_t s_tags_nel = client->send->n_comms;
+  int *s_tags = malloc(s_tags_nel*len*sizeof(*s_tags));
+  for(size_t i = 0; i < s_tags_nel; i++){
+    s_tags[i*len] = client->send->tags[i];
+    s_tags[i*len + 1] = i;
+    s_tags[i*len + 2] = 0; /* nproc_macro always > 0 */
   }
 
-  /* sort tags by {tag} */
-  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_first_int);
+  /* sort s_tags by {tag} */
+  qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_first_int);
 
   /* loop through each rebalance and extract list of jobs on the
      server. */
@@ -122,16 +123,16 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
     /* sort by job id */
     qsort(serv_tags,serv_tags_len,sizeof(*serv_tags),compare_first_int);
 
-    for(size_t j = 0; j < s_tags_len; j += len){
+    for(size_t j = 0; j < s_tags_nel; j++){
       /* do not search for match if already found */
-      if(s_tags[j+2] >= nproc_macro) continue;
+      if(s_tags[j*len + 2] >= nproc_macro) continue;
 
-      void *ptr = bsearch(s_tags + j,serv_tags,serv_tags_len,
+      void *ptr = bsearch(s_tags + j*len,serv_tags,serv_tags_len,
 			  sizeof(*serv_tags),compare_first_int);
 
       /* Check for match, set src/dest proc id */
       if(ptr != NULL){
-	s_tags[j+2] = i + nproc_macro;
+	s_tags[j*len + 2] = i + nproc_macro;
       }
     }
     free(serv_tags);
@@ -140,22 +141,22 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
 #ifndef NDEBUG
   /* sanity check/debugging. ensure that the src/dest is valid */
   /* sort s_tags by {server} */
-  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_third_int);
+  qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_third_int);
 
   /* ensure that the smallest server id is valid, i.e., we assigned all
      jobs on this domain. */
   assert(s_tags[2] >= nproc_macro);
-  assert(s_tags[s_tags_len - 1] < nproc_macro + client->n_server);
+  assert(s_tags[s_tags_nel*len - 1] < (nproc_macro + client->n_server));
 #endif
 
   /* sort s_tags by {idx} */
-  qsort(s_tags,client->send->n_comms,len*sizeof(*s_tags),compare_second_int);
+  qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_second_int);
 
   /* assign proc on send and recv */
-  for(size_t i = 0; i < s_tags_len; i += len){
-    const int tag = s_tags[i];
-    const int idx = s_tags[i+1];
-    const int proc = s_tags[i+2];
+  for(size_t i = 0; i < s_tags_nel; i++){
+    const int tag = s_tags[i*len];
+    const int idx = s_tags[i*len + 1];
+    const int proc = s_tags[i*len + 2];
 
     /* error checking. Compiled out with NDEBUG */
     assert(client->send->tags[idx] == tag);
@@ -208,7 +209,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   client->bcast.req = calloc(n_comm,sizeof(*(client->bcast.req)));
   {
     int * restrict r = client->bcast.ranks; /* restrict alias */
-    r[0] = rank;
+    r[0] = rank + nproc_macro;
     for(size_t i=1; i<n_comm; i++){
       r[i] = r[i-1] + nproc_macro;
     }
@@ -397,22 +398,26 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 
   /* compute partial sum for displ and set proc_id and time */
   displ[0] = 0;
+  const size_t max_proc = client->n_server;
+  size_t proc_id = 0;
   for(int i=0; i<n_jobs[0]; i++){
-    proc[i] = 0;
+    proc[i] = proc_id++;
+    if(proc_id >= max_proc) proc_id = 0;
     time[i] = 1;
   }
   for(int i=1; i<nproc_macro; i++){
     displ[i] = displ[i-1] + n_jobs[i-1];
     const int start = displ[i];
     for(int j=0; j<n_jobs[i]; j++){
-      proc[start + j] = i;
+      proc[start + j] = proc_id++;
+      if(proc_id >= max_proc) proc_id = 0;
       time[start + j] = 1;
     }
   }
 
   /* set job ids */
   const int start = displ[rank];
-  memcpy(id+start,client->send->tags,sizeof(*id));
+  memcpy(id+start,client->send->tags,client->send->n_comms*sizeof(*id));
 
   /* get job ids from other procs */
   MPI_Allgatherv(MPI_IN_PLACE,n_jobs[rank],MPI_INT,
@@ -421,7 +426,7 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   void *all_part = NULL;
   void *parts = NULL;
 
-  new_partition_build_set_keep(&all_part,client->n_jobs_max,
+  new_partition_build_set_keep(&all_part,client->n_jobs_glob,
 			       client->n_jobs_glob,id,time,proc);
   new_partitions_void(&parts,client->n_server,client->n_jobs_max);
 
@@ -455,7 +460,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 					    const int heuristic)
 {
   int nproc_macro = 0;
-  MPI_Comm_rank(mpi_comm->macro,&nproc_macro);
+  MPI_Comm_size(mpi_comm->macro,&nproc_macro);
 
   /* receive message and rebalance according to heuristic */
   pgf_FE2_server_rebalance *rb_list = pgf_FE2_rebalancer(mpi_comm,

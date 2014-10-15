@@ -30,6 +30,9 @@
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
 
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
 #endif
@@ -247,11 +250,10 @@ double Newton_Raphson (const int print_level,
        sol->d_r (no displacement increments) for displacement dof
        vector */
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-    start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				  JOB_NO_COMPUTE_EQUILIBRIUM,
-				  ctx->macro->sol->d_r,
-				  ctx->job_list,ctx->send,
-				  ctx->recv);
+    pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					   FE2_REBALANCE_NONE);
+    pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				   JOB_NO_COMPUTE_EQUILIBRIUM);
   }
 
   /* reset the error flag */
@@ -403,8 +405,7 @@ double Newton_Raphson (const int print_level,
 	    ART = 1;
 	    /* complete any jobs before assembly */
 	    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	    finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-					   ctx->send,ctx->recv);
+	    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
 	  }
 
 	  /* Matrix assmbly */
@@ -520,11 +521,12 @@ double Newton_Raphson (const int print_level,
 
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				      JOB_COMPUTE_EQUILIBRIUM,
-				      ctx->macro->sol->f,
-				      ctx->job_list,ctx->send,
-				      ctx->recv);
+	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					       FE2_REBALANCE_NONE);
+					       /* FE2_REBALANCE_GREEDY); */
+
+	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				       JOB_COMPUTE_EQUILIBRIUM);
       }
 
       /* Residuals */
@@ -536,8 +538,7 @@ double Newton_Raphson (const int print_level,
       if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				       ctx->send,ctx->recv);
+	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
       }
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -740,11 +741,11 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				    JOB_UPDATE,
-				    ctx->macro->sol->f,
-				    ctx->job_list,ctx->send,
-				    ctx->recv);
+      pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					     FE2_REBALANCE_NONE);
+
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				     JOB_UPDATE);
     }
 
     /* increment coheisve elements */
@@ -802,8 +803,7 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				     ctx->send,ctx->recv);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
     }
 
     /************* TEST THE UPDATE FROM N TO N+1  *************/

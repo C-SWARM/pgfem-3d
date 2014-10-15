@@ -27,6 +27,7 @@ void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
 void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf)
 {
   free(buf->buffer);
+  buf->buffer = NULL;
 }
 
 /*** FE2_job ***/
@@ -82,7 +83,9 @@ void pgf_FE2_job_init(pgf_FE2_job *job,
 
 void pgf_FE2_job_destroy(pgf_FE2_job *job)
 {
-  pgf_FE2_job_comm_buf_destroy(job->comm_buf);
+  if(job->comm_buf != NULL){
+    pgf_FE2_job_comm_buf_destroy(job->comm_buf);
+  }
   free(job->comm_buf);
   job->comm_buf = NULL;
 }
@@ -190,7 +193,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   time(&start);
 
   /* broadcast information to the microscale */
-  assert(mpi_comm->rank_mm_inter == 0);
+  assert(mpi_comm->rank_micro == 0);
   static const int n_meta = 2;
   size_t meta[n_meta];
   meta[0] = job->id;

@@ -254,11 +254,11 @@ static void pgf_FE2_micro_server_finish_cycle(const PGFEM_mpi_comm *mpi_comm,
   free(buf);
 }
 
-void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server *server,
+void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
 					 const char *buf)
 {
-  /* avoid memory leaks */
-  pgf_FE2_micro_server_destroy(server);
+  pgf_FE2_micro_server_init(Server);
+  pgf_FE2_micro_server *server = *Server; /* alias */
   static const size_t size_jobs = sizeof(*(server->jobs));
   static const size_t size_stats = sizeof(*(server->stats));
 
@@ -268,21 +268,28 @@ void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server *server,
   server->jobs = malloc(server->n_jobs*size_jobs);
   unpack_data(buf,server->stats,&pos,1,size_stats);
   unpack_data(buf,server->jobs,&pos,server->n_jobs,size_jobs);
+  for(int i=0,e=server->n_jobs; i<e; i++){
+    server->jobs[i].comm_buf = NULL;
+  }
 }
 
 static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 				       MICROSCALE *micro)
 {
   int err = 0;
-  pgf_FE2_micro_server *server = NULL;
-  pgf_FE2_micro_server_init(&server);
-  pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
   int exit_server = 0;
+  pgf_FE2_micro_server *server = NULL;
+  pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
+  pgf_FE2_server_rebalance_build(rebal,0,0,0);
 
   while(1){
     /* begin server loop */
+    pgf_FE2_micro_server_init(&server);
     pgf_FE2_micro_server_start_cycle(mpi_comm,server,rebal,&exit_server);
-    if(exit_server) break;
+    if(exit_server){
+      pgf_FE2_micro_server_destroy(server);
+      break;
+    }
 
     /* swap microscale information according to rebal */
     /* Future implementation/improvements will overlay this with
@@ -318,7 +325,6 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
     pgf_FE2_server_rebalance_destroy(rebal);
   }
 
-  free(server);
   free(rebal);
 
   return err;
@@ -351,6 +357,8 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 	int buf_len = info[1];
 	char *buf = malloc(buf_len);
 	pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
+	pgf_FE2_server_rebalance_build(rebal,0,0,0);
+
 	/* get information from MASTER */
 	MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
