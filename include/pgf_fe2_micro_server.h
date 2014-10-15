@@ -18,7 +18,7 @@ enum pgf_FE2_micro_server_event_tags{
   FE2_MICRO_SERVER_EXIT = -5,       /**< Signal the micro server to
 				       cleanup and exit */
 
-  FE2_MICRO_SERVER_REBALANCE = -1   /**< Signal the micro server to
+  FE2_MICRO_SERVER_REBALANCE = -6   /**< Signal the micro server to
 				       prepare for a new list of work
 				       and possible rebalancing
 				       step. */
