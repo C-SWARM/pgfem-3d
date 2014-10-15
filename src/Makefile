@@ -32,7 +32,7 @@ DFLAGS		= #-DNDEBUG
 # compiler for correct strict warnings
 CFLAGS_INTEL	= -Wcheck
 #CFLAGS_GCC	= -pedantic -Werror
-CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
+CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 #DFLAGS		+= -DNO_VTK_LIB=1
 #DFLAGS		+= -DDISP_DEBUG=1

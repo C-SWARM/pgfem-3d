@@ -24,7 +24,7 @@ enum pgf_FE2_rebalancer_heuristic {
  * Load balancer called on each macroscale prcocess to rebalance the
  * servers. Nominally collective communication on mpi_comm->mm_inter.
  */
-pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
+pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 					     const size_t total_n_jobs,
 					     const size_t max_n_jobs,
 					     const int heuristic);
@@ -71,5 +71,5 @@ void rebalance_partitions_greedy(const size_t n_parts,
  */
 void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
 						     const void *np,
-						       pgf_FE2_server_rebalance *rb);
+						     pgf_FE2_server_rebalance **rb);
 #endif

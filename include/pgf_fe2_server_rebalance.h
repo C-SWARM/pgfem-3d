@@ -13,14 +13,16 @@
 #include "microscale_information.h"
 
 /**
- * Special "structure" (really just specially arranged list of
- * integers) for handling information about how a server is to be
- * rebalanced. Described what jobs are to be kept, what jobs should be
+ * Structure for handling information about how a server is to be
+ * rebalanced. Describes what jobs are to be kept, what jobs should be
  * sent (and to whom), and what jobs are to be received (and from
  * whom). The total number of jobs on the server after the rebalancing
  * is n_keep + n_recv.
  */
-typedef int* pgf_FE2_server_rebalance;
+/* typedef int* pgf_FE2_server_rebalance; */
+struct pgf_FE2_server_rebalance;
+typedef struct pgf_FE2_server_rebalance pgf_FE2_server_rebalance;
+
 
 /**
  * Return the size fo the rebalance object in bytes.
@@ -28,9 +30,14 @@ typedef int* pgf_FE2_server_rebalance;
 size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t);
 
 /**
+ * Return a pointer to the internal bufeer for communication purposes.
+ */
+void* pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t);
+
+/**
  * Build the data structure and set metadata.
  */
-void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
+void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **t,
 				    const size_t n_keep,
 				    const size_t n_send,
 				    const size_t n_recv);
@@ -40,8 +47,8 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
  * the handle 'buffer' on exit. Any memory pointed to by buffer is
  * destroyed on a call to ..._destroy(t);
  */
-void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance *t,
-						void *buffer);
+void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
+						void **buffer);
 /**
  * Destroy the data strucuture.
  */

@@ -89,7 +89,7 @@ struct pgf_FE2_macro_client{
 };
 
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
-						 const pgf_FE2_server_rebalance *rb_list,
+						 pgf_FE2_server_rebalance **rb_list,
 						 const size_t nproc_macro)
 {
   int err = 0;
@@ -111,12 +111,12 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* loop through each rebalance and extract list of jobs on the
      server. */
   for(size_t i = 0, e = client->n_server; i<e; i++){
-    const size_t n_keep = pgf_FE2_server_rebalance_n_keep(&(rb_list[i]));
-    const size_t n_recv = pgf_FE2_server_rebalance_n_recv(&(rb_list[i]));
+    const size_t n_keep = pgf_FE2_server_rebalance_n_keep((rb_list[i]));
+    const size_t n_recv = pgf_FE2_server_rebalance_n_recv((rb_list[i]));
     const size_t serv_tags_len = (n_keep + n_recv);
     int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
-    const int *k = pgf_FE2_server_rebalance_keep_buf(&(rb_list[i]));
-    const int *r = pgf_FE2_server_rebalance_recv_buf(&(rb_list[i]));
+    const int *k = pgf_FE2_server_rebalance_keep_buf((rb_list[i]));
+    const int *r = pgf_FE2_server_rebalance_recv_buf((rb_list[i]));
     memcpy(serv_tags,k,n_keep*sizeof(*serv_tags));
     memcpy(serv_tags + n_keep,r,n_recv*sizeof(*serv_tags));
 
@@ -229,7 +229,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
  * macro-clients may perform communication.
  */
 static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *client,
-						       const pgf_FE2_server_rebalance *rb_list,
+						       pgf_FE2_server_rebalance **rb_list,
 						       const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
@@ -246,16 +246,22 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
   err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
 
   client->bcast.active = 1;
+
+  /* hold addresses of rebal buffers to send */
+  void **buffs = calloc(n_send,sizeof(*buffs));
+
   for(size_t i = 0; i < n_send; i++){
     size_t idx = rank + i*nproc_macro;
     assert(idx < client->n_server);
-    size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list + idx);
-    err += MPI_Isend(rb_list[idx],len,MPI_CHAR,ranks[i],
+    size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list[idx]);
+    buffs[i] = pgf_FE2_server_rebalance_buff(rb_list[idx]);
+    err += MPI_Isend(buffs[i],len,MPI_CHAR,ranks[i],
 		     FE2_MICRO_SERVER_REBALANCE,
 		     mpi_comm->mm_inter,req+i);
   }
 
   err += MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
+  free(buffs);
   client->bcast.active = 0;
 
   return err;
@@ -435,7 +441,7 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   rebalance_partitions_greedy(client->n_server,all_part,parts);
 
   /* push partitions into structure I will send */
-  pgf_FE2_server_rebalance *rb = malloc(client->n_server*sizeof(*rb));
+  pgf_FE2_server_rebalance **rb = calloc(client->n_server,sizeof(*rb));
   new_partitions_void_to_pgf_FE2_server_rebalance(client->n_server,parts,rb);
 
   /* cleanup */
@@ -450,7 +456,7 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 
   /* final cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
-    pgf_FE2_server_rebalance_destroy(rb + i);
+    pgf_FE2_server_rebalance_destroy(rb[i]);
   }
   free(rb);
 }
@@ -463,7 +469,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
   MPI_Comm_size(mpi_comm->macro,&nproc_macro);
 
   /* receive message and rebalance according to heuristic */
-  pgf_FE2_server_rebalance *rb_list = pgf_FE2_rebalancer(mpi_comm,
+  pgf_FE2_server_rebalance **rb_list = pgf_FE2_rebalancer(mpi_comm,
 							 client->n_jobs_glob,
 							 client->n_jobs_max,
 							 heuristic);
@@ -476,7 +482,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 
   /* cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
-    pgf_FE2_server_rebalance_destroy(rb_list + i);
+    pgf_FE2_server_rebalance_destroy(rb_list[i]);
   }
   free(rb_list);
 }

@@ -101,7 +101,7 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
  */
 static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
 					     pgf_FE2_micro_server *server,
-					     pgf_FE2_server_rebalance *rebal,
+					     pgf_FE2_server_rebalance **rebal,
 					     int *exit_server)
 {
   static const size_t n_info = 2;
@@ -158,10 +158,10 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
     MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
     /* build rebalance */
-    pgf_FE2_server_rebalance_build_from_buffer(rebal,buf);
+    pgf_FE2_server_rebalance_build_from_buffer(rebal,&((void*)buf));
 
     /* build server list */
-    pgf_FE2_micro_server_build(server,rebal);
+    pgf_FE2_micro_server_build(server,*rebal);
 
     /* do not free the buffer. Maintain access through rebal. Buffer
        is free'd when rebal is destroyed */
@@ -278,16 +278,17 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 {
   int err = 0;
   int exit_server = 0;
-  pgf_FE2_micro_server *server = NULL;
-  pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
-  pgf_FE2_server_rebalance_build(rebal,0,0,0);
 
   while(1){
     /* begin server loop */
+    pgf_FE2_micro_server *server = NULL;
+    pgf_FE2_server_rebalance *rebal = NULL;
+
     pgf_FE2_micro_server_init(&server);
-    pgf_FE2_micro_server_start_cycle(mpi_comm,server,rebal,&exit_server);
+    pgf_FE2_micro_server_start_cycle(mpi_comm,server,&rebal,&exit_server);
     if(exit_server){
       pgf_FE2_micro_server_destroy(server);
+      pgf_FE2_server_rebalance_destroy(rebal);
       break;
     }
 
@@ -325,8 +326,6 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
     pgf_FE2_server_rebalance_destroy(rebal);
   }
 
-  free(rebal);
-
   return err;
 }
 
@@ -356,14 +355,13 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 	/* allocate buffer for receive */
 	int buf_len = info[1];
 	char *buf = malloc(buf_len);
-	pgf_FE2_server_rebalance *rebal = malloc(sizeof(*rebal));
-	pgf_FE2_server_rebalance_build(rebal,0,0,0);
+	pgf_FE2_server_rebalance *rebal = NULL;
 
 	/* get information from MASTER */
 	MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
 	/* build rebalancing data structure */
-	pgf_FE2_server_rebalance_build_from_buffer(rebal,buf);
+	pgf_FE2_server_rebalance_build_from_buffer(&rebal,&((void*) buf));
 
 	/* perform rebalancing */
 	pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);
@@ -371,9 +369,8 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 	   async. comm here. */
 	pgf_FE2_server_rebalance_finalize_exchange(mpi_comm);
 
-	free(buf);
+	/* implicitly free's buf */
 	pgf_FE2_server_rebalance_destroy(rebal);
-	free(rebal);
       }
       break;
 

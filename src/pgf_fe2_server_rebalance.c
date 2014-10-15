@@ -6,6 +6,11 @@
 
 #include "pgf_fe2_server_rebalance.h"
 
+struct pgf_FE2_server_rebalance
+{
+  int *t;
+};
+
 enum {REBAL_N_KEEP=0,
       REBAL_N_SEND,
       REBAL_N_RECV,
@@ -21,14 +26,21 @@ static size_t get_size(const size_t n_keep,
   return ((size_t) REBAL_N_META) + n_keep + 2*(n_send + n_recv);
 }
 
-size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t)
+size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *R)
 {
-  return get_size((*t)[REBAL_N_KEEP],
-		  (*t)[REBAL_N_SEND],
-		  (*t)[REBAL_N_RECV])*sizeof(**t);
+  const int *t = R->t; /* alias */
+  return get_size((t)[REBAL_N_KEEP],
+		  (t)[REBAL_N_SEND],
+		  (t)[REBAL_N_RECV])*sizeof(*t);
 }
 
-void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
+void* pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t)
+{
+  if(t != NULL) return t->t;
+  else return NULL;
+}
+
+void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **R,
 				    const size_t n_keep,
 				    const size_t n_send,
 				    const size_t n_recv)
@@ -38,82 +50,85 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance *t,
      data described in the code below. */
 
   /* allocate buffer */
-  *t = calloc(get_size(n_keep,n_send,n_recv),sizeof(**t));
+  *R = malloc(sizeof(**R));
+  (*R)->t = calloc(get_size(n_keep,n_send,n_recv),sizeof(*((*R)->t)));
+  int *t = (*R)->t; /* alias */
 
   /* encode separate buffer sizes */
-  (*t)[REBAL_N_KEEP] = n_keep;
-  (*t)[REBAL_N_SEND] = n_send;
-  (*t)[REBAL_N_RECV] = n_recv;
+  t[REBAL_N_KEEP] = n_keep;
+  t[REBAL_N_SEND] = n_send;
+  t[REBAL_N_RECV] = n_recv;
 
   /* encode offsets */
-  (*t)[REBAL_KEEP_OFF] = REBAL_N_META; /* keep_offset */
-  (*t)[REBAL_SEND_OFF] = (*t)[3] + n_keep; /* send_offset */
-  (*t)[REBAL_RECV_OFF] = (*t)[4] + 2*n_send; /* recv_offset */
+  t[REBAL_KEEP_OFF] = REBAL_N_META; /* keep_offset */
+  t[REBAL_SEND_OFF] = t[3] + n_keep; /* send_offset */
+  t[REBAL_RECV_OFF] = t[4] + 2*n_send; /* recv_offset */
 }
 
 
-void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance *t,
-						 void *buffer)
+void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
+						 void **buffer)
 {
   /* avoid memory leaks */
-  pgf_FE2_server_rebalance_destroy(t);
-  *t = buffer;
+  pgf_FE2_server_rebalance_destroy(*t);
+  *t = malloc(sizeof(**t));
+  (*t)->t = *buffer;
 
-  /* invalidate buffer */
-  buffer = NULL;
+  /* invalidate pointer to buffer */
+  *buffer = NULL;
 }
 
 void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
 {
-  free(*t);
-  *t = NULL;
+  if(t != NULL) free(t->t);
+  free(t);
 }
 
 int pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t)[REBAL_N_KEEP];
+  if(t != NULL) return t->t[REBAL_N_KEEP];
   else return -1;
 }
 
 int* pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return *t + (*t)[REBAL_KEEP_OFF];
+  if(t != NULL) return (t->t + (t->t)[REBAL_KEEP_OFF]);
   else return NULL;
 }
 
 int pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t)[REBAL_N_SEND];
+  if(t != NULL) return (t->t)[REBAL_N_SEND];
   else return -1;
 }
 
 int* pgf_FE2_server_rebalance_send_buf(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t) + (*t)[REBAL_SEND_OFF];
+  if(t != NULL) return (t->t + (t->t)[REBAL_SEND_OFF]);
   else return NULL;
 }
 
 int* pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t) + (*t)[REBAL_SEND_OFF] + (*t)[REBAL_N_SEND];
+  if(t != NULL) return (t->t + (t->t)[REBAL_SEND_OFF] + (t->t)[REBAL_N_SEND]);
   else return NULL;
 }
 
 int pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t)[REBAL_N_RECV];
+  if(t != NULL) return (t->t)[REBAL_N_RECV];
   else return -1;
 }
 
 int* pgf_FE2_server_rebalance_recv_buf(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t) + (*t)[REBAL_RECV_OFF];
+  if(t != NULL) return (t->t + (t->t)[REBAL_RECV_OFF]);
   else return NULL;
 }
 
 int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t)
 {
-  if(*t != NULL) return (*t) + (*t)[REBAL_RECV_OFF] + (*t)[REBAL_N_RECV];
+  if(t != NULL) return (t->t + (t->t)[REBAL_RECV_OFF] + (t->t)[REBAL_N_RECV]);
   else return NULL;
 }
 

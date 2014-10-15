@@ -199,7 +199,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   meta[0] = job->id;
   meta[1] = job->comm_buf->buffer_len;
   MPI_Bcast(meta,n_meta,MPI_LONG,0,micro->common->mpi_comm);
-  MPI_Bcast(job->comm_buf->buffer,meta[0],MPI_CHAR,0,
+  MPI_Bcast(job->comm_buf->buffer,meta[1],MPI_CHAR,0,
 	    micro->common->mpi_comm);
 
   /* determine solution index from job id and compute */

@@ -92,7 +92,7 @@ static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
  * friendly.
  */
 static void new_partition_to_pgf_FE2_server_rebalance(const new_partition *np,
-						      pgf_FE2_server_rebalance *rb);
+						      pgf_FE2_server_rebalance **rb);
 
 /**
  * Assign a job to a given partition. Updates send buffers on other
@@ -187,11 +187,11 @@ void new_partitions_destroy_void(void *np,
 
 void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
 						     const void *np,
-						     pgf_FE2_server_rebalance *rb)
+						     pgf_FE2_server_rebalance **rb)
 {
   const new_partition *NP = np;
   for(int i=0; i<n_parts; i++){
-    new_partition_to_pgf_FE2_server_rebalance(NP + i,rb + i);
+    new_partition_to_pgf_FE2_server_rebalance(NP + i, rb + i);
   }
 }
 
@@ -228,7 +228,7 @@ void rebalance_partitions_greedy(const size_t n_parts,
   /* ... */
 }
 
-pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
+pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 					     const size_t total_n_jobs,
 					     const size_t max_n_jobs,
 					     const int heuristic)
@@ -299,7 +299,7 @@ pgf_FE2_server_rebalance* pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   }
 
   /* push new_partitions to rebalance data structure for communication */
-  pgf_FE2_server_rebalance *rb = malloc(n_micro_proc*sizeof(*rb));
+  pgf_FE2_server_rebalance **rb = calloc(n_micro_proc,sizeof(rb));
   for(int i=0; i<n_micro_proc; i++){
     new_partition_to_pgf_FE2_server_rebalance(parts + i,rb + i);
   }
@@ -389,14 +389,14 @@ static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
 
 
 static void new_partition_to_pgf_FE2_server_rebalance(const new_partition *np,
-						      pgf_FE2_server_rebalance *rb)
+						      pgf_FE2_server_rebalance **rb)
 {
   pgf_FE2_server_rebalance_build(rb,np->n_keep,np->n_send,np->n_recv);
-  int *keep = pgf_FE2_server_rebalance_keep_buf(rb);
-  int *send = pgf_FE2_server_rebalance_send_buf(rb);
-  int *send_to = pgf_FE2_server_rebalance_send_dest(rb);
-  int *recv = pgf_FE2_server_rebalance_recv_buf(rb);
-  int *recv_from = pgf_FE2_server_rebalance_recv_src(rb);
+  int *keep = pgf_FE2_server_rebalance_keep_buf(*rb);
+  int *send = pgf_FE2_server_rebalance_send_buf(*rb);
+  int *send_to = pgf_FE2_server_rebalance_send_dest(*rb);
+  int *recv = pgf_FE2_server_rebalance_recv_buf(*rb);
+  int *recv_from = pgf_FE2_server_rebalance_recv_src(*rb);
 
   for(size_t i=0, n_keep = np->n_keep; i<n_keep; i++){
     keep[i] = np->keep[i*NEW_PART_NUMEL + NEW_PART_JOB_ID];
