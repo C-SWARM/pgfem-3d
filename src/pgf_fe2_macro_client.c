@@ -98,6 +98,10 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* Get list of tags from ctx. Put into tuple for {tag, idx, server} */
   const size_t len = 3;
   const size_t s_tags_nel = client->send->n_comms;
+
+  /* exit early if this domain does not contain jobs */
+  if(s_tags_nel == 0) return err;
+
   int *s_tags = malloc(s_tags_nel*len*sizeof(*s_tags));
   for(size_t i = 0; i < s_tags_nel; i++){
     s_tags[i*len] = client->send->tags[i];

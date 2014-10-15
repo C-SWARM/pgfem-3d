@@ -94,6 +94,34 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
 }
 
 
+/**
+ * Busy loop looking for message to start the server cycle.
+ */
+static void pgf_FE2_micro_server_probe_start(const PGFEM_mpi_comm *mpi_comm,
+					     MPI_Status *stat)
+{
+  int msg_waiting = 0;
+  while (1){
+
+    /* exit */
+    MPI_Iprobe(MPI_ANY_SOURCE,FE2_MICRO_SERVER_EXIT,
+	       mpi_comm->mm_inter,&msg_waiting,stat);
+    if(msg_waiting) break;
+
+    /* rebalance */
+    MPI_Iprobe(MPI_ANY_SOURCE,FE2_MICRO_SERVER_REBALANCE,
+	       mpi_comm->mm_inter,&msg_waiting,stat);
+    if(msg_waiting) break;
+
+    /* other ... */
+  }
+
+  /* this assert will fail if we accidentally overlap with
+     MPI_ANY_TAG. FYI: often MPI_ANY_TAG = -1.*/
+  assert(stat->MPI_TAG == FE2_MICRO_SERVER_EXIT 
+	 || stat->MPI_TAG == FE2_MICRO_SERVER_REBALANCE);
+}
+
 
 /**
  * On the MASTER server process look for info from the macroscale and
@@ -111,7 +139,7 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
   MPI_Status stat;
 
   /* probe for incomming message on comm->mm_inter */
-  MPI_Probe(MPI_ANY_SOURCE,MPI_ANY_TAG,mpi_comm->mm_inter,&stat);
+  pgf_FE2_micro_server_probe_start(mpi_comm,&stat);
 
   /* analyze source of the message and its content */
 #ifndef NDEBUG
