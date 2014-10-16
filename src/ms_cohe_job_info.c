@@ -20,7 +20,8 @@ inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 		   + (info->ndofe*info->ndofe)*sizeof(double)
 		   + 2*info->ndofe*sizeof(long)
 		   + sizeof(int)
-		   + 3*sizeof(double));
+		   + 3*sizeof(double)
+		   + sizeof(double));
   return result;
 }	 
 
@@ -58,6 +59,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
 
   /* allocate other */
   info->times = PGFEM_calloc(3,sizeof(double));
+  info->dt = 1.0;
 
   return err;
 }
@@ -130,6 +132,7 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->print_flag,buffer,&pos,1,sizeof(int));
   pack_data(&info->int_wt,buffer,&pos,1,sizeof(double));
   pack_data(&info->tim,buffer,&pos,1,sizeof(int));
+  pack_data(&info->dt,buffer,&pos,1,sizeof(double));
 
   /* pack arrays */
   pack_data(info->jump,buffer,&pos,ndim,sizeof(double));
@@ -178,6 +181,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->print_flag,&pos,1,sizeof(int));
   unpack_data(buffer,&info->int_wt,&pos,1,sizeof(double));
   unpack_data(buffer,&info->tim,&pos,1,sizeof(int));
+  unpack_data(buffer,&info->dt,&pos,1,sizeof(double));
 
   /* unpack arrays */
   unpack_data(buffer,info->jump,&pos,ndim,sizeof(double));

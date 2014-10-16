@@ -222,7 +222,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 
   /* time to complete job */
   time(&finish);
-  job->time = difftime(finish,start);
+  job->time = difftime(finish,start) + 1;
 
   return pgf_FE2_job_reply(job,mpi_comm);
 }
