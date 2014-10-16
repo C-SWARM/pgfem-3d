@@ -120,6 +120,11 @@ int compute_ms_cohe_job(const int job_id,
   memcpy(sol->times,p_job->times,3*sizeof(double));
   sol->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
 
+  /* set the "past" time to reduce adaption time */
+  if(sol->tim > 0 && p_job->dt > 0){
+    sol->times[sol->tim - 1] = sol->times[sol->tim] - p_job->dt;
+  }
+
   /* switch set up job */
   switch(p_job->job_type){
   case JOB_UPDATE: case JOB_PRINT:/* do nothing */ break;
@@ -140,6 +145,9 @@ int compute_ms_cohe_job(const int job_id,
     /* compute the microscale equilibrium. */
     if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
     err += ms_cohe_job_nr(common,sol,microscale->opts);
+
+    /* update job dt */
+    p_job->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
 
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
