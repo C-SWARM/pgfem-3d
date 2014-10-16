@@ -69,6 +69,25 @@ typedef struct NR_summary{
   double final_res;
 } NR_summary;
 
+/** Set the time vector to contain current dt for microscale */
+static void set_time_micro(const int tim,
+			   double *times,
+			   const double dt,
+			   const long DIV,
+			   double *time_np1)
+{
+  *time_np1 = times[tim+1];
+  times[tim + 1] = times[tim] + dt;
+}
+
+/** Reset the time vector to normal state */
+static void set_time_macro(const int tim,
+			   double *times,
+			   const double time_np1)
+{
+  times[tim + 1] = time_np1;
+}
+
 double Newton_Raphson (const int print_level,
 		       long ne,
 		       int n_be,
@@ -162,6 +181,10 @@ double Newton_Raphson (const int print_level,
   double max_damage = 0.0;
   double alpha = 0.0;
 
+  /* max micro substep criteria */
+  const int max_n_micro_substep = 5;
+  int max_substep = 0;
+
   /* damage dissipation */
   double dissipation = 0.0;
  
@@ -252,8 +275,11 @@ double Newton_Raphson (const int print_level,
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
     pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
 					   FE2_REBALANCE_NONE);
+    double tnp1 = 0;
+    set_time_micro(tim,times,dt,DIV,&tnp1);
     pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
 				   JOB_NO_COMPUTE_EQUILIBRIUM);
+    set_time_macro(tim,times,tnp1);
   }
 
   /* reset the error flag */
@@ -405,7 +431,7 @@ double Newton_Raphson (const int print_level,
 	    ART = 1;
 	    /* complete any jobs before assembly */
 	    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
+	    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
 	  }
 
 	  /* Matrix assmbly */
@@ -523,9 +549,11 @@ double Newton_Raphson (const int print_level,
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
 	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
 					       FE2_REBALANCE_GREEDY);
-
+	double tnp1 = 0;
+	set_time_micro(tim,times,dt,DIV,&tnp1);
 	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
 				       JOB_COMPUTE_EQUILIBRIUM);
+	set_time_macro(tim,times,tnp1);
       }
 
       /* Residuals */
@@ -533,12 +561,6 @@ double Newton_Raphson (const int print_level,
 			   b_elems,matgeom,hommat,sup,
 			   eps,sig_e,nor_min,crpl,dt,stab,
 			   nce,coel,mpi_comm,opts);
-
-      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
-	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
-      }
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
@@ -549,6 +571,25 @@ double Newton_Raphson (const int print_level,
 	INFO = 1;
 	ART = 1;
 	goto rest;
+      }
+
+      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
+	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
+	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
+	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+
+	/* determine substep factor */
+	alpha = max_substep / max_n_micro_substep;
+	if(alpha > 1){
+	  if(myrank == 0){
+	    PGFEM_printf("Too many subdvisions at microscale (alpha = %f).\n"
+			 "Subdividing load.\n",alpha);
+	  }
+
+	  INFO = 1;
+	  ART = 1;
+	  goto rest;
+	}
       }
       
       /* Transform LOCAL load vector to GLOBAL */
@@ -743,8 +784,11 @@ double Newton_Raphson (const int print_level,
       pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
 					     FE2_REBALANCE_NONE);
 
+      double tnp1 = 0;
+      set_time_micro(tim,times,dt,DIV,&tnp1);
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
 				     JOB_UPDATE);
+      set_time_macro(tim,times,tnp1);
     }
 
     /* increment coheisve elements */
@@ -802,7 +846,7 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
     }
 
     /************* TEST THE UPDATE FROM N TO N+1  *************/

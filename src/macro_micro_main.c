@@ -601,7 +601,8 @@ int multi_scale_main(int argc, char **argv)
 	default: /* no output */ break;
 	}/* switch(format) */
 
-	pgf_FE2_macro_client_recv_jobs(client,macro);
+	int junk = 0;
+	pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
       }/* end output */
  
       if (mpi_comm->rank_macro == 0){

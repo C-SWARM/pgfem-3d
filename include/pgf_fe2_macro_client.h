@@ -62,10 +62,12 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 				    const int job_type);
 
 /**
- * Receive finished jobs from the servers.
+ * Receive finished jobs from the servers. Returns the maximum number
+ * of substeps take at the microscale.
  */
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
-				    MACROSCALE *macro);
+				    MACROSCALE *macro,
+				    int *max_micro_sub_step);
 
 /**
  * Send signal to servers to exit.

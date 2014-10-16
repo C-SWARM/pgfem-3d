@@ -549,16 +549,20 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
-				    MACROSCALE *macro)
+				    MACROSCALE *macro,
+				    int *max_micro_sub_step)
 {
   int err = 0;
+
   /* Get aliases from client object etc. */
   PGFEM_server_ctx *send = client->send;
   PGFEM_server_ctx *recv = client->recv;
   MS_COHE_JOB_INFO *job_list = client->jobs;
 
-  /* see finish_macroscale_compute_jobs */
+  /* reset the max number of steps */
+  *max_micro_sub_step = 0;
 
+  /* see finish_macroscale_compute_jobs */
   COMMON_MACROSCALE *c = macro->common;
   MACROSCALE_SOLUTION *s = macro->sol;
   int rank_macro = 0;
@@ -588,6 +592,9 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
       err += unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
 				     recv->buffer[idx]);
 
+      /* compute the number of micro-sub-steps */
+      if(job->n_step > *max_micro_sub_step) *max_micro_sub_step = job->n_step;
+
       /* finish jobs based on job_type */
       switch(job->job_type){
       case JOB_COMPUTE_EQUILIBRIUM:
@@ -597,6 +604,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 	  if(dof_id < 0) continue; /* boundary condition */
 	  s->f_u[dof_id] += job->traction_res[j];
 	}
+
 	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
 	/* assemble tangent to local and off-proc buffers */
@@ -616,6 +624,10 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     MPI_Status *sta_s = NULL;
     MPI_Request *req_s = NULL;
     err += send_stiffmat_comm(&sta_s,&req_s,Lk,c->mpi_comm,c->pgfem_comm);
+
+    /* get maximum number of steps from all macro processors */
+    err += MPI_Allreduce(MPI_IN_PLACE,max_micro_sub_step,
+			 1,MPI_INT,MPI_MAX,c->mpi_comm);
 
     err += assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
 				      c->SOLVER,receive);

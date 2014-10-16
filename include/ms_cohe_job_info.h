@@ -52,7 +52,7 @@ extern "C" {
     /* solution procedure */
     int tim; /**< time step at macroscale */
     double *times; /**< macro time at (tim-1) (tim) and (tim+1) [3]*/
-    double dt;
+    int n_step;
 
   }MS_COHE_JOB_INFO;
 
