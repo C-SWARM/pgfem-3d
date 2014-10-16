@@ -102,7 +102,7 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
  * send information and assigns locations for microstructures to
  * receive.
  */
-int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
+int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 					   const PGFEM_mpi_comm *mpi_comm,
 					   MICROSCALE *micro);
 /**
@@ -110,6 +110,7 @@ int pgf_FE2_server_rebalance_post_exchange(const pgf_FE2_server_rebalance *t,
  * buffers. Need to extend this functionality to overlab with further
  * computation.
  */
-int pgf_FE2_server_rebalance_finalize_exchange(const PGFEM_mpi_comm *mpi_comm);
+int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
+					       const PGFEM_mpi_comm *mpi_comm);
 
 #endif

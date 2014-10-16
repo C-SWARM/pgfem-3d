@@ -522,8 +522,7 @@ double Newton_Raphson (const int print_level,
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
 	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-					       FE2_REBALANCE_NONE);
-					       /* FE2_REBALANCE_GREEDY); */
+					       FE2_REBALANCE_GREEDY);
 
 	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
 				       JOB_COMPUTE_EQUILIBRIUM);

@@ -327,11 +327,11 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
     pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);
     /* blocks until all exchanges are done. Could improve
        async. comm here. */
-    pgf_FE2_server_rebalance_finalize_exchange(mpi_comm);
+    pgf_FE2_server_rebalance_finalize_exchange(rebal,mpi_comm);
 
     /* for now, go ahead and mark all jobs as needing information */
     for(size_t i=0,e=server->n_jobs; i<e; i++){
-      server->jobs->state = FE2_STATE_NEED_INFO;
+      pgf_FE2_job_set_state(server->jobs + i,FE2_STATE_NEED_INFO);
     }
 
     while(!pgf_FE2_micro_server_done(server)){
@@ -395,7 +395,7 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 	pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);
 	/* blocks until all exchanges are done. Could improve
 	   async. comm here. */
-	pgf_FE2_server_rebalance_finalize_exchange(mpi_comm);
+	pgf_FE2_server_rebalance_finalize_exchange(rebal,mpi_comm);
 
 	/* implicitly free's buf */
 	pgf_FE2_server_rebalance_destroy(rebal);

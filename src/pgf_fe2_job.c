@@ -81,6 +81,13 @@ void pgf_FE2_job_init(pgf_FE2_job *job,
   pgf_FE2_job_comm_buf_init(job->comm_buf);
 }
 
+void pgf_FE2_job_set_state(pgf_FE2_job *job,
+			   const int state)
+{
+  job->state = state;
+}
+
+
 void pgf_FE2_job_destroy(pgf_FE2_job *job)
 {
   if(job->comm_buf != NULL){

@@ -60,6 +60,10 @@ typedef struct pgf_FE2_job pgf_FE2_job;
 void pgf_FE2_job_init(pgf_FE2_job *job,
 		      const int id,
 		      const int state);
+
+void pgf_FE2_job_set_state(pgf_FE2_job *job,
+			   const int state);
+
 void pgf_FE2_job_destroy(pgf_FE2_job *job);
 
 /**
