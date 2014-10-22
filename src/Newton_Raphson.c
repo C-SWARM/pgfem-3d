@@ -178,12 +178,14 @@ double Newton_Raphson (const int print_level,
 
   /* damage substep criteria */
   const double max_damage_per_step = 0.05;
+  const double alpha_restart = 1.25;
   double max_damage = 0.0;
   double alpha = 0.0;
 
   /* max micro substep criteria */
-  const int max_n_micro_substep = 5;
+  const int max_n_micro_substep = 2;
   int max_substep = 0;
+  double alpha_ms = 0.0;
 
   /* damage dissipation */
   double dissipation = 0.0;
@@ -579,13 +581,13 @@ double Newton_Raphson (const int print_level,
 	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
 
 	/* determine substep factor */
-	alpha = max_substep / max_n_micro_substep;
-	if(alpha > 1){
+	alpha_ms = ((double) max_substep) / max_n_micro_substep;
+	if(alpha_ms > alpha_restart){
 	  if(myrank == 0){
-	    PGFEM_printf("Too many subdvisions at microscale (alpha = %f).\n"
-			 "Subdividing load.\n",alpha);
+	    PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n"
+			 "Subdividing load.\n",alpha_ms);
 	  }
-
+	  alpha = alpha_ms;
 	  INFO = 1;
 	  ART = 1;
 	  goto rest;
@@ -747,12 +749,14 @@ double Newton_Raphson (const int print_level,
     alpha = max_damage/max_damage_per_step;
     MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
     if(myrank == 0){
-      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n",
-	     alpha,max_damage_per_step);
+      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n"
+		   "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
+		   alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
+      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
     }
-    if(alpha > 1.25){
+    if(alpha > alpha_restart){
       if(myrank == 0){
-	PGFEM_printf("Subdividing to maintain accuracy of damage law.\n");
+	PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
       }
       INFO = 1;
       ART = 1;
