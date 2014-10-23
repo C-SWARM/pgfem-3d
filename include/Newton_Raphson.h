@@ -54,6 +54,7 @@ extern "C" {
    *  Abort on unrecoverable errors (e.g., too many substeps)
    */
   double Newton_Raphson (const int print_level,
+			 int *n_step, /**< returns the number of nonlinear steps taken to solve the given increment */
 			 long ne, /**< number of ELEMENT */
 			 int n_be, /**< number of BOUNDING_ELEMENT */
 			 long nn, /**< number of NODE */

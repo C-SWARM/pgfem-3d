@@ -447,8 +447,8 @@ int multi_scale_main(int argc, char **argv)
 
 	} /* end load increment */
 
-
-	hypre_time += Newton_Raphson ( 1,c->ne,0,c->nn,
+	int n_step = 0;
+	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
 				       c->ndofn,c->ndofd,c->npres,s->tim,
 				       s->times,nor_min,s->dt,c->elem,
 				       NULL,c->node,c->supports,sup_defl,

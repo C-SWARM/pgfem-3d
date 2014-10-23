@@ -29,7 +29,8 @@ static const int ndim = 3;
 /** Wrapper for Newton Raphson. */
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts);
+			  const PGFem3D_opt *opts,
+			  int *n_step);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -140,11 +141,11 @@ int compute_ms_cohe_job(const int job_id,
     /* compute the microscale equilibrium. */
     if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
 
-    err += ms_cohe_job_nr(common,sol,microscale->opts);
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
 
-    /* compute number of subdivisions at micro scale */
-    p_job->n_step = (int) ((p_job->times[2] - p_job->times[1])
-			   /(sol->times[sol->tim + 1] - sol->times[sol->tim]));
+    /* /\* compute number of subdivisions at micro scale *\/ */
+    /* p_job->n_step = (int) ((p_job->times[2] - p_job->times[1]) */
+    /* 			   /(sol->times[sol->tim + 1] - sol->times[sol->tim])); */
 
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -253,7 +254,8 @@ int assemble_ms_cohe_job_res(const int job_id,
 
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts)
+			  const PGFem3D_opt *opts,
+			  int *n_step)
 {
   int err = 0;
   double time = 0.0;
@@ -261,12 +263,13 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   int full_NR = 1; /* 0 is modified NR */
   double pores = 0.0;
   const int print_level = 0;
+  *n_step = 0;
 
   /* copy of load increment */
   double *sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson(print_level,c->ne,0,c->nn, c->ndofn,
+  time += Newton_Raphson(print_level,n_step,c->ne,0,c->nn, c->ndofn,
 			 c->ndofd,c->npres,s->tim,s->times,
 			 nl_err,s->dt,c->elem,NULL,
 			 c->node,c->supports,sup_defl,c->hommat,

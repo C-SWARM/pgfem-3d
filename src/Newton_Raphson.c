@@ -89,6 +89,7 @@ static void set_time_macro(const int tim,
 }
 
 double Newton_Raphson (const int print_level,
+		       int *n_step,
 		       long ne,
 		       int n_be,
 		       long nn,
@@ -208,7 +209,7 @@ double Newton_Raphson (const int print_level,
     break;
   }
 
-  int nstep = 0;
+  *n_step = 0;
 
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
@@ -777,6 +778,9 @@ double Newton_Raphson (const int print_level,
 
     ST = GAMA = gam = ART = 0;
 
+    /* increment the step counter */
+    *n_step ++;
+
     /* /\* turn off line search *\/ */
     /* ART = 1; */
     
@@ -891,11 +895,10 @@ double Newton_Raphson (const int print_level,
 	char fname[100];
 	sprintf(fname,"%s_%ld",opts->ofname,tim);
 	if(myrank == 0){
-	  VTK_print_master(opts->opath,fname,nstep,nproc,opts);
+	  VTK_print_master(opts->opath,fname,*n_step,nproc,opts);
 	}
-	VTK_print_vtu(opts->opath,fname,nstep,myrank,ne,nn,node,
+	VTK_print_vtu(opts->opath,fname,*n_step,myrank,ne,nn,node,
 		      elem,sup,r,sig_e,eps,opts);
-	nstep ++;
       }
     }
 
