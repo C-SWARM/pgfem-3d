@@ -158,7 +158,7 @@ int multi_scale_main(int argc, char **argv)
   pgf_FE2_macro_client *client = NULL;
   /* hard-code n_jobs_max, needs to be command line opt and/or scaled
      variable */
-  const int n_jobs_max = 10;
+  const int n_jobs_max = 30;
 
   /*=== Build MICROSCALE server and solutions ===*/
   if(mpi_comm->valid_micro){

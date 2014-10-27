@@ -138,9 +138,16 @@ int compute_ms_cohe_job(const int job_id,
   /* swtich compute job */
   switch(p_job->job_type){
   case JOB_COMPUTE_EQUILIBRIUM:
-    /* compute the microscale equilibrium. */
-    if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
 
+    /* print time step information */
+    if(myrank == 0){
+      PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
+      PGFEM_printf("\nFinite deformations time step %ld) "
+		   " Time %f | dt = %10.10f\n",
+		   p_job->tim,sol->times[sol->tim+1],sol->dt);
+    }
+
+    /* compute the microscale equilibrium. */
     err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
 
     /* /\* compute number of subdivisions at micro scale *\/ */

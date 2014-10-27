@@ -185,6 +185,7 @@ double Newton_Raphson (const int print_level,
 
   /* max micro substep criteria */
   const int max_n_micro_substep = 2;
+  const double alpha_restart_ms = 2.0;
   int max_substep = 0;
   double alpha_ms = 0.0;
 
@@ -583,7 +584,7 @@ double Newton_Raphson (const int print_level,
 
 	/* determine substep factor */
 	alpha_ms = ((double) max_substep) / max_n_micro_substep;
-	if(alpha_ms > alpha_restart){
+	if(alpha_ms > alpha_restart_ms){
 	  if(myrank == 0){
 	    PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n"
 			 "Subdividing load.\n",alpha_ms);
@@ -753,16 +754,22 @@ double Newton_Raphson (const int print_level,
       PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n"
 		   "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
 		   alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
-      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
     }
-    if(alpha > alpha_restart){
+    if(alpha > alpha_restart || alpha_ms > alpha_restart_ms){
       if(myrank == 0){
 	PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
       }
+
+      /* adapt time step based on largest adaption parameter */
+      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
+
       INFO = 1;
       ART = 1;
       goto rest;
     }
+
+    /* always adapt time step based on largest adaption parameter */
+    alpha = (alpha > alpha_ms)? alpha : alpha_ms;
 
     /* increment converged, output the volume weighted dissipation */
     if(myrank == 0){
@@ -779,7 +786,7 @@ double Newton_Raphson (const int print_level,
     ST = GAMA = gam = ART = 0;
 
     /* increment the step counter */
-    *n_step ++;
+    (*n_step) ++;
 
     /* /\* turn off line search *\/ */
     /* ART = 1; */
