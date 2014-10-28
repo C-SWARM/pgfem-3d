@@ -38,6 +38,11 @@ struct pgf_FE2_micro_server_stats{
 typedef struct pgf_FE2_micro_server_stats pgf_FE2_micro_server_stats;
 
 /**
+ * Print the stats structure nicely so it can be grepped from the logs.
+ */
+void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server_stats *stat);
+
+/**
  * Sturucture to organize a server's work.
  */
 struct pgf_FE2_micro_server{
