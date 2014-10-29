@@ -30,6 +30,9 @@
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
 
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
 #endif
@@ -66,7 +69,27 @@ typedef struct NR_summary{
   double final_res;
 } NR_summary;
 
+/** Set the time vector to contain current dt for microscale */
+static void set_time_micro(const int tim,
+			   double *times,
+			   const double dt,
+			   const long DIV,
+			   double *time_np1)
+{
+  *time_np1 = times[tim+1];
+  times[tim + 1] = times[tim] + dt;
+}
+
+/** Reset the time vector to normal state */
+static void set_time_macro(const int tim,
+			   double *times,
+			   const double time_np1)
+{
+  times[tim + 1] = time_np1;
+}
+
 double Newton_Raphson (const int print_level,
+		       int *n_step,
 		       long ne,
 		       int n_be,
 		       long nn,
@@ -156,8 +179,15 @@ double Newton_Raphson (const int print_level,
 
   /* damage substep criteria */
   const double max_damage_per_step = 0.05;
+  const double alpha_restart = 1.25;
   double max_damage = 0.0;
   double alpha = 0.0;
+
+  /* max micro substep criteria */
+  const int max_n_micro_substep = 2;
+  const double alpha_restart_ms = 2.0;
+  int max_substep = 0;
+  double alpha_ms = 0.0;
 
   /* damage dissipation */
   double dissipation = 0.0;
@@ -180,7 +210,7 @@ double Newton_Raphson (const int print_level,
     break;
   }
 
-  int nstep = 0;
+  *n_step = 0;
 
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
@@ -247,11 +277,13 @@ double Newton_Raphson (const int print_level,
        sol->d_r (no displacement increments) for displacement dof
        vector */
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-    start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				  JOB_NO_COMPUTE_EQUILIBRIUM,
-				  ctx->macro->sol->d_r,
-				  ctx->job_list,ctx->send,
-				  ctx->recv);
+    pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					   FE2_REBALANCE_NONE);
+    double tnp1 = 0;
+    set_time_micro(tim,times,dt,DIV,&tnp1);
+    pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				   JOB_NO_COMPUTE_EQUILIBRIUM);
+    set_time_macro(tim,times,tnp1);
   }
 
   /* reset the error flag */
@@ -403,8 +435,7 @@ double Newton_Raphson (const int print_level,
 	    ART = 1;
 	    /* complete any jobs before assembly */
 	    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	    finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-					   ctx->send,ctx->recv);
+	    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
 	  }
 
 	  /* Matrix assmbly */
@@ -520,11 +551,13 @@ double Newton_Raphson (const int print_level,
 
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				      JOB_COMPUTE_EQUILIBRIUM,
-				      ctx->macro->sol->f,
-				      ctx->job_list,ctx->send,
-				      ctx->recv);
+	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					       FE2_REBALANCE_GREEDY);
+	double tnp1 = 0;
+	set_time_micro(tim,times,dt,DIV,&tnp1);
+	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				       JOB_COMPUTE_EQUILIBRIUM);
+	set_time_macro(tim,times,tnp1);
       }
 
       /* Residuals */
@@ -532,13 +565,6 @@ double Newton_Raphson (const int print_level,
 			   b_elems,matgeom,hommat,sup,
 			   eps,sig_e,nor_min,crpl,dt,stab,
 			   nce,coel,mpi_comm,opts);
-
-      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
-	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				       ctx->send,ctx->recv);
-      }
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
@@ -549,6 +575,25 @@ double Newton_Raphson (const int print_level,
 	INFO = 1;
 	ART = 1;
 	goto rest;
+      }
+
+      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
+	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
+	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
+	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+
+	/* determine substep factor */
+	alpha_ms = ((double) max_substep) / max_n_micro_substep;
+	if(alpha_ms > alpha_restart_ms){
+	  if(myrank == 0){
+	    PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n"
+			 "Subdividing load.\n",alpha_ms);
+	  }
+	  alpha = alpha_ms;
+	  INFO = 1;
+	  ART = 1;
+	  goto rest;
+	}
       }
       
       /* Transform LOCAL load vector to GLOBAL */
@@ -706,17 +751,25 @@ double Newton_Raphson (const int print_level,
     alpha = max_damage/max_damage_per_step;
     MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
     if(myrank == 0){
-      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n",
-	     alpha,max_damage_per_step);
+      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n"
+		   "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
+		   alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
     }
-    if(alpha > 1.25){
+    if(alpha > alpha_restart || alpha_ms > alpha_restart_ms){
       if(myrank == 0){
-	PGFEM_printf("Subdividing to maintain accuracy of damage law.\n");
+	PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
       }
+
+      /* adapt time step based on largest adaption parameter */
+      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
+
       INFO = 1;
       ART = 1;
       goto rest;
     }
+
+    /* always adapt time step based on largest adaption parameter */
+    alpha = (alpha > alpha_ms)? alpha : alpha_ms;
 
     /* increment converged, output the volume weighted dissipation */
     if(myrank == 0){
@@ -732,6 +785,9 @@ double Newton_Raphson (const int print_level,
 
     ST = GAMA = gam = ART = 0;
 
+    /* increment the step counter */
+    (*n_step) ++;
+
     /* /\* turn off line search *\/ */
     /* ART = 1; */
     
@@ -740,11 +796,14 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				    JOB_UPDATE,
-				    ctx->macro->sol->f,
-				    ctx->job_list,ctx->send,
-				    ctx->recv);
+      pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					     FE2_REBALANCE_NONE);
+
+      double tnp1 = 0;
+      set_time_micro(tim,times,dt,DIV,&tnp1);
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				     JOB_UPDATE);
+      set_time_macro(tim,times,tnp1);
     }
 
     /* increment coheisve elements */
@@ -786,18 +845,9 @@ double Newton_Raphson (const int print_level,
     vvplus (r,d_r,ndofd);
     
     /* Null prescribed increment deformation */
-    switch(opts->analysis_type){
-    default:
-      for (i=0;i<sup->npd;i++){  
-	sup->defl[i] += sup->defl_d[i];
-	sup->defl_d[i] = 0.0;
-      }
-      break;
-    case DISP:
-      for (i=0;i<sup->npd;i++){      
-	sup->defl_d[i] = 0.0;
-      }
-      break;
+    for (i=0;i<sup->npd;i++){  
+      sup->defl[i] += sup->defl_d[i];
+      sup->defl_d[i] = 0.0;
     }
 
     for (i=0;i<ndofd;i++) {
@@ -811,8 +861,7 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				     ctx->send,ctx->recv);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
     }
 
     /************* TEST THE UPDATE FROM N TO N+1  *************/
@@ -853,11 +902,10 @@ double Newton_Raphson (const int print_level,
 	char fname[100];
 	sprintf(fname,"%s_%ld",opts->ofname,tim);
 	if(myrank == 0){
-	  VTK_print_master(opts->opath,fname,nstep,nproc,opts);
+	  VTK_print_master(opts->opath,fname,*n_step,nproc,opts);
 	}
-	VTK_print_vtu(opts->opath,fname,nstep,myrank,ne,nn,node,
+	VTK_print_vtu(opts->opath,fname,*n_step,myrank,ne,nn,node,
 		      elem,sup,r,sig_e,eps,opts);
-	nstep ++;
       }
     }
 

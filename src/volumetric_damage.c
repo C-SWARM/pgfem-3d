@@ -1,9 +1,10 @@
 /* HEADER */
 #include "volumetric_damage.h"
+#include "utils.h"
+#include "PGFEM_io.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "PGFEM_io.h"
 
 #ifndef VD_DEBUG
 #define VD_DEBUG 0
@@ -121,6 +122,22 @@ void copy_damage(damage *restrict dest,
 {
   if(dest == src) return;
   memcpy(dest,src,sizeof(*src));
+  /* may not be necessary, but do it anyhow */
+  reset_damage_functions(dest,dest->eq_flag);
+}
+
+void pack_damage(const damage *src,
+		 char *buffer,
+		 size_t *pos)
+{
+  pack_data(src,buffer,pos,1,sizeof(*src));
+}
+
+void unpack_damage(damage *dest,
+		   const char *buffer,
+		   size_t *pos)
+{
+  unpack_data(buffer,dest,pos,1,sizeof(*dest));
   /* may not be necessary, but do it anyhow */
   reset_damage_functions(dest,dest->eq_flag);
 }

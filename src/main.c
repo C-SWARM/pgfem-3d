@@ -458,7 +458,13 @@ int single_scale_main(int argc,char *argv[])
 
     /* temporary leftovers from old file format */      
     fscanf (in1,"%ld\n",&ncom); 
-    comat = aloc2 (ncom,4);
+
+    /* to silence warning message. need to pull this legacy bit of
+       code out completely. Cohesive porperties provided in separate
+       file. This leads to *very* small memory leak */
+    if(ncom <= 0) comat = aloc2 (1,4);
+    else     comat = aloc2 (ncom,4);
+
       
     /* read the cohesive element info */
     coel = read_cohe_elem (in1,ncom,ndim,nn,node,&nce,
@@ -1069,8 +1075,8 @@ int single_scale_main(int argc,char *argv[])
 	  vvplus  (R,nodal_forces,ndofd);
 
 	} /* end load increment */
-
-	hypre_time += Newton_Raphson ( 1,ne,n_be,nn,ndofn,ndofd,npres,tim,
+	int n_step = 0;
+	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
 				       eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
@@ -1202,7 +1208,8 @@ int single_scale_main(int argc,char *argv[])
 	  if (options.cohesive == 1){
 	    if(myrank == 0){
 	      VTK_print_cohesive_master(options.opath,
-					options.ofname,tim,nproc);
+					options.ofname,tim,nproc,
+					&options);
 	    }
 
 	    VTK_print_cohesive_vtu(options.opath,options.ofname,

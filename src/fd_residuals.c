@@ -1,52 +1,16 @@
 #include "fd_residuals.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef RESID_ON_ELEM_H
 #include "resid_on_elem.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
 
 int fd_residuals (double *f_u,
 		  long ne,
@@ -110,15 +74,25 @@ int fd_residuals (double *f_u,
 
     double *fe = aloc1 (ndofe);
     long *cn = aloc1l (ndofe);
+    /* code numbers on element */
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
     
     /* coordinates */
-    switch(opts->analysis_type){
-    case DISP:
-      nodecoord_total(nne,nod,node,x,y,z);
-      break;
-    default:
-      nodecoord_updated(nne,nod,node,x,y,z);
-      break;
+    if(sup->multi_scale){
+	nodecoord_total(nne,nod,node,x,y,z);
+	def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    } else {
+      switch(opts->analysis_type){
+      case DISP:
+	nodecoord_total(nne,nod,node,x,y,z);
+	def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+	break;
+      default:
+	nodecoord_updated(nne,nod,node,x,y,z);
+	/* deformation on element */
+	def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);    
+	break;
+      }
     }
 
     if(opts->analysis_type == MINI
@@ -126,17 +100,13 @@ int fd_residuals (double *f_u,
       element_center(nne,x,y,z);
     }
 
-    /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
-    
-    /* deformation on element */
-    def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+
     
     /* Residuals on element */
     switch(opts->analysis_type){
     case STABILIZED:
       err = resid_st_elem (i,ndofn,nne,elem,nod,node,hommat,
-			   x,y,z,eps,sig,r_e,nor_min,fe,dt,stab);
+			   x,y,z,eps,sig,sup,r_e,nor_min,fe,dt,stab);
       break;
     case MINI:
       err = MINI_resid_el(fe,i,ndofn,nne,x,y,z,elem,
@@ -147,17 +117,8 @@ int fd_residuals (double *f_u,
 			     nod,node,hommat,eps,sig,r_e);
       break;
     case DISP:
-      {
-	/* Get TOTAL deformation on element; r_e already contains
-	   INCREMENT of deformation, add the deformation from previous. */
-	double *r_en;
-	r_en = aloc1(ndofe);
-	def_elem (cn,ndofe,r,elem,node,r_en,sup,1);
-	vvplus(r_e,r_en,ndofe);
-	err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
-			     hommat,nod,node,eps,sig,sup,r_e);
-	free(r_en);
-      }
+      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
+			   hommat,nod,node,eps,sig,sup,r_e);
       break;
     default:
       err = resid_on_elem (i,ndofn,nne,nod,elem,node,matgeom,

@@ -1,4 +1,8 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ *  Matthew Mosby, University of Notre Dame
+ */
 #pragma once
 #ifndef MACRO_MICRO_FUNCTIONS_H
 #define MACRO_MICRO_FUNCTIONS_H
@@ -11,12 +15,13 @@ extern "C" {
 #include "ms_cohe_job_info.h"
 #include "ms_job_intercomm.h"
 
+  struct pgf_FE2_macro_client;
+  struct PGFEM_mpi_comm;
+
+  /* container for passing through Newton Raphson */
   typedef struct MS_SERVER_CTX{
-    int n_jobs;
-    MS_COHE_JOB_INFO *job_list;
-    PGFEM_server_ctx *send;
-    PGFEM_server_ctx *recv;
-    PGFEM_ms_job_intercomm *intercomm;
+    struct pgf_FE2_macro_client *client;
+    struct PGFEM_mpi_comm *mpi_comm;
     MACROSCALE *macro;
   }MS_SERVER_CTX;
 

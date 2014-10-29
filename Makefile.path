@@ -2,7 +2,7 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d/branches/fe2_damage
+top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/pgfem_3d/branches/merge
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
@@ -63,15 +63,15 @@ VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 
 # Intel MKL: MKLROOT must be defined or define it here
 MKL_incl	= -I$(MKLROOT)/include
-# MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
-# 	     	  -Wl,--start-group \
-# 	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
-# 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
-# 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
-# 	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
-# 	     	  -Wl,--end-group -lpthread
+MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
+	     	  -Wl,--start-group \
+	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
+	     	  -Wl,--end-group -lpthread
 
-MKL_lib		= -mkl
+#MKL_lib		= -mkl
 
 # Math libraries
 MATH_lib	=  -limf -lm

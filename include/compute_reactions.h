@@ -1,4 +1,9 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ */
+#pragma once
 #ifndef COMPUTE_REACTIONS_H
 #define COMPUTE_REACTIONS_H
 
@@ -7,38 +12,14 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #include "PGFEM_mpi.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
 
   /** After convergence, compute the reaction forces at nodes with
       prescribed deflections. This is achieved by computing the

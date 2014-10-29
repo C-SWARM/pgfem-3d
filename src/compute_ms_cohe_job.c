@@ -29,7 +29,8 @@ static const int ndim = 3;
 /** Wrapper for Newton Raphson. */
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts);
+			  const PGFem3D_opt *opts,
+			  int *n_step);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -107,7 +108,7 @@ int compute_ms_cohe_job(const int job_id,
   MPI_Comm_rank(common->mpi_comm,&myrank);
   if(myrank == 0){
     PGFEM_printf("=== MICROSCALE cell %d of %d ===\n",
-		 job_id+1,microscale->n_solutions);
+		 job_id+1,microscale->idx_map.size);
   /*   PGFEM_printf("Jump (n):\t"); */
   /*   print_array_d(PGFEM_stdout,p_job->jump_n,ndim,1,ndim); */
   /*   PGFEM_printf("Jump (n+1):\t"); */
@@ -137,9 +138,21 @@ int compute_ms_cohe_job(const int job_id,
   /* swtich compute job */
   switch(p_job->job_type){
   case JOB_COMPUTE_EQUILIBRIUM:
+
+    /* print time step information */
+    if(myrank == 0){
+      PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
+      PGFEM_printf("\nFinite deformations time step %ld) "
+		   " Time %f | dt = %10.10f\n",
+		   p_job->tim,sol->times[sol->tim+1],sol->dt);
+    }
+
     /* compute the microscale equilibrium. */
-    if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
-    err += ms_cohe_job_nr(common,sol,microscale->opts);
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
+
+    /* /\* compute number of subdivisions at micro scale *\/ */
+    /* p_job->n_step = (int) ((p_job->times[2] - p_job->times[1]) */
+    /* 			   /(sol->times[sol->tim + 1] - sol->times[sol->tim])); */
 
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -248,7 +261,8 @@ int assemble_ms_cohe_job_res(const int job_id,
 
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts)
+			  const PGFem3D_opt *opts,
+			  int *n_step)
 {
   int err = 0;
   double time = 0.0;
@@ -256,12 +270,13 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   int full_NR = 1; /* 0 is modified NR */
   double pores = 0.0;
   const int print_level = 0;
+  *n_step = 0;
 
   /* copy of load increment */
   double *sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson(print_level,c->ne,0,c->nn, c->ndofn,
+  time += Newton_Raphson(print_level,n_step,c->ne,0,c->nn, c->ndofn,
 			 c->ndofd,c->npres,s->tim,s->times,
 			 nl_err,s->dt,c->elem,NULL,
 			 c->node,c->supports,sup_defl,c->hommat,
@@ -798,7 +813,7 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 
     if(o->cohesive){
       if(myrank == 0){
-	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc);
+	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc,o);
       }
       VTK_print_cohesive_vtu(o->opath,ofname,s->p_tim,myrank,c->nce,c->node,
 			     c->coel,c->supports,s->r,c->ensight,o);

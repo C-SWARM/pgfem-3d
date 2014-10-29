@@ -85,13 +85,13 @@ extern "C" {
     EPS *eps;
     CRPL *crpl;
     long npres;
-    double *elem_state_info;
-    double *coel_state_info;
 
     /* solution information */
-    double *rn; /**< solution vector r at macro time n */
     double *r; /**< current solution r at macro time n+1 */
-    EPS *eps_n; /**< state vector eps at macro time n */
+
+    /* State variables at time n */
+    size_t packed_state_var_len;
+    char *packed_state_var_n;
 
     /** The following are pointers to a shared buffer elsewhere! The
 	buffers are used purely as a workspace. */
@@ -130,11 +130,49 @@ extern "C" {
     double NORM;
   } MICROSCALE_SOLUTION;
 
+  typedef struct{
+    size_t size;
+    int *map;
+  } sol_idx_map;
+  void sol_idx_map_build(sol_idx_map *map,
+			 const size_t size);
+  void sol_idx_map_destroy(sol_idx_map *map);
+  void sol_idx_map_sort_id(sol_idx_map *map);
+  void sol_idx_map_sort_idx(sol_idx_map *map);
+
+  /**
+   * Get solution idx from job id. Returns -1 if job id not found in
+   * the map.
+   */
+  int sol_idx_map_id_get_idx(const sol_idx_map *map,
+			     const int id);
+
+  /**
+   * Get the idx from the job id and then assign a new id. Aborts if
+   * the current id is not valid.
+   */
+  int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
+				   const int cur_id,
+				   const int new_id);
+
+  /**
+   * Get the job id from the idx. Return -1 if not found.
+   */
+  int sol_idx_map_idx_get_id(const sol_idx_map *map,
+			     const int idx);
+
+  /**
+   * Set the id at the given idx. Aborts if the idx is not found.
+   */
+  void sol_idx_map_idx_set_id(sol_idx_map *map,
+			      const int idx,
+			      const int id);
+
   /** structure to contain all microscale information */
   typedef struct MICROSCALE{
     PGFem3D_opt *opts;
     COMMON_MICROSCALE *common;
-    int n_solutions;
+    sol_idx_map idx_map;
     MICROSCALE_SOLUTION *sol;
   } MICROSCALE;
 

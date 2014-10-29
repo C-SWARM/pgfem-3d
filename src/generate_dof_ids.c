@@ -140,6 +140,16 @@ int generate_local_dof_ids(const int nelem,
     }
   }
 
+#ifndef NDEBUG
+  /* sanity check */
+  for(int i=0; i<ndofn*nnode; i++){
+    if(!visited_node_dof[i]){
+      PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
+      PGFEM_Abort();
+    }
+  }
+#endif
+
   free(visited_node_dof);
   if(err){
     PGFEM_Abort();
@@ -176,6 +186,18 @@ int generate_global_dof_ids(const int nelem,
     ndof += generate_global_dof_ids_on_coel(ndofn,ndof,i,visited_node_dof,
 					    nodes,coel,mpi_comm);
   }
+
+  /* sanity check */
+#ifndef NDEBUG
+  int myrank = 0;
+  MPI_Comm_rank(mpi_comm,&myrank);
+  for(int i=0; i<ndofn*nnode; i++){
+    if(!visited_node_dof[i]){
+      PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
+      PGFEM_Abort();
+    }
+  }
+#endif
 
   free(visited_node_dof);
   ndof --;
@@ -456,6 +478,10 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
+      for(int j=0; j<ptr_node->ndofn; j++){
+	const int dof_idx = node_id*ndofn + j;
+	visited_node_dof[dof_idx] = 1;
+      }
       continue;
     } else {
       for(int j=0; j<ptr_node->ndofn; j++){
@@ -556,6 +582,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
+      for(int j=0; j<ptr_node->ndofn; j++){
+	const int dof_idx = node_id*ndofn + j;
+	visited_node_dof[dof_idx] = 1;
+      }
       continue;
     } else {
       for(int j=0; j<ptr_node->ndofn; j++){
@@ -588,11 +618,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 }/* generate_global_dof_ids_on_coel() */
 
 
-static void distribute_global_dof_ids_on_bounding_elements
-(const int n_belem,
- const int ndof_be,
- BOUNDING_ELEMENT *b_elems,
- MPI_Comm mpi_comm)
+static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
+							   const int ndof_be,
+							   BOUNDING_ELEMENT *b_elems,
+							   MPI_Comm mpi_comm)
 {
   int myrank = 0;
   int nproc = 0;

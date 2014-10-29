@@ -7,6 +7,8 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
+#include <stdlib.h>
+
   /** Define volumetric damage variables */
   typedef struct DAMAGE_PARAMS{
     /* Weibull distribution parameters */
@@ -57,8 +59,18 @@ extern "C" {
 
   /** Copy the data from src to dest. The functions are reset
       according to src->eq_flag */
-  void copy_damage(damage * restrict dest,
-		   const damage * restrict src);
+  void copy_damage(damage *dest,
+		   const damage *src);
+
+  /** Pack a damage object into a buffer */
+  void pack_damage(const damage *src,
+		   char *buffer,
+		   size_t *pos);
+
+  /** Unpack a damage object from a buffer */
+  void unpack_damage(damage *dest,
+		     const char *buffer,
+		     size_t *pos);
 
   /** Reset the damage variables to n (e.g. after restart). */
   void reset_damage(damage *dam);
