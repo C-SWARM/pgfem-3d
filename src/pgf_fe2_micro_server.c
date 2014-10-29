@@ -14,12 +14,15 @@
 #include <assert.h>
 #include <limits.h>
 
-void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server_stats *stat)
+void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server *server)
 {
+
+  const pgf_FE2_micro_server_stats *stat = server->stats;
   PGFEM_printf("SERVER STATS: njob total avg std min max\n");
-  PGFEM_printf("%d %0.5e %0.5e %0.5e %0.5e %0.5e\n\n",
-	       (int) stat->total/stat->avg,stat->total,
-	       stat->avg,stat->std,stat->min,stat->max);
+  PGFEM_printf("%ld %0.5e %0.5e %0.5e %0.5e %0.5e\n\n",
+	       server->n_jobs,
+	       stat->total,stat->avg,
+	       stat->std,stat->min,stat->max);
 }
 
 void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server)
@@ -359,7 +362,7 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
 
     /* send server/job statistics to macroscale for rebalancing */
     pgf_FE2_micro_server_finish_cycle(mpi_comm,server);
-    pgf_FE2_micro_server_stats_print(server->stats);
+    pgf_FE2_micro_server_stats_print(server);
 
     pgf_FE2_micro_server_destroy(server);
     pgf_FE2_server_rebalance_destroy(rebal);
