@@ -114,21 +114,11 @@ vpath %.c $(srcdir)
 #  Targets
 #
 
-all: PGFem3D_ss PGFem3D_ms
+all: PGFem3D
 
-PGFem3D_ss: $(OBJS) super_main_ss
+PGFem3D: $(OBJS)
 	$(RM) $(pfem_bin_dir)/$@
 	$(LINK) -o $(pfem_bin_dir)/$@ $(LDOPTIONS) $(OBJS) $(LIBS)
-
-PGFem3D_ms: $(OBJS) super_main_ms
-	$(RM) $(pfem_bin_dir)/$@
-	$(LINK) -o $(pfem_bin_dir)/$@ $(LDOPTIONS) $(OBJS) $(LIBS)
-
-super_main_ss: $(OBJS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) super_main.c -DPGFEM_FRAMEWORK=SINGLE_SCALE
-
-super_main_ms: $(OBJS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) super_main.c -DPGFEM_FRAMEWORK=MULTI_SCALE
 
 objects: $(OBJS)
 
@@ -139,7 +129,7 @@ clean:
 	$(RM)  *.o *~
 
 realclean: clean
-	$(RM) $(pfem_bin_dir)/PGFem3D_*
+	$(RM) $(pfem_bin_dir)/PGFem3D
 
 docs:
 	doxygen docs.config
