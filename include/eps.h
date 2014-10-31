@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef EPS_H
 #define EPS_H
 
@@ -6,14 +7,9 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef VOLUMETRIC_DAMAGE_H
 #include "volumetric_damage.h"
-#endif
-
+#include <stdio.h>
   /** Structure of strains EPS */
   typedef struct { /* Inelastic strain in all integration points */
     double *o,*f,*m,*d,*i;
@@ -100,11 +96,49 @@ extern "C" {
   };
   typedef struct EPS EPS;
 
-  EPS* build_eps_el (const long ne);
-
   EPS* build_eps_il (const long ne,
 		     const ELEMENT *elem,
 		     const int analysis);
+
+  /**
+   * Copy EPS for all elements. Additionally copies the rate of
+   * plastic strain (which is stored only on the 0-th element). The
+   * lists src and dest should be constructed by identical calls to
+   * build_eps_il.
+   */
+  void copy_eps_list(EPS *dest,
+		     const EPS *src,
+		     const int ne,
+		     const ELEMENT *elem,
+		     const int analysis);
+
+  /**
+   * return size of EPS for all elements in bytes
+   */
+  size_t sizeof_eps_list(const EPS *src,
+			 const int ne,
+			 const ELEMENT *elem,
+			 const int analysis);
+
+  /**
+   * Pack EPS for all elements into a buffer.
+   */
+  void pack_eps_list(const EPS *src,
+		     const int ne,
+		     const ELEMENT *elem,
+		     const int analysis,
+		     char *buffer,
+		     size_t *pos);
+
+  /**
+   * Unpack EPS for all elements from a buffer.
+   */
+  void unpack_eps_list(EPS *dest,
+		       const int ne,
+		       const ELEMENT *elem,
+		       const int analysis,
+		       const char *buffer,
+		       size_t *pos);
 
   /*** MUST be called before destroy_elem */
   void destroy_eps_il(EPS* eps,

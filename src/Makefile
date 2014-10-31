@@ -30,7 +30,7 @@ DFLAGS		= #-DNDEBUG
 
 # Un/comment the appropriate CFLAGS variable for using intel or GNU
 # compiler for correct strict warnings
-CFLAGS_INTEL	= -Wcheck -Werror-all -strict-ansi
+CFLAGS_INTEL	= -Wcheck
 #CFLAGS_GCC	= -pedantic -Werror
 CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 

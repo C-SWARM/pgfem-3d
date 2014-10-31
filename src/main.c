@@ -1075,8 +1075,8 @@ int single_scale_main(int argc,char *argv[])
 	  vvplus  (R,nodal_forces,ndofd);
 
 	} /* end load increment */
-
-	hypre_time += Newton_Raphson ( 1,ne,n_be,nn,ndofn,ndofd,npres,tim,
+	int n_step = 0;
+	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
 				       eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,

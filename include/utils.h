@@ -19,6 +19,78 @@
 #include "sig.h"
 #include "eps.h"
 
+void pack_2mat(const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_2mat(void **dest,
+		 const int nrow,
+		 const int ncol,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+void pack_3mat(const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_3mat(void ***dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+void pack_4mat(const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_4mat(void ****dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const int n_4,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+/** src and dest must be unique */
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size);
+
+/** src and dest must be unique */
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size);
+
+/** src and dest must be unique */
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size);
+
 /**
  * \brief Determine the number of duplicate values in an array.
  *

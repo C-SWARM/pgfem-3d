@@ -26,6 +26,7 @@ extern "C" {
     int elem_id; /**< macro element id */
     int proc_id; /**< processor ID (in macro communicator) that owns
 		    the macro element */
+    int int_pt;
     int job_type; /**< flag to guide microscale computation */
     int print_flag; /**< flag to print during update */
 
@@ -51,6 +52,7 @@ extern "C" {
     /* solution procedure */
     int tim; /**< time step at macroscale */
     double *times; /**< macro time at (tim-1) (tim) and (tim+1) [3]*/
+    int n_step;
 
   }MS_COHE_JOB_INFO;
 
