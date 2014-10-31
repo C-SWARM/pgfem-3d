@@ -11,8 +11,12 @@
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
+/**
+ * Structure for maintaining communication information related to a
+ * particular job.
+ */
 struct pgf_FE2_job_comm_buf{
-  size_t buffer_len;
+  size_t buffer_len; /**< length of the buffer in bytes */
   char *buffer;
   MPI_Request request;
   MPI_Status status;
@@ -22,11 +26,33 @@ struct pgf_FE2_job_comm_buf{
 typedef struct pgf_FE2_job_comm_buf pgf_FE2_job_comm_buf;
 #endif
 
+/**
+ * Set a valid initial state for a pgf_FE2_job_comm_buf object.
+ *
+ * Performs no allocation.
+ */
 void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf);
+
+/**
+ * Allocate internal structure for a pgf_FE2_job_comm_buf object.
+ *
+ * Assumes that internal structures are not already allocated. Calling
+ * pgf_FE2_job_comm_buf_build on multiple times on an object without
+ * intermediat calls to pgf_FE2_job_comm_buf_destroy results in a
+ * memory leak.
+ */
 void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
 				const size_t buffer_len);
+
+/**
+ * Destroys pgf_FE2_job_comm_buf object and leaves it in a valid
+ * (empty) state.
+ */
 void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf);
 
+/**
+ * Enumeration for the progression of job states.
+ */
 enum pgf_FE2_job_state{
   FE2_STATE_UNDEFINED=-1,
   FE2_STATE_NEED_INFO_REBALANCE,  /*< job is rebalancing */
@@ -57,13 +83,22 @@ struct pgf_FE2_job{
 typedef struct pgf_FE2_job pgf_FE2_job;
 #endif
 
+/**
+ * Sets/allocates an initial valid state for a pgf_FE2_job object.
+ */
 void pgf_FE2_job_init(pgf_FE2_job *job,
 		      const int id,
 		      const int state);
 
+/**
+ * Set the job progression state for a pgf_FE2_job object.
+ */
 void pgf_FE2_job_set_state(pgf_FE2_job *job,
 			   const int state);
 
+/**
+ * Destroy a pgf_FE2_job object.
+ */
 void pgf_FE2_job_destroy(pgf_FE2_job *job);
 
 /**
@@ -90,12 +125,24 @@ void pgf_FE2_job_decode_id(const int id,
  */
 int pgf_FE2_job_decode_id_proc(const int id);
 
+/**
+ * Comparator function for 'state' of two pgf_FE2_job
+ * objects. Suitable for use in sorting functions etc.
+ */
 int pgf_FE2_job_compare_state(const void *a,
 			      const void *b);
 
+/**
+ * Comparator function for 'time' of two pgf_FE2_job objects. Suitable
+ * for use in sorting functions etc.
+ */
 int pgf_FE2_job_compare_time(const void *a,
 			     const void *b);
 
+/**
+ * Comparator function for 'id' of two pgf_FE2_job objects. Suitable
+ * for use in sorting functions etc.
+ */
 int pgf_FE2_job_compare_id(const void *a,
 			   const void *b);
 

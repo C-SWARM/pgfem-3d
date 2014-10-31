@@ -28,6 +28,7 @@ void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf)
 {
   free(buf->buffer);
   buf->buffer = NULL;
+  buf->buffer_len = 0;
 }
 
 /*** FE2_job ***/
