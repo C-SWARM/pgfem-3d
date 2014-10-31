@@ -288,14 +288,14 @@ int single_scale_main(int argc,char *argv[])
  
   /*=== Parse the command line for options ===*/
   PGFem3D_opt options;
-  if (argc <= 1){
+  if (argc <= 2){
     if(myrank == 0){
       print_usage(stdout);
     }
     exit(0);
   }
   set_default_options(&options);
-  parse_command_line(argc,argv,myrank,&options);
+  re_parse_command_line(myrank,2,argc,argv,&options);
   if(myrank == 0){
     print_options(stdout,&options);
   }
