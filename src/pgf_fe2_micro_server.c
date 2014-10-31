@@ -425,10 +425,6 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
   return err;
 }
 
-/**
- * This is the main function that starts the master/worker server
- * processes.
- */
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
 			       MICROSCALE *micro)
 {
