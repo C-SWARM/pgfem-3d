@@ -87,7 +87,7 @@ volumetricPressureFunctionPtr getVolumetricPressureFunction(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return volumetricPressure_Common;
 
   case 2:
@@ -115,7 +115,7 @@ linearizedPressureFunctionPtr getLinearizedPressureFunction(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return linearizedPressure_Common;
 
   case 2:
@@ -143,7 +143,7 @@ d2UdJ2FunctionPtr getd2UdJ2Function(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return d2UdJ2_Common;
 
   case 2:
@@ -171,7 +171,7 @@ totalUpFunctPtr getTotalUpFunction(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return totalUp_Common;
 
   case 2:
@@ -199,7 +199,7 @@ totalUppFunctPtr getTotalUppFunction(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return totalUpp_Common;
 
   case 2:
