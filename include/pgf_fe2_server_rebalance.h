@@ -18,24 +18,25 @@
  * sent (and to whom), and what jobs are to be received (and from
  * whom). The total number of jobs on the server after the rebalancing
  * is n_keep + n_recv.
+ *
+ * This datastructure is fully encapsulated and must be manipulated
+ * through a handle.
  */
-/* typedef int* pgf_FE2_server_rebalance; */
 struct pgf_FE2_server_rebalance;
 typedef struct pgf_FE2_server_rebalance pgf_FE2_server_rebalance;
 
-
 /**
- * Return the size fo the rebalance object in bytes.
+ * Return the size of the rebalance object in bytes.
  */
 size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *t);
 
 /**
- * Return a pointer to the internal bufeer for communication purposes.
+ * Return a pointer to the internal buffer for communication purposes.
  */
 void* pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t);
 
 /**
- * Build the data structure and set metadata.
+ * Construct a pgf_FE2_server_rebalance object and return a handle.
  */
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **t,
 				    const size_t n_keep,
@@ -43,14 +44,15 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **t,
 				    const size_t n_recv);
 
 /**
- * Initialize a pgf_FE2_server_rebalance from a buffer. Invalidates
- * the handle 'buffer' on exit. Any memory pointed to by buffer is
- * destroyed on a call to ..._destroy(t);
+ * Construct a pgf_FE2_server_rebalance object from a buffer and
+ * return the handle. Invalidates the handle 'buffer' on exit. Any
+ * memory pointed to by buffer is destroyed on a call to
+ * pgf_FE2_server_rebalance_destroy(t);
  */
 void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
 						void **buffer);
 /**
- * Destroy the data strucuture.
+ * Destroy the pgf_FE2_server_rebalance object
  */
 void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t);
 
@@ -98,8 +100,8 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
 
 /**
  * Posts non-blocking communication for exchanging all of the
- * jobs. Allocates buffers as necisarry for maintaining consistant
- * send information and assigns locations for microstructures to
+ * jobs. Allocates buffers as necessary for maintaining consistent
+ * send information and assigns locations for micro-structures to
  * receive.
  */
 int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
@@ -107,7 +109,7 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 					   MICROSCALE *micro);
 /**
  * Finalizes exchange communications and releases internal
- * buffers. Need to extend this functionality to overlab with further
+ * buffers. Need to extend this functionality to overlap with further
  * computation.
  */
 int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
