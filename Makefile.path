@@ -38,11 +38,6 @@ SUITESPARSE_incl= -I$(SUITESPARSE_dir)/UMFPACK/Include \
 SUITESPARSE_lib	= -L${SUITESPARSE_dir}/UMFPACK/Lib -lumfpack \
 		  -L${SUITESPARSE_dir}/AMD/Lib -lamd
 
-# BLOCKSOLVE
-BLOCKSOLVE_dir	= $(pfem_lib_ext)/BlockSolve95
-BLOCKSOLVE_incl	= -I$(BLOCKSOLVE_dir)/include
-BLOCKSOLVE_lib	= -L$(BLOCKSOLVE_dir)/lib/libO/linux-intel -lBS95
-
 # HYPRE
 HYPRE_dir	= $(pfem_lib_ext)/hypre-2.4.0b
 HYPRE_incl	= -I$(HYPRE_dir)/include

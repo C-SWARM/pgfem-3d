@@ -10,8 +10,7 @@
 #define PFEM_DEBUG 0
 #endif
 
-void PLoc_Sparse (BSspmat *K,
-		  double **Lk,
+void PLoc_Sparse (double **Lk,
 		  double *lk,
 		  int *Ai,
 		  int *Ap,

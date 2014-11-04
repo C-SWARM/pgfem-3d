@@ -199,7 +199,7 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
     MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
     /* build rebalance */
-    pgf_FE2_server_rebalance_build_from_buffer(rebal,&((void*)buf));
+    pgf_FE2_server_rebalance_build_from_buffer(rebal,(void**) &buf);
 
     /* build server list */
     pgf_FE2_micro_server_build(server,*rebal);
@@ -403,7 +403,7 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 	MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
 	/* build rebalancing data structure */
-	pgf_FE2_server_rebalance_build_from_buffer(&rebal,&((void*) buf));
+	pgf_FE2_server_rebalance_build_from_buffer(&rebal,(void**) &buf);
 
 	/* perform rebalancing */
 	pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);

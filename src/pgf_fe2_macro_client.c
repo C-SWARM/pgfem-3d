@@ -608,7 +608,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
 	/* assemble tangent to local and off-proc buffers */
-	PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
 		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
 		    c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
 	break;

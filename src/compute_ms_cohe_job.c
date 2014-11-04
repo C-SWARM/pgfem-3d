@@ -285,8 +285,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			 s->rr,s->R,s->f_defl,s->RR,
 			 s->f_u,s->RRn,s->crpl,opts->stab,
 			 c->nce,c->coel,full_NR,&pores,
-			 c->SOLVER,NULL,NULL, NULL,
-			 NULL,s->BS_x,s->BS_f,s->BS_RR,
+			 c->SOLVER,s->BS_x,s->BS_f,s->BS_RR,
 			 0.0,0.0,0.0,c->lin_err,
 			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
 			 1,c->maxit_nl,&s->NORM,c->nbndel,
@@ -389,7 +388,7 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
   ZeroHypreK(c->SOLVER,c->Ai,c->DomDof[myrank]);
 
   /* assemble to the microscale tangent matrix */
-  err += stiffmat_fd(NULL,c->Ap,c->Ai,c->ne,0,c->ndofn,
+  err += stiffmat_fd(c->Ap,c->Ai,c->ne,0,c->ndofn,
 		     c->elem,NULL,c->nbndel,c->bndel,
 		     c->node,c->hommat,c->matgeom,s->sig_e,
 		     s->eps,s->d_r,s->r,c->npres,c->supports,
@@ -705,10 +704,10 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
     if(i == 0){
       /* only setup solver for first time through */
       solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-		   c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+		   c->SOLVER,c->mpi_comm);
     } else {
       solve_system_no_setup(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-			    c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+			    c->SOLVER,c->mpi_comm);
     }
 
     /* check solver error status and print solve information */

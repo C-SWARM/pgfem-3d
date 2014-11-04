@@ -1,6 +1,7 @@
 #include "Arc_length.h"
 #include <sys/time.h> 
 #include <sys/resource.h>
+#include <assert.h>
 
 #include "PGFEM_io.h"
 #include "enumerations.h"
@@ -69,7 +70,6 @@ double Arc_length (long ne,
 		   EPS *eps,
 		   int *Ap,
 		   int *Ai,
-		   BSspmat *k,
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		   double *RRn,
 		   double *f_defl,
@@ -122,9 +122,6 @@ double Arc_length (long ne,
 		   long *DomDof,
 		   int GDof,
 		   COMMUN comm,
-		   BSprocinfo *BSinfo,
-		   BSpar_mat **pk,
-		   BSpar_mat **f_pk,
 		   double err,
 		   double *NORM,
 		   MPI_Comm mpi_comm,
@@ -251,25 +248,17 @@ double Arc_length (long ne,
     
     if (periodic == 1) nulld (R,ndofd);
     
-    /* Assembly stiffness matrix */
-    if (opts->solverpackage == BLOCKSOLVE){ /* BlockSolve */
-      null_BSspmat (k); 
-      stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
-    }
-    if (opts->solverpackage == HYPRE){ /* Hypre */
-      /* Null the matrix */
-      ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-      stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+    assert(opts->solverpackage == HYPRE);
+    /* Null the matrix */
+    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
+    stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		 node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
+		 nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
+		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
 
-      /* Assemble the matrix */
-      HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-    }	
+    /* Assemble the matrix */
+    HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
+
     
     if (periodic == 1 && TYPE == 1) dlm0 = nor;
     /* Transform LOCAL load vector to GLOBAL */
@@ -281,7 +270,7 @@ double Arc_length (long ne,
     {
       SOLVER_INFO s_info;
       solve_system(opts,BS_R,BS_rr,tim,iter,DomDof,
-		   &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		   &s_info,PGFEM_hypre,mpi_comm);
       if(myrank == 0){
 	solve_system_check_error(stdout,s_info);
       }
@@ -482,25 +471,16 @@ double Arc_length (long ne,
       /* Null the residual vector */
       nulld (f_u,ndofd);
       
-      if (opts->solverpackage == BLOCKSOLVE) { /* BSolve */
-	/* Assembly stiffness matrix */
-	null_BSspmat(k);
-	stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		     nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		     nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
-      }
-      if (opts->solverpackage == HYPRE){ /* Hypre */
-	/* Null the matrix */
-	ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		     nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		     nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+      assert(opts->solverpackage == HYPRE);
+      /* Null the matrix */
+      ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
+      stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
+		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
+		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
 	
-	/* Assemble the matrix */
-	HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-      }
+      /* Assemble the matrix */
+      HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
       
       /* Transform unequibriated force: L -> G */
       if (periodic != 1){
@@ -514,7 +494,7 @@ double Arc_length (long ne,
       {
 	SOLVER_INFO s_info;
 	solve_system(opts,BS_f_u,BS_rr,tim,iter,DomDof,
-		     &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		     &s_info,PGFEM_hypre,mpi_comm);
 	if(myrank == 0){
 	  solve_system_check_error(stdout,s_info);
 	}
@@ -561,7 +541,7 @@ double Arc_length (long ne,
       {
 	SOLVER_INFO s_info;
 	solve_system(opts,BS_f,BS_U,tim,iter,DomDof,
-		     &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		     &s_info,PGFEM_hypre,mpi_comm);
 	if(myrank == 0){
 	  solve_system_check_error(stdout,s_info);
 	}

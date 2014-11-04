@@ -5,7 +5,6 @@
 
 #include "pgfem_comm.h"
 #include "hypre_global.h"
-#include "blocksolve_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,8 +21,7 @@ extern "C" {
    *      xxxxxx
    */
 
-  void PLoc_Sparse (BSspmat *K, /**< UNUSED */
-		    double **Lk,
+  void PLoc_Sparse (double **Lk,
 		    double *lk,
 		    int *Ai, /**< UNUSED */
 		    int *Ap, /**< UNUSED */

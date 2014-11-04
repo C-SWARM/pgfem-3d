@@ -4,7 +4,6 @@
 #ifndef ARC_LENGTH_H
 #define ARC_LENGTH_H
 
-#include "blocksolve_interface.h"
 #include "PGFEM_mpi.h"
 #include "hypre_global.h"
 #include "element.h"
@@ -52,7 +51,6 @@ extern "C" {
 		     EPS *eps,
 		     int *Ap,
 		     int *Ai,
-		     BSspmat *k,
 		     PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		     double *RRn,
 		     double *f_defl,
@@ -105,9 +103,6 @@ extern "C" {
 		     long *DomDof,
 		     int GDof,
 		     COMMUN comm,
-		     BSprocinfo *BSinfo,
-		     BSpar_mat **pk,
-		     BSpar_mat **f_pk,
 		     double err,
 		     double *NORM,
 		     MPI_Comm mpi_comm,

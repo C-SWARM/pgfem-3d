@@ -2,6 +2,7 @@
 
 #include <sys/time.h> 
 #include <sys/resource.h>
+#include <assert.h>
 
 #include "PGFEM_io.h"
 #include "enumerations.h"
@@ -127,10 +128,6 @@ double Newton_Raphson (const int print_level,
 		       long FNR,
 		       double *pores,
 		       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		       BSprocinfo *BSinfo,
-		       BSspmat *k,
-		       BSpar_mat **pk,
-		       BSpar_mat **f_pk, 
 		       double *BS_x,
 		       double *BS_f, 
 		       double *BS_RR,
@@ -408,45 +405,36 @@ double Newton_Raphson (const int print_level,
       
       if (FNR == 1 || (FNR == 0 && iter == 0)){
 
-	/* Assembly stiffness matrix */
-	if (opts->solverpackage == BLOCKSOLVE){ /* BlockSolve */
-	  /* Null the matrix */
-	  null_BSspmat (k);
-	  INFO = stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,
-			      bndel,node,hommat,matgeom,sig_e,eps,d_r,r,
-			      npres,sup,iter,nor_min,dt,crpl,stab,nce,
-			      coel,0,0.0,f_u,myrank,nproc,DomDof,GDof,
-			      comm,mpi_comm,PGFEM_hypre,opts);
+	assert(opts->solverpackage == HYPRE);
+
+	/* Null the matrix (if not doing multiscale)*/
+	if(microscale == NULL){
+	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
-	if (opts->solverpackage == HYPRE){ /* Hypre */
-	  /* Null the matrix (if not doing multiscale)*/
-	  if(microscale == NULL){
-	    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	  }
 
-	  stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		       node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
-		       iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
-		       myrank,nproc,DomDof,GDof,
-		       comm,mpi_comm,PGFEM_hypre,opts);
+	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
+		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
+		     myrank,nproc,DomDof,GDof,
+		     comm,mpi_comm,PGFEM_hypre,opts);
 
-	  /* turn off line search for server-style multiscale */
-	  if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
-	    ART = 1;
-	    /* complete any jobs before assembly */
-	    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
-	  }
+	/* turn off line search for server-style multiscale */
+	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
+	  ART = 1;
+	  /* complete any jobs before assembly */
+	  MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
+	  pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+	}
 
-	  /* Matrix assmbly */
-	  INFO = HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-	}	
+	/* Matrix assmbly */
+	INFO = HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
+
       }
 
       /*=== Solve the system of equations ===*/
       SOLVER_INFO s_info;
       solve_time += solve_system(opts,BS_f,BS_x,tim,iter,DomDof,&s_info,
-				 PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+				 PGFEM_hypre,mpi_comm);
       if(myrank == 0){
 	solve_system_check_error(PGFEM_stdout,s_info);
       }
