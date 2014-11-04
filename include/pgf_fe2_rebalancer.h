@@ -21,7 +21,7 @@ enum pgf_FE2_rebalancer_heuristic {
 };
 
 /**
- * Load balancer called on each macroscale prcocess to rebalance the
+ * Load balancer called on each macroscale process to rebalance the
  * servers. Nominally collective communication on mpi_comm->mm_inter.
  */
 pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
@@ -43,6 +43,9 @@ void new_partition_build_set_keep(void **np,
 				  const int *job_time,
 				  const int *proc_id);
 
+/**
+ * Empty initialization of temporary opaque object.
+ */
 void new_partitions_void(void **parts,
 			 const size_t n_parts,
 			 const size_t n_max_job);
