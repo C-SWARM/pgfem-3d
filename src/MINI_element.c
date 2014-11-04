@@ -16,8 +16,10 @@
 #include "utils.h"
 #include "incl.h"
 
-/* need to update to new_potentials for consistencey */
+/* need to update to new_potentials for consistencey. requires change to
+   1D pointers */
 #include "potential.h"
+/* #include "new_potentials.h" */
 
 #include "tensors.h"
 #include "def_grad.h"
