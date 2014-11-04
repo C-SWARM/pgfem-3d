@@ -146,7 +146,7 @@ UFuncPtr getUFunc(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return U_Common;
 
   case 2:
@@ -174,7 +174,7 @@ dUdJFuncPtr getDUdJFunc(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return dUdJ_Common;
 
   case 2:
@@ -202,7 +202,7 @@ d2UdJ2FuncPtr getD2UdJ2Func(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return d2UdJ2_Common_new;
 
   case 2:
@@ -230,7 +230,7 @@ d2UdJ2FuncPtr getD3UdJ3Func(const int flag,
   }
 
   switch(type){
-  case 1:
+  case 99:
     return d3UdJ3_Common_new;
 
   case 2:

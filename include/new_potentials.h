@@ -6,9 +6,7 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
 
 /* This file contains functions to return stress, pressure and their
    tangents.  The tangents are the derivatives with respect to their
