@@ -1,22 +1,12 @@
 #include "generate_dof_ids.h"
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef GREDIST_NODE_H
 #include "GRedist_node.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
 
 /*=== STATIC FUNCTIONS ===*/
 static int generate_local_dof_ids_on_elem(const int nnode,
@@ -201,6 +191,9 @@ int generate_global_dof_ids(const int nelem,
 
   free(visited_node_dof);
   ndof --;
+
+  /* Abort with message if no global dofs on the domain */
+  assert(ndof > 0);
   return ndof;
 }/* generate_global_dof_ids() */
 
