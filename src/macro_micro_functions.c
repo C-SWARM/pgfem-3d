@@ -320,7 +320,7 @@ int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
 	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
 	/* assemble tangent to local and off-proc buffers */
-	PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
 		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
 		    c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
 	break;

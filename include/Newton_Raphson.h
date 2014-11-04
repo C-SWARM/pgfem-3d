@@ -23,7 +23,6 @@
 #include "pgfem_comm.h"
 
 #include "hypre_global.h"
-#include "blocksolve_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,10 +91,6 @@ extern "C" {
 			 long FNR, /**< "Full Newton-Raphson" == 0, only compute tangent on 1st iteration */
 			 double *pores, /**< [out] opening volume of failed cohesive interfaces */
 			 PGFEM_HYPRE_solve_info *PGFEM_hypre, /**< custom HYPRE solver object */
-			 BSprocinfo *BSinfo, /**< _DEPRECATED_ BlockSolve95 solver info */
-			 BSspmat *k, /**< _DEPRECATED_ BlockSolve global matrix object (void*) */
-			 BSpar_mat **pk, /**< _DEPRECATED_ BlockSolve stuff */
-			 BSpar_mat **f_pk,/**< _DEPRECATED_ BlockSolve stuff */
 			 double *BS_x, /**< workspace for the locally owned part of the global solution 'rr'. */
 			 double *BS_f, /**< Global part of 'f'. */
 			 double *BS_RR, /**< Global part of 'RR'. */

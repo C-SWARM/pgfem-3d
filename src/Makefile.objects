@@ -1,7 +1,6 @@
 OBJS = ALM.o \
 Arc_length.o \
 boomerAMGInterface.o \
-blocksolve_interface.o \
 GRedist_node.o \
 LINE.o \
 Newton_Raphson.o \
@@ -117,3 +116,5 @@ pgf_fe2_rebalancer.o \
 pgf_fe2_macro_client.o \
 main.o \
 super_main.o
+
+# blocksolve_interface.o \

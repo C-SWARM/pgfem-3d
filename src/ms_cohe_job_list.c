@@ -280,7 +280,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 
     /* assemble tangent if owning process */
     if(macro_rank == job->proc_id){
-      PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,
+      PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,
 		  job->g_dof_ids,job->ndofe,NULL,0,
 		  macro_rank,macro_nproc,macro_pgfem_comm,
 		  0/* interior (t/f) */,macro_solver,analysis);

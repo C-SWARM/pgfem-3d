@@ -15,8 +15,6 @@
 
 /* Extra libs */
 #include "renumbering.h"
-#include "blocksolve_interface.h"
-
 
 /*=== PFEM3d headers ===*/
 #include "PGFEM_io.h"
@@ -457,8 +455,7 @@ int multi_scale_main(int argc, char **argv)
 				       s->d_r,s->rr,s->R,s->f_defl,
 				       s->RR,s->f_u,s->RRn,s->crpl,
 				       macro->opts->stab,c->nce,c->coel,FNR,
-				       &pores,c->SOLVER,NULL,NULL,
-				       NULL,NULL,s->BS_x,s->BS_f,
+				       &pores,c->SOLVER,s->BS_x,s->BS_f,
 				       s->BS_RR,gama,GNOR,nor1,
 				       c->lin_err,s->BS_f_u,c->DomDof,
 				       c->pgfem_comm,c->GDof,nt,iter_max,
@@ -487,7 +484,7 @@ int multi_scale_main(int argc, char **argv)
 			   dt0,c->elem,NULL,c->nbndel,
 			   c->bndel,c->node,c->supports,sup_defl,
 			   c->hommat,c->matgeom,s->sig_e,s->eps,
-			   c->Ap,c->Ai,NULL,c->SOLVER,
+			   c->Ap,c->Ai,c->SOLVER,
 			   s->RRn,s->f_defl,s->crpl,macro->opts->stab,
 			   c->nce,c->coel,s->r,s->f,
 			   s->d_r,s->D_R,s->rr,s->R,
@@ -501,8 +498,8 @@ int multi_scale_main(int argc, char **argv)
 			   s->sig_n,out_dat,print,&AT,
 			   ARC,tmp_val,&ITT,&dAL,
 			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
-			   NULL,NULL,NULL,c->lim_zero,
-			   &s->NORM,c->mpi_comm,c->VVolume,macro->opts);
+			   c->lim_zero,&s->NORM,c->mpi_comm,
+			   c->VVolume,macro->opts);
 
 	/* Load multiplier */
 	lm += dlm;

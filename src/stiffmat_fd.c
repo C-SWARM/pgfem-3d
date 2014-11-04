@@ -28,7 +28,6 @@ static const int periodic = 0;
 /* This function may not be used outside this file */
 static int el_stiffmat (int i, /* Element ID */
 			double **Lk,
-			BSspmat *K,
 			int *Ap,
 			int *Ai,
 			long ndofn,
@@ -219,7 +218,7 @@ static int el_stiffmat (int i, /* Element ID */
   }/* end periodic */
 
   /* Assembly */
-  PLoc_Sparse (K,Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,GDof,
+  PLoc_Sparse (Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,GDof,
 	       myrank,nproc,comm,interior,PGFEM_hypre,analysis);
 
   /*  dealocation  */
@@ -241,7 +240,6 @@ static int el_stiffmat (int i, /* Element ID */
 /* This function may not be used outside of this file */
 static void coel_stiffmat(int i, /* coel ID */
 			  double **Lk,
-			  BSspmat *K,
 			  int *Ap,
 			  int *Ai,
 			  long ndofc,
@@ -376,7 +374,7 @@ static void coel_stiffmat(int i, /* coel ID */
 		 nor_min,eps,FNR,lm,fe,myrank);
       
   /* Assembly */
-  PLoc_Sparse (K,Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,
+  PLoc_Sparse (Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,
 	       GDof,myrank,nproc,comm,interior,PGFEM_hypre,analysis);
 
   /* Localization of TANGENTIAL LOAD VECTOR */
@@ -507,7 +505,7 @@ static int bnd_el_stiffmat(int belem_id,
   if(err == 0){
     /* PLoc_Sparse_rec(Lk,lk,Ai,Ap,Gcn_be,Gcn_ve,ndof_be,ndof_ve,Ddof, */
     /* 		   GDof,myrank,nproc,comm,interior); */
-    PLoc_Sparse(NULL,Lk,lk,Ai,Ap,cn_ve,Gcn_ve,ndof_ve,Ddof,
+    PLoc_Sparse(Lk,lk,Ai,Ap,cn_ve,Gcn_ve,ndof_ve,Ddof,
 		GDof,myrank,nproc,comm,interior,PGFEM_hypre,analysis);
   }
 
@@ -528,8 +526,7 @@ static int bnd_el_stiffmat(int belem_id,
 /* This is the re-written function which computes elem stiffness on
    boundaries first, then interior elem stiffnesses before
    assembly. */
-int stiffmat_fd (BSspmat *K,
-		 int *Ap,
+int stiffmat_fd (int *Ap,
 		 int *Ai,
 		 long ne,
 		 int n_be,
@@ -634,7 +631,7 @@ int stiffmat_fd (BSspmat *K,
   
   /***** COMM BOUNDARY ELEMENTS *****/
   for(i=0; i<nbndel; i++){
-    err += el_stiffmat(bndel[i],Lk,K,Ap,Ai,ndofn,elem,node,hommat,
+    err += el_stiffmat(bndel[i],Lk,Ap,Ai,ndofn,elem,node,hommat,
 		       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
 		       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
 		       Ddof,0,opts->analysis_type,PGFEM_hypre);
@@ -657,7 +654,7 @@ int stiffmat_fd (BSspmat *K,
       nor_min = 1.e-10;
     
     for (i=0;i<nce;i++){
-      coel_stiffmat(i,Lk,K,Ap,Ai,ndofc,elem,node,eps,
+      coel_stiffmat(i,Lk,Ap,Ai,ndofc,elem,node,eps,
 		    d_r,r,npres,sup,iter,nor_min,dt,crpl,
 		    stab,coel,FNR,lm,f_u,myrank,nproc,DomDof,
 		    GDof,comm,Ddof,0,opts->analysis_type,PGFEM_hypre);
@@ -743,12 +740,12 @@ int stiffmat_fd (BSspmat *K,
 	  skip++;
 	  continue;
 	} else if (idx == 0 && i < bndel[idx]){
-	  err = el_stiffmat(i,Lk,K,Ap,Ai,ndofn,elem,node,hommat,matgeom,
+	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,
 			    sig,eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,
 			    stab,FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
 			    opts->analysis_type,PGFEM_hypre);
 	} else if (idx > 0 && bndel[idx-1] < i && i < bndel[idx]){
-	  err = el_stiffmat(i,Lk,K,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
+	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
 			    opts->analysis_type,PGFEM_hypre);
@@ -758,7 +755,7 @@ int stiffmat_fd (BSspmat *K,
 	}
       } else {
 	if(i != bndel[nbndel-1]){
-	  err = el_stiffmat(i,Lk,K,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
+	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
 			    opts->analysis_type,PGFEM_hypre);
@@ -775,7 +772,7 @@ int stiffmat_fd (BSspmat *K,
     }
   } else { /* communication by coheisve elements only, nbndel = 0 */
     for(i=0; i<ne; i++){
-      err = el_stiffmat(i,Lk,K,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
+      err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,FNR,
 			lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
 			opts->analysis_type,PGFEM_hypre);

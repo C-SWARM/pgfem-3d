@@ -9,7 +9,12 @@
 #ifndef BLOCKSOLVE_INTERFACE_H
 #define BLOCKSOLVE_INTERFACE_H
 
-#include "BSprivate.h"
+//#include "BSprivate.h"
+
+/* temp pre-declare strcutures for removal of dependencies */
+/* typedef struct BSspmat BSspmat; */
+/* typedef struct BSprocinfo BSprocinfo; */
+/* typedef struct BSpar_mat BSpar_mat; */
 
 /** Write a BlockSolve95 matrix to a file in MATLAB sparse format */
 void write_mat_matlab(char *str,
@@ -27,4 +32,5 @@ BSspmat *BSalloc_A (int start_num,
 		    int *rp,
 		    int *cval,
 		    BSprocinfo *procinfo);
+
 #endif

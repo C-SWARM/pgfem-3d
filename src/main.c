@@ -10,12 +10,10 @@
 #include <stdlib.h>
 #include <sys/time.h> 
 #include <sys/resource.h>
-
+#include <assert.h>
 
 /* Extra libs */
 #include "renumbering.h"
-#include "blocksolve_interface.h"
-
 
 /*=== PFEM3d headers ===*/
 #include "PGFEM_io.h"
@@ -220,11 +218,6 @@ int single_scale_main(int argc,char *argv[])
   long *n_job_dom = NULL;
   MS_COHE_JOB_INFO *ms_job_list = NULL;
 
-  /* BlockSolve95 */
-  BSprocinfo *BSinfo = NULL;
-  BSspmat *k = NULL;
-  BSpar_mat *pk = NULL;
-  BSpar_mat *f_pk = NULL;
   double  *BS_x = NULL;
   double *BS_f = NULL;
   double *BS_RR = NULL;
@@ -589,20 +582,17 @@ int single_scale_main(int argc,char *argv[])
 
     PGFEM_printf ("\n");
     PGFEM_printf ("SolverPackage: ");
-    if (options.solverpackage == BLOCKSOLVE){
-      PGFEM_printf ("BlockSolve95\n");
-    } else if(options.solverpackage == HYPRE){
-      switch(options.solver){
-      case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
-      case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
-      case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-      case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
-      case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
-      default:
-	PGFEM_printerr("Unrecognized solver package!\n");
-	PGFEM_Abort();
-	break;
-      }
+    assert(options.solverpackage == HYPRE);
+    switch(options.solver){
+    case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
+    case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
+    case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
+    case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
+    case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
+    default:
+      PGFEM_printerr("Unrecognized solver package!\n");
+      PGFEM_Abort();
+      break;
     }
 
     PGFEM_printf("Preconditioner: ");
@@ -622,67 +612,6 @@ int single_scale_main(int argc,char *argv[])
     PGFEM_printf ("Number of elems on the COMM interfaces   : %ld\n",Gnbndel);
     PGFEM_printf ("Total number of bounding (surf) elems    : %d\n",Gn_be);
     PGFEM_printf ("Total number of degrees of freedom       : %ld\n",Gndof); 
-  }
-  
-  /****************************************/
-  /* BLOCKSOLVE95 INITIALIZATION ROUTINES */
-  /****************************************/
-  if (options.solverpackage == BLOCKSOLVE) { /* BSolve */
-    /* Call BSinit() to initialize BlocklSolve and MPI */   
-    BSinit (&argc,&argv);
-    
-    /* set up the context for BlockSolve */
-    BSinfo = BScreate_ctx ();
-    CHKERRN(0);
-    
-    /* tell it that this matrix has no i-nodes or cliques */
-    BSctx_set_si (BSinfo,FALSE);
-    CHKERRN(0);
-    
-    /* Type of color reordering */
-    BSctx_set_ct (BSinfo,SDO);
-    CHKERRN(0);
-    
-    /* tell it to print coloring, reordering and linear system
-       solution options */
-    BSctx_set_pr (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Error check */
-    BSctx_set_err (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Scaling */
-    BSctx_set_scaling (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Number of rhs */
-    BSctx_set_num_rhs (BSinfo,1);
-    CHKERRN(0);
-    
-    /* Retain data structure */
-    BSctx_set_rt (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Preconditioner */
-    BSctx_set_pre (BSinfo,PRE_ILU);
-    CHKERRN(0);
-    
-    /* Set method of solution */
-    BSctx_set_method (BSinfo,GMRES);
-    CHKERRN(0);
-    
-    /* Set guess for solutiuon to zero */
-    BSctx_set_guess (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Set GMRES restart */
-    BSctx_set_restart (BSinfo,500);
-    CHKERRN(0);
-    
-    /* Set GMRES iter max */
-    BSctx_set_max_it (BSinfo,ni);
-    CHKERRN(0);
   }
 
   {
@@ -711,11 +640,6 @@ int single_scale_main(int argc,char *argv[])
     }
 
     /*=== NO RENUMBERING === */
-
-    /* ALLOCATE STIFFNESS MATRIX */
-    if(options.solverpackage == BLOCKSOLVE){
-      k = BSalloc_A (GDof,DomDof[myrank],Ap,Ai,BSinfo);
-    } 
 
     /* allocate vectors */
     r = aloc1 (ndofd);
@@ -827,13 +751,6 @@ int single_scale_main(int argc,char *argv[])
       if ((FNR == 2 || FNR == 3) && ARC == 1) {
 	PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
       }
-    }
-
-    if(options.solverpackage == BLOCKSOLVE){ /* BSolve */
-      /* Set tolerance ||Ax - b||/|b|| and stop if the estimated norm
-	 is less than err */
-      BSctx_set_tol (BSinfo,err);
-      CHKERRN(0);
     }
 
     /* HYPRE INITIALIZATION ROUTINES */
@@ -1082,8 +999,7 @@ int single_scale_main(int argc,char *argv[])
 				       eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
 				       f_u,RRn,crpl,options.stab,
 				       nce,coel,FNR,&pores,PGFEM_hypre,
-				       BSinfo,k,&pk,&f_pk,BS_x,
-				       BS_f,BS_RR,gama,GNOR,nor1,err,
+				       BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
 				       &options,entities,forces,
@@ -1105,7 +1021,7 @@ int single_scale_main(int argc,char *argv[])
 	dlm = Arc_length ( ne,n_be,nn,ndofn,ndofd,npres,nt,tim,times,
 			   nor_min,iter_max,dt,dt0,elem,b_elems,nbndel,
 			   bndel,node,sup,sup_defl,hommat,matgeom,sig_e,
-			   eps,Ap,Ai,k,PGFEM_hypre,RRn,f_defl,crpl,
+			   eps,Ap,Ai,PGFEM_hypre,RRn,f_defl,crpl,
 			   options.stab,
 			   nce,coel,r,f,d_r,D_R,rr,R,RR,f_u,U,DK,dR,
 			   BS_f,BS_d_r,BS_D_R,BS_rr,BS_R,BS_RR,BS_f_u,
@@ -1113,8 +1029,8 @@ int single_scale_main(int argc,char *argv[])
 			   options.vis_format,options.smoothing,
 			   sig_n,out_dat,print,&AT,ARC,
 			   (times[tim+1]-times[tim])/dt0*dALMAX,&ITT,
-			   &dAL,&pores,DomDof,GDof,comm,BSinfo,&pk,
-			   &f_pk,err,&NORM,mpi_comm,VVolume,&options);
+			   &dAL,&pores,DomDof,GDof,comm,err,&NORM,
+			   mpi_comm,VVolume,&options);
 
 	/* Load multiplier */
 	lm += dlm;
@@ -1257,17 +1173,6 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (D_R);
     free(bndel);
 
-    /* BS free the par mat, etc. */
-    if(options.solverpackage == BLOCKSOLVE){
-      BSfree_par_mat (pk); 
-      BSfree_copy_par_mat (f_pk); 
-      BSfree_easymat (k);
-      /* free the context */
-      BSfree_ctx (BSinfo); 
-      CHKERRN(0);
-      /* Finalize BlockSolve */
-      BSfinalize (); 
-    }
     /* HYPRE */
     if (options.solverpackage == HYPRE){
       destroy_PGFEM_HYPRE_solve_info(PGFEM_hypre);
