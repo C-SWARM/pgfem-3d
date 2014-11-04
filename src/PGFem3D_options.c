@@ -30,7 +30,7 @@ typedef struct long_opt_descr{
   int sc;
 } long_opt_descr;
 
-static const char *opt_list = "AXEVsplh";
+static const char *opt_list = "AVlh";
 
 static const long_opt_descr analysis_opts[] = {
   /* Analysis options */
@@ -45,8 +45,8 @@ static const long_opt_descr analysis_opts[] = {
   {{"ms",no_argument,NULL,'m'},("\tINTERFACE or BULK multiscale modeling.\n"
 				"\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
 				"\t\tand a file named \"normal.in\" in the specified\n"
-				"\t\tinput directory containing the macroscopic normal\n"
-				"\t\tand cell thickness. Format: [lc Nx Ny Nz]."),0}
+				"\t\tinput directory containing the macroscopic normal,\n"
+				"\t\tbounding volume, and cell thickness. Format: [V lc Nx Ny Nz]."),0}
 };
 
 static const long_opt_descr solver_opts[] = {
@@ -74,31 +74,34 @@ static const long_opt_descr precond_opts[] = {
 
 static const long_opt_descr vis_opts[] = {
   /* Visualization options */
-  {{"elixir",no_argument,NULL,'X'},"Output in Elixir format",1},
-  {{"ensight",no_argument,NULL,'E'},"Output in EnSight format",1},
-  {{"XE",no_argument,NULL,'E'},"Output in EnSight format",1},
   {{"vtk",no_argument,NULL,'V'},"Output in VTK format",1},
-  {{"XV",no_argument,NULL,'V'},"Output in VTK format",1},
   {{"ascii",no_argument,NULL,'A'},"Additional output in ASCII format",1},
-  {{"sm",no_argument,NULL,'s'},"Smooth stress field",1},
 };
 
 static const long_opt_descr other_opts[] = {
   /* Other options */
   {{"ipath",required_argument,NULL,'i'},"Path to input files parent directory",0},
   {{"opath",required_argument,NULL,'o'},"Path to output files parent directory",0},
-  {{"pr",no_argument,NULL,'p'},"Periodic domain",1},
-  /* {{"rn",no_argument,NULL,'r'},"Renumber degrees of freedom",1}, */
   {{"override-pre-disp",required_argument,NULL,'O'},("\n\t\tOverride the prescribed displacements in *.in\n"
 						   "\t\twith those provided in the given file."),0},
   {{"override-solver-file",required_argument,NULL,'O'},("\n\t\tOverride the default solver filename with\n"
 						      "\t\tthe provided filename."),0},
-  {{"me",no_argument,NULL,'m'},"\tCompute nodal forces on model entities"
-   " (requires entities.in file)",0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
   {{"help",no_argument,NULL,'h'},"Print this message and exit",1}
 
+};
+
+/* these options may no longer be supported/functional. They are kept
+   for documentation purposes only and are ignored if used */
+static const long_opt_descr depricated_opts[] = {
+  {{"elixir",no_argument,NULL,'X'},"Output in Elixir format [unsupported, use -V]",1},
+  {{"ensight",no_argument,NULL,'E'},"Output in EnSight format [outdated, use -V]",1},
+  {{"sm",no_argument,NULL,'s'},"Smooth stress field [unsupported]",1},
+  {{"me",no_argument,NULL,'m'},"\tCompute nodal forces on model entities"
+   " (requires entities.in file) [unsupported]",0},
+  {{"pr",no_argument,NULL,'p'},"Periodic domain [outdated, use -ms]",1},
+  {{"rn",no_argument,NULL,'r'},"Renumber degrees of freedom [unsupported]",1},
 };
 
 static const struct option last_opt = {NULL,0,NULL,0};
@@ -108,9 +111,7 @@ static const int n_solver = sizeof(solver_opts)/sizeof(long_opt_descr);
 static const int n_precond = sizeof(precond_opts)/sizeof(long_opt_descr);
 static const int n_vis = sizeof(vis_opts)/sizeof(long_opt_descr);
 static const int n_other = sizeof(other_opts)/sizeof(long_opt_descr);
-static const int n_options = (sizeof(analysis_opts)+sizeof(solver_opts)
-			      +sizeof(precond_opts)+sizeof(vis_opts)
-			      +sizeof(other_opts))/sizeof(long_opt_descr);
+static const int n_depricated = sizeof(depricated_opts)/sizeof(long_opt_descr);
 
 static void print_long_options(FILE* out,
 			       const long_opt_descr *opts,
@@ -136,6 +137,7 @@ static void print_long_options(FILE* out,
 
 static void copy_options(struct option *A)
 {
+  const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
   int idx = 0;
   for(int i=0; i<n_analysis; i++){
     A[i+idx] = analysis_opts[i].opt;
@@ -246,8 +248,8 @@ void print_options(FILE *out,
 void print_usage(FILE* out)
 {
   PGFEM_fprintf(out,"%s\n",prog_name);
-  PGFEM_fprintf(out,"USAGE: mpirun -np [NP] PGFem3D [options] input output\n");
-  PGFEM_fprintf(out,"MS_USAGE: mpirun -np [NP] PGFem3D "
+  PGFEM_fprintf(out,"SS_USAGE: mpirun -np [NP] PGFem3D -SS [options] input output\n");
+  PGFEM_fprintf(out,"MS_USAGE: mpirun -np [NP] PGFem3D -MS "
 		"-macro-np [P] -micro-group-size [S] "
 		"[macro OPTION_BLK] [micro OPTION_BLK]\n"
 		"OPTION_BLK: -[scale]-start [options] "
@@ -262,6 +264,8 @@ void print_usage(FILE* out)
   print_long_options(out,vis_opts,n_vis);
   PGFEM_fprintf(out,"\nOther Options:\n");
   print_long_options(out,other_opts,n_other);
+  PGFEM_fprintf(out,"\nDepricated (ignored) Options:\n");
+  print_long_options(out,depricated_opts,n_depricated);
 } /* print_usage() */
 
 void parse_command_line(const int argc,
@@ -354,6 +358,7 @@ void re_parse_command_line(const int myrank,
 			   char **argv,
 			   PGFem3D_opt *options)
 {
+  const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
   struct option *opts;/* [n_options+1]; */
   opts = (struct option*) PGFEM_calloc(n_options+1,sizeof(struct option));
   copy_options(opts);
@@ -474,14 +479,8 @@ void re_parse_command_line(const int myrank,
       break;
 
       /* VISUALIZATION OPTIONS */
-    case 'X': options->vis_format = VIS_ELIXIR; break;
-    case 'E': options->vis_format = VIS_ENSIGHT; break;
     case 'V': options->vis_format = VIS_VTK; break;
     case 'A': options->ascii = 1; break;
-    case 's':
-      if(myrank == 0)
-	PGFEM_printerr("Smoothing not currently supported.\n");
-      break;
 
       /* OTHER OPTIONS */
     case 'i':
@@ -504,22 +503,9 @@ void re_parse_command_line(const int myrank,
       }
       break;
 
-    case 'p':
-      if(myrank == 0)
-	PGFEM_printerr("The periodic branch of the code is obsolete.\n");
-      break;
-
-    case 'r':
-      if(myrank == 0)
-	PGFEM_printerr("Renumbering is not currently supported.\n");
-      options->renumber = 0;
-      break;
-
     case 'm':
       if(strcmp("ms",opts[opts_idx].name) == 0){
 	options->multi_scale = 1;
-      } else  if(strcmp("me",opts[opts_idx].name) == 0){
-	options->me = 1;
       }
       break;
 
