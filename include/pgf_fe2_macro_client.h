@@ -44,8 +44,8 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 /**
  * Reassign jobs to balance load on servers. Send new assignment
  * information to servers to allow data migration while macroscale
- * does other stuff. Either this function or pgf_FE2_macro_client_send
- * exit MUST be called after each call to
+ * does other stuff. Either this function or
+ * pgf_FE2_macro_client_send_ exit MUST be called after each call to
  * pgf_FE2_macro_client_recv_jobs before
  * pgf_FE2_macro_client_send_jobs can be executed.
  */
@@ -63,7 +63,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 
 /**
  * Receive finished jobs from the servers. Returns the maximum number
- * of substeps take at the microscale.
+ * of sub-steps taken at the microscale.
  */
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 				    MACROSCALE *macro,
