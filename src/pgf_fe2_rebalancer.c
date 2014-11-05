@@ -10,6 +10,7 @@
 #include "pgf_fe2_micro_server.h"
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 /* a helper structure */
 enum new_partition_idx{
@@ -128,6 +129,7 @@ static void rebalance_partitions_none(const size_t n_parts,
  * it to migrate data.
  */
 static void rebalance_partitions_adaptive(const size_t n_parts,
+					  const double *orig_totals,
 					  new_partition *all_parts,
 					  new_partition *parts);
 
@@ -302,7 +304,17 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
     rebalance_partitions_greedy(n_micro_proc,all_parts,parts);
     break;
   case FE2_REBALANCE_ADAPTIVE:
-    rebalance_partitions_adaptive(n_micro_proc,all_parts,parts);
+    {
+      /* push unbalanced server totals into array */
+      double *orig_totals = malloc(n_micro_proc*sizeof(*orig_totals));
+      for(int i=0; i<n_micro_proc; i++){
+	orig_totals[i] = all_stats[i].total;
+      }
+
+      /* adaptively rebalance */
+      rebalance_partitions_adaptive(n_micro_proc,orig_totals,all_parts,parts);
+      free(orig_totals);
+    }
     break;
   default:
     /* Should not get here */
@@ -514,13 +526,46 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
 
 
 static void rebalance_partitions_adaptive(const size_t n_parts,
+					  const double *orig_totals,
 					  new_partition *all_parts,
 					  new_partition *parts)
 {
   /* compute the greedy partitioning. */
   rebalance_partitions_greedy(n_parts,all_parts,parts);
 
-  /* compare the server predicted times to the previous times */
+  /* compute statistics on original partitioning and new partitioning */
+  double orig_total = 0.0;
+  double orig_avg = 0.0;
+  double orig_min = INT_MAX; /* should be big enough */
+  double orig_max = -1.0; /* actual values are (+) */
+  double orig_std = 0.0;
+  double new_total = 0.0;
+  double new_avg = 0.0;
+  double new_min = INT_MAX; /* should be big enough */
+  double new_max = -1.0; /* actual values are (+) */
+  double new_std = 0.0;
+
+  for(size_t i=0; i<n_parts; i++){
+    /* totals */
+    orig_total += orig_totals[i];
+    new_total += parts[i].total_time;
+
+    /* min */
+    if(orig_min > orig_totals[i]) orig_min = orig_totals[i];
+    if(new_min > parts[i].total_time) new_min = (double) parts[i].total_time;
+
+    /* max */
+    if(orig_max < orig_totals[i]) orig_max = orig_totals[i];
+    if(new_max < parts[i].total_time) new_max = (double) parts[i].total_time;
+  }
+
+  orig_avg = orig_total/n_parts;
+  new_avg = new_total/n_parts;
+
+  for(size_t i=0; i<n_parts; i++){
+    orig_std = (orig_totals[i] - orig_avg)*(orig_totals[i] - orig_avg);
+    new_std = (parts[i].total_time - new_avg)*(parts[i].total_time - new_avg);
+  }
 
   /* if the predicted total times are slower -OR- the there is a
      decrease in predicted utilization (increase in max time - min
