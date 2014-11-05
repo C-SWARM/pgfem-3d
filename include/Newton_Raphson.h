@@ -19,7 +19,6 @@
 #include "cohesive_element.h"
 #include "bounding_element.h"
 #include "PGFem3D_options.h"
-#include "compute_force_on_model_ent.h"
 #include "pgfem_comm.h"
 
 #include "hypre_global.h"
@@ -110,9 +109,6 @@ extern "C" {
 			 MPI_Comm mpi_comm,
 			 const double VVolume, /**< original volume of the domain */
 			 const PGFem3D_opt *opts, /**< structure of options */
-			 MODEL_ENTITY *me, /**< _DEPRECATED_ list of model entities to compute reactions on */
-			 double *forces, /**< _DEPRECATED_ reaction forces on model entities */
-			 void *ms_job_list, /**< _DEPRECATED_ initial implementation of FE2 modeling */
 			 void *microscale /**< Container of microscale information. */
 			 );
 
