@@ -123,6 +123,15 @@ static void rebalance_partitions_none(const size_t n_parts,
 				      new_partition *parts);
 
 /**
+ * Chooses between rebalancing via greedy algorithm and original
+ * partitioning. This allows the system to decide whether it is worth
+ * it to migrate data.
+ */
+static void rebalance_partitions_adaptive(const size_t n_parts,
+					  new_partition *all_parts,
+					  new_partition *parts);
+
+/**
  * Format conversion server->new_partition (reduces footprint).
  */
 static void new_partition_extract_server_as_keep(new_partition *all_parts,
@@ -291,6 +300,9 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
     break;
   case FE2_REBALANCE_GREEDY:
     rebalance_partitions_greedy(n_micro_proc,all_parts,parts);
+    break;
+  case FE2_REBALANCE_ADAPTIVE:
+    rebalance_partitions_adaptive(n_micro_proc,all_parts,parts);
     break;
   default:
     /* Should not get here */
@@ -497,5 +509,29 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
     keep[off + NEW_PART_TIME] = j[i].time;
     keep[off + NEW_PART_SR] = server_id;
     all_parts->n_keep ++;
+  }
+}
+
+
+static void rebalance_partitions_adaptive(const size_t n_parts,
+					  new_partition *all_parts,
+					  new_partition *parts)
+{
+  /* compute the greedy partitioning. */
+  rebalance_partitions_greedy(n_parts,all_parts,parts);
+
+  /* compare the server predicted times to the previous times */
+
+  /* if the predicted total times are slower -OR- the there is a
+     decrease in predicted utilization (increase in max time - min
+     time on servers), then use partition from previous step. */
+  if(0){
+    /* reset the parts */
+    for(size_t i=0; i<n_parts; i++){
+      new_partition_set_empty(parts + i);
+    }
+
+    /* extract original partition */
+    rebalance_partitions_none(n_parts,all_parts,parts);
   }
 }
