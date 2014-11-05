@@ -567,10 +567,20 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
     new_std = (parts[i].total_time - new_avg)*(parts[i].total_time - new_avg);
   }
 
-  /* if the predicted total times are slower -OR- the there is a
-     decrease in predicted utilization (increase in max time - min
-     time on servers), then use partition from previous step. */
-  if(0){
+  /*
+   * Conditions for rebalancing -- Note that rebalancing requires
+   * substantial communication among the microscale servers!
+   *
+   * 1) Average time is reduced
+   * 2) Maximum wait time (max - min) is reduced (increased utilization)
+   *    -- related, standard deviation is reduced
+   * 3) Improvements outweigh estimated cost of communication.
+   *    -- This should be measured!
+   * 4) How many jobs are kept vs. communicated
+   */
+
+  /* do not rebalance if new_avg + new_wait >= orig_avg + orig_wait */
+  if((new_avg + new_max - new_min) >= (orig_avg + orig_max - orig_min)){
     /* reset the parts */
     for(size_t i=0; i<n_parts; i++){
       new_partition_set_empty(parts + i);
