@@ -289,8 +289,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			 0.0,0.0,0.0,c->lin_err,
 			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
 			 1,c->maxit_nl,&s->NORM,c->nbndel,
-			 c->bndel,c->mpi_comm,c->VVolume,opts,
-			 NULL,NULL,NULL,NULL);
+			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL);
 	
   free(sup_defl);
   return err;

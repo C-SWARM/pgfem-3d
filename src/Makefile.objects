@@ -79,7 +79,6 @@ node.o \
 element.o \
 solve_system.o \
 PGFEM_HYPRE_preconditioners.o \
-compute_force_on_model_ent.o \
 allocation.o \
 cohesive_element_utils.o \
 cohesive_element.o \
@@ -116,3 +115,5 @@ pgf_fe2_rebalancer.o \
 pgf_fe2_macro_client.o \
 main.o \
 super_main.o
+
+#compute_force_on_model_ent.o \

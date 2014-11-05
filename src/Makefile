@@ -30,9 +30,9 @@ DFLAGS		= #-DNDEBUG
 
 # Un/comment the appropriate CFLAGS variable for using intel or GNU
 # compiler for correct strict warnings
-CFLAGS_INTEL	= -Wcheck
+#CFLAGS_INTEL	= -Wcheck
 #CFLAGS_GCC	= -pedantic -Werror
-CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
+CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 #DFLAGS		+= -DNO_VTK_LIB=1
 #DFLAGS		+= -DDISP_DEBUG=1
@@ -129,7 +129,7 @@ clean:
 	$(RM)  *.o *~
 
 realclean: clean
-	$(RM) $(pfem_bin_dir)/PGFem3D
+	$(RM) $(pfem_bin_dir)/PGFem3D Makefile.depend
 
 docs:
 	doxygen docs.config

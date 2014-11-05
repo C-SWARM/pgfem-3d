@@ -360,21 +360,6 @@ int multi_scale_main(int argc, char **argv)
       }
     }
 
-    /*=== MODEL ENTITIES ===*/
-    MODEL_ENTITY *entities = NULL;
-    double *forces = NULL;
-    if(macro->opts->me){
-      char *me_fname = NULL;
-      alloc_sprintf(&me_fname,"%s/entities.in",macro->opts->ipath);
-      read_model_entity_list(me_fname,&entities,c->nn,c->ne);
-      model_entity_mark_nodes_elems(c->nn,c->node,c->ne,c->elem,entities);
-      if(entities->n_entities > 0){
-	forces = PGFEM_calloc(entities->n_entities
-			      *entities->n_dim,sizeof(double));
-      }
-    }
-
-
     double pores = 0.0;
     double gama = 0.0;
     double GNOR = 0.0;
@@ -460,8 +445,7 @@ int multi_scale_main(int argc, char **argv)
 				       c->lin_err,s->BS_f_u,c->DomDof,
 				       c->pgfem_comm,c->GDof,nt,iter_max,
 				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,
-				       entities,forces,NULL,ctx);
+				       c->mpi_comm,c->VVolume,macro->opts,ctx);
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
@@ -620,8 +604,6 @@ int multi_scale_main(int argc, char **argv)
     free(sup_defl);
     free(tim_load);
     free(print);
-    free(forces);
-    destroy_model_entity(entities);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
 
     /* destroy the macroscale client */

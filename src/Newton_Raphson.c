@@ -147,9 +147,6 @@ double Newton_Raphson (const int print_level,
 		       MPI_Comm mpi_comm,
 		       const double VVolume,
 		       const PGFem3D_opt *opts,
-		       MODEL_ENTITY *me,
-		       double *forces,
-		       void *ms_job_list,
 		       void *microscale)
 {
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
@@ -167,12 +164,6 @@ double Newton_Raphson (const int print_level,
   
   /* interface multiscale_modeling */
   double *macro_jump_u = aloc1(3);
-
-  /* forces */
-  double *inc_forces = NULL;
-  if(me != NULL && me->n_entities > 0){
-    inc_forces = aloc1(me->n_entities*me->n_dim);
-  }
 
   /* damage substep criteria */
   const double max_damage_per_step = 0.05;
@@ -725,14 +716,6 @@ double Newton_Raphson (const int print_level,
       } /* end iter > iter_max */
       iter++; BS_nor = 0.0; 
 
-      /* compute increment of forces */
-      if(me != NULL){
-	compute_force_increment_on_model_entity(ne,ndofn,r,d_r,rr,me,elem,
-						node,sup,hommat,eps,sig_e,
-						mpi_comm,
-						opts->analysis_type,
-						inc_forces);
-      }
     }/* end while nor > nor_min */
 
     /* before increment after convergence, check max damage */
@@ -894,25 +877,6 @@ double Newton_Raphson (const int print_level,
 	}
 	VTK_print_vtu(opts->opath,fname,*n_step,myrank,ne,nn,node,
 		      elem,sup,r,sig_e,eps,opts);
-      }
-    }
-
-    /* update model ent force vector */
-    if(me != NULL){
-      /* sum up force increment from all domains */
-      MPI_Allreduce(MPI_IN_PLACE,inc_forces,me->n_entities*me->n_dim,
-		    MPI_DOUBLE,MPI_SUM,mpi_comm);
-      /* add increment to total force list */
-      vvplus(forces,inc_forces,me->n_entities*me->n_dim);
-
-      /* zero the increment vector */
-      nulld(inc_forces,me->n_entities*me->n_dim);
-
-      /* print to PGFEM_stdout */
-      if(myrank == 0){
-	PGFEM_printf("model forces:\n");
-	print_array_d(PGFEM_stdout,forces,me->n_entities*me->n_dim,
-		      me->n_entities,me->n_dim);
       }
     }
 

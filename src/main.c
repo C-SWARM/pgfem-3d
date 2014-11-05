@@ -51,7 +51,6 @@
 #include "element.h"
 #include "node.h"
 #include "generate_dof_ids.h"
-#include "compute_force_on_model_ent.h"
 #include "applied_traction.h"
 #include "read_input_file.h"
 #include "microscale_information.h"
@@ -896,16 +895,6 @@ int single_scale_main(int argc,char *argv[])
       sup_check = aloc1(sup->npd);
     }
 
-    MODEL_ENTITY *entities = NULL;
-    double *forces = NULL;
-    if(options.me){
-      char fname[50];
-      sprintf(fname,"%s/entities.in",options.ipath);
-      read_model_entity_list(fname,&entities,nn,ne);
-      model_entity_mark_nodes_elems(nn,node,ne,elem,entities);
-      forces = aloc1((entities->n_entities+1)*entities->n_dim);
-    }
-
     /* debugging multiscale -- first try at building appropriately -- */
     if(DEBUG_MULTISCALE){
       /* in first attempt, each sub-communicator will contain only 1
@@ -1002,8 +991,7 @@ int single_scale_main(int argc,char *argv[])
 				       BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
-				       &options,entities,forces,
-				       ms_job_list,microscale);
+				       &options,microscale);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1149,9 +1137,6 @@ int single_scale_main(int argc,char *argv[])
 
     /*=== FREE MEMORY ===*/
     free(sup_check);
-    free(forces);
-    destroy_model_entity(entities);
-
     fclose (in1);
     free(Ap);
     dealoc1i (Ai);
