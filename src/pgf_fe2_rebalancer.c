@@ -8,6 +8,8 @@
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_micro_server.h"
+#include "PGFEM_mpi.h"
+#include "PGFEM_io.h"
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
@@ -530,6 +532,9 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
 					  new_partition *all_parts,
 					  new_partition *parts)
 {
+  int rank = -1;
+  PGFEM_Error_rank(&rank);
+  int rebal = 1;
   /* compute the greedy partitioning. */
   rebalance_partitions_greedy(n_parts,all_parts,parts);
 
@@ -588,5 +593,20 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
 
     /* extract original partition */
     rebalance_partitions_none(n_parts,all_parts,parts);
+    rebal = 0;
+  }
+
+  /* reporting */
+  if(rank == 0){
+    PGFEM_printerr("       avg       std       wait\n"
+		   "OLD: %8.3e %8.3e %8.3e\n"
+		   "NEW: %8.3e %8.3e %8.3e",
+		   orig_avg,orig_std,orig_max - orig_min,
+		   new_avg,new_std,new_max - new_min);
+    if(!rebal){
+      PGFEM_printerr(" -- DISCARDED\n");
+    } else {
+      PGFEM_printerr("\n");
+    }
   }
 }

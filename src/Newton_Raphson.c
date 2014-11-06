@@ -531,7 +531,7 @@ double Newton_Raphson (const int print_level,
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
 	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-					       FE2_REBALANCE_GREEDY);
+					       FE2_REBALANCE_ADAPTIVE);
 	double tnp1 = 0;
 	set_time_micro(tim,times,dt,DIV,&tnp1);
 	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
