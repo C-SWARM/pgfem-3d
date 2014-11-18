@@ -107,7 +107,7 @@ void add_inertia(double *Ks,
   dealoc1(N_x);
   dealoc1(N_y);
   dealoc1(N_z);
-};
+}
 
 /* This function may not be used outside this file */
 static int el_stiffmat(int i, /* Element ID */

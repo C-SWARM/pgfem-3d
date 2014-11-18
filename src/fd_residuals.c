@@ -124,7 +124,7 @@ void add_inertia4f(double *f,
   dealoc1(bf_n1a);        
   dealoc1(bf);  
     
-};
+}
 
 int resid_w_inertia_el(double *fe, int i, 
 			int nne, long ndofn, long ndofe, double *r_e,                               
@@ -491,3 +491,4 @@ int fd_residuals (double *f_u,
   } /* for each bounding element */
   return err;
 }
+

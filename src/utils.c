@@ -3219,4 +3219,5 @@ void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
   {
     v[a] = (1-alpha)*w[a] + alpha*x[a];
   }
-};
+}
+

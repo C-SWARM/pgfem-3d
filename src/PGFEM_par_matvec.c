@@ -829,7 +829,7 @@ static inline void set_entry(const int row,
   e->val = val;
 }
 
-static inline void destroy_entry(entry *e){};
+static inline void destroy_entry(entry *e){}
 static inline void destroy_entries(const int n_entry,
 				   entry *e)
 {
