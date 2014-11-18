@@ -637,5 +637,5 @@ double area (long nne,
 
 void Logarithmic_strain (double **F,
 			 double **EL);
-
+void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
 #endif
