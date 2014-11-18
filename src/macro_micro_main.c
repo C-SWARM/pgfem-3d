@@ -445,7 +445,7 @@ int multi_scale_main(int argc, char **argv)
 				       c->lin_err,s->BS_f_u,c->DomDof,
 				       c->pgfem_comm,c->GDof,nt,iter_max,
 				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,ctx);
+				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,NULL,NULL);
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){

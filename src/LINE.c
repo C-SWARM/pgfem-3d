@@ -97,6 +97,12 @@ long LINE_S1 (double *nor,
 	      double *dissipation,
 	      const PGFem3D_opt *opts)
 {
+
+  double t = 0.0;
+  double alpha = 0.0;
+  double *r_n = NULL;
+  double *r_n_1 = NULL;
+    
   double GNOR;
   long i,j,N,M,INFO,GInfo;
   char  *error[]={"inf","-inf","nan"},str1[500];
@@ -154,8 +160,8 @@ long LINE_S1 (double *nor,
 
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		  nce,coel,mpi_comm,opts);
+		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  nce,coel,mpi_comm,opts,alpha,r_n,r_n_1);
     
     /* Transform LOCAL load vector to GLOBAL */
     LToG (f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
@@ -221,6 +227,7 @@ long LINE_S3 (double *nor,
 	      double nor_min,
 	      CRPL *crpl,
 	      double dt,
+	      double t,
 	      double stab,
 	      long nce,
 	      COEL *coel,
@@ -238,7 +245,7 @@ long LINE_S3 (double *nor,
 	      MPI_Comm mpi_comm,
 	      double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts)
+		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1)
 {
   long i,j,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,nor3;
@@ -345,8 +352,8 @@ long LINE_S3 (double *nor,
 
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		  nce,coel/*,gnod,geel*/,mpi_comm,opts);
+		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
 	
     /* Compute Euclidian norm */
     for (i=0;i<ndofd;i++)
@@ -444,6 +451,12 @@ long ALINE_S3 (long ARC,
 		double *dissipation,
 		const PGFem3D_opt *opts )
 {
+
+  double t = 0.0;
+  double alpha = 0.0;
+  double *r_n = NULL;
+  double *r_n_1 = NULL;
+    
   long i,j,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,tmp;
   char  *error[]={"inf","-inf","nan"},str1[500];
@@ -578,8 +591,8 @@ long ALINE_S3 (long ARC,
     
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		  nce,coel/*,gnod,geel*/,mpi_comm,opts );
+		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
     
     /* Compute Euclidean norm */
     for (i=0;i<ndofd;i++)
