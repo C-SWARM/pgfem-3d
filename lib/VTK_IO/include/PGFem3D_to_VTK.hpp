@@ -55,6 +55,8 @@ void PGFem3D_destroy_vtkUnstructuredGrid(void *grid);
 void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
 				       const void *grid,
 				       const int ascii);
+				       
+int read_VTK_file(char fn[], double *r);				       
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */
