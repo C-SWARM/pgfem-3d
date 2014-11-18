@@ -294,3 +294,204 @@ void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
 
   writer->Write();
 }
+
+
+int read_VTK_file(char fn[], double *r)
+{
+  //parse command line arguments
+
+  std::string filename = fn;
+
+
+  //************ read all the data from the file **************
+  vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+    vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  reader->SetFileName(filename.c_str());
+  reader->Update(); //read in data from file.
+
+  vtkSmartPointer<vtkUnstructuredGrid> grid =
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  grid = reader->GetOutput(); //data is now in unstructured grid.
+
+  //*************************************************************
+
+  double *temp = 0;
+  int nelems = 0;
+  int ncomponents = 0;
+
+  vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
+  vtkPointData *pData = grid->GetPointData();
+  vtkDataArray *vtkData; // used to temporarily store vtk data arrays. CauchyStress, etc.
+
+  //************* Example: If(data exists) {}
+  /* vtkDataArray *CauchyStress;
+  if(cData->HasArray("CauchyStress")) {
+    CauchyStress = cData->GetArray("CauchyStress");
+  }
+ */
+ 
+ 
+ 
+   //********************* Print out displacement data ***********
+  //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
+  if(pData->HasArray("Displacement")) 
+  {
+    vtkDataArray *Displacement = pData->GetArray("Displacement");
+    nelems = Displacement->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) 
+    {
+      temp = Displacement->GetTuple(i);
+      r[i*3+0] = temp[0];
+      r[i*3+1] = temp[1];      
+      r[i*3+2] = temp[2];      
+    }
+  }
+  //**************************************************************
+  
+  return EXIT_SUCCESS;
+ 
+ 
+ 
+ 
+  if(cData->HasArray("CauchyStress")) {
+    vtkData = cData->GetArray("CauchyStress");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out CauchyStress data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "----------CauchyStress: " << i << " ---------- " << std::endl;
+      for(int j = 0; j < 6; j++) {
+        std::cout <<  "Component " << j << ": " << temp[j] << std::endl;
+      }
+      std::cout << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("EulerStrain")) {
+    vtkData = cData->GetArray("EulerStrain");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out EulerStrain data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "----------EulerStrain: " << i << " ---------- " << std::endl;
+      for(int j = 0; j < 6; j++) {
+        std::cout <<  "Component " << j << ": " << temp[j] << std::endl;
+      }
+      std::cout << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("EffectiveStress")) {
+    vtkData = cData->GetArray("EffectiveStress");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out EffectiveStress data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "EffectiveStress:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("EffectiveStrain")) {
+    vtkData = cData->GetArray("EffectiveStrain");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out EffectiveStrain data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "EffectiveStrain:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("Damage")) {
+    vtkData = cData->GetArray("Damage");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out Damage data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "Damage:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+  
+  if(cData->HasArray("Chi")) {
+    vtkData = cData->GetArray("Chi");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out Chi data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "Chi:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("CellProperty")) {
+    vtkData = cData->GetArray("CellProperty");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out CellProperty data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "CellProperty:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("F")) {
+    vtkData = cData->GetArray("F");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out F data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "----------F: " << i << " ---------- " << std::endl;
+      for(int j = 0; j < 9; j++) {
+        std::cout <<  "Component " << j << ": " << temp[j] << std::endl;
+      }
+      std::cout << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("P")) {
+    vtkData = cData->GetArray("P");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out P data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "----------P: " << i << " ---------- " << std::endl;
+      for(int j = 0; j < 9; j++) {
+        std::cout <<  "Component " << j << ": " << temp[j] << std::endl;
+      }
+      std::cout << std::endl;
+      //*************************************************************
+     } 
+  }
+
+  if(cData->HasArray("W")) {
+    vtkData = cData->GetArray("W");
+    nelems = vtkData->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      //******************** Print out W data ************
+      temp = vtkData->GetTuple(i);
+      std::cout << "W:" << i << " " << *temp << std::endl;
+      //*************************************************************
+     } 
+  }
+
+
+  //********************* Print out displacement data ***********
+  //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
+  if(pData->HasArray("Displacement")) {
+    std::cout << "Displacement: " << std::endl;
+    vtkDataArray *Displacement = pData->GetArray("Displacement");
+    nelems = Displacement->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) {
+      temp = Displacement->GetTuple(i);
+      std::cout << "Tuple: " << i << std::endl << "Component1: " << temp[0] << std::endl << "Component2: " << temp[1] << std::endl << "Component3: " << temp[2] << std::endl << std::endl;
+    }
+  }
+  //**************************************************************
+
+  return EXIT_SUCCESS;
+}
