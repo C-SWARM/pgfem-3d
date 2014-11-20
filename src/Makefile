@@ -27,7 +27,7 @@ LINK = mpicxx
 # compiler for correct strict warnings
 CFLAGS_INTEL	= -Wcheck
 #CFLAGS_GCC	= -pedantic
-CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
+CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
 DFLAGS		= #-DNDEBUG
 #DFLAGS		+= -DDISP_DEBUG=1
@@ -71,7 +71,6 @@ INCLUDES        = -I$(pfem_incl_dir) \
 		  $(VTK_IO_incl) \
 		  $(PARMETIS_incl) \
 		  $(SUITESPARSE_incl) \
-		  $(BLOCKSOLVE_incl) \
 		  $(HYPRE_incl) \
 		  $(VTK_incl) \
 		  $(MKL_incl)
@@ -83,7 +82,6 @@ LIBS	= $(RENUMBERING_lib) \
 	  $(VTK_IO_lib) \
 	  $(PARMETIS_lib) \
 	  $(SUITESPARSE_lib) \
-	  $(BLOCKSOLVE_lib) \
 	  $(HYPRE_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib) \
@@ -121,7 +119,7 @@ objects: $(OBJS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) $<
 
 clean:
-	$(RM)  *.o *~
+	$(RM)  *.o *~ TAGS Makefile.depend
 
 realclean: clean
 	$(RM) $(pfem_bin_dir)/PGFem3D
