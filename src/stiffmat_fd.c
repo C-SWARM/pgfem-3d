@@ -39,7 +39,7 @@ void add_inertia(double *Ks,
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
-  double rho = hommat[mat].e4;
+  double rho = hommat[mat].density;
   
   int ndofe = nne*ndofn;
 
@@ -146,7 +146,7 @@ static int el_stiffmat(int i, /* Element ID */
 /* make decision to include ineria*/
   
   const int mat = elem[i].mat[2];
-  double rho = hommat[mat].e4;
+  double rho = hommat[mat].density;
   long include_inertia = 1;
   
   if(fabs(rho)<1.0e-15)

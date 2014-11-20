@@ -1,12 +1,6 @@
 #include "hommat.h"
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
 
 HOMMAT* build_hommat (long i)
      /*
@@ -19,12 +13,23 @@ HOMMAT* build_hommat (long i)
   pom = (HOMMAT*) PGFEM_calloc (i, sizeof(HOMMAT));
   
   for (ii=0;ii<i;ii++){	 
+    /* internal allocation */
     pom[ii].M = (double*) PGFEM_calloc (9,sizeof(double));
     pom[ii].L = (double*) PGFEM_calloc (9,sizeof(double));
-  }
-  if (pom == NULL){
-    PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__);
-    abort ();
+
+    /* initialize variables */
+    pom[ii].m10 = 0.0;
+    pom[ii].m01 = 0.0;
+    pom[ii].E = 0.0;
+    pom[ii].G = 0.0;
+    pom[ii].nu = 0.0;
+    pom[ii].density = 0.0;
+    pom[ii].e1 = 0.0;
+    pom[ii].e2 = 0.0;
+    pom[ii].e3 = 0.0;
+    pom[ii].e4 = 0.0;
+    pom[ii].devPotFlag = -1; /* poisoned */
+    pom[ii].volPotFlag = -1; /* poisoned */
   }
 
   return (pom);

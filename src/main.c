@@ -1094,7 +1094,7 @@ int single_scale_main(int argc,char *argv[])
     for(int a = 0; a<ne; a++)
     {
       int mat = elem[a].mat[2];
-      hommat[mat].e4 = rho[mat];
+      hommat[mat].density = rho[mat];
     }
     
     
