@@ -10,7 +10,7 @@
 #include "res_fini_def.h"
 #include "elem3d.h"
 
-static const int MAX_STEP = 200;
+static const int MAX_STEP = 1000;
 static const double MIN_D_TIME = 1.0e-10;
 static const int periodic = 0;
 
