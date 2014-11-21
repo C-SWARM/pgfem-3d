@@ -47,9 +47,9 @@ double D_lam_ALM (long ndofd,
   DLM = 0.0;
   b = 0.0;
   
-  p1 = aloc1 (DomDof[myrank]);
-  p2 = aloc1 (DomDof[myrank]);
-  p3 = aloc1 (DomDof[myrank]);
+  p1 = (double *)aloc1 (DomDof[myrank]);
+  p2 = (double *)aloc1 (DomDof[myrank]);
+  p3 = (double *)aloc1 (DomDof[myrank]);
 
   for (i=0;i<DomDof[myrank];i++) {
     p1[i] = BS_rr[i]/BS_DK[i];
@@ -281,6 +281,11 @@ double D_lam_ALM2 (double *BS_rr,
 		   MPI_Comm mpi_comm,
 		   const PGFem3D_opt *opts)
 {
+  double t = 0.0;
+  double alpha_alpha = 0.0;
+  double *r_n = NULL;
+  double *r_n_1 = NULL;
+  
   long i;
   double /* s1,s2, */b,a1,a2,a3,DLM,x1,x2,*p1,*p2,
     *p3,an1,an2,nor1,nor2,*BS_f_u,*f_u,/* tmp, */*p12;
@@ -292,12 +297,12 @@ double D_lam_ALM2 (double *BS_rr,
   DLM = 0.0;
   b = 0.0;
   
-  p1 = aloc1 (DomDof[myrank]);
-  p2 = aloc1 (DomDof[myrank]);
-  p3 = aloc1 (DomDof[myrank]); 
-  f_u = aloc1 (ndofd);
-  BS_f_u = aloc1 (DomDof[myrank]);
-  p12 = aloc1(ndofd);
+  p1 = (double *)aloc1 (DomDof[myrank]);
+  p2 = (double *)aloc1 (DomDof[myrank]);
+  p3 = (double *)aloc1 (DomDof[myrank]); 
+  f_u = (double *)aloc1 (ndofd);
+  BS_f_u = (double *)aloc1 (DomDof[myrank]);
+  p12 = (double*)aloc1(ndofd);
   
   for (i=0;i<DomDof[myrank];i++) {
     p1[i] = BS_rr[i]/BS_DK[i];
@@ -448,8 +453,8 @@ double D_lam_ALM2 (double *BS_rr,
   for (i=0;i<ndofd;i++ ) f_u[i] = 0.0;
   GToL(p1,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
   fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dt,stab,nce,
-		coel /*,gnod,geel*/,mpi_comm,opts );
+		hommat,sup,eps,sig,nor_min,crpl,dt,t,stab,nce,
+		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
   LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
   for (i=0;i<DomDof[myrank];i++) {
@@ -467,8 +472,8 @@ double D_lam_ALM2 (double *BS_rr,
   GToL(p2,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
   fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dt,stab,nce,
-		coel /*,gnod,geel*/,mpi_comm,opts );
+		hommat,sup,eps,sig,nor_min,crpl,dt,t,stab,nce,
+		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
   LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
@@ -534,7 +539,7 @@ double d_ALM4 (long ndofd,
 
   DLM = 0.0;
   
-  p = aloc1 (DomDof[myrank]);
+  p = (double *)aloc1 (DomDof[myrank]);
   for (i=0;i<DomDof[myrank];i++)
     p[i] = BS_rr[i]/BS_DK[i];
   
@@ -572,9 +577,9 @@ double d_lam_ALM4 (long ndofd,
   tmp1 = 0.0;
   znam = 1.;
   
-  p1 = aloc1 (DomDof[myrank]);
-  p2 = aloc1 (DomDof[myrank]);
-  p3 = aloc1 (DomDof[myrank]); 
+  p1 = (double *)aloc1 (DomDof[myrank]);
+  p2 = (double *)aloc1 (DomDof[myrank]);
+  p3 = (double *)aloc1 (DomDof[myrank]); 
   
   for (i=0;i<DomDof[myrank];i++) {
     p1[i] = BS_rr[i]/BS_DK[i];
@@ -671,9 +676,9 @@ double D_lam_ALM4 (long ndofd,
 
   DLM = 0.0;
   
-  p1 = aloc1 (DomDof[myrank]);
-  p2 = aloc1 (DomDof[myrank]);
-  p3 = aloc1 (DomDof[myrank]);
+  p1 = (double *)aloc1 (DomDof[myrank]);
+  p2 = (double *)aloc1 (DomDof[myrank]);
+  p3 = (double *)aloc1 (DomDof[myrank]);
   
   /* Scale deformation vectors */
   for (i=0;i<DomDof[myrank];i++) {

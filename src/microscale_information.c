@@ -17,6 +17,10 @@
 #include "in.h"
 #include "PGFEM_par_matvec.h"
 
+#include <stdlib.h>
+#include <search.h>
+#include <assert.h>
+
 static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
@@ -77,12 +81,93 @@ typedef struct MICROSCALE_SOLUTION_BUFFERS{
 
 
 /*==== API FUNCTIONS ====*/
+static int sort_first(const void *a, const void *b)
+{
+  return *((const int*)a) - *((const int*) b);
+}
+
+static int sort_second(const void *a, const void *b)
+{
+  return *((const int*)a+1) - *((const int*)b+1);
+}
+
+void sol_idx_map_build(sol_idx_map *map,
+		       const size_t size)
+{
+  /* map stores id : idx pairs */
+  map->size = size;
+  map->map = malloc(2*size*sizeof(*(map->map)));
+  for(size_t i=0; i<2*size; i += 2){
+    map->map[i] = -1;
+    map->map[i+1] = i/2;
+  }
+}
+
+void sol_idx_map_destroy(sol_idx_map *map)
+{
+  map->size = 0;
+  free(map->map);
+  map->map = NULL;
+}
+
+void sol_idx_map_sort_id(sol_idx_map *map)
+{
+  qsort(map->map,map->size,sizeof(*(map->map)),sort_first);
+}
+
+void sol_idx_map_sort_idx(sol_idx_map *map)
+{
+  qsort(map->map,map->size,sizeof(*(map->map)),sort_second);
+}
+
+int sol_idx_map_id_get_idx(const sol_idx_map *map,
+			   const int id)
+{
+  int val[2] = {0,0}; val[0] = id;
+  size_t len = map->size;
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first) + 1); 
+  return (ptr == NULL)? -1 : *ptr;
+}
+
+int sol_idx_map_idx_get_id(const sol_idx_map *map,
+			   const int idx)
+{
+  int val[2] = {0,0}; val[1] = idx;
+  size_t len = map->size;
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second)); 
+  return (ptr == NULL)? -1 : *ptr;
+}
+
+int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
+				 const int cur_id,
+				 const int new_id)
+{
+  int val[2] = {0,0}; val[0] = cur_id;
+  size_t len = map->size;
+
+  /* get pointer to matching pair */
+  int *ptr = lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first);
+  assert(ptr != NULL);
+  ptr[0] = new_id;
+  return ptr[1];
+}
+
+void sol_idx_map_idx_set_id(sol_idx_map *map,
+			    const int idx,
+			    const int id)
+{
+  int val[2] = {0,0}; val[1] = idx;
+  size_t len = map->size;
+  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
+  assert(ptr != NULL);
+  *ptr = id;
+}
+
 void initialize_MICROSCALE(MICROSCALE **microscale)
 {
   *microscale = PGFEM_calloc(1,sizeof(MICROSCALE));
   (*microscale)->opts = PGFEM_calloc(1,sizeof(PGFem3D_opt));
   (*microscale)->common = PGFEM_calloc(1,sizeof(COMMON_MICROSCALE));
-  (*microscale)->n_solutions = 0;
   (*microscale)->sol = NULL;
 
   set_default_options((*microscale)->opts);
@@ -136,7 +221,7 @@ void build_MICROSCALE_solutions(const int n_solutions,
 				MICROSCALE *microscale)
 {
   /*=== BUILD SOLUTIONS ===*/
-  microscale->n_solutions = n_solutions;
+  sol_idx_map_build(&(microscale->idx_map),n_solutions);
   microscale->sol = PGFEM_calloc(n_solutions,sizeof(MICROSCALE_SOLUTION));
   for(int i=0; i<n_solutions; i++){
     initialize_MICROSCALE_SOLUTION(microscale->sol + i);
@@ -148,7 +233,8 @@ void build_MICROSCALE_solutions(const int n_solutions,
 void destroy_MICROSCALE(MICROSCALE *microscale)
 {
   if(microscale != NULL){
-    for(int i=0; i<microscale->n_solutions; i++){
+    for(int i = 0, e = microscale->idx_map.size;
+	i < e; i++){
       destroy_MICROSCALE_SOLUTION(microscale->sol+i,
 				  microscale->common,
 				  microscale->opts->analysis_type);
@@ -157,53 +243,24 @@ void destroy_MICROSCALE(MICROSCALE *microscale)
     destroy_COMMON_MICROSCALE(microscale->common);
     free(microscale->common);
     free(microscale->opts);
+    sol_idx_map_destroy(&(microscale->idx_map));
   }
   free(microscale);
 } /* destroy_MICROSCALE */
 
-int reset_MICROSCALE(MICROSCALE *m)
-{
-  int err = 0;
-  int myrank = 0;
-  COMMON_MICROSCALE *c = m->common;
-  err += MPI_Comm_rank(c->mpi_comm,&myrank);
-
-  const long loc_ndof = c->ndofd;
-  const long g_ndof = c->DomDof[myrank];
-
-  for(int i=0; i<m->n_solutions; i++){
-    MICROSCALE_SOLUTION *sol = m->sol+i;
-    err += reset_MICROSCALE_SOLUTION(sol,loc_ndof,g_ndof);
-  }
-
-  return err;
-}/* reset_MICROSCALE_SOLUTION */
-
-int update_MICROSCALE(MICROSCALE *m)
-{
-  int err = 0;
-  int myrank = 0;
-  COMMON_MICROSCALE *c = m->common;
-  err += MPI_Comm_rank(c->mpi_comm,&myrank);
-
-  const long loc_ndof = c->ndofd;
-  const long g_ndof = c->DomDof[myrank];
-
-  for(int i=0; i<m->n_solutions; i++){
-    MICROSCALE_SOLUTION *sol = m->sol+i;
-    err += update_MICROSCALE_SOLUTION(sol,loc_ndof,g_ndof);
-  }
-
-  return err;
-} /* update_MICROSCALE_SOLUTION */
-
 int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-			      const int loc_ndof,
-			      const int g_ndof)
+			      const MICROSCALE *micro)
 {
   int err = 0;
+  int myrank = 0;
+  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  const int loc_ndof = micro->common->ndofd;
+  const int g_ndof = micro->common->DomDof[myrank];
+  size_t pos = 0;
+
   /* reset displacement (solution) vector */
-  memcpy(sol->r,sol->rn,loc_ndof*sizeof(double));
+  unpack_data(sol->packed_state_var_n,
+	      sol->r,&pos,loc_ndof,sizeof(*(sol->r)));
 
   /* null all of the other local vectors */
   nulld(sol->f,loc_ndof);
@@ -233,23 +290,38 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   nulld(sol->BS_dR,g_ndof);
 
   /* reset state variables */
-  /*** NOT YET IMPLEMENTED ***/
+  unpack_eps_list(sol->eps,
+		  micro->common->ne,
+		  micro->common->elem,
+		  micro->opts->analysis_type,
+		  sol->packed_state_var_n,
+		  &pos);
 
   return err;
 }/* reset_MICROSCALE_SOLUTION */
 
 int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-			       const int loc_ndof,
-			       const int g_ndof)
+			       const MICROSCALE *micro)
 {
   int err = 0;
+  int myrank = 0;
+  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  const int loc_ndof = micro->common->ndofd;
+  size_t pos = 0;
+
   /* copy r -> rn  */
-  memcpy(sol->rn,sol->r,loc_ndof*sizeof(double));
+  pack_data(sol->r,sol->packed_state_var_n,&pos,
+	    loc_ndof,sizeof(*(sol->r)));
 
   /* leave other solution vectors alone */
 
   /* update state variables */
-  /*** NOT IMPLEMENTED YET ***/
+  pack_eps_list(sol->eps,
+		micro->common->ne,
+		micro->common->elem,
+		micro->opts->analysis_type,
+		sol->packed_state_var_n,
+		&pos);
 
   return err;
 }/* update_MICROSCALE_SOLUTION */
@@ -572,8 +644,6 @@ static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
   sol->eps = NULL;
   sol->crpl = NULL;
   sol->npres = 0;
-  sol->elem_state_info = NULL;
-  sol->coel_state_info = NULL;
 
   /* solution information */
   /* local vectors */
@@ -625,10 +695,26 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   const size_t len_double = sizeof(double);
 
   sol->sig_e = build_sig_il(common->ne,analysis,common->elem);
+
   sol->eps = build_eps_il(common->ne,common->elem,analysis);
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
 
+  /* initialize state variable buffer at macro time (n) */
+  sol->packed_state_var_len = local_len*len_double;
+  sol->packed_state_var_len += sizeof_eps_list(sol->eps,
+					       common->ne,
+					       common->elem,
+					       analysis);
+  sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));
+
+  /* initialize buffer */
+  {
+    /* pack eps after end of sol vector buffer */
+    size_t pos = local_len*len_double;
+    pack_eps_list(sol->eps,common->ne,common->elem,analysis,
+		  sol->packed_state_var_n,&pos);
+  }
   /* need to figure out elem/coel_state_info indexing */
 
   switch(analysis){
@@ -652,33 +738,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* } */
 
   /* local solution vectors */
-  sol->rn = PGFEM_calloc(local_len,len_double);
   sol->r = PGFEM_calloc(local_len,len_double);
-
-  /* sol->f = PGFEM_calloc(local_len,len_double); */
-  /* sol->d_r = PGFEM_calloc(local_len,len_double); */
-  /* sol->rr = PGFEM_calloc(local_len,len_double); */
-  /* sol->D_R = PGFEM_calloc(local_len,len_double); */
-  /* sol->R = PGFEM_calloc(local_len,len_double); */
-  /* sol->f_defl = PGFEM_calloc(local_len,len_double); */
-  /* sol->RR = PGFEM_calloc(local_len,len_double); */
-  /* sol->f_u = PGFEM_calloc(local_len,len_double); */
-  /* sol->RRn = PGFEM_calloc(local_len,len_double); */
-  /* sol->U = PGFEM_calloc(local_len,len_double); */
-  /* sol->DK = PGFEM_calloc(local_len,len_double); */
-  /* sol->dR = PGFEM_calloc(local_len,len_double); */
-
-  /* sol->BS_f = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_f_u = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_x = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_RR = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_d_r = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_D_R = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_rr = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_R = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_U = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_DK = PGFEM_calloc(global_len,len_double); */
-  /* sol->BS_dR = PGFEM_calloc(global_len,len_double); */
 
   /* Get pointers to the shared solution workspace */
   {
@@ -722,39 +782,15 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 					const int analysis)
 {
   free(sol->r);
-  free(sol->rn);
-  /* free(sol->f); */
-  /* free(sol->d_r); */
-  /* free(sol->rr); */
-  /* free(sol->D_R); */
-  /* free(sol->R); */
-  /* free(sol->f_defl); */
-  /* free(sol->RR); */
-  /* free(sol->f_u); */
-  /* free(sol->RRn); */
-  /* free(sol->U); */
-  /* free(sol->DK); */
-  /* free(sol->dR); */
-
-  /* free(sol->BS_f); */
-  /* free(sol->BS_f_u); */
-  /* free(sol->BS_x); */
-  /* free(sol->BS_RR); */
-  /* free(sol->BS_d_r); */
-  /* free(sol->BS_D_R); */
-  /* free(sol->BS_rr); */
-  /* free(sol->BS_R); */
-  /* free(sol->BS_U); */
-  /* free(sol->BS_DK); */
-  /* free(sol->BS_dR); */
+  free(sol->packed_state_var_n);
   free(sol->times);
 
   destroy_sig_il(sol->sig_e,common->elem,common->ne,analysis);
   /* destroy sig_n */
+
   destroy_eps_il(sol->eps,common->elem,common->ne,analysis);
+
   //destroy_crpl
-  free(sol->elem_state_info);
-  free(sol->coel_state_info);
 }
 
 static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,

@@ -19,11 +19,9 @@
 #include "cohesive_element.h"
 #include "bounding_element.h"
 #include "PGFem3D_options.h"
-#include "compute_force_on_model_ent.h"
 #include "pgfem_comm.h"
 
 #include "hypre_global.h"
-#include "blocksolve_interface.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,6 +52,7 @@ extern "C" {
    *  Abort on unrecoverable errors (e.g., too many substeps)
    */
   double Newton_Raphson (const int print_level,
+			 int *n_step, /**< returns the number of nonlinear steps taken to solve the given increment */
 			 long ne, /**< number of ELEMENT */
 			 int n_be, /**< number of BOUNDING_ELEMENT */
 			 long nn, /**< number of NODE */
@@ -91,10 +90,6 @@ extern "C" {
 			 long FNR, /**< "Full Newton-Raphson" == 0, only compute tangent on 1st iteration */
 			 double *pores, /**< [out] opening volume of failed cohesive interfaces */
 			 PGFEM_HYPRE_solve_info *PGFEM_hypre, /**< custom HYPRE solver object */
-			 BSprocinfo *BSinfo, /**< _DEPRECATED_ BlockSolve95 solver info */
-			 BSspmat *k, /**< _DEPRECATED_ BlockSolve global matrix object (void*) */
-			 BSpar_mat **pk, /**< _DEPRECATED_ BlockSolve stuff */
-			 BSpar_mat **f_pk,/**< _DEPRECATED_ BlockSolve stuff */
 			 double *BS_x, /**< workspace for the locally owned part of the global solution 'rr'. */
 			 double *BS_f, /**< Global part of 'f'. */
 			 double *BS_RR, /**< Global part of 'RR'. */
@@ -114,10 +109,10 @@ extern "C" {
 			 MPI_Comm mpi_comm,
 			 const double VVolume, /**< original volume of the domain */
 			 const PGFem3D_opt *opts, /**< structure of options */
-			 MODEL_ENTITY *me, /**< _DEPRECATED_ list of model entities to compute reactions on */
-			 double *forces, /**< _DEPRECATED_ reaction forces on model entities */
-			 void *ms_job_list, /**< _DEPRECATED_ initial implementation of FE2 modeling */
-			 void *microscale /**< Container of microscale information. */
+			 void *microscale, /**< Container of microscale information. */
+       double alpha_alpha, /**< mid_point_rule alpha */
+       double *r_n, /**< local total solution vector to times[tim-1] */
+       double *r_n_1 /**< local total solution vector to times[tim-2] */			 
 			 );
 
 #ifdef __cplusplus

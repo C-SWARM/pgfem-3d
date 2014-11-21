@@ -17,24 +17,19 @@ include ../Makefile.path
 
 CC = mpicc
 LINK = mpicxx
-DFLAGS		= #-DNDEBUG
 
 # BG/Q machines
 # CC = mpixlc_r
 # LINK = mpixlf77_r
 # DFLAGS	+= -DARCH_BGQ
 
-#TAU_OPTS = -optKeepFiles -tau_options=-optTauSelectFile=tau_instrument.txt
-#CC = tau_cc.sh $(TAU_OPTS)
-#LINK = tau_cxx.sh $(TAU_OPTS)
-
 # Un/comment the appropriate CFLAGS variable for using intel or GNU
 # compiler for correct strict warnings
-CFLAGS_INTEL	= -Wcheck -Werror-all -strict-ansi
-#CFLAGS_GCC	= -pedantic -Werror
-CFLAGS          = -Wall -std=c99 -O3 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
+CFLAGS_INTEL	= -Wcheck
+#CFLAGS_GCC	= -pedantic
+CFLAGS          = -Wall -std=c99 -O0 -g $(CFLAGS_INTEL) $(CFLAGS_GCC)
 
-#DFLAGS		+= -DNO_VTK_LIB=1
+DFLAGS		= #-DNDEBUG
 #DFLAGS		+= -DDISP_DEBUG=1
 #DFLAGS		+= -DVD_INT_ALG_DEBUG=1
 #DFLAGS		+= -DSTAB_DEBUG=1
@@ -76,7 +71,6 @@ INCLUDES        = -I$(pfem_incl_dir) \
 		  $(VTK_IO_incl) \
 		  $(PARMETIS_incl) \
 		  $(SUITESPARSE_incl) \
-		  $(BLOCKSOLVE_incl) \
 		  $(HYPRE_incl) \
 		  $(VTK_incl) \
 		  $(MKL_incl)
@@ -88,7 +82,6 @@ LIBS	= $(RENUMBERING_lib) \
 	  $(VTK_IO_lib) \
 	  $(PARMETIS_lib) \
 	  $(SUITESPARSE_lib) \
-	  $(BLOCKSOLVE_lib) \
 	  $(HYPRE_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib) \
@@ -114,21 +107,11 @@ vpath %.c $(srcdir)
 #  Targets
 #
 
-all: PGFem3D_ss PGFem3D_ms
+all: PGFem3D
 
-PGFem3D_ss: $(OBJS) super_main_ss
+PGFem3D: $(OBJS)
 	$(RM) $(pfem_bin_dir)/$@
 	$(LINK) -o $(pfem_bin_dir)/$@ $(LDOPTIONS) $(OBJS) $(LIBS)
-
-PGFem3D_ms: $(OBJS) super_main_ms
-	$(RM) $(pfem_bin_dir)/$@
-	$(LINK) -o $(pfem_bin_dir)/$@ $(LDOPTIONS) $(OBJS) $(LIBS)
-
-super_main_ss: $(OBJS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) super_main.c -DPGFEM_FRAMEWORK=SINGLE_SCALE
-
-super_main_ms: $(OBJS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) super_main.c -DPGFEM_FRAMEWORK=MULTI_SCALE
 
 objects: $(OBJS)
 
@@ -136,10 +119,10 @@ objects: $(OBJS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) $<
 
 clean:
-	$(RM)  *.o *~
+	$(RM)  *.o *~ TAGS Makefile.depend
 
 realclean: clean
-	$(RM) $(pfem_bin_dir)/PGFem3D_*
+	$(RM) $(pfem_bin_dir)/PGFem3D
 
 docs:
 	doxygen docs.config

@@ -1,7 +1,6 @@
 OBJS = ALM.o \
 Arc_length.o \
 boomerAMGInterface.o \
-blocksolve_interface.o \
 GRedist_node.o \
 LINE.o \
 Newton_Raphson.o \
@@ -80,7 +79,6 @@ node.o \
 element.o \
 solve_system.o \
 PGFEM_HYPRE_preconditioners.o \
-compute_force_on_model_ent.o \
 allocation.o \
 cohesive_element_utils.o \
 cohesive_element.o \
@@ -110,8 +108,10 @@ PGFEM_mpi.o \
 ms_job_intercomm.o \
 macro_micro_functions.o \
 macro_micro_main.o \
+pgf_fe2_micro_server.o \
+pgf_fe2_job.o \
+pgf_fe2_server_rebalance.o \
+pgf_fe2_rebalancer.o \
+pgf_fe2_macro_client.o \
 main.o \
 super_main.o
-
-# damage.o \
-#PFEM3d.o

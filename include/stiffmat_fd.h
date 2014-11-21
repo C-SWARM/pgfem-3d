@@ -4,7 +4,6 @@
 #define STIFFMAT_FD_H
 
 #include "PGFEM_mpi.h"
-#include "blocksolve_interface.h"
 #include "element.h"
 #include "node.h"
 #include "matgeom.h"
@@ -19,6 +18,7 @@
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
@@ -30,8 +30,8 @@ extern "C" {
    * COMMUN. Elements with global DOFs are computed first to overlap
    * communication with computation of fully local elements.
    */
-  int stiffmat_fd (BSspmat *K,
-		   int *Ap,
+  void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);		     
+  int stiffmat_fd (int *Ap,
 		   int *Ai,
 		   long ne,
 		   int n_be,
@@ -65,8 +65,8 @@ extern "C" {
 		   long GDof,
 		   COMMUN comm,
 		   MPI_Comm mpi_comm,
-		     PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		   const PGFem3D_opt *opts);
+		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

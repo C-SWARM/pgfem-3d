@@ -116,6 +116,7 @@ static int create_ms_job_intercomm_micro(const int nproc_macro,
 		     ic->recv_info->proc[i],MPI_ANY_TAG,
 		     ic->comm,&req_r[i]);
   }
+
   err += MPI_Waitall(ic->recv_info->n_proc,req_r,MPI_STATUS_IGNORE);
 
   /* copy the buffer sizes from the receive to the send */

@@ -1,11 +1,10 @@
 /* HEADER */
 #include "volumetric_damage.h"
+#include "utils.h"
+#include "PGFEM_io.h"
 #include <math.h>
 #include <stdlib.h>
-
-#ifndef PGFEM_IO_H
-#include "PGFEM_io.h"
-#endif
+#include <string.h>
 
 #ifndef VD_DEBUG
 #define VD_DEBUG 0
@@ -67,11 +66,11 @@ void init_damagef(damage *dam,
 		  const double *params,
 		  const int len)
 {
-  int perr,ferr,eerr,ererr;
-  perr = ferr = eerr  = ererr = 0;
+  int perr = 0;
 
   dam->Xn = dam->X = dam->wn = dam->w = dam->Hn = dam->H = 0.0;
   dam->broken = dam->damaged_n = dam->damaged = 0;
+  dam->eq_flag = eq_flag;
 
   if(set_damage_parameters(dam,params,len) != 0){
     PGFEM_printerr("set_damage_parameters returned error in %s.\n",__func__);
@@ -79,6 +78,20 @@ void init_damagef(damage *dam,
   }
   
   /* damage functions */
+  reset_damage_functions(dam,eq_flag);
+
+  if(perr){
+    abort();
+  }
+}
+
+void reset_damage_functions(damage *dam,
+			    const int eq_flag)
+{
+  int ferr = 0;
+  int eerr = 0;
+  int ererr = 0;
+
   switch(eq_flag){
   default:
     ferr = set_damage_function(dam,weibull_function);
@@ -99,9 +112,34 @@ void init_damagef(damage *dam,
     PGFEM_printerr("set_damage_evolution_rate returned error in %s.\n",__func__);
     ererr = 1;
   }
-  if(perr+ferr+eerr+ererr != 0){
+  if(ferr+eerr+ererr != 0){
     abort();
   }
+}
+
+void copy_damage(damage *restrict dest,
+		 const damage *restrict src)
+{
+  if(dest == src) return;
+  memcpy(dest,src,sizeof(*src));
+  /* may not be necessary, but do it anyhow */
+  reset_damage_functions(dest,dest->eq_flag);
+}
+
+void pack_damage(const damage *src,
+		 char *buffer,
+		 size_t *pos)
+{
+  pack_data(src,buffer,pos,1,sizeof(*src));
+}
+
+void unpack_damage(damage *dest,
+		   const char *buffer,
+		   size_t *pos)
+{
+  unpack_data(buffer,dest,pos,1,sizeof(*dest));
+  /* may not be necessary, but do it anyhow */
+  reset_damage_functions(dest,dest->eq_flag);
 }
 
 void reset_damage(damage *dam){

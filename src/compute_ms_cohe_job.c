@@ -26,15 +26,11 @@ static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 
-/** reset the microscale state variables at n */
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol);
-
 /** Wrapper for Newton Raphson. */
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts);
+			  const PGFem3D_opt *opts,
+			  int *n_step);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -112,7 +108,7 @@ int compute_ms_cohe_job(const int job_id,
   MPI_Comm_rank(common->mpi_comm,&myrank);
   if(myrank == 0){
     PGFEM_printf("=== MICROSCALE cell %d of %d ===\n",
-		 job_id+1,microscale->n_solutions);
+		 job_id+1,microscale->idx_map.size);
   /*   PGFEM_printf("Jump (n):\t"); */
   /*   print_array_d(PGFEM_stdout,p_job->jump_n,ndim,1,ndim); */
   /*   PGFEM_printf("Jump (n+1):\t"); */
@@ -131,11 +127,7 @@ int compute_ms_cohe_job(const int job_id,
 
   default: /* reset state to macro time (n) */
     /* reset the microscale solution to macro time (n) */
-    err += reset_MICROSCALE_SOLUTION(sol,common->ndofd,
-				     common->DomDof[myrank]);
-
-    /* reset the state variables to macroscopic time (n) */
-    err += reset_micro_state_variables(p_job,common,sol);
+    err += reset_MICROSCALE_SOLUTION(sol,microscale);
 
     /* reset the supports to contain the previous jump and current
        increment */
@@ -146,9 +138,21 @@ int compute_ms_cohe_job(const int job_id,
   /* swtich compute job */
   switch(p_job->job_type){
   case JOB_COMPUTE_EQUILIBRIUM:
+
+    /* print time step information */
+    if(myrank == 0){
+      PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
+      PGFEM_printf("\nFinite deformations time step %ld) "
+		   " Time %f | dt = %10.10f\n",
+		   p_job->tim,sol->times[sol->tim+1],sol->dt);
+    }
+
     /* compute the microscale equilibrium. */
-    if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
-    err += ms_cohe_job_nr(common,sol,microscale->opts);
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
+
+    /* /\* compute number of subdivisions at micro scale *\/ */
+    /* p_job->n_step = (int) ((p_job->times[2] - p_job->times[1]) */
+    /* 			   /(sol->times[sol->tim + 1] - sol->times[sol->tim])); */
 
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -194,8 +198,8 @@ int compute_ms_cohe_job(const int job_id,
 
   case JOB_UPDATE:
     /* update the solution and state variables state n <- n+1 */
-    err += update_MICROSCALE_SOLUTION(sol,common->ndofd,
-				      common->DomDof[myrank]);
+    err += update_MICROSCALE_SOLUTION(sol,microscale);
+
     /* job->jump_n <-- job->jump */
     memcpy(p_job->jump_n,p_job->jump,ndim*sizeof(double));
 
@@ -255,25 +259,10 @@ int assemble_ms_cohe_job_res(const int job_id,
 /*==== STATIC FUNCTION DEFINITIONS ====*/
 /*=====================================*/
 
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol)
-{
-  int err = 0;
-
-  /* reset nodal values */
-
-  /* reset element values */
-
-  /* reset supports */
-
-  return err;
-}/* reset_micro_state_variables() */
-
-
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts)
+			  const PGFem3D_opt *opts,
+			  int *n_step)
 {
   int err = 0;
   double time = 0.0;
@@ -281,12 +270,13 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   int full_NR = 1; /* 0 is modified NR */
   double pores = 0.0;
   const int print_level = 0;
+  *n_step = 0;
 
   /* copy of load increment */
   double *sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson(print_level,c->ne,0,c->nn, c->ndofn,
+  time += Newton_Raphson(print_level,n_step,c->ne,0,c->nn, c->ndofn,
 			 c->ndofd,c->npres,s->tim,s->times,
 			 nl_err,s->dt,c->elem,NULL,
 			 c->node,c->supports,sup_defl,c->hommat,
@@ -295,13 +285,11 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			 s->rr,s->R,s->f_defl,s->RR,
 			 s->f_u,s->RRn,s->crpl,opts->stab,
 			 c->nce,c->coel,full_NR,&pores,
-			 c->SOLVER,NULL,NULL, NULL,
-			 NULL,s->BS_x,s->BS_f,s->BS_RR,
+			 c->SOLVER,s->BS_x,s->BS_f,s->BS_RR,
 			 0.0,0.0,0.0,c->lin_err,
 			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
 			 1,c->maxit_nl,&s->NORM,c->nbndel,
-			 c->bndel,c->mpi_comm,c->VVolume,opts,
-			 NULL,NULL,NULL,NULL);
+			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL, 0, NULL, NULL);
 	
   free(sup_defl);
   return err;
@@ -399,14 +387,14 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
   ZeroHypreK(c->SOLVER,c->Ai,c->DomDof[myrank]);
 
   /* assemble to the microscale tangent matrix */
-  err += stiffmat_fd(NULL,c->Ap,c->Ai,c->ne,0,c->ndofn,
+  err += stiffmat_fd(c->Ap,c->Ai,c->ne,0,c->ndofn,
 		     c->elem,NULL,c->nbndel,c->bndel,
 		     c->node,c->hommat,c->matgeom,s->sig_e,
 		     s->eps,s->d_r,s->r,c->npres,c->supports,
 		     /*iter*/0,nor_min,s->dt,s->crpl,o->stab,
 		     c->nce,c->coel,0,0.0,s->f_u,myrank,nproc,
 		     c->DomDof,c->GDof,c->pgfem_comm,c->mpi_comm,
-		     c->SOLVER,o);
+		     c->SOLVER,o,0,NULL,NULL);
 
   /* finalize the microscale tangent matrix assembly */
   err += HYPRE_IJMatrixAssemble(c->SOLVER->hypre_k);
@@ -715,10 +703,10 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
     if(i == 0){
       /* only setup solver for first time through */
       solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-		   c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+		   c->SOLVER,c->mpi_comm);
     } else {
       solve_system_no_setup(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-			    c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+			    c->SOLVER,c->mpi_comm);
     }
 
     /* check solver error status and print solve information */

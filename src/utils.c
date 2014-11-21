@@ -25,6 +25,120 @@
 
 static const int periodic = 0;
 
+void pack_2mat(const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<nrow; i++){
+    pack_data(src[i],buffer,pos,ncol,elem_size);
+  }
+}
+
+void unpack_2mat(void **dest,
+		 const int nrow,
+		 const int ncol,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<nrow; i++){
+    unpack_data(buffer,dest[i],pos,ncol,elem_size);
+  }
+}
+
+void pack_3mat(const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    pack_2mat(src[i],n_2,n_3,elem_size,buffer,pos);
+  }
+}
+
+void unpack_3mat(void ***dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    unpack_2mat(dest[i],n_2,n_3,elem_size,buffer,pos);
+  }
+}
+
+void pack_4mat(const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    pack_3mat(src[i],n_2,n_3,n_4,elem_size,buffer,pos);
+  }
+}
+
+void unpack_4mat(void ****dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const int n_4,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    unpack_3mat(dest[i],n_2,n_3,n_4,elem_size,buffer,pos);
+  }
+}
+
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size)
+{
+  for(int i=0; i<nrow; i++){
+    memcpy(dest[i],src[i],ncol*elem_size);
+  }
+}
+
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_2mat(dest[i],src[i],n_2,n_3,elem_size);
+  }
+}
+
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_3mat(dest[i],src[i],n_2,n_3,n_4,elem_size);
+  }
+}
+
 int number_of_duplicates(const void *arr,
 			 const size_t n_elem,
 			 const size_t size,
@@ -3094,3 +3208,16 @@ long* sparse_ApAi (long ne,
   
   return (Ai);
 }
+
+void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
+{
+/* input: w, x, alpha
+          n_row: size of array
+   output: v = (1-alpha)*w + alpha*x
+*/   
+  for(long a = 0; a<n_row; a++)
+  {
+    v[a] = (1-alpha)*w[a] + alpha*x[a];
+  }
+}
+

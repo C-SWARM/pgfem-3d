@@ -11,6 +11,168 @@
 #include "displacement_based_element.h"
 #include "matice.h"
 #include "elem3d.h"
+#include <math.h>
+#include <string.h>
+
+void add_inertia4f(double *f,
+         const int ii,
+         const int ndofn,
+         const int nne,
+         const double *x,
+         const double *y,
+         const double *z,		     
+         const ELEMENT *elem,
+         const HOMMAT *hommat,
+		     const NODE *node, double dt, double t,
+		     double *r_2, double* r_1, double *r_0, double alpha) 
+{
+  int err = 0;
+  const int mat = elem[ii].mat[2];
+
+  double rho = hommat[mat].density;
+  int ndofe = nne*ndofn;
+    
+
+  /* make sure the f vector contains all zeros */
+  memset(f,0,ndofe*sizeof(double));
+
+  /* INTEGRATION */
+  long npt_x, npt_y, npt_z;
+  int_point(nne+1,&npt_z);
+
+  double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
+  int_pt_ksi = aloc1(npt_z);
+  int_pt_eta = aloc1(npt_z);
+  int_pt_zet = aloc1(npt_z);
+  weights = aloc1(npt_z);
+
+  /* allocate space for the shape functions, derivatives etc */
+  double *Na, *N_x, *N_y, *N_z;
+  Na = aloc1(nne);
+  N_x = aloc1(nne);
+  N_y = aloc1(nne);
+  N_z = aloc1(nne);
+
+  /*=== INTEGRATION LOOP ===*/
+  integrate(nne+1,&npt_x,&npt_y,&npt_z,
+	    int_pt_ksi,int_pt_eta,int_pt_zet,
+	    weights);
+
+  double du[ndofn];
+  double X[ndofn];
+  double *bf0, *bf1, *bf2, *bf_n1a, *bf;
+  bf0 = aloc1(ndofn);
+  bf1 = aloc1(ndofn);
+  bf2 = aloc1(ndofn);
+  bf_n1a = aloc1(ndofn);        
+  bf     = aloc1(ndofn);        
+  
+  for(long i=0; i<npt_x; i++)
+  {
+    for(long j=0; j<npt_y; j++)
+    {
+      for(long k=0; k<npt_z; k++)
+      {        
+	      shape_func(int_pt_ksi[k], int_pt_eta[k], int_pt_zet[k], nne, Na);
+        double detJ = deriv(int_pt_ksi[k],int_pt_eta[k],int_pt_zet[k],nne,x,y,z,N_x,N_y,N_z);	      
+	      double wt = weights[k];
+	      
+        memset(bf0,   0,ndofn*sizeof(double));
+        memset(bf1,   0,ndofn*sizeof(double));
+        memset(bf2,   0,ndofn*sizeof(double));
+        memset(bf_n1a,0,ndofn*sizeof(double));
+        memset(bf,    0,ndofn*sizeof(double));
+         X[0] =  X[1] =  X[2] = 0.0;
+        du[0] = du[1] = du[2] = 0.0;
+                        
+        for(long a = 0; a<nne; a++)
+        {
+          X[0] += Na[a]*x[a];
+          X[1] += Na[a]*y[a];          
+          X[2] += Na[a]*z[a];
+                              
+          for(long b = 0; b<ndofn; b++)
+          {
+            long id = a*ndofn + b;
+            du[b] += Na[a]*(r_2[id]-2.0*r_1[id]+r_0[id]);
+          }
+        }
+	       	      
+	      for(long a = 0; a<nne; a++)
+	      {
+          for(long b=0; b<ndofn; b++)
+	        {
+	          long id = a*ndofn + b;
+	          f[id] += rho/dt*Na[a]*du[b]*wt*detJ;
+	        }
+	      }		     
+      }
+	  }
+  }
+  dealoc1(weights);
+  dealoc1(int_pt_ksi);
+  dealoc1(int_pt_eta);
+  dealoc1(int_pt_zet);      
+  dealoc1(Na);  
+  dealoc1(N_x);
+  dealoc1(N_y);
+  dealoc1(N_z);
+  
+  dealoc1(bf0);
+  dealoc1(bf1);
+  dealoc1(bf2);
+  dealoc1(bf_n1a);        
+  dealoc1(bf);  
+    
+}
+
+int resid_w_inertia_el(double *fe, int i, 
+			int nne, long ndofn, long ndofe, double *r_e,                               
+		  NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig,
+		  long* nod, long *cn, double *x, double *y, double *z,                                
+		  double dt, double t, double alpha, double *r_n, double *r_n_1, double *r_n_1_a, double *r_n_a)
+{
+	int nsd = 3;
+	int err = 0;
+	double *r0, *r0_;
+	
+	double *f_i     = aloc1(ndofe);
+	double *f_n_a   = aloc1(ndofe);
+	double *f_n_1_a = aloc1(ndofe);
+	
+	r0      = aloc1(ndofe);
+	r0_     = aloc1(ndofe);
+	
+	for (long I=0;I<nne;I++)
+	{
+	  for(long J=0; J<nsd; J++)
+	  {
+	     r0[I*ndofn + J] =   r_n[nod[I]*ndofn + J];
+	    r0_[I*ndofn + J] = r_n_1[nod[I]*ndofn + J];            
+	  }
+	}
+		
+	mid_point_rule(r_n_1_a,r0_,r0,  alpha, ndofe); 
+	mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe); 
+	  
+	err =  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
+	         hommat,nod,node,eps,sig,sup,r_n_1_a);                                             
+	       
+	err =  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
+	        hommat,nod,node,eps,sig,sup,r_n_a);
+
+	add_inertia4f(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha); 
+	
+	for(long a = 0; a<ndofe; a++)
+	    fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
+	
+	free(r0);
+	free(r0_);
+	free(f_i);
+	free(f_n_a);
+	free(f_n_1_a);		
+	return err;
+}
 
 int fd_residuals (double *f_u,
 		  long ne,
@@ -30,12 +192,23 @@ int fd_residuals (double *f_u,
 		  double nor_min,
 		  CRPL *crpl,
 		  double dt,
+		  double t,
 		  double stab,
 		  long nce,
 		  COEL *coel,
 		  MPI_Comm mpi_comm,
-		  const PGFem3D_opt *opts)
+		  const PGFem3D_opt *opts,
+		  double alpha, double *r_n, double *r_n_1)
 {
+/* make decision to include ineria*/
+  const int mat = elem[0].mat[2];
+  double rho = hommat[mat].density;
+  long include_inertia = 1;
+  
+  if(fabs(rho)<1.0e-15)
+    include_inertia = 0;
+   
+/* decision end*/   
   int err = 0;
   /* long i,j,nne,ndofe,ndofc,k,kk,II,*nod,P,R,*cn; */
   /* double *r_e,*x,*y,*z,*fe,*X,*Y; */
@@ -78,20 +251,24 @@ int fd_residuals (double *f_u,
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
     
     /* coordinates */
-    if(sup->multi_scale){
-	nodecoord_total(nne,nod,node,x,y,z);
-	def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-    } else {
-      switch(opts->analysis_type){
+    if(sup->multi_scale)
+    {
+	    nodecoord_total(nne,nod,node,x,y,z);
+	    def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    } 
+    else
+    {
+      switch(opts->analysis_type)
+      {
       case DISP:
-	nodecoord_total(nne,nod,node,x,y,z);
-	def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-	break;
+	      nodecoord_total(nne,nod,node,x,y,z);
+	      def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+	      break;
       default:
-	nodecoord_updated(nne,nod,node,x,y,z);
-	/* deformation on element */
-	def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);    
-	break;
+	      nodecoord_updated(nne,nod,node,x,y,z);
+	      /* deformation on element */
+	      def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);    
+	      break;
       }
     }
 
@@ -101,6 +278,28 @@ int fd_residuals (double *f_u,
     }
 
 
+    if(include_inertia)
+    {
+      
+   		double *r_n_a, *r_n_1_a;
+   		r_n_a = aloc1(ndofe);
+   		r_n_1_a = aloc1(ndofe);
+   		      
+    	switch(opts->analysis_type)
+    	{   		
+      	case DISP:
+      	{
+					/* Get TOTAL deformation on element; r_e already contains
+	   			INCREMENT of deformation, add the deformation from previous. */
+///////////////////////////////////////////////////////////////////////////////////
+					resid_w_inertia_el(fe,i,nne,ndofn,ndofe,r_e,node,elem,hommat,sup,eps,sig,
+		  			nod,cn,x,y,z,dt,t,alpha,r_n,r_n_1, r_n_1_a, r_n_a);		
+      	}
+      	break;
+      }        
+    }
+    else
+    {
     
     /* Residuals on element */
     switch(opts->analysis_type){
@@ -125,6 +324,7 @@ int fd_residuals (double *f_u,
 			   hommat,x,y,z,eps,sig,r_e,npres,
 			   nor_min,fe,crpl,dt,opts->analysis_type);
       break;
+    }
     }
 
     /* Assembly */
@@ -291,3 +491,4 @@ int fd_residuals (double *f_u,
   } /* for each bounding element */
   return err;
 }
+

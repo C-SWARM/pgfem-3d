@@ -201,8 +201,12 @@ COEL* read_cohe_elem (FILE *in1,
 	ensight->ncn++;
       Enodes[i] = -1;
     }
-    ensight->Sm = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
-    ensight->Sp = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+    if(ensight->ncn > 0){
+      ensight->Sm = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+      ensight->Sp = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+    } else {
+      ensight->Sm = ensight->Sp = NULL;
+    }
     ensight->No = (long *) PGFEM_calloc (nn,sizeof(long));
     
     k = 0;

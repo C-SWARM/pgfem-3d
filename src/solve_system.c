@@ -91,10 +91,6 @@ double solve_system(const PGFem3D_opt *opts,
 		    const long *DomDof,
 		    SOLVER_INFO *info,
 		    PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		    BSprocinfo *BSinfo,
-		    BSspmat *k,
-		    BSpar_mat **pk,
-		    BSpar_mat **f_pk,
 		    MPI_Comm mpi_comm)
 {
   double func_time = -MPI_Wtime();
@@ -102,71 +98,6 @@ double solve_system(const PGFem3D_opt *opts,
   MPI_Comm_rank(mpi_comm,&myrank);
 
   switch(opts->solverpackage){
-  case BLOCKSOLVE:
-    {
-      /* Set symmetry */
-      BSset_mat_symmetric (k,FALSE);
-	
-      /* and storage */
-      BSset_mat_icc_storage (k,FALSE);
-	
-      /* permute the matrix */
-      static int BS_perm = 0;
-      if (tim == 0 && BS_perm == 0) {
-	*pk = BSmain_perm (BSinfo,k);
-	CHKERRN(0);
-	BS_perm = 1;
-      }else{
-	BSmain_reperm (BSinfo,k,*pk);
-	CHKERRN(0);
-      }
-	
-      /* diagonally scale the matrix */
-      if(BSinfo->scaling) {
-	BSscale_diag (*pk,(*pk)->diag,BSinfo);
-	CHKERRN(0);
-      }
-	
-      /* set up the communication structure for triangular matrix
-	 solution */
-      BScomm *kcomm = BSsetup_forward (*pk,BSinfo);
-      CHKERRN(0);
-	
-      /* get a copy of the sparse matrix */
-      *f_pk = BScopy_par_mat (*pk);
-      CHKERRN(0);
-	
-      /* set up a communication structure for factorization */
-      BScomm *k_comm = BSsetup_factor (*f_pk,BSinfo);
-      CHKERRN(0);
-	
-      /* shifted_diag is the initial diagonal */
-      double BS_diag = 1.0;
-	
-      /* factor the matrix until successful */
-      while (BSfactor (*f_pk,k_comm,BSinfo) != 0) {
-	CHKERRN(0);
-	/* recopy the nonzeroes */
-	BScopy_nz (*pk,*f_pk);
-	CHKERRN(0);
-	/* increment the diagonal shift */
-	BS_diag += 0.1;
-	BSset_diag (*f_pk,BS_diag,BSinfo);
-	CHKERRN(0);
-      }
-      CHKERRN(0);
-	
-      /* Solve system of equations */
-      info->n_iter = BSpar_solve (*pk,*f_pk,kcomm,loc_rhs,loc_sol,
-				  &(info->res_norm),BSinfo);
-      CHKERRN(0);
-
-      /* tell it to print coloring, reordering and linear system
-	 solution options */
-      BSctx_set_pr (BSinfo,FALSE);
-      CHKERRN(0);
-    }
-    break;
   case HYPRE:
     {
       /* Assemble the rhs and solution vector */
@@ -242,10 +173,6 @@ double solve_system_no_setup(const PGFem3D_opt *opts,
 			     const long *DomDof,
 			     SOLVER_INFO *info,
 			     PGFEM_HYPRE_solve_info *PGFEM_hypre,
-			     BSprocinfo *BSinfo,
-			     BSspmat *k,
-			     BSpar_mat **pk,
-			     BSpar_mat **f_pk,
 			     MPI_Comm mpi_comm)
 {
   double func_time = -MPI_Wtime();

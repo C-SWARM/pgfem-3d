@@ -127,6 +127,7 @@ extern "C" {
 		double nor_min,
 		CRPL *crpl,
 		double dt,
+		double t,
 		double stab,
 		long nce,
 		COEL *coel,
@@ -144,7 +145,7 @@ extern "C" {
 		MPI_Comm mpi_comm,
 		double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts);
+		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
 
   long ALINE_S3 (long ARC,
 		 double *DLM,

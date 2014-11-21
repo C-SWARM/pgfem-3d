@@ -1,6 +1,7 @@
 #include "Arc_length.h"
 #include <sys/time.h> 
 #include <sys/resource.h>
+#include <assert.h>
 
 #include "PGFEM_io.h"
 #include "enumerations.h"
@@ -69,7 +70,6 @@ double Arc_length (long ne,
 		   EPS *eps,
 		   int *Ap,
 		   int *Ai,
-		   BSspmat *k,
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		   double *RRn,
 		   double *f_defl,
@@ -122,9 +122,6 @@ double Arc_length (long ne,
 		   long *DomDof,
 		   int GDof,
 		   COMMUN comm,
-		   BSprocinfo *BSinfo,
-		   BSpar_mat **pk,
-		   BSpar_mat **f_pk,
 		   double err,
 		   double *NORM,
 		   MPI_Comm mpi_comm,
@@ -139,6 +136,11 @@ double Arc_length (long ne,
 
 */
 {
+  double t = 0.0;
+  double *r_n = NULL;
+  double *r_n_1 = NULL;
+  double alpha_alpha = 0.0;
+  
   double nor,nor1,nor2,dlm,dlm0,DLM,DET=0.0,dAL;
   double DT,DDLM,ddlm,ERROR,LS1,gama,pdt,tmp,nor3;
   long iter,INFO,i,j,STEP,N,M,DIV,ST,GAMA,OME,FI,ART,gam,TYPE,GInfo;
@@ -251,25 +253,17 @@ double Arc_length (long ne,
     
     if (periodic == 1) nulld (R,ndofd);
     
-    /* Assembly stiffness matrix */
-    if (opts->solverpackage == BLOCKSOLVE){ /* BlockSolve */
-      null_BSspmat (k); 
-      stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
-    }
-    if (opts->solverpackage == HYPRE){ /* Hypre */
-      /* Null the matrix */
-      ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-      stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+    assert(opts->solverpackage == HYPRE);
+    /* Null the matrix */
+    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
+    stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		 node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
+		 nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
+		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
-      /* Assemble the matrix */
-      HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-    }	
+    /* Assemble the matrix */
+    HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
+
     
     if (periodic == 1 && TYPE == 1) dlm0 = nor;
     /* Transform LOCAL load vector to GLOBAL */
@@ -281,7 +275,7 @@ double Arc_length (long ne,
     {
       SOLVER_INFO s_info;
       solve_system(opts,BS_R,BS_rr,tim,iter,DomDof,
-		   &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		   &s_info,PGFEM_hypre,mpi_comm);
       if(myrank == 0){
 	solve_system_check_error(stdout,s_info);
       }
@@ -414,9 +408,9 @@ double Arc_length (long ne,
 		       opts->analysis_type);
     
     /* Residuals */
-    fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		  nce,coel /*,gnod,geel*/,mpi_comm,opts);
+    fd_residuals(f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  nce,coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
     
     /* Compute Euclidian norm */
     for (i=0;i<ndofd;i++) f[i] = (lm + dlm)*R[i] - f_u[i];  
@@ -482,25 +476,16 @@ double Arc_length (long ne,
       /* Null the residual vector */
       nulld (f_u,ndofd);
       
-      if (opts->solverpackage == BLOCKSOLVE) { /* BSolve */
-	/* Assembly stiffness matrix */
-	null_BSspmat(k);
-	stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		     nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		     nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
-      }
-      if (opts->solverpackage == HYPRE){ /* Hypre */
-	/* Null the matrix */
-	ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
-		     nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		     nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+      assert(opts->solverpackage == HYPRE);
+      /* Null the matrix */
+      ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
+      stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
+		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
+		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 	
-	/* Assemble the matrix */
-	HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-      }
+      /* Assemble the matrix */
+      HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
       
       /* Transform unequibriated force: L -> G */
       if (periodic != 1){
@@ -514,7 +499,7 @@ double Arc_length (long ne,
       {
 	SOLVER_INFO s_info;
 	solve_system(opts,BS_f_u,BS_rr,tim,iter,DomDof,
-		     &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		     &s_info,PGFEM_hypre,mpi_comm);
 	if(myrank == 0){
 	  solve_system_check_error(stdout,s_info);
 	}
@@ -561,7 +546,7 @@ double Arc_length (long ne,
       {
 	SOLVER_INFO s_info;
 	solve_system(opts,BS_f,BS_U,tim,iter,DomDof,
-		     &s_info,PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+		     &s_info,PGFEM_hypre,mpi_comm);
 	if(myrank == 0){
 	  solve_system_check_error(stdout,s_info);
 	}
@@ -685,8 +670,8 @@ double Arc_length (long ne,
       
       /* Residuals */
       fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		    hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		    nce,coel/*,gnod,geel*/,mpi_comm,opts );
+		    hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		    nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       /* Compute Euclidean norm */
       for (i=0;i<ndofd;i++)
@@ -898,7 +883,7 @@ double Arc_length (long ne,
       for (i=0;i<ndofd;i++) {f_u[i] = 0.0; d_r[i] = 0.0;}
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,
 		    b_elems,matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       for (i=0;i<ndofd;i++) f[i] = lm*R[i] - f_u[i];
       
       LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);

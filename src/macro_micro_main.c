@@ -15,8 +15,6 @@
 
 /* Extra libs */
 #include "renumbering.h"
-#include "blocksolve_interface.h"
-
 
 /*=== PFEM3d headers ===*/
 #include "PGFEM_io.h"
@@ -52,6 +50,9 @@
 #include "ms_cohe_job_list.h"
 #include "applied_traction.h"
 #include "macro_micro_functions.h"
+
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
 
 static const int ndim = 3;
 
@@ -151,92 +152,50 @@ int multi_scale_main(int argc, char **argv)
     PGFEM_Abort();
   }
 
-  /*=== BUILD INTERCOMMUNICATOR NETWORK ===*/
-  PGFEM_ms_job_intercomm *intercomm = NULL;
-  int n_jobs = 0;
-  if(mpi_comm->valid_mm_inter){ /* MACRO + MICRO-MASTERS */
-    int *job_buff_sizes = NULL;
-    if(mpi_comm->valid_macro){ /*=== MACROSCALE ===*/
-      /* compute number of jobs and job_buff_sizes */
-      COMMON_MACROSCALE *c = macro->common;
-      err += compute_n_job_and_job_sizes(c,&n_jobs,&job_buff_sizes);
-    }
-    /* create the intercommunicator on all processes in the
-       communicator. Microscale only talks to macroscale and
-       vice-versa */
-    err += create_PGFEM_ms_job_intercomm(nproc_macro,
-					 mpi_comm,n_jobs,
-					 job_buff_sizes,
-					 &intercomm);
-    free(job_buff_sizes);
-  }
+  /*=== build the macroscacle clients ===*/
+  pgf_FE2_macro_client *client = NULL;
+  /* hard-code n_jobs_max, needs to be command line opt and/or scaled
+     variable */
+  const int n_jobs_max = 20;
 
+  /*=== Build MICROSCALE server and solutions ===*/
+  if(mpi_comm->valid_micro){
+    /* allocate space for maximum number of jobs to be computed. */
+    build_MICROSCALE_solutions(n_jobs_max,micro);
 
-  if(mpi_comm->valid_micro){/*=== MICROSCALE ===*/
-    /* allocate the microscale solutions based on the number of jobs I
-       will get from macroscale */
-    if(mpi_comm->valid_mm_inter){
-      err += PGFEM_comm_info_get_n_comms(intercomm->recv_info,&n_jobs);
-    }
-    err += MPI_Bcast(&n_jobs,1,MPI_INT,0,mpi_comm->micro);
-    build_MICROSCALE_solutions(n_jobs,micro);
+    /* start the microscale servers. This function does not exit until
+       a signal is passed from the macroscale via
+       pgf_FE2_macro_client_send_exit */
+    err += pgf_FE2_micro_server_START(mpi_comm,micro);
 
-    /* The microscale communicator starts a server and computes jobs
-       as they are received until it recieves a job tagged with
-       JOB_EXIT. */
-    err += start_microscale_server(mpi_comm,intercomm,micro);
+    /* destroy the microscale */
+    destroy_MICROSCALE(micro);
 
-    /* proceed to cleanup and exit */
   } else { /*=== MACROSCALE ===*/
-    /*=== BUILD LIST OF JOBS ===*/
-    /* NOTE: only the MACROSCALE stores the list of jobs */
-    MS_COHE_JOB_INFO *job_list = NULL;
+    /* initialize the client */
+    pgf_FE2_macro_client_init(&client);
+
+    /* create the list of jobs */
+    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm);
+
+    /* determine the initial job assignment*/
+    pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
+
+    /* send the first set of jobs */
+    pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				   JOB_NO_COMPUTE_EQUILIBRIUM);
+
     COMMON_MACROSCALE *c = macro->common;
     MACROSCALE_SOLUTION *s = macro->sol;
     int nproc_macro = 0;
     char filename[500];
     MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-    {
-      long Gn_jobs = 0;
-      long *n_job_dom = NULL;
-    /* use create group but pass MPI_COMM_SELF for ms_comm and
-       mpi_comm->macro for macro_mpi_comm */
-      err += create_group_ms_cohe_job_list(c->nce,c->coel,c->node,
-					   mpi_comm->macro,MPI_COMM_SELF,
-					   0,&Gn_jobs,&n_job_dom,&job_list);
-      /* error check */
-      if(Gn_jobs != n_jobs){
-	PGFEM_printerr("ERROR: got different number "
-		       "of jobs on macroscale!\n");
-	PGFEM_Abort();
-      }
-      free(n_job_dom);
-    }
-
-    PGFEM_server_ctx *send = PGFEM_calloc(1,sizeof(PGFEM_server_ctx));
-    PGFEM_server_ctx *recv = PGFEM_calloc(1,sizeof(PGFEM_server_ctx));
-    err += initialize_PGFEM_server_ctx(send);
-    err += initialize_PGFEM_server_ctx(recv);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->send_info,send);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->recv_info,recv);
-
-
-    /* compute the inital tangent from the microscale */
-    err += start_macroscale_compute_jobs(intercomm,macro,
-					 JOB_NO_COMPUTE_EQUILIBRIUM,
-					 s->r,job_list,send,recv);
-
-    /* err += finish_macroscale_compute_jobs(job_list,macro,send,recv); */
 
     /* Create a context for passing stuff to Newton Raphson */
     MS_SERVER_CTX *ctx = PGFEM_calloc(1,sizeof(MS_SERVER_CTX));
-    ctx->n_jobs = n_jobs;
-    ctx->job_list = job_list;
-    ctx->send = send;
-    ctx->recv = recv;
-    ctx->intercomm = intercomm;
+    ctx->client = client;
+    ctx->mpi_comm = mpi_comm;
     ctx->macro = macro;
-
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
     double *nodal_forces = PGFEM_calloc(c->ndofd,sizeof(double));
@@ -401,21 +360,6 @@ int multi_scale_main(int argc, char **argv)
       }
     }
 
-    /*=== MODEL ENTITIES ===*/
-    MODEL_ENTITY *entities = NULL;
-    double *forces = NULL;
-    if(macro->opts->me){
-      char *me_fname = NULL;
-      alloc_sprintf(&me_fname,"%s/entities.in",macro->opts->ipath);
-      read_model_entity_list(me_fname,&entities,c->nn,c->ne);
-      model_entity_mark_nodes_elems(c->nn,c->node,c->ne,c->elem,entities);
-      if(entities->n_entities > 0){
-	forces = PGFEM_calloc(entities->n_entities
-			      *entities->n_dim,sizeof(double));
-      }
-    }
-
-
     double pores = 0.0;
     double gama = 0.0;
     double GNOR = 0.0;
@@ -486,9 +430,8 @@ int multi_scale_main(int argc, char **argv)
 
 	} /* end load increment */
 
-
-
-	hypre_time += Newton_Raphson ( 1,c->ne,0,c->nn,
+	int n_step = 0;
+	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
 				       c->ndofn,c->ndofd,c->npres,s->tim,
 				       s->times,nor_min,s->dt,c->elem,
 				       NULL,c->node,c->supports,sup_defl,
@@ -497,14 +440,12 @@ int multi_scale_main(int argc, char **argv)
 				       s->d_r,s->rr,s->R,s->f_defl,
 				       s->RR,s->f_u,s->RRn,s->crpl,
 				       macro->opts->stab,c->nce,c->coel,FNR,
-				       &pores,c->SOLVER,NULL,NULL,
-				       NULL,NULL,s->BS_x,s->BS_f,
+				       &pores,c->SOLVER,s->BS_x,s->BS_f,
 				       s->BS_RR,gama,GNOR,nor1,
 				       c->lin_err,s->BS_f_u,c->DomDof,
 				       c->pgfem_comm,c->GDof,nt,iter_max,
 				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,
-				       entities,forces,NULL,ctx);
+				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,NULL,NULL);
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
@@ -527,7 +468,7 @@ int multi_scale_main(int argc, char **argv)
 			   dt0,c->elem,NULL,c->nbndel,
 			   c->bndel,c->node,c->supports,sup_defl,
 			   c->hommat,c->matgeom,s->sig_e,s->eps,
-			   c->Ap,c->Ai,NULL,c->SOLVER,
+			   c->Ap,c->Ai,c->SOLVER,
 			   s->RRn,s->f_defl,s->crpl,macro->opts->stab,
 			   c->nce,c->coel,s->r,s->f,
 			   s->d_r,s->D_R,s->rr,s->R,
@@ -541,8 +482,8 @@ int multi_scale_main(int argc, char **argv)
 			   s->sig_n,out_dat,print,&AT,
 			   ARC,tmp_val,&ITT,&dAL,
 			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
-			   NULL,NULL,NULL,c->lim_zero,
-			   &s->NORM,c->mpi_comm,c->VVolume,macro->opts);
+			   c->lim_zero,&s->NORM,c->mpi_comm,
+			   c->VVolume,macro->opts);
 
 	/* Load multiplier */
 	lm += dlm;
@@ -580,10 +521,14 @@ int multi_scale_main(int argc, char **argv)
       if (print[s->tim] == 1 && macro->opts->vis_format != VIS_NONE ) {
 	/* NOTE: null d_r is sent for print job because jump is
 	   computed from updated coordinates! */
-	err += start_macroscale_compute_jobs(intercomm,macro,
-					     JOB_PRINT,
-					     s->d_r,
-					     job_list,send,recv);
+
+	/* do not transfer data between servers */
+	pgf_FE2_macro_client_rebalance_servers(client,mpi_comm,
+					       FE2_REBALANCE_NONE);
+
+	/* Send print jobs */
+	pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,JOB_PRINT);
+
 	if(macro->opts->ascii){
 	  int Gnn = 0;
 	  ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
@@ -637,7 +582,8 @@ int multi_scale_main(int argc, char **argv)
 	default: /* no output */ break;
 	}/* switch(format) */
 
-	err += finish_macroscale_compute_jobs(job_list,macro,send,recv);
+	int junk = 0;
+	pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
       }/* end output */
  
       if (mpi_comm->rank_macro == 0){
@@ -650,28 +596,21 @@ int multi_scale_main(int argc, char **argv)
     }/* end while */
 
     /*=== SEND EXIT SIGNAL TO MICROSCALE SERVER ===*/
-    err += start_macroscale_compute_jobs(intercomm,macro,
-					 JOB_EXIT,s->r,
-					 job_list,send,recv);
-
-    err += finish_macroscale_compute_jobs(job_list,macro,send,recv);
+    pgf_FE2_macro_client_send_exit(client,mpi_comm);
 
     /* cleanup */
     free(ctx);
-    err += destroy_PGFEM_server_ctx(send);
-    err += destroy_PGFEM_server_ctx(recv);
-    free(send);
-    free(recv);
-    for(int i=0; i<n_jobs; i++){
-      destroy_MS_COHE_JOB_INFO(&job_list[i]);
-    }
-    free(job_list);
+
     free(sup_defl);
     free(tim_load);
     free(print);
-    free(forces);
-    destroy_model_entity(entities);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
+
+    /* destroy the macroscale client */
+    pgf_FE2_macro_client_destroy(client);
+
+    /* destroy the macroscale */
+    destroy_MACROSCALE(macro);
   } /*=== END OF COMPUTATIONS ===*/
 
   /*=== PRINT TIME OF ANALYSIS ===*/
@@ -686,15 +625,7 @@ int multi_scale_main(int argc, char **argv)
 		  usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
   }
 
-  /* destroy the scale information */
-  destroy_MACROSCALE(macro);
-  destroy_MICROSCALE(micro);
-
-  /* destroy the intercommunicator */
-  destroy_PGFEM_ms_job_intercomm(intercomm);
-  free(intercomm);
-
-  /* destroy the communicator */
+  /* destroy the PGFEM communicator */
   err += destroy_PGFEM_mpi_comm(mpi_comm);
   free(mpi_comm);
 

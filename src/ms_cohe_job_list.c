@@ -248,7 +248,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   int micro_rank = 0;
   COMMON_MICROSCALE *c = microscale->common;
   PGFEM_HYPRE_solve_info *micro_solver = c->SOLVER;
-  const int n_sols = microscale->n_solutions;
+  const int n_sols = microscale->idx_map.size;
   const int analysis = microscale->opts->analysis_type;
 
   /* get MPI ranks */
@@ -280,7 +280,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 
     /* assemble tangent if owning process */
     if(macro_rank == job->proc_id){
-      PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,
+      PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,
 		  job->g_dof_ids,job->ndofe,NULL,0,
 		  macro_rank,macro_nproc,macro_pgfem_comm,
 		  0/* interior (t/f) */,macro_solver,analysis);
@@ -369,7 +369,7 @@ int assemble_ms_cohe_res(const MICROSCALE *micro,
   /* assemble the residual from each job on the local part of the
      macroscale residual. Assembly takes place on the macro owning
      process only!! */
-  for(int i=0; i<micro->n_solutions; i++){
+  for(int i=0, e = micro->idx_map.size; i < e; i++){
     err += assemble_ms_cohe_job_res(i,jobs+i,
 				    micro->common->mpi_comm,
 				    macro_mpi_comm,
@@ -525,6 +525,7 @@ static int create_local_ms_cohe_job_list(const long nce,
       job->int_wt = wt;
       job->elem_id = i;
       job->proc_id = myrank_macro;
+      job->int_pt = ip;
       job->job_type = JOB_NO_COMPUTE_EQUILIBRIUM;
 
       /* set print flag equal to property. Non-zero value will cause
