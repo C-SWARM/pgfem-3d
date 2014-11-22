@@ -41,6 +41,12 @@ void destroy_coel(COEL* coel, long nce)
   free(coel);
 }
 
+void reset_coel_props(const cohesive_props *co_props,
+		      COEL *p_coel)
+{
+  p_coel->props = &co_props[p_coel->mat];
+}
+
 COEL* read_cohe_elem (FILE *in1,
 		      long ncom,
 		      long ndofn,
@@ -123,7 +129,7 @@ COEL* read_cohe_elem (FILE *in1,
     for (l=0;l<coel[j].toe;l++){
       fscanf (in1,"%ld",&coel[j].nod[l]);
     }
-    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&mat,&coel[j].pr);
+    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
     
     /* if (coel[j].typ == 0) { */
     /*   coel[j].Sc = comat[mat][0]; */
@@ -139,9 +145,10 @@ COEL* read_cohe_elem (FILE *in1,
     /*   coel[j].Jjn = 1.0; */
     /* } /\* Our law *\/ */
 
-    /* Set the element properties */
     coel[j].Jjn = 1.0;
-    coel[j].props = &co_props[mat];
+
+    /* Set the element properties */
+    reset_coel_props(co_props,coel + j);
 
     /* set internal state variables */
     switch(coel[j].props->type){

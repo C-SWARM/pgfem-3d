@@ -25,6 +25,7 @@ extern "C" {
     long *nod; /**< Node ids on the element */
     long pr;   /**< property flag */
     long typ;  /**< type flag */
+    long mat; /**< material id */
 
     /** depricated material properties (should not be used) */
     double Sc,Xc,b,k;
@@ -59,6 +60,12 @@ extern "C" {
   typedef struct COEL COEL;
 
   void destroy_coel(COEL* coel, long nce);
+
+  /**
+   * Reset the coel properties accorting to p_coel->mat.
+   */
+  void reset_coel_props(const cohesive_props *co_props,
+			COEL *p_coel);
 
   COEL* read_cohe_elem (FILE* in1,
 			long ncom,
