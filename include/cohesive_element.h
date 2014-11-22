@@ -144,6 +144,7 @@ extern "C" {
    */
   void coel_list_unpack_state(const int nce,
 			      COEL *coel,
+			      const cohesive_props *co_props,
 			      const char *buffer,
 			      size_t *buf_pos);
 

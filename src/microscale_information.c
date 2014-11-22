@@ -297,6 +297,12 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		  sol->packed_state_var_n,
 		  &pos);
 
+  /* reset coel state variables */
+  coel_list_unpack_state(micro->common->nce,
+			 micro->common->coel,
+			 micro->common->co_props,
+			 sol->packed_state_var_n,
+			 &pos);
   return err;
 }/* reset_MICROSCALE_SOLUTION */
 
@@ -322,6 +328,12 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		micro->opts->analysis_type,
 		sol->packed_state_var_n,
 		&pos);
+
+  /* update cohesive state variables */
+  coel_list_pack_state(micro->common->nce,
+		       micro->common->coel,
+		       sol->packed_state_var_n,
+		       &pos);
 
   return err;
 }/* update_MICROSCALE_SOLUTION */
@@ -701,11 +713,20 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		    sol->eps,analysis);
 
   /* initialize state variable buffer at macro time (n) */
+  /* length of the solution vector */
   sol->packed_state_var_len = local_len*len_double;
+
+  /* length of the EPS list */
   sol->packed_state_var_len += sizeof_eps_list(sol->eps,
 					       common->ne,
 					       common->elem,
 					       analysis);
+
+  /* length of the state variables stored in COEL */
+  sol->packed_state_var_len += coel_list_get_state_length_bytes(common->nce,
+								common->coel);
+
+  /* allocate the packed state buffer */
   sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));
 
   /* initialize buffer */
