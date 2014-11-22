@@ -85,6 +85,37 @@ extern "C" {
 				  const SUPP sup,
 				  const double *d_r);
 
+  /**
+   * Get the storage size (in bytes) of the internal state variables
+   * for all cohesive elements in the domain.
+   */
+  size_t coel_list_get_state_length_bytes(const int nce,
+					  const COEL *coel);
+
+  /**
+   * Pack the cohesive element state variables into a buffer.
+   *
+   * BUFFER is the buffer to copy data to. BUF_POS is the current
+   * insertion position in BUFFER. \return modified BUFFER and updated
+   * insertion location BUF_POS.
+   */
+  void coel_list_pack_state(const int nce,
+			    const COEL *coel,
+			    char *buffer,
+			    size_t *buf_pos);
+
+  /**
+   * Unpack the cohesive element state variables from a buffer.
+   *
+   * BUFFER is the buffer to copy data from. BUF_POS is the current
+   * copy position in BUFFER. \return modified cohesive elements COEL
+   * and updated insertion/copy location BUF_POS.
+   */
+  void coel_list_unpack_state(const int nce,
+			      COEL *coel,
+			      const char *buffer,
+			      size_t *buf_pos);
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */
