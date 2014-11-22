@@ -21,14 +21,38 @@ extern "C" {
 
   /** Structure of COHESIVE ELEMENTS */
   struct COEL {
-    long toe,*nod,pr,typ;
-    double Sc,Xc,b,Jjn,*e1,*e2,*n,*x,*y,
-      *z,*Xmax,*tmax,
-      *Xi,*ti,Xxi,txi,tn,ts,Xn,Xs,vo,k;
-    const cohesive_props *props; /* this is a pointer to a particular
-				    set of material properties. */
+    long toe;  /**< Number of nodes on the element */
+    long *nod; /**< Node ids on the element */
+    long pr;   /**< property flag */
+    long typ;  /**< type flag */
 
-    /* internal cohesive state variables */
+    /** depricated material properties (should not be used) */
+    double Sc,Xc,b,k;
+
+    /** Transformation for updated Lagrangian formulation. Note that
+	cohesive elements are *always* total Lagrangian, thus Jjn = 1
+	always. */
+    double Jjn;
+
+    /** buffers for basis vectors (updated every time) */
+    double *e1,*e2,*n;
+
+    /** buffers for mean-map coordinates (updated every time) */
+    double *x,*y,*z;
+
+    /** depricated internal state variables */
+    double *Xmax,*tmax;
+
+    /** average element  values for visualization */
+    double *Xi,*ti,Xxi,txi,tn,ts,Xn,Xs;
+
+    /** unknown, unused? */
+    double vo;
+
+    /** pointer to a particular set of material properties. */
+    const cohesive_props *props;
+    
+    /** internal cohesive state variables */
     int nvar;
     double **vars; /* variables at each ip */
   };
