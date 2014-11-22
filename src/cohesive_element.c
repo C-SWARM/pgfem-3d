@@ -913,6 +913,7 @@ void coel_list_pack_state(const int nce,
 
 void coel_list_unpack_state(const int nce,
 			    COEL *coel,
+			    const cohesive_props *co_props,
 			    const char *buffer,
 			    size_t *buf_pos)
 {
@@ -923,5 +924,6 @@ void coel_list_unpack_state(const int nce,
     for(int j = 0; j < nip; j++){
       unpack_data(buffer,coel[i].vars[j],buf_pos,coel[i].nvar,len_vars);
     }
+    reset_coel_props(co_props,coel+i);
   }
 }
