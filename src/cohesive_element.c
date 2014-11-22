@@ -876,3 +876,45 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
   dealoc1 (ge);
   dealoc1 (w);
 }
+
+size_t coel_list_get_state_length_bytes(const int nce,
+					const COEL *coel)
+{
+  size_t len_b = 0;
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe);
+    /* length in bytes/elem = n_int_points*nvars*sizeof(vars) */ 
+    len_b += nip*coel[i].nvar*sizeof(**(coel[i].vars));
+  }
+  return len_b;
+}
+
+void coel_list_pack_state(const int nce,
+			  const COEL *coel,
+			  char *buffer,
+			  size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe);
+    for(int j = 0; j < nip; j++){
+      pack_data(coel[i].vars[j],buffer,buf_pos,coel[i].nvar,len_vars);
+    }
+  }
+}
+
+void coel_list_unpack_state(const int nce,
+			    COEL *coel,
+			    const char *buffer,
+			    size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe);
+    for(int j = 0; j < nip; j++){
+      unpack_data(buffer,coel[i].vars[j],buf_pos,coel[i].nvar,len_vars);
+    }
+  }
+}
