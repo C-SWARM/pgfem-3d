@@ -22,8 +22,8 @@ struct SOLVER_FILE {
   size_t nonlin_method;
   size_t n_nonlin_method_opts;
   double *nonlin_method_opts;
-  size_t n_times; /**< length of times, # computed steps + 1 */
-  double *times;
+  size_t n_step;
+  double *times; /**< length of times, # computed steps + 1 */
   size_t *print_steps; /**< T/F print on step */
   size_t *load_steps; /**< T/F increment load on step */
 };

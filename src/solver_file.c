@@ -22,7 +22,7 @@ static void solver_file_init_values(SOLVER_FILE *sf)
   sf->nonlin_method = UNDEFINED_METHOD;
   sf->n_nonlin_method_opts = 0;
   sf->nonlin_method_opts = NULL;
-  sf->n_times = 0;
+  sf->n_step = 0;
   sf->times = NULL;
   sf->print_steps = NULL;
   sf->load_steps = NULL;
@@ -88,19 +88,18 @@ int solver_file_read_header(SOLVER_FILE *sf)
   }
 
   /* read number of steps and allocate */
-  fscanf(sf->file,"%ld",&(sf->n_times)); /* # computed steps */
-  sf->print_steps = calloc(sf->n_times,sizeof(*(sf->print_steps)));
-  sf->load_steps = calloc(sf->n_times,sizeof(*(sf->load_steps)));
+  fscanf(sf->file,"%ld",&(sf->n_step)); /* # computed steps */
+  sf->print_steps = calloc(sf->n_step,sizeof(*(sf->print_steps)));
+  sf->load_steps = calloc(sf->n_step,sizeof(*(sf->load_steps)));
 
   /* allocate/read times to read */
-  (sf->n_times)++; /* Total # of times to read */
-  sf->times = malloc(sf->n_times * sizeof(*(sf->times)));
-  for(size_t i = 0, e = sf->n_times; i < e; i++){
+  sf->times = malloc((sf->n_step + 1) * sizeof(*(sf->times)));
+  for(size_t i = 0, e = sf->n_step + 1; i < e; i++){
     fscanf(sf->file,"%lf",(sf->times) + i);
   }
 
   /* read print steps */
-  size_t n_step = 0;
+  size_t n_step = 0; /* NOT sf->n_step!! */
   fscanf(sf->file,"%ld",&n_step);
   for(size_t i = 0; i < n_step; i++){
     size_t idx = 0;
@@ -125,6 +124,9 @@ int solver_file_read_load(SOLVER_FILE *sf,
 			  double *incr_load)
 {
   int err = 0;
+  if(step == 0 && sf->load_steps[step]){
+    err++;
+  }
   if(sf->load_steps[step]){
     for(size_t i = 0; i < len_load; i++){
       fscanf(sf->file,"%lf",incr_load + i);

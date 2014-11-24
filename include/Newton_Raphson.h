@@ -110,9 +110,9 @@ extern "C" {
 			 const double VVolume, /**< original volume of the domain */
 			 const PGFem3D_opt *opts, /**< structure of options */
 			 void *microscale, /**< Container of microscale information. */
-       double alpha_alpha, /**< mid_point_rule alpha */
-       double *r_n, /**< local total solution vector to times[tim-1] */
-       double *r_n_1 /**< local total solution vector to times[tim-2] */			 
+			 double alpha_alpha, /**< mid_point_rule alpha */
+			 double *r_n, /**< local total solution vector to times[tim-1] */
+			 double *r_n_1 /**< local total solution vector to times[tim-2] */			 
 			 );
 
 #ifdef __cplusplus
