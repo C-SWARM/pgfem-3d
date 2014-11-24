@@ -889,7 +889,7 @@ size_t coel_list_get_state_length_bytes(const int nce,
 {
   size_t len_b = 0;
   for(int i = 0; i < nce; i++){
-    int nip = int_pointC(coel[i].toe);
+    int nip = int_pointC(coel[i].toe/2);
     /* length in bytes/elem = n_int_points*nvars*sizeof(vars) */ 
     len_b += nip*coel[i].nvar*sizeof(**(coel[i].vars));
   }
