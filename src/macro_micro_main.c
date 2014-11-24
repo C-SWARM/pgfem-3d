@@ -350,12 +350,9 @@ int multi_scale_main(int argc, char **argv)
     double dAL = 0.0;
     long AT = 0;
     long ITT = 0;
+    long init = 0;
 
     /*=== BEGIN SOLVE ===*/
-    lm = dlm = DLM = DET = 0.0;
-    dAL = dlm0 = solver_file->nonlin_method_opts[0];
-    AT = ITT = 0;
-
     while (solver_file->n_step > s->tim){
       s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
       if (s->dt <= 0.0){
@@ -421,6 +418,14 @@ int multi_scale_main(int argc, char **argv)
       /*=== ARC LENGTH ===*/
       if (solver_file->nonlin_method == ARC_LENGTH_METHOD
 	  || solver_file->nonlin_method == AUX_ARC_LENGTH_METHOD){
+
+	/* initialize arc-length specific variables */
+	if(!init){
+	  lm = dlm = DLM = DET = 0.0;
+	  dAL = dlm0 = solver_file->nonlin_method_opts[0];
+	  AT = ITT = 0;
+	  init++;
+	}
 	char out_dat[500];
 	double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
 			  /dt0*solver_file->nonlin_method_opts[1]);
