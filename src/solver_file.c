@@ -98,21 +98,30 @@ int solver_file_read_header(SOLVER_FILE *sf)
     fscanf(sf->file,"%lf",(sf->times) + i);
   }
 
-  /* read print steps */
+  /* read print steps.
+   *
+   * Note that print steps is only allocated for the number of steps
+   * to compute. However, the solver file may specify more print
+   * steps. Therefore we need to check bounds on idx
+   */
   size_t n_step = 0; /* NOT sf->n_step!! */
   fscanf(sf->file,"%ld",&n_step);
   for(size_t i = 0; i < n_step; i++){
     size_t idx = 0;
     fscanf(sf->file,"%ld",&idx);
-    sf->print_steps[idx] = 1;
+
+    if(idx < sf->n_step)
+      sf->print_steps[idx] = 1;
   }
 
-  /* read load steps */
+  /* read load steps. See note for print steps */
   fscanf(sf->file,"%ld",&n_step);
   for(size_t i = 0; i < n_step; i++){
     size_t idx = 0;
     fscanf(sf->file,"%ld",&idx);
-    sf->load_steps[idx] = 1;
+
+    if(idx < sf->n_step)
+      sf->load_steps[idx] = 1;
   }
 
   return err;
