@@ -287,8 +287,6 @@ int multi_scale_main(int argc, char **argv)
       }
     }
 
-    double nor_min = 0.0;
-    long iter_max = 0;
     double hypre_time = 0.0;
 
 
@@ -305,7 +303,7 @@ int multi_scale_main(int argc, char **argv)
     load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
 			NULL,c->node,c->hommat,
 			c->matgeom,c->supports,c->npres,
-			nor_min,s->sig_e,s->eps,s->dt,
+			solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
 			s->crpl,macro->opts->stab,
 			s->r,macro->opts);
     
@@ -332,9 +330,6 @@ int multi_scale_main(int argc, char **argv)
     double *sup_defl = NULL;
     if(c->supports->npd > 0){
       sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
-      for (int i=0;i<c->supports->npd;i++){
-	sup_defl[i] = c->supports->defl_d[i];
-      }
     }
 
     double pores = 0.0;
@@ -354,7 +349,7 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== BEGIN SOLVE ===*/
     while (solver_file->n_step > s->tim){
-      s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
+      s->dt = dt0 = solver_file->times[s->tim+1] - solver_file->times[s->tim];
       if (s->dt <= 0.0){
 	if (mpi_comm->rank_macro == 0) {
 	  PGFEM_printf("Incorrect dt\n");
@@ -370,9 +365,13 @@ int multi_scale_main(int argc, char **argv)
 
       /*=== NEWTON RAPHSON ===*/
       if (solver_file->nonlin_method == NEWTON_METHOD){
-	int load_err = solver_file_read_load(solver_file,s->tim,
-					     c->supports->npd,
-					     c->supports->defl_d);
+	int load_err = 0;
+
+	if(s->tim > 0){ /* get load increment */
+	  load_err = solver_file_read_load(solver_file,s->tim,
+					   c->supports->npd,
+					   c->supports->defl_d);
+	}
 
 	/* copy the load increment */
 	memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
