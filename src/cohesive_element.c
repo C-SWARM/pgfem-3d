@@ -904,7 +904,7 @@ void coel_list_pack_state(const int nce,
   if(nce <= 0 ) return;
   const size_t len_vars = sizeof(**(coel[0].vars));
   for(int i = 0; i < nce; i++){
-    int nip = int_pointC(coel[i].toe);
+    int nip = int_pointC(coel[i].toe/2);
     for(int j = 0; j < nip; j++){
       pack_data(coel[i].vars[j],buffer,buf_pos,coel[i].nvar,len_vars);
     }
@@ -920,7 +920,7 @@ void coel_list_unpack_state(const int nce,
   if(nce <= 0 ) return;
   const size_t len_vars = sizeof(**(coel[0].vars));
   for(int i = 0; i < nce; i++){
-    int nip = int_pointC(coel[i].toe);
+    int nip = int_pointC(coel[i].toe/2);
     for(int j = 0; j < nip; j++){
       unpack_data(buffer,coel[i].vars[j],buf_pos,coel[i].nvar,len_vars);
     }
