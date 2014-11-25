@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <search.h>
 #include <assert.h>
+#include <stdio.h>
 
 static const int ndim = 3;
 
@@ -337,6 +338,27 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   return err;
 }/* update_MICROSCALE_SOLUTION */
+
+int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
+				   FILE *out)
+{
+  int err = 0;
+  size_t n_write = fwrite(sol->packed_state_var_n,sizeof(char),
+			  sol->packed_state_var_len,out);
+  if(n_write != sol->packed_state_var_len) err++;
+  return err;
+}
+
+int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
+				   FILE *in)
+{
+  int err = 0;
+  size_t n_read = fread(sol->packed_state_var_n,sizeof(char),
+			  sol->packed_state_var_len,in);
+  if(n_read != sol->packed_state_var_len) err++;
+  return err;
+}
+				   
 
 /*==== STATIC FUNCTION DEFINITIONS ===*/
 

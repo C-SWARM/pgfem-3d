@@ -203,6 +203,20 @@ extern "C" {
   int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 				 const MICROSCALE *micro);
 
+  /**
+   * Dump the solution state vector to a binary file. Returns non-zero
+   * if there is a problem writing the file.
+   */
+  int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
+				     FILE *out);
+
+  /**
+   * Read a dumped binary state file. Returns non-zero if there is a
+   * problem reading the file.
+   */
+  int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
+				     FILE *in);
+
   /**=== Aliases for MACROSCALE ===*/
   typedef COMMON_MICROSCALE COMMON_MACROSCALE;
   typedef MICROSCALE_SOLUTION MACROSCALE_SOLUTION;
