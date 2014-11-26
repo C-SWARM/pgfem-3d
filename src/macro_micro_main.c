@@ -1,5 +1,5 @@
 /*** This is the main function for the fully-coupled multiscale modeling */
-
+#include <assert.h>
 
 #include "PFEM3d.h"
 #ifndef ENUMERATIONS_H
@@ -487,10 +487,7 @@ int multi_scale_main(int argc, char **argv)
 	free(sur_forces);
       }
 
-      if (solver_file->print_steps[s->tim] == 1
-	  && macro->opts->vis_format != VIS_NONE ) {
-	/* NOTE: null d_r is sent for print job because jump is
-	   computed from updated coordinates! */
+      if (solver_file->print_steps[s->tim] == 1){
 
 	/* do not transfer data between servers */
 	pgf_FE2_macro_client_rebalance_servers(client,mpi_comm,
@@ -499,60 +496,153 @@ int multi_scale_main(int argc, char **argv)
 	/* Send print jobs */
 	pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,JOB_PRINT);
 
-	if(macro->opts->ascii){
-	  int Gnn = 0;
-	  ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
-		       Gnn,c->nn,c->ne,c->nce,c->ndofd,
-		       c->DomDof,c->Ap,solver_file->nonlin_method,
-		       lm,pores,c->VVolume,
-		       c->node,c->elem,c->supports,
-		       s->r,s->eps,s->sig_e,s->sig_n,c->coel);
-	} /* End ASCII output */
+	if (macro->opts->vis_format != VIS_NONE ) {
 
-	switch(macro->opts->vis_format){
-	case VIS_ELIXIR:/* Print to elix file */
-	  sprintf (filename,"%s/%s_%d.elx%d",macro->opts->opath,
-		   macro->opts->ofname,mpi_comm->rank_macro,s->tim);
-	  elixir (filename,c->nn,c->ne,ndim,c->node,c->elem,
-		  c->supports,s->r,s->sig_e,s->sig_n,s->eps,
-		  macro->opts->smoothing,c->nce,c->coel,macro->opts);
-	  break;
-	case VIS_ENSIGHT:/* Print to EnSight files */
-	  sprintf (filename,"%s/%s",macro->opts->opath,
-		   macro->opts->ofname);
-	  EnSight (filename,s->tim,solver_file->n_step,c->nn,c->ne,ndim,c->node,
-		   c->elem,c->supports,s->r,s->sig_e,s->sig_n,s->eps,
-		   macro->opts->smoothing,c->nce,c->coel,
-		   solver_file->nonlin_method,lm,c->ensight,c->mpi_comm,
-		   macro->opts);
-	  break;
-	case VIS_VTK:/* Print to VTK files */
-	  if(mpi_comm->rank_macro == 0){
-	    VTK_print_master(macro->opts->opath,macro->opts->ofname,
-			     s->tim,nproc_macro,macro->opts);
-	  }
+	  /* *ADDITIONAL* ASCII formatted output.
+	   * *NOT* VTK ASCII format */
+	  if(macro->opts->ascii){
+	    int Gnn = 0;
+	    ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
+			 Gnn,c->nn,c->ne,c->nce,c->ndofd,
+			 c->DomDof,c->Ap,solver_file->nonlin_method,
+			 lm,pores,c->VVolume,
+			 c->node,c->elem,c->supports,
+			 s->r,s->eps,s->sig_e,s->sig_n,c->coel);
+	  } /* End ASCII output */
 
-	  VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
-			mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
-			c->supports,s->r,s->sig_e,s->eps,
-			macro->opts);
-
-	  if (macro->opts->cohesive == 1){
+	  switch(macro->opts->vis_format){
+	  case VIS_ELIXIR:/* Print to elix file */
+	    sprintf (filename,"%s/%s_%d.elx%d",macro->opts->opath,
+		     macro->opts->ofname,mpi_comm->rank_macro,s->tim);
+	    elixir (filename,c->nn,c->ne,ndim,c->node,c->elem,
+		    c->supports,s->r,s->sig_e,s->sig_n,s->eps,
+		    macro->opts->smoothing,c->nce,c->coel,macro->opts);
+	    break;
+	  case VIS_ENSIGHT:/* Print to EnSight files */
+	    sprintf (filename,"%s/%s",macro->opts->opath,
+		     macro->opts->ofname);
+	    EnSight (filename,s->tim,solver_file->n_step,c->nn,c->ne,ndim,c->node,
+		     c->elem,c->supports,s->r,s->sig_e,s->sig_n,s->eps,
+		     macro->opts->smoothing,c->nce,c->coel,
+		     solver_file->nonlin_method,lm,c->ensight,c->mpi_comm,
+		     macro->opts);
+	    break;
+	  case VIS_VTK:/* Print to VTK files */
 	    if(mpi_comm->rank_macro == 0){
-	      VTK_print_cohesive_master(macro->opts->opath,
-					macro->opts->ofname,
-					s->tim,nproc_macro,macro->opts);
+	      VTK_print_master(macro->opts->opath,macro->opts->ofname,
+			       s->tim,nproc_macro,macro->opts);
 	    }
 
-	    VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
-				   s->tim,mpi_comm->rank_macro,c->nce,c->node,
-				   c->coel,c->supports,s->r,c->ensight,
-				   macro->opts);
-	  }
-	  break;
-	default: /* no output */ break;
-	}/* switch(format) */
+	    VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
+			  mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
+			  c->supports,s->r,s->sig_e,s->eps,
+			  macro->opts);
 
+	    if (macro->opts->cohesive == 1){
+	      if(mpi_comm->rank_macro == 0){
+		VTK_print_cohesive_master(macro->opts->opath,
+					  macro->opts->ofname,
+					  s->tim,nproc_macro,macro->opts);
+	      }
+
+	      VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
+				     s->tim,mpi_comm->rank_macro,c->nce,c->node,
+				     c->coel,c->supports,s->r,c->ensight,
+				     macro->opts);
+	    }
+	    break;
+	  default: /* no output */ break;
+	  }/* switch(format) */
+	} /* if !VIZ_NONE */
+
+	/* Dump restart file */
+	update_MICROSCALE_SOLUTION(s,macro); /* populate state vector */
+	//reset_MICROSCALE_SOLUTION(s,macro); /* try reset from state vector */
+	//update_MICROSCALE_SOLUTION(s,macro); /* re-populate state vector */
+	char *filename = NULL;
+	alloc_sprintf(&filename,"restart.%ld.%d",s->tim,mpi_comm->rank_macro);
+	FILE *out = PGFEM_fopen(filename,"w");
+	int re_err = dump_MICROSCALE_SOLUTION_state(s,out);
+	if(re_err){
+	  PGFEM_printerr("ERROR: %s:%ld\n",__FILE__,__LINE__);
+	  PGFEM_Abort();
+	}
+	PGFEM_fclose(out);
+
+	/* 
+	 * test read of dumped file
+	 */
+
+	/* copy to temp array and null the state vector */
+	char *state_restart = malloc(s->packed_state_var_len);
+	memcpy(state_restart,s->packed_state_var_n,s->packed_state_var_len);
+	memset(s->packed_state_var_n,0,s->packed_state_var_len);
+
+	/* push zeros to current solution */
+	reset_MICROSCALE_SOLUTION(s,macro);
+
+	/* open/read the state file */
+	out = PGFEM_fopen(filename,"r");
+	re_err = read_MICROSCALE_SOLUTION_state(s,out);
+	if(re_err){
+	  PGFEM_printerr("ERROR: %s:%ld\n",__FILE__,__LINE__);
+	  PGFEM_Abort();
+	}
+	PGFEM_fclose(out);
+	free(filename);
+
+	/* compare read state to pre-restart */
+	assert(memcmp(state_restart,s->packed_state_var_n,
+		      s->packed_state_var_len) == 0);
+
+	/* push the read state to the current solution and dump to new file */
+	reset_MICROSCALE_SOLUTION(s,macro);
+	/* compare memeory */
+	assert(memcmp(state_restart,s->packed_state_var_n,
+		      s->packed_state_var_len) == 0);
+
+	/* memset(s->packed_state_var_n,0,s->packed_state_var_len); */
+	update_MICROSCALE_SOLUTION(s,macro);
+
+	size_t len_r = c->ndofd*sizeof(double);
+	size_t len_eps = sizeof_eps_list(s->eps,c->ne,c->elem,
+					 macro->opts->analysis_type);
+	size_t len_coel = coel_list_get_state_length_bytes(c->nce,c->coel);
+
+	/* compare memory by chunks */
+	int r_cmp = memcmp(state_restart,s->packed_state_var_n,len_r);
+	int eps_cmp = memcmp(state_restart + len_r,
+			     s->packed_state_var_n + len_r,
+			     len_eps);
+	int coel_cmp =  memcmp(state_restart + len_r + len_eps,
+			       s->packed_state_var_n + len_r + len_eps,
+			       len_coel);
+
+	assert(r_cmp == 0);
+	assert(coel_cmp == 0);
+	assert(eps_cmp == 0);
+	
+	/* compare memeory */
+	assert(memcmp(state_restart,s->packed_state_var_n,
+		      s->packed_state_var_len) == 0);
+
+
+	alloc_sprintf(&filename,"test.%ld.%d",s->tim,mpi_comm->rank_macro);
+	out = PGFEM_fopen(filename,"w");
+	re_err = dump_MICROSCALE_SOLUTION_state(s,out);
+	if(re_err){
+	  PGFEM_printerr("ERROR: %s:%ld\n",__FILE__,__LINE__);
+	  PGFEM_Abort();
+	}
+	PGFEM_fclose(out);
+
+	/* compare memeory */
+	assert(memcmp(state_restart,s->packed_state_var_n,
+		      s->packed_state_var_len) == 0);
+	free(state_restart);
+
+
+	/* complete communication cycle w/ microscale */
 	int junk = 0;
 	pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
       }/* end output */
