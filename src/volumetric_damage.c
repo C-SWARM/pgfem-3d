@@ -18,6 +18,9 @@ static double DAMAGE_THRESH = 0.9999;
 /*========================================================*/
 /*               Static Function Declarations             */
 /*========================================================*/
+
+static void damage_initialize_values(damage *dam);
+
 static int set_damage_function(damage *dam,
 			       vd_fun function);
 
@@ -42,8 +45,7 @@ void init_damage(damage *dam,
 		 const int len)
 {
   int err = 0;
-  dam->Xn = dam->X = dam->wn = dam->w = dam->Hn = dam->H = 0.0;
-  dam->broken = dam->damaged_n = dam->damaged = 0;
+  damage_initialize_values(dam);
   if(set_damage_function(dam,function) != 0){
     PGFEM_printerr("set_damage_function returned error in %s.\n",__func__);
     err = 1;
@@ -68,8 +70,7 @@ void init_damagef(damage *dam,
 {
   int perr = 0;
 
-  dam->Xn = dam->X = dam->wn = dam->w = dam->Hn = dam->H = 0.0;
-  dam->broken = dam->damaged_n = dam->damaged = 0;
+  damage_initialize_values(dam);
   dam->eq_flag = eq_flag;
 
   if(set_damage_parameters(dam,params,len) != 0){
@@ -126,18 +127,52 @@ void copy_damage(damage *restrict dest,
   reset_damage_functions(dest,dest->eq_flag);
 }
 
+size_t sizeof_damage(const damage *dam)
+{
+  size_t s = 0;
+  s += sizeof(dam->params);
+  s += 9*sizeof(double) + 4*sizeof(int);
+  return s;
+}
+
 void pack_damage(const damage *src,
 		 char *buffer,
 		 size_t *pos)
 {
-  pack_data(src,buffer,pos,1,sizeof(*src));
+  pack_data(&(src->params),buffer,pos,1,sizeof(src->params));
+  pack_data(&(src->wn),buffer,pos,1,sizeof(src->wn));
+  pack_data(&(src->w),buffer,pos,1,sizeof(src->w));
+  pack_data(&(src->Hn),buffer,pos,1,sizeof(src->Hn));
+  pack_data(&(src->H),buffer,pos,1,sizeof(src->H));
+  pack_data(&(src->Hpn),buffer,pos,1,sizeof(src->Hpn));
+  pack_data(&(src->Hp),buffer,pos,1,sizeof(src->Hp));
+  pack_data(&(src->Xn),buffer,pos,1,sizeof(src->Xn));
+  pack_data(&(src->X),buffer,pos,1,sizeof(src->X));
+  pack_data(&(src->dmu),buffer,pos,1,sizeof(src->dmu));
+  pack_data(&(src->damaged_n),buffer,pos,1,sizeof(src->damaged_n));
+  pack_data(&(src->damaged),buffer,pos,1,sizeof(src->damaged));
+  pack_data(&(src->broken),buffer,pos,1,sizeof(src->broken));
+  pack_data(&(src->eq_flag),buffer,pos,1,sizeof(src->eq_flag));
 }
 
 void unpack_damage(damage *dest,
 		   const char *buffer,
 		   size_t *pos)
 {
-  unpack_data(buffer,dest,pos,1,sizeof(*dest));
+  unpack_data(buffer,&(dest->params),pos,1,sizeof(dest->params));
+  unpack_data(buffer,&(dest->wn),pos,1,sizeof(dest->wn));
+  unpack_data(buffer,&(dest->w),pos,1,sizeof(dest->w));
+  unpack_data(buffer,&(dest->Hn),pos,1,sizeof(dest->Hn));
+  unpack_data(buffer,&(dest->H),pos,1,sizeof(dest->H));
+  unpack_data(buffer,&(dest->Hpn),pos,1,sizeof(dest->Hpn));
+  unpack_data(buffer,&(dest->Hp),pos,1,sizeof(dest->Hp));
+  unpack_data(buffer,&(dest->Xn),pos,1,sizeof(dest->Xn));
+  unpack_data(buffer,&(dest->X),pos,1,sizeof(dest->X));
+  unpack_data(buffer,&(dest->dmu),pos,1,sizeof(dest->dmu));
+  unpack_data(buffer,&(dest->damaged_n),pos,1,sizeof(dest->damaged_n));
+  unpack_data(buffer,&(dest->damaged),pos,1,sizeof(dest->damaged));
+  unpack_data(buffer,&(dest->broken),pos,1,sizeof(dest->broken));
+  unpack_data(buffer,&(dest->eq_flag),pos,1,sizeof(dest->eq_flag));
   /* may not be necessary, but do it anyhow */
   reset_damage_functions(dest,dest->eq_flag);
 }
@@ -242,6 +277,30 @@ double weibull_evolution_rate(const double Ybar,
 /*========================================================*/
 /*               Static Function Definitions              */
 /*========================================================*/
+static void damage_params_initialize_vals(damage_params *params)
+{
+  params->Yin = params->p1 = params->p2 = params->mu = 0.0;
+}
+
+static void damage_initialize_values(damage *dam)
+{
+  /* intialize damage parameters */
+  damage_params_initialize_vals(&(dam->params));
+
+  /* initialize internal variables */
+  dam->wn = dam->w = 0.0;
+  dam->Hn = dam->H = 0.0;
+  dam->Hpn = dam->Hp = 0.0;
+  dam->Xn = dam->X = 0.0;
+  dam->dmu = 0.0;
+  dam->damaged_n = dam->damaged = 0;
+  dam->broken = 0;
+  dam->eq_flag = 0;
+  dam->function = NULL;
+  dam->evolution = NULL;
+  dam->evolution_rate = NULL;
+}
+
 static int set_damage_function(damage *dam,
 			       vd_fun function)
 {

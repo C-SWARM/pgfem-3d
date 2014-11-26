@@ -555,6 +555,42 @@ int multi_scale_main(int argc, char **argv)
 	  }/* switch(format) */
 	} /* if !VIZ_NONE */
 
+	/* Test pack/unpack of EPS for single element debugging */
+	/* allocate EPS for element 0 and compute buffer length */
+	EPS *eps0 = build_eps_il(1,c->elem,macro->opts->analysis_type);
+	size_t eps0_len = sizeof_eps_list(eps0,1,c->elem,
+					  macro->opts->analysis_type);
+
+	/* allocat buffer for pack from eps and eps0 */
+	char *eps_buf = malloc(eps0_len);
+	char *eps0_buf = malloc(eps0_len);
+
+	/* pack eps associated with element 0 into a buffer */
+	size_t pos = 0;
+	pack_eps_list(s->eps,1,c->elem,macro->opts->analysis_type,
+		      eps_buf,&pos);
+	assert(pos == eps0_len);
+
+	/* unpack the buffer into eps0 and then re-pack */
+	pos = 0;
+	unpack_eps_list(eps0,1,c->elem,macro->opts->analysis_type,
+			eps_buf,&pos);
+	assert(pos == eps0_len);
+	pos = 0;
+	pack_eps_list(eps0,1,c->elem,macro->opts->analysis_type,
+		      eps0_buf,&pos);
+	assert(pos == eps0_len);
+
+	/* compare memory */
+	assert(memcmp(eps_buf,eps0_buf,624) == 0);
+	assert(memcmp(eps_buf,eps0_buf,eps0_len) == 0);
+	destroy_eps_il(eps0,c->elem,1,macro->opts->analysis_type);
+	free(eps_buf);
+	free(eps0_buf);
+
+		      
+
+
 	/* Dump restart file */
 	update_MICROSCALE_SOLUTION(s,macro); /* populate state vector */
 	//reset_MICROSCALE_SOLUTION(s,macro); /* try reset from state vector */
@@ -591,25 +627,16 @@ int multi_scale_main(int argc, char **argv)
 	PGFEM_fclose(out);
 	free(filename);
 
-	/* compare read state to pre-restart */
-	assert(memcmp(state_restart,s->packed_state_var_n,
-		      s->packed_state_var_len) == 0);
-
 	/* push the read state to the current solution and dump to new file */
 	reset_MICROSCALE_SOLUTION(s,macro);
-	/* compare memeory */
-	assert(memcmp(state_restart,s->packed_state_var_n,
-		      s->packed_state_var_len) == 0);
-
-	/* memset(s->packed_state_var_n,0,s->packed_state_var_len); */
+	memset(s->packed_state_var_n,0,s->packed_state_var_len);
 	update_MICROSCALE_SOLUTION(s,macro);
 
+	/* compare memory by chunks */
 	size_t len_r = c->ndofd*sizeof(double);
 	size_t len_eps = sizeof_eps_list(s->eps,c->ne,c->elem,
 					 macro->opts->analysis_type);
 	size_t len_coel = coel_list_get_state_length_bytes(c->nce,c->coel);
-
-	/* compare memory by chunks */
 	int r_cmp = memcmp(state_restart,s->packed_state_var_n,len_r);
 	int eps_cmp = memcmp(state_restart + len_r,
 			     s->packed_state_var_n + len_r,
@@ -621,24 +648,6 @@ int multi_scale_main(int argc, char **argv)
 	assert(r_cmp == 0);
 	assert(coel_cmp == 0);
 	assert(eps_cmp == 0);
-	
-	/* compare memeory */
-	assert(memcmp(state_restart,s->packed_state_var_n,
-		      s->packed_state_var_len) == 0);
-
-
-	alloc_sprintf(&filename,"test.%ld.%d",s->tim,mpi_comm->rank_macro);
-	out = PGFEM_fopen(filename,"w");
-	re_err = dump_MICROSCALE_SOLUTION_state(s,out);
-	if(re_err){
-	  PGFEM_printerr("ERROR: %s:%ld\n",__FILE__,__LINE__);
-	  PGFEM_Abort();
-	}
-	PGFEM_fclose(out);
-
-	/* compare memeory */
-	assert(memcmp(state_restart,s->packed_state_var_n,
-		      s->packed_state_var_len) == 0);
 	free(state_restart);
 
 

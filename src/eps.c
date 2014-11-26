@@ -420,7 +420,7 @@ static size_t sizeof_IL2_eps(const int analysis)
 {
   static IL2_eps src;
   size_t s = 0;
-  s = (sizeof(src.dam) + sizeof(src.Un_1)
+  s = (sizeof_damage(&(src.dam)) + sizeof(src.Un_1)
        + sizeof(src.Un) + sizeof(src.Jn_1));
 
   if(analysis == STABILIZED
@@ -449,6 +449,7 @@ static size_t sizeof_eps_local(const int analysis)
 		    + sizeof(*(src.el.i)));
     break;
   }
+  s += sizeof((src.el.eq)) + sizeof((src.el.eq_m)) + sizeof((src.el.eq_i));
   return s;
 }
 
@@ -472,7 +473,7 @@ static size_t sizeof_eps(const EPS *eps,
   if(pt_I > 0){
     s += pt_I * (sizeof_IL0_eps(analysis)
 		 + sizeof_IL1_eps(analysis)
-		 + sizeof(*(eps->dam)));
+		 + sizeof_damage((eps->dam)));
   }
 
   if(pt_J > 0){
@@ -632,6 +633,9 @@ static void pack_eps_local(const EPS *src,
 			   char *buffer,
 			   size_t *pos)
 {
+  pack_data(&(src->el.eq),buffer,pos,1,sizeof((src->el.eq)));
+  pack_data(&(src->el.eq_m),buffer,pos,1,sizeof((src->el.eq_m)));
+  pack_data(&(src->el.eq_i),buffer,pos,1,sizeof((src->el.eq_i)));
   switch(analysis){
   default:
     pack_data(src->el.o,buffer,pos,SYM_TENSOR,sizeof(*(src->el.o)));
@@ -656,6 +660,9 @@ static void unpack_eps_local(EPS *dest,
 			     const char *buffer,
 			     size_t *pos)
 {
+  unpack_data(buffer,&(dest->el.eq),pos,1,sizeof((dest->el.eq)));
+  unpack_data(buffer,&(dest->el.eq_m),pos,1,sizeof((dest->el.eq_m)));
+  unpack_data(buffer,&(dest->el.eq_i),pos,1,sizeof((dest->el.eq_i)));
   switch(analysis){
   default:
     unpack_data(buffer,dest->el.o,pos,SYM_TENSOR,sizeof(*(dest->el.o)));
