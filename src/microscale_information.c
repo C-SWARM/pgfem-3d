@@ -304,6 +304,9 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 			 micro->common->co_props,
 			 sol->packed_state_var_n,
 			 &pos);
+
+  assert(pos == sol->packed_state_var_len);
+  if(pos != sol->packed_state_var_len) err++;
   return err;
 }/* reset_MICROSCALE_SOLUTION */
 
@@ -336,6 +339,8 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		       sol->packed_state_var_n,
 		       &pos);
 
+  assert(pos == sol->packed_state_var_len);
+  if(pos != sol->packed_state_var_len) err++;
   return err;
 }/* update_MICROSCALE_SOLUTION */
 
@@ -345,6 +350,7 @@ int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
   int err = 0;
   size_t n_write = fwrite(sol->packed_state_var_n,sizeof(char),
 			  sol->packed_state_var_len,out);
+  assert(n_write == sol->packed_state_var_len);
   if(n_write != sol->packed_state_var_len) err++;
   return err;
 }
@@ -354,7 +360,8 @@ int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
 {
   int err = 0;
   size_t n_read = fread(sol->packed_state_var_n,sizeof(char),
-			  sol->packed_state_var_len,in);
+			sol->packed_state_var_len,in);
+  assert(n_read == sol->packed_state_var_len);
   if(n_read != sol->packed_state_var_len) err++;
   return err;
 }
