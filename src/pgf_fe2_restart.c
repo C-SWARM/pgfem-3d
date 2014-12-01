@@ -34,7 +34,7 @@ static int generate_restart_path(const char *opath,
   int err = 0;
   alloc_sprintf(restart_path_str,"%s/restart/STEP_%.5ld",opath,step);
   err += make_path(*restart_path_str,DIR_MODE);
-  return (err == 0);
+  return (err == -1); /* make_path returns -1 on error */
 }
 
 /**
@@ -74,7 +74,8 @@ int pgf_FE2_restart_print_macro(MACROSCALE *macro)
 
   /* generate the restart filename and write the file */
   char *restart_fname = NULL;
-  err += generate_restart_fname(macro->opts->opath,rank,0,macro->sol->tim,&restart_fname);
+  err += generate_restart_fname(macro->opts->opath,rank,0,
+				macro->sol->tim,&restart_fname);
   FILE *out = PGFEM_fopen(restart_fname,"w");
   err += dump_MICROSCALE_SOLUTION_state(macro->sol,out);
   PGFEM_fclose(out);

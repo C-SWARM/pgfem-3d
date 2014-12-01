@@ -558,7 +558,7 @@ int multi_scale_main(int argc, char **argv)
 
 	/* dump a restart file */
 	int re_err = pgf_FE2_restart_print_macro(macro);
-	assert(!re_err);
+	assert(re_err == 0);
 
 	/* complete communication cycle w/ microscale */
 	int junk = 0;
