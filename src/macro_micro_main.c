@@ -186,6 +186,7 @@ int multi_scale_main(int argc, char **argv)
     pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
 
     /* send the first set of jobs */
+    memcpy(macro->sol->f,macro->sol->r,macro->common->ndofd*sizeof(double));
     pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
 				   JOB_NO_COMPUTE_EQUILIBRIUM);
 
