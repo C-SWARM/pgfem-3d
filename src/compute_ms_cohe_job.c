@@ -1,6 +1,7 @@
 /* HEARER */
 #include "compute_ms_cohe_job.h"
 #include <string.h>
+#include <assert.h>
 #include "mkl_cblas.h"
 
 #include "vtk_output.h"
@@ -17,6 +18,7 @@
 #include "displacement_based_element.h"
 #include "interface_macro.h"
 #include "solve_system.h"
+#include "pgf_fe2_restart.h"
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
@@ -215,6 +217,13 @@ int compute_ms_cohe_job(const int job_id,
     /* output the job based on the print flag to the file specified by
        the options and solution step id */
     err += print_ms_cohe_job(p_job,common,sol,microscale->opts);
+
+    /* print the restart file regardless of output parameters */
+    {
+      int cell_id = sol_idx_map_idx_get_id(&(microscale->idx_map),job_id);
+      assert(cell_id >= 0);
+      err += pgf_FE2_restart_print_micro(microscale,cell_id);
+    }					 
     break;
 
   case JOB_EXIT: /* do nothing */ break;

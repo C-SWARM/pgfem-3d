@@ -112,6 +112,7 @@ pgf_fe2_job.o \
 pgf_fe2_server_rebalance.o \
 pgf_fe2_rebalancer.o \
 pgf_fe2_macro_client.o \
+pgf_fe2_restart.o \
 solver_file.o \
 macro_micro_main.o \
 main.o \

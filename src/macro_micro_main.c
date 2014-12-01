@@ -53,6 +53,7 @@
 
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
+#include "pgf_fe2_restart.h"
 
 #include "solver_file.h"
 
@@ -555,18 +556,9 @@ int multi_scale_main(int argc, char **argv)
 	  }/* switch(format) */
 	} /* if !VIZ_NONE */
 
-	/* Dump restart file */
-	update_MICROSCALE_SOLUTION(s,macro); /* populate state vector */
-	char *filename = NULL;
-	alloc_sprintf(&filename,"restart.%ld.%d",s->tim,mpi_comm->rank_macro);
-	FILE *out = PGFEM_fopen(filename,"w");
-	int re_err = dump_MICROSCALE_SOLUTION_state(s,out);
-	if(re_err){
-	  PGFEM_printerr("ERROR: %s:%ld\n",__FILE__,__LINE__);
-	  PGFEM_Abort();
-	}
-	PGFEM_fclose(out);
-	free(filename);
+	/* dump a restart file */
+	int re_err = pgf_FE2_restart_print_macro(macro);
+	assert(!re_err);
 
 	/* complete communication cycle w/ microscale */
 	int junk = 0;
