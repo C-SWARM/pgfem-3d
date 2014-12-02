@@ -305,6 +305,10 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 			 sol->packed_state_var_n,
 			 &pos);
 
+  /* reset NORM */
+  unpack_data(sol->packed_state_var_n,&sol->NORM,
+	      &pos,1,sizeof(sol->NORM));
+
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
   return err;
@@ -338,6 +342,10 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		       micro->common->coel,
 		       sol->packed_state_var_n,
 		       &pos);
+
+  /* pack NORM */
+  pack_data(&sol->NORM,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->NORM));
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
@@ -772,6 +780,9 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* length of the state variables stored in COEL */
   sol->packed_state_var_len += coel_list_get_state_length_bytes(common->nce,
 								common->coel);
+
+  /* length of NORM */
+  sol->packed_state_var_len += sizeof(sol->NORM);
 
   /* allocate the packed state buffer */
   sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));

@@ -295,6 +295,8 @@ int multi_scale_main(int argc, char **argv)
     double hypre_time = 0.0;
 
     if(macro->opts->restart >= 0){
+      PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+
       /* do restart stuff */
       solver_file_scan_to_step(solver_file,macro->opts->restart,
 			       c->supports->npd,c->supports->defl,
@@ -303,49 +305,63 @@ int multi_scale_main(int argc, char **argv)
       /* make increment = total up to current step */
       vvplus(c->supports->defl_d,c->supports->defl,c->supports->npd);
       nulld(c->supports->defl,c->supports->npd);
+
+      /* read restart files and set current equilibrium state */
       pgf_FE2_restart_read_macro(macro,macro->opts->restart);
       s->tim = macro->opts->restart;
-    }
 
-    /* send the first set of jobs */
-    pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
-				   JOB_NO_COMPUTE_EQUILIBRIUM);
+      /* send a job to compute the first tangent */
+      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				     JOB_NO_COMPUTE_EQUILIBRIUM);
 
-    /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
-	of the load vector  */
-    s->dt = s->times[s->tim + 1] - s->times[s->tim];
-    if (s->dt == 0.0){
-      if (mpi_comm->rank_macro == 0){
-	PGFEM_printf("Incorrect dt\n");
+      /* turn off restart at the macroscale */
+      macro->opts->restart = -1;
+
+      /* increment macroscale time */
+      s->tim ++;
+    } else {
+      /* not restarting, need to compute initial load/RHS */
+
+      /* send signal to microscale to compute initial tangent */
+      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				     JOB_NO_COMPUTE_EQUILIBRIUM);
+
+      /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
+	  of the load vector  */
+      s->dt = s->times[s->tim + 1] - s->times[s->tim];
+      if (s->dt == 0.0){
+	if (mpi_comm->rank_macro == 0){
+	  PGFEM_printf("Incorrect dt\n");
+	}
+	PGFEM_Abort();
       }
-      PGFEM_Abort();
-    }
 
-    load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
-			NULL,c->node,c->hommat,
-			c->matgeom,c->supports,c->npres,
-			solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
-			s->crpl,macro->opts->stab,
-			s->r,macro->opts);
+      load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
+			  NULL,c->node,c->hommat,
+			  c->matgeom,c->supports,c->npres,
+			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
+			  s->crpl,macro->opts->stab,
+			  s->r,macro->opts);
     
-    /*=== do not support node/surf loads ===*/
-    /* /\*  NODE - generation of the load vector  *\/ */
-    /* load_vec_node (R,nln,ndim,znod,node); */
-    /* /\*  ELEMENT - generation of the load vector  *\/ */
-    /* load_vec_elem_sur (R,nle_s,ndim,elem,zele_s); */
+      /*=== do not support node/surf loads ===*/
+      /* /\*  NODE - generation of the load vector  *\/ */
+      /* load_vec_node (R,nln,ndim,znod,node); */
+      /* /\*  ELEMENT - generation of the load vector  *\/ */
+      /* load_vec_elem_sur (R,nle_s,ndim,elem,zele_s); */
 
-    /* R   -> Incramental forces 
-       RR  -> Total forces for sudivided increment 
-       RRn -> Total force after equiblirium */
+      /* R   -> Incramental forces 
+	 RR  -> Total forces for sudivided increment 
+	 RRn -> Total force after equiblirium */
 
-    vvplus  (s->f,s->R,c->ndofd);
-    vvplus  (s->RR,s->f,c->ndofd);
-    vvminus (s->f,s->f_defl,c->ndofd);
+      vvplus  (s->f,s->R,c->ndofd);
+      vvplus  (s->RR,s->f,c->ndofd);
+      vvminus (s->f,s->f_defl,c->ndofd);
 
-    /* Transform LOCAL load vector to GLOBAL */
-    LToG (s->R,s->BS_R,mpi_comm->rank_macro,nproc_macro,
-	  c->ndofd,c->DomDof,c->GDof,c->pgfem_comm,
-	  c->mpi_comm);
+      /* Transform LOCAL load vector to GLOBAL */
+      LToG (s->R,s->BS_R,mpi_comm->rank_macro,nproc_macro,
+	    c->ndofd,c->DomDof,c->GDof,c->pgfem_comm,
+	    c->mpi_comm);
+    }
 
     /* Prescribed deflection */
     double *sup_defl = NULL;

@@ -242,6 +242,8 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
       for(int i=0; i<n_keep; i++){
 	err += pgf_FE2_restart_read_micro(micro,step,keep_id[i]);
       }
+      /* turn off restart at the microscale */
+      micro->opts->restart = -1;
     }
 
     /* increment flag so we do not do this initialization again */
