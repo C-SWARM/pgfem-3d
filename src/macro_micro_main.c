@@ -312,6 +312,25 @@ int multi_scale_main(int argc, char **argv)
       /* turn off restart at the macroscale */
       macro->opts->restart = -1;
 
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,c->node,c->elem,
+				  s->sig_e,s->eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
+	  if(mpi_comm->rank_macro == 0){
+	    PGFEM_printf("RESTART: Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
+	  }
+	}
+	free(sur_forces);
+      }
+
       /* increment macroscale time */
       s->tim ++;
 
