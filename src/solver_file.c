@@ -154,9 +154,6 @@ int solver_file_scan_to_step(SOLVER_FILE *sf,
 {
   int err = 0;
 
-  /* start with empty increment */
-  memset(incr_load,0,len_load*sizeof(*incr_load));
-
   /* note that we increment to i = step so that we get increment for
      current step. Also, we start from i = 1 since the initial
      increment comes from a different file. */
