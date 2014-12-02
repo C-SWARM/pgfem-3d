@@ -86,8 +86,8 @@ static const long_opt_descr other_opts[] = {
 						   "\t\twith those provided in the given file."),0},
   {{"override-solver-file",required_argument,NULL,'O'},("\n\t\tOverride the default solver filename with\n"
 						      "\t\tthe provided filename."),0},
-  {{"restart",required_argument,NULL,'r'},("\n\tRestart from specified step (FE2 only). Requires original\n"
-					   "input files and dumped restart files for specified step."),0},
+  {{"restart",required_argument,NULL,'r'},("Restart from specified step (FE2 only). Requires original\n"
+					   "\t\tinput files and dumped restart files for specified step."),0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
   {{"help",no_argument,NULL,'h'},"Print this message and exit",1}
@@ -103,7 +103,7 @@ static const long_opt_descr depricated_opts[] = {
   {{"me",no_argument,NULL,'m'},"\tCompute nodal forces on model entities"
    " (requires entities.in file) [unsupported]",0},
   {{"pr",no_argument,NULL,'p'},"Periodic domain [outdated, use -ms]",1},
-  {{"rn",no_argument,NULL,'r'},"Renumber degrees of freedom [unsupported]",0},
+  {{"rn",no_argument,NULL,'r'},"\tRenumber degrees of freedom [unsupported]",0},
 };
 
 static const struct option last_opt = {NULL,0,NULL,0};
