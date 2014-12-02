@@ -68,13 +68,11 @@ int solver_file_read_load(SOLVER_FILE *sf,
 
 /**
  * Scan the load section of the file to the specified step. The
- * specified loads are accumulated in accum_load and the current load
- * increment is copied to incr_load. Does not initialize accum_load to
- * zeros. Undefined behavior if accum_load and incr_load overlap.
+ * specified loads are accumulated in incr_load. Note: incr_load is
+ * *not* reset upon entry
  */
 int solver_file_scan_to_step(SOLVER_FILE *sf,
 			     const size_t step,
 			     const size_t len_load,
-			     double *accum_load,
 			     double *incr_load);
 #endif /* #ifndef  */

@@ -297,14 +297,9 @@ int multi_scale_main(int argc, char **argv)
     if(macro->opts->restart >= 0){
       PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
 
-      /* do restart stuff */
+      /* increment load to restart step */
       solver_file_scan_to_step(solver_file,macro->opts->restart,
-			       c->supports->npd,c->supports->defl,
-			       c->supports->defl_d);
-
-      /* make increment = total up to current step */
-      vvplus(c->supports->defl_d,c->supports->defl,c->supports->npd);
-      nulld(c->supports->defl,c->supports->npd);
+			       c->supports->npd,c->supports->defl_d);
 
       /* read restart files and set current equilibrium state */
       pgf_FE2_restart_read_macro(macro,macro->opts->restart);
@@ -319,6 +314,7 @@ int multi_scale_main(int argc, char **argv)
 
       /* increment macroscale time */
       s->tim ++;
+
     } else {
       /* not restarting, need to compute initial load/RHS */
 
