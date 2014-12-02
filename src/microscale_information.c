@@ -341,7 +341,25 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
+
+#ifndef NDEBUG
+  static int in_func = 0; /* no recursion if in_func != 0 */
+  if(in_func == 0){
+    in_func++; /* incrememnt to avoid recursion */
+    PGFEM_printerr("DEBUG: %s\n",__func__);
+    char *orig = malloc(sol->packed_state_var_len);
+    memcpy(orig,sol->packed_state_var_n,sol->packed_state_var_len);
+    reset_MICROSCALE_SOLUTION(sol,micro);
+    update_MICROSCALE_SOLUTION(sol,micro);
+    int memcmp_res = memcmp(orig,sol->packed_state_var_n,sol->packed_state_var_len);
+    assert(memcmp_res == 0);
+    free(orig);
+    in_func--; /* decrement recursion flag */
+  }
+#endif
+
   return err;
+
 }/* update_MICROSCALE_SOLUTION */
 
 int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
