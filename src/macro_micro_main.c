@@ -185,11 +185,6 @@ int multi_scale_main(int argc, char **argv)
     /* determine the initial job assignment*/
     pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
 
-    /* send the first set of jobs */
-    memcpy(macro->sol->f,macro->sol->r,macro->common->ndofd*sizeof(double));
-    pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
-				   JOB_NO_COMPUTE_EQUILIBRIUM);
-
     COMMON_MACROSCALE *c = macro->common;
     MACROSCALE_SOLUTION *s = macro->sol;
     int nproc_macro = 0;
@@ -267,6 +262,12 @@ int multi_scale_main(int argc, char **argv)
     s->tim = 0;
     solver_file_read_header(solver_file);
 
+    /* allocate macro_solution times and copy from solver_file */
+    free(s->times);
+    s->times = malloc((solver_file->n_step + 1) * sizeof(*(s->times)));
+    memcpy(s->times,solver_file->times,
+	   (solver_file->n_step + 1) * sizeof(*(s->times)));
+
     /* Nonlinear solver */
     if (mpi_comm->rank_macro == 0) {
       switch(solver_file->nonlin_method){
@@ -291,10 +292,27 @@ int multi_scale_main(int argc, char **argv)
 
     double hypre_time = 0.0;
 
+    if(macro->opts->restart >= 0){
+      /* do restart stuff */
+      solver_file_scan_to_step(solver_file,macro->opts->restart,
+			       c->supports->npd,c->supports->defl,
+			       c->supports->defl_d);
+
+      /* make increment = total up to current step */
+      vvplus(c->supports->defl_d,c->supports->defl,c->supports->npd);
+      nulld(c->supports->defl,c->supports->npd);
+      pgf_FE2_restart_read_macro(macro,macro->opts->restart);
+      s->tim = macro->opts->restart;
+    }
+
+    /* send the first set of jobs */
+    memcpy(macro->sol->f,macro->sol->r,macro->common->ndofd*sizeof(double));
+    pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				   JOB_NO_COMPUTE_EQUILIBRIUM);
 
     /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
 	of the load vector  */
-    s->dt = solver_file->times[s->tim + 1] - solver_file->times[s->tim];
+    s->dt = s->times[s->tim + 1] - s->times[s->tim];
     if (s->dt == 0.0){
       if (mpi_comm->rank_macro == 0){
 	PGFEM_printf("Incorrect dt\n");
@@ -351,7 +369,7 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== BEGIN SOLVE ===*/
     while (solver_file->n_step > s->tim){
-      s->dt = dt0 = solver_file->times[s->tim+1] - solver_file->times[s->tim];
+      s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
       if (s->dt <= 0.0){
 	if (mpi_comm->rank_macro == 0) {
 	  PGFEM_printf("Incorrect dt\n");
@@ -362,7 +380,7 @@ int multi_scale_main(int argc, char **argv)
       if (mpi_comm->rank_macro == 0){
 	PGFEM_printf("\nFinite deformations time step %ld) "
 		     " Time %f | dt = %10.10f\n",
-		     s->tim,solver_file->times[s->tim+1],s->dt);
+		     s->tim,s->times[s->tim+1],s->dt);
       }
 
       /*=== NEWTON RAPHSON ===*/
@@ -386,7 +404,7 @@ int multi_scale_main(int argc, char **argv)
 	int n_step = 0;
 	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
 				       c->ndofn,c->ndofd,c->npres,s->tim,
-				       solver_file->times,
+				       s->times,
 				       solver_file->nonlin_tol,s->dt,c->elem,
 				       NULL,c->node,c->supports,sup_defl,
 				       c->hommat,c->matgeom,s->sig_e,s->eps,
@@ -433,7 +451,7 @@ int multi_scale_main(int argc, char **argv)
 	dlm = Arc_length ( c->ne,0,c->nn,c->ndofn,
 			   c->ndofd,c->npres,
 			   solver_file->n_step,s->tim,
-			   solver_file->times,solver_file->nonlin_tol,
+			   s->times,solver_file->nonlin_tol,
 			   solver_file->max_nonlin_iter,s->dt,
 			   dt0,c->elem,NULL,c->nbndel,
 			   c->bndel,c->node,c->supports,sup_defl,
