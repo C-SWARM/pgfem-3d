@@ -41,6 +41,12 @@ void destroy_coel(COEL* coel, long nce)
   free(coel);
 }
 
+void reset_coel_props(const cohesive_props *co_props,
+		      COEL *p_coel)
+{
+  p_coel->props = &co_props[p_coel->mat];
+}
+
 COEL* read_cohe_elem (FILE *in1,
 		      long ncom,
 		      long ndofn,
@@ -123,7 +129,7 @@ COEL* read_cohe_elem (FILE *in1,
     for (l=0;l<coel[j].toe;l++){
       fscanf (in1,"%ld",&coel[j].nod[l]);
     }
-    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&mat,&coel[j].pr);
+    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
     
     /* if (coel[j].typ == 0) { */
     /*   coel[j].Sc = comat[mat][0]; */
@@ -139,9 +145,10 @@ COEL* read_cohe_elem (FILE *in1,
     /*   coel[j].Jjn = 1.0; */
     /* } /\* Our law *\/ */
 
-    /* Set the element properties */
     coel[j].Jjn = 1.0;
-    coel[j].props = &co_props[mat];
+
+    /* Set the element properties */
+    reset_coel_props(co_props,coel + j);
 
     /* set internal state variables */
     switch(coel[j].props->type){
@@ -875,4 +882,48 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
   dealoc1 (gk);
   dealoc1 (ge);
   dealoc1 (w);
+}
+
+size_t coel_list_get_state_length_bytes(const int nce,
+					const COEL *coel)
+{
+  size_t len_b = 0;
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    /* length in bytes/elem = n_int_points*nvars*sizeof(vars) */ 
+    len_b += nip*coel[i].nvar*sizeof(**(coel[i].vars));
+  }
+  return len_b;
+}
+
+void coel_list_pack_state(const int nce,
+			  const COEL *coel,
+			  char *buffer,
+			  size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    for(int j = 0; j < nip; j++){
+      pack_data(coel[i].vars[j],buffer,buf_pos,coel[i].nvar,len_vars);
+    }
+  }
+}
+
+void coel_list_unpack_state(const int nce,
+			    COEL *coel,
+			    const cohesive_props *co_props,
+			    const char *buffer,
+			    size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    for(int j = 0; j < nip; j++){
+      unpack_data(buffer,coel[i].vars[j],buf_pos,coel[i].nvar,len_vars);
+    }
+    reset_coel_props(co_props,coel+i);
+  }
 }

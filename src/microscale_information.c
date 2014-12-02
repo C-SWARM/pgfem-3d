@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <search.h>
 #include <assert.h>
+#include <stdio.h>
 
 static const int ndim = 3;
 
@@ -297,6 +298,19 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		  sol->packed_state_var_n,
 		  &pos);
 
+  /* reset coel state variables */
+  coel_list_unpack_state(micro->common->nce,
+			 micro->common->coel,
+			 micro->common->co_props,
+			 sol->packed_state_var_n,
+			 &pos);
+
+  /* reset NORM */
+  unpack_data(sol->packed_state_var_n,&sol->NORM,
+	      &pos,1,sizeof(sol->NORM));
+
+  assert(pos == sol->packed_state_var_len);
+  if(pos != sol->packed_state_var_len) err++;
   return err;
 }/* reset_MICROSCALE_SOLUTION */
 
@@ -323,8 +337,45 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		sol->packed_state_var_n,
 		&pos);
 
+  /* update cohesive state variables */
+  coel_list_pack_state(micro->common->nce,
+		       micro->common->coel,
+		       sol->packed_state_var_n,
+		       &pos);
+
+  /* pack NORM */
+  pack_data(&sol->NORM,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->NORM));
+
+  assert(pos == sol->packed_state_var_len);
+  if(pos != sol->packed_state_var_len) err++;
+
   return err;
+
 }/* update_MICROSCALE_SOLUTION */
+
+int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
+				   FILE *out)
+{
+  int err = 0;
+  size_t n_write = fwrite(sol->packed_state_var_n,sizeof(char),
+			  sol->packed_state_var_len,out);
+  assert(n_write == sol->packed_state_var_len);
+  if(n_write != sol->packed_state_var_len) err++;
+  return err;
+}
+
+int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
+				   FILE *in)
+{
+  int err = 0;
+  size_t n_read = fread(sol->packed_state_var_n,sizeof(char),
+			sol->packed_state_var_len,in);
+  assert(n_read == sol->packed_state_var_len);
+  if(n_read != sol->packed_state_var_len) err++;
+  return err;
+}
+				   
 
 /*==== STATIC FUNCTION DEFINITIONS ===*/
 
@@ -701,11 +752,23 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 		    sol->eps,analysis);
 
   /* initialize state variable buffer at macro time (n) */
+  /* length of the solution vector */
   sol->packed_state_var_len = local_len*len_double;
+
+  /* length of the EPS list */
   sol->packed_state_var_len += sizeof_eps_list(sol->eps,
 					       common->ne,
 					       common->elem,
 					       analysis);
+
+  /* length of the state variables stored in COEL */
+  sol->packed_state_var_len += coel_list_get_state_length_bytes(common->nce,
+								common->coel);
+
+  /* length of NORM */
+  sol->packed_state_var_len += sizeof(sol->NORM);
+
+  /* allocate the packed state buffer */
   sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));
 
   /* initialize buffer */

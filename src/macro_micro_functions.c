@@ -411,11 +411,9 @@ int macroscale_update_job_info(const MACROSCALE *macro,
   /* set the jump */
   get_jump(nne_2D,x,y,z,disp,job->shape + nne_2D,job->jump);
 
-  /* scale the jump */
-  /* for(int i=0; i<ndim; i++){ */
-  /*   /\* mm to micron *\/ */
-  /*   job->jump[i] *= 1000; */
-  /* } */
+  if(macro->opts->restart >= 0){
+    memcpy(job->jump_n,job->jump,ndim*sizeof(double));
+  }
 
   /* set the job type */
   job->job_type = job_type;
