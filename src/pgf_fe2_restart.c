@@ -208,8 +208,8 @@ int pgf_FE2_restart_read_micro(MICROSCALE *micro,
   int err = 0;
 
   /* get the index to the solution for cell_id */
-  int idx = 0;
-  sol_idx_map_id_get_idx(&(micro->idx_map),cell_id);
+  int idx = -1; /* poison value */
+  idx = sol_idx_map_id_get_idx(&(micro->idx_map),cell_id);
   assert(idx >= 0);
   MICROSCALE_SOLUTION *s = micro->sol + idx; /* alias */
 
