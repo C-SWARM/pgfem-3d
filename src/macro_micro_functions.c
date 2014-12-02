@@ -411,13 +411,6 @@ int macroscale_update_job_info(const MACROSCALE *macro,
   /* set the jump */
   get_jump(nne_2D,x,y,z,disp,job->shape + nne_2D,job->jump);
 
-  /* RESTART: copy jump to jump_n */
-  static int restart_init = 0;
-  if(!restart_init && macro->opts->restart >= 0){
-    restart_init++;    
-    memcpy(job->jump_n,job->jump,ndim*sizeof(double));
-  }
-
   /* set the job type */
   job->job_type = job_type;
 

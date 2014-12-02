@@ -263,8 +263,10 @@ int multi_scale_main(int argc, char **argv)
     solver_file_read_header(solver_file);
 
     /* allocate macro_solution times and copy from solver_file */
-    free(s->times);
-    s->times = malloc((solver_file->n_step + 1) * sizeof(*(s->times)));
+    if(solver_file->n_step > 2){
+      free(s->times);
+      s->times = malloc((solver_file->n_step + 1) * sizeof(*(s->times)));
+    }
     memcpy(s->times,solver_file->times,
 	   (solver_file->n_step + 1) * sizeof(*(s->times)));
 
@@ -306,7 +308,6 @@ int multi_scale_main(int argc, char **argv)
     }
 
     /* send the first set of jobs */
-    memcpy(macro->sol->f,macro->sol->r,macro->common->ndofd*sizeof(double));
     pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
 				   JOB_NO_COMPUTE_EQUILIBRIUM);
 

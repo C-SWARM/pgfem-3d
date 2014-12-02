@@ -16,6 +16,15 @@
 #include "PGFEM_io.h"
 #include "PGFEM_mpi.h"
 
+#include "enumerations.h"
+
+#include "fd_increment.h"
+#include "stabilized.h"
+#include "MINI_element.h"
+#include "MINI_3f_element.h"
+#include "displacement_based_element.h"
+#include "cohesive_element.h"
+
 #include <stdio.h>
 #include <assert.h>
 
@@ -136,6 +145,59 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
      packed vector at the macroscale. */
   reset_MICROSCALE_SOLUTION(macro->sol,macro);
 
+  /* aliases */
+  COMMON_MACROSCALE *c = macro->common;
+  MACROSCALE_SOLUTION *s = macro->sol;
+
+  /* push r -> d_r and r <- 0 */
+  memcpy(s->d_r,s->r,c->ndofd*sizeof(double));
+  memset(s->r,0,c->ndofd*sizeof(double));
+
+  /* increment the solution */
+  double pores = 0;
+  double nor_min = 1e-5;
+  if(macro->opts->cohesive){
+    increment_cohesive_elements(c->nce,c->coel,&pores,
+				c->node,c->supports,s->d_r);
+  }
+
+  /* Finite deformations increment */
+  switch(macro->opts->analysis_type){
+  case FS_CRPL:
+  case FINITE_STRAIN:
+    fd_increment (c->ne,c->nn,c->ndofn,c->npres,c->matgeom,c->hommat,
+		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
+		  nor_min,s->crpl,s->dt,c->nce,c->coel,&pores,c->mpi_comm,
+		  c->VVolume,macro->opts);
+    break;
+  case STABILIZED:
+    st_increment (c->ne,c->nn,c->ndofn,c->ndofd,c->matgeom,c->hommat,
+		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
+		  nor_min,macro->opts->stab,s->dt,c->nce,c->coel,&pores,
+		  c->mpi_comm,macro->opts->cohesive);
+    break;
+  case MINI:
+    MINI_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
+		   c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm);
+    break;
+  case MINI_3F:
+    MINI_3f_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
+		      c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm);
+    break;
+  case DISP:
+    DISP_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,c->supports,s->eps,
+		   s->sig_e,c->hommat,s->d_r,s->r,c->mpi_comm);
+    break;
+  default: break;
+  }
+
+  /* set displacement vector and clear increment */
+  memcpy(s->r,s->d_r,c->ndofd*sizeof(double));
+  memset(s->d_r,0,c->ndofd*sizeof(double));
+
+  /* increment the supports */
+  memcpy(c->supports->defl,c->supports->defl_d,c->supports->npd * sizeof(double));
+  memset(c->supports->defl_d,0,c->supports->npd * sizeof(double));
   return err;
 }
 
