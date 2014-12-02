@@ -594,7 +594,8 @@ double Newton_Raphson (const int print_level,
 	  || (iter == 0 && *NORM < ERROR)){ /* Reset *NORM if
 				     less than convergence tolerance
 				     MM 6/27/2012*/
-	*NORM = nor;
+	/* take maximum */
+	if(nor > *NORM)	*NORM = nor;
       }
 
       
