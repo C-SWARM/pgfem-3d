@@ -2,11 +2,12 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-top_level_dir	= $$HOME/Private/pgfem_3d/trunk
+pgfem_dir     	= $$HOME/Private/pgfem_3d
+top_level_dir	= $(pgfem_dir)/trunk
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
-pfem_lib_ext	= $(top_level_dir)/../external_libs
+pfem_lib_ext	= $(pgfem_dir)/external_libs
 pfem_incl_dir	= $(top_level_dir)/include
 pfem_src_dir	= $(top_level_dir)/src
 
