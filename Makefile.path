@@ -3,7 +3,7 @@
 
 # path to the top directory (where this file resides)
 pgfem_dir     	= $$HOME/Private/pgfem_3d
-top_level_dir	= $(pgfem_dir)/branches/merge
+top_level_dir	= $(pgfem_dir)/branches/adapt_rebal
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
