@@ -18,6 +18,7 @@
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
@@ -29,6 +30,7 @@ extern "C" {
    * COMMUN. Elements with global DOFs are computed first to overlap
    * communication with computation of fully local elements.
    */
+  void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);		     
   int stiffmat_fd (int *Ap,
 		   int *Ai,
 		   long ne,
@@ -64,7 +66,7 @@ extern "C" {
 		   COMMUN comm,
 		   MPI_Comm mpi_comm,
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		   const PGFem3D_opt *opts);
+		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

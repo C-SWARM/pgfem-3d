@@ -1,6 +1,7 @@
 /* HEARER */
 #include "compute_ms_cohe_job.h"
 #include <string.h>
+#include <assert.h>
 #include "mkl_cblas.h"
 
 #include "vtk_output.h"
@@ -17,6 +18,7 @@
 #include "displacement_based_element.h"
 #include "interface_macro.h"
 #include "solve_system.h"
+#include "pgf_fe2_restart.h"
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
@@ -215,6 +217,13 @@ int compute_ms_cohe_job(const int job_id,
     /* output the job based on the print flag to the file specified by
        the options and solution step id */
     err += print_ms_cohe_job(p_job,common,sol,microscale->opts);
+
+    /* print the restart file regardless of output parameters */
+    {
+      int cell_id = sol_idx_map_idx_get_id(&(microscale->idx_map),job_id);
+      assert(cell_id >= 0);
+      err += pgf_FE2_restart_print_micro(microscale,cell_id);
+    }					 
     break;
 
   case JOB_EXIT: /* do nothing */ break;
@@ -289,7 +298,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			 0.0,0.0,0.0,c->lin_err,
 			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
 			 1,c->maxit_nl,&s->NORM,c->nbndel,
-			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL);
+			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL, 0, NULL, NULL);
 	
   free(sup_defl);
   return err;
@@ -394,7 +403,7 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
 		     /*iter*/0,nor_min,s->dt,s->crpl,o->stab,
 		     c->nce,c->coel,0,0.0,s->f_u,myrank,nproc,
 		     c->DomDof,c->GDof,c->pgfem_comm,c->mpi_comm,
-		     c->SOLVER,o);
+		     c->SOLVER,o,0,NULL,NULL);
 
   /* finalize the microscale tangent matrix assembly */
   err += HYPRE_IJMatrixAssemble(c->SOLVER->hypre_k);

@@ -169,12 +169,16 @@ extern "C" {
 			      const int id);
 
   /** structure to contain all microscale information */
-  typedef struct MICROSCALE{
+ struct MICROSCALE{
     PGFem3D_opt *opts;
     COMMON_MICROSCALE *common;
     sol_idx_map idx_map;
     MICROSCALE_SOLUTION *sol;
-  } MICROSCALE;
+ };
+#ifndef TYPEDEF_MICROSCALE
+#define TYPEDEF_MICROSCALE
+  typedef struct MICROSCALE MICROSCALE;
+#endif
 
   /** Instantiate a MICROSCALE. Some space is allocated, but full
       allocation is deffered to the build_MICROSCALE
@@ -203,10 +207,27 @@ extern "C" {
   int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 				 const MICROSCALE *micro);
 
+  /**
+   * Dump the solution state vector to a binary file. Returns non-zero
+   * if there is a problem writing the file.
+   */
+  int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
+				     FILE *out);
+
+  /**
+   * Read a dumped binary state file. Returns non-zero if there is a
+   * problem reading the file.
+   */
+  int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
+				     FILE *in);
+
   /**=== Aliases for MACROSCALE ===*/
   typedef COMMON_MICROSCALE COMMON_MACROSCALE;
   typedef MICROSCALE_SOLUTION MACROSCALE_SOLUTION;
+#ifndef TYPEDEF_MACROSCALE
+#define TYPEDEF_MACROSCALE
   typedef MICROSCALE MACROSCALE;
+#endif
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
 #define build_MACROSCALE(macro,comm,argc,argv)	\
   build_MICROSCALE(macro,comm,argc,argv)

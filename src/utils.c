@@ -3208,3 +3208,16 @@ long* sparse_ApAi (long ne,
   
   return (Ai);
 }
+
+void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
+{
+/* input: w, x, alpha
+          n_row: size of array
+   output: v = (1-alpha)*w + alpha*x
+*/   
+  for(long a = 0; a<n_row; a++)
+  {
+    v[a] = (1-alpha)*w[a] + alpha*x[a];
+  }
+}
+

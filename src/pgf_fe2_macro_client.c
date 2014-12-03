@@ -529,7 +529,10 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
   }
 
   for(int i=0; i<send->n_comms; i++){
-    /* update the job information according to job_type */
+    /* update the job information according to job_type. Note that we
+       send the *increment* of the solution (f = d_r + rr) since the
+       cohesive elements are implemented assuming updated formulation
+       of the displacement field (u_n computed from coordinates) */
     err += macroscale_update_job_info(macro,job_type,macro->sol->f,job_list+i);
 
     /* pack the job info into the buffer to send */

@@ -62,6 +62,9 @@ extern "C" {
   void copy_damage(damage *dest,
 		   const damage *src);
 
+  /** Get the size of a damage object */
+  size_t sizeof_damage(const damage *dam);
+
   /** Pack a damage object into a buffer */
   void pack_damage(const damage *src,
 		   char *buffer,

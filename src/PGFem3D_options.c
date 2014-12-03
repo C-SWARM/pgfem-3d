@@ -86,6 +86,8 @@ static const long_opt_descr other_opts[] = {
 						   "\t\twith those provided in the given file."),0},
   {{"override-solver-file",required_argument,NULL,'O'},("\n\t\tOverride the default solver filename with\n"
 						      "\t\tthe provided filename."),0},
+  {{"restart",required_argument,NULL,'r'},("Restart from specified step (FE2 only). Requires original\n"
+					   "\t\tinput files and dumped restart files for specified step."),0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
   {{"help",no_argument,NULL,'h'},"Print this message and exit",1}
@@ -101,7 +103,7 @@ static const long_opt_descr depricated_opts[] = {
   {{"me",no_argument,NULL,'m'},"\tCompute nodal forces on model entities"
    " (requires entities.in file) [unsupported]",0},
   {{"pr",no_argument,NULL,'p'},"Periodic domain [outdated, use -ms]",1},
-  {{"rn",no_argument,NULL,'r'},"Renumber degrees of freedom [unsupported]",1},
+  {{"rn",no_argument,NULL,'r'},"\tRenumber degrees of freedom [unsupported]",0},
 };
 
 static const struct option last_opt = {NULL,0,NULL,0};
@@ -193,7 +195,8 @@ void set_default_options(PGFem3D_opt *options)
   options->legacy = 0;
   options->debug = 0;
   options->me = 0;
-  options->restart = 0;
+  options->restart = -1; /* flag >= 0 used to specify both restart and
+			    step to start from */
 
   /* input overrides */
   options->override_pre_disp = 0;
@@ -511,6 +514,10 @@ void re_parse_command_line(const int myrank,
 
     case 'l':
       options->legacy = 1;
+      break;
+
+    case 'r':
+      options->restart = atoi(optarg);
       break;
 
     case 9999: /* debug mode */

@@ -136,6 +136,11 @@ double Arc_length (long ne,
 
 */
 {
+  double t = 0.0;
+  double *r_n = NULL;
+  double *r_n_1 = NULL;
+  double alpha_alpha = 0.0;
+  
   double nor,nor1,nor2,dlm,dlm0,DLM,DET=0.0,dAL;
   double DT,DDLM,ddlm,ERROR,LS1,gama,pdt,tmp,nor3;
   long iter,INFO,i,j,STEP,N,M,DIV,ST,GAMA,OME,FI,ART,gam,TYPE,GInfo;
@@ -254,7 +259,7 @@ double Arc_length (long ne,
     stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		 node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
 		 nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
     /* Assemble the matrix */
     HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
@@ -403,9 +408,9 @@ double Arc_length (long ne,
 		       opts->analysis_type);
     
     /* Residuals */
-    fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		  nce,coel /*,gnod,geel*/,mpi_comm,opts);
+    fd_residuals(f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  nce,coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
     
     /* Compute Euclidian norm */
     for (i=0;i<ndofd;i++) f[i] = (lm + dlm)*R[i] - f_u[i];  
@@ -477,7 +482,7 @@ double Arc_length (long ne,
       stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
 		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts);
+		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 	
       /* Assemble the matrix */
       HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
@@ -665,8 +670,8 @@ double Arc_length (long ne,
       
       /* Residuals */
       fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		    hommat,sup,eps,sig_e,nor_min,crpl,dt,stab,
-		    nce,coel/*,gnod,geel*/,mpi_comm,opts );
+		    hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		    nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       /* Compute Euclidean norm */
       for (i=0;i<ndofd;i++)
@@ -878,7 +883,7 @@ double Arc_length (long ne,
       for (i=0;i<ndofd;i++) {f_u[i] = 0.0; d_r[i] = 0.0;}
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,
 		    b_elems,matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       for (i=0;i<ndofd;i++) f[i] = lm*R[i] - f_u[i];
       
       LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);

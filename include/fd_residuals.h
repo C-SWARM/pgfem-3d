@@ -43,11 +43,13 @@ extern "C" {
 		    double nor_min,
 		    CRPL *crpl,
 		    double dt,
+		    double t,
 		    double stab,
 		    long nce,
 		    COEL *coel,
 		    MPI_Comm mpi_comm,
-		    const PGFem3D_opt *opts);
+		    const PGFem3D_opt *opts,
+		    double alpha, double *r_n, double *r_n_1);
 
 #ifdef __cplusplus
 }

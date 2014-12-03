@@ -147,8 +147,12 @@ double Newton_Raphson (const int print_level,
 		       MPI_Comm mpi_comm,
 		       const double VVolume,
 		       const PGFem3D_opt *opts,
-		       void *microscale)
+		       void *microscale,
+		       double alpha_alpha,
+           double *r_n,
+           double *r_n_1)
 {
+  double t = times[tim+1];
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
   char  *error[] = {"inf","-inf","nan"};
@@ -324,7 +328,7 @@ double Newton_Raphson (const int print_level,
       nulld (f_u,ndofd);
       INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 			   matgeom,hommat,sup,eps,sig_e,
-			   nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+			   nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       for (i=0;i<ndofd;i++){
 	f[i] = - f_u[i];
 	R[i] = RR[i] = 0.0;
@@ -359,7 +363,7 @@ double Newton_Raphson (const int print_level,
 
 	fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 		      matgeom,hommat,sup,eps,sig_e,
-		      nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		      nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       } else {
 	nulld (f_u,ndofd);
       }
@@ -407,7 +411,7 @@ double Newton_Raphson (const int print_level,
 		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
 		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
 		     myrank,nproc,DomDof,GDof,
-		     comm,mpi_comm,PGFEM_hypre,opts);
+		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
@@ -542,8 +546,8 @@ double Newton_Raphson (const int print_level,
       /* Residuals */
       INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,
 			   b_elems,matgeom,hommat,sup,
-			   eps,sig_e,nor_min,crpl,dt,stab,
-			   nce,coel,mpi_comm,opts);
+			   eps,sig_e,nor_min,crpl,dt,t,stab,
+			   nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
@@ -590,7 +594,8 @@ double Newton_Raphson (const int print_level,
 	  || (iter == 0 && *NORM < ERROR)){ /* Reset *NORM if
 				     less than convergence tolerance
 				     MM 6/27/2012*/
-	*NORM = nor;
+	/* take maximum */
+	if(nor > *NORM)	*NORM = nor;
       }
 
       
@@ -616,11 +621,11 @@ double Newton_Raphson (const int print_level,
       if (ART == 0) {
 	INFO = LINE_S3 ( &nor,&nor2,&gama,nor1,NOR,LS1,iter,f_u,
 			 ne,n_be,ndofd,ndofn,npres,d_r,r,node,elem,b_elems,
-			 matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dt,
+			 matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dt,t,
 			 stab,nce,coel,f,rr,RR,tim,
 			 /*GNOD *gnod,GEEL *geel,*/
 			 BS_f,BS_RR,BS_f_u,DomDof,comm,GDof,STEP,mpi_comm,
-			 &max_damage, &dissipation, opts);
+			 &max_damage, &dissipation, opts,alpha_alpha,r_n,r_n_1);
 	
 	/* Gather infos */
 	MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -851,7 +856,7 @@ double Newton_Raphson (const int print_level,
       }
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 		    matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       for (i=0;i<ndofd;i++) f[i] = RR[i] - f_u[i];
       /* print_array_d(stdout,RR,ndofd,1,ndofd); */
