@@ -81,6 +81,31 @@ static const int ndim = 3;
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
 #define SAVE_RESTART_FILE 1
+
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart)
+{
+  char filename[1024];
+  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  int err = read_VTK_file(filename, u0);      
+  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  return read_VTK_file(filename, u1);
+}      
+
+#else
+#define SAVE_RESTART_FILE 0
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart)
+{
+  if(myrank==0)
+  {
+    PGFEM_printerr("Restart with VTK is not supported!\n");
+    PGFEM_printerr("Enforce to turn off restart!\n");
+  }
+  
+  *restart = -1;  
+  return 0;
+}
+#endif
+
 double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
 {
  
@@ -95,111 +120,93 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
 
   *restart = -1;
   if(fp_0 != NULL)
-    {  
-    
-      while(fgets(line, 1024, fp_0)!=NULL) 
-	{
-	  if(line[0]=='#')
-	    continue;
+  {  
+    while(fgets(line, 1024, fp_0)!=NULL) 
+	  {
+	    if(line[0]=='#')
+	      continue;
         
-	  sscanf(line, "%d", restart);
-	  break;
-	}
-      fclose(fp_0);
-    }
+	    sscanf(line, "%d", restart);
+	    break;
+	  }
+    fclose(fp_0);
+  }
   
   if(*restart>0)
-    {
-      sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-      int err = read_VTK_file(filename, u0);      
-      sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-      err += read_VTK_file(filename, u1);
-    }  
+    read_initial_from_VTK(opts, myrank, restart);
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
 
        
   if(fp == NULL)
-    {    
+  {    
+    if(myrank==0)
       printf("Fail to open file [%s]. Quasi steady state\n", filename);
-      return alpha;
-    }
-
+    return alpha;
+  }
 
   if(myrank==0)
-    {
-    
-      while(fgets(line, 1024, fp)!=NULL) 
-	{
-	  if(line[0]=='#')
-	    continue;
+  {
+    while(fgets(line, 1024, fp)!=NULL) 
+	  {
+	    if(line[0]=='#')
+	      continue;
       
-	  double temp;  
-	  sscanf(line, "%lf", &temp);
-	  break;
-	}
-    }
+	    double temp;  
+	    sscanf(line, "%lf", &temp);
+	    break;
+	  }
+  }
   
   while(fgets(line, 1024, fp)!=NULL) 
-    {
-      if(line[0]=='#')
-	continue;
+  {
+    if(line[0]=='#')
+	    continue;
         
-      sscanf(line, "%lf", &alpha);
-      break;
-    }
+    sscanf(line, "%lf", &alpha);
+    break;
+  }
      
 
   while(fgets(line, 1024, fp)!=NULL)
-    {
-    
-      if(line[0]=='#')
-	continue;
-    
-      for(int a=0; a<nmat; a++)
-	{    
-	  sscanf(line, "%lf", rho+a);
-	  if(a<nmat-1)
-	    fgets(line, 1024, fp);      
-	}
-      break;
-    } 
+  {
+    if(line[0]=='#')
+	    continue;
+    for(int a=0; a<nmat; a++)
+  	{    
+	    sscanf(line, "%lf", rho+a);
+	    if(a<nmat-1)
+	      fgets(line, 1024, fp);      
+	  }
+    break;
+  } 
   if(*restart>0)
-    {
-      fclose(fp);
+  {
+    fclose(fp);
       return alpha;  
-    }
+  }
                    
   while(fgets(line, 1024, fp)!=NULL)
-    {
-      if(line[0]=='#')
-	continue;
+  {
+    if(line[0]=='#')
+	    continue;
         
-      long nid;
-      double u[3], v[3];        
-      sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
+    long nid;
+    double u[3], v[3];        
+    sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
 
-      u1[nid*3+0] = u[0];
-      u1[nid*3+1] = u[1];
-      u1[nid*3+2] = u[2];    
-      u0[nid*3+0] = u[0]-dt*v[0];
-      u0[nid*3+1] = u[1]-dt*v[1];
-      u0[nid*3+2] = u[2]-dt*v[2];
-    }              
+    u1[nid*3+0] = u[0];
+    u1[nid*3+1] = u[1];
+    u1[nid*3+2] = u[2];    
+    u0[nid*3+0] = u[0]-dt*v[0];
+    u0[nid*3+1] = u[1]-dt*v[1];
+    u0[nid*3+2] = u[2]-dt*v[2];
+  }              
     
   fclose(fp);
   return alpha;       
 }
-#else
-#define SAVE_RESTART_FILE 0
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
-{
-  PGFEM_printerr("Restart not supported without VTK libraries!\n");
-  PGFEM_Abort();
-  return 0.0;
-}
-#endif
 
 int single_scale_main(int argc,char *argv[])
 {
