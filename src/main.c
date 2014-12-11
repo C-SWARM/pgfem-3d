@@ -82,7 +82,7 @@ static const int ndim = 3;
 #include "PGFem3D_to_VTK.hpp"
 #define SAVE_RESTART_FILE 1
 
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart)
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
 {
   char filename[1024];
   sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
@@ -93,7 +93,7 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart)
 
 #else
 #define SAVE_RESTART_FILE 0
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart)
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
 {
   if(myrank==0)
   {
@@ -133,7 +133,7 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   }
   
   if(*restart>0)
-    read_initial_from_VTK(opts, myrank, restart);
+    read_initial_from_VTK(opts, myrank, restart, u0, u1);
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
