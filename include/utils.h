@@ -1,57 +1,109 @@
-/*****************************
- * Program FEM3d ver. 2.0    *
- * FEM - 3D analysis         *
- * Karel Matous              *
- *****************************/
+/* HEADER */
 
-/*****************/
-/* November 2000 */
-/*****************/
+/**
+ * @file This file declares utility functions for PGFem3D.
+ */
 
+#pragma once
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "BSprivate.h"
-
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATERIAL_H
 #include "material.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
+
+void pack_2mat(const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_2mat(void **dest,
+		 const int nrow,
+		 const int ncol,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+void pack_3mat(const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_3mat(void ***dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+void pack_4mat(const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos);
+
+void unpack_4mat(void ****dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const int n_4,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos);
+
+/** src and dest must be unique */
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size);
+
+/** src and dest must be unique */
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size);
+
+/** src and dest must be unique */
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size);
+
+/**
+ * \brief Determine the number of duplicate values in an array.
+ *
+ * A copy of arr is sorted according to the compare function. The
+ * sorted array is then checked for duplicates using the compare
+ * function again.
+ *
+ * \return number of duplicate values.
+ */
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b));
 
 /** Dynamically allocate and populate a formated string */
 int alloc_sprintf(char **str,
@@ -227,15 +279,13 @@ long* times_print (FILE *in1,
 		   const long nt,
 		   const long n_p);
 
-/** Write a BlockSolve95 matrix to a file in MATLAB sparse format */
-void write_mat_matlab(char *str,
-		      BSspmat *A,
-		      BSprocinfo  *procinfo);
-
-/** Set all entries in a BlockSolve95 matrix to 0.0 */
-void null_BSspmat (BSspmat *K);
-
-/** Get the global partition (Gf) of the data (f)for the process. */
+/**
+ * Get the global partition (Gf) of the data (f)for the process.
+ *
+ * \param[out] Gf Contains the global DOF values owned by the domin in Gid-order
+ *
+ * Side effects: point-to-point communication according to comm.
+ */
 void LToG (const double *f,
 	   double *Gf,
 	   const int myrank,
@@ -246,7 +296,14 @@ void LToG (const double *f,
 	   const COMMUN comm,
 	   const MPI_Comm mpi_comm);
 
-/** Get the local part (r) of the global data (Gf). */
+/**
+ * Get the local part (r) of the global data (Gr).
+ *
+ * \param[out] r Contains the DOF values on the domain, including
+ * information from other domains.
+ *
+ * Side effects: point-to-point communication according to comm.
+ */
 void GToL (const double *Gr,
 	   double *r,
 	   const int myrank,
@@ -256,12 +313,6 @@ void GToL (const double *Gr,
 	   const long GDof,
 	   const COMMUN comm,
 	   const MPI_Comm mpi_comm);
-
-BSspmat *BSalloc_A (int start_num,
-		    int n,
-		    int *rp,
-		    int *cval,
-		    BSprocinfo *procinfo);
 
 MPI_Comm* CreateGraph (int nproc,
 		       int myrank,
@@ -329,21 +380,22 @@ void def_elem (const long *cn,
 	       const SUPP sup,
 	       const long TYPE);
 
+/** Compute the TOTAL deformation on an element using r, d_r, and
+    sup->{defl,defl_d} and store in r_e */
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e);
+
 /** Returns the local node numbers in a given element in nod[]. */
 void elemnodes (const long ii,
 		const long nne,
 		long *nod,
 		const ELEMENT *elem);
-
-/** Returns the coordinates of the nodes on the element in element
-    connectivity order. NOTE: returns undeformed configuration
-    if(periodic == 1 || analysis == DISP). */
-/* void nodecoord (const long nne, */
-/* 		const long *nod, */
-/* 		const NODE *node, */
-/* 		double *x, */
-/* 		double *y, */
-/* 		double *z); */
 
 /** returns node coords for total Lagrangian formulation
     (i.e. undeformed) */
@@ -503,9 +555,9 @@ void aver_stress (long ii,
 		  SIG *sig,
 		  EPS *eps);
 
-/*******************************************************************************************/
-/*****************************  ARC-LENGTH PROCEDURES  *************************************/
-/*******************************************************************************************/
+/***************************************************************/
+/*************  ARC-LENGTH PROCEDURES  *************************/
+/***************************************************************/
 
 long diag_K (double *k,
 	     long *adr,
@@ -515,32 +567,12 @@ double det_K (double *k,
 	      long *adr,
 	      long ndofd);
 
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0);
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL);
-*/
-
 double new_arc_length (long iter,
 		       long iter_des,
 		       double dAL,
 		       double dAL0);
 
-/*****************************************************************************************/
+/***************************************************************/
 
 void check_equi (double *fu,
 		 long ne,
@@ -564,7 +596,7 @@ double* Energy_functional (long ne,
 			   double *r,
 			   const int analysis);
 
-/*****************************  NONSYMMETRIC SPARSE SOLVER  *******************************/
+/*********************  NONSYMMETRIC SPARSE SOLVER  ****************/
 
 long* sparse_ApAi (long ne,
 		   long ndofd,
@@ -573,7 +605,7 @@ long* sparse_ApAi (long ne,
 		   NODE *node,
 		   long *Ap);
 
-/******************************************************************************************/
+/****************************************************************/
 
 void tensor_9x9 (double **K,
 		 double A[3][3][3][3],
@@ -605,5 +637,5 @@ double area (long nne,
 
 void Logarithmic_strain (double **F,
 			 double **EL);
-
+void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
 #endif

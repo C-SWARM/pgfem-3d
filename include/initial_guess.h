@@ -1,24 +1,23 @@
+/* HEADER */
+
+#pragma once
 #ifndef INITIAL_GUESS_H
 #define INITIAL_GUESS_H
 
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Compute an initial guess for the Newton-type methods.
+   *
+   * Not sure exacly what this function does or how it is used. Seems
+   * associated with crystal plasticity.
+   */
   long initial_guess (long ii,
 		      long ip,
 		      long tim,

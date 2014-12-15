@@ -1,39 +1,29 @@
-/*******************************************
- * Program FEM3d ver. 2.0                  *
- * FEM - 3D analysis                       *
- * CTU, Department of Structural Mechanics *
- * Karel Matous & Jaroslav Kruis           *
- *******************************************/
+/* HEADER */
 
-/*****************/
-/* November 2000 */
-/*****************/
+/**
+ * @file @todo Describe remaining functions and migrate integration
+ * rules to @see quadrature_rules.c
+ */
 
+#pragma once
 #ifndef ELEM3D_H
 #define ELEM3D_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
-/** get the number of integration points for the element. */
+/**
+ * Get the number of integration points for the element.
+ */
 void int_point (const long nne,
 		long *II);
 
-/** get the number of integration points in each direction, parent
-    coordinates and weights for integration. */
+/** 
+ * Get the number of integration points in each direction, parent
+ * coordinates and weights for integration.
+ */
 void integrate (const long nne,
 		long *II,
 		long *JJ,

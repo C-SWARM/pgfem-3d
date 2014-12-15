@@ -1,31 +1,28 @@
+/* HEADER */
+
+/**
+ * AUTHORS:
+ *    Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
+#pragma once
 #ifndef PSPARSE_APAI_H
 #define PSPARSE_APAI_H
 
 #include "PGFEM_mpi.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** Creates a parallel matrix that is used to solve the system. $name
-      populates Ap and returns Ai already allocated and populated. The
-      number of DOFs on each domain is not changed.*/
+  /**
+   * Create the global sparsity pattern and commincation structure.
+   */
   int* Psparse_ApAi (int nproc,
 		     int myrank,
 		     long ne,

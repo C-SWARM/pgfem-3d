@@ -2,19 +2,9 @@
 #ifndef SOLVE_SYSTEM_H
 #define SOLVE_SYSTEM_H
 
-#include "BSprivate.h"
-
-#ifndef PGFEM_IO_H
-#include "PGFEM_io.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
+#include "PGFEM_io.h"
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,11 +32,20 @@ extern "C" {
 		      const long *DomDof,
 		      SOLVER_INFO *info,
 		      PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		      BSprocinfo *BSinfo,
-		      BSspmat *k,
-		      BSpar_mat **pk,
-		      BSpar_mat **f_pk,
 		      MPI_Comm mpi_comm);
+
+  /** Solve the system of equations without calling setup
+      routines. Use this function for subsequent solves are made using
+      the same matrix. */
+  double solve_system_no_setup(const PGFem3D_opt *opts,
+			       double *loc_rhs,
+			       double *loc_sol,
+			       const int tim,
+			       const int iter,
+			       const long *DomDof,
+			       SOLVER_INFO *info,
+			       PGFEM_HYPRE_solve_info *PGFEM_hypre,
+			       MPI_Comm mpi_comm);
 
   int solve_system_check_error(FILE *out,
 			       const SOLVER_INFO info);

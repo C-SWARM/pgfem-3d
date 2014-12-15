@@ -1,75 +1,47 @@
-/*******************************************
- * Program FEM3d ver. 2.0                  *
- * FEM - 3D analysis                       *
- * CTU, Department of Structural Mechanics *
- * Karel Matous & Jaroslav Kruis           *
- *******************************************/
+/* HEADER */
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
+ */
 
-/*****************/
-/* November 2000 */
-/*****************/
-
+#pragma once
 #ifndef LOAD_H
 #define LOAD_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef MESH_LOAD_H
 #include "mesh_load.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
+/**
+ * \brief Get the list of times to increment the load from the file.
+ */
 long* compute_times_load (FILE *in1,
-			  long nt,
-			  long nlod_tim);
+			  const long nt,
+			  const long nlod_tim);
 
+/**
+ * \brief Get the load from the nodes with prescribed force.
+ */
 void load_vec_node (double *f,
-		    long nln,
-		    long ndofn,
-		    ZATNODE *znode,
-		    NODE *node);
+		    const long nln,
+		    const long ndofn,
+		    const ZATNODE *znode,
+		    const NODE *node);
 
+/**
+ * \brief Compute the load vector from the prescribed boundary
+ * conditions.
+ */
 int load_vec_node_defl (double *f,
 			long ne,
 			long ndofn,
@@ -89,10 +61,14 @@ int load_vec_node_defl (double *f,
 			double *r,
 			const PGFem3D_opt *opts);
 
+/**
+ * \brief Compute the load vector from the elements with surface load
+ * [NOT IMPLEMENTED].
+ */
 void load_vec_elem_sur (double *f,
-			long nle_s,
-			long ndofn,
-			ELEMENT *elem,
-			ZATELEM *zele_s);
+			const long nle_s,
+			const long ndofn,
+			const ELEMENT *elem,
+			const ZATELEM *zele_s);
 
 #endif

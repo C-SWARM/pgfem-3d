@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef BOUNDING_ELEMENT_UTILS_H
 #define BOUNDING_ELEMENT_UTILS_H
 
@@ -7,30 +8,12 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #include "PGFEM_mpi.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
 
   /** get the element local node numbers, i.e. ordering in volumetric
       element connectivity */

@@ -1,11 +1,9 @@
+#pragma once
 #ifndef GREDIST_NODE_H
 #define GREDIST_NODE_H
 
 #include "PGFEM_mpi.h"
-
-#ifndef NODE_H
 #include "node.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

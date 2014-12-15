@@ -1,14 +1,13 @@
 /* HEADER */
+#pragma once
 #ifndef PGFEM_OPTIONS_H
 #define PGFEM_OPTIONS_H
+
+#include "PGFEM_io.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-#ifndef PGFEM_IO_H
-#include "PGFEM_io.h"
-#endif
 
   /** Structure containing option parameters to set from the command
       line. */

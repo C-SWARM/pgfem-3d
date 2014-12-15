@@ -1,56 +1,26 @@
 /* HEADER */
-/* This header defines the structure(s) for the microscale
-   solutions. */
+/**
+ * \file This header defines the structure(s) for the microscale solutions.
+ *
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 (at) nd.edu>
+ */
+#pragma once
 #ifndef MICROSCALE_INFORMATION_H
 #define MICROSCALE_INFORMATION_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,32 +44,35 @@ extern "C" {
     long *bndel; /* bnd elem ids */
     long ndofd; /* dof on dom */
     long *DomDof; /* global dof on dom */
-    int GDof; /* last global dof on dom */
+    int GDof; /* first global dof id on dom */
 
     /* mesh info */
-    long nn; /* no. nodes */
-    long ne; /* no. elements */
-    long nce; /* no. cohesive elements */
-    long ndofn; /* no. dof on each node */
-    long npres; /* no. pressure nodes on elem */
-    double VVolume; /* original volume */
+    long nn; /**< no. nodes */
+    long ne; /**< no. elements */
+    long nce; /**< no. cohesive elements */
+    long ndofn; /**< no. dof on each node */
+    long npres; /**< no. pressure nodes on elem */
+    double VVolume; /**< original volume */
     NODE *node;
     ELEMENT *elem; /* NOTE: state/solution information is copied from
 		      solution structure */
     COEL *coel; /* NOTE: state/solution information is copied from
 		   solution structure */
     long n_orient;
-    MATGEOM matgeom; /* !pointer */
+    MATGEOM matgeom; /**< !pointer */
     long nhommat;
     HOMMAT *hommat;
-    ENSIGHT ensight; /* !pointer */
-    SUPP supports; /* !pointer */
+    ENSIGHT ensight; /**< !pointer */
+    SUPP supports; /**< !pointer */
     int n_co_props;
     cohesive_props *co_props;
 
     /* mixed tangent matrices. */
     void *K_01;
     void *K_10;
+
+    /* buffer for solution stuff */
+    void *solution_buffer;
 
   } COMMON_MICROSCALE;
 
@@ -112,13 +85,17 @@ extern "C" {
     EPS *eps;
     CRPL *crpl;
     long npres;
-    double *elem_state_info;
-    double *coel_state_info;
 
     /* solution information */
+    double *r; /**< current solution r at macro time n+1 */
+
+    /* State variables at time n */
+    size_t packed_state_var_len;
+    char *packed_state_var_n;
+
+    /** The following are pointers to a shared buffer elsewhere! The
+	buffers are used purely as a workspace. */
     /* local vectors */
-    double *r;
-    double *rn; /* solution vector r at macro time n */
     double *f;
     double *d_r;
     double *rr;
@@ -153,13 +130,55 @@ extern "C" {
     double NORM;
   } MICROSCALE_SOLUTION;
 
+  typedef struct{
+    size_t size;
+    int *map;
+  } sol_idx_map;
+  void sol_idx_map_build(sol_idx_map *map,
+			 const size_t size);
+  void sol_idx_map_destroy(sol_idx_map *map);
+  void sol_idx_map_sort_id(sol_idx_map *map);
+  void sol_idx_map_sort_idx(sol_idx_map *map);
+
+  /**
+   * Get solution idx from job id. Returns -1 if job id not found in
+   * the map.
+   */
+  int sol_idx_map_id_get_idx(const sol_idx_map *map,
+			     const int id);
+
+  /**
+   * Get the idx from the job id and then assign a new id. Aborts if
+   * the current id is not valid.
+   */
+  int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
+				   const int cur_id,
+				   const int new_id);
+
+  /**
+   * Get the job id from the idx. Return -1 if not found.
+   */
+  int sol_idx_map_idx_get_id(const sol_idx_map *map,
+			     const int idx);
+
+  /**
+   * Set the id at the given idx. Aborts if the idx is not found.
+   */
+  void sol_idx_map_idx_set_id(sol_idx_map *map,
+			      const int idx,
+			      const int id);
+
   /** structure to contain all microscale information */
-  typedef struct MICROSCALE{
+ struct MICROSCALE{
     PGFem3D_opt *opts;
     COMMON_MICROSCALE *common;
-    int n_solutions;
+    sol_idx_map idx_map;
     MICROSCALE_SOLUTION *sol;
-  } MICROSCALE;
+ };
+#ifndef TYPEDEF_MICROSCALE
+#define TYPEDEF_MICROSCALE
+  typedef struct MICROSCALE MICROSCALE;
+#endif
 
   /** Instantiate a MICROSCALE. Some space is allocated, but full
       allocation is deffered to the build_MICROSCALE
@@ -180,28 +199,35 @@ extern "C" {
 
   void destroy_MICROSCALE(MICROSCALE *microscale);
 
-  /** Reset the microscale solution to the macroscale n state */
-  int reset_MICROSCALE(MICROSCALE *m);
-
-  /** Update the microscale solution to the macroscale n+1 state */
-  int update_MICROSCALE(MICROSCALE *m);
-
-  /** see reset_MICROSCALE, operates on single MICROSCALE_SOLUTION
-      object */
+  /** resets a single MICROSCALE_SOLUTION to time (n) */
   int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				const int loc_ndof,
-				const int g_ndof);
+				const MICROSCALE *micro);
 
-  /** see update_MICROSCALE, operates on single MICROSCALE_SOLUTION
-      object */
+  /** updates a single MICROSCALE_SOLUTION to time (n+1) */
   int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				 const int loc_ndof,
-				 const int g_ndof);
+				 const MICROSCALE *micro);
+
+  /**
+   * Dump the solution state vector to a binary file. Returns non-zero
+   * if there is a problem writing the file.
+   */
+  int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
+				     FILE *out);
+
+  /**
+   * Read a dumped binary state file. Returns non-zero if there is a
+   * problem reading the file.
+   */
+  int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
+				     FILE *in);
 
   /**=== Aliases for MACROSCALE ===*/
   typedef COMMON_MICROSCALE COMMON_MACROSCALE;
   typedef MICROSCALE_SOLUTION MACROSCALE_SOLUTION;
+#ifndef TYPEDEF_MACROSCALE
+#define TYPEDEF_MACROSCALE
   typedef MICROSCALE MACROSCALE;
+#endif
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
 #define build_MACROSCALE(macro,comm,argc,argv)	\
   build_MICROSCALE(macro,comm,argc,argv)

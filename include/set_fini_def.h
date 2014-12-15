@@ -1,21 +1,12 @@
+/* HEADER */
+#pragma once
 #ifndef SET_FINI_DEF
 #define SET_FINI_DEF
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

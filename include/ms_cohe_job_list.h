@@ -1,9 +1,11 @@
 /* HEADER */
 
-/*** This hearder declares the functions called at the macroscale to
-     compute the microscale contributions from a list of jobs. These
-     functions serve as the primary interface to the microscale from
-     the macroscale. */
+/**
+ * @file This hearder declares the functions called at the macroscale
+ * to compute the microscale contributions from a list of jobs. These
+ * functions serve as the primary interface to the microscale from the
+ * macroscale.
+ */
 
 #ifndef MS_COHE_JOB_LIST_H
 #define MS_COHE_JOB_LIST_H
@@ -12,25 +14,11 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MS_COHE_JOB_INFO_H
 #include "ms_cohe_job_info.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
 
   /** Create the list of jobs to be performed on the communicator
       'ms_comm'. Returns the number of jobs on 'ms_comm' (Gnjobs), the

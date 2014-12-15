@@ -1,45 +1,26 @@
+/* HEADER */
+
+#pragma once
 #ifndef FD_INCREMENT_H
 #define FD_INCREMENT_H
 
 #include "PGFEM_mpi.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Increment the 'fd' formulation elements after a completed step.
+   */
   void fd_increment (long ne,
 		     long nn,
 		     long ndofn,

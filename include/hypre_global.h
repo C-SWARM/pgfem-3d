@@ -1,3 +1,4 @@
+#pragma once
 #ifndef HYPRE_GLOBAL_H
 #define HYPRE_GLOBAL_H
 
@@ -9,37 +10,34 @@
 #include "HYPRE_parcsr_ls.h"
 #include "krylov.h"
 
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 /* HYPRE */
 
-/* structure to contain HYPRE objects and pass them around easily */
+/**
+ * @name Structure to contain HYPRE objects and pass them around easily
+ */
 typedef struct PGFEM_HYPRE_solve_info{
-  HYPRE_IJMatrix hypre_k;
-  HYPRE_ParCSRMatrix hypre_pk;
-  HYPRE_Solver hypre_solver;
-  HYPRE_Solver hypre_pc;
-  HYPRE_Solver hypre_pc_gotten;
-  HYPRE_IJVector hypre_rhs;
-  HYPRE_ParVector hypre_prhs;
-  HYPRE_IJVector hypre_sol;
-  HYPRE_ParVector hypre_psol;
+  HYPRE_IJMatrix hypre_k;        /**< */
+  HYPRE_ParCSRMatrix hypre_pk;   /**< */
+  HYPRE_Solver hypre_solver;     /**< */
+  HYPRE_Solver hypre_pc;         /**< */
+  HYPRE_Solver hypre_pc_gotten;  /**< */
+  HYPRE_IJVector hypre_rhs;      /**< */
+  HYPRE_ParVector hypre_prhs;    /**< */
+  HYPRE_IJVector hypre_sol;      /**< */
+  HYPRE_ParVector hypre_psol;    /**< */
 
-  int *ncol;
-  int *grows;
-  int ilower;
-  int iupper;
-  int jlower;
-  int jupper;
+  int *ncol;                     /**< */
+  int *grows;                    /**< */
+  int ilower;                    /**< */
+  int iupper;                    /**< */
+  int jlower;                    /**< */
+  int jupper;                    /**< */
 
-  int precond_type;
-  int solver_type;
+  int precond_type;              /**< */
+  int solver_type;               /**< */
 }PGFEM_HYPRE_solve_info;
 
 void initialize_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info **info);

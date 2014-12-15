@@ -1,4 +1,12 @@
 /* HEADER */
+/**
+ * \file Routines for assigning DOF ids on nodes and elements.
+ *
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
+#pragma once
 #ifndef GENERATE_DOF_IDS_H
 #define GENERATE_DOF_IDS_H
 
@@ -6,25 +14,11 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
 
   /** Generate the local dof id numbers and return the number of local
       dofs */

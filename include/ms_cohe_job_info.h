@@ -1,4 +1,5 @@
 /* HEADER */
+#pragma once
 #ifndef MS_COHE_JOB_INFO_H
 #define MS_COHE_JOB_INFO_H
 
@@ -7,10 +8,7 @@ extern "C" {
 #endif /* #ifdef __cplusplus */
 
 #include <stdlib.h> /* for size_t */
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
 
   /* Job types */
   enum{JOB_NO_COMPUTE_EQUILIBRIUM, /**< do not compute micro equilibrium */
@@ -28,6 +26,7 @@ extern "C" {
     int elem_id; /**< macro element id */
     int proc_id; /**< processor ID (in macro communicator) that owns
 		    the macro element */
+    int int_pt;
     int job_type; /**< flag to guide microscale computation */
     int print_flag; /**< flag to print during update */
 
@@ -53,6 +52,7 @@ extern "C" {
     /* solution procedure */
     int tim; /**< time step at macroscale */
     double *times; /**< macro time at (tim-1) (tim) and (tim+1) [3]*/
+    int n_step;
 
   }MS_COHE_JOB_INFO;
 

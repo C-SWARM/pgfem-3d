@@ -1,49 +1,26 @@
-/****************************
- *  Program FEM3d ver. 3.0  *
- *  FEM - 3D analysis       *
- *  Karel Matous            *
- ****************************/
-
+/* HEADER */
+/**
+ * Authors:
+ * Karel Matous
+ * Matthew Mosby
+ */
+#pragma once
 #ifndef STABILIZED_H
 #define STABILIZED_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
 
-/** Compute the material potential at an integration point */
+/**
+ * Compute the material potential at an integration point
+ */
 int stab_get_material_potential(double *Wbar,
 				const double kappa,
 				const double Un_1, /* U(n-1) */
@@ -74,6 +51,7 @@ int resid_st_elem (long ii,
 		   double *z,
 		   EPS *eps,
 		   SIG *sig,
+		   SUPP sup,
 		   double *r_e,
 		   double nor_min,
 		   double *fe,
@@ -92,6 +70,7 @@ int stiffmatel_st (long ii,
 		   NODE *node,
 		   SIG *sig,
 		   EPS *eps,
+		   SUPP sup,
 		   double *r_e,
 		   long npres,
 		   double nor_min,

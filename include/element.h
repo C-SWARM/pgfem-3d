@@ -1,14 +1,10 @@
 /* HEADER */
+#pragma once
 #ifndef ELEMENT_H
 #define ELEMENT_H
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,43 +1,26 @@
+/* HEADER */
+#pragma once
 #ifndef STIFFMATEL_FD_H
 #define STIFFMATEL_FD_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Compute the element stiffness matrix for the original three-field
+   * formulation. To be reimplemented using the Hu_Washizu_element
+   * functions.
+   */
   int stiffmatel_fd (long ii,
 		     long ndofn,
 		     long nne,

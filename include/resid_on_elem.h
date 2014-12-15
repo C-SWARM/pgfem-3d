@@ -1,39 +1,26 @@
+/* HEADER */
+#pragma once
 #ifndef RESID_ON_ELEM_H
 #define RESID_ON_ELEM_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** */
+  /**
+   * Compute the residual on an element.
+   *
+   * I (Mosby) believe this is a carry over from the serial code and
+   * is unused.
+ */
   int resid_on_elem (long ii,
 		     long ndofn,
 		     long nne,

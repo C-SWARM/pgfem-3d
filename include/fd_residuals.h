@@ -1,53 +1,24 @@
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ * Karel Matous, University of Notre Dame, kmatous [at] nd.
+ */
+#pragma once
 #ifndef FD_RESIDUALS_H
 #define FD_RESIDUALS_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,11 +43,13 @@ extern "C" {
 		    double nor_min,
 		    CRPL *crpl,
 		    double dt,
+		    double t,
 		    double stab,
 		    long nce,
 		    COEL *coel,
 		    MPI_Comm mpi_comm,
-		    const PGFem3D_opt *opts);
+		    const PGFem3D_opt *opts,
+		    double alpha, double *r_n, double *r_n_1);
 
 #ifdef __cplusplus
 }

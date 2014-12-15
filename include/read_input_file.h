@@ -1,36 +1,16 @@
 /* HEADER */
+#pragma once
 #ifndef READ_INPUT_FILE_H
 #define READ_INPUT_FILE_H
 
 #include "PGFEM_mpi.h"
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef MATERIAL_H
 #include "material.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef MESH_LOAD_H
 #include "mesh_load.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

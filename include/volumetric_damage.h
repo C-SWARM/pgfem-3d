@@ -1,10 +1,13 @@
 /* HEADER */
+#pragma once
 #ifndef VOLUMETRIC_DAMAGE_H
 #define VOLUMETRIC_DAMAGE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
+
+#include <stdlib.h>
 
   /** Define volumetric damage variables */
   typedef struct DAMAGE_PARAMS{
@@ -29,6 +32,7 @@ extern "C" {
     int damaged_n,damaged;  /* damage propagation flag */
     int broken;
     /* *** functions *** */
+    int eq_flag;
     vd_fun function;
     vd_fun evolution;
     vd_fun evolution_rate;
@@ -48,6 +52,28 @@ extern "C" {
 		    const int eq_flag,
 		    const double *params,
 		    const int len);
+
+  /** Re-assign the damage functions according to eq_flag */
+  void reset_damage_functions(damage *dam,
+			      const int eq_flag);
+
+  /** Copy the data from src to dest. The functions are reset
+      according to src->eq_flag */
+  void copy_damage(damage *dest,
+		   const damage *src);
+
+  /** Get the size of a damage object */
+  size_t sizeof_damage(const damage *dam);
+
+  /** Pack a damage object into a buffer */
+  void pack_damage(const damage *src,
+		   char *buffer,
+		   size_t *pos);
+
+  /** Unpack a damage object from a buffer */
+  void unpack_damage(damage *dest,
+		     const char *buffer,
+		     size_t *pos);
 
   /** Reset the damage variables to n (e.g. after restart). */
   void reset_damage(damage *dam);

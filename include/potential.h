@@ -1,21 +1,23 @@
+/* HEADER */
+#pragma once
 #ifndef POTENTIAL_H
 #define POTENTIAL_H
 
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** These functions contain the calculations of important tensors
-      relating to the deviatoric and volumetric energy potential
-      functions.
-
-      NOTE: the bulk modulus has been factored out to
-      normalize the residual vector and thus allow for the l_2 norm
-      convergence test. */
+  /**
+   * These functions contain the calculations of important tensors
+   * relating to the deviatoric and volumetric energy potential
+   * functions.
+   *
+   * NOTE: the bulk modulus has been factored out to normalize the
+   *  residual vector and thus allow for the l_2 norm convergence
+   *  test.
+   */
 
   typedef void (*deviatoricStressFunctionPtr)(const double * const *C,
 					      const HOMMAT *material,

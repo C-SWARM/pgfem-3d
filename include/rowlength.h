@@ -1,13 +1,10 @@
+/* HEADER */
+#pragma once
 #ifndef ROWLENGTH_H
 #define ROWLENGTH_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,5 +1,6 @@
 /* HEADER */
 
+#pragma once
 #ifndef ENUMERATIONS_H
 #define ENUMERATIONS_H
 
@@ -15,6 +16,7 @@ extern "C" {
 	MINI=5,
 	MINI_3F=6,
 	DISP=7,
+        TF=8,
 	ANALYSIS_MAX} ANALYSIS_TYPE;
 
   enum {PARA_SAILS=0,

@@ -1,69 +1,37 @@
+/* HEADER */
+#pragma once
 #ifndef STIFFMAT_FD_H
 #define STIFFMAT_FD_H
 
 #include "PGFEM_mpi.h"
-#include "BSprivate.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef SUPP_H
 #include "supp.h"
-#endif
-
-#ifndef SIG_H
 #include "sig.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
-
-#ifndef CRPL_H
 #include "crpl.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
 #include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_COMM_H
 #include "pgfem_comm.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /** Computes global stiffness matrix.
-  */
-  int stiffmat_fd (BSspmat *K,
-		   int *Ap,
+  /**
+   * Computes element stiffness matrices and assembles local
+   * part. Off-process portions of the matrix are communicated via
+   * non-blocking point-to-point send/receives using information in
+   * COMMUN. Elements with global DOFs are computed first to overlap
+   * communication with computation of fully local elements.
+   */
+  void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);		     
+  int stiffmat_fd (int *Ap,
 		   int *Ai,
 		   long ne,
 		   int n_be,
@@ -97,8 +65,8 @@ extern "C" {
 		   long GDof,
 		   COMMUN comm,
 		   MPI_Comm mpi_comm,
-		     PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		   const PGFem3D_opt *opts);
+		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

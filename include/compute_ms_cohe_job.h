@@ -1,22 +1,12 @@
 /* HEADER */
+#pragma once
 #ifndef COMPUTE_MS_COHE_JOB_H
 #define COMPUTE_MS_COHE_JOB_H
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef MS_COHE_JOB_INFO_H
 #include "ms_cohe_job_info.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

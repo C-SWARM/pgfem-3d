@@ -18,15 +18,23 @@ extern "C" {
 #include "node.h"
 #endif
 
+#ifndef SIG_H
+#include "sig.h"
+#endif
+
+#ifndef EPS_H
+#include "eps.h"
+#endif
+
   typedef struct SURFACE_TRACTION_ELEM{
-    int elem_id;
-    int n_faces;
-    int *faces;
-    int *feat_num;
+    int elem_id; /**< index to get elem from array */
+    int n_faces; /**< number of faces on the element assoc. w/ feat*/
+    int *faces; /**< face ids */
+    int *feat_num; /** feat id from original list */
   } SUR_TRAC_ELEM;
  
   /** Reads the list of features and loads to apply from a
-      file. Returns allocated arrays and error flag (SUCCESS = 0) */
+      file. Returns allocated arrays and error flag (SUCCESS = 0). */
   int read_applied_surface_tractions_fname(char *fname,
 					   int *n_feats,
 					   int **feat_type,
@@ -61,6 +69,19 @@ extern "C" {
 				   const int n_feats,
 				   const double *loads,
 				   double *res);
+
+  /** integrate the force on the marked boundaries of the LOCAL DOMAIN
+      in the LAGRANGIAN FRAME. forces vector is [n_feats x ndim]
+      non-collective */
+  int compute_resultant_force(const int n_feats,
+			      const int n_ste,
+			      const SUR_TRAC_ELEM *ste,
+			      const NODE *nodes,
+			      const ELEMENT *elem,
+			      const SIG *sig,
+			      const EPS *eps,
+			      double *forces);
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

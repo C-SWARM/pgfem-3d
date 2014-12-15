@@ -1,4 +1,10 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
+ */
+
+#pragma once
 #ifndef INITIALIZE_DAMAGE_H
 #define INITIALIZE_DAMAGE_H
 
@@ -6,17 +12,9 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef EPS_H
 #include "eps.h"
-#endif
 
   /** Initialize the damage part of the strain object */
   void initialize_damage(const int ne,

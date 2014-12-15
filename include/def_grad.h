@@ -1,3 +1,5 @@
+/* HEADER */
+#pragma once
 #ifndef DEF_GRAD_H
 #define DEF_GRAD_H
 
