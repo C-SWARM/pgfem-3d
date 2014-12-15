@@ -2,110 +2,37 @@
 
 #include <sys/time.h> 
 #include <sys/resource.h>
+#include <assert.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef FD_INCREMENT_H
 #include "fd_increment.h"
-#endif
-
-#ifndef FD_RESIDUALS_H
 #include "fd_residuals.h"
-#endif
-
-#ifndef INTEGRATION_H
 #include "integration.h"
-#endif
-
-#ifndef VOL_DAMAGE_INT_ALG_H
 #include "vol_damage_int_alg.h"
-#endif
-
-#ifndef LINE_H
 #include "LINE.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef PRESS_THETA_H
 #include "press_theta.h"
-#endif
-
-#ifndef RES_FINI_DEF_H
 #include "res_fini_def.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
-
-#ifndef SUBDIVISION_H
 #include "subdivision.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef  MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef  MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_REACTIONS_H
 #include "compute_reactions.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_UTILS_H
 #include "bounding_element_utils.h"
-#endif
-
-#ifndef SOLVE_SYSTEM_H
 #include "solve_system.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef MACRO_MICRO_FUNCTIONS_H
 #include "macro_micro_functions.h"
-#endif
+
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -127,10 +54,6 @@
 #define PFEM_DEBUG_ALL 0
 #endif
 
-#ifndef DEBUG_MULTISCALE
-#define DEBUG_MULTISCALE 0
-#endif
-
 #ifndef DEBUG_MULTISCALE_SERVER
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
@@ -138,12 +61,6 @@
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
    any print_level > MINIMAL_OUTPUT, normal output is used. */
 enum{MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT} PRINT_LEVEL;
-
-/* /\* This is temporary hard-coded dimensions & normal for MS modeling of */
-/*    interfaces. *\/ */
-/* static const double macro_lc=100.0; */
-/* static const double macro_normal[3]={0.0,0.0,1.0}; */
-/* static const int multi_scale=1; */
 
 static const int periodic = 0;
 
@@ -153,7 +70,27 @@ typedef struct NR_summary{
   double final_res;
 } NR_summary;
 
+/** Set the time vector to contain current dt for microscale */
+static void set_time_micro(const int tim,
+			   double *times,
+			   const double dt,
+			   const long DIV,
+			   double *time_np1)
+{
+  *time_np1 = times[tim+1];
+  times[tim + 1] = times[tim] + dt;
+}
+
+/** Reset the time vector to normal state */
+static void set_time_macro(const int tim,
+			   double *times,
+			   const double time_np1)
+{
+  times[tim + 1] = time_np1;
+}
+
 double Newton_Raphson (const int print_level,
+		       int *n_step,
 		       long ne,
 		       int n_be,
 		       long nn,
@@ -191,10 +128,6 @@ double Newton_Raphson (const int print_level,
 		       long FNR,
 		       double *pores,
 		       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		       BSprocinfo *BSinfo,
-		       BSspmat *k,
-		       BSpar_mat **pk,
-		       BSpar_mat **f_pk, 
 		       double *BS_x,
 		       double *BS_f, 
 		       double *BS_RR,
@@ -214,11 +147,12 @@ double Newton_Raphson (const int print_level,
 		       MPI_Comm mpi_comm,
 		       const double VVolume,
 		       const PGFem3D_opt *opts,
-		       MODEL_ENTITY *me,
-		       double *forces,
-		       void *ms_job_list,
-		       void *microscale)
+		       void *microscale,
+		       double alpha_alpha,
+           double *r_n,
+           double *r_n_1)
 {
+  double t = times[tim+1];
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
   char  *error[] = {"inf","-inf","nan"};
@@ -235,28 +169,23 @@ double Newton_Raphson (const int print_level,
   /* interface multiscale_modeling */
   double *macro_jump_u = aloc1(3);
 
-  /* forces */
-  double *inc_forces = NULL;
-  if(me != NULL && me->n_entities > 0){
-    inc_forces = aloc1(me->n_entities*me->n_dim);
-  }
-
   /* damage substep criteria */
   const double max_damage_per_step = 0.05;
+  const double alpha_restart = 1.25;
   double max_damage = 0.0;
   double alpha = 0.0;
+
+  /* max micro substep criteria */
+  const int max_n_micro_substep = 2;
+  const double alpha_restart_ms = 2.0;
+  int max_substep = 0;
+  double alpha_ms = 0.0;
 
   /* damage dissipation */
   double dissipation = 0.0;
  
-  /* BlockSolve 95 */
-  BScomm *kcomm, *k_comm;
   double BS_nor=0.0;
-  double BS_diag;
   int BS_iter;
-  int BS_perm = 0;
-
-  int HYPRE_ERR = 0;
 
   /* MPI stuff */
   int nproc,myrank;
@@ -273,7 +202,7 @@ double Newton_Raphson (const int print_level,
     break;
   }
 
-  int nstep = 0;
+  *n_step = 0;
 
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
@@ -326,12 +255,6 @@ double Newton_Raphson (const int print_level,
 		 sup,sup_defl,rr,d_r,f_defl,f,RRn,R,&GAMA,
 		 &DT,&OME,stab,iter,iter_max,alpha,mpi_comm,
 		 opts->analysis_type);
-
-    /* TEMP */
-    /* if(STEP > 1){ */
-    /*   PGFEM_printerr("DEBUGING: abort on substep.\n"); */
-    /*   PGFEM_Comm_code_abort(mpi_comm,0); */
-    /* } */
     
     gam = ART = 0;
 
@@ -346,11 +269,13 @@ double Newton_Raphson (const int print_level,
        sol->d_r (no displacement increments) for displacement dof
        vector */
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-    start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				  JOB_NO_COMPUTE_EQUILIBRIUM,
-				  ctx->macro->sol->d_r,
-				  ctx->job_list,ctx->send,
-				  ctx->recv);
+    pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					   FE2_REBALANCE_NONE);
+    double tnp1 = 0;
+    set_time_micro(tim,times,dt,DIV,&tnp1);
+    pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				   JOB_NO_COMPUTE_EQUILIBRIUM);
+    set_time_macro(tim,times,tnp1);
   }
 
   /* reset the error flag */
@@ -360,7 +285,6 @@ double Newton_Raphson (const int print_level,
       PGFEM_printf ("\nSTEP = %ld :: NS =  %ld || Time %f | dt = %10.10f\n",
 	      DIV,STEP,times[tim+1],dt);
     }
-    double sum = 0.0;
     bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
     if (periodic == 1){
       /* Plane strain deviatoric tension */
@@ -404,7 +328,7 @@ double Newton_Raphson (const int print_level,
       nulld (f_u,ndofd);
       INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 			   matgeom,hommat,sup,eps,sig_e,
-			   nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+			   nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       for (i=0;i<ndofd;i++){
 	f[i] = - f_u[i];
 	R[i] = RR[i] = 0.0;
@@ -439,7 +363,7 @@ double Newton_Raphson (const int print_level,
 
 	fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 		      matgeom,hommat,sup,eps,sig_e,
-		      nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		      nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       } else {
 	nulld (f_u,ndofd);
       }
@@ -476,75 +400,36 @@ double Newton_Raphson (const int print_level,
       
       if (FNR == 1 || (FNR == 0 && iter == 0)){
 
-	/* Assembly stiffness matrix */
-	if (opts->solverpackage == BLOCKSOLVE){ /* BlockSolve */
-	  /* Null the matrix */
-	  null_BSspmat (k);
-	  INFO = stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,
-			      bndel,node,hommat,matgeom,sig_e,eps,d_r,r,
-			      npres,sup,iter,nor_min,dt,crpl,stab,nce,
-			      coel,0,0.0,f_u,myrank,nproc,DomDof,GDof,
-			      comm,mpi_comm,PGFEM_hypre,opts);
+	assert(opts->solverpackage == HYPRE);
+
+	/* Null the matrix (if not doing multiscale)*/
+	if(microscale == NULL){
+	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
-	if (opts->solverpackage == HYPRE){ /* Hypre */
-	  /* Null the matrix (if not doing multiscale)*/
-	  if(microscale == NULL){
-	    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	  }
 
-	  /* null the matrix only on the 1st iteration */
-	  if(DEBUG_MULTISCALE && iter == 0){
-	    ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-	  }
+	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
+		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
+		     myrank,nproc,DomDof,GDof,
+		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
-	  stiffmat_fd (k,Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		       node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
-		       iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
-		       myrank,nproc,DomDof,GDof,
-		       comm,mpi_comm,PGFEM_hypre,opts);
+	/* turn off line search for server-style multiscale */
+	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
+	  ART = 1;
+	  /* complete any jobs before assembly */
+	  MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
+	  pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+	}
 
-	  if(DEBUG_MULTISCALE && microscale != NULL){
-	    ART = 1; /* turn off line search */
-	    MICROSCALE *m = (MICROSCALE *) microscale;
-	    MS_COHE_JOB_INFO *jobs = (MS_COHE_JOB_INFO *) ms_job_list;
-	    int ms_err = 0;
-	    /* compute initial stiffness */
-	    if(iter == 0){
-	      ms_err += compute_ms_cohe_tan_res(iter,comm,mpi_comm,jobs,
-						PGFEM_hypre,m);
-	    }
-	    if(ms_err != 0)
-	      PGFEM_printerr("Received error from compute_ms_cohe_job\n");
-	  }
+	/* Matrix assmbly */
+	INFO = HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
 
-	  /* turn off line search for server-style multiscale */
-	  if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
-	    ART = 1;
-	    /* complete any jobs before assembly */
-	    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	    finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-					   ctx->send,ctx->recv);
-	  }
-
-	  /* Matrix assmbly */
-	  INFO = HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-
-	  /* if( tim == 0 && iter == 0){ */
-	  /*   if(microscale != NULL){ */
-	  /*     HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test"); */
-	  /*   }else{ */
-	  /*     HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_ms"); */
-	  /*   } */
-	  /*   print_array_d(PGFEM_stdout,BS_f,DomDof[myrank],1,DomDof[myrank]); */
-	  /* } */
-
-	}	
       }
 
       /*=== Solve the system of equations ===*/
       SOLVER_INFO s_info;
       solve_time += solve_system(opts,BS_f,BS_x,tim,iter,DomDof,&s_info,
-				 PGFEM_hypre,BSinfo,k,pk,f_pk,mpi_comm);
+				 PGFEM_hypre,mpi_comm);
       if(myrank == 0){
 	solve_system_check_error(PGFEM_stdout,s_info);
       }
@@ -649,51 +534,20 @@ double Newton_Raphson (const int print_level,
 
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				      JOB_COMPUTE_EQUILIBRIUM,
-				      ctx->macro->sol->f,
-				      ctx->job_list,ctx->send,
-				      ctx->recv);
+	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					       FE2_REBALANCE_GREEDY);
+	double tnp1 = 0;
+	set_time_micro(tim,times,dt,DIV,&tnp1);
+	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				       JOB_COMPUTE_EQUILIBRIUM);
+	set_time_macro(tim,times,tnp1);
       }
 
       /* Residuals */
       INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,
 			   b_elems,matgeom,hommat,sup,
-			   eps,sig_e,nor_min,crpl,dt,stab,
-			   nce,coel,mpi_comm,opts);
-
-      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
-	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				       ctx->send,ctx->recv);
-	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-      }
-
-      if(DEBUG_MULTISCALE && microscale != NULL){
-	MICROSCALE *m = (MICROSCALE *) microscale;
-	MS_COHE_JOB_INFO *jobs = (MS_COHE_JOB_INFO *) ms_job_list;
-	int ms_err = 0;
-
-	/* zero the macroscale tangent */
-	ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
-
-	/* reset the microscale state to macro state n */
-	ms_err += reset_MICROSCALE(m);
-
-	/* compute the jumps in displacement for each job */
-	ms_err += update_group_ms_cohe_job_list(nce,coel,node,sup,f,
-						m->common->mpi_comm,
-						jobs);
-
-	/* compute the microscale contributions to the tangent and
-	   residual. Assemble contributions to tangent */
-	ms_err += compute_ms_cohe_tan_res(iter+1,comm,mpi_comm,jobs,
-					  PGFEM_hypre,m);
-
-	/* Assemble contibutions to the residual */
-	ms_err += assemble_ms_cohe_res(m,jobs,mpi_comm,f_u);
-      }
+			   eps,sig_e,nor_min,crpl,dt,t,stab,
+			   nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
@@ -704,6 +558,25 @@ double Newton_Raphson (const int print_level,
 	INFO = 1;
 	ART = 1;
 	goto rest;
+      }
+
+      if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
+	/* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
+	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
+	pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+
+	/* determine substep factor */
+	alpha_ms = ((double) max_substep) / max_n_micro_substep;
+	if(alpha_ms > alpha_restart_ms){
+	  if(myrank == 0){
+	    PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n"
+			 "Subdividing load.\n",alpha_ms);
+	  }
+	  alpha = alpha_ms;
+	  INFO = 1;
+	  ART = 1;
+	  goto rest;
+	}
       }
       
       /* Transform LOCAL load vector to GLOBAL */
@@ -721,7 +594,8 @@ double Newton_Raphson (const int print_level,
 	  || (iter == 0 && *NORM < ERROR)){ /* Reset *NORM if
 				     less than convergence tolerance
 				     MM 6/27/2012*/
-	*NORM = nor;
+	/* take maximum */
+	if(nor > *NORM)	*NORM = nor;
       }
 
       
@@ -747,11 +621,11 @@ double Newton_Raphson (const int print_level,
       if (ART == 0) {
 	INFO = LINE_S3 ( &nor,&nor2,&gama,nor1,NOR,LS1,iter,f_u,
 			 ne,n_be,ndofd,ndofn,npres,d_r,r,node,elem,b_elems,
-			 matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dt,
+			 matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dt,t,
 			 stab,nce,coel,f,rr,RR,tim,
 			 /*GNOD *gnod,GEEL *geel,*/
 			 BS_f,BS_RR,BS_f_u,DomDof,comm,GDof,STEP,mpi_comm,
-			 &max_damage, &dissipation, opts);
+			 &max_damage, &dissipation, opts,alpha_alpha,r_n,r_n_1);
 	
 	/* Gather infos */
 	MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -847,31 +721,31 @@ double Newton_Raphson (const int print_level,
       } /* end iter > iter_max */
       iter++; BS_nor = 0.0; 
 
-      /* compute increment of forces */
-      if(me != NULL){
-	compute_force_increment_on_model_entity(ne,ndofn,r,d_r,rr,me,elem,
-						node,sup,hommat,eps,sig_e,
-						mpi_comm,
-						opts->analysis_type,
-						inc_forces);
-      }
     }/* end while nor > nor_min */
 
     /* before increment after convergence, check max damage */
     alpha = max_damage/max_damage_per_step;
     MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
     if(myrank == 0){
-      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n",
-	     alpha,max_damage_per_step);
+      PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n"
+		   "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
+		   alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
     }
-    if(alpha > 1.25){
+    if(alpha > alpha_restart || alpha_ms > alpha_restart_ms){
       if(myrank == 0){
-	PGFEM_printf("Subdividing to maintain accuracy of damage law.\n");
+	PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
       }
+
+      /* adapt time step based on largest adaption parameter */
+      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
+
       INFO = 1;
       ART = 1;
       goto rest;
     }
+
+    /* always adapt time step based on largest adaption parameter */
+    alpha = (alpha > alpha_ms)? alpha : alpha_ms;
 
     /* increment converged, output the volume weighted dissipation */
     if(myrank == 0){
@@ -887,6 +761,9 @@ double Newton_Raphson (const int print_level,
 
     ST = GAMA = gam = ART = 0;
 
+    /* increment the step counter */
+    (*n_step) ++;
+
     /* /\* turn off line search *\/ */
     /* ART = 1; */
     
@@ -895,11 +772,14 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      start_macroscale_compute_jobs(ctx->intercomm,ctx->macro,
-				    JOB_UPDATE,
-				    ctx->macro->sol->f,
-				    ctx->job_list,ctx->send,
-				    ctx->recv);
+      pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+					     FE2_REBALANCE_NONE);
+
+      double tnp1 = 0;
+      set_time_micro(tim,times,dt,DIV,&tnp1);
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+				     JOB_UPDATE);
+      set_time_macro(tim,times,tnp1);
     }
 
     /* increment coheisve elements */
@@ -941,18 +821,9 @@ double Newton_Raphson (const int print_level,
     vvplus (r,d_r,ndofd);
     
     /* Null prescribed increment deformation */
-    switch(opts->analysis_type){
-    default:
-      for (i=0;i<sup->npd;i++){  
-	sup->defl[i] += sup->defl_d[i];
-	sup->defl_d[i] = 0.0;
-      }
-      break;
-    case DISP:
-      for (i=0;i<sup->npd;i++){      
-	sup->defl_d[i] = 0.0;
-      }
-      break;
+    for (i=0;i<sup->npd;i++){  
+      sup->defl[i] += sup->defl_d[i];
+      sup->defl_d[i] = 0.0;
     }
 
     for (i=0;i<ndofd;i++) {
@@ -966,13 +837,7 @@ double Newton_Raphson (const int print_level,
     if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-      finish_macroscale_compute_jobs(ctx->job_list,ctx->macro,
-				     ctx->send,ctx->recv);
-    }
-
-    /* microscale update */
-    if(DEBUG_MULTISCALE && microscale != NULL){
-      update_MICROSCALE((MICROSCALE *) microscale);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
     }
 
     /************* TEST THE UPDATE FROM N TO N+1  *************/
@@ -991,7 +856,7 @@ double Newton_Raphson (const int print_level,
       }
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
 		    matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,stab,nce,coel,mpi_comm,opts);
+		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       for (i=0;i<ndofd;i++) f[i] = RR[i] - f_u[i];
       /* print_array_d(stdout,RR,ndofd,1,ndofd); */
@@ -1013,30 +878,10 @@ double Newton_Raphson (const int print_level,
 	char fname[100];
 	sprintf(fname,"%s_%ld",opts->ofname,tim);
 	if(myrank == 0){
-	  VTK_print_master(opts->opath,fname,nstep,nproc,opts);
+	  VTK_print_master(opts->opath,fname,*n_step,nproc,opts);
 	}
-	VTK_print_vtu(opts->opath,fname,nstep,myrank,ne,nn,node,
+	VTK_print_vtu(opts->opath,fname,*n_step,myrank,ne,nn,node,
 		      elem,sup,r,sig_e,eps,opts);
-	nstep ++;
-      }
-    }
-
-    /* update model ent force vector */
-    if(me != NULL){
-      /* sum up force increment from all domains */
-      MPI_Allreduce(MPI_IN_PLACE,inc_forces,me->n_entities*me->n_dim,
-		    MPI_DOUBLE,MPI_SUM,mpi_comm);
-      /* add increment to total force list */
-      vvplus(forces,inc_forces,me->n_entities*me->n_dim);
-
-      /* zero the increment vector */
-      nulld(inc_forces,me->n_entities*me->n_dim);
-
-      /* print to PGFEM_stdout */
-      if(myrank == 0){
-	PGFEM_printf("model forces:\n");
-	print_array_d(PGFEM_stdout,forces,me->n_entities*me->n_dim,
-		      me->n_entities,me->n_dim);
       }
     }
 
@@ -1065,11 +910,4 @@ double Newton_Raphson (const int print_level,
 
   return (solve_time);
 
-}
-
-static int print_iter()
-{
-  int err = 0;
-
-  return err;
 }

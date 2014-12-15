@@ -1,77 +1,23 @@
-/*******************************************
- * Program FEM3d ver. 2.0                  *
- * FEM - 3D analysis                       *
- * Karel Matous & Jaroslav Kruis           *
- *******************************************/
-
-/*****************/
-/* November 2000 */
-/*****************/
+/* HEADER */
 
 #include "load.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-/* #ifndef INCL_H */
-/* #include "incl.h" */
-/* #endif */
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef STIFFMATEL_FD_H
 #include "stiffmatel_fd.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
 
 long* compute_times_load (FILE *in1,
-			  long nt,
-			  long nlod_tim)
-     /*
-       
-     */
+			  const long nt,
+			  const long nlod_tim)
 {
   long i,j,*tim_load;
   long *help;
@@ -106,10 +52,10 @@ long* compute_times_load (FILE *in1,
 }
 
 void load_vec_node (double *f,
-		    long nln,
-		    long ndofn,
-		    ZATNODE *znode,
-		    NODE *node)
+		    const long nln,
+		    const long ndofn,
+		    const ZATNODE *znode,
+		    const NODE *node)
 	  /*
 	    
 	  */
@@ -143,9 +89,6 @@ int load_vec_node_defl (double *f,
 			double stab,
 			double *r,
 			const PGFem3D_opt *opts)
-     /*
-       
-     */
 {
   int err = 0;
   double *fe = NULL;
@@ -159,14 +102,14 @@ int load_vec_node_defl (double *f,
     int nne = elem[sup->lepd[i]].toe;
     int nne_t = nne + elem[sup->lepd[i]].n_bub;
     /* Nodes on element */
-    long *nod = aloc1l (nne);
-    elemnodes (sup->lepd[i],nne,nod,elem);
+    long *nod = elem[sup->lepd[i]].nod;
     
     /* Element Dof */
     int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
-
-    /* Allocation */
     long *cn = aloc1l (ndofe);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+
+    /* element tangent */
     double *lk= aloc1 (ndofe*ndofe);
 
     double *x,*y,*z;
@@ -183,28 +126,29 @@ int load_vec_node_defl (double *f,
 
     double *floc = aloc1 (ndofe);
     double *rloc = aloc1 (ndofe); 
-    
+    double *r_e = aloc1 (ndofe); 
+
     /* Coordinates of nodes */
-    switch(opts->analysis_type){
-    case DISP:
-      nodecoord_total (nne,nod,node,x,y,z);    
-      break;
-    default:
-      nodecoord_updated (nne,nod,node,x,y,z);    
-      break;
+    if(sup->multi_scale){
+      nodecoord_total (nne,nod,node,x,y,z);
+      def_elem (cn,ndofe,r,elem,node,r_e,sup,1);
+    } else {
+      switch(opts->analysis_type){
+      case DISP:
+	nodecoord_total (nne,nod,node,x,y,z);
+	def_elem (cn,ndofe,r,elem,node,r_e,sup,1); 
+	break;
+      default:
+	nodecoord_updated (nne,nod,node,x,y,z);    
+	break;
+      }
     }
+
     if (opts->analysis_type == MINI
 	|| opts->analysis_type == MINI_3F){ /* P1+B/P1 */
       element_center(nne,x,y,z);
     }
-   
-    nulld (lk,ndofe*ndofe);
-    double *r_e, *r_r;
 
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
-    
-    r_e = aloc1 (ndofe); 
-    r_r = aloc1 (ndofe); /* for TOTAL LAGRANGIAN */
     switch(opts->analysis_type){
     case FS_CRPL:
     case FINITE_STRAIN:
@@ -214,7 +158,7 @@ int load_vec_node_defl (double *f,
       break;
     case STABILIZED:
       stiffmatel_st (sup->lepd[i],ndofn,nne,x,y,z,elem,
-		     hommat,nod,node,sig,eps,r_e,npres,
+		     hommat,nod,node,sig,eps,sup,r_e,npres,
 		     nor_min,lk,dt,stab,0,0.0,fe);
       break;
     case MINI:
@@ -226,19 +170,14 @@ int load_vec_node_defl (double *f,
 			  hommat,nod,node,eps,sig,r_e);
       break;
     case DISP:
-	/* Total a-vector */
-	def_elem (cn,ndofe,r,elem,node,r_r,sup,1);
 	err = DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
-			       hommat,nod,node,eps,sig,sup,r_r);
+			       hommat,nod,node,eps,sig,sup,r_e);
       break;
     default:
       stiffmatel (sup->lepd[i],x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
       break;
     } /* switch analysis */
-    dealoc1 (r_e);
-    dealoc1 (r_r);
-  
-    
+      
     /* get the disp increment from BC */
     {
       int k = 0;
@@ -274,14 +213,14 @@ int load_vec_node_defl (double *f,
 
     /*  dealocation  */
     dealoc1l (cn);
-    dealoc1l (nod);
     dealoc1 (lk);
     dealoc1 (x);
     dealoc1 (y);
     dealoc1 (z);
     dealoc1(floc);
     dealoc1(rloc);
-    
+    dealoc1 (r_e);
+
     if(err != 0) return err;
   }/* end i (each volume element) */
 
@@ -295,7 +234,6 @@ int load_vec_node_defl (double *f,
     const ELEMENT *ptr_ve = &elem[ve_id];
     const long *ve_nod = ptr_ve->nod;
     const int nne_ve = ptr_ve->toe;
-    const int nne_ve_t = nne_ve + ptr_ve->n_bub;
 
     /* get ndofs on element */
     int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);
@@ -384,14 +322,9 @@ int load_vec_node_defl (double *f,
 }
 
 void load_vec_elem_sur (double *f,
-			long nle_s,
-			long ndofn,
-			ELEMENT *elem,
-			ZATELEM *zele_s)
-     /*
-       NOT IMPLIMENTED
-     */
+			const long nle_s,
+			const long ndofn,
+			const ELEMENT *elem,
+			const ZATELEM *zele_s)
 {
-  
-  
 }

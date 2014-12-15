@@ -1,56 +1,159 @@
+/* HEADER */
 #include "utils.h"
 #include <assert.h>
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
+#include <math.h>
 #include "mkl_cblas.h"
 #include "mkl_lapack.h"
 
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef LOCALIZAT_H
 #include "localizat.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef RESICE_H
 #include "resice.h"
-#endif
 
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
 #endif
 
 static const int periodic = 0;
+
+void pack_2mat(const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<nrow; i++){
+    pack_data(src[i],buffer,pos,ncol,elem_size);
+  }
+}
+
+void unpack_2mat(void **dest,
+		 const int nrow,
+		 const int ncol,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<nrow; i++){
+    unpack_data(buffer,dest[i],pos,ncol,elem_size);
+  }
+}
+
+void pack_3mat(const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    pack_2mat(src[i],n_2,n_3,elem_size,buffer,pos);
+  }
+}
+
+void unpack_3mat(void ***dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    unpack_2mat(dest[i],n_2,n_3,elem_size,buffer,pos);
+  }
+}
+
+void pack_4mat(const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size,
+	       char *buffer,
+	       size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    pack_3mat(src[i],n_2,n_3,n_4,elem_size,buffer,pos);
+  }
+}
+
+void unpack_4mat(void ****dest,
+		 const int n_1,
+		 const int n_2,
+		 const int n_3,
+		 const int n_4,
+		 const size_t elem_size,
+		 const char *buffer,
+		 size_t *pos)
+{
+  for(int i=0; i<n_1; i++){
+    unpack_3mat(dest[i],n_2,n_3,n_4,elem_size,buffer,pos);
+  }
+}
+
+void copy_2mat(void **dest,
+	       const void **src,
+	       const int nrow,
+	       const int ncol,
+	       const size_t elem_size)
+{
+  for(int i=0; i<nrow; i++){
+    memcpy(dest[i],src[i],ncol*elem_size);
+  }
+}
+
+void copy_3mat(void ***dest,
+	       const void ***src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_2mat(dest[i],src[i],n_2,n_3,elem_size);
+  }
+}
+
+void copy_4mat(void ****dest,
+	       const void ****src,
+	       const int n_1,
+	       const int n_2,
+	       const int n_3,
+	       const int n_4,
+	       const size_t elem_size)
+{
+  for(int i=0; i<n_1; i++){
+    copy_3mat(dest[i],src[i],n_2,n_3,n_4,elem_size);
+  }
+}
+
+int number_of_duplicates(const void *arr,
+			 const size_t n_elem,
+			 const size_t size,
+			 int (*compare)(const void *a, const void *b))
+{
+  int count = 0;
+  char *copy = malloc(n_elem*size);
+  memcpy(copy,arr,n_elem*size);
+  qsort(copy,n_elem,size,compare);
+  for(size_t i=1; i<n_elem; i++){
+    if(compare(copy+(i-1)*size,copy+i*size) >= 0) count++;
+  }
+  free(copy);
+  return count;
+}
 
 int alloc_sprintf(char **str,
 		  const char *format,
@@ -514,7 +617,11 @@ int inverse(double const* A,
     memcpy(A_I,A,M*M*sizeof(double));
 
     /* Factor into U matrix */
+#ifdef ARCH_BGQ
+    dgetrf(M,M,A_I,M,iPerm,&info);
+#else
     dgetrf(&M,&M,A_I,&M,iPerm,&info);
+#endif
     if(info<0){
       PGFEM_printerr("WARNING: illegal parameter given"
 	      " to dgetrf at position %d.\n",info);
@@ -523,7 +630,11 @@ int inverse(double const* A,
     }
 
     /* Compute inverse using factored matrix */
+#ifdef ARCH_BGQ
+    dgetri(M,A_I,M,iPerm,work,lwork,&info);
+#else
     dgetri(&M,A_I,&M,iPerm,work,&lwork,&info);
+#endif
     if(info<0){
       PGFEM_printerr("WARNING: illegal parameter given"
 	      " to dgetri at position %d.\n",info);
@@ -955,11 +1066,9 @@ double Tetra_qv_V (const long nne,
 double Hexa_V (const double *x,
 	       const double *y,
 	       const double *z)
-/*
-       
- */
 {
-  double V,*xx,*yy,*zz,*gk,*ge,*gz,*w,J,ksi,eta,zet,ai,aj,ak,**B_T,V2;
+  double *gk,*ge,*gz,*w;
+  double J,ksi,eta,zet,ai,aj,ak,**B_T,V2;
   long i,j,k,II,JJ,KK,ndofe,nne;
 
   /* V = 0.0; */
@@ -1067,11 +1176,8 @@ double T_VOLUME (const long ne,
 		 const long ndofn,
 		 const ELEMENT *elem,
 		 const NODE *node)
-/*
-       
- */
 {
-  long ii,nne,*nod,M, MM;
+  long ii,nne,*nod;
   double PL=0.0,*x,*y,*z,volume;
   
   for (ii=0;ii<ne;ii++){
@@ -1125,23 +1231,43 @@ void def_elem (const long *cn,
 	       double *r_e,
 	       const SUPP sup,
 	       const long TYPE)
-/*
-  ii - element
-  jj - layer
-  Function sorts vector of nodal unknowns on ELEMENT
-  u_1, u_2, u_3
-*/
 { 
+  enum{UPDATED=0,TOTAL=1,OTHER=2};
   long i,j;
-  
+
   for (i=0;i<ndofe;i++){
     j = cn[i];
-    if (j == 0) r_e[i] = 0.0;
-    if (j > 0)  r_e[i] = r[j-1];
-    if (j < 0)  {
-      if (TYPE == 0) r_e[i] = sup->defl_d[abs(j)-1];
-      if (TYPE == 1) r_e[i] = sup->defl[abs(j)-1];
-      if (TYPE == 2) r_e[i] = 0.0;
+    if (j == 0){
+      r_e[i] = 0.0;
+    } else if (j > 0){
+      r_e[i] = r[j-1];
+    } else { /* if (j < 0)  { */
+      if (TYPE == UPDATED) r_e[i] = sup->defl_d[abs(j)-1];
+      if (TYPE == TOTAL) r_e[i] = sup->defl[abs(j)-1];
+      if (TYPE == OTHER) r_e[i] = 0.0;
+    }
+  }
+}
+
+void def_elem_total (const long *cn,
+		     const long ndofe,
+		     const double *r,
+		     const double *d_r,
+		     const ELEMENT *elem,
+		     const NODE *node,
+		     const SUPP sup,
+		     double *r_e)
+{
+  for(int i=0; i< ndofe; i++){
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0){
+      r_e[i] = 0.0;
+    } else if (id > 0){
+      r_e[i] = r[aid] + d_r[aid];
+    } else {
+      r_e[i] = sup->defl[aid] + sup->defl_d[aid];
     }
   }
 }
@@ -2620,57 +2746,6 @@ void Logarithmic_strain (double **F,
  *               BEGIN FUNCTIONS UNIQUE TO PARALLEL CODE                 *
  *************************************************************************/
 
-void write_mat_matlab(char *str,
-		      BSspmat *A,
-		      BSprocinfo  *procinfo)
-{
-  FILE	*fp;
-  int	i, j, row, count = 1, nnz;
-  
-  /* try to open the file */
-  if ((fp = fopen(str,"w")) == NULL) {
-    PGFEM_printerr("Cannot open %s\n",str);
-    exit(-1);
-  }
-  
-  nnz = 0;
-  for (i=0;i<A->num_rows;i++) {
-    for (j=0;j<A->rows[i]->length;j++) {
-      nnz++;
-    }
-  }
-  
-  /* print out the header */
-  PGFEM_fprintf(fp,"n = %d;number_nz=%d;t=zeros(number_nz,3);\n",A->num_rows,nnz);
-  
-  /* print out the triplets */
-  for (i=0;i<A->num_rows;i++) {
-    A->map->flocal2global(1,&i,&row,procinfo,A->map);
-    for (j=0;j<A->rows[i]->length;j++) {
-      PGFEM_fprintf(fp,"t(%d,1:3) = [%d %d %4.16e];\n",
-	      count,row+1,A->rows[i]->col[j]+1,A->rows[i]->nz[j]);
-      count++;
-    }
-  }
-  PGFEM_fprintf(fp,"a = sparse(t(:,1),t(:,2),t(:,3));\n");
-  
-  fclose(fp);
-}
-
-void null_BSspmat (BSspmat *K)
-/*
-       
- */
-{
-  long i,j;
-  
-  for (i=0;i<K->num_rows;i++) {
-    for (j=0;j<K->rows[i]->length;j++) {
-      K->rows[i]->nz[j] = 0.0;
-    }
-  }
-}
-
 void LToG (const double *f,
 	   double *Gf,
 	   const int myrank,
@@ -2689,18 +2764,9 @@ void LToG (const double *f,
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
   
-  for (i=0;i<DomDof[myrank];i++)
-    Gf[i] = 0.0;
-  
-  /* Sort Global Dof */
-  for (i=0;i<DomDof[myrank];i++){
-    for (j=0;j<ndofd;j++){
-      if (i == comm->LG[j] - GDof){
-	Gf[i] = f[j];
-	break;
-      }
-    }
-  }
+  /* for (i=0;i<DomDof[myrank];i++) */
+  /*   Gf[i] = 0.0; */
+  nulld(Gf,DomDof[myrank]);
   
   /* Allocate recieve */
   send = (double**) PGFEM_calloc (nproc,sizeof(double*));
@@ -2710,13 +2776,6 @@ void LToG (const double *f,
     send[i] = (double*) PGFEM_calloc (KK,sizeof(double));
     if (comm->R[i] == 0) KK = 1; else KK = comm->R[i];
     recieve[i] = (double*) PGFEM_calloc (KK,sizeof(double));
-  }
-
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR allocating memory for \'send\'\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR allocating memory for \'recieve\'\n",myrank);
   }
 
   /* Allocate status and request fields */
@@ -2750,15 +2809,6 @@ void LToG (const double *f,
     MPI_Irecv (recieve[KK],comm->R[KK],MPI_DOUBLE,KK,
 	       MPI_ANY_TAG,mpi_comm,&req_r[i]);
   }
-  
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Irecv\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Irecv\n",myrank);
-  }
-
-  /* MPI_Barrier(mpi_comm); */
 
   /*************/
   /* Send data */
@@ -2772,30 +2822,18 @@ void LToG (const double *f,
 		myrank,mpi_comm,&req_s[i]);
   }
 
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Irsend\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Irsend\n",myrank);
-  }
+  pgfem_comm_get_owned_global_dof_values(comm,f,Gf);
 
   /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Ns,req_s,sta_s);
   MPI_Waitall (comm->Nr,req_r,sta_r);
   
-  if(send == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'send\' NULL after MPI_Waitall\n",myrank);
-  }
-  if(recieve == NULL){
-    PGFEM_printf("[%d]ERROR memory for \'recieve\' NULL after MPI_Waitall\n",myrank);
-  }
-
   for (i=0;i<comm->Nr;i++){
     KK = comm->Nrr[i];
     for (j=0;j<comm->R[KK];j++)
       Gf[comm->RGID[KK][j] - GDof] += recieve[KK][j];
   }
   
+  MPI_Waitall (comm->Ns,req_s,sta_s);
   /* Deallocate send and recieve */
   for (i=0;i<nproc;i++) {
     free(send[i]);
@@ -2828,19 +2866,12 @@ void GToL (const double *Gr,
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
 
+  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  nulld(r,ndofd);
 
   
-  for (i=0;i<ndofd;i++) r[i] = 0.0;
-  
-  /* Sort Global Dof */
-  for (j=0;j<ndofd;j++){
-    for (i=0;i<DomDof[myrank];i++){
-      if (j == comm->GL[i]) {
-	r[j] = Gr[i];
-	break;
-      }
-    }
-  }
+  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
+  nulld(r,ndofd);
 
   /* Allocate recieve */
   send = (double**) PGFEM_calloc (nproc,sizeof(double*));
@@ -2883,8 +2914,9 @@ void GToL (const double *Gr,
 	       myrank,mpi_comm,&req_s[i]);
   }
   
+  pgfem_comm_get_local_dof_values_from_global(comm,Gr,r);
+
   /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Nr,req_s,sta_s);
   MPI_Waitall (comm->Ns,req_r,sta_r);
   
   for (i=0;i<comm->Ns;i++){
@@ -2893,6 +2925,7 @@ void GToL (const double *Gr,
       r[comm->SLID[KK][j]] = recieve[KK][j];
   }
   
+  MPI_Waitall (comm->Nr,req_s,sta_s);
   /* Deallocate send and recieve */
   for (i=0;i<nproc;i++) {
     free(send[i]);
@@ -2909,84 +2942,6 @@ void GToL (const double *Gr,
 
 }
 
-BSspmat *BSalloc_A (int start_num,
-		    int n,
-		    int *rp,
-		    int *cval,
-		    BSprocinfo *procinfo)
-/* 
-   This rutine is te same as BSeasy_A, but it onlu allocate the matrix 
-*/
-{
-  BSspmat *A;
-  int	i, j;
-  int	*i_ptr;
-  int	gnum;
-  
-  /* set up the structure and mapping for the sparse matrix */
-  /* allocate the pointer to A */
-  A = (BSspmat *) PGFEM_calloc (1,sizeof(BSspmat));
-  
-  /* set the number of local rows */
-  A->num_rows = n;
-  
-  /* set the number of global rows */
-  A->global_num_rows = n;
-  GISUM(&(A->global_num_rows),1,&i,procinfo->procset);
-  
-  /* allocate the array of rows, and the space in each row */
-  /* allow for a max length in each row, but set the current length to 0 */
-  A->rows = (BSsprow **) PGFEM_calloc (A->num_rows,sizeof(BSsprow *));
-  for (i=0;i<A->num_rows;i++) {
-    A->rows[i] = (BSsprow *) PGFEM_calloc (1,sizeof(BSsprow));
-    A->rows[i]->length = rp[i+1] - rp[i];
-    A->rows[i]->col = &(cval[rp[i]]);
-    A->rows[i]->nz = (double *) PGFEM_calloc (A->rows[i]->length,sizeof(double));
-    gnum = start_num + i;
-    A->rows[i]->diag_ind = -1;
-    for (j=0;j<A->rows[i]->length;j++) {
-      if (A->rows[i]->col[j] == gnum) {
-	A->rows[i]->diag_ind = j;
-	break;
-      }
-    }
-  }
-  
-  /* allocate a pointer to a mapping structure */
-  A->map = (BSmapping *) PGFEM_calloc (1,sizeof(BSmapping));
-  
-  /* set up the local to global mapping */
-  /* all we need for this is the beginning number (offset) of */
-  /* the local rows in the global numbering (see BSloc2glob) */
-  A->map->vlocal2global = (void *) PGFEM_calloc (1,sizeof(int));
-  i_ptr = (int *) A->map->vlocal2global; /* pointer to mapping data */
-  *(i_ptr) = start_num;
-  A->map->flocal2global = BSloc2glob; /* the mapping function */
-  A->map->free_l2g = BSfreel2g; /* the routine to free the mapping */
-  
-  /* set up the global to local mapping */
-  /* all we need for this is the beginning number (offset) of */
-  /* the local rows in the global numbering (see BSglob2loc) */
-  A->map->vglobal2local = (void *) PGFEM_calloc (1,sizeof(int));
-  i_ptr = (int *) A->map->vglobal2local;	/* pointer to mapping data */
-  *(i_ptr) = start_num;
-  A->map->fglobal2local = BSglob2loc; /* the mapping function */
-  A->map->free_g2l = BSfreeg2l;	/* the routine to free the mapping */
-  
-  /* set up the global to processor number mapping */
-  /* we call the routine BSmake_off_map to create the mapping data */
-  /* the local rows in the global numbering (see BSglob2proc) */
-  A->map->vglobal2proc = (void *) BSmake_off_map(start_num,procinfo,A->global_num_rows); CHKERRN(0);
-  A->map->fglobal2proc = BSglob2proc;	/* the mapping function */
-  A->map->free_g2p = BSfree_off_map;	/* the routine to free the mapping */
-  
-  /* check for errors in A */
-  if (procinfo->error_check) {
-    BSrow_err_check(A,procinfo); CHKERRN(0);
-  }
-  return(A);
-}
-
 MPI_Comm* CreateGraph (int nproc,
 		       int myrank,
 		       long nn,
@@ -2998,7 +2953,7 @@ MPI_Comm* CreateGraph (int nproc,
 {
   int *BN,*displ;
   long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom,II,*CDom;
-  MPI_Comm *GrComm;
+  MPI_Comm *GrComm = NULL;
   
   for (i=0;i<nn;i++) if (node[i].Gnn >= 0) NBn++;
   
@@ -3132,124 +3087,6 @@ double det_K (double *k,
   return (DET);
 }
 
-/*
-  double d_lam_ALM (long ndofd,
-  double *rr,
-  double *R,
-  double dAL,
-  double DET,
-  double DET0,
-  double dlm0,
-  long PD,
-  long PD0)
-  / *
-       
-  * /
-  {
-  double s1,s2,b,znam,DLM;
-  DLM = 0.0;  b = 0.0;
-  
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  DLM = dAL/sqrt (s1 + b*b*s2);
-  
-  if (dlm0 == 0) znam = 1.0;
-  else             znam = dlm0/fabs(dlm0);
-  
-  if (PD > 0.0){
-  if (DET0 > 0.0 && DET < 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [1] | PD > 0\n\n");}
-  if (DET0 < 0.0 && DET > 0.0 && PD0 == PD){ znam *= -1.0; PGFEM_printf("\nChanging sign - [2] | PD > 0\n\n");}
-  }
-  if (PD < 0.0){
-  if (DET0 > 0.0 && DET > 0.0 && PD0 > 0.0){ znam *= -1.0; PGFEM_printf("\nChanging sign - [3] | PD < 0\n\n");}
-  }
-  
-  DLM *= znam;
-  
-  return (DLM);
-  }
-
-  double D_lam_ALM (long ndofd,
-  double *rr,
-  double *d_r,
-  double *D_R,
-  double *R,
-  double dlm,
-  double dAL)
-  / *
-       
-  * /
-  {
-  long i;
-  double s1,s2,b,a1,a2,a3,LIN,DLM,x1,x2,*dR,*p1,*p2;
-  DLM = 0.0;  b = 0.0;
-  
-  dR = aloc1 (ndofd);  p1 = aloc1 (ndofd);  p2 = aloc1 (ndofd);
-  
-  for (i=0;i<ndofd;i++) dR[i] = d_r[i] + D_R[i];
-  
-  / ****** /
-  / * A1 * /
-  / ****** /
-  s1 = ss (rr,rr,ndofd);
-  s2 = ss (R,R,ndofd);
-  
-  a1 = s1 + b*b*s2;
-  
-  / ****** /
-  / * A2 * /
-  / ****** /
-  s1 = ss (rr,dR,ndofd);
-  a2 = 2*(b*b*dlm*s2 + s1);
-  
-  / ****** /
-  / * A3 * /
-  / ****** /
-  s1 = ss (dR,dR,ndofd);
-  a3 = s1 - dAL*dAL + b*b*dlm*dlm*s2;
-  
-  if ((a2*a2 - 4*a1*a3) < 0.0 || 2*a1 == 0.0){
-  DLM = -1000000; return (DLM);
-  }
-  
-  / **** x1,2 = (-b +- sqrt(b^2 - 4*a*c))/(2*a) **** /
-  x1 = (-1.*a2 + sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  x2 = (-1.*a2 - sqrt (a2*a2 - 4*a1*a3))/(2*a1);
-  
-  for (i=0;i<ndofd;i++){
-  p1[i] = d_r[i] + D_R[i] + x1*rr[i];
-  p2[i] = d_r[i] + D_R[i] + x2*rr[i];
-  }
-  
-  s1 = ss (p1,d_r,ndofd);
-  s2 = ss (p2,d_r,ndofd);
-  
-  if (s1 < 0.0 && s2 > 0.0)
-  DLM = x2;
-  if (s2 < 0.0 && s1 > 0.0)
-  DLM = x1;
-  
-  LIN = -1.*a3/a2;
-  
-  if (s1 > 0.0 && s2 > 0.0){
-    
-  s1 = sqrt ((x1 - LIN)*(x1 - LIN));
-  s2 = sqrt ((x2 - LIN)*(x2 - LIN));
-    
-  if (s1 <= s2)  DLM = x1;
-  else           DLM = x2;
-  }
-  
-  if (s1 == 0.0 && s2 == 0.0)  DLM = 0.0;
-  
-  if (-1e+40 > DLM || DLM > 1e+40) DLM = -1000000;
-  
-  dealoc1 (dR); dealoc1 (p1); dealoc1 (p2);
-  
-  return (DLM);
-  }**/
-
 double new_arc_length (long iter,
 		       long iter_des,
 		       double dAL,
@@ -3260,7 +3097,8 @@ double new_arc_length (long iter,
 {
   double I1,I2,NEW;
   
-  I1 = iter_des; I2 = iter;
+  I1 = (double) iter_des;
+  I2 = (double) iter;
   
   NEW = dAL*sqrt (I1/I2);
   if (NEW > dAL0) NEW = dAL0;
@@ -3268,15 +3106,10 @@ double new_arc_length (long iter,
   return (NEW);
 }
 
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
-/***********************************************************************************************************************************/
 
-/************************************************************************************************/
-/*****************************  NONSYMMETRIC SPARSE SOLVER  *************************************/
-/************************************************************************************************/
+/***********************************************************/
+/************  NONSYMMETRIC SPARSE SOLVER  *****************/
+/***********************************************************/
 
 long* sparse_ApAi (long ne,
 		   long ndofd,
@@ -3375,3 +3208,16 @@ long* sparse_ApAi (long ne,
   
   return (Ai);
 }
+
+void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
+{
+/* input: w, x, alpha
+          n_row: size of array
+   output: v = (1-alpha)*w + alpha*x
+*/   
+  for(long a = 0; a<n_row; a++)
+  {
+    v[a] = (1-alpha)*w[a] + alpha*x[a];
+  }
+}
+

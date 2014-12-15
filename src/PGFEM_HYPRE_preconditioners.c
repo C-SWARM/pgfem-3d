@@ -6,12 +6,11 @@
  */
 
 #include "PGFEM_HYPRE_preconditioners.h"
+#include <math.h>
 #include "_hypre_parcsr_mv.h"
 #include "PGFEM_mpi.h"
 
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
 
 typedef struct{
   double *data;
@@ -60,7 +59,7 @@ int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
   for(int i=0; i<local_size; i++){
     /* diagonal value is always stored first on the local row */
     val = A_data[A_i[i]];
-    if (abs(val) > diag_pc->thresh){
+    if (fabs(val) > diag_pc->thresh){
       diag_pc->data[i] = 1./val;
     } else {
       diag_pc->data[i] = diag_pc->replacement;
@@ -144,7 +143,7 @@ int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
 		  MPI_DOUBLE,MPI_SUM,jacobi_pc->comm);
   }
 
-  if(abs(jacobi_pc->scale) < jacobi_pc->thresh){
+  if(fabs(jacobi_pc->scale) < jacobi_pc->thresh){
     jacobi_pc->scale = jacobi_pc->replace;
   } else {
     jacobi_pc->scale = 1.0/jacobi_pc->scale;

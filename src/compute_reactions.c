@@ -1,52 +1,21 @@
+/* HEADER */
+/**
+ * AUTHORS:
+ * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
+ */
 #include "compute_reactions.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef RESID_ON_ELEM_H
 #include "resid_on_elem.h"
-#endif
-
-#ifndef STABILIZED_H
 #include "stabilized.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef MINI_ELEMENT_H
 #include "MINI_element.h"
-#endif
-
-#ifndef MINI_3F_ELEMENT_H
 #include "MINI_3f_element.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
 
 int compute_reactions(long ne,
 		      long ndofn,
@@ -127,7 +96,7 @@ int compute_reactions(long ne,
       switch(analysis){
       case STABILIZED:
 	err = resid_st_elem (elem_id,ndofn,nne,elem,nod,node,hommat,
-			     x,y,z,eps,sig,r_e,nor_min,fe,dt,stab);
+			     x,y,z,eps,sig,sup,r_e,nor_min,fe,dt,stab);
 	break;
       case MINI:
 	MINI_resid_el(fe,elem_id,ndofn,nne,x,y,z,elem,

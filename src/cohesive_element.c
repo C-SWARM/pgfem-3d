@@ -1,34 +1,14 @@
 /* HEADER */
 #include "cohesive_element.h"
+#include <math.h>
 #include "PGFEM_mpi.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
 
 static void update_state_variables_co (COEL *cel, /* ptr to single el */
 				       double *x,
@@ -59,6 +39,12 @@ void destroy_coel(COEL* coel, long nce)
     free(coel[i].vars);
   }
   free(coel);
+}
+
+void reset_coel_props(const cohesive_props *co_props,
+		      COEL *p_coel)
+{
+  p_coel->props = &co_props[p_coel->mat];
 }
 
 COEL* read_cohe_elem (FILE *in1,
@@ -143,7 +129,7 @@ COEL* read_cohe_elem (FILE *in1,
     for (l=0;l<coel[j].toe;l++){
       fscanf (in1,"%ld",&coel[j].nod[l]);
     }
-    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&mat,&coel[j].pr);
+    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
     
     /* if (coel[j].typ == 0) { */
     /*   coel[j].Sc = comat[mat][0]; */
@@ -159,9 +145,10 @@ COEL* read_cohe_elem (FILE *in1,
     /*   coel[j].Jjn = 1.0; */
     /* } /\* Our law *\/ */
 
-    /* Set the element properties */
     coel[j].Jjn = 1.0;
-    coel[j].props = &co_props[mat];
+
+    /* Set the element properties */
+    reset_coel_props(co_props,coel + j);
 
     /* set internal state variables */
     switch(coel[j].props->type){
@@ -221,8 +208,12 @@ COEL* read_cohe_elem (FILE *in1,
 	ensight->ncn++;
       Enodes[i] = -1;
     }
-    ensight->Sm = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
-    ensight->Sp = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+    if(ensight->ncn > 0){
+      ensight->Sm = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+      ensight->Sp = (long *) PGFEM_calloc (ensight->ncn,sizeof(long));
+    } else {
+      ensight->Sm = ensight->Sp = NULL;
+    }
     ensight->No = (long *) PGFEM_calloc (nn,sizeof(long));
     
     k = 0;
@@ -303,11 +294,12 @@ void stiff_mat_coh (long ii,
 */
 {
   long ip,i,j,II,JJ,M,N,P,R,U,ndofe;
-  double ****Kt,****Kn,*gk,*ge,*w,ksi,eta,ai,aj,*Nf,*N_x,*N_y,
-    *xl,*yl,*zl,**TX,***AA,**TN,***Nxb,*xb,*yb,*zb,*Xi,Xxi,*e1,
-    *e2,*e2h,*n,txi,H1,Xn,dij;
-  double EE1,EE2,**STIFF,**Flam,**Xlam,**FXlam,*Plam,*Tlam,**Rlam,
-    **Glam,*Nlam,bet,J=0.0,Jjn;
+  double ****Kt,****Kn,*gk,*ge,*w,
+    ksi,eta,ai,aj,*Nf,*N_x,*N_y,
+    *xl,*yl,*zl,**TX,***AA,**TN,
+    ***Nxb,*xb,*yb,*zb,*Xi,*e1,
+    *e2,*e2h,*n;
+  double **STIFF,bet,J=0.0,Jjn;
   
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
@@ -392,27 +384,6 @@ void stiff_mat_coh (long ii,
 
       /* Get diplacement jump */
       get_jump (nne,x,y,z,r_e,Nf,Xi);
-      
-      /* /\* Normal opening displacement *\/ */
-      /* Xn = ss (Xi,n,3); */
-      
-      /* /\* Get effective opening displacement *\/ */
-      /* Xxi = get_Xxi (bet,Xi,n,Xn); */
-      
-      /* /\* Get effective traction t *\/ */
-      /* txi = get_t (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip],nor_min); */
-      
-      /* /\* Get derivative of t *\/ */
-      /* H1 = get_dt (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip],nor_min); */
-      
-      /* /\* Stiffness matrix constants *\/ */
-      /* if (Xxi == 0.0) {EE1 = H1; EE2 = 0.0;} */
-      /* else{ /\* Loading  + Unloading (For unloading EE2 = 0.0) + Contact *\/ */
-      /* 	EE1 = txi/Xxi; EE2 = (H1*Xxi-txi)/(Xxi*Xxi*Xxi); */
-      /* } */
-      
 
       /* compute the traction and tangents */
       int err = 0;
@@ -432,36 +403,16 @@ void stiff_mat_coh (long ii,
 
       /* Get dN/dxb */
       dN_dxb (nne,ksi,eta,e1,e2h,n,Nxb);
-
-      /*=== TX => mat_tan || TN => geo_tan ===*/
-
-      /* for (M=0;M<ndn;M++){ */
-      /* 	for (N=0;N<ndn;N++){ */
-      /* 	  if (M == N) dij = 1.0; */
-      /* 	  else dij = 0.0; */
-
-      /* 	  TX[M][N] = (EE2*(bet*bet*Xi[N] + (1.-bet*bet)*Xn*n[N]) */
-      /* 		      *(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]) */
-      /* 		      + EE1*(bet*bet*dij + (1.-bet*bet)*n[N]*n[M])); */
-
-      /* 	  TN[M][N] = (EE2*(bet*bet*Xn*Xn*n[N] + (1.-bet*bet)*Xn*Xi[N]) */
-      /* 		      *(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]) */
-      /* 		      + EE1*(1.-bet*bet)*(Xi[N]*n[M] + Xn*dij)); */
-      /* 	} */
-      /* } */
-
       for (M=0;M<ndn;M++){
       	for (N=0;N<ndn;N++){
       	  for (P=0;P<nne;P++){
 	    
       	    AA[M][N][P] = 0.0;
       	    for (U=0;U<ndn;U++){
-	      /* AA[M][N][P] += TN[M][U]*Nxb[U][N][P]; */
 	      AA[M][N][P] += geo_tan[idx_2(M,U)]*Nxb[U][N][P];
 	    }
 	    
       	    for (R=0;R<nne;R++){
-	      /* Kt[M][N][P][R] += ai*aj*J * Jjn*TX[M][N]*Nf[P]*Nf[R]; */
 	      Kt[M][N][P][R] += (ai*aj*J*Jjn*mat_tan[idx_2(M,N)]
 				 *Nf[P]*Nf[R]);
       	    }
@@ -558,8 +509,8 @@ void resid_co_elem (long ii,
 {
   long ip,i,j,II,JJ,ndofe,M,N;
   double *gk,*ge,*w,ksi,eta,ai,aj,*T,**Rc,*Nf,*N_x,*N_y,
-    *xl,*yl,*zl,*xb,*yb,*zb,*Xi,Xxi,*e1,*e2,*e2h,
-    *n,txi,Xn,bet,J,Jjn,EE1,H1;
+    *xl,*yl,*zl,*xb,*yb,*zb,*Xi,*e1,*e2,*e2h,
+    *n,bet,J,Jjn;
   
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
@@ -639,32 +590,6 @@ void resid_co_elem (long ii,
       /* Get diplacement jump */
       get_jump (nne,x,y,z,r_e,Nf,Xi);
       
-      /* /\* Normal opening displacement *\/ */
-      /* Xn = ss (Xi,n,3); */
-      
-      /* /\* Get effective opening displacement *\/ */
-      /* Xxi = get_Xxi (bet,Xi,n,Xn); */
-      
-      /* /\* Get effective traction t *\/ */
-      /* txi = get_t (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip], */
-      /* 		   nor_min);  */
-      
-      /* /\* Get derivative of t *\/ */
-      /* H1 = get_dt (coel[ii].typ,coel[ii].Sc,Xxi,coel[ii].Xc,bet, */
-      /* 		   coel[ii].k,Xn,coel[ii].Xmax[ip],coel[ii].tmax[ip], */
-      /* 		   nor_min); */
-
-      /* /\* Stiffness matrix constants *\/ */
-      /* if (Xxi == 0.0) {EE1 = H1;} */
-      /* else            {EE1 = txi/Xxi;} */
-      
-      /* /\* Remove damaged elements *\/ */
-      /* if (Xn > 0.0 && Xxi > coel[ii].Xc && txi < coel[ii].Sc/100.0) { */
-      /* 	ip++; */
-      /* 	continue; */
-      /* } */
-
       /* compute the traction and tangents */
       int err = 0;
       err += props->get_traction(traction,Xi,n,props->props,cel->vars[ip]);
@@ -678,14 +603,8 @@ void resid_co_elem (long ii,
 		__FILE__,__func__,__LINE__);
       }
 
-      /*=== T => traction ===*/
-      /* for (M=0;M<ndn;M++){ */
-      /* 	T[M] = EE1*(bet*bet*Xi[M] + (1.-bet*bet)*Xn*n[M]); */
-      /* } */
-      
       for (M=0;M<ndn;M++){
 	for (N=0;N<nne;N++){
-	  /* Rc[M][N] += ai*aj*J * Jjn*T[M]*Nf[N]; */
           Rc[M][N] += ai*aj*J * Jjn*traction[M]*Nf[N];
 	}
       }
@@ -738,7 +657,6 @@ int increment_cohesive_elements(const int nce,
   for (int i=0;i<nce;i++){
     COEL *cel = &coel[i];
     const int nne_t = cel->toe;
-    const int nne = nne_t/2;
     const int ndofe = nne_t*ndofc;
       
     double *r_e = aloc1 (ndofe);
@@ -785,7 +703,6 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
 {
   static const int ndn = 3;
   const int nne = cel->toe/2;
-  const long *nod = cel->nod;
 
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
@@ -965,4 +882,48 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
   dealoc1 (gk);
   dealoc1 (ge);
   dealoc1 (w);
+}
+
+size_t coel_list_get_state_length_bytes(const int nce,
+					const COEL *coel)
+{
+  size_t len_b = 0;
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    /* length in bytes/elem = n_int_points*nvars*sizeof(vars) */ 
+    len_b += nip*coel[i].nvar*sizeof(**(coel[i].vars));
+  }
+  return len_b;
+}
+
+void coel_list_pack_state(const int nce,
+			  const COEL *coel,
+			  char *buffer,
+			  size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    for(int j = 0; j < nip; j++){
+      pack_data(coel[i].vars[j],buffer,buf_pos,coel[i].nvar,len_vars);
+    }
+  }
+}
+
+void coel_list_unpack_state(const int nce,
+			    COEL *coel,
+			    const cohesive_props *co_props,
+			    const char *buffer,
+			    size_t *buf_pos)
+{
+  if(nce <= 0 ) return;
+  const size_t len_vars = sizeof(**(coel[0].vars));
+  for(int i = 0; i < nce; i++){
+    int nip = int_pointC(coel[i].toe/2);
+    for(int j = 0; j < nip; j++){
+      unpack_data(buffer,coel[i].vars[j],buf_pos,coel[i].nvar,len_vars);
+    }
+    reset_coel_props(co_props,coel+i);
+  }
 }

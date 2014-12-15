@@ -1,27 +1,17 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 #include "Hu_Washizu_element.h"
 #include <string.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 #ifndef HW_DEBUG
 #define HW_DEBUG 0
@@ -720,8 +710,6 @@ void debug_NH_Ru_at_ip(double *Ru,
 {
   /* offsets for different matrices */
   int len_a, off_a;
-  char fdebug[20];
-
   int err_rank;
   PGFEM_Error_rank(&err_rank);
 

@@ -1,35 +1,15 @@
+/* HEADER */
+
 #include "differentiation_of_UU.h"
 #include <math.h>
 #include "umfpack.h"
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef NULL_H
 #include "null.h"
-#endif
-
-#ifndef PLC_H
 #include "PLC.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef TA_GA_H
 #include "TA_GA.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
 
 void differentiation_of_UU (long ii,
 			    long ip,
@@ -55,7 +35,7 @@ void differentiation_of_UU (long ii,
     BB[3][3][3][3],**bb,**K,**KK,*inv,*f,**Ab,**Bb,ga;
   double Ts,POM,dGdt,N5,H_n,N3,N4; /*H,N1,N2;*/
   
-  double *Control = (double *) NULL, *Info = (double *) NULL,*XX;
+  double *Control = NULL, *Info = NULL,*XX;
   long *Ai,*Ap,NEL,status;
   void *Symbolic, *Numeric;
   
@@ -83,7 +63,7 @@ void differentiation_of_UU (long ii,
   XX = aloc1 (9);
   
   /* Invert Fr */
-  def_grad_inv (Fr,FrI);
+  def_grad_inv ((const double *const *)Fr,FrI);
   
   /* Implicit integration of hardening */
   Har = sig[ii].il[ip].Har1;

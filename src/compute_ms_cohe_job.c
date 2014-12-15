@@ -1,63 +1,24 @@
 /* HEARER */
 #include "compute_ms_cohe_job.h"
 #include <string.h>
+#include <assert.h>
 #include "mkl_cblas.h"
 
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef PGFEM_PAR_MATVEC_H
 #include "PGFEM_par_matvec.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef DISP_BASED_ELEM_H
 #include "displacement_based_element.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef SOLVE_SYSTEM_H
 #include "solve_system.h"
-#endif
+#include "pgf_fe2_restart.h"
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
@@ -67,15 +28,11 @@ static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 
-/** reset the microscale state variables at n */
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol);
-
 /** Wrapper for Newton Raphson. */
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts);
+			  const PGFem3D_opt *opts,
+			  int *n_step);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -153,7 +110,7 @@ int compute_ms_cohe_job(const int job_id,
   MPI_Comm_rank(common->mpi_comm,&myrank);
   if(myrank == 0){
     PGFEM_printf("=== MICROSCALE cell %d of %d ===\n",
-		 job_id+1,microscale->n_solutions);
+		 job_id+1,microscale->idx_map.size);
   /*   PGFEM_printf("Jump (n):\t"); */
   /*   print_array_d(PGFEM_stdout,p_job->jump_n,ndim,1,ndim); */
   /*   PGFEM_printf("Jump (n+1):\t"); */
@@ -172,11 +129,7 @@ int compute_ms_cohe_job(const int job_id,
 
   default: /* reset state to macro time (n) */
     /* reset the microscale solution to macro time (n) */
-    err += reset_MICROSCALE_SOLUTION(sol,common->ndofd,
-				     common->DomDof[myrank]);
-
-    /* reset the state variables to macroscopic time (n) */
-    err += reset_micro_state_variables(p_job,common,sol);
+    err += reset_MICROSCALE_SOLUTION(sol,microscale);
 
     /* reset the supports to contain the previous jump and current
        increment */
@@ -187,9 +140,21 @@ int compute_ms_cohe_job(const int job_id,
   /* swtich compute job */
   switch(p_job->job_type){
   case JOB_COMPUTE_EQUILIBRIUM:
+
+    /* print time step information */
+    if(myrank == 0){
+      PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
+      PGFEM_printf("\nFinite deformations time step %ld) "
+		   " Time %f | dt = %10.10f\n",
+		   p_job->tim,sol->times[sol->tim+1],sol->dt);
+    }
+
     /* compute the microscale equilibrium. */
-    if(myrank == 0) PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
-    err += ms_cohe_job_nr(common,sol,microscale->opts);
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
+
+    /* /\* compute number of subdivisions at micro scale *\/ */
+    /* p_job->n_step = (int) ((p_job->times[2] - p_job->times[1]) */
+    /* 			   /(sol->times[sol->tim + 1] - sol->times[sol->tim])); */
 
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -235,8 +200,8 @@ int compute_ms_cohe_job(const int job_id,
 
   case JOB_UPDATE:
     /* update the solution and state variables state n <- n+1 */
-    err += update_MICROSCALE_SOLUTION(sol,common->ndofd,
-				      common->DomDof[myrank]);
+    err += update_MICROSCALE_SOLUTION(sol,microscale);
+
     /* job->jump_n <-- job->jump */
     memcpy(p_job->jump_n,p_job->jump,ndim*sizeof(double));
 
@@ -252,6 +217,13 @@ int compute_ms_cohe_job(const int job_id,
     /* output the job based on the print flag to the file specified by
        the options and solution step id */
     err += print_ms_cohe_job(p_job,common,sol,microscale->opts);
+
+    /* print the restart file regardless of output parameters */
+    {
+      int cell_id = sol_idx_map_idx_get_id(&(microscale->idx_map),job_id);
+      assert(cell_id >= 0);
+      err += pgf_FE2_restart_print_micro(microscale,cell_id);
+    }					 
     break;
 
   case JOB_EXIT: /* do nothing */ break;
@@ -296,25 +268,10 @@ int assemble_ms_cohe_job_res(const int job_id,
 /*==== STATIC FUNCTION DEFINITIONS ====*/
 /*=====================================*/
 
-static int reset_micro_state_variables(const MS_COHE_JOB_INFO *job,
-				       const COMMON_MICROSCALE *common,
-				       MICROSCALE_SOLUTION *sol)
-{
-  int err = 0;
-
-  /* reset nodal values */
-
-  /* reset element values */
-
-  /* reset supports */
-
-  return err;
-}/* reset_micro_state_variables() */
-
-
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			  MICROSCALE_SOLUTION *s,
-			  const PGFem3D_opt *opts)
+			  const PGFem3D_opt *opts,
+			  int *n_step)
 {
   int err = 0;
   double time = 0.0;
@@ -322,12 +279,13 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   int full_NR = 1; /* 0 is modified NR */
   double pores = 0.0;
   const int print_level = 0;
+  *n_step = 0;
 
   /* copy of load increment */
   double *sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson(print_level,c->ne,0,c->nn, c->ndofn,
+  time += Newton_Raphson(print_level,n_step,c->ne,0,c->nn, c->ndofn,
 			 c->ndofd,c->npres,s->tim,s->times,
 			 nl_err,s->dt,c->elem,NULL,
 			 c->node,c->supports,sup_defl,c->hommat,
@@ -336,13 +294,11 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 			 s->rr,s->R,s->f_defl,s->RR,
 			 s->f_u,s->RRn,s->crpl,opts->stab,
 			 c->nce,c->coel,full_NR,&pores,
-			 c->SOLVER,NULL,NULL, NULL,
-			 NULL,s->BS_x,s->BS_f,s->BS_RR,
+			 c->SOLVER,s->BS_x,s->BS_f,s->BS_RR,
 			 0.0,0.0,0.0,c->lin_err,
 			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
 			 1,c->maxit_nl,&s->NORM,c->nbndel,
-			 c->bndel,c->mpi_comm,c->VVolume,opts,
-			 NULL,NULL,NULL,NULL);
+			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL, 0, NULL, NULL);
 	
   free(sup_defl);
   return err;
@@ -440,14 +396,14 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
   ZeroHypreK(c->SOLVER,c->Ai,c->DomDof[myrank]);
 
   /* assemble to the microscale tangent matrix */
-  err += stiffmat_fd(NULL,c->Ap,c->Ai,c->ne,0,c->ndofn,
+  err += stiffmat_fd(c->Ap,c->Ai,c->ne,0,c->ndofn,
 		     c->elem,NULL,c->nbndel,c->bndel,
 		     c->node,c->hommat,c->matgeom,s->sig_e,
 		     s->eps,s->d_r,s->r,c->npres,c->supports,
 		     /*iter*/0,nor_min,s->dt,s->crpl,o->stab,
 		     c->nce,c->coel,0,0.0,s->f_u,myrank,nproc,
 		     c->DomDof,c->GDof,c->pgfem_comm,c->mpi_comm,
-		     c->SOLVER,o);
+		     c->SOLVER,o,0,NULL,NULL);
 
   /* finalize the microscale tangent matrix assembly */
   err += HYPRE_IJMatrixAssemble(c->SOLVER->hypre_k);
@@ -543,7 +499,6 @@ static int compute_elem_micro_terms(const int elem_id,
   const int macro_nnode = job->nnode;
   const int macro_ndofn = ndim;
   const int macro_ndof = job->ndofe;
-  const long *macro_dof_id = job->g_dof_ids;
   const double *macro_shape_func = job->shape;
   const double *macro_normal = job->normal;
   const double macro_int_wt = job->int_wt;
@@ -621,35 +576,81 @@ static int compute_elem_micro_terms(const int elem_id,
   cblas_daxpy(ndim,1.0,traction_e,1,job->traction,1);
 
   /* K_01 & K_10 */
+  /* { */
+  /*   for(int a=0; a<macro_nnode; a++){ */
+  /*     for(int b=0; b<macro_ndofn; b++){ */
+  /* 	for(int w=0; w<nne; w++){ */
+  /* 	  for(int g=0; g<ndim; g++){ */
+  /* 	    /\* column idx is simply the index of the macro dof *\/ */
+  /* 	    const int col_idx = idx_2_gen(a,b,macro_nnode,macro_ndofn); */
+
+  /* 	    /\* row idx is the global dof id *\/ */
+  /* 	    const int row_idx = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1; */
+
+  /* 	    /\* skip if boundary condition *\/  */
+  /* 	    if(row_idx < 0) continue; */
+
+  /* 	    /\* get indices *\/ */
+  /* 	    const int idx_01 = idx_K_gen(a,b,w,g,macro_nnode, */
+  /* 					 macro_ndofn,nne,ndim); */
+  /* 	    const int idx_10 = idx_K_gen(w,g,a,b,nne,ndim, */
+  /* 					 macro_nnode,macro_ndofn); */
+
+  /* 	    /\* add values to distributed matrix *\/ */
+  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
+  /* 						  K_01_e + idx_01,K_01); */
+  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
+  /* 						  K_10_e + idx_10,K_10); */
+  /* 	  } */
+  /* 	} */
+  /*     } */
+  /*   } */
+  /* } */
+
   {
+    /* allocate enough space for full matrix */
+    double *val_01 = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(double));
+    double *val_10 = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(double));
+    int *row = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(int));
+    int *col = PGFEM_calloc(macro_nnode*macro_ndofn*nne*ndim,sizeof(int));
+    int idx = 0;
+
+    /* get list */
     for(int a=0; a<macro_nnode; a++){
       for(int b=0; b<macro_ndofn; b++){
-	for(int w=0; w<nne; w++){
-	  for(int g=0; g<ndim; g++){
-	    /* column idx is simply the index of the macro dof */
-	    const int col_idx = idx_2_gen(a,b,macro_nnode,macro_ndofn);
+  	for(int w=0; w<nne; w++){
+  	  for(int g=0; g<ndim; g++){
+  	    /* row idx is the global dof id */
+  	    row[idx] = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1;
 
-	    /* row idx is the global dof id */
-	    const int row_idx = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1;
+  	    /* skip if boundary condition */
+  	    if(row[idx] < 0) continue;
+	    else {
+	      /* column idx is simply the index of the macro dof */
+	      col[idx] = idx_2_gen(a,b,macro_nnode,macro_ndofn);
 
-	    /* skip if boundary condition */ 
-	    if(row_idx < 0) continue;
-
-	    /* get indices */
-	    const int idx_01 = idx_K_gen(a,b,w,g,macro_nnode,
-					 macro_ndofn,nne,ndim);
-	    const int idx_10 = idx_K_gen(w,g,a,b,nne,ndim,
-					 macro_nnode,macro_ndofn);
-
-	    /* add values to distributed matrix */
-	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx,
-						  K_01_e + idx_01,K_01);
-	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx,
-						  K_10_e + idx_10,K_10);
+	      /* get values */
+	      val_01[idx] = *(K_01_e + idx_K_gen(a,b,w,g,macro_nnode,
+						 macro_ndofn,nne,ndim));
+	      val_10[idx] = *(K_10_e + idx_K_gen(w,g,a,b,nne,ndim,
+						 macro_nnode,macro_ndofn));
+	      /* increment counter */
+	      idx++;
+	    }
 	  }
 	}
       }
     }
+
+    /* add list to matrices */
+    err += PGFEM_par_matrix_add_to_values(idx,row,col,val_01,K_01);
+    err += PGFEM_par_matrix_add_to_values(idx,row,col,val_10,K_10);
+
+    /* free memory */
+    free(val_01);
+    free(val_10);
+    free(row);
+    free(col);
   }
 
   /* deallocate function-scope information */
@@ -708,8 +709,14 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
     err += PGFEM_par_matrix_get_column(K_10,i,loc_rhs);
 
     /* compute loc_sol = K_11^{-1} K_10{i} */
-    solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-  		 c->SOLVER,NULL,NULL,NULL,NULL,c->mpi_comm);
+    if(i == 0){
+      /* only setup solver for first time through */
+      solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
+		   c->SOLVER,c->mpi_comm);
+    } else {
+      solve_system_no_setup(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
+			    c->SOLVER,c->mpi_comm);
+    }
 
     /* check solver error status and print solve information */
     err += solve_system_check_error(PGFEM_stderr,*info);
@@ -732,7 +739,7 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
   /* copy (++) block to others */
   for(int i=0; i<2; i++){
     for(int j=0; j<2; j++){
-      const int sign = ((i==j)? 1.0:-1.0);
+      const int sign = ((i==j)? 1:-1);
       for(int k=0; k<block_ndof; k++){
   	for(int m=0; m<block_ndof; m++){
   	  const int idx = idx_K(i,k,j,m,2,block_ndof);
@@ -813,7 +820,7 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 
     if(o->cohesive){
       if(myrank == 0){
-	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc);
+	VTK_print_cohesive_master(o->opath,ofname,s->p_tim,nproc,o);
       }
       VTK_print_cohesive_vtu(o->opath,ofname,s->p_tim,myrank,c->nce,c->node,
 			     c->coel,c->supports,s->r,c->ensight,o);

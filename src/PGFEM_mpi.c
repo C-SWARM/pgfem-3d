@@ -56,6 +56,7 @@ int destroy_PGFEM_mpi_comm(PGFEM_mpi_comm *pgfem_mpi_comm)
 
   if(pgfem_mpi_comm->valid_micro){
     err += MPI_Comm_free(&pgfem_mpi_comm->micro);
+    err += MPI_Comm_free(&pgfem_mpi_comm->worker_inter);
   }
 
   if(pgfem_mpi_comm->valid_mm_inter){
@@ -126,6 +127,17 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
 			  rank_micro_all,&(pgfem_mpi_comm->micro));
     err += MPI_Comm_rank(pgfem_mpi_comm->micro,
 			 &(pgfem_mpi_comm->rank_micro));
+
+    /*Create inter-micro communicators between equivalent procs on
+       different microstructures. This allows direct communication
+       between workers using the rank as the server id. Split
+       micro_all communicator by rank in micro using rank_micro as the
+       color and rank_micro_all as the key. */
+    err += MPI_Comm_split(pgfem_mpi_comm->micro_all,pgfem_mpi_comm->rank_micro,
+			  pgfem_mpi_comm->rank_micro_all,
+			  &(pgfem_mpi_comm->worker_inter));
+    err += MPI_Comm_rank(pgfem_mpi_comm->worker_inter,
+			 &(pgfem_mpi_comm->server_id));
   } else {
     pgfem_mpi_comm->micro = MPI_COMM_NULL;
     pgfem_mpi_comm->valid_micro = 0;
@@ -267,11 +279,34 @@ int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
     ctx->n_comms = 0;
     ctx->procs = NULL;
     ctx->sizes = NULL;
+    ctx->tags = NULL;
     ctx->buffer = NULL;
     ctx->req = NULL;
     ctx->stat = NULL;
+    ctx->in_process = 0;
   } else err++;
   return err;
+}
+
+void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
+			    const int n_comm,
+			    const int *buf_sizes)
+{
+  ctx->n_comms = n_comm;
+  ctx->procs = PGFEM_calloc(n_comm,sizeof(*(ctx->procs)));
+  ctx->sizes = malloc(n_comm*sizeof(*(ctx->sizes)));
+  ctx->tags = malloc(n_comm*sizeof(*(ctx->tags)));
+  ctx->buffer = malloc(n_comm*sizeof(*(ctx->buffer)));
+  ctx->req = PGFEM_calloc(n_comm,sizeof(*(ctx->req)));
+  ctx->stat = PGFEM_calloc(n_comm,sizeof(*(ctx->stat)));
+
+  /* set tags to MPI_ANY_TAG, allocate individual buffers, and copy
+     buffer sizes */
+  for(int i=0; i<n_comm; i++){
+    ctx->sizes[i] = buf_sizes[i];
+    ctx->buffer[i] = malloc(buf_sizes[i]);
+    ctx->tags[i] = MPI_ANY_TAG;
+  }
 }
 
 int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
@@ -288,15 +323,76 @@ int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
 
   /* allocate if necessary */
   if(ctx->n_comms > 0){
+    ctx->tags = malloc(ctx->n_comms*sizeof(*(ctx->tags)));
     ctx->req = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Request));
     ctx->stat = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Status));
 
     ctx->buffer = PGFEM_calloc(ctx->n_comms,sizeof(char*));
     for(int i=0; i<ctx->n_comms; i++){
+      ctx->tags[i] = MPI_ANY_TAG;
       ctx->buffer[i] = PGFEM_calloc(ctx->sizes[i],sizeof(char));
       ctx->req[i] = MPI_REQUEST_NULL;
     }
   }
+  return err;
+}
+
+int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
+				      const int tag,
+				      int *count,
+				      int *indices)
+{
+  int err = 0;
+  int c = 0;
+  for(int i=0, e=ctx->n_comms; i<e; i++){
+    if(ctx->tags[i] == tag || ctx->tags[i] == MPI_ANY_TAG){
+      indices[c] = i;
+      c++;
+    }
+  }
+  *count = c;
+  return err;
+}
+
+int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
+				     const int proc,
+				     const int idx)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  /* can modify if comm is in process since it does not affect already
+     posted comm. */
+  ctx->procs[idx] = proc;
+  return err;
+}
+
+int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
+				    const int tag,
+				    const int idx)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  /* can modify if comm is in process since it does not affect already
+     posted comm. */
+  ctx->tags[idx] = tag;
+  return err;
+}
+
+int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
+				 const int idx,
+				 void *buf,
+				 int *n_bytes,
+				 int *proc,
+				 int *tag,
+				 MPI_Request *req)
+{
+  int err = 0;
+  if(idx >= ctx->n_comms) return ++err;
+  buf = ctx->buffer[idx];
+  *n_bytes = ctx->sizes[idx];
+  *proc = ctx->procs[idx];
+  *tag = ctx->tags[idx];
+  req = ctx->req + idx;
   return err;
 }
 
@@ -306,6 +402,7 @@ int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
   if(ctx != NULL){
     free(ctx->procs);
     free(ctx->sizes);
+    free(ctx->tags);
     free(ctx->req);
     free(ctx->stat);
     for(int i=0; i<ctx->n_comms; i++) free(ctx->buffer[i]);

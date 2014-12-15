@@ -1,17 +1,8 @@
 #include "initial_guess.h"
 #include <math.h>
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
 
 static const int periodic = 0;
 
@@ -48,7 +39,8 @@ long initial_guess (long ii,
   
   if (periodic == 1){
     if (iter == 0 || GAMA != 0){
-      def_grad_inv (Fr,E); def_grad_inv (FnB,PP);
+      def_grad_inv (CCONST_2(double) Fr,E);
+      def_grad_inv (CCONST_2(double) FnB,PP);
       
       BB[0][0] = eps[ii].il[ip].Fe[0];  BB[0][1] = eps[ii].il[ip].Fe[1]; BB[0][2] = eps[ii].il[ip].Fe[2];
       BB[1][0] = eps[ii].il[ip].Fe[3];  BB[1][1] = eps[ii].il[ip].Fe[4]; BB[1][2] = eps[ii].il[ip].Fe[5];
@@ -101,7 +93,8 @@ long initial_guess (long ii,
 	else{
       */
       
-      def_grad_inv (Fr,E); def_grad_inv (FnB,PP);
+      def_grad_inv (CCONST_2(double) Fr,E);
+      def_grad_inv (CCONST_2(double) FnB,PP);
       for (M=0;M<3;M++){for (N=0;N<3;N++){UU[M][N] = 0.0; for (P=0;P<3;P++){
 	    for (Q=0;Q<3;Q++){UU[M][N] += pow(Tr,-1./3.)*pow(Jr,1./3.)*PP[M][P]*E[P][Q]*FnB[Q][N];}}}}
       

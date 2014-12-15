@@ -1,4 +1,8 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 
 /** This is the element definition for a TOTAL LAGRANGIAN
     displacement-based formulation. */
@@ -8,61 +12,20 @@
 #include <math.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef NEW_POTENTIALS_H
 #include "new_potentials.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef TRANSFORM_COORDINATES_H
 #include "transform_coordinates.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 #ifndef DISP_DEBUG
 #define DISP_DEBUG 0
@@ -230,20 +193,6 @@ static int integration_help(const int elem_id,
 			    double *C_I,
 			    double *J);
 
-/** Compute constant quantities from volume element */
-static int compute_constant_quantities_res(double *F,
-					   double *Sbar,
-					   double *ST,
-					   const int ndofn,
-					   const int ve_id,
-					   const ELEMENT *ptr_ve,
-					   const double *vol_disp,
-					   const NODE *node,
-					   const SUPP sup,
-					   const EPS *eps,
-					   const double kappa,
-					   const HOMMAT *ptr_mat);
-
 /** helper function which handles all of the domain mapping and
     computes function values at the 2D integration points */
 static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
@@ -286,26 +235,6 @@ static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
 
 /** compute microscale contribution to K_00_e at an integration
     point */
-static int compute_K_00_e_at_ip(double *K_00_e,
-				/* macro information */
-				const int macro_nnode,
-				const int macro_ndofn,
-				const double macro_int_wt,
-				const double *macro_shape_func,
-				const double *macro_normal,
-				const double layer_thickness,
-				const double *gNoxN,
-				/* micro information */
-				const int nne,
-				const double micro_volume0,
-				const double jj,
-				const double wt,
-				const double *F,
-				const double *ST,
-				const damage *p_dam,
-				const double *Sbar,
-				const double *L);
-
 static int compute_K_00_e_at_ip_2(double *K_00_e,
 				  /* macro information */
 				  const int macro_nnode,
@@ -409,7 +338,6 @@ int DISP_stiffmat_el(double *Ks,
 		     const SUPP sup,
 		     const double *disp) 
 {
-  int count; /* always reset before use! */
   int err = 0;
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
@@ -511,7 +439,6 @@ int DISP_resid_el(double *R,
 		  const SUPP sup,
 		  const double *disp)
 {
-  int count; /* always reset before use! */
   int err = 0;
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
@@ -615,7 +542,6 @@ int DISP_resid_bnd_el(double *R,
      functions */
 
   int err = 0;
-  int count = 0; /* always reset before use */
 
   /* Get const pointers */
   const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
@@ -762,7 +688,6 @@ int DISP_stiffmat_bnd_el(double *Ks,
      other than linear tetra. */
 
   int err = 0;
-  int count = 0; /* always reset before use */
 
   /* Get const pointers */
   const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
@@ -909,7 +834,6 @@ void DISP_increment_el(const ELEMENT *elem,
 		       const HOMMAT *hommat,
 		       const double *disp)
 {
-  int count; /* always reset before use! */
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
 
@@ -1079,7 +1003,6 @@ void DISP_increment(const ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     const ELEMENT *ptr_elem = &elem[i];
     const int nne = ptr_elem->toe;
-    const int mat = ptr_elem->mat[2];
     const int ndofe = nne*ndofn;
 
     /* allocate */
@@ -1100,9 +1023,7 @@ void DISP_increment(const ELEMENT *elem,
     nodecoord_total(nne,nod,node,x,y,z);
 
     /* TOTAL LAGRANGIAN: get the TOTAL displacement */
-    def_elem(cn,ndofe,sol_incr,elem,node,disp_incr,sup,0);
-    def_elem(cn,ndofe,sol,elem,node,disp,sup,1);
-    cblas_daxpy(ndofe,1.0,disp_incr,1,disp,1);
+    def_elem_total(cn,ndofe,sol,sol_incr,elem,node,sup,disp);
 
     /* increment the element quantities */
     DISP_increment_el(elem,i,nne,node,nod,ndofn,
@@ -1116,14 +1037,6 @@ void DISP_increment(const ELEMENT *elem,
     free(disp);
   } /* For each element */
 
-  /* Increment the prescribed displacements. This is done here because
-     it is a total lagrangian formulation and we need to compute the
-     total displacements. */
-
-  for(int i=0; i<sup->npd; i++){
-    sup->defl[i] += sup->defl_d[i];
-  }
-
   /*** Update the coordinates FOR COMPUTING CURRENT VOLUME ONLY ***/
   /* Total Lagrangian formaulation takes gradients w.r.t. xi_fd */
   for (int ii=0;ii<nnodes;ii++){
@@ -1131,21 +1044,41 @@ void DISP_increment(const ELEMENT *elem,
       int II = node[ii].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + sol[II-1] + sol_incr[II-1];
-	if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];
-	if (i == 2) node[ii].x3 = node[ii].x3_fd + sol[II-1] + sol_incr[II-1];
+	else if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];
+	else if (i == 2) node[ii].x3 = node[ii].x3_fd + sol[II-1] + sol_incr[II-1];
       }
-      if (II < 0){
+      else if (II < 0){
 	if (i == 0) node[ii].x1 = (node[ii].x1_fd
-				   + sup->defl[abs(II)-1]);
+				   + sup->defl[abs(II)-1]
+				   + sup->defl_d[abs(II)-1]);
 
-	if (i == 1) node[ii].x2 = (node[ii].x2_fd
-				   + sup->defl[abs(II)-1]);
+	else if (i == 1) node[ii].x2 = (node[ii].x2_fd
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
 
-	if (i == 2) node[ii].x3 = (node[ii].x3_fd
-				   + sup->defl[abs(II)-1]);
+	else if (i == 2) node[ii].x3 = (node[ii].x3_fd
+					+ sup->defl[abs(II)-1]
+					+ sup->defl_d[abs(II)-1]);
       }
     }
   }/* end ii < nn */
+
+  /* update the coordinates including macroscale deformations */
+  if(sup->multi_scale){
+    const double *F = sup->F0;
+    double X[ndn];
+    double Y[ndn];
+    for(int i=0; i<nnodes; i++){
+      X[0] = node[i].x1_fd;
+      X[1] = node[i].x2_fd;
+      X[2] = node[i].x3_fd;
+      cblas_dgemv(CblasRowMajor,CblasNoTrans,ndn,ndn,1.0,
+		  F,ndn,X,1,0.0,Y,1);
+      node[i].x1 += Y[0];
+      node[i].x2 += Y[1];
+      node[i].x3 += Y[2];
+    }
+  }
 
   double PL, GPL;
   int myrank;
@@ -1285,13 +1218,6 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 	    one loop. This was not done originally for simplified
 	    testing/proof of concept code */
 
-	  /* compute K_00_e */
-	  /* err += compute_K_00_e_at_ip(K_00_e,macro_nnode,macro_ndofn, */
-	  /* 			      macro_int_wt,macro_shape_func, */
-	  /* 			      macro_normal,layer_thickness, */
-	  /* 			      gNoxN,nne,micro_volume0, */
-	  /* 			      jj,wt,F,ST,p_dam,Sbar,L); */
-
 	  err += compute_K_00_e_at_ip_2(K_00_e,macro_nnode,macro_ndofn,
 					macro_int_wt,macro_shape_func,
 					macro_normal,layer_thickness,
@@ -1407,7 +1333,6 @@ static void get_material_stiffness(const double kappa,
   SoxS = (double*) PGFEM_calloc (81,sizeof(double));
 
   /* Get the potential stuff */
-  double Ybar = 0.0;
   double H = 0.0;
   double dUdJ = 0.0;
   double d2UdJ2 = 0.0;
@@ -1579,7 +1504,7 @@ static void disp_based_resid_at_ip(double *R,
 				   const double jj,
 				   const double wt)
 {
-  double *AA, *BB;
+  double *AA;
   AA = aloc1(9);
 
   for(int a=0; a<nne; a++){
@@ -1787,7 +1712,6 @@ static void disp_based_bnd_tan_at_ip(double *K,
   for(int row=0; row<ndofe; row++){
     for(int col=0; col<ndofe; col++){
       const int idx = idx_2_gen(row,col,ndofe,ndofe);
-      const int idx_t = idx_2_gen(col,row,ndofe,ndofe);
       if(row<node_dof && col<node_dof){ /* Kuu */
   	const int idx_Kuu = idx_2_gen(row,col,node_dof,node_dof);
   	K[idx] += Kuu[idx_Kuu];
@@ -1882,76 +1806,6 @@ static int integration_help(const int elem_id,
 
   return err;
 }/* integration_help */
-
-static int compute_constant_quantities_res(double *F,
-					   double *Sbar,
-					   double *ST,
-					   const int ndofn,
-					   const int ve_id,
-					   const ELEMENT *ptr_ve,
-					   const double *vol_disp,
-					   const NODE *node,
-					   const SUPP sup,
-					   const EPS *eps,
-					   const double kappa,
-					   const HOMMAT *ptr_mat)
-{
-  int err = 0;
-
-  const int nne = ptr_ve->toe;
-
-  double *x = aloc1(nne);
-  double *y = aloc1(nne);
-  double *z = aloc1(nne);
-  nodecoord_total(nne,ptr_ve->nod,node,x,y,z);  
-
-  long n_pt_z = 0;
-  int_point(nne,&n_pt_z);
-
-  double *int_pt_ksi = aloc1(n_pt_z);
-  double *int_pt_eta = aloc1(n_pt_z);
-  double *int_pt_zet = aloc1(n_pt_z);
-  double *weights = aloc1(n_pt_z);
-
-  double *Na = aloc1(nne);
-  double *N_x = aloc1(nne);
-  double *N_y = aloc1(nne);
-  double *N_z = aloc1(nne);
-
-  double *C = aloc1(9);
-  double *C_I = aloc1(9);
-
-  double J = 0.0;
-  double jj = 0.0;
-  double wt = 0.0;
-
-  /* Compute F (along with others) at the single integration point in
-     a linear tetra */
-  err += integration_help(ve_id,nne,ndofn,0,0,0,x,y,z,
-			  int_pt_ksi,int_pt_eta,int_pt_zet,
-			  weights,vol_disp,sup,&wt,&jj,Na,
-			  N_x,N_y,N_z,ST,F,C,C_I,&J);
-
-  get_material_stress(kappa,ptr_mat,C,C_I,J,Sbar);
-
-  free(x);
-  free(y);
-  free(z);
-
-  free(int_pt_ksi);
-  free(int_pt_eta);
-  free(int_pt_zet);
-  free(weights);
-  free(Na);
-  free(N_x);
-  free(N_y);
-  free(N_z);
-  free(C);
-  free(C_I);
-
-  return err;
-}/* compute_constant_quantites_res() */
-
 
 static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
 				const ELEMENT *ptr_ve,
@@ -2240,91 +2094,6 @@ static void disp_based_bnd_Kul_Klu_at_ip(double *Kul,
   free(FSTab);
 }/* disp_based_bnd_Kul_Klu_at_ip() */
 
-
-static int compute_K_00_e_at_ip(double *K_00_e,
-				/* macro information */
-				const int macro_nnode,
-				const int macro_ndofn,
-				const double macro_int_wt,
-				const double *macro_shape_func,
-				const double *macro_normal,
-				const double layer_thickness,
-				const double *gNoxN,
-				/* micro information */
-				const int nne,
-				const double micro_volume0,
-				const double jj,
-				const double wt,
-				const double *F,
-				const double *ST,
-				const damage *p_dam,
-				const double *Sbar,
-				const double *L)
-{
-  int err = 0;
-
-  /* allocate space */
-  double *t0wg = PGFEM_calloc(ndn,sizeof(double));
-  double *LL = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *FNN = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *FNN_sym = PGFEM_calloc(ndn*ndn,sizeof(double));
-
-  for(int w=0; w<macro_nnode; w++){
-    for(int g=0; g<macro_ndofn; g++){
-      /* get pointer to current gNoxN block */
-      int idx = idx_4_gen(w,g,0,0,macro_nnode,
-			  macro_ndofn,ndn,ndn);
-      const double *p_gNoxN = gNoxN + idx;
-
-      /* compute sym(F'gNoxN) */
-      cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1,
-		  F,3,p_gNoxN,3,0.0,FNN,3);
-      symmetric_part(FNN_sym,FNN,3);
-
-      /* compute LL = L:FNN_sym */
-      for(int i=0; i<ndn*ndn; i++){
-	if(FNN_sym[i] == 0) continue;
-	for(int j=0; j<ndn*ndn; j++){
-	  LL[j] += L[ndn*ndn*j+i]*FNN_sym[i];
-	}
-      }
-
-      /* compute t0wg (integrate at microscale) */
-      for(int i=0; i<ndn; i++){
-	t0wg[i] = 0.0;
-	for(int j=0; j<ndn; j++){
-	  const int ij = idx_2(i,j);
-	  for(int k=0; k<ndn; k++){
-	    const int jk = idx_2(j,k);
-	    t0wg[i] += (jj*wt*macro_normal[k]/
-			(layer_thickness*micro_volume0)
-			*((1-p_dam->w)*gNoxN[ij]*Sbar[jk] + F[ij]*LL[jk]));
-	  }
-	}
-      }
-
-      /* compute K_00_e (integrate at macroscale) */
-      for(int i=0; i<ndn; i++){
-	for(int b=0; b<macro_ndofn; b++){
-	  if(i != b) continue;  /* N^a_{i,b} = N^a d_{i,b} */
-	  for(int a=0; a<macro_nnode; a++){
-	    int idx = idx_K(a,b,w,g,macro_nnode,macro_ndofn);
-	    K_00_e[idx] += (macro_int_wt*macro_shape_func[a]*t0wg[i]);
-	  }
-	}
-      }
-    }
-  }
-
-  /* clean up */
-  free(t0wg);
-  free(LL);
-  free(FNN);
-  free(FNN_sym);
-
-  return err;
-}
-
 static int compute_K_00_e_at_ip_2(double *K_00_e,
 				/* macro information */
 				const int macro_nnode,
@@ -2389,25 +2158,6 @@ static int compute_K_00_e_at_ip_2(double *K_00_e,
       }
     }
   }
-
-  /* TESTING */
-  /* { */
-  /*   static int first = 1; */
-  /*   if(first){ */
-  /*     int myrank = 0; */
-  /*     MPI_Comm_rank(MPI_COMM_WORLD,&myrank); */
-  /*     char *fname = NULL; */
-  /*     alloc_sprintf(&fname,"testing_%d.log",myrank); */
-  /*     FILE *out = PGFEM_fopen(fname,"w"); */
-  /*     PGFEM_fprintf(out,"Term_I:\n"); */
-  /*     print_array_d(out,term_I,ndn*ndn,ndn,ndn); */
-  /*     PGFEM_fprintf(out,"Term_II:\n"); */
-  /*     print_array_d(out,term_II,ndn*ndn,ndn,ndn); */
-  /*     fclose(out); */
-  /*     free(fname); */
-  /*     first = 0; */
-  /*   } */
-  /* } */
 
   /* integrate at macroscale */
   for(int b=0; b<ndn; b++){
@@ -2525,62 +2275,6 @@ static int compute_K_01_e_at_ip(double *K_01_e,
 
   return err;
 
-  /* double *t1wg = PGFEM_calloc(ndn,sizeof(double)); */
-  /* double *LL = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* for(int w=0; w<nne; w++){ */
-  /*   for(int g=0; g<ndn /\*ndofn *\/; g++){ */
-  /*     /\* get pointer to current gNoxN block *\/ */
-  /*     int idx = idx_4_gen(w,g,0,0,nnode,ndn,ndn,ndn); */
-  /*     const double *p_ST = ST + idx; */
-
-  /*     /\* compute sym(F'ST_wg) *\/ */
-  /*     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1, */
-  /* 		  F,3,p_ST,3,0.0,FA,3); */
-  /*     symmetric_part(FA_sym,FA,3); */
-
-  /*     /\* compute LL = L:FA_sym *\/ */
-  /*     for(int i=0; i<ndn*ndn; i++){ */
-  /* 	if(FA_sym[i] == 0) continue; */
-  /* 	for(int j=0; j<ndn*ndn; j++){ */
-  /* 	  LL[j] += L[ndn*ndn*j+i]*FA_sym[i]; */
-  /* 	} */
-  /*     } */
-
-  /*     /\* compute t1wg at the microscale *\/ */
-  /*     for(int i=0; i<ndn; i++){ */
-  /* 	t1wg[i] = 0.0; */
-  /* 	for(int j=0; j<ndn; j++){ */
-  /* 	  const int ij = idx_2(i,j); */
-  /* 	  for(int k=0; k<ndn; k++){ */
-  /* 	    const int jk = idx_2(j,k); */
-  /* 	    t1wg[i] += (jj*wt*macro_normal[k]/micro_volume0 */
-  /* 			*((1-p_dam->w)*p_ST[ij]*Sbar[jk] */
-  /* 			  + F[ij]*LL[jk])); */
-  /* 	  } */
-  /* 	} */
-  /*     } */
-
-  /*     /\* integrate at macroscale *\/ */
-  /*     for(int i=0; i<ndn; i++){ */
-  /* 	for(int b=0; b<macro_ndofn; b++){ */
-  /* 	  if(i != b) continue; */
-  /* 	  for(int a=0; a<macro_nnode; a++){ */
-  /* 	    int idx = idx_K_gen(a,b,w,g,macro_nnode,macro_ndofn,nne,ndn); */
-  /* 	    K_01_e[idx] += (macro_int_wt */
-  /* 			    *macro_shape_func[a]*t1wg[i]); */
-  /* 	  } */
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-
-  /* free(t1wg); */
-  /* free(LL); */
-  /* free(FA); */
-  /* free(FA_sym); */
-  /* return err; */
 }
 
 static int compute_K_10_micro_term(double *result,
@@ -2624,7 +2318,7 @@ static int compute_K_10_micro_term(double *result,
       result[p] += (1.0-damage)*Sbar[ij]*pNST[ij];
       const double *Lij = L + ij*ndn*ndn;
       for(int lm=0; lm<ndn*ndn; lm++){
-	result[p] += FSTs[ij]*Lij[lm]*FN[lm];
+	result[p] += FSTs[ij]*Lij[lm]*pFN[lm];
       }
     }
     result[p] *= int_and_scale;
@@ -2667,7 +2361,7 @@ static int compute_K_10_e_at_ip(double *K_10_e,
 	for(int g=0; g<macro_ndofn; g++){
 	  const int abwg = idx_K_gen(a,b,w,g,macro_nnode,
 				     macro_ndofn,nne,ndn);
-	  K_10_e[abwg] = macro_int_wt*macro_shape_func[w]*micro_term_ab[g];
+	  K_10_e[abwg] = macro_shape_func[w]*micro_term_ab[g];
 	}
       }
       free(micro_term_ab);
@@ -2675,64 +2369,4 @@ static int compute_K_10_e_at_ip(double *K_10_e,
   }
 
   return err;
-
-  /* double *TMP = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *NNA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FA_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *FNN_sym = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* double *LL = PGFEM_calloc(ndn*ndn,sizeof(double)); */
-  /* for(int a=0; a<nne; a++){ */
-  /*   for(int b=0; b<ndn /\*ndofn *\/; b++){ */
-  /*     const double *p_ST = ST + idx_4_gen(a,b,0,0,nne, */
-  /* 					  ndn,ndn,ndn); */
-
-  /*     /\* compute sym(F'ST) *\/ */
-  /*     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		  F,3,p_ST,3,0.0,TMP,3); */
-  /*     symmetric_part(FA_sym,TMP,3); */
-
-  /*     for(int w=0; w<macro_nnode; w++){ */
-  /* 	for(int g=0; g<macro_ndofn; g++){ */
-  /* 	  const double *p_gNoxN = gNoxN + idx_4_gen(w,g,0,0,macro_nnode, */
-  /* 						    macro_ndofn,ndn,ndn); */
-
-  /* 	  /\* compute sym(gNoxN'ST) *\/ */
-  /* 	  cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		      p_gNoxN,3,p_ST,3,0.0,TMP,3); */
-  /* 	  symmetric_part(NNA_sym,TMP,3); */
-
-  /* 	  /\* compute sym(F'gNoxN) *\/ */
-  /* 	  cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,3,3,3,1.0, */
-  /* 		      F,3,p_gNoxN,3,0.0,TMP,3); */
-  /* 	  symmetric_part(FNN_sym,TMP,3); */
-
-  /* 	  /\* compute LL = L:FNN_sym *\/ */
-  /* 	  for(int i=0; i<ndn*ndn; i++){ */
-  /* 	    if(FNN_sym[i] == 0) continue; */
-  /* 	    for(int j=0; j<ndn*ndn; j++){ */
-  /* 	      LL[j] += L[ndn*ndn*j+i]*FNN_sym[i]; */
-  /* 	    } */
-  /* 	  } */
-
-  /* 	  /\* compute contribution to K_01 *\/ */
-  /* 	  const int idx = idx_K_gen(a,b,w,g,nne,ndn, */
-  /* 				    macro_nnode,macro_ndofn); */
-  /* 	  for(int i=0; i<ndn*ndn; i++){ */
-  /* 	    K_10_e[idx] += (jj*wt/micro_volume0 */
-  /* 			    *((1-p_dam->w)*Sbar[i]*NNA_sym[i] */
-  /* 			      +FA_sym[i]*LL[i])); */
-  /* 	  } */
-
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
-
-  /* free(TMP); */
-  /* free(NNA_sym); */
-  /* free(FA_sym); */
-  /* free(FNN_sym); */
-  /* free(LL); */
-
-  /* return err; */
 }

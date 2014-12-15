@@ -5,17 +5,9 @@
 #include <math.h>
 #include <string.h>
 
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
 
 static const double max_hy_term = 25;
 static const int ndim = 3;
@@ -124,7 +116,7 @@ int read_cohesive_properties(FILE *in,
     default:
       PGFEM_printerr("Cohesive type not yet implemented! %s:%s\n",
 		     __func__,__FILE__);
-	PGFEM_Abort();
+      PGFEM_Abort();
     }
   }
 
@@ -133,7 +125,7 @@ int read_cohesive_properties(FILE *in,
 
   if(err){
     PGFEM_printerr("ERROR: problem reading file! %s:%s:%d\n",
-	    __func__,__FILE__,__LINE__);
+		   __func__,__FILE__,__LINE__);
     PGFEM_Abort();
   }
   return err;
@@ -157,7 +149,7 @@ int PPR_potential(double *p_pot,
 		  const double *vars)
 {
   int err = -1;
-  static const struct PPR_PROP_KEY *pk = &PPR_pkey;
+  /* static const struct PPR_PROP_KEY *pk = &PPR_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -169,7 +161,7 @@ int PPR_traction(double *traction,
 		 const double *vars)
 {
   int err = -1;
-  static const struct PPR_PROP_KEY *pk = &PPR_pkey;
+  /* static const struct PPR_PROP_KEY *pk = &PPR_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -182,7 +174,7 @@ int PPR_tangents(double *mat_tan,
 		 const double *vars)
 {
   int err = -1;
-  static const struct PPR_PROP_KEY *pk = &PPR_pkey;
+  /* static const struct PPR_PROP_KEY *pk = &PPR_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -195,7 +187,7 @@ int Needleman_potential(double *p_pot,
 			const double *vars)
 {
   int err = -1;
-  static const struct NEEDLEMAN_PROP_KEY *pk = &Needleman_pkey;
+  /* static const struct NEEDLEMAN_PROP_KEY *pk = &Needleman_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -421,14 +413,14 @@ int Needleman_tangents(double *mat_tan,
 /*** Sc : Xc : b : k -> Matous-Arciniega
      1 < k < 5.04 - parameter shifts the Xc to the right,
      but Gc is preserved ***/
- int MA_potential(double *p_pot,
+int MA_potential(double *p_pot,
 		 const double *jump,
 		 const double *normal,
 		 const double *props,
 		 const double *vars)
 {
   int err = -1;
-  static const struct MA_PROP_KEY *pk = &MA_pkey;
+  /* static const struct MA_PROP_KEY *pk = &MA_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -440,7 +432,7 @@ int MA_traction(double *traction,
 		const double *vars)
 {
   int err = 0;
-  static const struct MA_PROP_KEY *pk = &MA_pkey;
+  /* static const struct MA_PROP_KEY *pk = &MA_pkey; */
   return err;
 }
 
@@ -453,7 +445,7 @@ int MA_tangents(double *mat_tan,
 		const double *vars)
 {
   int err = 0;
-  static const struct MA_PROP_KEY *pk = &MA_pkey;
+  /* static const struct MA_PROP_KEY *pk = &MA_pkey; */
   return err;
 }
 
@@ -464,7 +456,7 @@ int vdWaals_potential(double *p_pot,
 		      const double *vars)
 {
   int err = -1;
-  static const struct VDW_PROP_KEY *pk = &VDW_pkey;
+  /* static const struct VDW_PROP_KEY *pk = &VDW_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -540,16 +532,12 @@ int vdWaals_tangents(double *mat_tan,
   err += get_jump_nt(&Xn,&Xs,jump,N);
   err += get_eff_jump(&X_eff,Xn,Xs,0.0);
 
- /* compute eff_trac & eff_tan*/
-  double eff_trac = 0.0;
   double eff_tan = 0.0;
-  //err += compute_vdWaals_eff_trac(&eff_trac,props[pk->A],X_eff);
   err += compute_vdWaals_eff_tan(&eff_tan,props[pk->A],X_eff);
 
   /* compute tangents */
   for(int i=0; i<ndim; i++){
     for(int j=0; j<ndim; j++){
-      double dij = (i==j)?1.0:0.0;
       mat_tan[idx_2(i,j)] = eff_tan*N[i]*N[j];
       geo_tan[idx_2(i,j)] = 0.0;
     }
@@ -565,7 +553,7 @@ int LJ_potential(double *p_pot,
 		 const double *vars)
 {
   int err = -1;
-  static const struct LJ_PROP_KEY *pk = &LJ_pkey;
+  /* static const struct LJ_PROP_KEY *pk = &LJ_pkey; */
   /*** NOT IMPLEMENTED ***/
   return err;
 }
@@ -602,7 +590,7 @@ int LJ_traction(double *traction,
   double Xs = 0.0;
   double X_eff = 0.0;
 
- /* NOTE: The normal is hard coded because the attractive force is
+  /* NOTE: The normal is hard coded because the attractive force is
      always in the vertical direction */
   double N[3] = {0.0,0.0,1.0};
 
@@ -623,11 +611,11 @@ int LJ_traction(double *traction,
 }
 
 int LJ_tangents(double *mat_tan,
-		     double *geo_tan,
-		     const double *jump,
-		     const double *normal,
-		     const double *props,
-		     const double *vars)
+		double *geo_tan,
+		const double *jump,
+		const double *normal,
+		const double *props,
+		const double *vars)
 {
   int err = 0;
   static const struct LJ_PROP_KEY *pk = &LJ_pkey;
@@ -635,7 +623,7 @@ int LJ_tangents(double *mat_tan,
   double Xs = 0.0;
   double X_eff = 0.0;
 
- /* NOTE: The normal is hard coded because the attractive force is
+  /* NOTE: The normal is hard coded because the attractive force is
      always in the vertical direction */
   double N[3] = {0.0,0.0,1.0};
 
@@ -643,7 +631,7 @@ int LJ_tangents(double *mat_tan,
   err += get_jump_nt(&Xn,&Xs,jump,N);
   err += get_eff_jump(&X_eff,Xn,Xs,0.0);
 
- /* compute eff_trac & eff_tan*/
+  /* compute eff_trac & eff_tan*/
   double eff_trac = 0.0;
   double eff_tan = 0.0;
   err += compute_LJ_eff_trac(&eff_trac,props[pk->A],props[pk->X0],X_eff);
@@ -652,7 +640,6 @@ int LJ_tangents(double *mat_tan,
   /* compute tangents */
   for(int i=0; i<ndim; i++){
     for(int j=0; j<ndim; j++){
-      double dij = (i==j)?1.0:0.0;
       mat_tan[idx_2(i,j)] = eff_tan*N[i]*N[j];
       geo_tan[idx_2(i,j)] = 0.0;
     }
@@ -662,8 +649,8 @@ int LJ_tangents(double *mat_tan,
 }
 
 int Multiscale_potential(double *p_pot,
-			   const double *jump,
-			   const double *normal,
+			 const double *jump,
+			 const double *normal,
 			 const double *props,
 			 const double *vars)
 {

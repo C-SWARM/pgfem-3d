@@ -6,18 +6,13 @@
 #include "matice.h"
 #include <math.h>
 
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef RESICE_H
 #include "resice.h"
-#endif
 
 #define SIGN(a,b) ((b)<0 ? -fabs(a) : fabs(a))
 
 int compare_val_w_key(const void *a,
-			const void *b)
+		      const void *b)
 {
   return ( ((val_key*)a)->val - ((val_key*)b)->val);
 }
@@ -48,9 +43,9 @@ long round1 (double a)
 }
 
 void nas_AB (double **A,double **B,double **C,long m,long n,long p)
-     /* 
-	Procedura na nasobeni matic typu A(m,n)*B(n,p)=C(m,p), plne matice 
-     */
+/* 
+   Procedura na nasobeni matic typu A(m,n)*B(n,p)=C(m,p), plne matice 
+*/
 {
   
   long i,j,o;
@@ -64,17 +59,17 @@ void nas_AB (double **A,double **B,double **C,long m,long n,long p)
   for(i=0;i<m;i++){
     for(j=0;j<p;j++){
       for(o=0;o<n;o++){
-		  C[i][j] += A[i][o]*B[o][j];
+	C[i][j] += A[i][o]*B[o][j];
       }
     }
   }
 }
 
 void nas_ATB (double **AT,double **B,double **C,long m,long n,long p)
-     /* 
-	Procedura na nasobeni matic typu
-	A_T(m,n)*B(n,p)=C(m,p), plne matice
-     */
+/* 
+   Procedura na nasobeni matic typu
+   A_T(m,n)*B(n,p)=C(m,p), plne matice
+*/
 {
   
   long i,j,o;
@@ -88,17 +83,17 @@ void nas_ATB (double **AT,double **B,double **C,long m,long n,long p)
   for(i=0;i<m;i++){
     for(j=0;j<p;j++){
       for(o=0;o<n;o++){
-		  C[i][j] += AT[o][i]*B[o][j];
+	C[i][j] += AT[o][i]*B[o][j];
       }
     }
   }
 }
 
 void nas_ABT (double **AT,double **B,double **C,long m,long n,long p)
-     /* 
-	Procedura na nasobeni matic typu A(m,n)*B_T(n,p)=C(m,p), plne
-	matice
-     */
+/* 
+   Procedura na nasobeni matic typu A(m,n)*B_T(n,p)=C(m,p), plne
+   matice
+*/
 {
   
   long i,j,o;
@@ -112,16 +107,16 @@ void nas_ABT (double **AT,double **B,double **C,long m,long n,long p)
   for(i=0;i<m;i++){
     for(j=0;j<p;j++){
       for(o=0;o<n;o++){
-		  C[i][j] += AT[i][o]*B[j][o];
+	C[i][j] += AT[i][o]*B[j][o];
       }
     }
   }
 }
 
 void inv_I (double **A,double **I,long m)
-     /* 
-	Procedura na sestaveni Inverzni matice typu A(m,n), plna matice 
-     */
+/* 
+   Procedura na sestaveni Inverzni matice typu A(m,n), plna matice 
+*/
 {
   
   long i,j,pom;
@@ -164,38 +159,38 @@ void inv_I (double **A,double **I,long m)
 }
 
 void vvplus (double *a,double *b,long n)
-     /*
-       a = a + b
-     */
+/*
+  a = a + b
+*/
 {
   long i;
   for (i=0;i<n;i++) a[i] += b[i];
 }
 
 void vvminus (double *a,double *b,long n)
-     /*
-       a = a - b
-     */
+/*
+  a = a - b
+*/
 {
   long i;
   for (i=0;i<n;i++) a[i] -= b[i];
 }
 
 void mv (double *a,double *b,double *c,long m,long n)
-     /*
-       funkce nasobi matici A(m,n) s vektorem b(n,1)
-       A(m,n).b(n,1)=c(m,1)
+/*
+  funkce nasobi matici A(m,n) s vektorem b(n,1)
+  A(m,n).b(n,1)=c(m,1)
        
-       vystup
-       c - vysledny vektor
+  vystup
+  c - vysledny vektor
        
-       vstupy
-       a - matice A
-       b - vektor b
-       m,n - rozmer matice A; A stored by rows
+  vstupy
+  a - matice A
+  b - vektor b
+  m,n - rozmer matice A; A stored by rows
        
-       19.2.1997
-     */
+  19.2.1997
+*/
 {
   long i,j,aca;
   double s;
@@ -212,12 +207,12 @@ void mv (double *a,double *b,double *c,long m,long n)
 }
 
 void mtv (double *a,double *b,double *c,long m,long n)
-     /*
-       A^T . b = c
-       A(m,n), b(m,1), c(n,1)
+/*
+  A^T . b = c
+  A(m,n), b(m,1), c(n,1)
        
-       A is stored by rows
-     */
+  A is stored by rows
+*/
 {
   long i,j,ii;
   double s;
@@ -233,20 +228,20 @@ void mtv (double *a,double *b,double *c,long m,long n)
 }
 
 void mvc (double *a,double *b,double *c,long m,long n)
-     /*
-       funkce nasobi matici A vektorem b, vysledek je vektor c
-       matice A je ulozena po sloupcich
+/*
+  funkce nasobi matici A vektorem b, vysledek je vektor c
+  matice A je ulozena po sloupcich
        
-       vstupy
-       a - pole obsahujici matici A(m,n)
-       b - pole obsahujici vektor b(n,1)
-       m,n - rozmery matice a vektoru
+  vstupy
+  a - pole obsahujici matici A(m,n)
+  b - pole obsahujici vektor b(n,1)
+  m,n - rozmery matice a vektoru
        
-       vystup
-       c - pole obsahujici vysledny vektor c(m,1)
+  vystup
+  c - pole obsahujici vysledny vektor c(m,1)
        
-       15.12.1998
-     */
+  15.12.1998
+*/
 {
   long i,j,k;
   double s;
@@ -261,21 +256,21 @@ void mvc (double *a,double *b,double *c,long m,long n)
 }
 
 void mtvc (double *a,double *b,double *c,long m,long n)
-     /*
-       funkce nasobi transponovanou matici a vektor A^T b = c
+/*
+  funkce nasobi transponovanou matici a vektor A^T b = c
        
-       matice A je ulozena po sloupcich
+  matice A je ulozena po sloupcich
        
-       vstupy
-       a - pole obsahujici matici A(m,n)
-       b - pole obsahujici vektor b(m,1)
-       m,n - rozmery matice A
+  vstupy
+  a - pole obsahujici matici A(m,n)
+  b - pole obsahujici vektor b(m,1)
+  m,n - rozmery matice A
        
-       vystup
-       c - pole obsahujici vektor c(n,1)
+  vystup
+  c - pole obsahujici vektor c(n,1)
        
-       7.12.1998
-     */
+  7.12.1998
+*/
 {
   long i,j,k;
   double s;
@@ -290,13 +285,13 @@ void mtvc (double *a,double *b,double *c,long m,long n)
 }
 
 void mm (double *a,double *b,double *c,long l,long m,long n)
-     /*
-       funkce pocita soucin A.B=C
+/*
+  funkce pocita soucin A.B=C
        
-       A, B stored by rows 
+  A, B stored by rows 
        
-       19.2.1997
-     */
+  19.2.1997
+*/
 {
   long i,j,k,ac,acb,acu,acl;
   double s;
@@ -319,17 +314,17 @@ void mm (double *a,double *b,double *c,long l,long m,long n)
 }
 
 void mmt (double *a,double *b,double *c,long ra,long ca,long rb)
-     /*
-       funkce provadi soucin A . B^T = C
+/*
+  funkce provadi soucin A . B^T = C
 
-       A, B stored by rows 
+  A, B stored by rows 
        
-       a(ra,ca) - matice A
-       b(rb,ca) - matice B
-       c(ra,rb) - matice C
+  a(ra,ca) - matice A
+  b(rb,ca) - matice B
+  c(ra,rb) - matice C
        
-       9.11.1999
-     */
+  9.11.1999
+*/
 {
   long i,j,k,ii,kk,lk,uk;
   double s;
@@ -348,13 +343,13 @@ void mmt (double *a,double *b,double *c,long ra,long ca,long rb)
 }
 
 void mtm (double *a,double *b,double *c,long ra,long ca,long cb)
-     /*
-       funkce provadi soucin A^T . B = C
+/*
+  funkce provadi soucin A^T . B = C
 
-       A, B stored by rows 
+  A, B stored by rows 
 
-       a(ra,ca), b(ra,cb), c(ca,cb)
-     */
+  a(ra,ca), b(ra,cb), c(ca,cb)
+*/
 {
   long i,j,k,ii;
   double s;
@@ -372,22 +367,22 @@ void mtm (double *a,double *b,double *c,long ra,long ca,long cb)
 }
 
 void mtmccr (double *a,double *b,double *c,long m,long n,long p)
-     /*
-       funkce nasobi matice A^T . B = C
+/*
+  funkce nasobi matice A^T . B = C
        
-       matice A a B jsou ulozeny po sloupcich
-       vysledna matice C je ulozena po radcich
+  matice A a B jsou ulozeny po sloupcich
+  vysledna matice C je ulozena po radcich
        
-       vstupy
-       a - pole obsahujici matici A(m,n)
-       b - pole obsahujici matici B(m,p)
-       m,n,p - rozmery matic A, B, C
+  vstupy
+  a - pole obsahujici matici A(m,n)
+  b - pole obsahujici matici B(m,p)
+  m,n,p - rozmery matic A, B, C
        
-       vystup
-       c - pole obsahujici matici C(n,p)
+  vystup
+  c - pole obsahujici matici C(n,p)
        
-       7.12.1998
-     */
+  7.12.1998
+*/
 {
   long i,j,k,ii,lk,uk,ac;
   double s;
@@ -406,12 +401,12 @@ void mtmccr (double *a,double *b,double *c,long m,long n,long p)
 }
 
 void copyi (long *a,long *b,long n)
-     /*
-       funkce kopiruje celociselne pole b do pole a
-       obe pole maji n slozek
+/*
+  funkce kopiruje celociselne pole b do pole a
+  obe pole maji n slozek
        
-       31.5.1998
-     */
+  31.5.1998
+*/
 {
   long i;
   for (i=0;i<n;i++){
@@ -420,12 +415,12 @@ void copyi (long *a,long *b,long n)
 }
 
 void copyd (double *a,double *b,long n)
-     /*
-       funkce kopiruje celociselne pole b do pole a
-       obe pole maji n slozek
+/*
+  funkce kopiruje celociselne pole b do pole a
+  obe pole maji n slozek
        
-       31.5.1998
-     */
+  31.5.1998
+*/
 {
   long i;
   for (i=0;i<n;i++){
@@ -434,12 +429,12 @@ void copyd (double *a,double *b,long n)
 }
 
 double ss (const double *a, const double *b,const long n)
-     /*
-   funkce pocita skalarni soucin vektoru a(n) a b(n)
+/*
+  funkce pocita skalarni soucin vektoru a(n) a b(n)
 
-   // TRANSLATION: computes scalar product of vectors
+  // TRANSLATION: computes scalar product of vectors
    
-   5.4.1996
+  5.4.1996
 */
 {
   long i;
@@ -451,9 +446,9 @@ double ss (const double *a, const double *b,const long n)
 }
 
 void nor_vec (double *BS_a,long n,MPI_Comm mpi_comm)
-     /*
-       Return normalized global vector BS_a
-     */
+/*
+  Return normalized global vector BS_a
+*/
 {
   double nor,tmp;
   long i;
@@ -473,9 +468,9 @@ void nor_vec (double *BS_a,long n,MPI_Comm mpi_comm)
 }
 
 void nor_vec_serial (double *a,long n,int myrank)
-     /*
-       Return normalized local vector a
-     */
+/*
+  Return normalized local vector a
+*/
 {
   double nor;
   long i;
@@ -491,9 +486,9 @@ void nor_vec_serial (double *a,long n,int myrank)
 }
 
 void normalization (double *a,double nor,long n)
-     /*
+/*
        
-     */
+ */
 {
   long i;
   
@@ -509,20 +504,20 @@ void normalization (double *a,double nor,long n)
 }
 
 void mv_sky (double *a,double *b,double *c,long *adr,long n)
-     /*
-       funkce nasobi matici A(n,n) s vektorem B(n,1)
-       matice A je ulozena ve skylinu
+/*
+  funkce nasobi matici A(n,n) s vektorem B(n,1)
+  matice A je ulozena ve skylinu
        
-       a - matice ulozena ve skylinu
-       b - vektor
-       c - vysledny vektor
-       adr - pole adres diagonalnich prvku
-       n - rozmer matice
+  a - matice ulozena ve skylinu
+  b - vektor
+  c - vysledny vektor
+  adr - pole adres diagonalnich prvku
+  n - rozmer matice
        
-       funkce byla testovana 24.7.1996 programem test_fin_res.c v /u/jk/TESTY/METODY
+  funkce byla testovana 24.7.1996 programem test_fin_res.c v /u/jk/TESTY/METODY
        
-       **** otestovano ****
-       */
+  **** otestovano ****
+  */
 {
   long i,j,acb,aci,aci1;
   double s,g;
@@ -540,21 +535,21 @@ void mv_sky (double *a,double *b,double *c,long *adr,long n)
 }
 
 void utv (double *a,double *b,double *c,long *adr,long n)
-     /*
-       a - upper triangular matrix in skyline storage
-       b - vector
-       c - vector
-       adr - addresses of diagonal elements
-       n - dimension
+/*
+  a - upper triangular matrix in skyline storage
+  b - vector
+  c - vector
+  adr - addresses of diagonal elements
+  n - dimension
        
-       | 1 x x x x x x |
-       | 0 1 x x x x x |
-       | 0 0 1 x x x x |
-   A = | 0 0 0 1 x x x |
-       | 0 0 0 0 1 x x |
-       | 0 0 0 0 0 1 x |
-       | 0 0 0 0 0 0 1 |
-     */
+  | 1 x x x x x x |
+  | 0 1 x x x x x |
+  | 0 0 1 x x x x |
+  A = | 0 0 0 1 x x x |
+  | 0 0 0 0 1 x x |
+  | 0 0 0 0 0 1 x |
+  | 0 0 0 0 0 0 1 |
+*/
 {
   long i,j,k,lj,uj;
   double s;
@@ -572,21 +567,21 @@ void utv (double *a,double *b,double *c,long *adr,long n)
 }
 
 void ltv (double *a,double *b,double *c,long *adr,long n)
-     /*
-       a - lower triagular matrix in skyline storage
-       b - vector
-       c - vector
-       adr - addresses of diagonal elements
-       n - dimension
+/*
+  a - lower triagular matrix in skyline storage
+  b - vector
+  c - vector
+  adr - addresses of diagonal elements
+  n - dimension
        
-       | 1 0 0 0 0 0 0 |
-       | x 1 0 0 0 0 0 |
-   A = | x x 1 0 0 0 0 |
-       | x x x 1 0 0 0 |
-       | x x x x 1 0 0 |
-       | x x x x x 1 0 |
-       | x x x x x x 1 |
-     */
+  | 1 0 0 0 0 0 0 |
+  | x 1 0 0 0 0 0 |
+  A = | x x 1 0 0 0 0 |
+  | x x x 1 0 0 0 |
+  | x x x x 1 0 0 |
+  | x x x x x 1 0 |
+  | x x x x x x 1 |
+*/
 {
   long i,j,k,lj,uj;
   double s;
@@ -605,10 +600,10 @@ void ltv (double *a,double *b,double *c,long *adr,long n)
 }
 
 void per_sym (double ***e)
-     /*
-       Function returns permutation symbol Eijk
-       http://mathworld.wolfram.com/PermutationSymbol.html
-     */
+/*
+  Function returns permutation symbol Eijk
+  http://mathworld.wolfram.com/PermutationSymbol.html
+*/
 {
   
   e[0][1][2] = e[1][2][0] = e[2][0][1] = +1.0;
@@ -616,10 +611,10 @@ void per_sym (double ***e)
 }
 
 void cross_product (double *a,double *b,double *c)
-     /*
-       Cross product
-       c = a x b
-     */
+/*
+  Cross product
+  c = a x b
+*/
 {
   long i,j,k;
   double ***e;
@@ -641,16 +636,16 @@ void cross_product (double *a,double *b,double *c)
 }
 
 void tred2 (double **a,int n,double *d,double *e)
-     /*
-       Householder reduction of a real, symmetric matrix
-       a[1..n][1..n]. On output, a is replaced by the orthogonal
-       matrix Q effecting the transformation. d[1..n] returns the
-       diagonal elements of the tridiagonal matrix, and e[1..n] the
-       off-diagonal elements, with e[1]=0. Several statements, as
-       noted in comments, can be omitted if only eigenvalues are to be
-       found, in which case a contains no useful information on
-       output. Otherwise they are to be included.
-     */
+/*
+  Householder reduction of a real, symmetric matrix
+  a[1..n][1..n]. On output, a is replaced by the orthogonal
+  matrix Q effecting the transformation. d[1..n] returns the
+  diagonal elements of the tridiagonal matrix, and e[1..n] the
+  off-diagonal elements, with e[1]=0. Several statements, as
+  noted in comments, can be omitted if only eigenvalues are to be
+  found, in which case a contains no useful information on
+  output. Otherwise they are to be included.
+*/
 {
   int l,k,j,i;
   double scale,hh,h,g,f;
@@ -720,22 +715,22 @@ void tred2 (double **a,int n,double *d,double *e)
 }
 
 void tqli (double *d,double *e,int n,double **z)
-     /*
-       QL algorithm with implicit shifts, to determine the eigenvalues
-       and eigenvectors of a real, symmetric, tridiagonal matrix, or
-       of a real, symmetric matrix previously reduced by tred2
-       ¡×11.2. On input, d[1..n] contains the diagonal elements of the
-       tridiagonal matrix. On output, it returns the eigenvalues. The
-       vector e[1..n] inputs the subdiagonal elements of the
-       tridiagonal matrix, with e[1] arbitrary. On output e is
-       destroyed. When finding only the eigenvalues, several lines may
-       be omitted, as noted in the comments. If the eigenvectors of a
-       tridiagonal matrix are desired, the matrix z[1..n][1..n] is
-       input as the identity matrix. If the eigenvectors of a matrix
-       that has been reduced by tred2 are required, then z is input as
-       the matrix output by tred2.  In either case, the kth column of
-       z returns the normalized eigenvector corresponding to d[k].
-     */
+/*
+  QL algorithm with implicit shifts, to determine the eigenvalues
+  and eigenvectors of a real, symmetric, tridiagonal matrix, or
+  of a real, symmetric matrix previously reduced by tred2
+  ¡×11.2. On input, d[1..n] contains the diagonal elements of the
+  tridiagonal matrix. On output, it returns the eigenvalues. The
+  vector e[1..n] inputs the subdiagonal elements of the
+  tridiagonal matrix, with e[1] arbitrary. On output e is
+  destroyed. When finding only the eigenvalues, several lines may
+  be omitted, as noted in the comments. If the eigenvectors of a
+  tridiagonal matrix are desired, the matrix z[1..n][1..n] is
+  input as the identity matrix. If the eigenvectors of a matrix
+  that has been reduced by tred2 are required, then z is input as
+  the matrix output by tred2.  In either case, the kth column of
+  z returns the normalized eigenvector corresponding to d[k].
+*/
 {
   int m,l,iter,i,k;
   double s,r,p,g,f,dd,c,b;

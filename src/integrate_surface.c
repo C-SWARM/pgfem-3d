@@ -1,27 +1,15 @@
+/* HEADER */
 #include "integrate_surface.h"
 #include <string.h>
-#include "PGFEM_mpi.h"
+#include <math.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
+#include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
-#endif
-
-#ifndef QUADRATURE_RULES_H
 #include "quadrature_rules.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
 
 int integrate_surface(const int nne,
 		      const int face_id,
@@ -97,7 +85,7 @@ int integrate_surface(const int nne,
     }/* end switch face */
     break;
   
-    /*case 8: \/* Hex --> quad *\/
+    /*case 8: *//* Hex --> quad *//*
 
       break;*/
   default:

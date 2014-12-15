@@ -7,7 +7,6 @@ Newton_Raphson.o \
 PLC.o \
 PLoc_Sparse.o \
 Psparse_ApAi.o \
-RNPsparse_ApAi.o \
 Re1_Re2_Re3.o \
 TA_GA.o \
 addresses.o \
@@ -80,7 +79,6 @@ node.o \
 element.o \
 solve_system.o \
 PGFEM_HYPRE_preconditioners.o \
-compute_force_on_model_ent.o \
 allocation.o \
 cohesive_element_utils.o \
 cohesive_element.o \
@@ -109,9 +107,15 @@ PGFEM_io.o \
 PGFEM_mpi.o \
 ms_job_intercomm.o \
 macro_micro_functions.o \
+pgf_fe2_micro_server.o \
+pgf_fe2_job.o \
+pgf_fe2_server_rebalance.o \
+pgf_fe2_rebalancer.o \
+pgf_fe2_macro_client.o \
+pgf_fe2_restart.o \
+solver_file.o \
+condense.o \
+three_field_element.o \
 macro_micro_main.o \
 main.o \
 super_main.o
-
-# damage.o \
-#PFEM3d.o

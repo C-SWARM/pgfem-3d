@@ -2,62 +2,20 @@
 #include <math.h>
 #include <string.h>
 #include "umfpack.h"
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef INITIAL_GUESS_H
 #include "initial_guess.h"
-#endif
-
-#ifndef DIFFERENTIATION_OF_UU_H
 #include "differentiation_of_UU.h"
-#endif
-
-#ifndef NULL_H
 #include "null.h"
-#endif
-
-#ifndef PRESSU_SHAPE_H
 #include "pressu_shape.h"
-#endif
-
-#ifndef STRESS_STRAIN_H
 #include "stress_strain.h"
-#endif
-
-#ifndef TA_GA_H
 #include "TA_GA.h"
-#endif
-
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
 
 static const int periodic = 0;
 
@@ -107,9 +65,9 @@ double int_alg_res (double lam,
   
   AA = aloc2 (3,3); E = aloc2 (3,3); PP = aloc2 (3,3);
   
-  def_grad_inv (UU,AA);
+  def_grad_inv (CCONST_2(double) UU,AA);
   for (M=0;M<3;M++){for (N=0;N<3;N++){E[M][N] = 0.0; for (P=0;P<3;P++){E[M][N] += AA[M][P]*Fp[P][N];}}}
-  pom = def_grad_det (E);
+  pom = def_grad_det (CCONST_2(double) E);
   
   nulld2 (E,3,3);
   for (k=0;k<nss;k++){
@@ -266,11 +224,11 @@ long int_UU (long ii,
     }/* end k < nss */
     
     /* Inverse of UU */
-    def_grad_inv (UU,PP);
+    def_grad_inv (CCONST_2(double) UU,PP);
     for (M=0;M<3;M++){for (N=0;N<3;N++){ CC[M][N] = 0.0; for (U=0;U<3;U++){ CC[M][N] += PP[M][U]*Fp[U][N];}}}
     
     /* Det. of pFn+1 */
-    pom = def_grad_det (CC);
+    pom = def_grad_det (CCONST_2(double) CC);
     
     for (M=0;M<3;M++){
       for (N=0;N<3;N++){
@@ -635,8 +593,8 @@ long integration_alg (long ne,
 	  
 	  shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
 	  def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
-	  Jr = def_grad_det (Fr);
-	  Jn = def_grad_det (Fn);
+	  Jr = def_grad_det (CCONST_2(double) Fr);
+	  Jn = def_grad_det (CCONST_2(double) Fn);
 	  
 	  /* Pressure shape functions */
 	  pressu_shape (npres,ksi,eta,zet,Psi);
@@ -660,14 +618,14 @@ long integration_alg (long ne,
 	  if (periodic == 1) {
 	    
 	    /* Inverse of plastic deformation gradient at time n */
-	    def_grad_inv (Fp,FnB);
+	    def_grad_inv (CCONST_2(double) Fp,FnB);
 	    
 	    for (N=0;N<3;N++){
 	      for (P=0;P<3;P++)
 		Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
 	    }
 	    
-	    Jr = def_grad_det (Fr);
+	    Jr = def_grad_det (CCONST_2(double) Fr);
 	    Jn = Tn = 1.;
 	    
 	  }/* end PERIODIC */

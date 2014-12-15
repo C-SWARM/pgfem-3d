@@ -1,21 +1,10 @@
+/* HEADER */
 #include "rowlength.h"
 #include <stdlib.h>
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
 
 void rowlength (long *adr,
 		long ne,
@@ -24,9 +13,8 @@ void rowlength (long *adr,
 		NODE *node,
 		ELEMENT *elem,
 		long gr4)
-/** Computes lengths of the rows. */
 {
-  long i,j,k,nne,ndofe,min;
+  long i,k,nne,ndofe,min;
   long *nod,*cn;
   
   nod = (long*) PGFEM_calloc (10,sizeof(long));

@@ -1,32 +1,11 @@
 #include "macro_micro_functions.h"
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef COMPUTE_MS_COHE_JOB_H
 #include "compute_ms_cohe_job.h"
-#endif
-
-#ifndef PLOC_SPARSE_H
 #include "PLoc_Sparse.h"
-#endif
-
-#ifndef QUADRATURE_RULES_H
 #include "quadrature_rules.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
-
-#ifndef STIFFMAT_FD_H
 #include "stiffmat_fd.h"
-#endif
 
 static const int ndim = 3;
 
@@ -122,8 +101,12 @@ int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
       err += MPI_Cancel(&(recv->req[i]));
     }
     for(int i=0; i<send->n_comms; i++){
-      err += MPI_Cancel(&(send->req[i]));
+      if(send->req[i] != MPI_REQUEST_NULL){
+	err += MPI_Cancel(&(send->req[i]));
+      }
     }
+    MPI_Waitall(recv->n_comms,recv->req,MPI_STATUS_IGNORE);
+    MPI_Waitall(send->n_comms,send->req,MPI_STATUS_IGNORE);
 
     /* cleanup */
     err += destroy_PGFEM_server_ctx(send);
@@ -337,7 +320,7 @@ int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
 	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
 	/* assemble tangent to local and off-proc buffers */
-	PLoc_Sparse(NULL,Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
 		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
 		    c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
 	break;
@@ -428,11 +411,9 @@ int macroscale_update_job_info(const MACROSCALE *macro,
   /* set the jump */
   get_jump(nne_2D,x,y,z,disp,job->shape + nne_2D,job->jump);
 
-  /* scale the jump */
-  /* for(int i=0; i<ndim; i++){ */
-  /*   /\* mm to micron *\/ */
-  /*   job->jump[i] *= 1000; */
-  /* } */
+  if(macro->opts->restart >= 0){
+    memcpy(job->jump_n,job->jump,ndim*sizeof(double));
+  }
 
   /* set the job type */
   job->job_type = job_type;

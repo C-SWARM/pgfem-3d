@@ -1,22 +1,14 @@
 #include "generate_dof_ids.h"
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef GREDIST_NODE_H
 #include "GRedist_node.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
+
+static const int ndn = 3;
 
 /*=== STATIC FUNCTIONS ===*/
 static int generate_local_dof_ids_on_elem(const int nnode,
@@ -120,25 +112,42 @@ int generate_local_dof_ids(const int nelem,
     for(int j=0; j<ndofn; j++){
       const int idx = i*ndofn+j;
       if(!visited_node_dof[idx]){
-	if(nodes[i].Pr == -1){
-	  PGFEM_printerr("[%d] ERROR: Hanging node (%d)!\n",myrank,i);
-	  err = 1;
-	  break;
-	} else { /* node is periodic */
-	  const int pidx = nodes[i].Pr*ndofn+j;
-	  if(!visited_node_dof[pidx]){
-	    PGFEM_printerr("[%d] ERROR: master periodic node (%ld)"
-			   " has not been numbered!\n",myrank,nodes[i].Pr);
+	/* periodic nodes have different pressure ids! */
+	if(j<ndn){
+	  if(nodes[i].Pr == -1){
+	    PGFEM_printerr("[%d] ERROR: Hanging node (%d)!\n",myrank,i);
 	    err = 1;
 	    break;
-	  } else {
-	    nodes[i].id[j] = nodes[nodes[i].Pr].id[j];
-	    visited_node_dof[idx] = 1;
+	  } else { /* node is periodic */
+	    const int pidx = nodes[i].Pr*ndofn+j;
+	    if(!visited_node_dof[pidx]){
+	      PGFEM_printerr("[%d] ERROR: master periodic node (%ld)"
+			     " has not been numbered!\n",myrank,nodes[i].Pr);
+	      err = 1;
+	      break;
+	    } else {
+	      nodes[i].id[j] = nodes[nodes[i].Pr].id[j];
+	      visited_node_dof[idx] = 1;
+	    }
 	  }
+	} else { /* pressure node */
+	  PGFEM_printerr("[%d] TESTING: Periodic pressure node (%d)\n",myrank,i);
+	  nodes[i].id[j] = ndof;
+	  ndof ++;
 	}
       }
     }
   }
+
+#ifndef NDEBUG
+  /* sanity check */
+  for(int i=0; i<ndofn*nnode; i++){
+    if(!visited_node_dof[i]){
+      PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
+      PGFEM_Abort();
+    }
+  }
+#endif
 
   free(visited_node_dof);
   if(err){
@@ -177,8 +186,23 @@ int generate_global_dof_ids(const int nelem,
 					    nodes,coel,mpi_comm);
   }
 
+  /* sanity check */
+#ifndef NDEBUG
+  int myrank = 0;
+  MPI_Comm_rank(mpi_comm,&myrank);
+  for(int i=0; i<ndofn*nnode; i++){
+    if(!visited_node_dof[i]){
+      PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
+      PGFEM_Abort();
+    }
+  }
+#endif
+
   free(visited_node_dof);
   ndof --;
+
+  /* Abort with message if no global dofs on the domain */
+  assert(ndof > 0);
   return ndof;
 }/* generate_global_dof_ids() */
 
@@ -303,7 +327,8 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 	  ptr_node->id[j] = 0;
 	  visited_node_dof[dof_idx] = 1;
 	} else if(ptr_node->id[j] >= 0){
-	  if(ptr_node->Pr != -1){ /* periodic node/dofs */
+	  /* periodic node/dofs. Do not set pressure periodic! */
+	  if(ptr_node->Pr != -1 && j < ndn){ 
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    /* if the dof id has not been set yet on the master node,
 	       set it now */
@@ -409,7 +434,8 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 	  ptr_node->id[j] = 0;
 	  visited_node_dof[dof_idx] = 1;
 	} else if(ptr_node->id[j] >= 0){
-	  if(ptr_node->Pr != -1){ /* periodic node/dofs */
+	  /* periodic node/dofs. Do not set pressure periodic! */
+	  if(ptr_node->Pr != -1 && j < ndn){
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    /* if the dof id has not been set yet on the master node,
 	       set it now */
@@ -456,6 +482,10 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
+      for(int j=0; j<ptr_node->ndofn; j++){
+	const int dof_idx = node_id*ndofn + j;
+	visited_node_dof[dof_idx] = 1;
+      }
       continue;
     } else {
       for(int j=0; j<ptr_node->ndofn; j++){
@@ -464,7 +494,9 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 	  if(ptr_node->id[j] <= 0){ /* prescribed or supported dof */
 	    ptr_node->Gid[j] = ptr_node->id[j];
 	    visited_node_dof[dof_idx] = 1;
-	  } else if(ptr_node->Pr != -1){ /* node/dof is periodic */
+	  }
+	  /* periodic node/dofs. Do not set pressure periodic! */
+	  else if(ptr_node->Pr != -1 && j < ndn){
 	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
@@ -556,6 +588,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
+      for(int j=0; j<ptr_node->ndofn; j++){
+	const int dof_idx = node_id*ndofn + j;
+	visited_node_dof[dof_idx] = 1;
+      }
       continue;
     } else {
       for(int j=0; j<ptr_node->ndofn; j++){
@@ -564,7 +600,9 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 	  if(ptr_node->id[j] <= 0){ /* prescribed or supported dof */
 	    ptr_node->Gid[j] = ptr_node->id[j];
 	    visited_node_dof[dof_idx] = 1;
-	  } else if(ptr_node->Pr != -1){ /* node/dof is periodic */
+	  }
+	  /* periodic node/dofs. Do not set pressure periodic! */
+	  else if(ptr_node->Pr != -1 && j < ndn){
 	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
@@ -588,11 +626,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 }/* generate_global_dof_ids_on_coel() */
 
 
-static void distribute_global_dof_ids_on_bounding_elements
-(const int n_belem,
- const int ndof_be,
- BOUNDING_ELEMENT *b_elems,
- MPI_Comm mpi_comm)
+static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
+							   const int ndof_be,
+							   BOUNDING_ELEMENT *b_elems,
+							   MPI_Comm mpi_comm)
 {
   int myrank = 0;
   int nproc = 0;

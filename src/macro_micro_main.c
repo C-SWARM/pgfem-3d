@@ -1,5 +1,5 @@
 /*** This is the main function for the fully-coupled multiscale modeling */
-
+#include <assert.h>
 
 #include "PFEM3d.h"
 #ifndef ENUMERATIONS_H
@@ -15,147 +15,50 @@
 
 /* Extra libs */
 #include "renumbering.h"
-#include "BSprivate.h"
-
 
 /*=== PFEM3d headers ===*/
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ARC_LENGTH_H
 #include "Arc_length.h"
-#endif
-
-#ifndef BUILD_DISTRIBUTION_H
 #include "build_distribution.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef OUT_H
 #include "out.h"
-#endif
-
-#ifndef PRINTING_H
 #include "Printing.h"
-#endif
-
-#ifndef PRINT_DIST_H
 #include "print_dist.h"
-#endif
-
-#ifndef PROFILER_H
 #include "profiler.h"
-#endif
-
-#ifndef PSPARSE_APAI_H
 #include "Psparse_ApAi.h"
-#endif
-
-#ifndef READ_CRYST_PLAST_H
 #include "read_cryst_plast.h"
-#endif
-
-#ifndef RENUMBER_ID_H
 #include "renumber_ID.h"
-#endif
-
-#ifndef RNPSPARSE_APAI_H
 #include "RNPsparse_ApAi.h"
-#endif
-
-#ifndef SET_FINI_DEF_H
 #include "set_fini_def.h"
-#endif
-
-#ifndef SKYLINE_H
 #include "skyline.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef SETGLOBALNODENUMBERS_H
 #include "SetGlobalNodeNumbers.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_MACRO_F_H
 #include "computeMacroF.h"
-#endif
-
-#ifndef COMPUTE_MACRO_S_H
 #include "computeMacroS.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef APPLIED_TRACTION_H
 #include "applied_traction.h"
-#endif
-
-#ifndef MACRO_MICRO_FUNCTIONS_H
 #include "macro_micro_functions.h"
-#endif
 
-/* #define str(a) xstr(a) */
-/* #define xstr(a) #a */
-/* #define mgs 4 */
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+#include "pgf_fe2_restart.h"
 
-static const int ndim = 0;
+#include "solver_file.h"
+
+static const int ndim = 3;
+static const long ARC = 1;
 
 int multi_scale_main(int argc, char **argv)
 {
@@ -233,9 +136,9 @@ int multi_scale_main(int argc, char **argv)
       char *dir_name = PGFEM_calloc(dir_len,sizeof(char));
       sprintf(dir_name,"%s/log",micro->opts->opath);
       make_path(dir_name,DIR_MODE);
-      dir_len = snprintf(NULL,0,"%s/group_%0.5d",dir_name,group_id)+1;
+      dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
       char *fname = PGFEM_calloc(dir_len,sizeof(char));
-      sprintf(fname,"%s/group_%0.5d",dir_name,group_id);
+      sprintf(fname,"%s/group_%05d",dir_name,group_id);
 
       /* reinitialize I/O */
       PGFEM_finalize_io();
@@ -253,103 +156,56 @@ int multi_scale_main(int argc, char **argv)
     PGFEM_Abort();
   }
 
-  /*=== BUILD INTERCOMMUNICATOR NETWORK ===*/
-  PGFEM_ms_job_intercomm *intercomm = NULL;
-  int n_jobs = 0;
-  if(mpi_comm->valid_mm_inter){ /* MACRO + MICRO-MASTERS */
-    int *job_buff_sizes = NULL;
-    if(mpi_comm->valid_macro){ /*=== MACROSCALE ===*/
-      /* compute number of jobs and job_buff_sizes */
-      COMMON_MACROSCALE *c = macro->common;
-      err += compute_n_job_and_job_sizes(c,&n_jobs,&job_buff_sizes);
-    }
-    /* create the intercommunicator on all processes in the
-       communicator. Microscale only talks to macroscale and
-       vice-versa */
-    err += create_PGFEM_ms_job_intercomm(nproc_macro,
-					 mpi_comm,n_jobs,
-					 job_buff_sizes,
-					 &intercomm);
-    free(job_buff_sizes);
-  }
+  /*=== build the macroscacle clients ===*/
+  pgf_FE2_macro_client *client = NULL;
+  /* hard-code n_jobs_max, needs to be command line opt and/or scaled
+     variable */
+  const int n_jobs_max = 20;
 
+  /*=== Build MICROSCALE server and solutions ===*/
+  if(mpi_comm->valid_micro){
+    /* allocate space for maximum number of jobs to be computed. */
+    build_MICROSCALE_solutions(n_jobs_max,micro);
 
-  if(mpi_comm->valid_micro){/*=== MICROSCALE ===*/
-    /* allocate the microscale solutions based on the number of jobs I
-       will get from macroscale */
-    if(mpi_comm->valid_mm_inter){
-      err += PGFEM_comm_info_get_n_comms(intercomm->recv_info,&n_jobs);
-    }
-    err += MPI_Bcast(&n_jobs,1,MPI_INT,0,mpi_comm->micro);
-    build_MICROSCALE_solutions(n_jobs,micro);
+    /* start the microscale servers. This function does not exit until
+       a signal is passed from the macroscale via
+       pgf_FE2_macro_client_send_exit */
+    err += pgf_FE2_micro_server_START(mpi_comm,micro);
 
-    /* The microscale communicator starts a server and computes jobs
-       as they are received until it recieves a job tagged with
-       JOB_EXIT. */
-    err += start_microscale_server(mpi_comm,intercomm,micro);
+    /* destroy the microscale */
+    destroy_MICROSCALE(micro);
 
-    /* proceed to cleanup and exit */
   } else { /*=== MACROSCALE ===*/
-    /*=== BUILD LIST OF JOBS ===*/
-    /* NOTE: only the MACROSCALE stores the list of jobs */
-    MS_COHE_JOB_INFO *job_list = NULL;
+    /* initialize the client */
+    pgf_FE2_macro_client_init(&client);
+
+    /* create the list of jobs */
+    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm);
+
+    /* determine the initial job assignment*/
+    pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
+
     COMMON_MACROSCALE *c = macro->common;
     MACROSCALE_SOLUTION *s = macro->sol;
     int nproc_macro = 0;
     char filename[500];
     MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-    {
-      long Gn_jobs = 0;
-      long *n_job_dom = NULL;
-    /* use create group but pass MPI_COMM_SELF for ms_comm and
-       mpi_comm->macro for macro_mpi_comm */
-      err += create_group_ms_cohe_job_list(c->nce,c->coel,c->node,
-					   mpi_comm->macro,MPI_COMM_SELF,
-					   0,&Gn_jobs,&n_job_dom,&job_list);
-      /* error check */
-      if(Gn_jobs != n_jobs){
-	PGFEM_printerr("ERROR: got different number "
-		       "of jobs on macroscale!\n");
-	PGFEM_Abort();
-      }
-      free(n_job_dom);
-    }
-
-    PGFEM_server_ctx *send = PGFEM_calloc(1,sizeof(PGFEM_server_ctx));
-    PGFEM_server_ctx *recv = PGFEM_calloc(1,sizeof(PGFEM_server_ctx));
-    err += initialize_PGFEM_server_ctx(send);
-    err += initialize_PGFEM_server_ctx(recv);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->send_info,send);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(intercomm->recv_info,recv);
-
-
-    /* compute the inital tangent from the microscale */
-    err += start_macroscale_compute_jobs(intercomm,macro,
-					 JOB_NO_COMPUTE_EQUILIBRIUM,
-					 s->r,job_list,send,recv);
-
-    /* err += finish_macroscale_compute_jobs(job_list,macro,send,recv); */
 
     /* Create a context for passing stuff to Newton Raphson */
     MS_SERVER_CTX *ctx = PGFEM_calloc(1,sizeof(MS_SERVER_CTX));
-    ctx->n_jobs = n_jobs;
-    ctx->job_list = job_list;
-    ctx->send = send;
-    ctx->recv = recv;
-    ctx->intercomm = intercomm;
+    ctx->client = client;
+    ctx->mpi_comm = mpi_comm;
     ctx->macro = macro;
-
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
     double *nodal_forces = PGFEM_calloc(c->ndofd,sizeof(double));
+    SUR_TRAC_ELEM *ste = NULL;
+    int n_feats = 0;
+    int n_sur_trac_elem = 0;
     { 
-      int n_feats = 0;
-      int n_sur_trac_elem = 0;
       int *feat_type = NULL;
       int *feat_id = NULL;
       double *loads = NULL;
-      SUR_TRAC_ELEM *ste = NULL;
-
       char *trac_fname = NULL;
       alloc_sprintf(&trac_fname,"%s/traction.in",macro->opts->ipath);
 
@@ -381,7 +237,6 @@ int multi_scale_main(int argc, char **argv)
       free(feat_id);
       free(loads);
       free(trac_fname);
-      destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
     }
 
     /* push nodal_forces to s->R */
@@ -389,136 +244,145 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== SOLUTION PROCESS ===*/
     /*=== READ SOLVER FILE ===*/
-    /* override the default solver file with one specified
-       at commandline */
-    FILE *in1 = NULL;
+    SOLVER_FILE *solver_file = NULL;
     if(macro->opts->override_solver_file){
       if(mpi_comm->rank_macro == 0){
 	PGFEM_printf("Overriding the default solver file with:\n%s\n",
 		     macro->opts->solver_file);
       }
-      in1 = PGFEM_fopen(macro->opts->solver_file,"r");
+      solver_file_open(macro->opts->solver_file,&solver_file);
     } else {
       /* use the default file/filename */
-      char filename[500];
-      sprintf (filename,"%s/%s%d.in.st",macro->opts->ipath,
-	       macro->opts->ifname,mpi_comm->rank_macro);
-      in1 = PGFEM_fopen(filename,"r");
+      char *filename = NULL;
+      alloc_sprintf (&filename,"%s/%s%d.in.st",macro->opts->ipath,
+		     macro->opts->ifname,mpi_comm->rank_macro);
+      solver_file_open(filename,&solver_file);
+      free(filename);
     }
+    s->tim = 0;
+    solver_file_read_header(solver_file);
 
-    double nor_min = 0.0;
-    long iter_max = 0;
-    long FNR = 0;
-    long ARC = 1;
-    double dAL0 = 0.0;
-    double dALMAX = 0.0;
-    double hypre_time = 0.0;
-    {
-      long npres = 0;
-      fscanf (in1,"%lf %ld %ld %ld",&nor_min,&iter_max,&npres,&FNR);
-      if (FNR == 2 || FNR == 3){
-	fscanf (in1,"%lf %lf",&dAL0,&dALMAX);
-      }
+    /* allocate macro_solution times and copy from solver_file */
+    if(solver_file->n_step > 2){
+      free(s->times);
+      s->times = malloc((solver_file->n_step + 1) * sizeof(*(s->times)));
     }
-    
+    memcpy(s->times,solver_file->times,
+	   (solver_file->n_step + 1) * sizeof(*(s->times)));
+
     /* Nonlinear solver */
     if (mpi_comm->rank_macro == 0) {
-      if (FNR == 0 || FNR == 1) {
+      switch(solver_file->nonlin_method){
+      case NEWTON_METHOD:
 	PGFEM_printf ("\nNONLINEAR SOLVER : NEWTON-RAPHSON METHOD\n");
-      }
+	break;
 
-      if ((FNR == 2 || FNR == 3) && ARC == 0){
-	PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Crisfield\n");
-      }
-      if ((FNR == 2 || FNR == 3) && ARC == 1) {
-	PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
+      case ARC_LENGTH_METHOD:
+      case AUX_ARC_LENGTH_METHOD:
+	if (ARC == 0)
+	  PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Crisfield\n");
+	else if (ARC == 1)
+	  PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
+	break;
+
+      default:
+	PGFEM_printerr("Undefined method! ABORT\n");
+	PGFEM_Abort();
+	break;
       }
     }
 
-    /* read number of computational times */
-    long nt = 0;
-    fscanf (in1,"%ld",&nt);
-    
-    /* Compute times */
-    free(s->times);
-    s->times = aloc1 (nt+1);
-    for (int i=0;i<nt+1;i++){
-      fscanf (in1,"%lf",&(s->times[i]));
-    }
-    
-    /* read times for output */
-    long n_p = 0;
-    fscanf (in1,"%ld",&n_p);
-    
-    /* Times for printing */
-    long *print = times_print (in1,nt,n_p);
-    
-    long nlod_tim = 0;
-    fscanf (in1,"%ld",&nlod_tim);
-    
-    /* read times dependent load */
-    long *tim_load = compute_times_load (in1,nt,nlod_tim);
-    
+    double hypre_time = 0.0;
 
-    /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
-	of the load vector  */
-    s->dt = s->times[1] - s->times[0];
-    if (s->dt == 0.0){
-      if (mpi_comm->rank_macro == 0){
-	PGFEM_printf("Incorrect dt\n");
+    if(macro->opts->restart >= 0){
+      PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+
+      /* increment load to restart step */
+      solver_file_scan_to_step(solver_file,macro->opts->restart,
+			       c->supports->npd,c->supports->defl_d);
+
+      /* read restart files and set current equilibrium state */
+      pgf_FE2_restart_read_macro(macro,macro->opts->restart);
+      s->tim = macro->opts->restart;
+
+      /* send a job to compute the first tangent */
+      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				     JOB_NO_COMPUTE_EQUILIBRIUM);
+
+      /* turn off restart at the macroscale */
+      macro->opts->restart = -1;
+
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,c->node,c->elem,
+				  s->sig_e,s->eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
+	  if(mpi_comm->rank_macro == 0){
+	    PGFEM_printf("RESTART: Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
+	  }
+	}
+	free(sur_forces);
       }
-      PGFEM_Abort();
-    }
 
-    load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
-			NULL,c->node,c->hommat,
-			c->matgeom,c->supports,c->npres,
-			nor_min,s->sig_e,s->eps,s->dt,
-			s->crpl,macro->opts->stab,
-			s->r,macro->opts);
+      /* increment macroscale time */
+      s->tim ++;
+
+    } else {
+      /* not restarting, need to compute initial load/RHS */
+
+      /* send signal to microscale to compute initial tangent */
+      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+				     JOB_NO_COMPUTE_EQUILIBRIUM);
+
+      /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
+	  of the load vector  */
+      s->dt = s->times[s->tim + 1] - s->times[s->tim];
+      if (s->dt == 0.0){
+	if (mpi_comm->rank_macro == 0){
+	  PGFEM_printf("Incorrect dt\n");
+	}
+	PGFEM_Abort();
+      }
+
+      load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
+			  NULL,c->node,c->hommat,
+			  c->matgeom,c->supports,c->npres,
+			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
+			  s->crpl,macro->opts->stab,
+			  s->r,macro->opts);
     
-    /*=== do not support node/surf loads ===*/
-    /* /\*  NODE - generation of the load vector  *\/ */
-    /* load_vec_node (R,nln,ndim,znod,node); */
-    /* /\*  ELEMENT - generation of the load vector  *\/ */
-    /* load_vec_elem_sur (R,nle_s,ndim,elem,zele_s); */
+      /*=== do not support node/surf loads ===*/
+      /* /\*  NODE - generation of the load vector  *\/ */
+      /* load_vec_node (R,nln,ndim,znod,node); */
+      /* /\*  ELEMENT - generation of the load vector  *\/ */
+      /* load_vec_elem_sur (R,nle_s,ndim,elem,zele_s); */
 
-    /* R   -> Incramental forces 
-       RR  -> Total forces for sudivided increment 
-       RRn -> Total force after equiblirium */
+      /* R   -> Incramental forces 
+	 RR  -> Total forces for sudivided increment 
+	 RRn -> Total force after equiblirium */
 
-    vvplus  (s->f,s->R,c->ndofd);
-    vvplus  (s->RR,s->f,c->ndofd);
-    vvminus (s->f,s->f_defl,c->ndofd);
+      vvplus  (s->f,s->R,c->ndofd);
+      vvplus  (s->RR,s->f,c->ndofd);
+      vvminus (s->f,s->f_defl,c->ndofd);
 
-    /* Transform LOCAL load vector to GLOBAL */
-    LToG (s->R,s->BS_R,mpi_comm->rank_macro,nproc_macro,
-	  c->ndofd,c->DomDof,c->GDof,c->pgfem_comm,
-	  c->mpi_comm);
+      /* Transform LOCAL load vector to GLOBAL */
+      LToG (s->R,s->BS_R,mpi_comm->rank_macro,nproc_macro,
+	    c->ndofd,c->DomDof,c->GDof,c->pgfem_comm,
+	    c->mpi_comm);
+    }
 
     /* Prescribed deflection */
     double *sup_defl = NULL;
     if(c->supports->npd > 0){
       sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
-      for (int i=0;i<c->supports->npd;i++){
-	sup_defl[i] = c->supports->defl_d[i];
-      }
     }
-
-    /*=== MODEL ENTITIES ===*/
-    MODEL_ENTITY *entities = NULL;
-    double *forces = NULL;
-    if(macro->opts->me){
-      char *me_fname = NULL;
-      alloc_sprintf(&me_fname,"%s/entities.in",macro->opts->ipath);
-      read_model_entity_list(me_fname,&entities,c->nn,c->ne);
-      model_entity_mark_nodes_elems(c->nn,c->node,c->ne,c->elem,entities);
-      if(entities->n_entities > 0){
-	forces = PGFEM_calloc(entities->n_entities
-			      *entities->n_dim,sizeof(double));
-      }
-    }
-
 
     double pores = 0.0;
     double gama = 0.0;
@@ -533,13 +397,10 @@ int multi_scale_main(int argc, char **argv)
     double dAL = 0.0;
     long AT = 0;
     long ITT = 0;
+    long init = 0;
 
     /*=== BEGIN SOLVE ===*/
-    lm = dlm = DLM = DET = 0.0;
-    dAL = dlm0 = dAL0;
-    s->tim = AT = ITT = 0;
-
-    while (nt > s->tim){
+    while (solver_file->n_step > s->tim){
       s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
       if (s->dt <= 0.0){
 	if (mpi_comm->rank_macro == 0) {
@@ -555,60 +416,44 @@ int multi_scale_main(int argc, char **argv)
       }
 
       /*=== NEWTON RAPHSON ===*/
-      if (FNR == 0 || FNR == 1){
-	if (tim_load[s->tim] == 1 && s->tim == 0) {
-	  if (mpi_comm->rank_macro == 0){
-	    PGFEM_printf ("Incorrect load input for Time = 0\n");
-	  }
+      if (solver_file->nonlin_method == NEWTON_METHOD){
+	int load_err = 0;
+
+	if(s->tim > 0){ /* get load increment */
+	  load_err = solver_file_read_load(solver_file,s->tim,
+					   c->supports->npd,
+					   c->supports->defl_d);
+	}
+
+	/* copy the load increment */
+	memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
+
+	if (mpi_comm->rank_macro == 0 && load_err){
+	  PGFEM_printf ("Incorrect load input for Time = 0\n");
 	  PGFEM_Abort();
 	}
-	if (tim_load[s->tim] == 1 && s->tim != 0) {
-	  /*  read nodal prescribed deflection */
-	  for (int i=0;i<c->supports->npd;i++){
-	    fscanf (in1,"%lf",&c->supports->defl_d[i]);
-	    sup_defl[i] = c->supports->defl_d[i];
-	  }
 
-	  /*=== do not support node/surf loads ===*/
-	  /* /\* read nodal load in the subdomain *\/ */
-	  /* read_nodal_load (in1,nln,ndim,znod); */
-	  /* /\* read elem surface load *\/ */
-	  /* read_elem_surface_load (in1,nle_s,ndim,elem,zele_s); */
-	  /* /\*  NODE - generation of the load vector  *\/ */
-	  /* load_vec_node (R,nln,ndim,znod,node); */
-	  /* /\*  ELEMENT - generation of the load vector  *\/ */
-	  /* load_vec_elem_sur (R,nle_s,ndim,elem,zele_s); */
-
-	  /*
-	    R   -> Incramental forces 
-	    RR  -> Total forces for sudivided increment 
-	    RRn -> Total force after equiblirium
-	  */
-
-	  /* push nodal_forces to s->R */
-	  vvplus  (s->R,nodal_forces,c->ndofd);
-
-	} /* end load increment */
-
-
-
-	hypre_time += Newton_Raphson ( 1,c->ne,0,c->nn,
+	int n_step = 0;
+	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
 				       c->ndofn,c->ndofd,c->npres,s->tim,
-				       s->times,nor_min,s->dt,c->elem,
+				       s->times,
+				       solver_file->nonlin_tol,s->dt,c->elem,
 				       NULL,c->node,c->supports,sup_defl,
 				       c->hommat,c->matgeom,s->sig_e,s->eps,
 				       c->Ap,c->Ai,s->r,s->f,
 				       s->d_r,s->rr,s->R,s->f_defl,
 				       s->RR,s->f_u,s->RRn,s->crpl,
-				       macro->opts->stab,c->nce,c->coel,FNR,
-				       &pores,c->SOLVER,NULL,NULL,
-				       NULL,NULL,s->BS_x,s->BS_f,
+				       macro->opts->stab,c->nce,c->coel,
+				       solver_file->nonlin_method,
+				       &pores,c->SOLVER,s->BS_x,s->BS_f,
 				       s->BS_RR,gama,GNOR,nor1,
 				       c->lin_err,s->BS_f_u,c->DomDof,
-				       c->pgfem_comm,c->GDof,nt,iter_max,
+				       c->pgfem_comm,c->GDof,
+				       solver_file->n_step,
+				       solver_file->max_nonlin_iter,
 				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,
-				       entities,forces,NULL,ctx);
+				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,
+				       NULL,NULL);
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
@@ -617,35 +462,49 @@ int multi_scale_main(int argc, char **argv)
 	  s->R[i] = 0.0;
 	}
 
+	/* null the prescribed displacement increment */
 	nulld(sup_defl,c->supports->npd);
       }/* end NR */
 
       /*=== ARC LENGTH ===*/
-      if (FNR == 2 || FNR == 3){
+      if (solver_file->nonlin_method == ARC_LENGTH_METHOD
+	  || solver_file->nonlin_method == AUX_ARC_LENGTH_METHOD){
+
+	/* initialize arc-length specific variables */
+	if(!init){
+	  lm = dlm = DLM = DET = 0.0;
+	  dAL = dlm0 = solver_file->nonlin_method_opts[0];
+	  AT = ITT = 0;
+	  init++;
+	}
 	char out_dat[500];
-	double tmp_val = (s->times[s->tim+1]-s->times[s->tim])/dt0*dALMAX;
+	double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
+			  /dt0*solver_file->nonlin_method_opts[1]);
 	dlm = Arc_length ( c->ne,0,c->nn,c->ndofn,
-			   c->ndofd,c->npres,nt,s->tim,
-			   s->times,nor_min,iter_max,s->dt,
+			   c->ndofd,c->npres,
+			   solver_file->n_step,s->tim,
+			   s->times,solver_file->nonlin_tol,
+			   solver_file->max_nonlin_iter,s->dt,
 			   dt0,c->elem,NULL,c->nbndel,
 			   c->bndel,c->node,c->supports,sup_defl,
 			   c->hommat,c->matgeom,s->sig_e,s->eps,
-			   c->Ap,c->Ai,NULL,c->SOLVER,
+			   c->Ap,c->Ai,c->SOLVER,
 			   s->RRn,s->f_defl,s->crpl,macro->opts->stab,
 			   c->nce,c->coel,s->r,s->f,
 			   s->d_r,s->D_R,s->rr,s->R,
 			   s->RR,s->f_u,s->U,s->DK,
 			   s->dR,s->BS_f,s->BS_d_r,s->BS_D_R,
 			   s->BS_rr,s->BS_R,s->BS_RR,s->BS_f_u,
-			   s->BS_U,s->BS_DK,s->BS_dR,FNR,
-			   lm,dAL0,&DET,&dlm0,
+			   s->BS_U,s->BS_DK,s->BS_dR,solver_file->nonlin_method,
+			   lm,solver_file->nonlin_method_opts[0],&DET,&dlm0,
 			   &DLM,macro->opts->vis_format,
 			   macro->opts->smoothing,
-			   s->sig_n,out_dat,print,&AT,
+			   s->sig_n,out_dat,
+			   (long*) (solver_file->print_steps),&AT,
 			   ARC,tmp_val,&ITT,&dAL,
 			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
-			   NULL,NULL,NULL,c->lim_zero,
-			   &s->NORM,c->mpi_comm,c->VVolume,macro->opts);
+			   c->lim_zero,&s->NORM,c->mpi_comm,
+			   c->VVolume,macro->opts);
 
 	/* Load multiplier */
 	lm += dlm;
@@ -661,99 +520,100 @@ int multi_scale_main(int argc, char **argv)
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (c->ne,s->sig_e,s->eps,macro->opts->analysis_type);
 
-      /*=== fully coupled, so why do this? ===*/
-      /* /\* Calculate macro deformation gradient *\/ */
-      /* double *GF = computeMacroF(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->eps,c->VVolume,c->mpi_comm); */
-      /* double *GS = computeMacroS(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->sig_e,c->VVolume,c->mpi_comm); */
-      /* double *GP = computeMacroP(c->elem,c->ne,c->node,c->nn, */
-      /* 				 s->sig_e,s->eps,c->VVolume,c->mpi_comm); */
-
-      /* /\* print GF & GS to file *\/ */
-      /* if(mpi_comm->rank_macro == 0){ */
-      /* 	FILE *out = NULL; */
-      /* 	sprintf(filename,"%s/%s_macro.out.%d",macro->opts->opath, */
-      /* 		macro->opts->ofname,s->tim); */
-      /* 	out = PGFEM_fopen(filename,"w"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]); */
-      /* 	PGFEM_fprintf(out,"\n"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]); */
-      /* 	PGFEM_fprintf(out,"\n"); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]); */
-      /* 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]); */
-      /* 	fclose(out); */
-      /* } */
-
-      /* free(GF); */
-      /* free(GS); */
-      /* free(GP); */
-
-      if (print[s->tim] == 1 && macro->opts->vis_format != VIS_NONE ) {
-	/* NOTE: null d_r is sent for print job because jump is
-	   computed from updated coordinates! */
-	err += start_macroscale_compute_jobs(intercomm,macro,
-					     JOB_PRINT,
-					     s->d_r,
-					     job_list,send,recv);
-	if(macro->opts->ascii){
-	  int Gnn = 0;
-	  ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
-		       Gnn,c->nn,c->ne,c->nce,c->ndofd,
-		       c->DomDof,c->Ap,FNR,lm,pores,c->VVolume,
-		       c->node,c->elem,c->supports,
-		       s->r,s->eps,s->sig_e,s->sig_n,c->coel);
-	} /* End ASCII output */
-
-	switch(macro->opts->vis_format){
-	case VIS_ELIXIR:/* Print to elix file */
-	  sprintf (filename,"%s/%s_%d.elx%d",macro->opts->opath,
-		   macro->opts->ofname,mpi_comm->rank_macro,s->tim);
-	  elixir (filename,c->nn,c->ne,ndim,c->node,c->elem,
-		  c->supports,s->r,s->sig_e,s->sig_n,s->eps,
-		  macro->opts->smoothing,c->nce,c->coel,macro->opts);
-	  break;
-	case VIS_ENSIGHT:/* Print to EnSight files */
-	  sprintf (filename,"%s/%s",macro->opts->opath,
-		   macro->opts->ofname);
-	  EnSight (filename,s->tim,nt,c->nn,c->ne,ndim,c->node,
-		   c->elem,c->supports,s->r,s->sig_e,s->sig_n,s->eps,
-		   macro->opts->smoothing,c->nce,c->coel,
-		   /*nge,geel,ngn,gnod,*/FNR,lm,c->ensight,c->mpi_comm,
-		   macro->opts);
-	  break;
-	case VIS_VTK:/* Print to VTK files */
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,c->node,c->elem,
+				  s->sig_e,s->eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
 	  if(mpi_comm->rank_macro == 0){
-	    VTK_print_master(macro->opts->opath,macro->opts->ofname,
-			     s->tim,nproc_macro,macro->opts);
+	    PGFEM_printf("Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
 	  }
+	}
+	free(sur_forces);
+      }
 
-	  VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
-			mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
-			c->supports,s->r,s->sig_e,s->eps,
-			macro->opts);
+      if (solver_file->print_steps[s->tim] == 1){
 
-	  if (macro->opts->cohesive == 1){
+	/* do not transfer data between servers */
+	pgf_FE2_macro_client_rebalance_servers(client,mpi_comm,
+					       FE2_REBALANCE_NONE);
+
+	/* Send print jobs */
+	pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,JOB_PRINT);
+
+	if (macro->opts->vis_format != VIS_NONE ) {
+
+	  /* *ADDITIONAL* ASCII formatted output.
+	   * *NOT* VTK ASCII format */
+	  if(macro->opts->ascii){
+	    int Gnn = 0;
+	    ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
+			 Gnn,c->nn,c->ne,c->nce,c->ndofd,
+			 c->DomDof,c->Ap,solver_file->nonlin_method,
+			 lm,pores,c->VVolume,
+			 c->node,c->elem,c->supports,
+			 s->r,s->eps,s->sig_e,s->sig_n,c->coel);
+	  } /* End ASCII output */
+
+	  switch(macro->opts->vis_format){
+	  case VIS_ELIXIR:/* Print to elix file */
+	    sprintf (filename,"%s/%s_%d.elx%d",macro->opts->opath,
+		     macro->opts->ofname,mpi_comm->rank_macro,s->tim);
+	    elixir (filename,c->nn,c->ne,ndim,c->node,c->elem,
+		    c->supports,s->r,s->sig_e,s->sig_n,s->eps,
+		    macro->opts->smoothing,c->nce,c->coel,macro->opts);
+	    break;
+	  case VIS_ENSIGHT:/* Print to EnSight files */
+	    sprintf (filename,"%s/%s",macro->opts->opath,
+		     macro->opts->ofname);
+	    EnSight (filename,s->tim,solver_file->n_step,c->nn,c->ne,ndim,c->node,
+		     c->elem,c->supports,s->r,s->sig_e,s->sig_n,s->eps,
+		     macro->opts->smoothing,c->nce,c->coel,
+		     solver_file->nonlin_method,lm,c->ensight,c->mpi_comm,
+		     macro->opts);
+	    break;
+	  case VIS_VTK:/* Print to VTK files */
 	    if(mpi_comm->rank_macro == 0){
-	      VTK_print_cohesive_master(macro->opts->opath,
-					macro->opts->ofname,
-					s->tim,nproc_macro);
+	      VTK_print_master(macro->opts->opath,macro->opts->ofname,
+			       s->tim,nproc_macro,macro->opts);
 	    }
 
-	    VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
-				   s->tim,mpi_comm->rank_macro,c->nce,c->node,
-				   c->coel,c->supports,s->r,c->ensight,
-				   macro->opts);
-	  }
-	  break;
-	default: /* no output */ break;
-	}/* switch(format) */
+	    VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
+			  mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
+			  c->supports,s->r,s->sig_e,s->eps,
+			  macro->opts);
 
-	err += finish_macroscale_compute_jobs(job_list,macro,send,recv);
+	    if (macro->opts->cohesive == 1){
+	      if(mpi_comm->rank_macro == 0){
+		VTK_print_cohesive_master(macro->opts->opath,
+					  macro->opts->ofname,
+					  s->tim,nproc_macro,macro->opts);
+	      }
+
+	      VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
+				     s->tim,mpi_comm->rank_macro,c->nce,c->node,
+				     c->coel,c->supports,s->r,c->ensight,
+				     macro->opts);
+	    }
+	    break;
+	  default: /* no output */ break;
+	  }/* switch(format) */
+	} /* if !VIZ_NONE */
+
+	/* dump a restart file */
+	int re_err = pgf_FE2_restart_print_macro(macro);
+	assert(re_err == 0);
+
+	/* complete communication cycle w/ microscale */
+	int junk = 0;
+	pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
       }/* end output */
  
       if (mpi_comm->rank_macro == 0){
@@ -766,27 +626,19 @@ int multi_scale_main(int argc, char **argv)
     }/* end while */
 
     /*=== SEND EXIT SIGNAL TO MICROSCALE SERVER ===*/
-    err += start_macroscale_compute_jobs(intercomm,macro,
-					 JOB_EXIT,s->r,
-					 job_list,send,recv);
-
-    err += finish_macroscale_compute_jobs(job_list,macro,send,recv);
+    pgf_FE2_macro_client_send_exit(client,mpi_comm);
 
     /* cleanup */
     free(ctx);
-    err += destroy_PGFEM_server_ctx(send);
-    err += destroy_PGFEM_server_ctx(recv);
-    free(send);
-    free(recv);
-    for(int i=0; i<n_jobs; i++){
-      destroy_MS_COHE_JOB_INFO(&job_list[i]);
-    }
-    free(job_list);
+
     free(sup_defl);
-    free(tim_load);
-    free(print);
-    free(forces);
-    destroy_model_entity(entities);
+    destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
+
+    /* destroy the macroscale client */
+    pgf_FE2_macro_client_destroy(client);
+
+    /* destroy the macroscale */
+    destroy_MACROSCALE(macro);
   } /*=== END OF COMPUTATIONS ===*/
 
   /*=== PRINT TIME OF ANALYSIS ===*/
@@ -801,15 +653,7 @@ int multi_scale_main(int argc, char **argv)
 		  usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
   }
 
-  /* destroy the scale information */
-  destroy_MACROSCALE(macro);
-  destroy_MICROSCALE(micro);
-
-  /* destroy the intercommunicator */
-  destroy_PGFEM_ms_job_intercomm(intercomm);
-  free(intercomm);
-
-  /* destroy the communicator */
+  /* destroy the PGFEM communicator */
   err += destroy_PGFEM_mpi_comm(mpi_comm);
   free(mpi_comm);
 

@@ -1,3 +1,14 @@
+/*
+ * In this implmentation, initial displacement, velocity, and material density are spcicified in file_base_*.initial files.
+ * NON zero density triggers adding inertia. If density is equal to zero, no inertia and transient terms are evaluated.
+ */
+ /*
+ Restart is added which is dependent on read_VTK_file(char fn[], double *r) which can be found lib/VTK_IO/src (written in C++)
+ For the restart you have to set #define SAVE_RESTART_FILE 1.
+ When you restart the simulation, change -1 to your time step number in the file_base_0.inital
+ Nov. 17/2014, Sangmin Lee
+ */
+
 /* HEADER */
 
 #include "PFEM3d.h"
@@ -10,179 +21,52 @@
 #include <stdlib.h>
 #include <sys/time.h> 
 #include <sys/resource.h>
-
+#include <assert.h>
 
 /* Extra libs */
 #include "renumbering.h"
-#include "BSprivate.h"
-
 
 /*=== PFEM3d headers ===*/
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ARC_LENGTH_H
 #include "Arc_length.h"
-#endif
-
-#ifndef BUILD_DISTRIBUTION_H
 #include "build_distribution.h"
-#endif
-
-#ifndef HOMOGEN_H
 #include "homogen.h"
-#endif
-
-#ifndef HYPRE_GLOBAL_H
 #include "hypre_global.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
-
-#ifndef LOAD_H
 #include "load.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
-
-#ifndef MATRIX_PRINTING_H
 #include "matrix_printing.h"
-#endif
-
-#ifndef NEWTON_RAPHSON_H
 #include "Newton_Raphson.h"
-#endif
-
-#ifndef OUT_H
 #include "out.h"
-#endif
-
-#ifndef PRINTING_H
 #include "Printing.h"
-#endif
-
-#ifndef PRINT_DIST_H
 #include "print_dist.h"
-#endif
-
-#ifndef PROFILER_H
 #include "profiler.h"
-#endif
-
-#ifndef PSPARSE_APAI_H
 #include "Psparse_ApAi.h"
-#endif
-
-#ifndef READ_CRYST_PLAST_H
 #include "read_cryst_plast.h"
-#endif
-
-#ifndef RENUMBER_ID_H
 #include "renumber_ID.h"
-#endif
-
-#ifndef RNPSPARSE_APAI_H
 #include "RNPsparse_ApAi.h"
-#endif
-
-#ifndef SET_FINI_DEF_H
 #include "set_fini_def.h"
-#endif
-
-#ifndef SKYLINE_H
 #include "skyline.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef SETGLOBALNODENUMBERS_H
 #include "SetGlobalNodeNumbers.h"
-#endif
-
-#ifndef INTERFACE_MACRO_H
 #include "interface_macro.h"
-#endif
-
-#ifndef COMPUTE_MACRO_F_H
 #include "computeMacroF.h"
-#endif
-
-#ifndef COMPUTE_MACRO_S_H
 #include "computeMacroS.h"
-#endif
-
-#ifndef VTK_OUTPUT_H
 #include "vtk_output.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
-
-#ifndef GEN_PATH_H
 #include "gen_path.h"
-#endif
-
-#ifndef INITIALIZE_DAMAGE_H
 #include "initialize_damage.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_UTILS_H
 #include "bounding_element_utils.h"
-#endif
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef NODE_H
 #include "node.h"
-#endif
-
-#ifndef GENERATE_DOF_IDS_H
 #include "generate_dof_ids.h"
-#endif
-
-#ifndef COMPUTE_FORCE_ON_MODEL_ENT_H
-#include "compute_force_on_model_ent.h"
-#endif
-
-#ifndef APPLIED_TRACTION_H
 #include "applied_traction.h"
-#endif
-
-#ifndef READ_INPUT_FILE_H
 #include "read_input_file.h"
-#endif
-
-#ifndef MICROSCALE_INFORMATION_H
 #include "microscale_information.h"
-#endif
-
-#ifndef MS_COHE_JOB_LIST_H
 #include "ms_cohe_job_list.h"
-#endif
-
-#ifndef COMPUTE_MS_COHE_JOB_H
 #include "compute_ms_cohe_job.h"
-#endif
-
-#include "TextFile2.h"
 
 #ifndef DEBUG_MULTISCALE
 #define DEBUG_MULTISCALE 0
@@ -194,6 +78,135 @@ static const int ndim = 3;
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
+#ifndef NO_VTK_LIB
+#include "PGFem3D_to_VTK.hpp"
+#define SAVE_RESTART_FILE 1
+
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
+{
+  char filename[1024];
+  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  int err = read_VTK_file(filename, u0);      
+  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  return read_VTK_file(filename, u1);
+}      
+
+#else
+#define SAVE_RESTART_FILE 0
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
+{
+  if(myrank==0)
+  {
+    PGFEM_printerr("Restart with VTK is not supported!\n");
+    PGFEM_printerr("Enforce to turn off restart!\n");
+  }
+  
+  *restart = -1;  
+  return 0;
+}
+#endif
+
+double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+{
+ 
+  char filename[1024];
+  char line[1024];
+  double alpha = 0.5;
+  for(int a=0; a<nmat; a++)
+    rho[a] = 0.0;
+    
+  sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
+  FILE *fp_0 = fopen(filename,"r");
+
+  *restart = -1;
+  if(fp_0 != NULL)
+  {  
+    while(fgets(line, 1024, fp_0)!=NULL) 
+	  {
+	    if(line[0]=='#')
+	      continue;
+        
+	    sscanf(line, "%d", restart);
+	    break;
+	  }
+    fclose(fp_0);
+  }
+  
+  if(*restart>0)
+    read_initial_from_VTK(opts, myrank, restart, u0, u1);
+  
+  sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
+  FILE *fp = fopen(filename,"r");
+
+       
+  if(fp == NULL)
+  {    
+    if(myrank==0)
+      printf("Fail to open file [%s]. Quasi steady state\n", filename);
+    return alpha;
+  }
+
+  if(myrank==0)
+  {
+    while(fgets(line, 1024, fp)!=NULL) 
+	  {
+	    if(line[0]=='#')
+	      continue;
+      
+	    double temp;  
+	    sscanf(line, "%lf", &temp);
+	    break;
+	  }
+  }
+  
+  while(fgets(line, 1024, fp)!=NULL) 
+  {
+    if(line[0]=='#')
+	    continue;
+        
+    sscanf(line, "%lf", &alpha);
+    break;
+  }
+     
+
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+	    continue;
+    for(int a=0; a<nmat; a++)
+  	{    
+	    sscanf(line, "%lf", rho+a);
+	    if(a<nmat-1)
+	      fgets(line, 1024, fp);      
+	  }
+    break;
+  } 
+  if(*restart>0)
+  {
+    fclose(fp);
+      return alpha;  
+  }
+                   
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+	    continue;
+        
+    long nid;
+    double u[3], v[3];        
+    sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
+
+    u1[nid*3+0] = u[0];
+    u1[nid*3+1] = u[1];
+    u1[nid*3+2] = u[2];    
+    u0[nid*3+0] = u[0]-dt*v[0];
+    u0[nid*3+1] = u[1]-dt*v[1];
+    u0[nid*3+2] = u[2]-dt*v[2];
+  }              
+    
+  fclose(fp);
+  return alpha;       
+}
 
 int single_scale_main(int argc,char *argv[])
 {
@@ -242,7 +255,6 @@ int single_scale_main(int argc,char *argv[])
   double NORM = 0.0;
   double VVolume = 0.0;
 
-  FILE *in = NULL;
   FILE *in1 = NULL;
   FILE *out = NULL;
   NODE *node = NULL;
@@ -267,7 +279,6 @@ int single_scale_main(int argc,char *argv[])
   long gem = 0;
   long temp_int = 0;
   long sky = 0;
-  long rn_sky = 0;
   
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = NULL;
@@ -346,11 +357,6 @@ int single_scale_main(int argc,char *argv[])
   long *n_job_dom = NULL;
   MS_COHE_JOB_INFO *ms_job_list = NULL;
 
-  /* BlockSolve95 */
-  BSprocinfo *BSinfo = NULL;
-  BSspmat *k = NULL;
-  BSpar_mat *pk = NULL;
-  BSpar_mat *f_pk = NULL;
   double  *BS_x = NULL;
   double *BS_f = NULL;
   double *BS_RR = NULL;
@@ -365,15 +371,10 @@ int single_scale_main(int argc,char *argv[])
   
   /* HYPRE specific */
   PGFEM_HYPRE_solve_info *PGFEM_hypre = NULL;
-  int crank = 0;
   
   /* Ensight */
   ENSIGHT ensight;
 
-  /* Renumbering */
-  int *sizes = NULL;
-  int *l_order = NULL;
-  int *g_order = NULL;
   int *dist = NULL;
 
   /* original volume */
@@ -412,8 +413,6 @@ int single_scale_main(int argc,char *argv[])
 
   MPI_Errhandler_set(mpi_comm,MPI_ERRORS_ARE_FATAL);
 
-  int debug_wait=0;
-
   if(myrank == 0) {
     PGFEM_printf("\n\nInitializing PFEM3d\n\n");
   }
@@ -421,14 +420,14 @@ int single_scale_main(int argc,char *argv[])
  
   /*=== Parse the command line for options ===*/
   PGFem3D_opt options;
-  if (argc <= 1){
+  if (argc <= 2){
     if(myrank == 0){
       print_usage(stdout);
     }
     exit(0);
   }
   set_default_options(&options);
-  parse_command_line(argc,argv,myrank,&options);
+  re_parse_command_line(myrank,2,argc,argv,&options);
   if(myrank == 0){
     print_options(stdout,&options);
   }
@@ -591,7 +590,13 @@ int single_scale_main(int argc,char *argv[])
 
     /* temporary leftovers from old file format */      
     fscanf (in1,"%ld\n",&ncom); 
-    comat = aloc2 (ncom,4);
+
+    /* to silence warning message. need to pull this legacy bit of
+       code out completely. Cohesive porperties provided in separate
+       file. This leads to *very* small memory leak */
+    if(ncom <= 0) comat = aloc2 (1,4);
+    else     comat = aloc2 (ncom,4);
+
       
     /* read the cohesive element info */
     coel = read_cohe_elem (in1,ncom,ndim,nn,node,&nce,
@@ -716,20 +721,17 @@ int single_scale_main(int argc,char *argv[])
 
     PGFEM_printf ("\n");
     PGFEM_printf ("SolverPackage: ");
-    if (options.solverpackage == BLOCKSOLVE){
-      PGFEM_printf ("BlockSolve95\n");
-    } else if(options.solverpackage == HYPRE){
-      switch(options.solver){
-      case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
-      case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
-      case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-      case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
-      case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
-      default:
-	PGFEM_printerr("Unrecognized solver package!\n");
-	PGFEM_Abort();
-	break;
-      }
+    assert(options.solverpackage == HYPRE);
+    switch(options.solver){
+    case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
+    case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
+    case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
+    case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
+    case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
+    default:
+      PGFEM_printerr("Unrecognized solver package!\n");
+      PGFEM_Abort();
+      break;
     }
 
     PGFEM_printf("Preconditioner: ");
@@ -750,76 +752,18 @@ int single_scale_main(int argc,char *argv[])
     PGFEM_printf ("Total number of bounding (surf) elems    : %d\n",Gn_be);
     PGFEM_printf ("Total number of degrees of freedom       : %ld\n",Gndof); 
   }
-  
-  /****************************************/
-  /* BLOCKSOLVE95 INITIALIZATION ROUTINES */
-  /****************************************/
-  if (options.solverpackage == BLOCKSOLVE) { /* BSolve */
-    /* Call BSinit() to initialize BlocklSolve and MPI */   
-    BSinit (&argc,&argv);
-    
-    /* set up the context for BlockSolve */
-    BSinfo = BScreate_ctx ();
-    CHKERRN(0);
-    
-    /* tell it that this matrix has no i-nodes or cliques */
-    BSctx_set_si (BSinfo,FALSE);
-    CHKERRN(0);
-    
-    /* Type of color reordering */
-    BSctx_set_ct (BSinfo,SDO);
-    CHKERRN(0);
-    
-    /* tell it to print coloring, reordering and linear system
-       solution options */
-    BSctx_set_pr (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Error check */
-    BSctx_set_err (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Scaling */
-    BSctx_set_scaling (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Number of rhs */
-    BSctx_set_num_rhs (BSinfo,1);
-    CHKERRN(0);
-    
-    /* Retain data structure */
-    BSctx_set_rt (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Preconditioner */
-    BSctx_set_pre (BSinfo,PRE_ILU);
-    CHKERRN(0);
-    
-    /* Set method of solution */
-    BSctx_set_method (BSinfo,GMRES);
-    CHKERRN(0);
-    
-    /* Set guess for solutiuon to zero */
-    BSctx_set_guess (BSinfo,TRUE);
-    CHKERRN(0);
-    
-    /* Set GMRES restart */
-    BSctx_set_restart (BSinfo,500);
-    CHKERRN(0);
-    
-    /* Set GMRES iter max */
-    BSctx_set_max_it (BSinfo,ni);
-    CHKERRN(0);
-  }
 
   {
     /* ALlocate Ap, Ai */
     Ap = aloc1i (DomDof[myrank]+1);
     comm = (COMMUN) PGFEM_calloc (1,sizeof(COMMUN_1));
+    initialize_commun(comm);
 
     Ai = Psparse_ApAi (nproc,myrank,ne,n_be,nn,ndofn,ndofd,
 		       elem,b_elems,node,Ap,nce,coel,DomDof,
 		       &GDof,comm,mpi_comm,options.cohesive);
+
+    pgfem_comm_build_fast_maps(comm,ndofd,DomDof[myrank],GDof);
 
     /* Total number of nonzeros and skyline */
     MPI_Reduce (&Ap[DomDof[myrank]],&APP,1,MPI_INT,MPI_SUM,0,mpi_comm);
@@ -835,11 +779,6 @@ int single_scale_main(int argc,char *argv[])
     }
 
     /*=== NO RENUMBERING === */
-
-    /* ALLOCATE STIFFNESS MATRIX */
-    if(options.solverpackage == BLOCKSOLVE){
-      k = BSalloc_A (GDof,DomDof[myrank],Ap,Ai,BSinfo);
-    } 
 
     /* allocate vectors */
     r = aloc1 (ndofd);
@@ -876,47 +815,46 @@ int single_scale_main(int argc,char *argv[])
 
     /*=== TESTING ===*/
     double *nodal_forces = PGFEM_calloc(ndofd,sizeof(double));
-    /* { */
-    /*   int n_feats = 0; */
-    /*   int n_sur_trac_elem = 0; */
-    /*   int *feat_type = NULL; */
-    /*   int *feat_id = NULL; */
-    /*   double *loads = NULL; */
-    /*   SUR_TRAC_ELEM *ste = NULL; */
+    int n_feats = 0;
+    int n_sur_trac_elem = 0;
+    SUR_TRAC_ELEM *ste = NULL;
+    {
+      int *feat_type = NULL;
+      int *feat_id = NULL;
+      double *loads = NULL;
 
-    /*   char *trac_fname = NULL; */
-    /*   alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath); */
+      char *trac_fname = NULL;
+      alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
 
-    /*   read_applied_surface_tractions_fname(trac_fname,&n_feats, */
-    /* 					   &feat_type,&feat_id,&loads); */
+      read_applied_surface_tractions_fname(trac_fname,&n_feats,
+    					   &feat_type,&feat_id,&loads);
 
-    /*   generate_applied_surface_traction_list(ne,elem, */
-    /* 					     n_feats,feat_type, */
-    /* 					     feat_id,&n_sur_trac_elem, */
-    /* 					     &ste); */
+      generate_applied_surface_traction_list(ne,elem,
+    					     n_feats,feat_type,
+    					     feat_id,&n_sur_trac_elem,
+    					     &ste);
 
-    /*   compute_applied_traction_res(ndofn,node,elem, */
-    /* 				   n_sur_trac_elem,ste, */
-    /* 				   n_feats,loads, */
-    /* 				   nodal_forces); */
+      compute_applied_traction_res(ndofn,node,elem,
+    				   n_sur_trac_elem,ste,
+    				   n_feats,loads,
+    				   nodal_forces);
 
-    /*   double tmp_sum = 0.0; */
-    /*   for(int i=0; i<ndofd; i++){ */
-    /* 	tmp_sum += nodal_forces[i]; */
-    /*   } */
-    /*   MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE, */
-    /* 		    MPI_SUM,mpi_comm); */
+      double tmp_sum = 0.0;
+      for(int i=0; i<ndofd; i++){
+    	tmp_sum += nodal_forces[i];
+      }
+      MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
+    		    MPI_SUM,mpi_comm);
 
-    /*   if(myrank == 0){ */
-    /* 	PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum); */
-    /*   } */
+      if(myrank == 0){
+    	PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
+      }
 
-    /*   free(feat_type); */
-    /*   free(feat_id); */
-    /*   free(loads); */
-    /*   free(trac_fname); */
-    /*   destroy_applied_surface_traction_list(n_sur_trac_elem,ste); */
-    /* } */
+      free(feat_type);
+      free(feat_id);
+      free(loads);
+      free(trac_fname);
+    }
 
     /* push nodal_forces to s->R */
     vvplus  (R,nodal_forces,ndofd);
@@ -952,13 +890,6 @@ int single_scale_main(int argc,char *argv[])
       if ((FNR == 2 || FNR == 3) && ARC == 1) {
 	PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
       }
-    }
-
-    if(options.solverpackage == BLOCKSOLVE){ /* BSolve */
-      /* Set tolerance ||Ax - b||/|b|| and stop if the estimated norm
-	 is less than err */
-      BSctx_set_tol (BSinfo,err);
-      CHKERRN(0);
     }
 
     /* HYPRE INITIALIZATION ROUTINES */
@@ -1104,16 +1035,6 @@ int single_scale_main(int argc,char *argv[])
       sup_check = aloc1(sup->npd);
     }
 
-    MODEL_ENTITY *entities = NULL;
-    double *forces = NULL;
-    if(options.me){
-      char fname[50];
-      sprintf(fname,"%s/entities.in",options.ipath);
-      read_model_entity_list(fname,&entities,nn,ne);
-      model_entity_mark_nodes_elems(nn,node,ne,elem,entities);
-      forces = aloc1((entities->n_entities+1)*entities->n_dim);
-    }
-
     /* debugging multiscale -- first try at building appropriately -- */
     if(DEBUG_MULTISCALE){
       /* in first attempt, each sub-communicator will contain only 1
@@ -1133,9 +1054,9 @@ int single_scale_main(int argc,char *argv[])
 	char *dir_name = PGFEM_calloc(dir_len,sizeof(char));
 	sprintf(dir_name,"%s/log",microscale->opts->opath);
 	make_path(dir_name,DIR_MODE);
-	dir_len = snprintf(NULL,0,"%s/group_%0.5d",dir_name,group_id)+1;
+	dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
 	char *fname = PGFEM_calloc(dir_len,sizeof(char));
-	sprintf(fname,"%s/group_%0.5d",dir_name,group_id);
+	sprintf(fname,"%s/group_%05d",dir_name,group_id);
 	PGFEM_initialize_io(NULL,fname);
 	free(dir_name);
 	free(fname);
@@ -1151,6 +1072,50 @@ int single_scale_main(int argc,char *argv[])
       build_MICROSCALE_solutions(Gn_jobs,microscale);
       PGFEM_redirect_io_macro();
     }
+
+    /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+    
+    /* this is for inertia */
+    /* material density*/
+    double *rho;
+    double alpha = 0.5;    /* mid point rule alpha */
+    
+    double *r_n   = NULL; /* displacement at time is t_n*/
+    double *r_n_1 = NULL; /* displacement at time is t_n-1*/
+    double *r_n_dof = NULL;
+    
+    r_n   = aloc1(nn*ndofn);
+    r_n_1 = aloc1(nn*ndofn);
+    r_n_dof = aloc1(ndofd);
+        
+    rho = malloc(sizeof(double)*nmat);    
+    int restart_tim = 0;
+    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
+    for(long a = 0; a<nn; a++)
+    {
+      for(long b = 0; b<ndofn; b++)
+      {
+        long id = node[a].id[b];
+        if(id>0)
+          r[id-1] = r_n[a*ndofn + b];
+      }   
+    }
+
+    for(int a = 0; a<ne; a++)
+    {
+      int mat = elem[a].mat[2];
+      hommat[mat].density = rho[mat];
+    }
+    
+    
+/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+  
 
     while (nt > tim){
       dt = times[tim+1] - times[tim];
@@ -1200,19 +1165,26 @@ int single_scale_main(int argc,char *argv[])
 	  vvplus  (R,nodal_forces,ndofd);
 
 	} /* end load increment */
-
-	hypre_time += Newton_Raphson ( 1,ne,n_be,nn,ndofn,ndofd,npres,tim,
+	int n_step = 0;
+	
+/////////////////////////////////////////////////////////////////////////////////////////////////
+        if(tim<restart_tim+1)
+        {
+          tim++;
+          continue;
+        }
+/////////////////////////////////////////////////////////////////////////////////////////////////
+		
+	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
 				       eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
 				       f_u,RRn,crpl,options.stab,
 				       nce,coel,FNR,&pores,PGFEM_hypre,
-				       BSinfo,k,&pk,&f_pk,BS_x,
-				       BS_f,BS_RR,gama,GNOR,nor1,err,
+				       BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
-				       &options,entities,forces,
-				       ms_job_list,microscale);
+				       &options,microscale,alpha, r_n, r_n_1);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1221,6 +1193,7 @@ int single_scale_main(int argc,char *argv[])
 	  R[i] = 0.0;
 	}
 
+	/* null the prescribed displacement increment */
 	nulld(sup_defl,sup->npd);
       }/* end NR */
 
@@ -1229,7 +1202,7 @@ int single_scale_main(int argc,char *argv[])
 	dlm = Arc_length ( ne,n_be,nn,ndofn,ndofd,npres,nt,tim,times,
 			   nor_min,iter_max,dt,dt0,elem,b_elems,nbndel,
 			   bndel,node,sup,sup_defl,hommat,matgeom,sig_e,
-			   eps,Ap,Ai,k,PGFEM_hypre,RRn,f_defl,crpl,
+			   eps,Ap,Ai,PGFEM_hypre,RRn,f_defl,crpl,
 			   options.stab,
 			   nce,coel,r,f,d_r,D_R,rr,R,RR,f_u,U,DK,dR,
 			   BS_f,BS_d_r,BS_D_R,BS_rr,BS_R,BS_RR,BS_f_u,
@@ -1237,8 +1210,8 @@ int single_scale_main(int argc,char *argv[])
 			   options.vis_format,options.smoothing,
 			   sig_n,out_dat,print,&AT,ARC,
 			   (times[tim+1]-times[tim])/dt0*dALMAX,&ITT,
-			   &dAL,&pores,DomDof,GDof,comm,BSinfo,&pk,
-			   &f_pk,err,&NORM,mpi_comm,VVolume,&options);
+			   &dAL,&pores,DomDof,GDof,comm,err,&NORM,
+			   mpi_comm,VVolume,&options);
 
 	/* Load multiplier */
 	lm += dlm;
@@ -1254,12 +1227,29 @@ int single_scale_main(int argc,char *argv[])
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (ne,sig_e,eps,options.analysis_type);
 
+      /* print tractions on marked features */
+      {
+	double *sur_forces = NULL;
+	if(n_feats > 0){
+	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+	  compute_resultant_force(n_feats,n_sur_trac_elem,
+				  ste,node,elem,
+				  sig_e,eps,sur_forces);
+	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+			MPI_DOUBLE,MPI_SUM,mpi_comm);
+	  if(myrank == 0){
+	    PGFEM_printf("Forces on marked features:\n");
+	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+			  n_feats,ndim);
+	  }
+	}
+	free(sur_forces);
+      }
+
       /* Calculate macro deformation gradient */
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
       GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
       GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);
-
-      //xx_solve_FEM(elem,ne,node,nn);
 
       /* print GF & GS to file */
       if(myrank == 0){
@@ -1312,10 +1302,34 @@ int single_scale_main(int argc,char *argv[])
 			myrank,ne,nn,node,elem,sup,r,sig_e,eps,
 			&options);
 
+///////////////////////////////////////////////////////////////////////////////////      
+///////////////////////////////////////////////////////////////////////////////////                          
+// this is only for the restart
+            if(SAVE_RESTART_FILE)
+            {
+              for(long a = 0; a<nn; a++)
+              {              
+                for(long b = 0; b<ndofn; b++)
+                {
+                  long id = node[a].id[b];
+                  if(id>0)
+                    r_n_dof[id-1] = r_n[a*ndofn + b];
+                }
+              }              
+              char restart_path[1024];
+              sprintf(restart_path, "%s/restart", options.opath);
+              VTK_print_vtu(restart_path,options.ofname,tim,
+                    myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
+                    &options);                
+            } 
+///////////////////////////////////////////////////////////////////////////////////      
+///////////////////////////////////////////////////////////////////////////////////  
+
 	  if (options.cohesive == 1){
 	    if(myrank == 0){
 	      VTK_print_cohesive_master(options.opath,
-					options.ofname,tim,nproc);
+					options.ofname,tim,nproc,
+					&options);
 	    }
 
 	    VTK_print_cohesive_vtu(options.opath,options.ofname,
@@ -1334,14 +1348,39 @@ int single_scale_main(int argc,char *argv[])
 	PGFEM_printf("*********************************************\n");
       }
       
+      /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+      /* update previous time step values, r_n and r_n_1 from current time step values r */
+      for(long a = 0; a<nn; a++)
+      {
+        for(long b = 0; b<ndofn; b++)
+        {
+          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+          
+          long id = node[a].id[b];
+          if(id>0)
+            r_n[a*ndofn + b] = r[id-1];
+          else
+          {
+            if(id==0)
+              r_n[a*ndofn + b] = 0.0;
+            else
+              r_n[a*ndofn + b] = sup->defl_d[abs(id-1)-1];
+          }
+        }
+      }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+       
+      
       tim++;
     }/* end while */
 
     /*=== FREE MEMORY ===*/
     free(sup_check);
-    free(forces);
-    destroy_model_entity(entities);
-
     fclose (in1);
     free(Ap);
     dealoc1i (Ai);
@@ -1362,18 +1401,15 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (DK);
     dealoc1 (D_R);
     free(bndel);
-
-    /* BS free the par mat, etc. */
-    if(options.solverpackage == BLOCKSOLVE){
-      BSfree_par_mat (pk); 
-      BSfree_copy_par_mat (f_pk); 
-      BSfree_easymat (k);
-      /* free the context */
-      BSfree_ctx (BSinfo); 
-      CHKERRN(0);
-      /* Finalize BlockSolve */
-      BSfinalize (); 
-    }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+    dealoc1(r_n);
+    dealoc1(r_n_1);
+    dealoc1(r_n_dof);
+////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* HYPRE */
     if (options.solverpackage == HYPRE){
       destroy_PGFEM_HYPRE_solve_info(PGFEM_hypre);
@@ -1390,7 +1426,7 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (BS_U);
     dealoc1 (BS_DK);
     dealoc1 (BS_dR);
-
+    destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
   }
 
   /* Deallocate */

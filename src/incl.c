@@ -1,24 +1,11 @@
 /* HEADER */
 
-/************************************
- *  Alocation and Dealocation fun.  *
- *  Karel Matous & Jaroslav Kruis   *
- ************************************/
 #include"incl.h"
 #include <string.h> 
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
 
 void build_elem_inelas (long ne,ELEMENT *elem)
-     /*
-       
-     */
 {
   long i,j,II,nne;
   
@@ -113,22 +100,15 @@ void build_crystal_plast (long ne,
 
 void nulld (double *a,long n)
 {
-  long i;
   memset(a,0,n*sizeof(double));
-  /* for (i=0;i<n;i++){ */
-  /*   a[i] = 0.0; */
-  /* } */
 }
 
 void nulld2 (double **a,long m,long n)
 {
-  long i,j;
+  long i;
   
   for (i=0;i<m;i++){
     memset(a[i],0,n*sizeof(double));
-    /* for (j=0;j<n;j++){ */
-    /*   a[i][j] = 0.0; */
-    /* } */
   }
 }
 

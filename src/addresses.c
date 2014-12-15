@@ -1,5 +1,7 @@
 #include "addresses.h"
 
+/* this is a comment */
+
 /** Computes addresses of the diagonal matrix elements. */
 void addresses (long *adr,long ndof)
 {

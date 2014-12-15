@@ -1,61 +1,33 @@
 /* HEADER */
+/**
+ * AUTHORS:
+ * Matthew Mosby
+ */
 #include "MINI_element.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 #include "mkl_cblas.h"
 
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef TWO_FIELD_ELEMENT_H
 #include "two_field_element.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
-
-#ifndef INCL_H
 #include "incl.h"
-#endif
 
-#ifndef POTENTIAL_H
+/* need to update to new_potentials for consistencey. requires change to
+   1D pointers */
 #include "potential.h"
-#endif
+/* #include "new_potentials.h" */
 
-#ifndef TENSORS_H
 #include "tensors.h"
-#endif
-
-#ifndef DEF_GRAD_H
 #include "def_grad.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
 #include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
 #include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef CAST_MACROS_H
 #include "cast_macros.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
-
-#ifndef INDEX_MACROS_H
 #include "index_macros.h"
-#endif
 
 #ifndef MINI_DEBUG
 #define MINI_DEBUG 0
@@ -111,7 +83,6 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
   
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   double *disp;
@@ -255,8 +226,11 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
     Stiffness = getMaterialStiffnessFunction(1,&hommat[mat]);
     D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
 
-    Stress(C_mat,&hommat[mat],S_mat);
-    Stiffness(C_mat,&hommat[mat],Fn_mat,Fr_mat,dSdF_tensor);
+    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
+    Stiffness(CCONST_2(double) C_mat,&hommat[mat],
+	      CCONST_2(double) Fn_mat,
+	      CCONST_2(double) Fr_mat,
+	      dSdF_tensor);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
     /* convert from mat/tensor to array */
@@ -501,7 +475,6 @@ int MINI_resid_el(double *Res,         /**< Element residual */
   
   int n_bub = elem[ii].n_bub;
   int n_bub_dofs = elem[ii].n_bub_dofs;
-  int total_ndofe = ndofe + n_bub*n_bub_dofs;
   int total_nne = nne + n_bub;
 
   double *disp;
@@ -649,8 +622,12 @@ int MINI_resid_el(double *Res,         /**< Element residual */
     Pressure = getVolumetricPressureFunction(1,&hommat[mat]);
     D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
 
-    Stress(C_mat,&hommat[mat],S_mat);
-    Stiffness(C_mat,&hommat[mat],Fn_mat,Fr_mat,dSdF_tensor);
+    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
+    Stiffness(CCONST_2(double) C_mat,
+	      &hommat[mat],
+	      CCONST_2(double) Fn_mat,
+	      CCONST_2(double) Fr_mat,
+	      dSdF_tensor);
     Pressure(Jn,Jr,&hommat[mat],&Up);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
@@ -842,7 +819,6 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   /* stuff for debugging purposes */
@@ -896,7 +872,6 @@ int MINI_update_bubble_el(ELEMENT *elem,
     }
   }
 
-  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
   int_point(total_nne,&npt_z);
@@ -1001,8 +976,12 @@ int MINI_update_bubble_el(ELEMENT *elem,
     Stiffness = getMaterialStiffnessFunction(1,&hommat[mat]);
     D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
 
-    Stress(C_mat,&hommat[mat],S_mat);
-    Stiffness(C_mat,&hommat[mat],Fn_mat,Fr_mat,dSdF_tensor);
+    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
+    Stiffness(CCONST_2(double) C_mat,
+	      &hommat[mat],
+	      CCONST_2(double) Fn_mat,
+	      CCONST_2(double) Fr_mat,
+	      dSdF_tensor);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
     /* convert from mat/tensor to array */
@@ -1057,7 +1036,6 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
   /*** Compute the bubble update ***/
   double *Ktt_I, *ddt;
-  double *test;
   ddt = aloc1(n_bub*n_bub_dofs);
   Ktt_I = aloc1(n_bub*n_bub*n_bub_dofs*n_bub_dofs);
   if(!MINI_P1_P1){
@@ -1145,7 +1123,6 @@ int MINI_update_bubble(ELEMENT *elem,
 		       const double *dsol, /* sol from current iter */
 		       const int iter)
 {
-  const int ndn = 3;
   int err = 0;
 
   int nne, mat, nne_t;
@@ -1263,7 +1240,6 @@ void MINI_increment_el(ELEMENT *elem,
 
   const int n_bub = elem[ii].n_bub;
   const int n_bub_dofs = elem[ii].n_bub_dofs;
-  const int total_ndofe = ndofe + n_bub*n_bub_dofs;
   const int total_nne = nne + n_bub;
 
   double *disp;
@@ -1296,8 +1272,6 @@ void MINI_increment_el(ELEMENT *elem,
 	elem[ii].bub_dofs[i*n_bub_dofs + j];
     }
   }
-
-  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
@@ -1404,7 +1378,7 @@ void MINI_increment_el(ELEMENT *elem,
     // Get Deviatoric 2 P-K stress
     deviatoricStressFunctionPtr Stress;
     Stress = getDeviatoricStressFunction(1,&hommat[mat]);
-    Stress(C_mat,&hommat[mat],S_mat);
+    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
     mat2array(S,CONST_2(double) S_mat,3,3);
 
     /* Compute total stress S = dev(S) + p*Jn*Jr*C_I */
@@ -1595,7 +1569,6 @@ void MINI_check_resid(const int ndofn,
   MPI_Comm_size(mpi_comm,&nproc);
   MPI_Comm_rank(mpi_comm,&myrank);
   const int ndn = 3;
-  const int nVol = 1;
 
   int count; /* ALWAYS reset before use */
   int err = 0;
@@ -1623,7 +1596,6 @@ void MINI_check_resid(const int ndofn,
 
     const int n_bub = elem[ii].n_bub;
     const int n_bub_dofs = elem[ii].n_bub_dofs;
-    const int total_ndofe = ndofe + n_bub*n_bub_dofs;
     const int mat = elem[ii].mat[2];
     const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
@@ -1778,7 +1750,7 @@ void MINI_check_resid(const int ndofn,
     Pressure = getVolumetricPressureFunction(1,&hommat[mat]);
     D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
 
-    Stress(C_mat,&hommat[mat],S_mat);
+    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
     Pressure(Jn,Jr,&hommat[mat],&Up);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
