@@ -7,7 +7,7 @@ LIB:
 	cd $(pfem_lib_dir); make;
 
 SRC:
-	cd $(pfem_src_dir); make depend; make;
+	cd $(pfem_src_dir); make depend tags all;
 
 clean:
 	cd $(pfem_lib_dir); make clean;

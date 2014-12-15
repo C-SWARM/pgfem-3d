@@ -2,11 +2,12 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-top_level_dir	= /afs/crc.nd.edu/user/m/mmosby1/Private/cswarm/trunk
+pgfem_dir     	= $$HOME/pgfem_3d
+top_level_dir	= $(pgfem_dir)/slee_00_branch
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
-pfem_lib_ext	= $(pfem_lib_dir)/external/ext
+pfem_lib_ext	= $(pfem_lib_dir)/external
 pfem_incl_dir	= $(top_level_dir)/include
 pfem_src_dir	= $(top_level_dir)/src
 
@@ -38,19 +39,14 @@ SUITESPARSE_incl= -I$(SUITESPARSE_dir)/UMFPACK/Include \
 SUITESPARSE_lib	= -L${SUITESPARSE_dir}/UMFPACK/Lib -lumfpack \
 		  -L${SUITESPARSE_dir}/AMD/Lib -lamd
 
-# BLOCKSOLVE
-BLOCKSOLVE_dir	= $(pfem_lib_ext)/BlockSolve95
-BLOCKSOLVE_incl	= -I$(BLOCKSOLVE_dir)/include
-BLOCKSOLVE_lib	= -L$(BLOCKSOLVE_dir)/lib/libO/linux-intel -lBS95
-
 # HYPRE
 HYPRE_dir	= $(pfem_lib_ext)/hypre-2.4.0b
 HYPRE_incl	= -I$(HYPRE_dir)/include
 HYPRE_lib	= -L$(HYPRE_dir)/lib -lHYPRE
 
 # VTK
-VTK_dir		= $(pfem_lib_ext)/vtk-6.0
-#VTK_dir		= /opt/crc/vtk/5.10.1/gcc
+#VTK_dir		= $(pfem_lib_ext)/vtk-6.0
+VTK_dir		= /opt/crc/vtk/5.10.1/gcc
 VTK_incl	= -I$(VTK_dir)/include/vtk-6.0
 VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 		  -L$(VTK_dir)/lib -lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 \
@@ -64,12 +60,14 @@ VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 # Intel MKL: MKLROOT must be defined or define it here
 MKL_incl	= -I$(MKLROOT)/include
 MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
-	     	  -Wl,--start-group \
-	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
-	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
-	     	  -Wl,--end-group -lpthread
+ 	     	  -Wl,--start-group \
+ 	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
+ 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
+ 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
+ 	     	  $(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
+ 	     	  -Wl,--end-group -lpthread
+
+#MKL_lib		= -mkl
 
 # Math libraries
 MATH_lib	=  -limf -lm
