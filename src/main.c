@@ -704,6 +704,10 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
 	     "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
       break;
+    case TF:
+        PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
+                "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n"); 
+      break;                            
 
     default:
       PGFEM_printerr("ERROR: unrecognized analysis type!\n");
@@ -938,7 +942,18 @@ int single_scale_main(int argc,char *argv[])
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
     /* alocation of pressure variables */
+    int nVol = 1;
     switch(options.analysis_type){
+      case TF:
+          npres = 1;
+          nVol = 1;
+        if(elem[0].toe==10 && ndofn==3)
+        {  
+          npres = 1;
+          nVol = 1;
+        }
+  
+        break;      
     case STABILIZED: case MINI: case MINI_3F:
       if(npres != 4){
 	npres = 4;
@@ -1113,6 +1128,24 @@ int single_scale_main(int argc,char *argv[])
       hommat[mat].density = rho[mat];
     }
     
+    /* \/ initialized element varialbes */    
+		if(fabs(rho[0])>1.0e-12 && (options.analysis_type==TF || options.analysis_type==STABILIZED))
+		{		            
+			for (int e=0;e<ne;e++)
+			{
+			  if(npres==1)
+			  {
+        	eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
+      	  for(int a=0; a<3; a++)
+      		  eps[e].d_T[a] = 0.0;
+        }
+
+       	eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));	
+      	for(int a=0; a<nVol*3; a++)
+      		eps[e].T[a] = 1.0;
+		  }		  
+	  }    
+    /* /\ initialized element varialbes */    
     
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
   
