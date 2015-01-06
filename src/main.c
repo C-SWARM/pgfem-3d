@@ -469,7 +469,7 @@ int single_scale_main(int argc,char *argv[])
   if(options.restart){
     if(myrank == 0){
       PGFEM_printerr("WARNING: Restart is not currently supported!\n"
-	      "Starting the simulation from the beginning with"
+	      "Starting the simulation from the beginning with "
 	      "given options.\n");
     }
   }

@@ -483,6 +483,12 @@ double Newton_Raphson (const int print_level,
 	MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
 			      eps,sig_e,hommat,d_r,rr,iter);
 	break;
+      case TF: 
+////////////////////////////////////////////////////////////////////////////////////
+            evaluate_theta(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+                    dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
+/////////////////////////////////////////////////////////////////////////////////////
+  break;                 	
       default:
 	break;
       }

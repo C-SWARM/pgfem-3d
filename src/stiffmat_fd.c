@@ -60,7 +60,13 @@ void add_inertia(double *Ks,
   
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
-  int_point(nne+1,&npt_z);
+  
+  int itg_order = nne;
+  if(nne==4)
+    itg_order = nne + 1;
+      
+  
+  int_point(itg_order,&npt_z);
 
   double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
   int_pt_ksi = aloc1(npt_z);
@@ -77,7 +83,7 @@ void add_inertia(double *Ks,
 
 
   /*=== INTEGRATION LOOP ===*/
-  integrate(nne+1,&npt_x,&npt_y,&npt_z,
+  integrate(itg_order,&npt_x,&npt_y,&npt_z,
 	    int_pt_ksi,int_pt_eta,int_pt_zet,
 	    weights);
 
@@ -554,7 +560,7 @@ static int el_stiffmat(int i, /* Element ID */
         free(lk_i);
         break;
       }
-      case STABILIZED: //case TF: 
+      case STABILIZED: case TF: 
       {
         /* Get TOTAL deformation on element; r_e already contains
          * INCREMENT of deformation, add the deformation from previous. */
@@ -599,9 +605,8 @@ static int el_stiffmat(int i, /* Element ID */
 
         err = DISP_stiffmat_el(lk_k,i,ndofn,nne,x,y,z,elem,
                 hommat,nod,node,eps,sig,sup,r_mid);
-        
-        add_inertia(lk_i,i,nsd,nne,x,y,z,elem,hommat,node,dt);
 
+        add_inertia(lk_i,i,nsd,nne,x,y,z,elem,hommat,node,dt);
 
         for(int a=0; a<nne*nsd*nne*nsd; a++)
         	lk_i[a] = -lk_i[a] - alpha*(1-alpha)*dt*lk_k[a];
