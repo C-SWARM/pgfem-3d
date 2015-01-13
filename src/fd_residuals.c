@@ -25,7 +25,7 @@
 #define ndn 3
 #define N_VOL_TF 1
 #define N_VOL_ST 4
-    
+
 void resid_w_inertia_3f_el(double *fe,
         const int ii,
         double *fuI,
@@ -314,12 +314,8 @@ void resid_w_inertia_3f_el(double *fe,
   free(fp1); free(fp2);
   free(ft1); free(ft2);
 
-
-  if(npres==1)	
-    condense_Fupt_to_Fu(fe,nne,nsd,npres,nVol,fu,ft,fp,Kup,Ktp,Ktt,Kpt);
-  if(npres==4)	
-    condense_Fupt_to_Fup(fe,nne,nsd,npres,nVol,fu,ft,fp,Kut,Ktt,Kpt);
-
+  condense_F_out(fe,nne,nsd,npres,nVol,fu,ft,fp,Kut,Kup,Ktp,Ktt,Kpt);
+                   
   free(fu);
   free(fp);
   free(ft);
@@ -520,7 +516,6 @@ int fd_residuals (double *f_u,
 		  const PGFem3D_opt *opts,
 		  double alpha, double *r_n, double *r_n_1)
 {
-  printf("fd_residual is running\n");
 /* make decision to include ineria*/
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
@@ -1079,7 +1074,6 @@ void evaluate_PT_el(const int ii,
 
 	for(int a = 0; a<nVol; a++)
 	  eps[ii].T[a*3+0] += theta[a];
-	  
 
   double *press   = aloc1(nVol);  
   double *KtpI = aloc1(nVol*nVol);
@@ -1089,15 +1083,18 @@ void evaluate_PT_el(const int ii,
 	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nVol,1.0,Ktt,nVol,theta,1,1.0,ft,1);               
               
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nVol,1,nne*nsd,1.0,Ktu,nne*nsd,u,1,1.0,ft,1);               
+//	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+//              nVol,1,nne*nsd,1.0,Ktu,nne*nsd,u,1,1.0,ft,1);               
+
+//	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+//              nVol,1,nVol,-1.0,KtpI,nVol,ft,1,0.0,press,1);                                  	                                                          
 
 	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nVol,-1.0,KtpI,nVol,ft,1,0.0,press,1);                                  	                                                          
-  	  
+
   for(int a = 0; a<npres; a++)
-    eps[ii].d_T[a*3+0] += press[a];
-    
+    eps[ii].d_T[a*3+0] += press[a];      
+
   free(fp);  
   free(ft);  
   free(Ktu);
@@ -1347,7 +1344,7 @@ void evaluate_theta(long ne,
 		  double alpha, double *r_n, double *r_n_1)
 {
   const int mat = elem[0].mat[2];
-  double rho = hommat[mat].e4;
+  double rho = hommat[mat].density;
   long include_inertia = 1;
   
   if(fabs(rho)<1.0e-15)
@@ -1446,7 +1443,7 @@ void evaluate_theta(long ne,
 		if(npres==1)
 		  evaluate_PT_el(i,ndofn,nne,npres,x,y,z,elem,hommat,node,r_e,u2,u1,P2,P1,dt,sig,eps,alpha);
 		else
-		  evaluate_theta_el(i,ndofn,nne,x,y,z,elem,hommat,node,u2,u1,P2,P1,dt,sig,eps,alpha);   
+		  evaluate_theta_el(i,ndofn,nne,x,y,z,elem,hommat,node,u2,u1,P2,P1,dt,sig,eps,alpha);  
 		
 	  free(r_en);
 	  free(r0);

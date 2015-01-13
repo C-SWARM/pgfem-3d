@@ -10,6 +10,13 @@
 #include "allocation.h"
 #include "utils.h"
 
+#include "data_structure_c.h"
+
+#ifndef _Matrix_double
+Define_Matrix(double);
+#define _Matrix_double 1
+#endif
+
 
 //*
 // KttI:       [nVol]*[nVol]
@@ -18,97 +25,45 @@
 // Kpt:       [npres]*[nVol]
 // KptKttI:   [npres]*[nVol]
 	
-// C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
-// cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,a,A,k,B,n,b,C,n);
 //*/
+
+
 void condense_Fupt_to_Fup(double *fe, int nne, int nsd, int npres, int nVol,
-                   double *fu, double *ft, double *fp, double *Kut, double *Ktt, double *Kpt)
-{ 
-  int ndofn = nsd + 1; 
-  double *KttI, *KutKttI, *KptKttI;
-  KttI = aloc1(nVol*nVol);
-  KutKttI = aloc1(nne*nsd*nVol);
-  KptKttI = aloc1(npres*nVol);
-  
-	inverse(Ktt,nVol,KttI);
-     
-  double *_fu = aloc1(nne*nsd);
-  double *_fp = aloc1(npres);
-    
-     
-	// KttI:       [nVol]*[nVol]
-	// Kut:     [nne*nsd]*[nVol]
-	// KutKttI: [nne*nsd]*[nVol]
-	// Kpt:       [npres]*[nVol]
-	// KptKttI:   [npres]*[nVol]
-        
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,nVol,nVol,1.0,Kut,nVol,KttI,nVol,0.0,KutKttI,nVol);
-       
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              npres,nVol,nVol,1.0,Kpt,nVol,KttI,nVol,0.0,KptKttI,nVol);        
-              
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,1,nVol,1.0,KutKttI,nVol,ft,1,0.0,_fu,1);
-        
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              npres,1,nVol,1.0,KptKttI,nVol,ft,1,0.0,_fp,1);
-                
-	for(long a = 0; a<nne; a++)
-	{
-	  for(long b=0; b<ndofn; b++)
-	  {
-       if(b<nsd)
-         fe[a*ndofn + b] = (fu[a*nsd + b] - _fu[a*nsd + b]);
-       else
-         fe[a*ndofn + b] = (fp[a] - _fp[a]);
-	  }
-	}  
-  
-  free(_fu);
-  free(_fp);
-  
-  free(KttI);
-  free(KutKttI);
-  free(KptKttI);  
-  return;
-}
-/*
-void condense_Fupt_to_Fup(double *fe, int nne, int nsd, int npres, int nVol,
-                   double *fu, double *ft, double *fp, double *Kut, double *Ktt, double *Kpt)
-{ 
+                   Matrix(double) fu, Matrix(double) ft, Matrix(double) fp, 
+                   Matrix(double) Kut, Matrix(double) Ktt, Matrix(double) Kpt)
+{
   int ndofn = nsd + 1; 
   Matrix(double) KttI, KutKttI, KptKttI, _fu, _fp;
-  
+
 	Matrix_construct(double, KttI);
 	Matrix_construct(double, KutKttI);
 	Matrix_construct(double, KptKttI);
-	Matrix_construct(double, _fu;
+	Matrix_construct(double, _fu);
 	Matrix_construct(double, _fp);  
 
   Matrix_redim(KttI, nVol, nVol);
   Matrix_redim(KutKttI, nne*nsd, nVol);
   Matrix_redim(KptKttI, npres, nVol);
   
-	Matrix_inv(Ktt.m_pdata,KttI.m_pdata);
+	Matrix_inv(Ktt, KttI);
      
   Matrix_redim(_fu, nne*nsd, 1);
   Matrix_redim(_fp, npres, 1);
     
-  // Matrix_AxB(C, a, A, AT, B, BT) <-- C = aAxB
-  Matrix_AxB(KutKttI, 1.0,     Kut, 0, KttI, 0);
-  Matrix_AxB(KptKttI, 1.0,     Kpt, 0, KttI, 0);  
-  Matrix_AxB(    _fu, 1.0, KutKttI, 0,   ft, 0);
-  Matrix_AxB(    _fp, 1.0, KptKttI, 0,   ft, 0);  
+  // Matrix_AxB(C, a, b, A, AT, B, BT) <-- C = aAxB + bC
+  Matrix_AxB(KutKttI, 1.0, 0.0,     Kut, 0, KttI, 0);
+  Matrix_AxB(KptKttI, 1.0, 0.0,     Kpt, 0, KttI, 0);  
+  Matrix_AxB(    _fu, 1.0, 0.0, KutKttI, 0,   ft, 0);
+  Matrix_AxB(    _fp, 1.0, 0.0, KptKttI, 0,   ft, 0);  
                         
 	for(long a = 0; a<nne; a++)
 	{
 	  for(long b=0; b<ndofn; b++)
 	  {
        if(b<nsd)
-         fe[a*ndofn + b] = fu[a*nsd + b] - Mat_v(_fu, a*nsd + b+1, 1);
+         fe[a*ndofn + b] = Mat_v(fu,a*nsd+b+1,1) - Mat_v(_fu, a*nsd+b+1, 1);
        else
-         fe[a*ndofn + b] = fp[a] - Mat_v(_fp, a, 1);
+         fe[a*ndofn + b] = Mat_v(fp,a+1,1) - Mat_v(_fp, a, 1);
 	  }
 	}  
   
@@ -117,236 +72,164 @@ void condense_Fupt_to_Fup(double *fe, int nne, int nsd, int npres, int nVol,
   
   Matrix_cleanup(KttI);
   Matrix_cleanup(KutKttI);
-  Matrix_cleanup(KptKttI);  
-  return;
+  Matrix_cleanup(KptKttI);      
+  
 }
 
-*/
 void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
-                   double *fu, double *ft, double *fp, double *Kup, double *Ktp, double *Ktt,double *Kpt)                               
+                   Matrix(double) fu, Matrix(double) ft, Matrix(double) fp, 
+                   Matrix(double) Kup, Matrix(double) Ktp, Matrix(double) Ktt, Matrix(double) Kpt)                               
 {
   
 	int m = nVol;
 	
-  double *KptI = aloc1(npres*m);
-  double *KtpI = aloc1(npres*m);
-  double *_fu  = aloc1(nne*nsd);
+	Matrix(double) KptI, KtpI, _fu;
+  Matrix_construct(double, KptI); Matrix_redim(KptI,npres,nVol); 
+	Matrix_construct(double, KtpI); Matrix_redim(KtpI,npres,nVol);
+	Matrix_construct(double, _fu);	Matrix_redim(_fu, nne*nsd, 1);
+	  
+  memset(_fu.m_pdata, 0, sizeof(double)*nne*nsd);
+  Matrix_inv(Ktp,KtpI);
+  Matrix_inv(Kpt,KptI);
+
+  Matrix(double) KupKtpI, KupKtpIKtt, KptIFp;
+  Matrix_construct(double, KupKtpI);    Matrix_redim(KupKtpI,    nne*nsd, nVol); 
+  Matrix_construct(double, KupKtpIKtt); Matrix_redim(KupKtpIKtt, nne*nsd, nVol); 
+  Matrix_construct(double, KptIFp);     Matrix_redim(KptIFp,     nVol,    1);     
   
-  memset(_fu, 0, sizeof(double)*nne*nsd);
-
-  inverse(Ktp,m,KtpI);  
-  inverse(Kpt,m,KptI);  
-
-  double *KupKtpI, *KupKtpIKtt, *KptIFp;         
-  KupKtpI    = aloc1(nne*nsd*m);
-  KupKtpIKtt = aloc1(nne*nsd*m);
-  KptIFp    = aloc1(m);
-
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,m,m,1.0,Kup,m,KtpI,m,0.0,KupKtpI,m);
+  Matrix_AxB(KupKtpI,     1.0, 0.0, Kup,        0, KtpI,     0);
+  Matrix_AxB(KupKtpIKtt,  1.0, 0.0, KupKtpI,    0, Ktt,      0);
+  Matrix_AxB(KptIFp,      1.0, 0.0, KptI,       0, fp,       0);
+  Matrix_AxB(_fu,         1.0, 0.0, KupKtpI,    0, ft,       0);
+  Matrix_AxB(_fu,        -1.0, 1.0, KupKtpIKtt, 0, KptIFp,   0);  
               
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,m,m,1.0,KupKtpI,m,Ktt,m,0.0,KupKtpIKtt,m);
-              
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              m,1,m,1.0,KptI,m,fp,1,0.0,KptIFp,1);              
-
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,1,m,1.0,KupKtpI,m,ft,1,0.0,_fu,1);     
-              
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,1,m,-1.0,KupKtpIKtt,m,KptIFp,1,1.0,_fu,1);  
-                               
   for(int a=0; a<nne*nsd; a++)
-    fe[a] = fu[a] - _fu[a]; 
+    fe[a] =  Mat_v(fu,a+1,1) -  Mat_v(_fu,a+1,1); 
 
-  free(KptI);
-  free(KtpI);
-  free(KupKtpI);
-  free(KupKtpIKtt);
-  free(KptIFp); 
-  free(_fu);  
+  Matrix_cleanup(KptI);
+  Matrix_cleanup(KtpI);
+  Matrix_cleanup(KupKtpI);
+  Matrix_cleanup(KupKtpIKtt);
+  Matrix_cleanup(KptIFp); 
+  Matrix_cleanup(_fu);  
 }
 
 void condense_K2_to_K1(double *K11, int nne, int nsd, int npres,
-                   double *Kuu, double *Kup,
-                   double *Kpu, double *Kpp)                               
+                   Matrix(double) Kuu, Matrix(double) Kup, Matrix(double) Kpu, Matrix(double) Kpp)                               
 {
-  double *KppI, *KupKppI, *_Kuu;
-  KppI = aloc1(npres*npres);
-  KupKppI = aloc1(nne*nsd*npres);
-  _Kuu = aloc1(nne*nsd*nne*nsd);
+  Matrix(double) KppI, KupKppI, _Kuu;
+  Matrix_construct(double, KppI);    Matrix_redim(KppI,    npres,   npres);
+  Matrix_construct(double, KupKppI); Matrix_redim(KupKppI, nne*nsd, npres);
+  Matrix_construct(double, _Kuu);    Matrix_redim(_Kuu,    nne*nsd, nne*nsd);
 
-  inverse(Kpp,npres,KppI);
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,npres,npres,1.0,Kup,npres,KppI,npres,0.0,KupKppI,npres);
-              
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,nne*nsd,npres,1.0,KupKppI,npres,Kpu,nne*nsd,0.0,_Kuu,nne*nsd);
+  Matrix_inv(Kpp, KppI);
+
+  Matrix_AxB(KupKppI, 1.0, 0.0, Kup,     0, KppI, 0);
+  Matrix_AxB(_Kuu,    1.0, 0.0, KupKppI, 0, Kpu,  0);  
+  
   for(long a=0;a<nne*nsd*nne*nsd; a++)
-    K11[a] = Kuu[a] - _Kuu[a];
+    K11[a] = Kuu.m_pdata[a] - _Kuu.m_pdata[a];
     
-  free(KppI);    
-  free(KupKppI);
-  free(_Kuu);          
+  Matrix_cleanup(KppI);    
+  Matrix_cleanup(KupKppI);
+  Matrix_cleanup(_Kuu);          
   
 }
-void condense_K3_to_K2(double *K11, double *K12, double *K21, double *K22, 
-                   int nne, int nsd, int npres, int nVol,
-                   double *Kuu, double *Kut, double *Kup,
-                   double *Ktu, double *Ktt, double *Ktp,
-                   double *Kpu, double *Kpt, double *Kpp)                               
-{
-	double *KttI, *KutKttI, *KptKttI;
-  KttI = aloc1(nVol*nVol);
-  KutKttI = aloc1(nne*nsd*nVol);
-  KptKttI = aloc1(npres*nVol);
-   
-  inverse(Ktt,nVol,KttI);  
-     
-  double *_Kuu = aloc1(nne*nsd*nne*nsd);
-  double *_Kup = aloc1(nne*nsd*npres);
-  
-  double *_Kpu = aloc1(npres*nsd*nne);
-  double *_Kpp = aloc1(npres*npres);
-   
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,nVol,nVol,1.0,Kut,nVol,KttI,nVol,0.0,KutKttI,nVol);
-       
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              npres,nVol,nVol,1.0,Kpt,nVol,KttI,nVol,0.0,KptKttI,nVol);        
-              
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,nne*nsd,nVol,1.0,KutKttI,nVol,Ktu,nne*nsd,0.0,_Kuu,nne*nsd);
-       
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,npres,nVol,1.0,KutKttI,nVol,Ktp,npres,0.0,_Kup,npres);
-        
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              npres,nne*nsd,nVol,1.0,KptKttI,nVol,Ktu,nne*nsd,0.0,_Kpu,nne*nsd);
-       
-  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              npres,npres,nVol,1.0,KptKttI,nVol,Ktp,npres,0.0,_Kpp,npres);
-  
-	for(long a=0; a<nne*nsd*nne*nsd; a++)
-	  K11[a] = Kuu[a] - _Kuu[a];
-	
-	for(long a=0; a<nne*nsd*npres; a++)
-	{
-	  K12[a] = Kup[a] - _Kup[a];
-	  K21[a] = Kpu[a] - _Kpu[a];
-	}
-	  
-	for(long a=0; a<npres*npres; a++)
-	  K22[a] = Kpp[a] - _Kpp[a];	  
 
-/*
-// DEBUG 
-  for(int a = 0; a<nVol; a++)
-  {
-    for(int b = 0; b<nVol; b++)
-      printf("%e ", KttI[a*nVol+b]);
-    printf("\n");  
-  }
-  */
-  free(_Kuu);
-  free(_Kup);
-  free(KttI);
+void condense_K3_to_K2(Matrix(double) K11, Matrix(double) K12, Matrix(double) K21, Matrix(double) K22, 
+                   int nne, int nsd, int npres, int nVol,
+                   Matrix(double) Kuu, Matrix(double) Kut, Matrix(double) Kup,
+                   Matrix(double) Ktu, Matrix(double) Ktt, Matrix(double) Ktp,
+                   Matrix(double) Kpu, Matrix(double) Kpt, Matrix(double) Kpp)                               
+{
+	Matrix(double) KttI, KutKttI, KptKttI;
+	
+	Matrix_construct(double, KttI);    Matrix_redim(KttI,    nVol,    nVol);
+	Matrix_construct(double, KutKttI); Matrix_redim(KutKttI, nne*nsd, nVol);
+	Matrix_construct(double, KptKttI); Matrix_redim(KptKttI, npres,   nVol);
+	
+  Matrix_inv(Ktt, KttI);
+   
+  Matrix(double) _Kuu, _Kup, _Kpu, _Kpp;
+	Matrix_construct(double, _Kuu); Matrix_redim(_Kuu, nne*nsd, nne*nsd);
+	Matrix_construct(double, _Kup); Matrix_redim(_Kup, nne*nsd, npres);
+	Matrix_construct(double, _Kpu); Matrix_redim(_Kpu, npres,   nne*nsd);  
+  Matrix_construct(double, _Kpp); Matrix_redim(_Kpp, npres,   npres);
   
-  free(_Kpu);
-  free(_Kpp);
+  Matrix_AxB(KutKttI, 1.0, 0.0, Kut,     0, KttI, 0);
+  Matrix_AxB(KptKttI, 1.0, 0.0, Kpt,     0, KttI, 0);
+  Matrix_AxB(_Kuu,    1.0, 0.0, KutKttI, 0, Ktu,  0);
+  Matrix_AxB(_Kup,    1.0, 0.0, KutKttI, 0, Ktp,  0);
+  Matrix_AxB(_Kpu,    1.0, 0.0, KptKttI, 0, Ktu,  0);
+  Matrix_AxB(_Kpp,    1.0, 0.0, KptKttI, 0, Ktp,  0);  
   
-  free(KutKttI);
-  free(KptKttI);  
+  // C = aA + bB
+  // Matrix_AplusB(C, a, A, b, B)  
+  Matrix_AplusB(K11, 1.0, Kuu, -1.0, _Kuu);
+  Matrix_AplusB(K12, 1.0, Kup, -1.0, _Kup);
+  Matrix_AplusB(K21, 1.0, Kpu, -1.0, _Kpu);
+  Matrix_AplusB(K22, 1.0, Kpp, -1.0, _Kpp);  
+        
+  Matrix_cleanup(KttI);  
+  Matrix_cleanup(KutKttI);
+  Matrix_cleanup(KptKttI);    
   
-  
+  Matrix_cleanup(_Kuu);
+  Matrix_cleanup(_Kup);
+  Matrix_cleanup(_Kpu);
+  Matrix_cleanup(_Kpp);  
 } 
 
 void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
-                   double *Kuu, double *Kut, double *Kup,
-                   double *Ktu, double *Ktt, double *Ktp,
-                   double *Kpu, double *Kpt, double *Kpp)                               
+                   Matrix(double) Kuu, Matrix(double) Kut, Matrix(double) Kup,
+                   Matrix(double) Ktu, Matrix(double) Ktt, Matrix(double) Ktp,
+                   Matrix(double) Kpu, Matrix(double) Kpt, Matrix(double) Kpp)
 {
-  /*
-  double *K11 = aloc1(nne*nsd*nne*nsd);
-  double *K12 = aloc1(nne*nsd*npres);
-  
-  double *K21 = aloc1(npres*nsd*nne);
-  double *K22 = aloc1(npres*npres);
 
-  condense_3_to_2(K11,K12,K21,K22,nne,nsd,npres,nVol,
-                  Kuu,Kut,Kup,Ktu,Ktt,Ktp,Kpu,Kpt,Kpp); 
-                  
-// \/ CBD ---------------------------------------------------------------------
-  int d1 = npres;
-  int d2 = npres;
-  for(int a = 0; a<d1; a++)
-  {
-    for(int b = 0; b<d2; b++)
-      printf("%e ", K12[a*d2 + b]);
-    printf("\n");
-  }  
-  printf("\n\n\n"); 
-  
-// /\ CBD ---------------------------------------------------------------------                   
-                  
-  condense_2_to_1(Ks,nne,nsd,npres,
-                  K11,K12,K21,K22);                   
-
-  free(K11);
-  free(K12);
-  free(K21);
-  free(K22); */
-  
-  
-	double *KptI, *KtpI;
-	int m = nVol;
+	Matrix(double) KptI, KtpI, Kuu_add;
+	Matrix_construct(double, KptI);    Matrix_redim(KptI,    npres,   nVol);
+	Matrix_construct(double, KtpI);    Matrix_redim(KtpI,    nVol,    npres);
+	Matrix_construct(double, Kuu_add); Matrix_redim(Kuu_add, nne*nsd, nne*nsd);	
 	
-  KptI = aloc1(npres*m);
-  KtpI = aloc1(npres*m);
+	Matrix_inv(Kpt, KptI);
+	Matrix_inv(Ktp, KtpI);	
+	
 
-  inverse(Ktp,m,KtpI);  
-  inverse(Kpt,m,KptI);  
-
-  double *KupKtpI, *KupKtpIKtt, *KptIKpu;         
-  KupKtpI    = aloc1(nne*nsd*m);
-  KupKtpIKtt = aloc1(nne*nsd*m);
-  KptIKpu    = aloc1(nne*nsd*m);
-
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,m,m,1.0,Kup,m,KtpI,m,0.0,KupKtpI,m);
-              
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,m,m,1.0,KupKtpI,m,Ktt,m,0.0,KupKtpIKtt,m);
-              
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              m,nne*nsd,m,1.0,KptI,m,Kpu,nne*nsd,0.0,KptIKpu,nne*nsd);              
-
-	cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              nne*nsd,nne*nsd,m,1.0,KupKtpIKtt,m,KptIKpu,nne*nsd,1.0,Kuu,nne*nsd);                            
-  
+  Matrix(double) KupKtpI, KupKtpIKtt, KptIKpu;
+  Matrix_construct(double, KupKtpI);    Matrix_redim(KupKtpI,    nne*nsd, nVol);
+  Matrix_construct(double, KupKtpIKtt); Matrix_redim(KupKtpIKtt, nne*nsd, nVol);
+  Matrix_construct(double, KptIKpu);    Matrix_redim(KptIKpu,    nVol,    nne*nsd);
+           
+  // Matrix_AxB(C, a, b, A, AT, B, BT) <-- C = aAxB + bC
+  Matrix_AxB(KupKtpI,    1.0, 0.0, Kup,        0, KtpI,    0);
+  Matrix_AxB(KupKtpIKtt, 1.0, 0.0, KupKtpI,    0, Ktt,     0);  
+  Matrix_AxB(KptIKpu,    1.0, 0.0, KptI,       0, Kpu,     0);  
+  Matrix_AxB(Kuu_add,    1.0, 0.0, KupKtpIKtt, 0, KptIKpu, 0);    
+               
   for(int a=0; a<nne*nsd*nne*nsd; a++)
-    Ks[a] = Kuu[a];
+    Ks[a] = Kuu.m_pdata[a] + Kuu_add.m_pdata[a];
     
-  free(KptI);
-  free(KtpI);
-  free(KupKtpI);
-  free(KupKtpIKtt);
-  free(KptIKpu);                  
+  Matrix_cleanup(KptI);
+  Matrix_cleanup(KtpI);
+  Matrix_cleanup(Kuu_add);
+  Matrix_cleanup(KupKtpI);
+  Matrix_cleanup(KupKtpIKtt);
+  Matrix_cleanup(KptIKpu);     
 }
-  
+
 void condense_Kupt_to_Kup(double *Ks, int nne, int nsd, int npres, int nVol,
-                   double *Kuu, double *Kut, double *Kup,
-                   double *Ktu, double *Ktt, double *Ktp,
-                   double *Kpu, double *Kpt, double *Kpp)                               
+                   Matrix(double) Kuu, Matrix(double) Kut, Matrix(double) Kup,
+                   Matrix(double) Ktu, Matrix(double) Ktt, Matrix(double) Ktp,
+                   Matrix(double) Kpu, Matrix(double) Kpt, Matrix(double) Kpp)                               
 {
   int ndofn = nsd + 1;
-  double *K11 = aloc1(nne*nsd*nne*nsd);
-  double *K12 = aloc1(nne*nsd*npres);
+  Matrix(double) K11, K12, K21, K22;
   
-  double *K21 = aloc1(npres*nne*nsd);
-  double *K22 = aloc1(npres*npres);
-        
+  Matrix_construct(double, K11); Matrix_redim(K11, nne*nsd, nne*nsd);
+  Matrix_construct(double, K12); Matrix_redim(K12, nne*nsd, npres);
+  Matrix_construct(double, K21); Matrix_redim(K21, npres,   nne*nsd);
+  Matrix_construct(double, K22); Matrix_redim(K22, npres,   npres);
+          
   condense_K3_to_K2(K11,K12,K21,K22,nne,nsd,npres,nVol,
                   Kuu,Kut,Kup,Ktu,Ktt,Ktp,Kpu,Kpt,Kpp);
                   
@@ -362,31 +245,31 @@ void condense_Kupt_to_Kup(double *Ks, int nne, int nsd, int npres, int nVol,
 	        if(b<nsd && d<nsd)
 	        {
 	          int idx_uu = idx_K(a,b,c,d,nne,nsd);  
-	          Ks[idx] = K11[idx_uu];
+	          Ks[idx] = K11.m_pdata[idx_uu];
 	        }
 	        else if(b<nsd && d==nsd)
 	        {
 	          int idx_up = idx_K_gen(a,b,c,0,nne,nsd,npres,1);
-	          Ks[idx] = K12[idx_up];
+	          Ks[idx] = K12.m_pdata[idx_up];
 	        }
 	        else if(b==nsd && d<nsd)
 	        {
 	          int idx_pu = idx_K_gen(a,0,c,d,npres,1,nne,nsd);
-	          Ks[idx] = K21[idx_pu];
+	          Ks[idx] = K21.m_pdata[idx_pu];
 	        }
 	        else if(b==nsd && d==nsd)
 	        {
 	          int idx_pp = idx_K_gen(a,0,c,0,npres,1,npres,1);
-	          Ks[idx] = K22[idx_pp];
+	          Ks[idx] = K22.m_pdata[idx_pp];
 	        }
 	      }
 	    }
 	  }
 	} 
-  free(K11);
-  free(K12);
-  free(K21);
-  free(K22);
+  Matrix_cleanup(K11);
+  Matrix_cleanup(K12);
+  Matrix_cleanup(K21);
+  Matrix_cleanup(K22);
 } 
 
 void condense_K_out(double *Ks, int nne, int nsd, int npres, int nVol,
@@ -394,19 +277,106 @@ void condense_K_out(double *Ks, int nne, int nsd, int npres, int nVol,
                    double *Ktu, double *Ktt, double *Ktp,
                    double *Kpu, double *Kpt, double *Kpp)                               
 {
-  if(npres==4)
+  
+  Matrix(double) Kuu_temp, Kut_temp, Kup_temp;
+  Matrix(double) Ktu_temp, Ktt_temp, Ktp_temp;  
+  Matrix(double) Kpu_temp, Kpt_temp, Kpp_temp;  
+  
+	Matrix_construct(double, Kuu_temp);
+	Matrix_construct(double, Ktu_temp);
+	Matrix_construct(double, Kpu_temp);
+
+	Matrix_construct(double, Kut_temp);
+	Matrix_construct(double, Ktt_temp);
+	Matrix_construct(double, Kpt_temp);
+	
+  Matrix_construct(double, Kup_temp);
+	Matrix_construct(double, Ktp_temp);
+	Matrix_construct(double, Kpp_temp);	
+                            
+	Matrix_init_w_array(Kuu_temp, nne*nsd, nne*nsd, Kuu);
+	Matrix_init_w_array(Ktu_temp, nVol,    nne*nsd, Ktu);
+	Matrix_init_w_array(Kpu_temp, npres,   nne*nsd, Kpu);
+	Matrix_init_w_array(Kut_temp, nne*nsd, nVol,    Kut);
+	Matrix_init_w_array(Ktt_temp, nVol,    nVol,    Ktt);
+	Matrix_init_w_array(Kpt_temp, npres,   nVol,    Kpt);	
+	Matrix_init_w_array(Kup_temp, nne*nsd, npres,   Kup);
+	Matrix_init_w_array(Ktp_temp, nVol,    npres,   Ktp);
+	Matrix_init_w_array(Kpp_temp, npres,   npres,   Kpp);	
+   
+  switch(npres)
   {
-    condense_Kupt_to_Kup(Ks,nne,nsd,npres,nVol,
-                     Kuu,Kut,Kup,Ktu,Ktt,Ktp,Kpu,Kpt,Kpp);
-    return;
+    case 1:
+      condense_Kupt_to_Ku(Ks,nne,nsd,npres,nVol,
+                     Kuu_temp,Kut_temp,Kup_temp,
+                     Ktu_temp,Ktt_temp,Ktp_temp,
+                     Kpu_temp,Kpt_temp,Kpp_temp);
+      break;
+    case 4:                  
+      condense_Kupt_to_Kup(Ks,nne,nsd,npres,nVol,
+                     Kuu_temp,Kut_temp,Kup_temp,
+                     Ktu_temp,Ktt_temp,Ktp_temp,
+                     Kpu_temp,Kpt_temp,Kpp_temp);
+      break;                     
   }
-                    
+  
+  Matrix_cleanup(Kuu_temp);
+  Matrix_cleanup(Ktu_temp);
+  Matrix_cleanup(Kpu_temp);
+  Matrix_cleanup(Kut_temp);
+  Matrix_cleanup(Ktt_temp);
+  Matrix_cleanup(Kpt_temp);
+  Matrix_cleanup(Kup_temp);
+  Matrix_cleanup(Ktp_temp);
+  Matrix_cleanup(Kpp_temp);
+  
+  if(npres!=1 && npres!=4)
+  {    
+    printf("codensing with pressure # %d is not supported\n", npres);
+    exit(0);
+  }                                             
+}
+
+void condense_F_out(double *fe, int nne, int nsd, int npres, int nVol,
+                   double *fu, double *ft, double *fp, 
+                   double *Kut, double *Kup, double *Ktp, double *Ktt,double *Kpt)
+{
+  Matrix(double) fu_temp,ft_temp,fp_temp;
+	Matrix_construct(double, fu_temp);	  
+	Matrix_construct(double, ft_temp);
+	Matrix_construct(double, fp_temp);
+	
+	Matrix_init_w_array(fu_temp, nne*nsd, 1, fu);	
+	Matrix_init_w_array(ft_temp, nVol,    1, ft);	
+	Matrix_init_w_array(fp_temp, npres,   1, fp);	
+	
+  Matrix(double) Kut_temp,Kup_temp,Ktp_temp,Ktt_temp,Kpt_temp;
+	Matrix_construct(double, Kut_temp);	
+	Matrix_construct(double, Kup_temp);		
+	Matrix_construct(double, Ktp_temp);	
+	Matrix_construct(double, Ktt_temp);		
+	Matrix_construct(double, Kpt_temp);
+
+	Matrix_init_w_array(Kut_temp, nne*nsd, nVol,  Kut);	
+	Matrix_init_w_array(Kup_temp, nne*nsd, npres, Kup);	
+	Matrix_init_w_array(Ktp_temp, nVol,    npres, Ktp);
+	Matrix_init_w_array(Ktt_temp, nVol,    nVol,  Ktt); 	
+	Matrix_init_w_array(Kpt_temp, npres,   nVol,  Kpt);		
+	
   if(npres==1)
-  {  
-     condense_Kupt_to_Ku(Ks,nne,nsd,npres,nVol,
-                     Kuu,Kut,Kup,Ktu,Ktt,Ktp,Kpu,Kpt,Kpp);
-    return;
-  }
-  printf("codensing with pressure # %d is not supported\n", npres);
-  exit(0);                                             
+    condense_Fupt_to_Fu(fe,nne,nsd,npres,nVol,
+                   fu_temp,ft_temp,fp_temp,Kup_temp,Ktp_temp,Ktt_temp,Kpt_temp);     	
+  if(npres==4)	
+    condense_Fupt_to_Fup(fe,nne,nsd,npres,nVol, 
+                   fu_temp,ft_temp,fp_temp,Kut_temp,Ktt_temp,Kpt_temp);
+
+  Matrix_cleanup(fu_temp);
+  Matrix_cleanup(ft_temp);
+  Matrix_cleanup(fp_temp);
+
+  Matrix_cleanup(Kut_temp);
+  Matrix_cleanup(Kup_temp);
+  Matrix_cleanup(Ktp_temp);  
+  Matrix_cleanup(Ktt_temp);
+  Matrix_cleanup(Kpt_temp);      
 }
