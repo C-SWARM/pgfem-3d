@@ -534,8 +534,18 @@ double Newton_Raphson (const int print_level,
 
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-					       FE2_REBALANCE_ADAPTIVE);
+	if ( iter == 0 ) {
+	  /* == Do not rebalance if this is the first iteration. ==
+	     This is because most often it will be after an update or
+	     print operation from the previous step. These operations
+	     are approx. equal for all cells and thus the timing
+	     information is not valid for rebalancing purposes. */
+	  pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+						 FE2_REBALANCE_NONE);
+	} else {
+	  pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+						 FE2_REBALANCE_ADAPTIVE);
+	}
 	double tnp1 = 0;
 	set_time_micro(tim,times,dt,DIV,&tnp1);
 	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
