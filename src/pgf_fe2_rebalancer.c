@@ -14,6 +14,9 @@
 #include <assert.h>
 #include <limits.h>
 
+/* turn on/off adaptive rebalancing print statements */
+static const int LOGGING = 1;
+
 /* a helper structure */
 enum new_partition_idx{
   NEW_PART_JOB_ID,
@@ -534,27 +537,21 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
 {
   int rank = -1;
   PGFEM_Error_rank(&rank);
-  int rebal = 1;
   /* compute the greedy partitioning. */
   rebalance_partitions_greedy(n_parts,all_parts,parts);
 
-  /* compute statistics on original partitioning and new partitioning */
-  double orig_total = 0.0;
-  double orig_avg = 0.0;
+  /* compute statistics on original partitioning and new
+     partitioning. Note that total and average are unchanged between
+     the old and new partitionings. Most important statistic is max
+     time and wait time */
   double orig_min = INT_MAX; /* should be big enough */
   double orig_max = -1.0; /* actual values are (+) */
-  double orig_std = 0.0;
-  double new_total = 0.0;
-  double new_avg = 0.0;
+  double orig_wait = 0.0;
   double new_min = INT_MAX; /* should be big enough */
   double new_max = -1.0; /* actual values are (+) */
-  double new_std = 0.0;
+  double new_wait = 0.0;
 
   for(size_t i=0; i<n_parts; i++){
-    /* totals */
-    orig_total += orig_totals[i];
-    new_total += parts[i].total_time;
-
     /* min */
     if(orig_min > orig_totals[i]) orig_min = orig_totals[i];
     if(new_min > parts[i].total_time) new_min = (double) parts[i].total_time;
@@ -564,28 +561,31 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
     if(new_max < parts[i].total_time) new_max = (double) parts[i].total_time;
   }
 
-  orig_avg = orig_total/n_parts;
-  new_avg = new_total/n_parts;
-
-  for(size_t i=0; i<n_parts; i++){
-    orig_std = (orig_totals[i] - orig_avg)*(orig_totals[i] - orig_avg);
-    new_std = (parts[i].total_time - new_avg)*(parts[i].total_time - new_avg);
-  }
+  orig_wait = orig_max - orig_min;
+  new_wait = new_max - new_min;
 
   /*
-   * Conditions for rebalancing -- Note that rebalancing requires
-   * substantial communication among the microscale servers!
-   *
-   * 1) Average time is reduced
-   * 2) Maximum wait time (max - min) is reduced (increased utilization)
-   *    -- related, standard deviation is reduced
-   * 3) Improvements outweigh estimated cost of communication.
-   *    -- This should be measured!
-   * 4) How many jobs are kept vs. communicated
-   */
-
-  /* do not rebalance if new_avg + new_wait >= orig_avg + orig_wait */
-  if((new_avg + new_max - new_min) >= (orig_avg + orig_max - orig_min)){
+    Only rebalance if the estimated max server time is reduced by some
+    factor. Wait time, while a good metric for resource utilization,
+    does not matter in terms of scalability or overall
+    efficiency. Faster simulation = lower CPU hours. period.
+ */
+  static const double max_factor = 0.95; /* save ~1hr on a 24hr simulation */
+  if ( new_max < max_factor * orig_max ){ /* reduced total time */
+    if ( rank == 0 && LOGGING){
+      PGFEM_printerr("REBALANCING:\n"
+		     "       max       min       wait\n"
+		     "OLD: %8.3e %8.3e %8.3e\n"
+		     "NEW: %8.3e %8.3e %8.3e\n"
+		     "N_JOB: ",
+		     orig_max,orig_min,orig_wait,
+		     new_max,new_min,new_wait);
+      for(size_t i = 0; i < n_parts; i++){
+	PGFEM_printerr("%ld ",parts[i].n_job);
+      }
+      PGFEM_printerr("\n");
+    }
+  } else { /* do not rebalance */
     /* reset the parts */
     for(size_t i=0; i<n_parts; i++){
       new_partition_set_empty(parts + i);
@@ -593,20 +593,6 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
 
     /* extract original partition */
     rebalance_partitions_none(n_parts,all_parts,parts);
-    rebal = 0;
   }
 
-  /* reporting */
-  if(rank == 0){
-    PGFEM_printerr("       avg       std       wait\n"
-		   "OLD: %8.3e %8.3e %8.3e\n"
-		   "NEW: %8.3e %8.3e %8.3e",
-		   orig_avg,orig_std,orig_max - orig_min,
-		   new_avg,new_std,new_max - new_min);
-    if(!rebal){
-      PGFEM_printerr(" -- DISCARDED\n");
-    } else {
-      PGFEM_printerr("\n");
-    }
-  }
 }
