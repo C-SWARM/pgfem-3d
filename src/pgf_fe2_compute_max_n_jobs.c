@@ -5,15 +5,16 @@
  */
 
 #include "pgf_fe2_compute_max_n_jobs.h"
+#include "PGFEM_io.h"
 #include <assert.h>
-#include <stdlib.h>
+#include <math.h>
 
 int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
 			       const PGFEM_mpi_comm *mpi_comm,
 			       int *max_n_jobs)
 {
   int err = 0;
-  static const int factor = 1.1;
+  static const double factor = 1.1;
   if ( macro == NULL ){ /* microscale server(s) */
 
     /* Matching call to Bcast from Macroscale */
@@ -47,12 +48,15 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
       if ( (total_macro_nce % n_server) > 0 ) min_n_jobs ++;
 
       /* compute/override maximum number of jobs */
-      if ( macro->opts->max_n_jobs >= min_n_jobs ) {
-	*max_n_jobs = macro->opts->max_n_jobs;
-      } else {
-	*max_n_jobs = factor * min_n_jobs;
+      *max_n_jobs = (int) ceil(factor * min_n_jobs);
+      if ( macro->opts->max_n_jobs > 0 ){
+	if( macro->opts->max_n_jobs >= min_n_jobs ) {
+	  *max_n_jobs = macro->opts->max_n_jobs;
+	} else {
+	  PGFEM_printerr("WARNING: specified max. server jobs too small! Using default.\n");
+	}
       }
-
+      PGFEM_printf("Max. No. Jobs/Server: %d\n",*max_n_jobs);
     } else {
       /* recv buffer for reduce. Contents invalid after Reduce */
       int junk = -1;
