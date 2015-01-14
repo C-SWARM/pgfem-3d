@@ -187,6 +187,9 @@ double Newton_Raphson (const int print_level,
   double BS_nor=0.0;
   int BS_iter;
 
+  /* option '-no-migrate' */
+  const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
+
   /* MPI stuff */
   int nproc,myrank;
   MPI_Comm_size(mpi_comm,&nproc);
@@ -544,7 +547,7 @@ double Newton_Raphson (const int print_level,
 						 FE2_REBALANCE_NONE);
 	} else {
 	  pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-						 FE2_REBALANCE_ADAPTIVE);
+						 NR_REBALANCE);
 	}
 	double tnp1 = 0;
 	set_time_micro(tim,times,dt,DIV,&tnp1);

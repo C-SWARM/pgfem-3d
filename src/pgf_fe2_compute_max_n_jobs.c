@@ -49,13 +49,18 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
 
       /* compute/override maximum number of jobs */
       *max_n_jobs = (int) ceil(factor * min_n_jobs);
-      if ( macro->opts->max_n_jobs > 0 ){
+      if (!macro->opts->no_migrate
+	  && macro->opts->max_n_jobs > 0 ){
 	if( macro->opts->max_n_jobs >= min_n_jobs ) {
 	  *max_n_jobs = macro->opts->max_n_jobs;
 	} else {
 	  PGFEM_printerr("WARNING: specified max. server jobs too small! Using default.\n");
 	}
       }
+
+      /* if we are not migrating cells, use min */
+      if(macro->opts->no_migrate) *max_n_jobs = min_n_jobs;
+
       PGFEM_printf("Max. No. Jobs/Server: %d\n",*max_n_jobs);
     } else {
       /* recv buffer for reduce. Contents invalid after Reduce */
