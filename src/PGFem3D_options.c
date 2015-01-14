@@ -515,6 +515,7 @@ void re_parse_command_line(const int myrank,
 
     case 'S':
       options->max_n_jobs = atoi(optarg);
+      break;
 
     case 'l':
       options->legacy = 1;
