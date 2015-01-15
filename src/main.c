@@ -67,13 +67,10 @@
 #include "microscale_information.h"
 #include "ms_cohe_job_list.h"
 #include "compute_ms_cohe_job.h"
-#include "PGFem3D_to_VTK.hpp"
 
 #ifndef DEBUG_MULTISCALE
 #define DEBUG_MULTISCALE 0
 #endif
-
-#define SAVE_RESTART_FILE 1
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -81,6 +78,34 @@ static const int ndim = 3;
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
+#ifndef NO_VTK_LIB
+#include "PGFem3D_to_VTK.hpp"
+#define SAVE_RESTART_FILE 1
+
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
+{
+  char filename[1024];
+  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  int err = read_VTK_file(filename, u0);      
+  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
+  return read_VTK_file(filename, u1);
+}      
+
+#else
+#define SAVE_RESTART_FILE 0
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
+{
+  if(myrank==0)
+  {
+    PGFEM_printerr("Restart with VTK is not supported!\n");
+    PGFEM_printerr("Enforce to turn off restart!\n");
+  }
+  
+  *restart = -1;  
+  return 0;
+}
+#endif
+
 double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
 {
  
@@ -96,25 +121,19 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   *restart = -1;
   if(fp_0 != NULL)
   {  
-    
     while(fgets(line, 1024, fp_0)!=NULL) 
-    {
-      if(line[0]=='#')
-        continue;
+	  {
+	    if(line[0]=='#')
+	      continue;
         
-      sscanf(line, "%d", restart);
-      break;
-    }
+	    sscanf(line, "%d", restart);
+	    break;
+	  }
     fclose(fp_0);
   }
   
   if(*restart>0)
-  {
-    sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-    int err = read_VTK_file(filename, u0);      
-    sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-    err += read_VTK_file(filename, u1);
-  }  
+    read_initial_from_VTK(opts, myrank, restart, u0, u1);
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
@@ -122,29 +141,28 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
        
   if(fp == NULL)
   {    
-    printf("Fail to open file [%s]. Quasi steady state\n", filename);
+    if(myrank==0)
+      printf("Fail to open file [%s]. Quasi steady state\n", filename);
     return alpha;
   }
 
-
   if(myrank==0)
   {
-    
     while(fgets(line, 1024, fp)!=NULL) 
-    {
-      if(line[0]=='#')
-        continue;
+	  {
+	    if(line[0]=='#')
+	      continue;
       
-      double temp;  
-      sscanf(line, "%lf", &temp);
-      break;
-    }
+	    double temp;  
+	    sscanf(line, "%lf", &temp);
+	    break;
+	  }
   }
   
   while(fgets(line, 1024, fp)!=NULL) 
   {
     if(line[0]=='#')
-      continue;
+	    continue;
         
     sscanf(line, "%lf", &alpha);
     break;
@@ -153,28 +171,26 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
 
   while(fgets(line, 1024, fp)!=NULL)
   {
-    
     if(line[0]=='#')
-      continue;
-    
+	    continue;
     for(int a=0; a<nmat; a++)
-    {    
-      sscanf(line, "%lf", rho+a);
-      if(a<nmat-1)
-        fgets(line, 1024, fp);      
-    }
+  	{    
+	    sscanf(line, "%lf", rho+a);
+	    if(a<nmat-1)
+	      fgets(line, 1024, fp);      
+	  }
     break;
   } 
   if(*restart>0)
   {
     fclose(fp);
-    return alpha;  
+      return alpha;  
   }
                    
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
-      continue;
+	    continue;
         
     long nid;
     double u[3], v[3];        
