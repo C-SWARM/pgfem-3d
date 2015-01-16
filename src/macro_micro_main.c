@@ -296,7 +296,9 @@ int multi_scale_main(int argc, char **argv)
     double hypre_time = 0.0;
 
     if(macro->opts->restart >= 0){
-      PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+      if(mpi_comm->rank_macro == 0){
+	PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+      }
 
       /* increment load to restart step */
       solver_file_scan_to_step(solver_file,macro->opts->restart,
