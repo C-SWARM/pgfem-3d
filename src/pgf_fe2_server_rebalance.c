@@ -6,6 +6,7 @@
 
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_restart.h"
+#include <assert.h>
 
 /**
  * Internal data structure
@@ -209,6 +210,64 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t)
   else return NULL;
 }
 
+
+static int dbg_cmp_int(const void *a, const void *b)
+{
+  return *((const int*) a) - *((const int*) b);
+}
+
+/** Verify that the id's on the microscale servers are unique */
+static int debug_keep_id(const int n_keep,
+			 const int *keep_id,
+			 const PGFEM_mpi_comm *mpi_comm)
+{
+  int err = 0;
+  int n_servers = -1;
+  err += MPI_Comm_size(mpi_comm->worker_inter,&n_servers);
+
+  /* get n_keep from each proc on worker_inter */
+  int *counts = calloc(n_servers,sizeof(*counts));
+  int *displ = calloc(n_servers + 1,sizeof(*displ));
+  err += MPI_Allgather(&n_keep,1,MPI_INT,counts,1,MPI_INT,
+		      mpi_comm->worker_inter);
+
+  /* allocate buffer for all keep_id */
+  int total_n_keep = counts[0];
+  displ[0] = 0;
+  for(int i = 1; i < n_servers; i++){
+    displ[i] = displ[i-1] + counts[i-1];
+    total_n_keep += counts[i];
+  }
+  int *all_keep_id = calloc(total_n_keep,sizeof(*all_keep_id));
+
+  /* Gather keep_id from all procs */
+  err += MPI_Allgatherv(keep_id,n_keep,MPI_INT,all_keep_id,counts,
+			displ,MPI_INT,mpi_comm->worker_inter);
+
+  /* sort array */
+  qsort(all_keep_id,total_n_keep,sizeof(*all_keep_id),dbg_cmp_int);
+
+  /* linear search for duplicates on master of server 0 */
+  if(mpi_comm->server_id == 0 && mpi_comm->rank_micro == 0){
+    for(int i = 0; i < n_keep - 1; i++){
+      if(all_keep_id[i] == all_keep_id[i+1]){
+	PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
+	assert(0); /* Cause abort on duplicate. Requires investigation */
+	err ++;
+      }
+    }
+  }
+
+  /* brodcast error value to slaves */
+  MPI_Bcast(&err,1,MPI_INT,0,mpi_comm->worker_inter); /* between eq. procs */
+  MPI_Bcast(&err,1,MPI_INT,0,mpi_comm->micro); /* master to slaves */
+
+  free(counts);
+  free(displ);
+  free(all_keep_id);
+  return err;
+}
+
 int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 					   const PGFEM_mpi_comm *mpi_comm,
 					   MICROSCALE *micro)
@@ -225,6 +284,10 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
   if(!sol_id_initialized){
     int n_keep = pgf_FE2_server_rebalance_n_keep(t);
     const int *keep_id = pgf_FE2_server_rebalance_keep_buf(t);
+
+#ifndef NDEBUG
+    err += debug_keep_id(n_keep,keep_id,mpi_comm);
+#endif
 
     /* set first n_keep ids to match tags */
     for(int i=0; i<n_keep; i++){

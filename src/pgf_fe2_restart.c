@@ -221,6 +221,13 @@ int pgf_FE2_restart_read_micro(MICROSCALE *micro,
   char *restart_fname = NULL;
   err += generate_restart_fname(micro->opts->opath,rank,cell_id,
 				step,&restart_fname);
+
+#ifndef NDEBUG
+  if(rank == 0){
+    PGFEM_printerr("Reading restart file: %s\n",restart_fname);
+  }
+#endif
+
   FILE *in = PGFEM_fopen(restart_fname,"r");
   err += read_MICROSCALE_SOLUTION_state(s,in);
   PGFEM_fclose(in);

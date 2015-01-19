@@ -577,11 +577,12 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
 		     "       max       min       wait\n"
 		     "OLD: %8.3e %8.3e %8.3e\n"
 		     "NEW: %8.3e %8.3e %8.3e\n"
-		     "N_JOB: ",
+		     "N_JOB:\n",
 		     orig_max,orig_min,orig_wait,
 		     new_max,new_min,new_wait);
       for(size_t i = 0; i < n_parts; i++){
 	PGFEM_printerr("%ld ",parts[i].n_job);
+	if( !((i + 1) % 20) ) PGFEM_printerr("\n");
       }
       PGFEM_printerr("\n");
     }
