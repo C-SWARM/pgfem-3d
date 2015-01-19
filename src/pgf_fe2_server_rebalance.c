@@ -6,6 +6,7 @@
 
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_restart.h"
+#include <assert.h>
 
 /**
  * Internal data structure
@@ -251,6 +252,7 @@ static int debug_keep_id(const int n_keep,
     for(int i = 0; i < n_keep - 1; i++){
       if(all_keep_id[i] == all_keep_id[i+1]){
 	PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
+	assert(0); /* Cause abort on duplicate. Requires investigation */
 	err ++;
       }
     }
@@ -283,7 +285,9 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     int n_keep = pgf_FE2_server_rebalance_n_keep(t);
     const int *keep_id = pgf_FE2_server_rebalance_keep_buf(t);
 
+#ifndef NDEBUG
     err += debug_keep_id(n_keep,keep_id,mpi_comm);
+#endif
 
     /* set first n_keep ids to match tags */
     for(int i=0; i<n_keep; i++){
