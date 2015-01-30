@@ -8,8 +8,14 @@
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_micro_server.h"
+#include "PGFEM_mpi.h"
+#include "PGFEM_io.h"
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
+
+/* turn on/off adaptive rebalancing print statements */
+static const int LOGGING = 1;
 
 /* a helper structure */
 enum new_partition_idx{
@@ -121,6 +127,16 @@ static size_t get_smallest_part_idx(const size_t n_parts,
 static void rebalance_partitions_none(const size_t n_parts,
 				      new_partition *all_parts,
 				      new_partition *parts);
+
+/**
+ * Chooses between rebalancing via greedy algorithm and original
+ * partitioning. This allows the system to decide whether it is worth
+ * it to migrate data.
+ */
+static void rebalance_partitions_adaptive(const size_t n_parts,
+					  const double *orig_totals,
+					  new_partition *all_parts,
+					  new_partition *parts);
 
 /**
  * Format conversion server->new_partition (reduces footprint).
@@ -291,6 +307,19 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
     break;
   case FE2_REBALANCE_GREEDY:
     rebalance_partitions_greedy(n_micro_proc,all_parts,parts);
+    break;
+  case FE2_REBALANCE_ADAPTIVE:
+    {
+      /* push unbalanced server totals into array */
+      double *orig_totals = malloc(n_micro_proc*sizeof(*orig_totals));
+      for(int i=0; i<n_micro_proc; i++){
+	orig_totals[i] = all_stats[i].total;
+      }
+
+      /* adaptively rebalance */
+      rebalance_partitions_adaptive(n_micro_proc,orig_totals,all_parts,parts);
+      free(orig_totals);
+    }
     break;
   default:
     /* Should not get here */
@@ -498,4 +527,73 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
     keep[off + NEW_PART_SR] = server_id;
     all_parts->n_keep ++;
   }
+}
+
+
+static void rebalance_partitions_adaptive(const size_t n_parts,
+					  const double *orig_totals,
+					  new_partition *all_parts,
+					  new_partition *parts)
+{
+  int rank = -1;
+  PGFEM_Error_rank(&rank);
+  /* compute the greedy partitioning. */
+  rebalance_partitions_greedy(n_parts,all_parts,parts);
+
+  /* compute statistics on original partitioning and new
+     partitioning. Note that total and average are unchanged between
+     the old and new partitionings. Most important statistic is max
+     time and wait time */
+  double orig_min = INT_MAX; /* should be big enough */
+  double orig_max = -1.0; /* actual values are (+) */
+  double orig_wait = 0.0;
+  double new_min = INT_MAX; /* should be big enough */
+  double new_max = -1.0; /* actual values are (+) */
+  double new_wait = 0.0;
+
+  for(size_t i=0; i<n_parts; i++){
+    /* min */
+    if(orig_min > orig_totals[i]) orig_min = orig_totals[i];
+    if(new_min > parts[i].total_time) new_min = (double) parts[i].total_time;
+
+    /* max */
+    if(orig_max < orig_totals[i]) orig_max = orig_totals[i];
+    if(new_max < parts[i].total_time) new_max = (double) parts[i].total_time;
+  }
+
+  orig_wait = orig_max - orig_min;
+  new_wait = new_max - new_min;
+
+  /*
+    Only rebalance if the estimated max server time is reduced by some
+    factor. Wait time, while a good metric for resource utilization,
+    does not matter in terms of scalability or overall
+    efficiency. Faster simulation = lower CPU hours. period.
+ */
+  static const double max_factor = 0.95; /* save ~1hr on a 24hr simulation */
+  if ( new_max < max_factor * orig_max ){ /* reduced total time */
+    if ( rank == 0 && LOGGING){
+      PGFEM_printerr("REBALANCING:\n"
+		     "       max       min       wait\n"
+		     "OLD: %8.3e %8.3e %8.3e\n"
+		     "NEW: %8.3e %8.3e %8.3e\n"
+		     "N_JOB:\n",
+		     orig_max,orig_min,orig_wait,
+		     new_max,new_min,new_wait);
+      for(size_t i = 0; i < n_parts; i++){
+	PGFEM_printerr("%ld ",parts[i].n_job);
+	if( !((i + 1) % 20) ) PGFEM_printerr("\n");
+      }
+      PGFEM_printerr("\n");
+    }
+  } else { /* do not rebalance */
+    /* reset the parts */
+    for(size_t i=0; i<n_parts; i++){
+      new_partition_set_empty(parts + i);
+    }
+
+    /* extract original partition */
+    rebalance_partitions_none(n_parts,all_parts,parts);
+  }
+
 }

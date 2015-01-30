@@ -89,6 +89,8 @@ static const long_opt_descr other_opts[] = {
 						      "\t\tthe provided filename."),0},
   {{"restart",required_argument,NULL,'r'},("Restart from specified step (FE2 only). Requires original\n"
 					   "\t\tinput files and dumped restart files for specified step."),0},
+  {{"max-server-jobs",required_argument,NULL,'S'},("\n\t\tSet the maximum number of jobs allowed on a server (FE2)."),0},
+  {{"no-migrate",no_argument,NULL,'N'},("Do not migrate cells between servers (FE2)."),0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
   {{"help",no_argument,NULL,'h'},"Print this message and exit",1}
@@ -198,6 +200,8 @@ void set_default_options(PGFem3D_opt *options)
   options->me = 0;
   options->restart = -1; /* flag >= 0 used to specify both restart and
 			    step to start from */
+  options->max_n_jobs = 0;
+  options->no_migrate = 0;
 
   /* input overrides */
   options->override_pre_disp = 0;
@@ -513,6 +517,14 @@ void re_parse_command_line(const int myrank,
       if(strcmp("ms",opts[opts_idx].name) == 0){
 	options->multi_scale = 1;
       }
+      break;
+
+    case 'S':
+      options->max_n_jobs = atoi(optarg);
+      break;
+
+    case 'N':
+      options->no_migrate = 1;
       break;
 
     case 'l':

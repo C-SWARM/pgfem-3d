@@ -3,10 +3,77 @@
 #include "index_macros.h"
 #include "utils.h"
 #include "allocation.h"
+#include "femlib.h"
 
+
+void add_3F_Kuu_ip_(double *K, FEMLIB *fe, 
+        double *ST, Matrix(double) F, double Pn, double Tn,
+        double dt_alpha_1_minus_alpha)
+{
+  int nne = fe->nne;
+  int nsd = fe->nsd;
+  Matrix(double) F_I, ST_ab, ST_wg, AA, BB, CC;
+  Matrix_construct(double,F_I);  Matrix_redim(F_I,3,3);
+  Matrix_construct(double,ST_ab);
+  Matrix_construct(double,ST_wg);
+  Matrix_construct(double,AA);  Matrix_redim(AA,3,3);
+  Matrix_construct(double,BB);  Matrix_redim(BB,3,3);
+  Matrix_construct(double,CC);  Matrix_redim(CC,3,3);      
+  
+  Matrix_inv(F, F_I);
+  double Jn;
+  Matrix_det(F, Jn);
+    
+  for(int a=0; a<nne; a++)
+  {
+    for(int b=0; b<nsd; b++)
+    {
+      const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
+              nne,nsd,nsd,nsd)];
+      Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
+
+      /* AA = F_I Grad(del u) */      
+      Matrix_AxB(AA,1.0,0.0,F_I,0,ST_ab,0);        
+                    
+      double trAA = 0;
+      Matrix_trace(AA,trAA);
+      
+      for(int w=0; w<nne; w++)
+      {
+        for(int g=0; g<nsd; g++)
+        {
+          const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
+                  nne,nsd,nsd,nsd)];
+          Matrix_init_w_array(ST_wg,3,3,ptrST_wg);        
+                                    
+          /* BB = F_I Grad(d u) */
+          Matrix_AxB(BB,1.0,0.0,F_I,0,ST_wg,0);
+          
+          double trBB = 0;
+          Matrix_trace(BB,trBB);
+                          
+          /* CC = BB*AA */
+          Matrix_AxB(CC,1.0,0.0,AA,0,BB,0);
+          
+          double trCC = 0;
+          Matrix_trace(CC,trCC);
+          
+          const int K_idx = idx_K(a,b,w,g,nne,nsd);
+          K[K_idx] += -dt_alpha_1_minus_alpha*fe->detJxW*Pn*Jn*(trAA*trBB - trCC);          
+        }
+      }
+    }
+  }
+  Matrix_cleanup(F_I);
+  Matrix_cleanup(ST_ab);
+  Matrix_cleanup(ST_wg);
+  Matrix_cleanup(AA);
+  Matrix_cleanup(BB);
+  Matrix_cleanup(CC);
+}
 void add_3F_Kuu_ip(double *K,
         int nne, double *ST, double *F, double jj, double wt, double Pn, double Tn,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
   int nsd = 3;
   double AA[9], BB[9], CC[9];
@@ -53,7 +120,7 @@ void add_3F_Kuu_ip(double *K,
             trCC += CC[m*nsd + m];
           
           const int K_idx = idx_K(a,b,w,g,nne,nsd);
-          K[K_idx] += -alpha*(1.0-alpha)*dt*jj*wt*Pn*Jn*(trAA*trBB - trCC);
+          K[K_idx] += -dt_alpha_1_minus_alpha*jj*wt*Pn*Jn*(trAA*trBB - trCC);
           
         }
       }
@@ -63,14 +130,14 @@ void add_3F_Kuu_ip(double *K,
 
 void add_3F_Kut_ip(double *K,
         int nne, int nVol, double *ST, double *F, double jj, double wt, double *Nt,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 	int nsd = 3;
   return;
 }
 void add_3F_Kup_ip(double *K,
         int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 	int nsd = 3;
 
@@ -100,7 +167,7 @@ void add_3F_Kup_ip(double *K,
       for(int w=0; w<npres; w++)
       {
         int idx_up = idx_K_gen(a,b,w,0,nne,nsd,npres,1);
-        K[idx_up] += -alpha*(1.0-alpha)*dt*jj*wt*Jn*C_IFdu*Np[w];
+        K[idx_up] += -dt_alpha_1_minus_alpha*jj*wt*Jn*C_IFdu*Np[w];
       }
     }
   }
@@ -113,38 +180,38 @@ void add_3F_Kup_ip(double *K,
 void add_3F_Ktu_ip(double *K,
         int nne, int nVol,
         double *ST, double *F, double jj, double wt, double *Nt,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 	int nsd = 3;
   return;
 }
 
 void add_3F_Ktt_ip(double *K, int nVol, double jj, double wt, double *Nt, double Upp,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
   for(int a=0; a<nVol; a++)
   {
     for(int b=0; b<nVol; b++)
-      K[idx_K(a,0,b,0,nVol,1)] += -alpha*(1.0-alpha)*dt*Upp*(jj*wt*Nt[a]*Nt[b]);
+      K[idx_K(a,0,b,0,nVol,1)] += -dt_alpha_1_minus_alpha*Upp*(jj*wt*Nt[a]*Nt[b]);
   }
 }
 
 
 void add_3F_Ktp_ip(double *K,
         int nVol, int npres, double jj, double wt, double *Nt, double *Np,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 
   for(int a=0; a<nVol; a++)
   {
     for(int b=0; b<npres; b++)
-      K[idx_K_gen(a,0,b,0,nVol,1,npres,1)] += alpha*(1.0-alpha)*dt*jj*wt*Nt[a]*Np[b];
+      K[idx_K_gen(a,0,b,0,nVol,1,npres,1)] += dt_alpha_1_minus_alpha*jj*wt*Nt[a]*Np[b];
   }
 }
 
 void add_3F_Kpu_ip(double *K,
         int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 	int nsd = 3;
   double *AA  = aloc1(9);
@@ -189,7 +256,7 @@ void add_3F_Kpu_ip(double *K,
         }
         
         int idx_pu = idx_K_gen(a,b,w,g,npres,1,nne,nsd);
-        K[idx_pu] += -alpha*(1.0-alpha)*dt*jj*wt*Jn*Np[a]*(F_I_Tdu*0.0 + C_IFdu);
+        K[idx_pu] += -dt_alpha_1_minus_alpha*jj*wt*Jn*Np[a]*(F_I_Tdu*0.0 + C_IFdu);
       }
     }
   }
@@ -202,13 +269,13 @@ void add_3F_Kpu_ip(double *K,
 
 void add_3F_Kpt_ip(double *K,
         int nVol, int npres, double jj, double wt, double *Nt, double *Np,
-        double dt, double alpha)
+        double dt_alpha_1_minus_alpha)
 {
 		
   for(int a=0; a<npres; a++)
   {
     for(int b=0; b<nVol; b++)
-      K[idx_K_gen(a,0,b,0,npres,1,nVol,1)] += alpha*(1.0-alpha)*dt*jj*wt*Np[a]*Nt[b];
+      K[idx_K_gen(a,0,b,0,npres,1,nVol,1)] += dt_alpha_1_minus_alpha*jj*wt*Np[a]*Nt[b];
   }
 }
 

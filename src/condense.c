@@ -35,21 +35,14 @@ void condense_Fupt_to_Fup(double *fe, int nne, int nsd, int npres, int nVol,
   int ndofn = nsd + 1; 
   Matrix(double) KttI, KutKttI, KptKttI, _fu, _fp;
 
-	Matrix_construct(double, KttI);
-	Matrix_construct(double, KutKttI);
-	Matrix_construct(double, KptKttI);
-	Matrix_construct(double, _fu);
-	Matrix_construct(double, _fp);  
-
-  Matrix_redim(KttI, nVol, nVol);
-  Matrix_redim(KutKttI, nne*nsd, nVol);
-  Matrix_redim(KptKttI, npres, nVol);
+  Matrix_construct_redim(double,KttI,   nVol,   nVol);  
+	Matrix_construct_redim(double,KutKttI,nne*nsd,nVol);
+	Matrix_construct_redim(double,KptKttI,npres,  nVol);
+	Matrix_construct_redim(double,_fu,    nne*nsd,1);
+	Matrix_construct_redim(double,_fp,    npres,  1);    
   
 	Matrix_inv(Ktt, KttI);
-     
-  Matrix_redim(_fu, nne*nsd, 1);
-  Matrix_redim(_fp, npres, 1);
-    
+         
   // Matrix_AxB(C, a, b, A, AT, B, BT) <-- C = aAxB + bC
   Matrix_AxB(KutKttI, 1.0, 0.0,     Kut, 0, KttI, 0);
   Matrix_AxB(KptKttI, 1.0, 0.0,     Kpt, 0, KttI, 0);  
@@ -84,18 +77,17 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
 	int m = nVol;
 	
 	Matrix(double) KptI, KtpI, _fu;
-  Matrix_construct(double, KptI); Matrix_redim(KptI,npres,nVol); 
-	Matrix_construct(double, KtpI); Matrix_redim(KtpI,npres,nVol);
-	Matrix_construct(double, _fu);	Matrix_redim(_fu, nne*nsd, 1);
-	  
-  memset(_fu.m_pdata, 0, sizeof(double)*nne*nsd);
+  Matrix_construct_redim(double,KptI,npres,nVol); 
+	Matrix_construct_redim(double,KtpI,npres,nVol);
+	Matrix_construct_init(double,_fu, nne*nsd,1,0.0);
+
   Matrix_inv(Ktp,KtpI);
   Matrix_inv(Kpt,KptI);
 
   Matrix(double) KupKtpI, KupKtpIKtt, KptIFp;
-  Matrix_construct(double, KupKtpI);    Matrix_redim(KupKtpI,    nne*nsd, nVol); 
-  Matrix_construct(double, KupKtpIKtt); Matrix_redim(KupKtpIKtt, nne*nsd, nVol); 
-  Matrix_construct(double, KptIFp);     Matrix_redim(KptIFp,     nVol,    1);     
+  Matrix_construct_redim(double,KupKtpI   ,nne*nsd,nVol); 
+  Matrix_construct_redim(double,KupKtpIKtt,nne*nsd,nVol); 
+  Matrix_construct_redim(double,KptIFp    ,nVol,   1   );     
   
   Matrix_AxB(KupKtpI,     1.0, 0.0, Kup,        0, KtpI,     0);
   Matrix_AxB(KupKtpIKtt,  1.0, 0.0, KupKtpI,    0, Ktt,      0);
@@ -118,9 +110,9 @@ void condense_K2_to_K1(double *K11, int nne, int nsd, int npres,
                    Matrix(double) Kuu, Matrix(double) Kup, Matrix(double) Kpu, Matrix(double) Kpp)                               
 {
   Matrix(double) KppI, KupKppI, _Kuu;
-  Matrix_construct(double, KppI);    Matrix_redim(KppI,    npres,   npres);
-  Matrix_construct(double, KupKppI); Matrix_redim(KupKppI, nne*nsd, npres);
-  Matrix_construct(double, _Kuu);    Matrix_redim(_Kuu,    nne*nsd, nne*nsd);
+  Matrix_construct_redim(double, KppI   ,npres,  npres  );
+  Matrix_construct_redim(double, KupKppI,nne*nsd,npres  );
+  Matrix_construct_redim(double, _Kuu   ,nne*nsd,nne*nsd);
 
   Matrix_inv(Kpp, KppI);
 
@@ -144,17 +136,17 @@ void condense_K3_to_K2(Matrix(double) K11, Matrix(double) K12, Matrix(double) K2
 {
 	Matrix(double) KttI, KutKttI, KptKttI;
 	
-	Matrix_construct(double, KttI);    Matrix_redim(KttI,    nVol,    nVol);
-	Matrix_construct(double, KutKttI); Matrix_redim(KutKttI, nne*nsd, nVol);
-	Matrix_construct(double, KptKttI); Matrix_redim(KptKttI, npres,   nVol);
+	Matrix_construct_redim(double, KttI   ,nVol,   nVol);
+	Matrix_construct_redim(double, KutKttI,nne*nsd,nVol);
+	Matrix_construct_redim(double, KptKttI,npres,  nVol);
 	
   Matrix_inv(Ktt, KttI);
    
   Matrix(double) _Kuu, _Kup, _Kpu, _Kpp;
-	Matrix_construct(double, _Kuu); Matrix_redim(_Kuu, nne*nsd, nne*nsd);
-	Matrix_construct(double, _Kup); Matrix_redim(_Kup, nne*nsd, npres);
-	Matrix_construct(double, _Kpu); Matrix_redim(_Kpu, npres,   nne*nsd);  
-  Matrix_construct(double, _Kpp); Matrix_redim(_Kpp, npres,   npres);
+	Matrix_construct_redim(double, _Kuu,nne*nsd,nne*nsd);
+	Matrix_construct_redim(double, _Kup,nne*nsd,npres  );
+	Matrix_construct_redim(double, _Kpu,npres,  nne*nsd);  
+  Matrix_construct_redim(double, _Kpp,npres,  npres  );
   
   Matrix_AxB(KutKttI, 1.0, 0.0, Kut,     0, KttI, 0);
   Matrix_AxB(KptKttI, 1.0, 0.0, Kpt,     0, KttI, 0);
@@ -187,18 +179,18 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
 {
 
 	Matrix(double) KptI, KtpI, Kuu_add;
-	Matrix_construct(double, KptI);    Matrix_redim(KptI,    npres,   nVol);
-	Matrix_construct(double, KtpI);    Matrix_redim(KtpI,    nVol,    npres);
-	Matrix_construct(double, Kuu_add); Matrix_redim(Kuu_add, nne*nsd, nne*nsd);	
+	Matrix_construct_redim(double, KptI   ,npres,  nVol   );
+	Matrix_construct_redim(double, KtpI   ,nVol,   npres  );
+	Matrix_construct_redim(double, Kuu_add,nne*nsd,nne*nsd);	
 	
 	Matrix_inv(Kpt, KptI);
 	Matrix_inv(Ktp, KtpI);	
 	
 
   Matrix(double) KupKtpI, KupKtpIKtt, KptIKpu;
-  Matrix_construct(double, KupKtpI);    Matrix_redim(KupKtpI,    nne*nsd, nVol);
-  Matrix_construct(double, KupKtpIKtt); Matrix_redim(KupKtpIKtt, nne*nsd, nVol);
-  Matrix_construct(double, KptIKpu);    Matrix_redim(KptIKpu,    nVol,    nne*nsd);
+  Matrix_construct_redim(double,KupKtpI,   nne*nsd,nVol   );
+  Matrix_construct_redim(double,KupKtpIKtt,nne*nsd,nVol   );
+  Matrix_construct_redim(double,KptIKpu,   nVol,   nne*nsd);
            
   // Matrix_AxB(C, a, b, A, AT, B, BT) <-- C = aAxB + bC
   Matrix_AxB(KupKtpI,    1.0, 0.0, Kup,        0, KtpI,    0);
@@ -225,10 +217,10 @@ void condense_Kupt_to_Kup(double *Ks, int nne, int nsd, int npres, int nVol,
   int ndofn = nsd + 1;
   Matrix(double) K11, K12, K21, K22;
   
-  Matrix_construct(double, K11); Matrix_redim(K11, nne*nsd, nne*nsd);
-  Matrix_construct(double, K12); Matrix_redim(K12, nne*nsd, npres);
-  Matrix_construct(double, K21); Matrix_redim(K21, npres,   nne*nsd);
-  Matrix_construct(double, K22); Matrix_redim(K22, npres,   npres);
+  Matrix_construct_redim(double,K11,nne*nsd,nne*nsd);
+  Matrix_construct_redim(double,K12,nne*nsd,npres  );
+  Matrix_construct_redim(double,K21,npres,  nne*nsd);
+  Matrix_construct_redim(double,K22,npres,  npres  );
           
   condense_K3_to_K2(K11,K12,K21,K22,nne,nsd,npres,nVol,
                   Kuu,Kut,Kup,Ktu,Ktt,Ktp,Kpu,Kpt,Kpp);

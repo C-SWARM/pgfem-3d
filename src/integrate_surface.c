@@ -84,7 +84,64 @@ int integrate_surface(const int nne,
       break;
     }/* end switch face */
     break;
-  
+  case 10:
+    
+    err = get_tria_quadrature_rule(int_order,n_ip,ksi_2D,eta_2D,
+				   wt_2D);
+    *nne_2D = 6;
+    *ksi_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *eta_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *zet_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *nod_2D = PGFEM_calloc(*nne_2D,sizeof(int));
+    /* assign 3D integration points */
+    switch(face_id){
+    case 0:
+      memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
+      memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
+      (*nod_2D)[0] = 0;
+      (*nod_2D)[1] = 2;
+      (*nod_2D)[2] = 1;
+      (*nod_2D)[3] = 6;
+      (*nod_2D)[4] = 5;
+      (*nod_2D)[5] = 4;      
+      break;
+    case 1:
+      memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
+      memcpy(*zet_3D,*eta_2D,(*n_ip)*sizeof(double));
+      /* eta_3D = 0 */
+      (*nod_2D)[0] = 0;
+      (*nod_2D)[1] = 1;
+      (*nod_2D)[2] = 3;
+      (*nod_2D)[3] = 4;
+      (*nod_2D)[4] = 8;
+      (*nod_2D)[5] = 7;
+      break;
+    case 2:
+      memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
+      memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
+      for(int i=0; i<*n_ip; i++){
+	*zet_3D[i] = 1 - *ksi_3D[i] - *eta_3D[i];
+      }
+      (*nod_2D)[0] = 1;
+      (*nod_2D)[1] = 2;
+      (*nod_2D)[2] = 3;
+      (*nod_2D)[3] = 5;
+      (*nod_2D)[4] = 9;
+      (*nod_2D)[5] = 8;
+      break;
+    case 3:
+      memcpy(*eta_3D,*ksi_2D,(*n_ip)*sizeof(double));
+      memcpy(*zet_3D,*eta_2D,(*n_ip)*sizeof(double));
+      /* ksi_3D = 0 */
+      (*nod_2D)[0] = 0;
+      (*nod_2D)[1] = 3;
+      (*nod_2D)[2] = 2;
+      (*nod_2D)[3] = 7;
+      (*nod_2D)[4] = 9;
+      (*nod_2D)[5] = 6;
+      break;
+    }/* end switch face */
+    break;          
     /*case 8: *//* Hex --> quad *//*
 
       break;*/

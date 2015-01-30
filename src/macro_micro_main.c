@@ -54,6 +54,7 @@
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
 #include "pgf_fe2_restart.h"
+#include "pgf_fe2_compute_max_n_jobs.h"
 
 #include "solver_file.h"
 
@@ -156,11 +157,11 @@ int multi_scale_main(int argc, char **argv)
     PGFEM_Abort();
   }
 
+  int n_jobs_max = -1;
+  err += pgf_FE2_compute_max_n_jobs(macro,mpi_comm,&n_jobs_max);
+
   /*=== build the macroscacle clients ===*/
   pgf_FE2_macro_client *client = NULL;
-  /* hard-code n_jobs_max, needs to be command line opt and/or scaled
-     variable */
-  const int n_jobs_max = 20;
 
   /*=== Build MICROSCALE server and solutions ===*/
   if(mpi_comm->valid_micro){
@@ -295,7 +296,9 @@ int multi_scale_main(int argc, char **argv)
     double hypre_time = 0.0;
 
     if(macro->opts->restart >= 0){
-      PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+      if(mpi_comm->rank_macro == 0){
+	PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
+      }
 
       /* increment load to restart step */
       solver_file_scan_to_step(solver_file,macro->opts->restart,

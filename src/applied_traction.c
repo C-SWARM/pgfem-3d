@@ -44,7 +44,18 @@ int read_applied_surface_tractions_fname(char *fname,
 					 double **loads)
 {
   int err = 0;
-  FILE *in = PGFEM_fopen(fname,"r");
+  FILE *in = fopen(fname,"r");
+  if(in == NULL)
+  {
+    MPI_Comm mpi_comm = MPI_COMM_WORLD; 
+    int myrank = 0;
+
+    MPI_Comm_rank (mpi_comm,&myrank);
+
+    if(myrank==0)
+      printf("Fail to open file [%s]. Zero traction is applied.\n", fname);
+    return err;
+  }
   err = read_applied_surface_tractions(in,n_feats,feat_type,feat_id,loads);
   PGFEM_fclose(in);
 

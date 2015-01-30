@@ -187,6 +187,9 @@ double Newton_Raphson (const int print_level,
   double BS_nor=0.0;
   int BS_iter;
 
+  /* option '-no-migrate' */
+  const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
+
   /* MPI stuff */
   int nproc,myrank;
   MPI_Comm_size(mpi_comm,&nproc);
@@ -483,12 +486,6 @@ double Newton_Raphson (const int print_level,
 	MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
 			      eps,sig_e,hommat,d_r,rr,iter);
 	break;
-      case TF: 
-////////////////////////////////////////////////////////////////////////////////////
-            evaluate_theta(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
-                    dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
-/////////////////////////////////////////////////////////////////////////////////////
-  break;                 	
       default:
 	break;
       }
@@ -540,8 +537,18 @@ double Newton_Raphson (const int print_level,
 
 	/* start the microscale jobs */
 	MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
-	pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-					       FE2_REBALANCE_GREEDY);
+	if ( iter == 0 ) {
+	  /* == Do not rebalance if this is the first iteration. ==
+	     This is because most often it will be after an update or
+	     print operation from the previous step. These operations
+	     are approx. equal for all cells and thus the timing
+	     information is not valid for rebalancing purposes. */
+	  pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+						 FE2_REBALANCE_NONE);
+	} else {
+	  pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+						 NR_REBALANCE);
+	}
 	double tnp1 = 0;
 	set_time_micro(tim,times,dt,DIV,&tnp1);
 	pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
@@ -820,6 +827,11 @@ double Newton_Raphson (const int print_level,
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
+    case TF: 
+      update_3f(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+            dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
+      break;                 	
+      
     default: break;
     }
     
