@@ -64,13 +64,6 @@
 #include "generate_dof_ids.h"
 #include "applied_traction.h"
 #include "read_input_file.h"
-#include "microscale_information.h"
-#include "ms_cohe_job_list.h"
-#include "compute_ms_cohe_job.h"
-
-#ifndef DEBUG_MULTISCALE
-#define DEBUG_MULTISCALE 0
-#endif
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -84,11 +77,13 @@ static const int ndim = 3;
 
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
 {
+  int err = 0;
   char filename[1024];
   sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  int err = read_VTK_file(filename, u0);      
+  err += read_VTK_file(filename, u0);      
   sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  return read_VTK_file(filename, u1);
+  err += read_VTK_file(filename, u1);
+  return err;
 }      
 
 #else
@@ -336,26 +331,6 @@ int single_scale_main(int argc,char *argv[])
   COEL *coel = NULL;
   int n_co_props = 0;
   cohesive_props *co_props = NULL;
-
-  /* MULTISCALE */
-  MICROSCALE *microscale = NULL;
-  /*=== TESTING ===*/
-  /* the following are command-line style arguments for the
-     microscale */
-  int micro_argc = 14;
-  /* NOTE: Need to use ipath/opath options because string is const. */
-  char *micro_argv[] = {"dummy","-disp",
-			"-kdim","25",
-			"-maxit","1000",
-			"-ms","-pre-euclid",
-			"-ipath","./micro/2mat_block/2mat_block_2CPU",
-			"-opath","./out/2CPU/2mat_block",
-			"2mat_block_","2mat_block"};
-
-  MPI_Comm ms_comm = mpi_comm;
-  long Gn_jobs = 0;
-  long *n_job_dom = NULL;
-  MS_COHE_JOB_INFO *ms_job_list = NULL;
 
   double  *BS_x = NULL;
   double *BS_f = NULL;
@@ -1035,44 +1010,6 @@ int single_scale_main(int argc,char *argv[])
       sup_check = aloc1(sup->npd);
     }
 
-    /* debugging multiscale -- first try at building appropriately -- */
-    if(DEBUG_MULTISCALE){
-      /* in first attempt, each sub-communicator will contain only 1
-	 process */
-      int group_id = myrank%2;
-      MPI_Comm_split(mpi_comm,group_id,myrank,&ms_comm);
-
-      {
-	int micro_rank = 0;
-	MPI_Comm_rank(ms_comm,&micro_rank);
-	initialize_MICROSCALE(&microscale);
-	parse_command_line(micro_argc,micro_argv,
-			   micro_rank,microscale->opts);
-	/* create the directory for log output and set logging
-	   filename */
-	int dir_len = snprintf(NULL,0,"%s/log",microscale->opts->opath)+1;
-	char *dir_name = PGFEM_calloc(dir_len,sizeof(char));
-	sprintf(dir_name,"%s/log",microscale->opts->opath);
-	make_path(dir_name,DIR_MODE);
-	dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
-	char *fname = PGFEM_calloc(dir_len,sizeof(char));
-	sprintf(fname,"%s/group_%05d",dir_name,group_id);
-	PGFEM_initialize_io(NULL,fname);
-	free(dir_name);
-	free(fname);
-      }
-
-      /* redirect I/O */
-      PGFEM_redirect_io_micro();
-      /* put in load balancer... */
-      create_group_ms_cohe_job_list(nce,coel,node,mpi_comm,
-				    ms_comm,group_id,&Gn_jobs,
-				    &n_job_dom,&ms_job_list);
-      build_MICROSCALE(microscale,ms_comm,micro_argc,micro_argv);
-      build_MICROSCALE_solutions(Gn_jobs,microscale);
-      PGFEM_redirect_io_macro();
-    }
-
     /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1184,7 +1121,7 @@ int single_scale_main(int argc,char *argv[])
 				       BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
-				       &options,microscale,alpha, r_n, r_n_1);
+				       &options,NULL,alpha, r_n, r_n_1);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1457,9 +1394,6 @@ int single_scale_main(int argc,char *argv[])
   destroy_elem(elem,ne);
   destroy_bounding_elements(n_be,b_elems);
   destroy_node(nn,node);
-  destroy_MICROSCALE(microscale);
-  destroy_ms_cohe_job_list(Gn_jobs,ms_job_list);
-  free(n_job_dom);
 
   /*=== PRINT TIME OF ANALYSIS ===*/
   total_time += MPI_Wtime();
@@ -1478,7 +1412,6 @@ int single_scale_main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  if(DEBUG_MULTISCALE) MPI_Comm_free(&ms_comm);
   MPI_Finalize(); 
   return(0);
 }
