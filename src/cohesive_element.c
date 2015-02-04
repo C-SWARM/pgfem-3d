@@ -153,7 +153,8 @@ COEL* read_cohe_elem (FILE *in1,
     /* set internal state variables */
     switch(coel[j].props->type){
     case CO_MOD_MS:
-      coel[j].nvar = 0;
+      coel[j].nvar = 4;
+      /* state vars are: max_traction, t_1,t_2,t_3 */
       break;
     case CO_MOD_NEEDLEMAN:
       {

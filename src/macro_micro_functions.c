@@ -413,6 +413,8 @@ int macroscale_update_job_info(const MACROSCALE *macro,
 
   if(macro->opts->restart >= 0){
     memcpy(job->jump_n,job->jump,ndim*sizeof(double));
+    job->max_traction = cel->vars[n_ip][0];
+    memcpy(job->traction_n,cel->vars[n_ip] + 1,ndim*sizeof(double));
   }
 
   /* set the job type */
@@ -447,8 +449,12 @@ int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
   int err = 0;
   COEL *coel = macro->common->coel + job->elem_id;
 
-  /* set macroscale traction on the element from the microscale job */
+  /* set traction for output */
   memcpy(coel->ti,job->traction,ndim*sizeof(double));
+
+  /* set the state variable(s) */
+  coel->vars[job->int_pt][0] = job->max_traction;
+  memcpy(coel->vars[job->int_pt] + 1,job->traction,ndim*sizeof(double));
 
   /* That's all folks! */
   return err;
