@@ -309,6 +309,10 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   unpack_data(sol->packed_state_var_n,&sol->NORM,
 	      &pos,1,sizeof(sol->NORM));
 
+  /* reset failed flag */
+  unpack_data(sol->packed_state_var_n,&sol->failed,
+	      &pos,1,sizeof(sol->failed));
+
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
   return err;
@@ -346,6 +350,10 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* pack NORM */
   pack_data(&sol->NORM,sol->packed_state_var_n,
 	    &pos,1,sizeof(sol->NORM));
+
+  /* pack failed flag */
+  pack_data(&sol->failed,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->failed));
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
@@ -768,6 +776,9 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* length of NORM */
   sol->packed_state_var_len += sizeof(sol->NORM);
 
+  /* length of failed */
+  sol->packed_state_var_len += sizeof(sol->failed);
+
   /* allocate the packed state buffer */
   sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));
 
@@ -838,6 +849,8 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   sol->times = PGFEM_calloc(3,len_double);
   sol->tim = 0;
   sol->NORM = 0.0;
+
+  sol->failed = 0;
 }
 
 static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
