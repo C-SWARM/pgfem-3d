@@ -46,6 +46,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->jump_n = PGFEM_calloc(ndim,sizeof(double));
   info->normal = PGFEM_calloc(ndim,sizeof(double));
   info->traction = PGFEM_calloc(ndim,sizeof(double));
+  info->traction_n = PGFEM_calloc(ndim,sizeof(double));
 
   /* allocate len = nnode */
   info->shape = PGFEM_calloc(info->nnode,sizeof(double));
@@ -107,6 +108,7 @@ void destroy_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info)
     free(info->jump_n);
     free(info->normal);
     free(info->traction);
+    free(info->traction_n);
     free(info->shape);
     free(info->traction_res);
     free(info->K_00_contrib);
