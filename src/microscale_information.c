@@ -192,14 +192,14 @@ void build_MICROSCALE(MICROSCALE *microscale,
   if (microscale->opts->solverpackage != HYPRE){
     if(myrank == 0)
       PGFEM_printerr("ERROR: only the HYPRE solver are supported!"
-	"%s:%s:%d\n",__func__,__FILE__,__LINE__);
-  PGFEM_Comm_code_abort(mpi_comm,0);
-}
+		     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+    PGFEM_Comm_code_abort(mpi_comm,0);
+  }
 
   if (microscale->opts->analysis_type != DISP){
     if(myrank == 0)
       PGFEM_printerr("ERROR: only DISP analysis is supported!"
-	      "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+		     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mpi_comm,0);
   }
 
@@ -322,6 +322,11 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 			       const MICROSCALE *micro)
 {
   int err = 0;
+
+  /* exit early if the cell has failed since we have not computed a
+     new solution. */
+  if(sol->failed) return err;
+
   int myrank = 0;
   err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
   const int loc_ndof = micro->common->ndofd;

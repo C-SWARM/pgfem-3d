@@ -93,6 +93,45 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 			     const MICROSCALE_SOLUTION *s,
 			     const PGFem3D_opt *o);
 
+/**
+ * Update the job information from n <-- n+1.
+ *
+ * Modifies the job, particularly updates traction_n, jump_n, and
+ * max_traction.
+ *
+ * \return non-zero if cell failure is detected.
+ */
+static int update_job_information(MS_COHE_JOB_INFO *job)
+{
+  /* hard-code scaling for failure detection */
+  static const double eps = 0.01;
+
+  /* 
+   * Detect cell failure based on effective traction-separation
+   * law. If the cell isn't failed, conditionally update the maximum
+   * traction.
+   */
+  int cell_failure_detected = 0;
+  const double tn = cblas_dnrm2(ndim,job->traction_n,1);
+  const double tnp1 = cblas_dnrm2(ndim,job->traction,1);
+  const double jn = cblas_dnrm2(ndim,job->jump_n,1);
+  const double jnp1 = cblas_dnrm2(ndim,job->jump,1);
+  const double slope = (tnp1 - tn) / (jnp1 - jn);
+  if (tnp1 < eps * job->max_traction && slope < 0) cell_failure_detected++;
+  else if (tnp1 > job->max_traction) job->max_traction = tnp1;
+
+  /* update variables, n <-- n+1 */
+  /* job->jump_n <-- job->jump */
+  memcpy(job->jump_n,job->jump,ndim*sizeof(double));
+  memcpy(job->traction_n,job->traction,ndim*sizeof(double));
+
+  /* clear the tangent and residual (assemble 0's at macroscale) */
+  memset(job->traction_res,0,job->ndofe*sizeof(double));
+  memset(job->K_00_contrib,0,job->ndofe*job->ndofe*sizeof(double));
+
+  return cell_failure_detected;
+}
+
 /*==== API FUNCTION DEFINITIONS ====*/
 
 /** Given a microscale job, compute the solution on the time
@@ -111,10 +150,6 @@ int compute_ms_cohe_job(const int job_id,
   if(myrank == 0){
     PGFEM_printf("=== MICROSCALE cell %d of %d ===\n",
 		 job_id+1,microscale->idx_map.size);
-  /*   PGFEM_printf("Jump (n):\t"); */
-  /*   print_array_d(PGFEM_stdout,p_job->jump_n,ndim,1,ndim); */
-  /*   PGFEM_printf("Jump (n+1):\t"); */
-  /*   print_array_d(PGFEM_stdout,p_job->jump,ndim,1,ndim); */
   }
 
   /* copy the solve time from the job */
@@ -140,7 +175,7 @@ int compute_ms_cohe_job(const int job_id,
   /* swtich compute job */
   switch(p_job->job_type){
   case JOB_COMPUTE_EQUILIBRIUM:
-
+    if(sol->failed) break;
     /* print time step information */
     if(myrank == 0){
       PGFEM_printf("=== EQUILIBRIUM SOLVE ===\n");
@@ -152,12 +187,9 @@ int compute_ms_cohe_job(const int job_id,
     /* compute the microscale equilibrium. */
     err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step));
 
-    /* /\* compute number of subdivisions at micro scale *\/ */
-    /* p_job->n_step = (int) ((p_job->times[2] - p_job->times[1]) */
-    /* 			   /(sol->times[sol->tim + 1] - sol->times[sol->tim])); */
-
     /*=== INTENTIONAL DROP THROUGH ===*/
   case JOB_NO_COMPUTE_EQUILIBRIUM:
+    if(sol->failed) break;
     /* Do not compute the microscale equilibrium, just assemble the
        microscale tangent */
     {
@@ -202,15 +234,15 @@ int compute_ms_cohe_job(const int job_id,
     /* update the solution and state variables state n <- n+1 */
     err += update_MICROSCALE_SOLUTION(sol,microscale);
 
-    /* job->jump_n <-- job->jump */
-    memcpy(p_job->jump_n,p_job->jump,ndim*sizeof(double));
+    /* update job information and set cell failure condition. */
+    {
+      int failure_detected = update_job_information(p_job);
+      if (!sol->failed && failure_detected) sol->failed = 1;
+    }
 
     /* Set the supports for the new n-state and null the increment */
     err += set_job_supports(p_job,common->supports);
 
-    /* clear the tangent and residual (assemble 0's at macroscale) */
-    memset(p_job->traction_res,0,p_job->ndofe*sizeof(double));
-    memset(p_job->K_00_contrib,0,p_job->ndofe*p_job->ndofe*sizeof(double));
     break;
 
   case JOB_PRINT:
