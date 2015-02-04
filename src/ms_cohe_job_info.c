@@ -14,7 +14,8 @@ inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
   size_t result = (7*sizeof(int)
 		   + sizeof(double)
-		   + 4*ndim*sizeof(double)
+		   + 5*ndim*sizeof(double)
+		   + sizeof(double)
 		   + info->nnode*sizeof(double)
 		   + info->ndofe*sizeof(double)
 		   + (info->ndofe*info->ndofe)*sizeof(double)
@@ -133,12 +134,14 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->int_wt,buffer,&pos,1,sizeof(double));
   pack_data(&info->tim,buffer,&pos,1,sizeof(int));
   pack_data(&info->n_step,buffer,&pos,1,sizeof(int));
+  pack_data(&info->max_traction,buffer,&pos,1,sizeof(double));
 
   /* pack arrays */
   pack_data(info->jump,buffer,&pos,ndim,sizeof(double));
   pack_data(info->jump_n,buffer,&pos,ndim,sizeof(double));
   pack_data(info->normal,buffer,&pos,ndim,sizeof(double));
   pack_data(info->traction,buffer,&pos,ndim,sizeof(double));
+  pack_data(info->traction_n,buffer,&pos,ndim,sizeof(double));
   pack_data(info->shape,buffer,&pos,info->nnode,sizeof(double));
   pack_data(info->traction_res,buffer,&pos,info->ndofe,sizeof(double));
   pack_data(info->K_00_contrib,buffer,&pos,
@@ -182,12 +185,14 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->int_wt,&pos,1,sizeof(double));
   unpack_data(buffer,&info->tim,&pos,1,sizeof(int));
   unpack_data(buffer,&info->n_step,&pos,1,sizeof(int));
+  unpack_data(buffer,&info->max_traction,&pos,1,sizeof(double));
 
   /* unpack arrays */
   unpack_data(buffer,info->jump,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->jump_n,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->normal,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->traction,&pos,ndim,sizeof(double));
+  unpack_data(buffer,info->traction_n,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->shape,&pos,info->nnode,sizeof(double));
   unpack_data(buffer,info->traction_res,&pos,info->ndofe,sizeof(double));
   unpack_data(buffer,info->K_00_contrib,&pos,
