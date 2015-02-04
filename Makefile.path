@@ -3,7 +3,7 @@
 
 # path to the top directory (where this file resides)
 pgfem_dir     	= $$HOME/Private/pgfem_3d
-top_level_dir	= $(pgfem_dir)/trunk
+top_level_dir	= $(pgfem_dir)/branches/FE2_remove_failed_cells
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
