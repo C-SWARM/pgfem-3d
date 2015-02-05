@@ -841,13 +841,25 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
       cel->Xs += ai*aj*J/aa*Xs;
       
       /* For loading update state variables */
-      if(cel->nvar > 0){
-	if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
-	  cel->Xmax[ip] = Xxi;
-	  cel->tmax[ip] = txi;
-	  cel->vars[ip][0] = Xxi;
-	  cel->vars[ip][1] = txi;
+
+      if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
+	cel->Xmax[ip] = Xxi;
+	cel->tmax[ip] = txi;
+      }
+
+      switch(cel->props->type){
+      case CO_MOD_MS:
+	/* do nothing, multiscale state variables are updated
+	   elsewhere */
+	break;
+      default:
+	if(cel->nvar > 0){
+	  if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
+	    cel->vars[ip][0] = Xxi;
+	    cel->vars[ip][1] = txi;
+	  }
 	}
+      break;
       }
       
       /* Void concentration */
