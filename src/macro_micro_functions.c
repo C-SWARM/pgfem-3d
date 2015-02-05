@@ -396,6 +396,7 @@ int macroscale_update_job_info(const MACROSCALE *macro,
   double *ge = NULL;
   double *w = NULL;
   int n_ip = 0;
+  int ip = 0;
   switch(nne_2D){
   case 3: err += get_tria_quadrature_rule(0,&n_ip,&gk,&ge,&w); break;
   case 4: err += get_quad_quadrature_rule(0,&n_ip,&gk,&ge,&w); break;
@@ -413,8 +414,8 @@ int macroscale_update_job_info(const MACROSCALE *macro,
 
   if(macro->opts->restart >= 0){
     memcpy(job->jump_n,job->jump,ndim*sizeof(double));
-    job->max_traction = cel->vars[n_ip][0];
-    memcpy(job->traction_n,cel->vars[n_ip] + 1,ndim*sizeof(double));
+    job->max_traction = cel->vars[ip][0];
+    memcpy(job->traction_n,cel->vars[ip] + 1,ndim*sizeof(double));
   }
 
   /* set the job type */

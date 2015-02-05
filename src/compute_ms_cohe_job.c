@@ -1,5 +1,6 @@
 /* HEARER */
 #include "compute_ms_cohe_job.h"
+#include <math.h>
 #include <string.h>
 #include <assert.h>
 #include "mkl_cblas.h"
@@ -104,7 +105,7 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 static int update_job_information(MS_COHE_JOB_INFO *job)
 {
   /* hard-code scaling for failure detection */
-  static const double eps = 0.01;
+  static const double eps = 0.05;
 
   /* 
    * Detect cell failure based on effective traction-separation
@@ -117,8 +118,9 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   const double jn = cblas_dnrm2(ndim,job->jump_n,1);
   const double jnp1 = cblas_dnrm2(ndim,job->jump,1);
   const double slope = (tnp1 - tn) / (jnp1 - jn);
-  if (tnp1 < eps * job->max_traction && slope < 0) cell_failure_detected++;
-  else if (tnp1 > job->max_traction) job->max_traction = tnp1;
+  if (tnp1 > job->max_traction) job->max_traction = tnp1;
+  else if (tnp1 < (eps * job->max_traction)
+	   && isfinite(slope) && slope < 0) cell_failure_detected++;
 
   /* update variables, n <-- n+1 */
   /* job->jump_n <-- job->jump */
@@ -231,14 +233,14 @@ int compute_ms_cohe_job(const int job_id,
     break;
 
   case JOB_UPDATE:
-    /* update the solution and state variables state n <- n+1 */
-    err += update_MICROSCALE_SOLUTION(sol,microscale);
-
     /* update job information and set cell failure condition. */
     {
       int failure_detected = update_job_information(p_job);
       if (!sol->failed && failure_detected) sol->failed = 1;
     }
+
+    /* update the solution and state variables n <- n+1 */
+    err += update_MICROSCALE_SOLUTION(sol,microscale);
 
     /* Set the supports for the new n-state and null the increment */
     err += set_job_supports(p_job,common->supports);

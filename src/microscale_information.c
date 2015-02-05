@@ -323,10 +323,6 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 {
   int err = 0;
 
-  /* exit early if the cell has failed since we have not computed a
-     new solution. */
-  if(sol->failed) return err;
-
   int myrank = 0;
   err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
   const int loc_ndof = micro->common->ndofd;
@@ -744,6 +740,9 @@ static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
   sol->tim = 0;
   sol->p_tim = 0;
   sol->NORM = 0.0;
+
+  /* failure flag */
+  sol->failed = 0;
 }
 
 static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
