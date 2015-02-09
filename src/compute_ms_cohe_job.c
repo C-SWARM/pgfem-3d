@@ -127,7 +127,8 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   memcpy(job->jump_n,job->jump,ndim*sizeof(double));
   memcpy(job->traction_n,job->traction,ndim*sizeof(double));
 
-  /* clear the tangent and residual (assemble 0's at macroscale) */
+  /* clear the tangent, traction and residual (assemble 0's at macroscale) */
+  memset(job->traction,0,ndim*sizeof(double));
   memset(job->traction_res,0,job->ndofe*sizeof(double));
   memset(job->K_00_contrib,0,job->ndofe*job->ndofe*sizeof(double));
 
