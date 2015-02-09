@@ -36,6 +36,142 @@
 
 static const int periodic = 0;
 
+
+void stiffmat_uu_el(double *Ks,
+        const int ii,
+        const int ndofn,
+        const int nne,
+        int nsd,
+        const double *x,
+        const double *y,
+        const double *z,
+        const ELEMENT *elem,
+        const HOMMAT *hommat,
+        const NODE *node,
+        double *r_e)
+{
+  int err = 0;
+  const int mat = elem[ii].mat[2];
+  double rho = hommat[mat].density;
+  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));  
+  
+  int ndofe = nne*ndofn;
+  
+  /* make sure the stiffenss matrix contains all zeros */
+  memset(Ks,0,ndofe*ndofe*sizeof(double));
+
+  FEMLIB fe;
+  Matrix(double) xe, F, S, C, C_I;
+  double L[81]; 
+  
+  Matrix_construct_redim(double,xe,nne,3);
+  Matrix_construct_init(double,F, 3,3,0.0);
+  Matrix_construct_init(double,C, 3,3,0.0);  
+  Matrix_construct_init(double,C_I, 3,3,0.0);
+  Matrix_construct_init(double,S, 3,3,0.0);
+      
+  
+  for(int a=0; a<nne; a++)
+  {
+    Mat_v(xe, a+1, 1) = x[a];  
+    Mat_v(xe, a+1, 2) = y[a];  
+    Mat_v(xe, a+1, 3) = z[a];  
+  }        
+
+  int itg_order = nne;
+  if(nne==4)
+    itg_order = nne + 1; 
+
+  double ****ST_tensor, *ST;
+  
+  ST_tensor = aloc4(3,3,nsd,nne);
+  ST = aloc1(3*3*nsd*nne);
+  
+  double **F_mat;
+  F_mat = aloc2(3,3);    
+
+  devStressFuncPtr Stress = getDevStressFunc(0,&hommat[mat]);
+  dUdJFuncPtr DUDJ = getDUdJFunc(0,hommat);
+  
+  matStiffFuncPtr Stiffness = getMatStiffFunc(0,&hommat[mat]);
+  d2UdJ2FuncPtr D2UDJ2 = getD2UdJ2Func(0,&hommat[mat]);
+               
+  FEMLIB_initialization(&fe, itg_order, 1, nne);
+  FEMLIB_set_element(&fe, xe, ii);      
+  for(int ip = 1; ip<=fe.nint; ip++)
+  {
+    FEMLIB_elem_basis_V(&fe, ip); 
+    
+    shape_tensor(nne,ndn,fe.temp_v.N_x.m_pdata,fe.temp_v.N_y.m_pdata,fe.temp_v.N_z.m_pdata,ST_tensor);    
+    shapeTensor2array(ST,CONST_4(double) ST_tensor,nne);       
+
+    def_grad_get(nne,ndofn,CONST_4(double) ST_tensor,r_e,F_mat);
+    mat2array(F.m_pdata,CONST_2(double) F_mat,3,3); 
+    
+    Matrix_AxB(C,1.0,0.0,F,1,F,0);
+		
+    double J = 0.0;
+    Matrix_det(F, J);
+    Matrix_inv(C, C_I);
+    		
+		double dUdJ = 0.0;
+		double d2UdJ2 = 0.0;            
+    Stress(C.m_pdata,&hommat[mat],S.m_pdata);
+    Stiffness(C.m_pdata,&hommat[mat],L);
+    DUDJ(J,&hommat[mat],&dUdJ);
+    D2UDJ2(J,&hommat[mat],&d2UdJ2); 
+    
+    double *CIoxCI, *CICI, *SoxS;
+    CIoxCI = (double*) PGFEM_calloc (81,sizeof(double));
+    CICI = (double*) PGFEM_calloc (81,sizeof(double));
+    SoxS = (double*) PGFEM_calloc (81,sizeof(double));
+
+    /* Get the potential stuff */
+    double H = 0.0;
+ 
+   /* compute CIoxCI, CICI, & SoxS */
+    for(int i=0; i<3; i++){
+      for(int j=0; j<3; j++){
+        for(int k=0; k<3; k++){
+	  for(int l=0; l<3; l++){
+	    CIoxCI[idx_4(i,j,k,l)] = C_I.m_pdata[idx_2(i,j)]*C_I.m_pdata[idx_2(k,l)];
+	    SoxS[idx_4(i,j,k,l)] = S.m_pdata[idx_2(i,j)]*S.m_pdata[idx_2(k,l)];
+	    CICI[idx_4(i,j,k,l)] = C_I.m_pdata[idx_2(i,k)]*C_I.m_pdata[idx_2(l,j)];
+	  }
+      }
+    }
+  }
+  
+  for(int i=0; i<81; i++){
+    L[i] = (1.0*(
+			L[i]
+			+ kappa*(J*dUdJ + J*J*d2UdJ2)*CIoxCI[i]
+			- 2.0*kappa*J*dUdJ*CICI[i])
+	    -1.0*SoxS[i]);
+  }
+
+  free(CIoxCI);
+  free(CICI);
+  free(SoxS);    
+    
+    add_3F_Kuu_ip_disp(Ks,&fe,ST,F,S,L,-1.0);        
+    
+  }
+  
+  dealoc4(ST_tensor,3,3,nsd);
+  free(ST);
+  
+  dealoc2(F_mat,3); 
+    
+  Matrix_cleanup(xe);  
+  FEMLIB_destruct(&fe);  
+  
+  Matrix_cleanup(F);
+  Matrix_cleanup(C);
+  Matrix_cleanup(C_I);
+  Matrix_cleanup(S);   
+}        
+
 void stiffmat_w_inertia_el(double *Ks,
          const int ii,
          const int ndofn,
@@ -57,7 +193,7 @@ void stiffmat_w_inertia_el(double *Ks,
   memset(Ks,0,ndofe*ndofe*sizeof(double));
 
   FEMLIB fe;
-  Matrix(double) xe, du;
+  Matrix(double) xe;
   
   Matrix_construct_redim(double,xe,nne,3);
   
@@ -902,7 +1038,7 @@ static int el_stiffmat(int i, /* Element ID */
     nodecoord_total (nne,nod,node,x,y,z);
   } else {
     switch(analysis){
-    case DISP:
+    case DISP: case TF:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
     default:
@@ -937,7 +1073,7 @@ static int el_stiffmat(int i, /* Element ID */
     def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
   } else {
     switch(analysis){
-    case DISP: /* TOTAL LAGRANGIAN */
+    case DISP: case TF: /* TOTAL LAGRANGIAN */
       def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
       break;
     default:
@@ -952,7 +1088,7 @@ static int el_stiffmat(int i, /* Element ID */
       sup->defl_d[j] = sup_def[j];
    }
     
-  nulld (lk,ndofe*ndofe);  
+  memset(lk,0, sizeof(double)*ndofe*ndofe);  
   if(include_inertia)
   {
     switch(analysis){
@@ -1082,11 +1218,12 @@ static int el_stiffmat(int i, /* Element ID */
 			   hommat,nod,node,eps,sig,sup,r_e);
     break;
   case TF:
-    {
-      
-        int nVol = N_VOL_TF;
-        stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
-                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+    {      
+         err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			   hommat,nod,node,eps,sig,sup,r_e);
+  
+//        stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
+//                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
         break;
       }        
   default:

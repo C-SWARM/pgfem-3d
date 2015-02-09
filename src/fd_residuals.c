@@ -26,6 +26,106 @@
 #define ndn 3
 #define N_VOL_TF 1
 
+void residuals_disp_el(double *f,
+        const int ii,
+        const int ndofn,
+        const int nne,
+        const int nsd,
+        const double *x,
+        const double *y,
+        const double *z,
+        const ELEMENT *elem,
+        const HOMMAT *hommat,
+        const NODE *node,
+        double *r_e)
+{
+  const int mat = elem[ii].mat[2];
+  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
+      
+  Matrix(double) F,S,P,C,C_I;
+
+  int ndofe = nne*ndofn;
+
+  Matrix_construct_init(double,F,3,3,0.0);
+  Matrix_construct_init(double,C,3,3,0.0);  
+  Matrix_construct_init(double,C_I,3,3,0.0);    
+  Matrix_construct_init(double,S,3,3,0.0);
+  Matrix_construct_init(double,P,3,3,0.0);
+
+  FEMLIB fe;
+  Matrix(double) xe;  
+  Matrix_construct_init(double,xe,nne,3,0.0);
+
+  for(int a=0; a<nne; a++)
+  {
+    Mat_v(xe, a+1, 1) = x[a];  
+    Mat_v(xe, a+1, 2) = y[a];  
+    Mat_v(xe, a+1, 3) = z[a];  
+  }        
+
+  int itg_order = nne;
+  if(nne==4)
+    itg_order = nne + 1; 
+    
+    
+  double ****ST_tensor, *ST;
+ 
+  ST_tensor = aloc4(3,3,nsd,nne);
+  ST = aloc1(3*3*nsd*nne);
+  
+  double **F_mat;
+
+  F_mat = aloc2(3,3);
+                             
+  devStressFuncPtr Stress = getDevStressFunc(0,&hommat[mat]);
+  dUdJFuncPtr DUDJ = getDUdJFunc(0,hommat);
+  
+  double AA[9];
+                             
+  FEMLIB_initialization(&fe, itg_order, 1, nne);
+  FEMLIB_set_element(&fe, xe, ii);
+  for(int ip = 1; ip<=fe.nint; ip++)
+  {   
+    FEMLIB_elem_basis_V(&fe, ip);  
+         
+    double dUdJ = 0.0;
+
+    shape_tensor(nne,ndn,fe.temp_v.N_x.m_pdata,fe.temp_v.N_y.m_pdata,fe.temp_v.N_z.m_pdata,ST_tensor);
+    shapeTensor2array(ST,CONST_4(double) ST_tensor,nne);
+        
+    def_grad_get(nne,ndofn,CONST_4(double) ST_tensor,r_e,F_mat);
+    mat2array(F.m_pdata,CONST_2(double) F_mat,3,3);
+    
+    Matrix_AxB(C,1.0,0.0,F,1,F,0);
+    double J = 0.0;
+    Matrix_det(F, J);
+    Matrix_inv(C, C_I);
+    		            
+    Stress(C.m_pdata,&hommat[mat],S.m_pdata);
+    DUDJ(J,&hommat[mat],&dUdJ);
+    
+    cblas_daxpy(9,kappa*J*dUdJ,C_I.m_pdata,1,S.m_pdata,1);    
+            
+    Matrix_AxB(P,1.0,0.0,F,0,S,0);
+        
+    for(int a=0; a<fe.nne; a++)
+    {
+      for(int b=0; b<fe.nsd; b++)
+      {
+        for(int c=1; c<=3; c++)
+          f[a*ndofn + b] += Mat_v(P,b+1,c)*Mat_v(fe.dN,a+1,c)*fe.detJxW;
+      }
+    }     
+  }
+      
+  FEMLIB_destruct(&fe);                   
+  Matrix_cleanup(F);
+  Matrix_cleanup(C);
+  Matrix_cleanup(C_I);  
+  Matrix_cleanup(S);
+  Matrix_cleanup(P);
+}
+
 void residuals_3f_el(double *f,
         const int ii,
         const int ndofn,
@@ -87,8 +187,7 @@ void residuals_3f_el(double *f,
   Matrix_construct_init(double,Ktt,nVol,   nVol, 0.0);    
   Matrix_construct_init(double,Kup,nne*nsd,npres,0.0);
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
-  
-
+          
   DISP_resid_el(fu_add.m_pdata,ii,ndofn,nne,x,y,z,elem,
 	         hommat,nod,node,eps,sig,sup,r_e);  
 
@@ -1099,10 +1198,15 @@ int fd_residuals (double *f_u,
 			   hommat,nod,node,eps,sig,sup,r_e);
       break;
     case TF:
-       residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
-			                      x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+{
+
+      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
+			   hommat,nod,node,eps,sig,sup,r_e);
+	         			         
+//       residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
+//			                      x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
 			break;                      
-      
+}      
     default:
       err = resid_on_elem (i,ndofn,nne,nod,elem,node,matgeom,
 			   hommat,x,y,z,eps,sig,r_e,npres,
@@ -1137,9 +1241,6 @@ int fd_residuals (double *f_u,
     if(err != 0) return err;
 
   }/* end i < ne*/
-
-printf("this is running, %d, %d\n", opts->cohesive, n_be);
-
 
   /**** COHESIVE ELEMENT RESIDUALS ****/
   if (opts->cohesive == 1){

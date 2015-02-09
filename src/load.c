@@ -14,6 +14,7 @@
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
 #include "displacement_based_element.h"
+#include "three_field_element.h"
 
 long* compute_times_load (FILE *in1,
 			  const long nt,
@@ -134,7 +135,7 @@ int load_vec_node_defl (double *f,
       def_elem (cn,ndofe,r,elem,node,r_e,sup,1);
     } else {
       switch(opts->analysis_type){
-      case DISP:
+      case DISP: case TF:
 	nodecoord_total (nne,nod,node,x,y,z);
 	def_elem (cn,ndofe,r,elem,node,r_e,sup,1); 
 	break;
@@ -169,7 +170,7 @@ int load_vec_node_defl (double *f,
       MINI_3f_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
 			  hommat,nod,node,eps,sig,r_e);
       break;
-    case DISP:
+    case DISP: case TF:
 	err = DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
 			       hommat,nod,node,eps,sig,sup,r_e);
       break;

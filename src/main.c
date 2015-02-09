@@ -1111,6 +1111,20 @@ int single_scale_main(int argc,char *argv[])
         
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = 0;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    int node_id = -1;    
+    for(int a = 0; a<nn; a++)
+    {
+      double x = node[a].x1_fd;
+      double y = node[a].x2_fd;
+      double z = node[a].x3_fd;
+      if(fabs(x-48.0e-3)<1.0e-15 && fabs(y-60.0e-3)<1.0e-15 && fabs(z)<1.0e-15)
+        node_id = a;
+    }
+    printf("myrank=%d, node id = %d\n", myrank, node_id);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
     for(long a = 0; a<nn; a++)
     {
@@ -1416,6 +1430,16 @@ int single_scale_main(int argc,char *argv[])
       
       tim++;
     }/* end while */
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+    if(node_id>=0)
+    { 
+      double disp = r_n[node_id*ndofn + 0]*r_n[node_id*ndofn + 0] 
+                  + r_n[node_id*ndofn + 1]*r_n[node_id*ndofn + 1];
+      disp = sqrt(disp);             
+      printf("myrank=%d, node id = %d, disp = %e \n", myrank, node_id, disp);    
+    }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
 
     /*=== FREE MEMORY ===*/
     free(sup_check);

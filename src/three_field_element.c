@@ -6,6 +6,86 @@
 #include "femlib.h"
 
 
+void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe, 
+        double *ST, Matrix(double) F, Matrix(double) S, double *L,
+        double dt_alpha_1_minus_alpha)
+{
+  int nne = fe->nne;
+  int nsd = fe->nsd;
+  Matrix(double) ST_ab, ST_wg, AA, BB, CC;
+  Matrix(double) sAA, sBB;  
+  Matrix_construct(double,ST_ab);
+  Matrix_construct(double,ST_wg);
+  Matrix_construct_redim(double,AA,3,3);
+  Matrix_construct_redim(double,BB,3,3);
+  Matrix_construct_redim(double,CC,3,3);
+  
+  Matrix_construct_redim(double,sAA,3,3);
+  Matrix_construct_redim(double,sBB,3,3);
+  
+  
+  double FLsBB[9];
+    
+  for(int a=0; a<nne; a++)
+  {
+    for(int b=0; b<nsd; b++)
+    {
+      const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
+              nne,nsd,nsd,nsd)];
+      Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
+
+      // AA = F^T Grad(del u)      
+      Matrix_AxB(AA,1.0,0.0,F,1,ST_ab,0); 
+      symmetric_part(sAA.m_pdata,AA.m_pdata,3);
+                          
+      for(int w=0; w<nne; w++)
+      {
+        for(int g=0; g<nsd; g++)
+        {
+          const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
+                  nne,nsd,nsd,nsd)];
+          Matrix_init_w_array(ST_wg,3,3,ptrST_wg);        
+                                    
+          // BB = F^T Grad(du) 
+          Matrix_AxB(BB,1.0,0.0,F,1,ST_wg,0);
+          symmetric_part(sBB.m_pdata,BB.m_pdata,3);
+          
+          // CC = Grad(del u)S
+          Matrix_AxB(CC,1.0,0.0,ST_ab,0,S,0);
+
+          // Compute FL:sBB 
+	        for (int i=0; i<nsd; i++)
+	        {
+	          for (int j=0; j<nsd; j++)
+	          {
+	            FLsBB[idx_2(i,j)] = 0.0;
+	            
+	            for(int k=0; k<nsd; k++)
+	            {
+	              for(int l=0; l<nsd; l++)
+	              {
+	                for(int m=0; m<nsd;m++)	              
+ 	                  FLsBB[idx_2(i,j)] += Mat_v(F,i,m)*L[idx_4(m,j,k,l)]*Mat_v(sBB,k,l);
+ 	              }
+  	          }
+	          }
+	        }
+            
+          const int K_idx = idx_K(a,b,w,g,nne,nsd);
+          K[K_idx] += -dt_alpha_1_minus_alpha*fe->detJxW*(cblas_ddot(9,CC.m_pdata,1,ST_wg.m_pdata,1)+cblas_ddot(9,ST_ab.m_pdata,1,FLsBB,1));
+        }
+      }
+    }
+  }
+  Matrix_cleanup(ST_ab);
+  Matrix_cleanup(ST_wg);
+  Matrix_cleanup(AA);
+  Matrix_cleanup(BB);
+  Matrix_cleanup(CC);
+  Matrix_cleanup(sAA);
+  Matrix_cleanup(sBB);  
+}
+
 void add_3F_Kuu_ip_(double *K, FEMLIB *fe, 
         double *ST, Matrix(double) F, double Pn, double Tn,
         double dt_alpha_1_minus_alpha)
