@@ -37,11 +37,12 @@
  * restart_path_str on exit. \return non-zero on error.
  */
 static int generate_restart_path(const char *opath,
+				 const size_t cell_id,
 				 const size_t step,
 				 char **restart_path_str)
 {
   int err = 0;
-  alloc_sprintf(restart_path_str,"%s/restart/STEP_%.5ld",opath,step);
+  alloc_sprintf(restart_path_str,"%s/restart/STEP_%.5ld/cell_%.5ld",opath,step,cell_id);
   err += make_path(*restart_path_str,DIR_MODE);
   return (err == -1); /* make_path returns -1 on error */
 }
@@ -63,7 +64,7 @@ static int generate_restart_fname(const char *opath,
 {
   int err = 0;
   char *path = NULL;
-  err += generate_restart_path(opath,step,&path);
+  err += generate_restart_path(opath,cell_id,step,&path);
   alloc_sprintf(restart_fname,"%s/restart.%.4ld.%ld.%ld",path,rank,cell_id,step);
   free(path);
   return err;
@@ -198,6 +199,7 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   /* increment the supports */
   memcpy(c->supports->defl,c->supports->defl_d,c->supports->npd * sizeof(double));
   memset(c->supports->defl_d,0,c->supports->npd * sizeof(double));
+
   return err;
 }
 
