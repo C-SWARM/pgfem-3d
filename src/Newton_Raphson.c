@@ -30,6 +30,7 @@
 #include "vtk_output.h"
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
+#include "three_field_element.h"
 
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
@@ -377,7 +378,7 @@ double Newton_Raphson (const int print_level,
       load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			  matgeom,sup,npres,nor_min,
 			  sig_e,eps,dt,crpl,stab,r,opts);
-     
+			  
       /* Generate the load and vectors */
       for (i=0;i<ndofd;i++)  {
 	f[i] = R[i]/STEP - f_defl[i] - f_u[i];
@@ -471,23 +472,31 @@ double Newton_Raphson (const int print_level,
       MPI_Allreduce(&tmp,&Gss_temp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
       LS1 = 1./2.*Gss_temp;
       
-      /* Pressure and volume change THETA */
+      /* Pressure and volume change THETA */    
+      
       switch(opts->analysis_type){
       case FS_CRPL:
       case FINITE_STRAIN:
-	press_theta (ne,ndofn,npres,elem,node,d_r,rr,sup,matgeom,
-		     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
-	break;
+	      press_theta (ne,ndofn,npres,elem,node,d_r,rr,sup,matgeom,
+	      	     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
+	      break;
       case MINI:
-	MINI_update_bubble(elem,ne,node,ndofn,sup,
-			   eps,sig_e,hommat,d_r,rr,iter);
-	break;
+	      MINI_update_bubble(elem,ne,node,ndofn,sup,
+	      		   eps,sig_e,hommat,d_r,rr,iter);
+	      break;
       case MINI_3F:
-	MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
-			      eps,sig_e,hommat,d_r,rr,iter);
-	break;
+	      MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
+	      		      eps,sig_e,hommat,d_r,rr,iter);
+	      break;		      
+	    case TF:
+	    {  
+        update_3f(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+              dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);  			  
+	      		        
+	      break;
+	    }  
       default:
-	break;
+	      break;
       }
       
       /*************************/
@@ -828,8 +837,6 @@ double Newton_Raphson (const int print_level,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
     case TF: 
-      DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-		     sig_e,hommat,d_r,r,mpi_comm);      
 //      update_3f(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
 //            dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
       break;                 	

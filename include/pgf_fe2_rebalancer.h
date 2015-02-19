@@ -17,7 +17,8 @@
  */
 enum pgf_FE2_rebalancer_heuristic {
   FE2_REBALANCE_NONE,
-  FE2_REBALANCE_GREEDY
+  FE2_REBALANCE_GREEDY,
+  FE2_REBALANCE_ADAPTIVE
 };
 
 /**
@@ -25,9 +26,9 @@ enum pgf_FE2_rebalancer_heuristic {
  * servers. Nominally collective communication on mpi_comm->mm_inter.
  */
 pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
-					     const size_t total_n_jobs,
-					     const size_t max_n_jobs,
-					     const int heuristic);
+					      const size_t total_n_jobs,
+					      const size_t max_n_jobs,
+					      const int heuristic);
 
 /* The following is REALLY ugly, but I don't want to mess with it
 right now, I just want it to work and be externally callable. Will fix

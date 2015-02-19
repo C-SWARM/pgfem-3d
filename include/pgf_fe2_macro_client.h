@@ -29,6 +29,8 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
 /**
  * Get/create list of jobs owned by the client and to be computed by
  * one of the servers.
+ *
+ * Does NOT communicate w/ microscale servers
  */
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 					  const int n_jobs_max,
@@ -37,6 +39,8 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 
 /**
  * Generate initial partitioning of jobs to compute on servers.
+ *
+ * Communicates w/ microscale servers
  */
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 						 const PGFEM_mpi_comm *mpi_comm);

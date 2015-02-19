@@ -38,6 +38,8 @@ extern "C" {
     int debug;
     int me; /* model entity */
     int restart;
+    int max_n_jobs;
+    int no_migrate;
 
     /* input overrides */
     int override_pre_disp;

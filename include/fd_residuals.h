@@ -51,7 +51,7 @@ extern "C" {
 		    const PGFem3D_opt *opts,
 		    double alpha, double *r_n, double *r_n_1);
 		    
-void evaluate_theta(long ne,
+void update_3f(long ne,
 		  long ndofn,
 		  long npres,
 		  double *d_r,

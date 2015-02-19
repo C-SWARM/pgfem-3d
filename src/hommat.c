@@ -4,7 +4,7 @@
 
 HOMMAT* build_hommat (long i)
      /*
-       i - pocet homogennich materialu
+       i - number of homogeneous materials
      */
 {
   HOMMAT *pom;

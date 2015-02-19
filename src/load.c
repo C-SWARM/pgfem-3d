@@ -136,12 +136,12 @@ int load_vec_node_defl (double *f,
     } else {
       switch(opts->analysis_type){
       case DISP: case TF:
-	nodecoord_total (nne,nod,node,x,y,z);
-	def_elem (cn,ndofe,r,elem,node,r_e,sup,1); 
-	break;
+	      nodecoord_total(nne,nod,node,x,y,z);
+	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1); 
+	      break;
       default:
-	nodecoord_updated (nne,nod,node,x,y,z);    
-	break;
+	      nodecoord_updated (nne,nod,node,x,y,z);    
+	      break;
       }
     }
 
@@ -170,10 +170,18 @@ int load_vec_node_defl (double *f,
       MINI_3f_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
 			  hommat,nod,node,eps,sig,r_e);
       break;
-    case DISP: case TF:
-	err = DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
+    case DISP:
+      DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
 			       hommat,nod,node,eps,sig,sup,r_e);
       break;
+    case TF:
+    {
+      int nsd = 3;
+      int nVol = 1;
+      stiffmat_3f_el(lk,sup->lepd[i],ndofn,nne,npres,nVol,nsd,
+              x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+        break;     
+    }       
     default:
       stiffmatel (sup->lepd[i],x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
       break;
@@ -245,7 +253,7 @@ int load_vec_node_defl (double *f,
     double *z = aloc1(nne_ve);
 
     switch(opts->analysis_type){
-    case DISP:
+    case DISP: case TF:
       nodecoord_total (nne_ve,ve_nod,node,x,y,z);
       break;
     default:

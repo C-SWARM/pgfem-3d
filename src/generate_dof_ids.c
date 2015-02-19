@@ -310,7 +310,6 @@ static int generate_local_dof_ids_on_elem(const int nnode,
   ELEMENT *ptr_elem = &elems[elem_id];
   const long *elem_nod = ptr_elem->nod;
   const int nne = ptr_elem->toe;
-  printf("%d\n", nne);
   int id_adder = 0;
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];

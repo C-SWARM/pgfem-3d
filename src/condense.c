@@ -93,7 +93,37 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
   Matrix_AxB(KupKtpIKtt,  1.0, 0.0, KupKtpI,    0, Ktt,      0);
   Matrix_AxB(KptIFp,      1.0, 0.0, KptI,       0, fp,       0);
   Matrix_AxB(_fu,         1.0, 0.0, KupKtpI,    0, ft,       0);
-  Matrix_AxB(_fu,        -1.0, 1.0, KupKtpIKtt, 0, KptIFp,   0);  
+  Matrix_AxB(_fu,        -1.0, 1.0, KupKtpIKtt, 0, KptIFp,   0);
+  
+  
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  int myrank;
+  MPI_Comm_rank(mpi_comm,&myrank);	
+  
+  if(myrank==-1)
+  { 
+	  printf("1. -------------------------------------\n");
+	  Matrix_print(Kup);	  
+	  printf("2. -------------------------------------\n");	  
+	  Matrix_print(Ktp);
+	  printf("3. -------------------------------------\n");	  
+	  Matrix_print(ft);
+	  printf("4. -------------------------------------\n");	  
+	  Matrix_print(Ktt);	  	  
+	  printf("5. -------------------------------------\n");	  	  
+	  Matrix_print(Kpt);	  
+	  
+	  printf("6. -------------------------------------\n");	  
+	  Matrix_print(fp);	  	  
+	  
+	  printf("7. -------------------------------------\n");	  
+	  Matrix_print(_fu);	  	  
+	  	  
+	  printf("-------------------------------------\n");	 
+	   	  	  
+	}  
+  
+    
               
   for(int a=0; a<nne*nsd; a++)
     fe[a] =  Mat_v(fu,a+1,1) -  Mat_v(_fu,a+1,1); 
@@ -185,7 +215,6 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
 	
 	Matrix_inv(Kpt, KptI);
 	Matrix_inv(Ktp, KtpI);	
-	
 
   Matrix(double) KupKtpI, KupKtpIKtt, KptIKpu;
   Matrix_construct_redim(double,KupKtpI,   nne*nsd,nVol   );
@@ -193,11 +222,39 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
   Matrix_construct_redim(double,KptIKpu,   nVol,   nne*nsd);
            
   // Matrix_AxB(C, a, b, A, AT, B, BT) <-- C = aAxB + bC
-  Matrix_AxB(KupKtpI,    1.0, 0.0, Kup,        0, KtpI,    0);
+  Matrix_AxB(KupKtpI,    1.0, 0.0, Kup,        0, KtpI,    0);  
   Matrix_AxB(KupKtpIKtt, 1.0, 0.0, KupKtpI,    0, Ktt,     0);  
   Matrix_AxB(KptIKpu,    1.0, 0.0, KptI,       0, Kpu,     0);  
   Matrix_AxB(Kuu_add,    1.0, 0.0, KupKtpIKtt, 0, KptIKpu, 0);    
-               
+
+
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  int myrank;
+  MPI_Comm_rank(mpi_comm,&myrank);	
+  
+  if(myrank==-1)
+  { 
+	  printf("1. -------------------------------------\n");
+	  Matrix_print(Kuu);	  
+	  printf("2. -------------------------------------\n");	  
+	  Matrix_print(Kup);
+	  printf("3. -------------------------------------\n");	  
+	  Matrix_print(Ktp);
+	  printf("4. -------------------------------------\n");	  
+	  Matrix_print(Ktt);	  	  
+	  printf("5. -------------------------------------\n");	  	  
+	  Matrix_print(Kpt);	  
+	  
+	  printf("6. -------------------------------------\n");	  
+	  Matrix_print(Kpu);	  	  
+	  
+	  printf("7. -------------------------------------\n");	  
+	  Matrix_print(Kuu_add);	  	  
+	  	  
+	  printf("-------------------------------------\n");	 
+	   	  	  
+	}  
+
   for(int a=0; a<nne*nsd*nne*nsd; a++)
     Ks[a] = Kuu.m_pdata[a] + Kuu_add.m_pdata[a];
     
