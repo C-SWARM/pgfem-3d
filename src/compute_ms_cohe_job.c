@@ -155,12 +155,6 @@ int compute_ms_cohe_job(const int job_id,
 		 job_id+1,microscale->idx_map.size);
   }
 
-  /* copy the solve time from the job */
-  sol->p_tim = p_job->tim;
-  sol->tim = (p_job->tim > 0);
-  memcpy(sol->times,p_job->times,3*sizeof(double));
-  sol->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
-
   /* switch set up job */
   switch(p_job->job_type){
   case JOB_UPDATE: case JOB_PRINT:/* do nothing */ break;
@@ -174,6 +168,12 @@ int compute_ms_cohe_job(const int job_id,
     err += set_job_supports(p_job,common->supports);
     break;
   }
+
+  /* copy the solve time from the job */
+  sol->p_tim = p_job->tim;
+  sol->tim = (p_job->tim > 0);
+  memcpy(sol->times,p_job->times,3*sizeof(double));
+  sol->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
 
   /* swtich compute job */
   switch(p_job->job_type){

@@ -309,6 +309,10 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   unpack_data(sol->packed_state_var_n,&sol->NORM,
 	      &pos,1,sizeof(sol->NORM));
 
+  /* reset dt */
+  unpack_data(sol->packed_state_var_n,&sol->dt,
+	      &pos,1,sizeof(sol->dt));
+
   /* reset failed flag */
   unpack_data(sol->packed_state_var_n,&sol->failed,
 	      &pos,1,sizeof(sol->failed));
@@ -351,6 +355,10 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* pack NORM */
   pack_data(&sol->NORM,sol->packed_state_var_n,
 	    &pos,1,sizeof(sol->NORM));
+
+  /* pack dt */
+  pack_data(&sol->dt,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->dt));
 
   /* pack failed flag */
   pack_data(&sol->failed,sol->packed_state_var_n,
@@ -779,6 +787,9 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* length of NORM */
   sol->packed_state_var_len += sizeof(sol->NORM);
+
+  /* length of dt */
+  sol->packed_state_var_len += sizeof(sol->dt);
 
   /* length of failed */
   sol->packed_state_var_len += sizeof(sol->failed);

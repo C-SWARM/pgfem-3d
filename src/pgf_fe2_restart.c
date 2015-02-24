@@ -76,6 +76,13 @@ int pgf_FE2_restart_print_macro(MACROSCALE *macro)
   int rank = 0;
   MPI_Comm_rank(macro->common->mpi_comm,&rank);
 
+  /* update dt from any macroscale subdivision. */
+  {
+    int tim = macro->sol->tim;
+    const double *times = macro->sol->times;
+    macro->sol->dt = times[tim + 1] - times[tim];
+  }
+
   /* The current implementation of the FE2 solver does ont use the
      state vector for updating/resetting the solution at the
      macroscale. To populate the state vector with current values we
@@ -149,6 +156,10 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   /* aliases */
   COMMON_MACROSCALE *c = macro->common;
   MACROSCALE_SOLUTION *s = macro->sol;
+
+  /* set time increment to be consistent w/ previous solve for
+     substeping */
+  s->times[step] = s->times[step+1] - s->dt;
 
   /* push r -> d_r and r <- 0 */
   memcpy(s->d_r,s->r,c->ndofd*sizeof(double));
