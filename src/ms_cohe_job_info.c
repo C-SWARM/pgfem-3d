@@ -3,6 +3,7 @@
 #include <string.h>
 #include "allocation.h"
 #include "utils.h"
+#include "pgf_fe2_job.h"
 
 #ifndef DEBUG_MS_JOB_INFO
 #define DEBUG_MS_JOB_INFO 0
@@ -237,6 +238,9 @@ int print_MS_COHE_JOB_INFO(FILE *out,
 			   const MS_COHE_JOB_INFO *info)
 {
   int err = 0;
+  const int cell_id = pgf_FE2_job_compute_encoded_id(info->proc_id,
+						     info->elem_id,
+						     info->int_pt);
   char *job_str = NULL;
   PGFEM_fprintf(out,"===== START JOB INFO =====\n");
   PGFEM_fprintf(out,"NNODE:   %d\n",info->nnode);
@@ -244,6 +248,7 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"ELEM_ID: %d\n",info->elem_id);
   PGFEM_fprintf(out,"PROC_ID: %d\n",info->proc_id);
   PGFEM_fprintf(out,"INT_PT:  %d\n",info->int_pt);
+  PGFEM_fprintf(out,"CELL_ID: %d\n",cell_id);
 
   job_type_str(info->job_type,&job_str);
   PGFEM_fprintf(out,"JOB TYPE: %s\n",job_str);
@@ -268,6 +273,8 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   }
   PGFEM_fprintf(out,"\n");
 
+  PGFEM_fprintf(out,"TRAC(n): %3.5e %3.5e %3.5e\n",
+		info->traction_n[0],info->traction_n[1],info->traction_n[2]);
   PGFEM_fprintf(out,"TRAC:    %3.5e %3.5e %3.5e\n",
 		info->traction[0],info->traction[1],info->traction[2]);
   PGFEM_fprintf(out,"LID: ");
