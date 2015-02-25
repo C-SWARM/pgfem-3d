@@ -451,11 +451,11 @@ int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
   COEL *coel = macro->common->coel + job->elem_id;
 
   /* set traction for output */
-  memcpy(coel->ti,job->traction,ndim*sizeof(double));
+  memcpy(coel->ti,job->traction_n,ndim*sizeof(double));
 
   /* set the state variable(s) */
   coel->vars[job->int_pt][0] = job->max_traction;
-  memcpy(coel->vars[job->int_pt] + 1,job->traction,ndim*sizeof(double));
+  memcpy(coel->vars[job->int_pt] + 1,job->traction_n,ndim*sizeof(double));
 
   /* That's all folks! */
   return err;

@@ -156,7 +156,7 @@ UFuncPtr getUFunc(const int flag,
     return U_Doll_Schweizerhof_8;
 
   default:
-     PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
+     PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(type));
     abort();
   }
 }
@@ -184,7 +184,7 @@ dUdJFuncPtr getDUdJFunc(const int flag,
     return dUdJ_Doll_Schweizerhof_8;
 
   default:
-    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
+    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(type));
     abort();
   }
 }
@@ -212,7 +212,7 @@ d2UdJ2FuncPtr getD2UdJ2Func(const int flag,
     return d2UdJ2_Doll_Schweizerhof_8;
 
   default:
-    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
+    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(type));
     abort();
   }
 }
@@ -240,7 +240,7 @@ d2UdJ2FuncPtr getD3UdJ3Func(const int flag,
     return d3UdJ3_Doll_Schweizerhof_8;
 
   default:
-    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(flag));
+    PGFEM_printf("ERROR: Unrecognized volumetric potential flag (%d)\n",(type));
     abort();
   }
 }

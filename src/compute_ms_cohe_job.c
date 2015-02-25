@@ -127,7 +127,8 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   memcpy(job->jump_n,job->jump,ndim*sizeof(double));
   memcpy(job->traction_n,job->traction,ndim*sizeof(double));
 
-  /* clear the tangent and residual (assemble 0's at macroscale) */
+  /* clear the tangent, traction and residual (assemble 0's at macroscale) */
+  memset(job->traction,0,ndim*sizeof(double));
   memset(job->traction_res,0,job->ndofe*sizeof(double));
   memset(job->K_00_contrib,0,job->ndofe*job->ndofe*sizeof(double));
 
@@ -154,12 +155,6 @@ int compute_ms_cohe_job(const int job_id,
 		 job_id+1,microscale->idx_map.size);
   }
 
-  /* copy the solve time from the job */
-  sol->p_tim = p_job->tim;
-  sol->tim = (p_job->tim > 0);
-  memcpy(sol->times,p_job->times,3*sizeof(double));
-  sol->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
-
   /* switch set up job */
   switch(p_job->job_type){
   case JOB_UPDATE: case JOB_PRINT:/* do nothing */ break;
@@ -173,6 +168,12 @@ int compute_ms_cohe_job(const int job_id,
     err += set_job_supports(p_job,common->supports);
     break;
   }
+
+  /* copy the solve time from the job */
+  sol->p_tim = p_job->tim;
+  sol->tim = (p_job->tim > 0);
+  memcpy(sol->times,p_job->times,3*sizeof(double));
+  sol->dt = sol->times[sol->tim + 1] - sol->times[sol->tim];
 
   /* swtich compute job */
   switch(p_job->job_type){
