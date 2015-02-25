@@ -579,18 +579,18 @@ void resid_w_inertia_3f_el(double *fe,
 				}
 				else
 				{  				  
-  				add_3F_Kpt_ip(Kpt,nVol,npres,detJ,wt,Nt,Np,dt_alpha_1_minus_alpha);	
-	  			add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp2,dt_alpha_1_minus_alpha);	
+//  				add_3F_Kpt_ip(Kpt,nVol,npres,detJ,wt,Nt,Np,dt_alpha_1_minus_alpha);	
+//	  			add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp2,dt_alpha_1_minus_alpha);	
 
           if(npres==nne)
           {
-            add_3F_Kut_ip(Kut,nne,nVol,ST,F2,detJ,wt,Nt,dt_alpha_1_minus_alpha);
+//            add_3F_Kut_ip(Kut,nne,nVol,ST,F2,detJ,wt,Nt,dt_alpha_1_minus_alpha);
           }	
         
 				  if(npres==1)
 				  {
-            add_3F_Kup_ip(Kup,nne,npres,ST,F2,detJ,wt,Np,dt_alpha_1_minus_alpha);
-	  			  add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,dt_alpha_1_minus_alpha);			
+//            add_3F_Kup_ip(Kup,nne,npres,ST,F2,detJ,wt,Np,dt_alpha_1_minus_alpha);
+//	  			  add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,dt_alpha_1_minus_alpha);			
 	  		  }				  
 				  
   				resid_w_inertia_Rp_ip(fp2, npres, F2, detJ, wt, Np, Tn2);

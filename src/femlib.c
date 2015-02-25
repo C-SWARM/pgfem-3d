@@ -3,6 +3,10 @@
 
 #include "data_structure_c.h"
 #include "utils.h"
+#include "cast_macros.h"
+#include "allocation.h"
+#include "tensors.h"
+#include "def_grad.h"
 
 #ifndef _Matrix_double
 Define_Matrix(double);
@@ -109,6 +113,7 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   Matrix_construct_redim(double,fe->dN        ,nne ,nsd);
   Matrix_construct_redim(double,fe->x_ip      ,nsd ,1);  
   Matrix_construct_redim(double,fe->node_coord,nne ,nsd);
+  Matrix_construct_redim(long,fe->node_id,nne,1);
       
   FEMLIB_set_variable_size(&(fe->temp_v), nne);      
     
@@ -117,7 +122,8 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
           fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
           fe->weights.m_pdata);
 
-  Matrix_construct(int, fe->itg_ids); Matrix_redim(fe->itg_ids, npt_x*npt_y*npt_z, nsd);
+  Matrix_construct(int, fe->itg_ids); 
+  Matrix_redim(fe->itg_ids, npt_x*npt_y*npt_z, nsd);
 
   long cnt = 0;
   for(int a=1; a<=npt_x; a++)
@@ -133,12 +139,53 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
       }
     }
   } 
+  
+  fe->ST_tensor = aloc4(3,3,nsd,nne);
+  fe->ST = aloc1(3*3*nsd*nne);  
 }
 
+void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, ELEMENT *elem, NODE *node)
+{
+  int nne = elem[e].toe;
+  
+  int itg_order = nne;
+  if(nne==4)
+    itg_order = nne + 1;   
+  
+  FEMLIB_initialization(fe, itg_order, 1, nne);
+  
+  long *nod = aloc1l (nne);
+  elemnodes(e,nne,nod,elem);
+  
+  double *x,*y,*z;
+  x = aloc1(nne);
+  y = aloc1(nne);
+  z = aloc1(nne);
+  nodecoord_total(nne,nod,node,x,y,z);
+  
+  Matrix(double) xe;  
+  Matrix_construct_init(double,xe,nne,3,0.0); 
+  
+  for(int a=0; a<nne; a++)
+  {
+    Vec_v(fe->node_id, a+1) = nod[a];
+    Mat_v(xe, a+1, 1) = x[a];  
+    Mat_v(xe, a+1, 2) = y[a];  
+    Mat_v(xe, a+1, 3) = z[a];  
+  }
+  FEMLIB_set_element(fe, xe, e);  
+  
+  dealoc1(nod);
+  
+  dealoc1(x);
+  dealoc1(y);
+  dealoc1(z);
+  Matrix_cleanup(xe);       
+}
 
 void FEMLIB_set_element(FEMLIB *fe, Matrix(double) x, int eid)
 {
-  Matrix_AeqB(fe->node_coord,1,x);	
+  Matrix_AeqB(fe->node_coord,1.0,x);	
   fe->curt_elem_id = eid;
   for(int a = 1; a<=fe->nne; a++)
   {
@@ -224,6 +271,20 @@ void FEMLIB_elem_basis_V(FEMLIB *fe, long ip)
   fe->detJxW = fe->detJ*wt;
 } 
 
+void FEMLIB_update_shape_tensor(FEMLIB *fe, double *u, int ndofn, Matrix(double) F)
+{  
+  shape_tensor(fe->nne,fe->nsd,fe->temp_v.N_x.m_pdata,
+                               fe->temp_v.N_y.m_pdata,
+                               fe->temp_v.N_z.m_pdata,fe->ST_tensor);
+  shapeTensor2array(fe->ST,CONST_4(double) fe->ST_tensor,fe->nne);
+  
+  double **F_mat;  
+  F_mat = aloc2(3,3);                 
+  def_grad_get(fe->nne,ndofn,CONST_4(double) fe->ST_tensor,u,F_mat);
+  mat2array(F.m_pdata,CONST_2(double) F_mat,3,3);
+  dealoc2(F_mat,3);
+}
+
 double FEMLIB_elem_volume(FEMLIB *fe)
 {  
   double Volume;
@@ -250,4 +311,8 @@ void FEMLIB_destruct(FEMLIB *fe)
   Matrix_cleanup(fe->x_ip);    
   Matrix_cleanup(fe->node_coord);
   Matrix_cleanup(fe->itg_ids);
+  Matrix_cleanup(fe->node_id);
+  
+  dealoc4(fe->ST_tensor,3,3,fe->nsd);
+  free(fe->ST);
 }

@@ -65,6 +65,8 @@
 #include "applied_traction.h"
 #include "read_input_file.h"
 
+#include "three_field_element.h"
+
 static const int periodic = 0;
 static const int ndim = 3;
 
@@ -1378,9 +1380,41 @@ int single_scale_main(int argc,char *argv[])
       double disp = r_n[node_id*ndofn + 0]*r_n[node_id*ndofn + 0] 
                   + r_n[node_id*ndofn + 1]*r_n[node_id*ndofn + 1];
       disp = sqrt(disp);             
-      printf("myrank=%d, node id = %d, disp = %e \n", myrank, node_id, disp);    
+      printf("myrank=%d, node id = %d, disp = %e \n", myrank, node_id, disp);  
+      
     }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
+    {
+      double *GS = aloc1(9);    
+      compute_stress(GS,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm);            
+      
+      if(myrank==0)
+      {
+        
+        Matrix(double) F,S,C;
+        Matrix_construct_init(double,F,3,3,0.0);
+        Matrix_construct_init(double,C,3,3,0.0);  
+        Matrix_construct_init(double,S,3,3,0.0);
+        
+        Matrix_eye(F,3);
+        Mat_v(F, 1,1) = 1.1;
+  
+        const int mat = elem[0].mat[2];      
+        devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);    
+  
+        Matrix_AxB(C,1.0,0.0,F,1,F,0);
+        Stress(C.m_pdata,&hommat[mat],S.m_pdata);                      
+        
+        printf("computed stress\n");
+        for(int a=0; a<9; a++)
+          printf("%e %e\n", GS[a], S.m_pdata[a]);          
+
+        Matrix_cleanup(F);
+        Matrix_cleanup(C);
+        Matrix_cleanup(S);
+          
+      }      
+    }
 
     /*=== FREE MEMORY ===*/
     free(sup_check);

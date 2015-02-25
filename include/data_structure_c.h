@@ -19,6 +19,7 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix(T) Matrix_##T
 #define Mat_v(p, m, n) p.m_pdata[(m-1)*p.m_col+(n-1)]
+#define Vec_v(p, m) p.m_pdata[m-1]
 
 #define Matrix_construct(T, p) do {                                     \
   p.m_pdata = NULL;                                                     \
