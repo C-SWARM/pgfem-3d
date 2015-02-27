@@ -102,13 +102,13 @@ AC_ARG_ENABLE(vtk, [AS_HELP_STRING([--enable-vtk],
 	    )
 AC_ARG_WITH(vtk-include, [AS_HELP_STRING([--with-vtk-include=<include line>],
 		 [Provide the include line for VTK.]
-		 )],,[with_vtk_include=no]
+		 )],[have_vtk_include=yes],[have_vtk_include=no]
 	    )
 AC_ARG_WITH(vtk-libs, [AS_HELP_STRING([--with-vtk-libs=<link line>],
 		 [Provide the link line for VTK.]
-		 )],,[with_vtk_libs=no]
+		 )],[have_vtk_libs=yes],[have_vtk_libs=no]
 	    )
-AS_IF([test "x$enable_vtk" = xyes && "x$with_vtk_include" != xno && "x$with_vtk_libs" != xno],
+AS_IF([test "x$enable_vtk" = xyes && test "x$have_vtk_include" = xyes && test "x$have_vtk_libs" = xyes],
 dnl using VTK and everything is set
 [
 AC_MSG_NOTICE([Using VTK Libraries])
