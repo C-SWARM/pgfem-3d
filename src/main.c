@@ -11,6 +11,10 @@
 
 /* HEADER */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "PFEM3d.h"
 #ifndef ENUMERATIONS_H
 #include "enumerations.h"

@@ -9,21 +9,59 @@ hypre-2.40b   	       : http://computation.llnl.gov/casc/hypre/software.html
 ParMETIS-3.1.1	       : http://glaros.dtc.umn.edu/gkhome/fsroot/sw/parmetis/OLD
 suitesparse-2.1.1      : http://www.cise.ufl.edu/research/sparse/SuiteSparse/
            	         (only the AMD and UMFPACK routines are utilized)
-BlockSolve95	       : http://ftp.mcs.anl.gov/pub/BlockSolve95/
+Intel MKL	       : included w/ the Intel compiler suite
 
 While many of these libraries have newer versions available, these
 versions will not break our build tree and are known to work properly
-for our cases. Modify the paths in ../Makefile.path appropriately
-after compiling these external libraries.
+for our cases.
 
-It is recommended that all packages be compiled using the Intel
-compiler and linked to the MKL libraries where appropriate. If you
-choose to use the system libraries for cblas and lapack, uncomment
-lines 77-80 in Makefile.path and supply appropriate link-line commands
-for each library. Additionally, modify mkl_cblas.h and mkl_lapack.h in
-$(pfem_incl_dir)/MKL_override to include the appropriate header files.
+We are using the GNU autotools to build this project. If a configure
+script does not exist, recreate it using 'autoreconf -if'. We
+currently requrie the following options to be specified in the
+configuration step:
 
-Typing make in this directory will build the internal support
-libraries and then the main code. Compilation may be accelereated by
-changing into $(pgfem_src_dir) and typing 'make -j NP' for parallel
-build.
+  --with-parmetis-dir=<path>
+  --with-hypre-dir=<path>
+  --with-suitesparse-dir=<path>
+
+Use of the VTK libraries is off by default but may be enabled with the
+following options:
+
+  --enable-vtk
+  --with-vtk-include=<include line>
+  --with-vtk-libs=<link line>
+
+See `./configure -h` for more information. After configuration, simply
+`make && make install`.
+
+### Tips for Developers ###
+
+It is suggested that you set a config.site file for each Git branch
+you are actively developing such as
+
+`.../pgfem3d_install/branch_name/share/config.site`
+
+then options will automatically be set when you envoke
+
+`./configure --prefix=.../pgfem3d_install/branch_name`
+
+A sample `config.site` might look like the following:
+
+# required options
+with_parmetis_dir=/path/to/ParMetis-3.1.1
+with_hypre_dir=/path/to/hypre-2.4.0b
+with_suitesparse_dir=/path/to/suitesparse
+
+# enable/disable vtk
+enable_vtk=yes
+
+# required extra opts for enable_vtk=yes
+vtk_dir=/path/to/vtk
+with_vtk_include="-I$vtk_dir/include/vtk-6.0"
+with_vtk_libs="-Wl,-rpath=$vtk_dir/lib -L$vtk_dir/lib \
+-lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 -lvtkIOCore-6.0 -lvtkzlib-6.0 \
+-lvtkCommonExecutionModel-6.0 -lvtkCommonDataModel-6.0 \
+-lvtkCommonMisc-6.0 -lvtkCommonSystem-6.0 -lvtkCommonTransforms-6.0 \
+-lvtkCommonMath-6.0 -lvtkIOGeometry-6.0 -lvtkCommonCore-6.0 \
+-lvtksys-6.0 -lvtkexpat-6.0"
+
