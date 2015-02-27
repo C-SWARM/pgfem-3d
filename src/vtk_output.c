@@ -1,4 +1,9 @@
 #include "vtk_output.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <stdlib.h>
 #include "mkl_cblas.h"
@@ -9,10 +14,7 @@
 #include "utils.h"
 #include "allocation.h"
 #include "interface_macro.h"
-
-#ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
-#endif
 
 static const char *out_dir = "VTK";
 static const char *step_dir = "STEP_";
