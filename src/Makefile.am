@@ -136,3 +136,4 @@ AM_INCLUDES = $(renumbering_include) \
 PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
+PGFem3D_LINK = $(CXX)
