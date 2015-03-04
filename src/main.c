@@ -1386,7 +1386,7 @@ int single_scale_main(int argc,char *argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
     {
       double *GS = aloc1(9);    
-      compute_stress(GS,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm);            
+      compute_stress(GS,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, options.analysis_type);            
       
       if(myrank==0)
       {

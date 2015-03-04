@@ -13,6 +13,7 @@
 #include "def_grad.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
+#include "enumerations.h"
 
 
 #define ndn 3
@@ -2083,19 +2084,23 @@ void compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat,
   Matrix(double) C,CI,devS;
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,CI,3,3,0.0);
-  Matrix_construct_init(double,devS,3,3,0.0);  
+  Matrix_construct_init(double,devS,3,3,0.0);
+  
+  for(int a=0; a<9; a++)
+  {
+    if(F.m_pdata[a]<1.0e-10)
+      F.m_pdata[a] = 0.0;
+  }
+//  Matrix_print(F);  
   
   Matrix_AxB(C,1.0,0.0,F,1,F,0);
   double J;
-  Matrix_det(F, J);
-  Matrix_inv(C, CI);
+//  Matrix_det(F, J);
+//  Matrix_inv(C, CI);
   int mat = elem[e].mat[2];
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-  Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
-  
-  double JPn = J*Pn;
-  Matrix_AplusB(S,1.0,devS,JPn,CI);
-          
+  Stress(C.m_pdata,&hommat[mat],S.m_pdata);
+            
   Matrix_cleanup(C);
   Matrix_cleanup(CI);
   Matrix_cleanup(devS);        
@@ -2129,8 +2134,9 @@ void compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, E
 }
 
 void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm)
+                    double* r, int ndofn, MPI_Comm mpi_comm, int analysis)
 {
+  int nsd;
   Matrix(double) F,S,C,LS,CI;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,C,3,3,0.0);  
@@ -2149,60 +2155,65 @@ void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npre
         
     FEMLIB fe;
     FEMLIB_initialization_by_elem(&fe, e, elem, node);
-    Matrix(double) Np;  
-    Matrix_construct_init(double,Np,npres,1,0.0);    
-    
-    double *u,*P;
-    u = aloc1(nne*ndofn);
-    P = aloc1(npres);		    
-    
-    int mat = elem[e].mat[2];
-    double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));      			    
-  
-    dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
-    d2UdJ2FuncPtr UPP = getD2UdJ2Func(1, &hommat[mat]);
-    devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);    
-                
+    Matrix(double) Np, u, P;  
+    Matrix_construct_init(double,Np,npres,1,0.0);
+    Matrix_construct_init(double,u,nne*ndofn,1,0.0);
+    Matrix_construct_init(double,P,npres,1,0.0);        
+                        
     for(int a = 0; a<nne; a++)
     {      
       int nid = Vec_v(fe.node_id, a+1);
       for(int b=0; b<ndofn; b++)
-        u[a*ndofn+b] = r[nid*ndofn + b];
-    	if(npres==nne)
-    	  P[a] = r[nid*ndofn+3];        
+        Vec_v(u, a*ndofn+b+1) = r[nid*ndofn + b];
     }
-      					
-    if(npres==1)
-      P[0] =  eps[e].d_T[0];     
-        
+    
+    Matrix_print(u);
+    
+    if(analysis==TF)
+    {     	
+      if(npres==1)
+        Vec_v(P, 1) = eps[e].d_T[0];
+      else
+      {
+        for(int a = 0; a<nne; a++)
+        {
+          int nid = Vec_v(fe.node_id, a+1);
+          Vec_v(P, a+1) = r[nid*ndofn + 3];
+        }
+      }          
+    }
+    
+//    Matrix_print(u);    
     for(int ip = 1; ip<=fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_elem_shape_function(&fe,ip,npres, Np);
-      FEMLIB_update_shape_tensor(&fe, u, ndofn, F);
-              
-      double Pn = 0.0;    
-      for(int a=0; a<npres; a++)
-        Pn += Mat_v(Np,a+1,1)*P[a];      
+      FEMLIB_update_shape_tensor(&fe, u.m_pdata, ndofn, F);
+
+      double Pn = 0.0;          
+      if(analysis==TF)
+      {  
+        FEMLIB_elem_shape_function(&fe,ip,npres, Np);
+
+        for(int a=1; a<=npres; a++)
+          Pn += Vec_v(Np,a)*Vec_v(P,a);
+
+        compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn);
+      }
+      else
+        compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
+        
       
-      Matrix_AxB(C,1.0,0.0,F,1,F,0);
-      double J;
-      Matrix_det(F, J);
-      Matrix_inv(C, CI);
-      Stress(C.m_pdata,&hommat[mat],S.m_pdata);
       LV += fe.detJxW;
-      
-      compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn); 
-                                                    
+                                                          
       for(int a=0; a<9; a++)
         LS.m_pdata[a] += S.m_pdata[a]*fe.detJxW;
+	  }
 
-	  }	    
-    dealoc1(u); 
-    dealoc1(P); 
-        
-    FEMLIB_destruct(&fe);                   
+    FEMLIB_destruct(&fe);
     Matrix_cleanup(Np);
+    Matrix_cleanup(u);
+    Matrix_cleanup(P);    
+
   }
   
   Matrix_cleanup(F);

@@ -2,8 +2,8 @@
 # libraries and the PGFem3D package.
 
 # path to the top directory (where this file resides)
-pgfem_dir     	= $$HOME/pgfem_3d
-top_level_dir	= $(pgfem_dir)/slee_00_branch
+pgfem_dir     	= $$HOME/code_development/pgfem_3d
+top_level_dir	= $(pgfem_dir)
 
 pfem_bin_dir	= $(top_level_dir)/bin
 pfem_lib_dir	= $(top_level_dir)/lib
