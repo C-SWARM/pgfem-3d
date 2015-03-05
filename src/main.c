@@ -1343,34 +1343,6 @@ int single_scale_main(int argc,char *argv[])
 	PGFEM_printf("*********************************************\n");
       }
       
-      /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-      /* update previous time step values, r_n and r_n_1 from current time step values r */
-      for(long a = 0; a<nn; a++)
-      {
-        for(long b = 0; b<ndofn; b++)
-        {
-          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-          
-          long id = node[a].id[b];
-          if(id>0)
-            r_n[a*ndofn + b] = r[id-1];
-          else
-          {
-            if(id==0)
-              r_n[a*ndofn + b] = 0.0;
-            else
-              r_n[a*ndofn + b] = sup->defl_d[abs(id-1)-1];
-          }
-        }
-      }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-       
-      
       tim++;
     }/* end while */
     
@@ -1391,19 +1363,32 @@ int single_scale_main(int argc,char *argv[])
       if(myrank==0)
       {
         
-        Matrix(double) F,S,C;
+        Matrix(double) F,S,C,CI,devS;
         Matrix_construct_init(double,F,3,3,0.0);
         Matrix_construct_init(double,C,3,3,0.0);  
+        Matrix_construct_init(double,CI,3,3,0.0);  
+        Matrix_construct_init(double,devS,3,3,0.0);        
         Matrix_construct_init(double,S,3,3,0.0);
         
         Matrix_eye(F,3);
         Mat_v(F, 1,1) = 1.1;
   
-        const int mat = elem[0].mat[2];      
-        devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);    
-  
         Matrix_AxB(C,1.0,0.0,F,1,F,0);
-        Stress(C.m_pdata,&hommat[mat],S.m_pdata);                      
+        double J;
+        Matrix_det(F, J);
+        Matrix_inv(C, CI);
+        
+        int mat = elem[0].mat[2];
+        double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 
+      
+        devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
+        Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
+      
+        dUdJFuncPtr DUDJ = getDUdJFunc(1,&hommat[mat]);
+        double dUdJ = 0.0;
+        DUDJ(J,&hommat[mat],&dUdJ);
+        double kappaJdUdJ = kappa*J*dUdJ;  
+        Matrix_AplusB(S,1.0,devS,kappaJdUdJ,CI);                     
         
         printf("computed stress\n");
         for(int a=0; a<9; a++)
@@ -1411,6 +1396,8 @@ int single_scale_main(int argc,char *argv[])
 
         Matrix_cleanup(F);
         Matrix_cleanup(C);
+        Matrix_cleanup(CI);
+        Matrix_cleanup(devS);
         Matrix_cleanup(S);
           
       }      

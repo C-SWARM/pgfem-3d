@@ -329,6 +329,7 @@ void resid_w_inertia_Rt_ip(double *ft, int nVol, double jj, double wt, double *N
 void resid_w_inertia_Rp_ip(double *fp, int npres, double *F, double jj, double wt, double *Np, double Tn)
 {
   double Jn = det3x3(F);
+ // printf("%e, %e, %e\n", Jn, Tn, Jn - Tn); 
 	for(int a=0; a<npres; a++)
 		fp[a] += jj*wt*Np[a]*(Jn - Tn);
 }    
@@ -590,10 +591,10 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
     double Pn = 0.0;
     
     for(int a=0; a<nVol; a++)
-      Tn += Mat_v(Nt,a+1,1)*eps[ii].T[a*3+0];
+      Tn += Vec_v(Nt,a+1)*eps[ii].T[a*3+0];
     
     for(int a=0; a<npres; a++)
-      Pn += Mat_v(Np,a+1,1)*P[a];
+      Pn += Vec_v(Np,a+1)*P[a];
           
     double Jn = det3x3(F.m_pdata);        
 
@@ -779,7 +780,7 @@ void stiffmat_3f_w_inertia_el(double *Ks,
       Tn += Mat_v(Nt,a+1,1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);
        
     for(int a=0; a<npres; a++)
-      Pn += Mat_v(Np,a+1,1)*P[a];      
+      Pn += Vec_v(Np,a+1)*P[a];      
                         
     UPP(Tn,&hommat[mat],&Upp);
     Upp = Upp*kappa;
@@ -947,10 +948,10 @@ void residuals_3f_el(double *f,
     double Pn = 0.0;
     
     for(int a=0; a<nVol; a++)
-      Tn += Mat_v(Nt,a+1,1)*eps[ii].T[a*3+0];
+      Tn += Vec_v(Nt,a+1)*eps[ii].T[a*3+0];
     
     for(int a=0; a<npres; a++)
-      Pn += Mat_v(Np,a+1,1)*P[a];
+      Pn += Vec_v(Np,a+1)*P[a];
       
                 
     double Upp = 0.0;
@@ -1178,10 +1179,10 @@ void evaluate_PT_el(const int ii,
     double Pn = 0.0;
     
     for(int a=0; a<nVol; a++)
-      Tn += Mat_v(Nt,a+1,1)*eps[ii].T[a*3+0];
+      Tn += Vec_v(Nt,a+1)*eps[ii].T[a*3+0];
     
     for(int a=0; a<npres; a++)
-      Pn += Mat_v(Np,a+1,1)*P[a];
+      Pn += Vec_v(Np,a+1)*P[a];
       
                 
     double Upp = 0.0;
@@ -2088,18 +2089,27 @@ void compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat,
   
   for(int a=0; a<9; a++)
   {
-    if(F.m_pdata[a]<1.0e-10)
+    if(F.m_pdata[a]<1.0e-6)
       F.m_pdata[a] = 0.0;
   }
-//  Matrix_print(F);  
   
   Matrix_AxB(C,1.0,0.0,F,1,F,0);
   double J;
-//  Matrix_det(F, J);
-//  Matrix_inv(C, CI);
+  Matrix_det(F, J);
+  Matrix_inv(C, CI);
+  
   int mat = elem[e].mat[2];
+  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 
+
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-  Stress(C.m_pdata,&hommat[mat],S.m_pdata);
+  Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
+
+  dUdJFuncPtr DUDJ = getDUdJFunc(1,&hommat[mat]);
+  double dUdJ = 0.0;
+  DUDJ(J,&hommat[mat],&dUdJ);
+  double kappaJdUdJ = kappa*J*dUdJ;
+  
+  Matrix_AplusB(S,1.0,devS,kappaJdUdJ,CI);  
             
   Matrix_cleanup(C);
   Matrix_cleanup(CI);
@@ -2112,7 +2122,13 @@ void compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, E
   Matrix(double) C,CI,devS;
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,CI,3,3,0.0);
-  Matrix_construct_init(double,devS,3,3,0.0);  
+  Matrix_construct_init(double,devS,3,3,0.0);
+  
+  for(int a=0; a<9; a++)
+  {
+    if(F.m_pdata[a]<1.0e-6)
+      F.m_pdata[a] = 0.0;
+  }    
   
   Matrix_AxB(C,1.0,0.0,F,1,F,0);
   double J;
@@ -2167,8 +2183,6 @@ void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npre
         Vec_v(u, a*ndofn+b+1) = r[nid*ndofn + b];
     }
     
-    Matrix_print(u);
-    
     if(analysis==TF)
     {     	
       if(npres==1)
@@ -2183,7 +2197,6 @@ void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npre
       }          
     }
     
-//    Matrix_print(u);    
     for(int ip = 1; ip<=fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip);  
@@ -2198,6 +2211,10 @@ void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npre
           Pn += Vec_v(Np,a)*Vec_v(P,a);
 
         compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn);
+        
+        double J;
+        Matrix_det(F, J);
+//        printf("%e, %e\n", J, eps[e].T[0]);
       }
       else
         compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
