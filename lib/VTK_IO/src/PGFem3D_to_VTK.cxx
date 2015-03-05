@@ -1,4 +1,11 @@
 #include "PGFem3D_to_VTK.hpp"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <iostream>
+
+#ifndef NO_VTK_LIB
 #include <vtkVersion.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLUnstructuredGridReader.h>
@@ -10,7 +17,6 @@
 #include <vtkCellArray.h>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
-#include <iostream>
 
 /** Create a vtkUnstructuredGrid object from a PGFem3D mesh and
     associated information. ***CURRENTLY ONLY SUPPORT LINEAR TETRAS
@@ -495,3 +501,39 @@ int read_VTK_file(char fn[], double *r)
 
   return EXIT_SUCCESS;
 }
+
+#else
+
+void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
+				     const int nelems,
+				     const NODE *nodes,
+				     const ELEMENT *elems,
+				     const SUPP supports,
+				     const SIG *stress,
+				     const EPS *strain,
+				     const double *dofs,
+				     const int analysis_type)
+{
+  fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
+  return NULL;
+}
+
+void PGFem3D_destroy_vtkUnstructuredGrid(void *grid)
+{
+  fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
+}
+
+void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
+				       const void *grid,
+				       const int ascii)
+{
+  fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
+}
+				       
+int read_VTK_file(char fn[], double *r)
+{
+  fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
+  return EXIT_FAILURE;
+}
+
+#endif
