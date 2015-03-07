@@ -117,6 +117,9 @@ pgf_fe2_macro_client.c \
 pgf_fe2_restart.c \
 pgf_fe2_compute_max_n_jobs.c \
 solver_file.c \
+condense.c \
+three_field_element.c \
+femlib.c \
 macro_micro_main.c \
 main.c \
 super_main.c

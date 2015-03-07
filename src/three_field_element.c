@@ -979,9 +979,16 @@ void residuals_3f_el(double *f,
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
   }
+  
+  Matrix_print(fu);
+  Matrix_print(fp);
+  Matrix_print(ft);    
     
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
                     Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
+                    
+  for(int a=0; a<nne*nsd; a++)
+    printf("%e\n", f[a]);                    
 
   Matrix_cleanup(F);
   Matrix_cleanup(C);

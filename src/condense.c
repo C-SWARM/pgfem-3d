@@ -102,22 +102,21 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
   
   if(myrank==-1)
   { 
-	  printf("1. -------------------------------------\n");
-	  Matrix_print(Kup);	  
-	  printf("2. -------------------------------------\n");	  
-	  Matrix_print(Ktp);
-	  printf("3. -------------------------------------\n");	  
-	  Matrix_print(ft);
-	  printf("4. -------------------------------------\n");	  
-	  Matrix_print(Ktt);	  	  
-	  printf("5. -------------------------------------\n");	  	  
-	  Matrix_print(Kpt);	  
-	  
-	  printf("6. -------------------------------------\n");	  
-	  Matrix_print(fp);	  	  
-	  
-	  printf("7. -------------------------------------\n");	  
-	  Matrix_print(_fu);	  	  
+	  printf("-------------------------------------\n");	     
+    printf("Kup = [\n");
+	  Matrix_print(Kup); printf("];\n");
+    printf("Ktp = [\n");
+    Matrix_print(Ktp); printf("];\n");
+    printf("ft = [\n");
+	  Matrix_print(ft); printf("];\n");
+    printf("Ktt = [\n");
+	  Matrix_print(Ktt); printf("];\n");	  	  
+    printf("Kpt = [\n");
+	  Matrix_print(Kpt); printf("];\n");	  
+    printf("fp = [\n");
+	  Matrix_print(fp); printf("];\n");	  	  
+    printf("_fu = [\n");
+	  Matrix_print(_fu); printf("];\n");	  	  
 	  	  
 	  printf("-------------------------------------\n");	 
 	   	  	  
