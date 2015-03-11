@@ -410,6 +410,14 @@ double Newton_Raphson (const int print_level,
 	if(microscale == NULL){
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
+	
+  if(opts->analysis_type == TF && iter ==0 )
+  {  
+    printf("this is running\n");
+      fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
+		    matgeom,hommat,sup,eps,sig_e,
+		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+  }
 
 	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
@@ -490,7 +498,7 @@ double Newton_Raphson (const int print_level,
 	      break;		      
 	    case TF:
 	    {  
-        update_3f(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+        update_3f(ne,ndofn,npres,d_r,rr,node,elem,hommat,sup,eps,sig_e,
               dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);  			  
 	      		        
 	      break;

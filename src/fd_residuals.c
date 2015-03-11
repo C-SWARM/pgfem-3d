@@ -1035,7 +1035,7 @@ int fd_residuals (double *f_u,
       break;
     case TF:
        residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
-			       x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+			       x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);			       			       
 			break;                      
     default:
       err = resid_on_elem (i,ndofn,nne,nod,elem,node,matgeom,

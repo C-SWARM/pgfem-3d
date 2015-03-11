@@ -19,6 +19,7 @@
 #define ndn 3
 #define N_VOL_TF 1
 #define USE_HW_FUNCS 0
+
 void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe, 
         double *ST, Matrix(double) F, Matrix(double) S, double *L,
         double dt_alpha_1_minus_alpha)
@@ -289,12 +290,16 @@ void resid_w_inertia_Ru_ip(double *fu,
   double *sAA = aloc1(9);
   double *C   = aloc1(9);
   double *C_I = aloc1(9);
+  double *S_temp = aloc1(9);
   
   double Jn = det3x3(F);
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
           3,3,3,1.0,F,3,F,3,0.0,C,3);
   
   inverse(C,3,C_I);
+  for(int a = 0; a<9; a++)
+    S_temp[a] = Jn*Pn*C_I[a] + S[a];
+//  cblas_daxpy(9,Jn*Pn,C_I,1,S,1);
   
   for(int a=0; a<nne; a++)
   {
@@ -302,16 +307,21 @@ void resid_w_inertia_Ru_ip(double *fu,
     {
       const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd)];
       
-      /* AA = F'Grad(del u) */
+      
+      
+      // AA = F'Grad(del u);
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
               3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
-      symmetric_part(sAA,AA,3);
+  //    symmetric_part(sAA,AA,3);
       // sAA:S
-      double sAAS = cblas_ddot(9,sAA,1,S,1);            
-      /* C_IFdu = C_I:AA*/
-      double C_IFdu = cblas_ddot(9,C_I,1,AA,1);      
+//      double sAAS = cblas_ddot(9,sAA,1,S,1);            
+      // C_IFdu = C_I:AA
+//      double C_IFdu = cblas_ddot(9,C_I,1,AA,1);      
             
-      fu[a*nsd + b] += jj*wt*(sAAS + Jn*Pn*C_IFdu);
+//      fu[a*nsd + b] += jj*wt*(sAAS + Jn*Pn*C_IFdu);
+fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
+      
+      
     }
   }
   
@@ -319,7 +329,9 @@ void resid_w_inertia_Ru_ip(double *fu,
   free(sAA);
   free(C);
   free(C_I);
+  free(S_temp);
 }
+
 void resid_w_inertia_Rt_ip(double *ft, int nVol, double jj, double wt, double *Nt, double Pn, double Up)
 {
 
@@ -382,87 +394,9 @@ void TF_Kuu_ip(Matrix(double) K, FEMLIB *fe,
     HW_Kuu_at_ip(K.m_pdata,nne,nne,fe->ST,Fn,F.m_pdata,F_I,1.0,1.0,1.0,Pn,S.m_pdata,L,fe->detJ,fe->temp_v.w_ip,0);
   }
   else{
-    Matrix(double) K_add;
-    Matrix_construct_init(double,K_add,nne*nsd,nne*nsd,0.0);  
-    add_3F_Kuu_ip(K.m_pdata,nne ,fe->ST,F.m_pdata,fe->detJ,fe->temp_v.w_ip,Pn,dt_alpha_1_minus_alpha);        
-    add_3F_Kuu_ip_disp(K_add.m_pdata, fe, fe->ST, F, S, L, dt_alpha_1_minus_alpha);
-    
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=1; b<=nsd; b++)
-      {
-        for(int c=0; c<nne; c++)
-        {
-          for(int d=1; d<=nsd; d++)
-            Mat_v(K, a*nsd+b, c*nsd+d) += Mat_v(K_add, a*nsd+b, c*nsd+d);         
-        }
-      }
-    }
-    Matrix_cleanup(K_add);  
+    add_3F_Kuu_ip(K.m_pdata,nne ,fe->ST,F.m_pdata,fe->detJ,fe->temp_v.w_ip,Pn,dt_alpha_1_minus_alpha);  
+    add_3F_Kuu_ip_disp(K.m_pdata, fe, fe->ST, F, S, L, dt_alpha_1_minus_alpha);    
   }    
-    
-/*      
-  int nne = fe->nne;
-  int nsd = fe->nsd;
-  Matrix(double) F_I, ST_ab, ST_wg, AA, BB, CC;
-  Matrix_construct(double,F_I);  Matrix_redim(F_I,3,3);
-  Matrix_construct(double,ST_ab);
-  Matrix_construct(double,ST_wg);
-  Matrix_construct(double,AA);  Matrix_redim(AA,3,3);
-  Matrix_construct(double,BB);  Matrix_redim(BB,3,3);
-  Matrix_construct(double,CC);  Matrix_redim(CC,3,3);      
-  
-  Matrix_inv(F, F_I);
-  double Jn;
-  Matrix_det(F, Jn);
-    
-  for(int a=0; a<nne; a++)
-  {
-    for(int b=0; b<nsd; b++)
-    {
-      const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
-              nne,nsd,nsd,nsd)];
-      Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
-
-      // AA = F_I Grad(del u)      
-      Matrix_AxB(AA,1.0,0.0,F_I,0,ST_ab,0);        
-                    
-      double trAA = 0;
-      Matrix_trace(AA,trAA);
-      
-      for(int w=0; w<nne; w++)
-      {
-        for(int g=0; g<nsd; g++)
-        {
-          const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
-                  nne,nsd,nsd,nsd)];
-          Matrix_init_w_array(ST_wg,3,3,ptrST_wg);        
-                                    
-          // BB = F_I Grad(d u)
-          Matrix_AxB(BB,1.0,0.0,F_I,0,ST_wg,0);
-          
-          double trBB = 0;
-          Matrix_trace(BB,trBB);
-                          
-          // CC = BB*AA
-          Matrix_AxB(CC,1.0,0.0,AA,0,BB,0);
-          
-          double trCC = 0;
-          Matrix_trace(CC,trCC);
-          
-          const int K_idx = idx_K(a,b,w,g,nne,nsd);
-          Mat_v(K, a*nsd + b+1, w*nsd + g+1) += -dt_alpha_1_minus_alpha*fe->detJxW*Pn*Jn*(trAA*trBB - trCC);          
-        }
-      }
-    }
-  }
-  Matrix_cleanup(F_I);
-  Matrix_cleanup(ST_ab);
-  Matrix_cleanup(ST_wg);
-  Matrix_cleanup(AA);
-  Matrix_cleanup(BB);
-  Matrix_cleanup(CC); 
-  */
 }
 void TF_Kup_ip(Matrix(double) K, FEMLIB *fe, 
         Matrix(double) F, int npres, Matrix(double) Np, double dt_alpha_1_minus_alpha)
@@ -526,6 +460,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
   
   double Upp;
           
+  dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);        
   d2UdJ2FuncPtr UPP = getD2UdJ2Func(1, &hommat[mat]);  
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   matStiffFuncPtr Stiffness = getMatStiffFunc(1,&hommat[mat]);
@@ -542,7 +477,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,S,3,3,0.0);
-  
+
   Matrix_construct_init(double,Kuu,nne*nsd,nne*nsd,0.0);
   Matrix_construct_init(double,Kut,nne*nsd,nVol   ,0.0);
   Matrix_construct_init(double,Kup,nne*nsd,npres  ,0.0);
@@ -552,8 +487,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
   Matrix_construct_init(double,Kpu,nne*nsd,npres  ,0.0);      
   Matrix_construct_init(double,Kpt,npres  ,nVol   ,0.0);
   Matrix_construct_init(double,Kpp,npres  ,npres  ,0.0); 
-
-
+			   
 //  MPI_Comm mpi_comm = MPI_COMM_WORLD;    
 //  int myrank;
 //  MPI_Comm_rank(mpi_comm,&myrank);
@@ -601,9 +535,12 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
     Matrix_AxB(C,1.0,0.0,F,1,F,0);            
     UPP(Tn,&hommat[mat],&Upp);
     Upp = Upp*kappa;
-
+    double Up = 0.0;
+    UP(Tn,&hommat[mat],&Up);
+    Up = Up*kappa;
+    
     Stress(C.m_pdata,&hommat[mat],S.m_pdata);       
-    Stiffness(C.m_pdata,&hommat[mat],L);     
+    Stiffness(C.m_pdata,&hommat[mat],L); 
 
     TF_Kuu_ip(Kuu,&fe,F,S,L,Pn,-1.0);
     TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);     
@@ -614,7 +551,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
     Matrix_AeqB(Ktp,1.0,Kpt);
     Matrix_trans(Ktp);    
   } 
-
+  
   condense_K_out(Ks,nne,nsd,npres,nVol,
                  Kuu.m_pdata,Kut.m_pdata,Kup.m_pdata,
                  Ktu.m_pdata,Ktt.m_pdata,Ktp.m_pdata,
@@ -625,7 +562,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
 
   Matrix_cleanup(F);
   Matrix_cleanup(C);
-  Matrix_cleanup(S);  
+  Matrix_cleanup(S);
   Matrix_cleanup(Kuu);
   Matrix_cleanup(Kut);
   Matrix_cleanup(Kup);
@@ -871,6 +808,7 @@ void residuals_3f_el(double *f,
         const SUPP sup,
         double *r_e)
 {
+			     
   double *u, *P;
   u = aloc1(nne*nsd);
   P = aloc1(npres);		
@@ -899,7 +837,7 @@ void residuals_3f_el(double *f,
   Matrix_construct_init(double,C,3,3,0.0);  
   Matrix_construct_init(double,S,3,3,0.0);  
   
-  Matrix(double) fu,Kut;
+  Matrix(double) fu,Kut, fu_xx;
   Matrix(double) fp,Kpt;
   Matrix(double) ft,Ktt;
   Matrix(double) Kup,Ktp;
@@ -914,7 +852,7 @@ void residuals_3f_el(double *f,
   Matrix_construct_init(double,Ktt,nVol,   nVol, 0.0);    
   Matrix_construct_init(double,Kup,nne*nsd,npres,0.0);
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
-
+  
   FEMLIB fe;
   Matrix(double) xe;  
   Matrix_construct_init(double,xe,nne,3,0.0);
@@ -962,6 +900,7 @@ void residuals_3f_el(double *f,
     UP(Tn, &hommat[mat], &Up);
     Up = Up*kappa;
     
+    
     Matrix_AxB(C,1.0,0.0,F,1,F,0);
     Stress(C.m_pdata,&hommat[mat],S.m_pdata);
     		
@@ -979,17 +918,10 @@ void residuals_3f_el(double *f,
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
   }
-  
-  Matrix_print(fu);
-  Matrix_print(fp);
-  Matrix_print(ft);    
-    
+
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
                     Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
                     
-  for(int a=0; a<nne*nsd; a++)
-    printf("%e\n", f[a]);                    
-
   Matrix_cleanup(F);
   Matrix_cleanup(C);
   Matrix_cleanup(S); 
@@ -998,7 +930,7 @@ void residuals_3f_el(double *f,
   Matrix_cleanup(xe);
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);
-  
+
   Matrix_cleanup(fu);
   Matrix_cleanup(fp); 
   Matrix_cleanup(ft); 
@@ -1116,6 +1048,7 @@ void evaluate_PT_el(const int ii,
         const NODE *node,
         const double *r_e,
         double *u,
+        double *du,
         const double *P,
         double dt,
         SIG *sig,
@@ -1233,8 +1166,11 @@ void evaluate_PT_el(const int ii,
   Matrix_inv(Kpt,KptI);
   
   Matrix(double) uu;
+  
 	Matrix_construct(double, uu);	  	
-	Matrix_init_w_array(uu, nne*ndofn, 1, u);	   
+	Matrix_init_w_array(uu, nne*ndofn, 1, du);
+//	for(int a=0; a<nne*nsd; a++)
+//	  printf("%e %e\n", u[a], du[a]);
   
   Matrix_AxB(fp, 1.0, 1.0, Kpu, 0, uu, 0);        
   Matrix_AxB(theta, -1.0, 0.0, KptI, 0, fp, 0); 
@@ -1975,6 +1911,7 @@ void update_3f(long ne,
     int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
 
     double *r_e = aloc1 (ndofe);
+    double *dr_e = aloc1 (ndofe);
 
     double *x,*y,*z;
     x = aloc1 (nne);
@@ -1990,6 +1927,20 @@ void update_3f(long ne,
     
     /* deformation on element */
     def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    
+    for(int i=0; i< ndofe; i++)
+    {
+      const int id = cn[i];
+      const int aid = abs(id) - 1;
+
+      if (id == 0){
+        dr_e[i] = 0.0;
+      } else if (id > 0){
+        dr_e[i] = r[aid];
+      } else {
+        dr_e[i] = 0.0;
+      }
+    }
     
   	int nsd = 3;
 	  
@@ -2054,14 +2005,18 @@ void update_3f(long ne,
     }
     else
     {
-  		double *u, *P;
+  		double *u, *P, *du;
   		u = aloc1(nne*nsd);
+  		du = aloc1(nne*nsd);
   		P = aloc1(npres);
 		
   		for(int a=0;a<nne;a++)
   		{
   			for(int b=0; b<nsd;b++)
-  				u[a*nsd+b] = r_e[a*ndofn+b]; 		  			
+  			{
+  				u[a*nsd+b] = r_e[a*ndofn+b];
+  				du[a*nsd+b] = dr_e[a*ndofn+b];
+  			}
   			if(npres==nne)  		
     			P[a] = r_e[a*ndofn+nsd];
   		}
@@ -2069,11 +2024,12 @@ void update_3f(long ne,
         P[0] = eps[i].d_T[0];
   		
   		if(npres==1)
-  		  evaluate_PT_el(i,ndofn,nne,npres,x,y,z,elem,hommat,node,r_e,u,P,dt,sig,eps);
+  		  evaluate_PT_el(i,ndofn,nne,npres,x,y,z,elem,hommat,node,r_e,u,du,P,dt,sig,eps);
   		else
   		  evaluate_theta_el(i,ndofn,nne,x,y,z,elem,hommat,node,u,P,dt,sig,eps);
  
   	  free(u);
+  	  free(du);
   		free(P);
   		
   	}
@@ -2083,6 +2039,7 @@ void update_3f(long ne,
     free(y);
     free(z);  	
   	free(r_e);
+  	free(dr_e);
 	}	        							  											   		
 }
 
