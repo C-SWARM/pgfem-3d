@@ -410,21 +410,14 @@ double Newton_Raphson (const int print_level,
 	if(microscale == NULL){
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
-	
-  if(opts->analysis_type == TF && iter ==0 )
-  {  
-    printf("this is running\n");
-      fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
-		    matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
-  }
-
+		
 	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
 		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
 		     myrank,nproc,DomDof,GDof,
 		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
+//return 0.0;
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	  ART = 1;
@@ -498,8 +491,8 @@ double Newton_Raphson (const int print_level,
 	      break;		      
 	    case TF:
 	    {  
-        update_3f(ne,ndofn,npres,d_r,rr,node,elem,hommat,sup,eps,sig_e,
-              dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);  			  
+        update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
+              dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 	      		        
 	      break;
 	    }  
@@ -611,7 +604,7 @@ double Newton_Raphson (const int print_level,
       
       /* Transform LOCAL load vector to GLOBAL */
       LToG (f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
-      
+
       /* Compute Euclidian norm */
       for (i=0;i<DomDof[myrank];i++)
 	BS_f[i] = BS_RR[i] - BS_f_u[i];
@@ -845,7 +838,7 @@ double Newton_Raphson (const int print_level,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
     case TF: 
-//      update_3f(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+//      update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
 //            dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
       break;                 	
       

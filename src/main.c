@@ -1375,7 +1375,7 @@ int single_scale_main(int argc,char *argv[])
         Matrix_construct_init(double,S,3,3,0.0);
         
         Matrix_eye(F,3);
-        Mat_v(F, 1,1) = 1.1;
+        Mat_v(F, 1,2) = 0.1;
   
         Matrix_AxB(C,1.0,0.0,F,1,F,0);
         double J;

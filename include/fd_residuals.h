@@ -49,24 +49,7 @@ extern "C" {
 		    COEL *coel,
 		    MPI_Comm mpi_comm,
 		    const PGFem3D_opt *opts,
-		    double alpha, double *r_n, double *r_n_1);
-		    
-void update_3f(long ne,
-		  long ndofn,
-		  long npres,
-		  double *d_r,
-		  double *r,
-		  NODE *node,
-		  ELEMENT *elem,
-		  HOMMAT *hommat,
-		  SUPP sup,
-		  EPS *eps,
-		  SIG *sig,
-		  double dt,
-		  double t,
-		  MPI_Comm mpi_comm,
-		  const PGFem3D_opt *opts,
-		  double alpha, double *r_n, double *r_n_1);
+		    double alpha, double *r_n, double *r_n_1);		    
 		  
 #ifdef __cplusplus
 }

@@ -54,9 +54,9 @@ void condense_Fupt_to_Fup(double *fe, int nne, int nsd, int npres, int nVol,
 	  for(long b=0; b<ndofn; b++)
 	  {
        if(b<nsd)
-         fe[a*ndofn + b] = Mat_v(fu,a*nsd+b+1,1) - Mat_v(_fu, a*nsd+b+1, 1);
+         fe[a*ndofn + b] = Vec_v(fu,a*nsd+b+1) - Vec_v(_fu, a*nsd+b+1);
        else
-         fe[a*ndofn + b] = Mat_v(fp,a+1,1) - Mat_v(_fp, a, 1);
+         fe[a*ndofn + b] = Vec_v(fp,a+1) - Vec_v(_fp, a);
 	  }
 	}  
   
@@ -121,11 +121,9 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
 	  printf("-------------------------------------\n");	 
 	   	  	  
 	}  
-  
-    
               
   for(int a=0; a<nne*nsd; a++)
-    fe[a] =  Mat_v(fu,a+1,1) -  Mat_v(_fu,a+1,1); 
+    fe[a] =  Vec_v(fu,a+1) -  Vec_v(_fu,a+1); 
 
   Matrix_cleanup(KptI);
   Matrix_cleanup(KtpI);

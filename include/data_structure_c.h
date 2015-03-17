@@ -240,7 +240,6 @@ typedef struct Matrix_##T                                               \
     break;                                                              \
   if(A.m_col != B.m_col)                                                \
     break;                                                              \
-  Matrix_redim(C, m_row, m_col);                                        \
                                                                         \
   for(I = 0; I < m_row*m_col; I++)                                      \
     C.m_pdata[I] = A.m_pdata[I]*a + B.m_pdata[I]*b;                     \
