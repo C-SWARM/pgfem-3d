@@ -1,6 +1,7 @@
 # common for project
 *~
 *.[ao]
+TAGS
 
 # built executable
 src/PGFem3D

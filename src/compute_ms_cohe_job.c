@@ -97,37 +97,43 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
 /**
  * Update the job information from n <-- n+1.
  *
- * Modifies the job, particularly updates traction_n, jump_n, and
- * max_traction.
+ * Modifies the job, particularly updates traction_n, jump_n,
+ * max_traction, and max_jump.
  *
  * \return non-zero if cell failure is detected.
  */
 static int update_job_information(MS_COHE_JOB_INFO *job)
 {
   /* hard-code scaling for failure detection */
-  static const double eps = 0.05;
+  static const double small_val = 0.05;
 
-  /* 
-   * Detect cell failure based on effective traction-separation
-   * law. If the cell isn't failed, conditionally update the maximum
-   * traction.
-   */
   int cell_failure_detected = 0;
   const double tn = cblas_dnrm2(ndim,job->traction_n,1);
   const double tnp1 = cblas_dnrm2(ndim,job->traction,1);
-  const double jn = cblas_dnrm2(ndim,job->jump_n,1);
   const double jnp1 = cblas_dnrm2(ndim,job->jump,1);
-  const double slope = (tnp1 - tn) / (jnp1 - jn);
-  if (tnp1 > job->max_traction) job->max_traction = tnp1;
-  else if (tnp1 < (eps * job->max_traction)
-	   && isfinite(slope) && slope < 0) cell_failure_detected++;
 
-  /* update variables, n <-- n+1 */
-  /* job->jump_n <-- job->jump */
+  /* LOADING CONDITION: eff. jump is greater than any previous */
+  if (jnp1 > job->max_jump) {
+    /* update state variable */
+    job->max_jump = jnp1;
+
+    /* update max traction */
+    if (tnp1 > job->max_traction) job->max_traction = tnp1;
+
+    /* 
+     * FAILURE CONDITION: traction is small and decreasing under
+     * LOADING CONDITIO
+     */
+    if( (tnp1 < (small_val * job->max_traction)) && (tnp1 < tn) ){
+      cell_failure_detected++;
+    }
+  }
+
+  /* UPDATE: n <-- n+1 */
   memcpy(job->jump_n,job->jump,ndim*sizeof(double));
   memcpy(job->traction_n,job->traction,ndim*sizeof(double));
 
-  /* clear the tangent, traction and residual (assemble 0's at macroscale) */
+  /* RESET: traction, residual and tangent */
   memset(job->traction,0,ndim*sizeof(double));
   memset(job->traction_res,0,job->ndofe*sizeof(double));
   memset(job->K_00_contrib,0,job->ndofe*job->ndofe*sizeof(double));

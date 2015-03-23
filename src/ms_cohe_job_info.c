@@ -16,7 +16,7 @@ inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
   size_t result = (7*sizeof(int)
 		   + sizeof(double)
 		   + 5*ndim*sizeof(double)
-		   + sizeof(double)
+		   + 2*sizeof(double)
 		   + info->nnode*sizeof(double)
 		   + info->ndofe*sizeof(double)
 		   + (info->ndofe*info->ndofe)*sizeof(double)
@@ -41,6 +41,8 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->print_flag = 0; /* print output */
 
   info->int_wt = 0.0;
+
+  info->max_traction = info->max_jump = -1.0; /* poisoned value */
 
   /* allocate len = ndim */
   info->jump = PGFEM_calloc(ndim,sizeof(double));
@@ -138,6 +140,7 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->tim,buffer,&pos,1,sizeof(int));
   pack_data(&info->n_step,buffer,&pos,1,sizeof(int));
   pack_data(&info->max_traction,buffer,&pos,1,sizeof(double));
+  pack_data(&info->max_jump,buffer,&pos,1,sizeof(double));
 
   /* pack arrays */
   pack_data(info->jump,buffer,&pos,ndim,sizeof(double));
@@ -189,6 +192,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->tim,&pos,1,sizeof(int));
   unpack_data(buffer,&info->n_step,&pos,1,sizeof(int));
   unpack_data(buffer,&info->max_traction,&pos,1,sizeof(double));
+  unpack_data(buffer,&info->max_jump,&pos,1,sizeof(double));
 
   /* unpack arrays */
   unpack_data(buffer,info->jump,&pos,ndim,sizeof(double));

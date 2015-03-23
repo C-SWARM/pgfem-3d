@@ -44,6 +44,7 @@ extern "C" {
 			   microscale only. */
 
     double max_traction; /**< state variable. Maintained by microscale. */
+    double max_jump;  /**< state variable. Maintained by microscale. */
 
     double *shape; /**< shape function for each macro node [nnode]*/
 
