@@ -216,16 +216,13 @@ int compute_applied_traction_res(const int ndofn,
 				 double *res)
 {
   int err = 0;
-  int int_order = 1;
+  const int int_order = 1;
   for(int i=0; i<n_ste; i++){
     const SUR_TRAC_ELEM *pste = &ste[i];
 
     const ELEMENT *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
-
-    if(nne_3D==10)
-      int_order = 2;    
 
     double *x = PGFEM_calloc(nne_3D,sizeof(double));
     double *y = PGFEM_calloc(nne_3D,sizeof(double));
@@ -317,7 +314,7 @@ int compute_resultant_force(const int n_feats,
      generalized method to compute stress at an integration
      point for any element. Linear elements have constant
      stress, so can use any integration point. */
-  int int_order = 1;
+  const int int_order = 1;
 
   /* clear the force vector */
   memset(forces,0,ndim*n_feats*sizeof(double));
@@ -339,8 +336,6 @@ int compute_resultant_force(const int n_feats,
     const ELEMENT *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
-    if(nne_3D==10)
-      int_order = 2;     
 
     /* get 3D nodal coordinates */
     double *x = PGFEM_calloc(nne_3D,sizeof(double));
