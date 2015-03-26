@@ -76,6 +76,11 @@ void residuals_3f_el(double *f, const int ii, const int ndofn, const int nne, co
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
 		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1);
+		           
+void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
+               NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+		           MPI_Comm mpi_comm);
+		           		           
 void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm,int analysis);		           
 #ifdef __cplusplus

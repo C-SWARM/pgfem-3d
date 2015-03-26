@@ -1033,6 +1033,86 @@ void update_3f_state_variables_ip(int ii, int ip,
   eps[ii].el.o[5] += detJxW/volume*E[idx_2(0,1)]*2.0;    
 }  
 
+
+void update_3f_state_variables_el(const int ii,
+        const int ndofn,
+        const int nne,
+        const int npres,
+        const double *x,
+        const double *y,
+        const double *z,
+        const ELEMENT *elem,
+        const HOMMAT *hommat,
+        const NODE *node,
+        double *u,
+        const double *P,
+        double dt,
+        SIG *sig,
+        EPS *eps)
+{
+
+  const int mat = elem[ii].mat[2];
+  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));   
+  const double volume = Tetra_V(x,y,z);       			    
+  
+  const int nsd = 3;
+  const int nVol = N_VOL_TF;
+  
+  Matrix(double) F;
+  Matrix_construct_init(double,F,3,3,0.0);
+  
+  FEMLIB fe;
+  Matrix(double) xe;  
+  Matrix_construct_init(double,xe,nne,3,0.0);
+  
+  Matrix(double) Np, Nt;
+
+  for(int a=0; a<nne; a++)
+  {
+    Mat_v(xe, a+1, 1) = x[a];  
+    Mat_v(xe, a+1, 2) = y[a];  
+    Mat_v(xe, a+1, 3) = z[a];  
+  }        
+
+  int itg_order = nne;
+  if(nne==4)
+    itg_order = nne + 1; 
+    
+  Matrix_construct_init(double,Np,npres,1,0.0);
+  Matrix_construct_init(double,Nt,nVol, 1,0.0);       
+
+  FEMLIB_initialization(&fe, itg_order, 1, nne);
+  FEMLIB_set_element(&fe, xe, ii);
+    
+  for(int ip = 1; ip<=fe.nint; ip++)
+  {
+    FEMLIB_elem_basis_V(&fe, ip);  
+    FEMLIB_elem_shape_function(&fe,ip,npres,Np);
+    FEMLIB_elem_shape_function(&fe,ip,nVol, Nt);    
+    FEMLIB_update_shape_tensor(&fe, u, ndofn, F);
+              
+    double Tn = 0.0; 
+    double Pn = 0.0;
+    
+    for(int a=0; a<nVol; a++)
+      Tn += Vec_v(Nt,a+1)*eps[ii].T[a*3+0];
+    
+    for(int a=0; a<npres; a++)
+      Pn += Vec_v(Np,a+1)*P[a];
+                      
+    update_3f_state_variables_ip(ii,ip,elem,hommat,sig,eps,F.m_pdata,Pn,Tn,volume,fe.detJxW);
+
+  }
+
+  Matrix_cleanup(F);
+  
+  Matrix_cleanup(Np);  
+  Matrix_cleanup(Nt);                        
+  FEMLIB_destruct(&fe);                   
+  Matrix_cleanup(xe);  
+}
+
+
 void evaluate_PT_el(const int ii,
         const int ndofn,
         const int nne,
@@ -2025,6 +2105,78 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
 	}
 }
 
+void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
+               NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+		           MPI_Comm mpi_comm)
+{
+  const int mat = elem[0].mat[2];
+  double rho = hommat[mat].density;
+  long include_inertia = 1;
+  
+  if(fabs(rho)<1.0e-15)
+    include_inertia = 0;
+            
+  double err = 0.0;
+  
+  for (int i=0;i<ne;i++)
+  {
+
+    int nne = elem[i].toe;
+    long *nod = aloc1l (nne);
+    elemnodes (i,nne,nod,elem);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+
+    double *r_e = aloc1 (ndofe);
+
+    double *x,*y,*z;
+    x = aloc1 (nne);
+    y = aloc1 (nne);
+    z = aloc1 (nne);
+
+    long *cn = aloc1l (ndofe);
+
+    nodecoord_total(nne,nod,node,x,y,z);
+
+    // code numbers on element
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    
+    // deformation on element
+    def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    
+
+  	int nsd = 3;
+	  
+		double *u, *P;
+		u = aloc1(nne*nsd);
+		P = aloc1(npres);
+
+		for(int a=0;a<nne;a++)
+		{
+			for(int b=0; b<nsd;b++)
+			{
+				u[a*nsd+b] = r_e[a*ndofn+b];
+			}
+			if(npres==nne)  		
+  			P[a] = r_e[a*ndofn+nsd];
+		}
+    if(npres==1)
+      P[0] = eps[i].d_T[0];
+		
+    update_3f_state_variables_el(i,ndofn,nne,npres,x,y,z,elem,hommat,node,u,P,dt,sig,eps);
+
+	  free(u);
+		free(P);
+  		  	
+   	free(nod);
+   	free(cn);
+    free(x);
+    free(y);
+    free(z);  	
+  	free(r_e);
+	}
+}
+
+
 void compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
                           Matrix(double) F, double Pn)
 {
@@ -2032,19 +2184,11 @@ void compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat,
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,CI,3,3,0.0);
   Matrix_construct_init(double,devS,3,3,0.0);
-/*  
-  for(int a=0; a<9; a++)
-  {
-    if(F.m_pdata[a]<1.0e-6)
-      F.m_pdata[a] = 0.0;
-  }
-  */
-  Matrix_print(F);
+
   Matrix_AxB(C,1.0,0.0,F,1,F,0);
   double J;
   Matrix_det(F, J);
   Matrix_inv(C, CI);
-  printf("%e\n", J);
   
   int mat = elem[e].mat[2];
   double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 

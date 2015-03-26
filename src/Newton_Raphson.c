@@ -837,9 +837,9 @@ double Newton_Raphson (const int print_level,
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
-    case TF: 
-//      update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
-//            dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);                          
+    case TF:
+        update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+            dt,t,mpi_comm);                          
       break;                 	
       
     default: break;

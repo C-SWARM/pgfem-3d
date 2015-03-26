@@ -828,6 +828,25 @@ int single_scale_main(int argc,char *argv[])
       for(int i=0; i<ndofd; i++){
     	tmp_sum += nodal_forces[i];
       }
+/*      
+		int cnt = 0;
+		for(int a=0; a<ndofd; a++)
+		{
+		  if(fabs(nodal_forces[a])>1.0e-10)
+  		  cnt++;  		  
+    }
+    printf("nn on traction surface: %d\n", cnt);
+		for(int a=0; a<ndofd; a++)
+		{		  
+//  		if(fabs(nodal_forces[a])>1.0e-10)
+//       R[a] = nodal_forces[a] = 9.2/cnt;
+  		printf("%e %e, %e\n", f_defl[a], R[a], nodal_forces[a]); 			  
+       
+    } 
+*/
+
+      
+      
       MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
     		    MPI_SUM,mpi_comm);
 
@@ -1086,7 +1105,7 @@ int single_scale_main(int argc,char *argv[])
       double x = node[a].x1_fd;
       double y = node[a].x2_fd;
       double z = node[a].x3_fd;
-      if(fabs(x-48.0e-3)<1.0e-15 && fabs(y-60.0e-3)<1.0e-15 && fabs(z)<1.0e-15)
+      if(fabs(x-48.0)<1.0e-15 && fabs(y-44.0)<1.0e-15 && fabs(z)<1.0e-15)
         node_id = a;
     }
     printf("myrank=%d, node id = %d\n", myrank, node_id);
@@ -1375,7 +1394,7 @@ int single_scale_main(int argc,char *argv[])
         Matrix_construct_init(double,S,3,3,0.0);
         
         Matrix_eye(F,3);
-        Mat_v(F, 1,2) = 0.1;
+        Mat_v(F, 1,1) = 2.0;
   
         Matrix_AxB(C,1.0,0.0,F,1,F,0);
         double J;
