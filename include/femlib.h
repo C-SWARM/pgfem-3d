@@ -60,7 +60,8 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, ELEMENT *elem, NODE *node)
 void FEMLIB_set_element(FEMLIB *fe, Matrix(double) x, int eid);
 void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) N);
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip);
-void FEMLIB_update_shape_tensor(FEMLIB *fe, double *u, int ndofn, Matrix(double) F);
+void FEMLIB_update_shape_tensor(FEMLIB *fe);
+void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) F);
 double FEMLIB_elem_volume(FEMLIB *fe);
 void FEMLIB_destruct(FEMLIB *fe);
 

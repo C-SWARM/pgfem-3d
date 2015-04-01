@@ -64,15 +64,20 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
               const double *x, const double *y, const double *z, const ELEMENT *elem, const HOMMAT *hommat,
               const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double *r_e);
 
-void stiffmat_3f_w_inertia_el(double *Ks, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
+void stiffmat_3f_w_inertia_el(double *Ks, Matrix(double) Kuu_I, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
         const double *x, const double *y, const double *z, const ELEMENT *elem, const HOMMAT *hommat, 
-        const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_n, double *r_e);
+        const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_mid);
         
 void residuals_3f_el(double *f, const int ii, const int ndofn, const int nne, const int npres, const int nVol, const int nsd,
         const double *x, const double *y, const double *z, 
         const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node,
         double dt, SIG *sig, EPS *eps,  const SUPP sup, double *r_e); 
 
+void residuals_3f_w_inertia_el(double *f,const int ii,double *fuI,
+        const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
+        const double *x,const double *y,const double *z,
+        const ELEMENT *elem,const HOMMAT *hommat,const NODE *node,
+        double dt,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
 		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1);

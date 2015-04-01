@@ -489,13 +489,11 @@ double Newton_Raphson (const int print_level,
 	      MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
 	      		      eps,sig_e,hommat,d_r,rr,iter);
 	      break;		      
-	    case TF:
-	    {  
+	    case TF:	      
         update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
               dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 	      		        
 	      break;
-	    }  
       default:
 	      break;
       }
@@ -854,24 +852,41 @@ double Newton_Raphson (const int print_level,
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
       /* update previous time step values, r_n and r_n_1 from current time step values r */
-      for(long a = 0; a<nn; a++)
+    for(long a = 0; a<nn; a++)
+    {
+      for(long b = 0; b<ndofn; b++)
       {
-        for(long b = 0; b<ndofn; b++)
-        {
-          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+        r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
           
-          long id = node[a].id[b];
-          if(id>0)
-            r_n[a*ndofn + b] = r[id-1];
+        long id = node[a].id[b];
+        if(id>0)
+          r_n[a*ndofn + b] = r[id-1];
+        else
+        {
+          if(id==0)
+            r_n[a*ndofn + b] = 0.0;
           else
-          {
-            if(id==0)
-              r_n[a*ndofn + b] = 0.0;
-            else
-              r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
-          }
+            r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
         }
       }
+    }
+    if(opts->analysis_type==TF)
+    {	
+      int nVol = 1;	            
+    	for (int e=0;e<ne;e++)
+    	{
+    	  if(npres==1)
+    	  {
+     		  eps[e].d_T[1] = eps[e].d_T[0];
+     		  eps[e].d_T[2] = eps[e].d_T[1];     		  
+        }
+      	for(int a=0; a<nVol; a++)
+      	{
+      		eps[e].T[a*3+1] = eps[e].T[a*3+0];
+      		eps[e].T[a*3+2] = eps[e].T[a*3+1];      		
+      	}
+      }		  
+    }      
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     

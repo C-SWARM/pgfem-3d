@@ -828,25 +828,7 @@ int single_scale_main(int argc,char *argv[])
       for(int i=0; i<ndofd; i++){
     	tmp_sum += nodal_forces[i];
       }
-/*      
-		int cnt = 0;
-		for(int a=0; a<ndofd; a++)
-		{
-		  if(fabs(nodal_forces[a])>1.0e-10)
-  		  cnt++;  		  
-    }
-    printf("nn on traction surface: %d\n", cnt);
-		for(int a=0; a<ndofd; a++)
-		{		  
-//  		if(fabs(nodal_forces[a])>1.0e-10)
-//       R[a] = nodal_forces[a] = 9.2/cnt;
-  		printf("%e %e, %e\n", f_defl[a], R[a], nodal_forces[a]); 			  
-       
-    } 
-*/
-
-      
-      
+ 
       MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
     		    MPI_SUM,mpi_comm);
 

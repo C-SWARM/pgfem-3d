@@ -39,150 +39,14 @@
 
 static const int periodic = 0;
 
-/*
-void stiffmat_uu_el(double *Ks,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        double *r_e)
-{
-  int err = 0;
-  const int mat = elem[ii].mat[2];
-  double rho = hommat[mat].density;
-  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));  
-  
-  int ndofe = nne*ndofn;
-  
-  // make sure the stiffenss matrix contains all zeros 
-  memset(Ks,0,ndofe*ndofe*sizeof(double));
 
-  FEMLIB fe;
-  Matrix(double) xe, F, S, C, C_I;
-  double L[81]; 
-  
-  Matrix_construct_redim(double,xe,nne,3);
-  Matrix_construct_init(double,F, 3,3,0.0);
-  Matrix_construct_init(double,C, 3,3,0.0);  
-  Matrix_construct_init(double,C_I, 3,3,0.0);
-  Matrix_construct_init(double,S, 3,3,0.0);
-      
-  
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-
-  double ****ST_tensor, *ST;
-  
-  ST_tensor = aloc4(3,3,nsd,nne);
-  ST = aloc1(3*3*nsd*nne);
-  
-  double **F_mat;
-  F_mat = aloc2(3,3);    
-
-  devStressFuncPtr Stress = getDevStressFunc(0,&hommat[mat]);
-  dUdJFuncPtr DUDJ = getDUdJFunc(0,hommat);
-  
-  matStiffFuncPtr Stiffness = getMatStiffFunc(0,&hommat[mat]);
-  d2UdJ2FuncPtr D2UDJ2 = getD2UdJ2Func(0,&hommat[mat]);
-               
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);      
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip); 
-    
-    shape_tensor(nne,ndn,fe.temp_v.N_x.m_pdata,fe.temp_v.N_y.m_pdata,fe.temp_v.N_z.m_pdata,ST_tensor);    
-    shapeTensor2array(ST,CONST_4(double) ST_tensor,nne);       
-
-    def_grad_get(nne,ndofn,CONST_4(double) ST_tensor,r_e,F_mat);
-    mat2array(F.m_pdata,CONST_2(double) F_mat,3,3); 
-    
-    Matrix_AxB(C,1.0,0.0,F,1,F,0);
-		
-    double J = 0.0;
-    Matrix_det(F, J);
-    Matrix_inv(C, C_I);
-    		
-		double dUdJ = 0.0;
-		double d2UdJ2 = 0.0;            
-    Stress(C.m_pdata,&hommat[mat],S.m_pdata);
-    Stiffness(C.m_pdata,&hommat[mat],L);
-    DUDJ(J,&hommat[mat],&dUdJ);
-    D2UDJ2(J,&hommat[mat],&d2UdJ2); 
-    
-    double *CIoxCI, *CICI, *SoxS;
-    CIoxCI = (double*) PGFEM_calloc (81,sizeof(double));
-    CICI = (double*) PGFEM_calloc (81,sizeof(double));
-    SoxS = (double*) PGFEM_calloc (81,sizeof(double));
-
-    //Get the potential stuff
-    double H = 0.0;
- 
-    //compute CIoxCI, CICI, & SoxS 
-    for(int i=0; i<3; i++){
-      for(int j=0; j<3; j++){
-        for(int k=0; k<3; k++){
-	  for(int l=0; l<3; l++){
-	    CIoxCI[idx_4(i,j,k,l)] = C_I.m_pdata[idx_2(i,j)]*C_I.m_pdata[idx_2(k,l)];
-	    SoxS[idx_4(i,j,k,l)] = S.m_pdata[idx_2(i,j)]*S.m_pdata[idx_2(k,l)];
-	    CICI[idx_4(i,j,k,l)] = C_I.m_pdata[idx_2(i,k)]*C_I.m_pdata[idx_2(l,j)];
-	  }
-      }
-    }
-  }
-  
-  for(int i=0; i<81; i++){
-    L[i] = (1.0*(
-			L[i]
-			+ kappa*(J*dUdJ + J*J*d2UdJ2)*CIoxCI[i]
-			- 2.0*kappa*J*dUdJ*CICI[i])
-	    -1.0*SoxS[i]);
-  }
-
-  free(CIoxCI);
-  free(CICI);
-  free(SoxS);    
-    
-    add_3F_Kuu_ip_disp(Ks,&fe,ST,F,S,L,-1.0);        
-    
-  }
-  
-  dealoc4(ST_tensor,3,3,nsd);
-  free(ST);
-  
-  dealoc2(F_mat,3); 
-    
-  Matrix_cleanup(xe);  
-  FEMLIB_destruct(&fe);  
-  
-  Matrix_cleanup(F);
-  Matrix_cleanup(C);
-  Matrix_cleanup(C_I);
-  Matrix_cleanup(S);   
-}
-
-*/
 void stiffmat_disp_w_inertia_el(double *Ks,
          const int ii,
          const int ndofn,
-         const int nne,
+         const int nne, const int npres, const int nVol, const int nsd,
          const double *x, const double *y, const double *z,		     
          const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node, double dt,
-         SIG *sig, EPS *eps, const SUPP sup,		     
+         SIG *sig, EPS *eps, const SUPP sup, const int analysis,		     
 		     double alpha, double *r_n, double *r_e)
 {
   int err = 0;
@@ -191,9 +55,8 @@ void stiffmat_disp_w_inertia_el(double *Ks,
    
   int ndofe = nne*ndofn;
   
-  Matrix(double) Kuu_I, Kuu_K, u, u_n;
+  Matrix(double) Kuu_I, u, u_n;
   Matrix_construct_init(double,Kuu_I,ndofe,ndofe,0.0);
-  Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);
   Matrix_construct_init(double,u,ndofe,1,0.0);
   Matrix_construct_init(double,u_n,ndofe,1,0.0);      
 
@@ -206,10 +69,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
       Mat_v(u_n,I*ndofn+J+1,1) = r_n[nod[I]*ndofn + J];  
   }
    
-  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, alpha, ndofe);
-  
-  err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
-          hommat,nod,node,eps,sig,sup,u.m_pdata);
+  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, alpha, ndofe); 
   
   FEMLIB fe;
   Matrix(double) xe;
@@ -226,31 +86,57 @@ void stiffmat_disp_w_inertia_el(double *Ks,
   int itg_order = nne;
   if(nne==4)
     itg_order = nne + 1; 
-    
-               
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);      
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip); 
-    
-    for(long a = 0; a<nne; a++)
+
+  if(analysis == DISP || analysis == TF)    
+  {             
+    FEMLIB_initialization(&fe, itg_order, 1, nne);
+    FEMLIB_set_element(&fe, xe, ii);      
+    for(int ip = 1; ip<=fe.nint; ip++)
     {
-      for(long c=0; c<nne; c++)
+      FEMLIB_elem_basis_V(&fe, ip); 
+    
+      for(long a = 0; a<nne; a++)
       {
-        for(long b=1; b<=ndofn; b++)
-          Mat_v(Kuu_I,a*ndofn+b,c*ndofn+b) += rho/dt*Mat_v(fe.N,a+1,1)*Mat_v(fe.N,c+1,1)*fe.detJxW;
-      }
-	  } 
+        for(long c=0; c<nne; c++)
+        {
+          for(long b=1; b<=ndofn; b++)
+            Mat_v(Kuu_I,a*ndofn+b,c*ndofn+b) += rho/dt*Vec_v(fe.N,a+1)*Vec_v(fe.N,c+1)*fe.detJxW;
+        }
+	    } 
+    }
+    
+    Matrix_cleanup(xe);  
+    FEMLIB_destruct(&fe);
   }
-  Matrix_cleanup(xe);  
-  FEMLIB_destruct(&fe);
   
-  for(long a = 0; a<ndofe*ndofe; a++)
-      Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1-alpha)*dt*Kuu_K.m_pdata[a];
+  switch(analysis)
+  {
+    case DISP:
+    {  
+      Matrix(double) Kuu_K;
+      Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);
+  
+      err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
+                             hommat,nod,node,eps,sig,sup,u.m_pdata);
+      
+      for(long a = 0; a<ndofe*ndofe; a++)
+          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1-alpha)*dt*Kuu_K.m_pdata[a];                             
+
+      Matrix_cleanup(Kuu_K);
+      break;
+    }  
+    case TF:
+      stiffmat_3f_w_inertia_el(Ks,Kuu_I,ii,ndofn,nne,npres,nVol,nsd,x,y,z,
+                               elem,hommat,nod,node,dt,
+                               sig,eps,sup,alpha,u.m_pdata);
+                                                              
+      break;
+    default:
+      printf("Only displacement based element and three field element are supported\n");
+      break;                         
+  }              
 
   Matrix_cleanup(Kuu_I); 
-  Matrix_cleanup(Kuu_K);
   Matrix_cleanup(u); 
   Matrix_cleanup(u_n);  
 }
@@ -407,18 +293,9 @@ static int el_stiffmat(int i, /* Element ID */
   memset(lk,0, sizeof(double)*ndofe*ndofe);  
   if(include_inertia)
   {
-    switch(analysis){
-      case DISP:
-        stiffmat_disp_w_inertia_el(lk,i,ndofn, nne, x, y, z,	
-        elem,hommat,nod,node,dt,
-        sig,eps,sup,alpha,r_n,r_e);          
-        break;
-      case TF: 
-        stiffmat_3f_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x,y,z,
-        elem,hommat,nod,node,dt,
-        sig,eps,sup,alpha,r_n,r_e);
-        break;
-    } /* switch (analysis) */
+    stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
+                               elem,hommat,nod,node,dt,
+                               sig,eps,sup,analysis,alpha,r_n,r_e);          
   }
   else
   {        
@@ -437,9 +314,6 @@ static int el_stiffmat(int i, /* Element ID */
     break;
   case DISP:
     {
-//stiffmat_uu_el(lk,i,ndofn,nne,nsd,x,y,z,elem,
-//			   hommat,node,r_e);  
-    
     err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
 			   hommat,nod,node,eps,sig,sup,r_e);
 			  }

@@ -271,18 +271,21 @@ void FEMLIB_elem_basis_V(FEMLIB *fe, long ip)
   fe->detJxW = fe->detJ*wt;
 } 
 
-void FEMLIB_update_shape_tensor(FEMLIB *fe, double *u, int ndofn, Matrix(double) F)
+void FEMLIB_update_shape_tensor(FEMLIB *fe)
 {  
   shape_tensor(fe->nne,fe->nsd,fe->temp_v.N_x.m_pdata,
                                fe->temp_v.N_y.m_pdata,
                                fe->temp_v.N_z.m_pdata,fe->ST_tensor);
   shapeTensor2array(fe->ST,CONST_4(double) fe->ST_tensor,fe->nne);
-  
+}
+
+void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) F)
+{
   double **F_mat;  
   F_mat = aloc2(3,3);                 
   def_grad_get(fe->nne,ndofn,CONST_4(double) fe->ST_tensor,u,F_mat);
   mat2array(F.m_pdata,CONST_2(double) F_mat,3,3);
-  dealoc2(F_mat,3);
+  dealoc2(F_mat,3);  
 }
 
 double FEMLIB_elem_volume(FEMLIB *fe)
