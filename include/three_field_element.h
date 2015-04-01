@@ -64,7 +64,7 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
               const double *x, const double *y, const double *z, const ELEMENT *elem, const HOMMAT *hommat,
               const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double *r_e);
 
-void stiffmat_3f_w_inertia_el(double *Ks, Matrix(double) Kuu_I, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
+void stiffmat_3f_w_inertia_el(double *Ks, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
         const double *x, const double *y, const double *z, const ELEMENT *elem, const HOMMAT *hommat, 
         const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_mid);
         
@@ -73,7 +73,7 @@ void residuals_3f_el(double *f, const int ii, const int ndofn, const int nne, co
         const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node,
         double dt, SIG *sig, EPS *eps,  const SUPP sup, double *r_e); 
 
-void residuals_3f_w_inertia_el(double *f,const int ii,double *fuI,
+void residuals_3f_w_inertia_el(double *f,const int ii,
         const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
         const double *x,const double *y,const double *z,
         const ELEMENT *elem,const HOMMAT *hommat,const NODE *node,

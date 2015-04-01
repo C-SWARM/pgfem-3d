@@ -72,19 +72,19 @@ void DISP_resid_w_inertia_el(double *f,
     Matrix_init(du, 0.0);  
     for(long a = 0; a<nne; a++)
     {                              
-      for(long b = 0; b<ndofn; b++)
+      for(long b = 0; b<3; b++)
       {
         long id = a*ndofn + b;
-        Mat_v(du,b+1,1) += Mat_v(fe.N,a+1,1)*(r_2[id]-2.0*r_1[id]+r_0[id]);
+        Vec_v(du,b+1) += Vec_v(fe.N,a+1)*(r_2[id]-2.0*r_1[id]+r_0[id]);
       }
     }
     
 	  for(long a = 0; a<nne; a++)
 	  {
-      for(long b=0; b<ndofn; b++)
+      for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-	      f[id] += rho/dt*Mat_v(fe.N,a+1,1)*Mat_v(du,b+1,1)*fe.detJxW;	      	      
+	      f[id] += rho/dt*Vec_v(fe.N,a+1)*Vec_v(du,b+1)*fe.detJxW;	      	      
 	    }
 	  }
 	          
@@ -109,6 +109,8 @@ int residuals_w_inertia_el(double *fe, int i,
 	double *r0      = aloc1(ndofe);
 	double *r0_     = aloc1(ndofe); 	
 	double *f_i     = aloc1(ndofe);
+	memset(fe, 0, sizeof(double)*ndofe);
+	memset(f_i, 0, sizeof(double)*ndofe);
 		
 	for (long I=0;I<nne;I++)
 	{
@@ -145,14 +147,22 @@ int residuals_w_inertia_el(double *fe, int i,
 	      
 	    break;
 	  }  
-	  case TF:	    
+	  case TF:
+	  {  
+      double *f_n = aloc1(ndofe);	    
 	    DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha);
-	    residuals_3f_w_inertia_el(fe,i,f_i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
+	    residuals_3f_w_inertia_el(f_n,i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
 	                              dt,sig,eps,alpha,r_n_a,r_n_1_a);
+	                              
+	    for(long a = 0; a<ndofe; a++)
+	      fe[a] = -f_i[a] + f_n[a];
+	      
+      free(f_n);	      	                              
 	    break;
+	  }  
     default:
       printf("Only displacement based element and three field element are supported\n");
-  	  break;    		  	    
+  	  break;
   }
 
 	free(r_n_a);

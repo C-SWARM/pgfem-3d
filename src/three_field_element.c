@@ -295,8 +295,8 @@ void resid_w_inertia_Ru_ip(double *fu,
           3,3,3,1.0,F,3,F,3,0.0,C,3);
   
   inverse(C,3,C_I);
-  for(int a = 0; a<9; a++)
-    S_temp[a] = Jn*Pn*C_I[a] + S[a];
+//  for(int a = 0; a<9; a++)
+//    S_temp[a] = Jn*Pn*C_I[a] + S[a];
 //  cblas_daxpy(9,Jn*Pn,C_I,1,S,1);
   
   for(int a=0; a<nne; a++)
@@ -305,20 +305,17 @@ void resid_w_inertia_Ru_ip(double *fu,
     {
       const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd)];
       
-      
-      
       // AA = F'Grad(del u);
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
               3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
-  //    symmetric_part(sAA,AA,3);
-      // sAA:S
-//      double sAAS = cblas_ddot(9,sAA,1,S,1);            
-      // C_IFdu = C_I:AA
-//      double C_IFdu = cblas_ddot(9,C_I,1,AA,1);      
+      symmetric_part(sAA,AA,3);
+      //sAA:S
+      double sAAS = cblas_ddot(9,sAA,1,S,1);            
+      //C_IFdu = C_I:AA
+      double C_IFdu = cblas_ddot(9,C_I,1,AA,1);      
             
-//      fu[a*nsd + b] += jj*wt*(sAAS + Jn*Pn*C_IFdu);
-fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
-      
+      fu[a*nsd + b] += jj*wt*(sAAS + Jn*Pn*C_IFdu);
+//fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
       
     }
   }
@@ -329,7 +326,6 @@ fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
   free(C_I);
   free(S_temp);
 }
-
 void resid_w_inertia_Rt_ip(double *ft, int nVol, double jj, double wt, double *Nt, double Pn, double Up)
 {
 
@@ -580,7 +576,6 @@ void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, in
 }
 
 void stiffmat_3f_w_inertia_el(double *Ks,
-        Matrix(double) Kuu_I,
         const int ii,
         const int ndofn,
         const int nne,
@@ -716,19 +711,7 @@ void stiffmat_3f_w_inertia_el(double *Ks,
     Matrix_AeqB(Ktp,1.0,Kpt);
     Matrix_trans(Ktp);                                            				
   } 
-  
-  for(int a=0; a<nne; a++)
-  {
-    for(int b=1; b<=nsd; b++)
-    {
-      for(int c=0; c<nne; c++)
-      {
-        for(int d=1; d<=nsd; d++)
-          Mat_v(Kuu, a*nsd+b, c*nsd+d) -= Mat_v(Kuu_I, a*nsd+b, c*nsd+d);         
-      }
-    }
-  }
-          
+            
   condense_K_out(Ks,nne,nsd,npres,nVol,
                  Kuu.m_pdata,Kut.m_pdata,Kup.m_pdata,
                  Ktu.m_pdata,Ktt.m_pdata,Ktp.m_pdata,
@@ -914,7 +897,6 @@ void residuals_3f_el(double *f,
 
 void residuals_3f_w_inertia_el(double *f,
         const int ii,
-        double *fuI,
         const int ndofn,
         const int nne,
         const int npres,
@@ -1078,7 +1060,7 @@ void residuals_3f_w_inertia_el(double *f,
   }
     	
   for(int a=0; a<nne*nsd; a++)
-  	fu.m_pdata[a] = -fuI[a] -(1.0 - alpha)*dt*fu2.m_pdata[a] - alpha*dt*fu1.m_pdata[a];  	
+  	fu.m_pdata[a] = -(1.0 - alpha)*dt*fu2.m_pdata[a] - alpha*dt*fu1.m_pdata[a];  	
 
   for(int a=0; a<nVol; a++)
   	ft.m_pdata[a] = -(1.0 - alpha)*dt*ft2.m_pdata[a] - alpha*dt*ft1.m_pdata[a];
@@ -1088,7 +1070,7 @@ void residuals_3f_w_inertia_el(double *f,
   
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
                     Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);  
-
+                                        
   free(P1); free(P2); free(u1); free(u2);
   Matrix_cleanup(F1);
   Matrix_cleanup(F2);
@@ -1117,7 +1099,6 @@ void residuals_3f_w_inertia_el(double *f,
   Matrix_cleanup(Kup);
   Matrix_cleanup(Ktp);
 }
-
 
 void update_3f_state_variables_ip(int ii, int ip, 
         const ELEMENT *elem,
@@ -2140,7 +2121,6 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
 		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1)
 {
-  printf("this is running\n");
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
   long include_inertia = 1;

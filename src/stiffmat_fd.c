@@ -54,9 +54,10 @@ void stiffmat_disp_w_inertia_el(double *Ks,
   double rho = hommat[mat].density;  
    
   int ndofe = nne*ndofn;
-  
-  Matrix(double) Kuu_I, u, u_n;
+
+  Matrix(double) Kuu_K,Kuu_I, u, u_n;
   Matrix_construct_init(double,Kuu_I,ndofe,ndofe,0.0);
+  Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);  
   Matrix_construct_init(double,u,ndofe,1,0.0);
   Matrix_construct_init(double,u_n,ndofe,1,0.0);      
 
@@ -112,31 +113,27 @@ void stiffmat_disp_w_inertia_el(double *Ks,
   switch(analysis)
   {
     case DISP:
-    {  
-      Matrix(double) Kuu_K;
-      Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);
-  
       err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
                              hommat,nod,node,eps,sig,sup,u.m_pdata);
       
-      for(long a = 0; a<ndofe*ndofe; a++)
-          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1-alpha)*dt*Kuu_K.m_pdata[a];                             
+      break;
 
-      Matrix_cleanup(Kuu_K);
-      break;
-    }  
     case TF:
-      stiffmat_3f_w_inertia_el(Ks,Kuu_I,ii,ndofn,nne,npres,nVol,nsd,x,y,z,
+      stiffmat_3f_w_inertia_el(Kuu_K.m_pdata,ii,ndofn,nne,npres,nVol,nsd,x,y,z,
                                elem,hommat,nod,node,dt,
-                               sig,eps,sup,alpha,u.m_pdata);
-                                                              
+                               sig,eps,sup,alpha,u.m_pdata);                                                              
       break;
+      
     default:
       printf("Only displacement based element and three field element are supported\n");
       break;                         
   }              
 
+  for(long a = 0; a<ndofe*ndofe; a++)
+    Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1-alpha)*dt*Kuu_K.m_pdata[a];                                
+
   Matrix_cleanup(Kuu_I); 
+  Matrix_cleanup(Kuu_K);  
   Matrix_cleanup(u); 
   Matrix_cleanup(u_n);  
 }
