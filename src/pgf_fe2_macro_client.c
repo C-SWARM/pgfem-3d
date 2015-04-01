@@ -391,7 +391,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 
   /* compute total number of jobs and set maximum number of jobs per
      server */
-  MPI_Allreduce(MPI_IN_PLACE,&Gn_jobs,1,MPI_INT,MPI_SUM,mpi_comm->macro);
+  MPI_Allreduce(MPI_IN_PLACE,&Gn_jobs,1,MPI_LONG,MPI_SUM,mpi_comm->macro);
   client->n_jobs_glob = Gn_jobs;
   client->n_jobs_max = n_jobs_max;
 
