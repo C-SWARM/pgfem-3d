@@ -35,6 +35,7 @@ AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
  		fi
 ])
 AC_PROG_CC_STDC
+AC_PROG_FC
 AC_PROG_RANLIB
 
 # Checks for libraries.
