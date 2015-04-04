@@ -17,7 +17,7 @@ HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 # Compressed VTK I/O
 VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
 VTK_IO_incl	= -I$(VTK_IO_dir)/include
-VTK_IO_lib	= -L$(VTK_IO_dir)/lib -lPGFem3D_to_VTK
+VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
 
 # VTK
 VTK_dir		= /opt/crc/vtk/5.10.1/gcc
