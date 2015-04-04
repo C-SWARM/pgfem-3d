@@ -1,0 +1,8 @@
+How to run:
+
+1. set environment variable for PGFem3D directory and external libraries
+setenv TEST_DIR ${HOME}/code_development/pgfem3d/pgfem3d
+setenv PGFEM3D_EXT_LIB ${HOME}/lib/external
+
+2. make
+3. ./run.bat
