@@ -1079,19 +1079,6 @@ int single_scale_main(int argc,char *argv[])
         
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = 0;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int node_id = -1;    
-    for(int a = 0; a<nn; a++)
-    {
-      double x = node[a].x1_fd;
-      double y = node[a].x2_fd;
-      double z = node[a].x3_fd;
-      if(fabs(x-48.0)<1.0e-15 && fabs(y-44.0)<1.0e-15 && fabs(z)<1.0e-15)
-        node_id = a;
-    }
-    printf("myrank=%d, node id = %d\n", myrank, node_id);
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
     alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
     for(long a = 0; a<nn; a++)
@@ -1351,63 +1338,6 @@ int single_scale_main(int argc,char *argv[])
       tim++;
     }/* end while */
     
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
-    if(node_id>=0)
-    { 
-      double disp = r_n[node_id*ndofn + 0]*r_n[node_id*ndofn + 0] 
-                  + r_n[node_id*ndofn + 1]*r_n[node_id*ndofn + 1];
-      disp = sqrt(disp);             
-      printf("myrank=%d, node id = %d, disp = %e \n", myrank, node_id, disp);  
-      
-    }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////    
-    {
-      double *GS = aloc1(9);    
-      compute_stress(GS,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, options.analysis_type);            
-      
-      if(myrank==0)
-      {
-        
-        Matrix(double) F,S,C,CI,devS;
-        Matrix_construct_init(double,F,3,3,0.0);
-        Matrix_construct_init(double,C,3,3,0.0);  
-        Matrix_construct_init(double,CI,3,3,0.0);  
-        Matrix_construct_init(double,devS,3,3,0.0);        
-        Matrix_construct_init(double,S,3,3,0.0);
-        
-        Matrix_eye(F,3);
-        Mat_v(F, 1,1) = 2.0;
-  
-        Matrix_AxB(C,1.0,0.0,F,1,F,0);
-        double J;
-        Matrix_det(F, J);
-        Matrix_inv(C, CI);
-        
-        int mat = elem[0].mat[2];
-        double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 
-      
-        devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-        Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
-      
-        dUdJFuncPtr DUDJ = getDUdJFunc(1,&hommat[mat]);
-        double dUdJ = 0.0;
-        DUDJ(J,&hommat[mat],&dUdJ);
-        double kappaJdUdJ = kappa*J*dUdJ;  
-        Matrix_AplusB(S,1.0,devS,kappaJdUdJ,CI);                     
-        
-        printf("computed stress\n");
-        for(int a=0; a<9; a++)
-          printf("%e %e\n", GS[a], S.m_pdata[a]);          
-
-        Matrix_cleanup(F);
-        Matrix_cleanup(C);
-        Matrix_cleanup(CI);
-        Matrix_cleanup(devS);
-        Matrix_cleanup(S);
-          
-      }      
-    }
-
     /*=== FREE MEMORY ===*/
     free(sup_check);
     fclose (in1);
