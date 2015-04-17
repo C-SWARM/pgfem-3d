@@ -378,7 +378,17 @@ int single_scale_main(int argc,char *argv[])
   int nproc = 0;
 
   /*=== END INITIALIZATION === */
-  MPI_Init (&argc,&argv);
+
+  int flag_MPI_Init;
+  MPI_Initialized(&flag_MPI_Init);
+  if(!flag_MPI_Init)
+  {
+    if(myrank==0)
+      printf("MPI initialization\n");  
+
+    MPI_Init (&argc,&argv);  
+  }
+
   MPI_Comm_rank (mpi_comm,&myrank);
   MPI_Comm_size (mpi_comm,&nproc);
   MPI_Get_processor_name (processor_name,&namelen);
@@ -1110,7 +1120,7 @@ int single_scale_main(int argc,char *argv[])
 
       if (myrank == 0){
 	PGFEM_printf("\nFinite deformations time step %ld) "
-	       " Time %f | dt = %10.10f\n",
+	       " Time %e | dt = %e\n",
 	       tim,times[tim+1],dt);
       }
 
@@ -1434,6 +1444,16 @@ int single_scale_main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize(); 
+  
+  int flag_MPI_finalized;
+  MPI_Finalized(&flag_MPI_finalized);
+  if(!flag_MPI_finalized)
+  {
+    if(myrank==0)
+      printf("MPI finalizing\n");  
+
+    MPI_Finalize();  
+  }
+    
   return(0);
 }

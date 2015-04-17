@@ -179,7 +179,7 @@ int load_vec_node_defl (double *f,
       int nsd = 3;
       int nVol = 1;
       stiffmat_3f_el(lk,sup->lepd[i],ndofn,nne,npres,nVol,nsd,
-              x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+              x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0, r_e);
         break;     
     }       
     default:

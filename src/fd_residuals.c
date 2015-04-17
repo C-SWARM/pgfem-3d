@@ -21,157 +21,11 @@
 #include "index_macros.h"
 #include "def_grad.h"
 #include "mkl_cblas.h"
-#include "femlib.h"
+#include "dynamics.h"
 
 #define ndn 3
 #define N_VOL_TF 1
-
-void DISP_resid_w_inertia_el(double *f,
-         const int ii,
-         const int ndofn,
-         const int nne,
-         const double *x,
-         const double *y,
-         const double *z,		     
-         const ELEMENT *elem,
-         const HOMMAT *hommat,
-		     const NODE *node, double dt, double t,
-		     double *r_2, double* r_1, double *r_0, double alpha)
-{
-  const int mat = elem[ii].mat[2];
-  double rho = hommat[mat].density;
-  int ndofe = nne*ndofn;
-    
-  /* make sure the f vector contains all zeros */
-  memset(f,0,ndofe*sizeof(double));
-  
-  FEMLIB fe;
-  Matrix(double) xe, du;
-  
-  Matrix_construct_redim(double,xe,nne,3);
-  Matrix_construct_redim(double,du,3,1);  
-  
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-    
-               
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);      
-  for(int a = 1; a<=fe.nint; a++)
-  {
-    FEMLIB_elem_basis_V(&fe, a); 
-
-    Matrix_init(du, 0.0);  
-    for(long a = 0; a<nne; a++)
-    {                              
-      for(long b = 0; b<3; b++)
-      {
-        long id = a*ndofn + b;
-        Vec_v(du,b+1) += Vec_v(fe.N,a+1)*(r_2[id]-2.0*r_1[id]+r_0[id]);
-      }
-    }
-    
-	  for(long a = 0; a<nne; a++)
-	  {
-      for(long b=0; b<3; b++)
-	    {
-	      long id = a*ndofn + b;
-	      f[id] += rho/dt*Vec_v(fe.N,a+1)*Vec_v(du,b+1)*fe.detJxW;	      	      
-	    }
-	  }
-	          
-  }
-        
-  Matrix_cleanup(xe);  
-  Matrix_cleanup(du); 
-  FEMLIB_destruct(&fe);
-}
-
-int residuals_w_inertia_el(double *fe, int i, 
-			int nne, long ndofn, long npres, long nVol,long ndofe, double *r_e,                               
-		  NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig,
-		  long* nod, long *cn, double *x, double *y, double *z,                                
-		  double dt, double t, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1)
-{
-	int nsd = 3;
-	int err = 0;
-	
-  double *r_n_a   = aloc1(ndofe);
-  double *r_n_1_a = aloc1(ndofe);   			
-	double *r0      = aloc1(ndofe);
-	double *r0_     = aloc1(ndofe); 	
-	double *f_i     = aloc1(ndofe);
-	memset(fe, 0, sizeof(double)*ndofe);
-	memset(f_i, 0, sizeof(double)*ndofe);
-		
-	for (long I=0;I<nne;I++)
-	{
-	  for(long J=0; J<nsd; J++)
-	  {
-	     r0[I*ndofn + J] =   r_n[nod[I]*ndofn + J];
-	    r0_[I*ndofn + J] = r_n_1[nod[I]*ndofn + J];            
-	  }
-	}
-		
-	mid_point_rule(r_n_1_a,r0_,r0,  alpha, ndofe); 
-	mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe);
-	
-  switch(opts->analysis_type)
-  {   		
-    case DISP:
-    {   
-	    double *f_n_a   = aloc1(ndofe);
-	    double *f_n_1_a = aloc1(ndofe);      
-       
-	    err =  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
-	         hommat,nod,node,eps,sig,sup,r_n_1_a);                                             
-	       
-	    err =  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
-	        hommat,nod,node,eps,sig,sup,r_n_a);
-      
-      DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha); 
-	
-	    for(long a = 0; a<ndofe; a++)
-	      fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
-	      
-	    free(f_n_a);
-	    free(f_n_1_a);		      
-	      
-	    break;
-	  }  
-	  case TF:
-	  {  
-      double *f_n = aloc1(ndofe);	    
-	    DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha);
-	    residuals_3f_w_inertia_el(f_n,i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
-	                              dt,sig,eps,alpha,r_n_a,r_n_1_a);
-	                              
-	    for(long a = 0; a<ndofe; a++)
-	      fe[a] = -f_i[a] + f_n[a];
-	      
-      free(f_n);	      	                              
-	    break;
-	  }  
-    default:
-      printf("Only displacement based element and three field element are supported\n");
-  	  break;
-  }
-
-	free(r_n_a);
-	free(r_n_1_a);	
-	free(r0);
-	free(r0_);
-	free(f_i);	
-	return err;
-} 
+#define MIN_DENSITY 1.0e-16
 
 int fd_residuals (double *f_u,
 		  long ne,
@@ -204,7 +58,7 @@ int fd_residuals (double *f_u,
   double rho = hommat[mat].density;
   long include_inertia = 1;
   
-  if(fabs(rho)<1.0e-15)
+  if(fabs(rho)<MIN_DENSITY)
     include_inertia = 0;
    
 /* decision end*/   
@@ -301,13 +155,37 @@ int fd_residuals (double *f_u,
 			     nod,node,hommat,eps,sig,r_e);
       break;
     case DISP:
+    {
+      double *bf = aloc1(ndofe);
+	    memset(bf, 0, sizeof(double)*ndofe);
+      DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);         
       err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
 			   hommat,nod,node,eps,sig,sup,r_e);
+			   
+	    for(long a = 0; a<ndofe; a++)
+	      fe[a] += -bf[a];			        
+
+      dealoc1(bf);			   
       break;
+    }  
     case TF:
-       residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
-			       x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);			       			       
-			break;                      
+    { 
+	    double *bf = aloc1(ndofe);
+	    memset(bf, 0, sizeof(double)*ndofe);
+      DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t); 
+
+//      residuals_3f_w_inertia_el(fe,i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
+//	                                dt,sig,eps,-1.0,r_e,r_e);
+
+
+      residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
+			       x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+	    for(long a = 0; a<ndofe; a++)
+	      fe[a] += -bf[a];			        
+
+      dealoc1(bf);
+			break;
+		}	
     default:
       err = resid_on_elem (i,ndofn,nne,nod,elem,node,matgeom,
 			   hommat,x,y,z,eps,sig,r_e,npres,

@@ -70,6 +70,8 @@ all:
 	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o post_processing.o $(OBJ_TEST) $(LIBS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) tension_pressure.c 		
 	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o post_processing.o $(OBJ_TEST) $(LIBS)		
+	$(CC) -c $(INCLUDES) $(CFLAGS) UQ_study.c 		
+	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o post_processing.o $(OBJ_TEST) $(LIBS)	
  							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure
