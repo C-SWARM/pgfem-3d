@@ -81,14 +81,17 @@ static const int ndim = 3;
 #include "PGFem3D_to_VTK.hpp"
 #define SAVE_RESTART_FILE 1
 
+
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
 {
   int err = 0;
   char filename[1024];
+  
   sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
   err += read_VTK_file(filename, u0);      
   sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
   err += read_VTK_file(filename, u1);
+    
   return err;
 }      
 
@@ -107,9 +110,66 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, dou
 }
 #endif
 
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+int write_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
+{
+  
+  char restart_path[1024];
+  sprintf(restart_path, "%s/restart/STEP_%.5d", opts->opath,stepno);
+                
+  if(make_path(restart_path,DIR_MODE) != 0)
+  {
+    PGFEM_printf("Directory (%s) not created!\n",restart_path);
+    abort();                   
+  }  
+ 
+  char filename[1024];
+  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
+  FILE *fp = fopen(filename,"w");
+
+  if(fp == NULL)
+  {    
+    printf("Fail to open file [%s]. finishing\n", filename);
+    exit(0);  
+  }
+  
+  for(int a=0; a<nodeno; a++)
+  {
+    for(int b=0; b<nsd; b++)
+      fprintf(fp, "%e %e", u0[a*nsd + b], u1[a*nsd + b]);
+    
+    fprintf(fp, "\n");    
+  }
+  
+  fclose(fp);
+  return 0;
+}
+
+
+int read_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
 {
  
+  char filename[1024];
+  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
+  FILE *fp = fopen(filename,"r");
+
+  if(fp == NULL)
+  {    
+    printf("Fail to open file [%s]. finishing\n", filename);      
+    exit(0);  
+  }
+  
+  for(int a=0; a<nodeno; a++)
+  {
+    for(int b=0; b<nsd; b++)
+      fscanf(fp, "%lf %lf", u0+a*nsd + b, u1+a*nsd + b);    
+  }
+  
+  fclose(fp);
+  return 0;
+}
+
+double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+{
   char filename[1024];
   char line[1024];
   double alpha = 0.5;
@@ -134,7 +194,13 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   }
   
   if(*restart>0)
-    read_initial_from_VTK(opts, myrank, restart, u0, u1);
+  { 
+    int nsd = 3;
+    if(opts->analysis_type==DISP)
+      read_restart_disp(u0, u1, opts, myrank, nodeno, nsd, *restart);
+    else
+      read_initial_from_VTK(opts, myrank, restart, u0, u1);
+  } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
@@ -383,9 +449,6 @@ int single_scale_main(int argc,char *argv[])
   MPI_Initialized(&flag_MPI_Init);
   if(!flag_MPI_Init)
   {
-    if(myrank==0)
-      printf("MPI initialization\n");  
-
     MPI_Init (&argc,&argv);  
   }
 
@@ -1302,23 +1365,37 @@ int single_scale_main(int argc,char *argv[])
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////                          
 // this is only for the restart
-            if(SAVE_RESTART_FILE)
-            {
-              for(long a = 0; a<nn; a++)
-              {              
-                for(long b = 0; b<ndofn; b++)
-                {
-                  long id = node[a].id[b];
-                  if(id>0)
-                    r_n_dof[id-1] = r_n[a*ndofn + b];
+              if(SAVE_RESTART_FILE)
+              {
+                for(long a = 0; a<nn; a++)
+                {              
+                  for(long b = 0; b<ndofn; b++)
+                  {
+                    long id = node[a].id[b];
+                    if(id>0)
+                      r_n_dof[id-1] = r_n_1[a*ndofn + b];
+                  }
                 }
-              }              
-              char restart_path[1024];
-              sprintf(restart_path, "%s/restart", options.opath);
-              VTK_print_vtu(restart_path,options.ofname,tim,
-                    myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
-                    &options);                
-            } 
+                              
+                char restart_path[1024];
+                sprintf(restart_path, "%s/restart", options.opath);
+                
+                if(options.analysis_type==DISP)
+                {    
+                  if(make_path(restart_path,DIR_MODE) != 0)
+                  {
+                    PGFEM_printf("Directory (%s) not created!\n",restart_path);
+                    abort();                   
+                  }
+                  write_restart_disp(r_n_1, r_n, &options, myrank, nn, ndofn, tim);
+                }                
+                else
+                {
+                  VTK_print_vtu(restart_path,options.ofname,tim,
+                      myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
+                      &options);
+                }                
+              } 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
