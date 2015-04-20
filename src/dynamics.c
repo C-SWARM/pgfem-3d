@@ -6,7 +6,13 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
-#include "../verification_MMS/MMS.h"
+
+void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
+{
+  b[0] = 0.0;
+  b[1] = 0.0;
+  b[2] = 0.0;
+}
 
 void stiffmat_disp_w_inertia_el(double *Ks,
          const int ii,
