@@ -122,7 +122,6 @@ three_field_element.c \
 femlib.c \
 macro_micro_main.c \
 main.c \
-MMS.c \
 dynamics.c \
 super_main.c
 
