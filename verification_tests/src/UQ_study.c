@@ -32,7 +32,7 @@ int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
   return err;
 }      
 
-int change_material_properties(int argc, char **argv)
+int change_material_properties(int argc, char **argv, char *filename_out)
 {
   /*=== END INITIALIZATION === */
   
@@ -46,6 +46,9 @@ int change_material_properties(int argc, char **argv)
   {  
     FILE *fp_mat = fopen("material_properties.in", "r");
     double E;
+    char line[1024];
+    fgets(line, 1024, fp_mat);
+        
     fscanf(fp_mat, "%lf", &E);
     fclose(fp_mat);
   
@@ -78,13 +81,15 @@ int change_material_properties(int argc, char **argv)
     copy_filename(options.ifname, filename);
       
     sprintf(filename_symbol,"%s/../%s.out.header.symbol",options.ipath,filename);
-    sprintf(filename_header,"%s/../%s.out.header",       options.ipath,filename);    
+    sprintf(filename_header,"%s/../%s.out.header",       options.ipath,filename);
+    sprintf(filename_out, "%s/../%s.out.header", options.opath,filename);
+    sprintf(filename_out,"%s/%s_macro.out.%d",options.opath,options.ofname,0);
 
     sprintf(system_cmd, "sed -e \"s|Exx|%e|\" -e \"s|C01|%e|\" -e \"s|C10|%e|\" -e \"s|mu|%e|\"  -e \"s|nu|%f|\" %s > %s", 
                                     E,               C01,             C10,             mu,              nu, filename_symbol, filename_header);
                                     
     system(system_cmd);
-    sprintf(system_cmd_meshing, "./makeset.pl -np %d", nprocs);
+    sprintf(system_cmd_meshing, "./gen_meshes.pl -f %s -np %d", filename, nprocs);
     system(system_cmd_meshing);
 
   }  
@@ -110,7 +115,32 @@ int main(int argc, char **argv)
   if(!flag_MPI_Init)
     MPI_Init (&argc,&argv);  
 
-  err += change_material_properties(argc,argv);
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;    
+  int myrank = 0;
+  int nprocs = 0;
+  MPI_Comm_rank(mpi_comm, &myrank); 
+  
+  char filename_out[1024];
+  err += change_material_properties(argc,argv,filename_out);
   err += single_scale_main(argc,argv_4func);
+  
+  if(myrank==0)
+  {  
+    FILE *fp_in = fopen(filename_out, "r");
+    char line[1024];
+    double stress;
+    fgets(line, 1024, fp_in);
+    fgets(line, 1024, fp_in);
+    fgets(line, 1024, fp_in);
+    fgets(line, 1024, fp_in);
+    fgets(line, 1024, fp_in);
+    sscanf(line, "%lf", &stress);
+    fclose(fp_in);
+    
+    FILE *fp_out = fopen("stress.out", "w");
+    fprintf(fp_out, "%e\n", stress);
+    fclose(fp_out);
+  }
+    
   return err;
 }
