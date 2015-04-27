@@ -46,14 +46,18 @@ int change_material_properties(int argc, char **argv, char *filename_out)
   {  
     FILE *fp_mat = fopen("material_properties.in", "r");
     double E;
+    double xi;
+    double sigma = 0.25;
+    double E0 = 100.e+9;
     char line[1024];
     fgets(line, 1024, fp_mat);
         
-    fscanf(fp_mat, "%lf", &E);
+    fscanf(fp_mat, "%lf", &xi);
     fclose(fp_mat);
   
-    printf("%e is read\n", E);
-  
+    printf("%e is read\n", xi);
+    //E = E0+E0*sigma*xi;
+    E=xi;
     PGFem3D_opt options;
 
     if (argc <= 2)
@@ -87,9 +91,9 @@ int change_material_properties(int argc, char **argv, char *filename_out)
 
     sprintf(system_cmd, "sed -e \"s|Exx|%e|\" -e \"s|C01|%e|\" -e \"s|C10|%e|\" -e \"s|mu|%e|\"  -e \"s|nu|%f|\" %s > %s", 
                                     E,               C01,             C10,             mu,              nu, filename_symbol, filename_header);
-                                    
-    system(system_cmd);
-    sprintf(system_cmd_meshing, "./gen_meshes.pl -f %s -np %d", filename, nprocs);
+    printf("%s is done.\n", system_cmd);                               
+    system(system_cmd);    
+    sprintf(system_cmd_meshing, "cd %s/..; gen_meshes.pl -f %s -np %d", options.ipath, filename, nprocs);
     system(system_cmd_meshing);
 
   }  
@@ -128,17 +132,20 @@ int main(int argc, char **argv)
   {  
     FILE *fp_in = fopen(filename_out, "r");
     char line[1024];
-    double stress;
+    double stress[6];
     fgets(line, 1024, fp_in);
     fgets(line, 1024, fp_in);
     fgets(line, 1024, fp_in);
     fgets(line, 1024, fp_in);
     fgets(line, 1024, fp_in);
-    sscanf(line, "%lf", &stress);
+    
+    sscanf(line, "%lf %lf %lf %lf %lf %lf", 
+                  stress+0, stress+1, stress+2,
+                  stress+3, stress+4, stress+5);
     fclose(fp_in);
     
     FILE *fp_out = fopen("stress.out", "w");
-    fprintf(fp_out, "%e\n", stress);
+    fprintf(fp_out, "%e\n", stress[5]);
     fclose(fp_out);
   }
     
