@@ -6,6 +6,7 @@
 #include "post_processing.h"
 #include "PGFem3D_to_VTK.hpp"
 #include <stdlib.h>
+#include <unistd.h>
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
@@ -45,19 +46,26 @@ int change_material_properties(int argc, char **argv, char *filename_out)
   if(myrank==0)
   {  
     FILE *fp_mat = fopen("material_properties.in", "r");
+    int matno = 0;
     double E;
-    double xi;
     double sigma = 0.25;
     double E0 = 100.e+9;
     char line[1024];
     fgets(line, 1024, fp_mat);
-        
-    fscanf(fp_mat, "%lf", &xi);
+    
+    sscanf(line, "%d", &matno);
+
+    printf("material properties to be read: %d\n", matno);      
+    
+    double *mat = (double *) malloc(matno*sizeof(double));
+    for(int a=0; a<matno; a++)
+    {
+      fgets(line, 1024, fp_mat);    
+      sscanf(line, "%lf", mat+a);
+      printf("%d: %e\n", a, mat[a]);            
+    }
     fclose(fp_mat);
   
-    printf("%e is read\n", xi);
-    //E = E0+E0*sigma*xi;
-    E=xi;
     PGFem3D_opt options;
 
     if (argc <= 2)
@@ -68,35 +76,53 @@ int change_material_properties(int argc, char **argv, char *filename_out)
       exit(0);
     }
     
-    double nu = 0.25;
-    double mu = E/2.0/(1.0+nu);
-    double C01 = 0.5*mu;
-    double C10 = 0.0;
-    
     set_default_options(&options);
     re_parse_command_line(myrank,2,argc,argv,&options);
-
     char filename[1024];  
     char filename_symbol[1024];
     char filename_header[1024];    
-    char system_cmd[2048];
+    char system_cmd[4096];
     char system_cmd_meshing[2048];    
    
     copy_filename(options.ifname, filename);
-      
     sprintf(filename_symbol,"%s/../%s.out.header.symbol",options.ipath,filename);
     sprintf(filename_header,"%s/../%s.out.header",       options.ipath,filename);
     sprintf(filename_out, "%s/../%s.out.header", options.opath,filename);
     sprintf(filename_out,"%s/%s_macro.out.%d",options.opath,options.ofname,0);
 
-    sprintf(system_cmd, "sed -e \"s|Exx|%e|\" -e \"s|C01|%e|\" -e \"s|C10|%e|\" -e \"s|mu|%e|\"  -e \"s|nu|%f|\" %s > %s", 
-                                    E,               C01,             C10,             mu,              nu, filename_symbol, filename_header);
-    printf("%s is done.\n", system_cmd);                               
-    system(system_cmd);    
-    sprintf(system_cmd_meshing, "cd %s/..; gen_meshes.pl -f %s -np %d", options.ipath, filename, nprocs);
-    system(system_cmd_meshing);
 
-  }  
+    sprintf(system_cmd, "sed");
+    for(int a=0; a<matno; a++)
+    {
+      double E = mat[a];
+      double nu = 0.25;
+      double mu = E/2.0/(1.0+nu);
+      double C01 = 0.5*mu;
+      double C10 = 0.0;
+    
+      if(a+1<10)
+      {  
+        sprintf(system_cmd, "%s -e \"s|Exx_0%d|%e|\" -e \"s|C01_0%d|%e|\" -e \"s|mu_0%d|%e|\"", system_cmd, a+1, E, a+1, C01, a+1, mu);
+      }
+      else
+      {
+        sprintf(system_cmd, "%s -e \"s|Exx_%d|%e|\" -e \"s|C01_%d|%e|\" -e \"s|mu_%d|%e|\"", system_cmd, a+1, E, a+1, C01, a+1, mu);        
+      }                                       
+    }
+    
+    sprintf(system_cmd, "%s %s > %s", system_cmd, filename_symbol, filename_header);        
+    printf("[%s] is performed\n",  system_cmd);           
+
+    system(system_cmd);
+
+    sprintf(system_cmd_meshing, "cd %s/..; ls; ./gen_meshes.pl -f %s -np %d", options.ipath, filename, nprocs);
+    system(system_cmd_meshing);
+    free(mat);
+
+  }
+  int G_temp = 0;
+  int n_temp = myrank;
+  MPI_Allreduce(&G_temp,&n_temp,1,MPI_INT,MPI_SUM,mpi_comm);
   
   return 0;  
 }
