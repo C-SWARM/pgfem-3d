@@ -6,7 +6,6 @@
 #include "post_processing.h"
 #include "PGFem3D_to_VTK.hpp"
 #include <stdlib.h>
-#include <unistd.h>
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
@@ -35,8 +34,6 @@ int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
 
 int change_material_properties(int argc, char **argv, char *filename_out)
 {
-  /*=== END INITIALIZATION === */
-  
   MPI_Comm mpi_comm = MPI_COMM_WORLD;    
   int myrank = 0;
   int nprocs = 0;
@@ -47,9 +44,6 @@ int change_material_properties(int argc, char **argv, char *filename_out)
   {  
     FILE *fp_mat = fopen("material_properties.in", "r");
     int matno = 0;
-    double E;
-    double sigma = 0.25;
-    double E0 = 100.e+9;
     char line[1024];
     fgets(line, 1024, fp_mat);
     
@@ -81,44 +75,94 @@ int change_material_properties(int argc, char **argv, char *filename_out)
     char filename[1024];  
     char filename_symbol[1024];
     char filename_header[1024];    
-    char system_cmd[4096];
+    char system_cmd[32768];
     char system_cmd_meshing[2048];    
    
     copy_filename(options.ifname, filename);
     sprintf(filename_symbol,"%s/../%s.out.header.symbol",options.ipath,filename);
     sprintf(filename_header,"%s/../%s.out.header",       options.ipath,filename);
-    sprintf(filename_out, "%s/../%s.out.header", options.opath,filename);
     sprintf(filename_out,"%s/%s_macro.out.%d",options.opath,options.ofname,0);
 
 
-    sprintf(system_cmd, "sed");
-    for(int a=0; a<matno; a++)
+    // read center positions of grains and store then is X    
+    FILE *fp_grains = fopen("center_postion_of_grains.in", "r");
+    int grainno = 0;
+    int layerno = 0;
+    fgets(line, 1024, fp_grains); //skip comment
+    fgets(line, 1024, fp_grains); //skip comment
+    fgets(line, 1024, fp_grains); //skip comment
+    fgets(line, 1024, fp_grains); //skip comment
+    fgets(line, 1024, fp_grains); //skip comment
+    fscanf(fp_grains, "%d%d", &grainno,&layerno);
+    printf("Total number of grains: %d\n", grainno); 
+    printf("Total number of layers: %d\n", layerno);     
+    
+    double *X = (double *) malloc(sizeof(double)*3*grainno);
+    int *ngl = (int *) malloc(sizeof(int)*layerno);
+    for(int a=0; a<layerno; a++)
     {
-      double E = mat[a];
+      fscanf(fp_grains, "%d", ngl+a);
+      printf("%d ", ngl[a]);
+    }          
+    printf("\n");
+    for(int a=0; a<grainno; a++)
+    {
+      fscanf(fp_grains, "%lf%lf%lf", X+a*3+0, X+a*3+1, X+a*3+2);
+      //printf("%e %e %e\n", X[a*3+0], X[a*3+1], X[a*3+2]);
+    }    
+    
+    fclose(fp_grains);
+
+    // below is just for this current developing version. Later, these need to be updated in order for changing
+    // material properties properly using correlation fuctions
+
+    sprintf(system_cmd, "sed -e \"s|MAT_VALUES|");
+
+    double E0[2] = {100.0e-5,211.0e-5};
+    double sigma[2] = {16.0e-5,13.0e-5};
+    
+    int cnt = 0;
+    int lid = 0;
+    int mat_id = 0; // if mat_id==0: Al
+                    // if mat_id==1: Ni
+    
+    for(int a=0; a<grainno; a++)
+    {
+      if(a==ngl[lid]+cnt)
+      {
+        cnt += ngl[lid];        
+        lid++;
+        printf("switch materials: %d -> ", mat_id);
+        mat_id = (mat_id == 0);
+        printf("%d\n", mat_id);
+      }
+      
+      //use x,y,z coordinate for the functions
+      double x = X[a*3+0];
+      double y = X[a*3+1];
+      double z = X[a*3+2];
+
+      double xi = mat[mat_id];      
+      double E = E0[mat_id] + sigma[mat_id]*sin(2*x)*cos(2*y)*sin(z)*xi;
+        
       double nu = 0.25;
       double mu = E/2.0/(1.0+nu);
       double C01 = 0.5*mu;
       double C10 = 0.0;
     
-      if(a+1<10)
-      {  
-        sprintf(system_cmd, "%s -e \"s|Exx_0%d|%e|\" -e \"s|C01_0%d|%e|\" -e \"s|mu_0%d|%e|\"", system_cmd, a+1, E, a+1, C01, a+1, mu);
-      }
-      else
-      {
-        sprintf(system_cmd, "%s -e \"s|Exx_%d|%e|\" -e \"s|C01_%d|%e|\" -e \"s|mu_%d|%e|\"", system_cmd, a+1, E, a+1, C01, a+1, mu);        
-      }                                       
+      sprintf(system_cmd, "%s %e %e 0.0 %e 0.0 0.0 0.25 0.0 0.0 1.0 1.0 1.0 1.7e+03 1 2\\n", system_cmd, E, C01, mu);
     }
     
-    sprintf(system_cmd, "%s %s > %s", system_cmd, filename_symbol, filename_header);        
-    printf("[%s] is performed\n",  system_cmd);           
+    sprintf(system_cmd, "%s|\" %s > %s", system_cmd, filename_symbol, filename_header);        
+    //printf("[%s] is performed\n",  system_cmd);           
 
     system(system_cmd);
 
     sprintf(system_cmd_meshing, "cd %s/..; ls; ./gen_meshes.pl -f %s -np %d", options.ipath, filename, nprocs);
     system(system_cmd_meshing);
     free(mat);
-
+    free(X);
+    free(ngl);
   }
   int G_temp = 0;
   int n_temp = myrank;
