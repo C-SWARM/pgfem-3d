@@ -64,4 +64,3 @@ with_vtk_libs="-Wl,-rpath=$vtk_dir/lib -L$vtk_dir/lib \
 -lvtkCommonMisc-6.0 -lvtkCommonSystem-6.0 -lvtkCommonTransforms-6.0 \
 -lvtkCommonMath-6.0 -lvtkIOGeometry-6.0 -lvtkCommonCore-6.0 \
 -lvtksys-6.0 -lvtkexpat-6.0"
-
