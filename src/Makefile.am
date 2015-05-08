@@ -137,4 +137,4 @@ PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_l
 
 AM_CFLAGS = $(AM_INCLUDES)
 
-PGFem3D_LINK = $(FC) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@

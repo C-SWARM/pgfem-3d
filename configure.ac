@@ -47,6 +47,18 @@ AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
 AC_PROG_CC_STDC
 AC_PROG_RANLIB
 
+AC_ARG_WITH(special-link, [AS_HELP_STRING([--with-special-link=<linker>],
+		 [Link the executable with the specified linking tool. Default: "$(CXX)"])
+		 ],[special_link=yes],[special_link=no])
+
+AS_IF([test "x$special_link" = xyes],
+	    [
+	    AC_MSG_NOTICE([Linking PGFem3D with "$with_special_link"])
+	    AC_SUBST([PGFem3D_linker],["$with_special_link"])
+	    ],[
+	    AC_SUBST([PGFem3D_linker],['$(CXX)'])
+	    ])
+
 # Checks for libraries.
 
 AC_ARG_WITH(parmetis-dir, [AS_HELP_STRING([--with-parmetis-dir=<path>],
