@@ -22,7 +22,7 @@ AX_PROG_CXX_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
  		if test x"$with_mpi" = xyes; then
 		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
  		else
-		  AC_MSG_WARN([No MPI compiler found, won't use MPI.])
+		  AC_MSG_WARN([Will not use MPI.])
  		fi
 ])
 
@@ -31,11 +31,20 @@ AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
  		if test x"$with_mpi" = xyes; then
 		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
  		else
-		  AC_MSG_WARN([No MPI compiler found, won't use MPI.])
+		  AC_MSG_WARN([Will not use MPI.])
  		fi
 ])
+
+AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
+		use_mpi=no
+		if test x"$with_mpi" = xyes; then
+		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
+		else
+		  AC_MSG_WARN([Will not use MPI.])
+		fi
+])
+
 AC_PROG_CC_STDC
-AC_PROG_FC
 AC_PROG_RANLIB
 
 # Checks for libraries.
