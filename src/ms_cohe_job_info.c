@@ -3,6 +3,7 @@
 #include <string.h>
 #include "allocation.h"
 #include "utils.h"
+#include "pgf_fe2_job.h"
 
 #ifndef DEBUG_MS_JOB_INFO
 #define DEBUG_MS_JOB_INFO 0
@@ -14,7 +15,8 @@ inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
   size_t result = (7*sizeof(int)
 		   + sizeof(double)
-		   + 4*ndim*sizeof(double)
+		   + 5*ndim*sizeof(double)
+		   + 2*sizeof(double)
 		   + info->nnode*sizeof(double)
 		   + info->ndofe*sizeof(double)
 		   + (info->ndofe*info->ndofe)*sizeof(double)
@@ -40,11 +42,14 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
 
   info->int_wt = 0.0;
 
+  info->max_traction = info->max_jump = -1.0; /* poisoned value */
+
   /* allocate len = ndim */
   info->jump = PGFEM_calloc(ndim,sizeof(double));
   info->jump_n = PGFEM_calloc(ndim,sizeof(double));
   info->normal = PGFEM_calloc(ndim,sizeof(double));
   info->traction = PGFEM_calloc(ndim,sizeof(double));
+  info->traction_n = PGFEM_calloc(ndim,sizeof(double));
 
   /* allocate len = nnode */
   info->shape = PGFEM_calloc(info->nnode,sizeof(double));
@@ -106,6 +111,7 @@ void destroy_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info)
     free(info->jump_n);
     free(info->normal);
     free(info->traction);
+    free(info->traction_n);
     free(info->shape);
     free(info->traction_res);
     free(info->K_00_contrib);
@@ -133,12 +139,15 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->int_wt,buffer,&pos,1,sizeof(double));
   pack_data(&info->tim,buffer,&pos,1,sizeof(int));
   pack_data(&info->n_step,buffer,&pos,1,sizeof(int));
+  pack_data(&info->max_traction,buffer,&pos,1,sizeof(double));
+  pack_data(&info->max_jump,buffer,&pos,1,sizeof(double));
 
   /* pack arrays */
   pack_data(info->jump,buffer,&pos,ndim,sizeof(double));
   pack_data(info->jump_n,buffer,&pos,ndim,sizeof(double));
   pack_data(info->normal,buffer,&pos,ndim,sizeof(double));
   pack_data(info->traction,buffer,&pos,ndim,sizeof(double));
+  pack_data(info->traction_n,buffer,&pos,ndim,sizeof(double));
   pack_data(info->shape,buffer,&pos,info->nnode,sizeof(double));
   pack_data(info->traction_res,buffer,&pos,info->ndofe,sizeof(double));
   pack_data(info->K_00_contrib,buffer,&pos,
@@ -182,12 +191,15 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->int_wt,&pos,1,sizeof(double));
   unpack_data(buffer,&info->tim,&pos,1,sizeof(int));
   unpack_data(buffer,&info->n_step,&pos,1,sizeof(int));
+  unpack_data(buffer,&info->max_traction,&pos,1,sizeof(double));
+  unpack_data(buffer,&info->max_jump,&pos,1,sizeof(double));
 
   /* unpack arrays */
   unpack_data(buffer,info->jump,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->jump_n,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->normal,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->traction,&pos,ndim,sizeof(double));
+  unpack_data(buffer,info->traction_n,&pos,ndim,sizeof(double));
   unpack_data(buffer,info->shape,&pos,info->nnode,sizeof(double));
   unpack_data(buffer,info->traction_res,&pos,info->ndofe,sizeof(double));
   unpack_data(buffer,info->K_00_contrib,&pos,
@@ -230,6 +242,9 @@ int print_MS_COHE_JOB_INFO(FILE *out,
 			   const MS_COHE_JOB_INFO *info)
 {
   int err = 0;
+  const int cell_id = pgf_FE2_job_compute_encoded_id(info->proc_id,
+						     info->elem_id,
+						     info->int_pt);
   char *job_str = NULL;
   PGFEM_fprintf(out,"===== START JOB INFO =====\n");
   PGFEM_fprintf(out,"NNODE:   %d\n",info->nnode);
@@ -237,6 +252,7 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"ELEM_ID: %d\n",info->elem_id);
   PGFEM_fprintf(out,"PROC_ID: %d\n",info->proc_id);
   PGFEM_fprintf(out,"INT_PT:  %d\n",info->int_pt);
+  PGFEM_fprintf(out,"CELL_ID: %d\n",cell_id);
 
   job_type_str(info->job_type,&job_str);
   PGFEM_fprintf(out,"JOB TYPE: %s\n",job_str);
@@ -261,6 +277,8 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   }
   PGFEM_fprintf(out,"\n");
 
+  PGFEM_fprintf(out,"TRAC(n): %3.5e %3.5e %3.5e\n",
+		info->traction_n[0],info->traction_n[1],info->traction_n[2]);
   PGFEM_fprintf(out,"TRAC:    %3.5e %3.5e %3.5e\n",
 		info->traction[0],info->traction[1],info->traction[2]);
   PGFEM_fprintf(out,"LID: ");

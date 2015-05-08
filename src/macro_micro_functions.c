@@ -396,6 +396,7 @@ int macroscale_update_job_info(const MACROSCALE *macro,
   double *ge = NULL;
   double *w = NULL;
   int n_ip = 0;
+  int ip = 0;
   switch(nne_2D){
   case 3: err += get_tria_quadrature_rule(0,&n_ip,&gk,&ge,&w); break;
   case 4: err += get_quad_quadrature_rule(0,&n_ip,&gk,&ge,&w); break;
@@ -413,6 +414,9 @@ int macroscale_update_job_info(const MACROSCALE *macro,
 
   if(macro->opts->restart >= 0){
     memcpy(job->jump_n,job->jump,ndim*sizeof(double));
+    job->max_traction = cel->vars[ip][0];
+    job->max_jump = cel->vars[ip][1];
+    memcpy(job->traction_n,cel->vars[ip] + 2,ndim*sizeof(double));
   }
 
   /* set the job type */
@@ -447,8 +451,13 @@ int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
   int err = 0;
   COEL *coel = macro->common->coel + job->elem_id;
 
-  /* set macroscale traction on the element from the microscale job */
-  memcpy(coel->ti,job->traction,ndim*sizeof(double));
+  /* set traction for output */
+  memcpy(coel->ti,job->traction_n,ndim*sizeof(double));
+
+  /* set the state variable(s) */
+  coel->vars[job->int_pt][0] = job->max_traction;
+  coel->vars[job->int_pt][1] = job->max_jump;
+  memcpy(coel->vars[job->int_pt] + 2,job->traction_n,ndim*sizeof(double));
 
   /* That's all folks! */
   return err;

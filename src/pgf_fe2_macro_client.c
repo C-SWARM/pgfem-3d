@@ -79,7 +79,7 @@ struct pgf_FE2_macro_client{
   /* for broadcasting */
   /* When using this datastructure to communicate with servers, set
      active to true before 1st communication and set to 0 after
-     communication compled by MPI_Test/Wait functions. */
+     communication completed by MPI_Test/Wait functions. */
   struct BCAST{
     size_t active;
     size_t n_comm;
@@ -88,6 +88,23 @@ struct pgf_FE2_macro_client{
   } bcast;
 };
 
+/**
+ * Determine the communication pattern between macroscale clients and
+ * microscale servers.
+ *
+ * Only the domians with multiscale elements actually exchange
+ * information w/ microscale servers (other than broadcasting which
+ * rebalancing information). This function determines for the
+ * macroscale the location of cells on the servers after rebalancing
+ * and thus where to send/receive data to/from. The servers
+ * dynamically compute the src/dest of communications from the cell
+ * ID, chich encodes the macroscopic domain.
+ *
+ * \param[in,out] client Macroscopic domain
+ * \param[in] rb_list Rebalancing information for each server
+ * \param[in] nproc_macro Number of macroscale domains
+ * \return non-zero on error.
+ */
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
 						 pgf_FE2_server_rebalance **rb_list,
 						 const size_t nproc_macro)
@@ -95,13 +112,16 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   int err = 0;
   assert(nproc_macro > 0);
 
-  /* Get list of tags from ctx. Put into tuple for {tag, idx, server} */
-  const size_t len = 3;
+  /*
+   * Get number of communications (number of multiscale elements on
+   * domain). Can exit early if there are no multiscale elements,
+   * i.e., no required communication.
+   */
   const size_t s_tags_nel = client->send->n_comms;
-
-  /* exit early if this domain does not contain jobs */
   if(s_tags_nel == 0) return err;
 
+  /* push information into tuple workspace {tag, idx, server} */
+  const size_t len = 3;
   int *s_tags = malloc(s_tags_nel*len*sizeof(*s_tags));
   for(size_t i = 0; i < s_tags_nel; i++){
     s_tags[i*len] = client->send->tags[i];
@@ -112,46 +132,61 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* sort s_tags by {tag} */
   qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_first_int);
 
-  /* loop through each rebalance and extract list of jobs on the
-     server. */
+  /* 
+   * loop through each server and extract list of jobs on the server
+   * after rebalancing (kept + received).
+   */
+  int n_client_matched = 0;
   for(size_t i = 0, e = client->n_server; i<e; i++){
     const size_t n_keep = pgf_FE2_server_rebalance_n_keep((rb_list[i]));
     const size_t n_recv = pgf_FE2_server_rebalance_n_recv((rb_list[i]));
-    const size_t serv_tags_len = (n_keep + n_recv);
-    int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
     const int *k = pgf_FE2_server_rebalance_keep_buf((rb_list[i]));
     const int *r = pgf_FE2_server_rebalance_recv_buf((rb_list[i]));
+
+    /*
+     * serv_tags contains the tags (cell ids) on server i after
+     * rebalancing
+     */
+    const size_t serv_tags_len = (n_keep + n_recv);
+    int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
     memcpy(serv_tags,k,n_keep*sizeof(*serv_tags));
     memcpy(serv_tags + n_keep,r,n_recv*sizeof(*serv_tags));
 
     /* sort by job id */
     qsort(serv_tags,serv_tags_len,sizeof(*serv_tags),compare_first_int);
 
+    /* 
+     * Determine if server i contains tag (cell) j. If so, mark it
+     * with the server rank (in mpi_comm->mm_inter, rank = i +
+     * nproc_macro) to communicate with.
+     */
+    int n_server_matched = 0;
     for(size_t j = 0; j < s_tags_nel; j++){
-      /* do not search for match if already found */
-      if(s_tags[j*len + 2] >= nproc_macro) continue;
+      if (s_tags[j*len + 2] >= nproc_macro) {
+	/* already matched */
+	continue;
+      } else if (n_server_matched >= serv_tags_len
+		 || n_client_matched >= s_tags_nel) {
+	/* no more possible matches on server or client */
+	break;
+      }
 
+      /* search server for match on client */
       void *ptr = bsearch(s_tags + j*len,serv_tags,serv_tags_len,
 			  sizeof(*serv_tags),compare_first_int);
 
       /* Check for match, set src/dest proc id */
       if(ptr != NULL){
 	s_tags[j*len + 2] = i + nproc_macro;
+	n_server_matched++;
+	n_client_matched++;
       }
     }
     free(serv_tags);
+
+    /* break loop if all matchess with client are already found */
+    if (n_client_matched >= s_tags_nel) break;
   }
-
-#ifndef NDEBUG
-  /* sanity check/debugging. ensure that the src/dest is valid */
-  /* sort s_tags by {server} */
-  qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_third_int);
-
-  /* ensure that the smallest server id is valid, i.e., we assigned all
-     jobs on this domain. */
-  assert(s_tags[2] >= nproc_macro);
-  assert(s_tags[s_tags_nel*len - 1] < (nproc_macro + client->n_server));
-#endif
 
   /* sort s_tags by {idx} */
   qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_second_int);
@@ -356,7 +391,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 
   /* compute total number of jobs and set maximum number of jobs per
      server */
-  MPI_Allreduce(MPI_IN_PLACE,&Gn_jobs,1,MPI_INT,MPI_SUM,mpi_comm->macro);
+  MPI_Allreduce(MPI_IN_PLACE,&Gn_jobs,1,MPI_LONG,MPI_SUM,mpi_comm->macro);
   client->n_jobs_glob = Gn_jobs;
   client->n_jobs_max = n_jobs_max;
 
