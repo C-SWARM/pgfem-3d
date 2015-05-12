@@ -71,7 +71,7 @@ int read_input_file(const PGFem3D_opt *opts,
   read_elem(in,*ne,*elem,*sup,opts->legacy);
 
   for(int i=0, e=*nmat; i<e; i++){
-    if ( read_material(in,*nmat,*material,opts->legacy) ){
+    if ( read_material(in,i,*material,opts->legacy) ){
       PGFEM_Abort();
     }
   }
