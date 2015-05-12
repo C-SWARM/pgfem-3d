@@ -46,6 +46,7 @@ extern "C" {
     char *pre_disp_file;
     int override_solver_file;
     char *solver_file;
+    char *override_material_props;
 
     /* I/O file names */
     char *ipath;

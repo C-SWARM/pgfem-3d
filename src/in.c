@@ -1,17 +1,12 @@
 /* HEADER */
 #include "in.h"
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
+
+#include <string.h>
+#include <assert.h>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -121,55 +116,34 @@ SUPP read_supports (FILE *in,
   return (sup);
 }
 
-
-void read_material (FILE *in,
-		    long nmat,
-		    MATERIAL *mater,
-		    int legacy)
+int read_material (FILE *in,
+                   const size_t mat_id,
+                   MATERIAL *mater,
+                   const int legacy)
 {
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading materials.\n",1);
-  int err_rank = 0;
-  PGFEM_Error_rank(&err_rank);
-  /*
-    in    - Input file
-    nl    - Number of layers
-    nsup  - Number of supported nodes
-    ndofn - Number of degrees of freedom in one node
-    node  - Structure type of NODE
-    
-    %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
-  */
-  long i;
+  int err = 0;
   if (legacy) {
-    for (i=0;i<nmat;i++){
-      fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-	      &mater[i].Ex,&mater[i].Ey,&mater[i].Ez,
-	      &mater[i].Gyz,&mater[i].Gxz,&mater[i].Gxy,
-	      &mater[i].nyz,&mater[i].nxz,&mater[i].nxy,
-	      &mater[i].ax,&mater[i].ay,&mater[i].az,
-	      &mater[i].sig);
-      mater[i].devPotFlag = mater[i].volPotFlag = 0;
-    }
+    fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
+            &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
+            &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
+            &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
+            &mater[mat_id].sig);
+    mater[mat_id].devPotFlag = mater[mat_id].volPotFlag = 0;
   } else {
-    for (i=0;i<nmat;i++){
-      fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %d %d",
-	      &mater[i].Ex,&mater[i].Ey,&mater[i].Ez,
-	      &mater[i].Gyz,&mater[i].Gxz,&mater[i].Gxy,
-	      &mater[i].nyz,&mater[i].nxz,&mater[i].nxy,
-	      &mater[i].ax,&mater[i].ay,&mater[i].az,
-	      &mater[i].sig,&mater[i].devPotFlag,&mater[i].volPotFlag);
-    }
+    fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %d %d",
+            &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
+            &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
+            &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
+            &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
+            &mater[mat_id].sig,&mater[mat_id].devPotFlag,&mater[mat_id].volPotFlag);
   }
 
   if(ferror(in)){
-    PGFEM_printerr("[%d]ERROR:fscanf returned error"
-	    " reading material properties!\n",err_rank);
-    PGFEM_Abort();
-  } else if(feof(in)){
-    PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
-	    err_rank);
-    PGFEM_Abort();
+    PGFEM_printerr("ERROR: fscanf returned error in: %s(%s)\n",__func__,__FILE__);
+    err++;
   }
+  return err;
 }
 
 void read_matgeom (FILE *in,
@@ -262,6 +236,96 @@ int override_prescribed_displacements(SUPP sup,
     fscanf(in,"%lf",&sup->defl_d[i]);
   }
   err = ferror(in);
+  PGFEM_fclose(in);
+  return err;
+}
+
+/**
+ * Scan the file for a valid line (non-blank and does not start with a
+ * '#').  This function may be called multiple times on the same file.
+ *
+ * \param[in,out] in, File to scan
+ *
+ * \return non-zero on error. Upon successful completion, 'in' is
+ * returned with the file position set to the beginning of the valid
+ * line.
+ */
+static int scan_for_valid_line(FILE *in)
+{
+  static const size_t line_length = 1024;
+  static const char delim[] = " \t\n";
+
+  int err = 0;
+  char *line = malloc(line_length);
+  char *tok = NULL;
+  fpos_t pos;
+
+  /* scan for non-comment/blank line */
+  do{
+    /* get the starting file position for the line */
+    err += fgetpos(in,&pos);
+
+    /* get a line and exit if there is an error */
+    if ( fgets(line,line_length,in) == NULL) {
+      err++;
+      goto exit_err;
+    }
+
+    /* make sure got whole line (last char is '\n') */
+    if ( line[strlen(line) - 1] != '\n' && !feof(in)) {
+      fprintf(stderr,"ERROR: line too long (>%zd chars)! %s(%s)\n",
+              line_length, __func__, __FILE__);
+      err++;
+      goto exit_err;
+    }
+
+    /* get first token */
+    tok = strtok(line,delim);
+    if (tok == NULL) tok = line + strlen(line);
+  } while ( tok[0] == '#' || tok[0] == '\0');
+
+  /* return the file pointer to the beginning of the valid line */
+  err += fsetpos(in,&pos);
+
+ exit_err:
+  free(line);
+  return err;
+}
+
+int override_material_properties(const size_t nmat,
+                                 const PGFem3D_opt *opt,
+                                 MATERIAL *mater)
+{
+  int err = 0;
+  int n_override = 0;
+  int idx = -1;
+
+  /* exit early if no override file is specified */
+  if ( opt->override_material_props == NULL ) return err;
+
+  /* else */
+  FILE *in = PGFEM_fopen(opt->override_material_props,"r");
+  err += scan_for_valid_line(in);
+  if (err) goto exit_err;
+
+  /* number of materials to override */
+  fscanf(in,"%d",&n_override);
+  assert( n_override <= nmat );
+
+  for (int i=0; i<n_override; i++){
+    /* scan for override data */
+    err += scan_for_valid_line(in);
+    if (err) goto exit_err;
+
+    /* read override data */
+    idx = -1; /* poisoned value */
+    fscanf(in,"%d",&idx);
+    assert( idx < nmat );
+    err += read_material(in,idx,mater,opt->legacy);
+  }
+
+ exit_err:
+  if( ferror(in) ) err ++;
   PGFEM_fclose(in);
   return err;
 }
