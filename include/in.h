@@ -19,17 +19,28 @@
 #include "mesh_load.h"
 #include "supp.h"
 
+#include <stdlib.h>
+
 /* Function reads parameters of supports */
 SUPP read_supports (FILE *in,
 		    long nn,
 		    long ndofn,
 		    NODE *node);
 
-/* Function reads parameters of materials */
-void read_material (FILE *in,
-		    long nmat,
-		    MATERIAL *mater,
-		    int legacy);
+/**
+ * Read material property listing for material mat_id [0,nmat).
+ * 
+ * \param[in] in, File to read from
+ * \param[in] mat_id, Index to 'mater'
+ * \param[in,out] mater, Allocated material list
+ * \param[in] legacy, format flag for how to read the listing
+ *
+ * \return non-zero on internal error, i.e., I/O errors.
+ */
+int read_material (FILE *in,
+                   const size_t mat_id,
+                   MATERIAL *mater,
+                   const int legacy);
 
 /* Function gives stiffnesses matrix of materials */
 void read_matgeom (FILE *in,

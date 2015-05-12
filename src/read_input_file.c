@@ -69,7 +69,13 @@ int read_input_file(const PGFem3D_opt *opts,
   *sup = read_supports(in,*nn,ndim,*node);
 
   read_elem(in,*ne,*elem,*sup,opts->legacy);
-  read_material(in,*nmat,*material,opts->legacy);
+
+  for(int i=0, e=*nmat; i<e; i++){
+    if ( read_material(in,*nmat,*material,opts->legacy) ){
+      PGFEM_Abort();
+    }
+  }
+
   read_matgeom(in,*n_concentrations,*n_orient,*matgeom);
 
   /* NOTE: Node/Element loading assumes forces only in ndim

@@ -121,55 +121,37 @@ SUPP read_supports (FILE *in,
   return (sup);
 }
 
-
-void read_material (FILE *in,
-		    long nmat,
-		    MATERIAL *mater,
-		    int legacy)
+int read_material (FILE *in,
+                   const size_t mat_id,
+                   MATERIAL *mater,
+                   const int legacy)
 {
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading materials.\n",1);
-  int err_rank = 0;
-  PGFEM_Error_rank(&err_rank);
-  /*
-    in    - Input file
-    nl    - Number of layers
-    nsup  - Number of supported nodes
-    ndofn - Number of degrees of freedom in one node
-    node  - Structure type of NODE
-    
-    %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
-  */
-  long i;
+  int err = 0;
   if (legacy) {
-    for (i=0;i<nmat;i++){
-      fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-	      &mater[i].Ex,&mater[i].Ey,&mater[i].Ez,
-	      &mater[i].Gyz,&mater[i].Gxz,&mater[i].Gxy,
-	      &mater[i].nyz,&mater[i].nxz,&mater[i].nxy,
-	      &mater[i].ax,&mater[i].ay,&mater[i].az,
-	      &mater[i].sig);
-      mater[i].devPotFlag = mater[i].volPotFlag = 0;
-    }
+    fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
+            &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
+            &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
+            &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
+            &mater[mat_id].sig);
+    mater[mat_id].devPotFlag = mater[mat_id].volPotFlag = 0;
   } else {
-    for (i=0;i<nmat;i++){
-      fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %d %d",
-	      &mater[i].Ex,&mater[i].Ey,&mater[i].Ez,
-	      &mater[i].Gyz,&mater[i].Gxz,&mater[i].Gxy,
-	      &mater[i].nyz,&mater[i].nxz,&mater[i].nxy,
-	      &mater[i].ax,&mater[i].ay,&mater[i].az,
-	      &mater[i].sig,&mater[i].devPotFlag,&mater[i].volPotFlag);
-    }
+    fscanf (in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %d %d",
+            &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
+            &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
+            &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
+            &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
+            &mater[mat_id].sig,&mater[mat_id].devPotFlag,&mater[mat_id].volPotFlag);
   }
 
   if(ferror(in)){
-    PGFEM_printerr("[%d]ERROR:fscanf returned error"
-	    " reading material properties!\n",err_rank);
-    PGFEM_Abort();
+    PGFEM_printerr("ERROR: fscanf returned error in: %s(%s)\n",__func__,__FILE__);
+    err++;
   } else if(feof(in)){
-    PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
-	    err_rank);
-    PGFEM_Abort();
+    PGFEM_printerr("ERROR: prematurely reached end of file in %s(%s)\n",__func__,__FILE__);
+    err++;
   }
+  return err;
 }
 
 void read_matgeom (FILE *in,
