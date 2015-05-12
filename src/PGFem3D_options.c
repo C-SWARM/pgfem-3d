@@ -86,6 +86,8 @@ static const long_opt_descr other_opts[] = {
 						   "\t\twith those provided in the given file."),0},
   {{"override-solver-file",required_argument,NULL,'O'},("\n\t\tOverride the default solver filename with\n"
 						      "\t\tthe provided filename."),0},
+  {{"override-material-props",required_argument,NULL,'O'},("\n\t\tOverride the material properties in *.in\n"
+                                                           "\t\twith those provided in the given file."),0},
   {{"restart",required_argument,NULL,'r'},("Restart from specified step (FE2 only). Requires original\n"
 					   "\t\tinput files and dumped restart files for specified step."),0},
   {{"max-server-jobs",required_argument,NULL,'S'},("\n\t\tSet the maximum number of jobs allowed on a server (FE2)."),0},
@@ -207,6 +209,7 @@ void set_default_options(PGFem3D_opt *options)
   options->pre_disp_file = NULL;
   options->override_solver_file = 0;
   options->solver_file = NULL;
+  options->override_material_props = NULL;
 
   /* I/O file names */
   options->ipath = NULL;
@@ -507,6 +510,8 @@ void re_parse_command_line(const int myrank,
       } else  if(strcmp("override-solver-file",opts[opts_idx].name) == 0){
 	options->override_solver_file = 1;
 	options->solver_file = optarg;
+      } else  if(strcmp("override-material-props",opts[opts_idx].name) == 0){
+        options->override_material_props = optarg;
       }
       break;
 
