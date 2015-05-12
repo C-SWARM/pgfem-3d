@@ -42,6 +42,24 @@ int read_material (FILE *in,
                    MATERIAL *mater,
                    const int legacy);
 
+/**
+ * Read and override material properties as specified in the options.
+ *
+ * If a file containing material property overrides is specified on
+ * the command line, parse the file and override the specified
+ * material properties.
+ *
+ * \param[in] nmat, number of material properties allocated in 'mater'
+ * \param[in] opt, program options container
+ * \param[in,out] mater, list of material properties
+ *
+ * \return non-zero on internal error, i.e., I/O or bounds.
+ */
+int override_material_properties(const size_t nmat,
+                                 const PGFem3D_opt *opt,
+                                 MATERIAL *mater);
+
+
 /* Function gives stiffnesses matrix of materials */
 void read_matgeom (FILE *in,
 		   long nc,

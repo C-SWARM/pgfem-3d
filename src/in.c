@@ -1,17 +1,12 @@
 /* HEADER */
 #include "in.h"
 
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef UTILS_H
 #include "utils.h"
-#endif
+
+#include <string.h>
+#include <assert.h>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -147,9 +142,6 @@ int read_material (FILE *in,
   if(ferror(in)){
     PGFEM_printerr("ERROR: fscanf returned error in: %s(%s)\n",__func__,__FILE__);
     err++;
-  } else if(feof(in)){
-    PGFEM_printerr("ERROR: prematurely reached end of file in %s(%s)\n",__func__,__FILE__);
-    err++;
   }
   return err;
 }
@@ -244,6 +236,96 @@ int override_prescribed_displacements(SUPP sup,
     fscanf(in,"%lf",&sup->defl_d[i]);
   }
   err = ferror(in);
+  PGFEM_fclose(in);
+  return err;
+}
+
+/**
+ * Scan the file for a valid line (non-blank and does not start with a
+ * '#').  This function may be called multiple times on the same file.
+ *
+ * \param[in,out] in, File to scan
+ *
+ * \return non-zero on error. Upon successful completion, 'in' is
+ * returned with the file position set to the beginning of the valid
+ * line.
+ */
+static int scan_for_valid_line(FILE *in)
+{
+  static const size_t line_length = 1024;
+  static const char delim[] = " \t\n";
+
+  int err = 0;
+  char *line = malloc(line_length);
+  char *tok = NULL;
+  fpos_t pos;
+
+  /* scan for non-comment/blank line */
+  do{
+    /* get the starting file position for the line */
+    err += fgetpos(in,&pos);
+
+    /* get a line and exit if there is an error */
+    if ( fgets(line,line_length,in) == NULL) {
+      err++;
+      goto exit_err;
+    }
+
+    /* make sure got whole line (last char is '\n') */
+    if ( line[strlen(line) - 1] != '\n' && !feof(in)) {
+      fprintf(stderr,"ERROR: line too long (>%zd chars)! %s(%s)\n",
+              line_length, __func__, __FILE__);
+      err++;
+      goto exit_err;
+    }
+
+    /* get first token */
+    tok = strtok(line,delim);
+    if (tok == NULL) tok = line + strlen(line);
+  } while ( tok[0] == '#' || tok[0] == '\0');
+
+  /* return the file pointer to the beginning of the valid line */
+  err += fsetpos(in,&pos);
+
+ exit_err:
+  free(line);
+  return err;
+}
+
+int override_material_properties(const size_t nmat,
+                                 const PGFem3D_opt *opt,
+                                 MATERIAL *mater)
+{
+  int err = 0;
+  int n_override = 0;
+  int idx = -1;
+
+  /* exit early if no override file is specified */
+  if ( opt->override_material_props == NULL ) return err;
+
+  /* else */
+  FILE *in = PGFEM_fopen(opt->override_material_props,"r");
+  err += scan_for_valid_line(in);
+  if (err) goto exit_err;
+
+  /* number of materials to override */
+  fscanf(in,"%d",&n_override);
+  assert( n_override <= nmat );
+
+  for (int i=0; i<n_override; i++){
+    /* scan for override data */
+    err += scan_for_valid_line(in);
+    if (err) goto exit_err;
+
+    /* read override data */
+    idx = -1; /* poisoned value */
+    fscanf(in,"%d",&idx);
+    assert( idx < nmat );
+    err += read_material(in,idx,mater,opt->legacy);
+  }
+
+ exit_err:
+  if( ferror(in) ) err ++;
   PGFEM_fclose(in);
   return err;
 }

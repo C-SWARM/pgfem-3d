@@ -1,17 +1,9 @@
 /* HEADER */
 #include "read_input_file.h"
 
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef IN_H
 #include "in.h"
-#endif
 
 static const int ndim = 3;
 
@@ -74,6 +66,15 @@ int read_input_file(const PGFem3D_opt *opts,
     if ( read_material(in,i,*material,opts->legacy) ){
       PGFEM_Abort();
     }
+  }
+  if (feof(in)) {
+    PGFEM_printerr("ERROR: prematurely reached EOF in %s(%s)\n",
+                   __func__,__FILE__);
+    PGFEM_Abort();
+  }
+
+  if ( override_material_properties(*nmat,opts,*material) ) {
+    PGFEM_Abort();
   }
 
   read_matgeom(in,*n_concentrations,*n_orient,*matgeom);
