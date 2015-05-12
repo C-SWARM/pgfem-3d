@@ -18,6 +18,12 @@ mkdir -pv $git_install_prefix/share
 # notify user if prefix/share/config.site doesn't exist
 if [ ! -e $git_install_prefix/share/config.site ]; then
     echo "WARNING: $git_install_prefix/share/config.site does not exist!"
+    if [ -e $PGFEM3D_INSTALL/config.site ]; then
+	echo "Copying PGFEM3D_INSTALL/config.site into new branch installation tree"
+	cp $PGFEM3D_INSTALL/config.site $git_install_prefix/share/config.site
+    else
+	echo "WARNING: No default config file, using default options"
+    fi
 fi
 
 echo "Ensuring that the correct scripts are used"
