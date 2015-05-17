@@ -6,6 +6,8 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
+//#include "../verification_MMS/MMS.h"
+
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
 {
@@ -107,6 +109,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
 
       break;
       
+      
     default:
       printf("Only displacement based element and three field element are supported\n");
       break;                         
@@ -163,7 +166,7 @@ void DISP_resid_body_force_el(double *f,
     double X[3];
     X[0] = X[1] = X[2] = 0.0;
     
-    memset(bf,    0,ndofn*sizeof(double));
+    memset(bf,0,ndofn*sizeof(double));
               
     for(long a = 0; a<nne; a++)
     {
@@ -181,12 +184,9 @@ void DISP_resid_body_force_el(double *f,
 	      long id = a*ndofn + b;
         f[id] += bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
-	  }
-	          
-  }
-        
-  dealoc1(bf);
-        
+	  }	          
+  }        
+  dealoc1(bf);        
   Matrix_cleanup(xe);  
   FEMLIB_destruct(&fe);
 }		     
@@ -266,14 +266,14 @@ void DISP_resid_w_inertia_el(double *f,
     double t1 = t-dt;
     double t0 = t - dt - dt;
     
-    if(t0>0) 
+    //if(t0>=0) 
       MMS_body_force(bf0, &hommat[mat], t0, X[0], X[1], X[2]);
 
-    if(t1>0)  
+    //if(t1>=0)  
       MMS_body_force(bf1, &hommat[mat], t1, X[0], X[1], X[2]); 
     
     MMS_body_force(bf2, &hommat[mat], t,  X[0], X[1], X[2]);
-        
+    
     mid_point_rule(bf_n1a, bf0, bf1, alpha, ndofn);
     mid_point_rule(bf, bf1, bf2, alpha, ndofn);	    
     
@@ -282,7 +282,7 @@ void DISP_resid_w_inertia_el(double *f,
       for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-	      f[id] += rho/dt*Vec_v(fe.N,a+1)*Vec_v(du,b+1)*fe.detJxW;
+	      f[id] += rho/dt*Vec_v(fe.N,a+1)*Vec_v(  du,b+1)*fe.detJxW;
         f[id] -= (1.0-alpha)*dt*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;
         f[id] -= alpha*dt*bf_n1a[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
@@ -314,7 +314,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	double *r0      = aloc1(ndofe);
 	double *r0_     = aloc1(ndofe); 	
 	double *f_i     = aloc1(ndofe);
-	memset(fe, 0, sizeof(double)*ndofe);
+	memset(fe,  0, sizeof(double)*ndofe);
 	memset(f_i, 0, sizeof(double)*ndofe);
 		
 	for (long I=0;I<nne;I++)
@@ -362,9 +362,10 @@ int residuals_w_inertia_el(double *fe, int i,
 	    }
 	                              
 	    for(long a = 0; a<ndofe; a++)
-	      fe[a] = -f_i[a];
+	      fe[a] = -f_i[a] + fe[a];
 	      
 	    break;
+	    
 	  }  
     default:
       printf("Only displacement based element and three field element are supported\n");

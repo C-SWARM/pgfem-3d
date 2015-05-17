@@ -424,7 +424,7 @@ void TF_Ktt_ip(Matrix(double) K, FEMLIB *fe,
   if(USE_HW_FUNCS)
     HW_Ktt_at_ip(K.m_pdata,nVol,Nt.m_pdata,1.0,1.0,1.0,Upp,fe->detJ,fe->temp_v.w_ip);             
   else
-    add_3F_Ktt_ip(K.m_pdata,nVol,fe->detJ,fe->temp_v.w_ip,Nt.m_pdata,Upp,-1.0); 
+    add_3F_Ktt_ip(K.m_pdata,nVol,fe->detJ,fe->temp_v.w_ip,Nt.m_pdata,Upp,dt_alpha_1_minus_alpha); 
 }
 
 void stiffmat_3f_el(double *Ks,

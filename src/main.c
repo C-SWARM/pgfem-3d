@@ -77,9 +77,10 @@ static const int ndim = 3;
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
+#define SAVE_RESTART_FILE 1
+
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
-#define SAVE_RESTART_FILE 1
 
 
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
@@ -96,7 +97,6 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, dou
 }      
 
 #else
-#define SAVE_RESTART_FILE 0
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
 {
   if(myrank==0)
@@ -135,7 +135,7 @@ int write_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myra
   for(int a=0; a<nodeno; a++)
   {
     for(int b=0; b<nsd; b++)
-      fprintf(fp, "%e %e", u0[a*nsd + b], u1[a*nsd + b]);
+      fprintf(fp, "%e %e ", u0[a*nsd + b], u1[a*nsd + b]);
     
     fprintf(fp, "\n");    
   }
@@ -1164,11 +1164,9 @@ int single_scale_main(int argc,char *argv[])
       }   
     }
 
-    for(int a = 0; a<ne; a++)
-    {
-      int mat = elem[a].mat[2];
-      hommat[mat].density = rho[mat];
-    }
+    for(int a = 0; a<nmat; a++)
+      hommat[a].density = rho[a];      
+
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
   
 

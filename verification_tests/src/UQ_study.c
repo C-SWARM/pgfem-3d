@@ -118,8 +118,8 @@ int change_material_properties(int argc, char **argv, char *filename_out)
 
     sprintf(system_cmd, "sed -e \"s|MAT_VALUES|");
 
-    double E0[2] = {100.0e-5,211.0e-5};
-    double sigma[2] = {16.0e-5,13.0e-5};
+    double E0[2] = {100.0e-3,211.0e-3};
+    double sigma[2] = {16.0e-3,13.0e-3};
     
     int cnt = 0;
     int lid = 0;
