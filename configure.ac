@@ -22,7 +22,7 @@ AX_PROG_CXX_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
  		if test x"$with_mpi" = xyes; then
 		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
  		else
-		  AC_MSG_WARN([No MPI compiler found, won't use MPI.])
+		  AC_MSG_WARN([Will not use MPI.])
  		fi
 ])
 
@@ -31,11 +31,33 @@ AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
  		if test x"$with_mpi" = xyes; then
 		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
  		else
-		  AC_MSG_WARN([No MPI compiler found, won't use MPI.])
+		  AC_MSG_WARN([Will not use MPI.])
  		fi
 ])
+
+AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
+		use_mpi=no
+		if test x"$with_mpi" = xyes; then
+		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
+		else
+		  AC_MSG_WARN([Will not use MPI.])
+		fi
+])
+
 AC_PROG_CC_STDC
 AC_PROG_RANLIB
+
+AC_ARG_WITH(special-link, [AS_HELP_STRING([--with-special-link=<linker>],
+		 [Link the executable with the specified linking tool. Default: "$(CXX)"])
+		 ],[special_link=yes],[special_link=no])
+
+AS_IF([test "x$special_link" = xyes],
+	    [
+	    AC_MSG_NOTICE([Linking PGFem3D with "$with_special_link"])
+	    AC_SUBST([PGFem3D_linker],["$with_special_link"])
+	    ],[
+	    AC_SUBST([PGFem3D_linker],['$(CXX)'])
+	    ])
 
 # Checks for libraries.
 
@@ -48,8 +70,8 @@ AC_ARG_WITH(parmetis-dir, [AS_HELP_STRING([--with-parmetis-dir=<path>],
 			      AC_MSG_FAILURE([ParMETIS: Must provide package location!])
 			      ])
 
-AC_SUBST([parmetis_include],[-I"$with_parmetis_dir"])
-AC_SUBST([parmetis_lib],["-L$with_parmetis_dir -lparmetis -lmetis"])
+AC_SUBST([parmetis_include],[-I"$with_parmetis_dir/include"])
+AC_SUBST([parmetis_lib],["-L$with_parmetis_dir/lib -lparmetis -lmetis"])
 
 # HYPRE
 AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],
@@ -67,17 +89,39 @@ AC_SUBST([hypre_lib],["-L$with_hypre_dir/lib -lHYPRE"])
 AC_ARG_WITH(mkl, [AS_HELP_STRING([--without-mkl],
 			      [Do not use Intel MKL libraries])
 			      ],,[with_mkl=yes])
+
+# CBLAS / LAPACK
+AC_ARG_WITH(mkl-override, [AS_HELP_STRING([--with-mkl-override=<include line>],
+			      [Specify include line for MKL override headers (requires --without-mkl)])
+			      ],,[with_mkl_override=''])
+AC_ARG_WITH(cblas-include, [AS_HELP_STRING([--with-cblas-include=<include line>],
+			      [Specify include line for access to CBLAS (requires --without-mkl)])
+			      ],,[with_cblas_include=''])
+AC_ARG_WITH(cblas-lib, [AS_HELP_STRING([--with-cblas-lib=<link line>],
+			      [Specify link line for access to CBLAS (requires --without-mkl)])
+			      ],,[with_cblas_lib=''])
+AC_ARG_WITH(lapack-include, [AS_HELP_STRING([--with-lapack-include=<include line>],
+			      [Specify include line for access to LAPACK (requires --without-mkl)])
+			      ],,[with_lapack_include=''])
+AC_ARG_WITH(lapack-lib, [AS_HELP_STRING([--with-lapack-lib=<link line>],
+			      [Specify link line for access to LAPACK (requires --without-mkl)])
+			      ],,[with_lapack_lib=''])
+
 AS_IF([test "x$with_mkl" = xyes],
-	    [AC_MSG_NOTICE([Using Intel MKL libraries])],
-	    [AC_MSG_FAILURE([Currently must use Intel MKL libraries])])
-AC_SUBST([mkl_include],['-I$(MKLROOT)/include'])
-AC_SUBST([mkl_lib],['-Wl,--start-group \
-$(MKLROOT)/lib/intel64/libmkl_scalapack_lp64.a \
-$(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
-$(MKLROOT)/lib/intel64/libmkl_sequential.a \
-$(MKLROOT)/lib/intel64/libmkl_core.a \
-$(MKLROOT)/lib/intel64/libmkl_blacs_intelmpi_lp64.a \
--Wl,--end-group -lpthread'])
+	    [
+	    AC_MSG_NOTICE([Using Intel MKL libraries])
+	    AC_SUBST([mkl_include],['-I$(MKLROOT)/include'])
+	    AC_SUBST([mkl_lib],['-Wl,--start-group \
+	    $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
+	    $(MKLROOT)/lib/intel64/libmkl_sequential.a \
+	    $(MKLROOT)/lib/intel64/libmkl_core.a \
+	    -Wl,--end-group -lpthread'])
+	    ],
+	    [
+	    AC_MSG_NOTICE([Using specified CBLAS/LAPACK])
+	    AC_SUBST([mkl_include],["$with_mkl_override $with_cblas_include $with_lapack_include"])
+	    AC_SUBST([mkl_lib],["$with_cblas_lib $with_lapack_lib"])
+	    ])
 
 # suitesparse
 AC_ARG_WITH(suitesparse-dir, [AS_HELP_STRING([--with-suitesparse-dir=<path>],

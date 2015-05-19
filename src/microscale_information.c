@@ -192,14 +192,14 @@ void build_MICROSCALE(MICROSCALE *microscale,
   if (microscale->opts->solverpackage != HYPRE){
     if(myrank == 0)
       PGFEM_printerr("ERROR: only the HYPRE solver are supported!"
-	"%s:%s:%d\n",__func__,__FILE__,__LINE__);
-  PGFEM_Comm_code_abort(mpi_comm,0);
-}
+		     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+    PGFEM_Comm_code_abort(mpi_comm,0);
+  }
 
   if (microscale->opts->analysis_type != DISP){
     if(myrank == 0)
       PGFEM_printerr("ERROR: only DISP analysis is supported!"
-	      "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+		     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mpi_comm,0);
   }
 
@@ -309,6 +309,14 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   unpack_data(sol->packed_state_var_n,&sol->NORM,
 	      &pos,1,sizeof(sol->NORM));
 
+  /* reset dt */
+  unpack_data(sol->packed_state_var_n,&sol->dt,
+	      &pos,1,sizeof(sol->dt));
+
+  /* reset failed flag */
+  unpack_data(sol->packed_state_var_n,&sol->failed,
+	      &pos,1,sizeof(sol->failed));
+
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
   return err;
@@ -318,6 +326,7 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 			       const MICROSCALE *micro)
 {
   int err = 0;
+
   int myrank = 0;
   err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
   const int loc_ndof = micro->common->ndofd;
@@ -346,6 +355,14 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* pack NORM */
   pack_data(&sol->NORM,sol->packed_state_var_n,
 	    &pos,1,sizeof(sol->NORM));
+
+  /* pack dt */
+  pack_data(&sol->dt,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->dt));
+
+  /* pack failed flag */
+  pack_data(&sol->failed,sol->packed_state_var_n,
+	    &pos,1,sizeof(sol->failed));
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
@@ -731,6 +748,9 @@ static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
   sol->tim = 0;
   sol->p_tim = 0;
   sol->NORM = 0.0;
+
+  /* failure flag */
+  sol->failed = 0;
 }
 
 static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
@@ -767,6 +787,12 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* length of NORM */
   sol->packed_state_var_len += sizeof(sol->NORM);
+
+  /* length of dt */
+  sol->packed_state_var_len += sizeof(sol->dt);
+
+  /* length of failed */
+  sol->packed_state_var_len += sizeof(sol->failed);
 
   /* allocate the packed state buffer */
   sol->packed_state_var_n = PGFEM_calloc(sol->packed_state_var_len,sizeof(char));
@@ -838,6 +864,8 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   sol->times = PGFEM_calloc(3,len_double);
   sol->tim = 0;
   sol->NORM = 0.0;
+
+  sol->failed = 0;
 }
 
 static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,

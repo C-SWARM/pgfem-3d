@@ -130,21 +130,8 @@ COEL* read_cohe_elem (FILE *in1,
       fscanf (in1,"%ld",&coel[j].nod[l]);
     }
     fscanf (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
-    
-    /* if (coel[j].typ == 0) { */
-    /*   coel[j].Sc = comat[mat][0]; */
-    /*   coel[j].Xc = comat[mat][1]; */
-    /*   coel[j].b = comat[mat][2]; */
-    /*   coel[j].Jjn = 1.0; */
-    /* } /\* Needleman *\/  */
-    /* if (coel[j].typ == 1) { */
-    /*   coel[j].Sc = comat[mat][0]; */
-    /*   coel[j].Xc = comat[mat][1]; */
-    /*   coel[j].b = comat[mat][2]; */
-    /*   coel[j].k = comat[mat][3]; */
-    /*   coel[j].Jjn = 1.0; */
-    /* } /\* Our law *\/ */
 
+    /* Cohesive elements are always integrated in reference configuration */
     coel[j].Jjn = 1.0;
 
     /* Set the element properties */
@@ -153,7 +140,8 @@ COEL* read_cohe_elem (FILE *in1,
     /* set internal state variables */
     switch(coel[j].props->type){
     case CO_MOD_MS:
-      coel[j].nvar = 0;
+      coel[j].nvar = 5;
+      /* state vars are: max_traction, max_jump, t_1,t_2,t_3 */
       break;
     case CO_MOD_NEEDLEMAN:
       {
@@ -840,13 +828,25 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
       cel->Xs += ai*aj*J/aa*Xs;
       
       /* For loading update state variables */
-      if(cel->nvar > 0){
-	if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
-	  cel->Xmax[ip] = Xxi;
-	  cel->tmax[ip] = txi;
-	  cel->vars[ip][0] = Xxi;
-	  cel->vars[ip][1] = txi;
+
+      if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
+	cel->Xmax[ip] = Xxi;
+	cel->tmax[ip] = txi;
+      }
+
+      switch(cel->props->type){
+      case CO_MOD_MS:
+	/* do nothing, multiscale state variables are updated
+	   elsewhere */
+	break;
+      default:
+	if(cel->nvar > 0){
+	  if (Xxi >= cel->Xmax[ip] && Xn > 0.0){
+	    cel->vars[ip][0] = Xxi;
+	    cel->vars[ip][1] = txi;
+	  }
 	}
+      break;
       }
       
       /* Void concentration */

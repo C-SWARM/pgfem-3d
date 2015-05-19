@@ -128,6 +128,13 @@ extern "C" {
     int tim;
     int p_tim;
     double NORM;
+
+    /**
+     * Flag denoting cell has failed. Do not compute
+     * solutions/response when set to non-zero value
+     */
+    int failed;
+
   } MICROSCALE_SOLUTION;
 
   typedef struct{

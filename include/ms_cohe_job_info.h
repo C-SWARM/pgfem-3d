@@ -40,6 +40,12 @@ extern "C" {
     double *traction; /**< current traction computed at the microscale
 			 [ndim]. Modified by microscale only */
 
+    double *traction_n; /**< traction computed at time n. Modified by
+			   microscale only. */
+
+    double max_traction; /**< state variable. Maintained by microscale. */
+    double max_jump;  /**< state variable. Maintained by microscale. */
+
     double *shape; /**< shape function for each macro node [nnode]*/
 
     double *traction_res; /**< macro traction residual [ndofe] */

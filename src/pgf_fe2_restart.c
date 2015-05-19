@@ -37,11 +37,12 @@
  * restart_path_str on exit. \return non-zero on error.
  */
 static int generate_restart_path(const char *opath,
+				 const size_t cell_id,
 				 const size_t step,
 				 char **restart_path_str)
 {
   int err = 0;
-  alloc_sprintf(restart_path_str,"%s/restart/STEP_%.5ld",opath,step);
+  alloc_sprintf(restart_path_str,"%s/restart/STEP_%.5ld/cell_%.5ld",opath,step,cell_id);
   err += make_path(*restart_path_str,DIR_MODE);
   return (err == -1); /* make_path returns -1 on error */
 }
@@ -63,7 +64,7 @@ static int generate_restart_fname(const char *opath,
 {
   int err = 0;
   char *path = NULL;
-  err += generate_restart_path(opath,step,&path);
+  err += generate_restart_path(opath,cell_id,step,&path);
   alloc_sprintf(restart_fname,"%s/restart.%.4ld.%ld.%ld",path,rank,cell_id,step);
   free(path);
   return err;
@@ -74,6 +75,13 @@ int pgf_FE2_restart_print_macro(MACROSCALE *macro)
   int err = 0;
   int rank = 0;
   MPI_Comm_rank(macro->common->mpi_comm,&rank);
+
+  /* update dt from any macroscale subdivision. */
+  {
+    int tim = macro->sol->tim;
+    const double *times = macro->sol->times;
+    macro->sol->dt = times[tim + 1] - times[tim];
+  }
 
   /* The current implementation of the FE2 solver does ont use the
      state vector for updating/resetting the solution at the
@@ -99,8 +107,8 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
   int err = 0;
 
   /* get the index to the solution for cell_id */
-  int idx = 0;
-  sol_idx_map_id_get_idx(&(micro->idx_map),cell_id);
+  int idx = -1; /* poison */
+  idx = sol_idx_map_id_get_idx(&(micro->idx_map),cell_id);
   assert(idx >= 0);
 
   /* get the MPI rank on the microscale communicator */
@@ -148,6 +156,10 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   /* aliases */
   COMMON_MACROSCALE *c = macro->common;
   MACROSCALE_SOLUTION *s = macro->sol;
+
+  /* set time increment to be consistent w/ previous solve for
+     substeping */
+  s->times[step] = s->times[step+1] - s->dt;
 
   /* push r -> d_r and r <- 0 */
   memcpy(s->d_r,s->r,c->ndofd*sizeof(double));
@@ -198,6 +210,7 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   /* increment the supports */
   memcpy(c->supports->defl,c->supports->defl_d,c->supports->npd * sizeof(double));
   memset(c->supports->defl_d,0,c->supports->npd * sizeof(double));
+
   return err;
 }
 
