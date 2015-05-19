@@ -116,6 +116,13 @@ typedef int (*usr_increment)(Plasticity *p);
 
 /**
  * Generalized interface for integrating a constitutive model.
+ *
+ * This structure could be split into an object for handling the state
+ * variables at each integration point and another object responsible
+ * for handling model parameters and functions. This has the potential
+ * to drastically reduce the memory requirements for the
+ * implementation since we are not storing duplicates of the function
+ * pointers.
  */
 struct Plasticity {
   Matrix_handle *Fs;        /*< Array of handles to deformation
