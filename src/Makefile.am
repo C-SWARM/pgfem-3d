@@ -109,6 +109,8 @@ PGFEM_io.c \
 PGFEM_mpi.c \
 ms_job_intercomm.c \
 macro_micro_functions.c \
+plasticity.c \
+plasticity_model_none.c \
 pgf_fe2_micro_server.c \
 pgf_fe2_job.c \
 pgf_fe2_server_rebalance.c \

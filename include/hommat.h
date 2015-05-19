@@ -17,7 +17,10 @@ struct HOMMAT{
   int devPotFlag;
   int volPotFlag;
 };
+#ifndef TYPE_HOMMAT
+#define TYPE_HOMMAT
 typedef struct HOMMAT HOMMAT;
+#endif
 
 HOMMAT* build_hommat(long i);
 
