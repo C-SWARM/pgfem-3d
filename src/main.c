@@ -1305,12 +1305,7 @@ int single_scale_main(int argc,char *argv[])
       GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
 
       /* print GF & GS to file */
-      if(myrank == 0){
-
-	printf("%8.8e\t%8.8e\t%8.8e\n",GS[0],GS[1],GS[2]);
-	printf("%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
-	printf("\n");        
-        
+      if(myrank == 0){                
 	sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
 	out = fopen(filename,"w");
 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
