@@ -56,7 +56,7 @@ long FEMLIB_determine_integration_type(int e_type, int i_order);
 
 void FEMLIB_set_variable_size(TEMP_VARIABLES *v, int nne);
 void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne);
-void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, ELEMENT *elem, NODE *node);
+void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order);
 void FEMLIB_set_element(FEMLIB *fe, Matrix(double) x, int eid);
 void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) N);
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip);

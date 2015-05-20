@@ -8,6 +8,7 @@
 #include "three_field_element.h"
 //#include "../verification_MMS/MMS.h"
 
+#define INTG_ORDER 1
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
 {
@@ -48,26 +49,11 @@ void stiffmat_disp_w_inertia_el(double *Ks,
    
   mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, alpha, ndofe); 
   
-  FEMLIB fe;
-  Matrix(double) xe;
-  
-  Matrix_construct_redim(double,xe,nne,3);
-  
-  for(int a=0; a<nne; a++)
+  if(analysis == DISP || analysis == TF)      
   {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-
-  if(analysis == DISP || analysis == TF)    
-  {       
-    FEMLIB_initialization(&fe, itg_order, 1, nne);
-    FEMLIB_set_element(&fe, xe, ii);      
+    
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);  
     for(int ip = 1; ip<=fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip); 
@@ -82,7 +68,6 @@ void stiffmat_disp_w_inertia_el(double *Ks,
 	    } 
     }
     
-    Matrix_cleanup(xe);  
     FEMLIB_destruct(&fe);
   }
   
@@ -141,25 +126,10 @@ void DISP_resid_body_force_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  Matrix(double) xe;
-  
-  Matrix_construct_redim(double,xe,nne,3);
-  
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
     
   double *bf = aloc1(ndofn);
                  
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);      
   for(int a = 1; a<=fe.nint; a++)
   {
     FEMLIB_elem_basis_V(&fe, a); 
@@ -187,7 +157,6 @@ void DISP_resid_body_force_el(double *f,
 	  }	          
   }        
   dealoc1(bf);        
-  Matrix_cleanup(xe);  
   FEMLIB_destruct(&fe);
 }		     
 
@@ -211,32 +180,18 @@ void DISP_resid_w_inertia_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  Matrix(double) xe, du;
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  Matrix(double) du;
   
-  Matrix_construct_redim(double,xe,nne,3);
   Matrix_construct_redim(double,du,3,1);
-  
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-    
+      
   double *bf0, *bf1, *bf2, *bf_n1a, *bf;
   bf0 = aloc1(ndofn);
   bf1 = aloc1(ndofn);
   bf2 = aloc1(ndofn);
   bf_n1a = aloc1(ndofn);        
   bf     = aloc1(ndofn);
-  
-               
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);      
+                 
   for(int a = 1; a<=fe.nint; a++)
   {
     FEMLIB_elem_basis_V(&fe, a); 
@@ -295,7 +250,6 @@ void DISP_resid_w_inertia_el(double *f,
   dealoc1(bf_n1a);        
   dealoc1(bf);         
         
-  Matrix_cleanup(xe);  
   Matrix_cleanup(du); 
   FEMLIB_destruct(&fe);
 }

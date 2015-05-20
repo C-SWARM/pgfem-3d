@@ -19,6 +19,7 @@
 #define ndn 3
 #define N_VOL_TF 1
 #define USE_HW_FUNCS 0
+#define INTG_ORDER 1
 
 void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe, 
         double *ST, Matrix(double) F, Matrix(double) S, double *L,
@@ -514,29 +515,14 @@ void stiffmat_3f_el(double *Ks,
   Matrix_construct_init(double,Kpt,npres  ,nVol   ,0.0);
   Matrix_construct_init(double,Kpp,npres  ,npres  ,0.0);  
 
+
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-
-//start integration----------------------------------------> 
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-        
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
   
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
                          
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
@@ -583,7 +569,6 @@ void stiffmat_3f_el(double *Ks,
                  Kpu.m_pdata,Kpt.m_pdata,Kpp.m_pdata);
   
   FEMLIB_destruct(&fe);
-  Matrix_cleanup(xe); 
 
   Matrix_cleanup(F);
   Matrix_cleanup(C);
@@ -669,27 +654,12 @@ void residuals_3f_el(double *f,
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
   
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-    
-                        
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+                          
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
                          
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
@@ -745,7 +715,6 @@ void residuals_3f_el(double *f,
   Matrix_cleanup(S); 
                         
   FEMLIB_destruct(&fe);                   
-  Matrix_cleanup(xe);
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);
 
@@ -866,27 +835,12 @@ void residuals_3f_w_inertia_el(double *f,
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
   
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-    
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
                         
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
                          
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
@@ -977,7 +931,6 @@ void residuals_3f_w_inertia_el(double *f,
   Matrix_cleanup(S2);    
 
   FEMLIB_destruct(&fe);                   
-  Matrix_cleanup(xe);
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);
   
@@ -1119,27 +1072,12 @@ void update_3f_state_variables_el(const int ii,
   Matrix_construct_init(double,F,3,3,0.0);
   
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-  
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+    
   Matrix(double) Np, Nt;
-
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
     
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);       
-
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
     
   for(int ip = 1; ip<=fe.nint; ip++)
   {
@@ -1167,7 +1105,6 @@ void update_3f_state_variables_el(const int ii,
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);                        
   FEMLIB_destruct(&fe);                   
-  Matrix_cleanup(xe);  
 }
 
 
@@ -1199,7 +1136,7 @@ void evaluate_PT_el(const int ii,
   		u[a*nsd+b] = r_e[a*ndofn+b];
  
   	if(npres==nne)  		
-  			P[a] = r_e[a*ndofn+nsd];
+  	  P[a] = r_e[a*ndofn+nsd];
   }
   if(npres==1)
     P[0] = eps[ii].d_T[0];
@@ -1219,8 +1156,8 @@ void evaluate_PT_el(const int ii,
   Matrix(double) fp;
   Matrix(double) ft;
   
-  Matrix_construct_init(double,fp, npres,  1,    0.0);
-  Matrix_construct_init(double,ft, nVol,   1,    0.0);
+  Matrix_construct_init(double,fp, npres, 1, 0.0);
+  Matrix_construct_init(double,ft, nVol,  1, 0.0);
 		
   Matrix(double) Ktu,Ktt,Ktp;
   Matrix(double) Kup,Kpu,Kpt;
@@ -1233,26 +1170,12 @@ void evaluate_PT_el(const int ii,
   Matrix_construct_init(double,Ktp,nVol   ,npres  ,0.0);
   
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }        
-
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1; 
-
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
                          
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
@@ -1298,7 +1221,6 @@ void evaluate_PT_el(const int ii,
   Matrix_cleanup(F);
                         
   FEMLIB_destruct(&fe);                   
-  Matrix_cleanup(xe);
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);
   
@@ -1446,27 +1368,12 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_construct_init(double,Ktp,nVol   ,npres  ,0.0);   
 
   FEMLIB fe;
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0);
-
-  for(int a=0; a<nne; a++)
-  {
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
-  }     
-  
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1;      
-
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+    
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
-                         
-  FEMLIB_initialization(&fe, itg_order, 1, nne);
-  FEMLIB_set_element(&fe, xe, ii);
-    
+                             
   for(int a = 1; a<=fe.nint; a++)
   {
     FEMLIB_elem_basis_V(&fe, a);  
@@ -1531,7 +1438,6 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_cleanup(F2);
   	  	  	 
   FEMLIB_destruct(&fe);                   
-  Matrix_cleanup(xe);
   Matrix_cleanup(Np);  
   Matrix_cleanup(Nt);
   
@@ -1560,7 +1466,19 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_AxB(press, -1.0, 0.0, KtpI, 0, ft, 0);  
   
   for(int a = 0; a<npres; a++)
-    eps[ii].d_T[a*3+0] += press.m_pdata[a]; 
+    eps[ii].d_T[a*3+0] += press.m_pdata[a]*0.1; 
+    
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  int myrank = 0;
+  MPI_Comm_rank (mpi_comm,&myrank);
+  
+  
+  if(myrank==0 && ii==10)
+  {
+    printf("-----------------------------------------------------------\n");    
+    printf("pressure and volume = [%e %e]\n", eps[ii].d_T[0], eps[ii].T[0]);
+    printf("-----------------------------------------------------------\n");     
+  }
 
   Matrix_cleanup(uu);
   Matrix_cleanup(theta); 
@@ -1640,9 +1558,7 @@ void evaluate_theta_el(const int ii,
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
   int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1;  
-  int_point(itg_order,&npt_z);
+  int_point(nne,&npt_z);
   
   double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
   int_pt_ksi = aloc1(npt_z);
@@ -1664,7 +1580,7 @@ void evaluate_theta_el(const int ii,
   ST = aloc1(3*3*nsd*nne);
   
   /*=== INTEGRATION LOOP ===*/
-  integrate(itg_order,&npt_x,&npt_y,&npt_z,
+  integrate(nne,&npt_x,&npt_y,&npt_z,
           int_pt_ksi,int_pt_eta,int_pt_zet,
           weights);
   
@@ -1857,10 +1773,7 @@ void evaluate_theta_w_inertia_el(const int ii,
   
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1;  
-  int_point(itg_order,&npt_z);
+  int_point(nne,&npt_z);
   
   double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
   int_pt_ksi = aloc1(npt_z);
@@ -1882,7 +1795,7 @@ void evaluate_theta_w_inertia_el(const int ii,
   ST = aloc1(3*3*nsd*nne);
   
   /*=== INTEGRATION LOOP ===*/
-  integrate(itg_order,&npt_x,&npt_y,&npt_z,
+  integrate(nne,&npt_x,&npt_y,&npt_z,
           int_pt_ksi,int_pt_eta,int_pt_zet,
           weights);
   
@@ -2310,7 +2223,7 @@ void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npre
     elemnodes(e,nne,nod,elem);
         
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, INTG_ORDER);
     Matrix(double) Np, u, P;  
     Matrix_construct_init(double,Np,npres,1,0.0);
     Matrix_construct_init(double,u,nne*ndofn,1,0.0);

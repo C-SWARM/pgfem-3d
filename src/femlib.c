@@ -28,44 +28,64 @@ Define_Matrix(int);
 
 long FEMLIB_determine_integration_type(int e_type, int i_order)
 {
-  if(i_order == 0)
+  switch(i_order)
   {
-  	switch(e_type)
-  	{
-      case LINE:
-      	return 1;
-      case TRIANGLE:
-      	return 1;
-      case QUADRILATERAL:
-      	return 1;
-      case TETRAHEDRON:
-      	return 4;
-      case HEXAHEDRAL:
-      	return 4;
-      default:
-        return 4;
-    }
-  }
-  
-  if(i_order == 1)
-  {
-  	switch(e_type)
-  	{  	
-      case LINE:
-      	return 2;
-      case TRIANGLE:
-      	return 2;
-      case QUADRILATERAL:
-      	return 2;
-      case TETRAHEDRON:
-      	return 5;
-      case HEXAHEDRAL:
-      	return 8;
-      case QTETRAHEDRON:
-      	return 10;      	
-      default:
-        return 5;
-    }        
+    case 0:
+    	switch(e_type)
+  	  {
+        case LINE:
+      	  return 1;
+        case TRIANGLE:
+      	  return 1;
+        case QUADRILATERAL:
+      	  return 1;
+        case TETRAHEDRON:
+      	  return 1;
+        default:
+          return 1;
+      }
+      break;
+    case 1:
+  	  switch(e_type)
+  	  {  	
+        case LINE:
+      	  return 2;
+        case TRIANGLE:
+      	  return 3;
+        case QUADRILATERAL:
+      	  return 4;
+        case TETRAHEDRON:
+        	return 4;
+        case HEXAHEDRAL:
+      	  return 8;
+        case QTETRAHEDRON:
+      	  return 4;      	
+        default:
+          return 4;
+      }
+      break;      
+    case 2:
+  	  switch(e_type)
+  	  {  	
+        case TETRAHEDRON:
+        	return 5;
+        case QTETRAHEDRON:
+      	  return 5;      	
+        default:
+          return 5;
+      }
+      break;
+    case 3:
+  	  switch(e_type)
+  	  {  	
+        case TETRAHEDRON:
+        	return 11;
+        case QTETRAHEDRON:
+      	  return 11;      	
+        default:
+          return 11;
+      }
+      break;                      
   }
   return 4;
 }
@@ -100,9 +120,7 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   fe->elem_type = e_type;
   fe->intg_order = i_order;
 
-  long intg_type = FEMLIB_determine_integration_type(e_type, i_order);
-  int_point(intg_type, &nint);
-    
+  nint = FEMLIB_determine_integration_type(e_type, i_order);
   fe->nint = nint;
 
   Matrix_construct_redim(double,fe->ksi       ,nint,1);
@@ -118,9 +136,44 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   FEMLIB_set_variable_size(&(fe->temp_v), nne);      
     
   long npt_x, npt_y, npt_z;
-  integrate(intg_type, &npt_x, &npt_y, &npt_z,
-          fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-          fe->weights.m_pdata);
+  
+  //currently supports for TETRAHEDRON
+  switch(i_order)
+  {
+    case 0:
+      int_tetra_1(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);
+      npt_x = 1;
+      npt_y = 1;
+      npt_z = 1;
+      break;
+    case 1:
+      int_tetra_4(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);
+      npt_x = 1;
+      npt_y = 1;
+      npt_z = 4;
+      break;
+    case 2:
+      int_tetra_5(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);
+      npt_x = 1;
+      npt_y = 1;
+      npt_z = 5;
+      break;
+    case 3:              
+      int_tetra_11(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);
+      npt_x = 1;
+      npt_y = 1;
+      npt_z = 11;               
+
+      break;
+   default:
+      integrate(e_type, &npt_x, &npt_y, &npt_z,
+              fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+              fe->weights.m_pdata);               
+  }  
 
   Matrix_construct(int, fe->itg_ids); 
   Matrix_redim(fe->itg_ids, npt_x*npt_y*npt_z, nsd);
@@ -144,15 +197,11 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   fe->ST = aloc1(3*3*nsd*nne);  
 }
 
-void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, ELEMENT *elem, NODE *node)
+void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order)
 {
   int nne = elem[e].toe;
-  
-  int itg_order = nne;
-  if(nne==4)
-    itg_order = nne + 1;   
-  
-  FEMLIB_initialization(fe, itg_order, 1, nne);
+    
+  FEMLIB_initialization(fe, nne, i_order, nne);
   
   long *nod = aloc1l (nne);
   elemnodes(e,nne,nod,elem);
