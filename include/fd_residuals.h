@@ -49,8 +49,8 @@ extern "C" {
 		    COEL *coel,
 		    MPI_Comm mpi_comm,
 		    const PGFem3D_opt *opts,
-		    double alpha, double *r_n, double *r_n_1);
-
+		    double alpha, double *r_n, double *r_n_1);		    
+		  
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

@@ -116,6 +116,16 @@ void dN_2D (long nne,
       N_ksi[3]  = 0.25*(-1.0 - eta); N_eta[3]  = 0.25*(1.0 - ksi); 
       break;
     }
+  case 6:
+    {
+      N_ksi[0] =     4.0*(eta+ksi)-3.0; N_eta[0] =     4.0*(eta + ksi)-3.0;
+      N_ksi[1] =                   0.0; N_eta[1] =             4.0*ksi-1.0;
+      N_ksi[2] =           4.0*eta-1.0; N_eta[2] =                     0.0;
+      N_ksi[3] =              -4.0*ksi; N_eta[3] = 4.0*(1.0 - 2.0*ksi-eta);
+      N_ksi[4] =               4.0*ksi; N_eta[4] =                 4.0*eta;
+      N_ksi[5] = 4.0*(1.0-ksi-2.0*eta); N_eta[5] =                -4.0*eta; 
+      break;
+    }    
   default:
     PGFEM_printerr("Unrecognized cohesive element! (%s:%s)\n",
 	    __FILE__,__func__);

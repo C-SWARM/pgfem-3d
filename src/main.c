@@ -69,29 +69,34 @@
 #include "applied_traction.h"
 #include "read_input_file.h"
 
+#include "three_field_element.h"
+
 static const int periodic = 0;
 static const int ndim = 3;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
+#define SAVE_RESTART_FILE 1
+
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
-#define SAVE_RESTART_FILE 1
+
 
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
 {
   int err = 0;
   char filename[1024];
+  
   sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
   err += read_VTK_file(filename, u0);      
   sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
   err += read_VTK_file(filename, u1);
+    
   return err;
 }      
 
 #else
-#define SAVE_RESTART_FILE 0
 int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
 {
   if(myrank==0)
@@ -105,9 +110,66 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, dou
 }
 #endif
 
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+int write_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
+{
+  
+  char restart_path[1024];
+  sprintf(restart_path, "%s/restart/STEP_%.5d", opts->opath,stepno);
+                
+  if(make_path(restart_path,DIR_MODE) != 0)
+  {
+    PGFEM_printf("Directory (%s) not created!\n",restart_path);
+    abort();                   
+  }  
+ 
+  char filename[1024];
+  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
+  FILE *fp = fopen(filename,"w");
+
+  if(fp == NULL)
+  {    
+    printf("Fail to open file [%s]. finishing\n", filename);
+    exit(0);  
+  }
+  
+  for(int a=0; a<nodeno; a++)
+  {
+    for(int b=0; b<nsd; b++)
+      fprintf(fp, "%e %e ", u0[a*nsd + b], u1[a*nsd + b]);
+    
+    fprintf(fp, "\n");    
+  }
+  
+  fclose(fp);
+  return 0;
+}
+
+
+int read_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
 {
  
+  char filename[1024];
+  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
+  FILE *fp = fopen(filename,"r");
+
+  if(fp == NULL)
+  {    
+    printf("Fail to open file [%s]. finishing\n", filename);      
+    exit(0);  
+  }
+  
+  for(int a=0; a<nodeno; a++)
+  {
+    for(int b=0; b<nsd; b++)
+      fscanf(fp, "%lf %lf", u0+a*nsd + b, u1+a*nsd + b);    
+  }
+  
+  fclose(fp);
+  return 0;
+}
+
+double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+{
   char filename[1024];
   char line[1024];
   double alpha = 0.5;
@@ -132,7 +194,13 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   }
   
   if(*restart>0)
-    read_initial_from_VTK(opts, myrank, restart, u0, u1);
+  { 
+    int nsd = 3;
+    if(opts->analysis_type==DISP)
+      read_restart_disp(u0, u1, opts, myrank, nodeno, nsd, *restart);
+    else
+      read_initial_from_VTK(opts, myrank, restart, u0, u1);
+  } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
@@ -376,7 +444,14 @@ int single_scale_main(int argc,char *argv[])
   int nproc = 0;
 
   /*=== END INITIALIZATION === */
-  MPI_Init (&argc,&argv);
+
+  int flag_MPI_Init;
+  MPI_Initialized(&flag_MPI_Init);
+  if(!flag_MPI_Init)
+  {
+    MPI_Init (&argc,&argv);  
+  }
+
   MPI_Comm_rank (mpi_comm,&myrank);
   MPI_Comm_size (mpi_comm,&nproc);
   MPI_Get_processor_name (processor_name,&namelen);
@@ -448,7 +523,7 @@ int single_scale_main(int argc,char *argv[])
   if(options.restart){
     if(myrank == 0){
       PGFEM_printerr("WARNING: Restart is not currently supported!\n"
-	      "Starting the simulation from the beginning with"
+	      "Starting the simulation from the beginning with "
 	      "given options.\n");
     }
   }
@@ -683,6 +758,10 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
 	     "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
       break;
+    case TF:
+        PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
+                "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n"); 
+      break;                            
 
     default:
       PGFEM_printerr("ERROR: unrecognized analysis type!\n");
@@ -822,6 +901,7 @@ int single_scale_main(int argc,char *argv[])
       for(int i=0; i<ndofd; i++){
     	tmp_sum += nodal_forces[i];
       }
+ 
       MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
     		    MPI_SUM,mpi_comm);
 
@@ -917,7 +997,16 @@ int single_scale_main(int argc,char *argv[])
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
     /* alocation of pressure variables */
+    int nVol = 1;
     switch(options.analysis_type){
+      case TF:
+        nVol = 1;
+        if(elem[0].toe==10 && ndofn==3)
+        {  
+          npres = 1;
+          nVol = 1;
+        }          
+        break;      
     case STABILIZED: case MINI: case MINI_3F:
       if(npres != 4){
 	npres = 4;
@@ -950,6 +1039,32 @@ int single_scale_main(int argc,char *argv[])
     build_crystal_plast (ne,elem,sig_e,eps,crpl,
 			 options.analysis_type,options.plc);
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /* \/ initialized element varialbes */    
+    if(options.analysis_type==TF)
+    {		            
+    	for (int e=0;e<ne;e++)
+    	{
+    	  if(npres==1)
+    	  {
+        	eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
+      	  for(int a=0; a<3; a++)
+      		  eps[e].d_T[a] = 0.0;
+        }
+    
+       	eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));	
+      	for(int a=0; a<nVol*3; a++)
+      		eps[e].T[a] = 1.0;
+      }		  
+    }    
+    /* /\ initialized element varialbes */  			 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
     /* set finite deformations variables */
     set_fini_def (ne,npres,elem,eps,sig_e,options.analysis_type);
     if (options.analysis_type == FS_CRPL){
@@ -966,7 +1081,7 @@ int single_scale_main(int argc,char *argv[])
       }
       PGFEM_Comm_code_abort(mpi_comm,0);
     }
-
+    
     load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			matgeom,sup,npres,nor_min,sig_e,eps,dt,
 			crpl,options.stab,r,&options);
@@ -1037,6 +1152,7 @@ int single_scale_main(int argc,char *argv[])
         
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = 0;
+    
     alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
     for(long a = 0; a<nn; a++)
     {
@@ -1048,13 +1164,9 @@ int single_scale_main(int argc,char *argv[])
       }   
     }
 
-    for(int a = 0; a<ne; a++)
-    {
-      int mat = elem[a].mat[2];
-      hommat[mat].density = rho[mat];
-    }
-    
-    
+    for(int a = 0; a<nmat; a++)
+      hommat[a].density = rho[a];      
+
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
   
 
@@ -1069,7 +1181,7 @@ int single_scale_main(int argc,char *argv[])
 
       if (myrank == 0){
 	PGFEM_printf("\nFinite deformations time step %ld) "
-	       " Time %f | dt = %10.10f\n",
+	       " Time %e | dt = %e\n",
 	       tim,times[tim+1],dt);
       }
 
@@ -1190,10 +1302,15 @@ int single_scale_main(int argc,char *argv[])
       /* Calculate macro deformation gradient */
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
       GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
-      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);
+      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
 
       /* print GF & GS to file */
       if(myrank == 0){
+
+	printf("%8.8e\t%8.8e\t%8.8e\n",GS[0],GS[1],GS[2]);
+	printf("%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
+	printf("\n");        
+        
 	sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
 	out = fopen(filename,"w");
 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
@@ -1246,23 +1363,37 @@ int single_scale_main(int argc,char *argv[])
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////                          
 // this is only for the restart
-            if(SAVE_RESTART_FILE)
-            {
-              for(long a = 0; a<nn; a++)
-              {              
-                for(long b = 0; b<ndofn; b++)
-                {
-                  long id = node[a].id[b];
-                  if(id>0)
-                    r_n_dof[id-1] = r_n[a*ndofn + b];
+              if(SAVE_RESTART_FILE)
+              {
+                for(long a = 0; a<nn; a++)
+                {              
+                  for(long b = 0; b<ndofn; b++)
+                  {
+                    long id = node[a].id[b];
+                    if(id>0)
+                      r_n_dof[id-1] = r_n_1[a*ndofn + b];
+                  }
                 }
-              }              
-              char restart_path[1024];
-              sprintf(restart_path, "%s/restart", options.opath);
-              VTK_print_vtu(restart_path,options.ofname,tim,
-                    myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
-                    &options);                
-            } 
+                              
+                char restart_path[1024];
+                sprintf(restart_path, "%s/restart", options.opath);
+                
+                if(options.analysis_type==DISP)
+                {    
+                  if(make_path(restart_path,DIR_MODE) != 0)
+                  {
+                    PGFEM_printf("Directory (%s) not created!\n",restart_path);
+                    abort();                   
+                  }
+                  write_restart_disp(r_n_1, r_n, &options, myrank, nn, ndofn, tim);
+                }                
+                else
+                {
+                  VTK_print_vtu(restart_path,options.ofname,tim,
+                      myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
+                      &options);
+                }                
+              } 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
@@ -1289,37 +1420,9 @@ int single_scale_main(int argc,char *argv[])
 	PGFEM_printf("*********************************************\n");
       }
       
-      /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-      /* update previous time step values, r_n and r_n_1 from current time step values r */
-      for(long a = 0; a<nn; a++)
-      {
-        for(long b = 0; b<ndofn; b++)
-        {
-          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-          
-          long id = node[a].id[b];
-          if(id>0)
-            r_n[a*ndofn + b] = r[id-1];
-          else
-          {
-            if(id==0)
-              r_n[a*ndofn + b] = 0.0;
-            else
-              r_n[a*ndofn + b] = sup->defl_d[abs(id-1)-1];
-          }
-        }
-      }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-       
-      
       tim++;
     }/* end while */
-
+    
     /*=== FREE MEMORY ===*/
     free(sup_check);
     fclose (in1);
@@ -1416,6 +1519,16 @@ int single_scale_main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize(); 
+  
+  int flag_MPI_finalized;
+  MPI_Finalized(&flag_MPI_finalized);
+  if(!flag_MPI_finalized)
+  {
+    if(myrank==0)
+      printf("MPI finalizing\n");  
+
+    MPI_Finalize();  
+  }
+    
   return(0);
 }

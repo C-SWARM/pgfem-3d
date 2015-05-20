@@ -447,7 +447,7 @@ int DISP_resid_el(double *R,
   int ndofe = 0;
   for(int i=0; i<nne; i++){
     ndofe += node[nod[i]].ndofn;
-  }
+  } 
 
   /* Make sure that the residual vector contains zeros */
   memset(R,0,ndofe*sizeof(double));

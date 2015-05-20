@@ -70,8 +70,8 @@ AC_ARG_WITH(parmetis-dir, [AS_HELP_STRING([--with-parmetis-dir=<path>],
 			      AC_MSG_FAILURE([ParMETIS: Must provide package location!])
 			      ])
 
-AC_SUBST([parmetis_include],[-I"$with_parmetis_dir/include"])
-AC_SUBST([parmetis_lib],["-L$with_parmetis_dir/lib -lparmetis -lmetis"])
+AC_SUBST([parmetis_include],[-I"$with_parmetis_dir"])
+AC_SUBST([parmetis_lib],["-L$with_parmetis_dir -lparmetis -lmetis"])
 
 # HYPRE
 AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],

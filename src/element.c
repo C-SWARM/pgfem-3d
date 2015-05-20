@@ -55,11 +55,11 @@ ELEMENT* build_elem (FILE *in,
       }
       break;
     case DISP:
-      if (pom[ii].toe != 4){
-	PGFEM_printf("This element type has not been tested"
-	       " with this analysis type (yet).\n");
-	PGFEM_Abort();
-      }
+//      if (pom[ii].toe != 4){        
+//	PGFEM_printf("This element type has not been tested"
+//	       " with this analysis type (yet).\n");
+//	PGFEM_Abort();
+//      }
       break;
     default:
       /* do nothing */

@@ -41,7 +41,8 @@ void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
 				       const void *grid,
 				       const int ascii);
 				       
-int read_VTK_file(char fn[], double *r);				       
+int read_VTK_file(char fn[], double *r);	
+int read_VTK_file4TF(char fn[], double *r, double *P, double *V);				       
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

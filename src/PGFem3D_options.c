@@ -41,6 +41,7 @@ static const long_opt_descr analysis_opts[] = {
   {{"he",no_argument,NULL,2},"\tFinite strains analysis using MINI element",0},
   {{"he3",no_argument,NULL,2},"\tFinite strains analysis using bubble-enhanced 3-Field element",0},
   {{"disp",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based finite strains analysis",0},
+  {{"tf",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based 3 field finite strains analysis",0},
   {{"coh",no_argument,NULL,1},"\tCohesive elements",0},
   {{"ms",no_argument,NULL,'m'},("\tINTERFACE or BULK multiscale modeling.\n"
 				"\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
@@ -434,6 +435,8 @@ void re_parse_command_line(const int myrank,
 	options->analysis_type = MINI_3F;
       } else if(strcmp("disp",opts[opts_idx].name) == 0){
 	options->analysis_type = DISP;
+      } else if(strcmp("tf",opts[opts_idx].name) == 0){
+	options->analysis_type = TF;	
       }
       break;
 

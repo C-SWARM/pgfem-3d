@@ -30,6 +30,7 @@
 #include "vtk_output.h"
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
+#include "three_field_element.h"
 
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
@@ -377,7 +378,7 @@ double Newton_Raphson (const int print_level,
       load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			  matgeom,sup,npres,nor_min,
 			  sig_e,eps,dt,crpl,stab,r,opts);
-     
+			  
       /* Generate the load and vectors */
       for (i=0;i<ndofd;i++)  {
 	f[i] = R[i]/STEP - f_defl[i] - f_u[i];
@@ -409,13 +410,14 @@ double Newton_Raphson (const int print_level,
 	if(microscale == NULL){
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
-
+		
 	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
 		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
 		     myrank,nproc,DomDof,GDof,
 		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
+//return 0.0;
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	  ART = 1;
@@ -471,23 +473,29 @@ double Newton_Raphson (const int print_level,
       MPI_Allreduce(&tmp,&Gss_temp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
       LS1 = 1./2.*Gss_temp;
       
-      /* Pressure and volume change THETA */
+      /* Pressure and volume change THETA */    
+      
       switch(opts->analysis_type){
       case FS_CRPL:
       case FINITE_STRAIN:
-	press_theta (ne,ndofn,npres,elem,node,d_r,rr,sup,matgeom,
-		     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
-	break;
+	      press_theta (ne,ndofn,npres,elem,node,d_r,rr,sup,matgeom,
+	      	     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
+	      break;
       case MINI:
-	MINI_update_bubble(elem,ne,node,ndofn,sup,
-			   eps,sig_e,hommat,d_r,rr,iter);
-	break;
+	      MINI_update_bubble(elem,ne,node,ndofn,sup,
+	      		   eps,sig_e,hommat,d_r,rr,iter);
+	      break;
       case MINI_3F:
-	MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
-			      eps,sig_e,hommat,d_r,rr,iter);
-	break;
+	      MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
+	      		      eps,sig_e,hommat,d_r,rr,iter);
+	      break;		      
+	    case TF:	      
+        update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
+              dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+	      		        
+	      break;
       default:
-	break;
+	      break;
       }
       
       /*************************/
@@ -594,7 +602,7 @@ double Newton_Raphson (const int print_level,
       
       /* Transform LOCAL load vector to GLOBAL */
       LToG (f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
-      
+
       /* Compute Euclidian norm */
       for (i=0;i<DomDof[myrank];i++)
 	BS_f[i] = BS_RR[i] - BS_f_u[i];
@@ -827,11 +835,60 @@ double Newton_Raphson (const int print_level,
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
+    case TF:
+        update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+            dt,t,mpi_comm);                          
+      break;                 	
+      
     default: break;
     }
     
     /* Add deformation increment into displacement vector */
     vvplus (r,d_r,ndofd);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+      /* update previous time step values, r_n and r_n_1 from current time step values r */
+    for(long a = 0; a<nn; a++)
+    {
+      for(long b = 0; b<ndofn; b++)
+      {
+        r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+          
+        long id = node[a].id[b];
+        if(id>0)
+          r_n[a*ndofn + b] = r[id-1];
+        else
+        {
+          if(id==0)
+            r_n[a*ndofn + b] = 0.0;
+          else
+            r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
+        }
+      }
+    }
+    if(opts->analysis_type==TF)
+    {	
+      int nVol = 1;	            
+    	for (int e=0;e<ne;e++)
+    	{
+    	  if(npres==1)
+    	  {
+     		  eps[e].d_T[1] = eps[e].d_T[0];
+     		  eps[e].d_T[2] = eps[e].d_T[1];     		  
+        }
+      	for(int a=0; a<nVol; a++)
+      	{
+      		eps[e].T[a*3+1] = eps[e].T[a*3+0];
+      		eps[e].T[a*3+2] = eps[e].T[a*3+1];      		
+      	}
+      }		  
+    }      
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     
     /* Null prescribed increment deformation */
     for (i=0;i<sup->npd;i++){  

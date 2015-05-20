@@ -18,96 +18,29 @@
 #include "MINI_3f_element.h"
 #include "displacement_based_element.h"
 #include "matice.h"
+
+#include "three_field_element.h"
+#include "condense.h"
+#include "new_potentials.h"
+#include "tensors.h"
+#include "cast_macros.h"
 #include "index_macros.h"
+#include "def_grad.h"
+
+#include "mkl_cblas.h"
+#include "femlib.h"
+#include "dynamics.h"
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
 
+#define ndn 3
+#define N_VOL_TF 1
+#define MIN_DENSITY 1.0e-16
+
 static const int periodic = 0;
 
-void add_inertia(double *Ks,
-         const int ii,
-         const int ndofn,
-         const int nne,
-         const double *x,
-         const double *y,
-         const double *z,		     
-         const ELEMENT *elem,
-         const HOMMAT *hommat,
-		     const NODE *node, double dt) 
-{
-  int err = 0;
-  const int mat = elem[ii].mat[2];
-  double rho = hommat[mat].density;
-  
-  int ndofe = nne*ndofn;
-
-  /* make sure the stiffenss matrix contains all zeros */
-  memset(Ks,0,ndofe*ndofe*sizeof(double));
-
-  
-  /* INTEGRATION */
-  long npt_x, npt_y, npt_z;
-  int_point(nne+1,&npt_z);
-
-  double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
-  int_pt_ksi = aloc1(npt_z);
-  int_pt_eta = aloc1(npt_z);
-  int_pt_zet = aloc1(npt_z);
-  weights = aloc1(npt_z);
-
-  /* allocate space for the shape functions, derivatives etc */
-  double *Na, *N_x, *N_y, *N_z;
-  Na = aloc1 (nne);
-  N_x = aloc1 (nne);
-  N_y = aloc1 (nne);
-  N_z = aloc1 (nne);
-
-
-  /*=== INTEGRATION LOOP ===*/
-  integrate(nne+1,&npt_x,&npt_y,&npt_z,
-	    int_pt_ksi,int_pt_eta,int_pt_zet,
-	    weights);
-
-  for(long i=0; i<npt_x; i++)
-  {
-    for(long j=0; j<npt_y; j++)
-    {
-      for(long k=0; k<npt_z; k++)
-      {
-	      shape_func(int_pt_ksi[k], int_pt_eta[k], int_pt_zet[k], nne, Na);
-        double detJ = deriv(int_pt_ksi[k],int_pt_eta[k],int_pt_zet[k],nne,x,y,z,N_x,N_y,N_z);	      
-	      double wt = weights[k];
-	      for(long a = 0; a<nne; a++)
-	      {
-	        for(long b=0; b<ndofn; b++)
-	        {
-	          for(long c=0; c<nne; c++)
-	          {
-	            for(long d = 0; d<=ndofn; d++)
-	            {
-	              if(b==d)
-	              {
-                  const int K_idx = idx_K(a,b,c,d,nne,ndofn);
-	                Ks[K_idx] += rho/dt*Na[a]*Na[c]*wt*detJ;
-	              }
-	            }
-	          }
-	        } 
-	      }		     
-      }
-	  }
-  }
-  dealoc1(weights);
-  dealoc1(int_pt_ksi);
-  dealoc1(int_pt_eta);
-  dealoc1(int_pt_zet);      
-  dealoc1(Na);  
-  dealoc1(N_x);
-  dealoc1(N_y);
-  dealoc1(N_z);
-}
 
 /* This function may not be used outside this file */
 static int el_stiffmat(int i, /* Element ID */
@@ -143,14 +76,17 @@ static int el_stiffmat(int i, /* Element ID */
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
 			double alpha, double *r_n, double *r_n_1)
 {
-/* make decision to include ineria*/
+/* make a decision to include ineria*/
   
   const int mat = elem[i].mat[2];
   double rho = hommat[mat].density;
   long include_inertia = 1;
+  int nsd = 3;
   
-  if(fabs(rho)<1.0e-15)
+  if(fabs(rho)<MIN_DENSITY)
+  {
     include_inertia = 0;
+  }
 /* decision end*/ 
   
   
@@ -204,7 +140,7 @@ static int el_stiffmat(int i, /* Element ID */
     nodecoord_total (nne,nod,node,x,y,z);
   } else {
     switch(analysis){
-    case DISP:
+    case DISP: case TF:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
     default:
@@ -239,7 +175,7 @@ static int el_stiffmat(int i, /* Element ID */
     def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
   } else {
     switch(analysis){
-    case DISP: /* TOTAL LAGRANGIAN */
+    case DISP: case TF: /* TOTAL LAGRANGIAN */
       def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
       break;
     default:
@@ -254,59 +190,19 @@ static int el_stiffmat(int i, /* Element ID */
       sup->defl_d[j] = sup_def[j];
    }
     
-  nulld (lk,ndofe*ndofe);  
+  int nVol = N_VOL_TF;   
+  memset(lk,0, sizeof(double)*ndofe*ndofe);  
   if(include_inertia)
   {
-    switch(analysis){
-      case DISP:
-      {
-        /* Get TOTAL deformation on element; r_e already contains
-         * INCREMENT of deformation, add the deformation from previous. */
-///////////////////////////////////////////////////////////////////////////////////        
-        double *r_en, *r_mid, *r0;
-        double *lk_k, *lk_i;
-        lk_k = aloc1(ndofe*ndofe);
-        lk_i = aloc1(ndofe*ndofe);
-        
-        r_en  = aloc1(ndofe);
-        r_mid = aloc1(ndofe);
-        r0    = aloc1(ndofe);
-              
-        for (long I=0;I<nne;I++)
-        {
-          for(long J=0; J<ndofn; J++)
-            r0[I*ndofn + J] = r_n[nod[I]*ndofn + J];
-        }
-        
-        def_elem (cnL,ndofe,r,elem,node,r_en,sup,1);
-        vvplus(r_e,r_en,ndofe);
-        
-        mid_point_rule(r_mid, r0, r_e, alpha, ndofe);
-        
-        err = DISP_stiffmat_el(lk_k,i,ndofn,nne,x,y,z,elem,
-                hommat,nod,node,eps,sig,sup,r_mid);
-        
-        add_inertia(lk_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt);
-        
-        
-        memset(lk,0,ndofe*ndofe*sizeof(double));
-        for(long a = 0; a<ndofe*ndofe; a++)
-            lk[a] = -lk_i[a]-alpha*(1-alpha)*dt*lk_k[a];
-
-        free(r_en);
-        free(r_mid);
-        free(r0);
-        free(lk_k);
-        free(lk_i);
-        break;
-      }
-    } /* switch (analysis) */
+    stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
+                               elem,hommat,nod,node,dt,
+                               sig,eps,sup,analysis,alpha,r_n,r_e);          
   }
   else
   {        
   switch(analysis){
   case STABILIZED:
-    err = stiffmatel_st (i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
+    err = stiffmatel_st(i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
 			 sup,r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
     break;
   case MINI:
@@ -318,9 +214,17 @@ static int el_stiffmat(int i, /* Element ID */
 			      hommat,nod,node,eps,sig,r_e);
     break;
   case DISP:
+    {
     err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
 			   hommat,nod,node,eps,sig,sup,r_e);
+			  }
     break;
+  case TF:
+    stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
+                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
+        //stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
+        //          x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+        break;
   default:
     err = stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
 			 hommat,node,sig,eps,r_e,npres,

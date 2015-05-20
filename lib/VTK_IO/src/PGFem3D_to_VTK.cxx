@@ -62,7 +62,8 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   }
   if(analysis_type == STABILIZED
      || analysis_type == MINI
-     || analysis_type == MINI_3F){
+     || analysis_type == MINI_3F
+     || (analysis_type == TF && elems[0].toe!=10)){
     have_pressure = 1;
     pressure->SetNumberOfComponents(1);
     pressure->SetNumberOfTuples(nnode);
@@ -110,6 +111,9 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     vtkSmartPointer<vtkDoubleArray>::New();
   vtkSmartPointer<vtkIdTypeArray> prop = 
     vtkSmartPointer<vtkIdTypeArray>::New();
+      
+  vtkSmartPointer<vtkDoubleArray> tf_pressure = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> tf_volume = vtkSmartPointer<vtkDoubleArray>::New();              
 
   /* output F, P, and W at 1st integration point */
   vtkSmartPointer<vtkDoubleArray> vtkF = 
@@ -159,6 +163,18 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   vtkW->SetNumberOfValues(nelems);
   vtkW->SetName("W");
 
+  if(analysis_type==TF)
+  { 
+    if(elems[0].toe==10)
+    {
+      tf_pressure->SetNumberOfValues(nelems);
+      tf_pressure->SetName("TF_Pressure"); 
+    }
+    
+    tf_volume->SetNumberOfValues(nelems);
+    tf_volume->SetName("TF_Volume"); 
+  }  
+
   // build connectivity and populate fields
   unsigned int count = 0;
   for(int i=0; i<nelems; i++){
@@ -201,6 +217,15 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     damage->SetValue(i,strain[i].dam[0].wn);
     chi->SetValue(i,strain[i].dam[0].Xn);
     prop->SetValue(i,elems[i].pr);
+    
+    if(analysis_type==TF)
+    {
+      if(elems[i].toe==10)
+        tf_pressure->SetValue(i, strain[i].d_T[0]);  
+      
+      tf_volume->SetValue(i, strain[i].T[0]);  
+    }
+      
 
     vtkF->SetTuple(i,strain[i].il[0].F);
     vtkW->SetValue(i,strain[i].il[0].Y);
@@ -260,7 +285,14 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   grid->GetCellData()->AddArray(prop);
   grid->GetCellData()->AddArray(damage);
   grid->GetCellData()->AddArray(chi);
-
+  if(analysis_type==TF)
+  {
+    if(elems[0].toe==10)
+      grid->GetCellData()->AddArray(tf_pressure);
+      
+    grid->GetCellData()->AddArray(tf_volume);    
+  }
+  
   grid->GetCellData()->AddArray(vtkF);
   grid->GetCellData()->AddArray(vtkP);
   grid->GetCellData()->AddArray(vtkW);
@@ -299,6 +331,83 @@ void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
 #endif
 
   writer->Write();
+}
+
+int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
+{
+  //parse command line arguments
+
+  std::string filename = fn;
+
+
+  //************ read all the data from the file **************
+  vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+    vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  reader->SetFileName(filename.c_str());
+  reader->Update(); //read in data from file.
+
+  vtkSmartPointer<vtkUnstructuredGrid> grid =
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  grid = reader->GetOutput(); //data is now in unstructured grid.
+
+  //*************************************************************
+
+  double *temp = 0;
+  int nelems = 0;
+  int ncomponents = 0;
+
+  vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
+  vtkPointData *pData = grid->GetPointData();
+  vtkDataArray *vtkData; // used to temporarily store vtk data arrays. CauchyStress, etc.
+
+  //************* Example: If(data exists) {}
+  /* vtkDataArray *CauchyStress;
+  if(cData->HasArray("CauchyStress")) {
+    CauchyStress = cData->GetArray("CauchyStress");
+  }
+ */
+ 
+ 
+ 
+   //********************* Print out displacement data ***********
+  //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
+  if(pData->HasArray("Displacement")) 
+  {
+    vtkDataArray *Displacement = pData->GetArray("Displacement");
+    nelems = Displacement->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++) 
+    {
+      temp = Displacement->GetTuple(i);
+      r[i*3+0] = temp[0];
+      r[i*3+1] = temp[1];      
+      r[i*3+2] = temp[2];      
+    }
+  }
+  //**************************************************************
+
+  if(cData->HasArray("TF_Pressure")) 
+  {
+    vtkDataArray *pressure = cData->GetArray("TF_Pressure");
+    nelems = pressure->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++)
+    {
+      temp = pressure->GetTuple(i);
+      P[i] = temp[0];
+    } 
+  }
+  
+  if(cData->HasArray("TF_Volume")) 
+  {
+    vtkDataArray *volume = cData->GetArray("TF_Volume");
+    nelems = volume->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++)
+    {
+      temp = volume->GetTuple(i);
+      V[i] = temp[0];
+    } 
+  }
+
+  return EXIT_SUCCESS;
 }
 
 

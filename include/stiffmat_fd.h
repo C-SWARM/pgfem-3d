@@ -30,7 +30,6 @@ extern "C" {
    * COMMUN. Elements with global DOFs are computed first to overlap
    * communication with computation of fully local elements.
    */
-  void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);		     
   int stiffmat_fd (int *Ap,
 		   int *Ai,
 		   long ne,

@@ -295,6 +295,9 @@ void VTK_print_vtu(char *path,
 
   /* Pressure */
   switch(opts->analysis_type){
+  case TF:
+    if(elem[0].toe==10)
+      break;
   case STABILIZED:
   case MINI:
   case MINI_3F:
@@ -414,6 +417,27 @@ void VTK_print_vtu(char *path,
     PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
+  
+  if(opts->analysis_type==TF && elem[0].toe==10)
+  {  
+    /* Pressure */
+    PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Pressure\" format=\"ascii\">\n");
+    for (int i=0; i<ne; i++){
+      PGFEM_fprintf(out,"%12.12e\n",eps[i].d_T[0]);
+    }
+    PGFEM_fprintf(out,"</DataArray>\n");  
+  }  
+  
+  if(opts->analysis_type==TF)
+  {  
+    /* Volume */
+    PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Volume\" format=\"ascii\">\n");
+    for (int i=0; i<ne; i++){
+      PGFEM_fprintf(out,"%12.12e\n",eps[i].T[0]);
+    }
+    PGFEM_fprintf(out,"</DataArray>\n");  
+  }
+  
 
   /* End Cell data */
   PGFEM_fprintf(out,"</CellData>\n");
