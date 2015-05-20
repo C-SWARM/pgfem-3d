@@ -56,7 +56,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     elemnodes(e,nne,nod,elem);
         
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, 1);
     Matrix(double) u;  
     Matrix_construct_init(double,u,nne*ndofn,1,0.0);
                         
