@@ -4,7 +4,7 @@
  */
 
 #include "plasticity_model_none.h"
-#include "plasticity.h"
+#include "constitutive_model.h"
 #include "new_potentials.h"
 
 /**
@@ -21,7 +21,7 @@ static double compute_bulk_mod(const HOMMAT *mat)
   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
 }
 
-static int plasticity_none_int_alg(Plasticity *p,
+static int plasticity_none_int_alg(Constitutive_model *p,
                                    const void *ctx)
 {
   int err = 0;
@@ -29,7 +29,7 @@ static int plasticity_none_int_alg(Plasticity *p,
   return err;
 }
 
-static int plasticity_none_dev_stress(const Plasticity *p,
+static int plasticity_none_dev_stress(const Constitutive_model *p,
                                       const void *ctx,
                                       Matrix_handle *stress)
 {
@@ -40,7 +40,7 @@ static int plasticity_none_dev_stress(const Plasticity *p,
   return err;
 }
 
-static int plasticity_none_pressure(const Plasticity *p,
+static int plasticity_none_pressure(const Constitutive_model *p,
                                     const void *ctx,
                                     double *pressure)
 {
@@ -53,7 +53,7 @@ static int plasticity_none_pressure(const Plasticity *p,
   return err;
 }
 
-static int plasticity_none_dev_tangent(const Plasticity *p,
+static int plasticity_none_dev_tangent(const Constitutive_model *p,
                                        const void *ctx,
                                        Matrix_handle *tangent)
 {
@@ -64,7 +64,7 @@ static int plasticity_none_dev_tangent(const Plasticity *p,
   return err;
 }
 
-static int plasticity_none_pressure_tangent(const Plasticity *p,
+static int plasticity_none_pressure_tangent(const Constitutive_model *p,
                                             const void *ctx,
                                             double *pres_tan)
 {
@@ -77,25 +77,31 @@ static int plasticity_none_pressure_tangent(const Plasticity *p,
   return err;
 }
 
-static int plasticity_none_update(Plasticity *p)
+static int plasticity_none_update(Constitutive_model *p)
 {
   int err = 0;
   return err;
 }
 
-static int plasticity_none_reset(Plasticity *p)
+static int plasticity_none_reset(Constitutive_model *p)
 {
   int err = 0;
   return err;
 }
 
+static int plasticity_none_info(Model_var_info **info)
+{
+  *info = malloc(sizeof(**info));
+  (*info)->F_names = NULL;
+  (*info)->var_names = NULL;
+  (*info)->n_Fs = 0;
+  (*info)->n_vars = 0;
+  return 0;
+}
 
-int plasticity_model_none_initialize(Plasticity *p)
+int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
-  p->Fs = NULL;
-  p->n_Fs = 0;
-  /* zero length state_vars */
 
   /* set functions */
   p->integration_algorithm = plasticity_none_int_alg;
@@ -105,6 +111,7 @@ int plasticity_model_none_initialize(Plasticity *p)
   p->compute_pressure_tangent = plasticity_none_pressure_tangent;
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
+  p->get_var_info = plasticity_none_info;
 
   return err;
 }

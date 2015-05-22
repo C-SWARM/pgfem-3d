@@ -7,37 +7,87 @@
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 
-#include "plasticity.h"
+#include "constitutive_model.h"
 
 #include "material.h"
 #include "hommat.h"
 #include "PGFEM_io.h"
-/* #include "data_structure_c.h" */
+#include "data_structure_c.h"
 
 /* model headers */
 #include "plasticity_model_none.h"
 
-int plasticity_construct(Plasticity *p)
+int constitutive_model_construct(Constitutive_model *m)
+{
+  int err = 0;
+  m->model = NULL;
+  err += state_variables_build(&(m->vars));
+  return err;
+}
+
+int constitutive_model_initialize(Constitutive_model *m,
+                                  const Model_parameters *param)
+{
+  int err = 0;
+  if (param == NULL){
+    err++;
+  } else {
+    m->model = param;
+    Model_var_info *info = NULL;
+    m->model->get_var_info(&info);
+    err += state_variables_initialize(&(m->vars),info->n_Fs,info->n_vars);
+    err += model_var_info_destroy(&info);
+  }
+  return err;
+}
+
+int constitutive_model_destroy(Constitutive_model *m)
+{
+  int err = 0;
+  /* drop pointer to Model_parameters object (deallocated elsewhere) */
+  m->model = NULL;
+  err += state_variables_destroy(&(m->vars));
+  return err;
+}
+
+int model_var_info_destroy(Model_var_info **info)
+{
+  int err = 0;
+  for (size_t i=0, e=(**info).n_Fs; i < e; i++){
+    free(F_names[i]);
+  }
+  free(F_names);
+
+  for (size_t i=0, e=(**info).n_vars; i < e; i++){
+    free(var_names[i]);
+  }
+  free(var_names);
+
+  /* destroy and invalidate pointer */
+  free(*info);
+  *info = NULL;
+  return err;
+}
+
+int model_parameters_construct(Model_parameters *p)
 {
   int err = 0;
   /* poison all values */
-  p->Fs = NULL;
-  /* p->state_vars = NULL; (is this possible?) */
   p->p_mat = NULL;
   p->p_hmat = NULL;
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
-  p->compute_pressure = NULL;
+  p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
-  p->compute_pressure_tangent = NULL;
+  p->compute_d2udj2 = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
-  p->n_Fs = 0;
+  p->get_var_info = NULL;
   p->type = -1;
   return err;
 }
 
-int plasticity_initialize(Plasticity *p,
+int model_parameters_initialize(Model_parameters *p,
                           const MATERIAL *p_mat,
                           const HOMMAT *p_hmat,
                           const size_t type)
@@ -60,18 +110,9 @@ int plasticity_initialize(Plasticity *p,
   return err;
 }
 
-int plasticity_destroy(Plasticity *p)
+int model_parameters_destroy(Model_parameters *p)
 {
   int err = 0;
-  for ( size_t i = 0, e = p->n_Fs; i < e; i++) {
-    /* destroy matrix objects */
-  }
-  free(p->Fs);
-  p->Fs = NULL;
-
-  /* destroy state variables vector */
-  /* Matrix_destroy(p->state_vars); */
-
   /* drop pointer to material (material free'd elsewhere) */
   p->p_mat = NULL;
   p->p_hmat = NULL;
@@ -79,14 +120,14 @@ int plasticity_destroy(Plasticity *p)
   /* drop function pointers */
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
-  p->compute_pressure = NULL;
+  p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
-  p->compute_pressure_tangent = NULL;
+  p->compute_d2udj2 = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
+  p->get_var_info = NULL;
 
   /* reset counters/flags */
-  p->n_Fs = 0;
   p->type = -1;
 
   return err;

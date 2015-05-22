@@ -1,7 +1,5 @@
 /**
- * plasticity.h
- *
- * Define the interface to generalized integration algorithms with
+ * Define the interface to generalized constitutive models with
  * their associated data structure(s). The user is responsible for
  * defining and linking the functions associated with a particular
  * model. NEED MORE USAGE DETAILS.
@@ -14,10 +12,130 @@
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 #pragma once
-#ifndef PLASTICITY_H
-#define PLASTICITY_H
+#ifndef CONSTITUTIVE_MODEL_H
+#define CONSTITUTIVE_MODEL_H
 
 #include <stdlib.h>
+#include "state_variables.h" /* provides declaration of Matrix_double */
+
+/**
+ * Enumeration for the model type
+ */
+enum model_type {
+  NONE,
+  CRYSTAL_PLASTICITY,
+  BPA_PLASTICITY
+};
+
+/**
+ * Pre-declare the Model_parameters structure
+ */
+struct Model_parameters;
+#ifndef TYPE_MODEL_PARAMETERS
+#define TYPE_MODEL_PARAMETERS
+typedef struct Model_parameters Model_parameters;
+#endif
+
+/**
+ * General interface to a constitutive model.
+ *
+ * Holds a Model_parameters object.
+ * Has a State_variables object.
+ */
+struct Constitutive_model {
+  Model_parameters *model;
+  State_variables vars;
+};
+
+#ifndef TYPE_CONSTITUTIVE_MODEL
+#define TYPE_CONSTITUTIVE_MODEL
+typedef struct Constitutive_model Constitutive_model;
+#endif
+
+/**
+ * Construct a Constitutive_model object. The object is left in an
+ * invalid state until constitutive_model initialize is called.
+ *
+ * \return non-zero on error.
+ */
+int constitutive_model_construct(Constitutive_model *m);
+
+/**
+ * Initialize the Constitutive_model object given the material type
+ * and properties. The object may be used after calling this function.
+ *
+ * \return non-zero on error.
+ */
+int constitutive_model_initialize(Constitutive_model *m,
+                                  const Model_parameters *param);
+
+/**
+ * Destroy a Constitutive_model object.
+ *
+ * \return non-zero on error.
+ */
+int constitutive_model_destroy(Constitutive_model *m);
+
+/**
+ * User defined function for the Constitutive_model integration algorithm.
+ *
+ * \param[in,out] m - pointer to a Constitutive_model object.
+ * \param[in,out] usr_ctx - handle to a user defined structure that
+ *   controls execution of the user-defined integration algorithm. This
+ *   is the mechanism for passing model-specific information into the
+ *   general function interface.
+ * 
+ * \return non-zero on internal error that should be handled by the
+ * calling function.
+ */
+typedef int (*usr_int_alg)(Constitutive_model *m,
+                             const void *usr_ctx);
+
+/**
+ * User defined function to compute constitutive tensors.
+ *
+ * \param[in] m - pointer to Constitutive_model object.
+ * \param[in,out] usr_ctx - handle to a user defined structure that
+ *   controls execution of the user-defined function. This is the
+ *   mechanism for passing model-specific information into the general
+ *   function interface.
+ * \param[out] tensor - pointer to a Matrix object (treated as a tensor)
+ *   that is populated with values from the constitutive model.
+ *
+ * \return non-zero value on internal error that should be handled by
+ * the calling function.
+ */
+typedef int (*usr_tensor)(const Constitutive_model *m,
+                          const void *usr_ctx,
+                          Matrix_double *tensor);
+
+/**
+ * User defined function to compute constitutive scalars.
+ *
+ * \param[in] m - pointer to Constitutive_model object.
+ * \param[in,out] usr_ctx - handle to a user defined structure that
+ *   controls execution of the user-defined function. This is the
+ *   mechanism for passing model-specific information into the general
+ *   function interface.
+ * \param[out] scalar - scalar passed by reference
+ *
+ * \return non-zero value on internal error that should be handled by
+ * the calling function.
+ */
+typedef int (*usr_scalar)(const Constitutive_model *m,
+                          const void *usr_ctx,
+                          double *scalar);
+
+/**
+ * User defined function that to increment/decrement the internally
+ * stored state variables, i.e., advance: (n) <- (n + 1),
+ * or reset: (n + 1) <- (n) the internal state variables.
+ *
+ * \param[in,out] m - pointer to Constitutive_model object.
+ * \return non-zero on internal error that should be handled by the
+ * calling function.
+ */
+typedef int (*usr_increment)(Constitutive_model *m);
 
 /** Pre-declare MATERIAL structure */
 struct MATERIAL;
@@ -33,158 +151,85 @@ struct HOMMAT;
 typedef struct HOMMAT HOMMAT;
 #endif
 
-/** Handle to a matrix object */
-struct Matrix_double;
-#ifndef TYPE_MATRIX_HANDLE
-#define TYPE_MATRIX_HANDLE
-typedef struct Matrix_double Matrix_handle;
-#endif
+/**
+ * Object for querying/describing the state variables.
+ */
+struct Model_var_info {
+  char **F_names;
+  char **var_names;
+  size_t n_Fs;
+  size_t n_vars;
+};
 
-/** Handle to a vector object */
-#ifndef TYPE_VECTOR_HANDLE
-#define TYPE_VECTOR_HANDLE
-typedef struct Matrix_double Vector_handle;
-#endif
-
-/** Pre-declare and typedef Plasticity structure */
-struct Plasticity;
-#ifndef TYPE_PLASTICITY
-#define TYPE_PLASTICITY
-typedef struct Plasticity Plasticity;
+#ifndef TYPE_MODEL_VAR_INFO
+#define TYPE_MODEL_VAR_INFO
+typedef struct Model_var_info Model_var_info;
 #endif
 
 /**
- * User defined function to modify the Plasticity object.
+ * destroy a Model_var_info object. Assumes full control of all
+ * internal pointers.
  *
- * \param[in,out] p - Pointer to a plasticity object.
- * \param[in,out] usr_ctx - handle to a user defined structure that
- *   controls execution of the user-defined function. This is the
- *   mechanism for passing model-specific information into the general
- *   function interface.
- * 
- * \return non-zero on internal error that should be handled by the
- * calling function.
+ * \return non-zero on error
  */
-typedef int (*usr_func)(Plasticity *p,
-                        const void *usr_ctx);
+int model_var_info_destroy(Model_var_info **info);
 
 /**
- * User defined function to compute constitutive tensors.
- *
- * \param[in] p - pointer to Plasticity object.
- * \param[in,out] usr_ctx - handle to a user defined structure that
- *   controls execution of the user-defined function. This is the
- *   mechanism for passing model-specific information into the general
- *   function interface.
- * \param[out] tensor - pointer to a Matrix object (treated as a tensor)
- *   that is populated with values from the constitutive model.
- *
- * \return non-zero value on internal error that should be handled by
- * the calling function.
+ * A user described function that allocates a Model_var_info object
+ * and populates the internal structure. This function should fully
+ * allocate the internals of Model_var_info and *copy* data rather
+ * than hold references.
  */
-typedef int (*usr_tensor)(const Plasticity *p,
-                          const void *usr_ctx,
-                          Matrix_handle *tensor);
+typedef int (*usr_info)(Model_var_info **info);
 
 /**
- * User defined function to compute constitutive scalars.
- *
- * \param[in] p - pointer to Plasticity object.
- * \param[in,out] usr_ctx - handle to a user defined structure that
- *   controls execution of the user-defined function. This is the
- *   mechanism for passing model-specific information into the general
- *   function interface.
- * \param[out] scalar - scalar passed by reference
- *
- * \return non-zero value on internal error that should be handled by
- * the calling function.
+ * Interface for accessing model parameters and modifying/updating the
+ * associated state variable(s) at integration points.
  */
-typedef int (*usr_scalar)(const Plasticity *p,
-                          const void *usr_ctx,
-                          double *scalar);
+struct Model_parameters {
+  /** Pointer to anisotropic material properties (props,orientation, etc.) */
+  const MATERIAL *p_mat;
+  /** Pointer to isotropic material props */
+  const HOMMAT *p_hmat;
 
-/**
- * User defined function that to increment/decrement the internally
- * stored state variables, i.e., advance: (n) <- (n + 1),
- * or reset: (n + 1) <- (n) the internal state variables.
- *
- * \param[in,out] p - pointer to Plasticity object.
- * \return non-zero on internal error that should be handled by the
- * calling function.
- */
-typedef int (*usr_increment)(Plasticity *p);
-
-/**
- * Generalized interface for integrating a constitutive model.
- *
- * This structure could be split into an object for handling the state
- * variables at each integration point and another object responsible
- * for handling model parameters and functions. This has the potential
- * to drastically reduce the memory requirements for the
- * implementation since we are not storing duplicates of the function
- * pointers.
- */
-struct Plasticity {
-  Matrix_handle *Fs;        /*< Array of handles to deformation
-                              gradients, e.g., Fp, Ft, Fe,... */
-  Vector_handle *state_vars; /*< Handle to vector of state variables */
-  const MATERIAL *p_mat;    /*< Pointer to a material (props,
-                              orientation, etc.)*/
-  const HOMMAT *p_hmat;     /*< Pointer to add'l material props */
-
-  usr_func integration_algorithm;  /*< integrate the constitutive
-                                     model (compute n + 1 state
-                                     variables) */
-  usr_tensor compute_dev_stress;   /*< compute the (modified)
-                                     deviatoric stress */
-  usr_scalar compute_pressure;   /*< compute the (modified)
-                                     pressure */ 
-  usr_tensor compute_dev_tangent;  /*< compute the (modified)
-                                     deviatoric tangent */
-  usr_scalar compute_pressure_tangent;  /*< compute the (modified)
-                                          pressure tangent */
-  usr_increment update_state_vars; /*< state variables
-                                     (n) <- (n + 1) */
-  usr_increment reset_state_vars; /*< state variables
-                                    (n + 1) <- (n) */
-
-  size_t n_Fs; /*< Number of handles to deformation gradients. */
-  size_t type; /*< Model type, see enumeration @model_type */
+  /** access to user-defined functions */
+  usr_int_alg integration_algorithm;
+  usr_tensor compute_dev_stress;
+  usr_scalar compute_dudj;
+  usr_tensor compute_dev_tangent;
+  usr_scalar compute_d2udj2;
+  usr_increment update_state_vars;
+  usr_increment reset_state_vars;
+  usr_info get_var_info;
+  /** Model type, see enumeration @model_type */
+  size_t type;
 };
 
 /**
- * Enumeration for the model type
- */
-enum model_type {
-  NONE,
-  CRYSTAL_PLASTICITY,
-  BPA_PLASTICITY
-};
-
-/**
- * Construct a plasticity object. The object is left in an invalid
- * state until plasticity initialize is called.
+ * Construct a Model_parameters object. The object is left in an
+ * invalid state until model_parameters_initialize is called.
  *
  * \return non-zero on error.
  */
-int plasticity_construct(Plasticity *p);
+int model_parameters_construct(Model_parameters *p);
 
 /**
- * Initialize the plasticity object given the material type and
- * properties. The object may be used after calling this function.
+ * Initialize the Model_parameters object. The object may be used
+ * after calling this function. Calling this function on an already
+ * initialized object is undefined.
  *
  * \return non-zero on error.
  */
-int plasticity_initialize(Plasticity *p,
-                          const MATERIAL *p_mat,
-                          const HOMMAT *p_hmat,
-                          const size_t type);
+int model_parameters_initialize(Model_parameters *p,
+                                const MATERIAL *p_mat,
+                                const HOMMAT *p_hmat,
+                                const size_t type);
 
 /**
- * Destroy a plasticity object.
+ * Destroy a Model_parameters object.
  *
  * \return non-zero on error.
  */
-int plasticity_destroy(Plasticity *p);
+int model_parameters_destroy(Model_parameters *p);
 
 #endif

@@ -1,7 +1,7 @@
 /**
  * Declare/define functions that integrate with the plasticty model
- * interface (see plasticity.h). This file defines the interface for
- * the purely hyperelastic model.
+ * interface (see constitutive_model.h). This file defines the
+ * interface for the purely hyperelastic model.
  *
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
@@ -10,20 +10,19 @@
 #ifndef PLASTICITY_MODEL_NONE_H
 #define PLASTICITY_MODEL_NONE_H
 
-/** Pre-declare and typedef Plasticity structure */
-struct Plasticity;
-#ifndef TYPE_PLASTICITY
-#define TYPE_PLASTICITY
-typedef struct Plasticity Plasticity;
+struct Model_parameters;
+#ifndef TYPE_MODEL_PARAMETERS
+#define TYPE_MODEL_PARAMETERS
+typedef struct Model_parameters Model_parameters;
 #endif
 
 /**
- * Initialize the plasticity object for this particular model.
+ * Initialize the Model_parameters object for this particular model.
  *
- * \param[in,out] p - pointer to a Plasticity object
+ * \param[in,out] p - pointer to a Constitutive_model object
  * \return non-zero on internal error
  */
-int plasticity_model_none_initialize(Plasticity *p);
+int plasticity_model_none_initialize(Model_parameters *p);
 
 /**
  * Construct and initialize the model context for calling functions
