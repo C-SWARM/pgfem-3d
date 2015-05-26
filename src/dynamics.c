@@ -6,7 +6,6 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
-#include "../verification_MMS/MMS.h"
 
 #define INTG_ORDER 3
 
