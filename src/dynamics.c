@@ -6,9 +6,9 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
-//#include "../verification_MMS/MMS.h"
+#include "../verification_MMS/MMS.h"
 
-#define INTG_ORDER 1
+#define INTG_ORDER 3
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
 {
@@ -130,9 +130,9 @@ void DISP_resid_body_force_el(double *f,
     
   double *bf = aloc1(ndofn);
                  
-  for(int a = 1; a<=fe.nint; a++)
+  for(int ip = 1; ip<=fe.nint; ip++)
   {
-    FEMLIB_elem_basis_V(&fe, a); 
+    FEMLIB_elem_basis_V(&fe, ip); 
     double X[3];
     X[0] = X[1] = X[2] = 0.0;
     
@@ -152,7 +152,7 @@ void DISP_resid_body_force_el(double *f,
       for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-        f[id] += bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
+        f[id] += 0.0*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
 	  }	          
   }        
@@ -192,9 +192,9 @@ void DISP_resid_w_inertia_el(double *f,
   bf_n1a = aloc1(ndofn);        
   bf     = aloc1(ndofn);
                  
-  for(int a = 1; a<=fe.nint; a++)
+  for(int ip = 1; ip<=fe.nint; ip++)
   {
-    FEMLIB_elem_basis_V(&fe, a); 
+    FEMLIB_elem_basis_V(&fe, ip); 
 
     Matrix_init(du, 0.0);
     double X[3];
@@ -221,10 +221,10 @@ void DISP_resid_w_inertia_el(double *f,
     double t1 = t-dt;
     double t0 = t - dt - dt;
     
-    //if(t0>=0) 
+//    if(t0>=0) 
       MMS_body_force(bf0, &hommat[mat], t0, X[0], X[1], X[2]);
 
-    //if(t1>=0)  
+//    if(t1>=0)  
       MMS_body_force(bf1, &hommat[mat], t1, X[0], X[1], X[2]); 
     
     MMS_body_force(bf2, &hommat[mat], t,  X[0], X[1], X[2]);
@@ -316,7 +316,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	    }
 	                              
 	    for(long a = 0; a<ndofe; a++)
-	      fe[a] = -f_i[a] + fe[a];
+	      fe[a] -= f_i[a];
 	      
 	    break;
 	    
