@@ -15,16 +15,23 @@
 #include "pgf_fe2_server_rebalance.h"
 
 /**
+ * Specify the minimum tag upper bound prescribed in the MPI
+ * standard. It seems that querying MPI_TAG_UB may not be accurate for
+ * the implementation... (for example mvapich2-2.0: MPI_TAG_UB - 1
+ * gives MPI_TAG_ERR)
+ */
+#define PGFEM_TAG_UB 32767
+/**
  * Enumeration to use for special macro-micro communication tags.
  */
 enum pgf_FE2_micro_server_event_tags{
-  FE2_MICRO_SERVER_EXIT = -5,       /**< Signal the micro server to
-				       cleanup and exit */
+  /** Signal the micro server to cleanup and exit */
+  FE2_MICRO_SERVER_EXIT = PGFEM_TAG_UB - 1,
 
-  FE2_MICRO_SERVER_REBALANCE = -6   /**< Signal the micro server to
-				       prepare for a new list of work
-				       and possible rebalancing
-				       step. */
+  /** Signal the micro server to prepare for a new list of work and
+   * possible rebalancing step.
+   */
+  FE2_MICRO_SERVER_REBALANCE = PGFEM_TAG_UB -2
 };
 
 /**

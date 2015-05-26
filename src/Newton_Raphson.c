@@ -846,49 +846,47 @@ double Newton_Raphson (const int print_level,
     /* Add deformation increment into displacement vector */
     vvplus (r,d_r,ndofd);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-      /* update previous time step values, r_n and r_n_1 from current time step values r */
-    for(long a = 0; a<nn; a++)
-    {
-      for(long b = 0; b<ndofn; b++)
+    /* update previous time step values, r_n and r_n_1 from current
+       time step values r*/
+    /* For FE2, these vectors are not allocated and are passed as NULL */
+    if ( r_n_1 != NULL && r_n != NULL )
       {
-        r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-          
-        long id = node[a].id[b];
-        if(id>0)
-          r_n[a*ndofn + b] = r[id-1];
-        else
-        {
-          if(id==0)
-            r_n[a*ndofn + b] = 0.0;
-          else
-            r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
-        }
+        for(long a = 0; a<nn; a++)
+          {
+            for(long b = 0; b<ndofn; b++)
+              {
+                r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+                long id = node[a].id[b];
+                if(id>0)
+                  r_n[a*ndofn + b] = r[id-1];
+                else
+                  {
+                    if(id==0)
+                      r_n[a*ndofn + b] = 0.0;
+                    else
+                      r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
+                  }
+              }
+          }
       }
-    }
+
     if(opts->analysis_type==TF)
-    {	
-      int nVol = 1;	            
-    	for (int e=0;e<ne;e++)
-    	{
-    	  if(npres==1)
-    	  {
-     		  eps[e].d_T[1] = eps[e].d_T[0];
-     		  eps[e].d_T[2] = eps[e].d_T[1];     		  
-        }
-      	for(int a=0; a<nVol; a++)
-      	{
-      		eps[e].T[a*3+1] = eps[e].T[a*3+0];
-      		eps[e].T[a*3+2] = eps[e].T[a*3+1];      		
-      	}
-      }		  
-    }      
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+      {
+        int nVol = 1;
+        for (int e=0;e<ne;e++)
+          {
+            if(npres==1)
+              {
+                eps[e].d_T[1] = eps[e].d_T[0];
+                eps[e].d_T[2] = eps[e].d_T[1];
+              }
+            for(int a=0; a<nVol; a++)
+              {
+                eps[e].T[a*3+1] = eps[e].T[a*3+0];
+                eps[e].T[a*3+2] = eps[e].T[a*3+1];
+              }
+          }
+      }
     
     /* Null prescribed increment deformation */
     for (i=0;i<sup->npd;i++){  
