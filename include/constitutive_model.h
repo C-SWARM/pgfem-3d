@@ -43,7 +43,7 @@ typedef struct Model_parameters Model_parameters;
  * Has a State_variables object.
  */
 struct Constitutive_model {
-  Model_parameters *model;
+  const Model_parameters *model;
   State_variables vars;
 };
 

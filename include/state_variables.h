@@ -12,6 +12,18 @@
 #ifndef STATE_VARIABLES_H
 #define STATE_VARIABLES_H
 
+#include <stdlib.h>
+
+struct Matrix_double;
+#ifndef TYPE_MATRIX_DOUBLE
+#define TYPE_MATRIX_DOUBLE
+typedef struct Matrix_double Matrix_double;
+#endif
+
+#ifndef TYPE_VECTOR_DOUBLE
+#define TYPE_VECTOR_DOUBLE
+typedef struct Matrix_double Vector_double;
+#endif
 /**
  * Object for storing state variables at an integration point.
  */
@@ -24,6 +36,11 @@ struct State_variables {
 
   size_t n_Fs;
 };
+
+#ifndef TYPE_STATE_VARIABLES
+#define TYPE_STATE_VARIABLES
+typedef struct State_variables State_variables;
+#endif
 
 int state_variables_build(State_variables *s);
 int state_variables_destroy(State_variables *s);
