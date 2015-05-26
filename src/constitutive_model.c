@@ -53,19 +53,24 @@ int constitutive_model_destroy(Constitutive_model *m)
 int model_var_info_destroy(Model_var_info **info)
 {
   int err = 0;
-  for (size_t i=0, e=(**info).n_Fs; i < e; i++){
-    free(F_names[i]);
-  }
-  free(F_names);
-
-  for (size_t i=0, e=(**info).n_vars; i < e; i++){
-    free(var_names[i]);
-  }
-  free(var_names);
-
-  /* destroy and invalidate pointer */
-  free(*info);
+  Model_var_info *t_info = *info;
+  /* invalidate pointer */
   *info = NULL;
+
+  /* deallocate internal memory */
+  for (size_t i=0, e=t_info->n_Fs; i < e; i++){
+    free(t_info->F_names[i]);
+  }
+  free(t_info->F_names);
+
+  for (size_t i=0, e=t_info->n_vars; i < e; i++){
+    free(t_info->var_names[i]);
+  }
+  free(t_info->var_names);
+
+  /* destroy memory for structure */
+  free(t_info);
+
   return err;
 }
 

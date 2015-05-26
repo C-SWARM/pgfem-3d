@@ -6,6 +6,9 @@
 #include "plasticity_model_none.h"
 #include "constitutive_model.h"
 #include "new_potentials.h"
+#include "data_structure_c.h"
+
+Define_Matrix(double);
 
 /**
  * Private structure for use exclusively with this model and
@@ -31,49 +34,45 @@ static int plasticity_none_int_alg(Constitutive_model *p,
 
 static int plasticity_none_dev_stress(const Constitutive_model *p,
                                       const void *ctx,
-                                      Matrix_handle *stress)
+                                      Matrix_double *stress)
 {
   int err = 0;
   const none_ctx *CTX = ctx;
-  devStressFuncPtr Stress = getDevStressFunc(-1,p->p_hmat);
-  /* Stress(CTX->C,p->p_hmat,stress->data); */
+  devStressFuncPtr Stress = getDevStressFunc(-1,p->model->p_hmat);
+  Stress(CTX->C,p->model->p_hmat,stress->m_pdata);
   return err;
 }
 
-static int plasticity_none_pressure(const Constitutive_model *p,
-                                    const void *ctx,
-                                    double *pressure)
+static int plasticity_none_dudj(const Constitutive_model *p,
+                                const void *ctx,
+                                double *dudj)
 {
   int err = 0;
   const none_ctx *CTX = ctx;
-  const double kappa = compute_bulk_mod(p->p_hmat);
-  dUdJFuncPtr Pressure = getDUdJFunc(-1,p->p_hmat);
-  Pressure(*(CTX->J),p->p_hmat,pressure);
-  (*pressure) *= kappa / 2.0;
+  dUdJFuncPtr Pressure = getDUdJFunc(-1,p->model->p_hmat);
+  Pressure(*(CTX->J),p->model->p_hmat,dudj);
   return err;
 }
 
 static int plasticity_none_dev_tangent(const Constitutive_model *p,
                                        const void *ctx,
-                                       Matrix_handle *tangent)
+                                       Matrix_double *tangent)
 {
   int err = 0;
   const none_ctx *CTX = ctx;
-  matStiffFuncPtr Tangent = getMatStiffFunc(-1,p->p_hmat);
-  /* Tangent(CTX->C,p->p_hmat,tangent->data); */
+  matStiffFuncPtr Tangent = getMatStiffFunc(-1,p->model->p_hmat);
+  Tangent(CTX->C,p->model->p_hmat,tangent->m_pdata);
   return err;
 }
 
-static int plasticity_none_pressure_tangent(const Constitutive_model *p,
-                                            const void *ctx,
-                                            double *pres_tan)
+static int plasticity_none_d2udj2(const Constitutive_model *p,
+                                  const void *ctx,
+                                  double *d2udj2)
 {
   int err = 0;
   const none_ctx *CTX = ctx;
-  const double kappa = compute_bulk_mod(p->p_hmat);
-  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,p->p_hmat);
-  D_Pressure(*(CTX->J),p->p_hmat,pres_tan);
-  (*pres_tan) *= kappa / 2.0;
+  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,p->model->p_hmat);
+  D_Pressure(*(CTX->J),p->model->p_hmat,d2udj2);
   return err;
 }
 
@@ -106,9 +105,9 @@ int plasticity_model_none_initialize(Model_parameters *p)
   /* set functions */
   p->integration_algorithm = plasticity_none_int_alg;
   p->compute_dev_stress = plasticity_none_dev_stress;
-  p->compute_pressure = plasticity_none_pressure;
+  p->compute_dudj = plasticity_none_dudj;
   p->compute_dev_tangent = plasticity_none_dev_tangent;
-  p->compute_pressure_tangent = plasticity_none_pressure_tangent;
+  p->compute_d2udj2 = plasticity_none_d2udj2;
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
   p->get_var_info = plasticity_none_info;
