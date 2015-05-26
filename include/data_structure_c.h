@@ -46,9 +46,9 @@ typedef struct Matrix_##T                                               \
 } while(0)                                     
 
 #define Matrix_init(p, value) do {                                      \
-  long a, b;                                                            \
-  for(a = 0; a < p.m_row*p.m_col; a++){                                 \
-      p.m_pdata[a] =  value;                                            \
+  long __a;                                                             \
+  for(__a = 0; __a < p.m_row*p.m_col; __a++){                           \
+      p.m_pdata[__a] =  value;                                          \
   }                                                                     \
 } while(0) 
 
@@ -65,32 +65,32 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix_init_w_array(p, m, n, q) do {                            \
   Matrix_redim(p, m, n);                                                \
-  long a, b;                                                            \
-  for(a = 1; a <= p.m_row; a++){                                        \
-    for(b = 1; b <= p.m_col; b++){                                      \
-      Mat_v(p, a, b) =  q[(a-1)*n + (b-1)];                             \
+  long __a, __b;                                                        \
+  for(__a = 1; __a <= p.m_row; __a++){                                  \
+    for(__b = 1; __b <= p.m_col; __b++){                                \
+      Mat_v(p, __a, __b) =  q[(__a-1)*n + (__b-1)];                     \
     }                                                                   \
   }                                                                     \
 } while(0)
 
 /* A = delta_ij */
 #define Matrix_eye(A, m) do {                                           \
-  long I;                                                               \
+  long __a;                                                             \
   Matrix_redim(A, m, m);                                                \
   Matrix_init(A, 0.0);                                                  \
-  for(I = 1; I <= m; I++)                                               \
-    Mat_v(A, I, I) = 1.0;                                               \
+  for(__a = 1; __a <= m; __a++)                                         \
+    Mat_v(A, __a, __a) = 1.0;                                           \
                                                                         \
 } while(0)
 
 /* trA = tr_(A), trA = A_ii */
 #define Matrix_trace(A,trA) do {                                        \
-  long I;                                                               \
+  long __a;                                                             \
   trA = 0.0;                                                            \
   if(A.m_row != A.m_col || A.m_row ==0 || A.m_col ==0)                  \
     break;                                                              \ 
-  for(I = 1; I <= A.m_row; I++)                                         \  
-    trA += Mat_v(A, I, I);                                              \
+  for(__a = 1; __a <= A.m_row; __a++)                                   \  
+    trA += Mat_v(A, __a, __a);                                          \
 } while(0)
 
 #define Matrix_det(A, ddet) do {                                        \
@@ -190,11 +190,11 @@ typedef struct Matrix_##T                                               \
 } while(0)
 
 #define Matrix_print(A) do {                                            \
-  long a, b;                                                            \
+  long __a, __b;                                                        \
   printf("[%ldx%ld] = \n", A.m_row, A.m_col);                           \
-  for(a = 1; a <= A.m_row; a++){                                        \
-    for(b = 1; b <= A.m_col; b++){                                      \
-      printf("%e ", (double)Mat_v(A, a, b));                            \
+  for(__a = 1; __a <= A.m_row; __a++){                                  \
+    for(__b = 1; __b <= A.m_col; __b++){                                \
+      printf("%e ", (double)Mat_v(A, __a, __b));                        \
     }                                                                   \
     printf("\n");                                                       \
   }                                                                     \
@@ -202,25 +202,25 @@ typedef struct Matrix_##T                                               \
 
 /* A = bB */
 #define Matrix_AeqB(A, b, B) do {                                       \
-  long I;                                                               \
+  long __a;                                                             \
   long m_row = B.m_row;                                                 \
   long m_col = B.m_col;                                                 \
   Matrix_redim(A, m_row, m_col);                                        \
                                                                         \
-  for(I = 0; I < m_row*m_col; I++)                                      \
-    A.m_pdata[I] = B.m_pdata[I]*b;                                      \
+  for(__a = 0; __a < m_row*m_col; __a++)                                \
+    A.m_pdata[__a] = B.m_pdata[__a]*b;                                  \
 } while(0)
   
 /* A = transpose(A) */
 #define Matrix_trans(A) do {                                            \
-  long a, b;                                                            \
+  long __a, __b;                                                        \
   long m_row = A.m_row;                                                 \
   long m_col = A.m_col;                                                 \
   A.temp =  malloc(A.sizeof_T*m_row*m_col);                             \
                                                                         \
-  for(a = 1; a <= m_row; a++){                                          \
-    for(b = 1; b <= m_col; b++){                                        \
-      A.temp[(b-1)*A.m_col+(a-1)] = Mat_v(A, a, b);                     \
+  for(__a = 1; __a <= m_row; __a++){                                    \
+    for(__b = 1; __b <= m_col; __b++){                                  \
+      A.temp[(__b-1)*A.m_col+(__a-1)] = Mat_v(A, __a, __b);             \
     }                                                                   \
   }                                                                     \
   A.m_row = m_col;                                                      \
@@ -233,7 +233,7 @@ typedef struct Matrix_##T                                               \
 
 /* C = aA + bB */
 #define Matrix_AplusB(C, a, A, b, B) do {                               \
-  long I, J;                                                            \
+  long __I;                                                             \
   long m_row = A.m_row;                                                 \
   long m_col = A.m_col;                                                 \
   if(A.m_row != B.m_row)                                                \
@@ -241,8 +241,8 @@ typedef struct Matrix_##T                                               \
   if(A.m_col != B.m_col)                                                \
     break;                                                              \
                                                                         \
-  for(I = 0; I < m_row*m_col; I++)                                      \
-    C.m_pdata[I] = A.m_pdata[I]*a + B.m_pdata[I]*b;                     \
+  for(__I = 0; __I < m_row*m_col; __I++)                                \
+    C.m_pdata[__I] = A.m_pdata[__I]*a + B.m_pdata[__I]*b;               \
 } while(0)
 
 
