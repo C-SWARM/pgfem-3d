@@ -27,9 +27,6 @@
 #include <sys/resource.h>
 #include <assert.h>
 
-/* Extra libs */
-#include "renumbering.h"
-
 /*=== PFEM3d headers ===*/
 #include "PGFEM_io.h"
 #include "allocation.h"

@@ -1,9 +1,0 @@
-This directory contains the source code for renumbering routines using
-ParMETIS. The source code is in the src/ directory, the header files
-are in the include/ directory, and the library(s) are in the lib/
-directory.
-
-While this library only needs access to the ParMETIS header files and
-not the libraries, remember to link the ParMETIS and METIS libraries
-to whatever executable it will be used in.  Also, note that the
-library must be linked BEFORE the ParMETIS and METIS libraries.
