@@ -18,46 +18,46 @@ typedef struct Matrix_##T                                               \
 
 
 #define Matrix(T) Matrix_##T
-#define Mat_v(p, m, n) p.m_pdata[(m-1)*p.m_col+(n-1)]
-#define Vec_v(p, m) p.m_pdata[m-1]
+#define Mat_v(p, m, n) (p).m_pdata[((m)-1)*(p).m_col+((n)-1)]
+#define Vec_v(p, m) (p).m_pdata[(m)-1]
 
 #define Matrix_construct(T, p) do {                                     \
-  p.m_pdata = NULL;                                                     \
-  p.temp    = NULL;                                                     \
-  p.m_row = 0;                                                          \
-  p.m_col = 0;                                                          \
-  p.sizeof_T = sizeof(T);                                               \
+  (p).m_pdata = NULL;                                                   \
+  (p).temp    = NULL;                                                   \
+  (p).m_row = 0;                                                        \
+  (p).m_col = 0;                                                        \
+  (p).sizeof_T = sizeof(T);                                             \
 } while(0) 
 
 #define Matrix_construct_redim(T, p, m, n) do {                         \
-  p.temp    = NULL;                                                     \
-  p.m_row = m;                                                          \
-  p.m_col = n;                                                          \
-  p.sizeof_T = sizeof(T);                                               \
-  p.m_pdata = malloc(p.sizeof_T*m*n);                                   \
+  (p).temp    = NULL;                                                   \
+  (p).m_row = m;                                                        \
+  (p).m_col = n;                                                        \
+  (p).sizeof_T = sizeof(T);                                             \
+  (p).m_pdata = malloc(p.sizeof_T*m*n);                                 \
 } while(0)
 
 #define Matrix_redim(p, m, n) do {                                      \
   Matrix_cleanup(p);                                                    \
-  p.m_pdata = malloc(p.sizeof_T*m*n);                                   \
-  p.temp    = NULL;                                                     \
-  p.m_row = m;                                                          \
-  p.m_col = n;                                                          \
+  (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
+  (p).temp    = NULL;                                                   \
+  (p).m_row = m;                                                        \
+  (p).m_col = n;                                                        \
 } while(0)                                     
 
 #define Matrix_init(p, value) do {                                      \
   long __a;                                                             \
-  for(__a = 0; __a < p.m_row*p.m_col; __a++){                           \
-      p.m_pdata[__a] =  value;                                          \
+  for(__a = 0; __a < (p).m_row*(p).m_col; __a++){                       \
+      (p).m_pdata[__a] =  value;                                        \
   }                                                                     \
 } while(0) 
 
 #define Matrix_construct_init(T, p, m, n, value) do {                   \
-  p.temp    = NULL;                                                     \
-  p.m_row = m;                                                          \
-  p.m_col = n;                                                          \
-  p.sizeof_T = sizeof(T);                                               \
-  p.m_pdata = malloc(p.sizeof_T*m*n);                                   \
+  (p).temp    = NULL;                                                   \
+  (p).m_row = m;                                                        \
+  (p).m_col = n;                                                        \
+  (p).sizeof_T = sizeof(T);                                             \
+  (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
 /*  memset(p.m_pdata,value,p.sizeof_T*m*n);   */                        \
   Matrix_init(p, value);                                                \  
 } while(0)
@@ -95,15 +95,15 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix_det(A, ddet) do {                                        \
                                                                         \
-  if(A.m_row != A.m_col || A.m_row ==0 || A.m_col ==0)                  \
+  if((A).m_row != (A).m_col || (A).m_row ==0 || (A).m_col ==0)          \
     break;                                                              \
                                                                         \
-  if(A.m_row==1){                                                       \
+  if((A).m_row==1){                                                     \
     ddet = Mat_v(A, 1, 1);                                              \
     break;                                                              \
   }                                                                     \
                                                                         \
-  if(A.m_row==2){                                                       \
+  if((A).m_row==2){                                                     \
     ddet = Mat_v(A, 1, 1)*Mat_v(A, 2, 2);                               \
     ddet -= Mat_v(A, 1, 2)*Mat_v(A, 2, 1);                              \
     break;                                                              \
@@ -118,7 +118,7 @@ typedef struct Matrix_##T                                               \
     ddet -= Mat_v(A, 1, 1)*Mat_v(A, 3, 2)*Mat_v(A, 2, 3);               \
     break;                                                              \
   };                                                                    \
-  if(A.m_row > 3){                                                      \
+  if((A).m_row > 3){                                                    \
     printf("Matrix greater than [3x3] is not currently supported\n");   \
     break;                                                              \
   }                                                                     \
@@ -127,10 +127,10 @@ typedef struct Matrix_##T                                               \
 #define Matrix_inv(A, invA) do {                                        \
   double detA = 0.0;                                                    \
                                                                         \
-  if(A.m_row != A.m_col || A.m_row ==0 || A.m_col ==0)                  \
+  if((A).m_row != (A).m_col || (A).m_row ==0 || (A).m_col ==0)          \
     break;                                                              \
                                                                         \
-  Matrix_redim(invA, A.m_row, A.m_col);                                 \
+  Matrix_redim(invA, (A).m_row, (A).m_col);                             \
   if(A.m_row==1){                                                       \
     Mat_v(invA, 1, 1) = 1.0/Mat_v(A, 1, 1);                             \
     break;                                                              \
@@ -142,15 +142,15 @@ typedef struct Matrix_##T                                               \
     break;                                                              \
   }                                                                     \
                                                                         \
-  if(A.m_row==2){                                                       \
-    Mat_v(invA, 1, 1) = Mat_v(A, 2, 2)/detA;                            \
-    Mat_v(invA, 2, 2) = Mat_v(A, 1, 1)/detA;                            \
+  if((A).m_row==2){                                                     \
+    Mat_v(invA, 1, 1) =  Mat_v(A, 2, 2)/detA;                           \
+    Mat_v(invA, 2, 2) =  Mat_v(A, 1, 1)/detA;                           \
     Mat_v(invA, 1, 2) = -Mat_v(A, 1, 2)/detA;                           \
     Mat_v(invA, 2, 1) = -Mat_v(A, 2, 1)/detA;                           \
     break;                                                              \
   };                                                                    \
                                                                         \
-  if(A.m_row==3){                                                       \
+  if((A).m_row==3){                                                     \
                                                                         \
     Mat_v(invA, 1, 1) = (Mat_v(A, 2, 2)*Mat_v(A, 3, 3)                  \
                        - Mat_v(A, 2, 3)*Mat_v(A, 3, 2))/detA;           \
@@ -172,28 +172,28 @@ typedef struct Matrix_##T                                               \
                        - Mat_v(A, 1, 2)*Mat_v(A, 2, 1))/detA;           \
     break;                                                              \
   };                                                                    \
-  if(A.m_row > 3){                                                      \
+  if((A).m_row > 3){                                                    \
     printf("Matrix greater than [3x3] is not currently supported\n");   \
     break;                                                              \
   }                                                                     \
 } while(0)                                                              
 
 #define Matrix_cleanup(A) do {                                          \
-  A.m_row = 0;                                                          \
-  A.m_col = 0;                                                          \
-  if(A.m_pdata)                                                         \
-    free(A.m_pdata);                                                    \
-  A.m_pdata = NULL;                                                     \
-  if(A.temp)                                                            \
-    free(A.temp);                                                       \
-  A.temp = NULL;                                                        \
+  (A).m_row = 0;                                                        \
+  (A).m_col = 0;                                                        \
+  if((A).m_pdata)                                                       \
+    free((A).m_pdata);                                                  \
+  (A).m_pdata = NULL;                                                   \
+  if((A).temp)                                                          \
+    free((A).temp);                                                     \
+  (A).temp = NULL;                                                      \
 } while(0)
 
 #define Matrix_print(A) do {                                            \
   long __a, __b;                                                        \
-  printf("[%ldx%ld] = \n", A.m_row, A.m_col);                           \
-  for(__a = 1; __a <= A.m_row; __a++){                                  \
-    for(__b = 1; __b <= A.m_col; __b++){                                \
+  printf("[%ldx%ld] = \n", (A).m_row, (A).m_col);                       \
+  for(__a = 1; __a <= (A).m_row; __a++){                                \
+    for(__b = 1; __b <= (A).m_col; __b++){                              \
       printf("%e ", (double)Mat_v(A, __a, __b));                        \
     }                                                                   \
     printf("\n");                                                       \
@@ -203,65 +203,65 @@ typedef struct Matrix_##T                                               \
 /* A = bB */
 #define Matrix_AeqB(A, b, B) do {                                       \
   long __a;                                                             \
-  long m_row = B.m_row;                                                 \
-  long m_col = B.m_col;                                                 \
+  long m_row = (B).m_row;                                               \
+  long m_col = (B).m_col;                                               \
   Matrix_redim(A, m_row, m_col);                                        \
                                                                         \
   for(__a = 0; __a < m_row*m_col; __a++)                                \
-    A.m_pdata[__a] = B.m_pdata[__a]*b;                                  \
+    A.m_pdata[__a] = (B).m_pdata[__a]*b;                                \
 } while(0)
   
 /* A = transpose(A) */
 #define Matrix_trans(A) do {                                            \
   long __a, __b;                                                        \
-  long m_row = A.m_row;                                                 \
-  long m_col = A.m_col;                                                 \
-  A.temp =  malloc(A.sizeof_T*m_row*m_col);                             \
+  long m_row = (A).m_row;                                               \
+  long m_col = (A).m_col;                                               \
+  (A).temp =  malloc((A).sizeof_T*m_row*m_col);                         \
                                                                         \
   for(__a = 1; __a <= m_row; __a++){                                    \
     for(__b = 1; __b <= m_col; __b++){                                  \
-      A.temp[(__b-1)*A.m_col+(__a-1)] = Mat_v(A, __a, __b);             \
+      (A).temp[(__b-1)*(A).m_col+(__a-1)] = Mat_v(A, __a, __b);         \
     }                                                                   \
   }                                                                     \
-  A.m_row = m_col;                                                      \
-  A.m_col = m_row;                                                      \
-  if(A.m_pdata)                                                         \
-    free(A.m_pdata);                                                    \
-  A.m_pdata = A.temp;                                                   \
-  A.temp = NULL;                                                        \
+  (A).m_row = m_col;                                                    \
+  (A).m_col = m_row;                                                    \
+  if((A).m_pdata)                                                       \
+    free((A).m_pdata);                                                  \
+  (A).m_pdata = (A).temp;                                               \
+  (A).temp = NULL;                                                      \
 } while(0)
 
 /* C = aA + bB */
 #define Matrix_AplusB(C, a, A, b, B) do {                               \
   long __I;                                                             \
-  long m_row = A.m_row;                                                 \
-  long m_col = A.m_col;                                                 \
-  if(A.m_row != B.m_row)                                                \
+  long m_row = (A).m_row;                                               \
+  long m_col = (A).m_col;                                               \
+  if((A).m_row != (B).m_row)                                            \
     break;                                                              \
-  if(A.m_col != B.m_col)                                                \
+  if((A).m_col != (B).m_col)                                            \
     break;                                                              \
                                                                         \
   for(__I = 0; __I < m_row*m_col; __I++)                                \
-    C.m_pdata[__I] = A.m_pdata[__I]*a + B.m_pdata[__I]*b;               \
+    (C).m_pdata[__I] = (A).m_pdata[__I]*a + (B).m_pdata[__I]*b;         \
 } while(0)
 
 
 /*C = aAxB + bC*/
 // C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
 // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,a,A,k,B,n,b,C,n);
-#define Matrix_AxB(C, a, b, A, AT, B, BT) do {                                                                                             \
-  if(AT==0 && BT==0){                                                                                                                      \
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,A.m_row,B.m_col,A.m_col,a,A.m_pdata,A.m_col,B.m_pdata,B.m_col,b,C.m_pdata,C.m_col);\
-  }                                                                                                                                        \
-  if(AT==1 && BT==0){                                                                                                                      \
-    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasNoTrans,C.m_row,C.m_col,B.m_row,a,A.m_pdata,A.m_col,B.m_pdata,B.m_col,b,C.m_pdata,C.m_col);\
-  }                                                                                                                                        \   
-  if(AT==0 && BT==1){                                                                                                                      \
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,  C.m_row,C.m_col,A.m_col,a,A.m_pdata,A.m_col,B.m_pdata,B.m_col,b,C.m_pdata,C.m_col);\
-  }                                                                                                                                        \
-  if(AT==1 && BT==1){                                                                                                                      \
-    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasTrans,  C.m_row,C.m_col,A.m_row,a,A.m_pdata,A.m_col,B.m_pdata,B.m_col,b,C.m_pdata,C.m_col);\
-  }                                                                                                                                        \
+#define Matrix_AxB(C, a, b, A, AT, B, BT) do {                                                                                                               \
+  if(AT==0 && BT==0){                                                                                                                                        \
+    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,(A).m_row,(B).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
+  }                                                                                                                                                          \
+  if(AT==1 && BT==0){                                                                                                                                        \
+    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasNoTrans,(C).m_row,(C).m_col,(B).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
+  }                                                                                                                                                          \   
+  if(AT==0 && BT==1){                                                                                                                                        \
+    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,  (C).m_row,(C).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
+  }                                                                                                                                                          \
+  if(AT==1 && BT==1){                                                                                                                                        \
+    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasTrans,  (C).m_row,(C).m_col,(A).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
+  }                                                                                                                                                          \
 } while(0)
 
 #endif
