@@ -1151,18 +1151,20 @@ int single_scale_main(int argc,char *argv[])
     int restart_tim = 0;
     
     alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
-    for(long a = 0; a<nn; a++)
+    for(long idx_a = 0; idx_a<nn; idx_a++)
     {
-      for(long b = 0; b<ndofn; b++)
+      for(long idx_b = 0; idx_b<ndofn; idx_b++)
       {
-        long id = node[a].id[b];
+        long id = node[idx_a].id[idx_b];
         if(id>0)
-          r[id-1] = r_n[a*ndofn + b];
-      }   
+          r[id-1] = r_n[idx_a*ndofn + idx_b];
+      }
     }
 
-    for(int a = 0; a<nmat; a++)
-      hommat[a].density = rho[a];      
+    for(int idx_a = 0; idx_a<nhommat; idx_a++)
+      hommat[idx_a].density = rho[idx_a];
+
+    free(rho);
 
 /*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
   
@@ -1463,6 +1465,7 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (BS_DK);
     dealoc1 (BS_dR);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
+    free(nodal_forces);
   }
 
   /* Deallocate */
