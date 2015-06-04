@@ -41,7 +41,7 @@ static int BPA_int_alg(Constitutive_model *m,
                        const void *ctx)
 {
   int err = 0;
-
+  const BPA_ctx *CTX = ctx;
   return err;
 }
 
@@ -50,6 +50,7 @@ static int BPA_dev_stress(const Constitutive_model *m,
                           Matrix_double *dev_stress)
 {
   int err = 0;
+  const BPA_ctx *CTX = ctx;
   return err;
 }
 
@@ -58,6 +59,7 @@ static int BPA_dudj(const Constitutive_model *m,
                     double *dudj)
 {
   int err = 0;
+  const BPA_ctx *CTX = ctx;
   return err;
 }
 
@@ -66,7 +68,7 @@ static int BPA_dev_tangent(const Constitutive_model *m,
                            Matrix_double *dev_tangent)
 {
   int err = 0;
-
+  const BPA_ctx *CTX = ctx;
   return err;
 }
 
@@ -75,18 +77,29 @@ static int BPA_d2udj2(const Constitutive_model *m,
                       double *d2udj2)
 {
   int err = 0;
+  const BPA_ctx *CTX = ctx;
   return err;
 }
 
 static int BPA_update_vars(Constitutive_model *m)
 {
   int err = 0;
+  Matrix_copy(m->vars.Fs[_Fp_n],m->vars.Fs[_Fp]);
+
+  /* alias */
+  Vector_double *vars = m->vars.state_vars;
+  Vec_v(*vars,_s_n + 1) = Vec_v(*vars,_s + 1);
   return err;
 }
 
 static int BPA_reset_vars(Constitutive_model *m)
 {
   int err = 0;
+  Matrix_copy(m->vars.Fs[_Fp],m->vars.Fs[_Fp_n]);
+
+  /* alias */
+  Vector_double *vars = m->vars.state_vars;
+  Vec_v(*vars,_s + 1) = Vec_v(*vars,_s_n + 1);
   return err;
 }
 
