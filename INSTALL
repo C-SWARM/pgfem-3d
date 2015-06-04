@@ -6,7 +6,6 @@ PGFem3D relies on several external libraries. They are:
 
 VTK-6.0	      	       : http://vtk.org/VTK/resources/software.html
 hypre-2.40b   	       : http://computation.llnl.gov/casc/hypre/software.html
-ParMETIS-3.1.1	       : http://glaros.dtc.umn.edu/gkhome/fsroot/sw/parmetis/OLD
 suitesparse-2.1.1      : http://www.cise.ufl.edu/research/sparse/SuiteSparse/
            	         (only the AMD and UMFPACK routines are utilized)
 Intel MKL	       : included w/ the Intel compiler suite
@@ -20,7 +19,6 @@ script does not exist, recreate it using 'autoreconf -if'. We
 currently requrie the following options to be specified in the
 configuration step:
 
-  --with-parmetis-dir=<path>
   --with-hypre-dir=<path>
   --with-suitesparse-dir=<path>
 
@@ -48,7 +46,6 @@ then options will automatically be set when you envoke
 A sample `config.site` might look like the following:
 
 # required options
-with_parmetis_dir=/path/to/ParMetis-3.1.1
 with_hypre_dir=/path/to/hypre-2.4.0b
 with_suitesparse_dir=/path/to/suitesparse
 

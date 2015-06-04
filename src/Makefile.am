@@ -128,19 +128,15 @@ main.c \
 dynamics.c \
 super_main.c
 
-renumbering_include = -I$(top_srcdir)/lib/Renumbering/include
-renumbering_lib = -L$(top_srcdir)/lib/Renumbering/src -lrenumbering
-
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
 VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 
-AM_INCLUDES = $(renumbering_include) \
-	      $(VTK_IO_include) \
+AM_INCLUDES = $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
 	      $(mkl_include)
 
-PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
+PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
 
