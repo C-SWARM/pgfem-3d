@@ -125,6 +125,7 @@ main.c \
 dynamics.c \
 plasticity_model.c \
 plasticity_model_none.c \
+plasticity_model_BPA.c \
 state_variables.c \
 constitutive_model.c \
 post_processing.c \
