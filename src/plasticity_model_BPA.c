@@ -17,6 +17,7 @@
 
 #include "plasticity_model_BPA.h"
 #include "constitutive_model.h"
+#include "state_variables.h"
 #include "new_potentials.h"
 #include "data_structure_c.h"
 
@@ -87,18 +88,38 @@ static int BPA_reset_vars(Constitutive_model *m)
 static int BPA_model_info(Model_var_info **info)
 {
   int err = 0;
+
+  /* make sure I don't leak memory */
   if (*info != NULL) err += model_var_info_destroy(info);
+
+  /* allocate pointers */
   (*info) = malloc(sizeof(**info));
-  (*info)->F_names = NULL;
-  (*info)->var_names = NULL;
-  (*info)->n_Fs = 0;
-  (*info)->n_vars = 0;
+  (*info)->n_Fs = 2;
+  (*info)->n_vars = 2;
+  (*info)->F_names = malloc(sizeof(((*info)->F_names)));
+  (*info)->var_names = malloc( ( (*info)->n_vars )
+                               * sizeof( ((*info)->var_names) ));
+
+  /* allocate/copy strings */
+  (*info)->F_names[0] = strdup("Fp_n");
+  (*info)->F_names[1] = strdup("Fp");
+  (*info)->var_names[0] = strdup("s_n");
+  (*info)->var_names[1] = strdup("s");
+
   return err;
 }
 
 int plasticity_model_BPA_initialize(Model_parameters *p)
 {
   int err = 0;
+  p->integration_algorithm = BPA_int_alg;
+  p->compute_dev_stress = BPA_dev_stress;
+  p->compute_dudj = BPA_dudj;
+  p->compute_dev_tangent = BPA_dev_tangent;
+  p->compute_d2udj2 = BPA_d2udj2;
+  p->update_state_vars = BPA_update_vars;
+  p->reset_state_vars = BPA_reset_vars;
+  p->get_var_info = BPA_model_info;
   return err;
 }
 
