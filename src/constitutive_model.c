@@ -125,10 +125,10 @@ int model_parameters_construct(Model_parameters *p)
 }
 
 int model_parameters_initialize(Model_parameters *p,
-                          const MATERIAL *p_mat,
-                          const MATGEOM_1 *p_mgeom,
-                          const HOMMAT *p_hmat,
-                          const size_t type)
+                                const MATERIAL *p_mat,
+                                const MATGEOM_1 *p_mgeom,
+                                const HOMMAT *p_hmat,
+                                const size_t type)
 {
   int err = 0;
   p->p_mat = p_mat;
