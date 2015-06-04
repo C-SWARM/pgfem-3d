@@ -310,6 +310,18 @@ typedef struct Matrix_##T                                               \
   }                                                                     \
 } while(0)
 
+/* A <- B */
+#define Matrix_copy(A,B) do {                                           \
+    assert( ((A).m_row == (B).m_row) && ((A).m_col == (B).m_col) );     \
+    if ( sizeof(*((A).m_pdata)) == sizeof(*((B).m_pdata)) ) {           \
+      memcpy((A).m_pdata,(B).m_pdata,                                   \
+             (A).m_row * (A).m_col * sizeof(*((A).m_pdata)));           \
+    } else {                                                            \
+      for ( size_t idx = 0, e = (A).m_row * (A).m_col;                  \
+            idx < e; idx++) (A).m_pdata[idx] = (B).m_pdata[idx];        \
+    }                                                                   \
+} while (0)
+
 /* A = bB */
 #define Matrix_AeqB(A, b, B) do {                                       \
   long __a;                                                             \
