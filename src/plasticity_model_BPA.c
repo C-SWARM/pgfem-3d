@@ -32,6 +32,11 @@ typedef struct {
   int dummy;
 } BPA_ctx;
 
+static const int _n_Fs = 2;
+static const int _n_vars = 2;
+enum {_Fp_n,_Fp};
+enum {_s_n,_s};
+
 static int BPA_int_alg(Constitutive_model *m,
                        const void *ctx)
 {
@@ -94,17 +99,17 @@ static int BPA_model_info(Model_var_info **info)
 
   /* allocate pointers */
   (*info) = malloc(sizeof(**info));
-  (*info)->n_Fs = 2;
-  (*info)->n_vars = 2;
+  (*info)->n_Fs = _n_Fs;
+  (*info)->n_vars = _n_vars;
   (*info)->F_names = malloc(sizeof(((*info)->F_names)));
   (*info)->var_names = malloc( ( (*info)->n_vars )
                                * sizeof( ((*info)->var_names) ));
 
   /* allocate/copy strings */
-  (*info)->F_names[0] = strdup("Fp_n");
-  (*info)->F_names[1] = strdup("Fp");
-  (*info)->var_names[0] = strdup("s_n");
-  (*info)->var_names[1] = strdup("s");
+  (*info)->F_names[_Fp_n] = strdup("Fp_n");
+  (*info)->F_names[_Fp] = strdup("Fp");
+  (*info)->var_names[_s_n] = strdup("s_n");
+  (*info)->var_names[_s] = strdup("s");
 
   return err;
 }
