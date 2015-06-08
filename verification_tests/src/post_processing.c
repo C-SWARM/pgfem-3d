@@ -2,6 +2,7 @@
 #include "enumerations.h"
 #include "utils.h"
 #include "allocation.h"
+#include "PGFem3D_to_VTK.hpp"
 
 int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
 {

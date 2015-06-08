@@ -4,7 +4,6 @@
 
 #include "read_input_file.h"
 #include "post_processing.h"
-#include "PGFem3D_to_VTK.hpp"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */

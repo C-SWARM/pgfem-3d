@@ -4,6 +4,8 @@
 #include "new_potentials.h"
 #include "femlib.h"
 #include "eps.h"
+#include "PGFem3D_options.h"
+
 int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u);
 
 void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
