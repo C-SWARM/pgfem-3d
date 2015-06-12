@@ -176,7 +176,6 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   }  
 
   // build connectivity and populate fields
-  unsigned int count = 0;
   for(int i=0; i<nelems; i++){
     switch(elems[i].toe){
     case 4: type[i] = VTK_TETRA; break;
@@ -187,10 +186,8 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
       MPI_Abort(MPI_COMM_WORLD,0);
       break;
     }
-    // conn->InsertValue(count,elems[i].toe); count++;
     conn->InsertNextValue(elems[i].toe);
     for(int j=0;j<elems[i].toe; j++){
-      // conn->InsertValue(count,elems[i].nod[j]);count++;
       conn->InsertNextValue(elems[i].nod[j]);
     }
 
@@ -354,11 +351,9 @@ int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
 
   double *temp = 0;
   int nelems = 0;
-  int ncomponents = 0;
 
   vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
   vtkPointData *pData = grid->GetPointData();
-  vtkDataArray *vtkData; // used to temporarily store vtk data arrays. CauchyStress, etc.
 
   //************* Example: If(data exists) {}
   /* vtkDataArray *CauchyStress;
@@ -432,7 +427,6 @@ int read_VTK_file(char fn[], double *r)
 
   double *temp = 0;
   int nelems = 0;
-  int ncomponents = 0;
 
   vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
   vtkPointData *pData = grid->GetPointData();
