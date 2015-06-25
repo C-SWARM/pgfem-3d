@@ -68,7 +68,7 @@ if ( $flag eq '-np' ) {
     if ( $nproc != 1 ) {
       system ("cd $dir; cp -s ../partitions.$nproc/$filebase.out.* .");
     } else {
-      system ("cp $filebase.out $dir/$filebase.out");
+      system ("cp $filebase.out $dir/$filebase.out.0");
     }
 
     print ("Copying header file.\n");
