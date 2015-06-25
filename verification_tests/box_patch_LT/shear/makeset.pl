@@ -2,7 +2,7 @@
 
 $filebase = "box_LT";
 $ext = "st";
-$t3d_options = "-d .1 -p 8 "; #'-\$ -X';
+$t3d_options = "-d .1 -p 8 -k 1"; #'-\$ -X';
 $decomposition_options = '-sp -rn';
 $convert_options = '-v'; #'-pr 200.0 200.0 200.0';
 
@@ -33,6 +33,12 @@ $flag = shift;
 if ( $flag eq 'clean') {
   system ("rm -rf $filebase.out *CPU partitions.*");
   $flag = shift;
+}
+
+if ( $flag eq '-d') {
+  $dis = shift;
+  $flag = shift;
+  $t3d_options = "-d $dis -p 8 -k 2"; #'-\$ -X';
 }
 
 if ( $flag eq '-np' ) {
