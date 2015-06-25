@@ -7,10 +7,10 @@ clear;
 
 files = dir; % determines the files in the directory
 
-for id = 2:length(files) - 5 % determines the number of files in the directory...
-    % minus the files: box_QT_0.in.st, box_QT.out.header, box_QT.t3d,...
-    % makeset.pl, and this file
+for id = 1:length(files) - 1 % determines the number of files in the directory...
+    % minus this file
     k = 2^(id - 1);
+
     if isdir(sprintf('box_QT_%iCPU',k)) == 1
         cd (sprintf('box_QT_%iCPU',k)) % changes to the correct directory if found
         for i = 1:k  
@@ -42,26 +42,36 @@ for id = 2:length(files) - 5 % determines the number of files in the directory..
                 end
             end
     
-            fprintf(file2, '%4d %4d %4d %17.8e %16.8e %16.8e %2d %4d %1d\n', B');
+            fprintf(file2,'%4d %4d %4d   %4.8e   %4.8e   %4.8e %2d %4d %d\n', B');
             fprintf(file2,'\n');
 
-            count = 0; 
+            count = 0;
+
+	    shear=[];
+	    bcmat = [];	 
             for l = 1:nodes
                 if B(l,4) == 0 || B(l,5) == 0 || B(l,6) == 0 || B(l,4) == 1 ||...
                     B(l,5) == 1 || B(l,6) == 1
-                    shear(1,l) = B(l,5)*displacement; % determines the amount of shear in the y-direction
-                    count = count + 1; % iteration counter
-                else
+			count = count + 1; % iteration counter 
+                   	bc = [B(l,3) -count 1 1]; % [geom id] [x comp. supporting type] [y comp. supporting type] [z comp. supporting type]
+		      %  tline = fgets(file1);
+			for o = 1:4
+			    bcmat(count,o) = bc(o); % matrix that remembers the values in bc
+			end
+			shear(1,count) = B(l,5)*displacement; % determines the amount of shear in the y-direction
+                 else
+		%	    bcmat(l,1) = l - 1;
+		%	tline = fgets(file1);
+		%	tlinemat = str2num(tline)
+		% 	for o = 1:4
+		%	    bcmat(l,o) = tlinemat(o)
+		%	end
                 end
             end
 
             fprintf(file2, '%d\n', count); % number of supported entities
-
-            for m = 1:count
-                bc = [m-1, -m, 1, 1]; % [geom id] [x comp. supporting type] [y comp. supporting type] [z comp. supporting type]
-                fprintf(file2, '%d %d %d %d\n', bc);
-            end
-    
+            fprintf(file2, '%4d  %d %d %d\n', bcmat');
+               
             fprintf(file2, '\n');
             fprintf(file2, '%d\n', count); % [# of prescribed]
             fprintf(file2, '%e  ', shear); % [value 1] [value 2] [value #]
@@ -70,8 +80,8 @@ for id = 2:length(files) - 5 % determines the number of files in the directory..
 
             tline = fgets(file1);
             tline = fgets(file1);
-            original_count = str2double(tline); 
             count2 = 0;
+	   original_count = str2double(tline);
             while ischar(tline)
                 tline = fgets(file1);
                 if count2 > original_count + 3 % skips the values that have already been replaced
@@ -82,7 +92,7 @@ for id = 2:length(files) - 5 % determines the number of files in the directory..
            delete(sprintf('box_QT_%i.in',number)); % deletes the original *.in file
            movefile(sprintf('box_QT%i.in',number),sprintf('box_QT_%i.in',number)); % file being written to renamed to box_QT_...
         end
+    cd .. % goes back up to original directory
     else
     end
-    cd .. % goes back up to original directory
 end
