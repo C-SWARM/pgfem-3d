@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include "mkl_cblas.h"
+#include "utils.h"
 
 #define Define_Matrix(T)                                                \
 typedef struct Matrix_##T                                               \
@@ -20,6 +21,50 @@ typedef struct Matrix_##T                                               \
 #define Matrix(T) Matrix_##T
 #define Mat_v(p, m, n) (p).m_pdata[((m)-1)*(p).m_col+((n)-1)]
 #define Vec_v(p, m) (p).m_pdata[(m)-1]
+#define Tns4_v(p, I,J,K,L) Vec_v(p,(I-1)*3*3*3+(J-1)*3*3+(K-1)*3+L)
+
+#define Matrix_Tns4_mat_9x9(p) do{                                      \
+  (p).m_row = 9;                                                        \
+  (p).m_col = 9;                                                        \
+} while(0)
+
+#define Matrix_Mat2Vec(p) do{                                           \
+  (p).m_row = (p).m_row*(p).m_col;                                      \
+  (p).m_col = 1;                                                        \
+} while(0)
+
+#define Matrix_Vec2Mat(p, m, n) do{                                     \
+  (p).m_row = (m);                                                      \
+  (p).m_col = (n);                                                      \
+} while(0)
+
+#define Matrix_Tns4_eye(p) do{                                          \
+  for(int I=1; I<=3; I++)                                               \
+  {                                                                     \
+    for(int J=1; J<=3; J++)                                             \
+    {                                                                   \
+      for(int K=1; K<=3; K++)                                           \
+      {                                                                 \
+        for(int L=1; L<=3; L++)                                         \
+          Tns4_v(p, I,J,K,L) = 1.0*(I==K)*(J==L);                       \
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
+
+#define Matrix_Tns4_eye_bar(p) do{                                      \
+  for(int I=1; I<=3; I++)                                               \
+  {                                                                     \
+    for(int J=1; J<=3; J++)                                             \
+    {                                                                   \
+      for(int K=1; K<=3; K++)                                           \
+      {                                                                 \
+        for(int L=1; L<=3; L++)                                         \
+          Tns4_v(p, I,J,K,L) = 1.0*(I==L)*(J==K);                       \
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
 
 #define Matrix_construct(T, p) do {                                     \
   (p).m_pdata = NULL;                                                   \
@@ -34,7 +79,7 @@ typedef struct Matrix_##T                                               \
   (p).m_row = m;                                                        \
   (p).m_col = n;                                                        \
   (p).sizeof_T = sizeof(T);                                             \
-  (p).m_pdata = malloc((p).sizeof_T*m*n);                                 \
+  (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
 } while(0)
 
 #define Matrix_redim(p, m, n) do {                                      \
@@ -59,7 +104,7 @@ typedef struct Matrix_##T                                               \
   (p).sizeof_T = sizeof(T);                                             \
   (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
 /*  memset(p.m_pdata,value,p.sizeof_T*m*n);   */                        \
-  Matrix_init(p, value);                                                \  
+  Matrix_init(p, value);                                                \
 } while(0)
                                                 
 
@@ -68,7 +113,7 @@ typedef struct Matrix_##T                                               \
   long __a, __b;                                                        \
   for(__a = 1; __a <= p.m_row; __a++){                                  \
     for(__b = 1; __b <= p.m_col; __b++){                                \
-      Mat_v(p, __a, __b) =  q[(__a-1)*n + (__b-1)];                     \
+      Mat_v(p, __a, __b) =  q[(__a-1)*(n) + (__b-1)];                   \
     }                                                                   \
   }                                                                     \
 } while(0)
@@ -125,6 +170,10 @@ typedef struct Matrix_##T                                               \
 } while(0)                                                              
 
 #define Matrix_inv(A, invA) do {                                        \
+  inverse((A).m_pdata,(A).m_row,(invA).m_pdata);                        \
+} while(0)
+
+#define Matrix_inv_no_use(A, invA) do {                                 \
   double detA = 0.0;                                                    \
                                                                         \
   if((A).m_row != (A).m_col || (A).m_row ==0 || (A).m_col ==0)          \
@@ -208,7 +257,7 @@ typedef struct Matrix_##T                                               \
   Matrix_redim(A, m_row, m_col);                                        \
                                                                         \
   for(__a = 0; __a < m_row*m_col; __a++)                                \
-    A.m_pdata[__a] = (B).m_pdata[__a]*b;                                \
+    A.m_pdata[__a] = (B).m_pdata[__a]*(b);                              \
 } while(0)
   
 /* A = transpose(A) */
@@ -242,9 +291,37 @@ typedef struct Matrix_##T                                               \
     break;                                                              \
                                                                         \
   for(__I = 0; __I < m_row*m_col; __I++)                                \
-    (C).m_pdata[__I] = (A).m_pdata[__I]*a + (B).m_pdata[__I]*b;         \
+    (C).m_pdata[__I] = (A).m_pdata[__I]*(a) + (B).m_pdata[__I]*(b);     \
 } while(0)
 
+#define Matrix_AOxB(C, A, B) do {                                       \
+  for(int I=1; I<=3; I++)                                               \
+  {                                                                     \
+    for(int J=1; J<=3; J++)                                             \
+    {                                                                   \
+      for(int K=1; K<=3; K++)                                           \
+      {                                                                 \
+        for(int L=1; L<=3; L++)                                         \
+          Tns4_v(C, I,J,K,L) = Mat_v(A,I,J)*Mat_v(B,K,L);               \
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
+
+#define Matrix_Tns4_dd_Tns2(C, A, B) do {                               \
+  for(int I=1; I<=3; I++)                                               \
+  {                                                                     \
+    for(int J=1; J<=3; J++)                                             \
+    {                                                                   \
+      Mat_v(C,I,J)=0.0;                                                 \
+      for(int K=1; K<=3; K++)                                           \
+      {                                                                 \
+        for(int L=1; L<=3; L++)                                         \
+          Mat_v(C,I,J) += Tns4_v(A,I,J,K,L)*Mat_v(B,K,L);               \
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
 
 /*C = aAxB + bC*/
 // C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
