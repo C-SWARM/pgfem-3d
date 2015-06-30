@@ -1,17 +1,20 @@
 % Author: Phillip Hughes
 % Date: June 15, 2015
 % Title: Shear
-    
+
+% this script copies shear input files once created and determines the amount of shear based on mapping of points    
+% to be used when input files are in the same directory
+
 clc;
 clear;
 
 filename = 'box_LT';
 files = dir; % determines the number of files in the directory
 
-for id = 1:length(files) % determines the number of files in the directory...
+for id = 1:length(files)
     k = 2^(id - 1);
 
-    if isdir(sprintf(strcat(filename,'_%iCPU'),k)) == 1
+    if isdir(sprintf(strcat(filename,'_%iCPU'),k)) == 1 % determines if the folder is in the directory
         cd (sprintf(strcat(filename,'_%iCPU'),k)) % changes to the correct directory if found
         for i = 1:k  
             number = i - 1;
@@ -47,25 +50,18 @@ for id = 1:length(files) % determines the number of files in the directory...
 
             count = 0;
 
-	    shear=[];
-	    bcmat = [];	 
+	    shear=[]; % refreshes the matrix every iteration
+	    bcmat = [];	% refreshes the matrix every iteration 
             for l = 1:nodes
                 if B(l,4) == 0 || B(l,5) == 0 || B(l,6) == 0 || B(l,4) == 1 ||...
                     B(l,5) == 1 || B(l,6) == 1
 			count = count + 1; % iteration counter 
                    	bc = [B(l,3) -count 1 1]; % [geom id] [x comp. supporting type] [y comp. supporting type] [z comp. supporting type]
-		      %  tline = fgets(file1);
 			for o = 1:4
 			    bcmat(count,o) = bc(o); % matrix that remembers the values in bc
 			end
 			shear(1,count) = B(l,5)*displacement; % determines the amount of shear in the y-direction
-                 else
-		%	    bcmat(l,1) = l - 1;
-		%	tline = fgets(file1);
-		%	tlinemat = str2num(tline)
-		% 	for o = 1:4
-		%	    bcmat(l,o) = tlinemat(o)
-		%	end
+                else
                 end
             end
 
@@ -81,7 +77,7 @@ for id = 1:length(files) % determines the number of files in the directory...
             tline = fgets(file1);
             tline = fgets(file1);
             count2 = 0;
-	   original_count = str2double(tline);
+	    original_count = str2double(tline);
             while ischar(tline)
                 tline = fgets(file1);
                 if count2 > original_count + 3 % skips the values that have already been replaced
@@ -89,8 +85,8 @@ for id = 1:length(files) % determines the number of files in the directory...
                 end
                 count2 = count2 + 1; % iteration counter
             end
-           delete(sprintf(strcat(filename,'_%i.in'),number)); % deletes the original *.in file
-           movefile(sprintf(strcat(filename,'%i.in'),number),sprintf(strcat(filename,'_%i.in'),number)); % file being written to renamed to filename...
+            delete(sprintf(strcat(filename,'_%i.in'),number)); % deletes the original *.in file
+            movefile(sprintf(strcat(filename,'%i.in'),number),sprintf(strcat(filename,'_%i.in'),number)); % file being written to renamed to filename...
         end
     cd .. % goes back up to original directory
     else
