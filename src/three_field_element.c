@@ -961,7 +961,6 @@ void update_3f_state_variables_ip(int ii, int ip,
         double volume,
         double detJxW)
 {
-  
   if(ip==1)
   { 
     memset(sig[ii].el.o,0,6*sizeof(double));
@@ -1072,7 +1071,7 @@ void update_3f_state_variables_el(const int ii,
   Matrix_construct_init(double,F,3,3,0.0);
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 1);
     
   Matrix(double) Np, Nt;
     
@@ -1374,11 +1373,11 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_construct_init(double,Np,npres,1,0.0);
   Matrix_construct_init(double,Nt,nVol, 1,0.0);    
                              
-  for(int a = 1; a<=fe.nint; a++)
+  for(int ip = 1; ip<=fe.nint; ip++)
   {
-    FEMLIB_elem_basis_V(&fe, a);  
-    FEMLIB_elem_shape_function(&fe, a,npres,Np);
-    FEMLIB_elem_shape_function(&fe, a,nVol, Nt);   
+    FEMLIB_elem_basis_V(&fe, ip);  
+    FEMLIB_elem_shape_function(&fe, ip,npres,Np);
+    FEMLIB_elem_shape_function(&fe, ip,nVol, Nt);   
     FEMLIB_update_shape_tensor(&fe);
     FEMLIB_update_deformation_gradient(&fe,ndofn,u1,F1);
     FEMLIB_update_deformation_gradient(&fe,ndofn,u2,F2);    
@@ -1432,7 +1431,7 @@ void evaluate_PT_w_inertia_el(const int ii,
 
   for(int a=0; a<npres; a++)
   	fp.m_pdata[a] = dt_alpha_1*fp2.m_pdata[a] + dt_alpha_2*fp1.m_pdata[a];
-  
+  	    
   free(P1); free(P2); free(u1); free(u2);
   Matrix_cleanup(F1);
   Matrix_cleanup(F2);
@@ -1443,14 +1442,13 @@ void evaluate_PT_w_inertia_el(const int ii,
   
   Matrix(double) theta, KptI;
   Matrix_construct_init(double,theta, nVol,1,0.0);
-  Matrix_construct_init(double,KptI, nVol,nVol,0.0);  
+  Matrix_construct_init(double,KptI, nVol,npres,0.0);  
   Matrix_inv(Kpt,KptI);
   
   Matrix(double) uu;
   
 	Matrix_construct(double, uu);	  	
 	Matrix_init_w_array(uu, nne*ndofn, 1, du);
-  
   Matrix_AxB(fp, 1.0, 1.0, Kpu, 0, uu, 0);        
   Matrix_AxB(theta, -1.0, 0.0, KptI, 0, fp, 0); 
   
@@ -1466,20 +1464,8 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_AxB(press, -1.0, 0.0, KtpI, 0, ft, 0);  
   
   for(int a = 0; a<npres; a++)
-    eps[ii].d_T[a*3+0] += press.m_pdata[a]*0.1; 
+    eps[ii].d_T[a*3+0] += press.m_pdata[a];     
     
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  int myrank = 0;
-  MPI_Comm_rank (mpi_comm,&myrank);
-  
-  
-  if(myrank==0 && ii==10)
-  {
-    printf("-----------------------------------------------------------\n");    
-    printf("pressure and volume = [%e %e]\n", eps[ii].d_T[0], eps[ii].T[0]);
-    printf("-----------------------------------------------------------\n");     
-  }
-
   Matrix_cleanup(uu);
   Matrix_cleanup(theta); 
   Matrix_cleanup(KptI); 
@@ -1983,20 +1969,7 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
     
     /* deformation on element */
     def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-    
-    for(int i=0; i< ndofe; i++)
-    {
-      const int id = cn[i];
-      const int aid = abs(id) - 1;
-
-      if (id == 0){
-        dr_e[i] = 0.0;
-      } else if (id > 0){
-        dr_e[i] = rr[aid];
-      } else {
-        dr_e[i] = 0.0;
-      }
-    }
+    def_elem(cn,ndofe,rr,elem,node,dr_e,sup,2);
     
     double*du;
     du = aloc1(nne*nsd);

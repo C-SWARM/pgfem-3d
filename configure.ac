@@ -60,19 +60,6 @@ AS_IF([test "x$special_link" = xyes],
 	    ])
 
 # Checks for libraries.
-
-AC_ARG_WITH(parmetis-dir, [AS_HELP_STRING([--with-parmetis-dir=<path>],
-			      [Provide location of root directory for standard ParMETIS installation.])
-			      ],
-			      [AC_MSG_CHECKING([location of ParMETIS])
-			      AC_MSG_RESULT(["$with_parmetis_dir"])],
-			      [AC_MSG_CHECKING([location of ParMETIS])
-			      AC_MSG_FAILURE([ParMETIS: Must provide package location!])
-			      ])
-
-AC_SUBST([parmetis_include],[-I"$with_parmetis_dir/include"])
-AC_SUBST([parmetis_lib],["-L$with_parmetis_dir/lib -lparmetis -lmetis"])
-
 # HYPRE
 AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],
 			      [Provide location of root directory for standard HYPRE installation.])
@@ -194,7 +181,6 @@ AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
 
 AC_CONFIG_FILES([Makefile
-                 lib/Renumbering/src/Makefile
                  lib/VTK_IO/src/Makefile
                  src/Makefile])
 AC_OUTPUT

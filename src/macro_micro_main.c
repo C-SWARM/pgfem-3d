@@ -12,10 +12,6 @@
 #include <sys/time.h> 
 #include <sys/resource.h>
 
-
-/* Extra libs */
-#include "renumbering.h"
-
 /*=== PFEM3d headers ===*/
 #include "PGFEM_io.h"
 #include "allocation.h"

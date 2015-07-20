@@ -109,9 +109,6 @@ PGFEM_io.c \
 PGFEM_mpi.c \
 ms_job_intercomm.c \
 macro_micro_functions.c \
-state_variables.c \
-constitutive_model.c \
-plasticity_model_none.c \
 pgf_fe2_micro_server.c \
 pgf_fe2_job.c \
 pgf_fe2_server_rebalance.c \
@@ -126,23 +123,17 @@ femlib.c \
 macro_micro_main.c \
 main.c \
 dynamics.c \
-plasticity_model.c \
 super_main.c
-
-renumbering_include = -I$(top_srcdir)/lib/Renumbering/include
-renumbering_lib = -L$(top_srcdir)/lib/Renumbering/src -lrenumbering
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
 VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 
-AM_INCLUDES = $(renumbering_include) \
-	      $(VTK_IO_include) \
+AM_INCLUDES = $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
-	      $(mkl_include) \
-	      $(cnstvm_include)
+	      $(mkl_include)
 
-PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_lib) $(hypre_lib) $(cnstvm_lib) $(vtk_lib) $(mkl_lib)
+PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
 

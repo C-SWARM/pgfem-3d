@@ -877,13 +877,14 @@ double Newton_Raphson (const int print_level,
           {
             if(npres==1)
               {
-                eps[e].d_T[1] = eps[e].d_T[0];
                 eps[e].d_T[2] = eps[e].d_T[1];
+                eps[e].d_T[1] = eps[e].d_T[0];
+                
               }
             for(int a=0; a<nVol; a++)
               {
-                eps[e].T[a*3+1] = eps[e].T[a*3+0];
                 eps[e].T[a*3+2] = eps[e].T[a*3+1];
+                eps[e].T[a*3+1] = eps[e].T[a*3+0];                
               }
           }
       }
