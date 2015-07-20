@@ -22,7 +22,7 @@
  * Enumeration for the model type
  */
 enum model_type {
-  NONE,
+  HYPER_ELASTICITY,
   CRYSTAL_PLASTICITY,
   BPA_PLASTICITY
 };
@@ -43,7 +43,7 @@ typedef struct Model_parameters Model_parameters;
  * Has a State_variables object.
  */
 struct Constitutive_model {
-  const Model_parameters *model;
+  const Model_parameters *param;
   State_variables vars;
 };
 
@@ -144,6 +144,13 @@ struct MATERIAL;
 typedef struct MATERIAL MATERIAL;
 #endif
 
+/** Pre-declare MATERIAL structure */
+struct MATGEOM_1;
+#ifndef TYPE_MATGEOM_1
+#define TYPE_MATGEOM_1
+typedef struct MATGEOM_1 MATGEOM_1;
+#endif
+
 /** Pre-declare HOMMAT structure */
 struct HOMMAT;
 #ifndef TYPE_HOMMAT
@@ -189,6 +196,8 @@ typedef int (*usr_info)(Model_var_info **info);
 struct Model_parameters {
   /** Pointer to anisotropic material properties (props,orientation, etc.) */
   const MATERIAL *p_mat;
+  /** Pointer to anisotropic material properties (props,orientation, etc.) */
+  const MATGEOM_1  *p_mgeom;  
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
 
@@ -222,6 +231,7 @@ int model_parameters_construct(Model_parameters *p);
  */
 int model_parameters_initialize(Model_parameters *p,
                                 const MATERIAL *p_mat,
+                                const MATGEOM_1 *p_mgeom,
                                 const HOMMAT *p_hmat,
                                 const size_t type);
 
@@ -231,5 +241,14 @@ int model_parameters_initialize(Model_parameters *p,
  * \return non-zero on error.
  */
 int model_parameters_destroy(Model_parameters *p);
+
+int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *Fe, double dt,
+                               Matrix_double *L, Matrix_double *S, int compute_stiffness);
+// if compute_stiffness == 1: compute stiffness (L)
+// if compute_stiffness == 0: just stress (S) is updated and stiffness (L) is not computed
+
+int constitutive_model_update_plasticity(Matrix_double *pFnp1,Matrix_double *eFn, Matrix_double *pFn, Constitutive_model *m, double dt);
+
+int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, Matrix_double *Fe, Matrix_double *S, Matrix_double *L, Matrix_double *Grad_du, double dt);
 
 #endif
