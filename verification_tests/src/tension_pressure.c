@@ -4,20 +4,10 @@
 
 #include "read_input_file.h"
 #include "post_processing.h"
-#include "PGFem3D_to_VTK.hpp"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
-
-int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
-{
-  int err = 0;
-  char filename[1024];
-  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,step,opts->ofname,myrank, step);   
-  err += read_VTK_file(filename, u);      
-  return err;
-}      
 
 int main(int argc,char *argv[])
 {
