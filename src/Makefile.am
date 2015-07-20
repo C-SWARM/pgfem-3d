@@ -126,6 +126,7 @@ femlib.c \
 macro_micro_main.c \
 main.c \
 dynamics.c \
+plasticity_model.c \
 super_main.c
 
 renumbering_include = -I$(top_srcdir)/lib/Renumbering/include
@@ -138,9 +139,10 @@ AM_INCLUDES = $(renumbering_include) \
 	      $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
-	      $(mkl_include)
+	      $(mkl_include) \
+	      $(cnstvm_include)
 
-PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
+PGFem3D_LDADD = $(renumbering_lib) $(VTK_IO_lib) $(parmetis_lib) $(suitesparse_lib) $(hypre_lib) $(cnstvm_lib) $(vtk_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
 
