@@ -188,6 +188,7 @@ int generate_applied_surface_traction_list(const int ne,
   free(elem_has_trac);
   free(elem_n_faces);
   free(n_faces);
+  free(elem_ids);
 
   /* exit function */
   return err;

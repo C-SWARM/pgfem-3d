@@ -4,7 +4,7 @@
 
 #include "read_input_file.h"
 #include "post_processing.h"
-#include "PGFem3D_to_VTK.hpp"
+
 #include <stdlib.h>
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -22,15 +22,6 @@ void copy_filename(char fn_from[], char f_to[])
   }
   f_to[c-1] = '\0';
 }   
-
-int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
-{
-  int err = 0;
-  char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,step,opts->ofname,myrank, step);   
-  err += read_VTK_file(filename, u);      
-  return err;
-}      
 
 int change_material_properties(int argc, char **argv, char *filename_out)
 {
