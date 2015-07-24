@@ -10,6 +10,12 @@ extern "C" {
 #include "element.h"
 #include "volumetric_damage.h"
 #include <stdio.h>
+
+#ifndef TYPE_CONSTITUTIVE_MODEL
+#define TYPE_CONSTITUTIVE_MODEL
+typedef struct Constitutive_model Constitutive_model;
+#endif
+
   /** Structure of strains EPS */
   typedef struct { /* Inelastic strain in all integration points */
     double *o,*f,*m,*d,*i;
@@ -79,6 +85,9 @@ extern "C" {
     /** Volumetric Damage */
     damage *dam;
   
+    /** Generalized constitutive modeling interface */
+    Constitutive_model *model;
+
     /** Crystal plasticity */
     double *T,*d_T,GD;
   
