@@ -68,6 +68,8 @@
 
 #include "three_field_element.h"
 
+#include "constitutive_model.h"
+
 static const int periodic = 0;
 static const int ndim = 3;
 
@@ -327,6 +329,7 @@ int single_scale_main(int argc,char *argv[])
   MATERIAL *mater = NULL;
   MATGEOM matgeom = NULL;
   HOMMAT *hommat = NULL;
+  Model_parameters *param_list = NULL;
   SIG *sig_e = NULL;
   SIG *sig_n = NULL;
   EPS *eps = NULL;
@@ -993,6 +996,12 @@ int single_scale_main(int argc,char *argv[])
     eps = build_eps_il (ne,elem,options.analysis_type);
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
+    /* parameter list and initialize const. model at int points.
+     * NOTE: should catch/handle returned error flag...
+     */
+    build_model_parameters_list(&param_list,nhommat,matgeom,hommat);
+    init_all_constitutive_model(eps,ne,elem,param_list);
+
     /* alocation of pressure variables */
     int nVol = 1;
     switch(options.analysis_type){
@@ -1009,7 +1018,7 @@ int single_scale_main(int argc,char *argv[])
 	npres = 4;
 	if(myrank == 0){
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
-		 "Re-setting to 4 and continuing...\n");
+                       "Re-setting to 4 and continuing...\n");
 	}
       }
       break;
@@ -1472,7 +1481,7 @@ int single_scale_main(int argc,char *argv[])
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-
+  destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_sig_il(sig_e,elem,ne,options.analysis_type);
 
