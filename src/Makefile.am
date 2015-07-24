@@ -135,10 +135,11 @@ VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 AM_INCLUDES = $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
-	      $(mkl_include) \
-	      $(cnstvm_include)
+	      $(cnstvm_include) \
+	      $(mkl_include)
 
-PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib) $(cnstvm_lib)
+
+PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
 
