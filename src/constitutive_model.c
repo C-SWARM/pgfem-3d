@@ -17,6 +17,7 @@
 #include "matgeom.h"
 #include "PGFEM_io.h"
 #include "data_structure_c.h"
+#include "elem3d.h"
 
 #include "CM.h"
 
@@ -469,4 +470,64 @@ int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, M
     break;
   }
   return err; 
+}
+
+
+int build_model_parameters_list(Model_parameters **param_list,
+                                const int n_mat,
+                                const MATGEOM_1 *p_mgeom,
+                                const HOMMAT *hmat_list)
+{
+  int err = 0;
+  if (n_mat <= 0) return 1;
+  (*param_list) = malloc(n_mat*sizeof(**param_list));
+
+  /* for now set all model type to HYPER_ELASTIC. See issue #22 */
+  int type = HYPER_ELASTICITY;
+  for (int i = 0; i < n_mat; i++) {
+    err += model_parameters_construct(& ((*param_list)[i]) );
+    err += model_parameters_initialize(& ((*param_list)[i]),
+                                       NULL,
+                                       p_mgeom,
+                                       hmat_list + i,
+                                       type);
+  }
+
+  return err;
+}
+
+int destroy_model_parameters_list(const int n_mat,
+                                  Model_parameters *param_list)
+{
+  int err = 0;
+  if (param_list == NULL) return 0;
+
+  for (int i = 0; i < n_mat; i++) {
+    err += model_parameters_destroy(param_list + i);
+  }
+  free(param_list);
+  return 0;
+}
+
+int init_all_constitutive_model(EPS *eps,
+                                const int ne,
+                                const ELEMENT *elem,
+                                const Model_parameters *param_list)
+{
+  int err = 0;
+  if (ne <= 0) return 1;
+
+  for (int i = 0; i < ne; i++) {
+    /* aliases */
+    EPS *p_eps = eps + i;
+    const ELEMENT *p_el = elem + i;
+    const Model_parameters *p_param = param_list + (p_el->mat[2]);
+
+    long n_ip = 0;
+    int_point(p_el->toe,&n_ip);
+    for (int j = 0; j < n_ip; j++) {
+      err += constitutive_model_initialize((p_eps->model) + j, p_param);
+    }
+  }
+  return err;
 }

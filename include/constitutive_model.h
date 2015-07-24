@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include "state_variables.h" /* provides declaration of Matrix_double */
 
+typedef struct EPS EPS;
+typedef struct ELEMENT ELEMENT;;
 
 /**
  * Enumeration for the model type
@@ -78,6 +80,39 @@ int constitutive_model_initialize(Constitutive_model *m,
 int constitutive_model_destroy(Constitutive_model *m);
 
 /**
+ * Initialize the constitutive model object at each integration point.
+ *
+ * \return non-zero on error.
+ */
+int init_all_constitutive_model(EPS *eps,
+                                const int ne,
+                                const ELEMENT *elem,
+                                const Model_parameters *param_list);
+
+// if compute_stiffness == 1: compute stiffness (L)
+// if compute_stiffness == 0: just stress (S) is updated and stiffness (L) is not computed
+int constitutive_model_update_elasticity(Constitutive_model *m,
+                                         Matrix_double *Fe,
+                                         double dt,
+                                         Matrix_double *L,
+                                         Matrix_double *S,
+                                         int compute_stiffness);
+
+int constitutive_model_update_plasticity(Matrix_double *pFnp1,
+                                         Matrix_double *eFn,
+                                         Matrix_double *pFn,
+                                         Constitutive_model *m,
+                                         double dt);
+
+int constitutive_model_update_dMdu(Constitutive_model *m,
+                                   Matrix_double *dMdu,
+                                   Matrix_double *Fe,
+                                   Matrix_double *S,
+                                   Matrix_double *L,
+                                   Matrix_double *Grad_du,
+                                   double dt);
+
+/**
  * User defined function for the Constitutive_model integration algorithm.
  *
  * \param[in,out] m - pointer to a Constitutive_model object.
@@ -90,7 +125,7 @@ int constitutive_model_destroy(Constitutive_model *m);
  * calling function.
  */
 typedef int (*usr_int_alg)(Constitutive_model *m,
-                             const void *usr_ctx);
+                           const void *usr_ctx);
 
 /**
  * User defined function to compute constitutive tensors.
@@ -243,13 +278,33 @@ int model_parameters_initialize(Model_parameters *p,
  */
 int model_parameters_destroy(Model_parameters *p);
 
-int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *Fe, double dt,
-                               Matrix_double *L, Matrix_double *S, int compute_stiffness);
-// if compute_stiffness == 1: compute stiffness (L)
-// if compute_stiffness == 0: just stress (S) is updated and stiffness (L) is not computed
+/**
+ * Allocate and populate a list of Model_parameters given the number
+ * of materials. It seems that only one MATGEOM_1 exists, no matter
+ * how many orientations are present, and that MATERIAL is not used by
+ * any of the current implementation. Therefore the length of the list
+ * is n_hmat.
+ *
+ * \param[in/out] param_list, list of Model_parameters, unallocated on
+ *                            entry -- allocated on exit.
+ * \param[in] n_mat, length oc hmat_list
+ * \param[in] p_mgeom, pointer to material geometry object
+ * \param[in] hmat_list, list of homogenized material properies
+ *
+ * \return non-zero on error.
+ */
+int build_model_parameters_list(Model_parameters **param_list,
+                                const int n_mat,
+                                const MATGEOM_1 *p_mgeom,
+                                const HOMMAT *hmat_list);
 
-int constitutive_model_update_plasticity(Matrix_double *pFnp1,Matrix_double *eFn, Matrix_double *pFn, Constitutive_model *m, double dt);
-
-int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, Matrix_double *Fe, Matrix_double *S, Matrix_double *L, Matrix_double *Grad_du, double dt);
+/**
+ * Free all of the memory assiciated with the list of model
+ * parameters.
+ *
+ * \return non-zero on error.
+ */
+int destroy_model_parameters_list(const int n_mat,
+                                  Model_parameters *param_list);
 
 #endif
