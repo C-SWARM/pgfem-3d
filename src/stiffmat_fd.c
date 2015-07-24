@@ -33,6 +33,8 @@
 #include "dynamics.h"
 
 #include "constitutive_model.h"
+#include "plasticity_model.h"
+
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif

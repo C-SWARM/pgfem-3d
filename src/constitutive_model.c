@@ -9,6 +9,9 @@
 
 #include "constitutive_model.h"
 
+#include "plasticity_model_none.h"
+#include "plasticity_model.h"
+
 #include "material.h"
 #include "hommat.h"
 #include "matgeom.h"

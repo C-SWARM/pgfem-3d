@@ -25,6 +25,7 @@
 #include "dynamics.h"
 
 #include "constitutive_model.h"
+#include "plasticity_model.h"
 
 #define ndn 3
 #define N_VOL_TF 1

@@ -18,9 +18,6 @@
 #include <stdlib.h>
 #include "state_variables.h" /* provides declaration of Matrix_double */
 
-#include "plasticity_model_none.h"
-#include "plasticity_model.h"
-
 
 /**
  * Enumeration for the model type
