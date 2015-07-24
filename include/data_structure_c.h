@@ -19,8 +19,8 @@ typedef struct Matrix_##T                                               \
 
 
 #define Matrix(T) Matrix_##T
-#define Mat_v(p, m, n) (p).m_pdata[((m)-1)*(p).m_col+((n)-1)]
 #define Vec_v(p, m) (p).m_pdata[(m)-1]
+#define Mat_v(p, m, n) (p).m_pdata[((m)-1)*(p).m_col+((n)-1)]
 #define Tns4_v(p, I,J,K,L) Vec_v(p,(I-1)*3*3*3+(J-1)*3*3+(K-1)*3+L)
 
 #define Matrix_Tns4_mat_9x9(p) do{                                      \
@@ -165,7 +165,7 @@ typedef struct Matrix_##T                                               \
     break;                                                              \
   };                                                                    \
                                                                         \
-  if(A.m_row==3){                                                       \
+  if((A).m_row==3){                                                       \
     ddet  = Mat_v(A, 1, 1)*Mat_v(A, 2, 2)*Mat_v(A, 3, 3);               \
     ddet += Mat_v(A, 1, 2)*Mat_v(A, 2, 3)*Mat_v(A, 3, 1);               \
     ddet += Mat_v(A, 1, 3)*Mat_v(A, 3, 2)*Mat_v(A, 2, 1);               \

@@ -29,14 +29,25 @@ typedef struct Matrix_double Matrix_double;
 
 enum variable_names {
   VAR_Ns,
-  VAR_L_n,
-  VAR_g_n
+  VAR_L_np1,  
+  VAR_g_n,
+  VAR_g_np1,  
+  VAR_gamma_dot_0,
+  VAR_gamma_dot_s, 
+  VAR_m,
+  VAR_g0,  
+  VAR_G0,    
+  VAR_gs_0,
+  VAR_w
 };
-
+  
 enum tensor_names {
   TENSOR_F,
   TENSOR_Fp,
-  TENSOR_Fpnp1
+  TENSOR_M,
+  TENSOR_P_sys,
+  TENSOR_tau,
+  TENSOR_gamma_dot
 };
 
 /**
@@ -86,4 +97,7 @@ int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu,
  * \param[in] dt - time step size
  * \return non-zero on internal error.
  */
+ 
+int plasticity_model_slip_system(Constitutive_model *m);
+ 
 #endif

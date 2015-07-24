@@ -24,8 +24,6 @@
 #include "dynamics.h"
 
 #include "constitutive_model.h"
-#include "../../Constitutive_Model_implicit/math_helper.h"
-#include "../../Constitutive_Model_implicit/physics_helper.h"
 
 #define ndn 3
 #define N_VOL_TF 1
@@ -38,6 +36,7 @@ int update_residuals_from_constitutive_model(double *f,
         const int nsd,
         const ELEMENT *elem,
         const HOMMAT *hommat,
+        MATGEOM matgeom,
         const long *nod,
         const NODE *node,
         double dt,
@@ -47,24 +46,23 @@ int update_residuals_from_constitutive_model(double *f,
         double *r_e)
 {
   int err = 0;
+
+  int cnstv = HYPER_ELASTICITY;
+  //cnstv = CRYSTAL_PLASTICITY;
+    
+  // --> initialize constitutive model
   Constitutive_model m;
   Model_parameters p;
-  constitutive_model_construct(&m);
-  model_parameters_construct(&p);
   
-  int cnstv = HYPER_ELASTICITY;
-  switch(cnstv)
-  {
-    case HYPER_ELASTICITY:
-      model_parameters_initialize(&p, NULL, NULL, hommat, HYPER_ELASTICITY);
-      break;
-    case CRYSTAL_PLASTICITY:
-      break;
-    default:
-      PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",cnstv);
-      err++;
-  }
+  constitutive_model_construct(&m);
+  model_parameters_construct(&p);  
+  model_parameters_initialize(&p, NULL, matgeom, hommat, cnstv);
   constitutive_model_initialize(&m, &p);
+  // <-- initialize constitutive model
+  
+  if(cnstv==CRYSTAL_PLASTICITY)
+    plasticity_model_slip_system(&m);
+    
   double *u;
   u = aloc1(nne*nsd);
 
@@ -153,7 +151,6 @@ int update_residuals_from_constitutive_model(double *f,
   }
   
   free(u);
-      
   Matrix_cleanup(Fr);
   Matrix_cleanup(Fnp1);
   Matrix_cleanup(Fn);
@@ -316,7 +313,7 @@ int fd_residuals (double *f_u,
 	    memset(bf, 0, sizeof(double)*ndofe);
       DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);   
       
-      update_residuals_from_constitutive_model(fe,i,ndofn,nne,nsd,elem,hommat,nod,node,
+      update_residuals_from_constitutive_model(fe,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
                                dt,sig,eps,sup,r_e);
 	                                                 
 //      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,

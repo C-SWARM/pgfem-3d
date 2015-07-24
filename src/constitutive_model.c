@@ -15,12 +15,7 @@
 #include "PGFEM_io.h"
 #include "data_structure_c.h"
 
-/* model headers */
-#include "plasticity_model_none.h"
-#include "plasticity_model.h"
-
 #include "CM.h"
-#include "physics_helper.h"
 
 Define_Matrix(double);
 
@@ -173,7 +168,9 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
       err += plasticity_model_none_ctx_build(&ctx, C.m_pdata, &J);
       break;
     case CRYSTAL_PLASTICITY:
+      
       err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J);
+      
       break;
     case BPA_PLASTICITY:
     default:
@@ -182,18 +179,15 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
       break;
   }
 
-
   // compute stress
   double dudj = 0.0;
   double d2udj2 = 0.0;
   double nu = (m->param->p_hmat)->nu;
   double G = (m->param->p_hmat)->G;
   double kappa = ((2.0*G *(1.0+nu))/(3.0*(1.0-2.0*nu)));    
-  
   err += m->param->compute_dev_stress(m, ctx, S);
   err += m->param->compute_dudj(m,ctx,&dudj);    
   Matrix_AplusB(*S, kappa*J*dudj,CI,1.0,*S);
-  
   //compute stiffness
   if(compute_stiffness)
   {  
@@ -255,7 +249,8 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
 void elastic_stress(MaterialProperties *Props, double *F, double *S)
 {
   Matrix(double) Se, Fe;
-  Matrix_construct_redim(double,Se,3,3);   
+  Matrix_construct_redim(double,Se,3,3);
+  Matrix_construct(double, Fe);   
   Matrix_init_w_array(Fe,3,3,F);  
   constitutive_model_update_elasticity(Props->cm, &Fe, 0.0, NULL, &Se, 0);
 
@@ -269,7 +264,8 @@ void elastic_stress(MaterialProperties *Props, double *F, double *S)
 void elastic_tangent(MaterialProperties *Props, double *F, double *L)
 {
   Matrix(double) Se, Fe, Le;
-  Matrix_construct_redim(double,Se,3,3);   
+  Matrix_construct_redim(double,Se,3,3); 
+  Matrix_construct(double, Fe);  
   Matrix_construct_redim(double,Le,81,1);     
   Matrix_init_w_array(Fe,3,3,F);  
   constitutive_model_update_elasticity(Props->cm, &Fe, 0.0, &Le, &Se, 1);
@@ -282,10 +278,18 @@ void elastic_tangent(MaterialProperties *Props, double *F, double *L)
   Matrix_cleanup(Fe);   
 }
 
-int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fe_n, Matrix_double *S_n, double dt)
+int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fe_n, double dt)
 {
+  const HOMMAT *hmat = m->param->p_hmat;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix(double) *Fs = (m->vars).Fs;
+  
   int err = 0;
-  int N_SYS=Vec_v((m->vars).state_vars[0], VAR_Ns+1);;
+  int N_SYS = (int) state_var[VAR_Ns];
+  double *P_sys = Fs[TENSOR_P_sys].m_pdata;
+  double *Fp    = Fs[TENSOR_Fp].m_pdata;
+  double *F     = Fs[TENSOR_F].m_pdata;
+  
 	/*--------Simulation_Settings--------*/
 	SolverInformation Solver;
 	Solver.Solver_Type = IMPLICIT;/*ImplicitWithIncompresibility_or_IC*/
@@ -306,98 +310,94 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
 
 	/*--------MaterialProperties_Settings--------*/
 	MaterialProperties Props;
-	Props.Lame_I =1.2/*Lambda*/;
-	Props.Lame_II =1.2/*Shear*/;
-	Props.Modulus_Elastic = (Props.Lame_II*((3.0*Props.Lame_I+2.0*Props.Lame_II)/(Props.Lame_I+Props.Lame_II)));
-	Props.Modulus_Shear = Props.Lame_II;
-	Props.Poissons_Ratio= ((Props.Modulus_Elastic/(2.0*Props.Lame_II))-1.0);
-	Props.Modulus_Bulk = (Props.Modulus_Elastic/(3.0-6.0*Props.Poissons_Ratio));
-	Props.use_hyperelastic = 0;
+	Props.Lame_I =hmat->nu*hmat->E/(1.0+hmat->nu)/(1.0-2.0*hmat->nu);; 
+	Props.Lame_II =hmat->G;
+	Props.Modulus_Elastic = hmat->E;
+	Props.Modulus_Shear = hmat->G;
+	Props.Poissons_Ratio= hmat->nu;
+	Props.Modulus_Bulk = (2.0*hmat->G*(1.0+hmat->nu))/(3.0*(1.0 - 2.0*hmat->nu));
+	Props.use_hyperelastic = 1;
 	Props.cm = m;
 	Props.compute_elastic_stress = elastic_stress;
 	Props.compute_elastic_tangent = elastic_tangent;
 
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+  state_var[VAR_gamma_dot_0] = 1.0;
+  state_var[VAR_gamma_dot_s] = 50.0e+9;  
+  state_var[VAR_m]           = 0.05;
+  state_var[VAR_g0]          = 0.21;  
+  state_var[VAR_G0]          = 0.2;    
+  state_var[VAR_gs_0]        = 0.33;
+  state_var[VAR_w]           = 0.005;  
+  
+//  Matrix_print((m->vars).state_vars[0]);
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+	
 	/*--------MaterialParameters_Settings--------*/
 	MaterialParameters Params;
 	Params.Model_Type = PL_VK;
 	Params.Parameters_Count = 7;
-	Params.gam0dot = 1.0;
-	Params.m_matl = 0.05;
-	Params.gs0 = 0.330;
-	Params.gamsdot = 50000000000.0;
-	Params.w = 0.005;
-	Params.G0 = 0.2;
-	Params.g0 = 0.21;
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-  Vec_v((m->vars).state_vars[0], VAR_g_n+1) = 210.0;
-  Vec_v((m->vars).state_vars[0], VAR_L_n+1) = 0.001;
-  
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+	Params.gam0dot = state_var[VAR_gamma_dot_0];
+	Params.m_matl  = state_var[VAR_m];
+	Params.gs0     = state_var[VAR_gs_0];
+	Params.gamsdot = state_var[VAR_gamma_dot_s];
+	Params.w       = state_var[VAR_w];
+	Params.G0      = state_var[VAR_G0];
+	Params.g0      = state_var[VAR_g0];	
 	
 	int j_max = 3;
 
-	/*needed param info*/
-		
-	double *P_nsysR = (double *) malloc(sizeof(double)*N_SYS*j_max*j_max);
-
-	for (int k = 0; k<N_SYS; k++)
-	{
-		for (int j = 0; j<j_max; j++)
-		{
-			for (int i = 0; i<j_max; i++)
-				P_nsysR[Index_3D(k,j,i,j_max,j_max)] = 0.0;
-		}
-		P_sys_sp(k, P_nsysR);
-	}
-	
   Matrix(double) Fe_I,Fp_np1k;
 	
   Matrix_construct_redim(double,Fe_I,3,3);
   Matrix_construct_redim(double,Fp_np1k,3,3);
+
+  double g_n = state_var[VAR_g_n];
   
-  double g_n = Vec_v((m->vars).state_vars[0], VAR_g_n+1);
-  // F_np1 = m->vars.Fs[TENSOR_F]: F
-  // F_pn = m->vars.Fs[TENSOR_Fp]: Fp
-  
-  double L_np1k = Vec_v((m->vars).state_vars[0], VAR_L_n+1);
+  double L_np1k = state_var[VAR_L_np1];
   double L_np1 = 0.0;
   Matrix_inv(*Fe_n, Fe_I);
-  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,m->vars.Fs[0],0);
-  
+  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,Fs[TENSOR_F],0);
+	
 	Staggered_NewtonRapson_Testing_sp(&Props,&Params,&Struc,&Solver,0.0,dt,
-									   P_nsysR,g_n,m->vars.Fs[TENSOR_Fp].m_pdata,m->vars.Fs[TENSOR_F].m_pdata
-									   ,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
+									   P_sys,g_n,Fp,F,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
 
-  Matrix(double) gamma_RateArray,Tau_Array;	
-  Matrix_construct_redim(double,Tau_Array,N_SYS,1);
-  Matrix_construct_redim(double,gamma_RateArray,N_SYS,1);
-  
-//  Matrix_print(*pFnp1);  
-//  printf("L_n+1: %e\n", L_np1);
-
+  Matrix(double) S_n;
+  Matrix_construct_redim(double,S_n,3,3);       
+	
+	elastic_stress(&Props, Fe_n->m_pdata, S_n.m_pdata);  
   for (int k = 0; k<N_SYS; k++)
 	{
-    Vec_v(Tau_Array,k+1) = Tau_Rhs_sp(k, P_nsysR, Fe_n->m_pdata, S_n->m_pdata);
-    Vec_v(gamma_RateArray,k+1) = gamma_Rate_PL(&Params,g_n,Vec_v(Tau_Array,k+1));
+	  double tau_k = Tau_Rhs_sp(k, P_sys, Fe_n->m_pdata, S_n.m_pdata);
+    Vec_v(Fs[TENSOR_tau],k+1) = tau_k;
+    Vec_v(Fs[TENSOR_gamma_dot],k+1) = gamma_Rate_PL(&Params,g_n,tau_k);
   }
 
-  double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, gamma_RateArray.m_pdata);
-  Vec_v((m->vars).state_vars[0], VAR_g_n+1) =  g_n + dt*g_Rhs;
-  Vec_v((m->vars).state_vars[0], VAR_L_n+1) =  L_np1;
+  double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, Fs[TENSOR_gamma_dot].m_pdata);
+  state_var[VAR_g_np1] =  g_n + dt*g_Rhs;
+  state_var[VAR_L_np1] =  L_np1;
 
   Matrix_cleanup(Fe_I);
   Matrix_cleanup(Fp_np1k);
+  Matrix_cleanup(S_n);
   
-  Matrix_cleanup(gamma_RateArray);
-  Matrix_cleanup(Tau_Array);
+////////////////////////////////////////////////////////////////////////////  
+  double dd;
+  Matrix_det(*pFnp1, dd);
+//  Matrix_print(*pFnp1);  
+  printf("g_n+1: %e, dd: %e, L_n+1: %e\n", state_var[VAR_g_np1], dd, state_var[VAR_L_np1]);
+/////////////////////////////////////////////////////////////////////////////
+  
 	return err;  
   
 }
 
-int constitutive_model_update_plasticity(Matrix_double *pFnp1,Matrix_double *eFn,Matrix_double *pFn,Constitutive_model *m, double dt)
+int constitutive_model_update_plasticity(Matrix_double *pFnp1,
+                                         Matrix_double *eFn,
+                                         Matrix_double *pFn,
+                                         Constitutive_model *m, double dt)
 {
   int err = 0;  
 
@@ -409,21 +409,18 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,Matrix_double *eFn
     
     case CRYSTAL_PLASTICITY:
     {  
-      Matrix(double) S;
-      Matrix_construct_redim(double,S,3,3);       
-
       Matrix_AeqB(m->vars.Fs[1],1.0,*pFn);
 
 /////////////////////////////////////////////////////////////////////  
      dt = 1.0;
       Matrix_eye(*pFnp1,3);
 /////////////////////////////////////////////////////////////////////        
-      constitutive_model_update_elasticity(m,eFn,dt,NULL,&S,0);                                           
-      integration_ip(pFnp1, m, eFn, &S, dt);
+                                                 
+      integration_ip(pFnp1, m, eFn, dt);
 /////////////////////////////////////////////////////////////////////      
     //  Matrix_print(*pFnp1);
       Matrix_eye(*pFnp1,3);
-/////////////////////////////////////////////////////////////////////      
+/////////////////////////////////////////////////////////////////////
       return err;
     }  
     case BPA_PLASTICITY:

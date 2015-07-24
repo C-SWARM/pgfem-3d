@@ -82,7 +82,7 @@ AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
                               AC_MSG_FAILURE([Constitutive Model: must provide package location!])
                               ])
 AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/include"])
-AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/src -lCM"])
+AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/src -lCM -L/opt/crc/scilib/lapack/gnu -llapack -llapack_pic"])
 
 
 # MKL
@@ -105,7 +105,7 @@ AC_ARG_WITH(lapack-include, [AS_HELP_STRING([--with-lapack-include=<include line
 			      ],,[with_lapack_include=''])
 AC_ARG_WITH(lapack-lib, [AS_HELP_STRING([--with-lapack-lib=<link line>],
 			      [Specify link line for access to LAPACK (requires --without-mkl)])
-			      ],,[with_lapack_lib=''])
+			      ],,[with_lapack_lib='yes'])
 
 AS_IF([test "x$with_mkl" = xyes],
 	    [
