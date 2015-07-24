@@ -5,6 +5,7 @@
  * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
 #include "stiffmat_fd.h"
+#include "assert.h"
 #include "enumerations.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
@@ -40,6 +41,10 @@
 #define N_VOL_TF 1
 #define MIN_DENSITY 1.0e-16
 
+#ifndef PGFEM3D_DEV_TEST
+#define PGFEM3D_DEV_TEST 0
+#endif
+
 static const int periodic = 0;
 
 int update_stiffness_from_constitutive_model(double *lk,
@@ -59,6 +64,10 @@ int update_stiffness_from_constitutive_model(double *lk,
         double *r_e)
 {
   int err = 0;
+
+  if (PGFEM3D_DEV_TEST) {
+    assert(0);
+  }
 
   int cnstv = HYPER_ELASTICITY;
   //cnstv = CRYSTAL_PLASTICITY;
@@ -474,20 +483,15 @@ static int el_stiffmat(int i, /* Element ID */
   case DISP:
     {
       
-      /////////////////////////////////////////////////////////////////////    
-      update_stiffness_from_constitutive_model(lk.m_pdata,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                               dt,sig,eps,sup,r_e);
-//      if(i==0)
-//        printf("lk1: %e, %e, %e\n", Vec_v(lk, 1), Vec_v(lk, 2), Vec_v(lk, 3));
-//      Matrix_init(lk,0.0);
-//      //////////////////////////////////////////////////////////////////////            
-//
-//      err = DISP_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
-//  	   hommat,nod,node,eps,sig,sup,r_e);
-//	    if(i==0)
-//	      printf("lk2: %e, %e, %e\n", Vec_v(lk, 1), Vec_v(lk, 2), Vec_v(lk, 3));
-//
-			  }
+      if (PGFEM3D_DEV_TEST) {
+        update_stiffness_from_constitutive_model(lk.m_pdata,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+      } else {
+        err = DISP_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
+                               hommat,nod,node,eps,sig,sup,r_e);
+      }
+      /* if(i == 0) printf("lk2: %e, %e, %e\n", Vec_v(lk, 1), Vec_v(lk, 2), Vec_v(lk, 3)); */
+    }
     break;
   case TF:
     stiffmat_3f_el(lk.m_pdata,i,ndofn,nne,npres,nVol,nsd,

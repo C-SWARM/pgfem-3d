@@ -1,4 +1,5 @@
 #include "fd_residuals.h"
+#include "assert.h"
 #include "enumerations.h"
 #include "utils.h"
 #include "allocation.h"
@@ -28,6 +29,10 @@
 #define ndn 3
 #define N_VOL_TF 1
 #define MIN_DENSITY 1.0e-16
+
+#ifndef PGFEM3D_DEV_TEST
+#define PGFEM3D_DEV_TEST 0
+#endif
 			   
 int update_residuals_from_constitutive_model(double *f,
         const int ii,
@@ -46,6 +51,10 @@ int update_residuals_from_constitutive_model(double *f,
         double *r_e)
 {
   int err = 0;
+
+  if(PGFEM3D_DEV_TEST) {
+    assert(0);
+  }
 
   int cnstv = HYPER_ELASTICITY;
   //cnstv = CRYSTAL_PLASTICITY;
@@ -312,13 +321,14 @@ int fd_residuals (double *f_u,
       double *bf = aloc1(ndofe);
 	    memset(bf, 0, sizeof(double)*ndofe);
       DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);   
-      
-      update_residuals_from_constitutive_model(fe,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                               dt,sig,eps,sup,r_e);
-	                                                 
-//      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
-//			   hommat,nod,node,eps,sig,sup,r_e);
 
+      if (PGFEM3D_DEV_TEST) {
+        update_residuals_from_constitutive_model(fe,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+      } else {
+        err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
+                             hommat,nod,node,eps,sig,sup,r_e);
+      }
         			   
 	    for(long a = 0; a<ndofe; a++)
 	      fe[a] += -bf[a];			        
