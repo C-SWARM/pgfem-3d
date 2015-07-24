@@ -89,6 +89,7 @@ int model_parameters_construct(Model_parameters *p)
   int err = 0;
   /* poison all values */
   p->p_mat = NULL;
+  p->p_mgeom = NULL;
   p->p_hmat = NULL;
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
@@ -110,6 +111,7 @@ int model_parameters_initialize(Model_parameters *p,
 {
   int err = 0;
   p->p_mat = p_mat;
+  p->p_mgeom = p_mgeom;
   p->p_hmat = p_hmat;
   p->type = type;
   switch(type) {
