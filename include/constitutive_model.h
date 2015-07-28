@@ -307,4 +307,5 @@ int build_model_parameters_list(Model_parameters **param_list,
 int destroy_model_parameters_list(const int n_mat,
                                   Model_parameters *param_list);
 
+int constitutive_model_test(const HOMMAT *hmat);
 #endif

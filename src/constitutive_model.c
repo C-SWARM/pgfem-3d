@@ -166,7 +166,7 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
   
   Matrix_AxB(C, 1.0, 0.0, *Fe, 1, *Fe, 0);
   Matrix_inv(C,CI);        
-  Matrix_det(m->vars.Fs[0], J);
+  Matrix_det(*Fe, J);
 
   switch(m->param->type)
   {
@@ -207,15 +207,15 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
   
     for(int I=1; I<=3; I++)
     {
-      for(int J=1; J<=3; J++)
+      for(int JJ=1; JJ<=3; JJ++)
       {
         for(int P=1; P<=3; P++)
         {
           for(int Q=1; Q<=3; Q++)
           {
-            Tns4_v(CIoxCI,I,J,P,Q) = Mat_v(CI,I,J)*Mat_v(CI,P,Q);
-            Tns4_v(SoxS,I,J,P,Q) = Mat_v(CI,I,J)*Mat_v(CI,P,Q);            
-            Tns4_v(CICI,I,J,P,Q) = Mat_v(CI,I,P)*Mat_v(CI,Q,J);
+            Tns4_v(CIoxCI,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);
+            Tns4_v(SoxS,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);            
+            Tns4_v(CICI,I,JJ,P,Q) = Mat_v(CI,I,P)*Mat_v(CI,Q,JJ);
           }
         }
       }
@@ -454,8 +454,8 @@ int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, M
     double J;
     Matrix(double) C;
     Matrix_construct_redim(double,C,3,3); 
-    Matrix_AxB(C, 1.0, 0.0, m->vars.Fs[0], 1, m->vars.Fs[0], 0);
-    Matrix_det(m->vars.Fs[0], J);
+    Matrix_AxB(C, 1.0, 0.0, *Fe, 1, *Fe, 0);
+    Matrix_det(*Fe, J);
     err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J);
     err += compute_dMdu(m,dMdu,Grad_du,Fe,S,L,dt);
     err += plasticity_model_ctx_destroy(&ctx);
@@ -533,3 +533,324 @@ int init_all_constitutive_model(EPS *eps,
   }
   return err;
 }
+
+int constitutive_model_test(const HOMMAT *hmat)
+{
+ 
+  Constitutive_model m;
+  Model_parameters p;
+  
+  constitutive_model_construct(&m);
+  model_parameters_construct(&p);  
+  model_parameters_initialize(&p, NULL, NULL, hmat, CRYSTAL_PLASTICITY);
+  constitutive_model_initialize(&m, &p);
+    
+  int err = 0;
+  int N_SYS = 12;
+	/*--------Simulation_Settings--------*/
+	SolverInformation Solver;
+	Solver.Solver_Type = IMPLICIT;/*ImplicitWithIncompresibility_or_IC*/
+	Solver.AMatrix_Size = 100;
+	Solver.BVector_Size = 10;
+	Solver.NR_ML_MAX = 100;
+	Solver.NR_G_MAX = 100;
+	Solver.SNR_MAX = 100;
+	Solver.Fp_TOL = 10e-12;
+	Solver.L_TOL = 10e-12;
+	Solver.g_TOL = 10e-12;
+
+/*--------MaterialStructure_Settings--------*/
+	MaterialStructure Struc;
+	Struc.NUM_GRAIN = 1;
+	Struc.N_SYS = N_SYS;
+	Struc.Structure_Type = FCC;
+
+	/*--------MaterialProperties_Settings--------*/
+	MaterialProperties Props;
+	Props.Lame_I =hmat->nu*hmat->E/(1.0+hmat->nu)/(1.0-2.0*hmat->nu);; 
+	Props.Lame_II =hmat->G;
+	Props.Modulus_Elastic = hmat->E;
+	Props.Modulus_Shear = hmat->G;
+	Props.Poissons_Ratio= hmat->nu;
+	Props.Modulus_Bulk = (2.0*hmat->G*(1.0+hmat->nu))/(3.0*(1.0 - 2.0*hmat->nu));
+
+  printf("%e\n", Props.Lame_I);
+/*	
+	Props.Lame_I =75600.0;
+	Props.Lame_II =26100.0;
+	Props.Modulus_Elastic = (Props.Lame_II*((3.0*Props.Lame_I+2.0*Props.Lame_II)/(Props.Lame_I+Props.Lame_II)));
+	Props.Modulus_Shear = Props.Lame_II;
+	Props.Poissons_Ratio= ((Props.Modulus_Elastic/(2.0*Props.Lame_II))-1.0);
+	Props.Modulus_Bulk = (Props.Modulus_Elastic/(3.0-6.0*Props.Poissons_Ratio));*/
+	Props.use_hyperelastic = 1;
+	Props.cm = &m;
+	Props.compute_elastic_stress = elastic_stress;
+	Props.compute_elastic_tangent = elastic_tangent;	
+
+	/*--------MaterialParameters_Settings--------*/
+	MaterialParameters Param;
+	Param.Model_Type = PL_VK;
+	Param.Parameters_Count = 7;
+	Param.gam0dot = 1.0;
+	Param.m_matl = 0.05;
+	Param.gs0 = 330.0;
+	Param.gamsdot = 50000000000.0;
+	Param.w = 0.005;
+	Param.G0 = 200.0;
+	Param.g0 = 210.0;
+	
+	double T_Initial = 0.0;
+	double T_Final = 1.0;
+	double dt = 0.001;
+	double Load_History = 1.0;
+	int Load_Type = UNIAXIAL_COMPRESSION;	
+	
+	int Num_Steps=(int)(ceil(T_Final/dt));  
+  
+  int j_max = 3;
+  Matrix(double) P_sys;  
+  Matrix_construct_redim(double, P_sys, N_SYS*j_max*j_max, 1);
+
+	for (int k = 0; k<N_SYS; k++)
+	{
+		for (int j = 0; j<j_max; j++)
+		{
+			for (int i = 0; i<j_max; i++)
+				P_sys.m_pdata[Index_3D(k,j,i,j_max,j_max)] = 0.0;
+		}
+		P_sys_sp(k, P_sys.m_pdata);
+	}
+
+  Matrix(double) F_np1,F_n,Fe_n,Fe_I,Fp_n,Fp_np1,Fp_np1k;
+  Matrix(double) F_I,S_n,T_n,L,tmp,R_tmp,Fp_I;
+  Matrix(double) Tau_Array, gamma_RateArray, tmp_Eigen;
+  
+  Matrix_construct_redim(double,F_np1  ,j_max,j_max);
+  Matrix_construct_redim(double,F_n    ,j_max,j_max);
+  Matrix_construct_redim(double,Fe_n   ,j_max,j_max);
+  Matrix_construct_redim(double,Fe_I   ,j_max,j_max);
+  Matrix_construct_redim(double,Fp_n   ,j_max,j_max);
+  Matrix_construct_redim(double,Fp_np1 ,j_max,j_max); 
+  Matrix_construct_redim(double,Fp_np1k,j_max,j_max); 
+  Matrix_construct_redim(double,F_I    ,j_max,j_max);
+  Matrix_construct_redim(double,S_n    ,j_max,j_max);
+  Matrix_construct_redim(double,T_n    ,j_max,j_max);
+  Matrix_construct_redim(double,L      ,j_max,j_max);
+  Matrix_construct_redim(double,tmp    ,j_max,j_max);
+  Matrix_construct_redim(double,R_tmp  ,j_max,j_max);
+  Matrix_construct_redim(double,Fp_I   ,j_max,j_max);
+  
+  Matrix_construct_redim(double,Tau_Array      , N_SYS,1);
+  Matrix_construct_redim(double,gamma_RateArray, N_SYS,1);
+  Matrix_construct_redim(double,tmp_Eigen,j_max,1);
+
+  double g0=Param.g0;
+  double g_n = g0;
+	double g_np1 = 0.0;
+	  
+	switch(Load_Type)
+	{
+    case UNIAXIAL_TENSION:
+		  // Tension
+  		Matrix_eye(L,3);
+  		Mat_v(L,1,1) = -(0.5)*Load_History;
+  		Mat_v(L,2,2) = -(0.5)*Load_History;
+  		Mat_v(L,3,3) = +(1.0)*Load_History;
+      break;
+    case SIMPLE_SHEAR: 
+      // shear
+      Matrix_init(L, 0.0);
+      Mat_v(L, 1,2) = Load_History;
+      break;
+    case PLAIN_STRAIN_COMPRESSION:     
+		  // plain_strain_compression
+  		Matrix_eye(L,3);
+  		Mat_v(L,1,1) = (1.0)*Load_History;
+  		Mat_v(L,2,2) = (0.0)*Load_History;
+  		Mat_v(L,3,3) = -(1.0)*Load_History;
+      break;      
+    case UNIAXIAL_COMPRESSION:
+      // compressions use same setting, contiue             
+    case CYCLIC_LOADING:
+      // compressions use same setting, contiue             
+    case STRESS_RELAXATION:
+  		Matrix_eye(L,3);
+  		Mat_v(L,1,1) = (0.5)*Load_History;
+  		Mat_v(L,2,2) = (0.5)*Load_History;
+  		Mat_v(L,3,3) = -(1.0)*Load_History;
+      break;      
+    default:
+      break;
+	}	
+
+	Matrix_eye(F_n,3);
+	Matrix_init(F_np1, 0.0);
+	F_Implicit_sp(dt, F_n.m_pdata, L.m_pdata, F_np1.m_pdata);
+
+  Matrix_AeqB(Fe_n,1.0,F_n);
+	Matrix_eye(Fp_n,3);
+	Matrix_inv(Fe_n, Fe_I);
+
+	Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,F_np1,0);
+
+	double L_np1k = 0.001;
+	double L_np1;
+	double L_n = 0.0;
+
+	Matrix_init(S_n, 0.0);
+	elastic_stress(&Props,Fe_n.m_pdata, S_n.m_pdata);
+
+	double g_np1k2 = 0.0;
+	double g_RESIDUAL = 0.0;
+	double g_np1k1 = g_n;
+	double det_Fe;
+
+  Matrix_det(Fe_n, det_Fe);
+  Matrix(double) FeS;
+  Matrix_construct_redim(double,FeS,j_max,j_max);
+	Matrix_init(T_n, 0.0);
+	Matrix_AxB(FeS,1.0,0.0,Fe_n,0,S_n,0);
+	Matrix_AxB(T_n,1.0/det_Fe,0.0,FeS,0,Fe_n,1);
+
+
+	printf("time \t Effective Stress \n");
+	double norm_T;
+	Matrix_ddot(T_n,T_n,norm_T);
+	double s_eff=sqrt(3.0/2.0)*sqrt(norm_T);
+
+  double t = T_Initial;
+	printf("%e \t %e\n",t,s_eff);
+	
+	for (int kk=1; kk<Num_Steps+1; kk++)
+	{
+		Matrix_init(Fp_np1, 0.0);
+		L_np1 = 0.0;
+
+		Staggered_NewtonRapson_Testing_sp(&Props,&Param,&Struc,&Solver,
+				                       t,dt,P_sys.m_pdata,g_n,Fp_n.m_pdata,F_np1.m_pdata,
+				                       L_np1k,&L_np1,Fp_np1k.m_pdata,Fp_np1.m_pdata);
+
+		Matrix_init(Fp_n, 0.0);
+		Matrix_AeqB(Fp_n,1.0,Fp_np1);
+
+		L_n = 0.0;
+		L_n = L_np1;
+
+		Matrix_init(Fp_I, 0.0);
+		Matrix_inv(Fp_n, Fp_I);
+
+		Matrix_init(Fe_n, 1.0);
+		Matrix_AxB(Fe_n,1.0,0.0,F_np1,0,Fp_I,0);
+
+		Matrix_init(Fe_I, 0.0);
+		Matrix_inv(Fe_n, Fe_I);
+
+		if(Load_Type==STRESS_RELAXATION && (t > 0.5) )
+		{
+			Mat_v(L,1,1) = Mat_v(L,2,2) = Mat_v(L,3,3) = 0.0;
+		}
+		if(Load_Type==CYCLIC_LOADING )
+		{
+			//plug_for_cyclic_loading:
+			if ((t > 0.5) && (t <= 0.9))
+			{
+				double new_rate = -1.0;
+				Mat_v(L,1,1)=-(0.5)*new_rate;
+				Mat_v(L,2,2)=-(0.5)*new_rate;
+				Mat_v(L,3,3)=+(1.0)*new_rate;
+			}
+			if (t>0.9 && (t <= 1.6))
+			{
+				double new_rate = 1.0;
+				Mat_v(L,1,1)=-(0.5)*new_rate;
+			  Mat_v(L,2,2)=-(0.5)*new_rate;
+				Mat_v(L,3,3)=+(1.0)*new_rate;
+			}
+		}
+
+		t=((double) (kk))*dt;
+
+		//compute::F_np1
+		Matrix_init(F_n, 0.0);
+		Matrix_AeqB(F_n,1.0,F_np1);
+		Matrix_init(F_np1, 0.0);
+     	if( Load_Type==UNIAXIAL_COMPRESSION || 
+     	    Load_Type==STRESS_RELAXATION || 
+     	    Load_Type==CYCLIC_LOADING)
+		{
+			//CMP:compression
+			Matrix_eye(L,3);
+			Mat_v(L,1,1) = +(0.5)*Load_History;
+			Mat_v(L,2,2) = +(0.5)*Load_History;
+			Mat_v(L,3,3) = -(1.0)*Load_History;
+		}
+		F_Implicit_sp(dt, F_n.m_pdata, L.m_pdata, F_np1.m_pdata);
+
+		Matrix_init(Fp_np1k, 0.0);
+		Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,F_np1,0);
+
+		L_np1k = 0.0;
+		L_np1k = L_n;
+
+		Matrix_init(S_n,0.0);
+		elastic_stress(&Props,Fe_n.m_pdata,S_n.m_pdata);
+
+		Matrix_init(T_n,0.0);
+    Matrix_det(Fe_n, det_Fe);
+	  Matrix_AxB(FeS,1.0,0.0,Fe_n,0,S_n,0);
+	  Matrix_AxB(T_n,1.0/det_Fe,0.0,FeS,0,Fe_n,1);
+
+    Matrix_ddot(T_n,T_n,norm_T);
+		s_eff=sqrt(3.0/2.0)*sqrt(norm_T);
+    printf("%e \t %e\n",t,s_eff);
+  
+		Matrix_init(Tau_Array, 0.0);
+		Matrix_init(gamma_RateArray, 0.0);
+		double gmdot_tmp = 0.0;
+		for (int k = 0; k<N_SYS; k++)
+		{
+		  double tau_k = Tau_Rhs_sp(k, P_sys.m_pdata, Fe_n.m_pdata, S_n.m_pdata);
+			Vec_v(Tau_Array,k+1) = tau_k;
+			Vec_v(gamma_RateArray,k+1) = gamma_Rate_PL(&Param,g_n,tau_k);
+			gmdot_tmp += fabs(Vec_v(gamma_RateArray,k+1));
+		}
+
+		double g_Rhs = g_Rate_VK(&Param,&Struc,g_n, gamma_RateArray.m_pdata);
+		g_np1 = g_n + dt*(g_Rhs);
+		g_Rhs = 0.0;
+
+		//update_hardening
+		g_n = g_np1;
+		g_np1 = 0.0;
+	}
+
+  printf("integration test is successfull\n");
+	
+  Matrix_cleanup(F_np1  );
+  Matrix_cleanup(F_n    );
+  Matrix_cleanup(Fe_n   );
+  Matrix_cleanup(Fe_I   );
+  Matrix_cleanup(Fp_n   );
+  Matrix_cleanup(Fp_np1 ); 
+  Matrix_cleanup(Fp_np1k); 
+  Matrix_cleanup(F_I    );
+  Matrix_cleanup(S_n    );
+  Matrix_cleanup(T_n    );
+  Matrix_cleanup(L      );
+  Matrix_cleanup(tmp    );
+  Matrix_cleanup(R_tmp  );
+  Matrix_cleanup(Fp_I   );	
+
+  Matrix_cleanup(Tau_Array);
+  Matrix_cleanup(gamma_RateArray);
+  Matrix_cleanup(tmp_Eigen);  
+
+	
+  Matrix_cleanup(FeS);
+  Matrix_cleanup(P_sys);
+
+  constitutive_model_destroy(&m);
+  model_parameters_destroy(&p);  	  
+  return err;
+}
+

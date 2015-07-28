@@ -344,6 +344,9 @@ static int el_stiffmat(int i, /* Element ID */
 			double alpha, double *r_n, double *r_n_1)
 {
 /* make a decision to include ineria*/
+  if(0==i && 1==iter)
+    constitutive_model_test(hommat);
+    
   const int mat = elem[i].mat[2];
   double rho = hommat[mat].density;
   long include_inertia = 1;
