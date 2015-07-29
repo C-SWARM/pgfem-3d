@@ -100,6 +100,8 @@ int model_parameters_construct(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   p->type = -1;
+  p->Psys = NULL;
+  p->N_SYS = 0;
   return err;
 }
 
@@ -114,13 +116,19 @@ int model_parameters_initialize(Model_parameters *p,
   p->p_mgeom = p_mgeom;
   p->p_hmat = p_hmat;
   p->type = type;
+  p->Psys = NULL;
+  p->N_SYS = 0;
   switch(type) {
   case HYPER_ELASTICITY:
     err += plasticity_model_none_initialize(p);
     break;
   case CRYSTAL_PLASTICITY:
+  {
+    p->Psys = malloc(sizeof(*(p->Psys)));
+    Matrix_construct(double,*(p->Psys));
     err += plasticity_model_initialize(p);
     break;
+  }
   case BPA_PLASTICITY:
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
@@ -137,7 +145,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->p_mat = NULL;
   p->p_mgeom = NULL;
   p->p_hmat = NULL;
-
+  p->N_SYS = 0;
+  
   /* drop function pointers */
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
@@ -147,7 +156,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
-
+  Matrix_cleanup(*(p->Psys));
+  p->Psys = NULL;
   /* reset counters/flags */
   p->type = -1;
 
@@ -284,7 +294,7 @@ void elastic_tangent(MaterialProperties *Props, double *F, double *L)
   Matrix_cleanup(Fe);   
 }
 
-int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fe_n, double dt)
+int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fnp1, Matrix_double *Fe_n, double dt)
 {
   const HOMMAT *hmat = m->param->p_hmat;
   double *state_var = (m->vars).state_vars[0].m_pdata;
@@ -292,9 +302,8 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   
   int err = 0;
   int N_SYS = (int) state_var[VAR_Ns];
-  double *P_sys = Fs[TENSOR_P_sys].m_pdata;
-  double *Fp    = Fs[TENSOR_Fp].m_pdata;
-  double *F     = Fs[TENSOR_F].m_pdata;
+  double *P_sys = ((m->param)->Psys)->m_pdata;
+  double *pFn    = Fs[TENSOR_pFn].m_pdata;
   
 	/*--------Simulation_Settings--------*/
 	SolverInformation Solver;
@@ -327,20 +336,6 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
 	Props.compute_elastic_stress = elastic_stress;
 	Props.compute_elastic_tangent = elastic_tangent;
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-  state_var[VAR_gamma_dot_0] = 1.0;
-  state_var[VAR_gamma_dot_s] = 50.0e+9;  
-  state_var[VAR_m]           = 0.05;
-  state_var[VAR_g0]          = 0.21;  
-  state_var[VAR_G0]          = 0.2;    
-  state_var[VAR_gs_0]        = 0.33;
-  state_var[VAR_w]           = 0.005;  
-  
-//  Matrix_print((m->vars).state_vars[0]);
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-	
 	/*--------MaterialParameters_Settings--------*/
 	MaterialParameters Params;
 	Params.Model_Type = PL_VK;
@@ -365,10 +360,10 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   double L_np1k = state_var[VAR_L_np1];
   double L_np1 = 0.0;
   Matrix_inv(*Fe_n, Fe_I);
-  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,Fs[TENSOR_F],0);
+  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,Fs[TENSOR_Fn],0);
 	
 	Staggered_NewtonRapson_Testing_sp(&Props,&Params,&Struc,&Solver,0.0,dt,
-									   P_sys,g_n,Fp,F,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
+									   P_sys,g_n,pFn,Fnp1->m_pdata,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
 
   Matrix(double) S_n;
   Matrix_construct_redim(double,S_n,3,3);       
@@ -396,13 +391,12 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   printf("g_n+1: %e, dd: %e, L_n+1: %e\n", state_var[VAR_g_np1], dd, state_var[VAR_L_np1]);
 /////////////////////////////////////////////////////////////////////////////
   
-	return err;  
-  
+	return err;    
 }
 
 int constitutive_model_update_plasticity(Matrix_double *pFnp1,
+                                         Matrix_double *Fnp1,
                                          Matrix_double *eFn,
-                                         Matrix_double *pFn,
                                          Constitutive_model *m, double dt)
 {
   int err = 0;  
@@ -415,18 +409,7 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
     
     case CRYSTAL_PLASTICITY:
     {  
-      Matrix_AeqB(m->vars.Fs[1],1.0,*pFn);
-
-/////////////////////////////////////////////////////////////////////  
-     dt = 1.0;
-      Matrix_eye(*pFnp1,3);
-/////////////////////////////////////////////////////////////////////        
-                                                 
-      integration_ip(pFnp1, m, eFn, dt);
-/////////////////////////////////////////////////////////////////////      
-    //  Matrix_print(*pFnp1);
-      Matrix_eye(*pFnp1,3);
-/////////////////////////////////////////////////////////////////////
+      integration_ip(pFnp1, m, Fnp1, eFn, dt);
       return err;
     }  
     case BPA_PLASTICITY:
@@ -460,9 +443,6 @@ int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, M
     err += compute_dMdu(m,dMdu,Grad_du,Fe,S,L,dt);
     err += plasticity_model_ctx_destroy(&ctx);
     Matrix_cleanup(C);
-    /////////////////////////////////////////////
-    Matrix_init(*dMdu, 0.0);    
-    ////////////////////////////////////////////
     break;    
   }  
   case BPA_PLASTICITY:
@@ -482,13 +462,18 @@ int build_model_parameters_list(Model_parameters **param_list,
 {
   int err = 0;
   if (n_mat <= 0) return 1;
+  
   (*param_list) = malloc(n_mat*sizeof(**param_list));
 
   /* for now set all model type to HYPER_ELASTIC. See issue #22 */
   int type = HYPER_ELASTICITY;
+////////////////////////////////////////////////////////////////////
+  type = CRYSTAL_PLASTICITY; // for the test
+////////////////////////////////////////////////////////////////////  
+  
   for (int i = 0; i < n_mat; i++) {
-    err += model_parameters_construct(& ((*param_list)[i]) );
-    err += model_parameters_initialize(& ((*param_list)[i]),
+    err += model_parameters_construct(&((*param_list)[i]) );
+    err += model_parameters_initialize(&((*param_list)[i]),
                                        NULL,
                                        p_mgeom,
                                        hmat_list + i,
@@ -510,6 +495,68 @@ int destroy_model_parameters_list(const int n_mat,
   free(param_list);
   return 0;
 }
+
+int read_individual_constitutive_model_parameters(Constitutive_model *m)
+{
+  int err = 0;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+  
+  state_var[VAR_gamma_dot_0] = 1.0;
+  state_var[VAR_gamma_dot_s] = 50.0e+9;  
+  state_var[VAR_m]           = 0.05;
+  state_var[VAR_g0]          = 0.21;  
+  state_var[VAR_G0]          = 0.2;    
+  state_var[VAR_gs_0]        = 0.33;
+  state_var[VAR_w]           = 0.005;
+  return err;
+}
+
+int read_constitutive_model_parameters(EPS *eps,
+                                const int ne,
+                                const ELEMENT *elem,
+                                const int n_mat,
+                                Model_parameters *param_list)
+{ 
+  int err = 0;
+  int type = HYPER_ELASTICITY;
+////////////////////////////////////////////////////////////////////
+  type = CRYSTAL_PLASTICITY; // for the test
+////////////////////////////////////////////////////////////////////   
+  switch(type)
+  {
+    case HYPER_ELASTICITY:
+      return err;
+    
+    case CRYSTAL_PLASTICITY:
+    { 
+      for(int a=0; a<n_mat; a++)
+      {
+        Matrix(double) *P = param_list[a].Psys;
+        param_list[a].N_SYS = plasticity_model_slip_system(P);
+      } 
+      
+      for(int a=0; a<ne; a++)
+      {
+        long n_ip = 0;
+        int_point(elem[a].toe,&n_ip);
+        for(int ip=0; ip<n_ip; ip++)
+        {
+          Constitutive_model *m = &(eps[a].model[ip]);
+          read_individual_constitutive_model_parameters(m);          
+        }
+      }
+      return err;
+    }  
+    case BPA_PLASTICITY:
+      return err;
+    
+    default:
+    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
+    err++;
+    break;
+  }      
+  return err;   
+}                                
 
 int init_all_constitutive_model(EPS *eps,
                                 const int ne,
@@ -537,6 +584,8 @@ int init_all_constitutive_model(EPS *eps,
 int constitutive_model_test(const HOMMAT *hmat)
 {
  
+  int Print_results = 0;
+  
   Constitutive_model m;
   Model_parameters p;
   
@@ -544,9 +593,12 @@ int constitutive_model_test(const HOMMAT *hmat)
   model_parameters_construct(&p);  
   model_parameters_initialize(&p, NULL, NULL, hmat, CRYSTAL_PLASTICITY);
   constitutive_model_initialize(&m, &p);
-    
+  
+  p.N_SYS = plasticity_model_slip_system(p.Psys);
+  read_individual_constitutive_model_parameters(&m);  
+  
   int err = 0;
-  int N_SYS = 12;
+  int N_SYS = p.N_SYS;
 	/*--------Simulation_Settings--------*/
 	SolverInformation Solver;
 	Solver.Solver_Type = IMPLICIT;/*ImplicitWithIncompresibility_or_IC*/
@@ -574,14 +626,6 @@ int constitutive_model_test(const HOMMAT *hmat)
 	Props.Poissons_Ratio= hmat->nu;
 	Props.Modulus_Bulk = (2.0*hmat->G*(1.0+hmat->nu))/(3.0*(1.0 - 2.0*hmat->nu));
 
-  printf("%e\n", Props.Lame_I);
-/*	
-	Props.Lame_I =75600.0;
-	Props.Lame_II =26100.0;
-	Props.Modulus_Elastic = (Props.Lame_II*((3.0*Props.Lame_I+2.0*Props.Lame_II)/(Props.Lame_I+Props.Lame_II)));
-	Props.Modulus_Shear = Props.Lame_II;
-	Props.Poissons_Ratio= ((Props.Modulus_Elastic/(2.0*Props.Lame_II))-1.0);
-	Props.Modulus_Bulk = (Props.Modulus_Elastic/(3.0-6.0*Props.Poissons_Ratio));*/
 	Props.use_hyperelastic = 1;
 	Props.cm = &m;
 	Props.compute_elastic_stress = elastic_stress;
@@ -608,19 +652,8 @@ int constitutive_model_test(const HOMMAT *hmat)
 	int Num_Steps=(int)(ceil(T_Final/dt));  
   
   int j_max = 3;
-  Matrix(double) P_sys;  
-  Matrix_construct_redim(double, P_sys, N_SYS*j_max*j_max, 1);
-
-	for (int k = 0; k<N_SYS; k++)
-	{
-		for (int j = 0; j<j_max; j++)
-		{
-			for (int i = 0; i<j_max; i++)
-				P_sys.m_pdata[Index_3D(k,j,i,j_max,j_max)] = 0.0;
-		}
-		P_sys_sp(k, P_sys.m_pdata);
-	}
-
+  Matrix(double) *P_sys = p.Psys;
+  
   Matrix(double) F_np1,F_n,Fe_n,Fe_I,Fp_n,Fp_np1,Fp_np1k;
   Matrix(double) F_I,S_n,T_n,L,tmp,R_tmp,Fp_I;
   Matrix(double) Tau_Array, gamma_RateArray, tmp_Eigen;
@@ -682,7 +715,6 @@ int constitutive_model_test(const HOMMAT *hmat)
     default:
       break;
 	}	
-
 	Matrix_eye(F_n,3);
 	Matrix_init(F_np1, 0.0);
 	F_Implicit_sp(dt, F_n.m_pdata, L.m_pdata, F_np1.m_pdata);
@@ -712,14 +744,17 @@ int constitutive_model_test(const HOMMAT *hmat)
 	Matrix_AxB(FeS,1.0,0.0,Fe_n,0,S_n,0);
 	Matrix_AxB(T_n,1.0/det_Fe,0.0,FeS,0,Fe_n,1);
 
-
-	printf("time \t Effective Stress \n");
+  if(Print_results)
+  	printf("time \t Effective Stress \n");
+	
 	double norm_T;
 	Matrix_ddot(T_n,T_n,norm_T);
 	double s_eff=sqrt(3.0/2.0)*sqrt(norm_T);
 
   double t = T_Initial;
-	printf("%e \t %e\n",t,s_eff);
+
+  if(Print_results)
+  	printf("%e \t %e\n",t,s_eff);
 	
 	for (int kk=1; kk<Num_Steps+1; kk++)
 	{
@@ -727,7 +762,7 @@ int constitutive_model_test(const HOMMAT *hmat)
 		L_np1 = 0.0;
 
 		Staggered_NewtonRapson_Testing_sp(&Props,&Param,&Struc,&Solver,
-				                       t,dt,P_sys.m_pdata,g_n,Fp_n.m_pdata,F_np1.m_pdata,
+				                       t,dt,P_sys->m_pdata,g_n,Fp_n.m_pdata,F_np1.m_pdata,
 				                       L_np1k,&L_np1,Fp_np1k.m_pdata,Fp_np1.m_pdata);
 
 		Matrix_init(Fp_n, 0.0);
@@ -802,14 +837,16 @@ int constitutive_model_test(const HOMMAT *hmat)
 
     Matrix_ddot(T_n,T_n,norm_T);
 		s_eff=sqrt(3.0/2.0)*sqrt(norm_T);
-    printf("%e \t %e\n",t,s_eff);
+
+    if(Print_results)
+  	  printf("%e \t %e\n",t,s_eff);
   
 		Matrix_init(Tau_Array, 0.0);
 		Matrix_init(gamma_RateArray, 0.0);
 		double gmdot_tmp = 0.0;
 		for (int k = 0; k<N_SYS; k++)
 		{
-		  double tau_k = Tau_Rhs_sp(k, P_sys.m_pdata, Fe_n.m_pdata, S_n.m_pdata);
+		  double tau_k = Tau_Rhs_sp(k, P_sys->m_pdata, Fe_n.m_pdata, S_n.m_pdata);
 			Vec_v(Tau_Array,k+1) = tau_k;
 			Vec_v(gamma_RateArray,k+1) = gamma_Rate_PL(&Param,g_n,tau_k);
 			gmdot_tmp += fabs(Vec_v(gamma_RateArray,k+1));
@@ -823,8 +860,6 @@ int constitutive_model_test(const HOMMAT *hmat)
 		g_n = g_np1;
 		g_np1 = 0.0;
 	}
-
-  printf("integration test is successfull\n");
 	
   Matrix_cleanup(F_np1  );
   Matrix_cleanup(F_n    );
@@ -847,7 +882,6 @@ int constitutive_model_test(const HOMMAT *hmat)
 
 	
   Matrix_cleanup(FeS);
-  Matrix_cleanup(P_sys);
 
   constitutive_model_destroy(&m);
   model_parameters_destroy(&p);  	  

@@ -32,7 +32,7 @@
 #define MIN_DENSITY 1.0e-16
 
 #ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 0
+#define PGFEM3D_DEV_TEST 1
 #endif
 			   
 int update_residuals_from_constitutive_model(double *f,
@@ -53,25 +53,9 @@ int update_residuals_from_constitutive_model(double *f,
 {
   int err = 0;
 
-  if(PGFEM3D_DEV_TEST) {
-    assert(0);
+  if (PGFEM3D_DEV_TEST) {
+    //assert(0);
   }
-
-  int cnstv = HYPER_ELASTICITY;
-  //cnstv = CRYSTAL_PLASTICITY;
-    
-  // --> initialize constitutive model
-  Constitutive_model m;
-  Model_parameters p;
-  
-  constitutive_model_construct(&m);
-  model_parameters_construct(&p);  
-  model_parameters_initialize(&p, NULL, matgeom, hommat, cnstv);
-  constitutive_model_initialize(&m, &p);
-  // <-- initialize constitutive model
-  
-  if(cnstv==CRYSTAL_PLASTICITY)
-    plasticity_model_slip_system(&m);
     
   double *u;
   u = aloc1(nne*nsd);
@@ -82,20 +66,18 @@ int update_residuals_from_constitutive_model(double *f,
   		u[a*nsd+b] = r_e[a*ndofn+b];	
   }
 
-  Matrix(double) Fr, Fnp1, Fn;
+  Matrix(double) Fr, Fnp1;
   Matrix_construct_redim(double,Fr ,3,3);
   Matrix_construct_redim(double,Fnp1 ,3,3);      
-  Matrix_construct(double,Fn);  Matrix_eye(Fn, 3);
        
-  Matrix(double) FreFn,eFnp1,pFnp1,L,S;  
-  Matrix_construct_redim(double,FreFn,3,3);      
+  Matrix(double) eFnp1,pFnp1,pFnp1_I,L,S;  
   Matrix_construct_redim(double,eFnp1,3,3);  
-  Matrix_construct_redim(double,pFnp1,3,3);    
+  Matrix_construct_redim(double,pFnp1,3,3);
+  Matrix_construct_redim(double,pFnp1_I,3,3);      
   Matrix_construct_redim(double,L ,81,1);  
   Matrix_construct_redim(double,S    ,3,3);
   
-  Matrix(double) pFn, pFnI, eFn, M, eFnM;  
-  Matrix_construct(double,pFn);  Matrix_eye(pFn, 3);
+  Matrix(double) pFnI, eFn, M, eFnM;  
   Matrix_construct_redim(double,pFnI,3,3); 
   Matrix_construct_redim(double, eFn,3,3); 
   Matrix_construct_redim(double,   M,3,3);
@@ -111,33 +93,38 @@ int update_residuals_from_constitutive_model(double *f,
   Matrix_construct_redim(double,MTeFnT_sAA_eFnM    ,3,3);
 
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 1);      
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0);      
   int compute_stiffness = 0;
    
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
+    
+    Constitutive_model *m = &(eps[ii].model[ip-1]);
+    Matrix(double) *Fs = (m->vars).Fs;    
 
-    Matrix_inv(pFn, pFnI);
-    Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
+    Matrix_inv(Fs[TENSOR_pFn], pFnI);
+    Matrix_AxB(eFn,1.0,0.0,Fs[TENSOR_Fn],0,pFnI,0); 
    
-    Matrix_init(L,0.0);
-    Matrix_init(S,0.0);
+    // --> update plasticity part
+    Matrix_AxB(Fnp1,1.0,0.0,Fs[TENSOR_Fn],0,Fr,0);  // Fn+1    
+    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
+    Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);    
+    // <-- update plasticity part
 
-    Matrix_AxB(m.vars.Fs[0],1.0,0.0,Fn,0,Fr,0);
-         
-    constitutive_model_update_plasticity(&pFnp1,&eFn,&pFn,&m,dt);
-    Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);
-        
-    Matrix_AxB(FreFn,1.0,0.0,Fr,0,eFn,0);
-    Matrix_AxB(eFnp1,1.0,0.0,FreFn,0,M,0);    
-    constitutive_model_update_elasticity(&m,&eFnp1,dt,&L,&S,compute_stiffness);
-        
+    // --> update elasticity part
+    Matrix_init(L,0.0);
+    Matrix_init(S,0.0);    
+    
+    Matrix_inv(pFnp1, pFnp1_I);
+    Matrix_AxB(eFnp1,1.0,0.0,Fnp1,0,pFnp1_I,0);
+    constitutive_model_update_elasticity(m,&eFnp1,dt,&L,&S,compute_stiffness);
+    // <-- update elasticity part
+            
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
-    double Jn; Matrix_det(Fn, Jn);
+    double Jn; Matrix_det(Fs[TENSOR_Fn], Jn);
     
     for(int a=0; a<nne; a++)
     {
@@ -163,15 +150,13 @@ int update_residuals_from_constitutive_model(double *f,
   free(u);
   Matrix_cleanup(Fr);
   Matrix_cleanup(Fnp1);
-  Matrix_cleanup(Fn);
 
-  Matrix_cleanup(FreFn);   
   Matrix_cleanup(eFnp1);    
-  Matrix_cleanup(pFnp1);      
+  Matrix_cleanup(pFnp1);
+  Matrix_cleanup(pFnp1_I);        
   Matrix_cleanup(L);  
   Matrix_cleanup(S);
 
-  Matrix_cleanup(pFn);        
   Matrix_cleanup(pFnI);
   Matrix_cleanup(eFn);  
   Matrix_cleanup(M);
@@ -184,8 +169,6 @@ int update_residuals_from_constitutive_model(double *f,
   Matrix_cleanup(MTeFnT_sAA_eFnM);
     
   FEMLIB_destruct(&fe);
-  constitutive_model_destroy(&m);
-  model_parameters_destroy(&p); 
   return err;
 }        
         

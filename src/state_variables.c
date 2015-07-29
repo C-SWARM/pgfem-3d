@@ -47,7 +47,10 @@ int state_variables_initialize(State_variables *s,
   s->n_Fs = n_Fs;
   s->Fs = malloc(n_Fs*sizeof(*(s->Fs)));
   for(size_t i = 0; i < n_Fs; i++)
-    Matrix_construct_redim(double,s->Fs[i],3,3);
+  {
+    Matrix_construct(double,s->Fs[i]);
+    Matrix_eye(s->Fs[i],3);    
+  }
 
   /* state variables is column vector */
   s->n_vars = n_vars;

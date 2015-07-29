@@ -1001,6 +1001,15 @@ int single_scale_main(int argc,char *argv[])
      */
     build_model_parameters_list(&param_list,nhommat,matgeom,hommat);
     init_all_constitutive_model(eps,ne,elem,param_list);
+///////////////////////////////////////////////////////////////////////////////////////////    
+// temporal test cases
+// need extral material properties to run constitutive model
+// this can be done by reading values from files
+// ex) read_constitutive_model_parameters(eps,ne,elem,param_list,filename);
+
+    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list); 
+///////////////////////////////////////////////////////////////////////////////////////////    
+    
 
     /* alocation of pressure variables */
     int nVol = 1;

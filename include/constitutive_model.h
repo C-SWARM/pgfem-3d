@@ -99,8 +99,8 @@ int constitutive_model_update_elasticity(Constitutive_model *m,
                                          int compute_stiffness);
 
 int constitutive_model_update_plasticity(Matrix_double *pFnp1,
+                                         Matrix_double *Fnp1,
                                          Matrix_double *eFn,
-                                         Matrix_double *pFn,
                                          Constitutive_model *m,
                                          double dt);
 
@@ -236,6 +236,9 @@ struct Model_parameters {
   const MATGEOM_1  *p_mgeom;  
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
+  
+  Matrix_double *Psys;
+  int N_SYS;
 
   /** access to user-defined functions */
   usr_int_alg integration_algorithm;
@@ -272,10 +275,25 @@ int model_parameters_initialize(Model_parameters *p,
                                 const size_t type);
 
 /**
+ * function for reading extra prameters for plasticity, this is a temporal.
+ * decision needs to be made how to pass material properties
+ * \param[in/out] param_list, list of Model_parameters, unallocated on
+ *                            entry -- allocated on exit.
+ * \param[in] eps, pointer to strains EPS
+ * \param[in] ne, number of elements
+ * \param[in] elem, pointer to elements
+ * \param[in] param_list, list of constitutive model parameters
+ *
+ * \return non-zero on error.
+ */
+int read_constitutive_model_parameters(EPS *eps, const int ne, const ELEMENT *elem, const int n_mat, Model_parameters *param_list); 
+
+/**
  * Destroy a Model_parameters object.
  *
  * \return non-zero on error.
  */
+  
 int model_parameters_destroy(Model_parameters *p);
 
 /**

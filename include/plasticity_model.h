@@ -42,10 +42,9 @@ enum variable_names {
 };
   
 enum tensor_names {
-  TENSOR_F,
-  TENSOR_Fp,
+  TENSOR_Fn,
+  TENSOR_pFn,
   TENSOR_M,
-  TENSOR_P_sys,
   TENSOR_tau,
   TENSOR_gamma_dot
 };
@@ -98,6 +97,6 @@ int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu,
  * \return non-zero on internal error.
  */
  
-int plasticity_model_slip_system(Constitutive_model *m);
+int plasticity_model_slip_system(Matrix_double *P);
  
 #endif

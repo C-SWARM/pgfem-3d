@@ -95,17 +95,16 @@ static int plasticity_reset(Constitutive_model *m)
 static int plasticity_info(Model_var_info **info)
 {
   *info = malloc(sizeof(**info));
-  int Fno = 6;
+  int Fno = 5;
   
   (*info)->n_Fs = Fno;
   (*info)->F_names = (char **)malloc(sizeof(char*)*Fno);
   for(int a=0; a<Fno; a++)
     (*info)->F_names[a] = (char *)malloc(sizeof(char)*1024);
 
-  sprintf((*info)->F_names[TENSOR_F],         "F");
-  sprintf((*info)->F_names[TENSOR_Fp],        "Fp");
+  sprintf((*info)->F_names[TENSOR_Fn],        "Fn");
+  sprintf((*info)->F_names[TENSOR_pFn],       "pFp");
   sprintf((*info)->F_names[TENSOR_M],         "M");
-  sprintf((*info)->F_names[TENSOR_P_sys],     "P_sys");  
   sprintf((*info)->F_names[TENSOR_tau],       "tau"); 
   sprintf((*info)->F_names[TENSOR_gamma_dot], "gamma_dot");     
   
@@ -180,13 +179,12 @@ int plasticity_model_ctx_destroy(void **ctx)
 
 int compute_P_alpha(Constitutive_model *m, int alpha, Matrix(double) *Pa)
 {
-  int Ns = (int)(m->vars).state_vars[0].m_pdata[VAR_Ns];
-  double *P_sys = ((m->vars).Fs[TENSOR_P_sys]).m_pdata;
+  double *P_sys = ((m->param)->Psys)->m_pdata;
   Matrix_redim(*Pa, 3,3);
   for(int a=0; a<3; a++)
   {
     for(int b=0;b<3;b++)
-      Mat_v(*Pa,a+1,b+1) = P_sys[Index_3D(alpha,a,b,Ns,3)];
+      Mat_v(*Pa,a+1,b+1) = P_sys[Index_3D(alpha,a,b,3,3)];
   }
   return 0;
 }
@@ -212,7 +210,7 @@ int compute_C_D_alpha(Constitutive_model *m, Matrix(double) *aC, Matrix(double) 
   Matrix_AxB(AA,1.0,1.0,LC,0,*Pa,0);   // AA = AA + L:C*Pa
 
   Matrix_AxB(CAA,1.0,0.0,*C,0,AA,0);   
-  Matrix_AxB(*aC,1.0,0.0,m->vars.Fs[TENSOR_Fp],1,CAA,0);     // Fp: m->vars.Fs[TENSOR_Fp]
+  Matrix_AxB(*aC,1.0,0.0,m->vars.Fs[TENSOR_pFn],1,CAA,0);     // Fp: m->vars.Fs[TENSOR_pFn]
 
   Matrix_AxB(FeAA,1.0,0.0,*Fe,0,AA,0);
   Matrix_AxB(FeAAMT,1.0,0.0,FeAA,0,m->vars.Fs[TENSOR_M],1); // M: m->vars.Fs[TENSOR_M]
@@ -361,17 +359,15 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
   return 0;
 }
 
-int plasticity_model_slip_system(Constitutive_model *m)
+int plasticity_model_slip_system(Matrix_double *P)
 {
   int err = 0;
   int N_SYS = 12; // depended on slip system
 
   int j_max = 3;  
-  Matrix_redim((m->vars).Fs[TENSOR_P_sys], N_SYS*j_max*j_max, 1);
-  double *P_sys = (m->vars).Fs[TENSOR_P_sys].m_pdata;
+  Matrix_redim(*P, N_SYS*j_max*j_max, 1);
+  double *P_sys = P->m_pdata;
   
-  Vec_v((m->vars).state_vars[0], VAR_Ns+1)  = N_SYS;
-
 	for (int k = 0; k<N_SYS; k++)
 	{
 		for (int j = 0; j<j_max; j++)
@@ -382,5 +378,6 @@ int plasticity_model_slip_system(Constitutive_model *m)
 		P_sys_sp(k, P_sys);
 	}
 	
-	return err;	
+	return N_SYS;	
 }
+
