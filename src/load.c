@@ -166,12 +166,12 @@ int load_vec_node_defl (double *f,
     int nVol = N_VOL_TREE_FIELD;
     long FNR = 0;
 		double lm = 0.0;    
-/*    err += el_compute_stiffmat(sup->lepd[i],lk,ndofn,nne,npres,nVol,nsd,
+    err += el_compute_stiffmat(sup->lepd[i],lk,ndofn,nne,npres,nVol,nsd,
                         elem,node,hommat,matgeom,sig,eps,sup,
                         dt,nor_min,stab,crpl,FNR,lm,
 	                      x,y,z,fe,nod,r_n,r_e,
 	                      alpha,include_inertia,opts->analysis_type); 
-*/	                      
+/*	                      
     switch(opts->analysis_type){
     case FS_CRPL:
     case FINITE_STRAIN:
@@ -209,7 +209,7 @@ int load_vec_node_defl (double *f,
       break;
     } // switch analysis
     
-      
+  */    
     /* get the disp increment from BC */
     {
       int k = 0;
