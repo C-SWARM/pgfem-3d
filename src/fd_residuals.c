@@ -28,7 +28,6 @@
 #include "plasticity_model.h"
 
 #define ndn 3
-#define N_VOL_TF 1
 
 #ifndef PGFEM3D_DEV_TEST
 #define PGFEM3D_DEV_TEST 0
@@ -275,7 +274,7 @@ int fd_residuals (double *f_u,
       element_center(nne,x,y,z);
     }
 
-		int nVol = N_VOL_TF;
+		int nVol = N_VOL_TREE_FIELD;
     int nsd = 3;
 
     if(include_inertia)

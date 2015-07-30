@@ -40,8 +40,6 @@
 #endif
 
 #define ndn 3
-#define N_VOL_TF 1
-#define MIN_DENSITY 1.0e-16
 
 #ifndef PGFEM3D_DEV_TEST
 #define PGFEM3D_DEV_TEST 0
@@ -340,8 +338,8 @@ int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int
 			  hommat,node,sig,eps,r_e,npres,
 			  nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
       break;
-    } /* switch (analysis) */
-  } /* if(include_inertia) */
+    } // switch (analysis)
+  } // if(include_inertia)
   
   return err;
 }        
@@ -494,7 +492,7 @@ static int el_stiffmat(int i, /* Element ID */
       sup->defl_d[j] = sup_def[j];
    }
     
-  int nVol = N_VOL_TF;
+  int nVol = N_VOL_TREE_FIELD;
   Matrix(double) lk;
   Matrix_construct_redim(double,lk,ndofe,ndofe);   
   Matrix_init(lk, 0.0);

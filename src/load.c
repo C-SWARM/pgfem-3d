@@ -15,6 +15,8 @@
 #include "MINI_3f_element.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
+#include "stiffmat_fd.h"
+#include "dynamics.h"
 
 long* compute_times_load (FILE *in1,
 			  const long nt,
@@ -89,7 +91,8 @@ int load_vec_node_defl (double *f,
 			CRPL *crpl,
 			double stab,
 			double *r,
-			const PGFem3D_opt *opts)
+			double *r_n,
+			const PGFem3D_opt *opts, double alpha)
 {
   int err = 0;
   double *fe = NULL;
@@ -98,6 +101,16 @@ int load_vec_node_defl (double *f,
   const int ndn = 3;
 
   for (int i=0;i<sup->nde;i++){
+    
+    const int mat = elem[sup->lepd[i]].mat[2];
+    double rho = hommat[mat].density;
+    long include_inertia = 1;
+    int nsd = 3;
+  
+    if(fabs(rho)<MIN_DENSITY)
+    {
+      include_inertia = 0;
+    }    
     
     /* Number of element nodes */
     int nne = elem[sup->lepd[i]].toe;
@@ -150,6 +163,15 @@ int load_vec_node_defl (double *f,
       element_center(nne,x,y,z);
     }
 
+    int nVol = N_VOL_TREE_FIELD;
+    long FNR = 0;
+		double lm = 0.0;    
+/*    err += el_compute_stiffmat(sup->lepd[i],lk,ndofn,nne,npres,nVol,nsd,
+                        elem,node,hommat,matgeom,sig,eps,sup,
+                        dt,nor_min,stab,crpl,FNR,lm,
+	                      x,y,z,fe,nod,r_n,r_e,
+	                      alpha,include_inertia,opts->analysis_type); 
+*/	                      
     switch(opts->analysis_type){
     case FS_CRPL:
     case FINITE_STRAIN:
@@ -185,7 +207,8 @@ int load_vec_node_defl (double *f,
     default:
       stiffmatel (sup->lepd[i],x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
       break;
-    } /* switch analysis */
+    } // switch analysis
+    
       
     /* get the disp increment from BC */
     {

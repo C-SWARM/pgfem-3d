@@ -377,7 +377,7 @@ double Newton_Raphson (const int print_level,
       nulld (f_defl,ndofd);
       load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			  matgeom,sup,npres,nor_min,
-			  sig_e,eps,dt,crpl,stab,r,opts);
+			  sig_e,eps,dt,crpl,stab,r,r_n,opts,alpha_alpha);
 			  
       /* Generate the load and vectors */
       for (i=0;i<ndofd;i++)  {

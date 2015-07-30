@@ -14,10 +14,9 @@
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
 #include "enumerations.h"
+#include "dynamics.h"
 
-#define MIN_DENSITY 1.0e-16
 #define ndn 3
-#define N_VOL_TF 1
 #define USE_HW_FUNCS 0
 #define INTG_ORDER 1
 
@@ -1065,7 +1064,7 @@ void update_3f_state_variables_el(const int ii,
   const double volume = Tetra_V(x,y,z);       			    
   
   const int nsd = 3;
-  const int nVol = N_VOL_TF;
+  const int nVol = N_VOL_TREE_FIELD;
   
   Matrix(double) F;
   Matrix_construct_init(double,F,3,3,0.0);
@@ -1932,7 +1931,7 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
   long include_inertia = 1;
 
   const int nsd = 3;
-  const int nVol = N_VOL_TF;
+  const int nVol = N_VOL_TREE_FIELD;
   
   if(fabs(rho)<MIN_DENSITY)
     include_inertia = 0;
