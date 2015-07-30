@@ -301,6 +301,7 @@ typedef struct Matrix_##T                                               \
   if((A).m_col != (B).m_col)                                            \
     break;                                                              \
                                                                         \
+  Matrix_check_null_and_redim(C, (A).m_row, (A).m_col);                 \
   for(__I = 0; __I < m_row*m_col; __I++)                                \
     (C).m_pdata[__I] = (A).m_pdata[__I]*(a) + (B).m_pdata[__I]*(b);     \
 } while(0)

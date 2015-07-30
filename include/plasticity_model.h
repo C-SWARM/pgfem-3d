@@ -28,7 +28,7 @@ typedef struct Matrix_double Matrix_double;
 #endif
 
 enum variable_names {
-  VAR_Ns,
+  VAR_L_n,
   VAR_L_np1,  
   VAR_g_n,
   VAR_g_np1,  

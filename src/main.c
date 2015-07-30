@@ -1484,7 +1484,6 @@ int single_scale_main(int argc,char *argv[])
   dealoc1l (DomNe);
   dealoc1l (DomNn);
   free(dist);
-
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
   destroy_zatelem(zele_v,nle_v);
@@ -1493,7 +1492,6 @@ int single_scale_main(int argc,char *argv[])
   destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_sig_il(sig_e,elem,ne,options.analysis_type);
-
   if(options.cohesive == 1){
     destroy_coel(coel,nce);
     destroy_cohesive_props(n_co_props,co_props);

@@ -157,6 +157,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   Matrix_cleanup(*(p->Psys));
+  free(p->Psys);
   p->Psys = NULL;
   /* reset counters/flags */
   p->type = -1;
@@ -301,10 +302,10 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   Matrix(double) *Fs = (m->vars).Fs;
   
   int err = 0;
-  int N_SYS = (int) state_var[VAR_Ns];
+  int N_SYS = (m->param)->N_SYS;
   double *P_sys = ((m->param)->Psys)->m_pdata;
   double *pFn    = Fs[TENSOR_pFn].m_pdata;
-  
+    
 	/*--------Simulation_Settings--------*/
 	SolverInformation Solver;
 	Solver.Solver_Type = IMPLICIT;/*ImplicitWithIncompresibility_or_IC*/
@@ -317,7 +318,7 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
 	Solver.L_TOL = 10e-12;
 	Solver.g_TOL = 10e-12;
 	
-/*--------MaterialStructure_Settings--------*/
+  /*--------MaterialStructure_Settings--------*/
 	MaterialStructure Struc;
 	Struc.NUM_GRAIN = 1;
 	Struc.N_SYS = N_SYS;
@@ -357,25 +358,65 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
 
   double g_n = state_var[VAR_g_n];
   
-  double L_np1k = state_var[VAR_L_np1];
+  double L_np1k = state_var[VAR_L_n];
+  if(fabs(L_np1k)<1.0e-12)
+    L_np1k = 0.001;
+    
   double L_np1 = 0.0;
   Matrix_inv(*Fe_n, Fe_I);
-  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,Fs[TENSOR_Fn],0);
+  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,*Fnp1,0);
+
+// compute velocity gradient	
+/*
+	Matrix(double) LL, Feye;
+	Matrix_construct_redim(double, LL, 3,3);
+	Matrix_construct_redim(double, Feye, 3,3);	
+	Matrix_eye(Feye,3);
+	Matrix_inv(*Fnp1, LL);
+	Matrix_AplusB(Feye,1.0,*Fnp1,-1.0,Feye);
 	
+	Matrix_AxB(LL,1.0/dt,0.0,Feye,0,LL,0);
+	Matrix_print(LL);
+	Matrix_cleanup(LL);
+	Matrix_cleanup(Feye);	
+*/
+
 	Staggered_NewtonRapson_Testing_sp(&Props,&Params,&Struc,&Solver,0.0,dt,
 									   P_sys,g_n,pFn,Fnp1->m_pdata,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
 
-  Matrix(double) S_n;
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+    
+/*    printf("%e,%e,%e\n", g_n,L_np1k,L_np1);
+    printf("P_sys-----------------------\n");Matrix_print(*((m->param)->Psys));
+    printf("Fp_n------------------------\n");Matrix_print(Fs[TENSOR_pFn]);
+    printf("F_np1-----------------------\n");Matrix_print(*Fnp1);
+    printf("Fp_np1k---------------------\n");Matrix_print(Fp_np1k);
+    printf("Fp_np1----------------------\n");Matrix_print(*pFnp1); 
+
+  printf("##########%d", N_SYS);
+  */     
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+  Matrix(double) S_n, pFnp1_I, eFnp1;
   Matrix_construct_redim(double,S_n,3,3);       
+  Matrix_construct_redim(double,pFnp1_I,3,3);       
+  Matrix_construct_redim(double,eFnp1,3,3);           
 	
-	elastic_stress(&Props, Fe_n->m_pdata, S_n.m_pdata);  
+	Matrix_inv(*pFnp1,pFnp1_I);
+	Matrix_AxB(eFnp1,1.0,0.0,*Fnp1,0,pFnp1_I,0);
+	
+	elastic_stress(&Props, eFnp1.m_pdata, S_n.m_pdata);  
+
   for (int k = 0; k<N_SYS; k++)
 	{
-	  double tau_k = Tau_Rhs_sp(k, P_sys, Fe_n->m_pdata, S_n.m_pdata);
+	  double tau_k = Tau_Rhs_sp(k, P_sys, eFnp1.m_pdata, S_n.m_pdata);
+//	  printf("%e ", tau_k);
     Vec_v(Fs[TENSOR_tau],k+1) = tau_k;
     Vec_v(Fs[TENSOR_gamma_dot],k+1) = gamma_Rate_PL(&Params,g_n,tau_k);
   }
-
+//  printf("\n");
   double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, Fs[TENSOR_gamma_dot].m_pdata);
   state_var[VAR_g_np1] =  g_n + dt*g_Rhs;
   state_var[VAR_L_np1] =  L_np1;
@@ -383,12 +424,14 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   Matrix_cleanup(Fe_I);
   Matrix_cleanup(Fp_np1k);
   Matrix_cleanup(S_n);
+  Matrix_cleanup(eFnp1);
+  Matrix_cleanup(pFnp1_I);    
   
 ////////////////////////////////////////////////////////////////////////////  
   double dd;
   Matrix_det(*pFnp1, dd);
 //  Matrix_print(*pFnp1);  
-  printf("g_n+1: %e, dd: %e, L_n+1: %e\n", state_var[VAR_g_np1], dd, state_var[VAR_L_np1]);
+//  printf("g_n+1: %e, dd: %e, L_n+1: %e\n", state_var[VAR_g_np1], dd, state_var[VAR_L_np1]);
 /////////////////////////////////////////////////////////////////////////////
   
 	return err;    
@@ -504,10 +547,21 @@ int read_individual_constitutive_model_parameters(Constitutive_model *m)
   state_var[VAR_gamma_dot_0] = 1.0;
   state_var[VAR_gamma_dot_s] = 50.0e+9;  
   state_var[VAR_m]           = 0.05;
-  state_var[VAR_g0]          = 0.21;  
-  state_var[VAR_G0]          = 0.2;    
-  state_var[VAR_gs_0]        = 0.33;
+  state_var[VAR_g0]          = 210.0;  
+  state_var[VAR_G0]          = 200.0;    
+  state_var[VAR_gs_0]        = 330.0;
   state_var[VAR_w]           = 0.005;
+  
+    
+  state_var[VAR_g_n] = state_var[VAR_g0];
+  state_var[VAR_g_np1] = state_var[VAR_g0];    
+  state_var[VAR_L_n] = 0.0;  
+  state_var[VAR_L_np1] = 0.0;
+  
+  int N_SYS = (m->param)->N_SYS;
+  Matrix(double) *Fs = (m->vars).Fs;
+  Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
+  Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);    
   return err;
 }
 
@@ -542,7 +596,7 @@ int read_constitutive_model_parameters(EPS *eps,
         for(int ip=0; ip<n_ip; ip++)
         {
           Constitutive_model *m = &(eps[a].model[ip]);
-          read_individual_constitutive_model_parameters(m);          
+          read_individual_constitutive_model_parameters(m); 
         }
       }
       return err;
@@ -646,7 +700,7 @@ int constitutive_model_test(const HOMMAT *hmat)
 	double T_Initial = 0.0;
 	double T_Final = 1.0;
 	double dt = 0.001;
-	double Load_History = 1.0;
+  double Load_History = 1.0;
 	int Load_Type = UNIAXIAL_COMPRESSION;	
 	
 	int Num_Steps=(int)(ceil(T_Final/dt));  

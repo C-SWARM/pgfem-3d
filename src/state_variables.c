@@ -32,7 +32,7 @@ int state_variables_destroy(State_variables *s)
   s->n_Fs = 0;  
   
   Matrix_cleanup(s->state_vars[0]);
-    
+  free(s->state_vars);  
   s->state_vars = NULL;
   s->n_vars = 0;
   

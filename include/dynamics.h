@@ -9,6 +9,7 @@
 #include "eps.h"
 #include "PGFem3D_options.h"
 
+#define MIN_DENSITY 1.0e-16
 
 #ifdef __cplusplus
 extern "C" {

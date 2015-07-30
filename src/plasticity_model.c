@@ -114,8 +114,8 @@ static int plasticity_info(Model_var_info **info)
   for(int a=0; a<varno; a++)
     (*info)->var_names[a] = (char *)malloc(sizeof(char)*1024);
   
-  sprintf((*info)->var_names[VAR_Ns],         "Ns");         
-  sprintf((*info)->var_names[VAR_L_np1],      "L_n");        
+  sprintf((*info)->var_names[VAR_L_n],        "L_n");  
+  sprintf((*info)->var_names[VAR_L_np1],      "L_np1");         
   sprintf((*info)->var_names[VAR_g_n],        "g_n");        
   sprintf((*info)->var_names[VAR_g_np1],      "g_np1");      
   sprintf((*info)->var_names[VAR_gamma_dot_0],"gamma_dot_0");
@@ -233,7 +233,7 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
 
   double *state_var = (m->vars).state_vars[0].m_pdata;
   
-  int Ns        = (int)state_var[VAR_Ns];
+  int N_SYS             = (m->param)->N_SYS;;
   double g_n         = state_var[VAR_g_n];
   double g_np1       = state_var[VAR_g_np1];  
   double gamma_dot_0 = state_var[VAR_gamma_dot_0];
@@ -281,7 +281,7 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
   
   double gamma_dot = 0.0;
   double sum_1gm1gm = 0.0;
-  for(int a = 0; a<Ns; a++)
+  for(int a = 0; a<N_SYS; a++)
   {
     gamma_dot += fabs(gamma_dots[a]);
     sum_1gm1gm += fabs(gamma_dots[a])/g_np1;
@@ -297,13 +297,13 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
 
   double R1 = R4/(1.0-R4*sum_1gm1gm);
   
-  for(int a = 0; a<Ns; a++)
+  for(int a = 0; a<N_SYS; a++)
   {
     double drdtau = gamma_dot_0/mm/g_np1*pow(fabs(tau_np1[a]/g_np1), 1.0/mm - 1.0);
     double drdg   = -drdtau*tau_np1[a]/g_np1;
 
-    double R2_a = fabs(gamma_dots[a])/tau_np1[a];
-    
+    double R2_a = ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdtau;
+        
     compute_P_alpha(m,a,&Pa);
     compute_C_D_alpha(m,&aC, &aD,Fe,&Pa,S,L,&C);
     

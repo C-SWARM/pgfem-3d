@@ -44,7 +44,7 @@
 #define MIN_DENSITY 1.0e-16
 
 #ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 1
+#define PGFEM3D_DEV_TEST 0
 #endif
 
 static const int periodic = 0;
@@ -137,7 +137,6 @@ int update_stiffness_from_constitutive_model(double *lk,
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix(double) *Fs = (m->vars).Fs;
-    
     Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0);
     
     Matrix_inv(Fs[TENSOR_pFn], pFnI);
@@ -145,10 +144,19 @@ int update_stiffness_from_constitutive_model(double *lk,
     
     // --> update plasticity part
     Matrix_AxB(Fnp1,1.0,0.0,Fs[TENSOR_Fn],0,Fr,0);  // Fn+1    
-    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
+    
+   constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
+/////////////////////////////////////////////////////////////////////// 
     Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);   
-    Matrix_printf(Fr); 
     // <-- update plasticity part
+/////////////////////////////////////////////////////////////////////////////////            
+/////////////////////////////////////////////////////////////////////////////////
+            
+//            Matrix_eye(M,3);
+//            Matrix_eye(pFnp1,3);            
+            
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////  
 
     // --> update elasticity part
     Matrix_init(L,0.0);
@@ -159,7 +167,7 @@ int update_stiffness_from_constitutive_model(double *lk,
     constitutive_model_update_elasticity(m,&eFnp1,dt,&L,&S,compute_stiffness);
     // <-- update elasticity part
 
-    // --> start compute tagent
+    // --> start computing tagent
     Matrix_AxB(FreFn,1.0,0.0,Fr,0,eFn,0);
     Matrix_AxB(eFnp1,1.0,0.0,FreFn,0,M,0);    
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
@@ -188,8 +196,15 @@ int update_stiffness_from_constitutive_model(double *lk,
                                                       nne,nsd,nsd,nsd)]; 
             Matrix_init_w_array(ST_wg,3,3,ptrST_wg); 
             
-            // --> update stiffness w.r.t plasticity 
+            // --> update stiffness w.r.t plasticity
             constitutive_model_update_dMdu(m,&dMdu,&eFnp1,&S,&L,&ST_wg,dt);
+/////////////////////////////////////////////////////////////////////////////////            
+/////////////////////////////////////////////////////////////////////////////////
+//            Matrix_print(dMdu);
+//            Matrix_init(dMdu,0.0);
+            
+/////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////            
             // <-- update stiffness w.r.t plasticity
             Matrix_AxB(BB,1.0,0.0,Fr,1,ST_wg,0); 
             Matrix_symmetric(BB,sBB);
@@ -234,7 +249,6 @@ int update_stiffness_from_constitutive_model(double *lk,
       }
     }
   }
-  
   free(u);
   
   Matrix_cleanup(Fr);
@@ -277,7 +291,60 @@ int update_stiffness_from_constitutive_model(double *lk,
   
   return err;
 }        
-        
+
+int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int nVol, int nsd,
+                        ELEMENT *elem, NODE *node, HOMMAT *hommat, MATGEOM matgeom, SIG *sig, EPS *eps, SUPP sup,
+                        double dt, double nor_min, double stab, CRPL *crpl, long FNR, double lm,
+	                      double *x, double *y, double *z, double *fe, long *nod, double *r_n, double *r_e, 
+	                      double alpha, int include_inertia, const int analysis)
+{
+  int err = 0;
+  if(include_inertia)
+  {
+    stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
+                               elem,hommat,nod,node,dt,
+                               sig,eps,sup,analysis,alpha,r_n,r_e);          
+  }
+  else
+  {
+    switch(analysis){
+    case STABILIZED:
+      err += stiffmatel_st(i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
+			  sup,r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
+      break;
+    case MINI:
+      err += MINI_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			    hommat,nod,node,eps,sig,r_e);
+      break;
+    case MINI_3F:
+      err += MINI_3f_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			      hommat,nod,node,eps,sig,r_e);
+      break;
+    case DISP:
+    {      
+      if (PGFEM3D_DEV_TEST){
+        err += update_stiffness_from_constitutive_model(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+      } else {
+        err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+                               hommat,nod,node,eps,sig,sup,r_e);
+      }
+      break;
+    }
+    case TF:
+      stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
+                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
+      break;
+    default:
+      err += stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
+			  hommat,node,sig,eps,r_e,npres,
+			  nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
+      break;
+    } /* switch (analysis) */
+  } /* if(include_inertia) */
+  
+  return err;
+}        
 /* This function may not be used outside this file */
 static int el_stiffmat(int i, /* Element ID */
 			double **Lk,
@@ -312,7 +379,7 @@ static int el_stiffmat(int i, /* Element ID */
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
 			double alpha, double *r_n, double *r_n_1)
 {
-  if(0==i && 0==iter && PGFEM3D_DEV_TEST)
+  if(-1==i && 0==iter && PGFEM3D_DEV_TEST)
     constitutive_model_test(hommat);
 
 /* make a decision to include ineria*/
@@ -431,7 +498,14 @@ static int el_stiffmat(int i, /* Element ID */
   Matrix(double) lk;
   Matrix_construct_redim(double,lk,ndofe,ndofe);   
   Matrix_init(lk, 0.0);
+  
+  err += el_compute_stiffmat(i,lk.m_pdata,ndofn,nne,npres,nVol,nsd,
+                        elem,node,hommat,matgeom,sig,eps,sup,
+                        dt,nor_min,stab,crpl,FNR,lm,
+	                      x,y,z,fe,nod,r_n,r_e,
+	                      alpha,include_inertia,analysis);  
 
+/*
   if(include_inertia)
   {
     stiffmat_disp_w_inertia_el(lk.m_pdata,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
@@ -460,11 +534,11 @@ static int el_stiffmat(int i, /* Element ID */
       if (PGFEM3D_DEV_TEST) {
         update_stiffness_from_constitutive_model(lk.m_pdata,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
                                                  dt,sig,eps,sup,r_e);
+
       } else {
         err = DISP_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
                                hommat,nod,node,eps,sig,sup,r_e);
       }
-      /* if(i == 0) printf("lk2: %e, %e, %e\n", Vec_v(lk, 1), Vec_v(lk, 2), Vec_v(lk, 3)); */
     }
     break;
   case TF:
@@ -478,9 +552,9 @@ static int el_stiffmat(int i, /* Element ID */
 			 hommat,node,sig,eps,r_e,npres,
 			 nor_min,lk.m_pdata,dt,crpl,FNR,lm,fe,analysis);
     break;
-  } /* switch (analysis) */
-  } /* if(include_inertia) */
-    
+  } // switch (analysis)
+  } // if(include_inertia)
+    */
   if (PFEM_DEBUG){
     char filename[50];
     switch(analysis){
