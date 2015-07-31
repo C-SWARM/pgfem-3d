@@ -42,7 +42,7 @@
 #define ndn 3
 
 #ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 0
+#define PGFEM3D_DEV_TEST 1
 #endif
 
 static const int periodic = 0;
@@ -145,7 +145,8 @@ int update_stiffness_from_constitutive_model(double *lk,
     
    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
 /////////////////////////////////////////////////////////////////////// 
-    Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);   
+    Matrix_inv(pFnp1, pFnp1_I);
+    Matrix_AxB(M,1.0,0.0,Fs[TENSOR_pFn],0,pFnp1_I,0);   
     // <-- update plasticity part
 /////////////////////////////////////////////////////////////////////////////////            
 /////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +161,6 @@ int update_stiffness_from_constitutive_model(double *lk,
     Matrix_init(L,0.0);
     Matrix_init(S,0.0);    
     
-    Matrix_inv(pFnp1, pFnp1_I);
     Matrix_AxB(eFnp1,1.0,0.0,Fnp1,0,pFnp1_I,0);
     constitutive_model_update_elasticity(m,&eFnp1,dt,&L,&S,compute_stiffness);
     // <-- update elasticity part
@@ -195,11 +195,11 @@ int update_stiffness_from_constitutive_model(double *lk,
             Matrix_init_w_array(ST_wg,3,3,ptrST_wg); 
             
             // --> update stiffness w.r.t plasticity
-            constitutive_model_update_dMdu(m,&dMdu,&eFnp1,&S,&L,&ST_wg,dt);
+            constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt);
 /////////////////////////////////////////////////////////////////////////////////            
 /////////////////////////////////////////////////////////////////////////////////
 //            Matrix_print(dMdu);
-//            Matrix_init(dMdu,0.0);
+            Matrix_init(dMdu,0.0);
             
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////            

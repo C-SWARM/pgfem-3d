@@ -44,7 +44,8 @@ enum variable_names {
 enum tensor_names {
   TENSOR_Fn,
   TENSOR_pFn,
-  TENSOR_M,
+  TENSOR_Fnp1,
+  TENSOR_pFnp1,  
   TENSOR_tau,
   TENSOR_gamma_dot
 };
@@ -85,7 +86,7 @@ int plasticity_model_ctx_build(void **ctx,
 int plasticity_model_ctx_destroy(void **ctx);
 
 int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu, 
-                 Matrix_double *Grad_du, Matrix_double *Fe, 
+                 Matrix_double *Grad_du, Matrix_double *eFn, Matrix_double *eFnp1, Matrix_double *M,
                  Matrix_double *S, Matrix_double *L, double dt);
 /**
  * compute tangent of the plasticity part of deformation gradient with respect to the deformation

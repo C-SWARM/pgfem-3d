@@ -366,38 +366,8 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   Matrix_inv(*Fe_n, Fe_I);
   Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,*Fnp1,0);
 
-// compute velocity gradient	
-/*
-	Matrix(double) LL, Feye;
-	Matrix_construct_redim(double, LL, 3,3);
-	Matrix_construct_redim(double, Feye, 3,3);	
-	Matrix_eye(Feye,3);
-	Matrix_inv(*Fnp1, LL);
-	Matrix_AplusB(Feye,1.0,*Fnp1,-1.0,Feye);
-	
-	Matrix_AxB(LL,1.0/dt,0.0,Feye,0,LL,0);
-	Matrix_print(LL);
-	Matrix_cleanup(LL);
-	Matrix_cleanup(Feye);	
-*/
-
 	Staggered_NewtonRapson_Testing_sp(&Props,&Params,&Struc,&Solver,0.0,dt,
 									   P_sys,g_n,pFn,Fnp1->m_pdata,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
-
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
-    
-/*    printf("%e,%e,%e\n", g_n,L_np1k,L_np1);
-    printf("P_sys-----------------------\n");Matrix_print(*((m->param)->Psys));
-    printf("Fp_n------------------------\n");Matrix_print(Fs[TENSOR_pFn]);
-    printf("F_np1-----------------------\n");Matrix_print(*Fnp1);
-    printf("Fp_np1k---------------------\n");Matrix_print(Fp_np1k);
-    printf("Fp_np1----------------------\n");Matrix_print(*pFnp1); 
-
-  printf("##########%d", N_SYS);
-  */     
-///////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////
 
   Matrix(double) S_n, pFnp1_I, eFnp1;
   Matrix_construct_redim(double,S_n,3,3);       
@@ -412,11 +382,9 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   for (int k = 0; k<N_SYS; k++)
 	{
 	  double tau_k = Tau_Rhs_sp(k, P_sys, eFnp1.m_pdata, S_n.m_pdata);
-//	  printf("%e ", tau_k);
     Vec_v(Fs[TENSOR_tau],k+1) = tau_k;
     Vec_v(Fs[TENSOR_gamma_dot],k+1) = gamma_Rate_PL(&Params,g_n,tau_k);
   }
-//  printf("\n");
   double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, Fs[TENSOR_gamma_dot].m_pdata);
   state_var[VAR_g_np1] =  g_n + dt*g_Rhs;
   state_var[VAR_L_np1] =  L_np1;
@@ -427,12 +395,8 @@ int integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *F
   Matrix_cleanup(eFnp1);
   Matrix_cleanup(pFnp1_I);    
   
-////////////////////////////////////////////////////////////////////////////  
-  double dd;
-  Matrix_det(*pFnp1, dd);
-//  Matrix_print(*pFnp1);  
-//  printf("g_n+1: %e, dd: %e, L_n+1: %e\n", state_var[VAR_g_np1], dd, state_var[VAR_L_np1]);
-/////////////////////////////////////////////////////////////////////////////
+  Matrix_AeqB(Fs[TENSOR_pFnp1], 1.0, *pFnp1);
+  Matrix_AeqB(Fs[TENSOR_Fnp1], 1.0, *Fnp1);
   
 	return err;    
 }
@@ -466,7 +430,8 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
   return err;  
 }
 
-int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, Matrix_double *Fe, Matrix_double *S, Matrix_double *L, Matrix_double *Grad_du, double dt)
+int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, Matrix_double *eFn, Matrix_double *eFnp1, Matrix_double *M, 
+                                   Matrix_double *S, Matrix_double *L, Matrix_double *Grad_du, double dt)
 {
   int err = 0;
   switch(m->param->type) 
@@ -480,12 +445,13 @@ int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, M
     double J;
     Matrix(double) C;
     Matrix_construct_redim(double,C,3,3); 
-    Matrix_AxB(C, 1.0, 0.0, *Fe, 1, *Fe, 0);
-    Matrix_det(*Fe, J);
+    Matrix_AxB(C, 1.0, 0.0, *eFnp1, 1, *eFnp1, 0);
+    Matrix_det(*eFnp1, J);
     err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J);
-    err += compute_dMdu(m,dMdu,Grad_du,Fe,S,L,dt);
+    err += compute_dMdu(m,dMdu,Grad_du,eFn,eFnp1,M,S,L,dt);
     err += plasticity_model_ctx_destroy(&ctx);
     Matrix_cleanup(C);
+        
     break;    
   }  
   case BPA_PLASTICITY:
@@ -942,3 +908,31 @@ int constitutive_model_test(const HOMMAT *hmat)
   return err;
 }
 
+int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *elem)
+{
+  printf("this is running\n");
+  int err = 0;
+  if (ne <= 0) return 1;
+
+  for (int i = 0; i < ne; i++) 
+  {
+    const ELEMENT *p_el = elem + i;
+    long n_ip = 0;
+    int_point(p_el->toe,&n_ip);
+    for (int j = 0; j < n_ip; j++)     
+    {
+      Constitutive_model *m = &(eps[i].model[j]);
+      Matrix(double) *Fs = (m->vars).Fs;
+      double *state_var = (m->vars).state_vars[0].m_pdata;
+//      Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
+      Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);
+      state_var[VAR_g_n] = state_var[VAR_g_np1];
+      state_var[VAR_L_n] = state_var[VAR_L_np1];
+      if(i==0)
+        printf("%e %e \n", state_var[VAR_g_np1], state_var[VAR_L_np1]);
+    }
+    
+    
+  }
+  return err;  
+}

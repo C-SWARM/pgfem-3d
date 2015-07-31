@@ -106,7 +106,9 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
 
 int constitutive_model_update_dMdu(Constitutive_model *m,
                                    Matrix_double *dMdu,
-                                   Matrix_double *Fe,
+                                   Matrix_double *eFn,
+                                   Matrix_double *eFnp1,                                   
+                                   Matrix_double *M,
                                    Matrix_double *S,
                                    Matrix_double *L,
                                    Matrix_double *Grad_du,
@@ -324,6 +326,12 @@ int build_model_parameters_list(Model_parameters **param_list,
  */
 int destroy_model_parameters_list(const int n_mat,
                                   Model_parameters *param_list);
+
+int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *elem);
+/**
+ * update values for next time step: variables[tn] = variables[tn+1]
+ * \return non-zero on error.
+ */
 
 int constitutive_model_test(const HOMMAT *hmat);
 #endif

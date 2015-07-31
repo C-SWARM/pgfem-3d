@@ -30,7 +30,7 @@
 #define ndn 3
 
 #ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 0
+#define PGFEM3D_DEV_TEST 1
 #endif
 			   
 int update_residuals_from_constitutive_model(double *f,

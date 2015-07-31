@@ -95,7 +95,7 @@ static int plasticity_reset(Constitutive_model *m)
 static int plasticity_info(Model_var_info **info)
 {
   *info = malloc(sizeof(**info));
-  int Fno = 5;
+  int Fno = 6;
   
   (*info)->n_Fs = Fno;
   (*info)->F_names = (char **)malloc(sizeof(char*)*Fno);
@@ -104,7 +104,8 @@ static int plasticity_info(Model_var_info **info)
 
   sprintf((*info)->F_names[TENSOR_Fn],        "Fn");
   sprintf((*info)->F_names[TENSOR_pFn],       "pFp");
-  sprintf((*info)->F_names[TENSOR_M],         "M");
+  sprintf((*info)->F_names[TENSOR_Fnp1],      "Fnp1");
+  sprintf((*info)->F_names[TENSOR_pFnp1],     "pFpnp1");    
   sprintf((*info)->F_names[TENSOR_tau],       "tau"); 
   sprintf((*info)->F_names[TENSOR_gamma_dot], "gamma_dot");     
   
@@ -189,19 +190,20 @@ int compute_P_alpha(Constitutive_model *m, int alpha, Matrix(double) *Pa)
   return 0;
 }
 
-int compute_C_D_alpha(Constitutive_model *m, Matrix(double) *aC, Matrix(double) *Da, 
-                    Matrix(double) *Fe, Matrix(double) *Pa, Matrix(double) *S,
+int compute_C_D_alpha(Constitutive_model *m, Matrix(double) *aC, Matrix(double) *aD, 
+                    Matrix(double) *eFn, Matrix(double) *eFnp1,Matrix(double) *M, Matrix(double) *Pa, Matrix(double) *S,
                     Matrix(double) *L, Matrix(double) *C)
 {
   Matrix_init(*aC, 0.0);  
-  Matrix_init(*Da, 0.0);
+  Matrix_init(*aD, 0.0);
   
-  Matrix(double) LC, AA, CAA, FeAA, FeAAMT;
-  Matrix_construct_redim(double,LC,    3,3);
-  Matrix_construct_redim(double,AA,    3,3);
-  Matrix_construct_redim(double,CAA,   3,3);
-  Matrix_construct_redim(double,FeAA,  3,3);
-  Matrix_construct_redim(double,FeAAMT,3,3);    
+  Matrix(double) LC, AA, CAA, eFnp1AA, eFnp1AAMT, MI;
+  Matrix_construct_redim(double,LC,       3,3);
+  Matrix_construct_redim(double,AA,       3,3);
+  Matrix_construct_redim(double,CAA,      3,3);
+  Matrix_construct_redim(double,eFnp1AA,  3,3);
+  Matrix_construct_redim(double,eFnp1AAMT,3,3);    
+  Matrix_construct_redim(double,MI,       3,3);      
 
   Matrix_AxB(AA,1.0,0.0,*Pa,0,*S,0);   // AA = Pa*S
   Matrix_AxB(AA,1.0,1.0,*S,0,*Pa,1);   // AA = AA + S*Pa' 
@@ -209,24 +211,26 @@ int compute_C_D_alpha(Constitutive_model *m, Matrix(double) *aC, Matrix(double) 
   Matrix_Tns4_dd_Tns2(LC, *L, *C);     // LC = L:C
   Matrix_AxB(AA,1.0,1.0,LC,0,*Pa,0);   // AA = AA + L:C*Pa
 
+  Matrix_inv(*M,MI);
   Matrix_AxB(CAA,1.0,0.0,*C,0,AA,0);   
-  Matrix_AxB(*aC,1.0,0.0,m->vars.Fs[TENSOR_pFn],1,CAA,0);     // Fp: m->vars.Fs[TENSOR_pFn]
+  Matrix_AxB(*aC,1.0,0.0,MI,1,CAA,0);     // Fp: m->vars.Fs[TENSOR_pFn]
 
-  Matrix_AxB(FeAA,1.0,0.0,*Fe,0,AA,0);
-  Matrix_AxB(FeAAMT,1.0,0.0,FeAA,0,m->vars.Fs[TENSOR_M],1); // M: m->vars.Fs[TENSOR_M]
-  Matrix_AxB(*Da,1.0,0.0,FeAAMT,0,*Fe,1);
+  Matrix_AxB(eFnp1AA,1.0,0.0,*eFnp1,0,AA,0);
+  Matrix_AxB(eFnp1AAMT,1.0,0.0,eFnp1AA,0,*M,1);
+  Matrix_AxB(*aD,1.0,0.0,eFnp1AAMT,0,*eFn,1);
   
   Matrix_cleanup(LC);
   Matrix_cleanup(AA);
   Matrix_cleanup(CAA);
-  Matrix_cleanup(FeAA);
-  Matrix_cleanup(FeAAMT);       
-         
+  Matrix_cleanup(eFnp1AA);
+  Matrix_cleanup(eFnp1AAMT);       
+  Matrix_cleanup(MI);          
   return 0;
 }
 
-int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Grad_du, Matrix_double *Fe, 
-                 Matrix(double) *S, Matrix(double) *L, double dt)
+int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, 
+                 Matrix(double) *Grad_du, Matrix(double) *eFn, Matrix(double) *eFnp1, Matrix(double) *M,
+                 Matrix(double) *S, Matrix(double) *L, double dt)                 
 {
   // compute dMdu:U = -grad(du):B
   // Grad_du = Grad(du)
@@ -252,7 +256,7 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
   // --------------> define variables
   Matrix(double) C;
   Matrix_construct_redim(double, C, 3,3);
-  Matrix_AxB(C,1.0,0.0,*Fe,1,*Fe,0);
+  Matrix_AxB(C,1.0,0.0,*eFnp1,1,*eFnp1,0);
   
   Matrix(double) U,UI,II,B,aCxPa,CxP,aDxPa,DxP;
   
@@ -305,7 +309,7 @@ int compute_dMdu(Constitutive_model *m, Matrix(double) *dMdu, Matrix(double) *Gr
     double R2_a = ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdtau;
         
     compute_P_alpha(m,a,&Pa);
-    compute_C_D_alpha(m,&aC, &aD,Fe,&Pa,S,L,&C);
+    compute_C_D_alpha(m,&aC, &aD,eFn,eFnp1,M,&Pa,S,L,&C);
     
     Matrix_AOxB(aCxPa, aC, Pa);
     Matrix_AOxB(aDxPa, aD, Pa);    

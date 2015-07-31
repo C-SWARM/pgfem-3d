@@ -35,6 +35,8 @@
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
 
+#include "constitutive_model.h"
+
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
 #endif
@@ -57,6 +59,10 @@
 
 #ifndef DEBUG_MULTISCALE_SERVER
 #define DEBUG_MULTISCALE_SERVER 1
+#endif
+
+#ifndef PGFEM3D_DEV_TEST
+#define PGFEM3D_DEV_TEST 1
 #endif
 
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
@@ -832,6 +838,9 @@ double Newton_Raphson (const int print_level,
 			sup,eps,sig_e,hommat,d_r,mpi_comm);
       break;
     case DISP:
+      if (PGFEM3D_DEV_TEST)
+        constitutive_model_update_time_steps(eps,ne,elem);
+        
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
