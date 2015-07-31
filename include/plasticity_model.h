@@ -20,7 +20,6 @@ typedef struct Model_parameters Model_parameters;
 typedef struct Constitutive_model Constitutive_model;
 #endif
 
-
 struct Matrix_double;
 #ifndef TYPE_MATRIX_DOUBLE
 #define TYPE_MATRIX_DOUBLE

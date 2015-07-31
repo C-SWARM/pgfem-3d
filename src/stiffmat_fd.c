@@ -63,6 +63,8 @@ int update_stiffness_from_constitutive_model(double *lk,
         const SUPP sup,
         double *r_e)
 {
+  int updated_Lagrangian = 1;
+  
   int err = 0;
 
   if (PGFEM3D_DEV_TEST) {
@@ -79,7 +81,8 @@ int update_stiffness_from_constitutive_model(double *lk,
   }
 
   
-  Matrix(double) Fr, Fnp1;
+  Matrix(double) Fn, Fr, Fnp1;
+  Matrix(double) pFn;
   Matrix(double) FreFn,eFnp1,pFnp1,pFnp1_I,L,dMdu,S;  
   Matrix(double) pFnI, eFn, M, eFnM;  
   Matrix(double) ST_ab, ST_wg, AA, BB, CC;
@@ -87,8 +90,12 @@ int update_stiffness_from_constitutive_model(double *lk,
   Matrix(double) MTeFnT_sAA, MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,MTeFnT_FrTFr,MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,MTeFnT_sBB;
   Matrix(double) L_dCdu,MTeFnT_sCC,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,sMTeFnT_sAA_eFndMdu;
       
+  Matrix_construct_redim(double,Fn ,3,3);
   Matrix_construct_redim(double,Fr ,3,3);
   Matrix_construct_redim(double,Fnp1 ,3,3);      
+
+  Matrix_construct_redim(double,pFn ,3,3);
+  
   Matrix_construct_redim(double,L ,81,1);  
   Matrix_construct_redim(double,dMdu ,3,3);
   Matrix_construct_redim(double,FreFn,3,3);      
@@ -137,16 +144,27 @@ int update_stiffness_from_constitutive_model(double *lk,
     Matrix(double) *Fs = (m->vars).Fs;
     Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0);
     
-    Matrix_inv(Fs[TENSOR_pFn], pFnI);
-    Matrix_AxB(eFn,1.0,0.0,Fs[TENSOR_Fn],0,pFnI,0); 
+    if(updated_Lagrangian)
+    {
+      Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
+      Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
+    }   
+    else
+    {  
+      Matrix_eye(Fn,3);
+      Matrix_eye(pFn,3);
+    }  
+        
+    Matrix_inv(pFn, pFnI);
+    Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
     
     // --> update plasticity part
-    Matrix_AxB(Fnp1,1.0,0.0,Fs[TENSOR_Fn],0,Fr,0);  // Fn+1    
+    Matrix_AxB(Fnp1,1.0,0.0,Fn,0,Fr,0);  // Fn+1    
     
    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
 /////////////////////////////////////////////////////////////////////// 
     Matrix_inv(pFnp1, pFnp1_I);
-    Matrix_AxB(M,1.0,0.0,Fs[TENSOR_pFn],0,pFnp1_I,0);   
+    Matrix_AxB(M,1.0,0.0,pFn,0,pFnp1_I,0);   
     // <-- update plasticity part
 /////////////////////////////////////////////////////////////////////////////////            
 /////////////////////////////////////////////////////////////////////////////////
@@ -170,7 +188,7 @@ int update_stiffness_from_constitutive_model(double *lk,
     Matrix_AxB(eFnp1,1.0,0.0,FreFn,0,M,0);    
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
     
-    double Jn; Matrix_det(Fs[TENSOR_Fn], Jn);
+    double Jn; Matrix_det(Fn, Jn);
     
     for(int a=0; a<nne; a++)
     {
@@ -249,8 +267,10 @@ int update_stiffness_from_constitutive_model(double *lk,
   }
   free(u);
   
+  Matrix_cleanup(Fn);
   Matrix_cleanup(Fr);
-  Matrix_cleanup(Fnp1);      
+  Matrix_cleanup(Fnp1);
+  Matrix_cleanup(pFn);      
   Matrix_cleanup(L);  
   Matrix_cleanup(dMdu);
   Matrix_cleanup(FreFn);      

@@ -49,6 +49,8 @@ int update_residuals_from_constitutive_model(double *f,
         const SUPP sup,
         double *r_e)
 {
+  int updated_Lagrangian = 0;
+  
   int err = 0;
 
   if (PGFEM3D_DEV_TEST) {
@@ -64,9 +66,12 @@ int update_residuals_from_constitutive_model(double *f,
   		u[a*nsd+b] = r_e[a*ndofn+b];	
   }
 
-  Matrix(double) Fr, Fnp1;
+  Matrix(double) Fn, Fr, Fnp1, pFn;
+  Matrix_construct_redim(double,Fn ,3,3);
   Matrix_construct_redim(double,Fr ,3,3);
-  Matrix_construct_redim(double,Fnp1 ,3,3);      
+  Matrix_construct_redim(double,Fnp1 ,3,3); 
+  
+  Matrix_construct_redim(double,pFn ,3,3);     
        
   Matrix(double) eFnp1,pFnp1,pFnp1_I,L,S;  
   Matrix_construct_redim(double,eFnp1,3,3);  
@@ -103,11 +108,24 @@ int update_residuals_from_constitutive_model(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix(double) *Fs = (m->vars).Fs;    
 
-    Matrix_inv(Fs[TENSOR_pFn], pFnI);
-    Matrix_AxB(eFn,1.0,0.0,Fs[TENSOR_Fn],0,pFnI,0); 
+
+    if(updated_Lagrangian)
+    {
+      Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
+      Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
+    }   
+    else
+    {  
+      Matrix_eye(Fn,3);
+      Matrix_eye(pFn,3);
+    } 
+    
+
+    Matrix_inv(pFn, pFnI);
+    Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
    
     // --> update plasticity part
-    Matrix_AxB(Fnp1,1.0,0.0,Fs[TENSOR_Fn],0,Fr,0);  // Fn+1    
+    Matrix_AxB(Fnp1,1.0,0.0,Fn,0,Fr,0);  // Fn+1    
     constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
     Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);    
     // <-- update plasticity part
@@ -122,7 +140,7 @@ int update_residuals_from_constitutive_model(double *f,
     // <-- update elasticity part
             
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
-    double Jn; Matrix_det(Fs[TENSOR_Fn], Jn);
+    double Jn; Matrix_det(Fn, Jn);
     
     for(int a=0; a<nne; a++)
     {
@@ -146,8 +164,10 @@ int update_residuals_from_constitutive_model(double *f,
   }
   
   free(u);
+  Matrix_cleanup(Fn);
   Matrix_cleanup(Fr);
   Matrix_cleanup(Fnp1);
+  Matrix_cleanup(pFn);
 
   Matrix_cleanup(eFnp1);    
   Matrix_cleanup(pFnp1);

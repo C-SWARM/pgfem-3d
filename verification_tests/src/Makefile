@@ -1,6 +1,5 @@
 EXC = main_test
-$(shell ls ../../src/*.o > objs)
-OBJ_TEST = $(shell grep -v 'super_main.o' objs)
+OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o')
 
 POST_PROCESSING=../include
 
@@ -13,6 +12,10 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 # HYPRE
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 
+# CNSTVM
+CNSTVM_dir = $(HOME)/temp/Constitutive_Model_implicit
+CNSTVM_lib = -L$(CNSTVM_dir)/src -lCM
+CNSTVM_incl = -I$(CNSTVM_dir)/include
 
 # Compressed VTK I/O
 VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
@@ -50,6 +53,7 @@ RM = rm -rf
 CFLAGS = -Wall -std=c99 -O3 -g
 	
 INCLUDES = -I$(pfem_incl_dir) \
+                  $(CNSTVM_incl) \
 		  $(VTK_IO_incl) \
 		  $(MKL_incl) \
 		  -I$(POST_PROCESSING)
@@ -57,21 +61,22 @@ INCLUDES = -I$(pfem_incl_dir) \
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
+          $(CNSTVM_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib)
 	  	  		  		  		
 OBJ = $(SRC:.c=.o)
 
 all:
-	$(CC) -c $(INCLUDES) $(CFLAGS) post_processing.c 	
+#	$(CC) -c $(INCLUDES) $(CFLAGS) post_processing.c 	
 	$(CC) -c $(INCLUDES) $(CFLAGS) shear.c 		
-	$(LINK) -o shear $(CFLAGS) shear.o post_processing.o $(OBJ_TEST) $(LIBS)
+	$(LINK) -o shear $(CFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) tension_disp.c 		
-	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o post_processing.o $(OBJ_TEST) $(LIBS)
+	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) tension_pressure.c 		
-	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o post_processing.o $(OBJ_TEST) $(LIBS)		
+	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
 	$(CC) -c $(INCLUDES) $(CFLAGS) UQ_study.c 		
-	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o post_processing.o $(OBJ_TEST) $(LIBS)	
+	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
  							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure

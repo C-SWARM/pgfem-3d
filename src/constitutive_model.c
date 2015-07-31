@@ -910,7 +910,6 @@ int constitutive_model_test(const HOMMAT *hmat)
 
 int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *elem)
 {
-  printf("this is running\n");
   int err = 0;
   if (ne <= 0) return 1;
 
@@ -924,15 +923,11 @@ int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *
       Constitutive_model *m = &(eps[i].model[j]);
       Matrix(double) *Fs = (m->vars).Fs;
       double *state_var = (m->vars).state_vars[0].m_pdata;
-//      Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
+      //Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
       Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);
       state_var[VAR_g_n] = state_var[VAR_g_np1];
       state_var[VAR_L_n] = state_var[VAR_L_np1];
-      if(i==0)
-        printf("%e %e \n", state_var[VAR_g_np1], state_var[VAR_L_np1]);
     }
-    
-    
   }
   return err;  
 }

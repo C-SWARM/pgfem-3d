@@ -213,7 +213,7 @@ int compute_C_D_alpha(Constitutive_model *m, Matrix(double) *aC, Matrix(double) 
 
   Matrix_inv(*M,MI);
   Matrix_AxB(CAA,1.0,0.0,*C,0,AA,0);   
-  Matrix_AxB(*aC,1.0,0.0,MI,1,CAA,0);     // Fp: m->vars.Fs[TENSOR_pFn]
+  Matrix_AxB(*aC,1.0,0.0,MI,1,CAA,0);
 
   Matrix_AxB(eFnp1AA,1.0,0.0,*eFnp1,0,AA,0);
   Matrix_AxB(eFnp1AAMT,1.0,0.0,eFnp1AA,0,*M,1);

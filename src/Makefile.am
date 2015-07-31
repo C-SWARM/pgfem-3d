@@ -127,6 +127,7 @@ plasticity_model.c \
 plasticity_model_none.c \
 state_variables.c \
 constitutive_model.c \
+post_processing.c \
 super_main.c
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
