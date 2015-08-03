@@ -1,6 +1,7 @@
 #include "allocation.h"
 #include "homogen.h"
 #include "utils.h"
+#include "constitutive_model.h"
 
 #include "read_input_file.h"
 #include "post_processing.h"
@@ -58,7 +59,8 @@ int main(int argc,char *argv[])
   long nle_s = 0;
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
-  ZATELEM *zele_v = NULL;    
+  ZATELEM *zele_v = NULL;
+  Model_parameters *param_list = NULL;   
   
   
   int in_err = 0;
@@ -91,6 +93,9 @@ int main(int argc,char *argv[])
   EPS *eps = NULL;    
   eps = build_eps_il(ne,elem,options.analysis_type);
   
+  
+  build_model_parameters_list(&param_list,nhommat,matgeom,hommat);
+  init_all_constitutive_model(eps,ne,elem,param_list);    
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs
   double *u = aloc1(nn*ndofn); 
@@ -111,6 +116,7 @@ int main(int argc,char *argv[])
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
+  destroy_model_parameters_list(nhommat,param_list);  
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
