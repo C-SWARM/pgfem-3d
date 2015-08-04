@@ -61,10 +61,6 @@
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
 
-#ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 1
-#endif
-
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
    any print_level > MINIMAL_OUTPUT, normal output is used. */
 enum{MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT} PRINT_LEVEL;
@@ -839,8 +835,9 @@ double Newton_Raphson (const int print_level,
       break;
     case DISP:
       if (PGFEM3D_DEV_TEST)
-        constitutive_model_update_time_steps(eps,ne,elem);
-        
+      {
+        constitutive_model_update_time_steps(eps,ne,elem);      
+      }             
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
@@ -873,7 +870,7 @@ double Newton_Raphson (const int print_level,
                     if(id==0)
                       r_n[a*ndofn + b] = 0.0;
                     else
-                      r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
+                      r_n[a*ndofn + b] = sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
                   }
               }
           }
@@ -897,7 +894,7 @@ double Newton_Raphson (const int print_level,
               }
           }
       }
-    
+        
     /* Null prescribed increment deformation */
     for (i=0;i<sup->npd;i++){  
       sup->defl[i] += sup->defl_d[i];
