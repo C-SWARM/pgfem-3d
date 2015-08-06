@@ -144,8 +144,10 @@ int main(int argc,char *argv[])
   compute_L2_error(GL2_err, elem, ne, node, u, Ph, Vh, times[tim+1], mpi_comm, &options, hommat);
   if(myrank==0)
   {
+    FILE *f = fopen("error.txt", "w");
     printf("time step = %d, time = %e\n", tim, times[tim+1]);
     printf("error = %e, %e, %e\n", sqrt(GL2_err[0]), sqrt(GL2_err[1]), sqrt(GL2_err[2]));
+    fprintf(f , "%e, %e, %e\n", sqrt(GL2_err[0]), sqrt(GL2_err[1]), sqrt(GL2_err[2]));
   }
 
   free(u);

@@ -157,7 +157,7 @@ void DISP_resid_body_force_el(double *f,
       for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-        f[id] += 0.0*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
+        f[id] += bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
 	  }	          
   }        
