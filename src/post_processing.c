@@ -134,7 +134,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
       intg_order = 0;
 
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,1);
     int nne = fe.nne;
     
     Matrix(double) Np, u, P;  

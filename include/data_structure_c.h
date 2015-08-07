@@ -39,6 +39,7 @@ typedef struct Matrix_##T                                               \
 } while(0)
 
 #define Matrix_Tns4_eye(p) do{                                          \
+  Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \
   {                                                                     \
     for(int J=1; J<=3; J++)                                             \
@@ -53,6 +54,7 @@ typedef struct Matrix_##T                                               \
 } while(0)
 
 #define Matrix_Tns4_eye_bar(p) do{                                      \
+  Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \
   {                                                                     \
     for(int J=1; J<=3; J++)                                             \

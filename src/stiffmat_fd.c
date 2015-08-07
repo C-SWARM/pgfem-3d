@@ -126,7 +126,7 @@ int update_stiffness_from_constitutive_model(double *lk,
   Matrix_construct_redim(double,sMTeFnT_sAA_eFndMdu,3,3);  
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,1);
   int compute_stiffness = 1;      
 
   for(int ip = 1; ip<=fe.nint; ip++)
@@ -175,7 +175,6 @@ int update_stiffness_from_constitutive_model(double *lk,
 
     // --> start computing tagent
     Matrix_AxB(FreFn,1.0,0.0,Fr,0,eFn,0);
-    Matrix_AxB(eFnp1,1.0,0.0,FreFn,0,M,0);    
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
     
     double Jn; Matrix_det(Fn, Jn);
@@ -443,9 +442,15 @@ static int el_stiffmat(int i, /* Element ID */
     nodecoord_total (nne,nod,node,x,y,z);
   } else {
     switch(analysis){
-    case DISP: case TF:
-      nodecoord_total (nne,nod,node,x,y,z);
+    case DISP:
+      if(PGFEM3D_DEV_TEST)
+        nodecoord_updated (nne,nod,node,x,y,z);
+      else
+        nodecoord_total (nne,nod,node,x,y,z);
       break;
+    case TF:
+      nodecoord_total (nne,nod,node,x,y,z);
+      break;      
     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
@@ -478,7 +483,13 @@ static int el_stiffmat(int i, /* Element ID */
     def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
   } else {
     switch(analysis){
-    case DISP: case TF: /* TOTAL LAGRANGIAN */
+    case DISP:
+      if(PGFEM3D_DEV_TEST) 
+        def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+      else
+        def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+      break;      
+    case TF: /* TOTAL LAGRANGIAN */
       def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
       break;
     default:

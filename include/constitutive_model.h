@@ -338,7 +338,7 @@ int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *
  * \return non-zero on error.
  */
 int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT *hommat, EPS *eps, 
-                                        const int ne, const int ndofn,
+                                        const int ne, const int nn, const int ndofn,
                                         double* r, double dt); 
 
 int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);

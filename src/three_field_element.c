@@ -516,7 +516,7 @@ void stiffmat_3f_el(double *Ks,
 
 
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
   
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
@@ -653,7 +653,7 @@ void residuals_3f_el(double *f,
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
                           
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
@@ -834,7 +834,7 @@ void residuals_3f_w_inertia_el(double *f,
   Matrix_construct_init(double,Ktp,nVol,   npres,0.0);
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
                         
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
@@ -1070,7 +1070,7 @@ void update_3f_state_variables_el(const int ii,
   Matrix_construct_init(double,F,3,3,0.0);
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 1);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 1,1);
     
   Matrix(double) Np, Nt;
     
@@ -1168,7 +1168,7 @@ void evaluate_PT_el(const int ii,
   Matrix_construct_init(double,Ktp,nVol   ,npres  ,0.0);
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
   
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);
@@ -1366,7 +1366,7 @@ void evaluate_PT_w_inertia_el(const int ii,
   Matrix_construct_init(double,Ktp,nVol   ,npres  ,0.0);   
 
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
     
   Matrix(double) Np, Nt;
   Matrix_construct_init(double,Np,npres,1,0.0);

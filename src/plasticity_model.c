@@ -503,7 +503,7 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m,
   double g_n = state_var[VAR_g_n];
   
   double L_np1k = state_var[VAR_L_n];
-//  if(fabs(L_np1k)<1.0e-12)
+  if(fabs(L_np1k)<1.0e-12)
     L_np1k = 0.001;
     
   double L_np1 = 0.0;
@@ -523,13 +523,13 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m,
 	
 	elastic_stress(&Props, eFnp1.m_pdata, S_n.m_pdata);  
 
-  double gamma_dot = 0.0;    //////////////////////// compute g_np1
+//  double gamma_dot = 0.0;    //////////////////////// compute g_np1
   for (int k = 0; k<N_SYS; k++)
 	{
 	  double tau_k = Tau_Rhs_sp(k, P_sys, eFnp1.m_pdata, S_n.m_pdata);
     Vec_v(Fs[TENSOR_tau],k+1) = tau_k;
     Vec_v(Fs[TENSOR_gamma_dot],k+1) = gamma_Rate_PL(&Params,g_n,tau_k);
-    gamma_dot += fabs(Vec_v(Fs[TENSOR_gamma_dot],k+1)); //////////////////////// compute g_np1
+//    gamma_dot += fabs(Vec_v(Fs[TENSOR_gamma_dot],k+1)); //////////////////////// compute g_np1
   }
   double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, Fs[TENSOR_gamma_dot].m_pdata);
   state_var[VAR_g_np1] =  g_n + dt*g_Rhs;
@@ -537,15 +537,15 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m,
   
   
   //////////////////////// compute g_np1
-  double gm_gms   = gamma_dot/Params.gamsdot;
-  double gs_np1 = 0.0;   
-  if(fabs(gm_gms)>1.0e-15)
-    gs_np1 = Params.gs0*pow(fabs(gm_gms),Params.w);
+//  double gm_gms   = gamma_dot/Params.gamsdot;
+//  double gs_np1 = 0.0;   
+//  if(fabs(gm_gms)>1.0e-15)
+//    gs_np1 = Params.gs0*pow(fabs(gm_gms),Params.w);
   
     
-  double gg = ((gs_np1-Params.g0)*g_n + dt*Params.G0*gs_np1*gamma_dot)/(gs_np1 - Params.g0 + dt*Params.G0*gamma_dot);
+//  double gg = ((gs_np1-Params.g0)*g_n + dt*Params.G0*gs_np1*gamma_dot)/(gs_np1 - Params.g0 + dt*Params.G0*gamma_dot);
 //  printf("%e %e %e\n", g_n + dt*g_Rhs, gg, g_n + fabs(dt*g_Rhs - gg));  
-  state_var[VAR_g_np1] = gg;
+//  state_var[VAR_g_np1] = gg;
   //////////////////////// compute g_np1  
 
   Matrix_cleanup(Fe_I);

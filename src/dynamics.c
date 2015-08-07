@@ -52,7 +52,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
   {
     
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);  
+    FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);  
     for(int ip = 1; ip<=fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip); 
@@ -125,7 +125,7 @@ void DISP_resid_body_force_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
     
   double *bf = aloc1(ndofn);
                  
@@ -179,7 +179,7 @@ void DISP_resid_w_inertia_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
   Matrix(double) du;
   
   Matrix_construct_redim(double,du,3,1);

@@ -92,7 +92,7 @@ int update_residuals_from_constitutive_model(double *f,
   Matrix_construct_redim(double,MTeFnT_sAA_eFnM    ,3,3);
 
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0);      
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,1);      
   int compute_stiffness = 0;
    
   for(int ip = 1; ip<=fe.nint; ip++)
@@ -284,7 +284,18 @@ int fd_residuals (double *f_u,
     {
       switch(opts->analysis_type)
       {
-      case DISP: 
+      case DISP:
+        if(PGFEM3D_DEV_TEST)
+        {  
+	        nodecoord_updated(nne,nod,node,x,y,z);
+	        def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+	      } 
+        else
+        {  
+          nodecoord_total(nne,nod,node,x,y,z);
+	        def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+	      }  
+        break; 
       case TF:
 	      nodecoord_total(nne,nod,node,x,y,z);
 	      def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);

@@ -466,7 +466,7 @@ int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *
 }
 
 int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT *hommat, EPS *eps, 
-                                        const int ne, const int ndofn,
+                                        const int ne, const int nn, const int ndofn,
                                         double* r, double dt)
 {
   int nsd = 3;
@@ -491,7 +491,7 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
       intg_order = 0;
 
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,1);
     int nne = fe.nne;
     
     Matrix(double) u;  
@@ -542,6 +542,25 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
       state_var[VAR_L_n] = state_var[VAR_L_np1];
     }
   }
+  
+  
+  /*********************/
+  /* Coordinate update */
+  /*********************/
+   for(int n = 0;n<nn; n++)
+   {
+    for(int a=0;a<nsd;a++)
+    {
+      int II = node[n].id[a];
+      if (II != 0)
+      {
+	      if (a == 0) node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
+	      else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
+	      else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
+      }
+    }
+  }/* end n < nn */  
+  
   Matrix_cleanup(Fn);
   Matrix_cleanup(pFn);
   Matrix_cleanup(pFnI);

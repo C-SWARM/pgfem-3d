@@ -879,7 +879,7 @@ double Newton_Raphson (const int print_level,
       if (PGFEM3D_DEV_TEST)
       {
         constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
-                                        ne,ndofn,r_n,dt);             
+                                        ne,nn,ndofn,r_n,dt);             
       }
       
     if(opts->analysis_type==TF)
