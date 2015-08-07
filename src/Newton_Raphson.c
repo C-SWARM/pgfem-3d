@@ -836,7 +836,7 @@ double Newton_Raphson (const int print_level,
     case DISP:
       if (PGFEM3D_DEV_TEST)
       {
-        constitutive_model_update_time_steps(eps,ne,elem);      
+//        constitutive_model_update_time_steps(eps,ne,elem); 
       }             
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
@@ -875,7 +875,13 @@ double Newton_Raphson (const int print_level,
               }
           }
       }
-
+      
+      if (PGFEM3D_DEV_TEST)
+      {
+        constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
+                                        ne,ndofn,r_n,dt);             
+      }
+      
     if(opts->analysis_type==TF)
       {
         int nVol = 1;

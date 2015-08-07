@@ -127,8 +127,6 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   double LV = 0.0;
   double GV = 0.0;
   
-  
-  
   for(int e = 0; e<ne; e++)
   {    
     int intg_order = 1;    

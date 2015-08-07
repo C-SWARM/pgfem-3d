@@ -98,5 +98,13 @@ int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu,
  */
  
 int plasticity_model_slip_system(Matrix_double *P);
+
+int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fnp1, Matrix_double *Fe_n, double dt);
+
+int plasticity_model_read_parameters(Constitutive_model *m);
+
+typedef struct HOMMAT HOMMAT;
+
+int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);
  
 #endif

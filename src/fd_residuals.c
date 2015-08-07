@@ -28,10 +28,6 @@
 #include "plasticity_model.h"
 
 #define ndn 3
-
-#ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 1
-#endif
 			   
 int update_residuals_from_constitutive_model(double *f,
         const int ii,
@@ -109,23 +105,35 @@ int update_residuals_from_constitutive_model(double *f,
     Matrix(double) *Fs = (m->vars).Fs;    
 
 
-    if(updated_Lagrangian)
-    {
+//    if(updated_Lagrangian)
+//    {
       Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
       Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
-    }   
-    else
-    {  
-      Matrix_eye(Fn,3);
-      Matrix_eye(pFn,3);
-    } 
+//    }   
+//    else
+//    {  
+//      Matrix_eye(Fn,3);
+//      Matrix_eye(pFn,3);
+//    } 
     
 
     Matrix_inv(pFn, pFnI);
     Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
    
     // --> update plasticity part
-    Matrix_AxB(Fnp1,1.0,0.0,Fn,0,Fr,0);  // Fn+1    
+    if(updated_Lagrangian)
+    {    
+      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
+    }
+    else
+    {
+      Matrix(double) FnI;
+      Matrix_construct_redim(double, FnI,3,3);
+      Matrix_inv(Fn,FnI);
+      Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
+      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
+      Matrix_cleanup(FnI);
+    }      
     constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
     Matrix_AxB(M,1.0,0.0,pFnI,0,pFnp1,0);    
     // <-- update plasticity part

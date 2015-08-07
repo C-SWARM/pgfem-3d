@@ -41,10 +41,6 @@
 
 #define ndn 3
 
-#ifndef PGFEM3D_DEV_TEST
-#define PGFEM3D_DEV_TEST 1
-#endif
-
 static const int periodic = 0;
 
 int update_stiffness_from_constitutive_model(double *lk,
@@ -63,7 +59,7 @@ int update_stiffness_from_constitutive_model(double *lk,
         const SUPP sup,
         double *r_e)
 {
-  int updated_Lagrangian = 1;
+  int updated_Lagrangian = 0;
   
   int err = 0;
 
@@ -79,7 +75,6 @@ int update_stiffness_from_constitutive_model(double *lk,
   	for(int b=0; b<nsd;b++)
   		u[a*nsd+b] = r_e[a*ndofn+b];	
   }
-
   
   Matrix(double) Fn, Fr, Fnp1;
   Matrix(double) pFn;
@@ -129,7 +124,7 @@ int update_stiffness_from_constitutive_model(double *lk,
   Matrix_construct_redim(double,MTeFnT_sCC_eFnM    ,3,3);
   Matrix_construct_redim(double,MTeFnT_sAA_eFndMdu ,3,3);
   Matrix_construct_redim(double,sMTeFnT_sAA_eFndMdu,3,3);  
-
+  
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0);
   int compute_stiffness = 1;      
@@ -139,41 +134,36 @@ int update_stiffness_from_constitutive_model(double *lk,
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
-
+    
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix(double) *Fs = (m->vars).Fs;
-    Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0);
     
-    if(updated_Lagrangian)
-    {
-      Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
-      Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
-    }   
-    else
-    {  
-      Matrix_eye(Fn,3);
-      Matrix_eye(pFn,3);
-    }  
+    Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
+    Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
         
     Matrix_inv(pFn, pFnI);
     Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
     
     // --> update plasticity part
-    Matrix_AxB(Fnp1,1.0,0.0,Fn,0,Fr,0);  // Fn+1    
-    
-   constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
-/////////////////////////////////////////////////////////////////////// 
+    if(updated_Lagrangian)
+    {    
+      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
+    }
+    else
+    {
+      Matrix(double) FnI;
+      Matrix_construct_redim(double, FnI,3,3);
+      Matrix_inv(Fn,FnI);
+      Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
+      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
+      Matrix_cleanup(FnI);
+    }   
+    Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0); 
+    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
+
     Matrix_inv(pFnp1, pFnp1_I);
-    Matrix_AxB(M,1.0,0.0,pFn,0,pFnp1_I,0);   
-    // <-- update plasticity part
-/////////////////////////////////////////////////////////////////////////////////            
-/////////////////////////////////////////////////////////////////////////////////
-            
-//            Matrix_eye(M,3);
-//            Matrix_eye(pFnp1,3);            
-            
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////  
+    Matrix_AxB(M,1.0,0.0,pFn,0,pFnp1_I,0);
+    // <-- update plasticity part 
 
     // --> update elasticity part
     Matrix_init(L,0.0);
@@ -214,14 +204,8 @@ int update_stiffness_from_constitutive_model(double *lk,
             
             // --> update stiffness w.r.t plasticity
             constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt);
-/////////////////////////////////////////////////////////////////////////////////            
-/////////////////////////////////////////////////////////////////////////////////
-//            Matrix_print(dMdu);
-            Matrix_init(dMdu,0.0);
-            
-/////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////            
             // <-- update stiffness w.r.t plasticity
+
             Matrix_AxB(BB,1.0,0.0,Fr,1,ST_wg,0); 
             Matrix_symmetric(BB,sBB);
             Matrix_AxB(CC, 1.0,0.0,ST_ab,1,ST_wg,0);
@@ -397,9 +381,6 @@ static int el_stiffmat(int i, /* Element ID */
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
 			double alpha, double *r_n, double *r_n_1)
 {
-  if(-1==i && 0==iter && PGFEM3D_DEV_TEST)
-    constitutive_model_test(hommat);
-
 /* make a decision to include ineria*/
   const int mat = elem[i].mat[2];
   double rho = hommat[mat].density;

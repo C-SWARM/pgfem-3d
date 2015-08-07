@@ -320,6 +320,7 @@ typedef struct Matrix_##T                                               \
   }                                                                     \
 } while(0)
 
+// C = A:B
 #define Matrix_Tns4_dd_Tns2(C, A, B) do {                               \
   Matrix_init(C,0.0);                                                   \
   for(int __K=1; __K<=3; __K++)                                         \
@@ -332,6 +333,24 @@ typedef struct Matrix_##T                                               \
       {                                                                 \
         for(int __J=1; __J<=3; __J++)                                   \
          Mat_v(C,__I,__J) += Tns4_v(A,__I,__J,__K,__L)*Mat_v(B,__K,__L);\
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
+
+// C = A:B
+#define Matrix_Tns2_dd_Tns4(C, A, B) do {                               \
+  Matrix_init(C,0.0);                                                   \
+  for(int __I=1; __I<=3; __I++)                                         \
+  {                                                                     \
+    for(int __J=1; __J<=3; __J++)                                       \
+    {                                                                   \
+      if(Mat_v(A,__I,__J)==0.0)                                         \
+        continue;                                                       \
+      for(int __K=1; __K<=3; __K++)                                     \
+      {                                                                 \
+        for(int __L=1; __L<=3; __L++)                                   \
+         Mat_v(C,__K,__L) += Mat_v(A,__I,__J)*Tns4_v(B,__I,__J,__K,__L);\
       }                                                                 \
     }                                                                   \
   }                                                                     \

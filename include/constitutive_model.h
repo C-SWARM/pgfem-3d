@@ -19,7 +19,12 @@
 #include "state_variables.h" /* provides declaration of Matrix_double */
 
 typedef struct EPS EPS;
-typedef struct ELEMENT ELEMENT;;
+typedef struct ELEMENT ELEMENT;
+typedef struct NODE NODE;
+
+#ifndef PGFEM3D_DEV_TEST
+#define PGFEM3D_DEV_TEST 1
+#endif
 
 /**
  * Enumeration for the model type
@@ -332,6 +337,9 @@ int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *
  * update values for next time step: variables[tn] = variables[tn+1]
  * \return non-zero on error.
  */
+int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT *hommat, EPS *eps, 
+                                        const int ne, const int ndofn,
+                                        double* r, double dt); 
 
-int constitutive_model_test(const HOMMAT *hmat);
+int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);
 #endif
