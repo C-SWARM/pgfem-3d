@@ -5,6 +5,7 @@ TAGS
 
 # built executable
 src/PGFem3D
+src/*driver
 
 # autotools stuff
 Makefile.in
