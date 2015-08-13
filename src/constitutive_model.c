@@ -60,6 +60,18 @@ int constitutive_model_destroy(Constitutive_model *m)
   return err;
 }
 
+int model_var_info_print(FILE *f,
+                         const Model_var_info * info)
+{
+  int err = 0;
+  fprintf(f,"F names: ");
+  for(int i = 0, e = info->n_Fs; i < e; i++) fprintf(f,"%s ",info->F_names[i]);
+  fprintf(f,"\nVar names: ");
+  for(int i = 0, e = info->n_vars; i < e; i++) fprintf(f,"%s ",info->var_names[i]);
+  fprintf(f,"\n");
+  return err;
+}
+
 int model_var_info_destroy(Model_var_info **info)
 {
   int err = 0;
