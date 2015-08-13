@@ -172,8 +172,10 @@ int model_parameters_destroy(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
-  Matrix_cleanup(*(p->Psys));
-  free(p->Psys);
+  if(p->Psys){
+    Matrix_cleanup(*(p->Psys));
+    free(p->Psys);
+  }
   p->Psys = NULL;
   /* reset counters/flags */
   p->type = -1;
