@@ -39,6 +39,7 @@ typedef struct HOMMAT HOMMAT;
  */
 typedef struct {
   double F[9];
+  double dt;
 } BPA_ctx;
 
 

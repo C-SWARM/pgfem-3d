@@ -34,9 +34,9 @@
 Define_Matrix(double);
 
 /* constants/enums */
-static const int _n_Fs = 4;
+static const int _n_Fs = 6;
 static const int _n_vars = 4;
-enum {_M,_W,_M_n,_W_n};
+enum {_M,_W,_Fe,_M_n,_W_n,_Fe_n};
 enum {_s,_lam,_s_n,_lam_n};
 static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
@@ -146,50 +146,205 @@ static void bpa_compute_d2udj2(const double Je,
   D_Pressure(Je,p_hmat,d2udj2);
 }
 
-/*
- * Private interface for the model
- */
-int BPA_int_alg(Constitutive_model *m,
-                const void *ctx)
+static int bpa_compute_step1_terms(double *gdot,
+                                   double *s_s,
+                                   double *tau,
+                                   double *eq_sig_dev,
+                                   double *normal,
+                                   const double s,
+                                   const double kappa,
+                                   const double *F,
+                                   const double *M,
+                                   const HOMMAT *p_hmat)
 {
   int err = 0;
-  const BPA_ctx *CTX = ctx;
-  const HOMMAT *p_hmat = m->param->p_hmat;
-
-  /* compute the deformation */
-  double Fe[tensor], Ce[tensor];
-  bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   double Fp[tensor];
-  err += inv3x3(m->vars.Fs[_M].m_pdata,Fp);
-  double Je = det3x3(Fe);
+  double Fe[tensor];
+  double Ce[tensor];
+  err += inv3x3(M,Fp);
+  bpa_compute_Fe_Ce(F,M,Fe,Ce);
 
   /* compute the elastic stress */
   double Sdev[tensor];
   bpa_compute_Sdev(Ce,p_hmat,Sdev);
 
   /* compute the pressure */
-  const double kappa = bpa_compute_bulk_mod(m->param->p_hmat);
   double pressure = 0.0;
+  double Je = det3x3(Fe);
   bpa_compute_dudj(Je,p_hmat,&pressure);
   pressure *= kappa / 2.0;
 
   /* compute the pressure-dependent athermal shear stress */
-  double s_s = m->vars.state_vars->m_pdata[_s] + param_alpha * pressure;
+  *s_s = s + param_alpha * pressure;
 
   /* compute the plastic backstress */
   double Bdev[tensor];
   err += BPA_compute_Bdev(Bdev,Fp);
+  err += BPA_compute_loading_dir(normal,eq_sig_dev,tau,Sdev,Bdev,Fe);
+  err += BPA_compute_gdot(gdot,*tau,*s_s);
+  return err;
+}
 
-  /* compute the loading direction */
-  double normal[tensor], eq_sig_dev[tensor];
+/**
+ * Compute an initial guess for the solution vector (M,Wp,lam). The
+ * initial guess for the plastic deformation (M) is that the increment
+ * of deformation (Fn -> Fn+1) is all plastic. This is reasonable as
+ * the elastic deformations are assumed to be small.
+ *
+ * Note that we use the most up-to-date estimates (i.e., from previous
+ * iterations in the PDE solve) to compute the initial guess.
+ */
+int bpa_int_alg_initial_guess(const double *F,
+                              const Constitutive_model *m,
+                              double * restrict M,
+                              double *Wp,
+                              double *lam,
+                              double *s)
+{
+  int err = 0;
+
+  /* M ~= inv(F) Fe */
+  memset(M, 0, tensor * sizeof(*M));
+  double invF[tensor];
+  err += inv3x3(F, invF);
+  const double * restrict Fen = m->vars.Fs[_Fe].m_pdata;
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        M[idx_2(i,j)] = invF[idx_2(i,k)] * Fen[idx_2(k,j)];
+      }
+    }
+  }
+
+  /* Wp ~= Wp */
+  memcpy(Wp, m->vars.Fs[_W].m_pdata, tensor * sizeof(*Wp));
+
+  /* s ~= s, lam ~= lam */
+  *s = m->vars.state_vars->m_pdata[_s];
+  *lam = m->vars.state_vars->m_pdata[_lam];
+
+  return err;
+}
+
+int bpa_update_state_variables(const double *F,
+                               const double *M,
+                               const double *Wp,
+                               const double lam,
+                               const double s,
+                               Constitutive_model *m)
+{
+  int err = 0;
+  bpa_compute_Fe(F,M,m->vars.Fs[_Fe].m_pdata);
+  memcpy(m->vars.Fs[_M].m_pdata, M, tensor * sizeof(*M));
+  memcpy(m->vars.Fs[_W].m_pdata, Wp, tensor * sizeof(*Wp));
+  m->vars.state_vars->m_pdata[_lam] = lam;
+  m->vars.state_vars->m_pdata[_s] = s;
+  return err;
+}
+
+/**
+ * Update the current value of the solution with the increment
+ *
+ */
+int bpa_update_solution(const double * restrict increment,
+                        double * restrict M,
+                        double * restrict Wp,
+                        double * restrict lam)
+{
+  int err = 0;
+  for (int i = 0; i < tensor; i++) {
+    M[i] += increment[i];
+    Wp[i] += increment[i + tensor];
+  }
+  *lam += increment[2 * tensor];
+  return err;
+}
+
+/*
+ * Private interface for the model
+ */
+int BPA_int_alg(Constitutive_model *m,
+                const void *ctx)
+{
+  static double TOL1 = 1.0e-5;
+  static double TOL2 = 1.0e-5;
+  static int maxit1 = 10;
+  static int maxit2 = 5;
+
+  int err = 0;
+  const BPA_ctx *CTX = ctx;
+  const HOMMAT *p_hmat = m->param->p_hmat;
+  double Fpn[tensor];
+  err += inv3x3(m->vars.Fs[_M_n].m_pdata, Fpn);
+  const double kappa = bpa_compute_bulk_mod(p_hmat);
+  const double s_n = m->vars.state_vars->m_pdata[_s_n];
+
+  /* initial guess for the solution */
+  double M[tensor];
+  double Wp[tensor];
+  double lam = 0;
+  double s = 0;
+  err += bpa_int_alg_initial_guess(CTX->F, m, M, Wp, &lam, &s);
+
+  /* internal variables */
+  double gdot = 0;
+  double s_s = 0;
   double tau = 0;
-  err += BPA_compute_loading_dir(normal,eq_sig_dev,&tau,Sdev,Bdev,Fe);
+  double eq_sig_dev[tensor];
+  double normal[tensor];
 
-  /* compute gdot */
-  double gdot = 0.0;
-  err += BPA_compute_gdot(&gdot,tau,s_s);
+  double TAN[tangent * tangent];
+  double RES[tangent];
+  double norm1 = 1.0;
+  double norm2 = 1.0;
+  int iter2 = 0;
+  err += bpa_compute_step1_terms(&gdot, &s_s, &tau, eq_sig_dev, normal, /*< out */
+                                 s, kappa, CTX->F, M, p_hmat);          /*< in */
+  err += BPA_int_alg_res(RES, CTX->dt, gdot, lam, Fpn,
+                         normal, CTX->F, M, Wp);
 
+  while ((norm1 > TOL1 || norm2 > TOL2) && iter2 < maxit2) {
 
+    /* compute plstic deformation */
+    int iter1 = 0;
+    while (norm1 > TOL1 && iter1 < maxit1) {
+      err += BPA_int_alg_tan(TAN, CTX->dt, gdot, lam, tau, s_s, Fpn,
+                             normal, eq_sig_dev, CTX->F, M, Wp, p_hmat);
+
+      /* solve for increment: note solution in RES on exit */
+      err += solve_Ax_b(tangent,TAN,RES);
+
+      /* update deformation */
+      err += bpa_update_solution(RES, M, Wp, &lam);
+
+      /* update vars (gdot, s_s, tau, eq_sig_dev, normal) */
+      err += bpa_compute_step1_terms(&gdot, &s_s, &tau, eq_sig_dev, normal, /*< out */
+                                     s, kappa, CTX->F, M, p_hmat);          /*< in */
+
+      /* compute residual */
+      err += BPA_int_alg_res(RES, CTX->dt, gdot, lam, Fpn,
+                             normal, CTX->F, M, Wp);
+      norm1 = cblas_dnrm2(tangent,RES,1);
+    }
+
+    /* update s */
+    const double s_k = s;
+    s = s_s * (s_n + CTX->dt * param_h * gdot) / (s_s + CTX->dt * param_h * gdot);
+    norm2 = fabs(s - s_k) / param_s_ss;
+
+    /* compute the residual with updated value of s */
+    err += bpa_compute_step1_terms(&gdot, &s_s, &tau, eq_sig_dev, normal, /*< out */
+                                   s, kappa, CTX->F, M, p_hmat);          /*< in */
+    err += BPA_int_alg_res(RES, CTX->dt, gdot, lam, Fpn,
+                           normal, CTX->F, M, Wp);
+    norm1 = cblas_dnrm2(tangent,RES,1);
+
+    /* output of the iterative procedure */
+    printf("[%d] R1 = %6e (%d) || R2 = %6e\n", iter2, norm1, iter1, norm2);
+  }
+
+  /* Update state variables with converged values */
+  err += bpa_update_state_variables(CTX->F,M, Wp, lam, s, m);
   return err;
 }
 
@@ -758,6 +913,7 @@ int BPA_update_vars(Constitutive_model *m)
   int err = 0;
   Matrix_copy(m->vars.Fs[_M_n],m->vars.Fs[_M]);
   Matrix_copy(m->vars.Fs[_W_n],m->vars.Fs[_W]);
+  Matrix_copy(m->vars.Fs[_Fe_n],m->vars.Fs[_Fe]);
 
   /* alias */
   Vector_double *vars = m->vars.state_vars;
@@ -771,6 +927,7 @@ int BPA_reset_vars(Constitutive_model *m)
   int err = 0;
   Matrix_copy(m->vars.Fs[_M],m->vars.Fs[_M_n]);
   Matrix_copy(m->vars.Fs[_W],m->vars.Fs[_W_n]);
+  Matrix_copy(m->vars.Fs[_Fe],m->vars.Fs[_Fe_n]);
 
   /* alias */
   Vector_double *vars = m->vars.state_vars;
@@ -798,6 +955,8 @@ int BPA_model_info(Model_var_info **info)
   (*info)->F_names[_M_n] = strdup("M_n");
   (*info)->F_names[_W] = strdup("Wp");
   (*info)->F_names[_W_n] = strdup("Wp_n");
+  (*info)->F_names[_Fe] = strdup("Fe");
+  (*info)->F_names[_Fe_n] = strdup("Fe_n");
   (*info)->var_names[_s_n] = strdup("s_n");
   (*info)->var_names[_s] = strdup("s");
   (*info)->var_names[_lam_n] = strdup("lam_n");
