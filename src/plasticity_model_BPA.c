@@ -24,13 +24,21 @@
 #include "utils.h"
 #include "index_macros.h"
 
+/* Define constant dimensions. Note cannot use `static const` with
+   initialization list */
+#define dim  3
+#define tensor 9
+#define tensor4 81
+#define tangent 19
+
 Define_Matrix(double);
 
-static const int dim = 3;
+/* constants/enums */
 static const int _n_Fs = 4;
 static const int _n_vars = 4;
 enum {_M,_W,_M_n,_W_n};
 enum {_s,_lam,_s_n,_lam_n};
+static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
 /* material parameters */
 static double param_A;
@@ -54,7 +62,7 @@ static void compute_Fe(const double * restrict F,
                        const double * restrict M,
                        double * restrict Fe)
 {
-  memset(Fe, 0, dim * dim * sizeof(*Fe));
+  memset(Fe, 0, tensor * dim * sizeof(*Fe));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
        for (int k = 0; k < dim; k++) {
@@ -64,13 +72,39 @@ static void compute_Fe(const double * restrict F,
   }
 }
 
+static double compute_plam(const double *Cp)
+{
+  return sqrt(1./3. * (Cp[0] + Cp[4] + Cp[8]));
+}
+
+static void compute_Cp(double * restrict Cp,
+                       const double * restrict Fp)
+{
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        Cp[idx_2(i,j)] = Fp[idx_2(i,k)] * Fp[idx_2(j,k)];
+      }
+    }
+  }
+}
+
+static void compute_Cpdev(double * restrict Cpdev,
+                          const double * restrict Cp)
+{
+  const double Jdev = pow(det3x3(Cp),-1./3.);
+  for (int i = 0; i < tensor; i++) {
+    Cpdev[i] = Jdev * Cp[i];
+  }
+}
+
 static void compute_Fe_Ce(const double * restrict F,
                           const double * restrict M,
                           double * restrict Fe,
                           double * restrict Ce)
 {
   compute_Fe(F,M,Fe);
-  memset(Ce, 0, dim * dim * sizeof(*Ce));
+  memset(Ce, 0, tensor * sizeof(*Ce));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
@@ -123,14 +157,14 @@ int BPA_int_alg(Constitutive_model *m,
   const HOMMAT *p_hmat = m->param->p_hmat;
 
   /* compute the deformation */
-  double Fe[dim*dim], Ce[dim*dim];
+  double Fe[tensor], Ce[tensor];
   compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
-  double Fp[dim*dim];
+  double Fp[tensor];
   inv3x3(m->vars.Fs[_M].m_pdata,Fp);
   double Je = det3x3(Fe);
 
   /* compute the elastic stress */
-  double Sdev[dim*dim];
+  double Sdev[tensor];
   compute_Sdev(Ce,p_hmat,Sdev);
 
   /* compute the pressure */
@@ -143,11 +177,11 @@ int BPA_int_alg(Constitutive_model *m,
   double s_s = m->vars.state_vars->m_pdata[_s] + param_alpha * pressure;
 
   /* compute the plastic backstress */
-  double Bdev[dim*dim];
+  double Bdev[tensor];
   err += BPA_compute_Bdev(Bdev,Fp);
 
   /* compute the loading direction */
-  double normal[dim], eq_sig_dev[dim * dim];
+  double normal[tensor], eq_sig_dev[tensor];
   double tau = 0;
   err += BPA_compute_loading_dir(normal,eq_sig_dev,&tau,Sdev,Bdev,Fe);
 
@@ -165,7 +199,7 @@ int BPA_dev_stress(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[dim*dim], Ce[dim*dim];
+  double Fe[tensor], Ce[tensor];
   compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   compute_Sdev(Ce,m->param->p_hmat,dev_stress->m_pdata);
   return err;
@@ -177,7 +211,7 @@ int BPA_dudj(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[dim*dim];
+  double Fe[tensor];
   compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
   double Je = det3x3(Fe);
   compute_dudj(Je,m->param->p_hmat,dudj);
@@ -190,7 +224,7 @@ int BPA_dev_tangent(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[dim*dim], Ce[dim*dim];
+  double Fe[tensor], Ce[tensor];
   compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   compute_Ldev(Ce,m->param->p_hmat,dev_tangent->m_pdata);
   return err;
@@ -202,7 +236,7 @@ int BPA_d2udj2(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[dim*dim];
+  double Fe[tensor];
   compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
   double Je = det3x3(Fe);
   compute_d2udj2(Je,m->param->p_hmat,d2udj2);
@@ -320,20 +354,21 @@ int BPA_compute_Bdev(double *Bdev,
   int err = 0;
 
   /* compute the deviatoric plastic deformation */
-  double Cp[dim*dim];
-  double Jp_dev = pow(det3x3(Fp),-2./3.);
-  cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, dim, dim, dim,
-                     Jp_dev, Fp, dim, Fp, dim, 0, Cp, dim);
+  double Cp[tensor];
+  double Cpdev[tensor];
+  compute_Cp(Cp,Fp);
+  compute_Cpdev(Cpdev,Cp);
 
   /* compute the backstess coefficient */
-  const double lam_p = sqrt((Cp[0] + Cp[4] + Cp[8]) / 3.0);
+  const double lam_p = compute_plam(Cp);
   double coeff = 0;
   err += BPA_inverse_langevin(lam_p / sqrt(param_N), &coeff);
   coeff *= param_Cr * sqrt(param_N) / (3 * lam_p);
 
   /* compute the deviatoric back stress tensor */
-  memset(Bdev,0,dim*dim*sizeof(*Bdev));
-  cblas_daxpy(dim * dim, coeff, Cp, 1,Bdev,1);
+  for (int i = 0; i < tensor; i++) {
+    Bdev[i] = coeff * Cpdev[i];
+  }
 
   return err;
 }
@@ -348,13 +383,13 @@ int BPA_compute_loading_dir(double * restrict normal,
   int err = 0;
 
   /* clear the result buffer(s) */
-  memset(eq_sig_dev, 0, dim * dim * sizeof(*eq_sig_dev));
-  memset(normal, 0, dim * dim * sizeof(*normal));
+  memset(eq_sig_dev, 0, tensor * sizeof(*eq_sig_dev));
+  memset(normal, 0, tensor * sizeof(*normal));
 
   /* compute temporary buffers */
   const double inv_Je = 1.0 / det3x3(Fe);
-  double tmp[dim*dim], tmp2[dim*dim];
-  for (int i = 0; i < dim*dim; i++) {
+  double tmp[tensor], tmp2[tensor];
+  for (int i = 0; i < tensor; i++) {
     tmp[i] = inv_Je * (Sdev[i] - Bdev[i]);
     tmp2[i] = 0;
   }
@@ -379,8 +414,8 @@ int BPA_compute_loading_dir(double * restrict normal,
 
   /* compute equivalent plastic stress and the normal to the loading
      direction */
-  *tau = sqrt(0.5 * cblas_ddot(dim*dim, eq_sig_dev, 1, eq_sig_dev, 1) );
-  cblas_daxpy(dim*dim,1.0 / (*tau), eq_sig_dev, 1, normal, 1);
+  *tau = sqrt(0.5 * cblas_ddot(tensor, eq_sig_dev, 1, eq_sig_dev, 1) );
+  cblas_daxpy(tensor,1.0 / (*tau), eq_sig_dev, 1, normal, 1);
 
   return err;
 }
