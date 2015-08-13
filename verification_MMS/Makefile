@@ -61,7 +61,7 @@ LIBS	= $(VTK_IO_lib) \
 OBJ = $(SRC:.c=.o)
 
 all:	
-	$(CC) -c $(INCLUDES) $(CFLAGS) MMS.c 		
+#	$(CC) -c $(INCLUDES) $(CFLAGS) MMS.c 		
 	$(CC) -c $(INCLUDES) $(CFLAGS) ../src/dynamics.c
 	$(LINK) -o PGFem3D $(CFLAGS) $(OBJS) $(LIBS) ../src/super_main.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
 	$(CC) -c $(INCLUDES) $(CFLAGS) verification_tf_MMS.c 		
@@ -70,4 +70,4 @@ all:
 
  							
 clean:  
-	rm -f PGFem3D verification_tf_MMS *.out *.o *.mod core*
+	rm -f *.out *.o *.mod core* PGFem3D verification_tf_MMS
