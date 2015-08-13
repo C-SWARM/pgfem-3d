@@ -28,6 +28,11 @@ typedef struct Constitutive_model Constitutive_model;
 typedef struct Model_var_info Model_var_info;
 #endif
 
+#ifndef TYPE_HOMMAT
+#define TYPE_HOMMAT
+typedef struct HOMMAT HOMMAT;
+#endif
+
 /**
  * Private structure used exclsively with this model and associated
  * functions.
@@ -168,5 +173,73 @@ int BPA_compute_loading_dir(double *normal,
                             const double *Sdev,
                             const double *Bdev,
                             const double *Fe);
+
+/**
+ * Compute residuals for the integration algorithm. Note that all pointers
+ * are _restrict_ qualified, and therefore if the pointers overlap,
+ * undefined behavior will occur.
+ *
+ * \param[out] Rm, R_M for the int. alg.
+ * \param[out] Rw, R_Wp for the int. alg.
+ * \param[out] Rlam, R_lam for the int. alg.
+ * \param[in] dt, the time increment
+ * \param[in] gdot, the plastic strain rate
+ * \param[in] lam, the Lagrange multiplier for Fe sym.
+ * \param[in] Fpn, the _total_ plastic deformation to time (n)
+ * \param[in] n, the direction (normal) of plastic loading
+ * \param[in] F, the _total_ deformation gradient
+ * \param[in] M, the _total_ inverse plastic deformation grad.
+ * \param[in] Wp, the _total_ (computational) plastic spin
+ * \return non-zero on internal error
+ */
+int BPA_int_alg_res_terms(double *Rm,
+                          double *Rw,
+                          double *Rlam,
+                          const double dt,
+                          const double gdot,
+                          const double lam,
+                          const double *Fpn,
+                          const double *n,
+                          const double *F,
+                          const double *M,
+                          const double *Wp);
+
+/**
+ * Compute the derivative of Fe w.r.t. M. Note that pointers are
+ * _restrict_ qualified.
+ *
+ * \param[out] DFe_DM, 4th-order tensor containing the derivative
+ * \param[in] F, the _total_ deformation gradient
+ * \return non-zero on internal error
+ */
+int BPA_compute_DFe_DM(double *DFe_DM,
+                       const double *F);
+
+/**
+ * Compute the tangent terms for the integration algorithm. Note that
+ * pointers are _restrict_ qualified.
+ *
+ * \param[out] DM_M,DM_W,DM_lam,DW_M,DW_W,Dlam_M non-zero tangent terms
+ * \param[in] all others
+ * \return non-zero on internal error
+ */
+int BPA_int_alg_tan_terms(double *DM_M,
+                          double *DM_W,
+                          double *DM_lam,
+                          double *DW_M,
+                          double *DW_W,
+                          double *Dlam_M,
+                          const double dt,
+                          const double gdot,
+                          const double lam,
+                          const double tau,
+                          const double s_s,
+                          const double *Fpn,
+                          const double *n,
+                          const double *sig,
+                          const double *F,
+                          const double *M,
+                          const double *Wp,
+                          const HOMMAT *p_hmat);
 
 #endif
