@@ -53,14 +53,14 @@ static double param_s_ss;
 /*
  * Purely static functions
  */
-static double compute_bulk_mod(const HOMMAT *mat)
+static double bpa_compute_bulk_mod(const HOMMAT *mat)
 {
   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
 }
 
-static void compute_Fe(const double * restrict F,
-                       const double * restrict M,
-                       double * restrict Fe)
+static void bpa_compute_Fe(const double * restrict F,
+                           const double * restrict M,
+                           double * restrict Fe)
 {
   memset(Fe, 0, tensor * dim * sizeof(*Fe));
   for (int i = 0; i < dim; i++) {
@@ -72,13 +72,13 @@ static void compute_Fe(const double * restrict F,
   }
 }
 
-static double compute_plam(const double *Cp)
+static double bpa_compute_plam(const double *Cp)
 {
   return sqrt(1./3. * (Cp[0] + Cp[4] + Cp[8]));
 }
 
-static void compute_Cp(double * restrict Cp,
-                       const double * restrict Fp)
+static void bpa_compute_Cp(double * restrict Cp,
+                           const double * restrict Fp)
 {
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -89,8 +89,8 @@ static void compute_Cp(double * restrict Cp,
   }
 }
 
-static void compute_Cpdev(double * restrict Cpdev,
-                          const double * restrict Cp)
+static void bpa_compute_Cpdev(double * restrict Cpdev,
+                              const double * restrict Cp)
 {
   const double Jdev = pow(det3x3(Cp),-1./3.);
   for (int i = 0; i < tensor; i++) {
@@ -98,12 +98,12 @@ static void compute_Cpdev(double * restrict Cpdev,
   }
 }
 
-static void compute_Fe_Ce(const double * restrict F,
-                          const double * restrict M,
-                          double * restrict Fe,
-                          double * restrict Ce)
+static void bpa_compute_Fe_Ce(const double * restrict F,
+                              const double * restrict M,
+                              double * restrict Fe,
+                              double * restrict Ce)
 {
-  compute_Fe(F,M,Fe);
+  bpa_compute_Fe(F,M,Fe);
   memset(Ce, 0, tensor * sizeof(*Ce));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -114,33 +114,33 @@ static void compute_Fe_Ce(const double * restrict F,
   }
 }
 
-static void compute_Sdev(const double *Ce,
-                         const HOMMAT *p_hmat,
-                         double *Sdev)
+static void bpa_compute_Sdev(const double *Ce,
+                             const HOMMAT *p_hmat,
+                             double *Sdev)
 {
   devStressFuncPtr Stress = getDevStressFunc(-1,p_hmat);
   Stress(Ce,p_hmat,Sdev);
 }
 
-static void compute_Ldev(const double *Ce,
-                         const HOMMAT *p_hmat,
-                         double *Ldev)
+static void bpa_compute_Ldev(const double *Ce,
+                             const HOMMAT *p_hmat,
+                             double *Ldev)
 {
   matStiffFuncPtr Tangent = getMatStiffFunc(-1,p_hmat);
   Tangent(Ce,p_hmat,Ldev);
 }
 
-static void compute_dudj(const double Je,
-                         const HOMMAT *p_hmat,
-                         double *dudj)
+static void bpa_compute_dudj(const double Je,
+                             const HOMMAT *p_hmat,
+                             double *dudj)
 {
   dUdJFuncPtr Pressure = getDUdJFunc(-1,p_hmat);
   Pressure(Je,p_hmat,dudj);
 }
 
-static void compute_d2udj2(const double Je,
-                           const HOMMAT *p_hmat,
-                           double *d2udj2)
+static void bpa_compute_d2udj2(const double Je,
+                               const HOMMAT *p_hmat,
+                               double *d2udj2)
 {
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,p_hmat);
   D_Pressure(Je,p_hmat,d2udj2);
@@ -158,19 +158,19 @@ int BPA_int_alg(Constitutive_model *m,
 
   /* compute the deformation */
   double Fe[tensor], Ce[tensor];
-  compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
+  bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   double Fp[tensor];
-  inv3x3(m->vars.Fs[_M].m_pdata,Fp);
+  err += inv3x3(m->vars.Fs[_M].m_pdata,Fp);
   double Je = det3x3(Fe);
 
   /* compute the elastic stress */
   double Sdev[tensor];
-  compute_Sdev(Ce,p_hmat,Sdev);
+  bpa_compute_Sdev(Ce,p_hmat,Sdev);
 
   /* compute the pressure */
-  const double kappa = compute_bulk_mod(m->param->p_hmat);
+  const double kappa = bpa_compute_bulk_mod(m->param->p_hmat);
   double pressure = 0.0;
-  compute_dudj(Je,p_hmat,&pressure);
+  bpa_compute_dudj(Je,p_hmat,&pressure);
   pressure *= kappa / 2.0;
 
   /* compute the pressure-dependent athermal shear stress */
@@ -366,9 +366,9 @@ int BPA_compute_DBdev_DM(double * restrict DB_DM,
   int err = 0;
   double Cp[tensor];
   double Cpdev[tensor];
-  compute_Cp(Cp,Fp);
-  compute_Cpdev(Cpdev,Cp);
-  const double plam = compute_plam(Cp);
+  bpa_compute_Cp(Cp,Fp);
+  bpa_compute_Cpdev(Cpdev,Cp);
+  const double plam = bpa_compute_plam(Cp);
 
   /* compute chain rule terms */
   double der_inv_lang = 0;
@@ -420,7 +420,7 @@ int BPA_compute_DSdev_DM(double * restrict DSdev_DM,
 
   /* compute Ldev */
   double Ldev[tensor4];
-  compute_Ldev(Ce,p_hmat,Ldev);
+  bpa_compute_Ldev(Ce,p_hmat,Ldev);
 
   /* compute result */
   memset(DSdev_DM, 0, tensor4 * sizeof(*DSdev_DM));
@@ -450,14 +450,14 @@ int BPA_compute_Dsig_DM(double * restrict Dsig_DM,
   double Fe[tensor];
   double Ce[tensor];
   double Fp[tensor];
-  compute_Fe_Ce(F,M,Fe,Ce);
+  bpa_compute_Fe_Ce(F,M,Fe,Ce);
   err += inv3x3(M,Fp);
   const double Je_inv = 1.0 / det3x3(Fe);
 
   /* compute stress tensors */
   double Sdev[tensor];
   double Bdev[tensor];
-  compute_Sdev(Ce,p_hmat,Sdev);
+  bpa_compute_Sdev(Ce,p_hmat,Sdev);
   err += BPA_compute_Bdev(Bdev,Fp);
 
   /* compute chain rule tensors */
@@ -710,8 +710,8 @@ int BPA_dev_stress(const Constitutive_model *m,
   int err = 0;
   const BPA_ctx *CTX = ctx;
   double Fe[tensor], Ce[tensor];
-  compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
-  compute_Sdev(Ce,m->param->p_hmat,dev_stress->m_pdata);
+  bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
+  bpa_compute_Sdev(Ce,m->param->p_hmat,dev_stress->m_pdata);
   return err;
 }
 
@@ -722,9 +722,9 @@ int BPA_dudj(const Constitutive_model *m,
   int err = 0;
   const BPA_ctx *CTX = ctx;
   double Fe[tensor];
-  compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
+  bpa_compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
   double Je = det3x3(Fe);
-  compute_dudj(Je,m->param->p_hmat,dudj);
+  bpa_compute_dudj(Je,m->param->p_hmat,dudj);
   return err;
 }
 
@@ -735,8 +735,8 @@ int BPA_dev_tangent(const Constitutive_model *m,
   int err = 0;
   const BPA_ctx *CTX = ctx;
   double Fe[tensor], Ce[tensor];
-  compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
-  compute_Ldev(Ce,m->param->p_hmat,dev_tangent->m_pdata);
+  bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
+  bpa_compute_Ldev(Ce,m->param->p_hmat,dev_tangent->m_pdata);
   return err;
 }
 
@@ -747,9 +747,9 @@ int BPA_d2udj2(const Constitutive_model *m,
   int err = 0;
   const BPA_ctx *CTX = ctx;
   double Fe[tensor];
-  compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
+  bpa_compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
   double Je = det3x3(Fe);
-  compute_d2udj2(Je,m->param->p_hmat,d2udj2);
+  bpa_compute_d2udj2(Je,m->param->p_hmat,d2udj2);
   return err;
 }
 
@@ -866,11 +866,11 @@ int BPA_compute_Bdev(double *Bdev,
   /* compute the deviatoric plastic deformation */
   double Cp[tensor];
   double Cpdev[tensor];
-  compute_Cp(Cp,Fp);
-  compute_Cpdev(Cpdev,Cp);
+  bpa_compute_Cp(Cp,Fp);
+  bpa_compute_Cpdev(Cpdev,Cp);
 
   /* compute the backstess coefficient */
-  const double lam_p = compute_plam(Cp);
+  const double lam_p = bpa_compute_plam(Cp);
   double coeff = 0;
   err += BPA_inverse_langevin(lam_p / sqrt(param_N), &coeff);
   coeff *= param_Cr * sqrt(param_N) / (3 * lam_p);
