@@ -429,8 +429,8 @@ double getJacobian(const double *mat,
   return J;
 }
 
-int inv2x2(const double *mat,
-	   double *mat_inv)
+int inv2x2(const double * restrict mat,
+	   double * restrict mat_inv)
 {
   double A = det2x2(mat);
   if(A != 0.0){
@@ -442,8 +442,8 @@ int inv2x2(const double *mat,
   } else return 1;
 }
 
-int inv3x3(const double *mat,
-	   double *mat_inv)
+int inv3x3(const double * restrict  mat,
+	   double * restrict mat_inv)
 {
   double A = det3x3(mat);
 
@@ -658,8 +658,40 @@ int inverse(double const* A,
   return info;
 }
 
-void transpose(double *mat_t,
-	       const double *mat,
+int solve_Ax_b(const int dim,
+               const double *A,
+               double *b_x)
+{
+  int err = 0;
+  assert(dim > 0);
+
+  /* since we are calling a FORTRAN routine, we need to transpose the
+     matrix */
+  double *At = malloc(dim*dim*sizeof(*At));
+  transpose(At,A,dim,dim);
+
+  /* allocate workspace for LAPACK */
+  int *IPIV = malloc(dim*sizeof(*IPIV));
+  int NRHS = 1;
+
+  /* call LAPACK for the solve */
+#ifdef ARCH_BGQ
+  dgesv(dim,NRHS,At,dim,IPIV,b_x,dim,&err);
+#else
+  dgesv(&dim,&NRHS,At,&dim,IPIV,b_x,&dim,&err);
+#endif
+
+  /* deallocate */
+  free(At);
+  free(IPIV);
+
+  /* negative error codes are programming error codes */
+  assert(err >= 0);
+  return err;
+}
+
+void transpose(double * restrict mat_t,
+	       const double * restrict mat,
 	       const int mat_row,
 	       const int mat_col)
 {
