@@ -214,7 +214,8 @@ int inverse(double const* A,
  * Compute the solution to Ax=b for an NxN system using LAPACK and
  * return 0 on success.
  *
- * \param[in] dim, the size of the (square) matrix
+ * \param[in] n_eq, the number of equations to solve
+ * \param[in] mat_dim, the size of the (square) matrix
  * \param[in] A, the coefficient matrix
  * \param[in,out] b_x, on entry: RHS (b), on exit: solution (x)
  * \return non-zero on recoverable error, abort on logic error
@@ -222,7 +223,8 @@ int inverse(double const* A,
  * CAVEATES: The matrix A is copied/transposed for migration to
  * FORTRAN LAPACK routine.
  */
-int solve_Ax_b(const int dim,
+int solve_Ax_b(const int n_eq,
+               const int mat_dim,
                const double *A,
                double *b_x);
 

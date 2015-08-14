@@ -33,6 +33,9 @@
 
 Define_Matrix(double);
 
+/* Set to value > 0 for extra diagnostics/printing */
+static const int BPA_PRINT_LEVEL = 0;
+
 /* constants/enums */
 static const int _n_Fs = 6;
 static const int _n_vars = 4;
@@ -208,17 +211,20 @@ int bpa_int_alg_initial_guess(const double *F,
   int err = 0;
 
   /* M ~= inv(F) Fe */
-  memset(M, 0, tensor * sizeof(*M));
-  double invF[tensor] = {};
-  err += inv3x3(F, invF);
-  const double * restrict Fen = m->vars.Fs[_Fe].m_pdata;
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      for (int k = 0; k < dim; k++) {
-        M[idx_2(i,j)] += invF[idx_2(i,k)] * Fen[idx_2(k,j)];
-      }
-    }
-  }
+  /* memset(M, 0, tensor * sizeof(*M)); */
+  /* double invF[tensor] = {}; */
+  /* err += inv3x3(F, invF); */
+  /* const double * restrict Fen = m->vars.Fs[_Fe].m_pdata; */
+  /* for (int i = 0; i < dim; i++) { */
+  /*   for (int j = 0; j < dim; j++) { */
+  /*     for (int k = 0; k < dim; k++) { */
+  /*       M[idx_2(i,j)] += invF[idx_2(i,k)] * Fen[idx_2(k,j)]; */
+  /*     } */
+  /*   } */
+  /* } */
+
+  /* TESTING M ~= M */
+  memcpy(M, m->vars.Fs[_M].m_pdata, tensor * sizeof(*M));
 
   /* Wp ~= Wp */
   memcpy(Wp, m->vars.Fs[_W].m_pdata, tensor * sizeof(*Wp));
@@ -315,8 +321,24 @@ int BPA_int_alg(Constitutive_model *m,
       err += BPA_int_alg_tan(TAN, CTX->dt, gdot, lam, tau, s_s, Fpn,
                              normal, eq_sig_dev, CTX->F, M, Wp, p_hmat);
 
+      /*
+       * If R_lam is identically zero, then the system with lagrange
+       * multipliers is indeteminate and the number of equations must
+       * be reduced
+       */
+      int n_eq = tangent;
+      if (RES[tangent - 1] == 0) n_eq--;
+
+      if(BPA_PRINT_LEVEL > 0){
+        print_array_d(stdout,TAN,tangent * tangent, tangent,tangent);
+        print_array_d(stdout,RES,tangent,1,tangent);
+      }
+
       /* solve for increment: note solution in RES on exit */
-      err += solve_Ax_b(tangent,TAN,RES);
+      int err_s = solve_Ax_b(n_eq,tangent,TAN,RES);
+      if(err_s) PGFEM_printerr("WARNING: received error (%d) from 'solve_Ax_b'\n",err_s);
+      assert(err_s == 0);
+      err += err_s;
 
       /* update deformation */
       err += bpa_update_solution(RES, M, Wp, &lam);

@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   const double dt = 0.001;
   const int nstep = 1;
   double t = dt;
-  double F[9];
+  double F[9] = {};
   void *ctx = NULL;
   for (int i = 0; i < nstep; i++) {
     get_F(t,mat->nu,F);

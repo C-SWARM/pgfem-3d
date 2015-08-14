@@ -658,27 +658,29 @@ int inverse(double const* A,
   return info;
 }
 
-int solve_Ax_b(const int dim,
+int solve_Ax_b(const int n_eq,
+               const int mat_dim,
                const double *A,
                double *b_x)
 {
   int err = 0;
-  assert(dim > 0);
+  assert(n_eq <= mat_dim);
+  assert(n_eq > 0);
 
   /* since we are calling a FORTRAN routine, we need to transpose the
      matrix */
-  double *At = malloc(dim*dim*sizeof(*At));
-  transpose(At,A,dim,dim);
+  double *At = malloc(mat_dim*mat_dim*sizeof(*At));
+  transpose(At,A,mat_dim,mat_dim);
 
   /* allocate workspace for LAPACK */
-  int *IPIV = malloc(dim*sizeof(*IPIV));
+  int *IPIV = malloc(mat_dim*sizeof(*IPIV));
   int NRHS = 1;
 
   /* call LAPACK for the solve */
 #ifdef ARCH_BGQ
-  dgesv(dim,NRHS,At,dim,IPIV,b_x,dim,&err);
+  dgesv(n_eq,NRHS,At,mat_dim,IPIV,b_x,mat_dim,&err);
 #else
-  dgesv(&dim,&NRHS,At,&dim,IPIV,b_x,&dim,&err);
+  dgesv(&n_eq,&NRHS,At,&mat_dim,IPIV,b_x,&mat_dim,&err);
 #endif
 
   /* deallocate */
