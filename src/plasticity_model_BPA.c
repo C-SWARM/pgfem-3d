@@ -709,7 +709,6 @@ int BPA_int_alg_tan_terms(double * restrict DM_M,
                           double * restrict DM_lam,
                           double * restrict DW_M,
                           double * restrict DW_W,
-                          double * restrict Dlam_M,
                           const double dt,
                           const double gdot,
                           const double lam,
@@ -764,7 +763,6 @@ int BPA_int_alg_tan_terms(double * restrict DM_M,
 
         }
       }
-      Dlam_M[idx_2(j,i)] = DM_lam[idx_2(i,j)];
     }
   }
 
@@ -793,9 +791,9 @@ int BPA_int_alg_tan(double * restrict TAN,
   double DM_lam[tensor] = {};
   double DW_M[tensor4] = {};
   double DW_W[tensor4] = {};
-  double Dlam_M[tensor] = {};
-  err += BPA_int_alg_tan_terms(DM_M,DM_W,DM_lam,DW_M,DW_W,Dlam_M,
-                               dt,gdot,lam,tau,s_s,Fpn,n,sig,F,M,Wp,p_hmat);
+  err += BPA_int_alg_tan_terms(DM_M, DM_W, DM_lam, DW_M, DW_W,  /*< out */
+                               dt, gdot, lam, tau, s_s, Fpn, n, /*< in (and next) */
+                               sig, F, M, Wp, p_hmat);
 
   /* Assemble tangent blocks, TAN [19x19]
      TAN = T-----------------T

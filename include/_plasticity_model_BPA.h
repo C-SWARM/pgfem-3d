@@ -220,7 +220,7 @@ int BPA_compute_loading_dir(double *normal,
  * Compute the tangent terms for the integration algorithm. Note that
  * pointers are _restrict_ qualified.
  *
- * \param[out] DM_M,DM_W,DM_lam,DW_M,DW_W,Dlam_M tangent terms
+ * \param[out] DM_M,DM_W,DM_lam,DW_M,DW_W, tangent terms
  * \param[in] dt, the time increment
  * \param[in] gdot, the plastic strain rate
  * \param[in] lam, the Lagrange multiplier for Fe sym.
@@ -239,7 +239,6 @@ int BPA_int_alg_tan_terms(double *DM_M,
                           double *DM_lam,
                           double *DW_M,
                           double *DW_W,
-                          double *Dlam_M,
                           const double dt,
                           const double gdot,
                           const double lam,
