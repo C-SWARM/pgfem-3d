@@ -65,7 +65,7 @@ static void bpa_compute_Fe(const double * restrict F,
                            const double * restrict M,
                            double * restrict Fe)
 {
-  memset(Fe, 0, tensor * dim * sizeof(*Fe));
+  memset(Fe, 0, tensor * sizeof(*Fe));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
        for (int k = 0; k < dim; k++) {
@@ -329,6 +329,7 @@ int BPA_int_alg(Constitutive_model *m,
       err += BPA_int_alg_res(RES, CTX->dt, gdot, lam, Fpn,
                              normal, CTX->F, M, Wp);
       norm1 = cblas_dnrm2(tangent,RES,1);
+      iter1++;
     }
 
     /* update s */
