@@ -40,15 +40,18 @@ enum {_M,_W,_Fe,_M_n,_W_n,_Fe_n};
 enum {_s,_lam,_s_n,_lam_n};
 static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
-/* material parameters */
-static double param_A;
-static double param_T;
-static double param_N;
-static double param_Cr;
-static double param_alpha;
-static double param_gdot0;
-static double param_h;
-static double param_s_ss;
+/* material parameters (constant for testing purposes, need to be
+   migrated to Model_parameters in a programatic/general way)*/
+/* parameter values from S. Holopanien, Mech. of Mat. (2013) */
+static const double param_A = 289;
+static const double param_T = 240;
+static const double param_N = 2.15;
+static const double param_Cr = 12.8;
+static const double param_alpha = 00.8;
+static const double param_gdot0 = 2.0e15;
+static const double param_h = 500;
+static const double param_s0 = 97;
+static const double param_s_ss = 76.6;
 
 /*
  * Purely static functions
@@ -1106,13 +1109,33 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   return err;
 }
 
-int plasticity_model_BPA_ctx_build(void **ctx
-                                   //...
-                                   )
+int plasticity_model_BPA_set_initial_values(Constitutive_model *m)
+{
+  int err = 0;
+  /* Algorithmic Wp is 0 at start */
+  memset(m->vars.Fs[_W].m_pdata, 0, tensor * sizeof(double));
+  memset(m->vars.Fs[_W_n].m_pdata, 0, tensor * sizeof(double));
+
+  /* s is s0 at start */
+  m->vars.state_vars->m_pdata[_s] = param_s0;
+  m->vars.state_vars->m_pdata[_s_n] = param_s0;
+
+  /* lam is 0 at start */
+  m->vars.state_vars->m_pdata[_lam] = 0;
+  m->vars.state_vars->m_pdata[_lam_n] = 0;
+
+  return err;
+}
+
+int plasticity_model_BPA_ctx_build(void **ctx,
+                                   const double *F,
+                                   const double dt)
 {
   int err = 0;
   BPA_ctx *t_ctx = malloc(sizeof(*t_ctx));
   *ctx = t_ctx;
+  t_ctx->dt = dt;
+  memcpy(t_ctx->F, F, tensor * sizeof(*F));
   return err;
 }
 

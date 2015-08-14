@@ -18,7 +18,11 @@
 #ifndef PLASTICITY_MODEL_BPA_H
 #define PLASTICITY_MODEL_BPA_H
 
-struct Model_parameters;
+#ifndef TYPE_CONSTITUTIVE_MODEL
+#define TYPE_CONSTITUTIVE_MODEL
+typedef struct Constitutive_model Constitutive_model;
+#endif
+
 #ifndef TYPE_MODEL_PARAMETERS
 #define TYPE_MODEL_PARAMETERS
 typedef struct Model_parameters Model_parameters;
@@ -33,16 +37,24 @@ typedef struct Model_parameters Model_parameters;
 int plasticity_model_BPA_initialize(Model_parameters *p);
 
 /**
+ * Set the initial values for the state variables.
+ *
+ * \return non-zero on error.
+ */
+int plasticity_model_BPA_set_initial_values(Constitutive_model *m);
+
+/**
  * Construct and initialize the model context for calling functions
  * through the plasticity interface.
  *
  * \param[in,out] ctx - handle to an opaque model context object.
+ * \param[in] F, _total_ deformation gradient
+ * \param[in] dt, time increment
  * \return non-zero on internal error.
- *
  */
-int plasticity_model_BPA_ctx_build(void **ctx
-                                   //...
-                                   );
+int plasticity_model_BPA_ctx_build(void **ctx,
+                                   const double *F,
+                                   const double dt);
 
 /**
  * Destroy the model context and invalidate the handle.
