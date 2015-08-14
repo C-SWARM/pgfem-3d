@@ -69,7 +69,7 @@ static void bpa_compute_Fe(const double * restrict F,
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
        for (int k = 0; k < dim; k++) {
-        Fe[idx_2(i,j)] = F[idx_2(i,k)] * M[idx_2(k,j)];
+        Fe[idx_2(i,j)] += F[idx_2(i,k)] * M[idx_2(k,j)];
       }
     }
   }
@@ -83,10 +83,11 @@ static double bpa_compute_plam(const double *Cp)
 static void bpa_compute_Cp(double * restrict Cp,
                            const double * restrict Fp)
 {
+  memset(Cp, 0, tensor * sizeof(*Cp));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-        Cp[idx_2(i,j)] = Fp[idx_2(i,k)] * Fp[idx_2(j,k)];
+        Cp[idx_2(i,j)] += Fp[idx_2(i,k)] * Fp[idx_2(j,k)];
       }
     }
   }
@@ -111,7 +112,7 @@ static void bpa_compute_Fe_Ce(const double * restrict F,
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-        Ce[idx_2(i,j)] = Fe[idx_2(k,i)] * Fe[idx_2(k,j)];
+        Ce[idx_2(i,j)] += Fe[idx_2(k,i)] * Fe[idx_2(k,j)];
       }
     }
   }
@@ -161,14 +162,14 @@ static int bpa_compute_step1_terms(double *gdot,
                                    const HOMMAT *p_hmat)
 {
   int err = 0;
-  double Fp[tensor];
-  double Fe[tensor];
-  double Ce[tensor];
+  double Fp[tensor] = {};
+  double Fe[tensor] = {};
+  double Ce[tensor] = {};
   err += inv3x3(M,Fp);
   bpa_compute_Fe_Ce(F,M,Fe,Ce);
 
   /* compute the elastic stress */
-  double Sdev[tensor];
+  double Sdev[tensor] = {};
   bpa_compute_Sdev(Ce,p_hmat,Sdev);
 
   /* compute the pressure */
@@ -181,7 +182,7 @@ static int bpa_compute_step1_terms(double *gdot,
   *s_s = s + param_alpha * pressure;
 
   /* compute the plastic backstress */
-  double Bdev[tensor];
+  double Bdev[tensor] = {};
   err += BPA_compute_Bdev(Bdev,Fp);
   err += BPA_compute_loading_dir(normal,eq_sig_dev,tau,Sdev,Bdev,Fe);
   err += BPA_compute_gdot(gdot,*tau,*s_s);
@@ -208,13 +209,13 @@ int bpa_int_alg_initial_guess(const double *F,
 
   /* M ~= inv(F) Fe */
   memset(M, 0, tensor * sizeof(*M));
-  double invF[tensor];
+  double invF[tensor] = {};
   err += inv3x3(F, invF);
   const double * restrict Fen = m->vars.Fs[_Fe].m_pdata;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-        M[idx_2(i,j)] = invF[idx_2(i,k)] * Fen[idx_2(k,j)];
+        M[idx_2(i,j)] += invF[idx_2(i,k)] * Fen[idx_2(k,j)];
       }
     }
   }
@@ -277,14 +278,14 @@ int BPA_int_alg(Constitutive_model *m,
   int err = 0;
   const BPA_ctx *CTX = ctx;
   const HOMMAT *p_hmat = m->param->p_hmat;
-  double Fpn[tensor];
+  double Fpn[tensor] = {};
   err += inv3x3(m->vars.Fs[_M_n].m_pdata, Fpn);
   const double kappa = bpa_compute_bulk_mod(p_hmat);
   const double s_n = m->vars.state_vars->m_pdata[_s_n];
 
   /* initial guess for the solution */
-  double M[tensor];
-  double Wp[tensor];
+  double M[tensor] = {};
+  double Wp[tensor] = {};
   double lam = 0;
   double s = 0;
   err += bpa_int_alg_initial_guess(CTX->F, m, M, Wp, &lam, &s);
@@ -293,11 +294,11 @@ int BPA_int_alg(Constitutive_model *m,
   double gdot = 0;
   double s_s = 0;
   double tau = 0;
-  double eq_sig_dev[tensor];
-  double normal[tensor];
+  double eq_sig_dev[tensor] = {};
+  double normal[tensor] = {};
 
-  double TAN[tangent * tangent];
-  double RES[tangent];
+  double TAN[tangent * tangent] = {};
+  double RES[tangent] = {};
   double norm1 = 1.0;
   double norm2 = 1.0;
   int iter2 = 0;
@@ -366,9 +367,9 @@ int BPA_int_alg_res_terms(double * restrict Rm,
   int err = 0;
 
   /* compute intermediate terms (mat mults) */
-  double FpnM_dt[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
-  double Fe[tensor] = {0,0,0, 0,0,0, 0,0,0};
-  double Isym[tensor];
+  double FpnM_dt[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  double Fe[tensor] = {};
+  double Isym[tensor] = {};
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
@@ -434,7 +435,7 @@ int BPA_compute_Dtau_Dsig(double * restrict Dtau_Dsig,
   for (int i = 0; i < tensor; i++){
     mag += sig[i] * sig[i];
   }
-  mag *= sqrt(2.0);
+  mag = sqrt(2.0 * mag);
 
   /* corner case, sig = 0 (should never happen, produce error code) */
   if (mag == 0) {
@@ -522,16 +523,16 @@ int BPA_compute_DBdev_DM(double * restrict DB_DM,
                          const double * restrict Fp)
 {
   int err = 0;
-  double Cp[tensor];
-  double Cpdev[tensor];
+  double Cp[tensor] = {};
+  double Cpdev[tensor] = {};
   bpa_compute_Cp(Cp,Fp);
   bpa_compute_Cpdev(Cpdev,Cp);
   const double plam = bpa_compute_plam(Cp);
 
   /* compute chain rule terms */
   double der_inv_lang = 0;
-  double Dplam_DM[tensor];
-  double DCpdev_DM[tensor4];
+  double Dplam_DM[tensor] = {};
+  double DCpdev_DM[tensor4] = {};
   err += BPA_der_inverse_langevin(plam / sqrt(param_N), &der_inv_lang);
   err += BPA_compute_Dplam_DM(Dplam_DM,Fp,Cp);
   err += BPA_compute_DCpdev_DM(DCpdev_DM,Fp,Cpdev);
@@ -566,8 +567,7 @@ int BPA_compute_DSdev_DM(double * restrict DSdev_DM,
 {
   int err = 0;
 
-  double FeF[tensor];
-  memset(FeF,0,sizeof(FeF));
+  double FeF[tensor] = {};
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
@@ -577,7 +577,7 @@ int BPA_compute_DSdev_DM(double * restrict DSdev_DM,
   }
 
   /* compute Ldev */
-  double Ldev[tensor4];
+  double Ldev[tensor4] = {};
   bpa_compute_Ldev(Ce,p_hmat,Ldev);
 
   /* compute result */
@@ -605,22 +605,22 @@ int BPA_compute_Dsig_DM(double * restrict Dsig_DM,
   int err = 0;
 
   /* compute deformation tensors */
-  double Fe[tensor];
-  double Ce[tensor];
-  double Fp[tensor];
+  double Fe[tensor] = {};
+  double Ce[tensor] = {};
+  double Fp[tensor] = {};
   bpa_compute_Fe_Ce(F,M,Fe,Ce);
   err += inv3x3(M,Fp);
   const double Je_inv = 1.0 / det3x3(Fe);
 
   /* compute stress tensors */
-  double Sdev[tensor];
-  double Bdev[tensor];
+  double Sdev[tensor] = {};
+  double Bdev[tensor] = {};
   bpa_compute_Sdev(Ce,p_hmat,Sdev);
   err += BPA_compute_Bdev(Bdev,Fp);
 
   /* compute chain rule tensors */
-  double DSdev_DM[tensor4];
-  double DBdev_DM[tensor4];
+  double DSdev_DM[tensor4] = {};
+  double DBdev_DM[tensor4] = {};
   err += BPA_compute_DSdev_DM(DSdev_DM,F,Fe,Ce,p_hmat);
   err += BPA_compute_DBdev_DM(DBdev_DM,Fp);
 
@@ -656,7 +656,7 @@ int BPA_compute_Dn_DM(double * restrict Dn_DM,
 {
   int err = 0;
 
-  double Dn_Dsig[tensor4];
+  double Dn_Dsig[tensor4] = {};
   err += BPA_compute_Dn_Dsig(Dn_Dsig,n,tau);
 
   memset(Dn_DM, 0, tensor4 * sizeof(*Dn_DM));
@@ -686,7 +686,7 @@ int BPA_compute_Dgdot_DM(double *restrict Dgdot_DM,
 {
   int err = 0;
   double Dgdot_Dtau = 0;
-  double Dtau_Dsig[tensor];
+  double Dtau_Dsig[tensor] = {};
   err += BPA_compute_Dgdot_Dtau(&Dgdot_Dtau,s_s,tau);
   err += BPA_compute_Dtau_Dsig(Dtau_Dsig,sig);
 
@@ -724,10 +724,10 @@ int BPA_int_alg_tan_terms(double * restrict DM_M,
                           const HOMMAT *p_hmat)
 {
   int err = 0;
-  double Dsig_DM[tensor4];
-  double Dgdot_DM[tensor];
-  double Dn_DM[tensor4];
-  double Fe[tensor];
+  double Dsig_DM[tensor4] = {};
+  double Dgdot_DM[tensor] = {};
+  double Dn_DM[tensor4] = {};
+  double Fe[tensor] = {};
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
      Fe[idx_2(i,j)] = 0.0;
@@ -788,12 +788,12 @@ int BPA_int_alg_tan(double * restrict TAN,
   int err = 0;
 
   /* compute terms */
-  double DM_M[tensor4];
-  double DM_W[tensor4];
-  double DM_lam[tensor];
-  double DW_M[tensor4];
-  double DW_W[tensor4];
-  double Dlam_M[tensor];
+  double DM_M[tensor4] = {};
+  double DM_W[tensor4] = {};
+  double DM_lam[tensor] = {};
+  double DW_M[tensor4] = {};
+  double DW_W[tensor4] = {};
+  double Dlam_M[tensor] = {};
   err += BPA_int_alg_tan_terms(DM_M,DM_W,DM_lam,DW_M,DW_W,Dlam_M,
                                dt,gdot,lam,tau,s_s,Fpn,n,sig,F,M,Wp,p_hmat);
 
@@ -847,8 +847,8 @@ int BPA_int_alg_res(double *RES,
    * arrays, can pass in appropriately indexed pointers to locations
    * in RES to remove additional assembly/memory overhead.
    */
-  double Rm[tensor];
-  double Rw[tensor];
+  double Rm[tensor] = {};
+  double Rw[tensor] = {};
   double Rlam;
   err += BPA_int_alg_res_terms(Rm, Rw, &Rlam, dt, gdot, lam, Fpn, n, F, M, Wp);
   memcpy(RES, Rm, tensor * sizeof(*RES));
@@ -867,7 +867,7 @@ int BPA_dev_stress(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[tensor], Ce[tensor];
+  double Fe[tensor] = {}, Ce[tensor] = {};
   bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   bpa_compute_Sdev(Ce,m->param->p_hmat,dev_stress->m_pdata);
   return err;
@@ -879,9 +879,9 @@ int BPA_dudj(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[tensor];
+  double Fe[tensor] = {};
   bpa_compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
-  double Je = det3x3(Fe);
+  const double Je = det3x3(Fe);
   bpa_compute_dudj(Je,m->param->p_hmat,dudj);
   return err;
 }
@@ -892,7 +892,7 @@ int BPA_dev_tangent(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[tensor], Ce[tensor];
+  double Fe[tensor] = {}, Ce[tensor] = {};
   bpa_compute_Fe_Ce(CTX->F,m->vars.Fs[_M].m_pdata,Fe,Ce);
   bpa_compute_Ldev(Ce,m->param->p_hmat,dev_tangent->m_pdata);
   return err;
@@ -904,9 +904,9 @@ int BPA_d2udj2(const Constitutive_model *m,
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
-  double Fe[tensor];
+  double Fe[tensor] = {};
   bpa_compute_Fe(CTX->F,m->vars.Fs[_M].m_pdata,Fe);
-  double Je = det3x3(Fe);
+  const double Je = det3x3(Fe);
   bpa_compute_d2udj2(Je,m->param->p_hmat,d2udj2);
   return err;
 }
@@ -1026,8 +1026,8 @@ int BPA_compute_Bdev(double *Bdev,
   int err = 0;
 
   /* compute the deviatoric plastic deformation */
-  double Cp[tensor];
-  double Cpdev[tensor];
+  double Cp[tensor] = {};
+  double Cpdev[tensor] = {};
   bpa_compute_Cp(Cp,Fp);
   bpa_compute_Cpdev(Cpdev,Cp);
 
@@ -1060,7 +1060,7 @@ int BPA_compute_loading_dir(double * restrict normal,
 
   /* compute temporary buffers */
   const double inv_Je = 1.0 / det3x3(Fe);
-  double tmp[tensor], tmp2[tensor];
+  double tmp[tensor] = {}, tmp2[tensor] = {};
   for (int i = 0; i < tensor; i++) {
     tmp[i] = inv_Je * (Sdev[i] - Bdev[i]);
     tmp2[i] = 0;
@@ -1087,7 +1087,7 @@ int BPA_compute_loading_dir(double * restrict normal,
   /* compute equivalent plastic stress and the normal to the loading
      direction */
   *tau = sqrt(0.5 * cblas_ddot(tensor, eq_sig_dev, 1, eq_sig_dev, 1) );
-  cblas_daxpy(tensor,1.0 / (*tau), eq_sig_dev, 1, normal, 1);
+  cblas_daxpy(tensor,1.0 / (sqrt(2.0) * (*tau)), eq_sig_dev, 1, normal, 1);
 
   return err;
 }
