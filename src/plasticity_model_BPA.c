@@ -34,7 +34,7 @@
 Define_Matrix(double);
 
 /* Set to value > 0 for extra diagnostics/printing */
-static const int BPA_PRINT_LEVEL = 0;
+static const int BPA_PRINT_LEVEL = 2;
 
 /* constants/enums */
 static const int _n_Fs = 6;
@@ -278,7 +278,7 @@ int BPA_int_alg(Constitutive_model *m,
 {
   static double TOL1 = 1.0e-5;
   static double TOL2 = 1.0e-5;
-  static int maxit1 = 10;
+  static int maxit1 = 50;
   static int maxit2 = 5;
 
   int err = 0;
@@ -329,7 +329,7 @@ int BPA_int_alg(Constitutive_model *m,
       int n_eq = tangent;
       if (RES[tangent - 1] == 0) n_eq--;
 
-      if(BPA_PRINT_LEVEL > 0){
+      if(BPA_PRINT_LEVEL > 1){
         print_array_d(stdout,TAN,tangent * tangent, tangent,tangent);
         print_array_d(stdout,RES,tangent,1,tangent);
       }
@@ -351,13 +351,17 @@ int BPA_int_alg(Constitutive_model *m,
       err += BPA_int_alg_res(RES, CTX->dt, gdot, lam, Fpn,
                              normal, CTX->F, M, Wp);
       norm1 = cblas_dnrm2(tangent,RES,1);
+      /* if (BPA_PRINT_LEVEL > 0) { */
+      /*   printf("\tR1 = %6e (%d)\n", norm1, iter1); */
+      /* } */
       iter1++;
     }
+    // assert(norm1 < TOL1);
 
     /* update s */
     const double s_k = s;
     s = s_s * (s_n + CTX->dt * param_h * gdot) / (s_s + CTX->dt * param_h * gdot);
-    norm2 = fabs(s - s_k) / param_s_ss;
+    norm2 = fabs(s - s_k) / param_s0;
 
     /* compute the residual with updated value of s */
     err += bpa_compute_step1_terms(&gdot, &s_s, &tau, eq_sig_dev, normal, /*< out */
@@ -367,8 +371,14 @@ int BPA_int_alg(Constitutive_model *m,
     norm1 = cblas_dnrm2(tangent,RES,1);
 
     /* output of the iterative procedure */
-    printf("[%d] R1 = %6e (%d) || R2 = %6e\n", iter2, norm1, iter1, norm2);
+    if (BPA_PRINT_LEVEL > 0) {
+      printf("[%d] R1 = %6e (%d) || R2 = %6e\n", iter2, norm1, iter1 - 1, norm2);
+    }
+    iter2++;
   }
+  if (BPA_PRINT_LEVEL > 0) printf("\n");
+
+  assert(norm1 < TOL1 && norm2 < TOL2);
 
   /* Update state variables with converged values */
   err += bpa_update_state_variables(CTX->F,M, Wp, lam, s, m);
@@ -393,6 +403,7 @@ int BPA_int_alg_res_terms(double * restrict Rm,
   double FpnM_dt[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
   double Fe[tensor] = {};
   double Isym[tensor] = {};
+  *Rlam = 0;
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
@@ -400,24 +411,22 @@ int BPA_int_alg_res_terms(double * restrict Rm,
         Fe[idx_2(i,j)] += F[idx_2(i,k)] * M[idx_2(k,j)];
       }
       FpnM_dt[idx_2(i,j)] /= dt;
-      Isym[idx_2(i,j)] = Fe[idx_2(i,j)] - Fe[idx_2(j,i)];
+      *Rlam += 0.5 * (Fe[idx_2(i,j)] - Fe[idx_2(j,i)]) * (Fe[idx_2(i,j)] - Fe[idx_2(j,i)]);
     }
   }
 
   /* compute the residual terms */
   memset(Rm, 0, tensor * sizeof(*Rm));
-  const double coef = gdot / sqrt(2);
-  for (int k = 0; k < dim; k++) {
-    for (int L = 0; L < dim; L++) {
-      Rw[idx_2(k,L)] = (dt * (coef * n[idx_2(k,L)] + Wp[idx_2(k,L)] - FpnM_dt[idx_2(k,L)])
-                        + 2.0 * (Wp[idx_2(k,L)] + Wp[idx_2(L,k)]) );
-      for (int i = 0; i < dim; i++) {
-        Rm[idx_2(k,L)] += (Fpn[idx_2(i,k)] * (coef * n[idx_2(i,L)] + Wp[idx_2(i,L)] - FpnM_dt[idx_2(i,L)])
-                           + 2.0 * lam * (F[idx_2(i,k)] * Fe[idx_2(i,L)] - Fe[idx_2(L,i)] * F[idx_2(i,k)]) );
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      Rw[idx_2(i,j)] = (dt * (gdot * n[idx_2(i,j)] + Wp[idx_2(i,j)] - FpnM_dt[idx_2(i,j)])
+                        + 2.0 * (Wp[idx_2(i,j)] + Wp[idx_2(j,i)]) );
+      for (int p = 0; p < dim; p++) {
+        Rm[idx_2(i,j)] += (Fpn[idx_2(p,i)] * (gdot * n[idx_2(p,j)] + Wp[idx_2(p,j)] - FpnM_dt[idx_2(p,j)])
+                           + 2.0 * lam * F[idx_2(p,i)] *( Fe[idx_2(p,j)] - Fe[idx_2(j,p)]) );
       }
     }
   }
-  *Rlam = 0.5 * cblas_ddot(tensor, Isym, 1, Isym, 1);
   return err;
 }
 
@@ -444,7 +453,7 @@ int BPA_compute_Dgdot_Dtau(double *Dgdot_Dtau,
                            const double tau)
 {
   int err = 0;
-  double pow_term = pow(tau/s_s,5.0/6.0);
+  const double pow_term = pow(tau / s_s, 5.0 / 6.0);
   *Dgdot_Dtau = ((5 * param_A * s_s * param_gdot0) / (6 * param_T * tau) * pow_term
                  * exp(-param_A * s_s * (1.0 - pow_term) / param_T));
   return err;
@@ -477,17 +486,16 @@ int BPA_compute_Dn_Dsig(double * restrict Dn_Dsig,
                         const double tau)
 {
   int err = 0;
-  double coef = 1.0 / (2*sqrt(2));
-  if (tau > 0) coef /= tau;
-  else err++;
+  const double coef = 1.0 / (sqrt(2) * tau);
+  assert(isfinite(coef));
 
   memset(Dn_Dsig, 0, tensor4 * sizeof(*Dn_Dsig));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
-          Dn_Dsig[idx_4(i,j,k,l)] = coef * (eye[idx_2(i,k)] * eye[idx_2(l,j)]
-                                            + eye[idx_2(i,l)] * eye[idx_2(k,j)]
+          Dn_Dsig[idx_4(i,j,k,l)] = coef * (0.5 * (eye[idx_2(i,k)] * eye[idx_2(l,j)]
+                                                   + eye[idx_2(i,l)] * eye[idx_2(k,j)])
                                             - n[idx_2(i,j)] * n[idx_2(k,l)]);
         }
       }
@@ -522,16 +530,14 @@ int BPA_compute_DCpdev_DM(double * restrict DCpdev_DM,
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
-
           const int ijkl = idx_4(i,j,k,l);
           DCpdev_DM[ijkl] = 2./3. * Cpdev[idx_2(i,j)] * Fp[idx_2(l,k)];
-
           for (int p = 0; p < dim; p++) {
             for(int q = 0; q < dim; q++) {
-              DCpdev_DM[ijkl] -= (0.5 * (eye[idx_2(i,k)] *  eye[idx_2(l,j)]
-                                         + eye[idx_2(i,l)] *  eye[idx_2(k,j)])
+              DCpdev_DM[ijkl] -= (0.5 * (eye[idx_2(i,p)] *  eye[idx_2(q,j)]
+                                         + eye[idx_2(i,q)] *  eye[idx_2(p,j)])
                                   * (Fp[idx_2(p,k)] * Cpdev[idx_2(l,q)] 
-                                     + Fp[idx_2(p,l)] * Cpdev[idx_2(k,q)])
+                                     + Cpdev[idx_2(p,l)] * Fp[idx_2(q,k)])
                                   );
             }
           }
@@ -610,8 +616,7 @@ int BPA_compute_DSdev_DM(double * restrict DSdev_DM,
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
           for (int p = 0; p < dim; p++) {
-            DSdev_DM[idx_4(i,j,k,l)] += 0.5 * (Ldev[idx_4(i,j,l,p)] * FeF[idx_2(p,k)]
-                                               + Ldev[idx_4(i,j,p,l)] * FeF[idx_2(p,k)]);
+            DSdev_DM[idx_4(i,j,k,l)] += 0.5 * (Ldev[idx_4(i,j,l,p)] + Ldev[idx_4(i,j,p,l)]) * FeF[idx_2(p,k)];
           }
         }
       }
@@ -661,7 +666,7 @@ int BPA_compute_Dsig_DM(double * restrict Dsig_DM,
               const int pqkl = idx_4(p,q,k,l);
               Dsig_DM[ijkl] += (Je_inv
                                 * (DSdev_DM[pqkl] - DBdev_DM[pqkl]
-                                   - Fp[idx_2(l,k)] * (Sdev[idx_2(l,p)] - Bdev[idx_2(l,q)]))
+                                   - Fp[idx_2(l,k)] * (Sdev[idx_2(p,q)] - Bdev[idx_2(p,q)]))
                                 * Fe[idx_2(i,p)] * F[idx_2(j,q)]);
             }
           }
@@ -763,27 +768,35 @@ int BPA_int_alg_tan_terms(double * restrict DM_M,
   err += BPA_compute_Dgdot_DM(Dgdot_DM,Dsig_DM,sig,tau,s_s);
   err += BPA_compute_Dn_DM(Dn_DM,Dsig_DM,n,tau);
 
+
+  /* zero tangents */
+  memset(DM_M, 0, tensor * tensor * sizeof(*DM_M));
+  memset(DM_W, 0, tensor * tensor * sizeof(*DM_W));
+  memset(DW_M, 0, tensor * tensor * sizeof(*DW_M));
+  memset(DW_W, 0, tensor * tensor * sizeof(*DW_W));
+  memset(DM_lam, 0, tensor * sizeof(*DM_lam));
+
+  /* compute tangents */
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      DM_lam[idx_2(i,j)] = 0.0;
       for (int k = 0; k < dim; k++) {
-        DM_lam[idx_2(i,j)] += 2.0 * (F[idx_2(k,i)] * Fe[idx_2(k,j)] - Fe[idx_2(j,k)] * F[idx_2(k,i)]);
+        DM_lam[idx_2(i,j)] += 2.0 * F[idx_2(k,i)] * (Fe[idx_2(k,j)] - Fe[idx_2(j,k)]);
         for (int L = 0; L < dim; L++) {
           const int ijkl = idx_4(i,j,k,L);
-          DM_M[ijkl] = 0.0;
+          /* DM_W[ijkl] = Fpn[idx_2(k,i)] * eye[idx_2(L,j)]; */
+          DM_W[ijkl] += 0.5 * (Fpn[idx_2(k,i)] * eye[idx_2(L,j)] - Fpn[idx_2(L,i)] * eye[idx_2(k,j)] );
+          /* DW_W[ijkl] = (dt + 2.0) * eye[idx_2(i,k)] * eye[idx_2(L,j)] + 2.0 * eye[idx_2(j,k)] * eye[idx_2(L,i)]; */
+          DW_W[ijkl] = 0.5 * dt * (eye[idx_2(i,k)] * eye[idx_2(L,j)] - eye[idx_2(i,L)] * eye[idx_2(k,j)] );
+          DW_M[ijkl] = dt * (Dgdot_DM[idx_2(k,L)] * n[idx_2(i,j)]
+                             + gdot * Dn_DM[ijkl] + Fpn[idx_2(i,k)] * eye[idx_2(L,j)] / dt);
+
           for (int p = 0; p < dim; p++) {
             DM_M[ijkl] += (Fpn[idx_2(p,i)] * (Dgdot_DM[idx_2(k,L)] * n[idx_2(p,j)]
                                               + gdot * Dn_DM[idx_4(p,j,k,L)]
-                                              + Fpn[idx_2(p,k)] * eye[idx_2(L,j)])
-                           + 2.0 * lam * (F[idx_2(p,i)] * F[idx_2(p,k)] * eye[idx_2(L,j)]
-                                          - F[idx_2(j,k)] * F[idx_2(L,i)]) );
+                                              + Fpn[idx_2(p,k)] * eye[idx_2(L,j)] / dt)
+                           + (2.0 * lam * F[idx_2(p,i)] 
+                              * (F[idx_2(p,k)] * eye[idx_2(L,j)] - F[idx_2(j,k)] * eye[idx_2(L,p)])) );
           }
-          DM_W[ijkl] = Fpn[idx_2(k,i)] * eye[idx_2(L,j)];
-
-          DW_M[ijkl] = dt * (Dgdot_DM[idx_2(k,L)] * n[idx_2(i,j)]
-                             + gdot * Dn_DM[ijkl] + Fpn[idx_2(i,k)] * eye[idx_2(L,i)] / dt);
-          DW_W[ijkl] = (dt + 2.0) * eye[idx_2(i,k)] * eye[idx_2(L,j)] + 2.0 * eye[idx_2(j,k)] * eye[idx_2(L,i)];
-
         }
       }
     }
@@ -879,6 +892,10 @@ int BPA_int_alg_res(double *RES,
   /* OPTIMIZED */
   /* err += BPA_int_alg_res_terms(RES, RES + tensor, RES + tangent - 1, */
   /*                              dt,gdot,lam,Fpn,F,M,Wp); */
+
+  for(int i = 0; i < tangent; i++){
+    RES[i] *= -1.0;
+  }
   return err;
 }
 
