@@ -42,7 +42,7 @@ void get_F(const double t,
            const double nu,
            double *F)
 {
-  const double rate = 0.001;
+  const double rate = 0.01;
   memset(F, 0, 9*sizeof(*F));
   /* compression */
   F[0] = F[4] = 1 + nu * rate * t;
