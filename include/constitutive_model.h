@@ -16,6 +16,7 @@
 #define CONSTITUTIVE_MODEL_H
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "state_variables.h" /* provides declaration of Matrix_double */
 
 typedef struct EPS EPS;
@@ -215,6 +216,12 @@ struct Model_var_info {
 #define TYPE_MODEL_VAR_INFO
 typedef struct Model_var_info Model_var_info;
 #endif
+
+/**
+ * Print the object to the specified file.
+ */
+int model_var_info_print(FILE *f,
+                         const Model_var_info * info);
 
 /**
  * destroy a Model_var_info object. Assumes full control of all
