@@ -856,32 +856,32 @@ double Newton_Raphson (const int print_level,
        time step values r*/
     /* For FE2, these vectors are not allocated and are passed as NULL */
     if ( r_n_1 != NULL && r_n != NULL )
+    {
+      for(long a = 0; a<nn; a++)
       {
-        for(long a = 0; a<nn; a++)
+        for(long b = 0; b<ndofn; b++)
+        {
+          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+          long id = node[a].id[b];
+          if(id>0)
+            r_n[a*ndofn + b] = d_r[id-1];
+          else
           {
-            for(long b = 0; b<ndofn; b++)
-              {
-                r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-                long id = node[a].id[b];
-                if(id>0)
-                  r_n[a*ndofn + b] = r[id-1];
-                else
-                  {
-                    if(id==0)
-                      r_n[a*ndofn + b] = 0.0;
-                    else
-                      r_n[a*ndofn + b] = sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
-                  }
-              }
+            if(id==0)
+              r_n[a*ndofn + b] = 0.0;
+            else
+              r_n[a*ndofn + b] = 0.0*sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
           }
+        }
       }
-      
-      if (PGFEM3D_DEV_TEST)
-      {
-        constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
-                                        ne,nn,ndofn,r_n,dt);             
-      }
-      
+    }
+    
+    if (PGFEM3D_DEV_TEST)
+    {
+      constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
+                                      ne,nn,ndofn,r_n,dt);             
+    }
+    
     if(opts->analysis_type==TF)
       {
         int nVol = 1;

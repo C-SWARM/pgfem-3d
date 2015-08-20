@@ -229,7 +229,7 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
           for(int Q=1; Q<=3; Q++)
           {
             Tns4_v(CIoxCI,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);
-            Tns4_v(SoxS,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);            
+            Tns4_v(SoxS,I,JJ,P,Q) = Mat_v(*S,I,JJ)*Mat_v(*S,P,Q);            
             Tns4_v(CICI,I,JJ,P,Q) = Mat_v(CI,I,P)*Mat_v(CI,Q,JJ);
           }
         }
@@ -470,7 +470,7 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
                                         double* r, double dt)
 {
   int nsd = 3;
-  int updated_Lagrangian = 0;
+  int total_Lagrangian = 0;
   int err = 0;
   if (ne <= 0) return 1;
 
@@ -491,7 +491,7 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
       intg_order = 0;
 
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,1);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
     Matrix(double) u;  
@@ -524,13 +524,13 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
       Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
     
       // --> update plasticity part
-      if(updated_Lagrangian)
+      if(total_Lagrangian)
       {    
-        Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
+        Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
       }
       else
       {
-        Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
+        Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
       }   
     
       constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);     

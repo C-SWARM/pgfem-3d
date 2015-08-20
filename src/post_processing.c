@@ -91,7 +91,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, H
 void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Matrix(double) *S, HOMMAT *hommat, ELEMENT *elem, EPS *eps,
                           Matrix(double) *Fr, double Pn)
 {
-  int updated_Lagrangian = 0;
+  int total_Lagrangian = 0;
   int compute_stiffness = 0;
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
@@ -100,16 +100,32 @@ void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Mat
   Matrix_construct_init(double,Fn,3,3,0.0);
   Matrix_construct_init(double,Fnp1,3,3,0.0);  
   Matrix_construct_init(double,pFnp1_I,3,3,0.0);
-  Matrix_construct_init(double,eFnp1,3,3,0.0);  
-  if(updated_Lagrangian)
-    Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
+  Matrix_construct_init(double,eFnp1,3,3,0.0); 
+
+  Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);  
+  if(total_Lagrangian)
+  { 
+    Matrix(double) FnI;
+    Matrix_construct_redim(double, FnI,3,3);
+    Matrix_inv(Fn,FnI);
+    Matrix_AeqB(Fnp1,1.0,*Fr);  // Fn+1 
+    Matrix_AxB(*Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
+    Matrix_cleanup(FnI);         
+  }
   else
-    Matrix_eye(Fn,3);
-  Matrix_AxB(Fnp1,1.0,0.0,*Fr,0,Fn,0);
+  {
+    Matrix_AxB(Fnp1,1.0,0.0,*Fr,0,Fn,0);  // Fn+1    
+  } 
+       
   Matrix_inv(Fs[TENSOR_pFnp1], pFnp1_I);  
   Matrix_AxB(eFnp1,1.0,0.0,Fnp1,0,pFnp1_I,0); 
   constitutive_model_update_elasticity(m,&eFnp1,0.0,NULL,S,compute_stiffness);
-  double Jn; Matrix_det(Fn, Jn); 
+  
+  double Jn = 1.0;
+  if(!total_Lagrangian)
+    Matrix_det(Fn, Jn);
+
+  Matrix_AeqB(*S,1.0/Jn,*S);
   
   Matrix_cleanup(Fn);
   Matrix_cleanup(Fnp1);  
@@ -119,6 +135,7 @@ void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Mat
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm, int analysis)
 {
+  int total_Lagrangian = 1;
   int nsd = 3;
   Matrix(double) F,S,LS;
   Matrix_construct_init(double,F,3,3,0.0);
@@ -131,10 +148,12 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   {    
     int intg_order = 1;    
     if (PGFEM3D_DEV_TEST)
+    {  
       intg_order = 0;
-
+      total_Lagrangian = 0;      
+    }
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,1);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
     Matrix(double) Np, u, P;  

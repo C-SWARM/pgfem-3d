@@ -59,7 +59,7 @@ int update_stiffness_from_constitutive_model(double *lk,
         const SUPP sup,
         double *r_e)
 {
-  int updated_Lagrangian = 0;
+  int total_Lagrangian = 0;
   
   int err = 0;
 
@@ -126,7 +126,7 @@ int update_stiffness_from_constitutive_model(double *lk,
   Matrix_construct_redim(double,sMTeFnT_sAA_eFndMdu,3,3);  
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,1);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
   int compute_stiffness = 1;      
 
   for(int ip = 1; ip<=fe.nint; ip++)
@@ -145,18 +145,18 @@ int update_stiffness_from_constitutive_model(double *lk,
     Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
     
     // --> update plasticity part
-    if(updated_Lagrangian)
-    {    
-      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
-    }
-    else
-    {
+    if(total_Lagrangian)
+    { 
       Matrix(double) FnI;
       Matrix_construct_redim(double, FnI,3,3);
       Matrix_inv(Fn,FnI);
       Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
       Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
-      Matrix_cleanup(FnI);
+      Matrix_cleanup(FnI);         
+    }
+    else
+    {
+      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
     }   
     Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0); 
     constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
@@ -188,7 +188,7 @@ int update_stiffness_from_constitutive_model(double *lk,
         Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
         Matrix_AxB(AA,1.0,0.0,Fr,1,ST_ab,0); 
         Matrix_symmetric(AA,sAA);
-
+        
         Matrix_AxB(MTeFnT_sAA,1.0,0.0,eFnM,1,sAA,0);
         Matrix_AxB(MTeFnT_sAA_eFn,1.0,0.0,MTeFnT_sAA,0,eFn,0);
         Matrix_AxB(MTeFnT_sAA_eFnM,1.0,0.0,MTeFnT_sAA_eFn,0,M,0);  

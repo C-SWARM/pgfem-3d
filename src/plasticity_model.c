@@ -523,13 +523,13 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m,
 	
 	elastic_stress(&Props, eFnp1.m_pdata, S_n.m_pdata);  
 
-//  double gamma_dot = 0.0;    //////////////////////// compute g_np1
+  double gamma_dot = 0.0;    //////////////////////// compute g_np1
   for (int k = 0; k<N_SYS; k++)
 	{
 	  double tau_k = Tau_Rhs_sp(k, P_sys, eFnp1.m_pdata, S_n.m_pdata);
     Vec_v(Fs[TENSOR_tau],k+1) = tau_k;
     Vec_v(Fs[TENSOR_gamma_dot],k+1) = gamma_Rate_PL(&Params,g_n,tau_k);
-//    gamma_dot += fabs(Vec_v(Fs[TENSOR_gamma_dot],k+1)); //////////////////////// compute g_np1
+    gamma_dot += fabs(Vec_v(Fs[TENSOR_gamma_dot],k+1)); //////////////////////// compute g_np1
   }
   double g_Rhs = g_Rate_VK(&Params,&Struc,g_n, Fs[TENSOR_gamma_dot].m_pdata);
   state_var[VAR_g_np1] =  g_n + dt*g_Rhs;
@@ -537,15 +537,15 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m,
   
   
   //////////////////////// compute g_np1
-//  double gm_gms   = gamma_dot/Params.gamsdot;
-//  double gs_np1 = 0.0;   
-//  if(fabs(gm_gms)>1.0e-15)
-//    gs_np1 = Params.gs0*pow(fabs(gm_gms),Params.w);
+  double gm_gms   = gamma_dot/Params.gamsdot;
+  double gs_np1 = 0.0;   
+  if(fabs(gm_gms)>1.0e-15)
+    gs_np1 = Params.gs0*pow(fabs(gm_gms),Params.w);
   
     
-//  double gg = ((gs_np1-Params.g0)*g_n + dt*Params.G0*gs_np1*gamma_dot)/(gs_np1 - Params.g0 + dt*Params.G0*gamma_dot);
+  double gg = ((gs_np1-Params.g0)*g_n + dt*Params.G0*gs_np1*gamma_dot)/(gs_np1 - Params.g0 + dt*Params.G0*gamma_dot);
 //  printf("%e %e %e\n", g_n + dt*g_Rhs, gg, g_n + fabs(dt*g_Rhs - gg));  
-//  state_var[VAR_g_np1] = gg;
+  state_var[VAR_g_np1] = gg;
   //////////////////////// compute g_np1  
 
   Matrix_cleanup(Fe_I);
@@ -647,7 +647,7 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
 	
 	double T_Initial = 0.0;
 	double T_Final = 1.0;
-	double dt = 0.0001;
+	double dt = 0.001;
   double Load_History = 1.0;
 	int Load_Type = UNIAXIAL_COMPRESSION;	
 	
@@ -724,7 +724,6 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
 	Matrix_eye(F_n,3);
 	Matrix_init(F_np1, 0.0);
 	F_Implicit_sp(dt, F_n.m_pdata, L.m_pdata, F_np1.m_pdata);
-	Matrix_print(F_np1);
 
   Matrix_AeqB(Fe_n,1.0,F_n);
 	Matrix_eye(Fp_n,3);
@@ -754,7 +753,6 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
   if(Print_results)
   	printf("time \t Effective Stress \n");
 	
-
   double t = T_Initial;
 
 	double norm_T, norm_S;
@@ -766,7 +764,7 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
 	double PK2_eff = sqrt(3.0/2.0)*sqrt(norm_S);
 
   if(Print_results)
-	  printf("%e \t %e %e\n",t,s_eff,PK2_eff);
+	  printf("%e \t %e %e %e\n",t,s_eff,PK2_eff,g_n);
  
 	for (int kk=1; kk<Num_Steps+1; kk++)
 	{
@@ -856,9 +854,6 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
     
 		s_eff=sqrt(3.0/2.0)*sqrt(norm_T);
 		PK2_eff = sqrt(3.0/2.0)*sqrt(norm_S);
-
-    if(Print_results)
-  	  printf("%e \t %e %e\n",t,s_eff,PK2_eff);
   
 		Matrix_init(Tau_Array, 0.0);
 		Matrix_init(gamma_RateArray, 0.0);
@@ -878,6 +873,10 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_re
 		//update_hardening
 		g_n = g_np1;
 		g_np1 = 0.0;
+		
+
+    if(Print_results)
+  	  printf("%e \t %e %e %e\n",t,s_eff,PK2_eff, g_n);		
 	}
 	
   Matrix_cleanup(F_np1  );

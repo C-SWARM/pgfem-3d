@@ -148,7 +148,19 @@ int load_vec_node_defl (double *f,
       def_elem (cn,ndofe,r,elem,node,r_e,sup,1);
     } else {
       switch(opts->analysis_type){
-      case DISP: case TF:
+      case DISP: 
+        if(1)
+        {
+  	      nodecoord_updated(nne,nod,node,x,y,z);    	                     
+          //def_elem(cn,ndofe,r,elem,node,r_e,sup,0);	        
+	      }
+	      else
+	      {	        
+	        nodecoord_total(nne,nod,node,x,y,z);
+	        def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+	      }
+	    break;         
+      case TF:
 	      nodecoord_total(nne,nod,node,x,y,z);
 	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1); 
 	      break;

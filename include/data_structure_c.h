@@ -53,6 +53,22 @@ typedef struct Matrix_##T                                               \
   }                                                                     \
 } while(0)
 
+#define Matrix_Tns4_II(p) do{                                           \
+  Matrix_init(p,0.0);                                                   \
+  for(int I=1; I<=3; I++)                                               \
+  {                                                                     \
+    for(int J=1; J<=3; J++)                                             \
+    {                                                                   \
+      for(int K=1; K<=3; K++)                                           \
+      {                                                                 \
+        for(int L=1; L<=3; L++)                                         \
+          Tns4_v(p, I,J,K,L) = 0.5*((I==K)*(J==L)+(I==L)*(J==K));       \
+      }                                                                 \
+    }                                                                   \
+  }                                                                     \
+} while(0)
+
+
 #define Matrix_Tns4_eye_bar(p) do{                                      \
   Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \

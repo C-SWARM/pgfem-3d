@@ -1433,8 +1433,6 @@ int single_scale_main(int argc,char *argv[])
                                      
                 Matrix_init_w_array(F, 3, 3, GF);              
                 
-                Matrix_print(F);
-                
                 Matrix_inv(F,FI);
                 Matrix_eye(I, 3);
                 Matrix_AplusB(F,1.0,F,-1.0,I);
@@ -1447,9 +1445,6 @@ int single_scale_main(int argc,char *argv[])
                                                   
                 if(myrank==-1)
                   constitutive_model_test(hommat, NULL, 1);
-
-                Matrix_print(L);
-
 
                 Matrix_cleanup(F);
                 Matrix_cleanup(I);              
