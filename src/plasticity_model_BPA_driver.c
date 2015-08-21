@@ -82,11 +82,16 @@ int compute_stress(double * restrict sig,
   return err;
 }
 
-void write_data_point(FILE *f,
-                      const double *sig,
-                      const double t)
+int write_data_point(FILE *f,
+                     const void *ctx,
+                     const Constitutive_model *m,
+                     const double t)
 {
-  fprintf(f,"%e\t%e\n",t,-sig[8]);
+  int err = 0;
+  double sig[9] = {};
+  err += compute_stress(sig,m,ctx);
+  fprintf(f,"%e\t%e\t%e\n",t,-sig[8],m->vars.state_vars->m_pdata[0]);
+  return err;
 }
 
 int main(int argc, char **argv)
@@ -111,24 +116,32 @@ int main(int argc, char **argv)
   err += model_var_info_print(stdout,info);
   err += model_var_info_destroy(&info);
 
-  const double dt = 1.0;
+  double dt = 1.0;
   const int nstep = 100;
   double t = dt;
   double F[9] = {};
-  double sig[9] = {};
   void *ctx = NULL;
+  int conv = 0;
 
-  write_data_point(out,sig,0);
   for (int i = 0; i < nstep; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat->nu,F);
     err += plasticity_model_BPA_ctx_build(&ctx,F,dt);
-    err += m->param->integration_algorithm(m,ctx);
+    conv = m->param->integration_algorithm(m,ctx);
+    /* assert(conv >= 0); */
+    /* if(conv < 0) { */
+    /*   printf("\t DID NOT CONVERGE, RESTARTING\n\n"); */
+    /*   dt /= 2; */
+    /*   t -= dt; */
+    /*   err += m->param->update_state_vars(m); */
+    /*   err += plasticity_model_BPA_ctx_destroy(&ctx); */
+    /*   i--; */
+    /*   continue; */
+    /* } else err += conv; */
     err += m->param->update_state_vars(m);
-    err += compute_stress(sig,m,ctx);
+    err += write_data_point(out,ctx,m,t);
     err += plasticity_model_BPA_ctx_destroy(&ctx);
     printf("\n");
-    write_data_point(out,sig,t);
     t += dt;
   }
 

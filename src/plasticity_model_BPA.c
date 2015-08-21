@@ -51,7 +51,7 @@ static const double param_A = 289;
 static const double param_T = 240;
 static const double param_N = 2.15;
 static const double param_Cr = 12.8;
-static const double param_alpha = 00.8;
+static const double param_alpha = 0.8;
 static const double param_gdot0 = 2.0e15;
 static const double param_h = 500;
 static const double param_s0 = 97;
@@ -880,14 +880,14 @@ int BPA_int_alg(Constitutive_model *m,
   int iter = 0;
   int iterWp = 0;
   static const double TOL = 1.0e-5;
-  static const int maxit = 20;
+  static const int maxit = 5;
 
   /* COMPUTE THE RESIDUAL */
   err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
 
-  while (normWp > TOL && iterWp < maxit) {
+  while ((normWp > TOL || norm > TOL) && iterWp < maxit) {
+    iter = 0;
     while (norm > TOL  && iter < maxit) {
-
       /* COMPUTE THE TANGENT */
       err += bpa_compute_tan(TAN, CTX->dt, gdot, tau, s_s, lam,
                              eq_sig_dev, normal, Mn, CTX->F, Fe,
@@ -916,8 +916,8 @@ int BPA_int_alg(Constitutive_model *m,
       err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
       norm = cblas_dnrm2(tan_row,RES,1);
       if (BPA_PRINT_LEVEL > 0) {
-        printf("\tR1 = %6e (%d) ", norm, iter);
-        print_array_d(stdout, RES, tan_row, 1, tan_row);
+        printf("\tR1 = %6e (%d)\n", norm, iter);
+        /* print_array_d(stdout, RES, tan_row, 1, tan_row); */
       }
       iter++;
     }
@@ -947,6 +947,7 @@ int BPA_int_alg(Constitutive_model *m,
     }
     iterWp++;
   }
+  assert(norm < TOL);
   assert(normWp < TOL);
 
   /* Update state variables with converged values */
