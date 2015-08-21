@@ -117,18 +117,18 @@ int BPA_model_info(Model_var_info **info);
  * \param[in] p_hmat, pointer to the material props
  * \return non-zero on error
  */
-int BPA_int_alg_tan(double *TAN,
-                    const double dt,
-                    const double gdot,
-                    const double tau,
-                    const double s,
-                    const double s_s,
-                    const double *sig,
-                    const double *Mn,
-                    const double *n,
-                    const double *F,
-                    const double *Fe,
-                    const HOMMAT *p_hmat);
+/* int BPA_int_alg_tan(double *TAN, */
+/*                     const double dt, */
+/*                     const double gdot, */
+/*                     const double tau, */
+/*                     const double s, */
+/*                     const double s_s, */
+/*                     const double *sig, */
+/*                     const double *Mn, */
+/*                     const double *n, */
+/*                     const double *F, */
+/*                     const double *Fe, */
+/*                     const HOMMAT *p_hmat); */
 
 /**
  * Compute and assemble the integration algorithm residual vector.
@@ -144,17 +144,17 @@ int BPA_int_alg_tan(double *TAN,
  * \param[in] Wp, the algorithmic plastic spin
  * \return non-zero on error
  */
-int BPA_int_alg_res(double *RES,
-                    const double dt,
-                    const double gdot,
-                    const double sdot,
-                    const double s_n,
-                    const double s,
-                    const double *n,
-                    const double *F,
-                    const double *Fe,
-                    const double *Wp,
-                    const double *Mn);
+/* int BPA_int_alg_res(double *RES, */
+/*                     const double dt, */
+/*                     const double gdot, */
+/*                     const double sdot, */
+/*                     const double s_n, */
+/*                     const double s, */
+/*                     const double *n, */
+/*                     const double *F, */
+/*                     const double *Fe, */
+/*                     const double *Wp, */
+/*                     const double *Mn); */
 
 /**
  * Compute the plastic slip rate. NOTE: makes use of global values at
@@ -165,9 +165,9 @@ int BPA_int_alg_res(double *RES,
  * \param[in] s_s, the pressure-dependent athermal shear stress
  * \return non-zero on internal error.
  */
-int BPA_compute_gdot(double *gdot,
-                     const double tau,
-                     const double s_s);
+/* int BPA_compute_gdot(double *gdot, */
+/*                      const double tau, */
+/*                      const double s_s); */
 
 /**
  * Compute the athermal shear hardenening rate. NOTE: makes use of
@@ -178,9 +178,9 @@ int BPA_compute_gdot(double *gdot,
  * \param[in] gdot, the current slip rate
  * \return non-zero on internal error
  */
-int BPA_compute_sdot(double *sdot,
-                     const double s,
-                     const double gdot);
+/* int BPA_compute_sdot(double *sdot, */
+/*                      const double s, */
+/*                      const double gdot); */
 
 /**
  * Compute the deviatoric backstress in the intermediate
@@ -191,8 +191,8 @@ int BPA_compute_sdot(double *sdot,
  * \param[in] Fp, the (total) plastic deformation gradient
  * \return non-zero on internal error.
  */
-int BPA_compute_Bdev(double *Bdev,
-                     const double *Fp);
+/* int BPA_compute_Bdev(double *Bdev, */
+/*                      const double *Fp); */
 
 /**
  * Compute the plastic loading direction. Note that all pointers are
@@ -209,78 +209,14 @@ int BPA_compute_Bdev(double *Bdev,
  *                  configuration
  * \return non-zero on internal error
  */
-int BPA_compute_loading_dir(double *normal,
-                            double *eq_sig_dev,
-                            double *tau,
-                            const double *Sdev,
-                            const double *Bdev,
-                            const double *Fe);
+/* int BPA_compute_loading_dir(double *normal, */
+/*                             double *eq_sig_dev, */
+/*                             double *tau, */
+/*                             const double *Sdev, */
+/*                             const double *Bdev, */
+/*                             const double *Fe); */
 
 /*=== LEVEL 2 subroutines ===*/
-/**
- * Compute the tangent terms for the integration algorithm. Note that
- * pointers are _restrict_ qualified.
- *
- * \param[out] DM_M,DM_W,DM_lam,DW_M,DW_W, tangent terms
- * \param[in] dt, the time increment
- * \param[in] gdot, the plastic strain rate
- * \param[in] lam, the Lagrange multiplier for Fe sym.
- * \param[in] tau, magnitude of the plastic stress
- * \param[in] s_s, pressure-dependant athermal shear stress
- * \param[in] Fpn, the _total_ plastic deformation to time (n)
- * \param[in] n, the direction (normal) of plastic loading
- * \param[in] F, the _total_ deformation gradient
- * \param[in] M, the _total_ inverse plastic deformation grad.
- * \param[in] Wp, the _total_ (computational) plastic spin
- * \param[in] p_hmat, pointer to the material props
- * \return non-zero on internal error
- */
-int BPA_int_alg_tan_terms(double *DRFe_Fe,
-                          double *DRFe_s,
-                          double *DRs_Fe,
-                          double *DRs_s,
-                          const double dt,
-                          const double gdot,
-                          const double tau,
-                          const double s,
-                          const double s_s,
-                          const double *sig,
-                          const double *Mn,
-                          const double *n,
-                          const double *F,
-                          const double *Fe,
-                          const HOMMAT *p_hmat);
-
-/**
- * Compute residuals for the integration algorithm. Note that all pointers
- * are _restrict_ qualified, and therefore if the pointers overlap,
- * undefined behavior will occur.
- *
- * \param[out] Rm, R_M for the int. alg.
- * \param[out] Rw, R_Wp for the int. alg.
- * \param[out] Rlam, R_lam for the int. alg.
- * \param[in] dt, the time increment
- * \param[in] gdot, the plastic strain rate
- * \param[in] lam, the Lagrange multiplier for Fe sym.
- * \param[in] Fpn, the _total_ plastic deformation to time (n)
- * \param[in] n, the direction (normal) of plastic loading
- * \param[in] F, the _total_ deformation gradient
- * \param[in] M, the _total_ inverse plastic deformation grad.
- * \param[in] Wp, the _total_ (computational) plastic spin
- * \return non-zero on internal error
- */
-int BPA_int_alg_res_terms(double *RFe,
-                          double *Rs,
-                          const double dt,
-                          const double gdot,
-                          const double sdot,
-                          const double s_n,
-                          const double s,
-                          const double *n,
-                          const double *F,
-                          const double *Fe,
-                          const double *Wp,
-                          const double *Mn);
 
 /*=== LEVEL 3+ subroutines ===*/
 /**
@@ -292,8 +228,8 @@ int BPA_int_alg_res_terms(double *RFe,
  * \return non-zero if y outside bounds (resulting in undefined
  * behavior).
  */
-int BPA_inverse_langevin(const double y,
-                         double *inv_lang);
+/* int BPA_inverse_langevin(const double y, */
+/*                          double *inv_lang); */
 
 /**
  * Evaluate the derivative of the Pade approximation for the inverse
@@ -304,8 +240,8 @@ int BPA_inverse_langevin(const double y,
  * \return non-zero if y outside bounds (resulting in undefined
  * behavior).
  */
-int BPA_der_inverse_langevin(const double y,
-                             double  *der_inv_lang);
+/* int BPA_der_inverse_langevin(const double y, */
+/*                              double  *der_inv_lang); */
 
 /**
  * Compute the derivative of gdot w.r.t. tau. Note that pointers are
@@ -316,9 +252,9 @@ int BPA_der_inverse_langevin(const double y,
  * \param[in] tau, magnitude of the plastic stress
  * \return non-zero on error
  */
-int BPA_compute_Dgdot_Dtau(double *Dgdot_Dtau,
-                           const double s_s,
-                           const double tau);
+/* int BPA_compute_Dgdot_Dtau(double *Dgdot_Dtau, */
+/*                            const double s_s, */
+/*                            const double tau); */
 
 /**
  * Compute the derivative of tau w.r.t. sig (eff. plastic
@@ -328,8 +264,8 @@ int BPA_compute_Dgdot_Dtau(double *Dgdot_Dtau,
  * \param[out] sig, the equiv. plastic stress tensor
  * \return non-zero on error
  */
-int BPA_compute_Dtau_Dsig(double *Dtau_Dsig,
-                          const double *sig);
+/* int BPA_compute_Dtau_Dsig(double *Dtau_Dsig, */
+/*                           const double *sig); */
 
 /**
  * Compute the derivative of n (plastic loading direction) w.r.t. sig
@@ -340,46 +276,8 @@ int BPA_compute_Dtau_Dsig(double *Dtau_Dsig,
  * \param[in] tau, magnitude of the plastic stress
  * \return non-zero on error
  */
-int BPA_compute_Dn_Dsig(double *Dn_Dsig,
-                        const double *n,
-                        const double tau);
-
-/**
- * Compute the derivative of plam w.r.t. M. Note that pointers are
- * _restrict_ qualified.
- *
- * \param[out] Dplam_DM, 2nd-order tensor of the derivative 
- * \param[in] Fp, _total_ plastic deformation gradient
- * \param[in] Cp, Cp = Fp Fp'
- * \return non-zero on error
- */
-int BPA_compute_Dplam_DM(double *Dplam_DM,
-                         const double *Fp,
-                         const double *Cp);
-
-/**
- * Compute the derivative of Cpdev (deviatoric part of Cp)
- * w.r.t. M. Note that pointers are _restrict_ qualified.
- *
- * \param[out] DCpdev_DM, 4th-order tensor of the derivative
- * \param[in] Fp, _total_ plastic deformation gradient
- * \param[in] Cpdev, deviatoric part of Cp = Fp Fp'
- * \return non-zero on error
- */
-int BPA_compute_DCpdev_DM(double *DCpdev_DM,
-                          const double *Fp,
-                          const double *Cpdev);
-
-/**
- * Compute the derivative of Bdev w.r.t. M. Note that pointers are
- * _restrict_ qualified. NOTE: Makes use of file-scope global
- * variables.
- *
- * \param[out] DB_DM, 4th-order tensor of the derivative
- * \param[in] Fp, _total_ plastic deformation gradient
- * \return non-zero on error
- */
-int BPA_compute_DBdev_DM(double *DB_DM,
-                         const double *Fp);
+/* int BPA_compute_Dn_Dsig(double *Dn_Dsig, */
+/*                         const double *n, */
+/*                         const double tau); */
 
 #endif

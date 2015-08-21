@@ -42,7 +42,7 @@ void get_F(const double t,
            const double nu,
            double *F)
 {
-  const double rate = 0.01;
+  const double rate = 0.001;
   memset(F, 0, 9*sizeof(*F));
   /* compression */
   F[0] = F[4] = 1 + nu * rate * t;
@@ -64,7 +64,7 @@ int compute_stress(double * restrict sig,
   m->param->compute_dev_stress(m,ctx,&S);
 
   /* push stress forward */
-  const double *Fe = m->vars.Fs[2].m_pdata;
+  const double *Fe = m->vars.Fs[0].m_pdata;
   const double J = det3x3(Fe);
   memset(sig,0,9*sizeof(*sig));
   for (int i = 0; i < 3; i++) {
