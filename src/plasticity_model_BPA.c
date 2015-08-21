@@ -85,6 +85,7 @@ static double bpa_compute_plam(const double *Cp)
 {
   return sqrt((Cp[0] + Cp[4] + Cp[8]) / 3.0);
 }
+
 static void bpa_compute_Cpdev(double * restrict Cpdev,
                               const double * restrict Cp)
 {
@@ -204,7 +205,7 @@ static int bpa_compute_res_vec(double * restrict RES,
   double Lp[tensor] = {};
   double dtFMnLp[tensor] = {};
   err += inv3x3(Fe,invFe);
-  for (int i = 0; i < dim; i++) {
+  for (int i = 0; i < tensor; i++) {
     Lp[i] = gdot * n[i] + Wp[i];
   }
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
@@ -219,7 +220,7 @@ static int bpa_compute_res_vec(double * restrict RES,
     for (int j = 0; j < dim; j++) {
       const int ij = idx_2(i,j);
       const int ji = idx_2(j,i);
-      RES[ij] = -(2 * F[ij] - F[ji] - FMn[ij] + dtFMnLp[ij]
+      RES[ij] = -(2 * Fe[ij] - Fe[ji] - FMn[ij] + dtFMnLp[ij]
                  - lam * Jp * invFe[ji]);
     }
   }
@@ -346,7 +347,7 @@ static int bpa_compute_DSdev_DFe(double * restrict DSdev_DFe,
     }
   }
 
-  return 0;
+  return err;
 }
 
 static int bpa_compute_DFp_DFe(double * restrict DFp_DFe,
@@ -923,7 +924,7 @@ int BPA_int_alg(Constitutive_model *m,
     assert(norm < TOL);
 
     double s_k = s;
-    s = (s_n + param_h * gdot * CTX->dt) / (1 + param_h * gdot * CTX->dt/ param_s_ss);
+    s = (s_n + param_h * gdot * (CTX->dt)) / (1 + param_h * gdot * (CTX->dt)/ param_s_ss);
     normWp = pow((s-s_k) / param_s_ss,2);
 
     /* compute updated Wp and residual norm */
