@@ -146,40 +146,30 @@ int bpa_compute_loading_dir(double * restrict normal,
 {
   int err = 0;
 
-  /* clear the result buffer(s) */
-  memset(eq_sig_dev, 0, tensor * sizeof(*eq_sig_dev));
-  memset(normal, 0, tensor * sizeof(*normal));
-
   /* compute temporary buffers */
-  const double inv_Je = 1.0 / det3x3(Fe);
-  double tmp[tensor] = {}, tmp2[tensor] = {};
+  const double Je = det3x3(Fe);
+  double SmB[tensor] = {};
+  double tmp[tensor] = {};
   for (int i = 0; i < tensor; i++) {
-    tmp[i] = inv_Je * (Sdev[i] - Bdev[i]);
-    tmp2[i] = 0;
+    SmB[i] = Sdev[i] - Bdev[i];
   }
 
   /* compute the intermediate result */
-  for (int i = 0; i < dim; i++) {
-    for(int j = 0; j < dim; j++) {
-      for(int k = 0; k < dim; k++) {
-        tmp2[idx_2(i,j)] += Fe[idx_2(i,k)] * tmp[idx_2(k,j)];
-      }
-    }
-  }
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+              dim, dim, dim, 1.0 / Je, Fe, dim, SmB, dim,
+              0.0, tmp, dim);
 
-  /* comptue the final result */
-  for (int i = 0; i < dim; i++) {
-    for(int j = 0; j < dim; j++) {
-      for(int k = 0; k < dim; k++) {
-        eq_sig_dev[idx_2(i,j)] += tmp2[idx_2(i,k)] * Fe[idx_2(j,k)];
-      }
-    }
-  }
+  /* comptue eq. stress */
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+              dim, dim, dim, 1.0, tmp, dim, Fe, dim,
+              0.0, eq_sig_dev, dim);
 
-  /* compute equivalent plastic stress and the normal to the loading
-     direction */
+  /* compute eff. stress */
   *tau = sqrt(0.5 * cblas_ddot(tensor, eq_sig_dev, 1, eq_sig_dev, 1) );
-  cblas_daxpy(tensor,1.0 / (sqrt(2.0) * (*tau)), eq_sig_dev, 1, normal, 1);
+
+  /* compute the loading direction (normal) */
+  memset(normal, 0, tensor * sizeof(*normal));
+  cblas_daxpy(tensor, 1.0 / (sqrt(2.0) * (*tau)), eq_sig_dev, 1, normal, 1);
 
   return err;
 }
@@ -284,7 +274,7 @@ int bpa_compute_Bdev(double *Bdev,
   const double lam_p = bpa_compute_plam(Cp);
   double coeff = 0;
   err += bpa_inverse_langevin(lam_p / sqrt(param_N), &coeff);
-  coeff *= param_Cr * sqrt(param_N) / (3 * lam_p);
+  coeff *= param_Cr * sqrt(param_N) / (3.0 * lam_p);
 
   /* compute the deviatoric back stress tensor */
   for (int i = 0; i < tensor; i++) {
@@ -442,37 +432,16 @@ int bpa_compute_Dgdot_Dtau(double *Dgdot_Dtau,
                            const double tau)
 {
   int err = 0;
-  const double pow_term = pow(tau / s_s, 5.0 / 6.0);
-  *Dgdot_Dtau = ((5 * param_A * s_s * param_gdot0) / (6 * param_T * tau) * pow_term
-                 * exp(-param_A * s_s * (1.0 - pow_term) / param_T));
+  const double pow_term = pow(tau / s_s, 1.0 / 6.0);
+  double gdot = 0;
+  err += bpa_compute_gdot(&gdot,tau,s_s);
+  *Dgdot_Dtau = 5.0 * param_A * gdot / (6.0 * param_T * pow_term);
   return err;
 }
 
-int bpa_compute_Dtau_Dsig(double * restrict Dtau_Dsig,
-                          const double * restrict sig)
-{
-  int err = 0;
-  double mag = 0;
-  for (int i = 0; i < tensor; i++){
-    mag += sig[i] * sig[i];
-  }
-  mag = sqrt(2.0 * mag);
-
-  /* corner case, sig = 0 (should never happen, produce error code) */
-  if (mag <= 0) {
-    err++;
-    mag = 1.0;
-  }
-
-  for (int i = 0; i < tensor; i++){
-    Dtau_Dsig[i] = sig[i] / mag;
-  }
-  return err;
-}
-
-static int bpa_compute_Dgdot_Ds(double *Dgdot_Ds,
-                                const double tau,
-                                const double s_s)
+static int bpa_compute_Dgdot_Ds_s(double *Dgdot_Ds,
+                                  const double tau,
+                                  const double s_s)
 {
   int err = 0;
   const double pow_term = pow(tau / s_s, 5. / 6.);
@@ -486,16 +455,15 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
                                  const double s_s,
                                  const double tau,
                                  const double * restrict Dsig_DFe,
-                                 const double * restrict sig,
+                                 const double * restrict normal,
                                  const double * restrict Dp_DFe)
 {
   int err = 0;
   double Dgdot_Dtau = 0;
   err += bpa_compute_Dgdot_Dtau(&Dgdot_Dtau,s_s,tau);
-  double Dtau_Dsig[tensor] = {};
-  err += bpa_compute_Dtau_Dsig(Dtau_Dsig,sig);
+  const double rt2 = sqrt(2.0);
   double Dgdot_Dp = 0;
-  err += bpa_compute_Dgdot_Ds(&Dgdot_Dp,tau,s_s);
+  err += bpa_compute_Dgdot_Ds_s(&Dgdot_Dp,tau,s_s);
   Dgdot_Dp *= param_alpha;
 
   memset(Dgdot_DFe, 0, tensor * sizeof(*Dgdot_DFe));
@@ -504,7 +472,7 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
       Dgdot_DFe[idx_2(i,j)] += Dgdot_Dp * Dp_DFe[idx_2(i,j)];
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
-          Dgdot_DFe[idx_2(i,j)] += Dgdot_Dtau * Dtau_Dsig[idx_2(k,l)] * Dsig_DFe[idx_4(k,l,i,j)];
+          Dgdot_DFe[idx_2(i,j)] += Dgdot_Dtau * rt2 * normal[idx_2(k,l)] * Dsig_DFe[idx_4(k,l,i,j)];
         }
       }
     }
@@ -521,7 +489,6 @@ int bpa_compute_Dn_Dsig(double * restrict Dn_Dsig,
   const double coef = 1.0 / (sqrt(2) * tau);
   assert(isfinite(coef));
 
-  memset(Dn_Dsig, 0, tensor4 * sizeof(*Dn_Dsig));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
@@ -612,7 +579,7 @@ static int bpa_compute_tan_Fe_Fe(double * restrict tan,
               0.0, FMn, dim);
   err += bpa_compute_Dsig_DFe(Deff_sig_DFe,F,Fe,Fp,p_hmat);
   err += bpa_compute_Dp_DFe(Dp_DFe,Fe,p_hmat);
-  err += bpa_compute_Dgdot_DFe(Dgdot_DFe,s_s,tau,Deff_sig_DFe,eff_sig,Dp_DFe);
+  err += bpa_compute_Dgdot_DFe(Dgdot_DFe,s_s,tau,Deff_sig_DFe,n,Dp_DFe);
   err += bpa_compute_Dn_DFe(Dn_DFe,tau,Deff_sig_DFe,n);
 
   memset(tan, 0, tensor4 * sizeof(*tan));
@@ -711,10 +678,6 @@ static int bpa_compute_step1_terms(double *gdot,
   *Jp = det3x3(Fp);
   bpa_compute_Ce(Ce,Fe);
 
-  /* compute the elastic stress */
-  double Sdev[tensor] = {};
-  bpa_compute_Sdev(Ce,p_hmat,Sdev);
-
   /* compute the pressure */
   double pressure = 0.0;
   double Je = det3x3(Fe);
@@ -725,7 +688,9 @@ static int bpa_compute_step1_terms(double *gdot,
   *s_s = s + param_alpha * pressure;
 
   /* compute the plastic backstress */
+  double Sdev[tensor] = {};
   double Bdev[tensor] = {};
+  bpa_compute_Sdev(Ce,p_hmat,Sdev);
   err += bpa_compute_Bdev(Bdev,Fp);
   err += bpa_compute_loading_dir(normal,eq_sig_dev,tau,Sdev,Bdev,Fe);
   err += bpa_compute_gdot(gdot,*tau,*s_s);
