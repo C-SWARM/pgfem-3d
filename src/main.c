@@ -761,8 +761,26 @@ int single_scale_main(int argc,char *argv[])
     case TF:
         PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
                 "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n"); 
-      break;                            
-
+      break;     
+    case CM:
+    {
+      PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
+      switch(options.cm)
+      {
+        case HYPER_ELASTICITY:
+          PGFEM_printf("HYPERELASTICITY\n");
+          break;
+        case CRYSTAL_PLASTICITY:
+          PGFEM_printf("CRYSTAL PLASTICITY\n");
+          break;                                                 
+        case BPA_PLASTICITY:
+          PGFEM_printf("BPA_PLASTICITY\n");          
+        default:
+          PGFEM_printf("HYPERELASTICITY\n");
+          break;
+      }            
+      break;                                   
+    }
     default:
       PGFEM_printerr("ERROR: unrecognized analysis type!\n");
       PGFEM_Abort();
@@ -998,8 +1016,8 @@ int single_scale_main(int argc,char *argv[])
   
     /* parameter list and initialize const. model at int points.
      * NOTE: should catch/handle returned error flag...
-     */
-    build_model_parameters_list(&param_list,nhommat,matgeom,hommat);
+     */     
+    build_model_parameters_list(&param_list,nhommat,matgeom,hommat,options.cm);
     init_all_constitutive_model(eps,ne,elem,param_list);
 ///////////////////////////////////////////////////////////////////////////////////////////    
 // temporal test cases
@@ -1007,7 +1025,7 @@ int single_scale_main(int argc,char *argv[])
 // this can be done by reading values from files
 // ex) read_constitutive_model_parameters(eps,ne,elem,param_list,filename);
 
-    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list); 
+    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm); 
 ///////////////////////////////////////////////////////////////////////////////////////////    
     
 
@@ -1031,7 +1049,8 @@ int single_scale_main(int argc,char *argv[])
 	}
       }
       break;
-    case DISP:
+    case DISP: // intented not to have break
+    case CM:
       if(npres != 0){
 	npres = 0;
 	if (myrank == 0) {
@@ -1135,7 +1154,7 @@ int single_scale_main(int argc,char *argv[])
     load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			matgeom,sup,npres,nor_min,sig_e,eps,dt,
 			crpl,options.stab,r,r_n,&options,alpha);
-    
+		
     /*  NODE - generation of the load vector  */
     load_vec_node (R,nln,ndim,znod,node);
     /*  ELEMENT - generation of the load vector  */

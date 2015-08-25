@@ -834,18 +834,32 @@ double Newton_Raphson (const int print_level,
 			sup,eps,sig_e,hommat,d_r,mpi_comm);
       break;
     case DISP:
-      if (PGFEM3D_DEV_TEST)
-      {
-//        constitutive_model_update_time_steps(eps,ne,elem); 
-      }             
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
     case TF:
         update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
-            dt,t,mpi_comm);                          
+            dt,t,mpi_comm);
+    case CM:
+    {
+      switch(opts->cm)
+      {
+        case HYPER_ELASTICITY:
+          DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
+		                     sig_e,hommat,d_r,r,mpi_comm);          
+          break;
+        case CRYSTAL_PLASTICITY:
+          break;                                                 
+        case BPA_PLASTICITY:
+        default:
+        {  
+          DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
+		                     sig_e,hommat,d_r,r,mpi_comm);           
+          break;
+        }  
+      }                
       break;                 	
-      
+    }  
     default: break;
     }
     
@@ -876,7 +890,7 @@ double Newton_Raphson (const int print_level,
       }
     }
     
-    if (PGFEM3D_DEV_TEST)
+    if(opts->cm==CRYSTAL_PLASTICITY)
     {
       constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
                                       ne,nn,ndofn,r_n,dt);             

@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "state_variables.h" /* provides declaration of Matrix_double */
+#include "sig.h"
+#include "matgeom.h"
+#include "supp.h"
 
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
@@ -300,7 +303,12 @@ int model_parameters_initialize(Model_parameters *p,
  *
  * \return non-zero on error.
  */
-int read_constitutive_model_parameters(EPS *eps, const int ne, const ELEMENT *elem, const int n_mat, Model_parameters *param_list); 
+int read_constitutive_model_parameters(EPS *eps, 
+                                       const int ne, 
+                                       const ELEMENT *elem, 
+                                       const int n_mat, 
+                                       Model_parameters *param_list,
+                                       const int type); 
 
 /**
  * Destroy a Model_parameters object.
@@ -328,7 +336,8 @@ int model_parameters_destroy(Model_parameters *p);
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
                                 const MATGEOM_1 *p_mgeom,
-                                const HOMMAT *hmat_list);
+                                const HOMMAT *hmat_list,
+                                const int type);
 
 /**
  * Free all of the memory assiciated with the list of model
@@ -349,4 +358,21 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
                                         double* r, double dt); 
 
 int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);
+
+int stiffness_el_hyper_elasticity(double *lk,const int ii,const int ndofn,const int nne,const int nsd,
+        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
+        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+        
+int residuals_el_hyper_elasticity(double *f,const int ii,const int ndofn,const int nne,const int nsd,
+        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
+        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+
+int stiffness_el_crystal_plasticity(double *lk,const int ii,const int ndofn,const int nne,const int nsd,
+        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
+        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+        
+int residuals_el_crystal_plasticity(double *f,const int ii,const int ndofn,const int nne,const int nsd,
+        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
+        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+        
 #endif

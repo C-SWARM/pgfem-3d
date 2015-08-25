@@ -30,7 +30,7 @@ extern "C" {
                         ELEMENT *elem, NODE *node, HOMMAT *hommat, MATGEOM matgeom, SIG *sig, EPS *eps, SUPP sup,
                         double dt, double nor_min, double stab, CRPL *crpl, long FNR, double lm,
 	                      double *x, double *y, double *z, double *fe, long *nod, double *r_n, double *r_e, 
-	                      double alpha, int include_inertia, const int analysis);
+	                      double alpha, int include_inertia, const int analysis, const int cm);
 	                      
   /**
    * Computes element stiffness matrices and assembles local

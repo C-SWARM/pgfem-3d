@@ -43,261 +43,11 @@
 
 static const int periodic = 0;
 
-int update_stiffness_from_constitutive_model(double *lk,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
-{
-  int total_Lagrangian = 0;
-  
-  int err = 0;
-
-  if (PGFEM3D_DEV_TEST) {
-    //assert(0);
-  }
-
-  double *u;
-  u = aloc1(nne*nsd);
-
-  for(int a=0;a<nne;a++)
-  {
-  	for(int b=0; b<nsd;b++)
-  		u[a*nsd+b] = r_e[a*ndofn+b];	
-  }
-  
-  Matrix(double) Fn, Fr, Fnp1;
-  Matrix(double) pFn;
-  Matrix(double) FreFn,eFnp1,pFnp1,pFnp1_I,L,dMdu,S;  
-  Matrix(double) pFnI, eFn, M, eFnM;  
-  Matrix(double) ST_ab, ST_wg, AA, BB, CC;
-  Matrix(double) sAA, sBB, sCC;
-  Matrix(double) MTeFnT_sAA, MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,MTeFnT_FrTFr,MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,MTeFnT_sBB;
-  Matrix(double) L_dCdu,MTeFnT_sCC,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,sMTeFnT_sAA_eFndMdu;
-      
-  Matrix_construct_redim(double,Fn ,3,3);
-  Matrix_construct_redim(double,Fr ,3,3);
-  Matrix_construct_redim(double,Fnp1 ,3,3);      
-
-  Matrix_construct_redim(double,pFn ,3,3);
-  
-  Matrix_construct_redim(double,L ,81,1);  
-  Matrix_construct_redim(double,dMdu ,3,3);
-  Matrix_construct_redim(double,FreFn,3,3);      
-  Matrix_construct_redim(double,eFnp1,3,3);
-  Matrix_construct_redim(double,pFnp1,3,3);
-  Matrix_construct_redim(double,pFnp1_I,3,3);    
-  Matrix_construct_redim(double,S    ,3,3);     
-  Matrix_construct_redim(double,pFnI,3,3); 
-  Matrix_construct_redim(double, eFn,3,3); 
-  Matrix_construct_redim(double,   M,3,3);
-  Matrix_construct_redim(double,eFnM,3,3); 
-  Matrix_construct(double,ST_ab);
-  Matrix_construct(double,ST_wg);
-  Matrix_construct_redim(double,AA,3,3);
-  Matrix_construct_redim(double,BB,3,3);
-  Matrix_construct_redim(double,CC,3,3);  
-  Matrix_construct_redim(double,sAA, 3,3);
-  Matrix_construct_redim(double,sBB, 3,3);  
-  Matrix_construct_redim(double,sCC, 3,3);    
-  Matrix_construct_redim(double,MTeFnT_sAA        ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sAA_eFn     ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sAA_eFnM    ,3,3);
-  Matrix_construct_redim(double,FrTFr            ,3,3);
-  Matrix_construct_redim(double,MTeFnT_FrTFr      ,3,3);
-  Matrix_construct_redim(double,MTeFnT_FrTFreFn    ,3,3);
-  Matrix_construct_redim(double,MTeFnT_FrTFreFndMdu,3,3);
-  Matrix_construct_redim(double,dCdu             ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sBB        ,3,3);
-  Matrix_construct_redim(double,L_dCdu           ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sCC        ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sCC_eFnM    ,3,3);
-  Matrix_construct_redim(double,MTeFnT_sAA_eFndMdu ,3,3);
-  Matrix_construct_redim(double,sMTeFnT_sAA_eFndMdu,3,3);  
-  
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
-  int compute_stiffness = 1;      
-
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
-    
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-    Matrix(double) *Fs = (m->vars).Fs;
-    
-    Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
-    Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
-        
-    Matrix_inv(pFn, pFnI);
-    Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
-    
-    // --> update plasticity part
-    if(total_Lagrangian)
-    { 
-      Matrix(double) FnI;
-      Matrix_construct_redim(double, FnI,3,3);
-      Matrix_inv(Fn,FnI);
-      Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
-      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
-      Matrix_cleanup(FnI);         
-    }
-    else
-    {
-      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
-    }   
-    Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0); 
-    constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
-
-    Matrix_inv(pFnp1, pFnp1_I);
-    Matrix_AxB(M,1.0,0.0,pFn,0,pFnp1_I,0);
-    // <-- update plasticity part 
-
-    // --> update elasticity part
-    Matrix_init(L,0.0);
-    Matrix_init(S,0.0);    
-    
-    Matrix_AxB(eFnp1,1.0,0.0,Fnp1,0,pFnp1_I,0);
-    constitutive_model_update_elasticity(m,&eFnp1,dt,&L,&S,compute_stiffness);
-    // <-- update elasticity part
-
-    // --> start computing tagent
-    Matrix_AxB(FreFn,1.0,0.0,Fr,0,eFn,0);
-    Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
-    
-    double Jn; Matrix_det(Fn, Jn);
-    
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
-        Matrix_AxB(AA,1.0,0.0,Fr,1,ST_ab,0); 
-        Matrix_symmetric(AA,sAA);
-        
-        Matrix_AxB(MTeFnT_sAA,1.0,0.0,eFnM,1,sAA,0);
-        Matrix_AxB(MTeFnT_sAA_eFn,1.0,0.0,MTeFnT_sAA,0,eFn,0);
-        Matrix_AxB(MTeFnT_sAA_eFnM,1.0,0.0,MTeFnT_sAA_eFn,0,M,0);  
-
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          { 
-            const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)]; 
-            Matrix_init_w_array(ST_wg,3,3,ptrST_wg); 
-            
-            // --> update stiffness w.r.t plasticity
-            constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt);
-            // <-- update stiffness w.r.t plasticity
-
-            Matrix_AxB(BB,1.0,0.0,Fr,1,ST_wg,0); 
-            Matrix_symmetric(BB,sBB);
-            Matrix_AxB(CC, 1.0,0.0,ST_ab,1,ST_wg,0);
-            Matrix_symmetric(CC,sCC);
-            
-            // compute dCdu
-            Matrix_AxB(MTeFnT_FrTFr,1.0,0.0,eFnM,1,FrTFr,0);
-            Matrix_AxB(MTeFnT_FrTFreFn,1.0,0.0,MTeFnT_FrTFr,0,eFn,0);
-            Matrix_AxB(MTeFnT_FrTFreFndMdu,1.0,0.0,MTeFnT_FrTFreFn,0,dMdu,0);            
-            Matrix_symmetric(MTeFnT_FrTFreFndMdu,dCdu);
-            
-            Matrix_AxB(MTeFnT_sBB,1.0,0.0,eFnM,1,sBB,0);
-            Matrix_AxB(dCdu,1.0,1.0,MTeFnT_sBB,0,eFnM,0);
-            
-            // compute MTeFnT_sAA_eFnM:L:dCdu
-            Matrix_Tns4_dd_Tns2(L_dCdu,L,dCdu);
-            double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
-            Matrix_ddot(MTeFnT_sAA_eFnM,L_dCdu,MTeFnT_sAA_eFnM_L_dCdu);
-            
-            // compute MTeFnT_sCC_eFnM
-            Matrix_AxB(MTeFnT_sCC,1.0,0.0,eFnM,1,sCC,0);
-            Matrix_AxB(MTeFnT_sCC_eFnM,1.0,0.0,MTeFnT_sCC,0,eFnM,0);
-            
-            // compute MTeFnT_sCC_eFnM:S
-            double MTeFnT_sCC_eFnM_S = 0.0;
-            Matrix_ddot(MTeFnT_sCC_eFnM,S,MTeFnT_sCC_eFnM_S);
-            
-            // compute MTeFnT_sAA_eFndMdu
-            Matrix_AxB(MTeFnT_sAA_eFndMdu,1.0,0.0,MTeFnT_sAA_eFn,0,dMdu,0);    
-            Matrix_symmetric(MTeFnT_sAA_eFndMdu, sMTeFnT_sAA_eFndMdu);        
-
-            // compute MTeFnT_sAA_eFndMdu:S
-            double sMTeFnT_sAA_eFndMdu_S = 0.0;            
-            Matrix_ddot(sMTeFnT_sAA_eFndMdu,S,sMTeFnT_sAA_eFndMdu_S);
-            
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-                      
-            lk[lk_idx] += 1.0/Jn*fe.detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);            
-          }
-        }
-      }
-    }
-  }
-  free(u);
-  
-  Matrix_cleanup(Fn);
-  Matrix_cleanup(Fr);
-  Matrix_cleanup(Fnp1);
-  Matrix_cleanup(pFn);      
-  Matrix_cleanup(L);  
-  Matrix_cleanup(dMdu);
-  Matrix_cleanup(FreFn);      
-  Matrix_cleanup(eFnp1);
-  Matrix_cleanup(pFnp1);
-  Matrix_cleanup(pFnp1_I);
-  Matrix_cleanup(S);    
-  Matrix_cleanup(pFnI); 
-  Matrix_cleanup(eFn); 
-  Matrix_cleanup(M);
-  Matrix_cleanup(eFnM); 
-  Matrix_cleanup(ST_ab);
-  Matrix_cleanup(ST_wg);
-  Matrix_cleanup(AA);
-  Matrix_cleanup(BB);
-  Matrix_cleanup(CC);  
-  Matrix_cleanup(sAA);
-  Matrix_cleanup(sBB);  
-  Matrix_cleanup(sCC);    
-  Matrix_cleanup(MTeFnT_sAA);
-  Matrix_cleanup(MTeFnT_sAA_eFn);
-  Matrix_cleanup(MTeFnT_sAA_eFnM);
-  Matrix_cleanup(FrTFr);
-  Matrix_cleanup(MTeFnT_FrTFr);
-  Matrix_cleanup(MTeFnT_FrTFreFn);
-  Matrix_cleanup(MTeFnT_FrTFreFndMdu);
-  Matrix_cleanup(dCdu);
-  Matrix_cleanup(MTeFnT_sBB);
-  Matrix_cleanup(L_dCdu);
-  Matrix_cleanup(MTeFnT_sCC);
-  Matrix_cleanup(MTeFnT_sCC_eFnM);
-  Matrix_cleanup(MTeFnT_sAA_eFndMdu);
-  Matrix_cleanup(sMTeFnT_sAA_eFndMdu);
-    
-  FEMLIB_destruct(&fe);
-  
-  return err;
-}        
-
 int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int nVol, int nsd,
                         ELEMENT *elem, NODE *node, HOMMAT *hommat, MATGEOM matgeom, SIG *sig, EPS *eps, SUPP sup,
                         double dt, double nor_min, double stab, CRPL *crpl, long FNR, double lm,
 	                      double *x, double *y, double *z, double *fe, long *nod, double *r_n, double *r_e, 
-	                      double alpha, int include_inertia, const int analysis)
+	                      double alpha, int include_inertia, const int analysis, int cm)
 {
   int err = 0;
   if(include_inertia)
@@ -322,20 +72,35 @@ int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int
 			      hommat,nod,node,eps,sig,r_e);
       break;
     case DISP:
-    {      
-      if (PGFEM3D_DEV_TEST){
-        err += update_stiffness_from_constitutive_model(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
-      } else {
         err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
                                hommat,nod,node,eps,sig,sup,r_e);
-      }
       break;
-    }
     case TF:
       stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
                   x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
       break;
+    case CM:
+    {  
+      switch(cm)
+      {
+        case HYPER_ELASTICITY:
+          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+          break;
+        case CRYSTAL_PLASTICITY:
+          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+          break;                                                 
+        case BPA_PLASTICITY:
+        default:
+        {  
+          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+          break;
+        }  
+      }
+      break;
+    }      
     default:
       err += stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
 			  hommat,node,sig,eps,r_e,npres,
@@ -377,6 +142,7 @@ static int el_stiffmat(int i, /* Element ID */
 			int *Ddof,
 			int interior,
 			const int analysis,
+			const int cm,
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
 			double alpha, double *r_n, double *r_n_1)
 {
@@ -443,14 +209,28 @@ static int el_stiffmat(int i, /* Element ID */
   } else {
     switch(analysis){
     case DISP:
-      if(PGFEM3D_DEV_TEST)
-        nodecoord_updated (nne,nod,node,x,y,z);
-      else
-        nodecoord_total (nne,nod,node,x,y,z);
+      nodecoord_total (nne,nod,node,x,y,z);
       break;
     case TF:
       nodecoord_total (nne,nod,node,x,y,z);
+      break;
+    case CM:
+    {  
+      switch(cm)
+      {
+        case HYPER_ELASTICITY:
+          nodecoord_total (nne,nod,node,x,y,z);
+          break;
+        case CRYSTAL_PLASTICITY:
+          nodecoord_updated (nne,nod,node,x,y,z);
+          break;          
+        case BPA_PLASTICITY:
+        default:
+          nodecoord_total (nne,nod,node,x,y,z);
+          break;
+      }
       break;      
+    }    
     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
@@ -484,14 +264,27 @@ static int el_stiffmat(int i, /* Element ID */
   } else {
     switch(analysis){
     case DISP:
-      if(PGFEM3D_DEV_TEST) 
-        def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
-      else
-        def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
-      break;      
+      def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
     case TF: /* TOTAL LAGRANGIAN */
       def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
       break;
+    case CM:
+    {  
+      switch(cm)
+      {
+        case HYPER_ELASTICITY:
+          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+          break;
+        case CRYSTAL_PLASTICITY:
+          def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+          break;          
+        case BPA_PLASTICITY:
+        default:
+          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+          break;
+      }
+      break;      
+    }      
     default:
       def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
       break;
@@ -513,7 +306,7 @@ static int el_stiffmat(int i, /* Element ID */
                         elem,node,hommat,matgeom,sig,eps,sup,
                         dt,nor_min,stab,crpl,FNR,lm,
 	                      x,y,z,fe,nod,r_n,r_e,
-	                      alpha,include_inertia,analysis);  
+	                      alpha,include_inertia,analysis,cm);  
 
 /*
   if(include_inertia)
@@ -1016,7 +809,7 @@ int stiffmat_fd(int *Ap,
     err += el_stiffmat(bndel[i],Lk,Ap,Ai,ndofn,elem,node,hommat,
 		       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
 		       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
-		       Ddof,0,opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+		       Ddof,0,opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 
     /* If there is an error, complete communication and exit */
     if(err != 0) goto send;
@@ -1125,12 +918,12 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,
 			    sig,eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,
 			    stab,FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	} else if (idx > 0 && bndel[idx-1] < i && i < bndel[idx]){
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	} else {
 	  PGFEM_printf("[%d]ERROR: problem in determining if element %ld"
 		 " is on interior.\n", myrank, i);
@@ -1140,7 +933,7 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	}
       }
 
@@ -1157,7 +950,7 @@ int stiffmat_fd(int *Ap,
       err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,FNR,
 			lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
       /* If there is an error, complete communication and exit */
       if(err != 0) goto wait;
     }

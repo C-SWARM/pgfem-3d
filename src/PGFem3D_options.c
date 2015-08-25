@@ -42,6 +42,10 @@ static const long_opt_descr analysis_opts[] = {
   {{"he3",no_argument,NULL,2},"\tFinite strains analysis using bubble-enhanced 3-Field element",0},
   {{"disp",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based finite strains analysis",0},
   {{"tf",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based 3 field finite strains analysis",0},
+  {{"cm",required_argument,NULL,2},"Use of constitutive model interface\n"
+                                   "\t\t arg = 0: Hyperelasticity\n"
+                                   "\t\t arg = 1: Crystal plasticity\n"
+                                   "\t\t arg = 2: BPA_plasticity",0},  
   {{"coh",no_argument,NULL,1},"\tCohesive elements",0},
   {{"ms",no_argument,NULL,'m'},("\tINTERFACE or BULK multiscale modeling.\n"
 				"\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
@@ -231,10 +235,11 @@ void print_options(FILE *out,
   PGFEM_fprintf(out,"Max It:         %d\n",options->maxit);
 
   PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
-  PGFEM_fprintf(out,"Analysis type:  %d\n",options->analysis_type);
-  PGFEM_fprintf(out,"Stab parameter: %.12e\n",options->stab);
-  PGFEM_fprintf(out,"Cohesive elems: %d\n",options->cohesive);
-  PGFEM_fprintf(out,"Multi-scale:    %d\n",options->multi_scale);
+  PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
+  PGFEM_fprintf(out,"Stab parameter:     %.12e\n",options->stab);
+  PGFEM_fprintf(out,"Cohesive elems:     %d\n",options->cohesive);
+  PGFEM_fprintf(out,"Multi-scale:        %d\n",options->multi_scale);
+  PGFEM_fprintf(out,"Constitutive Model: %d\n",options->cm);
 
   PGFEM_fprintf(out,"\n=== VISUALIZATION OPTIONS ===\n");
   PGFEM_fprintf(out,"Visualization:  %d\n",options->vis_format);
@@ -326,6 +331,15 @@ void print_interpreted_options(const PGFem3D_opt *opts)
     PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
 		 "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
     break;
+  case TF:
+    PGFEM_printf("THREE FIELD MIXED METHOD:\n"
+		 "TOTAL LAGRANGIAN DISPLACEMENT, PRESSURE, AND VOLUME BASED ELEMENT\n");
+    break; 
+  case CM:
+    PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE:\n"
+		 "HYPERELASTICITY, CRYSTAL PLASTICITY, AND BPA_PLASTICITY\n");
+    break;    
+       
 
   default:
     PGFEM_printerr("ERROR: unrecognized analysis type!\n");
@@ -437,7 +451,11 @@ void re_parse_command_line(const int myrank,
 	options->analysis_type = DISP;
       } else if(strcmp("tf",opts[opts_idx].name) == 0){
 	options->analysis_type = TF;	
+      } else if(strcmp("cm",opts[opts_idx].name) == 0){
+	options->analysis_type = CM;
+	options->cm = atof(optarg);	
       }
+      
       break;
 
       /* SOLVER OPTIONS */

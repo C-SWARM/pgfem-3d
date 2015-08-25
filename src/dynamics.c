@@ -7,7 +7,7 @@
 #include "displacement_based_element.h"
 #include "three_field_element.h"
 
-#define INTG_ORDER 3
+#define INTG_ORDER 0
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
 {

@@ -25,6 +25,7 @@ extern "C" {
     int cohesive;
     int plc;
     int multi_scale;
+    int cm;
 
     /* visualization options */
     int vis_format; /* gr2 */

@@ -345,7 +345,7 @@ typedef struct Matrix_##T                                               \
   {                                                                     \
     for(int __L=1; __L<=3; __L++)                                       \
     {                                                                   \
-      if(Mat_v(B,__K,__L)==0.0)                                         \
+      if(fabs(Mat_v(B,__K,__L))<1.0e-15)                                \
         continue;                                                       \
       for(int __I=1; __I<=3; __I++)                                     \
       {                                                                 \

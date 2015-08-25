@@ -17,6 +17,7 @@
 #include "three_field_element.h"
 #include "stiffmat_fd.h"
 #include "dynamics.h"
+#include "constitutive_model.h"
 
 long* compute_times_load (FILE *in1,
 			  const long nt,
@@ -149,21 +150,35 @@ int load_vec_node_defl (double *f,
     } else {
       switch(opts->analysis_type){
       case DISP: 
-        if(1)
-        {
-  	      nodecoord_updated(nne,nod,node,x,y,z);    	                     
-          //def_elem(cn,ndofe,r,elem,node,r_e,sup,0);	        
-	      }
-	      else
-	      {	        
-	        nodecoord_total(nne,nod,node,x,y,z);
-	        def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
-	      }
-	    break;         
+        nodecoord_total(nne,nod,node,x,y,z);
+	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+  	    break;         
       case TF:
 	      nodecoord_total(nne,nod,node,x,y,z);
 	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1); 
 	      break;
+	    case CM:
+	    {
+        switch(opts->cm)
+        {
+          case HYPER_ELASTICITY:
+            nodecoord_total(nne,nod,node,x,y,z);
+	          def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+            break;
+          case CRYSTAL_PLASTICITY:
+            nodecoord_updated(nne,nod,node,x,y,z);
+            
+            break;                                                 
+          case BPA_PLASTICITY:
+          default:
+          {  
+            nodecoord_total(nne,nod,node,x,y,z);
+	          def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+            break;
+          }
+        }
+        break;	      
+      }  	        
       default:
 	      nodecoord_updated (nne,nod,node,x,y,z);    
 	      break;
@@ -182,7 +197,7 @@ int load_vec_node_defl (double *f,
                         elem,node,hommat,matgeom,sig,eps,sup,
                         dt,nor_min,stab,crpl,FNR,lm,
 	                      x,y,z,fe,nod,r_n,r_e,
-	                      alpha,include_inertia,opts->analysis_type); 
+	                      alpha,include_inertia,opts->analysis_type, opts->cm); 
 /*	                      
     switch(opts->analysis_type){
     case FS_CRPL:
@@ -291,6 +306,23 @@ int load_vec_node_defl (double *f,
     case DISP: case TF:
       nodecoord_total (nne_ve,ve_nod,node,x,y,z);
       break;
+	  case CM:
+	  {
+      switch(opts->cm)
+      {
+        case HYPER_ELASTICITY:
+          nodecoord_total(nne_ve,ve_nod,node,x,y,z);
+          break;
+        case CRYSTAL_PLASTICITY:
+          nodecoord_updated(nne_ve,ve_nod,node,x,y,z);          
+          break;                                                 
+        case BPA_PLASTICITY:
+        default:
+          nodecoord_total(nne_ve,ve_nod,node,x,y,z);
+          break;
+      }
+      break;
+    }        
     default:
       nodecoord_updated (nne_ve,ve_nod,node,x,y,z);    
       break;
@@ -302,7 +334,6 @@ int load_vec_node_defl (double *f,
     double *rloc = aloc1(ndof_ve);
     long *cn_ve = aloc1l(ndof_ve);
     get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn_ve);
-
     /* get displacements */
     double *ve_disp = aloc1(ndof_ve);
     if(opts->analysis_type == DISP){ /* TOTAL LAGRANGIAN formulation */
