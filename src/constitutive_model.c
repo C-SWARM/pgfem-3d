@@ -456,7 +456,9 @@ int init_all_constitutive_model(EPS *eps,
   return err;
 }
 
-int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *elem)
+int constitutive_model_update_time_steps(EPS *eps,
+                                         const int ne,
+                                         const ELEMENT *elem)
 {
   int err = 0;
   if (ne <= 0) return 1;
@@ -469,20 +471,21 @@ int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *
     for (int j = 0; j < n_ip; j++)     
     {
       Constitutive_model *m = &(eps[i].model[j]);
-      Matrix(double) *Fs = (m->vars).Fs;
-      double *state_var = (m->vars).state_vars[0].m_pdata;
-      Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
-      Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);
-      state_var[VAR_g_n] = state_var[VAR_g_np1];
-      state_var[VAR_L_n] = state_var[VAR_L_np1];
+      m->param->update_state_vars(m);
     }
   }
   return err;  
 }
 
-int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT *hommat, EPS *eps, 
-                                        const int ne, const int nn, const int ndofn,
-                                        double* r, double dt)
+int constitutive_model_update_time_steps_test(ELEMENT *elem,
+                                              NODE *node,
+                                              HOMMAT *hommat,
+                                              EPS *eps,
+                                              const int ne,
+                                              const int nn,
+                                              const int ndofn,
+                                              double* r,
+                                              double dt)
 {
   int nsd = 3;
   int total_Lagrangian = 0;
@@ -549,12 +552,7 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
       }   
     
       constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);     
-
-
-      Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
-      Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);
-      state_var[VAR_g_n] = state_var[VAR_g_np1];
-      state_var[VAR_L_n] = state_var[VAR_L_np1];
+      m->param->update_state_vars(m);
     }
   }
   
@@ -563,18 +561,18 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT 
   /* Coordinate update */
   /*********************/
    for(int n = 0;n<nn; n++)
-   {
-    for(int a=0;a<nsd;a++)
-    {
-      int II = node[n].id[a];
-      if (II != 0)
-      {
-	      if (a == 0) node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
-	      else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
-	      else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
-      }
-    }
-  }/* end n < nn */  
+     {
+       for(int a=0;a<nsd;a++)
+         {
+           int II = node[n].id[a];
+           if (II != 0)
+             {
+               if (a == 0) node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
+               else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
+               else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
+             }
+         }
+     }/* end n < nn */
   
   Matrix_cleanup(Fn);
   Matrix_cleanup(pFn);
@@ -818,22 +816,22 @@ int residuals_el_hyper_elasticity(double *f,
 }        
 
 int stiffness_el_crystal_plasticity(double *lk,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const HOMMAT *hommat,
+                                    MATGEOM matgeom,
+                                    const long *nod,
+                                    const NODE *node,
+                                    double dt,
+                                    SIG *sig,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    double *r_e)
 {
-  int total_Lagrangian = 0;
+  static const int total_Lagrangian = 0;
   
   int err = 0;
 

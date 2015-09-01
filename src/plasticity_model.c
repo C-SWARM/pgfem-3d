@@ -84,12 +84,24 @@ static int plasticity_d2udj2(const Constitutive_model *m,
 static int plasticity_update(Constitutive_model *m)
 {
   int err = 0;
+  Matrix(double) *Fs = (m->vars).Fs;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
+  Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);
+  state_var[VAR_g_n] = state_var[VAR_g_np1];
+  state_var[VAR_L_n] = state_var[VAR_L_np1];
   return err;
 }
 
 static int plasticity_reset(Constitutive_model *m)
 {
   int err = 0;
+  Matrix(double) *Fs = (m->vars).Fs;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix_AeqB(Fs[TENSOR_Fnp1], 1.0,Fs[TENSOR_Fn]);
+  Matrix_AeqB(Fs[TENSOR_pFnp1],1.0,Fs[TENSOR_pFn]);
+  state_var[VAR_g_np1] = state_var[VAR_g_n];
+  state_var[VAR_L_np1] = state_var[VAR_L_n];
   return err;
 }
 
