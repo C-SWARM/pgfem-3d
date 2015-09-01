@@ -81,23 +81,18 @@ int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int
       break;
     case CM:
     {  
-      switch(cm)
-      {
-        case HYPER_ELASTICITY:
-          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
-          break;
-        case CRYSTAL_PLASTICITY:
-          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
-          break;                                                 
-        case BPA_PLASTICITY:
-        default:
-        {  
-          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
-          break;
-        }  
+      switch(cm) {
+      case CRYSTAL_PLASTICITY:
+        err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                               dt,sig,eps,sup,r_e);
+        break;
+
+      case HYPER_ELASTICITY: /* deliberate drop through */
+      case BPA_PLASTICITY: /* deliberate drop through */
+      default:
+        err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
+                                             dt,sig,eps,sup,r_e);
+        break;
       }
       break;
     }      
