@@ -23,6 +23,9 @@
 #include "data_structure_c.h"
 #include "utils.h"
 #include "index_macros.h"
+#include "mkl_cblas.h"
+#include "mkl_lapack.h"
+
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
@@ -831,6 +834,117 @@ static int bpa_get_state_at_n(const Constitutive_model *m,
   return err;
 }
 
+static int bpa_compute_Dtau_DFe(double * restrict Dtau_DFe,
+                                const double * restrict n,
+                                const double * restrict Dsig_DFe)
+{
+  int err = 0;
+  const double rt2 = sqrt(2.0);
+  memset(Dtau_DFe, 0, tensor * sizeof(*Dtau_DFe));
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        for (int l = 0; l < dim; l++) {
+          Dtau_DFe[idx_2(i,j)] += n[idx_2(k,l)] / rt2 * Dsig_DFe[idx_4(k,l,i,j)];
+        }
+      }
+    }
+  }
+  return err;
+}
+
+static int bpa_compute_Ds_Dgdot(double * restrict Ds_Dgdot,
+                                const double s_n,
+                                const double dt,
+                                const double gdot)
+{
+  int err = 0;
+  *Ds_Dgdot =  gdot * (dt * param_h * param_s_ss * (param_s_ss - s_n)
+                       / pow(dt * param_h + param_s_ss, 2));
+  return err;
+}
+
+static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
+                              const double s_n,
+                              const double dt,
+                              const double gdot,
+                              const double Dgdot_Dss,
+                              const double * restrict Dgdot_DFe)
+{
+  int err = 0;
+  double Ds_Dgdot = 0.0;
+  err += bpa_compute_Ds_Dgdot(&Ds_Dgdot, s_n, dt, gdot);
+
+  const double coeff = Ds_Dgdot / (1.0 - Ds_Dgdot * Dgdot_Dss);
+
+  memset(Ds_DFe, 0, tensor * sizeof(*Ds_DFe));
+  cblas_daxpy(tensor, coeff, Dgdot_DFe, 1, Ds_DFe, 1);
+  return err;
+}
+
+static int bpa_compute_DM_DFe(double * restrict DM_DFe,
+                              const double dt,
+                              const double s_n,
+                              const double s,
+                              const double * restrict Mn,
+                              const double * restrict Fe,
+                              const double * restrict F,
+                              const HOMMAT *p_hmat)
+{
+  int err = 0;
+
+  /* compute needed terms for derivatives */
+  const double kappa = bpa_compute_bulk_mod(p_hmat);
+  double gp = 0.0;
+  double s_s = 0.0;
+  double tau = 0.0;
+  double Jp = 0.0;
+  double eff_sig[tensor] = {};
+  double n[tensor] = {};
+  double Fp[tensor] = {};
+  err += bpa_compute_step1_terms(&gp, &s_s, &tau, &Jp, eff_sig, n, Fp,
+                                 s, kappa, F, Fe, p_hmat);
+
+  /* compute derivative terms */
+  double Dgp_DFe[tensor] = {}; /* does not include terms from s */
+  double Dsig_DFe[tensor4] = {};
+  double Dgp_Dss = 0.0;
+  double Dtau_DFe[tensor] = {};
+  double Ds_DFe[tensor] = {};
+  double Dp_DFe[tensor] = {};
+  double Dn_DFe[tensor4] = {};
+  err += bpa_compute_Dsig_DFe(Dsig_DFe, F, Fe, Fp, p_hmat);
+  err += bpa_compute_Dp_DFe(Dp_DFe, Fe, p_hmat);
+  err += bpa_compute_Dgdot_DFe(Dgp_DFe, s_s, tau, Dsig_DFe, n, Dp_DFe);
+  err += bpa_compute_Dgdot_Ds_s(&Dgp_Dss, tau, s_s);
+  err += bpa_compute_Dtau_DFe(Dtau_DFe, n, Dsig_DFe);
+  err += bpa_compute_Ds_DFe(Ds_DFe, s_n, dt, gp, Dgp_Dss, Dgp_DFe);
+  err += bpa_compute_Dn_DFe(Dn_DFe, tau, Dsig_DFe, n);
+
+  /* compute - dt * Mn * n */
+  double dtMn_n[tensor] = {};
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+              dim, dim, dim, -dt, Mn, dim, n, dim, 0.0, dtMn_n, dim);
+
+  /* compute full Dgp_DFe */
+  cblas_daxpy(tensor, Dgp_Dss, Ds_DFe, 1, Dgp_DFe, 1);
+
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        for (int l = 0; l < dim; l++) {
+          const int ijkl = idx_4(i,j,k,l);
+          DM_DFe[ijkl] = dtMn_n[idx_2(i,j)] * Dgp_DFe[idx_2(k,l)];
+          for (int p = 0; p < dim; p++) {
+            DM_DFe[ijkl] -= dt * gp * Mn[idx_2(i,p)] * Dn_DFe[idx_4(p,j,k,l)];
+          }
+        }
+      }
+    }
+  }
+
+  return err;
+}
 
 /*
  * Private interface for the model
@@ -1104,3 +1218,99 @@ int plasticity_model_BPA_ctx_destroy(void **ctx)
   return err;
 }
 
+/*
+ * Arguably, this should be part of the standard CM interface, but
+ * will require some homogenization with the other models/developers.
+ *
+ * OPTIMIZATION NOTE:
+ * Should compute the tangent operator for all node/DOF (alpha,beta)
+ * using LAPACK solve w/ multiple right hand sides. This way
+ * factorization is only done once.
+ */
+int plasticity_model_BPA_compute_dM_du(const Constitutive_model *m,
+                                       const void *ctx,
+                                       const int nne,
+                                       const int ndofn,
+                                       const double *ST,
+                                       double *dM_du) /* _ab */
+{
+  int err = 0;
+  const BPA_ctx *CTX = ctx;
+  const double *F = CTX->F;
+  const double dt = CTX->dt;
+  const double *Fe = m->vars.Fs[_Fe].m_pdata;
+  const double *Fp = m->vars.Fs[_Fp].m_pdata;
+  const double *Fp_n = m->vars.Fs[_Fp_n].m_pdata;
+  const double s = m->vars.state_vars->m_pdata[_s];
+  const double s_n = m->vars.state_vars->m_pdata[_s_n];
+
+  /* compute 4th order tensor operators */
+  double M[tensor] = {};
+  double Mn[tensor] = {};
+  double DM_DFe[tensor4] = {};
+  double DFe_DF[tensor4] = {};
+  double DFe_DM[tensor4] = {};
+  err += inv3x3(Fp,M);
+  err += inv3x3(Fp_n,Mn);
+  err += bpa_compute_DM_DFe(DM_DFe, dt, s_n, s, Mn, Fe, F, m->param->p_hmat);
+
+  /* compute the tangent operator */
+  double U[tensor4] = {};
+  double B[tensor4] = {};
+  for (int i = 0; i < dim; i++) {
+    for(int j = 0; j < dim; j++) {
+      for(int m = 0; m < dim; m++) {
+        for(int n = 0; n < dim; n++) {
+          const int ijmn = idx_4(i,j,m,n);
+          U[ijmn] = eye[idx_2(i,m)] * eye[idx_2(n,j)];
+          for(int l = 0; l < dim; l++) {
+            U[ijmn] -= DM_DFe[idx_4(i,j,l,n)] * F[idx_2(l,m)];
+            B[ijmn] += DM_DFe[idx_4(i,j,m,l)] * M[idx_2(n,l)];
+          }
+        }
+      }
+    }
+  }
+
+  /* NOTE that we assemble the multiple RHS (and the resulting
+     solution) as rows instead of columns. Therefore, we do not need
+     to transpose the RHS before passing to LAPACK, nor the solution
+     after returning from LAPACK */
+  for (int a = 0; a < nne; a++) {
+    for (int b = 0; b < ndofn; b++) {
+      const int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,dim,dim);
+      for (int i = 0; i < dim; i++) {
+        for(int j = 0; j < dim; j++) {
+          const int ijmn = idx_4(i,j,0,0);
+          const int ij = idx_2(i,j);
+          *(dM_du + idx_ab + ij) = cblas_ddot(tensor, B + ijmn, 1, ST + idx_ab, 1);
+        }
+      }
+    }
+  }
+
+  /* LAPACK solution procedure:
+   * 1) Transpose U
+   * 2) Allocate workspace
+   * 3) Solve
+   * 4) Clean up
+   */
+  {
+    int l_err = 0;
+    double Ut[tensor4] = {};
+    transpose(Ut,U,tensor,tensor);
+    int *IPIV = malloc(tensor * sizeof(*IPIV));
+    int NRHS = nne * ndofn;
+    int DIM = tensor;
+#ifdef ARCH_BGQ
+    dgesv(DIM, NRHS, Ut, DIM, IPIV, dM_du, DIM, &l_err);
+#else
+    dgesv(&DIM, &NRHS, Ut, &DIM, IPIV, dM_du, &DIM, &l_err);
+#endif
+    assert(l_err >= 0);
+    err += l_err;
+    free(IPIV);
+  }
+
+  return err;
+}
