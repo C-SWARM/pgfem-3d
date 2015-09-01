@@ -473,7 +473,7 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
       Dgdot_DFe[idx_2(i,j)] += Dgdot_Dp * Dp_DFe[idx_2(i,j)];
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
-          Dgdot_DFe[idx_2(i,j)] += Dgdot_Dtau * rt2 * normal[idx_2(k,l)] * Dsig_DFe[idx_4(k,l,i,j)];
+          Dgdot_DFe[idx_2(i,j)] += Dgdot_Dtau / rt2 * normal[idx_2(k,l)] * Dsig_DFe[idx_4(k,l,i,j)];
         }
       }
     }
