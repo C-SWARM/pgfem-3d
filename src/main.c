@@ -1462,7 +1462,7 @@ int single_scale_main(int argc,char *argv[])
 //                //Mat_v(L, 1,3) = Mat_v(L, 1,2) = 0.06;                
 //                Mat_v(L, 2,2) = Mat_v(L, 3,3) = .37;
  */                     
-                if(myrank==0)
+                if(myrank==-1)
                   constitutive_model_test(hommat, NULL, 1);
 /*
                 Matrix_cleanup(F);
