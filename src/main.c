@@ -1420,7 +1420,7 @@ int single_scale_main(int argc,char *argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////
-              Matrix(double) PK2;
+/*              Matrix(double) PK2;
               Matrix_construct_init(double, PK2, 3,3,0.0);
               post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, options.analysis_type);                          
               if(myrank==0)
@@ -1439,11 +1439,11 @@ int single_scale_main(int argc,char *argv[])
                 fclose(fp_ss);
               }
               Matrix_cleanup(PK2);              
-
+*/
 /////////////////////////////////////////////////////////////////////////////////// 
               if(tim==0)
               {       
-                GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
+ /*               GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
                 Matrix(double) F,I,L,FI;              
                 Matrix_construct(double, F);
                 Matrix_construct(double, I); 
@@ -1461,15 +1461,15 @@ int single_scale_main(int argc,char *argv[])
 //                Mat_v(L, 1,1) = -1.0;
 //                //Mat_v(L, 1,3) = Mat_v(L, 1,2) = 0.06;                
 //                Mat_v(L, 2,2) = Mat_v(L, 3,3) = .37;
-                                                  
-                if(myrank==-1)
+ */                     
+                if(myrank==0)
                   constitutive_model_test(hommat, NULL, 1);
-
+/*
                 Matrix_cleanup(F);
                 Matrix_cleanup(I);              
                 Matrix_cleanup(L);                            
                 Matrix_cleanup(FI);                                          
-                free(GF);
+                free(GF);*/
               }  
 ///////////////////////////////////////////////////////////////////////////////////      
               
