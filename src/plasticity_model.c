@@ -1,6 +1,7 @@
 /**
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
+ *  Sangmin Lee, University of Notre Dame, Notre Dame, IN, <slee43@nd.edu>
  */
 
 #include "plasticity_model.h"
@@ -29,7 +30,7 @@ static double compute_bulk_mod(const HOMMAT *mat)
 }
 
 static int plasticity_int_alg(Constitutive_model *m,
-                                   const void *ctx)
+                              const void *ctx)
 {
   int err = 0;
   /* hyperelastic, no integration algorithm */
@@ -103,22 +104,24 @@ static int plasticity_info(Model_var_info **info)
     (*info)->F_names[a] = (char *)malloc(sizeof(char)*1024);
 
   sprintf((*info)->F_names[TENSOR_Fn],        "Fn");
-  sprintf((*info)->F_names[TENSOR_pFn],       "pFp");
+  sprintf((*info)->F_names[TENSOR_pFn],       "pFn");
   sprintf((*info)->F_names[TENSOR_Fnp1],      "Fnp1");
-  sprintf((*info)->F_names[TENSOR_pFnp1],     "pFpnp1");    
-  sprintf((*info)->F_names[TENSOR_tau],       "tau"); 
-  sprintf((*info)->F_names[TENSOR_gamma_dot], "gamma_dot");     
+  sprintf((*info)->F_names[TENSOR_pFnp1],     "pFnp1");
+  sprintf((*info)->F_names[TENSOR_tau],       "tau");
+  sprintf((*info)->F_names[TENSOR_gamma_dot], "gamma_dot");
   
   int varno = 11;
   (*info)->n_vars = varno;
-  (*info)->var_names = (char **)malloc(sizeof(char*)*varno);  
+  (*info)->var_names = (char **)malloc(sizeof(char*)*varno);
   for(int a=0; a<varno; a++)
     (*info)->var_names[a] = (char *)malloc(sizeof(char)*1024);
   
-  sprintf((*info)->var_names[VAR_L_n],        "L_n");  
-  sprintf((*info)->var_names[VAR_L_np1],      "L_np1");         
-  sprintf((*info)->var_names[VAR_g_n],        "g_n");        
-  sprintf((*info)->var_names[VAR_g_np1],      "g_np1");      
+  sprintf((*info)->var_names[VAR_L_n],        "L_n");
+  sprintf((*info)->var_names[VAR_L_np1],      "L_np1");
+  sprintf((*info)->var_names[VAR_g_n],        "g_n");
+  sprintf((*info)->var_names[VAR_g_np1],      "g_np1");
+
+  /* Parameters, temporarily stored as variables */
   sprintf((*info)->var_names[VAR_gamma_dot_0],"gamma_dot_0");
   sprintf((*info)->var_names[VAR_gamma_dot_s],"gamma_dot_s"); 
   sprintf((*info)->var_names[VAR_m],          "m");          
@@ -178,9 +181,9 @@ int plasticity_model_ctx_destroy(void **ctx)
   return err;
 }
 
-int compute_P_alpha(const Constitutive_model *m,
-                    const int alpha,
-                    Matrix(double) *Pa)
+static int compute_P_alpha(const Constitutive_model *m,
+                           const int alpha,
+                           Matrix(double) *Pa)
 {
   const double * restrict P_sys = ((m->param)->Psys)->m_pdata;
   Matrix_redim(*Pa, 3,3);
@@ -436,7 +439,7 @@ void elastic_stress(MaterialProperties *Props, double *F, double *S)
   Matrix_cleanup(Fe);   
 }
 
-void elastic_tangent(MaterialProperties *Props, double *F, double *L)
+static void elastic_tangent(MaterialProperties *Props, double *F, double *L)
 {
   Matrix(double) Se, Fe, Le;
   Matrix_construct_redim(double,Se,3,3); 
@@ -445,12 +448,11 @@ void elastic_tangent(MaterialProperties *Props, double *F, double *L)
   Matrix_init_w_array(Fe,3,3,F);  
   constitutive_model_update_elasticity(Props->cm, &Fe, 0.0, &Le, &Se, 1);
 
-  for(int a=0;a<81;a++)
-    L[a] = Le.m_pdata[a];
+  memcpy(L, Le.m_pdata, 81 * sizeof(*L));
     
   Matrix_cleanup(Se);
-  Matrix_cleanup(Le);  
-  Matrix_cleanup(Fe);   
+  Matrix_cleanup(Le);
+  Matrix_cleanup(Fe);
 }
 
 static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,

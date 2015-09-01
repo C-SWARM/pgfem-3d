@@ -4,6 +4,7 @@
  *
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
+ *  Sangmin Lee, University of Notre Dame, Notre Dame, IN, <slee43@nd.edu>
  */
 #pragma once
 #ifndef PLASTICITY_MODEL_H
@@ -102,7 +103,6 @@ int compute_dMdu(const Constitutive_model *m,
  * \param[in] dt - time step size
  * \return non-zero on internal error.
  */
- 
 int plasticity_model_slip_system(Matrix_double *P);
 
 int plasticity_model_integration_ip(Matrix_double *pFnp1,
