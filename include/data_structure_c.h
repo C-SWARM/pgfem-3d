@@ -5,9 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
+#include "index_macros.h"
 #include "mkl_cblas.h"
 #include "utils.h"
 
+/**
+ * Define a Matrix structure of type T.
+ */
 #define Define_Matrix(T)                                                \
 typedef struct Matrix_##T                                               \
 {                                                                       \
@@ -17,27 +22,48 @@ typedef struct Matrix_##T                                               \
   T *temp;                                                              \
 } Matrix_##T                                                            \
 
-
+/**
+ * Template-class-like declaration of a Matrix structure of type T.
+ */
 #define Matrix(T) Matrix_##T
-#define Vec_v(p, m) (p).m_pdata[(m)-1]
-#define Mat_v(p, m, n) (p).m_pdata[((m)-1)*(p).m_col+((n)-1)]
-#define Tns4_v(p, I,J,K,L) Vec_v(p,(I-1)*3*3*3+(J-1)*3*3+(K-1)*3+L)
 
+/**
+ * Indexing functions. !!NOTE!! Indexing starts from 1
+ *
+ * Provides direct read/write access to data.
+ */
+#define Vec_v(p, m) (p).m_pdata[(m)-1]
+#define Mat_v(p, m, n) (p).m_pdata[idx_2_gen((m) - 1, (n) - 1, (p).m_row, (p).m_col)]
+#define Tns4_v(p, I,J,K,L) (p).m_pdata[idx_4((I) - 1, (J) - 1, (K) - 1, (L) - 1)]
+
+/**
+ * Set the row/col size of a 4th-order tensor. Does not allocate any
+ * memory.
+ */
 #define Matrix_Tns4_mat_9x9(p) do{                                      \
   (p).m_row = 9;                                                        \
   (p).m_col = 9;                                                        \
 } while(0)
 
+/**
+ * Convert a Matrix to a (row) Vector
+ */
 #define Matrix_Mat2Vec(p) do{                                           \
   (p).m_row = (p).m_row*(p).m_col;                                      \
   (p).m_col = 1;                                                        \
 } while(0)
 
+/**
+ * Convert a (row) Vector to a [m x n] Matrix
+ */
 #define Matrix_Vec2Mat(p, m, n) do{                                     \
   (p).m_row = (m);                                                      \
   (p).m_col = (n);                                                      \
 } while(0)
 
+/**
+ * Compute the 4th order identity tensor
+ */
 #define Matrix_Tns4_eye(p) do{                                          \
   Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \
@@ -53,6 +79,9 @@ typedef struct Matrix_##T                                               \
   }                                                                     \
 } while(0)
 
+/**
+ * Comptue the 4th order symmetric identity tensor
+ */
 #define Matrix_Tns4_II(p) do{                                           \
   Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \
@@ -68,7 +97,9 @@ typedef struct Matrix_##T                                               \
   }                                                                     \
 } while(0)
 
-
+/**
+ * See Matrix_Tns4_eye, transpose k,l
+ */
 #define Matrix_Tns4_eye_bar(p) do{                                      \
   Matrix_init(p,0.0);                                                   \
   for(int I=1; I<=3; I++)                                               \
@@ -83,6 +114,7 @@ typedef struct Matrix_##T                                               \
     }                                                                   \
   }                                                                     \
 } while(0)
+
 
 #define Matrix_construct(T, p) do {                                     \
   (p).m_pdata = NULL;                                                   \
