@@ -179,8 +179,12 @@ int model_parameters_destroy(Model_parameters *p)
   return err;
 }
 
-int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *Fe, double dt,
-                               Matrix_double *L, Matrix_double *S, int compute_stiffness)
+int constitutive_model_update_elasticity(const Constitutive_model *m,
+                                         const Matrix_double *Fe,
+                                         const double dt,
+                                         Matrix_double *L,
+                                         Matrix_double *S,
+                                         const int compute_stiffness)
 {
   int err = 0;
   void *ctx;
@@ -278,9 +282,10 @@ int constitutive_model_update_elasticity(Constitutive_model *m, Matrix_double *F
 }
 
 int constitutive_model_update_plasticity(Matrix_double *pFnp1,
-                                         Matrix_double *Fnp1,
-                                         Matrix_double *eFn,
-                                         Constitutive_model *m, double dt)
+                                         const Matrix_double *Fnp1,
+                                         const Matrix_double *eFn,
+                                         Constitutive_model *m,
+                                         const double dt)
 {
   int err = 0;  
 
@@ -306,8 +311,15 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
   return err;  
 }
 
-int constitutive_model_update_dMdu(Constitutive_model *m, Matrix_double *dMdu, Matrix_double *eFn, Matrix_double *eFnp1, Matrix_double *M, 
-                                   Matrix_double *S, Matrix_double *L, Matrix_double *Grad_du, double dt)
+int constitutive_model_update_dMdu(const Constitutive_model *m,
+                                   Matrix_double *dMdu,
+                                   const Matrix_double *eFn,
+                                   const Matrix_double *eFnp1,
+                                   const Matrix_double *M,
+                                   const Matrix_double *S,
+                                   const Matrix_double *L,
+                                   const Matrix_double *Grad_du,
+                                   const double dt)
 {
   int err = 0;
   switch(m->param->type) 
@@ -1214,8 +1226,4 @@ int residuals_el_crystal_plasticity(double *f,
     
   FEMLIB_destruct(&fe);
   return err;
-}        
-        
-
-
-			   
+}

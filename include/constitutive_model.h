@@ -98,30 +98,48 @@ int init_all_constitutive_model(EPS *eps,
                                 const ELEMENT *elem,
                                 const Model_parameters *param_list);
 
-// if compute_stiffness == 1: compute stiffness (L)
-// if compute_stiffness == 0: just stress (S) is updated and stiffness (L) is not computed
-int constitutive_model_update_elasticity(Constitutive_model *m,
-                                         Matrix_double *Fe,
-                                         double dt,
+
+/**
+ * Compute the elastic stress and tangent tensors. Note that the total
+ * stress and tangent (not only the deviatoric parts) are returned.
+ *
+ * \param[in] compute_stiffness, flag to comptue the stiffness tensor
+ * (L) if non-zero. Otherwise L is unchanged.
+ *
+ * \return non-zero on internal error.
+ */
+int constitutive_model_update_elasticity(const Constitutive_model *m,
+                                         const Matrix_double *Fe,
+                                         const double dt,
                                          Matrix_double *L,
                                          Matrix_double *S,
-                                         int compute_stiffness);
+                                         const int compute_stiffness);
 
+/**
+ * Call the integration algorithm and update the internal state variables.
+ *
+ * \param[out] pFnp1, the computed plastic deformation
+ * \return non-zero on internal error.
+ */
 int constitutive_model_update_plasticity(Matrix_double *pFnp1,
-                                         Matrix_double *Fnp1,
-                                         Matrix_double *eFn,
+                                         const Matrix_double *Fnp1,
+                                         const Matrix_double *eFn,
                                          Constitutive_model *m,
-                                         double dt);
+                                         const double dt);
 
-int constitutive_model_update_dMdu(Constitutive_model *m,
+/**
+ * Compute the algorithmic tangent dM_du.
+ *
+ */
+int constitutive_model_update_dMdu(const Constitutive_model *m,
                                    Matrix_double *dMdu,
-                                   Matrix_double *eFn,
-                                   Matrix_double *eFnp1,                                   
-                                   Matrix_double *M,
-                                   Matrix_double *S,
-                                   Matrix_double *L,
-                                   Matrix_double *Grad_du,
-                                   double dt);
+                                   const Matrix_double *eFn,
+                                   const Matrix_double *eFnp1,
+                                   const Matrix_double *M,
+                                   const Matrix_double *S,
+                                   const Matrix_double *L,
+                                   const Matrix_double *Grad_du,
+                                   const double dt);
 
 /**
  * User defined function for the Constitutive_model integration algorithm.

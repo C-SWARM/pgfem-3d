@@ -73,8 +73,8 @@ int plasticity_model_initialize(Model_parameters *p);
  * invalidate ctx.
  */
 int plasticity_model_ctx_build(void **ctx,
-                                    const double *C,
-                                    const double *J_or_Theta);
+                               const double *C,
+                               const double *J_or_Theta);
 
 /**
  * Destroy the model context and invalidate the handle.
@@ -84,9 +84,15 @@ int plasticity_model_ctx_build(void **ctx,
  */
 int plasticity_model_ctx_destroy(void **ctx);
 
-int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu, 
-                 Matrix_double *Grad_du, Matrix_double *eFn, Matrix_double *eFnp1, Matrix_double *M,
-                 Matrix_double *S, Matrix_double *L, double dt);
+int compute_dMdu(const Constitutive_model *m,
+                 Matrix_double *dMdu,
+                 const Matrix_double *Grad_du,
+                 const Matrix_double *eFn,
+                 const Matrix_double *eFnp1,
+                 const Matrix_double *M,
+                 const Matrix_double *S,
+                 const Matrix_double *L,
+                 const double dt);
 /**
  * compute tangent of the plasticity part of deformation gradient with respect to the deformation
  *
@@ -99,7 +105,11 @@ int compute_dMdu(Constitutive_model *m, Matrix_double *dMdu,
  
 int plasticity_model_slip_system(Matrix_double *P);
 
-int plasticity_model_integration_ip(Matrix_double *pFnp1, Constitutive_model *m, Matrix_double *Fnp1, Matrix_double *Fe_n, double dt);
+int plasticity_model_integration_ip(Matrix_double *pFnp1,
+                                    Constitutive_model *m,
+                                    const Matrix_double *Fnp1,
+                                    const Matrix_double *Fe_n,
+                                    const double dt);
 
 int plasticity_model_read_parameters(Constitutive_model *m);
 
