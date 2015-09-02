@@ -131,6 +131,20 @@ static int he_get_eFn(const Constitutive_model *m,
   return 1;
 }
 
+static int he_compute_dMdu(const Constitutive_model *m,
+                           const void *ctx,
+                           const double *Grad_op,
+                           const int nne,
+                           const int ndofn,
+                           double *dM_du)
+{
+  int err = 0;
+  /* there is no plastic deformation in this formulation, return zeros
+     in dM_du */
+  memset(dM_du, 0, nne * ndofn * 9 * nne * ndofn * 9 * sizeof(*dM_du));
+  return err;
+}
+
 int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -149,6 +163,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
   p->destroy_ctx = plasticity_model_none_ctx_destroy;
+  p->compute_dMdu = he_compute_dMdu;
 
   return err;
 }
