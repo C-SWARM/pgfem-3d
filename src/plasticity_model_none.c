@@ -148,6 +148,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_pFn = he_get_pFn;
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
+  p->destroy_ctx = plasticity_model_none_ctx_destroy;
 
   return err;
 }

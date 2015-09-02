@@ -221,6 +221,13 @@ typedef int (*usr_increment)(Constitutive_model *m);
 typedef int (*usr_get_F)(const Constitutive_model *m,
                          Matrix_double *F);
 
+/**
+ * User defined function to destroy a context for the model. This
+ * function shall destroy any internally allocated data and
+ * invalidate the handle, i.e., *ctx = NULL.
+ */
+typedef int (*usr_destroy_ctx)(void **ctx);
+
 /** Pre-declare MATERIAL structure */
 struct MATERIAL;
 #ifndef TYPE_MATERIAL
@@ -307,6 +314,7 @@ struct Model_parameters {
   usr_get_F get_pFn;
   usr_get_F get_eF;
   usr_get_F get_eFn;
+  usr_destroy_ctx destroy_ctx;
 
   /** Model type, see enumeration @model_type */
   size_t type;

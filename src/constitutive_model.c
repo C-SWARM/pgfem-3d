@@ -115,6 +115,7 @@ int model_parameters_construct(Model_parameters *p)
   p->get_pFn = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->destroy_ctx = NULL;
   p->type = -1;
   p->Psys = NULL;
   p->N_SYS = 0;
@@ -176,6 +177,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->get_pFn = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->destroy_ctx = NULL;
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
     free(p->Psys);

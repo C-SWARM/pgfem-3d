@@ -200,13 +200,14 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_pFn = plasticity_get_pFn;
   p->get_eF = plasticity_get_eF;
   p->get_eFn = plasticity_get_eFn;
+  p->destroy_ctx = plasticity_model_ctx_destroy;
 
   return err;
 }
 
 int plasticity_model_ctx_build(void **ctx,
-                                    const double *C,
-                                    const double *J_or_Theta)
+                               const double *C,
+                               const double *J_or_Theta)
 {
   int err = 0;
   plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
