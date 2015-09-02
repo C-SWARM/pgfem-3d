@@ -844,6 +844,7 @@ int test_set_CM_interface_values(MaterialProperties *Props, MaterialParameters *
 	Struc->N_SYS = N_SYS;
 	Struc->Structure_Type = FCC;
 
+  // 7.160177e+04 13050 0 26100.0 0 0 3.716814e-01 0 0 1.0 1.0 1.0 1.7e+03 1 2
 	/*--------MaterialProperties_Settings--------*/
 	Props->Lame_I =hmat->nu*hmat->E/(1.0+hmat->nu)/(1.0-2.0*hmat->nu);; 
 	Props->Lame_II =hmat->G;
@@ -872,29 +873,26 @@ int test_set_CM_interface_values(MaterialProperties *Props, MaterialParameters *
 
 void test_load_type(Matrix(double) *L, int type, double Load_History, double t)
 {
+  Matrix_init(*L,0.0);
 	switch(type)
 	{
     case UNIAXIAL_TENSION:
-		  // Tension
-  		Matrix_eye(*L,3);
+		  // Tension  		
   		Mat_v(*L,1,1) = -(0.5)*Load_History;
   		Mat_v(*L,2,2) = -(0.5)*Load_History;
   		Mat_v(*L,3,3) = +(1.0)*Load_History;
       break;
     case SIMPLE_SHEAR: 
       // shear
-      Matrix_init(*L, 0.0);
       Mat_v(*L, 1,2) = Load_History;
       break;
     case PLAIN_STRAIN_COMPRESSION:     
 		  // plain_strain_compression
-  		Matrix_eye(*L,3);
   		Mat_v(*L,1,1) = (1.0)*Load_History;
   		Mat_v(*L,2,2) = (0.0)*Load_History;
   		Mat_v(*L,3,3) = -(1.0)*Load_History;
       break;      
     case UNIAXIAL_COMPRESSION:
-  		Matrix_eye(*L,3);
   		Mat_v(*L,1,1) = (0.5)*Load_History;
   		Mat_v(*L,2,2) = (0.5)*Load_History;
   		Mat_v(*L,3,3) = -(1.0)*Load_History;
@@ -902,30 +900,26 @@ void test_load_type(Matrix(double) *L, int type, double Load_History, double t)
     case CYCLIC_LOADING:
       if(t<=0.5)
       {
-  		  Matrix_eye(*L,3);
   		  Mat_v(*L,1,1) = (0.5)*Load_History;
   		  Mat_v(*L,2,2) = (0.5)*Load_History;
   		  Mat_v(*L,3,3) = -(1.0)*Load_History;
   		}      
-  	  if((t > 0.5) && (t <= 0.9))
+  	  if((0.5 < t) && (t <= 0.9))
   	  {
-  	    Matrix_eye(*L,3);
-  	  	double new_rate = -1.0;
+  	  	double new_rate = 1.0;
   	  	Mat_v(*L,1,1)=-(0.5)*new_rate;
   	  	Mat_v(*L,2,2)=-(0.5)*new_rate;
   	  	Mat_v(*L,3,3)=+(1.0)*new_rate;
   	  }
-  	  if(t>0.9 && (t <= 1.6))
+  	  if(0.9<t && (t <= 1.6))
   	  {
-  	    Matrix_eye(*L,3);
-  	  	double new_rate = 1.0;
+  	  	double new_rate = -1.0;
   	  	Mat_v(*L,1,1)=-(0.5)*new_rate;
   	    Mat_v(*L,2,2)=-(0.5)*new_rate;
   	  	Mat_v(*L,3,3)=+(1.0)*new_rate;
   	  }
   	  break;      
     case STRESS_RELAXATION:
-  		Matrix_init(*L,0.0);
   		if(t <= 0.5)
   		{
     		Mat_v(*L,1,1) = (0.5)*Load_History;
@@ -943,6 +937,9 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   int err = 0;  
   double tol_g = 1.0e-6;
   double computer_zero = 1.0e-15;
+///////////////////////////////////////////////////////  
+  Print_results = 1;
+//////////////////////////////////////////////////////  
    
   Constitutive_model m;
   Model_parameters p;
@@ -965,9 +962,16 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
 
 	double T_Initial = 0.0;
 	double T_Final = 1.0;
-	double dt = 0.1;
+	double dt = 0.001;
   double Load_History = 1.0;
-	int Load_Type = UNIAXIAL_COMPRESSION;	
+	
+//  int Load_Type = UNIAXIAL_TENSION; // Uniaxial_Tension
+//  int Load_Type = UNIAXIAL_COMPRESSION;         // Uniaxial_Compression
+//  int Load_Type = SIMPLE_SHEAR;                 // Simple_Shear            
+//  int Load_Type = PLAIN_STRAIN_COMPRESSION;     // Plain_Strain_Compression
+  int Load_Type = CYCLIC_LOADING;               // Cyclic_Loading          
+//  int Load_Type = STRESS_RELAXATION};
+      	
 	
 	int Num_Steps=(int)(ceil(T_Final/dt));  
   
@@ -976,7 +980,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   Matrix(double) *Fs;  
   
   enum {Fnp1,Fn,eFn,eFnp1,eFnp1_I,pFn,pFnp1,pFnp1_I,PK2,sigma,L,eFnp1PK2,
-        PK2dev,sigma_dev,Fend};
+        PK2dev,sigma_dev,C,E,Fend};
   
   Fs = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));  
   
@@ -1024,7 +1028,12 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
                      &Props, &Param, &Struc, &Solver,
                      &m, dt, g_n);   
 
-    // compute stress (PK2)                                       
+    // compute stress (PK2)
+    Matrix_AxB(Fs[C],1.0,0.0,Fs[Fnp1],1,Fs[Fnp1],0);
+    Matrix_eye(Fs[E], 3);
+    Matrix_AplusB(Fs[E],0.5,Fs[C],-0.5,Fs[E]);
+    
+//    printf("%e, %e\n", t, Mat_v(Fs[E], 1,1));                                       
 	  Matrix_inv(Fs[pFnp1], Fs[pFnp1_I]);	
 	  Matrix_AxB(Fs[eFnp1],1.0,0.0,Fs[Fnp1],0,Fs[pFnp1_I],0);
     elastic_stress(&Props,Fs[eFnp1].m_pdata,Fs[PK2].m_pdata);
@@ -1060,7 +1069,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
 		double PK2_eff = sqrt(3.0/2.0*norm_PK2);		
 
     if(Print_results)
-  	  printf("%e \t %e %e %e\n",t,sigma_eff,PK2_eff, g_n);		
+  	  printf("%e \t %e %e %e %e %e\n",t,sigma_eff,PK2_eff, g_n, Mat_v(Fs[E],1,1), Mat_v(Fs[PK2],1,1));		
 	}
 
   constitutive_model_destroy(&m);
@@ -1098,9 +1107,14 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
 
 	double T_Initial = 0.0;
 	double T_Final = 1.0;
-	double dt = 0.1;
+	double dt = 0.001;
   double Load_History = 1.0;
-	int Load_Type = UNIAXIAL_COMPRESSION;	
+//  int Load_Type = UNIAXIAL_TENSION; // Uniaxial_Tension
+//  int Load_Type = UNIAXIAL_COMPRESSION;         // Uniaxial_Compression
+//  int Load_Type = SIMPLE_SHEAR;                 // Simple_Shear            
+//  int Load_Type = PLAIN_STRAIN_COMPRESSION;     // Plain_Strain_Compression
+  int Load_Type = CYCLIC_LOADING;               // Cyclic_Loading          
+//  int Load_Type = STRESS_RELAXATION};	
 	
 	int Num_Steps=(int)(ceil(T_Final/dt));  
   
