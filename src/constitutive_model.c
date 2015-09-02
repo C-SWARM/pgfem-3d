@@ -96,6 +96,7 @@ int model_var_info_destroy(Model_var_info **info)
   return err;
 }
 
+
 int model_parameters_construct(Model_parameters *p)
 {
   int err = 0;
@@ -116,6 +117,7 @@ int model_parameters_construct(Model_parameters *p)
   p->get_eF = NULL;
   p->get_eFn = NULL;
   p->destroy_ctx = NULL;
+  p->compute_dMdu = NULL;
   p->type = -1;
   p->Psys = NULL;
   p->N_SYS = 0;
@@ -178,6 +180,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->get_eF = NULL;
   p->get_eFn = NULL;
   p->destroy_ctx = NULL;
+  p->compute_dMdu = NULL;
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
     free(p->Psys);
@@ -318,7 +321,7 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
     err++;
     break;
   }      
-  return err;  
+  return err;
 }
 
 int constitutive_model_update_dMdu(const Constitutive_model *m,

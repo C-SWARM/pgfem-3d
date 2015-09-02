@@ -228,6 +228,33 @@ typedef int (*usr_get_F)(const Constitutive_model *m,
  */
 typedef int (*usr_destroy_ctx)(void **ctx);
 
+/**
+ * User defined function to compute the linearization of the plastic
+ * deformation w.r.t. the displacement variable. In the current
+ * formulations, the formulation for the PDE is in terms of M =
+ * inv(pFr). Thus the linearization is dM_du. ***This may be changed
+ * in the future, deprecating this function***
+ *
+ * \param[in] m, Constitutive model object
+ * \param[in] ctx, model specific user context
+ * \param[in] Grad_op, 4-index FE gradient operator where the 1st two
+ *                     indices are the node followed by the DOF.
+ * \param[in] nne, number of nodes on the element (length of idx 1 in
+ *                 Grad_op)
+ * \param[in] ndofn, number of dofs on each node (length of idx 2 in
+ *                  Grad_op)
+ * \param[out] dM_du, 4-index FE linearization of M, same dimensions
+ *                   as Grad_op
+ *
+ * \return non-zero on internal error
+ */
+typedef int (*usr_compute_dM_du)(const Constitutive_model *m,
+                                 const void *ctx,
+                                 const double *Grad_op,
+                                 const int nne,
+                                 const int ndofn,
+                                 double *dM_du);
+
 /** Pre-declare MATERIAL structure */
 struct MATERIAL;
 #ifndef TYPE_MATERIAL
@@ -315,6 +342,7 @@ struct Model_parameters {
   usr_get_F get_eF;
   usr_get_F get_eFn;
   usr_destroy_ctx destroy_ctx;
+  usr_compute_dM_du compute_dMdu;
 
   /** Model type, see enumeration @model_type */
   size_t type;
@@ -365,7 +393,6 @@ int read_constitutive_model_parameters(EPS *eps,
  *
  * \return non-zero on error.
  */
-  
 int model_parameters_destroy(Model_parameters *p);
 
 /**
