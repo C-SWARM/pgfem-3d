@@ -166,9 +166,9 @@ typedef struct Matrix_##T                                               \
 #define Matrix_init_w_array(p, m, n, q) do {                            \
   Matrix_check_null_and_redim(p, m, n);                                 \
   long __a, __b;                                                        \
-  for(__a = 1; __a <= p.m_row; __a++){                                  \
-    for(__b = 1; __b <= p.m_col; __b++){                                \
-      Mat_v(p, __a, __b) =  q[(__a-1)*(n) + (__b-1)];                   \
+  for(__a = 1; __a <= (p).m_row; __a++){                                \
+    for(__b = 1; __b <= (p).m_col; __b++){                              \
+      Mat_v(p, __a, __b) =  (q)[(__a-1)*(n) + (__b-1)];                 \
     }                                                                   \
   }                                                                     \
 } while(0)
