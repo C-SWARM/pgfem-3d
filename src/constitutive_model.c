@@ -615,8 +615,8 @@ int stiffness_el_hyper_elasticity(double *lk,
 
   for(int a=0;a<nne;a++)
   {
-  	for(int b=0; b<nsd;b++)
-  		u[a*nsd+b] = r_e[a*ndofn+b];	
+      (int b=0; b<nsd;b++)
+      u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
   Matrix(double) F,L,S,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,LsBB;
@@ -638,11 +638,11 @@ int stiffness_el_hyper_elasticity(double *lk,
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);   
   
-  for(int ip = 1; ip<=fe.nint; ip++)
+    (int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_de  mation_gradient(&fe,ndofn,u,F);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     
@@ -651,9 +651,9 @@ int stiffness_el_hyper_elasticity(double *lk,
     
     constitutive_model_update_elasticity(m,&F,dt,&L,&S,compute_stiffness);
     
-    for(int a=0; a<nne; a++)
+      (int a=0; a<nne; a++)
     {
-      for(int b=0; b<nsd; b++)
+        (int b=0; b<nsd; b++)
       {
         const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
                                                 nne,nsd,nsd,nsd)];
@@ -662,18 +662,18 @@ int stiffness_el_hyper_elasticity(double *lk,
                     3,3,3,1.0,F.m_pdata,3,ptrST_ab,3,0.0,AA.m_pdata,3);
         Matrix_symmetric(AA,sAA);
         
-        for(int w=0; w<nne; w++)
+          (int w=0; w<nne; w++)
         {
-          for(int g=0; g<nsd; g++)
+            (int g=0; g<nsd; g++)
           { 
             const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
                                                       nne,nsd,nsd,nsd)];             
-            for(int _i=0; _i<nsd; _i++)
+              (int _i=0; _i<nsd; _i++)
             {
-                for(int _j=0; _j<nsd; _j++)
+                  (int _j=0; _j<nsd; _j++)
                 {
                     BB.m_pdata[idx_2(_i,_j)] = CC.m_pdata[idx_2(_i,_j)] = 0.0;
-                    for(int _k=0; _k<nsd; _k++)
+                      (int _k=0; _k<nsd; _k++)
                     {
                         /* BB = F' ST_wg */
                         BB.m_pdata[idx_2(_i,_j)] += F.m_pdata[idx_2(_k,_i)]*ptrST_wg[idx_2(_k,_j)];
@@ -688,17 +688,17 @@ int stiffness_el_hyper_elasticity(double *lk,
             Matrix_symmetric(CC,sCC);
             
             Matrix_init(LsBB,0.0);
-	          for(int _i=0; _i<9; _i++)
-	          {
-	            if(fabs(sBB.m_pdata[_i]) < 1.0e-15) continue;
-	            for(int _j=0; _j<9; _j++)
-	              LsBB.m_pdata[_j] += L.m_pdata[9*_j+_i]*sBB.m_pdata[_i];
-	          }            
+              (int _i=0; _i<9; _i++)
+            {
+              if(fabs(sBB.m_pdata[_i]) < 1.0e-15) continue;
+                (int _j=0; _j<9; _j++)
+                LsBB.m_pdata[_j] += L.m_pdata[9*_j+_i]*sBB.m_pdata[_i];
+            }            
             
             //Matrix_Tns4_dd_Tns2(LsBB,L,sBB);
 
             const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-            for(int n=0; n<9; n++)
+              (int n=0; n<9; n++)
             {                 
               lk[lk_idx] += fe.detJxW*(sAA.m_pdata[n]*LsBB.m_pdata[n]
                                        + S.m_pdata[n]*sCC.m_pdata[n]);
@@ -750,10 +750,10 @@ int residuals_el_hyper_elasticity(double *f,
   double *u;
   u = (double *) malloc(sizeof(double)*nne*nsd);
 
-  for(int a=0;a<nne;a++)
+    (int a=0;a<nne;a++)
   {
-  	for(int b=0; b<nsd;b++)
-  		u[a*nsd+b] = r_e[a*ndofn+b];	
+      (int b=0; b<nsd;b++)
+      u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
   Matrix(double) F,S,ST_ab,AA,sAA;
@@ -767,20 +767,20 @@ int residuals_el_hyper_elasticity(double *f,
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
 
-  for(int ip = 1; ip<=fe.nint; ip++)
+    (int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_de  mation_gradient(&fe,ndofn,u,F);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix_init(S,0.0);    
     
     constitutive_model_update_elasticity(m,&F,dt,NULL,&S,compute_stiffness);
               
-    for(int a=0; a<nne; a++)
+      (int a=0; a<nne; a++)
     {
-      for(int b=0; b<nsd; b++)
+        (int b=0; b<nsd; b++)
       {
         const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
                                                 nne,nsd,nsd,nsd)];
@@ -798,7 +798,7 @@ int residuals_el_hyper_elasticity(double *f,
         
         int fe_id = a*ndofn + b;              
                 
-        for(int n=0; n<9; n++)
+          (int n=0; n<9; n++)
           f[fe_id] += fe.detJxW*sAA.m_pdata[n]*S.m_pdata[n];
       }
     }
@@ -838,10 +838,10 @@ int stiffness_el_crystal_plasticity(double *lk,
   double *u;
   u = (double *) malloc(sizeof(double)*nne*nsd);
 
-  for(int a=0;a<nne;a++)
+    (int a=0;a<nne;a++)
   {
-  	for(int b=0; b<nsd;b++)
-  		u[a*nsd+b] = r_e[a*ndofn+b];	
+      (int b=0; b<nsd;b++)
+      u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
   Matrix(double) Fn, Fr, Fnp1;
@@ -897,11 +897,11 @@ int stiffness_el_crystal_plasticity(double *lk,
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
   int compute_stiffness = 1;      
 
-  for(int ip = 1; ip<=fe.nint; ip++)
+    (int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
+    FEMLIB_update_de  mation_gradient(&fe,ndofn,u,Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix(double) *Fs = (m->vars).Fs;
@@ -947,9 +947,9 @@ int stiffness_el_crystal_plasticity(double *lk,
     
     double Jn; Matrix_det(Fn, Jn);
     
-    for(int a=0; a<nne; a++)
+      (int a=0; a<nne; a++)
     {
-      for(int b=0; b<nsd; b++)
+        (int b=0; b<nsd; b++)
       {
         const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
                                                 nne,nsd,nsd,nsd)];
@@ -961,9 +961,9 @@ int stiffness_el_crystal_plasticity(double *lk,
         Matrix_AxB(MTeFnT_sAA_eFn,1.0,0.0,MTeFnT_sAA,0,eFn,0);
         Matrix_AxB(MTeFnT_sAA_eFnM,1.0,0.0,MTeFnT_sAA_eFn,0,M,0);  
 
-        for(int w=0; w<nne; w++)
+          (int w=0; w<nne; w++)
         {
-          for(int g=0; g<nsd; g++)
+            (int g=0; g<nsd; g++)
           { 
             const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
                                                       nne,nsd,nsd,nsd)]; 
@@ -1084,10 +1084,10 @@ int residuals_el_crystal_plasticity(double *f,
   double *u;
   u = (double *) malloc(sizeof(double)*nne*nsd);
   
-  for(int a=0;a<nne;a++)
+    (int a=0;a<nne;a++)
   {
-  	for(int b=0; b<nsd;b++)
-  		u[a*nsd+b] = r_e[a*ndofn+b];	
+      (int b=0; b<nsd;b++)
+      u[a*nsd+b] = r_e[a*ndofn+b];  
   }
 
   Matrix(double) Fn, Fr, Fnp1, pFn;
@@ -1123,11 +1123,11 @@ int residuals_el_crystal_plasticity(double *f,
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
   int compute_stiffness = 0;
    
-  for(int ip = 1; ip<=fe.nint; ip++)
+    (int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
+    FEMLIB_update_de  mation_gradient(&fe,ndofn,u,Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix(double) *Fs = (m->vars).Fs;    
@@ -1178,9 +1178,9 @@ int residuals_el_crystal_plasticity(double *f,
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
     double Jn; Matrix_det(Fn, Jn);
     
-    for(int a=0; a<nne; a++)
+      (int a=0; a<nne; a++)
     {
-      for(int b=0; b<nsd; b++)
+        (int b=0; b<nsd; b++)
       {
         const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
                                                 nne,nsd,nsd,nsd)];
