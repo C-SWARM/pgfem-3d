@@ -79,12 +79,14 @@ static int plasticity_none_d2udj2(const Constitutive_model *m,
 static int plasticity_none_update(Constitutive_model *m)
 {
   int err = 0;
+  /* there are no state variables to update */
   return err;
 }
 
 static int plasticity_none_reset(Constitutive_model *m)
 {
   int err = 0;
+  /* there are no state varables to update */
   return err;
 }
 
@@ -101,6 +103,34 @@ static int plasticity_none_info(Model_var_info **info)
   return 0;
 }
 
+static int he_get_pF(const Constitutive_model *m,
+                     Matrix_double *F)
+{
+  int err = 0;
+  Matrix_eye(*F,3);
+  return err;
+}
+
+static int he_get_pFn(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  return he_get_pF(m,F);
+}
+
+static int he_get_eF(const Constitutive_model *m,
+                     Matrix_double *F)
+{
+  assert(0 && "this function is not implemented");
+  return 1;
+}
+
+static int he_get_eFn(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  assert(0 && "this function is not implemented");
+  return 1;
+}
+
 int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -114,6 +144,10 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
   p->get_var_info = plasticity_none_info;
+  p->get_pF = he_get_pF;
+  p->get_pFn = he_get_pFn;
+  p->get_eF = he_get_eF;
+  p->get_eFn = he_get_eFn;
 
   return err;
 }
