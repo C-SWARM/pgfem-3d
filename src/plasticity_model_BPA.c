@@ -1167,6 +1167,38 @@ int BPA_model_info(Model_var_info **info)
   return err;
 }
 
+static int bpa_get_Fp(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fp]);
+  return err;
+}
+
+static int bpa_get_Fpn(const Constitutive_model *m,
+                       Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fp_n]);
+  return err;
+}
+
+static int bpa_get_Fe(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fe]);
+  return err;
+}
+
+static int bpa_get_Fen(const Constitutive_model *m,
+                       Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fe_n]);
+  return err;
+}
+
 /*
  * Public interface for the BPA model
  */
@@ -1181,6 +1213,11 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->update_state_vars = BPA_update_vars;
   p->reset_state_vars = BPA_reset_vars;
   p->get_var_info = BPA_model_info;
+  p->get_pF = bpa_get_Fp;
+  p->get_pFn = bpa_get_Fpn;
+  p->get_eF = bpa_get_Fe;
+  p->get_eFn = bpa_get_Fen;
+
   return err;
 }
 
