@@ -111,6 +111,10 @@ int model_parameters_construct(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
+  p->get_pF = NULL;
+  p->get_pFn = NULL;
+  p->get_eF = NULL;
+  p->get_eFn = NULL;
   p->type = -1;
   p->Psys = NULL;
   p->N_SYS = 0;
@@ -168,6 +172,10 @@ int model_parameters_destroy(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
+  p->get_pF = NULL;
+  p->get_pFn = NULL;
+  p->get_eF = NULL;
+  p->get_eFn = NULL;
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
     free(p->Psys);

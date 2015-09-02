@@ -142,7 +142,11 @@ int constitutive_model_update_dMdu(const Constitutive_model *m,
                                    const double dt);
 
 /**
- * User defined function for the Constitutive_model integration algorithm.
+ * User defined function for the Constitutive_model integration
+ * algorithm. This function shall be implemented such that it modifies
+ * the internal state to contain the updated values upon exit, i.e.,
+ * subsequent calls to usr_get_F functions will return the correct
+ * values without re-integrating the constitutive model.
  *
  * \param[in,out] m - pointer to a Constitutive_model object.
  * \param[in,out] usr_ctx - handle to a user defined structure that
@@ -201,6 +205,21 @@ typedef int (*usr_scalar)(const Constitutive_model *m,
  * calling function.
  */
 typedef int (*usr_increment)(Constitutive_model *m);
+
+/**
+ * User defined function to return the deformation gradient. Note that
+ * this function *DOES NOT* modify the internal state variables. This
+ * function shall be implemented such that destroying the returned
+ * deformation gradient does not modify the internal state of the
+ * Constitutive_model object.
+ *
+ * \param[in] m - constant reference to a Constitiutive_model object.
+ * \param[out] F - reference to Matrix object that contains the
+ *                 deformation gradient upon exit.
+ * \return non-zero on internal error
+ */
+typedef int (*usr_get_F)(const Constitutive_model *m,
+                         Matrix_double *F);
 
 /** Pre-declare MATERIAL structure */
 struct MATERIAL;
@@ -284,6 +303,11 @@ struct Model_parameters {
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
   usr_info get_var_info;
+  usr_get_F get_pF;
+  usr_get_F get_pFn;
+  usr_get_F get_eF;
+  usr_get_F get_eFn;
+
   /** Model type, see enumeration @model_type */
   size_t type;
 };
