@@ -5,6 +5,7 @@
 
 #include "read_input_file.h"
 #include "post_processing.h"
+#include "enumerations.h"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -16,7 +17,6 @@ int main(int argc,char *argv[])
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
   int myrank = 0;
   int nproc = 0;
-
   /*=== END INITIALIZATION === */
   MPI_Init (&argc,&argv);
   MPI_Comm_rank (mpi_comm,&myrank);
@@ -26,7 +26,6 @@ int main(int argc,char *argv[])
   int namelen = 0;  
   MPI_Get_processor_name (processor_name,&namelen);
   PGFEM_initialize_io(NULL,NULL);  
-    
   PGFem3D_opt options;
   if (argc <= 2){
     if(myrank == 0){
@@ -36,9 +35,6 @@ int main(int argc,char *argv[])
   }
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
-  if(myrank == 0){
-    print_options(stdout,&options);
-  }  
 
   long nn = 0;
   long Gnn = 0;
@@ -63,15 +59,14 @@ int main(int argc,char *argv[])
   ZATELEM *zele_v = NULL;    
   Model_parameters *param_list = NULL;
   
-  
   int in_err = 0;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-		     &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-		     &elem,&mater,&matgeom,&sup,&nln,&znod,
-		     &nle_s,&zele_s,&nle_v,&zele_v);
+         &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+         &elem,&mater,&matgeom,&sup,&nln,&znod,
+         &nle_s,&zele_s,&nle_v,&zele_v);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-	    myrank);
+      myrank);
     PGFEM_Abort();
   }   
 
@@ -81,12 +76,12 @@ int main(int argc,char *argv[])
   long ***a = NULL;
   a = aloc3l (nmat,nmat,nc);
   long nhommat = list(a,ne,nmat,nc,elem); 
-  
+
   /*  alocation of the material matrices  */
   hommat = build_hommat(nhommat);
 
   hom_matrices(a,ne,nmat,nc,elem,mater,matgeom,
-		hommat,matgeom->SH,options.analysis_type);
+    hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
   free(mater);  
@@ -94,23 +89,22 @@ int main(int argc,char *argv[])
   EPS *eps = NULL;    
   eps = build_eps_il(ne,elem,options.analysis_type);
 
-  build_model_parameters_list(&param_list,nhommat,matgeom,hommat);
+  build_model_parameters_list(&param_list,nhommat,matgeom,hommat,options.cm);
   init_all_constitutive_model(eps,ne,elem,param_list);  
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs
   double *u = aloc1(nn*ndofn); 
   read_from_VTK(&options, myrank, 0, u);
-  
+
   int npres = 0;
   double *GS = aloc1(9);    
-  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, options.analysis_type);            
-    
+  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);            
+
   FILE *fp = fopen("stress.out", "w");  
   fprintf(fp, "%e\n", GS[1]);
   fclose(fp);  
   free(u);    
   free(GS);
-
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
   destroy_zatelem(zele_v,nle_v);

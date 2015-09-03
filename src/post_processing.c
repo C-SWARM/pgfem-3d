@@ -68,7 +68,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, H
   Matrix_det(F, J);
   Matrix_inv(C, CI);
   int mat = elem[e].mat[2];
-  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));      			      
+  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));                  
   
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
@@ -133,25 +133,29 @@ void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Mat
   Matrix_cleanup(eFnp1);   
 }                          
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, int analysis)
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                    
 {
   int total_Lagrangian = 1;
+  int intg_order = 1;
+  
+  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+  {  
+    total_Lagrangian = 0;
+    intg_order = 0;
+  }     
+  
   int nsd = 3;
   Matrix(double) F,S,LS;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,S,3,3,0.0);
-  Matrix_construct_init(double,LS,3,3,0.0);
+  Matrix_construct_init(double,LS,3,3,0.0);  
+
   double LV = 0.0;
   double GV = 0.0;
   
   for(int e = 0; e<ne; e++)
-  {    
-    int intg_order = 1;    
-    if (PGFEM3D_DEV_TEST)
-    {  
-      intg_order = 0;
-      total_Lagrangian = 0;      
-    }
+  {        
     FEMLIB fe;
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
@@ -169,9 +173,9 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
         Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
-    
-    if(analysis==TF)
-    {     	
+
+    if(opts->analysis_type==TF)
+    {       
       if(npres==1)
         Vec_v(P, 1) = eps[e].d_T[0];
       else
@@ -189,34 +193,48 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
-      double Pn = 0.0;          
-      if(analysis==TF)
-      {  
-        FEMLIB_elem_shape_function(&fe,ip,npres, Np);
+      double Pn = 0.0;  
 
-        for(int a=1; a<=npres; a++)
-          Pn += Vec_v(Np,a)*Vec_v(P,a);
-
-        post_processing_compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn);
-        
-        double J;
-        Matrix_det(F, J);
-//        printf("%e, %e\n", J, eps[e].T[0]);
-      }
-      else
+      switch(opts->analysis_type)
       {
-        if (PGFEM3D_DEV_TEST)
-          post_processing_compute_stress_plasticity_ip(&fe,e,ip,&S,hommat,elem,eps,&F,Pn);
-        else
+        case DISP:
           post_processing_compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
-          
-      }  
+          break;
+        case TF:
+        {
+          FEMLIB_elem_shape_function(&fe,ip,npres, Np);
+  
+          for(int a=1; a<=npres; a++)
+            Pn += Vec_v(Np,a)*Vec_v(P,a);
+  
+          post_processing_compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn);
+          break;
+        }           
+        case CM:
+        {
+          switch(opts->cm)
+          {
+            case HYPER_ELASTICITY:
+              post_processing_compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
+              break;
+            case CRYSTAL_PLASTICITY:
+              post_processing_compute_stress_plasticity_ip(&fe,e,ip,&S,hommat,elem,eps,&F,Pn);
+              break;          
+            case BPA_PLASTICITY:
+            default:
+              break;
+          }
+          break;
+        }      
+        default:
+          break;
+      }
       
       LV += fe.detJxW;
 
       for(int a=0; a<9; a++)
         LS.m_pdata[a] += S.m_pdata[a]*fe.detJxW;
-	  }
+    }
     FEMLIB_destruct(&fe);
     Matrix_cleanup(Np);
     Matrix_cleanup(u);
@@ -234,5 +252,4 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   printf("Total V = %e\n", GV);
   for(int a=0; a<9; a++)
     GS[a] = GS[a]/GV;
-};
-
+}

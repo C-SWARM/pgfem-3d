@@ -80,4 +80,3 @@ all:
  							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure
-	rm objs

@@ -1,8 +1,9 @@
 #!/bin/bash
 
+BRANCH_NAME=$(git branch | grep '*' | sed -e 's/* //')
+
 NP=1
-echo ${HOME}
-exe=PGFem3D
+exe=$PGFEM3D_INSTALL/$BRANCH_NAME/bin/PGFem3D 
 
 W_DIR=${TEST_DIR}/verification_tests/box_patch_LT
 I_FORMAT=inputs/box_LT_${NP}CPU/box_LT_
