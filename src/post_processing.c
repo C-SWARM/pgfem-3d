@@ -249,7 +249,84 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);  
   Matrix_cleanup(LS);
   
-  printf("Total V = %e\n", GV);
   for(int a=0; a<9; a++)
     GS[a] = GS[a]/GV;
+}
+
+void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                    
+{
+  int total_Lagrangian = 1;
+  int intg_order = 1;
+  
+  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+  {  
+    total_Lagrangian = 0;
+    intg_order = 0;
+  }     
+  
+  int nsd = 3;
+  Matrix(double) F,LF, Fnp1;
+  Matrix_construct_init(double,F,3,3,0.0);
+  Matrix_construct_init(double,LF,3,3,0.0);  
+  Matrix_construct_init(double,Fnp1,3,3,0.0);    
+
+  double LV = 0.0;
+  double GV = 0.0;
+  
+  for(int e = 0; e<ne; e++)
+  {        
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    int nne = fe.nne;
+    
+    Matrix(double) u;  
+    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+                        
+    for(int a = 0; a<nne; a++)
+    {      
+      int nid = Vec_v(fe.node_id, a+1);
+      for(int b=0; b<nsd; b++)
+      {
+        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+      }
+    }
+    
+    for(int ip = 1; ip<=fe.nint; ip++)
+    {      
+      FEMLIB_elem_basis_V(&fe, ip);  
+      FEMLIB_update_shape_tensor(&fe);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      
+      if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+      { 
+        Constitutive_model *m = &(eps[e].model[ip-1]);
+        Matrix_AxB(Fnp1,1.0,0.0,F,0,(m->vars).Fs[TENSOR_Fn],0);  // Fn+1
+        double Jn = 0.0;
+        Matrix_det((m->vars).Fs[TENSOR_Fn], Jn);
+        
+        LV += fe.detJxW/Jn;
+        for(int a=0; a<9; a++)
+          LF.m_pdata[a] += Fnp1.m_pdata[a]*fe.detJxW/Jn;        
+        
+      }
+      else
+      {        
+        LV += fe.detJxW;
+        for(int a=0; a<9; a++)
+          LF.m_pdata[a] += F.m_pdata[a]*fe.detJxW;
+      }
+    }
+    FEMLIB_destruct(&fe);
+    Matrix_cleanup(u);
+  }
+      
+  MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
+  Matrix_cleanup(F);
+  Matrix_cleanup(Fnp1);
+  
+  for(int a=0; a<9; a++)
+    GF[a] = GF[a]/GV;
 }

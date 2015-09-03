@@ -115,6 +115,6 @@ int plasticity_model_read_parameters(Constitutive_model *m);
 
 typedef struct HOMMAT HOMMAT;
 
-int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);
+int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
  
 #endif

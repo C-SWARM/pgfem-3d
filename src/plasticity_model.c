@@ -975,14 +975,11 @@ void test_load_type(Matrix(double) *L, int type, double Load_History, double t)
   }      
 }
 
-int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, int Print_results)
+int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, int Load_Type)
 { 
   int err = 0;  
   double tol_g = 1.0e-6;
   double computer_zero = 1.0e-15;
-///////////////////////////////////////////////////////  
-  Print_results = 1;
-//////////////////////////////////////////////////////  
    
   Constitutive_model m;
   Model_parameters p;
@@ -1008,13 +1005,43 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   double dt = 0.001;
   double Load_History = 1.0;
   
-//  int Load_Type = UNIAXIAL_TENSION; // Uniaxial_Tension
-//  int Load_Type = UNIAXIAL_COMPRESSION;         // Uniaxial_Compression
-//  int Load_Type = SIMPLE_SHEAR;                 // Simple_Shear            
-//  int Load_Type = PLAIN_STRAIN_COMPRESSION;     // Plain_Strain_Compression
-  int Load_Type = CYCLIC_LOADING;               // Cyclic_Loading          
-//  int Load_Type = STRESS_RELAXATION};
-        
+  char fn_out[1024];
+  
+  if(L_in==NULL)
+  {  
+    switch(Load_Type)
+    {
+      case UNIAXIAL_TENSION:
+        sprintf(fn_out, "uniaxial_tension.txt"); 
+        break;
+      case UNIAXIAL_COMPRESSION:
+        sprintf(fn_out, "uniaxial_compression.txt");
+        break;
+      case SIMPLE_SHEAR:
+        sprintf(fn_out, "simple_shear.txt");
+        break;
+      case PLAIN_STRAIN_COMPRESSION:
+        sprintf(fn_out, "plain_strain_compression.txt");
+        break;
+      case CYCLIC_LOADING:
+        sprintf(fn_out, "cyclic_loading.txt");
+        break;
+      case STRESS_RELAXATION:
+        sprintf(fn_out, "stress_relaxation.txt");
+        break;
+      default:
+        Load_Type = UNIAXIAL_TENSION;
+        sprintf(fn_out, "uniaxial_tension.txt");  
+        break;
+    }
+  }
+  else
+  {  
+    sprintf(fn_out, "user_define_L.txt");
+    Load_Type = -1;
+  }
+  
+  FILE *fp = fopen(fn_out, "w");
   
   int Num_Steps=(int)(ceil(T_Final/dt));  
   
@@ -1058,7 +1085,10 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
      }
 
     if(L_in != NULL)
-      Matrix_AeqB(Fs[L], 1.0, *L_in);
+    {
+      if(n==1)  
+        Matrix_AeqB(Fs[L], 1.0, *L_in);
+    }
     else     
        test_load_type((Fs+L), Load_Type, Load_History, t);
      
@@ -1111,8 +1141,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
     double sigma_eff=sqrt(3.0/2.0*norm_sigma);
     double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
 
-    if(Print_results)
-      printf("%e \t %e %e %e %e %e\n",t,sigma_eff,PK2_eff, g_n, Mat_v(Fs[E],1,1), Mat_v(Fs[PK2],1,1));    
+    fprintf(fp, "%e \t %e %e %e %e %e\n",t,sigma_eff,PK2_eff, g_n, Mat_v(Fs[E],1,1), Mat_v(Fs[PK2],1,1));    
   }
 
   constitutive_model_destroy(&m);
@@ -1120,11 +1149,12 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   
   for(int a=0; a<Fend; a++)
     Matrix_cleanup(Fs[a]);  
-           
+
+  fclose(fp);           
   return err;
 }
 
-int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in, int Print_results)
+int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in, int Load_Type)
 { 
   int err = 0;  
   double computer_zero = 1.0e-15;
@@ -1152,12 +1182,44 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
   double T_Final = 1.0;
   double dt = 0.001;
   double Load_History = 1.0;
-//  int Load_Type = UNIAXIAL_TENSION; // Uniaxial_Tension
-//  int Load_Type = UNIAXIAL_COMPRESSION;         // Uniaxial_Compression
-//  int Load_Type = SIMPLE_SHEAR;                 // Simple_Shear            
-//  int Load_Type = PLAIN_STRAIN_COMPRESSION;     // Plain_Strain_Compression
-  int Load_Type = CYCLIC_LOADING;               // Cyclic_Loading          
-//  int Load_Type = STRESS_RELAXATION};  
+
+  char fn_out[1024];
+  
+  if(L_in==NULL)
+  {  
+    switch(Load_Type)
+    {
+      case UNIAXIAL_TENSION:
+        sprintf(fn_out, "uniaxial_tension.txt"); 
+        break;
+      case UNIAXIAL_COMPRESSION:
+        sprintf(fn_out, "uniaxial_compression.txt");
+        break;
+      case SIMPLE_SHEAR:
+        sprintf(fn_out, "simple_shear.txt");
+        break;
+      case PLAIN_STRAIN_COMPRESSION:
+        sprintf(fn_out, "plain_strain_compression.txt");
+        break;
+      case CYCLIC_LOADING:
+        sprintf(fn_out, "cyclic_loading.txt");
+        break;
+      case STRESS_RELAXATION:
+        sprintf(fn_out, "stress_relaxation.txt");
+        break;
+      default:
+        Load_Type = UNIAXIAL_TENSION;
+        sprintf(fn_out, "uniaxial_tension.txt");  
+        break;
+    }
+  }
+  else
+  {  
+    sprintf(fn_out, "user_define_L.txt");
+    Load_Type = -1;
+  }        
+   
+  FILE *fp = fopen(fn_out, "w");
   
   int Num_Steps=(int)(ceil(T_Final/dt));  
   
@@ -1208,7 +1270,10 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
      }
 
     if(L_in != NULL)
-      Matrix_AeqB(Fs[L], 1.0, *L_in);
+    {
+      if(n==1)  
+        Matrix_AeqB(Fs[L], 1.0, *L_in);
+    }
     else     
        test_load_type((Fs+L), Load_Type, Load_History, t);
      
@@ -1275,8 +1340,7 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
     double sigma_eff=sqrt(3.0/2.0*norm_sigma);
     double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
 
-    if(Print_results)
-      printf("%e \t %e %e %e\n",t,sigma_eff,PK2_eff, g_n);    
+    fprintf(fp, "%e \t %e %e %e\n",t,sigma_eff,PK2_eff, g_n);    
   }
   
   constitutive_model_destroy(&m);
@@ -1287,18 +1351,18 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
 
   Matrix_cleanup(Tau_Array);
   Matrix_cleanup(gamma_RateArray);
-         
+  fclose(fp);       
   return err;
 }
 
-int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Print_results)
+int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Load_Type)
 { 
   int err = 0;
    
   if(1)
-    err += plasticity_model_test_staggered(hmat, L_in, Print_results);
+    err += plasticity_model_test_staggered(hmat, L_in, Load_Type);
   else
-    err += plasticity_model_test_no_staggered(hmat, L_in, Print_results);    
+    err += plasticity_model_test_no_staggered(hmat, L_in, Load_Type);    
    
   return err;
 }

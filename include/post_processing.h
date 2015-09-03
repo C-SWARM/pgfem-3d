@@ -12,4 +12,6 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S,
                           Matrix(double) F, double Pn);
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);
+void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);                    
 #endif
