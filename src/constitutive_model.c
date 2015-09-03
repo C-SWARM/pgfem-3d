@@ -371,6 +371,8 @@ int build_model_parameters_list(Model_parameters **param_list,
                                 const HOMMAT *hmat_list, const int type)
 {
   int err = 0;
+  if(type<0)
+    return err;  
   if (n_mat <= 0) return 1;
   
   (*param_list) = malloc(n_mat*sizeof(**param_list));
@@ -453,6 +455,8 @@ int init_all_constitutive_model(EPS *eps,
 {
   int err = 0;
   if (ne <= 0) return 1;
+  if(param_list==NULL)
+    return err;
 
   for (int i = 0; i < ne; i++) {
     /* aliases */

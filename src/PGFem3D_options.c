@@ -388,6 +388,8 @@ void re_parse_command_line(const int myrank,
   opts = (struct option*) PGFEM_calloc(n_options+1,sizeof(struct option));
   copy_options(opts);
   opterr = 0;
+  
+  options->cm = -1; //default: no use of constitutive model
 
   /* print command line to parse */
   if(myrank == 0){
