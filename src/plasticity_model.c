@@ -13,6 +13,10 @@
 
 #include "CM.h"
 
+#define DIM 3
+#define TENSOR_LEN 9
+#define TENSOR4_LEN 81
+
 Define_Matrix(double);
 
 /**
@@ -175,7 +179,7 @@ static int plasticity_get_eF(const Constitutive_model *m,
 {
   int err = 0;
   Matrix_double invFp;
-  Matrix_construct_redim(double,invFp,3,3);
+  Matrix_construct_redim(double,invFp,DIM,DIM);
   Matrix_inv(m->vars.Fs[TENSOR_pFnp1],invFp);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnp1], 0, invFp, 0);
   Matrix_cleanup(invFp);
@@ -216,8 +220,8 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   Matrix_double C, eFn, eFnp1;
 
   /* extract the elastic deformations at (n) and (n + 1) */
-  Matrix_construct_redim(double, eFn, 3, 3);
-  Matrix_construct_redim(double, eFnp1, 3, 3);
+  Matrix_construct_redim(double, eFn, DIM, DIM);
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);
   err += m->param->get_eFn(m,&eFn);
   err += m->param->get_eF(m,&eFnp1);
 
@@ -236,8 +240,8 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   Matrix_double M;
   {
     Matrix_double pFnp1_I;
-    Matrix_construct_redim(double, pFnp1_I, 3, 3);
-    Matrix_construct_redim(double, M, 3, 3);
+    Matrix_construct_redim(double, pFnp1_I, DIM, DIM);
+    Matrix_construct_redim(double, M, DIM, DIM);
     Matrix_inv(m->vars.Fs[TENSOR_pFnp1], pFnp1_I);
     Matrix_AxB(M, 1.0, 0.0, m->vars.Fs[TENSOR_pFn], 0, pFnp1_I, 0);
     Matrix_cleanup(pFnp1_I);
@@ -247,8 +251,8 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
      constitutive_model_update_elasticity. This needs to become part
      of the CM interface */
   Matrix_double L,S;
-  Matrix_construct_redim(double, L, 81, 1);
-  Matrix_construct_redim(double, S, 3, 3);
+  Matrix_construct_redim(double, L, TENSOR4_LEN, 1);
+  Matrix_construct_redim(double, S, DIM, DIM);
   err += constitutive_model_update_elasticity(m, &eFnp1, internal_ctx->dt, &L, &S, 1);
 
   /* make successive calls to compute_dMdu for each node/dof. To avoid
@@ -259,14 +263,14 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   Matrix_construct(double, Grad_op_ab);
   for (int a = 0; a < nne; a++) {
     for(int b = 0; b < ndofn; b++) {
-      int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,3,3);
+      int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,DIM,DIM);
       /* reset dimensions of the matrix objects and set pointer */
-      dMdu_ab.m_row = 3;
-      dMdu_ab.m_col = 3;
+      dMdu_ab.m_row = DIM;
+      dMdu_ab.m_col = DIM;
       dMdu_ab.m_pdata = dM_du + idx_ab;
 
       /* need to copy Grad_op due to const qualifier */
-      Matrix_init_w_array(Grad_op_ab, 3, 3, Grad_op + idx_ab);
+      Matrix_init_w_array(Grad_op_ab, DIM, DIM, Grad_op + idx_ab);
 
       /* call to compute_dMdu */
       err += compute_dMdu(m, &dMdu_ab, &Grad_op_ab, &eFn, &eFnp1, &M,
@@ -348,11 +352,11 @@ static int compute_P_alpha(const Constitutive_model *m,
                            Matrix(double) *Pa)
 {
   const double * restrict P_sys = ((m->param)->Psys)->m_pdata;
-  Matrix_redim(*Pa, 3,3);
-  for(int a=0; a<3; a++)
+  Matrix_redim(*Pa, DIM,DIM);
+  for(int a=0; a<DIM; a++)
   {
-    for(int b=0;b<3;b++)
-      Mat_v(*Pa,a+1,b+1) = P_sys[Index_3D(alpha,a,b,3,3)];
+    for(int b=0;b<DIM;b++)
+      Mat_v(*Pa,a+1,b+1) = P_sys[Index_3D(alpha,a,b,DIM,DIM)];
   }
   return 0;
 }
@@ -372,12 +376,12 @@ static int compute_C_D_alpha(const Constitutive_model *m,
   Matrix_init(*aD, 0.0);
   
   Matrix(double) LC, AA, CAA, eFnp1AA, eFnp1AAMT, MI;
-  Matrix_construct_redim(double,LC,       3,3);
-  Matrix_construct_redim(double,AA,       3,3);
-  Matrix_construct_redim(double,CAA,      3,3);
-  Matrix_construct_redim(double,eFnp1AA,  3,3);
-  Matrix_construct_redim(double,eFnp1AAMT,3,3);    
-  Matrix_construct_redim(double,MI,       3,3);      
+  Matrix_construct_redim(double,LC,       DIM,DIM);
+  Matrix_construct_redim(double,AA,       DIM,DIM);
+  Matrix_construct_redim(double,CAA,      DIM,DIM);
+  Matrix_construct_redim(double,eFnp1AA,  DIM,DIM);
+  Matrix_construct_redim(double,eFnp1AAMT,DIM,DIM);    
+  Matrix_construct_redim(double,MI,       DIM,DIM);      
 
   Matrix_AxB(AA,1.0,0.0,*Pa,0,*S,0);   // AA = Pa*S
   Matrix_AxB(AA,1.0,1.0,*S,0,*Pa,1);   // AA = AA + S*Pa' 
@@ -433,28 +437,28 @@ int compute_dMdu(const Constitutive_model *m,
 
   // --------------> define variables
   Matrix(double) C;
-  Matrix_construct_redim(double, C, 3,3);
+  Matrix_construct_redim(double, C, DIM,DIM);
   Matrix_AxB(C,1.0,0.0,*eFnp1,1,*eFnp1,0);
   
   Matrix(double) U,UI,II,B,aCxPa,CxP,aDxPa,DxP;
   
-  Matrix_construct_redim(double, U,     81,1); // 3x3x3x3 tensor
-  Matrix_construct_redim(double, UI,    9,9);
-  Matrix_construct_redim(double, II,    81,1);
-  Matrix_construct_init( double, B,     81,1,0.0);
-  Matrix_construct_redim(double, aCxPa, 81,1);
-  Matrix_construct_redim(double, CxP,   81,1);
-  Matrix_construct_redim(double, aDxPa, 81,1);
-  Matrix_construct_redim(double, DxP,   81,1);  
+  Matrix_construct_redim(double, U,     TENSOR4_LEN,1); // 3x3x3x3 tensor
+  Matrix_construct_redim(double, UI,    TENSOR_LEN,TENSOR_LEN);
+  Matrix_construct_redim(double, II,    TENSOR4_LEN,1);
+  Matrix_construct_init( double, B,     TENSOR4_LEN,1,0.0);
+  Matrix_construct_redim(double, aCxPa, TENSOR4_LEN,1);
+  Matrix_construct_redim(double, CxP,   TENSOR4_LEN,1);
+  Matrix_construct_redim(double, aDxPa, TENSOR4_LEN,1);
+  Matrix_construct_redim(double, DxP,   TENSOR4_LEN,1);  
 
   Matrix(double) aC,Pa,aD,sum_aC,sum_Pa,sum_aD;
-  Matrix_construct_redim(double, aC, 3,3);  
-  Matrix_construct_redim(double, Pa, 3,3);
-  Matrix_construct_redim(double, aD, 3,3);
+  Matrix_construct_redim(double, aC, DIM,DIM);  
+  Matrix_construct_redim(double, Pa, DIM,DIM);
+  Matrix_construct_redim(double, aD, DIM,DIM);
         
-  Matrix_construct_init( double, sum_aC, 3,3,0.0);
-  Matrix_construct_init( double, sum_Pa, 3,3,0.0);
-  Matrix_construct_init( double, sum_aD, 3,3,0.0);  
+  Matrix_construct_init( double, sum_aC, DIM,DIM,0.0);
+  Matrix_construct_init( double, sum_Pa, DIM,DIM,0.0);
+  Matrix_construct_init( double, sum_aD, DIM,DIM,0.0);  
   
   Matrix_Tns4_eye(II);
   Matrix_AeqB(U, 1.0/dt, II);
@@ -518,7 +522,7 @@ int compute_dMdu(const Constitutive_model *m,
 
 /*  
   Matrix(double) V;
-  Matrix_construct_init(double, V, 3,3,0.0);
+  Matrix_construct_init(double, V, DIM,DIM,0.0);
   Matrix_Tns2_dd_Tns4(V,*Grad_du,B);
   Matrix_AeqB(V, -1.0, V);
   
@@ -526,13 +530,13 @@ int compute_dMdu(const Constitutive_model *m,
   Matrix_inv(U, UI);
   
   dMdu->m_row = 1;
-  dMdu->m_col = 9;
+  dMdu->m_col = TENSOR_LEN;
   Matrix_Mat2Vec(V);        
   Matrix_AxB(*dMdu,1.0,0.0,V,1,UI,0);   
-  Matrix_Vec2Mat(*dMdu,3,3);*/
+  Matrix_Vec2Mat(*dMdu,DIM,DIM);*/
   
   Matrix(double) V;
-  Matrix_construct_redim(double, V, 3,3);
+  Matrix_construct_redim(double, V, DIM,DIM);
   Matrix_Tns4_dd_Tns2(V,B,*Grad_du);
   Matrix_AeqB(V, -1.0, V);
   
@@ -542,7 +546,7 @@ int compute_dMdu(const Constitutive_model *m,
   Matrix_Mat2Vec(V);
   Matrix_Mat2Vec(*dMdu);
   Matrix_AxB(*dMdu,1.0,0.0,UI,0,V,0); 
-  Matrix_Vec2Mat(*dMdu,3,3);
+  Matrix_Vec2Mat(*dMdu,DIM,DIM);
 
   // clear variables
   Matrix_cleanup(U);
@@ -569,7 +573,7 @@ int plasticity_model_slip_system(Matrix_double *P)
   int err = 0;
   int N_SYS = 12; // depended on slip system
 
-  int j_max = 3;  
+  int j_max = DIM;  
   Matrix_redim(*P, N_SYS*j_max*j_max, 1);
   double *P_sys = P->m_pdata;
   
@@ -589,12 +593,12 @@ int plasticity_model_slip_system(Matrix_double *P)
 void elastic_stress(MaterialProperties *Props, double *F, double *S)
 {
   Matrix(double) Se, Fe;
-  Matrix_construct_redim(double,Se,3,3);
+  Matrix_construct_redim(double,Se,DIM,DIM);
   Matrix_construct(double, Fe);   
-  Matrix_init_w_array(Fe,3,3,F);  
+  Matrix_init_w_array(Fe,DIM,DIM,F);  
   constitutive_model_update_elasticity(Props->cm, &Fe, 0.0, NULL, &Se, 0);
 
-  for(int a=0;a<9;a++)
+  for(int a=0;a<TENSOR_LEN;a++)
     S[a] = Se.m_pdata[a];
     
   Matrix_cleanup(Se);
@@ -604,13 +608,13 @@ void elastic_stress(MaterialProperties *Props, double *F, double *S)
 static void elastic_tangent(MaterialProperties *Props, double *F, double *L)
 {
   Matrix(double) Se, Fe, Le;
-  Matrix_construct_redim(double,Se,3,3); 
+  Matrix_construct_redim(double,Se,DIM,DIM); 
   Matrix_construct(double, Fe);  
-  Matrix_construct_redim(double,Le,81,1);     
-  Matrix_init_w_array(Fe,3,3,F);  
+  Matrix_construct_redim(double,Le,TENSOR4_LEN,1);     
+  Matrix_init_w_array(Fe,DIM,DIM,F);  
   constitutive_model_update_elasticity(Props->cm, &Fe, 0.0, &Le, &Se, 1);
 
-  memcpy(L, Le.m_pdata, 81 * sizeof(*L));
+  memcpy(L, Le.m_pdata, TENSOR4_LEN * sizeof(*L));
     
   Matrix_cleanup(Se);
   Matrix_cleanup(Le);
@@ -645,7 +649,7 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
   Fs = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));
   
   for(int a=0; a<Fend; a++)
-    Matrix_construct_redim(double, Fs[a],3,3);  
+    Matrix_construct_redim(double, Fs[a],DIM,DIM);  
   
   Matrix(double) Tau_Array, gamma_RateArray;
   Matrix_construct_redim(double,Tau_Array      , N_SYS,1);
@@ -771,12 +775,12 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   Params.G0      = state_var[VAR_G0];
   Params.g0      = state_var[VAR_g0];  
   
-  int j_max = 3;
+  int j_max = DIM;
 
   Matrix(double) Fe_I,Fp_np1k;
   
-  Matrix_construct_redim(double,Fe_I,3,3);
-  Matrix_construct_redim(double,Fp_np1k,3,3);
+  Matrix_construct_redim(double,Fe_I,DIM,DIM);
+  Matrix_construct_redim(double,Fp_np1k,DIM,DIM);
 
   double g_n = state_var[VAR_g_n];
   double g_np1 = g_n;
@@ -794,9 +798,9 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   state_var[VAR_L_np1] =  L_np1;
 
   Matrix(double) S_n, pFnp1_I, eFnp1;
-  Matrix_construct_redim(double,S_n,3,3);       
-  Matrix_construct_redim(double,pFnp1_I,3,3);       
-  Matrix_construct_redim(double,eFnp1,3,3);           
+  Matrix_construct_redim(double,S_n,DIM,DIM);       
+  Matrix_construct_redim(double,pFnp1_I,DIM,DIM);       
+  Matrix_construct_redim(double,eFnp1,DIM,DIM);           
   
   Matrix_inv(*pFnp1,pFnp1_I);
   Matrix_AxB(eFnp1,1.0,0.0,*Fnp1,0,pFnp1_I,0);
@@ -879,12 +883,12 @@ int plasticity_model_integration_ip_(Matrix_double *pFnp1, Constitutive_model *m
   Params.G0      = state_var[VAR_G0];
   Params.g0      = state_var[VAR_g0];  
   
-  int j_max = 3;
+  int j_max = DIM;
 
   Matrix(double) Fe_I,Fp_np1k;
   
-  Matrix_construct_redim(double,Fe_I,3,3);
-  Matrix_construct_redim(double,Fp_np1k,3,3);
+  Matrix_construct_redim(double,Fe_I,DIM,DIM);
+  Matrix_construct_redim(double,Fp_np1k,DIM,DIM);
 
   double g_n = state_var[VAR_g_n];
   
@@ -900,9 +904,9 @@ int plasticity_model_integration_ip_(Matrix_double *pFnp1, Constitutive_model *m
                                     P_sys,g_n,pFn,Fnp1->m_pdata,L_np1k,&L_np1,Fp_np1k.m_pdata,pFnp1->m_pdata);
 
   Matrix(double) S_n, pFnp1_I, eFnp1;
-  Matrix_construct_redim(double,S_n,3,3);       
-  Matrix_construct_redim(double,pFnp1_I,3,3);       
-  Matrix_construct_redim(double,eFnp1,3,3);           
+  Matrix_construct_redim(double,S_n,DIM,DIM);       
+  Matrix_construct_redim(double,pFnp1_I,DIM,DIM);       
+  Matrix_construct_redim(double,eFnp1,DIM,DIM);           
 
   Matrix_inv(*pFnp1,pFnp1_I);
   Matrix_AxB(eFnp1,1.0,0.0,*Fnp1,0,pFnp1_I,0);
@@ -1152,7 +1156,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   
   int Num_Steps=(int)(ceil(T_Final/dt));  
   
-  int j_max = 3;
+  int j_max = DIM;
   Matrix(double) *P_sys = p.Psys;  
   Matrix(double) *Fs;  
   
@@ -1210,7 +1214,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
 
     // compute stress (PK2)
     Matrix_AxB(Fs[C],1.0,0.0,Fs[Fnp1],1,Fs[Fnp1],0);
-    Matrix_eye(Fs[E], 3);
+    Matrix_eye(Fs[E], DIM);
     Matrix_AplusB(Fs[E],0.5,Fs[C],-0.5,Fs[E]);
     
 //    printf("%e, %e\n", t, Mat_v(Fs[E], 1,1));                                       
@@ -1235,8 +1239,8 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
     
     Matrix_trace(Fs[PK2],trPK2);
     Matrix_trace(Fs[sigma],tr_sigma);
-    Matrix_eye(Fs[PK2dev], 3);
-    Matrix_eye(Fs[sigma_dev], 3);
+    Matrix_eye(Fs[PK2dev], DIM);
+    Matrix_eye(Fs[sigma_dev], DIM);
         
     Matrix_AplusB(Fs[PK2dev],    1.0, Fs[PK2],      -trPK2/3.0, Fs[PK2dev]);
     Matrix_AplusB(Fs[sigma_dev], 1.0, Fs[sigma], -tr_sigma/3.0, Fs[sigma_dev]);    
@@ -1379,8 +1383,8 @@ int plasticity_model_test_staggered_F_of_t(const HOMMAT *hmat)
     
     Matrix_trace(Fs[PK2],trPK2);
     Matrix_trace(Fs[sigma],tr_sigma);
-    Matrix_eye(Fs[PK2dev], 3);
-    Matrix_eye(Fs[sigma_dev], 3);
+    Matrix_eye(Fs[PK2dev], DIM);
+    Matrix_eye(Fs[sigma_dev], DIM);
         
     Matrix_AplusB(Fs[PK2dev],    1.0, Fs[PK2],      -trPK2/3.0, Fs[PK2dev]);
     Matrix_AplusB(Fs[sigma_dev], 1.0, Fs[sigma], -tr_sigma/3.0, Fs[sigma_dev]);    
@@ -1475,7 +1479,7 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
   
   int Num_Steps=(int)(ceil(T_Final/dt));  
   
-  int j_max = 3;
+  int j_max = DIM;
   Matrix(double) *P_sys = p.Psys;
   Matrix(double) *Fs;
   
