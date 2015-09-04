@@ -218,7 +218,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
       break;
     case CRYSTAL_PLASTICITY:
       
-      err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J);
+      err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J, dt);
       
       break;
     case BPA_PLASTICITY:
@@ -349,7 +349,7 @@ int constitutive_model_update_dMdu(const Constitutive_model *m,
     Matrix_construct_redim(double,C,3,3); 
     Matrix_AxB(C, 1.0, 0.0, *eFnp1, 1, *eFnp1, 0);
     Matrix_det(*eFnp1, J);
-    err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J);
+    err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J, dt); /* <-- seems unused */
     err += compute_dMdu(m,dMdu,Grad_du,eFn,eFnp1,M,S,L,dt);
     err += plasticity_model_ctx_destroy(&ctx);
     Matrix_cleanup(C);
@@ -853,8 +853,8 @@ int stiffness_el_crystal_plasticity(double *lk,
   
   int err = 0;
 
-  double *u;
-  u = (double *) malloc(sizeof(double)*nne*nsd);
+  double *u = malloc(sizeof(*u)*nne*nsd);
+  double *dMdu_all = malloc(sizeof(*dMdu_all) * 9 * nne * nsd);
 
   for(int a=0;a<nne;a++)
   {
@@ -922,13 +922,13 @@ int stiffness_el_crystal_plasticity(double *lk,
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
-    Matrix(double) *Fs = (m->vars).Fs;
-    
-    Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
-    Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
-        
-    Matrix_inv(pFn, pFnI);
-    Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
+    //Matrix(double) *Fs = (m->vars).Fs;
+
+    /* get a shortened pointer for simplified CM function calls */
+    const Model_parameters *func = m->param;
+    err += func->get_Fn(m,&Fn);
+    err += func->get_pFn(m,&pFn);
+    err += func->get_eFn(m,&eFn);
     
     // --> update plasticity part
     if(total_Lagrangian)
@@ -945,7 +945,11 @@ int stiffness_el_crystal_plasticity(double *lk,
       Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
     }   
     Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0); 
+
+    /* need to have called the integration algorithm. This should be
+       done OUTSIDE of the stiffness/tangent functions */
     constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);
+    err += func->get_pF(m,&pFnp1);
 
     Matrix_inv(pFnp1, pFnp1_I);
     Matrix_AxB(M,1.0,0.0,pFn,0,pFnp1_I,0);
@@ -964,7 +968,12 @@ int stiffness_el_crystal_plasticity(double *lk,
     Matrix_AxB(eFnM,1.0,0.0,eFn,0,M,0);
     
     double Jn; Matrix_det(Fn, Jn);
-    
+
+    void *tmp_ctx = NULL;
+    err += plasticity_model_ctx_build(&tmp_ctx, NULL, NULL, dt);
+    err += func->compute_dMdu(m, tmp_ctx, fe.ST, nne, ndofn, dMdu_all);
+    err += func->destroy_ctx(&tmp_ctx);
+
     for(int a=0; a<nne; a++)
     {
       for(int b=0; b<nsd; b++)
@@ -985,10 +994,14 @@ int stiffness_el_crystal_plasticity(double *lk,
           { 
             const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
                                                       nne,nsd,nsd,nsd)]; 
+            const double* const ptr_dMdu_wg = &(dMdu_all[idx_4_gen(w,g,0,0,
+                                                                   nne,nsd,nsd,nsd)]);
+
             Matrix_init_w_array(ST_wg,3,3,ptrST_wg); 
-            
+            Matrix_init_w_array(dMdu,3,3,ptr_dMdu_wg);
+
             // --> update stiffness w.r.t plasticity
-            constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt);
+            /* constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt); */
             // <-- update stiffness w.r.t plasticity
 
             Matrix_AxB(BB,1.0,0.0,Fr,1,ST_wg,0); 
@@ -1075,7 +1088,8 @@ int stiffness_el_crystal_plasticity(double *lk,
   Matrix_cleanup(sMTeFnT_sAA_eFndMdu);
     
   FEMLIB_destruct(&fe);
-  
+  free(dMdu_all);
+ 
   return err;
 }        
 

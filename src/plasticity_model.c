@@ -22,6 +22,7 @@ Define_Matrix(double);
 typedef struct plasticity_ctx {
   const double *C; /*< pointer to the left Cauchy-Green deformation tensor */
   const double *J; /*< pointer to the Jacobian -OR- Volume term */
+  double dt; /* time increment */
 } plasticity_ctx;
 
 static double compute_bulk_mod(const HOMMAT *mat)
@@ -189,6 +190,99 @@ static int plasticity_get_eFn(const Constitutive_model *m,
   Matrix_construct_redim(double,invFp,3,3);
   Matrix_inv(m->vars.Fs[TENSOR_pFn],invFp);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fn], 0, invFp, 0);
+  Matrix_cleanup(invFp);
+  return err;
+}
+
+static int plasticity_compute_dMdu(const Constitutive_model *m,
+                                   const void *ctx,
+                                   const double *Grad_op,
+                                   const int nne,
+                                   const int ndofn,
+                                   double *dM_du)
+{
+  int err = 0;
+  /* The existing function compute_dMdu takes Grad_op for a given
+     alpha,beta pair and computes the corresponding dMdu. We will
+     generate the required inputs for this function and call it
+     alpha*beta times. This should be improved */
+
+  /* since the current implementation uses the elastic deformation as
+     part of the user ctx, but which is stored as in the constitutive
+     model, we will assume we are getting junk in the ctx and extract
+     the needed stuff from the CM object. */
+  const plasticity_ctx *CTX = ctx;
+  plasticity_ctx *internal_ctx = NULL;
+  Matrix_double C, eFn, eFnp1;
+
+  /* extract the elastic deformations at (n) and (n + 1) */
+  Matrix_construct_redim(double, eFn, 3, 3);
+  Matrix_construct_redim(double, eFnp1, 3, 3);
+  err += m->param->get_eFn(m,&eFn);
+  err += m->param->get_eF(m,&eFnp1);
+
+  /* compute Je */
+  double J = 0.0;
+  Matrix_det(eFnp1, J);
+
+  /* compute eC */
+  Matrix_construct_redim(double,C,3,3);
+  Matrix_AxB(C, 1.0, 0.0, eFnp1, 1, eFnp1, 0);
+
+  /* construct a user context that we can trust */
+  err += plasticity_model_ctx_build((void**) &internal_ctx, C.m_pdata, &J, CTX->dt);
+
+  /* compute M at n+1, again, this information is in CM */
+  Matrix_double M;
+  {
+    Matrix_double pFnp1_I;
+    Matrix_construct_redim(double, pFnp1_I, 3, 3);
+    Matrix_construct_redim(double, M, 3, 3);
+    Matrix_inv(m->vars.Fs[TENSOR_pFnp1], pFnp1_I);
+    Matrix_AxB(M, 1.0, 0.0, m->vars.Fs[TENSOR_pFn], 0, pFnp1_I, 0);
+    Matrix_cleanup(pFnp1_I);
+  }
+
+  /* compute the elastic stress/tangent (S, L) using
+     constitutive_model_update_elasticity. This needs to become part
+     of the CM interface */
+  Matrix_double L,S;
+  Matrix_construct_redim(double, L, 81, 1);
+  Matrix_construct_redim(double, S, 3, 3);
+  err += constitutive_model_update_elasticity(m, &eFnp1, internal_ctx->dt, &L, &S, 1);
+
+  /* make successive calls to compute_dMdu for each node/dof. To avoid
+     copying, I am abusing access to the internal data structure of
+     the Matrix structure. */
+  Matrix_double dMdu_ab, Grad_op_ab;
+  Matrix_construct(double, dMdu_ab);
+  Matrix_construct(double, Grad_op_ab);
+  for (int a = 0; a < nne; a++) {
+    for(int b = 0; b < ndofn; b++) {
+      int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,3,3);
+      /* reset dimensions of the matrix objects and set pointer */
+      dMdu_ab.m_row = 3;
+      dMdu_ab.m_col = 3;
+      dMdu_ab.m_pdata = dM_du + idx_ab;
+
+      /* need to copy Grad_op due to const qualifier */
+      Matrix_init_w_array(Grad_op_ab, 3, 3, Grad_op + idx_ab);
+
+      /* call to compute_dMdu */
+      err += compute_dMdu(m, &dMdu_ab, &Grad_op_ab, &eFn, &eFnp1, &M,
+                          &S, &L, internal_ctx->dt);
+    }
+  }
+
+  /* clean up */
+  err += m->param->destroy_ctx((void**) &internal_ctx);
+  Matrix_cleanup(C);
+  Matrix_cleanup(M);
+  Matrix_cleanup(S);
+  Matrix_cleanup(L);
+  Matrix_cleanup(eFn);
+  Matrix_cleanup(eFnp1);
+
   return err;
 }
 
@@ -211,13 +305,15 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_eF = plasticity_get_eF;
   p->get_eFn = plasticity_get_eFn;
   p->destroy_ctx = plasticity_model_ctx_destroy;
+  p->compute_dMdu = plasticity_compute_dMdu;
 
   return err;
 }
 
 int plasticity_model_ctx_build(void **ctx,
                                const double *C,
-                               const double *J_or_Theta)
+                               const double *J_or_Theta,
+                               const double dt)
 {
   int err = 0;
   plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
@@ -226,6 +322,7 @@ int plasticity_model_ctx_build(void **ctx,
      the value. No additional memory is allocated. */
   t_ctx->C = C;
   t_ctx->J = J_or_Theta;
+  t_ctx->dt = dt;
 
   /* assign handle */
   *ctx = t_ctx;

@@ -75,7 +75,8 @@ int plasticity_model_initialize(Model_parameters *p);
  */
 int plasticity_model_ctx_build(void **ctx,
                                const double *C,
-                               const double *J_or_Theta);
+                               const double *J_or_Theta,
+                               const double dt);
 
 /**
  * Destroy the model context and invalidate the handle.
