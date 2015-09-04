@@ -325,47 +325,6 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
   return err;
 }
 
-int constitutive_model_update_dMdu(const Constitutive_model *m,
-                                   Matrix_double *dMdu,
-                                   const Matrix_double *eFn,
-                                   const Matrix_double *eFnp1,
-                                   const Matrix_double *M,
-                                   const Matrix_double *S,
-                                   const Matrix_double *L,
-                                   const Matrix_double *Grad_du,
-                                   const double dt)
-{
-  int err = 0;
-  switch(m->param->type) 
-  {
-  case HYPER_ELASTICITY:
-    Matrix_init(*dMdu, 0.0);
-    return err;
-  case CRYSTAL_PLASTICITY:
-  {
-    void *ctx;
-    double J;
-    Matrix(double) C;
-    Matrix_construct_redim(double,C,3,3); 
-    Matrix_AxB(C, 1.0, 0.0, *eFnp1, 1, *eFnp1, 0);
-    Matrix_det(*eFnp1, J);
-    err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J, dt); /* <-- seems unused */
-    err += compute_dMdu(m,dMdu,Grad_du,eFn,eFnp1,M,S,L,dt);
-    err += plasticity_model_ctx_destroy(&ctx);
-    Matrix_cleanup(C);
-        
-    break;    
-  }  
-  case BPA_PLASTICITY:
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
-    err++;
-    break;
-  }
-  return err; 
-}
-
-
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
                                 const MATGEOM_1 *p_mgeom,
@@ -999,10 +958,6 @@ int stiffness_el_crystal_plasticity(double *lk,
 
             Matrix_init_w_array(ST_wg,3,3,ptrST_wg); 
             Matrix_init_w_array(dMdu,3,3,ptr_dMdu_wg);
-
-            // --> update stiffness w.r.t plasticity
-            /* constitutive_model_update_dMdu(m,&dMdu,&eFn,&eFnp1,&M,&S,&L,&ST_wg,dt); */
-            // <-- update stiffness w.r.t plasticity
 
             Matrix_AxB(BB,1.0,0.0,Fr,1,ST_wg,0); 
             Matrix_symmetric(BB,sBB);

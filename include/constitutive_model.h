@@ -128,20 +128,6 @@ int constitutive_model_update_plasticity(Matrix_double *pFnp1,
                                          const double dt);
 
 /**
- * Compute the algorithmic tangent dM_du.
- *
- */
-int constitutive_model_update_dMdu(const Constitutive_model *m,
-                                   Matrix_double *dMdu,
-                                   const Matrix_double *eFn,
-                                   const Matrix_double *eFnp1,
-                                   const Matrix_double *M,
-                                   const Matrix_double *S,
-                                   const Matrix_double *L,
-                                   const Matrix_double *Grad_du,
-                                   const double dt);
-
-/**
  * User defined function for the Constitutive_model integration
  * algorithm. This function shall be implemented such that it modifies
  * the internal state to contain the updated values upon exit, i.e.,
