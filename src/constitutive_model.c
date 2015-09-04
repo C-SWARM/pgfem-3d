@@ -202,6 +202,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
 {
   int err = 0;
   void *ctx;
+  const Model_parameters *func = m->param;
   double J;
   Matrix(double) C, CI;    
   Matrix_construct_redim(double,C,3,3); 
@@ -234,8 +235,8 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   double nu = (m->param->p_hmat)->nu;
   double G = (m->param->p_hmat)->G;
   double kappa = ((2.0*G *(1.0+nu))/(3.0*(1.0-2.0*nu)));    
-  err += m->param->compute_dev_stress(m, ctx, S);
-  err += m->param->compute_dudj(m,ctx,&dudj);    
+  err += func->compute_dev_stress(m, ctx, S);
+  err += func->compute_dudj(m,ctx,&dudj);    
   Matrix_AplusB(*S, kappa*J*dudj,CI,1.0,*S);
   //compute stiffness
   if(compute_stiffness)
@@ -245,8 +246,8 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
     Matrix_construct_redim(double,CICI,81,1);             
     Matrix_construct_redim(double,SoxS,81,1);
     
-    err += m->param->compute_dev_tangent(m, ctx, L);              
-    err += m->param->compute_d2udj2(m,ctx,&d2udj2);
+    err += func->compute_dev_tangent(m, ctx, L);              
+    err += func->compute_d2udj2(m,ctx,&d2udj2);
   
     for(int I=1; I<=3; I++)
     {
@@ -275,21 +276,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
     Matrix_cleanup(SoxS);             
   }
 
-  switch(m->param->type)
-  {
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_destroy(&ctx);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_destroy(&ctx);
-      break;
-    case BPA_PLASTICITY:
-    default:
-      PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
-      err++;
-      break;
-  }
-  
+  func->destroy_ctx(&ctx);  
   Matrix_cleanup(C);
   Matrix_cleanup(CI); 
   return err; 
