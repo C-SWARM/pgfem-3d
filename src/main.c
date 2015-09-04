@@ -1420,9 +1420,12 @@ int single_scale_main(int argc,char *argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////
-/*              Matrix(double) PK2;
+/*
+              Matrix(double) PK2, Feff;
               Matrix_construct_init(double, PK2, 3,3,0.0);
-              post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, options.analysis_type);                          
+              Matrix_construct_init(double, Feff, 3,3,0.0);
+              post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
+              post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);              
               if(myrank==0)
               { 
                 FILE *fp_ss;
@@ -1431,48 +1434,19 @@ int single_scale_main(int argc,char *argv[])
                 else
                   fp_ss = fopen("strain_stress.txt", "a");
                                     
-                fprintf(fp_ss, "%ld %e %e %e %e %e %e %e %e %e %e %e\n", tim,times[tim+1],sup->defl_d[0], 
-                                 Mat_v(PK2,1,1),Mat_v(PK2,1,2),Mat_v(PK2,1,3),
+                fprintf(fp_ss, "%ld %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n", tim,times[tim+1], 
+                                Mat_v(Feff,1,1),Mat_v(Feff,1,2),Mat_v(Feff,1,3),
+                                Mat_v(Feff,2,1),Mat_v(Feff,2,2),Mat_v(Feff,2,3),
+                                Mat_v(Feff,3,1),Mat_v(Feff,3,2),Mat_v(Feff,3,3),
+                                Mat_v(PK2,1,1),Mat_v(PK2,1,2),Mat_v(PK2,1,3),
                                 Mat_v(PK2,2,1),Mat_v(PK2,2,2),Mat_v(PK2,2,3),
                                 Mat_v(PK2,3,1),Mat_v(PK2,3,2),Mat_v(PK2,3,3));
 
                 fclose(fp_ss);
               }
-              Matrix_cleanup(PK2);              
-*/
-/////////////////////////////////////////////////////////////////////////////////// 
-              if(tim==0)
-              {       
- /*               GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
-                Matrix(double) F,I,L,FI;              
-                Matrix_construct(double, F);
-                Matrix_construct(double, I); 
-                Matrix_construct_redim(double, L,3,3);                  
-                Matrix_construct_redim(double, FI,3,3);
-                                     
-                Matrix_init_w_array(F, 3, 3, GF);              
-                
-                Matrix_inv(F,FI);
-                Matrix_eye(I, 3);
-                Matrix_AplusB(F,1.0,F,-1.0,I);
-                Matrix_AxB(L,1.0/dt,0.0,F,0,FI,0);
-                
-//                Matrix_init(L,0.0);
-//                Mat_v(L, 1,1) = -1.0;
-//                //Mat_v(L, 1,3) = Mat_v(L, 1,2) = 0.06;                
-//                Mat_v(L, 2,2) = Mat_v(L, 3,3) = .37;
- */                     
-                if(myrank==-1)
-                  constitutive_model_test(hommat, NULL, 1);
-/*
-                Matrix_cleanup(F);
-                Matrix_cleanup(I);              
-                Matrix_cleanup(L);                            
-                Matrix_cleanup(FI);                                          
-                free(GF);*/
-              }  
-///////////////////////////////////////////////////////////////////////////////////      
-              
+              Matrix_cleanup(PK2);
+              Matrix_cleanup(Feff);              
+*/              
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
