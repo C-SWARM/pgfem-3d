@@ -585,9 +585,9 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
            int II = node[n].id[a];
            if (II != 0)
              {
-               if (a == 0) node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
-               else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
-               else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
+               if (a == 0)      node[n].x1 += r[n*ndofn + a];
+               else if (a == 1) node[n].x2 += r[n*ndofn + a];
+               else if (a == 2) node[n].x3 += r[n*ndofn + a];
              }
          }
      }/* end n < nn */
