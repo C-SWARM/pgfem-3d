@@ -103,6 +103,13 @@ static int plasticity_none_info(Model_var_info **info)
   return 0;
 }
 
+static int he_get_Fn(const Constitutive_model *m,
+                     Matrix_double *F)
+{
+  assert(0 && "this function is not implemented");
+  return 1;
+}
+
 static int he_get_pF(const Constitutive_model *m,
                      Matrix_double *F)
 {
@@ -158,6 +165,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
   p->get_var_info = plasticity_none_info;
+  p->get_Fn = he_get_Fn;
   p->get_pF = he_get_pF;
   p->get_pFn = he_get_pFn;
   p->get_eF = he_get_eF;

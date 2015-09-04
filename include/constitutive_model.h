@@ -337,6 +337,7 @@ struct Model_parameters {
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
   usr_info get_var_info;
+  usr_get_F get_Fn;
   usr_get_F get_pF;
   usr_get_F get_pFn;
   usr_get_F get_eF;

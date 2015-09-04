@@ -153,6 +153,14 @@ static int plasticity_get_pF(const Constitutive_model *m,
   return err;
 }
 
+static int plasticity_get_Fn(const Constitutive_model *m,
+                             Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_Fn]);
+  return err;
+}
+
 static int plasticity_get_pFn(const Constitutive_model *m,
                               Matrix_double *F)
 {
@@ -166,10 +174,11 @@ static int plasticity_get_eF(const Constitutive_model *m,
 {
   int err = 0;
   Matrix_double invFp;
-  Matrix_redim(invFp,3,3);
+  Matrix_construct_redim(double,invFp,3,3);
   Matrix_inv(m->vars.Fs[TENSOR_pFnp1],invFp);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnp1], 0, invFp, 0);
-  return 0;
+  Matrix_cleanup(invFp);
+  return err;
 }
 
 static int plasticity_get_eFn(const Constitutive_model *m,
@@ -177,10 +186,10 @@ static int plasticity_get_eFn(const Constitutive_model *m,
 {
   int err = 0;
   Matrix_double invFp;
-  Matrix_redim(invFp,3,3);
+  Matrix_construct_redim(double,invFp,3,3);
   Matrix_inv(m->vars.Fs[TENSOR_pFn],invFp);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fn], 0, invFp, 0);
-  return 0;
+  return err;
 }
 
 int plasticity_model_initialize(Model_parameters *p)
@@ -196,6 +205,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->update_state_vars = plasticity_update;
   p->reset_state_vars = plasticity_reset;
   p->get_var_info = plasticity_info;
+  p->get_Fn = plasticity_get_Fn;
   p->get_pF = plasticity_get_pF;
   p->get_pFn = plasticity_get_pFn;
   p->get_eF = plasticity_get_eF;

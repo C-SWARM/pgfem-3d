@@ -175,6 +175,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
+  p->get_Fn = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
   p->get_eF = NULL;
