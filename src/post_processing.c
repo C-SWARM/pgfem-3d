@@ -88,47 +88,23 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, H
   Matrix_cleanup(devS);        
 }
 
-void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Matrix(double) *S, HOMMAT *hommat, ELEMENT *elem, EPS *eps,
-                          Matrix(double) *Fr, double Pn)
+void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Matrix(double) *S, double *Jnp1, 
+                                                  HOMMAT *hommat, ELEMENT *elem, EPS *eps)
 {
   int total_Lagrangian = 0;
   int compute_stiffness = 0;
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
   Matrix(double) *Fs = (m->vars).Fs;
-  Matrix(double) Fn, pFnp1_I, Fnp1, eFnp1;
-  Matrix_construct_init(double,Fn,3,3,0.0);
-  Matrix_construct_init(double,Fnp1,3,3,0.0);  
+  Matrix(double) pFnp1_I, eFnp1;
   Matrix_construct_init(double,pFnp1_I,3,3,0.0);
   Matrix_construct_init(double,eFnp1,3,3,0.0); 
-
-  Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);  
-  if(total_Lagrangian)
-  { 
-    Matrix(double) FnI;
-    Matrix_construct_redim(double, FnI,3,3);
-    Matrix_inv(Fn,FnI);
-    Matrix_AeqB(Fnp1,1.0,*Fr);  // Fn+1 
-    Matrix_AxB(*Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
-    Matrix_cleanup(FnI);         
-  }
-  else
-  {
-    Matrix_AxB(Fnp1,1.0,0.0,*Fr,0,Fn,0);  // Fn+1    
-  } 
        
   Matrix_inv(Fs[TENSOR_pFnp1], pFnp1_I);  
-  Matrix_AxB(eFnp1,1.0,0.0,Fnp1,0,pFnp1_I,0); 
-  constitutive_model_update_elasticity(m,&eFnp1,0.0,NULL,S,compute_stiffness);
+  Matrix_AxB(eFnp1,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0); 
+  constitutive_model_update_elasticity(m,&eFnp1,0.0,NULL,S,compute_stiffness);  
+  Matrix_det(Fs[TENSOR_Fnp1], *Jnp1);
   
-  double Jn = 1.0;
-  if(!total_Lagrangian)
-    Matrix_det(Fn, Jn);
-
-  Matrix_AeqB(*S,1.0/Jn,*S);
-  
-  Matrix_cleanup(Fn);
-  Matrix_cleanup(Fnp1);  
   Matrix_cleanup(pFnp1_I);
   Matrix_cleanup(eFnp1);   
 }                          
@@ -189,12 +165,12 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
-    {
+    {     
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       double Pn = 0.0;  
-
+      double Jnp1 = 1.0;
       switch(opts->analysis_type)
       {
         case DISP:
@@ -218,7 +194,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
               post_processing_compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
               break;
             case CRYSTAL_PLASTICITY:
-              post_processing_compute_stress_plasticity_ip(&fe,e,ip,&S,hommat,elem,eps,&F,Pn);
+              post_processing_compute_stress_plasticity_ip(&fe,e,ip,&S,&Jnp1,hommat,elem,eps);
               break;          
             case BPA_PLASTICITY:
             default:
@@ -230,10 +206,10 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
           break;
       }
       
-      LV += fe.detJxW;
+      LV += fe.detJxW/Jnp1;
 
       for(int a=0; a<9; a++)
-        LS.m_pdata[a] += S.m_pdata[a]*fe.detJxW;
+        LS.m_pdata[a] += S.m_pdata[a]*fe.detJxW/Jnp1;
     }
     FEMLIB_destruct(&fe);
     Matrix_cleanup(Np);
@@ -251,6 +227,8 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   
   for(int a=0; a<9; a++)
     GS[a] = GS[a]/GV;
+    
+  printf("S: %e\n", GV);  
 }
 
 void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
@@ -267,10 +245,9 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
   }     
   
   int nsd = 3;
-  Matrix(double) F,LF, Fnp1;
+  Matrix(double) F,LF;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,LF,3,3,0.0);  
-  Matrix_construct_init(double,Fnp1,3,3,0.0);    
 
   double LV = 0.0;
   double GV = 0.0;
@@ -297,18 +274,16 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     {      
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
-        Matrix_AxB(Fnp1,1.0,0.0,F,0,(m->vars).Fs[TENSOR_Fn],0);  // Fn+1
-        double Jn = 0.0;
-        Matrix_det((m->vars).Fs[TENSOR_Fn], Jn);
+        double Jnp1 = 0.0;
+        Matrix_det((m->vars).Fs[TENSOR_Fnp1], Jnp1);
         
-        LV += fe.detJxW/Jn;
+        LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += Fnp1.m_pdata[a]*fe.detJxW/Jn;        
+          LF.m_pdata[a] += (m->vars).Fs[TENSOR_Fnp1].m_pdata[a]*fe.detJxW/Jnp1;        
         
       }
       else
@@ -325,8 +300,8 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
   MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
   Matrix_cleanup(F);
-  Matrix_cleanup(Fnp1);
   
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
+  printf("GV: %e\n", GV);  
 }
