@@ -877,15 +877,32 @@ double Newton_Raphson (const int print_level,
         {
           r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
           long id = node[a].id[b];
-          if(id>0)
-            r_n[a*ndofn + b] = d_r[id-1];
-          else
-          {
-            if(id==0)
-              r_n[a*ndofn + b] = 0.0;
+          if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY) 
+          // Updated Lagrangian
+          {  
+            if(id>0)
+              r_n[a*ndofn + b] = d_r[id-1];
             else
-              r_n[a*ndofn + b] = 0.0*sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
+            {
+              if(id==0)
+                r_n[a*ndofn + b] = 0.0;
+              else
+                r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
+            }
           }
+          else
+          // Total Lagrangian: DISP, TF
+          {
+            if(id>0)
+              r_n[a*ndofn + b] = r[id-1];
+            else
+            {
+              if(id==0)
+                r_n[a*ndofn + b] = 0.0;
+              else
+                r_n[a*ndofn + b] = sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
+            }            
+          }   
         }
       }
     }
