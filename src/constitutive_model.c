@@ -194,7 +194,7 @@ int model_parameters_destroy(Model_parameters *p)
 }
 
 int constitutive_model_update_elasticity(const Constitutive_model *m,
-                                         const Matrix_double *Fe,
+                                         const Matrix_double *F,
                                          const double dt,
                                          Matrix_double *L,
                                          Matrix_double *S,
@@ -204,13 +204,25 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   void *ctx;
   const Model_parameters *func = m->param;
   double J;
-  Matrix(double) C, CI;    
+  Matrix(double) Fe,C, CI;    
   Matrix_construct_redim(double,C,3,3); 
   Matrix_construct_redim(double,CI,3,3);     
-  
-  Matrix_AxB(C, 1.0, 0.0, *Fe, 1, *Fe, 0);
+  Matrix_construct_redim(double, Fe, 3,3);
+
+  /* this is TEMPORARY until expand hyperelastic to maintain an
+     elastic deformation gradient */
+  switch (m->param->type){
+  case HYPER_ELASTICITY:
+    Matrix_AeqB(Fe,1.0,*F);
+    break;
+  default:
+    func->get_eF(m,&Fe);
+    break;
+  }
+
+  Matrix_AxB(C, 1.0, 0.0, Fe, 1, Fe, 0);
   Matrix_inv(C,CI);        
-  Matrix_det(*Fe, J);
+  Matrix_det(Fe, J);
 
   switch(m->param->type)
   {
@@ -219,7 +231,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
       break;
     case CRYSTAL_PLASTICITY:
       
-      err += plasticity_model_ctx_build(&ctx, C.m_pdata, &J, dt);
+      err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt);
       
       break;
     case BPA_PLASTICITY:
@@ -916,7 +928,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     double Jn; Matrix_det(Fn, Jn);
 
     void *tmp_ctx = NULL;
-    err += plasticity_model_ctx_build(&tmp_ctx, NULL, NULL, dt);
+    err += plasticity_model_ctx_build(&tmp_ctx, Fnp1.m_pdata, dt);
     err += func->compute_dMdu(m, tmp_ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->destroy_ctx(&tmp_ctx);
 

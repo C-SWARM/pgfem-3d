@@ -24,8 +24,7 @@ Define_Matrix(double);
  * associated functions.
  */
 typedef struct plasticity_ctx {
-  const double *C; /*< pointer to the left Cauchy-Green deformation tensor */
-  const double *J; /*< pointer to the Jacobian -OR- Volume term */
+  double F[TENSOR_LEN];
   double dt; /* time increment */
 } plasticity_ctx;
 
@@ -42,47 +41,38 @@ static int plasticity_int_alg(Constitutive_model *m,
   return err;
 }
 
-static int plasticity_dev_stress(const Constitutive_model *m,
-                                      const void *ctx,
-                                      Matrix_double *stress)
+static int cp_compute_eC(const double * restrict eF,
+                         double * restrict eC)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
-  devStressFuncPtr Stress = getDevStressFunc(-1,m->param->p_hmat);
-  Stress(CTX->C,m->param->p_hmat,stress->m_pdata);
+  memset(eC, 0, TENSOR_LEN * sizeof(*eC));
+  for (int i = 0; i < DIM; i++) {
+    for (int j = 0; j < DIM; j++) {
+      for (int k = 0; k < DIM; k++) {
+        eC[idx_2(i,j)] += eF[idx_2(k,i)] * eF[idx_2(k,j)];
+      }
+    }
+  }
   return err;
 }
 
-static int plasticity_dudj(const Constitutive_model *m,
-                                const void *ctx,
-                                double *dudj)
+static int cp_dev_stress(const double *eC,
+                         const HOMMAT *p_hmat,
+                         double *Sdev)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
-  dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
-  Pressure(*(CTX->J),m->param->p_hmat,dudj);
+  devStressFuncPtr Stress = getDevStressFunc(-1, p_hmat);
+  Stress(eC, p_hmat, Sdev);
   return err;
 }
 
-static int plasticity_dev_tangent(const Constitutive_model *m,
-                                       const void *ctx,
-                                       Matrix_double *tangent)
+static int cp_dev_tangent(const double *eC,
+                          const HOMMAT *p_hmat,
+                          double *Ldev)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
-  matStiffFuncPtr Tangent = getMatStiffFunc(-1,m->param->p_hmat);
-  Tangent(CTX->C,m->param->p_hmat,tangent->m_pdata);
-  return err;
-}
-
-static int plasticity_d2udj2(const Constitutive_model *m,
-                                  const void *ctx,
-                                  double *d2udj2)
-{
-  int err = 0;
-  const plasticity_ctx *CTX = ctx;
-  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
-  D_Pressure(*(CTX->J),m->param->p_hmat,d2udj2);
+  matStiffFuncPtr Tangent = getMatStiffFunc(-1, p_hmat);
+  Tangent(eC, p_hmat, Ldev);
   return err;
 }
 
@@ -191,10 +181,72 @@ static int plasticity_get_eFn(const Constitutive_model *m,
 {
   int err = 0;
   Matrix_double invFp;
-  Matrix_construct_redim(double,invFp,3,3);
+  Matrix_construct_redim(double,invFp,DIM,DIM);
   Matrix_inv(m->vars.Fs[TENSOR_pFn],invFp);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fn], 0, invFp, 0);
   Matrix_cleanup(invFp);
+  return err;
+}
+
+static int plasticity_dev_stress(const Constitutive_model *m,
+                                 const void *ctx,
+                                 Matrix_double *stress)
+{
+  int err = 0;
+  const plasticity_ctx *CTX = ctx;
+  double eC[TENSOR_LEN] = {};
+  Matrix_double eFnp1;
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);
+  err += plasticity_get_eF(m,&eFnp1);
+  err += cp_compute_eC(eFnp1.m_pdata,eC);
+  err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
+  return err;
+}
+
+static int plasticity_dudj(const Constitutive_model *m,
+                           const void *ctx,
+                           double *dudj)
+{
+  int err = 0;
+  const plasticity_ctx *CTX = ctx;
+  dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
+  Matrix_double eFnp1;
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);
+  err += plasticity_get_eF(m,&eFnp1);
+  double J = 0.0;
+  Matrix_det(eFnp1, J);
+  Pressure(J,m->param->p_hmat,dudj);
+  return err;
+}
+
+static int plasticity_dev_tangent(const Constitutive_model *m,
+                                  const void *ctx,
+                                  Matrix_double *tangent)
+{
+  int err = 0;
+  const plasticity_ctx *CTX = ctx;
+  double eC[TENSOR_LEN] = {};
+  Matrix_double eFnp1;
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);
+  err += plasticity_get_eF(m,&eFnp1);
+  err += cp_compute_eC(eFnp1.m_pdata,eC);
+  err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
+  return err;
+}
+
+static int plasticity_d2udj2(const Constitutive_model *m,
+                             const void *ctx,
+                             double *d2udj2)
+{
+  int err = 0;
+  const plasticity_ctx *CTX = ctx;
+  Matrix_double eFnp1;
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);
+  err += plasticity_get_eF(m,&eFnp1);
+  double J = 0.0;
+  Matrix_det(eFnp1, J);
+  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
+  D_Pressure(J,m->param->p_hmat,d2udj2);
   return err;
 }
 
@@ -210,31 +262,14 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
      alpha,beta pair and computes the corresponding dMdu. We will
      generate the required inputs for this function and call it
      alpha*beta times. This should be improved */
-
-  /* since the current implementation uses the elastic deformation as
-     part of the user ctx, but which is stored as in the constitutive
-     model, we will assume we are getting junk in the ctx and extract
-     the needed stuff from the CM object. */
   const plasticity_ctx *CTX = ctx;
-  plasticity_ctx *internal_ctx = NULL;
-  Matrix_double C, eFn, eFnp1;
+  Matrix_double eFn, eFnp1;
 
   /* extract the elastic deformations at (n) and (n + 1) */
   Matrix_construct_redim(double, eFn, DIM, DIM);
   Matrix_construct_redim(double, eFnp1, DIM, DIM);
   err += m->param->get_eFn(m,&eFn);
   err += m->param->get_eF(m,&eFnp1);
-
-  /* compute Je */
-  double J = 0.0;
-  Matrix_det(eFnp1, J);
-
-  /* compute eC */
-  Matrix_construct_redim(double,C,3,3);
-  Matrix_AxB(C, 1.0, 0.0, eFnp1, 1, eFnp1, 0);
-
-  /* construct a user context that we can trust */
-  err += plasticity_model_ctx_build((void**) &internal_ctx, C.m_pdata, &J, CTX->dt);
 
   /* compute M at n+1, again, this information is in CM */
   Matrix_double M;
@@ -253,7 +288,7 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   Matrix_double L,S;
   Matrix_construct_redim(double, L, TENSOR4_LEN, 1);
   Matrix_construct_redim(double, S, DIM, DIM);
-  err += constitutive_model_update_elasticity(m, &eFnp1, internal_ctx->dt, &L, &S, 1);
+  err += constitutive_model_update_elasticity(m, &eFnp1, CTX->dt, &L, &S, 1);
 
   /* make successive calls to compute_dMdu for each node/dof. To avoid
      copying, I am abusing access to the internal data structure of
@@ -274,13 +309,11 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
 
       /* call to compute_dMdu */
       err += compute_dMdu(m, &dMdu_ab, &Grad_op_ab, &eFn, &eFnp1, &M,
-                          &S, &L, internal_ctx->dt);
+                          &S, &L, CTX->dt);
     }
   }
 
   /* clean up */
-  err += m->param->destroy_ctx((void**) &internal_ctx);
-  Matrix_cleanup(C);
   Matrix_cleanup(M);
   Matrix_cleanup(S);
   Matrix_cleanup(L);
@@ -315,17 +348,14 @@ int plasticity_model_initialize(Model_parameters *p)
 }
 
 int plasticity_model_ctx_build(void **ctx,
-                               const double *C,
-                               const double *J_or_Theta,
+                               const double *F,
                                const double dt)
 {
   int err = 0;
   plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
 
-  /* assign internal pointers. NOTE: We are copying the pointer NOT
-     the value. No additional memory is allocated. */
-  t_ctx->C = C;
-  t_ctx->J = J_or_Theta;
+  /* copy data into context */
+  memcpy(t_ctx->F, F, TENSOR_LEN * sizeof(*F));
   t_ctx->dt = dt;
 
   /* assign handle */
@@ -340,7 +370,7 @@ int plasticity_model_ctx_destroy(void **ctx)
   /* invalidate handle */
   *ctx = NULL;
 
-  /* we do not control memory for internal pointers */
+  /* there are no internal pointers */
 
   /* free object memory */
   free(t_ctx);
@@ -590,6 +620,40 @@ int plasticity_model_slip_system(Matrix_double *P)
   return N_SYS;  
 }
 
+/**
+ * Function to set the values of Fnp1 under the stand-alone CM
+ * integrator. This is a band-aid since the integrator does not
+ * directly access/modify the Constitutive_model data.
+ */
+static void CM_set_Fnp1(MaterialProperties *Props,
+                        double **Fnp1)
+{
+  assert(Props->cm != NULL);
+  double *F = Props->cm->vars.Fs[TENSOR_Fnp1].m_pdata;
+  for (int i = 0; i < DIM; i++) {
+    for (int j = 0; j < DIM; j++) {
+      F[idx_2(i,j)] = Fnp1[i][j];
+    }
+  }
+}
+
+/**
+ * Function to set the values of pFnp1 under the stand-alone CM
+ * integrator. This is a band-aid since the integrator does not
+ * directly access/modify the Constitutive_model data.
+ */
+static void CM_set_pFnp1(MaterialProperties *Props,
+                         double **pFnp1)
+{
+  assert(Props->cm != NULL);
+  double *F = Props->cm->vars.Fs[TENSOR_pFnp1].m_pdata;
+  for (int i = 0; i < DIM; i++) {
+    for (int j = 0; j < DIM; j++) {
+      F[idx_2(i,j)] = pFnp1[i][j];
+    }
+  }
+}
+
 void elastic_stress(MaterialProperties *Props, double *F, double *S)
 {
   Matrix(double) Se, Fe;
@@ -645,7 +709,8 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
   enum {eFn_I, pFnp1_k, pFnp1_I, eFnp1, PK2, Fend};
   
   const int N_SYS = (m->param)->N_SYS;
-  double *P_sys = ((m->param)->Psys)->m_pdata;    
+  double *P_sys = ((m->param)->Psys)->m_pdata;
+  Matrix_double *CM_pFnp1 = &(m->vars.Fs[TENSOR_pFnp1]);
   Fs = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));
   
   for(int a=0; a<Fend; a++)
@@ -663,6 +728,8 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
   Matrix_inv(*eFn, Fs[eFn_I]);
   Matrix_AxB(Fs[pFnp1_k],1.0,0.0,Fs[eFn_I],0,*Fnp1,0);  
 
+
+
   double err_g_0 = computer_zero;   
 
   for(int k=0; k<max_itr; k++)
@@ -670,12 +737,18 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
     Matrix_init(*pFnp1, 0.0);
         *L_np1 = 0.0;
 
-    Staggered_NewtonRapson_Testing_sp(Props,Param,Struc,Solver,
-                                      0.0,dt,P_sys,g_np1_kp1,pFn->m_pdata,Fnp1->m_pdata,
-                                      L_np1_k,&L_np1_kp1,Fs[pFnp1_k].m_pdata,pFnp1->m_pdata);
+        /* update the internal datastructure for pF */
+        Matrix_AeqB(*CM_pFnp1,1.0,Fs[pFnp1_k]);
 
-    Matrix_inv(*pFnp1, Fs[pFnp1_I]);
-    Matrix_AxB(Fs[eFnp1],1.0,0.0,*Fnp1,0,Fs[pFnp1_I],0);         
+        Staggered_NewtonRapson_Testing_sp(Props,Param,Struc,Solver,
+                                          0.0,dt,P_sys,g_np1_kp1,pFn->m_pdata,Fnp1->m_pdata,
+                                          L_np1_k,&L_np1_kp1,Fs[pFnp1_k].m_pdata,pFnp1->m_pdata);
+
+        /* update the internal datastructure for pF */
+        Matrix_AeqB(*CM_pFnp1,1.0,*pFnp1);
+
+        Matrix_inv(*pFnp1, Fs[pFnp1_I]);
+     Matrix_AxB(Fs[eFnp1],1.0,0.0,*Fnp1,0,Fs[pFnp1_I],0);         
     elastic_stress(Props,Fs[eFnp1].m_pdata,Fs[PK2].m_pdata);
     Matrix_init(Tau_Array, 0.0);
     Matrix_init(gamma_RateArray, 0.0);
@@ -762,6 +835,8 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   Props.cm = m;
   Props.compute_elastic_stress = elastic_stress;
   Props.compute_elastic_tangent = elastic_tangent;
+  Props.set_cm_Fnp1 = CM_set_Fnp1;
+  Props.set_cm_pFnp1 = CM_set_pFnp1;
 
   /*--------MaterialParameters_Settings--------*/
   MaterialParameters Params;
@@ -777,22 +852,24 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   
   int j_max = DIM;
 
-  Matrix(double) Fe_I,Fp_np1k;
-  
+  Matrix(double) Fe_I;
   Matrix_construct_redim(double,Fe_I,DIM,DIM);
-  Matrix_construct_redim(double,Fp_np1k,DIM,DIM);
+  Matrix_inv(*Fe_n, Fe_I);
 
   double g_n = state_var[VAR_g_n];
   double g_np1 = g_n;
-  
   double L_np1 = state_var[VAR_L_n];
 
-  Matrix_inv(*Fe_n, Fe_I);
-  Matrix_AxB(Fp_np1k,1.0,0.0,Fe_I,0,*Fnp1,0);
-  
+  /* Update the internally stored total F, pF */
+  Matrix_AeqB(Fs[TENSOR_Fnp1], 1.0, *Fnp1);
+  Matrix_AeqB(Fs[TENSOR_pFnp1], 1.0, *pFnp1);
+
   plasticity_model_staggered_NR(pFnp1, &g_np1, &L_np1,
                                 Fnp1, Fe_n, (Fs+TENSOR_pFn),
                                 &Props, &Params, &Struc, &Solver, m, dt, g_n);
+
+  /* update pF after the integration algorithm */
+  Matrix_AeqB(Fs[TENSOR_pFnp1], 1.0, *pFnp1);
 
   state_var[VAR_g_np1] =  g_np1;
   state_var[VAR_L_np1] =  L_np1;
@@ -817,15 +894,11 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   }
 
   Matrix_cleanup(Fe_I);
-  Matrix_cleanup(Fp_np1k);
   Matrix_cleanup(S_n);
   Matrix_cleanup(eFnp1);
-  Matrix_cleanup(pFnp1_I);    
+  Matrix_cleanup(pFnp1_I);
   
-  Matrix_AeqB(Fs[TENSOR_pFnp1], 1.0, *pFnp1);
-  Matrix_AeqB(Fs[TENSOR_Fnp1], 1.0, *Fnp1);
-  
-  return err;    
+  return err;
 }
 
 
@@ -870,6 +943,8 @@ int plasticity_model_integration_ip_(Matrix_double *pFnp1, Constitutive_model *m
   Props.cm = m;
   Props.compute_elastic_stress = elastic_stress;
   Props.compute_elastic_tangent = elastic_tangent;
+  Props.set_cm_Fnp1 = CM_set_Fnp1;
+  Props.set_cm_pFnp1 = CM_set_pFnp1;
 
   /*--------MaterialParameters_Settings--------*/
   MaterialParameters Params;

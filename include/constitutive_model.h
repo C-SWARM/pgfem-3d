@@ -103,13 +103,14 @@ int init_all_constitutive_model(EPS *eps,
  * Compute the elastic stress and tangent tensors. Note that the total
  * stress and tangent (not only the deviatoric parts) are returned.
  *
+ * \param[in] F, *total* deformation gradient
  * \param[in] compute_stiffness, flag to comptue the stiffness tensor
  * (L) if non-zero. Otherwise L is unchanged.
  *
  * \return non-zero on internal error.
  */
 int constitutive_model_update_elasticity(const Constitutive_model *m,
-                                         const Matrix_double *Fe,
+                                         const Matrix_double *F,
                                          const double dt,
                                          Matrix_double *L,
                                          Matrix_double *S,

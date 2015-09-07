@@ -63,9 +63,7 @@ int plasticity_model_initialize(Model_parameters *p);
  * through the plasticity interface.
  *
  * \param[in,out] ctx - handle to an opaque model context object.
- * \param[in] C - The total left Cauchy-Green deformation tensor.
- * \param[in] J_or_Theta - The Jacobian of the deformation -OR- the
- *   volume field (depending on FE formulation)
+ * \param[in] F - The *total* deformation gradient.
  * \return non-zero on internal error.
  *
  * CAVEATES: The addresses of C and J_or_Theta must remain valid
@@ -74,8 +72,7 @@ int plasticity_model_initialize(Model_parameters *p);
  * invalidate ctx.
  */
 int plasticity_model_ctx_build(void **ctx,
-                               const double *C,
-                               const double *J_or_Theta,
+                               const double *F,
                                const double dt);
 
 /**
