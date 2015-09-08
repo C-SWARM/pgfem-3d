@@ -117,18 +117,6 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
                                          const int compute_stiffness);
 
 /**
- * Call the integration algorithm and update the internal state variables.
- *
- * \param[out] pFnp1, the computed plastic deformation
- * \return non-zero on internal error.
- */
-int constitutive_model_update_plasticity(Matrix_double *pFnp1,
-                                         const Matrix_double *Fnp1,
-                                         const Matrix_double *eFn,
-                                         Constitutive_model *m,
-                                         const double dt);
-
-/**
  * User defined function for the Constitutive_model integration
  * algorithm. This function shall be implemented such that it modifies
  * the internal state to contain the updated values upon exit, i.e.,

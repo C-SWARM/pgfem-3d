@@ -294,36 +294,6 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   return err; 
 }
 
-int constitutive_model_update_plasticity(Matrix_double *pFnp1,
-                                         const Matrix_double *Fnp1,
-                                         const Matrix_double *eFn,
-                                         Constitutive_model *m,
-                                         const double dt)
-{
-  int err = 0;  
-
-  switch(m->param->type)
-  {
-    case HYPER_ELASTICITY:
-      Matrix_eye(*pFnp1,3);
-      return err;
-    
-    case CRYSTAL_PLASTICITY:
-    {  
-      plasticity_model_integration_ip(pFnp1, m, Fnp1, eFn, dt);
-      return err;
-    }  
-    case BPA_PLASTICITY:
-      return err;
-    
-    default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
-    err++;
-    break;
-  }      
-  return err;
-}
-
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
                                 const MATGEOM_1 *p_mgeom,
@@ -507,12 +477,9 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,Fr);
             
       Constitutive_model *m = &(eps[e].model[ip-1]);
-      Matrix(double) *Fs = (m->vars).Fs;
-      double *state_var = (m->vars).state_vars[0].m_pdata;
-      
-   
-      Matrix_AeqB(Fn,1.0,Fs[TENSOR_Fn]);
-      Matrix_AeqB(pFn,1.0,Fs[TENSOR_pFn]);      
+      const Model_parameters *func = m->param;
+      err += func->get_Fn(m,&Fn);
+      err += func->get_pFn(m,&pFn);
         
       Matrix_inv(pFn, pFnI);
       Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
@@ -527,8 +494,16 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
         Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
       }   
     
-      constitutive_model_update_plasticity(&pFnp1,&Fnp1,&eFn,m,dt);     
-      m->param->update_state_vars(m);
+      void *ctx = NULL;
+      switch (m->param->type){
+      case CRYSTAL_PLASTICITY:
+        err += plasticity_model_ctx_build(&ctx,Fnp1.m_pdata,dt);
+        break;
+      default: assert(0); break;
+      }
+      err += func->integration_algorithm(m,ctx);
+      err += func->destroy_ctx(&ctx);
+      err += m->param->update_state_vars(m);
     }
   }
   
