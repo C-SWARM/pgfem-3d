@@ -37,7 +37,21 @@ static int plasticity_int_alg(Constitutive_model *m,
                               const void *ctx)
 {
   int err = 0;
-  /* hyperelastic, no integration algorithm */
+  const plasticity_ctx *CTX = ctx;
+  Matrix_double Fnp1, pFnp1, Fe_n;
+  Matrix_construct(double, Fnp1);
+  Matrix_init_w_array(Fnp1, DIM, DIM, CTX->F);
+  Matrix_construct_redim(double, pFnp1, DIM, DIM);
+  Matrix_construct_redim(double, Fe_n, DIM, DIM);
+  err += m->param->get_eFn(m,&Fe_n);
+
+  /* NOTE: m->...pFnp1 is set in this function. The returned value is
+     not needed. */
+  err += plasticity_model_integration_ip(&pFnp1, m, &Fnp1, &Fe_n, CTX->dt);
+
+  Matrix_cleanup(Fnp1);
+  Matrix_cleanup(pFnp1);
+  Matrix_cleanup(Fe_n);
   return err;
 }
 
