@@ -5,7 +5,6 @@
 #include "PGFem3D_to_VTK.hpp"
 
 #include "constitutive_model.h"
-#include "plasticity_model.h"
 
 int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
 {
