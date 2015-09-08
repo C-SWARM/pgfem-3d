@@ -1044,7 +1044,8 @@ int plasticity_model_read_parameters(Constitutive_model *m)
 {
   int err = 0;
   double *state_var = (m->vars).state_vars[0].m_pdata;
-  
+
+  /* set parameter values -- these remain unchanged */
   state_var[VAR_gamma_dot_0] = 1.0;
   state_var[VAR_gamma_dot_s] = 50.0e+9;  
   state_var[VAR_m]           = 0.05;
@@ -1052,17 +1053,22 @@ int plasticity_model_read_parameters(Constitutive_model *m)
   state_var[VAR_G0]          = 200.0;    
   state_var[VAR_gs_0]        = 330.0;
   state_var[VAR_w]           = 0.005;
-  
-    
+
+  /* set state variables to initial values */
   state_var[VAR_g_n] = state_var[VAR_g0];
   state_var[VAR_g_np1] = state_var[VAR_g0];    
   state_var[VAR_L_n] = 0.0;  
   state_var[VAR_L_np1] = 0.0;
-  
-  int N_SYS = (m->param)->N_SYS;
+
+  /* set the dimensions for the tau and gamma_dot varables */
   Matrix(double) *Fs = (m->vars).Fs;
+  const int N_SYS = (m->param)->N_SYS;
   Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
-  Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);    
+  Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);
+
+  /* intitialize to zeros */
+  Matrix_init(Fs[TENSOR_tau], 0.0);
+  Matrix_init(Fs[TENSOR_gamma_dot], 0.0);
   return err;
 }
 

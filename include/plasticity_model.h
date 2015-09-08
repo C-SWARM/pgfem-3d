@@ -32,7 +32,7 @@ enum variable_names {
   VAR_L_np1,  
   VAR_g_n,
   VAR_g_np1,  
-  VAR_gamma_dot_0,
+  VAR_gamma_dot_0, /* this and the rest are actually material parameters */
   VAR_gamma_dot_s, 
   VAR_m,
   VAR_g0,  
