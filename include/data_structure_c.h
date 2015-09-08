@@ -451,37 +451,46 @@ typedef struct Matrix_##T                                               \
   }                                                                                                                                                          \
 } while(0)
 
-// D = A*B*C
-#define Matrix_Tns2_AxBxC(D,A,B,C) do {                                 \
+// D = a*A*B*C + b*D, a and b are scalar
+#define Matrix_Tns2_AxBxC(D,a,b,A,B,C) do {                             \
                                                                         \
   Matrix_check_null_and_redim(D,3,3);                                   \
-  Mat_v(D,1,1) = Mat_v(C,1,1)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,1)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,1)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3));\
-  Mat_v(D,1,2) = Mat_v(C,1,2)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,2)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,2)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3));\
-  Mat_v(D,1,3) = Mat_v(C,1,3)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,3)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,3)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3));\
-  Mat_v(D,2,1) = Mat_v(C,1,1)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,1)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,1)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3));\
-  Mat_v(D,2,2) = Mat_v(C,1,2)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,2)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,2)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3));\
-  Mat_v(D,2,3) = Mat_v(C,1,3)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,3)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,3)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3));\
-  Mat_v(D,3,1) = Mat_v(C,1,1)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,1)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,1)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3));\
-  Mat_v(D,3,2) = Mat_v(C,1,2)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,2)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,2)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3));\
-  Mat_v(D,3,3) = Mat_v(C,1,3)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1)) \
-               + Mat_v(C,2,3)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2)) \
-               + Mat_v(C,3,3)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3));\
+  Mat_v(D,1,1) = Mat_v(D,1,1)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,1)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,1)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,1)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
+  Mat_v(D,1,2) = Mat_v(D,1,2)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,2)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,2)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,2)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
+  Mat_v(D,1,3) = Mat_v(D,1,3)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,3)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,3)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,3)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
+  Mat_v(D,2,1) = Mat_v(D,2,1)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,1)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,1)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,1)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
+  Mat_v(D,2,2) = Mat_v(D,2,2)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,2)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,2)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,2)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
+  Mat_v(D,2,3) = Mat_v(D,2,3)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,3)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,3)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,3)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
+  Mat_v(D,3,1) = Mat_v(D,3,1)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,1)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,1)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,1)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
+  Mat_v(D,3,2) = Mat_v(D,3,2)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,2)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,2)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,2)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
+  Mat_v(D,3,3) = Mat_v(D,3,3)*(b) + (a)*(                                                                          \
+               + Mat_v(C,1,3)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
+               + Mat_v(C,2,3)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
+               + Mat_v(C,3,3)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
 } while(0)
 
 #endif
