@@ -341,6 +341,20 @@ typedef struct Matrix_##T                                               \
   (A).temp = NULL;                                                      \
 } while(0)
 
+/* A = bBT */
+#define Matrix_AeqBT(A,b,B) do {                                        \
+  long __a;                                                             \
+  long m_row = (B).m_row;                                               \
+  long m_col = (B).m_col;                                               \
+  Matrix_check_null_and_redim(A, (B).m_col, (B).m_row);                 \
+                                                                        \
+  for(__a = 0; __a < m_row; __a++){                                     \
+    for(__b = 0; __b < m_col; __b++){                                   \
+      Mat_v(A, _b, _a) = Mat_v(B,__a, __b)*(b);                         \
+    }                                                                   \
+  }                                                                     \
+} while(0)
+
 /* C = aA + bB */
 #define Matrix_AplusB(C, a, A, b, B) do {                               \
   long __I;                                                             \
