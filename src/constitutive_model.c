@@ -438,75 +438,7 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
   int err = 0;
   if (ne <= 0) return 1;
 
-  Matrix(double) Fn, pFn, pFnI, eFn, Fnp1, pFnp1, Fr;
-  Matrix_construct_redim(double,Fn,3,3);
-  Matrix_construct_redim(double,pFn,3,3);
-  Matrix_construct_redim(double,pFnI,3,3);
-  Matrix_construct_redim(double,eFn,3,3);    
-  Matrix_construct_redim(double,Fnp1,3,3); 
-  Matrix_construct_redim(double,pFnp1,3,3);      
-  Matrix_construct_redim(double,Fr,3,3);    
-    
-  for (int e = 0; e < ne; e++) 
-  {
-    
-    int intg_order = 1;    
-    if (PGFEM3D_DEV_TEST)
-      intg_order = 0;
-
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
-    int nne = fe.nne;
-    
-    Matrix(double) u;  
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
-                        
-    for(int a = 0; a<nne; a++)
-    {      
-      int nid = Vec_v(fe.node_id, a+1);
-      for(int b=0; b<nsd; b++)
-      {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
-      }
-    }    
-    
-    for (int ip = 1; ip <=fe.nint; ip++)     
-    {
-      FEMLIB_elem_basis_V(&fe, ip);
-      FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,Fr);
-            
-      Constitutive_model *m = &(eps[e].model[ip-1]);
-      const Model_parameters *func = m->param;
-      err += func->get_Fn(m,&Fn);
-      err += func->get_pFn(m,&pFn);
-        
-      Matrix_inv(pFn, pFnI);
-      Matrix_AxB(eFn,1.0,0.0,Fn,0,pFnI,0); 
-    
-      // --> update plasticity part
-      if(total_Lagrangian)
-      {    
-        Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
-      }
-      else
-      {
-        Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
-      }   
-    
-      void *ctx = NULL;
-      switch (m->param->type){
-      case CRYSTAL_PLASTICITY:
-        err += plasticity_model_ctx_build(&ctx,Fnp1.m_pdata,dt);
-        break;
-      default: assert(0); break;
-      }
-      err += func->integration_algorithm(m,ctx);
-      err += func->destroy_ctx(&ctx);
-      err += m->param->update_state_vars(m);
-    }
-  }
-  
+  err += constitutive_model_update_time_steps(eps,ne,elem);
   
   /*********************/
   /* Coordinate update */
@@ -525,13 +457,6 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
          }
      }/* end n < nn */
   
-  Matrix_cleanup(Fn);
-  Matrix_cleanup(pFn);
-  Matrix_cleanup(pFnI);
-  Matrix_cleanup(eFn);    
-  Matrix_cleanup(Fnp1);
-  Matrix_cleanup(pFnp1);  
-  Matrix_cleanup(Fr);   
   return err;  
 }
 
@@ -888,7 +813,6 @@ int stiffness_el_crystal_plasticity(double *lk,
       break;
     default: assert(0); break;
     }
-    err += func->integration_algorithm(m,ctx);
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->destroy_ctx(&ctx);
     err += func->get_pF(m,&pFnp1);
