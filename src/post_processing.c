@@ -95,17 +95,17 @@ void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Mat
   int compute_stiffness = 0;
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
-  Matrix(double) *Fs = (m->vars).Fs;
-  Matrix(double) pFnp1_I, eFnp1;
-  Matrix_construct_init(double,pFnp1_I,3,3,0.0);
-  Matrix_construct_init(double,eFnp1,3,3,0.0); 
-       
-  Matrix_inv(Fs[TENSOR_pFnp1], pFnp1_I);  
-  Matrix_AxB(eFnp1,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0); 
+  Matrix(double) Fnp1, eFnp1;
+  Matrix_construct_redim(double,eFnp1,3,3);
+  Matrix_construct_redim(double,Fnp1,3,3);
+  /* after update (i.e., converged step) the *Fn = *Fnp1 */
+  m->param->get_Fn(m,&Fnp1);
+  m->param->get_eFn(m,&eFnp1);
+
   constitutive_model_update_elasticity(m,&eFnp1,0.0,NULL,S,compute_stiffness);  
-  Matrix_det(Fs[TENSOR_Fnp1], *Jnp1);
+  Matrix_det(Fnp1, *Jnp1);
   
-  Matrix_cleanup(pFnp1_I);
+  Matrix_cleanup(Fnp1);
   Matrix_cleanup(eFnp1);   
 }                          
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
@@ -279,12 +279,17 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 0.0;
-        Matrix_det((m->vars).Fs[TENSOR_Fnp1], Jnp1);
+        Matrix(double) Fnp1;
+        Matrix_construct_redim(double,Fnp1,3,3);
+        /* after update (i.e., converged step) the *Fn = *Fnp1 */
+        m->param->get_Fn(m,&Fnp1);
+        Matrix_det(Fnp1, Jnp1);
         
         LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += (m->vars).Fs[TENSOR_Fnp1].m_pdata[a]*fe.detJxW/Jnp1;        
-        
+          LF.m_pdata[a] += Fnp1.m_pdata[a]*fe.detJxW/Jnp1;
+
+        Matrix_cleanup(Fnp1);
       }
       else
       {        

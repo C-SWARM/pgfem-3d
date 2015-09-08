@@ -27,29 +27,6 @@ struct Matrix_double;
 typedef struct Matrix_double Matrix_double;
 #endif
 
-enum variable_names {
-  VAR_L_n,
-  VAR_L_np1,  
-  VAR_g_n,
-  VAR_g_np1,  
-  VAR_gamma_dot_0, /* this and the rest are actually material parameters */
-  VAR_gamma_dot_s, 
-  VAR_m,
-  VAR_g0,  
-  VAR_G0,    
-  VAR_gs_0,
-  VAR_w
-};
-  
-enum tensor_names {
-  TENSOR_Fn,
-  TENSOR_pFn,
-  TENSOR_Fnp1,
-  TENSOR_pFnp1,  
-  TENSOR_tau,
-  TENSOR_gamma_dot
-};
-
 /**
  * Initialize the Model_parameters object for this particular model.
  *
