@@ -1,5 +1,5 @@
 EXC = main_test
-OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o')
+OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v 'plasticity_model_BPA_driver.o')
 
 POST_PROCESSING=../include
 
