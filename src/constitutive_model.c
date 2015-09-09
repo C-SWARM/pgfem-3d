@@ -304,7 +304,8 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
                                 const MATGEOM_1 *p_mgeom,
-                                const HOMMAT *hmat_list, const int type)
+                                const HOMMAT *hmat_list,
+                                const int type) /* <-- see #22 */
 {
   int err = 0;
   if(type<0)
@@ -312,8 +313,6 @@ int build_model_parameters_list(Model_parameters **param_list,
   if (n_mat <= 0) return 1;
   
   (*param_list) = malloc(n_mat*sizeof(**param_list));
-
-  /* for now set all model type to HYPER_ELASTIC. See issue #22 */
   
   for (int i = 0; i < n_mat; i++) {
     err += model_parameters_construct(&((*param_list)[i]) );
@@ -341,42 +340,47 @@ int destroy_model_parameters_list(const int n_mat,
 }
 
 int read_constitutive_model_parameters(EPS *eps,
-                                const int ne,
-                                const ELEMENT *elem,
-                                const int n_mat,
-                                Model_parameters *param_list,
-                                const int type)
+                                       const int ne,
+                                       const ELEMENT *elem,
+                                       const int n_mat,
+                                       Model_parameters *param_list,
+                                       const int type)
 { 
   int err = 0;
-  switch(type)
-  {
-    case HYPER_ELASTICITY:
-      return err;
-    
-    case CRYSTAL_PLASTICITY:
-    { 
-      for(int a=0; a<n_mat; a++)
-      {
+  switch (type) {
+  case HYPER_ELASTICITY: /* nothing required */ break;
+  case CRYSTAL_PLASTICITY:
+    {
+      for(int a=0; a<n_mat; a++) {
         Matrix(double) *P = param_list[a].Psys;
         param_list[a].N_SYS = plasticity_model_slip_system(P);
-      } 
-      
-      for(int a=0; a<ne; a++)
-      {
+      }
+
+      for(int a=0; a<ne; a++) {
         long n_ip = 0;
         int_point(elem[a].toe,&n_ip);
-        for(int ip=0; ip<n_ip; ip++)
-        {
+        for(int ip=0; ip<n_ip; ip++) {
           Constitutive_model *m = &(eps[a].model[ip]);
-          plasticity_model_read_parameters(m); 
+          plasticity_model_read_parameters(m);
         }
       }
-      return err;
-    }  
-    case BPA_PLASTICITY:
-      return err;
-    
-    default:
+    }
+    break;
+
+  case BPA_PLASTICITY:
+    {
+      for (int a = 0; a < ne; a++) {
+        long n_ip = 0;
+        int_point(elem[a].toe, &n_ip);
+        for (int ip = 0; ip < n_ip; ip++) {
+          Constitutive_model *m = &(eps[a].model[ip]);
+          err += plasticity_model_BPA_set_initial_values(m);
+        }
+      }
+    }
+    break;
+
+  default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
     err++;
     break;
