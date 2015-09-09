@@ -117,6 +117,7 @@ int model_parameters_construct(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
+  p->get_Fn = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
   p->get_eF = NULL;
@@ -237,11 +238,11 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
       err += plasticity_model_none_ctx_build(&ctx, C.m_pdata, &J);
       break;
     case CRYSTAL_PLASTICITY:
-      
       err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt);
-      
       break;
     case BPA_PLASTICITY:
+      err += plasticity_model_BPA_ctx_build(&ctx, F->m_pdata, dt);
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
       err++;
@@ -413,9 +414,9 @@ int init_all_constitutive_model(EPS *eps,
   return err;
 }
 
-int constitutive_model_update_time_steps(EPS *eps,
-                                         const int ne,
-                                         const ELEMENT *elem)
+static int constitutive_model_update_time_steps(EPS *eps,
+                                                const int ne,
+                                                const ELEMENT *elem)
 {
   int err = 0;
   if (ne <= 0) return 1;
@@ -434,18 +435,17 @@ int constitutive_model_update_time_steps(EPS *eps,
   return err;  
 }
 
-int constitutive_model_update_time_steps_test(ELEMENT *elem,
+int constitutive_model_update_time_steps_test(const ELEMENT *elem,
                                               NODE *node,
-                                              HOMMAT *hommat,
                                               EPS *eps,
                                               const int ne,
                                               const int nn,
                                               const int ndofn,
-                                              double* r,
-                                              double dt)
+                                              const double* r,
+                                              const double dt,
+                                              const int total_Lagrangian)
 {
   int nsd = 3;
-  int total_Lagrangian = 0;
   int err = 0;
   if (ne <= 0) return 1;
 
@@ -454,19 +454,29 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
   /*********************/
   /* Coordinate update */
   /*********************/
-   for(int n = 0;n<nn; n++)
-     {
-       for(int a=0;a<nsd;a++)
-         {
-           int II = node[n].id[a];
-           if (II != 0)
-             {
-               if (a == 0)      node[n].x1 += r[n*ndofn + a];
-               else if (a == 1) node[n].x2 += r[n*ndofn + a];
-               else if (a == 2) node[n].x3 += r[n*ndofn + a];
-             }
-         }
-     }/* end n < nn */
+  if(total_Lagrangian) {
+    for(int n = 0;n<nn; n++) {
+      for(int a=0;a<nsd;a++) {
+        int II = node[n].id[a];
+        if (II != 0){
+          if (a == 0)      node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
+          else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
+          else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
+        }
+      }
+    }/* end n < nn */
+  } else {
+    for(int n = 0;n<nn; n++) {
+      for(int a=0;a<nsd;a++) {
+        int II = node[n].id[a];
+        if (II != 0){
+          if (a == 0)      node[n].x1 += r[n*ndofn + a];
+          else if (a == 1) node[n].x2 += r[n*ndofn + a];
+          else if (a == 2) node[n].x3 += r[n*ndofn + a];
+        }
+      }
+    }/* end n < nn */
+  }
   
   return err;  
 }
@@ -478,20 +488,17 @@ int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_r
 }
 
 int stiffness_el_hyper_elasticity(double *lk,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e)
 {
   int err = 0;
   int total_Lagrangian = 1;
@@ -616,20 +623,17 @@ int stiffness_el_hyper_elasticity(double *lk,
 }
 
 int residuals_el_hyper_elasticity(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e)
 {
   int err = 0;
   int total_Lagrangian = 1;
@@ -708,18 +712,14 @@ int stiffness_el_crystal_plasticity(double *lk,
                                     const int nne,
                                     const int nsd,
                                     const ELEMENT *elem,
-                                    const HOMMAT *hommat,
-                                    MATGEOM matgeom,
                                     const long *nod,
                                     const NODE *node,
-                                    double dt,
-                                    SIG *sig,
+                                    const double dt,
                                     EPS *eps,
                                     const SUPP sup,
-                                    double *r_e)
+                                    const double *r_e,
+                                    const int total_Lagrangian)
 {
-  static const int total_Lagrangian = 0;
-  
   int err = 0;
 
   double *u = malloc(sizeof(*u)*nne*nsd);
@@ -737,8 +737,11 @@ int stiffness_el_crystal_plasticity(double *lk,
   Matrix(double) pFnI, eFn, M, eFnM;  
   Matrix(double) ST_ab, ST_wg, AA, BB, CC;
   Matrix(double) sAA, sBB, sCC;
-  Matrix(double) MTeFnT_sAA, MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,MTeFnT_FrTFr,MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,MTeFnT_sBB;
-  Matrix(double) L_dCdu,MTeFnT_sCC,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,sMTeFnT_sAA_eFndMdu;
+  Matrix(double) MTeFnT_sAA, MTeFnT_sAA_eFn, MTeFnT_sAA_eFnM;
+  Matrix(double) FrTFr, MTeFnT_FrTFr, MTeFnT_FrTFreFn;
+  Matrix(double) MTeFnT_FrTFreFndMdu, dCdu, MTeFnT_sBB;
+  Matrix(double) L_dCdu, MTeFnT_sCC, MTeFnT_sCC_eFnM;
+  Matrix(double) MTeFnT_sAA_eFndMdu, sMTeFnT_sAA_eFndMdu;
       
   Matrix_construct_redim(double,Fn ,3,3);
   Matrix_construct_redim(double,Fr ,3,3);
@@ -782,7 +785,7 @@ int stiffness_el_crystal_plasticity(double *lk,
   
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
-  int compute_stiffness = 1;      
+  const int compute_stiffness = 1;
 
   for(int ip = 1; ip<=fe.nint; ip++)
   {
@@ -791,7 +794,6 @@ int stiffness_el_crystal_plasticity(double *lk,
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
-    //Matrix(double) *Fs = (m->vars).Fs;
 
     /* get a shortened pointer for simplified CM function calls */
     const Model_parameters *func = m->param;
@@ -805,15 +807,15 @@ int stiffness_el_crystal_plasticity(double *lk,
       Matrix(double) FnI;
       Matrix_construct_redim(double, FnI,3,3);
       Matrix_inv(Fn,FnI);
-      Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
-      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
+      Matrix_AeqB(Fnp1,1.0,Fr); /* set Fnp1 */
+      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0); /* recompute Fr */
       Matrix_cleanup(FnI);         
     }
     else
     {
-      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
+      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0); /* compute Fnp1 */
     }   
-    Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0); 
+    Matrix_AxB(FrTFr,1.0,0.0,Fr,1,Fr,0);
 
     /* need to have called the integration algorithm. This should be
        done OUTSIDE of the stiffness/tangent functions */
@@ -821,6 +823,9 @@ int stiffness_el_crystal_plasticity(double *lk,
     switch (m->param->type){
     case CRYSTAL_PLASTICITY:
       err += plasticity_model_ctx_build(&ctx,Fnp1.m_pdata,dt);
+      break;
+    case BPA_PLASTICITY:
+      err += plasticity_model_BPA_ctx_build(&ctx,Fnp1.m_pdata,dt);
       break;
     default: assert(0); break;
     }
@@ -962,23 +967,19 @@ int stiffness_el_crystal_plasticity(double *lk,
 }        
 
 int residuals_el_crystal_plasticity(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e,
+                                    const int total_Lagrangian)
 {
-  int total_Lagrangian = 0;
-  
   int err = 0;
     
   double *u = (double *) malloc(sizeof(double)*nne*nsd);
@@ -1030,17 +1031,8 @@ int residuals_el_crystal_plasticity(double *f,
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
-//    if(updated_Lagrangian)
-//    {
     m->param->get_Fn(m,&Fn);
     m->param->get_pFn(m,&pFn);
-//    }   
-//    else
-//    {  
-//      Matrix_eye(Fn,3);
-//      Matrix_eye(pFn,3);
-//    } 
-    
 
     Matrix_inv(pFn, pFnI);
     m->param->get_eFn(m,&eFn);
@@ -1051,19 +1043,22 @@ int residuals_el_crystal_plasticity(double *f,
       Matrix(double) FnI;
       Matrix_construct_redim(double, FnI,3,3);
       Matrix_inv(Fn,FnI);
-      Matrix_AeqB(Fnp1,1.0,Fr);  // Fn+1 
-      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0);  // Fn+1          
+      Matrix_AeqB(Fnp1,1.0,Fr); /* set Fnp1 */
+      Matrix_AxB(Fr,1.0,0.0,Fnp1,0,FnI,0); /* recompute Fr */
       Matrix_cleanup(FnI);          
     }
     else
     {
-      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0);  // Fn+1    
+      Matrix_AxB(Fnp1,1.0,0.0,Fr,0,Fn,0); /* compute Fnp1 */
     }      
 
     void *ctx = NULL;
     switch (m->param->type){
     case CRYSTAL_PLASTICITY:
       err += plasticity_model_ctx_build(&ctx,Fnp1.m_pdata,dt);
+      break;
+    case BPA_PLASTICITY:
+      err += plasticity_model_BPA_ctx_build(&ctx,Fnp1.m_pdata,dt);
       break;
     default: assert(0); break;
     }
@@ -1100,7 +1095,7 @@ int residuals_el_crystal_plasticity(double *f,
         Matrix_AxB(MTeFnT_sAA_eFnM,1.0,0.0,MTeFnT_sAA,0,eFnM,0); 
         double MTeFnT_sAA_eFnM_S = 0.0; 
         Matrix_ddot(MTeFnT_sAA_eFnM,S,MTeFnT_sAA_eFnM_S);          
-        
+
         int fe_id = a*ndofn + b;              
         f[fe_id] += 1.0/Jn*fe.detJxW*MTeFnT_sAA_eFnM_S;
       }

@@ -838,28 +838,23 @@ double Newton_Raphson (const int print_level,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
     case TF:
-        update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
-            dt,t,mpi_comm);
+      update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+                                dt,t,mpi_comm);
     case CM:
-    {
-      switch(opts->cm)
       {
-        case HYPER_ELASTICITY:
-          DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-		                     sig_e,hommat,d_r,r,mpi_comm);          
-          break;
-        case CRYSTAL_PLASTICITY:
-          break;                                                 
-        case BPA_PLASTICITY:
-        default:
-        {  
-          DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-		                     sig_e,hommat,d_r,r,mpi_comm);           
-          break;
-        }  
-      }                
-      break;                 	
-    }  
+        switch(opts->cm)
+          {
+          case HYPER_ELASTICITY:
+            DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
+                           sig_e,hommat,d_r,r,mpi_comm);
+            break;
+          case CRYSTAL_PLASTICITY: case BPA_PLASTICITY:
+            /* updated later... */
+            break;
+          default: assert(0 && "undefined CM type"); break;
+          }
+        break;
+      }
     default: break;
     }
     
@@ -907,10 +902,20 @@ double Newton_Raphson (const int print_level,
       }
     }
     
-    if(opts->cm==CRYSTAL_PLASTICITY)
+    /* update of internal variables and nodal coordinates */
+    if(opts->analysis_type==CM)
     {
-      constitutive_model_update_time_steps_test(elem,node,hommat,eps, 
-                                      ne,nn,ndofn,r_n,dt);             
+      switch(opts->cm){
+      case CRYSTAL_PLASTICITY:
+      constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
+                                                ndofn,r_n,dt,0 /* UL */);
+      break;
+      case BPA_PLASTICITY:
+      constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
+                                                ndofn,r_n,dt,1 /* TL */);
+      break;
+      default: break;
+      }
     }
     
     if(opts->analysis_type==TF)
