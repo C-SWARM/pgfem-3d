@@ -38,7 +38,7 @@
 Define_Matrix(double);
 
 /* Set to value > 0 for extra diagnostics/printing */
-static const int BPA_PRINT_LEVEL = 1;
+static const int BPA_PRINT_LEVEL = 0;
 
 /* constants/enums */
 static const int _n_Fs = 6;
@@ -1183,6 +1183,14 @@ static int bpa_get_Fpn(const Constitutive_model *m,
   return err;
 }
 
+static int bpa_get_Fn(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars.Fs[_F_n]);
+  return err;
+}
+
 static int bpa_get_Fe(const Constitutive_model *m,
                       Matrix_double *F)
 {
@@ -1199,77 +1207,12 @@ static int bpa_get_Fen(const Constitutive_model *m,
   return err;
 }
 
-/*
- * Public interface for the BPA model
- */
-int plasticity_model_BPA_initialize(Model_parameters *p)
-{
-  int err = 0;
-  p->integration_algorithm = BPA_int_alg;
-  p->compute_dev_stress = BPA_dev_stress;
-  p->compute_dudj = BPA_dudj;
-  p->compute_dev_tangent = BPA_dev_tangent;
-  p->compute_d2udj2 = BPA_d2udj2;
-  p->update_state_vars = BPA_update_vars;
-  p->reset_state_vars = BPA_reset_vars;
-  p->get_var_info = BPA_model_info;
-  p->get_pF = bpa_get_Fp;
-  p->get_pFn = bpa_get_Fpn;
-  p->get_eF = bpa_get_Fe;
-  p->get_eFn = bpa_get_Fen;
-
-  return err;
-}
-
-int plasticity_model_BPA_set_initial_values(Constitutive_model *m)
-{
-  int err = 0;
-
-  /* s is s0 at start */
-  m->vars.state_vars->m_pdata[_s] = param_s0;
-  m->vars.state_vars->m_pdata[_s_n] = param_s0;
-
-  m->vars.state_vars->m_pdata[_lam] = 0;
-  m->vars.state_vars->m_pdata[_lam_n] = 0;
-
-  return err;
-}
-
-int plasticity_model_BPA_ctx_build(void **ctx,
-                                   const double *F,
-                                   const double dt)
-{
-  int err = 0;
-  BPA_ctx *t_ctx = malloc(sizeof(*t_ctx));
-  *ctx = t_ctx;
-  t_ctx->dt = dt;
-  memcpy(t_ctx->F, F, tensor * sizeof(*F));
-  return err;
-}
-
-int plasticity_model_BPA_ctx_destroy(void **ctx)
-{
-  int err = 0;
-  free(*ctx);
-  *ctx = NULL;
-  return err;
-}
-
-/*
- * Arguably, this should be part of the standard CM interface, but
- * will require some homogenization with the other models/developers.
- *
- * OPTIMIZATION NOTE:
- * Should compute the tangent operator for all node/DOF (alpha,beta)
- * using LAPACK solve w/ multiple right hand sides. This way
- * factorization is only done once.
- */
-int plasticity_model_BPA_compute_dM_du(const Constitutive_model *m,
-                                       const void *ctx,
-                                       const int nne,
-                                       const int ndofn,
-                                       const double *ST,
-                                       double *dM_du) /* _ab */
+static int bpa_compute_dM_du(const Constitutive_model *m,
+                             const void *ctx,
+                             const double *ST,
+                             const int nne,
+                             const int ndofn,
+                             double *dM_du) /* _ab */
 {
   int err = 0;
   const BPA_ctx *CTX = ctx;
@@ -1349,5 +1292,64 @@ int plasticity_model_BPA_compute_dM_du(const Constitutive_model *m,
     free(IPIV);
   }
 
+  return err;
+}
+
+/*
+ * Public interface for the BPA model
+ */
+int plasticity_model_BPA_initialize(Model_parameters *p)
+{
+  int err = 0;
+  p->integration_algorithm = BPA_int_alg;
+  p->compute_dev_stress = BPA_dev_stress;
+  p->compute_dudj = BPA_dudj;
+  p->compute_dev_tangent = BPA_dev_tangent;
+  p->compute_d2udj2 = BPA_d2udj2;
+  p->update_state_vars = BPA_update_vars;
+  p->reset_state_vars = BPA_reset_vars;
+  p->get_var_info = BPA_model_info;
+  p->get_Fn = bpa_get_Fn;
+  p->get_pF = bpa_get_Fp;
+  p->get_pFn = bpa_get_Fpn;
+  p->get_eF = bpa_get_Fe;
+  p->get_eFn = bpa_get_Fen;
+  p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
+  p->compute_dMdu = bpa_compute_dM_du;
+
+  return err;
+}
+
+int plasticity_model_BPA_set_initial_values(Constitutive_model *m)
+{
+  int err = 0;
+
+  /* s is s0 at start */
+  m->vars.state_vars->m_pdata[_s] = param_s0;
+  m->vars.state_vars->m_pdata[_s_n] = param_s0;
+
+  m->vars.state_vars->m_pdata[_lam] = 0;
+  m->vars.state_vars->m_pdata[_lam_n] = 0;
+
+  return err;
+}
+
+int plasticity_model_BPA_ctx_build(void **ctx,
+                                   const double *F,
+                                   const double dt)
+{
+  int err = 0;
+  BPA_ctx *t_ctx = malloc(sizeof(*t_ctx));
+  *ctx = t_ctx;
+  t_ctx->dt = dt;
+  memcpy(t_ctx->F, F, tensor * sizeof(*F));
+  return err;
+}
+
+int plasticity_model_BPA_ctx_destroy(void **ctx)
+{
+  int err = 0;
+  free(*ctx);
+  *ctx = NULL;
   return err;
 }

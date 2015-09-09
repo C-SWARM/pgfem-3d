@@ -117,6 +117,7 @@ int model_parameters_construct(Model_parameters *p)
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
+  p->get_Fn = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
   p->get_eF = NULL;
@@ -237,11 +238,11 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
       err += plasticity_model_none_ctx_build(&ctx, C.m_pdata, &J);
       break;
     case CRYSTAL_PLASTICITY:
-      
       err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt);
-      
       break;
     case BPA_PLASTICITY:
+      err += plasticity_model_BPA_ctx_build(&ctx, F->m_pdata, dt);
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
       err++;
