@@ -413,9 +413,9 @@ int init_all_constitutive_model(EPS *eps,
   return err;
 }
 
-int constitutive_model_update_time_steps(EPS *eps,
-                                         const int ne,
-                                         const ELEMENT *elem)
+static int constitutive_model_update_time_steps(EPS *eps,
+                                                const int ne,
+                                                const ELEMENT *elem)
 {
   int err = 0;
   if (ne <= 0) return 1;
@@ -434,18 +434,17 @@ int constitutive_model_update_time_steps(EPS *eps,
   return err;  
 }
 
-int constitutive_model_update_time_steps_test(ELEMENT *elem,
+int constitutive_model_update_time_steps_test(const ELEMENT *elem,
                                               NODE *node,
-                                              HOMMAT *hommat,
                                               EPS *eps,
                                               const int ne,
                                               const int nn,
                                               const int ndofn,
-                                              double* r,
-                                              double dt)
+                                              const double* r,
+                                              const double dt,
+                                              const int total_Lagrangian)
 {
   int nsd = 3;
-  int total_Lagrangian = 0;
   int err = 0;
   if (ne <= 0) return 1;
 
@@ -454,19 +453,29 @@ int constitutive_model_update_time_steps_test(ELEMENT *elem,
   /*********************/
   /* Coordinate update */
   /*********************/
-   for(int n = 0;n<nn; n++)
-     {
-       for(int a=0;a<nsd;a++)
-         {
-           int II = node[n].id[a];
-           if (II != 0)
-             {
-               if (a == 0)      node[n].x1 += r[n*ndofn + a];
-               else if (a == 1) node[n].x2 += r[n*ndofn + a];
-               else if (a == 2) node[n].x3 += r[n*ndofn + a];
-             }
-         }
-     }/* end n < nn */
+  if(total_Lagrangian) {
+    for(int n = 0;n<nn; n++) {
+      for(int a=0;a<nsd;a++) {
+        int II = node[n].id[a];
+        if (II != 0){
+          if (a == 0)      node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
+          else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
+          else if (a == 2) node[n].x3 = node[n].x3_fd + r[n*ndofn + a];
+        }
+      }
+    }/* end n < nn */
+  } else {
+    for(int n = 0;n<nn; n++) {
+      for(int a=0;a<nsd;a++) {
+        int II = node[n].id[a];
+        if (II != 0){
+          if (a == 0)      node[n].x1 += r[n*ndofn + a];
+          else if (a == 1) node[n].x2 += r[n*ndofn + a];
+          else if (a == 2) node[n].x3 += r[n*ndofn + a];
+        }
+      }
+    }/* end n < nn */
+  }
   
   return err;  
 }
@@ -478,20 +487,17 @@ int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_r
 }
 
 int stiffness_el_hyper_elasticity(double *lk,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e)
 {
   int err = 0;
   int total_Lagrangian = 1;
@@ -616,20 +622,17 @@ int stiffness_el_hyper_elasticity(double *lk,
 }
 
 int residuals_el_hyper_elasticity(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e)
 {
   int err = 0;
   int total_Lagrangian = 1;
@@ -708,15 +711,12 @@ int stiffness_el_crystal_plasticity(double *lk,
                                     const int nne,
                                     const int nsd,
                                     const ELEMENT *elem,
-                                    const HOMMAT *hommat,
-                                    MATGEOM matgeom,
                                     const long *nod,
                                     const NODE *node,
-                                    double dt,
-                                    SIG *sig,
+                                    const double dt,
                                     EPS *eps,
                                     const SUPP sup,
-                                    double *r_e)
+                                    const double *r_e)
 {
   static const int total_Lagrangian = 0;
   
@@ -962,20 +962,17 @@ int stiffness_el_crystal_plasticity(double *lk,
 }        
 
 int residuals_el_crystal_plasticity(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int nsd,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        MATGEOM matgeom,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e)
 {
   int total_Lagrangian = 0;
   

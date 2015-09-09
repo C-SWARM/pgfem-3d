@@ -401,31 +401,74 @@ int build_model_parameters_list(Model_parameters **param_list,
 int destroy_model_parameters_list(const int n_mat,
                                   Model_parameters *param_list);
 
-int constitutive_model_update_time_steps(EPS *eps, const int ne, const ELEMENT *elem);
 /**
  * update values for next time step: variables[tn] = variables[tn+1]
  * \return non-zero on error.
  */
-int constitutive_model_update_time_steps_test(ELEMENT *elem, NODE *node, HOMMAT *hommat, EPS *eps, 
-                                        const int ne, const int nn, const int ndofn,
-                                        double* r, double dt); 
+int constitutive_model_update_time_steps_test(const ELEMENT *elem,
+                                              NODE *node,
+                                              EPS *eps,
+                                              const int ne,
+                                              const int nn,
+                                              const int ndofn,
+                                              const double* r,
+                                              const double dt,
+                                              const int total_Lagrangian);
 
-int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results);
+int constitutive_model_test(const HOMMAT *hmat,
+                            Matrix_double *L_in,
+                            int Print_results);
 
-int stiffness_el_hyper_elasticity(double *lk,const int ii,const int ndofn,const int nne,const int nsd,
-        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
-        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+int stiffness_el_hyper_elasticity(double *lk,
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e);
         
-int residuals_el_hyper_elasticity(double *f,const int ii,const int ndofn,const int nne,const int nsd,
-        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
-        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+int residuals_el_hyper_elasticity(double *f,
+                                  const int ii,
+                                  const int ndofn,
+                                  const int nne,
+                                  const int nsd,
+                                  const ELEMENT *elem,
+                                  const long *nod,
+                                  const NODE *node,
+                                  const double dt,
+                                  EPS *eps,
+                                  const SUPP sup,
+                                  const double *r_e);
 
-int stiffness_el_crystal_plasticity(double *lk,const int ii,const int ndofn,const int nne,const int nsd,
-        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
-        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+int stiffness_el_crystal_plasticity(double *lk,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e);
         
-int residuals_el_crystal_plasticity(double *f,const int ii,const int ndofn,const int nne,const int nsd,
-        const ELEMENT *elem,const HOMMAT *hommat,MATGEOM matgeom,const long *nod,const NODE *node,
-        double dt,SIG *sig,EPS *eps,const SUPP sup,double *r_e);
+int residuals_el_crystal_plasticity(double *f,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e);
         
 #endif

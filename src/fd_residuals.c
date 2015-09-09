@@ -207,8 +207,8 @@ int fd_residuals (double *f_u,
             memset(bf, 0, sizeof(double)*ndofe);
             DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
 
-            err += residuals_el_hyper_elasticity(fe,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
+            err += residuals_el_hyper_elasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e);
 
             for(long a = 0; a<ndofe; a++)
               fe[a] += -bf[a];
@@ -217,8 +217,8 @@ int fd_residuals (double *f_u,
             break;
           }
         case CRYSTAL_PLASTICITY: case BPA_PLASTICITY:
-          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e);
           break;
 
         default: assert(0 && "undefined CM type"); break;
