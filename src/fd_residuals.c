@@ -216,11 +216,14 @@ int fd_residuals (double *f_u,
             dealoc1(bf);
             break;
           }
-        case CRYSTAL_PLASTICITY: case BPA_PLASTICITY:
+        case CRYSTAL_PLASTICITY:
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                 dt,eps,sup,r_e);
+                                                 dt,eps,sup,r_e, 0 /* UL */);
           break;
-
+        case BPA_PLASTICITY:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, 1 /* TL */);
+          break;
         default: assert(0 && "undefined CM type"); break;
         }
       break;

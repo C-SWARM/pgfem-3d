@@ -456,7 +456,8 @@ int stiffness_el_crystal_plasticity(double *lk,
                                     const double dt,
                                     EPS *eps,
                                     const SUPP sup,
-                                    const double *r_e);
+                                    const double *r_e,
+                                    const int total_Lagrangian);
         
 int residuals_el_crystal_plasticity(double *f,
                                     const int ii,
@@ -469,6 +470,7 @@ int residuals_el_crystal_plasticity(double *f,
                                     const double dt,
                                     EPS *eps,
                                     const SUPP sup,
-                                    const double *r_e);
-        
+                                    const double *r_e,
+                                    const int total_Lagrangian);
+
 #endif

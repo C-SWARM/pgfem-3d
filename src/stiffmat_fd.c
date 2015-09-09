@@ -107,10 +107,16 @@ int el_compute_stiffmat(int i,
     case CM:
       {
         switch(cm) {
-        case CRYSTAL_PLASTICITY: /* deliberate drop through */
+        case CRYSTAL_PLASTICITY:
+          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
+                                                 nod,node,dt,eps,sup,r_e,
+                                                 0 /* UL */);
+          break;
+
         case BPA_PLASTICITY:
           err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
-                                                 nod,node,dt,eps,sup,r_e);
+                                                 nod,node,dt,eps,sup,r_e,
+                                                 1 /* TL */);
           break;
 
         case HYPER_ELASTICITY:
