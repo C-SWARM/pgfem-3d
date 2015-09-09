@@ -98,20 +98,20 @@ int main(int argc,char *argv[])
     
   if(myrank==0)
   {
-    for(int Load_Type = 0; Load_Type<1; Load_Type++)
+    for(int Load_Type = 0; Load_Type<6; Load_Type++)
       constitutive_model_test(hommat, NULL, Load_Type);
+ 
+    constitutive_model_test(hommat, NULL, -1);
+  
+    Matrix(double) L;
+    Matrix_construct_init(double,L,3,3,0.0);  
+    Mat_v(L,1,1) = -1.001;
+    Mat_v(L,2,2) = Mat_v(L,3,3) = 0.4998;
+  
+    constitutive_model_test(hommat, &L, -1); 
+  
+    Matrix_cleanup(L);
   }
-  
-  constitutive_model_test(hommat, NULL, -1);
-  
-  Matrix(double) L;
-  Matrix_construct_init(double,L,3,3,0.0);  
-  Mat_v(L,1,1) = -1.001;
-  Mat_v(L,2,2) = Mat_v(L,3,3) = 0.4998;
-  
-  constitutive_model_test(hommat, &L, -1); 
-  
-  Matrix_cleanup(L);
 
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);

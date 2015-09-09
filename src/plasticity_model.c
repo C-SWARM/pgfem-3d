@@ -1129,7 +1129,9 @@ int test_set_CM_interface_values(MaterialProperties *Props, MaterialParameters *
   Props->use_hyperelastic = 1;
   Props->cm = m;
   Props->compute_elastic_stress = elastic_stress;
-  Props->compute_elastic_tangent = elastic_tangent;  
+  Props->compute_elastic_tangent = elastic_tangent;
+  Props->set_cm_Fnp1 = CM_set_Fnp1;
+  Props->set_cm_pFnp1 = CM_set_pFnp1;    
 
   /*--------MaterialParameters_Settings--------*/
   Param->Model_Type = PL_VK;
