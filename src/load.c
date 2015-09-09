@@ -60,9 +60,6 @@ void load_vec_node (double *f,
 		    const long ndofn,
 		    const ZATNODE *znode,
 		    const NODE *node)
-	  /*
-	    
-	  */
 {
   long i,j,ii;
   
@@ -76,24 +73,25 @@ void load_vec_node (double *f,
 }
 
 int load_vec_node_defl (double *f,
-			long ne,
-			long ndofn,
-			ELEMENT *elem,
-			BOUNDING_ELEMENT *b_elems,
-			NODE *node,
-			HOMMAT *hommat,
-			MATGEOM matgeom,
-			SUPP sup,
-			long npres,
-			double nor_min,
-			SIG *sig,
-			EPS *eps,
-			double dt,
-			CRPL *crpl,
-			double stab,
-			double *r,
-			double *r_n,
-			const PGFem3D_opt *opts, double alpha)
+                        long ne,
+                        long ndofn,
+                        ELEMENT *elem,
+                        BOUNDING_ELEMENT *b_elems,
+                        NODE *node,
+                        HOMMAT *hommat,
+                        MATGEOM matgeom,
+                        SUPP sup,
+                        long npres,
+                        double nor_min,
+                        SIG *sig,
+                        EPS *eps,
+                        double dt,
+                        CRPL *crpl,
+                        double stab,
+                        double *r,
+                        double *r_n,
+                        const PGFem3D_opt *opts,
+                        double alpha)
 {
   int err = 0;
   double *fe = NULL;
@@ -149,39 +147,29 @@ int load_vec_node_defl (double *f,
       def_elem (cn,ndofe,r,elem,node,r_e,sup,1);
     } else {
       switch(opts->analysis_type){
-      case DISP: 
+      case DISP: case TF: /* total Lagrangian formulations */
         nodecoord_total(nne,nod,node,x,y,z);
-	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
-  	    break;         
-      case TF:
-	      nodecoord_total(nne,nod,node,x,y,z);
-	      def_elem(cn,ndofe,r,elem,node,r_e,sup,1); 
-	      break;
-	    case CM:
-	    {
-        switch(opts->cm)
+        def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+        break;
+
+      case CM:
         {
-          case HYPER_ELASTICITY:
+          switch(opts->cm) {
+          case HYPER_ELASTICITY: case BPA_PLASTICITY: /* total Lagrangian */
             nodecoord_total(nne,nod,node,x,y,z);
-	          def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+            def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;
-          case CRYSTAL_PLASTICITY:
+          case CRYSTAL_PLASTICITY: /* updated Lagrangian */
             nodecoord_updated(nne,nod,node,x,y,z);
-            
-            break;                                                 
-          case BPA_PLASTICITY:
-          default:
-          {  
-            nodecoord_total(nne,nod,node,x,y,z);
-	          def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;
+          default: assert(0 && "should never reach this case"); break;
           }
         }
-        break;	      
-      }  	        
-      default:
-	      nodecoord_updated (nne,nod,node,x,y,z);    
-	      break;
+        break;
+
+      default: /* updated Lagrangian */
+        nodecoord_updated(nne,nod,node,x,y,z);
+        break;
       }
     }
 
@@ -192,51 +180,13 @@ int load_vec_node_defl (double *f,
 
     int nVol = N_VOL_TREE_FIELD;
     long FNR = 0;
-		double lm = 0.0;    
+    double lm = 0.0;
     err += el_compute_stiffmat(sup->lepd[i],lk,ndofn,nne,npres,nVol,nsd,
-                        elem,node,hommat,matgeom,sig,eps,sup,
-                        dt,nor_min,stab,crpl,FNR,lm,
-	                      x,y,z,fe,nod,r_n,r_e,
-	                      alpha,include_inertia,opts->analysis_type, opts->cm); 
-/*	                      
-    switch(opts->analysis_type){
-    case FS_CRPL:
-    case FINITE_STRAIN:
-      stiffmatel_fd (sup->lepd[i],ndofn,nne,nod,x,y,z,elem,matgeom,
-		     hommat,node,sig,eps,r_e,npres,nor_min,lk,dt,
-		     crpl,0,0.0,fe,opts->analysis_type);
-      break;
-    case STABILIZED:
-      stiffmatel_st (sup->lepd[i],ndofn,nne,x,y,z,elem,
-		     hommat,nod,node,sig,eps,sup,r_e,npres,
-		     nor_min,lk,dt,stab,0,0.0,fe);
-      break;
-    case MINI:
-      MINI_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
-		       hommat,nod,node,eps,sig,r_e);
-      break;
-    case MINI_3F:
-      MINI_3f_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
-			  hommat,nod,node,eps,sig,r_e);
-      break;
-    case DISP:
-      DISP_stiffmat_el(lk,sup->lepd[i],ndofn,nne,x,y,z,elem,
-			       hommat,nod,node,eps,sig,sup,r_e);
-      break;
-    case TF:
-    {
-      int nsd = 3;
-      int nVol = 1;
-      stiffmat_3f_el(lk,sup->lepd[i],ndofn,nne,npres,nVol,nsd,
-              x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0, r_e);
-        break;     
-    }       
-    default:
-      stiffmatel (sup->lepd[i],x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
-      break;
-    } // switch analysis
-    
-  */    
+                               elem,node,hommat,matgeom,sig,eps,sup,
+                               dt,nor_min,stab,crpl,FNR,lm,
+                               x,y,z,fe,nod,r_n,r_e,
+                               alpha,include_inertia,opts->analysis_type, opts->cm);
+
     /* get the disp increment from BC */
     {
       int k = 0;

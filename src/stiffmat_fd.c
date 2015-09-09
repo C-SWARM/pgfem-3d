@@ -42,11 +42,37 @@
 
 static const int periodic = 0;
 
-int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int nVol, int nsd,
-                        ELEMENT *elem, NODE *node, HOMMAT *hommat, MATGEOM matgeom, SIG *sig, EPS *eps, SUPP sup,
-                        double dt, double nor_min, double stab, CRPL *crpl, long FNR, double lm,
-	                      double *x, double *y, double *z, double *fe, long *nod, double *r_n, double *r_e, 
-	                      double alpha, int include_inertia, const int analysis, int cm)
+int el_compute_stiffmat(int i,
+                        double *lk,
+                        long ndofn,
+                        long nne,
+                        long npres,
+                        int nVol,
+                        int nsd,
+                        ELEMENT *elem,
+                        NODE *node,
+                        HOMMAT *hommat,
+                        MATGEOM matgeom,
+                        SIG *sig,
+                        EPS *eps,
+                        SUPP sup,
+                        double dt,
+                        double nor_min,
+                        double stab,
+                        CRPL *crpl,
+                        long FNR,
+                        double lm,
+                        double *x,
+                        double *y,
+                        double *z,
+                        double *fe,
+                        long *nod,
+                        double *r_n,
+                        double *r_e,
+                        double alpha,
+                        int include_inertia,
+                        const int analysis,
+                        int cm)
 {
   int err = 0;
   if(include_inertia)
@@ -79,32 +105,35 @@ int el_compute_stiffmat(int i, double *lk, long ndofn, long nne, long npres, int
                   x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
       break;
     case CM:
-    {  
-      switch(cm) {
-      case CRYSTAL_PLASTICITY:
-        err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                               dt,sig,eps,sup,r_e);
-        break;
+      {
+        switch(cm) {
+        case CRYSTAL_PLASTICITY: /* deliberate drop through */
+        case BPA_PLASTICITY:
+          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
+                                                 hommat,matgeom,nod,node,
+                                                 dt,sig,eps,sup,r_e);
+          break;
 
-      case HYPER_ELASTICITY: /* deliberate drop through */
-      case BPA_PLASTICITY: /* deliberate drop through */
-      default:
-        err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                             dt,sig,eps,sup,r_e);
+        case HYPER_ELASTICITY:
+          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,
+                                               hommat,matgeom,nod,node,
+                                               dt,sig,eps,sup,r_e);
+          break;
+        default: assert(0 && "should never get here"); break;
+        }
         break;
       }
-      break;
-    }      
     default:
       err += stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
-			  hommat,node,sig,eps,r_e,npres,
-			  nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
+                            hommat,node,sig,eps,r_e,npres,
+                            nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
       break;
     } // switch (analysis)
   } // if(include_inertia)
   
   return err;
-}        
+}
+
 /* This function may not be used outside this file */
 static int el_stiffmat(int i, /* Element ID */
 			double **Lk,
@@ -210,18 +239,14 @@ static int el_stiffmat(int i, /* Element ID */
       break;
     case CM:
     {  
-      switch(cm)
-      {
-        case HYPER_ELASTICITY:
-          nodecoord_total (nne,nod,node,x,y,z);
-          break;
-        case CRYSTAL_PLASTICITY:
-          nodecoord_updated (nne,nod,node,x,y,z);
-          break;          
-        case BPA_PLASTICITY:
-        default:
-          nodecoord_total (nne,nod,node,x,y,z);
-          break;
+      switch(cm) {
+      case HYPER_ELASTICITY: case BPA_PLASTICITY:
+        nodecoord_total (nne,nod,node,x,y,z);
+        break;
+      case CRYSTAL_PLASTICITY:
+        nodecoord_updated (nne,nod,node,x,y,z);
+        break;
+      default: assert(0 && "undefined CM type"); break;
       }
       break;      
     }    
@@ -264,21 +289,17 @@ static int el_stiffmat(int i, /* Element ID */
       break;
     case CM:
     {  
-      switch(cm)
-      {
-        case HYPER_ELASTICITY:
-          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
-          break;
-        case CRYSTAL_PLASTICITY:
-          def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
-          break;          
-        case BPA_PLASTICITY:
-        default:
-          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
-          break;
+      switch(cm) {
+      case HYPER_ELASTICITY: case BPA_PLASTICITY:
+        def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+        break;
+      case CRYSTAL_PLASTICITY:
+        def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+        break;
+      default: assert(0 && "undefined CM type"); break;
       }
       break;      
-    }      
+    }
     default:
       def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
       break;
@@ -297,61 +318,11 @@ static int el_stiffmat(int i, /* Element ID */
   Matrix_init(lk, 0.0);
   
   err += el_compute_stiffmat(i,lk.m_pdata,ndofn,nne,npres,nVol,nsd,
-                        elem,node,hommat,matgeom,sig,eps,sup,
-                        dt,nor_min,stab,crpl,FNR,lm,
-	                      x,y,z,fe,nod,r_n,r_e,
-	                      alpha,include_inertia,analysis,cm);  
+                             elem,node,hommat,matgeom,sig,eps,sup,
+                             dt,nor_min,stab,crpl,FNR,lm,
+                             x,y,z,fe,nod,r_n,r_e,
+                             alpha,include_inertia,analysis,cm);
 
-/*
-  if(include_inertia)
-  {
-    stiffmat_disp_w_inertia_el(lk.m_pdata,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
-                               elem,hommat,nod,node,dt,
-                               sig,eps,sup,analysis,alpha,r_n,r_e);          
-  }
-  else
-  { 
-           
-  switch(analysis){
-  case STABILIZED:
-    err = stiffmatel_st(i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
-			 sup,r_e,npres,nor_min,lk.m_pdata,dt,stab,FNR,lm,fe);
-    break;
-  case MINI:
-    err = MINI_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
-			   hommat,nod,node,eps,sig,r_e);
-    break;
-  case MINI_3F:
-    err = MINI_3f_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
-			      hommat,nod,node,eps,sig,r_e);
-    break;
-  case DISP:
-    {
-      
-      if (PGFEM3D_DEV_TEST) {
-        update_stiffness_from_constitutive_model(lk.m_pdata,i,ndofn,nne,nsd,elem,hommat,matgeom,nod,node,
-                                                 dt,sig,eps,sup,r_e);
-
-      } else {
-        err = DISP_stiffmat_el(lk.m_pdata,i,ndofn,nne,x,y,z,elem,
-                               hommat,nod,node,eps,sig,sup,r_e);
-      }
-    }
-    break;
-  case TF:
-    stiffmat_3f_el(lk.m_pdata,i,ndofn,nne,npres,nVol,nsd,
-                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
-        //stiffmat_3f_el(lk.m_pdata,i,ndofn,nne,npres,nVol,nsd,
-        //          x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
-        break;
-  default:
-    err = stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
-			 hommat,node,sig,eps,r_e,npres,
-			 nor_min,lk.m_pdata,dt,crpl,FNR,lm,fe,analysis);
-    break;
-  } // switch (analysis)
-  } // if(include_inertia)
-    */
   if (PFEM_DEBUG){
     char filename[50];
     switch(analysis){
@@ -751,45 +722,6 @@ int stiffmat_fd(int *Ap,
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
 				     mpi_comm,comm);
 
-  /* Lk = (double**) PGFEM_calloc (nproc,sizeof(double*)); */
-  /* for (i=0;i<nproc;i++) { */
-  /*   if (myrank == i || comm->S[i] == 0) */
-  /*     k = 1; */
-  /*   else  */
-  /*     k = comm->AS[i]; */
-  /*   Lk[i] = (double*) PGFEM_calloc (k,sizeof(double)); */
-  /* } */
-  /* if (Lk == NULL){ */
-  /*   PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__); */
-  /*   fflush(stdout);  */
-  /*   PGFEM_Comm_code_abort (mpi_comm,i); */
-  /* } */
-  
-  /* /\* Allocate recieve *\/ */
-  /* recieve = (double**) PGFEM_calloc (nproc,sizeof(double*)); */
-  /* for (i=0;i<nproc;i++) { */
-  /*   if (comm->AR[i] == 0) */
-  /*     KK = 1; */
-  /*   else */
-  /*     KK = comm->AR[i]; */
-  /*   recieve[i] = (double*) PGFEM_calloc (KK,sizeof(double)); */
-  /* } */
-  
-  /* /\* Allocate request fields *\/ */
-  /* if (comm->Nr == 0) */
-  /*   KK = 1; */
-  /* else */
-  /*   KK = comm->Nr; */
-  /* sta_r = (MPI_Status*) PGFEM_calloc (KK,sizeof(MPI_Status)); */
-  /* req_r = (MPI_Request*) PGFEM_calloc (KK,sizeof(MPI_Request)); */
-  
-  /* /\* Receive data *\/ */
-  /* for (i=0;i<comm->Nr;i++){ */
-  /*   KK = comm->Nrr[i]; */
-  /*   MPI_Irecv (recieve[KK],comm->AR[KK],MPI_DOUBLE,KK, */
-  /* 	       MPI_ANY_TAG,mpi_comm,&req_r[i]); */
-  /* }/\* end i < nproc *\/ */
-  
   /* Allocate */
   Ddof = aloc1i (nproc);
   
@@ -801,9 +733,10 @@ int stiffmat_fd(int *Ap,
   /***** COMM BOUNDARY ELEMENTS *****/
   for(i=0; i<nbndel; i++){
     err += el_stiffmat(bndel[i],Lk,Ap,Ai,ndofn,elem,node,hommat,
-		       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
-		       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
-		       Ddof,0,opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
+                       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
+                       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
+                       Ddof,0,opts->analysis_type,opts->cm,PGFEM_hypre,
+                       alpha,r_n,r_n_1);
 
     /* If there is an error, complete communication and exit */
     if(err != 0) goto send;

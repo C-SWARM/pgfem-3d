@@ -1055,7 +1055,7 @@ int single_scale_main(int argc,char *argv[])
 	npres = 0;
 	if (myrank == 0) {
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
-		 "Re-setting to 0 and continuing...\n");
+                       "Re-setting to 0 and continuing...\n");
 	}
       }
       break;
@@ -1064,7 +1064,7 @@ int single_scale_main(int argc,char *argv[])
 	npres = 1;
 	if (myrank == 0) {
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
-		 "Re-setting to 1 and continuing...\n");
+                       "Re-setting to 1 and continuing...\n");
 	}
       }
       break;
@@ -1116,7 +1116,8 @@ int single_scale_main(int argc,char *argv[])
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = 0;
     
-    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
+    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank,
+                                nn, nmat, times[1] - times[0], &restart_tim);
     for(long idx_a = 0; idx_a<nn; idx_a++)
     {
       for(long idx_b = 0; idx_b<ndofn; idx_b++)
@@ -1209,8 +1210,8 @@ int single_scale_main(int argc,char *argv[])
 
       if (myrank == 0){
 	PGFEM_printf("\nFinite deformations time step %ld) "
-	       " Time %e | dt = %e\n",
-	       tim,times[tim+1],dt);
+                     " Time %e | dt = %e\n",
+                     tim,times[tim+1],dt);
       }
 
       /*=== NEWTON RAPHSON ===*/
