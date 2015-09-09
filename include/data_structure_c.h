@@ -343,14 +343,13 @@ typedef struct Matrix_##T                                               \
 
 /* A = bBT */
 #define Matrix_AeqBT(A,b,B) do {                                        \
-  long __a;                                                             \
   long m_row = (B).m_row;                                               \
   long m_col = (B).m_col;                                               \
-  Matrix_check_null_and_redim(A, (B).m_col, (B).m_row);                 \
+  Matrix_check_null_and_redim(A, m_col, m_row);                         \
                                                                         \
-  for(__a = 0; __a < m_row; __a++){                                     \
-    for(__b = 0; __b < m_col; __b++){                                   \
-      Mat_v(A, _b, _a) = Mat_v(B,__a, __b)*(b);                         \
+  for(int __a = 1; __a <= m_row; __a++){                                \
+    for(int __b = 1; __b <= m_col; __b++){                              \
+      Mat_v(A, __b, __a) = Mat_v(B,__a, __b)*(b);                       \
     }                                                                   \
   }                                                                     \
 } while(0)
