@@ -92,6 +92,12 @@ static int plasticity_none_reset(Constitutive_model *m)
 
 static int plasticity_none_info(Model_var_info **info)
 {
+  int err = 0;
+
+  /* make sure I don't leak memory */
+  if( *info != NULL) err += model_var_info_destroy(info);
+
+  /* construct valid info object */
   *info = malloc(sizeof(**info));
   (*info)->F_names = malloc(1*sizeof(char *));
   (*info)->F_names[0] = (char *) malloc(1024*sizeof(char));
@@ -100,7 +106,7 @@ static int plasticity_none_info(Model_var_info **info)
   (*info)->var_names = NULL;
   (*info)->n_Fs = 1;
   (*info)->n_vars = 0;
-  return 0;
+  return err;
 }
 
 static int he_get_Fn(const Constitutive_model *m,

@@ -12,6 +12,11 @@
 #include "constitutive_model.h"
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
+#include "plasticity_model_BPA.h"
+
+#include "material.h"
+#include "hommat.h"
+#include "matgeom.h"
 #include "PGFEM_io.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
@@ -125,10 +130,10 @@ int model_parameters_construct(Model_parameters *p)
 }
 
 int model_parameters_initialize(Model_parameters *p,
-                          const MATERIAL *p_mat,
-                          const MATGEOM_1 *p_mgeom,
-                          const HOMMAT *p_hmat,
-                          const size_t type)
+                                const MATERIAL *p_mat,
+                                const MATGEOM_1 *p_mgeom,
+                                const HOMMAT *p_hmat,
+                                const size_t type)
 {
   int err = 0;
   p->p_mat = p_mat;
@@ -149,6 +154,8 @@ int model_parameters_initialize(Model_parameters *p,
     break;
   }
   case BPA_PLASTICITY:
+    err += plasticity_model_BPA_initialize(p);
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
     err++;
