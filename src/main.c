@@ -1355,6 +1355,12 @@ int single_scale_main(int argc,char *argv[])
       free(GP);
 
       if (print[tim] == 1 && options.vis_format != VIS_NONE ) {
+
+        if(options.cm){
+          constitutive_model_update_output_variables(sig_e, eps, ne,
+                                                     times[tim+1] - times[tim]);
+        }
+
 	if(options.ascii){
 	  ASCII_output(&options,mpi_comm,tim,times,Gnn,nn,ne,nce,ndofd,
 		       DomDof,Ap,FNR,lm,pores,VVolume,node,elem,sup,

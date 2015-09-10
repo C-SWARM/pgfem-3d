@@ -1020,3 +1020,103 @@ int residuals_el_crystal_plasticity(double *f,
   FEMLIB_destruct(&fe);
   return err;
 }
+
+int constitutive_model_update_output_variables(SIG *sig,
+                                               EPS *eps,
+                                               const int ne,
+                                               const double dt)
+{
+  int err = 0;
+
+  static const double eye[TENSOR_LEN] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
+  /* need to set
+   * sig[i].el.o
+   * eps[i].el.o
+   * eps[i].el.eq
+   * sig[i].el.eq
+   * eps[i].dam[0].wn <-- hardening parameter
+   * eps[i].il[0].F <-- eF
+   */
+
+  /* deformation gradient */
+  Matrix_double F, eF, pF, S;
+  Matrix_construct_redim(double, F, DIM, DIM);
+  Matrix_construct_redim(double, eF, DIM, DIM);
+  Matrix_construct_redim(double, pF, DIM, DIM);
+  Matrix_construct_redim(double, S, DIM, DIM);
+
+  for (int i = 0; i < ne; i++) {
+    /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
+    const Constitutive_model *m = eps[i].model;
+    const Model_parameters *func = m->param;
+
+    err += func->get_Fn(m, &F);
+    err += func->get_eFn(m, &eF);
+    err += func->get_pFn(m, &pF);
+    err += constitutive_model_update_elasticity(m,&F,dt,NULL,&S,0);
+
+    /* get aliases to Matrix data for simpler access */
+    const double *Sd = S.m_pdata;
+    const double *eFd = eF.m_pdata;
+    const double *pFd = pF.m_pdata;
+    const double eJ = det3x3(eFd);
+
+    /* store elastic deformation */
+    memcpy(eps[i].il->F, eFd, TENSOR_LEN * sizeof(*eFd));
+
+    /* store the hardening parameter */
+    err += func->get_hardening(m, &eps[i].dam[0].wn);
+
+    /* compute/store the plastic stretch */
+    eps[i].dam[0].Xn = sqrt(cblass_ddot(TENSOR_LEN, pFd, 1, pFd, 1) / 3.0);
+
+    /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
+    double sigma[TENSOR_LEN] = {};
+    double temp[TENSOR_LEN] = {};
+    double temp_I[TENSOR_LEN] = {};
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                DIM,DIM,DIM, 1.0 / eJ, eFd, DIM, Sd, DIM,
+                0.0, temp,DIM);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                DIM, DIM, DIM, 1.0, temp, DIM, eFd, DIM,
+                0.0, sigma, DIM);
+
+    /* store symmetric part */
+    sig[i].el.o[0] += sigma[idx_2(0,0)]; /* XX */
+    sig[i].el.o[1] += sigma[idx_2(1,1)]; /* YY */
+    sig[i].el.o[2] += sigma[idx_2(2,2)]; /* ZZ */
+    sig[i].el.o[3] += sigma[idx_2(1,2)]; /* YZ */
+    sig[i].el.o[4] += sigma[idx_2(0,2)]; /* XZ */
+    sig[i].el.o[5] += sigma[idx_2(0,1)]; /* XY */
+
+    /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                DIM, DIM, DIM, 1.0, eFd, DIM, eFd, DIM,
+                0.0, temp, DIM);
+    err += inv3x3(temp, temp_I);
+    /* e <-- temp is the Euler strain */
+    for(int i = 0; i < TENSOR_LEN; i++){
+      temp[i] = 0.5*(eye[i]-temp_I[i]);
+    }
+
+    /* store symmetric part (also Eng. strain) */
+    eps[i].el.o[0] += temp[idx_2(0,0)];
+    eps[i].el.o[1] += temp[idx_2(1,1)];
+    eps[i].el.o[2] += temp[idx_2(2,2)];
+
+    eps[i].el.o[3] += 2. * temp[idx_2(1,2)];
+    eps[i].el.o[4] += 2. * temp[idx_2(0,2)];
+    eps[i].el.o[5] += 2. * temp[idx_2(0,1)];
+
+  }
+
+  Matrix_cleanup(F);
+  Matrix_cleanup(eF);
+  Matrix_cleanup(S);
+
+  /* Compute equivalent stress and strain */
+  Mises (ne, sig, eps, 0);
+
+  return err;
+}
