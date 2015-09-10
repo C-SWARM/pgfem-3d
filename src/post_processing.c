@@ -225,9 +225,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   Matrix_cleanup(LS);
   
   for(int a=0; a<9; a++)
-    GS[a] = GS[a]/GV;
-    
-  printf("S: %e\n", GV);  
+    GS[a] = GS[a]/GV;    
 }
 
 void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
@@ -273,6 +271,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     {      
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       { 
@@ -304,8 +303,150 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
   MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
   Matrix_cleanup(F);
+  Matrix_cleanup(LF);
   
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
-  printf("GV: %e\n", GV);  
+}
+
+void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                    
+{
+  int total_Lagrangian = 1;
+  int intg_order = 1;
+  
+  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+  {  
+    total_Lagrangian = 0;
+    intg_order = 0;
+  }     
+  
+  int nsd = 3;
+  Matrix(double) F,LF;
+  Matrix_construct_init(double,F,3,3,0.0);
+  Matrix_construct_init(double,LF,3,3,0.0);  
+
+  double LV = 0.0;
+  double GV = 0.0;
+  
+  for(int e = 0; e<ne; e++)
+  {        
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    int nne = fe.nne;
+    
+    Matrix(double) u;  
+    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+                        
+    for(int a = 0; a<nne; a++)
+    {      
+      int nid = Vec_v(fe.node_id, a+1);
+      for(int b=0; b<nsd; b++)
+      {
+        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+      }
+    }
+    
+    for(int ip = 1; ip<=fe.nint; ip++)
+    {      
+      FEMLIB_elem_basis_V(&fe, ip);  
+      FEMLIB_update_shape_tensor(&fe);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      
+      if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+      { 
+        Constitutive_model *m = &(eps[e].model[ip-1]);
+        double Jnp1 = 0.0;
+        Matrix(double) Fnp1, eFnp1;
+        Matrix_construct_redim(double,Fnp1,3,3);
+        Matrix_construct_redim(double,eFnp1,3,3);        
+        /* after update (i.e., converged step) the *Fn = *Fnp1 */
+        m->param->get_Fn(m,&Fnp1);
+        m->param->get_eFn(m,&eFnp1);        
+        Matrix_det(Fnp1, Jnp1);
+        
+        LV += fe.detJxW/Jnp1;
+        for(int a=0; a<9; a++)
+          LF.m_pdata[a] += eFnp1.m_pdata[a]*fe.detJxW/Jnp1;
+
+        Matrix_cleanup(Fnp1);
+        Matrix_cleanup(eFnp1);        
+      }
+      else
+      {        
+        LV += fe.detJxW;
+        for(int a=0; a<9; a++)
+          LF.m_pdata[a] += F.m_pdata[a]*fe.detJxW;
+      }
+    }
+    FEMLIB_destruct(&fe);
+    Matrix_cleanup(u);
+  }
+      
+  MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
+  Matrix_cleanup(F);
+  Matrix_cleanup(LF);
+  
+  for(int a=0; a<9; a++)
+    GF[a] = GF[a]/GV;
+}
+
+
+void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                    
+{
+  int total_Lagrangian = 1;
+  int intg_order = 1;
+  
+  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+  {  
+    total_Lagrangian = 0;
+    intg_order = 0;
+  }
+  else
+    return;     
+  
+  int nsd = 3;
+  double L_gn = 0.0;
+
+  double LV = 0.0;
+  double GV = 0.0;
+  
+  for(int e = 0; e<ne; e++)
+  {        
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    int nne = fe.nne;
+        
+    for(int ip = 1; ip<=fe.nint; ip++)
+    {      
+      FEMLIB_elem_basis_V(&fe, ip);  
+      FEMLIB_update_shape_tensor(&fe);
+      
+      Constitutive_model *m = &(eps[e].model[ip-1]);
+        
+      double *state_var = (m->vars).state_vars[0].m_pdata;  
+      double g_n = state_var[3]; // VAR_g_np1 = 3
+      double Jnp1 = 0.0;
+      Matrix(double) Fnp1;
+      Matrix_construct_redim(double,Fnp1,3,3);
+      /* after update (i.e., converged step) the *Fn = *Fnp1 */
+      m->param->get_Fn(m,&Fnp1);
+      Matrix_det(Fnp1, Jnp1);
+      
+      LV += fe.detJxW/Jnp1;
+      L_gn += g_n*fe.detJxW/Jnp1;
+
+      Matrix_cleanup(Fnp1);
+    }
+    FEMLIB_destruct(&fe);
+  }
+      
+  MPI_Allreduce(&L_gn,G_gn,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
+  
+  (*G_gn) = (*G_gn)/GV;
 }

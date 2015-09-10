@@ -1421,33 +1421,73 @@ int single_scale_main(int argc,char *argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////
-/*
-              Matrix(double) PK2, Feff;
+/*{
+              double G_gn = 0.0;
+              Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
+
               Matrix_construct_init(double, PK2, 3,3,0.0);
+              Matrix_construct_init(double, sigma, 3,3,0.0);
               Matrix_construct_init(double, Feff, 3,3,0.0);
+              Matrix_construct_init(double, Eeff, 3,3,0.0);              
+              Matrix_construct_init(double, eFeff, 3,3,0.0);
+              Matrix_construct_init(double, E, 3,3,0.0);
+              Matrix_construct_init(double, PK2dev, 3,3,0.0);
+              Matrix_construct_init(double, sigma_dev, 3,3,0.0);
+              Matrix_construct_init(double, eFeffPK2, 3,3,0.0);
+            
               post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
-              post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);              
+              post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
+              post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);              
+              post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options); 
+                           
               if(myrank==0)
               { 
+                Matrix_eye(Eeff, 3);
+                Matrix_AxB(Eeff,0.5,-0.5,Feff,1,Feff,0);
+                double det_Fe;
+                Matrix_det(eFeff, det_Fe);
+                Matrix_AxB(eFeffPK2,1.0,0.0,eFeff,0,PK2,0);
+                Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);        
+                                
+                double trPK2, tr_sigma;
+                
+                Matrix_trace(PK2,trPK2);
+                Matrix_trace(sigma,tr_sigma);
+                Matrix_eye(PK2dev, 3);
+                Matrix_eye(sigma_dev, 3);  
+                
+                Matrix_AplusB(PK2dev,    1.0, PK2,      -trPK2/3.0, PK2dev);
+                Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);    
+    
+                double norm_sigma, norm_PK2;
+                Matrix_ddot(PK2dev,PK2dev,norm_PK2);    
+                Matrix_ddot(sigma_dev,sigma_dev,norm_sigma);
+    
+                double sigma_eff=sqrt(3.0/2.0*norm_sigma);
+                double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
+                              
+                
                 FILE *fp_ss;
                 if(tim==0) 
                   fp_ss = fopen("strain_stress.txt", "w");
                 else
                   fp_ss = fopen("strain_stress.txt", "a");
-                                    
-                fprintf(fp_ss, "%ld %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n", tim,times[tim+1], 
-                                Mat_v(Feff,1,1),Mat_v(Feff,1,2),Mat_v(Feff,1,3),
-                                Mat_v(Feff,2,1),Mat_v(Feff,2,2),Mat_v(Feff,2,3),
-                                Mat_v(Feff,3,1),Mat_v(Feff,3,2),Mat_v(Feff,3,3),
-                                Mat_v(PK2,1,1),Mat_v(PK2,1,2),Mat_v(PK2,1,3),
-                                Mat_v(PK2,2,1),Mat_v(PK2,2,2),Mat_v(PK2,2,3),
-                                Mat_v(PK2,3,1),Mat_v(PK2,3,2),Mat_v(PK2,3,3));
+                  
+                fprintf(fp_ss,"%e %e %e %e %e %e\n",times[tim+1],sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));                                    
 
                 fclose(fp_ss);
               }
+
               Matrix_cleanup(PK2);
-              Matrix_cleanup(Feff);              
-*/              
+              Matrix_cleanup(sigma);
+              Matrix_cleanup(Feff);
+              Matrix_cleanup(Eeff);              
+              Matrix_cleanup(eFeff);
+              Matrix_cleanup(E);
+              Matrix_cleanup(PK2dev);
+              Matrix_cleanup(sigma_dev);
+              Matrix_cleanup(eFeffPK2);                           
+}*/              
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
