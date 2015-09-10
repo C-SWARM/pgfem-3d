@@ -144,6 +144,13 @@ static int he_get_eFn(const Constitutive_model *m,
   return 1;
 }
 
+static int he_get_hardening(const Constitutive_model *m,
+                            double *var)
+{
+  *var = 0.0;
+  return 0;
+}
+
 static int he_compute_dMdu(const Constitutive_model *m,
                            const void *ctx,
                            const double *Grad_op,
@@ -176,6 +183,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_pFn = he_get_pFn;
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
+  p->get_hardening = he_get_hardening;
   p->destroy_ctx = plasticity_model_none_ctx_destroy;
   p->compute_dMdu = he_compute_dMdu;
 

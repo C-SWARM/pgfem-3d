@@ -182,6 +182,22 @@ typedef int (*usr_scalar)(const Constitutive_model *m,
 typedef int (*usr_increment)(Constitutive_model *m);
 
 /**
+ * User defined function to return a state variable. Note that this
+ * function *DOES NOT* modify the internal state variables. This
+ * function shall be implemented such that destroying the returned
+ * variable does not modify the internal state of the
+ * Constitutive_model object.
+ *
+ * \param[in] m - constant reference to a Constitiutive_model object.
+ * \param[out] var - contains the value of the state variable upon
+ *                   exit.
+ * \return non-zero on internal error
+ */
+typedef int (*usr_get_var)(const Constitutive_model *m,
+                           double *var);
+
+
+/**
  * User defined function to return the deformation gradient. Note that
  * this function *DOES NOT* modify the internal state variables. This
  * function shall be implemented such that destroying the returned
@@ -317,6 +333,7 @@ struct Model_parameters {
   usr_get_F get_pFn;
   usr_get_F get_eF;
   usr_get_F get_eFn;
+  usr_get_var get_hardening;
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;
 
@@ -472,5 +489,10 @@ int residuals_el_crystal_plasticity(double *f,
                                     const SUPP sup,
                                     const double *r_e,
                                     const int total_Lagrangian);
+
+int constitutive_model_update_output_variables(SIG *sig,
+                                               EPS *eps,
+                                               const int ne,
+                                               const double dt);
 
 #endif

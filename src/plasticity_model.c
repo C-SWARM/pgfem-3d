@@ -226,6 +226,14 @@ static int plasticity_get_eFn(const Constitutive_model *m,
   return err;
 }
 
+static int plasticity_get_hardening(const Constitutive_model *m,
+                                    double *var)
+{
+  int err = 0;
+  *var = m->vars.state_vars->m_pdata[VAR_g_n];
+  return err;
+}
+
 static int plasticity_dev_stress(const Constitutive_model *m,
                                  const void *ctx,
                                  Matrix_double *stress)
@@ -379,6 +387,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_pFn = plasticity_get_pFn;
   p->get_eF = plasticity_get_eF;
   p->get_eFn = plasticity_get_eFn;
+  p->get_hardening = plasticity_get_hardening;
   p->destroy_ctx = plasticity_model_ctx_destroy;
   p->compute_dMdu = plasticity_compute_dMdu;
 

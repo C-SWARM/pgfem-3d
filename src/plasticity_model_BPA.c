@@ -1207,6 +1207,14 @@ static int bpa_get_Fen(const Constitutive_model *m,
   return err;
 }
 
+static int bpa_get_hardening(const Constitutive_model *m,
+                             double *var)
+{
+  int err = 0;
+  *var = m->vars.state_vars->m_pdata[_s_n];
+  return err;
+}
+
 static int bpa_compute_dM_du(const Constitutive_model *m,
                              const void *ctx,
                              const double *ST,
@@ -1314,6 +1322,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->get_pFn = bpa_get_Fpn;
   p->get_eF = bpa_get_Fe;
   p->get_eFn = bpa_get_Fen;
+  p->get_hardening = bpa_get_hardening;
   p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
   p->compute_dMdu = bpa_compute_dM_du;
 

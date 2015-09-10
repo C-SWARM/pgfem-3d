@@ -28,6 +28,9 @@ Define_Matrix(double);
 #define _Matrix_double 1
 #endif
 
+#define DIM 3
+#define TENSOR_LEN 9
+
 int constitutive_model_construct(Constitutive_model *m)
 {
   int err = 0;
@@ -122,6 +125,7 @@ int model_parameters_construct(Model_parameters *p)
   p->get_pFn = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_hardening = NULL;
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
   p->type = -1;
@@ -188,6 +192,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->get_pFn = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_hardening = NULL;
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
   if(p->Psys){
