@@ -1309,6 +1309,12 @@ int single_scale_main(int argc,char *argv[])
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (ne,sig_e,eps,options.analysis_type);
 
+      /* update output stuff for CM interface */
+      if(options.cm){
+        constitutive_model_update_output_variables(sig_e, eps, ne,
+                                                   times[tim+1] - times[tim]);
+      }
+
       /* print tractions on marked features */
       {
 	double *sur_forces = NULL;
@@ -1355,12 +1361,6 @@ int single_scale_main(int argc,char *argv[])
       free(GP);
 
       if (print[tim] == 1 && options.vis_format != VIS_NONE ) {
-
-        if(options.cm){
-          constitutive_model_update_output_variables(sig_e, eps, ne,
-                                                     times[tim+1] - times[tim]);
-        }
-
 	if(options.ascii){
 	  ASCII_output(&options,mpi_comm,tim,times,Gnn,nn,ne,nce,ndofd,
 		       DomDof,Ap,FNR,lm,pores,VVolume,node,elem,sup,
