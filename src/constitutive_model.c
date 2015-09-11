@@ -1069,7 +1069,7 @@ int constitutive_model_update_output_variables(SIG *sig,
     err += func->get_hardening(m, &eps[i].dam[0].wn);
 
     /* compute/store the plastic stretch */
-    eps[i].dam[0].Xn = sqrt(cblass_ddot(TENSOR_LEN, pFd, 1, pFd, 1) / 3.0);
+    eps[i].dam[0].Xn = sqrt( cblas_ddot(TENSOR_LEN, pFd, 1, pFd, 1) / 3.0 );
 
     /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
     double sigma[TENSOR_LEN] = {};
