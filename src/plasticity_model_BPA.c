@@ -994,7 +994,7 @@ int BPA_int_alg(Constitutive_model *m,
   int iter = 0;
   int iterWp = 0;
   static const double TOL = 1.0e-5;
-  static const int maxit = 5;
+  static const int maxit = 100;
 
   /* COMPUTE THE RESIDUAL */
   err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
