@@ -191,6 +191,7 @@ void set_default_options(PGFem3D_opt *options)
   options->cohesive = 0;
   options->plc = 0;
   options->multi_scale = 0;
+  options->cm = -1;
 
 
   /* visualization options */

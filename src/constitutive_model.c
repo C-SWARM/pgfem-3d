@@ -1114,6 +1114,7 @@ int constitutive_model_update_output_variables(SIG *sig,
 
   Matrix_cleanup(F);
   Matrix_cleanup(eF);
+  Matrix_cleanup(pF);
   Matrix_cleanup(S);
 
   /* Compute equivalent stress and strain */
