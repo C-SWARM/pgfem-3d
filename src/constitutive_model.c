@@ -303,7 +303,8 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
 
   func->destroy_ctx(&ctx);  
   Matrix_cleanup(C);
-  Matrix_cleanup(CI); 
+  Matrix_cleanup(CI);
+  Matrix_cleanup(Fe);
   return err; 
 }
 
@@ -745,13 +746,13 @@ int stiffness_el_crystal_plasticity(double *lk,
   Matrix(double) L;  
   Matrix_construct_redim(double,L ,81,1);  
 
-  Matrix(double) *F2; // Second order tensors  
-  F2 = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));
+  /* list of second-order tensors */
+  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   
-  for(int a=0; a<Fend; a++)
-    Matrix_construct_redim(double, F2[a],3,3); 
+  for (int a = 0; a < Fend; a++) {
+    Matrix_construct_redim(double, F2[a],3,3);
+  }
 
-  
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
   int compute_stiffness = 1;      
@@ -888,9 +889,13 @@ int stiffness_el_crystal_plasticity(double *lk,
   free(u);
   
   Matrix_cleanup(L); 
-  for(int a=0; a<Fend; a++)
-    Matrix_cleanup(F2[a]); 
-    
+
+  /* destroy second-order tensors */
+  for (int a = 0; a < Fend; a++) {
+    Matrix_cleanup(F2[a]);
+  }
+  free(F2);
+
   FEMLIB_destruct(&fe);
   free(dMdu_all);
  
@@ -924,11 +929,11 @@ int residuals_el_crystal_plasticity(double *f,
   enum {Fn,Fr,Fnp1,pFn,eFnp1,pFnp1,pFnp1_I,
     L,S,pFnI,eFn,M,eFnM,ST_ab,AA,sAA,MTeFnT_sAA_eFnM,eFnMT,Fend}; 
   
-  Matrix(double) *F2; // Second order tensors  
-  F2 = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));
-  
-  for(int a=0; a<Fend; a++)
-    Matrix_construct_redim(double, F2[a],3,3);   
+  /* second-order tensors */
+  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
+  for (int a = 0; a < Fend; a++) {
+    Matrix_construct_redim(double, F2[a],3,3);
+  }
 
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
@@ -1014,9 +1019,12 @@ int residuals_el_crystal_plasticity(double *f,
   
   free(u);
   
-  for(int a=0; a<Fend; a++)
-    Matrix_cleanup(F2[a]);   
-    
+  /* destroyu list of second-order tenosors */
+  for(int a = 0; a < Fend; a++) {
+    Matrix_cleanup(F2[a]);
+  }
+  free(F2);
+
   FEMLIB_destruct(&fe);
   return err;
 }
