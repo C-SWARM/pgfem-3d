@@ -886,7 +886,6 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
                               const double dt,
                               const double s_n,
                               const double s,
-                              const double * restrict Mn,
                               const double * restrict Fe,
                               const double * restrict F,
                               const HOMMAT *p_hmat)
@@ -921,11 +920,6 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
   err += bpa_compute_Ds_DFe(Ds_DFe, s_n, dt, gp, Dgp_Dss, Dgp_DFe);
   err += bpa_compute_Dn_DFe(Dn_DFe, tau, Dsig_DFe, n);
 
-  /* compute - dt * Mn * n */
-  double dtMn_n[tensor] = {};
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-              dim, dim, dim, -dt, Mn, dim, n, dim, 0.0, dtMn_n, dim);
-
   /* compute full Dgp_DFe */
   cblas_daxpy(tensor, Dgp_Dss, Ds_DFe, 1, Dgp_DFe, 1);
 
@@ -934,9 +928,9 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
           const int ijkl = idx_4(i,j,k,l);
-          DM_DFe[ijkl] = dtMn_n[idx_2(i,j)] * Dgp_DFe[idx_2(k,l)];
+          DM_DFe[ijkl] = dt * eye[idx_2(i,j)] * Dgp_DFe[idx_2(k,l)];
           for (int p = 0; p < dim; p++) {
-            DM_DFe[ijkl] -= dt * gp * Mn[idx_2(i,p)] * Dn_DFe[idx_4(p,j,k,l)];
+            DM_DFe[ijkl] -= dt * gp * eye[idx_2(i,p)] * Dn_DFe[idx_4(p,j,k,l)];
           }
         }
       }
@@ -1240,7 +1234,7 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   double DFe_DM[tensor4] = {};
   err += inv3x3(Fp,M);
   err += inv3x3(Fp_n,Mn);
-  err += bpa_compute_DM_DFe(DM_DFe, dt, s_n, s, Mn, Fe, F, m->param->p_hmat);
+  err += bpa_compute_DM_DFe(DM_DFe, dt, s_n, s, Fe, F, m->param->p_hmat);
 
   /* compute the tangent operator */
   double U[tensor4] = {};
