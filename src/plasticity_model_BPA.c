@@ -92,10 +92,11 @@ static double bpa_compute_plam(const double *Cp)
 static void bpa_compute_Cpdev(double * restrict Cpdev,
                               const double * restrict Cp)
 {
-  const double Jdev = pow(det3x3(Cp),-1./3.);
-  for (int i = 0; i < tensor; i++) {
-    Cpdev[i] = Jdev * Cp[i];
-  }
+  const double lam = (Cp[0] + Cp[4] + Cp[8]) / 3.0;
+  memcpy(Cpdev, Cp, tensor * sizeof(*Cp));
+  Cpdev[0] -= lam;
+  Cpdev[4] -= lam;
+  Cpdev[8] -= lam;
 }
 
 static void bpa_compute_Fp(double * restrict Fp,
@@ -173,7 +174,9 @@ int bpa_compute_loading_dir(double * restrict normal,
 
   /* compute the loading direction (normal) */
   memset(normal, 0, tensor * sizeof(*normal));
-  cblas_daxpy(tensor, 1.0 / (sqrt(2.0) * (*tau)), eq_sig_dev, 1, normal, 1);
+  if (*tau != 0) {
+    cblas_daxpy(tensor, 1.0 / (sqrt(2.0) * (*tau)), eq_sig_dev, 1, normal, 1);
+  }
 
   return err;
 }
@@ -315,9 +318,9 @@ int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
         for (int l = 0; l < dim; l++) {
-          DB_DFp[idx_4(i,j,k,l)] = (coef_1 * (Jp23 * (eye[idx_2(i,k)] * Fp[idx_2(j,l)]
-                                                      + Fp[idx_2(i,l)] * eye[idx_2(k,j)])
-                                              -2./3. * Cpdev[idx_2(i,j)] * invFp[idx_2(l,k)])
+          DB_DFp[idx_4(i,j,k,l)] = (coef_1 * (eye[idx_2(i,k)] * Fp[idx_2(j,l)]
+                                              + Fp[idx_2(i,l)] * eye[idx_2(j,k)]
+                                              -2./3. * eye[idx_2(i,j)] * Fp[idx_2(k,l)])
                                     + coef_2 * Cpdev[idx_2(i,j)] * Fp[idx_2(k,l)]);
         }
       }
@@ -464,7 +467,9 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
 {
   int err = 0;
   double Dgdot_Dtau = 0;
-  err += bpa_compute_Dgdot_Dtau(&Dgdot_Dtau,s_s,tau);
+  if(tau != 0){
+    err += bpa_compute_Dgdot_Dtau(&Dgdot_Dtau,s_s,tau);
+  }
   const double rt2 = sqrt(2.0);
   double Dgdot_Dp = 0;
   err += bpa_compute_Dgdot_Ds_s(&Dgdot_Dp,tau,s_s);
@@ -491,7 +496,10 @@ int bpa_compute_Dn_Dsig(double * restrict Dn_Dsig,
 {
   int err = 0;
   const double coef = 1.0 / (sqrt(2) * tau);
-  assert(isfinite(coef));
+  if( !isfinite(coef) ) {
+    memset(Dn_Dsig, 0, tensor4 * sizeof(*Dn_Dsig));
+    return err;
+  }
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
