@@ -354,6 +354,8 @@ int read_constitutive_model_parameters(EPS *eps,
                                        const int type)
 { 
   int err = 0;
+  if(type<0)
+    return err;
   switch (type) {
   case HYPER_ELASTICITY: /* nothing required */ break;
   case CRYSTAL_PLASTICITY:
