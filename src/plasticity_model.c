@@ -246,6 +246,7 @@ static int plasticity_dev_stress(const Constitutive_model *m,
   err += plasticity_get_eF(m,&eFnp1);
   err += cp_compute_eC(eFnp1.m_pdata,eC);
   err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
+  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -262,6 +263,7 @@ static int plasticity_dudj(const Constitutive_model *m,
   double J = 0.0;
   Matrix_det(eFnp1, J);
   Pressure(J,m->param->p_hmat,dudj);
+  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -277,6 +279,7 @@ static int plasticity_dev_tangent(const Constitutive_model *m,
   err += plasticity_get_eF(m,&eFnp1);
   err += cp_compute_eC(eFnp1.m_pdata,eC);
   err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
+  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -293,6 +296,7 @@ static int plasticity_d2udj2(const Constitutive_model *m,
   Matrix_det(eFnp1, J);
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
   D_Pressure(J,m->param->p_hmat,d2udj2);
+  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -340,7 +344,7 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
      copying, I am abusing access to the internal data structure of
      the Matrix structure. */
   Matrix_double dMdu_ab, Grad_op_ab;
-  Matrix_construct(double, dMdu_ab);
+  Matrix_construct(double, dMdu_ab); // no memory created for this, no need Matrix_cleanup
   Matrix_construct(double, Grad_op_ab);
   for (int a = 0; a < nne; a++) {
     for(int b = 0; b < ndofn; b++) {
@@ -365,6 +369,7 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   Matrix_cleanup(L);
   Matrix_cleanup(eFn);
   Matrix_cleanup(eFnp1);
+  Matrix_cleanup(Grad_op_ab);
 
   return err;
 }
