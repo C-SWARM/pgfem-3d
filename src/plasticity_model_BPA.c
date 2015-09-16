@@ -50,11 +50,11 @@ static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 /* material parameters (constant for testing purposes, need to be
    migrated to Model_parameters in a programatic/general way) */
 /* parameter values from S. Holopanien, Mech. of Mat. (2013) */
-static const double param_A = 289;
-static const double param_T = 240;
+static const double param_A = 240;
+static const double param_T = 289;
 static const double param_N = 2.15;
 static const double param_Cr = 12.8;
-static const double param_alpha = 0.8;
+static const double param_alpha = 0.08;
 static const double param_gdot0 = 2.0e15;
 static const double param_h = 500;
 static const double param_s0 = 97;
@@ -987,8 +987,9 @@ int BPA_int_alg(Constitutive_model *m,
   double normWp = 1.0;
   int iter = 0;
   int iterWp = 0;
+  int total_it = 0;
   static const double TOL = 1.0e-5;
-  static const int maxit = 100;
+  static const int maxit = 10;
 
   /* COMPUTE THE RESIDUAL */
   err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
@@ -1029,6 +1030,7 @@ int BPA_int_alg(Constitutive_model *m,
       }
       iter++;
     }
+    total_it += iter;
     assert(norm < TOL);
 
     double s_k = s;
@@ -1057,6 +1059,9 @@ int BPA_int_alg(Constitutive_model *m,
   }
   assert(norm < TOL);
   assert(normWp < TOL);
+
+  /* induce subdivision of PDE if too many iterations */
+  if (total_it >= 2*maxit){ err ++;}
 
   /* Update state variables with converged values */
   err += bpa_update_state_variables(CTX->F,Fe, Fp, s, lam, m);
