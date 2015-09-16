@@ -1310,7 +1310,7 @@ int single_scale_main(int argc,char *argv[])
       Mises (ne,sig_e,eps,options.analysis_type);
 
       /* update output stuff for CM interface */
-      if(options.analysis_type == CM){
+      if(options.analysis_type == CM && options.cm!=0){
         constitutive_model_update_output_variables(sig_e, eps, ne,
                                                    times[tim+1] - times[tim]);
       }
