@@ -631,6 +631,7 @@ int compute_dMdu(const Constitutive_model *m,
   Matrix_Vec2Mat(*dMdu,DIM,DIM);
 
   // clear variables
+  Matrix_cleanup(C);
   Matrix_cleanup(U);
   Matrix_cleanup(UI);
   Matrix_cleanup(II);
