@@ -237,21 +237,20 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   Matrix_inv(C,CI);        
   Matrix_det(Fe, J);
 
-  switch(m->param->type)
-  {
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_build(&ctx, C.m_pdata, &J);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt);
-      break;
-    case BPA_PLASTICITY:
-      err += plasticity_model_BPA_ctx_build(&ctx, F->m_pdata, dt);
-      break;
-    default:
-      PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
-      err++;
-      break;
+  switch(m->param->type) {
+  case HYPER_ELASTICITY:
+    err += plasticity_model_none_ctx_build(&ctx, F->m_pdata);
+    break;
+  case CRYSTAL_PLASTICITY:
+    err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt);
+    break;
+  case BPA_PLASTICITY:
+    err += plasticity_model_BPA_ctx_build(&ctx, F->m_pdata, dt);
+    break;
+  default:
+    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
+    err++;
+    break;
   }
 
   // compute stress
