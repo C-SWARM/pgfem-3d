@@ -848,7 +848,7 @@ double Newton_Raphson (const int print_level,
             DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
                            sig_e,hommat,d_r,r,mpi_comm);
             break;
-          case CRYSTAL_PLASTICITY: case BPA_PLASTICITY:
+          case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
             /* updated later... */
             break;
           default: assert(0 && "undefined CM type"); break;

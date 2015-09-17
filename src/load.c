@@ -155,7 +155,7 @@ int load_vec_node_defl (double *f,
       case CM:
         {
           switch(opts->cm) {
-          case HYPER_ELASTICITY: case BPA_PLASTICITY: /* total Lagrangian */
+          case TESTING: case HYPER_ELASTICITY: case BPA_PLASTICITY: /* total Lagrangian */
             nodecoord_total(nne,nod,node,x,y,z);
             def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;

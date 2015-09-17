@@ -36,7 +36,8 @@ typedef struct NODE NODE;
 enum model_type {
   HYPER_ELASTICITY,
   CRYSTAL_PLASTICITY,
-  BPA_PLASTICITY
+  BPA_PLASTICITY,
+  TESTING=99
 };
 
 /**

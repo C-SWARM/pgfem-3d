@@ -148,6 +148,7 @@ int model_parameters_initialize(Model_parameters *p,
   p->Psys = NULL;
   p->N_SYS = 0;
   switch(type) {
+  case TESTING:
   case HYPER_ELASTICITY:
     err += plasticity_model_none_initialize(p);
     break;
@@ -238,6 +239,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   Matrix_det(Fe, J);
 
   switch(m->param->type) {
+  case TESTING:
   case HYPER_ELASTICITY:
     err += plasticity_model_none_ctx_build(&ctx, F->m_pdata);
     break;
@@ -356,6 +358,7 @@ int read_constitutive_model_parameters(EPS *eps,
   if(type<0)
     return err;
   switch (type) {
+  case TESTING:
   case HYPER_ELASTICITY: /* nothing required */ break;
   case CRYSTAL_PLASTICITY:
     {
@@ -792,6 +795,9 @@ int stiffness_el_crystal_plasticity(double *lk,
        done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
     switch (m->param->type){
+    case TESTING:
+      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
+      break;
     case CRYSTAL_PLASTICITY:
       err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
       break;
@@ -971,6 +977,9 @@ int residuals_el_crystal_plasticity(double *f,
 
     void *ctx = NULL;
     switch (m->param->type){
+    case TESTING:
+      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
+      break;
     case CRYSTAL_PLASTICITY:
       err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
       break;

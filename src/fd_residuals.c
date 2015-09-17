@@ -115,7 +115,7 @@ int fd_residuals (double *f_u,
 
       case CM:
         switch(opts->cm) {
-        case HYPER_ELASTICITY: case BPA_PLASTICITY:
+        case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
           /* total Lagrangian */
           nodecoord_total (nne,nod,node,x,y,z);
           def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
@@ -220,7 +220,7 @@ int fd_residuals (double *f_u,
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
                                                  dt,eps,sup,r_e, 0 /* UL */);
           break;
-        case BPA_PLASTICITY:
+        case BPA_PLASTICITY: case TESTING:
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
                                                  dt,eps,sup,r_e, 1 /* TL */);
           break;
