@@ -6,6 +6,9 @@ TAGS
 # built executable
 src/PGFem3D
 
+# any user-made install dirs
+install/
+
 # autotools stuff
 Makefile.in
 Makefile
