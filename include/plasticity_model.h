@@ -86,7 +86,19 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
                                     const Matrix_double *Fe_n,
                                     const double dt);
 
-int plasticity_model_read_parameters(Constitutive_model *m);
+#ifndef ELEMENT_H
+typedef struct EPS EPS;
+#endif
+
+#ifndef EPS_H
+typedef struct ELEMENT ELEMENT;
+#endif
+
+int plasticity_model_read_parameters(EPS *eps,
+                                       const int ne,
+                                       const ELEMENT *elem,
+                                       const int n_mat,
+                                       Model_parameters *param_list);
 
 typedef struct HOMMAT HOMMAT;
 

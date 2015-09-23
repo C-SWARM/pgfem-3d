@@ -361,21 +361,7 @@ int read_constitutive_model_parameters(EPS *eps,
   case TESTING:
   case HYPER_ELASTICITY: /* nothing required */ break;
   case CRYSTAL_PLASTICITY:
-    {
-      for(int a=0; a<n_mat; a++) {
-        Matrix(double) *P = param_list[a].Psys;
-        param_list[a].N_SYS = plasticity_model_slip_system(P);
-      }
-
-      for(int a=0; a<ne; a++) {
-        long n_ip = 0;
-        int_point(elem[a].toe,&n_ip);
-        for(int ip=0; ip<n_ip; ip++) {
-          Constitutive_model *m = &(eps[a].model[ip]);
-          plasticity_model_read_parameters(m);
-        }
-      }
-    }
+    plasticity_model_read_parameters(eps, ne, elem, n_mat, param_list);
     break;
 
   case BPA_PLASTICITY:
