@@ -30,6 +30,7 @@ HOMMAT* build_hommat (long i)
     pom[ii].e4 = 0.0;
     pom[ii].devPotFlag = -1; /* poisoned */
     pom[ii].volPotFlag = -1; /* poisoned */
+    pom[ii].mat_id = -1;
   }
 
   return (pom);

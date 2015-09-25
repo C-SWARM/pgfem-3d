@@ -16,6 +16,7 @@ struct HOMMAT{
   /* potential function flags */
   int devPotFlag;
   int volPotFlag;
+  int mat_id; // material ID
 };
 #ifndef TYPE_HOMMAT
 #define TYPE_HOMMAT

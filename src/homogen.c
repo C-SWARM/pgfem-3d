@@ -194,6 +194,7 @@ void hom_matrices (long ***a,
 	    /* Potential functions for isotropic materials */
 	    hommat[nn].devPotFlag = mater[i].devPotFlag;
 	    hommat[nn].volPotFlag = mater[i].volPotFlag;
+      hommat[nn].mat_id = i;	    
 	    break;
 
 	  default:
