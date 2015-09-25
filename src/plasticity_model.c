@@ -9,6 +9,7 @@
 #include "new_potentials.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
+#include "gen_path.h"
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -46,6 +47,49 @@ enum tensor_names {
 };
 
 Define_Matrix(double);
+Define_Matrix(int);
+
+typedef struct {
+  int e_id;
+  int n_ip;
+  int mat_id;
+  Matrix(int) ip_ids;
+} IP_ID_LIST;
+
+Define_Matrix(IP_ID_LIST);
+
+int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, int *max_mat_id, EPS *eps, const ELEMENT *elem, int ne)
+{
+  int cnt = 0;
+  *max_mat_id = 0;
+  for(int a=0; a<ne; a++)
+  {
+    long n_ip = 0;
+    int_point(elem[a].toe,&n_ip);         
+    Matrix_construct_redim(int,elm_ip_map[a].ip_ids,n_ip, 1);
+    elm_ip_map[a].e_id = a;
+    elm_ip_map[a].n_ip = n_ip;
+    elm_ip_map[a].mat_id = elem[a].mat[0];
+    if(elm_ip_map[a].mat_id>*max_mat_id)
+      *max_mat_id = elm_ip_map[a].mat_id;
+      
+    for(int b=1; b<=n_ip; b++)
+    {
+      Mat_v(elm_ip_map[a].ip_ids, b, 1) = cnt;
+      cnt++;
+    }    
+  }
+  return cnt;
+}
+
+int plasticity_model_cleanup_elem_ip_map(IP_ID_LIST *elm_ip_map, int ne)
+{
+  int err = 0;
+  for(int a=0; a<ne; a++)
+    Matrix_cleanup(elm_ip_map[a].ip_ids);
+
+  return err;
+} 
 
 /**
  * Private structure for use exclusively with this model and
@@ -743,6 +787,27 @@ static void elastic_tangent(MaterialProperties *Props, double *F, double *L)
   Matrix_cleanup(Fe);
 }
 
+int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS)
+{
+  int err = 0;
+  Matrix(double) RT, Pa_in, Pa_out;
+  
+  Matrix_construct_redim(double, RT, DIM,DIM);
+  Matrix_construct(double, Pa_in); // <= this will use pointer, no need Matrix_cleanup  
+  Matrix_construct(double, Pa_out); // <= this will use pointer, no need Matrix_cleanup    
+  Matrix_AeqBT(RT,1.0,*R);
+  
+  Pa_in.m_col = Pa_in.m_row = DIM;
+  Pa_out.m_col = Pa_out.m_row = DIM;  
+  for(int a=0; a<N_SYS; a++)
+  {
+    Pa_in.m_pdata = &(Psys_in[a*DIM*DIM]);
+    Pa_out.m_pdata = &(Psys_out[a*DIM*DIM]);
+    Matrix_Tns2_AxBxC(Pa_out,1.0,0.0,*R,Pa_in,RT);    
+  }
+  Matrix_cleanup(RT);
+  return err;
+} 
 static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
                                          double *g_np1,
                                          double *L_np1,
@@ -755,7 +820,9 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
                                          SolverInformation *Solver,
                                          Constitutive_model *m,
                                          const double dt,
-                                         const double g_n)
+                                         const double g_n,
+                                         double *P_sys,
+                                         int N_SYS)
 {
   const int print_step_info = 0;   
   const int max_itr = 10;   
@@ -766,8 +833,6 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
   Matrix(double) *Fs;  
   enum {eFn_I, pFnp1_k, pFnp1_I, eFnp1, PK2, Fend};
   
-  const int N_SYS = (m->param)->N_SYS;
-  double *P_sys = ((m->param)->Psys)->m_pdata;
   Matrix_double *CM_pFnp1 = &(m->vars.Fs[TENSOR_pFnp1]);
   Fs = (Matrix(double) *) malloc(Fend*sizeof(Matrix(double)));
   
@@ -786,19 +851,17 @@ static int plasticity_model_staggered_NR(Matrix(double) *pFnp1,
   Matrix_inv(*eFn, Fs[eFn_I]);
   Matrix_AxB(Fs[pFnp1_k],1.0,0.0,Fs[eFn_I],0,*Fnp1,0);  
 
-
-
   double err_g_0 = computer_zero;   
 
   for(int k=0; k<max_itr; k++)
   {
     Matrix_init(*pFnp1, 0.0);
-        *L_np1 = 0.0;
+    *L_np1 = 0.0;
 
-        /* update the internal datastructure for pF */
-        Matrix_AeqB(*CM_pFnp1,1.0,Fs[pFnp1_k]);
+    /* update the internal datastructure for pF */
+    Matrix_AeqB(*CM_pFnp1,1.0,Fs[pFnp1_k]);
 
-        Staggered_NewtonRapson_Testing_sp(Props,Param,Struc,Solver,
+    Staggered_NewtonRapson_Testing_sp(Props,Param,Struc,Solver,
                                           0.0,dt,P_sys,g_np1_kp1,pFn->m_pdata,Fnp1->m_pdata,
                                           L_np1_k,&L_np1_kp1,Fs[pFnp1_k].m_pdata,pFnp1->m_pdata);
 
@@ -860,8 +923,11 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   
   int err = 0;
   int N_SYS = (m->param)->N_SYS;
-  double *P_sys = ((m->param)->Psys)->m_pdata;
+  double *P_sys_in = ((m->param)->Psys)->m_pdata;
+  double *P_sys = (double *) malloc(sizeof(double)*N_SYS*DIM*DIM);
   double *pFn    = Fs[TENSOR_pFn].m_pdata;
+  
+  err += plasticity_rotate_crystal(&Fs[TENSOR_R], P_sys_in, P_sys, N_SYS);
     
   /*--------Simulation_Settings--------*/
   SolverInformation Solver;
@@ -924,7 +990,7 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
 
   plasticity_model_staggered_NR(pFnp1, &g_np1, &L_np1,
                                 Fnp1, Fe_n, (Fs+TENSOR_pFn),
-                                &Props, &Params, &Struc, &Solver, m, dt, g_n);
+                                &Props, &Params, &Struc, &Solver, m, dt, g_n, P_sys, N_SYS);
 
   /* update pF after the integration algorithm */
   Matrix_AeqB(Fs[TENSOR_pFnp1], 1.0, *pFnp1);
@@ -956,6 +1022,7 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   Matrix_cleanup(eFnp1);
   Matrix_cleanup(pFnp1_I);
   
+  free(P_sys);
   return err;
 }
 
@@ -1083,76 +1150,264 @@ int plasticity_model_integration_ip_(Matrix_double *pFnp1, Constitutive_model *m
   return err;    
 }
 
-int plasticity_model_generate_random_orientation(EPS *eps, const int ne, const ELEMENT *elem)
+int plasticity_model_set_orientations(EPS *eps, Matrix(int) *e_ids, Matrix(double) *angles)
 {
   int err = 0;
-  double pi = 3.141592653589793;
-  double psi_max = pi;
-  Matrix(double) Ax, Ay, Az, A;
-  Matrix_construct_init(double, Ax, 3,3, 0.0);
-  Matrix_construct_init(double, Ay, 3,3, 0.0);
-  Matrix_construct_init(double, Az, 3,3, 0.0);    
-  for(int a=0; a<ne; a++)
+  Matrix(double) Ax, Ay, Az;
+  Matrix_construct_init(double, Ax, DIM,DIM, 0.0);
+  Matrix_construct_init(double, Ay, DIM,DIM, 0.0);
+  Matrix_construct_init(double, Az, DIM,DIM, 0.0);    
+  for(int a=0; a<e_ids->m_row; a++)
   {
-    long n_ip = 0;
-    int_point(elem[a].toe,&n_ip);
-    for(int ip=0; ip<n_ip; ip++) 
-    {
-      Constitutive_model *m = &(eps[a].model[ip]);
-      Matrix(double) *Fs = (m->vars).Fs;    
-      double n1 = (double)rand() / ((double)RAND_MAX + 1);
-      double n2 = (double)rand() / ((double)RAND_MAX + 1);
-      double n3 = (double)rand() / ((double)RAND_MAX + 1);
+    int id = Mat_v(*e_ids, a+1, 1);
+    if(id<0)
+      continue;        
     
-      double phi   = 2*pi*n1;
-      double theta = asin(n2);
-      double psi   = psi_max*(2.0*n3-1.0);
-        
-      Mat_v(Ax,1,1) = 1.0;
-      Mat_v(Ax,1,2) = Mat_v(Ax,1,3) = Mat_v(Ax,2,1) = Mat_v(Ax,3,1) = 0.0;
-      Mat_v(Ax,2,2) =  cos(phi); Mat_v(Ax,2,3) = sin(phi);
-      Mat_v(Ax,3,2) = -sin(phi); Mat_v(Ax,3,3) = cos(phi);    
-    
-      Mat_v(Ay,2,2) = 1.0;
-      Mat_v(Ay,2,1) = Mat_v(Ay,2,3) = Mat_v(Ay,1,2) = Mat_v(Ay,3,2) = 0.0;
-      Mat_v(Ay,1,1) = cos(theta); Mat_v(Ay,1,3) = -sin(theta);
-      Mat_v(Ay,3,1) = sin(theta); Mat_v(Ay,3,3) =  cos(theta);
-    
-      Mat_v(Az,3,3) = 1.0;
-      Mat_v(Az,3,1) = Mat_v(Az,3,2) = Mat_v(Az,1,3) = Mat_v(Az,2,3) = 0.0;
-      Mat_v(Az,1,1) =  cos(psi); Mat_v(Az,1,2) = sin(psi);
-      Mat_v(Az,2,1) = -sin(psi); Mat_v(Az,2,2) = cos(psi);            
-      Matrix_Tns2_AxBxC(Fs[TENSOR_R],1.0,0.0,Az,Ay,Ax);
-      printf("%d %d %e %e %e\n", a, ip, phi, theta, psi);
-    }  
+    int ip = Mat_v(*e_ids, a+1, 2);
+    Constitutive_model *m = &(eps[id].model[ip]);
+    Matrix(double) *Fs = (m->vars).Fs;    
+    double phi   = angles->m_pdata[a*DIM+0]; // NOTE: phi = Mat_v(*angles, a+1, 1) is not working, do not know why.
+    double theta = angles->m_pdata[a*DIM+1];
+    double psi   = angles->m_pdata[a*DIM+2];
+    Mat_v(Ax,1,1) = 1.0;
+    Mat_v(Ax,1,2) = Mat_v(Ax,1,3) = Mat_v(Ax,2,1) = Mat_v(Ax,3,1) = 0.0;
+    Mat_v(Ax,2,2) =  cos(phi);// Mat_v(Ax,2,3) = sin(phi);
+    Mat_v(Ax,3,2) = -sin(phi); Mat_v(Ax,3,3) = cos(phi);    
+  
+    Mat_v(Ay,2,2) = 1.0;
+    Mat_v(Ay,2,1) = Mat_v(Ay,2,3) = Mat_v(Ay,1,2) = Mat_v(Ay,3,2) = 0.0;
+    Mat_v(Ay,1,1) = cos(theta); Mat_v(Ay,1,3) = -sin(theta);
+    Mat_v(Ay,3,1) = sin(theta); Mat_v(Ay,3,3) =  cos(theta);
+  
+    Mat_v(Az,3,3) = 1.0;
+    Mat_v(Az,3,1) = Mat_v(Az,3,2) = Mat_v(Az,1,3) = Mat_v(Az,2,3) = 0.0;
+    Mat_v(Az,1,1) =  cos(psi); Mat_v(Az,1,2) = sin(psi);
+    Mat_v(Az,2,1) = -sin(psi); Mat_v(Az,2,2) = cos(psi);            
+    Matrix_Tns2_AxBxC(Fs[TENSOR_R],1.0,0.0,Az,Ay,Ax);
   }
   Matrix_cleanup(Ax);
   Matrix_cleanup(Ay);
   Matrix_cleanup(Az);
   return err;
 }
+
+int plasticity_model_read_orientations(Matrix(int) *e_ids, Matrix(double) *angles, IP_ID_LIST *elm_ip_map, char *fn_in, int myrank, int ne)
+{
+  int err = 0;
+  char fn[1024], line[1024];
+  sprintf(fn, "%s_%d.in", fn_in, myrank);
+  FILE *fp = fopen(fn, "r");
+  if(fp==NULL)
+  { 
+    printf("fail to read [%s]\n", fn);
+    printf("set default onrientation [R=I]\n");     
+    return err;
+  }
+  
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+	    continue;
+        
+    int e, ip;    
+    double x1, x2, x3;        
+    sscanf(line, "%d %d %lf %lf %lf", &e, &ip, &x1, &x2, &x3);
+    
+    if(e<0)
+    {
+      for(int a=0; a<ne; a++)
+      {
+        int n_ip = elm_ip_map[a].n_ip;
+        int mat = elm_ip_map[a].mat_id;
+        if(mat!=ip)
+          continue;
+          
+        for(int b=0; b<n_ip; b++)
+        {
+           int ip_id = elm_ip_map[a].ip_ids.m_pdata[b];
+           Mat_v(*e_ids,  ip_id+1, 1) = a;  // +1 is needed because ip_id starts from 0
+           Mat_v(*e_ids,  ip_id+1, 2) = b;
+           Mat_v(*angles, ip_id+1, 1) = x1;    
+           Mat_v(*angles, ip_id+1, 2) = x2;        
+           Mat_v(*angles, ip_id+1, 3) = x3;          
+        }
+      }
+    }  
+    else
+    {  
+      int ip_id = elm_ip_map[e].ip_ids.m_pdata[ip];
+      Mat_v(*e_ids,  ip_id+1, 1) = e;  // +1 is needed because ip_id starts from 0
+      Mat_v(*e_ids,  ip_id+1, 2) = ip;
+      Mat_v(*angles, ip_id+1, 1) = x1;    
+      Mat_v(*angles, ip_id+1, 2) = x2;        
+      Mat_v(*angles, ip_id+1, 3) = x3;
+    }
+  } 
+  
+  fclose(fp);
+  return err;
+}
+
+int plasticity_model_generate_random_orientation_element(const int ne, const IP_ID_LIST *elm_ip_map, int mat_id, Matrix(int) *e_ids, Matrix(double) *angles, int diff_ort_at_ip)
+{
+  int err = 0;
+  double pi = 3.141592653589793;
+  double psi_max = pi;
+
+  for(int a=0; a<ne; a++)
+  {
+    int n_ip = elm_ip_map[a].n_ip;
+    int mat = elm_ip_map[a].mat_id;
+    if(mat!=mat_id)
+      continue;    
+
+    double n1 = (double)rand() / ((double)RAND_MAX + 1);
+    double n2 = (double)rand() / ((double)RAND_MAX + 1);
+    double n3 = (double)rand() / ((double)RAND_MAX + 1);
+    
+    double phi   = 2*pi*n1;
+    double theta = asin(n2);
+    double psi   = psi_max*(2.0*n3-1.0);
+          
+    for(int ip=0; ip<n_ip; ip++) 
+    {
+      int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];      
+      if(diff_ort_at_ip && ip>0)
+      {
+        n1 = (double)rand() / ((double)RAND_MAX + 1);
+        n2 = (double)rand() / ((double)RAND_MAX + 1);
+        n3 = (double)rand() / ((double)RAND_MAX + 1);
+    
+        phi   = 2*pi*n1;
+        theta = asin(n2);
+        psi   = psi_max*(2.0*n3-1.0);        
+      }  
+      Mat_v(*angles,ip_id+1,1) = phi;
+      Mat_v(*angles,ip_id+1,2) = theta;
+      Mat_v(*angles,ip_id+1,3) = psi;            
+      Mat_v(*e_ids, ip_id+1,1) = a;
+      Mat_v(*e_ids, ip_id+1,2) = ip;                     
+    }  
+  }
+  return err;
+}
+
+int plasticity_model_generate_random_orientation_crystal(const int ne, const IP_ID_LIST *elm_ip_map, int mat_id, Matrix(int) *e_ids, Matrix(double) *angles)
+{
+  int err = 0;
+  double pi = 3.141592653589793;
+  double psi_max = pi;
+  
+  double n1 = (double)rand() / ((double)RAND_MAX + 1);
+  double n2 = (double)rand() / ((double)RAND_MAX + 1);
+  double n3 = (double)rand() / ((double)RAND_MAX + 1);
+  
+  double phi   = 2*pi*n1;
+  double theta = asin(n2);
+  double psi   = psi_max*(2.0*n3-1.0);
+  
+  int cnt = 0;          
+  for(int a=0; a<ne; a++)
+  {
+    int n_ip = elm_ip_map[a].n_ip;
+    int mat = elm_ip_map[a].mat_id;
+    if(mat!=mat_id)
+      continue;    
+    
+    for(int ip=0; ip<n_ip; ip++) 
+    {
+      int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];
+      Mat_v(*angles,ip_id+1,1) = phi;
+      Mat_v(*angles,ip_id+1,2) = theta;
+      Mat_v(*angles,ip_id+1,3) = psi;            
+      Mat_v(*e_ids, ip_id+1,1) = a;
+      Mat_v(*e_ids, ip_id+1,2) = ip;                      
+    } 
+  } 
+  return err;
+}
+
+int plasticity_model_set_given_orientation_crystal(const int ne, const IP_ID_LIST *elm_ip_map, int mat_id, Matrix(int) *e_ids, Matrix(double) *angles, double *angle_in)
+{
+  int err = 0;
+   
+  for(int a=0; a<ne; a++)
+  {
+    int n_ip = elm_ip_map[a].n_ip;
+    int mat = elm_ip_map[a].mat_id;
+    if(mat!=mat_id)
+      continue;    
+    
+    for(int ip=0; ip<n_ip; ip++) 
+    {
+      int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];
+      Mat_v(*angles,ip_id+1,1) = angle_in[0];
+      Mat_v(*angles,ip_id+1,2) = angle_in[1];
+      Mat_v(*angles,ip_id+1,3) = angle_in[2];            
+      Mat_v(*e_ids, ip_id+1,1) = a;
+      Mat_v(*e_ids, ip_id+1,2) = ip;                      
+    } 
+  } 
+  return err;
+}  
+// read material properties
 int plasticity_model_read_parameters(EPS *eps,
                                        const int ne,
                                        const ELEMENT *elem,
-                                       const int n_mat_,
+                                       const int n_mat,
                                        Model_parameters *param_list)
 {
   int err = 0;
-  for(int a=0; a<n_mat_; a++) {
+  int save_orientations = 0;
+
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  int myrank = 0;
+  
+  char fn[1024], line[1024], file_in_mat[1024], file_in_ort[1024];
+  char default_ort_dir[1024];
+
+  sprintf(fn, "MATERIAL_PROPERTY.in");
+  sprintf(default_ort_dir, "CRYSTAL_ORIENTATION");
+
+  if(myrank==0)
+  {   
+    if(make_path(default_ort_dir,DIR_MODE) != 0)
+    {
+      PGFEM_printf("Directory [%s] not created!\n",default_ort_dir);
+      abort();
+    }
+  }
+
+  MPI_Comm_rank (mpi_comm,&myrank);
+
+  // build element ip ids that will be used to assign element orientation
+  IP_ID_LIST *elm_ip_map = malloc(sizeof(IP_ID_LIST)*ne);
+  int max_mat_id = 0;
+  int total_mat_no = 0;
+  int cnt_of_ips = plasticity_model_construct_elem_ip_map(elm_ip_map, &max_mat_id, eps, elem, ne);
+  MPI_Allreduce(&max_mat_id,&total_mat_no,1,MPI_INT,MPI_MAX,mpi_comm);
+ 
+  total_mat_no += 1;  
+      
+  // set slip system
+  for(int a=0; a<n_mat; a++) {
     Matrix(double) *P = param_list[a].Psys;
     param_list[a].N_SYS = plasticity_model_slip_system(P);
   }
-
-  int n_mat = 2;
     
-  char fn[1024], line[1024], file_in_mat[1024], file_in_ort[1024];
-  sprintf(fn, "MATERIAL_PROPERTY.in");
+      
   FILE *fp = fopen(fn, "r");
   
-  Matrix(double) props;
-  Matrix_construct_init(double,props,n_mat, 7, 0.0);
+  Matrix(double) props; 
+  Matrix_construct_init(double,props,total_mat_no, 7, 0.0);
   
-  for(int a=1; a<=n_mat; a++)
+  
+  Matrix(int) e_ids;
+  Matrix(double) angles;
+  Matrix_construct_init(int,e_ids,cnt_of_ips, 2, -1);
+  Matrix_construct_init(double,angles,cnt_of_ips,3,0.0);    
+  
+  for(int a=1; a<=total_mat_no; a++)
   {
     // default material properties           
     Mat_v(props,a,1) = 1.0;     // gamma_dot_0 
@@ -1168,13 +1423,13 @@ int plasticity_model_read_parameters(EPS *eps,
   {  
     int n_mat_in = 0;
     while(fgets(line, 1024, fp)!=NULL) 
-	  {
-	    if(line[0]=='#')
-	      continue;
+    {
+      if(line[0]=='#')
+        continue;
         
-	    sscanf(line, "%d", &n_mat_in);
-	    break;
-	  }
+      sscanf(line, "%d", &n_mat_in);
+      break;
+    }
     
     int mat_id  = 0;
     int paramno = 0;
@@ -1184,43 +1439,43 @@ int plasticity_model_read_parameters(EPS *eps,
     // -1: no orientation is used
     // 0: random - each element will have random orientation using built in function 
     // 1: crystals - each crystal will have random orientation using built in function
-    // 2: file - orientation is givne by a file, need to provide file path     
+    // 2: file - orientation is givne by a file, need to provide file path
+    // 3: provide material orientation directly e.g) 3 0.1 0.1 0.1         
                       
     for(int imat=0; imat<n_mat_in; imat++)
     {    
       while(fgets(line, 1024, fp)!=NULL)
       {
         if(line[0]=='#')
-	        continue;
+          continue;
         sscanf(line, "%d %lf", &mat_id, &meter_scale);
-        printf("mat_id: %d %e\n", mat_id, meter_scale);
         break;
       }  
       
       while(fgets(line, 1024, fp)!=NULL)
       {
         if(line[0]=='#')
-	        continue;
-	      
-	      sscanf(line, "%d", &paramno);
-	      if(paramno==7)
-	      { 
-	        double temp[7]; 
-	        sscanf(line, "%d %lf %lf %lf %lf %lf %lf %lf", &paramno, temp+0, 
-	                                                             temp+1, temp+2, temp+3, 
-	                                                             temp+4, temp+5, temp+6);
-	        Mat_v(props,mat_id+1,1) = temp[0];
-	        Mat_v(props,mat_id+1,2) = temp[1];
-	        Mat_v(props,mat_id+1,3) = temp[2]*meter_scale*meter_scale;
-	        Mat_v(props,mat_id+1,4) = temp[3]*meter_scale*meter_scale;
-	        Mat_v(props,mat_id+1,5) = temp[4]*meter_scale*meter_scale;
-	        Mat_v(props,mat_id+1,6) = temp[5];
-	        Mat_v(props,mat_id+1,7) = temp[6];
+          continue;
+        
+        sscanf(line, "%d", &paramno);
+        if(paramno==7)
+        { 
+          double temp[7]; 
+          sscanf(line, "%d %lf %lf %lf %lf %lf %lf %lf", &paramno, temp+0, 
+                                                               temp+1, temp+2, temp+3, 
+                                                               temp+4, temp+5, temp+6);
+          Mat_v(props,mat_id+1,1) = temp[0];
+          Mat_v(props,mat_id+1,2) = temp[1];
+          Mat_v(props,mat_id+1,3) = temp[2]*meter_scale*meter_scale;
+          Mat_v(props,mat_id+1,4) = temp[3]*meter_scale*meter_scale;
+          Mat_v(props,mat_id+1,5) = temp[4]*meter_scale*meter_scale;
+          Mat_v(props,mat_id+1,6) = temp[5];
+          Mat_v(props,mat_id+1,7) = temp[6];
         }
         else
         {
-	        sscanf(line, "%d %s", &paramno, file_in_mat);
-	        FILE *fp_mat = fopen(file_in_mat, "r");
+          sscanf(line, "%d %s", &paramno, file_in_mat);
+          FILE *fp_mat = fopen(file_in_mat, "r");
           
           if(fp_mat==NULL)
           {
@@ -1231,28 +1486,28 @@ int plasticity_model_read_parameters(EPS *eps,
           while(fgets(line, 1024, fp_mat)!=NULL)
           {
             if(line[0]=='#')
-	            continue;
+              continue;
             break;
           } 
           while(fgets(line, 1024, fp_mat)!=NULL)
           {
             if(line[0]=='#')
-	            continue;
+              continue;
 
-  	        double temp[7]; 
-	          sscanf(line, "%d %lf %lf %lf %lf %lf %lf %lf", &paramno, temp+0, 
-	                                                               temp+1, temp+2, temp+3, 
-	                                                               temp+4, temp+5, temp+6);
-	          Mat_v(props,mat_id+1,1) = temp[0];
-	          Mat_v(props,mat_id+1,2) = temp[1];
-	          Mat_v(props,mat_id+1,3) = temp[2]*meter_scale*meter_scale;
-	          Mat_v(props,mat_id+1,4) = temp[3]*meter_scale*meter_scale;
-	          Mat_v(props,mat_id+1,5) = temp[4]*meter_scale*meter_scale;
-	          Mat_v(props,mat_id+1,6) = temp[5];
-	          Mat_v(props,mat_id+1,7) = temp[6];	            
+            double temp[7]; 
+            sscanf(line, "%d %lf %lf %lf %lf %lf %lf %lf", &paramno, temp+0, 
+                                                                 temp+1, temp+2, temp+3, 
+                                                                 temp+4, temp+5, temp+6);
+            Mat_v(props,mat_id+1,1) = temp[0];
+            Mat_v(props,mat_id+1,2) = temp[1];
+            Mat_v(props,mat_id+1,3) = temp[2]*meter_scale*meter_scale;
+            Mat_v(props,mat_id+1,4) = temp[3]*meter_scale*meter_scale;
+            Mat_v(props,mat_id+1,5) = temp[4]*meter_scale*meter_scale;
+            Mat_v(props,mat_id+1,6) = temp[5];
+            Mat_v(props,mat_id+1,7) = temp[6];              
             break;
           }           
- 	        fclose(fp_mat);   	                                                             
+           fclose(fp_mat);                                                                  
         }
         break;
       }
@@ -1260,28 +1515,44 @@ int plasticity_model_read_parameters(EPS *eps,
       while(fgets(line, 1024, fp)!=NULL)
       {
         if(line[0]=='#')
-	        continue;
-	      
-	      sscanf(line, "%d", &ort);
-	      switch(ort)
-	      {
-	        case -1:
-	          break;
-	        case 0:
-	          plasticity_model_generate_random_orientation(eps, ne, elem);
-	          break;
-	        case 1:
-	          break;
-	        case 2:
-	        {  
-  	        sscanf(line, "%d %s", &ort, file_in_ort); 
-	          printf("read %s\n", file_in_ort);	          
-	          break;
-	        }
-	        default:
-	          break;
-	      }
-	      break;            
+          continue;
+        
+        sscanf(line, "%d", &ort);
+        switch(ort)
+        {
+          case -1:
+            break;
+          case 0:
+          {  
+            int temp;
+            int diff_ort_at_ip = 0;
+            sscanf(line, "%d %d", &temp, &diff_ort_at_ip);            
+            err += plasticity_model_generate_random_orientation_element(ne, elm_ip_map, mat_id, &e_ids, &angles, diff_ort_at_ip);
+            save_orientations++;
+            break;
+          }
+          case 1:
+            err += plasticity_model_generate_random_orientation_crystal(ne, elm_ip_map, mat_id, &e_ids, &angles);
+            save_orientations++;
+            break;
+          case 2:
+          {  
+            sscanf(line, "%d %s", &ort, file_in_ort); 
+            err += plasticity_model_read_orientations(&e_ids, &angles, elm_ip_map, file_in_ort, myrank, ne);
+            
+            break;
+          }
+          case 3:
+          {
+            double angle_in[3];
+            int temp;
+            sscanf(line, "%d %lf %lf %lf", &temp, angle_in+0, angle_in+1, angle_in+2); 
+            err += plasticity_model_set_given_orientation_crystal(ne, elm_ip_map, mat_id, &e_ids, &angles, angle_in);
+          }
+          default:
+            break;
+        }
+        break;            
       }      
     }     
   }
@@ -1298,43 +1569,66 @@ int plasticity_model_read_parameters(EPS *eps,
            "w           = 0.005\n");
   }                   
         
-  Matrix_print(props);  
+  plasticity_model_set_orientations(eps, &e_ids, &angles);
+  
+  if(save_orientations)
+  {  
+    char fn_orientation[1024];
+    sprintf(fn_orientation, "%s/orientation_%d.in", default_ort_dir, myrank);  
+    FILE *fp_ort = fopen(fn_orientation, "w");
+    fprintf(fp_ort, "# Element (crystal) orientations are generated randomly\n");
+    fprintf(fp_ort, "# element_ID, Integration_point_ID, phi [radian], theta [radian], psi [radian]\n");  
+    for(int a=1; a<=e_ids.m_row; a++)
+    {
+      if(Mat_v(e_ids, a, 1)<0)
+        continue;
+    
+      fprintf(fp_ort, "%d %d %e %e %e\n", Mat_v(e_ids, a, 1), Mat_v(e_ids, a, 2),
+                                        Mat_v(angles, a, 1), Mat_v(angles, a, 2), Mat_v(angles, a, 3));             
+    }
+    fclose(fp_ort);
+  }
+  
   for(int a=0; a<ne; a++) {
     const int mat = elem[a].mat[2];    
     long n_ip = 0;
     int_point(elem[a].toe,&n_ip);
-    for(int ip=0; ip<n_ip; ip++) {
+    for(int ip=0; ip<n_ip; ip++)
+    {
       Constitutive_model *m = &(eps[a].model[ip]);
-      double *state_var = (m->vars).state_vars[0].m_pdata;
-      /* set parameter values -- these remain unchanged */
-     state_var[VAR_gamma_dot_0] = Mat_v(props,mat+1,1);
-     state_var[VAR_m]           = Mat_v(props,mat+1,2);
-     state_var[VAR_G0]          = Mat_v(props,mat+1,3);      
-     state_var[VAR_g0]          = Mat_v(props,mat+1,4);  
-     state_var[VAR_gs_0]        = Mat_v(props,mat+1,5);  
-     state_var[VAR_gamma_dot_s] = Mat_v(props,mat+1,6);  
-     state_var[VAR_w]           = Mat_v(props,mat+1,7);
-
-     /* set state variables to initial values */
-     state_var[VAR_g_n] = state_var[VAR_g0];
-     state_var[VAR_g_np1] = state_var[VAR_g0];    
-     state_var[VAR_L_n] = 0.0;  
-     state_var[VAR_L_np1] = 0.0;
-   
-     /* set the dimensions for the tau and gamma_dot varables */
-     Matrix(double) *Fs = (m->vars).Fs;
-     const int N_SYS = (m->param)->N_SYS;
-     Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
-     Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);
-   
-     /* intitialize to zeros */
-     Matrix_init(Fs[TENSOR_tau], 0.0);
-     Matrix_init(Fs[TENSOR_gamma_dot], 0.0);
-
+       double *state_var = (m->vars).state_vars[0].m_pdata;
+       /* set parameter values -- these remain unchanged */
+      state_var[VAR_gamma_dot_0] = Mat_v(props,mat+1,1);
+      state_var[VAR_m]           = Mat_v(props,mat+1,2);
+      state_var[VAR_G0]          = Mat_v(props,mat+1,3);      
+      state_var[VAR_g0]          = Mat_v(props,mat+1,4);  
+      state_var[VAR_gs_0]        = Mat_v(props,mat+1,5);  
+      state_var[VAR_gamma_dot_s] = Mat_v(props,mat+1,6);  
+      state_var[VAR_w]           = Mat_v(props,mat+1,7);
+      
+      /* set state variables to initial values */
+      state_var[VAR_g_n] = state_var[VAR_g0];
+      state_var[VAR_g_np1] = state_var[VAR_g0];    
+      state_var[VAR_L_n] = 0.0;  
+      state_var[VAR_L_np1] = 0.0;
+      
+      /* set the dimensions for the tau and gamma_dot varables */
+      Matrix(double) *Fs = (m->vars).Fs;
+      const int N_SYS = (m->param)->N_SYS;
+      Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
+      Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);
+      
+      /* intitialize to zeros */
+      Matrix_init(Fs[TENSOR_tau], 0.0);
+      Matrix_init(Fs[TENSOR_gamma_dot], 0.0);     
     }
   }
 
   Matrix_cleanup(props);
+  Matrix_cleanup(e_ids);
+  Matrix_cleanup(angles);
+  err += plasticity_model_cleanup_elem_ip_map(elm_ip_map, ne);
+  free(elm_ip_map);
   fclose(fp);  
   return err;
 }
@@ -1368,6 +1662,7 @@ int plasticity_model_set_initial_values(Constitutive_model *m)
   /* intitialize to zeros */
   Matrix_init(Fs[TENSOR_tau], 0.0);
   Matrix_init(Fs[TENSOR_gamma_dot], 0.0);
+  Matrix_eye(Fs[TENSOR_R], DIM);
   return err;
 }
 
@@ -1606,7 +1901,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
     plasticity_model_staggered_NR((Fs+pFnp1), &g_np1, &L_np1,
                      (Fs+Fnp1), (Fs+eFn), (Fs+pFn),                    
                      &Props, &Param, &Struc, &Solver,
-                     &m, dt, g_n);   
+                     &m, dt, g_n, P_sys->m_pdata, N_SYS);   
 
     // compute stress (PK2)
     Matrix_AxB(Fs[C],1.0,0.0,Fs[Fnp1],1,Fs[Fnp1],0);
@@ -1750,7 +2045,7 @@ int plasticity_model_test_staggered_F_of_t(const HOMMAT *hmat)
     plasticity_model_staggered_NR((Fs+pFnp1), &g_np1, &L_np1,
                      (Fs+Fnp1), (Fs+eFn), (Fs+pFn),                    
                      &Props, &Param, &Struc, &Solver,
-                     &m, dt, g_n);   
+                     &m, dt, g_n, P_sys->m_pdata, N_SYS);   
 
     // compute stress (PK2)
     Matrix_AxB(Fs[C],1.0,0.0,Fs[Fnp1],1,Fs[Fnp1],0);
