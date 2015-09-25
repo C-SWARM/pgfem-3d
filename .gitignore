@@ -7,6 +7,9 @@ TAGS
 src/PGFem3D
 src/*driver
 
+# any user-made install dirs
+install/
+
 # autotools stuff
 Makefile.in
 Makefile
