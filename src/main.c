@@ -1162,7 +1162,7 @@ int single_scale_main(int argc,char *argv[])
     }
 
     for(int idx_a = 0; idx_a<nhommat; idx_a++)
-      hommat[idx_a].density = rho[idx_a];
+      hommat[idx_a].density = rho[hommat[idx_a].mat_id];
 
     free(rho);
 
