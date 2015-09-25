@@ -1129,7 +1129,7 @@ int single_scale_main(int argc,char *argv[])
     }
 
     for(int idx_a = 0; idx_a<nhommat; idx_a++)
-      hommat[idx_a].density = rho[idx_a];
+      hommat[idx_a].density = rho[hommat[idx_a].mat_id];
 
     free(rho);
 
@@ -1198,49 +1198,6 @@ int single_scale_main(int argc,char *argv[])
     if(sup->npd > 0){
       sup_check = aloc1(sup->npd);
     }
-
-    /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-    
-    /* this is for inertia */
-    /* material density*/
-    double *rho;
-    double alpha = 0.5;    /* mid point rule alpha */
-    
-    double *r_n   = NULL; /* displacement at time is t_n*/
-    double *r_n_1 = NULL; /* displacement at time is t_n-1*/
-    double *r_n_dof = NULL;
-    
-    r_n   = aloc1(nn*ndofn);
-    r_n_1 = aloc1(nn*ndofn);
-    r_n_dof = aloc1(ndofd);
-        
-    rho = malloc(sizeof(double)*nmat);    
-    int restart_tim = 0;
-    
-    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
-    for(long idx_a = 0; idx_a<nn; idx_a++)
-    {
-      for(long idx_b = 0; idx_b<ndofn; idx_b++)
-      {
-        long id = node[idx_a].id[idx_b];
-        if(id>0)
-          r[id-1] = r_n[idx_a*ndofn + idx_b];
-      }
-    }
-
-    for(int idx_a = 0; idx_a<nhommat; idx_a++)
-      hommat[idx_a].density = rho[hommat[idx_a].mat_id];
-
-    free(rho);
-
-/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-  
 
     while (nt > tim){
       dt = times[tim+1] - times[tim];
