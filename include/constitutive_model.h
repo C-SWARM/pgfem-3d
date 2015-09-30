@@ -330,10 +330,14 @@ struct Model_parameters {
   usr_increment reset_state_vars;
   usr_info get_var_info;
   usr_get_F get_Fn;
+  usr_get_F get_Fnm1;  
   usr_get_F get_pF;
   usr_get_F get_pFn;
+  usr_get_F get_pFnm1;
   usr_get_F get_eF;
   usr_get_F get_eFn;
+  usr_get_F get_eFnm1;
+    
   usr_get_var get_hardening;
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;

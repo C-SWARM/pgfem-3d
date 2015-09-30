@@ -50,7 +50,8 @@ int plasticity_model_initialize(Model_parameters *p);
  */
 int plasticity_model_ctx_build(void **ctx,
                                const double *F,
-                               const double dt);
+                               const double dt,
+                               const double alpha);
 
 /**
  * Destroy the model context and invalidate the handle.
@@ -60,15 +61,6 @@ int plasticity_model_ctx_build(void **ctx,
  */
 int plasticity_model_ctx_destroy(void **ctx);
 
-int compute_dMdu(const Constitutive_model *m,
-                 Matrix_double *dMdu,
-                 const Matrix_double *Grad_du,
-                 const Matrix_double *eFn,
-                 const Matrix_double *eFnp1,
-                 const Matrix_double *M,
-                 const Matrix_double *S,
-                 const Matrix_double *L,
-                 const double dt);
 /**
  * compute tangent of the plasticity part of deformation gradient with respect to the deformation
  *

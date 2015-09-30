@@ -24,7 +24,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
          const int nne, const int npres, const int nVol, const int nsd,
          const double *x, const double *y, const double *z,		     
          const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node, double dt,
-         SIG *sig, EPS *eps, const SUPP sup, const int analysis,		     
+         SIG *sig, EPS *eps, const SUPP sup, const int analysis, int cm,		     
 		     double alpha, double *r_n, double *r_e);
 		     
 void DISP_resid_body_force_el(double *f,

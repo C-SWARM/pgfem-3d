@@ -6,6 +6,7 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
+#include "constitutive_model.h"
 
 #define INTG_ORDER 0
 
@@ -22,7 +23,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
          const int nne, const int npres, const int nVol, const int nsd,
          const double *x, const double *y, const double *z,		     
          const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node, double dt,
-         SIG *sig, EPS *eps, const SUPP sup, const int analysis,		     
+         SIG *sig, EPS *eps, const SUPP sup, const int analysis, int cm,		     
 		     double alpha, double *r_n, double *r_e)
 {
   int err = 0;
@@ -92,7 +93,36 @@ void stiffmat_disp_w_inertia_el(double *Ks,
         Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
 
       break;
+    case CM:
+    {
+      switch(cm) {
+      case CRYSTAL_PLASTICITY:
+        err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e,
+                                               0 /* UL */);
+        break;
       
+      case BPA_PLASTICITY: case TESTING:
+        err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e,
+                                               1 /* TL */);
+        break;
+      
+      case HYPER_ELASTICITY:
+        err += stiffness_el_hyper_elasticity(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
+                                             nod,node,dt,eps,sup,u.m_pdata);
+        for(long a = 0; a<ndofe*ndofe; a++)
+          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
+      
+      break;
+      
+                                             
+        break;
+      default: assert(0 && "should never get here"); break;
+      }
+      break;      
+      
+    }  
       
     default:
       printf("Only displacement based element and three field element are supported\n");
@@ -319,6 +349,41 @@ int residuals_w_inertia_el(double *fe, int i,
 	      
 	    break;
 	    
+	  }
+	  case CM:
+	  {
+      switch(opts->cm)
+      {
+        case HYPER_ELASTICITY:
+        {
+	        double *f_n_a   = aloc1(ndofe);
+	        double *f_n_1_a = aloc1(ndofe);      
+           
+          err += residuals_el_hyper_elasticity(f_n_1_a,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_n_1_a);
+                                               	                                                          
+          err += residuals_el_hyper_elasticity(f_n_a,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_n_a);		           
+                	
+	        for(long a = 0; a<ndofe; a++)
+	          fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
+	          
+	        free(f_n_a);
+	        free(f_n_1_a);          
+          
+          break;
+        }
+        case CRYSTAL_PLASTICITY:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, 0 /* UL */);
+          break;
+        case BPA_PLASTICITY: case TESTING:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, 1 /* TL */);
+          break;
+        default: assert(0 && "undefined CM type"); break;
+      }
+      break;	    
 	  }  
     default:
       printf("Only displacement based element and three field element are supported\n");
@@ -332,3 +397,4 @@ int residuals_w_inertia_el(double *fe, int i,
 	free(f_i);	
 	return err;
 } 
+

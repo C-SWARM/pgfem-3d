@@ -79,7 +79,7 @@ int el_compute_stiffmat(int i,
   {
     stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
                                elem,hommat,nod,node,dt,
-                               sig,eps,sup,analysis,alpha,r_n,r_e);          
+                               sig,eps,sup,analysis,cm,alpha,r_n,r_e);          
   }
   else
   {
