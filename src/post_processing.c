@@ -116,7 +116,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   
   if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
   {  
-    total_Lagrangian = 0;
+    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
     intg_order = 0;
   }     
   
@@ -237,7 +237,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
   
   if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
   {  
-    total_Lagrangian = 0;
+    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
     intg_order = 0;
   }     
   
@@ -276,12 +276,13 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
-        double Jnp1 = 0.0;
+        double Jnp1 = 1.0;
         Matrix(double) Fnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);
-        Matrix_det(Fnp1, Jnp1);
+        if(!total_Lagrangian)
+          Matrix_det(Fnp1, Jnp1);
         
         LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
@@ -318,7 +319,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
   
   if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
   {  
-    total_Lagrangian = 0;
+    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
     intg_order = 0;
   }     
   
@@ -357,14 +358,15 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
-        double Jnp1 = 0.0;
+        double Jnp1 = 1.0;
         Matrix(double) Fnp1, eFnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
         Matrix_construct_redim(double,eFnp1,3,3);        
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);
-        m->param->get_eFn(m,&eFnp1);        
-        Matrix_det(Fnp1, Jnp1);
+        m->param->get_eFn(m,&eFnp1);
+        if(!total_Lagrangian)        
+          Matrix_det(Fnp1, Jnp1);
         
         LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
@@ -403,7 +405,7 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
   
   if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
   {  
-    total_Lagrangian = 0;
+    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
     intg_order = 0;
   }
   else

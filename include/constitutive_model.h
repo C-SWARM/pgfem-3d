@@ -22,6 +22,8 @@
 #include "matgeom.h"
 #include "supp.h"
 
+#define PLASTICITY_TOTAL_LAGRANGIAN 1
+
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -499,5 +501,32 @@ int constitutive_model_update_output_variables(SIG *sig,
                                                EPS *eps,
                                                const int ne,
                                                const double dt);
-
+                                               
+int stiffness_el_crystal_plasticity_w_inertia(double *lk,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e,
+                                    double alpha);
+                                    
+int residuals_el_crystal_plasticity_w_inertia(double *f,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e,
+                                    const double alpha);                                    
 #endif

@@ -122,8 +122,16 @@ int fd_residuals (double *f_u,
           break;
 
         case CRYSTAL_PLASTICITY:
-          nodecoord_updated (nne,nod,node,x,y,z);
-          def_elem(cn,ndofe,d_r,elem,node,r_e,sup,0);
+          if(PLASTICITY_TOTAL_LAGRANGIAN)
+          {
+            nodecoord_total (nne,nod,node,x,y,z);
+            def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+          }
+          else
+          {  
+            nodecoord_updated (nne,nod,node,x,y,z);
+            def_elem(cn,ndofe,d_r,elem,node,r_e,sup,0);
+          }
           break;
 
         default: assert(0 && "undefined CM type"); break;
@@ -218,7 +226,7 @@ int fd_residuals (double *f_u,
           }
         case CRYSTAL_PLASTICITY:
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                 dt,eps,sup,r_e, 0 /* UL */);
+                                                 dt,eps,sup,r_e, PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
           break;
         case BPA_PLASTICITY: case TESTING:
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,

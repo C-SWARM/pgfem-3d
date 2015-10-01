@@ -872,7 +872,7 @@ double Newton_Raphson (const int print_level,
         {
           r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
           long id = node[a].id[b];
-          if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY) 
+          if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY && !PLASTICITY_TOTAL_LAGRANGIAN) 
           // Updated Lagrangian
           {  
             if(id>0)
@@ -908,7 +908,7 @@ double Newton_Raphson (const int print_level,
       switch(opts->cm){
       case CRYSTAL_PLASTICITY:
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
-                                                ndofn,r_n,dt,0 /* UL */);
+                                                ndofn,r_n,dt,PLASTICITY_TOTAL_LAGRANGIAN);
       break;
       case BPA_PLASTICITY:
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,

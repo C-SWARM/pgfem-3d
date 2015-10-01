@@ -203,6 +203,8 @@ static int plasticity_update(Constitutive_model *m)
   Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
   Matrix_AeqB(Fs[TENSOR_pFnm1],1.0,Fs[TENSOR_pFn]);
   Matrix_AeqB(Fs[TENSOR_pFn],1.0,Fs[TENSOR_pFnp1]);  
+  Matrix_AeqB(Fs[TENSOR_gamma_dot_n],1.0,Fs[TENSOR_gamma_dot]);  
+  Matrix_AeqB(Fs[TENSOR_tau_n],1.0,Fs[TENSOR_tau]);      
   state_var[VAR_g_nm1] = state_var[VAR_g_n];
   state_var[VAR_g_n] = state_var[VAR_g_np1];  
   state_var[VAR_L_nm1] = state_var[VAR_L_n];
@@ -359,12 +361,20 @@ static int plasticity_dev_stress(const Constitutive_model *m,
   int err = 0;
   const plasticity_ctx *CTX = ctx;
   double eC[TENSOR_LEN] = {};
+
   Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);
-  err += plasticity_get_eF(m,&eFnp1);
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
+
+  if(CTX->alpha<0)
+    err += plasticity_get_eF(m,&eFnp1);
+  else
+    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
+      
   err += cp_compute_eC(eFnp1.m_pdata,eC);
-  err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
   Matrix_cleanup(eFnp1);
+  
+  err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
+
   return err;
 }
 
@@ -375,13 +385,19 @@ static int plasticity_dudj(const Constitutive_model *m,
   int err = 0;
   const plasticity_ctx *CTX = ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
+
   Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);
-  err += plasticity_get_eF(m,&eFnp1);
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
+
+  if(CTX->alpha<0)
+    err += plasticity_get_eF(m,&eFnp1);
+  else
+    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
+
   double J = 0.0;
   Matrix_det(eFnp1, J);
+  Matrix_cleanup(eFnp1);        
   Pressure(J,m->param->p_hmat,dudj);
-  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -392,9 +408,15 @@ static int plasticity_dev_tangent(const Constitutive_model *m,
   int err = 0;
   const plasticity_ctx *CTX = ctx;
   double eC[TENSOR_LEN] = {};
+  
   Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);
-  err += plasticity_get_eF(m,&eFnp1);
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
+
+  if(CTX->alpha<0)
+    err += plasticity_get_eF(m,&eFnp1);
+  else
+    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
+
   err += cp_compute_eC(eFnp1.m_pdata,eC);
   err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
   Matrix_cleanup(eFnp1);
@@ -407,9 +429,15 @@ static int plasticity_d2udj2(const Constitutive_model *m,
 {
   int err = 0;
   const plasticity_ctx *CTX = ctx;
+
   Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);
-  err += plasticity_get_eF(m,&eFnp1);
+  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
+
+  if(CTX->alpha<0)
+    err += plasticity_get_eF(m,&eFnp1);
+  else
+    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
+    
   double J = 0.0;
   Matrix_det(eFnp1, J);
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
@@ -1995,8 +2023,10 @@ int plasticity_model_read_parameters(EPS *eps,
       state_var[VAR_w]           = Mat_v(props,mat+1,7);
       
       /* set state variables to initial values */
-      state_var[VAR_g_n] = state_var[VAR_g0];
+      state_var[VAR_g_nm1] = state_var[VAR_g0];      
+      state_var[VAR_g_n] = state_var[VAR_g0];      
       state_var[VAR_g_np1] = state_var[VAR_g0];    
+      state_var[VAR_L_nm1] = 0.0;
       state_var[VAR_L_n] = 0.0;  
       state_var[VAR_L_np1] = 0.0;
       
@@ -2004,11 +2034,16 @@ int plasticity_model_read_parameters(EPS *eps,
       Matrix(double) *Fs = (m->vars).Fs;
       const int N_SYS = (m->param)->N_SYS;
       Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
-      Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);
+      Matrix_redim(Fs[TENSOR_tau_n],N_SYS, 1);
+      Matrix_redim(Fs[TENSOR_gamma_dot],N_SYS, 1);      
+      Matrix_redim(Fs[TENSOR_gamma_dot_n],N_SYS, 1);
       
       /* intitialize to zeros */
       Matrix_init(Fs[TENSOR_tau], 0.0);
-      Matrix_init(Fs[TENSOR_gamma_dot], 0.0);     
+      Matrix_init(Fs[TENSOR_tau_n], 0.0);
+      Matrix_init(Fs[TENSOR_gamma_dot], 0.0);           
+      Matrix_init(Fs[TENSOR_gamma_dot_n], 0.0);     
+      
     }
   }
 

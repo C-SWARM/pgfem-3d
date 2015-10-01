@@ -49,7 +49,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
    
   mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, alpha, ndofe); 
   
-  if(analysis == DISP || analysis == TF)      
+  if(analysis == DISP || analysis == TF || analysis == CM)      
   {
     
     FEMLIB fe;
@@ -97,10 +97,16 @@ void stiffmat_disp_w_inertia_el(double *Ks,
     {
       switch(cm) {
       case CRYSTAL_PLASTICITY:
-        err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
-                                               nod,node,dt,eps,sup,r_e,
-                                               0 /* UL */);
-        break;
+        err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e,alpha);
+
+//      err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
+//                             hommat,nod,node,eps,sig,sup,u.m_pdata);
+
+      for(long a = 0; a<ndofe*ndofe; a++)
+        Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
+      
+      break;
       
       case BPA_PLASTICITY: case TESTING:
         err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
@@ -111,6 +117,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
       case HYPER_ELASTICITY:
         err += stiffness_el_hyper_elasticity(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
                                              nod,node,dt,eps,sup,u.m_pdata);
+          
         for(long a = 0; a<ndofe*ndofe; a++)
           Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
       
@@ -312,7 +319,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	mid_point_rule(r_n_1_a,r0_,r0,  alpha, ndofe); 
 	mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe);
 	
-  if(opts->analysis_type == DISP || opts->analysis_type == TF) 
+  if(opts->analysis_type == DISP || opts->analysis_type == TF || opts->analysis_type == CM) 
     DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha);   
 
   switch(opts->analysis_type)
@@ -358,13 +365,14 @@ int residuals_w_inertia_el(double *fe, int i,
         {
 	        double *f_n_a   = aloc1(ndofe);
 	        double *f_n_1_a = aloc1(ndofe);      
+
+          err += residuals_el_hyper_elasticity(f_n_a,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_n_a);		           
+
            
           err += residuals_el_hyper_elasticity(f_n_1_a,i,ndofn,nne,nsd,elem,nod,node,
                                                dt,eps,sup,r_n_1_a);
-                                               	                                                          
-          err += residuals_el_hyper_elasticity(f_n_a,i,ndofn,nne,nsd,elem,nod,node,
-                                               dt,eps,sup,r_n_a);		           
-                	
+
 	        for(long a = 0; a<ndofe; a++)
 	          fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
 	          
@@ -374,9 +382,20 @@ int residuals_w_inertia_el(double *fe, int i,
           break;
         }
         case CRYSTAL_PLASTICITY:
-          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                 dt,eps,sup,r_e, 0 /* UL */);
+        {
+    	    double *f_n   = aloc1(ndofe);    
+    	    memset(f_n, 0, sizeof(double)*ndofe);       
+
+          err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_e,alpha);  
+
+	        for(long a = 0; a<ndofe; a++)
+	          fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
+
+          free(f_n);
+	                                                                                                                   
           break;
+        }  
         case BPA_PLASTICITY: case TESTING:
           err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
                                                  dt,eps,sup,r_e, 1 /* TL */);

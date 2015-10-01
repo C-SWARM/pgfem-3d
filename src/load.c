@@ -159,8 +159,15 @@ int load_vec_node_defl (double *f,
             nodecoord_total(nne,nod,node,x,y,z);
             def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;
-          case CRYSTAL_PLASTICITY: /* updated Lagrangian */
-            nodecoord_updated(nne,nod,node,x,y,z);
+          case CRYSTAL_PLASTICITY:
+            if(PLASTICITY_TOTAL_LAGRANGIAN)
+            {  
+              nodecoord_total(nne,nod,node,x,y,z);
+              def_elem(cn,ndofe,r,elem,node,r_e,sup,1);              
+            }
+            else              
+              nodecoord_updated(nne,nod,node,x,y,z);
+
             break;
           default: assert(0 && "should never reach this case"); break;
           }

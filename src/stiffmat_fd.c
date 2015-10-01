@@ -110,7 +110,7 @@ int el_compute_stiffmat(int i,
         case CRYSTAL_PLASTICITY:
           err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
                                                  nod,node,dt,eps,sup,r_e,
-                                                 0 /* UL */);
+                                                 PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
           break;
 
         case BPA_PLASTICITY: case TESTING:
@@ -248,7 +248,10 @@ static int el_stiffmat(int i, /* Element ID */
         nodecoord_total (nne,nod,node,x,y,z);
         break;
       case CRYSTAL_PLASTICITY:
-        nodecoord_updated (nne,nod,node,x,y,z);
+        if(PLASTICITY_TOTAL_LAGRANGIAN)
+          nodecoord_total (nne,nod,node,x,y,z);
+        else              
+          nodecoord_updated (nne,nod,node,x,y,z);        
         break;
       default: assert(0 && "undefined CM type"); break;
       }
@@ -298,7 +301,10 @@ static int el_stiffmat(int i, /* Element ID */
         def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
         break;
       case CRYSTAL_PLASTICITY:
-        def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+        if(PLASTICITY_TOTAL_LAGRANGIAN)
+          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+        else
+          def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
         break;
       default: assert(0 && "undefined CM type"); break;
       }
