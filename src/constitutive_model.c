@@ -207,17 +207,18 @@ int model_parameters_destroy(Model_parameters *p)
   return err;
 }
 
-int constitutive_model_update_elasticity_npa(const Constitutive_model *m,
+int constitutive_model_update_elasticity(const Constitutive_model *m,
                                          const Matrix_double *F,
                                          const double dt,
                                          Matrix_double *L,
                                          Matrix_double *S,
-                                         const int compute_stiffness, double alpha)
+                                         const int compute_stiffness)
 {
   int err = 0;
   void *ctx;
   const Model_parameters *func = m->param;
   double J;
+  int alpha = -1.0;
   Matrix(double) Fe,C, CI;    
   Matrix_construct_redim(double,C,3,3); 
   Matrix_construct_redim(double,CI,3,3);     
@@ -230,10 +231,7 @@ int constitutive_model_update_elasticity_npa(const Constitutive_model *m,
     Matrix_AeqB(Fe,1.0,*F);
     break;
   case CRYSTAL_PLASTICITY:
-    if(alpha<0)
-      func->get_eF(m,&Fe);
-    else
-      Matrix_AeqB(Fe,1.0,*F);
+    Matrix_AeqB(Fe,1.0,*F);
     break;
   default:    
     func->get_eF(m,&Fe);
@@ -315,21 +313,7 @@ int constitutive_model_update_elasticity_npa(const Constitutive_model *m,
   return err; 
 }
 
-int constitutive_model_update_elasticity(const Constitutive_model *m,
-                                         const Matrix_double *F,
-                                         const double dt,
-                                         Matrix_double *L,
-                                         Matrix_double *S,
-                                         const int compute_stiffness)
-{
-  int err = 0;
-  double alpha = -1.0;   // if alpha < 0, no inertia
-  
-  err += constitutive_model_update_elasticity_npa(m,F,dt,L,S,compute_stiffness,alpha);
-  
-  return err;
-  
-}
+
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
                                 const MATGEOM_1 *p_mgeom,
@@ -1074,7 +1058,7 @@ int constitutive_model_update_output_variables(SIG *sig,
     err += func->get_Fn(m, &F);
     err += func->get_eFn(m, &eF);
     err += func->get_pFn(m, &pF);
-    err += constitutive_model_update_elasticity(m,&F,dt,NULL,&S,0);
+    err += constitutive_model_update_elasticity(m,&eF,dt,NULL,&S,0);
 
     /* get aliases to Matrix data for simpler access */
     const double *Sd = S.m_pdata;
@@ -1177,10 +1161,9 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,dMdu,eFnp1,pFnp1,pFnp1_I,S,
-    eFn,M,Mn,Mnp1,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
-    MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,
-    MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,
+  enum {Fn,Fr,Fnp1,pFn,dMdu,eFnpa,pFnp1,pFnpa,S,
+    M,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
+    MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,MTeFnT_FrTFreFndMdu,dCdu,
     L_dCdu,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,
     sMTeFnT_sAA_eFndMdu,eFnMT,Fend};
   
@@ -1209,12 +1192,11 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     err += m->param->get_pF(m,&F2[pFnp1]);
     err += m->param->get_pFn(m,&F2[pFn]);
     err += m->param->get_Fn(m,&F2[Fn]);
-        
-    Matrix_inv(F2[pFnp1], F2[Mnp1]);
-    Matrix_inv(F2[pFn],   F2[Mn]);
-    
-    mid_point_rule(F2[M].m_pdata, F2[Mn].m_pdata, F2[Mnp1].m_pdata, alpha, nsd*nsd);
-    mid_point_rule(F2[Fr].m_pdata, F2[Fn].m_pdata, F2[Fnp1].m_pdata, alpha, nsd*nsd);    
+            
+    mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, nsd*nsd);
+    mid_point_rule(   F2[Fr].m_pdata,  F2[Fn].m_pdata,  F2[Fnp1].m_pdata, alpha, nsd*nsd);
+    Matrix_inv(F2[pFnpa], F2[M]);
+    Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fr],0,F2[M],0);
     
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0);  
 
@@ -1241,7 +1223,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     Matrix_init(L,0.0);
     Matrix_init(F2[S],0.0);    
     
-    constitutive_model_update_elasticity_npa(m,&F2[Fr],dt,&L,&F2[S],compute_stiffness, alpha);
+    constitutive_model_update_elasticity(m,&F2[eFnpa],dt,&L,&F2[S],compute_stiffness);
     // <-- update elasticity part
 
     // --> start computing tagent
@@ -1262,7 +1244,8 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
         Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0);
         Matrix_symmetric(F2[AA],F2[sAA]);
 
-//       Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFn]);
+//        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFn]);
+        Matrix_AxB(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],0,F2[sAA],0);
 //       Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[M],0);
         Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[eFnMT],F2[sAA],F2[M]);
 
@@ -1345,8 +1328,8 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
                                     const long *nod,
                                     const NODE *node,
                                     const double dt,
-                                    Matrix(double) *Mnp1,
-                                    Matrix(double) *Mn,
+                                    Matrix(double) *pFnp1,
+                                    Matrix(double) *pFn,
                                     Matrix(double) *Fnp1,
                                     Matrix(double) *Fn,
                                     double alpha,
@@ -1355,7 +1338,7 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
 {
   // Total Lagrangian based
   int err = 0;   
-  enum {M,F,S,ST_ab,AA,sAA,MT,MT_sAA_M,Fend}; 
+  enum {M,eFnpa,pFnpa,Fnpa,S,ST_ab,AA,sAA,MT,MT_sAA_M,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -1365,12 +1348,15 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
 
   int compute_stiffness = 0;
    
-  mid_point_rule(F2[M].m_pdata, Mn->m_pdata, Mnp1->m_pdata, alpha, nsd*nsd);
-  mid_point_rule(F2[F].m_pdata, Fn->m_pdata, Fnp1->m_pdata, alpha, nsd*nsd);
-    
+  mid_point_rule(F2[pFnpa].m_pdata, pFn->m_pdata, pFnp1->m_pdata, alpha, nsd*nsd);
+  mid_point_rule( F2[Fnpa].m_pdata,  Fn->m_pdata,  Fnp1->m_pdata, alpha, nsd*nsd);
+  
+  Matrix_inv(F2[pFnpa], F2[M]);
+  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[M],0);
+        
   Matrix_AeqBT(F2[MT],1.0,F2[M]);  
   Matrix_init(F2[S],0.0);    
-  constitutive_model_update_elasticity_npa(m,&F2[F],dt,NULL,&F2[S],compute_stiffness, alpha);
+  constitutive_model_update_elasticity(m,&F2[eFnpa],dt,NULL,&F2[S],compute_stiffness);
   
   for(int a=0; a<nne; a++)
   {
@@ -1426,7 +1412,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fnp1,Fn,Fnm1,pFnp1,pFn,pFnm1,Mnp1,Mn,Mnm1,Fend}; 
+  enum {Fnp1,Fn,Fnm1,pFnp1,pFn,pFnm1,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -1470,22 +1456,18 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
 
     err += m->param->get_Fn(m,  &F2[Fn]);
     err += m->param->get_Fnm1(m,&F2[Fnm1]);
-            
-    Matrix_inv(F2[pFnp1], F2[Mnp1]);
-    Matrix_inv(F2[pFn],   F2[Mn]);
-    Matrix_inv(F2[pFnm1], F2[Mnm1]);
     
     double dt_1_minus_alpha = -dt*(1.0-alpha);
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,nne,nsd,
                                 elem,nod,node,dt,
-                                &F2[Mnp1],&F2[Mn],&F2[Fnp1],&F2[Fn],
+                                &F2[pFnp1],&F2[pFn],&F2[Fnp1],&F2[Fn],
                                 alpha, dt_1_minus_alpha,&fe);
                                 
     double dt_alpha = -dt*alpha;
 
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,nne,nsd,
                                 elem,nod,node,dt,
-                                &F2[Mn],&F2[Mnm1],&F2[Fn],&F2[Fnm1],
+                                &F2[pFn],&F2[pFnm1],&F2[Fn],&F2[Fnm1],
                                 alpha, dt_alpha,&fe);
   }
   

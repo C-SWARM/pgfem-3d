@@ -97,14 +97,12 @@ void stiffmat_disp_w_inertia_el(double *Ks,
     {
       switch(cm) {
       case CRYSTAL_PLASTICITY:
+        
         err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
                                                nod,node,dt,eps,sup,r_e,alpha);
-
-//      err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
-//                             hommat,nod,node,eps,sig,sup,u.m_pdata);
-
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
+                                               
+        for(long a = 0; a<ndofe*ndofe; a++)
+          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];
       
       break;
       
@@ -306,7 +304,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	double *f_i     = aloc1(ndofe);
 	memset(fe,  0, sizeof(double)*ndofe);
 	memset(f_i, 0, sizeof(double)*ndofe);
-		
+			
 	for (long I=0;I<nne;I++)
 	{
 	  for(long J=0; J<nsd; J++)
@@ -389,10 +387,8 @@ int residuals_w_inertia_el(double *fe, int i,
           err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
                                                dt,eps,sup,r_e,alpha);  
 
-	        for(long a = 0; a<ndofe; a++)
+	        for(long a = 0; a<ndofe; a++){
 	          fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
-
-          free(f_n);
 	                                                                                                                   
           break;
         }  

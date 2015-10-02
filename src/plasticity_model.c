@@ -361,18 +361,8 @@ static int plasticity_dev_stress(const Constitutive_model *m,
   int err = 0;
   const plasticity_ctx *CTX = ctx;
   double eC[TENSOR_LEN] = {};
-
-  Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
-
-  if(CTX->alpha<0)
-    err += plasticity_get_eF(m,&eFnp1);
-  else
-    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
       
-  err += cp_compute_eC(eFnp1.m_pdata,eC);
-  Matrix_cleanup(eFnp1);
-  
+  err += cp_compute_eC(CTX->F,eC);
   err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
 
   return err;
@@ -385,18 +375,7 @@ static int plasticity_dudj(const Constitutive_model *m,
   int err = 0;
   const plasticity_ctx *CTX = ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
-
-  Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
-
-  if(CTX->alpha<0)
-    err += plasticity_get_eF(m,&eFnp1);
-  else
-    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
-
-  double J = 0.0;
-  Matrix_det(eFnp1, J);
-  Matrix_cleanup(eFnp1);        
+  double J = det3x3(CTX->F);
   Pressure(J,m->param->p_hmat,dudj);
   return err;
 }
@@ -409,17 +388,8 @@ static int plasticity_dev_tangent(const Constitutive_model *m,
   const plasticity_ctx *CTX = ctx;
   double eC[TENSOR_LEN] = {};
   
-  Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
-
-  if(CTX->alpha<0)
-    err += plasticity_get_eF(m,&eFnp1);
-  else
-    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
-
-  err += cp_compute_eC(eFnp1.m_pdata,eC);
+  err += cp_compute_eC(CTX->F,eC);
   err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
-  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -429,20 +399,10 @@ static int plasticity_d2udj2(const Constitutive_model *m,
 {
   int err = 0;
   const plasticity_ctx *CTX = ctx;
+  double J = det3x3(CTX->F);
 
-  Matrix_double eFnp1;
-  Matrix_construct_redim(double, eFnp1, DIM, DIM);      
-
-  if(CTX->alpha<0)
-    err += plasticity_get_eF(m,&eFnp1);
-  else
-    Matrix_init_w_array(eFnp1,DIM,DIM,CTX->F);
-    
-  double J = 0.0;
-  Matrix_det(eFnp1, J);
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
   D_Pressure(J,m->param->p_hmat,d2udj2);
-  Matrix_cleanup(eFnp1);
   return err;
 }
 
@@ -552,25 +512,26 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha*beta times. This should be improved */
   const plasticity_ctx *CTX = ctx;
   
-  enum {eFn,eFnp1,eFnpa,pFnp1,pFn,Mnpa,Mnp1,Mn,S,Fend}; 
+  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnp1,pFn,Mnpa,S,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   for (int a = 0; a < Fend; a++) {
     Matrix_construct_redim(double, F2[a],DIM,DIM);
   }  
-    
+  
+  Matrix_init_w_array(Fnp1, DIM, DIM, CTX->F);  
   err += m->param->get_eFn(m,&F2[eFn]);
-  err += m->param->get_eF(m,&F2[eFnp1]);
-  mid_point_rule(F2[eFnpa].m_pdata, F2[eFn].m_pdata, F2[eFnp1].m_pdata, alpha, DIM*DIM);  
   Matrix_eye(F2[eFn],DIM); // <== recompute F2[eFn] to make Total Lagrangian
     
   err += m->param->get_pF(m,&F2[pFnp1]);
   err += m->param->get_pFn(m,&F2[pFn]);
+ 
+  mid_point_rule(F2[Fnpa].m_pdata, F2[Fn].m_pdata, F2[Fnp1].m_pdata, alpha, DIM*DIM);  
+  mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, DIM*DIM);  
 
-  Matrix_inv(F2[pFnp1], F2[Mnp1]);
-  Matrix_inv(F2[pFn],   F2[Mn]);
-  mid_point_rule(F2[Mnpa].m_pdata, F2[Mn].m_pdata, F2[Mnp1].m_pdata, alpha, DIM*DIM);  
+  Matrix_inv(F2[pFnpa],   F2[Mnpa]);
+  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fr],0,F2[M],0);  
 
   /* compute the elastic stress/tangent (S, L) using
      constitutive_model_update_elasticity. This needs to become part
@@ -641,6 +602,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   free(P_sys);
   return err;
 }
+
 
 static int plasticity_compute_dMdu(const Constitutive_model *m,
                                    const void *ctx,
@@ -1970,7 +1932,8 @@ int plasticity_model_read_parameters(EPS *eps,
         }
         break;            
       }      
-    }     
+    }
+    fclose(fp);     
   }
   else
   {
@@ -2051,8 +2014,7 @@ int plasticity_model_read_parameters(EPS *eps,
   Matrix_cleanup(e_ids);
   Matrix_cleanup(angles);
   err += plasticity_model_cleanup_elem_ip_map(elm_ip_map, ne);
-  free(elm_ip_map);
-  fclose(fp);  
+  free(elm_ip_map);  
   return err;
 }
 
