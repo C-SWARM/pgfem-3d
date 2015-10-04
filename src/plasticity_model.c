@@ -512,7 +512,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha*beta times. This should be improved */
   const plasticity_ctx *CTX = ctx;
   
-  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnp1,pFn,Mnpa,S,Fend}; 
+  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnp1,pFn,Mnpa,S,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -520,7 +520,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
     Matrix_construct_redim(double, F2[a],DIM,DIM);
   }  
   
-  Matrix_init_w_array(Fnp1, DIM, DIM, CTX->F);  
+  Matrix_init_w_array(F2[Fnp1], DIM, DIM, CTX->F);  
+  err += m->param->get_Fn(m,&F2[Fn]);  
   err += m->param->get_eFn(m,&F2[eFn]);
   Matrix_eye(F2[eFn],DIM); // <== recompute F2[eFn] to make Total Lagrangian
     
@@ -531,8 +532,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, DIM*DIM);  
 
   Matrix_inv(F2[pFnpa],   F2[Mnpa]);
-  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fr],0,F2[M],0);  
-
+  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);  
   /* compute the elastic stress/tangent (S, L) using
      constitutive_model_update_elasticity. This needs to become part
      of the CM interface */

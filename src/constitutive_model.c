@@ -1195,6 +1195,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
             
     mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, nsd*nsd);
     mid_point_rule(   F2[Fr].m_pdata,  F2[Fn].m_pdata,  F2[Fnp1].m_pdata, alpha, nsd*nsd);
+
     Matrix_inv(F2[pFnpa], F2[M]);
     Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fr],0,F2[M],0);
     
@@ -1228,7 +1229,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
 
     // --> start computing tagent
     //Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
-    Matrix_AeqBT(F2[eFnM],1.0,F2[M]); // eFn = 1 for total_Lagrangian
+    Matrix_AeqB(F2[eFnM],1.0,F2[M]); // eFn = 1 for total_Lagrangian
     Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
         
     double Jn; // Matrix_det(F2[Fn], Jn);
@@ -1260,7 +1261,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
 
             Matrix_init_w_array(F2[ST_wg],3,3,ptrST_wg);
             Matrix_init_w_array(F2[dMdu],3,3,ptr_dMdu_wg);
-
+            
             Matrix_AxB(F2[BB],1.0,0.0,F2[Fr],1,F2[ST_wg],0);
             Matrix_symmetric(F2[BB],F2[sBB]);
             Matrix_AxB(F2[CC], 1.0,0.0,F2[ST_ab],1,F2[ST_wg],0);
@@ -1293,9 +1294,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
             // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
             double sMTeFnT_sAA_eFndMdu_S = 0.0;
             Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],F2[S],sMTeFnT_sAA_eFndMdu_S);
-            
             const int lk_idx = idx_K(a,b,w,g,nne,nsd);
-
             lk[lk_idx] += 1.0/Jn*fe.detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);
           }
         }
@@ -1365,7 +1364,7 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
       const double* const ptrST_ab = &(fe->ST)[idx_4_gen(a,b,0,0,
                                               nne,nsd,nsd,nsd)];
       Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-      Matrix_AxB(F2[AA],1.0,0.0,F2[F],1,F2[ST_ab],0); 
+      Matrix_AxB(F2[AA],1.0,0.0,F2[Fnpa],1,F2[ST_ab],0); 
       Matrix_symmetric(F2[AA],F2[sAA]);
 
       Matrix_Tns2_AxBxC(F2[MT_sAA_M],1.0,0.0,F2[MT],F2[sAA],F2[M]);

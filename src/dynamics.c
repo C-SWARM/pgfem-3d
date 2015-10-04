@@ -97,15 +97,13 @@ void stiffmat_disp_w_inertia_el(double *Ks,
     {
       switch(cm) {
       case CRYSTAL_PLASTICITY:
-        
         err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
                                                nod,node,dt,eps,sup,r_e,alpha);
                                                
         for(long a = 0; a<ndofe*ndofe; a++)
           Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];
-      
-      break;
-      
+
+        break;
       case BPA_PLASTICITY: case TESTING:
         err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
                                                nod,node,dt,eps,sup,r_e,
@@ -387,9 +385,10 @@ int residuals_w_inertia_el(double *fe, int i,
           err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
                                                dt,eps,sup,r_e,alpha);  
 
-	        for(long a = 0; a<ndofe; a++){
+	        for(long a = 0; a<ndofe; a++)
 	          fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
-	                                                                                                                   
+	        
+	        free(f_n);                                                                                                           
           break;
         }  
         case BPA_PLASTICITY: case TESTING:
