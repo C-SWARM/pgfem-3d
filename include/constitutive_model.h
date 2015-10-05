@@ -308,6 +308,12 @@ int model_var_info_destroy(Model_var_info **info);
 typedef int (*usr_info)(Model_var_info **info);
 
 /**
+ * A user described function that writes and read restart file at
+ * integration point
+ */
+typedef int (*usr_restart)(FILE *fp, const Constitutive_model *m);
+
+/**
  * Interface for accessing model parameters and modifying/updating the
  * associated state variable(s) at integration points.
  */
@@ -341,6 +347,11 @@ struct Model_parameters {
   usr_get_F get_eFnm1;
     
   usr_get_var get_hardening;
+  usr_get_var get_hardening_nm1;
+  
+  usr_restart write_restart;
+  usr_restart read_restart;  
+
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;
 

@@ -346,11 +346,18 @@ static int plasticity_get_eFnm1(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_get_hardening(const Constitutive_model *m,
+static int plasticity_get_hardening_n(const Constitutive_model *m,
                                     double *var)
 {
   int err = 0;
   *var = m->vars.state_vars->m_pdata[VAR_g_n];
+  return err;
+}
+static int plasticity_get_hardening_nm1(const Constitutive_model *m,
+                                    double *var)
+{
+  int err = 0;
+  *var = m->vars.state_vars->m_pdata[VAR_g_nm1];
   return err;
 }
 
@@ -620,6 +627,79 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   return err;
 }            
                       
+static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
+{
+
+  int err = 0;
+  Matrix(double) *Fs = (m->vars).Fs;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+
+    
+  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_Fn].m_pdata[   0],Fs[TENSOR_Fn].m_pdata[   1],Fs[TENSOR_Fn].m_pdata[   2],
+                                                 Fs[TENSOR_Fn].m_pdata[   3],Fs[TENSOR_Fn].m_pdata[   4],Fs[TENSOR_Fn].m_pdata[   5],
+                                                 Fs[TENSOR_Fn].m_pdata[   6],Fs[TENSOR_Fn].m_pdata[   7],Fs[TENSOR_Fn].m_pdata[   8]);
+  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_Fnm1].m_pdata[ 0],Fs[TENSOR_Fnm1].m_pdata[ 1],Fs[TENSOR_Fnm1].m_pdata[ 2],
+                                                 Fs[TENSOR_Fnm1].m_pdata[ 3],Fs[TENSOR_Fnm1].m_pdata[ 4],Fs[TENSOR_Fnm1].m_pdata[ 5],
+                                                 Fs[TENSOR_Fnm1].m_pdata[ 6],Fs[TENSOR_Fnm1].m_pdata[ 7],Fs[TENSOR_Fnm1].m_pdata[ 8]);
+  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_pFn].m_pdata[  0],Fs[TENSOR_pFn].m_pdata[  1],Fs[TENSOR_pFn].m_pdata[  2],
+                                                 Fs[TENSOR_pFn].m_pdata[  3],Fs[TENSOR_pFn].m_pdata[  4],Fs[TENSOR_pFn].m_pdata[  5],
+                                                 Fs[TENSOR_pFn].m_pdata[  6],Fs[TENSOR_pFn].m_pdata[  7],Fs[TENSOR_pFn].m_pdata[  8]);
+  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_pFnm1].m_pdata[0],Fs[TENSOR_pFnm1].m_pdata[1],Fs[TENSOR_pFnm1].m_pdata[2],
+                                                 Fs[TENSOR_pFnm1].m_pdata[3],Fs[TENSOR_pFnm1].m_pdata[4],Fs[TENSOR_pFnm1].m_pdata[5],
+                                                 Fs[TENSOR_pFnm1].m_pdata[6],Fs[TENSOR_pFnm1].m_pdata[7],Fs[TENSOR_pFnm1].m_pdata[8]);
+  const int N_SYS = (m->param)->N_SYS;                                                 
+  for(int a=0; a<N_SYS; a++)
+    fprintf(fp, "%e ", Fs[TENSOR_tau_n].m_pdata[a]);
+
+  fprintf(fp, "\n");
+  
+  for(int a=0; a<N_SYS; a++)
+    fprintf(fp, "%e ", Fs[TENSOR_gamma_dot_n].m_pdata[a]);
+      
+  fprintf(fp, "\n");
+                                                   
+  fprintf(fp, "%e %e %e %e\n", state_var[VAR_g_n], state_var[VAR_g_nm1], state_var[VAR_L_n], state_var[VAR_L_nm1]);                                              
+  
+  return err;
+}
+
+static int plasticity_read_restart(FILE *fp, const Constitutive_model *m)
+{
+  int err = 0;
+  Matrix(double) *Fs = (m->vars).Fs;
+  double *state_var = (m->vars).state_vars[0].m_pdata;
+
+    
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",    Fs[TENSOR_Fn].m_pdata+0,   Fs[TENSOR_Fn].m_pdata+1,   Fs[TENSOR_Fn].m_pdata+2,
+                                                       Fs[TENSOR_Fn].m_pdata+3,   Fs[TENSOR_Fn].m_pdata+4,   Fs[TENSOR_Fn].m_pdata+5,
+                                                       Fs[TENSOR_Fn].m_pdata+6,   Fs[TENSOR_Fn].m_pdata+7,   Fs[TENSOR_Fn].m_pdata+8);
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",  Fs[TENSOR_Fnm1].m_pdata+0, Fs[TENSOR_Fnm1].m_pdata+1, Fs[TENSOR_Fnm1].m_pdata+2,
+                                                     Fs[TENSOR_Fnm1].m_pdata+3, Fs[TENSOR_Fnm1].m_pdata+4, Fs[TENSOR_Fnm1].m_pdata+5,
+                                                     Fs[TENSOR_Fnm1].m_pdata+6, Fs[TENSOR_Fnm1].m_pdata+7, Fs[TENSOR_Fnm1].m_pdata+8);
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",   Fs[TENSOR_pFn].m_pdata+0,  Fs[TENSOR_pFn].m_pdata+1,  Fs[TENSOR_pFn].m_pdata+2,
+                                                      Fs[TENSOR_pFn].m_pdata+3,  Fs[TENSOR_pFn].m_pdata+4,  Fs[TENSOR_pFn].m_pdata+5,
+                                                      Fs[TENSOR_pFn].m_pdata+6,  Fs[TENSOR_pFn].m_pdata+7,  Fs[TENSOR_pFn].m_pdata+8);
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", Fs[TENSOR_pFnm1].m_pdata+0,Fs[TENSOR_pFnm1].m_pdata+1,Fs[TENSOR_pFnm1].m_pdata+2,
+                                                    Fs[TENSOR_pFnm1].m_pdata+3,Fs[TENSOR_pFnm1].m_pdata+4,Fs[TENSOR_pFnm1].m_pdata+5,
+                                                    Fs[TENSOR_pFnm1].m_pdata+6,Fs[TENSOR_pFnm1].m_pdata+7,Fs[TENSOR_pFnm1].m_pdata+8);
+
+  const int N_SYS = (m->param)->N_SYS;                                                 
+  for(int a=0; a<N_SYS; a++)
+    fscanf(fp, "%lf ", Fs[TENSOR_tau_n].m_pdata + a);
+  
+  for(int a=0; a<N_SYS; a++)
+    fscanf(fp, "%lf ", Fs[TENSOR_gamma_dot_n].m_pdata + a);
+                                                        
+  fscanf(fp, "%lf %lf %lf %lf\n", state_var+VAR_g_n, state_var+VAR_g_nm1, state_var+VAR_L_n, state_var+VAR_L_nm1);
+  Matrix_AeqB(Fs[TENSOR_Fnp1],     1.0,Fs[TENSOR_Fn]);                                                   
+  Matrix_AeqB(Fs[TENSOR_pFnp1],    1.0,Fs[TENSOR_pFn]);  
+  Matrix_AeqB(Fs[TENSOR_tau],      1.0,Fs[TENSOR_tau_n]);
+  Matrix_AeqB(Fs[TENSOR_gamma_dot],1.0,Fs[TENSOR_gamma_dot_n]);                                                   
+  state_var[VAR_g_np1] = state_var[VAR_g_n];
+  state_var[VAR_L_np1] = state_var[VAR_L_n];  
+  return 0;  
+}
+
 int plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -642,7 +722,11 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_eFn   = plasticity_get_eFn;
   p->get_eFnm1 = plasticity_get_eFnm1;
     
-  p->get_hardening = plasticity_get_hardening;
+  p->get_hardening     = plasticity_get_hardening_n;
+  p->get_hardening_nm1 = plasticity_get_hardening_nm1;  
+  p->write_restart = plasticity_write_restart;
+  p->read_restart  = plasticity_read_restart;
+  
   p->destroy_ctx   = plasticity_model_ctx_destroy;
   p->compute_dMdu  = plasticity_compute_dMdu;
 
@@ -1314,9 +1398,9 @@ int plasticity_model_integration_ip(Matrix_double *pFnp1,
   Solver.NR_ML_MAX = 100;
   Solver.NR_G_MAX = 100;
   Solver.SNR_MAX = 100;
-  Solver.Fp_TOL = 10e-12;
-  Solver.L_TOL = 10e-12;
-  Solver.g_TOL = 10e-12;
+  Solver.Fp_TOL = 10e-6;
+  Solver.L_TOL = 10e-6;
+  Solver.g_TOL = 10e-6;
   
   /*--------MaterialStructure_Settings--------*/
   MaterialStructure Struc;

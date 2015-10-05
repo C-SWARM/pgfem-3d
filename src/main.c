@@ -69,6 +69,7 @@
 #include "three_field_element.h"
 #include "constitutive_model.h"
 #include "post_processing.h"
+#include "restart.h"
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -78,96 +79,9 @@ static const int ndim = 3;
 /*****************************************************/
 #define SAVE_RESTART_FILE 1
 
-#ifndef NO_VTK_LIB
-#include "PGFem3D_to_VTK.hpp"
-
-
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
-{
-  int err = 0;
-  char filename[1024];
-  
-  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  err += read_VTK_file(filename, u0);      
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  err += read_VTK_file(filename, u1);
-    
-  return err;
-}      
-
-#else
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
-{
-  if(myrank==0)
-  {
-    PGFEM_printerr("Restart with VTK is not supported!\n");
-    PGFEM_printerr("Enforce to turn off restart!\n");
-  }
-  
-  *restart = -1;  
-  return 0;
-}
-#endif
-
-int write_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
-{
-  
-  char restart_path[1024];
-  sprintf(restart_path, "%s/restart/STEP_%.5d", opts->opath,stepno);
-                
-  if(make_path(restart_path,DIR_MODE) != 0)
-  {
-    PGFEM_printf("Directory (%s) not created!\n",restart_path);
-    abort();                   
-  }  
- 
-  char filename[1024];
-  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
-  FILE *fp = fopen(filename,"w");
-
-  if(fp == NULL)
-  {    
-    printf("Fail to open file [%s]. finishing\n", filename);
-    exit(0);  
-  }
-  
-  for(int a=0; a<nodeno; a++)
-  {
-    for(int b=0; b<nsd; b++)
-      fprintf(fp, "%e %e ", u0[a*nsd + b], u1[a*nsd + b]);
-    
-    fprintf(fp, "\n");    
-  }
-  
-  fclose(fp);
-  return 0;
-}
-
-
-int read_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
-{
- 
-  char filename[1024];
-  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
-  FILE *fp = fopen(filename,"r");
-
-  if(fp == NULL)
-  {    
-    printf("Fail to open file [%s]. finishing\n", filename);      
-    exit(0);  
-  }
-  
-  for(int a=0; a<nodeno; a++)
-  {
-    for(int b=0; b<nsd; b++)
-      fscanf(fp, "%lf %lf", u0+a*nsd + b, u1+a*nsd + b);    
-  }
-  
-  fclose(fp);
-  return 0;
-}
-
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts,
+                           ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
+                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart)
 {
   char filename[1024];
   char line[1024];
@@ -195,10 +109,8 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   if(*restart>0)
   { 
     int nsd = 3;
-    if(opts->analysis_type==DISP)
-      read_restart_disp(u0, u1, opts, myrank, nodeno, nsd, *restart);
-    else
-      read_initial_from_VTK(opts, myrank, restart, u0, u1);
+    read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
+                 myrank,elemno,nodeno,nsd,restart);    
   } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -1116,15 +1028,18 @@ int single_scale_main(int argc,char *argv[])
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = 0;
     
-    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank,
-                                nn, nmat, times[1] - times[0], &restart_tim);
+    alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
+                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim);
+
     for(long idx_a = 0; idx_a<nn; idx_a++)
     {
       for(long idx_b = 0; idx_b<ndofn; idx_b++)
       {
         long id = node[idx_a].id[idx_b];
         if(id>0)
+        {  
           r[id-1] = r_n[idx_a*ndofn + idx_b];
+        }    
       }
     }
 
@@ -1252,6 +1167,10 @@ int single_scale_main(int argc,char *argv[])
 /////////////////////////////////////////////////////////////////////////////////////////////////
         if(tim<restart_tim+1)
         {
+          for (i=0;i<sup->npd;i++){  
+            sup->defl[i] += sup->defl_d[i];
+            sup->defl_d[i] = 0.0;
+          }          
           tim++;
           continue;
         }
@@ -1395,34 +1314,9 @@ int single_scale_main(int argc,char *argv[])
 // this is only for the restart
               if(SAVE_RESTART_FILE)
               {
-                for(long a = 0; a<nn; a++)
-                {              
-                  for(long b = 0; b<ndofn; b++)
-                  {
-                    long id = node[a].id[b];
-                    if(id>0)
-                      r_n_dof[id-1] = r_n_1[a*ndofn + b];
-                  }
-                }
-                              
-                char restart_path[1024];
-                sprintf(restart_path, "%s/restart", options.opath);
-                
-                if(options.analysis_type==DISP)
-                {    
-                  if(make_path(restart_path,DIR_MODE) != 0)
-                  {
-                    PGFEM_printf("Directory (%s) not created!\n",restart_path);
-                    abort();                   
-                  }
-                  write_restart_disp(r_n_1, r_n, &options, myrank, nn, ndofn, tim);
-                }                
-                else
-                {
-                  VTK_print_vtu(restart_path,options.ofname,tim,
-                      myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
-                      &options);
-                }                
+                  write_restart(r_n_1, r_n, &options, 
+                                elem, node,sig_e,eps,sup,
+                                myrank, ne, nn, ndofn, ndofd,tim);
               } 
 
 ///////////////////////////////////////////////////////////////////////////////////      

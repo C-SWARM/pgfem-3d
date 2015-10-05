@@ -128,7 +128,8 @@ plasticity_model_none.c \
 plasticity_model_BPA.c \
 state_variables.c \
 constitutive_model.c \
-post_processing.c
+post_processing.c \
+restart.c
 
 plasticity_model_BPA_driver_SOURCES = \
 $(all_sources) \
