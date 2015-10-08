@@ -840,6 +840,7 @@ double Newton_Raphson (const int print_level,
     case TF:
       update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
                                 dt,t,mpi_comm);
+      break;                          
     case CM:
       {
         switch(opts->cm)
