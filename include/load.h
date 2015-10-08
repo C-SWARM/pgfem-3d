@@ -59,7 +59,8 @@ int load_vec_node_defl (double *f,
 			CRPL *crpl,
 			double stab,
 			double *r,
-			const PGFem3D_opt *opts);
+			double *r_n,
+			const PGFem3D_opt *opts,double alpha);
 
 /**
  * \brief Compute the load vector from the elements with surface load

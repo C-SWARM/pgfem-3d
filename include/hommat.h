@@ -18,7 +18,10 @@ struct HOMMAT{
   int volPotFlag;
   int mat_id; // material ID
 };
+#ifndef TYPE_HOMMAT
+#define TYPE_HOMMAT
 typedef struct HOMMAT HOMMAT;
+#endif
 
 HOMMAT* build_hommat(long i);
 

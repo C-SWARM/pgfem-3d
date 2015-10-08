@@ -1,5 +1,5 @@
-bin_PROGRAMS = PGFem3D
-PGFem3D_SOURCES = \
+bin_PROGRAMS = PGFem3D plasticity_model_BPA_driver
+all_sources = \
 ALM.c \
 Arc_length.c \
 boomerAMGInterface.c \
@@ -123,6 +123,20 @@ femlib.c \
 macro_micro_main.c \
 main.c \
 dynamics.c \
+plasticity_model.c \
+plasticity_model_none.c \
+plasticity_model_BPA.c \
+state_variables.c \
+constitutive_model.c \
+post_processing.c \
+restart.c
+
+plasticity_model_BPA_driver_SOURCES = \
+$(all_sources) \
+plasticity_model_BPA_driver.c
+
+PGFem3D_SOURCES = \
+$(all_sources) \
 super_main.c
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
@@ -131,10 +145,14 @@ VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 AM_INCLUDES = $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
+	      $(cnstvm_include) \
 	      $(mkl_include)
 
-PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(mkl_lib)
+
+PGFem3D_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
+plasticity_model_BPA_driver_LDADD = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 
 AM_CFLAGS = $(AM_INCLUDES)
 
 PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+plasticity_model_BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@

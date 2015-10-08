@@ -6,8 +6,9 @@
 #include "allocation.h"
 #include "displacement_based_element.h"
 #include "three_field_element.h"
+#include "constitutive_model.h"
 
-#define INTG_ORDER 3
+#define INTG_ORDER 0
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
 {
@@ -22,7 +23,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
          const int nne, const int npres, const int nVol, const int nsd,
          const double *x, const double *y, const double *z,		     
          const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node, double dt,
-         SIG *sig, EPS *eps, const SUPP sup, const int analysis,		     
+         SIG *sig, EPS *eps, const SUPP sup, const int analysis, int cm,		     
 		     double alpha, double *r_n, double *r_e)
 {
   int err = 0;
@@ -48,11 +49,11 @@ void stiffmat_disp_w_inertia_el(double *Ks,
    
   mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, alpha, ndofe); 
   
-  if(analysis == DISP || analysis == TF)      
+  if(analysis == DISP || analysis == TF || analysis == CM)      
   {
     
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);  
+    FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);  
     for(int ip = 1; ip<=fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip); 
@@ -92,7 +93,39 @@ void stiffmat_disp_w_inertia_el(double *Ks,
         Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
 
       break;
+    case CM:
+    {
+      switch(cm) {
+      case CRYSTAL_PLASTICITY:
+        err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e,alpha);
+                                               
+        for(long a = 0; a<ndofe*ndofe; a++)
+          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];
+
+        break;
+      case BPA_PLASTICITY: case TESTING:
+        err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e,
+                                               1 /* TL */);
+        break;
       
+      case HYPER_ELASTICITY:
+        err += stiffness_el_hyper_elasticity(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
+                                             nod,node,dt,eps,sup,u.m_pdata);
+          
+        for(long a = 0; a<ndofe*ndofe; a++)
+          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
+      
+      break;
+      
+                                             
+        break;
+      default: assert(0 && "should never get here"); break;
+      }
+      break;      
+      
+    }  
       
     default:
       printf("Only displacement based element and three field element are supported\n");
@@ -125,7 +158,7 @@ void DISP_resid_body_force_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
     
   double *bf = aloc1(ndofn);
                  
@@ -151,7 +184,7 @@ void DISP_resid_body_force_el(double *f,
       for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-        f[id] += 0.0*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
+        f[id] += bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
 	  }	          
   }        
@@ -179,7 +212,7 @@ void DISP_resid_w_inertia_el(double *f,
   memset(f,0,ndofe*sizeof(double));
   
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER);
+  FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
   Matrix(double) du;
   
   Matrix_construct_redim(double,du,3,1);
@@ -269,7 +302,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	double *f_i     = aloc1(ndofe);
 	memset(fe,  0, sizeof(double)*ndofe);
 	memset(f_i, 0, sizeof(double)*ndofe);
-		
+			
 	for (long I=0;I<nne;I++)
 	{
 	  for(long J=0; J<nsd; J++)
@@ -282,7 +315,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	mid_point_rule(r_n_1_a,r0_,r0,  alpha, ndofe); 
 	mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe);
 	
-  if(opts->analysis_type == DISP || opts->analysis_type == TF) 
+  if(opts->analysis_type == DISP || opts->analysis_type == TF || opts->analysis_type == CM) 
     DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha);   
 
   switch(opts->analysis_type)
@@ -319,6 +352,52 @@ int residuals_w_inertia_el(double *fe, int i,
 	      
 	    break;
 	    
+	  }
+	  case CM:
+	  {
+      switch(opts->cm)
+      {
+        case HYPER_ELASTICITY:
+        {
+	        double *f_n_a   = aloc1(ndofe);
+	        double *f_n_1_a = aloc1(ndofe);      
+
+          err += residuals_el_hyper_elasticity(f_n_a,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_n_a);		           
+
+           
+          err += residuals_el_hyper_elasticity(f_n_1_a,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_n_1_a);
+
+	        for(long a = 0; a<ndofe; a++)
+	          fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
+	          
+	        free(f_n_a);
+	        free(f_n_1_a);          
+          
+          break;
+        }
+        case CRYSTAL_PLASTICITY:
+        {
+    	    double *f_n   = aloc1(ndofe);    
+    	    memset(f_n, 0, sizeof(double)*ndofe);       
+
+          err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
+                                               dt,eps,sup,r_e,alpha);  
+
+	        for(long a = 0; a<ndofe; a++)
+	          fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
+	        
+	        free(f_n);                                                                                                           
+          break;
+        }  
+        case BPA_PLASTICITY: case TESTING:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, 1 /* TL */);
+          break;
+        default: assert(0 && "undefined CM type"); break;
+      }
+      break;	    
 	  }  
     default:
       printf("Only displacement based element and three field element are supported\n");
@@ -332,3 +411,4 @@ int residuals_w_inertia_el(double *fe, int i,
 	free(f_i);	
 	return err;
 } 
+

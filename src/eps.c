@@ -1,4 +1,5 @@
 #include "eps.h"
+#include "constitutive_model.h"
 #include "enumerations.h"
 #include "allocation.h"
 #include "utils.h"
@@ -23,6 +24,7 @@ EPS* build_eps_il (const long ne,
   INELASTIC
 */
 {
+  int err = 0;
   EPS *pom;
   long i,j,k,M,N,P,II,JJ,nne;
   
@@ -86,6 +88,10 @@ EPS* build_eps_il (const long ne,
 
 	/* volumetric damage structure */
 	pom[i].dam = (damage*) PGFEM_calloc (II,sizeof(damage));
+
+        /* Generalized constitutive modeling interface */
+  if(analysis==CM)      
+    pom[i].model = PGFEM_calloc(II,sizeof(*(pom[i].model)));
       
 	/* Pressure integration part */
 	if (analysis == STABILIZED
@@ -106,6 +112,8 @@ EPS* build_eps_il (const long ne,
 	}
 
 	for (j=0;j<II;j++){
+	  if(analysis==CM) 
+          err += constitutive_model_construct(pom[i].model + j);
 	  pom[i].il[j].o = (double *) PGFEM_calloc (SYM_TENSOR,sizeof(double));
 	  pom[i].il[j].F = (double *) PGFEM_calloc (TENSOR_2,sizeof(double));
 	
@@ -826,6 +834,7 @@ void destroy_eps_il(EPS* eps,
 		    const long ne,
 		    const int analysis)
 {
+  int err = 0;
   for(long i=0; i<ne; i++){
     const int nne = elem[i].toe;
     long n_ip = 0;
@@ -870,6 +879,16 @@ void destroy_eps_il(EPS* eps,
       }
     }
 
+    /* constitutive_model */
+    if(analysis==CM)
+    {  
+      if (p_eps->model != NULL) {
+        for (int j = 0; j < n_ip; j++) {
+          err += constitutive_model_destroy((p_eps->model) + j);
+        }
+      }
+    }
+
     /* remaining */
     free(p_eps->il);
     free(p_eps->d_il);
@@ -877,6 +896,7 @@ void destroy_eps_il(EPS* eps,
     free(p_eps->dam);
     free(p_eps->T);
     free(p_eps->d_T);
+    free(p_eps->model);
     if(p_eps->F != NULL) dealoc2(p_eps->F,NDN);
     if(p_eps->Fn != NULL) dealoc2(p_eps->Fn,NDN);
     if(p_eps->P != NULL) dealoc2(p_eps->P,NDN);

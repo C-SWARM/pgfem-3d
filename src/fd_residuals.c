@@ -1,4 +1,5 @@
 #include "fd_residuals.h"
+#include "assert.h"
 #include "enumerations.h"
 #include "utils.h"
 #include "allocation.h"
@@ -23,37 +24,39 @@
 #include "mkl_cblas.h"
 #include "dynamics.h"
 
-#define ndn 3
-#define N_VOL_TF 1
-#define MIN_DENSITY 1.0e-16
+#include "constitutive_model.h"
 
+#define ndn 3
+			   
 int fd_residuals (double *f_u,
-		  long ne,
-		  int n_be,
-		  long ndofn,
-		  long npres,
-		  double *d_r,
-		  double *r,
-		  NODE *node,
-		  ELEMENT *elem,
-		  BOUNDING_ELEMENT *b_elems,
-		  MATGEOM matgeom,
-		  HOMMAT *hommat,
-		  SUPP sup,
-		  EPS *eps,
-		  SIG *sig,
-		  double nor_min,
-		  CRPL *crpl,
-		  double dt,
-		  double t,
-		  double stab,
-		  long nce,
-		  COEL *coel,
-		  MPI_Comm mpi_comm,
-		  const PGFem3D_opt *opts,
-		  double alpha, double *r_n, double *r_n_1)
+                  long ne,
+                  int n_be,
+                  long ndofn,
+                  long npres,
+                  double *d_r,
+                  double *r,
+                  NODE *node,
+                  ELEMENT *elem,
+                  BOUNDING_ELEMENT *b_elems,
+                  MATGEOM matgeom,
+                  HOMMAT *hommat,
+                  SUPP sup,
+                  EPS *eps,
+                  SIG *sig,
+                  double nor_min,
+                  CRPL *crpl,
+                  double dt,
+                  double t,
+                  double stab,
+                  long nce,
+                  COEL *coel,
+                  MPI_Comm mpi_comm,
+                  const PGFem3D_opt *opts,
+                  double alpha,
+                  double *r_n,
+                  double *r_n_1)
 {
-/* make decision to include ineria*/
+  /* make decision to include ineria*/
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
   long include_inertia = 1;
@@ -61,12 +64,8 @@ int fd_residuals (double *f_u,
   if(fabs(rho)<MIN_DENSITY)
     include_inertia = 0;
    
-/* decision end*/   
+  /* decision end*/
   int err = 0;
-  /* long i,j,nne,ndofe,ndofc,k,kk,II,*nod,P,R,*cn; */
-  /* double *r_e,*x,*y,*z,*fe,*X,*Y; */
-
-  /* int nne_t; */
 
   int myrank,nproc;
   MPI_Comm_size(mpi_comm,&nproc);
@@ -103,25 +102,46 @@ int fd_residuals (double *f_u,
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
     
     /* coordinates */
-    if(sup->multi_scale)
-    {
-	    nodecoord_total(nne,nod,node,x,y,z);
-	    def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-    } 
-    else
-    {
-      switch(opts->analysis_type)
-      {
-      case DISP: 
-      case TF:
-	      nodecoord_total(nne,nod,node,x,y,z);
-	      def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-	      break;
-      default:
-	      nodecoord_updated(nne,nod,node,x,y,z);
-	      /* deformation on element */
-	      def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);    
-	      break;
+    if(sup->multi_scale) {
+        nodecoord_total(nne,nod,node,x,y,z);
+        def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+    } else {
+      switch(opts->analysis_type) {
+      case DISP: case TF:
+        /* total Lagrangian */
+        nodecoord_total(nne,nod,node,x,y,z);
+        def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+        break; 
+
+      case CM:
+        switch(opts->cm) {
+        case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+          /* total Lagrangian */
+          nodecoord_total (nne,nod,node,x,y,z);
+          def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+          break;
+
+        case CRYSTAL_PLASTICITY:
+          if(PLASTICITY_TOTAL_LAGRANGIAN)
+          {
+            nodecoord_total (nne,nod,node,x,y,z);
+            def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
+          }
+          else
+          {  
+            nodecoord_updated (nne,nod,node,x,y,z);
+            def_elem(cn,ndofe,d_r,elem,node,r_e,sup,0);
+          }
+          break;
+
+        default: assert(0 && "undefined CM type"); break;
+        }
+        break;	      
+
+      default: /* updated Lagrangian */
+        nodecoord_updated(nne,nod,node,x,y,z);
+        def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
+        break;
       }
     }
 
@@ -130,16 +150,16 @@ int fd_residuals (double *f_u,
       element_center(nne,x,y,z);
     }
 
-		int nVol = N_VOL_TF;
+    int nVol = N_VOL_TREE_FIELD;
     int nsd = 3;
 
     if(include_inertia)
     {
       residuals_w_inertia_el(fe,i,nne,ndofn,npres,nVol,ndofe,r_e,node,elem,hommat,sup,eps,sig,
-		                         nod,cn,x,y,z,dt,t,opts,alpha,r_n,r_n_1);		
+                             nod,cn,x,y,z,dt,t,opts,alpha,r_n,r_n_1);
     }
     else
-    {    
+    {
     /* Residuals on element */
     switch(opts->analysis_type){
     case STABILIZED:
@@ -157,39 +177,69 @@ int fd_residuals (double *f_u,
     case DISP:
     {
       double *bf = aloc1(ndofe);
-	    memset(bf, 0, sizeof(double)*ndofe);
-      DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);         
-      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
-			   hommat,nod,node,eps,sig,sup,r_e);
-			   
-	    for(long a = 0; a<ndofe; a++)
-	      fe[a] += -bf[a];			        
+      memset(bf, 0, sizeof(double)*ndofe);
+      DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
 
-      dealoc1(bf);			   
+      err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
+                           hommat,nod,node,eps,sig,sup,r_e);
+      for(long a = 0; a<ndofe; a++)
+        fe[a] += -bf[a];
+
+      dealoc1(bf);
       break;
     }  
     case TF:
     { 
-	    double *bf = aloc1(ndofe);
-	    memset(bf, 0, sizeof(double)*ndofe);
+      double *bf = aloc1(ndofe);
+      memset(bf, 0, sizeof(double)*ndofe);
       DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t); 
 
 //      residuals_3f_w_inertia_el(fe,i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
 //	                                dt,sig,eps,-1.0,r_e,r_e);
 
-
       residuals_3f_el(fe,i,ndofn,nne,npres,nVol,nsd,
-			       x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
-	    for(long a = 0; a<ndofe; a++)
-	      fe[a] += -bf[a];			        
+                      x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
+      for(long a = 0; a<ndofe; a++)
+        fe[a] += -bf[a];
 
       dealoc1(bf);
-			break;
-		}	
+      break;
+    }
+    case CM:
+    {
+      switch(opts->cm)
+        {
+        case HYPER_ELASTICITY:
+          {
+            double *bf = aloc1(ndofe);
+            memset(bf, 0, sizeof(double)*ndofe);
+            DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
+
+            err += residuals_el_hyper_elasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e);
+
+            for(long a = 0; a<ndofe; a++)
+              fe[a] += -bf[a];
+
+            dealoc1(bf);
+            break;
+          }
+        case CRYSTAL_PLASTICITY:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
+          break;
+        case BPA_PLASTICITY: case TESTING:
+          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
+                                                 dt,eps,sup,r_e, 1 /* TL */);
+          break;
+        default: assert(0 && "undefined CM type"); break;
+        }
+      break;
+    }
     default:
       err = resid_on_elem (i,ndofn,nne,nod,elem,node,matgeom,
-			   hommat,x,y,z,eps,sig,r_e,npres,
-			   nor_min,fe,crpl,dt,opts->analysis_type);
+                           hommat,x,y,z,eps,sig,r_e,npres,
+                           nor_min,fe,crpl,dt,opts->analysis_type);
 
       break;
     }

@@ -5,6 +5,7 @@
 
 #include "read_input_file.h"
 #include "post_processing.h"
+#include <unistd.h>
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -34,7 +35,7 @@ int main(int argc,char *argv[])
     exit(0);
   }
   set_default_options(&options);
-  re_parse_command_line(myrank,2,argc,argv,&options); 
+  re_parse_command_line(myrank,2,argc,argv,&options);
 
   long nn = 0;
   long Gnn = 0;
@@ -56,8 +57,8 @@ int main(int argc,char *argv[])
   long nle_s = 0;
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
-  ZATELEM *zele_v = NULL;    
-  Model_parameters *param_list = NULL;  
+  ZATELEM *zele_v = NULL;
+  Model_parameters *param_list = NULL;   
   
   int in_err = 0;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
@@ -86,33 +87,37 @@ int main(int argc,char *argv[])
   dealoc3l(a,nmat,nmat);
   free(mater);  
   
-  EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
 
-  build_model_parameters_list(&param_list,nhommat,matgeom,hommat,options.cm);
-  init_all_constitutive_model(eps,ne,elem,param_list);    
-/////////////////////////////////////////////////////////////////////////////////////
-// read inputs
-  double *u = aloc1(nn*ndofn); 
-  read_from_VTK(&options, myrank, 0, u);
+  // Load_Type = 0: Uniaxial_tension
+  // Load_Type = 1: Uniaxial_compression
+  // Load_Type = 2: Simple_shear
+  // Load_Type = 3: Plain_strain_compression
+  // Load_Type = 4: Cyclic_loading
+  // Load_Type = 5: Stress_relaxation
+  // Load_Type = 6: Uniaxial_tension
+    
+  if(myrank==0)
+  {
+    for(int Load_Type = 0; Load_Type<6; Load_Type++)
+      constitutive_model_test(hommat, NULL, Load_Type);
+ 
+    constitutive_model_test(hommat, NULL, -1);
   
-  int npres = 0;
-  double *GS = aloc1(9);    
-  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);            
-
-  FILE *fp = fopen("stress_tension_pressure.out", "w");  
-  fprintf(fp, "%e\n", GS[0]);
-  fclose(fp);  
-  free(u);    
-  free(GS);
+    Matrix(double) L;
+    Matrix_construct_init(double,L,3,3,0.0);  
+    Mat_v(L,1,1) = -1.001;
+    Mat_v(L,2,2) = Mat_v(L,3,3) = 0.4998;
+  
+    constitutive_model_test(hommat, &L, -1); 
+  
+    Matrix_cleanup(L);
+  }
 
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-  destroy_model_parameters_list(nhommat,param_list);  
-  destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
   destroy_node(nn,node);

@@ -72,6 +72,20 @@ AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],
 AC_SUBST([hypre_include],["-I$with_hypre_dir/include"])
 AC_SUBST([hypre_lib],["-L$with_hypre_dir/lib -lHYPRE"])
 
+# Constitutive_model
+AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
+                              [Provide location of root directory for standard Constitutive Model installation.])
+                              ],
+                              [AC_MSG_CHECKING([location of Constitutive Model])
+                              AC_MSG_RESULT(["$with_cnstvm_dir"])],
+                              [AC_MSG_CHECKING([location of Constitutive Model])
+                              AC_MSG_FAILURE([Constitutive Model: must provide package location!])
+                              ])
+AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/include"])
+AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/src -lCM "])
+#AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/src -lCM -L/opt/crc/scilib/lapack/gnu -llapack -llapack_pic"])
+
+
 # MKL
 AC_ARG_WITH(mkl, [AS_HELP_STRING([--without-mkl],
 			      [Do not use Intel MKL libraries])

@@ -12,7 +12,7 @@ extern "C" {
 #include "sig.h"
 #include "eps.h"
 #include "tensors.h"
-
+#define N_VOL_TREE_FIELD 1
 void resid_w_inertia_Ru_ip(double *fu,
         int nne, double *ST, double *F, double *S, double jj, double wt, double Pn);
 

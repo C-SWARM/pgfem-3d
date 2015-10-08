@@ -355,7 +355,7 @@ int multi_scale_main(int argc, char **argv)
 			  c->matgeom,c->supports,c->npres,
 			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
 			  s->crpl,macro->opts->stab,
-			  s->r,macro->opts);
+			  s->r,NULL,macro->opts,0.0);
     
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
