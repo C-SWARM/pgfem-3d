@@ -1,5 +1,5 @@
 EXC = main_test
-OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v 'plasticity_model_BPA_driver.o')
+OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v plasticity_model_BPA_driver.o)
 
 POST_PROCESSING=../include
 
@@ -13,7 +13,7 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 
 # CNSTVM
-CNSTVM_dir = $(HOME)/temp/Constitutive_Model_implicit
+CNSTVM_dir = $(shell grep 'cnstvm_lib' ../../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Constitutive_Model_implicit' | sed 's/\/src //')
 CNSTVM_lib = -L$(CNSTVM_dir)/src -lCM
 CNSTVM_incl = -I$(CNSTVM_dir)/include
 
