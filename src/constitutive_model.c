@@ -130,7 +130,9 @@ int model_parameters_construct(Model_parameters *p)
   p->compute_dMdu = NULL;
   p->type = -1;
   p->Psys = NULL;
-  p->N_SYS = 0;
+  p->N_SYS = -1;
+  p->n_param = -1;
+  p->model_param = NULL;
   return err;
 }
 
@@ -177,7 +179,6 @@ int model_parameters_destroy(Model_parameters *p)
   p->p_mat = NULL;
   p->p_mgeom = NULL;
   p->p_hmat = NULL;
-  p->N_SYS = 0;
   
   /* drop function pointers */
   p->integration_algorithm = NULL;
@@ -201,8 +202,15 @@ int model_parameters_destroy(Model_parameters *p)
     free(p->Psys);
   }
   p->Psys = NULL;
+
   /* reset counters/flags */
   p->type = -1;
+  p->N_SYS = -1;
+
+  /* free model constants */
+  p->n_param = -1;
+  free(p->model_param);
+  p->model_param = NULL;
 
   return err;
 }

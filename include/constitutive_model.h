@@ -357,6 +357,10 @@ struct Model_parameters {
 
   /** Model type, see enumeration @model_type */
   size_t type;
+
+  /* array for storing the model constants. */
+  size_t n_param;
+  double *model_param;
 };
 
 /**
