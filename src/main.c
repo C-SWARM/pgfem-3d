@@ -106,7 +106,7 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
     fclose(fp_0);
   }
   
-  if(*restart>0)
+  if(*restart>=0)
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
