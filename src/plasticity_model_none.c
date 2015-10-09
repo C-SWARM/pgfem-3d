@@ -196,6 +196,19 @@ static int he_compute_dMdu(const Constitutive_model *m,
   return err;
 }
 
+static int he_read(Model_parameters *p,
+                   FILE *in)
+{
+  /* there are no parameters to read */
+  return scan_for_valid_line(in);
+}
+
+static int he_set_initial_vals(Constitutive_model *m)
+{
+  /* do nothing */
+  return 0;
+}
+
 int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -214,9 +227,19 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_pFn = he_get_pFn;
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
+
   p->get_hardening = he_get_hardening;
+
   p->destroy_ctx = plasticity_model_none_ctx_destroy;
   p->compute_dMdu = he_compute_dMdu;
+
+  p->set_init_vals = he_set_initial_vals;
+  p->read_param = he_read;
+
+  p->type = HYPER_ELASTICITY;
+
+  p->n_param = 0;
+  p->model_param = NULL;
 
   return err;
 }

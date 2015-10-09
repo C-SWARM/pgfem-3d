@@ -50,6 +50,7 @@ int constitutive_model_initialize(Constitutive_model *m,
     Model_var_info *info = NULL;
     m->param->get_var_info(&info);
     err += state_variables_initialize(&(m->vars),info->n_Fs,info->n_vars);
+    m->param->set_init_vals(m);
     err += model_var_info_destroy(&info);
   }
   return err;
@@ -121,13 +122,23 @@ int model_parameters_construct(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   p->get_Fn = NULL;
+  p->get_Fnm1 = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
+  p->get_pFnm1 = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_eFnm1 = NULL;
+
   p->get_hardening = NULL;
+  p->get_hardening_nm1 = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
+
+  p->set_init_vals = NULL;
+  p->read_param = NULL;
+
   p->type = -1;
   p->Psys = NULL;
   p->N_SYS = -1;
@@ -190,13 +201,23 @@ int model_parameters_destroy(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   p->get_Fn = NULL;
+  p->get_Fnm1 = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
+  p->get_pFnm1 = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_eFnm1 = NULL;
+
   p->get_hardening = NULL;
+  p->get_hardening_nm1 = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
+
+  p->set_init_vals = NULL;
+  p->read_param = NULL;
+
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
     free(p->Psys);
@@ -423,16 +444,7 @@ int read_model_parameters_list(Model_parameters **param_list,
                                            NULL,
                                            hmat_list + idx,
                                            model_type);
-        /* read in the parameters specific to the model */
-        switch(model_type) {
-        case BPA_PLASTICITY:
-          err += plasticity_model_BPA_read(&((*param_list)[idx]), in);
-          break;
-        default:
-          printf("Reading model parameters not yet implemented (%d)\n",
-                 model_type);
-          break;
-        }
+        err += ((*param_list)[idx]).read_param(&((*param_list)[idx]),in);
       }
     }
 
@@ -479,32 +491,9 @@ int read_constitutive_model_parameters(EPS *eps,
                                        const int type)
 { 
   int err = 0;
-  if(type<0)
-    return err;
-  switch (type) {
-  case TESTING:
-  case HYPER_ELASTICITY: /* nothing required */ break;
-  case CRYSTAL_PLASTICITY:
+  if(type < 0) return err;
+  if (type == CRYSTAL_PLASTICITY) {
     plasticity_model_read_parameters(eps, ne, elem, n_mat, param_list);
-    break;
-
-  case BPA_PLASTICITY:
-    {
-      for (int a = 0; a < ne; a++) {
-        long n_ip = 0;
-        int_point(elem[a].toe, &n_ip);
-        for (int ip = 0; ip < n_ip; ip++) {
-          Constitutive_model *m = &(eps[a].model[ip]);
-          err += plasticity_model_BPA_set_initial_values(m);
-        }
-      }
-    }
-    break;
-
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
-    err++;
-    break;
   }      
   return err;   
 }                                

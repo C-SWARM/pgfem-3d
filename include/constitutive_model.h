@@ -314,6 +314,19 @@ typedef int (*usr_info)(Model_var_info **info);
 typedef int (*usr_restart)(FILE *fp, const Constitutive_model *m);
 
 /**
+ * User defined function to set the initial values of the state
+ * variables for the particular model.
+ */
+typedef int (*usr_set_init_vals)(Constitutive_model *m);
+
+/**
+ * User defined function for reading in material parameters from a
+ * file.
+ */
+typedef int (*usr_read_params)(Model_parameters *p,
+                               FILE *in);
+
+/**
  * Interface for accessing model parameters and modifying/updating the
  * associated state variable(s) at integration points.
  */
@@ -355,6 +368,9 @@ struct Model_parameters {
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;
 
+  usr_set_init_vals set_init_vals;
+  usr_read_params read_param;
+
   /** Model type, see enumeration @model_type */
   size_t type;
 
@@ -385,6 +401,10 @@ int model_parameters_initialize(Model_parameters *p,
                                 const size_t type);
 
 /**
+ * THIS FUNCTION IS TO BE DEPRECATED
+ * Need to properly read in model parameters for crystal plasticity
+ * and treat orientations separately.
+ *
  * function for reading extra prameters for plasticity, this is a temporal.
  * decision needs to be made how to pass material properties
  * \param[in/out] param_list, list of Model_parameters, unallocated on

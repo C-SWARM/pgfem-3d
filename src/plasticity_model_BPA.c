@@ -1398,9 +1398,16 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->get_pFn = bpa_get_Fpn;
   p->get_eF = bpa_get_Fe;
   p->get_eFn = bpa_get_Fen;
+
   p->get_hardening = bpa_get_hardening;
+
   p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
   p->compute_dMdu = bpa_compute_dM_du;
+
+  p->set_init_vals = plasticity_model_BPA_set_initial_values;
+  p->read_param = plasticity_model_BPA_read;
+
+  p->type = BPA_PLASTICITY;
 
   p->n_param = N_PARAM;
   p->model_param = calloc(N_PARAM, sizeof(*(p->model_param)));
