@@ -215,7 +215,7 @@ static int he_write_restart(FILE *out,
   /* write Fn to file */
   int err = 0;
   const double *F = m->vars.Fs[Fn].m_pdata;
-  if (fprintf(out,"%.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g\n",
+  if (fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
               F[0], F[1], F[2],
               F[3], F[4], F[5],
               F[6], F[7], F[8]) < 0) err ++;
