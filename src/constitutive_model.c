@@ -385,10 +385,13 @@ int read_model_parameters_list(Model_parameters **param_list,
   err += scan_for_valid_line(in);
   fscanf(in, "%d", &num_entries);
 
-  for (int i = 0; i < num_entries; i++) {
+  int i = 0;
+  for (i = 0; i < num_entries; i++) {
     int model_type = -1;
     HOMMAT *p_hmat = NULL;
     err += scan_for_valid_line(in);
+    if (feof(in)) break;
+
     fscanf(in, "%d %d", &(key->mat_id), &model_type);
     err += scan_for_valid_line(in);
 
@@ -411,30 +414,36 @@ int read_model_parameters_list(Model_parameters **param_list,
     /* check for match */
     if (p_hmat != NULL) {
       int idx = p_hmat - hmat_list;
-      if (is_set[idx]) break;
-      else is_set[idx] = 1;
-      /* construct and initialize this object */
-      err += model_parameters_construct(&((*param_list)[idx]) );
-      err += model_parameters_initialize(&((*param_list)[idx]),
-                                         NULL,
-                                         NULL,
-                                         hmat_list + idx,
-                                         model_type);
-      /* read in the parameters specific to the model */
-      switch(model_type) {
-      case BPA_PLASTICITY:
-        err += plasticity_model_BPA_read(&((*param_list)[idx]), in);
-        break;
-      default:
-        printf("Reading model parameters not yet implemented (%d)\n",
-               model_type);
-        break;
+      if (!is_set[idx]) {
+        is_set[idx] = 1;
+        /* construct and initialize this object */
+        err += model_parameters_construct(&((*param_list)[idx]) );
+        err += model_parameters_initialize(&((*param_list)[idx]),
+                                           NULL,
+                                           NULL,
+                                           hmat_list + idx,
+                                           model_type);
+        /* read in the parameters specific to the model */
+        switch(model_type) {
+        case BPA_PLASTICITY:
+          err += plasticity_model_BPA_read(&((*param_list)[idx]), in);
+          break;
+        default:
+          printf("Reading model parameters not yet implemented (%d)\n",
+                 model_type);
+          break;
+        }
       }
     }
 
     /* scan to closing brace and continue on to the next entry */
     while(fgetc(in) != '}' && !feof(in)){}
+    if (feof(in)) break;
+  }
 
+  if (feof(in) && i != num_entries) {
+    err++;
+    assert(0 && "Prematurely reached EOF");
   }
 
   int sum = 0;

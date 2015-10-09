@@ -48,7 +48,7 @@ enum {_s,_lam,_s_n,_lam_n};
 static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
 /* enumerations for indexing into the list of model parameters */
-enum {mcA, mcT, mcN, mcCr, mcAlpha, mcGdot0, mcH, mcS0, mcSss, N_PARAM};
+enum {mcA, mcAlpha, mcCr, mcGdot0, mcH, mcN, mcS0, mcSss, mcT, N_PARAM};
 
 /*
  * Purely static functions
