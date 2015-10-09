@@ -1410,6 +1410,52 @@ static int bpa_set_initial_values(Constitutive_model *m)
   return err;
 }
 
+static int bpa_write_restart(FILE *out,
+                             const Constitutive_model *m)
+{
+  /* write all state variables at n */
+  int err = 0;
+  const double *Fen = m->vars.Fs[_Fe_n].m_pdata;
+  const double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
+  const double *Fn = m->vars.Fs[_F_n].m_pdata;
+  const double *vars = m->vars.state_vars->m_pdata;
+  if(fprintf(out,"%.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g\n",
+             Fen[0], Fen[1], Fen[2], Fen[3], Fen[4],
+             Fen[5], Fen[6], Fen[7], Fen[8]) < 0) err ++;
+  if(fprintf(out,"%.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g\n",
+             Fpn[0], Fpn[1], Fpn[2], Fpn[3], Fpn[4],
+             Fpn[5], Fpn[6], Fpn[7], Fpn[8]) < 0) err ++;
+  if(fprintf(out,"%.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g %.17g\n",
+             Fn[0], Fn[1], Fn[2], Fn[3], Fn[4],
+             Fn[5], Fn[6], Fn[7], Fn[8]) < 0) err ++;
+  if(fprintf(out,"%.17g %.17g\n",vars[_s_n], vars[_lam_n]) < 0) err++;
+  return err;
+}
+
+static int bpa_read_restart(FILE *in,
+                            Constitutive_model *m)
+{
+  /* read all state variables at n and set all vars at n+1 = n */
+  int err = 0;
+  double *Fen = m->vars.Fs[_Fe_n].m_pdata;
+  double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
+  double *Fn = m->vars.Fs[_F_n].m_pdata;
+  double *vars = m->vars.state_vars->m_pdata;
+
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fen, Fen + 1, Fen + 2, Fen + 3, Fen + 4,
+            Fen + 5, Fen + 6, Fen + 7, Fen + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fpn, Fpn + 1, Fpn + 2, Fpn + 3, Fpn + 4,
+            Fpn + 5, Fpn + 6, Fpn + 7, Fpn + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fn, Fn + 1, Fn + 2, Fn + 3, Fn + 4,
+            Fn + 5, Fn + 6, Fn + 7, Fn + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf", vars + _s_n, vars + _lam_n) != 2) err++;
+  err += BPA_reset_vars(m);
+  return err;
+}
+
 /*
  * Public interface for the BPA model
  */
@@ -1431,6 +1477,9 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->get_eFn = bpa_get_Fen;
 
   p->get_hardening = bpa_get_hardening;
+
+  p->write_restart = bpa_write_restart;
+  p->read_restart = bpa_read_restart;
 
   p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
   p->compute_dMdu = bpa_compute_dM_du;

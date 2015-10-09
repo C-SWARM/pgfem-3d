@@ -663,7 +663,7 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
   return err;
 }
 
-static int plasticity_read_restart(FILE *fp, const Constitutive_model *m)
+static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
 {
   int err = 0;
   Matrix(double) *Fs = (m->vars).Fs;

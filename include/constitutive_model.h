@@ -311,7 +311,10 @@ typedef int (*usr_info)(Model_var_info **info);
  * A user described function that writes and read restart file at
  * integration point
  */
-typedef int (*usr_restart)(FILE *fp, const Constitutive_model *m);
+typedef int (*usr_w_restart)(FILE *fp,
+                             const Constitutive_model *m);
+typedef int (*usr_r_restart)(FILE *fp,
+                             Constitutive_model *m);
 
 /**
  * User defined function to set the initial values of the state
@@ -362,8 +365,8 @@ struct Model_parameters {
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
   
-  usr_restart write_restart;
-  usr_restart read_restart;  
+  usr_w_restart write_restart;
+  usr_r_restart read_restart;
 
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;
