@@ -1366,17 +1366,48 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   return err;
 }
 
-static void bpa_debug_set_default_param(double *param)
+static int bpa_read(Model_parameters *p,
+                    FILE *in)
 {
-  param[mcA] = 240;
-  param[mcT] = 289;
-  param[mcN] = 2.15;
-  param[mcCr] = 12.8;
-  param[mcAlpha] = 0.08;
-  param[mcGdot0] = 2.0e15;
-  param[mcH] = 500;
-  param[mcS0] = 97;
-  param[mcSss] = 76.6;
+  int err = 0;
+
+  /* get pointer to parameter data */
+  double *param = p->model_param;
+  assert(param != NULL); // check the pointer
+
+  /* scan to non-blank/comment line */
+  err += scan_for_valid_line(in);
+
+  /* READ PROPERTIES IN ALPHABETICAL ORDER */
+  int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                     param + mcA, param + mcAlpha, param + mcCr,
+                     param + mcGdot0, param + mcH, param + mcN,
+                     param + mcS0, param + mcSss, param + mcT);
+  if (match != N_PARAM) err++;
+  assert(match == N_PARAM && "Did not read expected number of parameters");
+
+  /* scan past any other comment/blank lines in the block */
+  err += scan_for_valid_line(in);
+
+  /* not expecting EOF, check and return error if encountered */
+  if (feof(in)) err ++;
+  assert(!feof(in) && "EOF reached prematurely");
+
+  return err;
+}
+
+static int bpa_set_initial_values(Constitutive_model *m)
+{
+  int err = 0;
+
+  /* s is s0 at start */
+  m->vars.state_vars->m_pdata[_s] = m->param->model_param[mcS0];
+  m->vars.state_vars->m_pdata[_s_n] = m->param->model_param[mcS0];
+
+  m->vars.state_vars->m_pdata[_lam] = 0;
+  m->vars.state_vars->m_pdata[_lam_n] = 0;
+
+  return err;
 }
 
 /*
@@ -1404,8 +1435,8 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
   p->compute_dMdu = bpa_compute_dM_du;
 
-  p->set_init_vals = plasticity_model_BPA_set_initial_values;
-  p->read_param = plasticity_model_BPA_read;
+  p->set_init_vals = bpa_set_initial_values;
+  p->read_param = bpa_read;
 
   p->type = BPA_PLASTICITY;
 
@@ -1413,20 +1444,6 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->model_param = calloc(N_PARAM, sizeof(*(p->model_param)));
 
   // bpa_debug_set_default_param(p->model_param);
-
-  return err;
-}
-
-int plasticity_model_BPA_set_initial_values(Constitutive_model *m)
-{
-  int err = 0;
-
-  /* s is s0 at start */
-  m->vars.state_vars->m_pdata[_s] = m->param->model_param[mcS0];
-  m->vars.state_vars->m_pdata[_s_n] = m->param->model_param[mcS0];
-
-  m->vars.state_vars->m_pdata[_lam] = 0;
-  m->vars.state_vars->m_pdata[_lam_n] = 0;
 
   return err;
 }
@@ -1448,35 +1465,5 @@ int plasticity_model_BPA_ctx_destroy(void **ctx)
   int err = 0;
   free(*ctx);
   *ctx = NULL;
-  return err;
-}
-
-int plasticity_model_BPA_read(Model_parameters *p,
-                              FILE *in)
-{
-  int err = 0;
-
-  /* get pointer to parameter data */
-  double *param = p->model_param;
-  assert(param != NULL); // check the pointer
-
-  /* scan to non-blank/comment line */
-  err += scan_for_valid_line(in);
-
-  /* READ PROPERTIES IN ALPHABETICAL ORDER */
-  int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                     param + mcA, param + mcAlpha, param + mcCr,
-                     param + mcGdot0, param + mcH, param + mcN,
-                     param + mcS0, param + mcSss, param + mcT);
-  if (match != N_PARAM) err++;
-  assert(match == N_PARAM && "Did not read expected number of parameters");
-
-  /* scan past any other comment/blank lines in the block */
-  err += scan_for_valid_line(in);
-
-  /* not expecting EOF, check and return error if encountered */
-  if (feof(in)) err ++;
-  assert(!feof(in) && "EOF reached prematurely");
-
   return err;
 }

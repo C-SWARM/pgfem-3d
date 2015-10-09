@@ -39,22 +39,6 @@ typedef struct Model_parameters Model_parameters;
 int plasticity_model_BPA_initialize(Model_parameters *p);
 
 /**
- * Read the model parameters from a file.
- *
- * \param[in,out] p - pointer to an inialized Model_parameters object
- * \return non-zero on internal error
- */
-int plasticity_model_BPA_read(Model_parameters *p,
-                              FILE *in);
-
-/**
- * Set the initial values for the state variables.
- *
- * \return non-zero on error.
- */
-int plasticity_model_BPA_set_initial_values(Constitutive_model *m);
-
-/**
  * Construct and initialize the model context for calling functions
  * through the plasticity interface.
  *
