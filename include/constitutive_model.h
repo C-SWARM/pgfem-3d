@@ -431,6 +431,15 @@ int build_model_parameters_list(Model_parameters **param_list,
                                 const HOMMAT *hmat_list,
                                 const int type);
 
+
+/**
+ * Allocate and populate a list of Model_parameters given the number
+ * of materials.
+ */
+int read_model_parameters_list(Model_parameters **param_list,
+                               const int n_mat,
+                               const HOMMAT *hmat_list,
+                               FILE *in);
 /**
  * Free all of the memory assiciated with the list of model
  * parameters.

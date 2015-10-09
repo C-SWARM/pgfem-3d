@@ -347,6 +347,105 @@ int build_model_parameters_list(Model_parameters **param_list,
   return err;
 }
 
+
+static int compare_mat_id(const void *a, const void *b)
+{
+  return ((const HOMMAT *)a)->mat_id - ((const HOMMAT *)b)->mat_id;
+}
+
+int read_model_parameters_list(Model_parameters **param_list,
+                               const int n_mat,
+                               const HOMMAT *hmat_list,
+                               FILE *in)
+{
+  /* see issue #28 */
+  /* File format:
+     ------
+     num_entries
+     material_id model_type
+     { # begin model info
+     ... # specified by model
+     } # end model info
+     ...
+     ------
+     caveats:
+     - Comments can only go at the end of a line after all of the data
+       on that line has been specified
+     - No support for sub-braces in model sections (yet)
+     - Undefined behavior for duplicate entires (will try to
+       re-initialize the object)
+   */
+  int err = 0;
+  if (n_mat <= 0) return 1;
+  (*param_list) = malloc(n_mat*sizeof(**param_list));
+  int *is_set = calloc(n_mat, sizeof(*is_set));
+
+  int num_entries = -1;
+  HOMMAT *key = calloc(1, sizeof(*key));
+  err += scan_for_valid_line(in);
+  fscanf(in, "%d", &num_entries);
+
+  for (int i = 0; i < num_entries; i++) {
+    int model_type = -1;
+    HOMMAT *p_hmat = NULL;
+    err += scan_for_valid_line(in);
+    fscanf(in, "%d %d", &(key->mat_id), &model_type);
+    err += scan_for_valid_line(in);
+
+    int brace = fgetc(in);
+    assert(brace == '{');
+
+    /*
+     * NOTE: The material ID in the input files is not necessarily the
+     * index of the HOMMAT material. The hmat_list is the reduced set
+     * of material properties that are actually used on the
+     * domain. Therefore, we need to search for the matching
+     * mat_id. Futheremore, no warning is issued if no match is found,
+     * but we perform checks to ensire that all materials are
+     * specified.
+     */
+
+    /* search for matching pointer in hmat_list (assume unique) */
+    p_hmat = bsearch(key,hmat_list,n_mat,sizeof(*hmat_list),compare_mat_id);
+
+    /* check for match */
+    if (p_hmat != NULL) {
+      int idx = p_hmat - hmat_list;
+      if (is_set[idx]) break;
+      else is_set[idx] = 1;
+      /* construct and initialize this object */
+      err += model_parameters_construct(&((*param_list)[idx]) );
+      err += model_parameters_initialize(&((*param_list)[idx]),
+                                         NULL,
+                                         NULL,
+                                         hmat_list + idx,
+                                         model_type);
+      /* read in the parameters specific to the model */
+      switch(model_type) {
+      default:
+        printf("Reading model parameters not yet implemented (%d)\n",
+               model_type);
+        break;
+      }
+    }
+
+    /* scan to closing brace and continue on to the next entry */
+    while(fgetc(in) != '}' && !feof(in)){}
+
+  }
+
+  int sum = 0;
+  for (int i = 0; i < n_mat; i++){
+    sum += is_set[i];
+  }
+  if (sum != n_mat) err++;
+  assert(sum == n_mat && "require that all model params are set");
+
+  free(key);
+  free(is_set);
+  return err;
+}
+
 int destroy_model_parameters_list(const int n_mat,
                                   Model_parameters *param_list)
 {
