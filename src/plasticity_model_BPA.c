@@ -1405,7 +1405,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->n_param = N_PARAM;
   p->model_param = calloc(N_PARAM, sizeof(*(p->model_param)));
 
-  bpa_debug_set_default_param(p->model_param);
+  // bpa_debug_set_default_param(p->model_param);
 
   return err;
 }
@@ -1441,5 +1441,35 @@ int plasticity_model_BPA_ctx_destroy(void **ctx)
   int err = 0;
   free(*ctx);
   *ctx = NULL;
+  return err;
+}
+
+int plasticity_model_BPA_read(Model_parameters *p,
+                              FILE *in)
+{
+  int err = 0;
+
+  /* get pointer to parameter data */
+  double *param = p->model_param;
+  assert(param != NULL); // check the pointer
+
+  /* scan to non-blank/comment line */
+  err += scan_for_valid_line(in);
+
+  /* READ PROPERTIES IN ALPHABETICAL ORDER */
+  int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                     param + mcA, param + mcAlpha, param + mcCr,
+                     param + mcGdot0, param + mcH, param + mcN,
+                     param + mcS0, param + mcSss, param + mcT);
+  if (match != N_PARAM) err++;
+  assert(match == N_PARAM && "Did not read expected number of parameters");
+
+  /* scan past any other comment/blank lines in the block */
+  err += scan_for_valid_line(in);
+
+  /* not expecting EOF, check and return error if encountered */
+  if (feof(in)) err ++;
+  assert(!feof(in) && "EOF reached prematurely");
+
   return err;
 }

@@ -18,6 +18,8 @@
 #ifndef PLASTICITY_MODEL_BPA_H
 #define PLASTICITY_MODEL_BPA_H
 
+#include <stdio.h>
+
 #ifndef TYPE_CONSTITUTIVE_MODEL
 #define TYPE_CONSTITUTIVE_MODEL
 typedef struct Constitutive_model Constitutive_model;
@@ -35,6 +37,15 @@ typedef struct Model_parameters Model_parameters;
  * \return non-zero on internal error
  */
 int plasticity_model_BPA_initialize(Model_parameters *p);
+
+/**
+ * Read the model parameters from a file.
+ *
+ * \param[in,out] p - pointer to an inialized Model_parameters object
+ * \return non-zero on internal error
+ */
+int plasticity_model_BPA_read(Model_parameters *p,
+                              FILE *in);
 
 /**
  * Set the initial values for the state variables.

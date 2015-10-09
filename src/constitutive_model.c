@@ -393,7 +393,7 @@ int read_model_parameters_list(Model_parameters **param_list,
     err += scan_for_valid_line(in);
 
     int brace = fgetc(in);
-    assert(brace == '{');
+    assert(brace == '{' && "Expect opening brace as next valid entry");
 
     /*
      * NOTE: The material ID in the input files is not necessarily the
@@ -422,6 +422,9 @@ int read_model_parameters_list(Model_parameters **param_list,
                                          model_type);
       /* read in the parameters specific to the model */
       switch(model_type) {
+      case BPA_PLASTICITY:
+        err += plasticity_model_BPA_read(&((*param_list)[idx]), in);
+        break;
       default:
         printf("Reading model parameters not yet implemented (%d)\n",
                model_type);
