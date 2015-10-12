@@ -1088,7 +1088,8 @@ int BPA_int_alg(Constitutive_model *m,
       iter++;
     }
     total_it += iter;
-    assert(norm < TOL);
+    /* assert(norm < TOL); */
+    /* if(norm > TOL) err++; */
 
     double s_k = s;
     s = (s_n + params[mcH] * gdot * (CTX->dt)) / (1 + params[mcH] * gdot * (CTX->dt)/ params[mcSss]);
@@ -1117,11 +1118,12 @@ int BPA_int_alg(Constitutive_model *m,
     }
     iterWp++;
   }
-  assert(norm < TOL);
-  assert(normWp < TOL);
 
-  /* induce subdivision of PDE if too many iterations */
-  if (total_it >= 2*maxit){ err ++;}
+  /* induce subdivision of PDE if too many iterations or failed to
+     converge */
+  if (total_it >= 2*maxit
+      || norm > TOL
+      || normWp > TOL){ err ++;}
 
   /* Update state variables with converged values */
   err += bpa_update_state_variables(CTX->F,Fe, Fp, s, lam, m);
