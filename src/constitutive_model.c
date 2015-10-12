@@ -50,6 +50,7 @@ int constitutive_model_initialize(Constitutive_model *m,
     Model_var_info *info = NULL;
     m->param->get_var_info(&info);
     err += state_variables_initialize(&(m->vars),info->n_Fs,info->n_vars);
+    m->param->set_init_vals(m);
     err += model_var_info_destroy(&info);
   }
   return err;
@@ -121,16 +122,28 @@ int model_parameters_construct(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   p->get_Fn = NULL;
+  p->get_Fnm1 = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
+  p->get_pFnm1 = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_eFnm1 = NULL;
+
   p->get_hardening = NULL;
+  p->get_hardening_nm1 = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
+
+  p->set_init_vals = NULL;
+  p->read_param = NULL;
+
   p->type = -1;
   p->Psys = NULL;
-  p->N_SYS = 0;
+  p->N_SYS = -1;
+  p->n_param = -1;
+  p->model_param = NULL;
   return err;
 }
 
@@ -177,7 +190,6 @@ int model_parameters_destroy(Model_parameters *p)
   p->p_mat = NULL;
   p->p_mgeom = NULL;
   p->p_hmat = NULL;
-  p->N_SYS = 0;
   
   /* drop function pointers */
   p->integration_algorithm = NULL;
@@ -189,20 +201,37 @@ int model_parameters_destroy(Model_parameters *p)
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
   p->get_Fn = NULL;
+  p->get_Fnm1 = NULL;
   p->get_pF = NULL;
   p->get_pFn = NULL;
+  p->get_pFnm1 = NULL;
   p->get_eF = NULL;
   p->get_eFn = NULL;
+  p->get_eFnm1 = NULL;
+
   p->get_hardening = NULL;
+  p->get_hardening_nm1 = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
+
+  p->set_init_vals = NULL;
+  p->read_param = NULL;
+
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
     free(p->Psys);
   }
   p->Psys = NULL;
+
   /* reset counters/flags */
   p->type = -1;
+  p->N_SYS = -1;
+
+  /* free model constants */
+  p->n_param = -1;
+  free(p->model_param);
+  p->model_param = NULL;
 
   return err;
 }
@@ -339,6 +368,108 @@ int build_model_parameters_list(Model_parameters **param_list,
   return err;
 }
 
+
+static int compare_mat_id(const void *a, const void *b)
+{
+  return ((const HOMMAT *)a)->mat_id - ((const HOMMAT *)b)->mat_id;
+}
+
+int read_model_parameters_list(Model_parameters **param_list,
+                               const int n_mat,
+                               const HOMMAT *hmat_list,
+                               FILE *in)
+{
+  /* see issue #28 */
+  /* File format:
+     ------
+     num_entries
+     material_id model_type
+     { # begin model info
+     ... # specified by model
+     } # end model info
+     ...
+     ------
+     caveats:
+     - Comments can only go at the end of a line after all of the data
+       on that line has been specified
+     - No support for sub-braces in model sections (yet)
+     - Undefined behavior for duplicate entires (will try to
+       re-initialize the object)
+   */
+  int err = 0;
+  if (n_mat <= 0) return 1;
+  (*param_list) = malloc(n_mat*sizeof(**param_list));
+  int *is_set = calloc(n_mat, sizeof(*is_set));
+
+  int num_entries = -1;
+  HOMMAT *key = calloc(1, sizeof(*key));
+  err += scan_for_valid_line(in);
+  fscanf(in, "%d", &num_entries);
+
+  int i = 0;
+  for (i = 0; i < num_entries; i++) {
+    int model_type = -1;
+    HOMMAT *p_hmat = NULL;
+    err += scan_for_valid_line(in);
+    if (feof(in)) break;
+
+    fscanf(in, "%d %d", &(key->mat_id), &model_type);
+    err += scan_for_valid_line(in);
+
+    int brace = fgetc(in);
+    assert(brace == '{' && "Expect opening brace as next valid entry");
+
+    /*
+     * NOTE: The material ID in the input files is not necessarily the
+     * index of the HOMMAT material. The hmat_list is the reduced set
+     * of material properties that are actually used on the
+     * domain. Therefore, we need to search for the matching
+     * mat_id. Futheremore, no warning is issued if no match is found,
+     * but we perform checks to ensire that all materials are
+     * specified.
+     */
+
+    /* search for matching pointer in hmat_list (assume unique) */
+    p_hmat = bsearch(key,hmat_list,n_mat,sizeof(*hmat_list),compare_mat_id);
+
+    /* check for match */
+    if (p_hmat != NULL) {
+      int idx = p_hmat - hmat_list;
+      if (!is_set[idx]) {
+        is_set[idx] = 1;
+        /* construct and initialize this object */
+        err += model_parameters_construct(&((*param_list)[idx]) );
+        err += model_parameters_initialize(&((*param_list)[idx]),
+                                           NULL,
+                                           NULL,
+                                           hmat_list + idx,
+                                           model_type);
+        err += ((*param_list)[idx]).read_param(&((*param_list)[idx]),in);
+      }
+    }
+
+    /* scan to closing brace and continue on to the next entry */
+    while(fgetc(in) != '}' && !feof(in)){}
+    if (feof(in)) break;
+  }
+
+  if (feof(in) && i != num_entries) {
+    err++;
+    assert(0 && "Prematurely reached EOF");
+  }
+
+  int sum = 0;
+  for (int i = 0; i < n_mat; i++){
+    sum += is_set[i];
+  }
+  if (sum != n_mat) err++;
+  assert(sum == n_mat && "require that all model params are set");
+
+  free(key);
+  free(is_set);
+  return err;
+}
+
 int destroy_model_parameters_list(const int n_mat,
                                   Model_parameters *param_list)
 {
@@ -360,32 +491,9 @@ int read_constitutive_model_parameters(EPS *eps,
                                        const int type)
 { 
   int err = 0;
-  if(type<0)
-    return err;
-  switch (type) {
-  case TESTING:
-  case HYPER_ELASTICITY: /* nothing required */ break;
-  case CRYSTAL_PLASTICITY:
+  if(type < 0) return err;
+  if (type == CRYSTAL_PLASTICITY) {
     plasticity_model_read_parameters(eps, ne, elem, n_mat, param_list);
-    break;
-
-  case BPA_PLASTICITY:
-    {
-      for (int a = 0; a < ne; a++) {
-        long n_ip = 0;
-        int_point(elem[a].toe, &n_ip);
-        for (int ip = 0; ip < n_ip; ip++) {
-          Constitutive_model *m = &(eps[a].model[ip]);
-          err += plasticity_model_BPA_set_initial_values(m);
-        }
-      }
-    }
-    break;
-
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
-    err++;
-    break;
   }      
   return err;   
 }                                
@@ -788,6 +896,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -971,6 +1080,7 @@ int residuals_el_crystal_plasticity(double *f,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -1206,6 +1316,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -1437,6 +1548,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:

@@ -119,7 +119,7 @@ int write_restart_plasticity(double *u0, double *u1, const PGFem3D_opt *opts,
   }  
  
   char filename[1024];
-  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
+  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);
   FILE *fp = fopen(filename,"w");
 
   if(fp == NULL)
@@ -130,27 +130,27 @@ int write_restart_plasticity(double *u0, double *u1, const PGFem3D_opt *opts,
   
   for(int a=0; a<nodeno; a++)
   {
-    for(int b=0; b<nsd; b++)
-      fprintf(fp, "%e %e ", u0[a*nsd + b], u1[a*nsd + b]);
-    
+    for(int b=0; b<nsd; b++) {
+      fprintf(fp, "%.17e %.17e ", u0[a*nsd + b], u1[a*nsd + b]);
+    }
     fprintf(fp, "\n");    
   }
   
-  for (int e = 0; e < elemno; e++) 
+  for (int e = 0; e < elemno; e++)
   {
     const ELEMENT *p_el = elem + e;
     long n_ip = 0;
     int_point(p_el->toe,&n_ip);
-    fprintf(fp, "%ld\n", n_ip); 
-    for (int ip = 0; ip < n_ip; ip++)     
+    fprintf(fp, "%ld\n", n_ip);
+    for (int ip = 0; ip < n_ip; ip++)
     {
       Constitutive_model *m = &(eps[e].model[ip]);
       err += m->param->write_restart(fp, m);
     }
   }
-      
-  fclose(fp);  
-  return err;  
+
+  fclose(fp);
+  return err;
 }
 
 int read_restart_plasticity(double *u0, double *u1, const PGFem3D_opt *opts,
@@ -211,8 +211,8 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
       break;
     case CM:
       err += read_restart_plasticity(u0,u1,opts,eps,elem,
-                             myrank,elemno,nodeno,nsd,*stepno);      
-      break;  
+                                     myrank,elemno,nodeno,nsd,*stepno);
+      break;
     default:
       read_initial_from_VTK(opts, myrank, stepno, u0, u1);
       break;
@@ -239,22 +239,10 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
     case DISP:
       write_restart_disp(u0,u1,opts,myrank,nodeno,ndofn,stepno);
       break;
-    case CM:
-    {
-      switch(opts->cm)
-      {
-        case CRYSTAL_PLASTICITY:
-        {  
-          err += write_restart_plasticity(u0,u1,opts,eps,elem,
-                             myrank,elemno,nodeno,nsd,stepno);          
-          
-          break;
-        }          
-        default:
-          break;
-      }
-      break;
-    }  
+  case CM:
+    err += write_restart_plasticity(u0,u1,opts,eps,elem,
+                                    myrank,elemno,nodeno,nsd,stepno);
+    break;
     default:
     {  
       double *r_n_dof = (double *) malloc(sizeof(double)*ndofd);
@@ -275,4 +263,4 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
     }
   }  
   return err;
-}  
+}

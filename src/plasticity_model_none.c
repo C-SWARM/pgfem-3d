@@ -196,6 +196,47 @@ static int he_compute_dMdu(const Constitutive_model *m,
   return err;
 }
 
+static int he_read(Model_parameters *p,
+                   FILE *in)
+{
+  /* there are no parameters to read */
+  return scan_for_valid_line(in);
+}
+
+static int he_set_initial_vals(Constitutive_model *m)
+{
+  /* do nothing */
+  return 0;
+}
+
+static int he_write_restart(FILE *out,
+                            const Constitutive_model *m)
+{
+  /* write Fn to file */
+  int err = 0;
+  const double *F = m->vars.Fs[Fn].m_pdata;
+  if (fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+              F[0], F[1], F[2],
+              F[3], F[4], F[5],
+              F[6], F[7], F[8]) < 0) err ++;
+  return err;
+}
+
+static int he_read_restart(FILE *in,
+                           Constitutive_model *m)
+{
+  /* read Fn from file and set Fnp1 = Fn */
+  int err = 0;
+  double *FN = m->vars.Fs[Fn].m_pdata;
+  double *FNP1 = m->vars.Fs[Fnp1].m_pdata;
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            FN, FN + 1, FN + 2,
+            FN + 3, FN + 4, FN + 5,
+            FN + 6, FN + 7, FN + 8) != tensor) err++;
+  err += plasticity_none_reset(m);
+  return err;
+}
+
 int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -214,9 +255,22 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_pFn = he_get_pFn;
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
+
   p->get_hardening = he_get_hardening;
+
+  p->write_restart = he_write_restart;
+  p->read_restart = he_read_restart;
+
   p->destroy_ctx = plasticity_model_none_ctx_destroy;
   p->compute_dMdu = he_compute_dMdu;
+
+  p->set_init_vals = he_set_initial_vals;
+  p->read_param = he_read;
+
+  p->type = HYPER_ELASTICITY;
+
+  p->n_param = 0;
+  p->model_param = NULL;
 
   return err;
 }

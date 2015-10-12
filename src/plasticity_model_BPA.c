@@ -47,18 +47,8 @@ enum {_Fe,_Fp,_F,_Fe_n,_Fp_n,_F_n};
 enum {_s,_lam,_s_n,_lam_n};
 static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
-/* material parameters (constant for testing purposes, need to be
-   migrated to Model_parameters in a programatic/general way) */
-/* parameter values from S. Holopanien, Mech. of Mat. (2013) */
-static const double param_A = 240;
-static const double param_T = 289;
-static const double param_N = 2.15;
-static const double param_Cr = 12.8;
-static const double param_alpha = 0.08;
-static const double param_gdot0 = 2.0e15;
-static const double param_h = 500;
-static const double param_s0 = 97;
-static const double param_s_ss = 76.6;
+/* enumerations for indexing into the list of model parameters */
+enum {mcA, mcAlpha, mcCr, mcGdot0, mcH, mcN, mcS0, mcSss, mcT, N_PARAM};
 
 /*
  * Purely static functions
@@ -181,12 +171,14 @@ int bpa_compute_loading_dir(double * restrict normal,
   return err;
 }
 
-int bpa_compute_gdot(double *gdot,
-                     const double tau,
-                     const double s_s)
+static int bpa_compute_gdot(double *gdot,
+                            const double param_gdot0,
+                            const double param_A,
+                            const double param_T,
+                            const double tau,
+                            const double s_s)
 {
   int err = 0;
-  /* NOTE: Makes use of global variables for material properties!! */
   *gdot = param_gdot0 * exp( - param_A * s_s / param_T
                              * (1.0 - pow(tau / s_s, 5.0 / 6.0)) );
   return err;
@@ -265,10 +257,11 @@ int bpa_der_inverse_langevin(const double y,
   return err;
 }
 
-int bpa_compute_Bdev(double *Bdev,
-                     const double *Fp)
+static int bpa_compute_Bdev(double *Bdev,
+                            const double param_N,
+                            const double param_Cr,
+                            const double *Fp)
 {
-  /* NOTE: makes use of (file) global parameters! */
   int err = 0;
 
   /* compute the deviatoric plastic deformation */
@@ -291,8 +284,10 @@ int bpa_compute_Bdev(double *Bdev,
   return err;
 }
 
-int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
-                          const double * restrict Fp)
+static int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
+                                 const double * restrict Fp,
+                                 const double param_N,
+                                 const double param_Cr)
 {
   int err = 0;
   double Cp[tensor] = {};
@@ -377,7 +372,9 @@ static int bpa_compute_Dsig_DFe(double * restrict Dsig_DFe,
                                 const double * restrict F,
                                 const double * restrict Fe,
                                 const double * restrict Fp,
-                                const HOMMAT *p_hmat)
+                                const HOMMAT *p_hmat,
+                                const double param_N,
+                                const double param_Cr)
 {
   int err = 0;
 
@@ -392,13 +389,13 @@ static int bpa_compute_Dsig_DFe(double * restrict Dsig_DFe,
   double Sdev[tensor] = {};
   double Bdev[tensor] = {};
   bpa_compute_Sdev(Ce,p_hmat,Sdev);
-  err += bpa_compute_Bdev(Bdev,Fp);
+  err += bpa_compute_Bdev(Bdev, param_N, param_Cr, Fp);
 
   /* compute derivatives */
   double DB_DFp[tensor4] = {};
   double DSdev_DFe[tensor4] = {};
   double DFp_DFe[tensor4] = {};
-  err += bpa_compute_DBdev_DFp(DB_DFp,Fp);
+  err += bpa_compute_DBdev_DFp(DB_DFp,Fp,param_N, param_Cr);
   err += bpa_compute_DSdev_DFe(DSdev_DFe,Ce,Fe,p_hmat);
   err += bpa_compute_DFp_DFe(DFp_DFe,invFe,Fp);
 
@@ -434,31 +431,41 @@ static int bpa_compute_Dsig_DFe(double * restrict Dsig_DFe,
   return err;
 }
 
-int bpa_compute_Dgdot_Dtau(double *Dgdot_Dtau,
-                           const double s_s,
-                           const double tau)
+static int bpa_compute_Dgdot_Dtau(double *Dgdot_Dtau,
+                                  const double param_gdot0,
+                                  const double param_A,
+                                  const double param_T,
+                                  const double s_s,
+                                  const double tau)
 {
   int err = 0;
   const double pow_term = pow(tau / s_s, 1.0 / 6.0);
   double gdot = 0;
-  err += bpa_compute_gdot(&gdot,tau,s_s);
+  err += bpa_compute_gdot(&gdot, param_gdot0, param_A, param_T, tau, s_s);
   *Dgdot_Dtau = 5.0 * param_A * gdot / (6.0 * param_T * pow_term);
   return err;
 }
 
 static int bpa_compute_Dgdot_Ds_s(double *Dgdot_Ds,
+                                  const double param_gdot0,
+                                  const double param_A,
+                                  const double param_T,
                                   const double tau,
                                   const double s_s)
 {
   int err = 0;
   const double pow_term = pow(tau / s_s, 5. / 6.);
   double gdot = 0.0;
-  err += bpa_compute_gdot(&gdot,tau,s_s);
+  err += bpa_compute_gdot(&gdot,param_gdot0,param_A,param_T,tau,s_s);
   *Dgdot_Ds = gdot * param_A * (pow_term - 6.) / (6. * param_T);
   return err;
 }
 
 static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
+                                 const double param_gdot0,
+                                 const double param_A,
+                                 const double param_T,
+                                 const double param_alpha,
                                  const double s_s,
                                  const double tau,
                                  const double * restrict Dsig_DFe,
@@ -468,11 +475,11 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
   int err = 0;
   double Dgdot_Dtau = 0;
   if(tau != 0){
-    err += bpa_compute_Dgdot_Dtau(&Dgdot_Dtau,s_s,tau);
+    err += bpa_compute_Dgdot_Dtau(&Dgdot_Dtau, param_gdot0, param_A, param_T, s_s, tau);
   }
   const double rt2 = sqrt(2.0);
   double Dgdot_Dp = 0;
-  err += bpa_compute_Dgdot_Ds_s(&Dgdot_Dp,tau,s_s);
+  err += bpa_compute_Dgdot_Ds_s(&Dgdot_Dp, param_gdot0, param_A, param_T, tau, s_s);
   Dgdot_Dp *= param_alpha;
 
   memset(Dgdot_DFe, 0, tensor * sizeof(*Dgdot_DFe));
@@ -563,6 +570,12 @@ static int bpa_compute_Dp_DFe(double * restrict Dp_DFe,
 }
 
 static int bpa_compute_tan_Fe_Fe(double * restrict tan,
+                                 const double param_gdot0,
+                                 const double param_A,
+                                 const double param_T,
+                                 const double param_N,
+                                 const double param_Cr,
+                                 const double param_alpha,
                                  const double dt,
                                  const double gdot,
                                  const double tau,
@@ -589,9 +602,10 @@ static int bpa_compute_tan_Fe_Fe(double * restrict tan,
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
               dim, dim, dim, 1.0, F, dim, Mn, dim,
               0.0, FMn, dim);
-  err += bpa_compute_Dsig_DFe(Deff_sig_DFe,F,Fe,Fp,p_hmat);
+  err += bpa_compute_Dsig_DFe(Deff_sig_DFe, F, Fe, Fp, p_hmat, param_N, param_Cr);
   err += bpa_compute_Dp_DFe(Dp_DFe,Fe,p_hmat);
-  err += bpa_compute_Dgdot_DFe(Dgdot_DFe,s_s,tau,Deff_sig_DFe,n,Dp_DFe);
+  err += bpa_compute_Dgdot_DFe(Dgdot_DFe, param_gdot0, param_A, param_T,
+                               param_alpha, s_s, tau, Deff_sig_DFe, n, Dp_DFe);
   err += bpa_compute_Dn_DFe(Dn_DFe,tau,Deff_sig_DFe,n);
 
   memset(tan, 0, tensor4 * sizeof(*tan));
@@ -635,6 +649,12 @@ static int bpa_compute_tan_Fe_lam(double *tan,
 }
     
 static int bpa_compute_tan(double * restrict tan,
+                           const double param_gdot0,
+                           const double param_A,
+                           const double param_T,
+                           const double param_N,
+                           const double param_Cr,
+                           const double param_alpha,
                            const double dt,
                            const double gdot,
                            const double tau,
@@ -653,8 +673,10 @@ static int bpa_compute_tan(double * restrict tan,
   /* compute terms */
   double tan_Fe_Fe[tensor4] = {};
   double tan_Fe_lam[tensor] = {};
-  err += bpa_compute_tan_Fe_Fe(tan_Fe_Fe, dt, gdot, tau, s_s,
-                               lam, eff_sig, F, n, Mn, Fe, Fp,
+  err += bpa_compute_tan_Fe_Fe(tan_Fe_Fe,
+                               param_gdot0, param_A, param_T, param_N,
+                               param_Cr, param_alpha, dt, gdot, tau, s_s, lam,
+                               eff_sig, F, n, Mn, Fe, Fp,
                                p_hmat);
   err += bpa_compute_tan_Fe_lam(tan_Fe_lam, Fe, Fp);
 
@@ -678,6 +700,12 @@ static int bpa_compute_step1_terms(double *gdot,
                                    double *eq_sig_dev,
                                    double *normal,
                                    double *Fp,
+                                   const double param_gdot0,
+                                   const double param_A,
+                                   const double param_T,
+                                   const double param_N,
+                                   const double param_Cr,
+                                   const double param_alpha,
                                    const double s,
                                    const double kappa,
                                    const double *F,
@@ -703,9 +731,9 @@ static int bpa_compute_step1_terms(double *gdot,
   double Sdev[tensor] = {};
   double Bdev[tensor] = {};
   bpa_compute_Sdev(Ce,p_hmat,Sdev);
-  err += bpa_compute_Bdev(Bdev,Fp);
-  err += bpa_compute_loading_dir(normal,eq_sig_dev,tau,Sdev,Bdev,Fe);
-  err += bpa_compute_gdot(gdot,*tau,*s_s);
+  err += bpa_compute_Bdev(Bdev, param_N, param_Cr, Fp);
+  err += bpa_compute_loading_dir(normal, eq_sig_dev, tau, Sdev, Bdev, Fe);
+  err += bpa_compute_gdot(gdot, param_gdot0, param_A, param_T, *tau, *s_s);
   return err;
 }
 
@@ -862,6 +890,8 @@ static int bpa_compute_Dtau_DFe(double * restrict Dtau_DFe,
 }
 
 static int bpa_compute_Ds_Dgdot(double * restrict Ds_Dgdot,
+                                const double param_h,
+                                const double param_s_ss,
                                 const double s_n,
                                 const double dt,
                                 const double gdot)
@@ -873,6 +903,8 @@ static int bpa_compute_Ds_Dgdot(double * restrict Ds_Dgdot,
 }
 
 static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
+                              const double param_h,
+                              const double param_s_ss,
                               const double s_n,
                               const double dt,
                               const double gdot,
@@ -881,7 +913,7 @@ static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
 {
   int err = 0;
   double Ds_Dgdot = 0.0;
-  err += bpa_compute_Ds_Dgdot(&Ds_Dgdot, s_n, dt, gdot);
+  err += bpa_compute_Ds_Dgdot(&Ds_Dgdot, param_h, param_s_ss, s_n, dt, gdot);
 
   const double coeff = Ds_Dgdot / (1.0 - Ds_Dgdot * Dgdot_Dss);
 
@@ -891,6 +923,14 @@ static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
 }
 
 static int bpa_compute_DM_DFe(double * restrict DM_DFe,
+                              const double param_gdot0,
+                              const double param_A,
+                              const double param_T,
+                              const double param_N,
+                              const double param_Cr,
+                              const double param_alpha,
+                              const double param_h,
+                              const double param_s_ss,
                               const double dt,
                               const double s_n,
                               const double s,
@@ -910,6 +950,8 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
   double n[tensor] = {};
   double Fp[tensor] = {};
   err += bpa_compute_step1_terms(&gp, &s_s, &tau, &Jp, eff_sig, n, Fp,
+                                 param_gdot0, param_A, param_T, param_N,
+                                 param_Cr, param_alpha,
                                  s, kappa, F, Fe, p_hmat);
 
   /* compute derivative terms */
@@ -920,12 +962,13 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
   double Ds_DFe[tensor] = {};
   double Dp_DFe[tensor] = {};
   double Dn_DFe[tensor4] = {};
-  err += bpa_compute_Dsig_DFe(Dsig_DFe, F, Fe, Fp, p_hmat);
+  err += bpa_compute_Dsig_DFe(Dsig_DFe, F, Fe, Fp, p_hmat, param_N, param_Cr);
   err += bpa_compute_Dp_DFe(Dp_DFe, Fe, p_hmat);
-  err += bpa_compute_Dgdot_DFe(Dgp_DFe, s_s, tau, Dsig_DFe, n, Dp_DFe);
-  err += bpa_compute_Dgdot_Ds_s(&Dgp_Dss, tau, s_s);
+  err += bpa_compute_Dgdot_DFe(Dgp_DFe, param_gdot0, param_A, param_T,
+                               param_alpha,s_s, tau, Dsig_DFe, n, Dp_DFe);
+  err += bpa_compute_Dgdot_Ds_s(&Dgp_Dss, param_gdot0, param_A, param_T, tau, s_s);
   err += bpa_compute_Dtau_DFe(Dtau_DFe, n, Dsig_DFe);
-  err += bpa_compute_Ds_DFe(Ds_DFe, s_n, dt, gp, Dgp_Dss, Dgp_DFe);
+  err += bpa_compute_Ds_DFe(Ds_DFe, param_h, param_s_ss, s_n, dt, gp, Dgp_Dss, Dgp_DFe);
   err += bpa_compute_Dn_DFe(Dn_DFe, tau, Dsig_DFe, n);
 
   /* compute full Dgp_DFe */
@@ -959,6 +1002,7 @@ int BPA_int_alg(Constitutive_model *m,
   const HOMMAT *p_hmat = m->param->p_hmat;
   const double kappa = bpa_compute_bulk_mod(p_hmat);
   const double *Fn = m->vars.Fs[_F_n].m_pdata;
+  const double *params = m->param->model_param;
 
   double s_n = 0;
   double Mn[tensor] = {};
@@ -978,8 +1022,10 @@ int BPA_int_alg(Constitutive_model *m,
   double eq_sig_dev[tensor] = {};
   double normal[tensor] = {};
   double Fp[tensor] = {};
-  err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp, /*< out */
-                                 s, kappa, CTX->F, Fe, p_hmat);          /*< in */
+  err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
+                                 params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
+                                 params[mcCr], params[mcAlpha], s, kappa, CTX->F,
+                                 Fe, p_hmat);
 
   /* compute plastic spin */
   double L[tensor] = {};
@@ -1006,7 +1052,8 @@ int BPA_int_alg(Constitutive_model *m,
     iter = 0;
     while (norm > TOL  && iter < maxit) {
       /* COMPUTE THE TANGENT */
-      err += bpa_compute_tan(TAN, CTX->dt, gdot, tau, s_s, lam,
+      err += bpa_compute_tan(TAN, params[mcGdot0], params[mcA], params[mcT], params[mcN],
+                             params[mcCr], params[mcAlpha], CTX->dt, gdot, tau, s_s, lam,
                              eq_sig_dev, normal, Mn, CTX->F, Fe,
                              Fp, p_hmat);
 
@@ -1026,8 +1073,10 @@ int BPA_int_alg(Constitutive_model *m,
       err += bpa_update_solution(RES, Fe, &lam);
 
       /* update vars (gdot, s_s, tau, eq_sig_dev, normal) */
-      err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp, /*< out */
-                                     s, kappa, CTX->F, Fe, p_hmat);          /*< in */
+      err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
+                                     params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
+                                     params[mcCr], params[mcAlpha], s, kappa, CTX->F,
+                                     Fe, p_hmat);
 
       /* COMPUTE RESIDUAL */
       err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
@@ -1039,11 +1088,12 @@ int BPA_int_alg(Constitutive_model *m,
       iter++;
     }
     total_it += iter;
-    assert(norm < TOL);
+    /* assert(norm < TOL); */
+    /* if(norm > TOL) err++; */
 
     double s_k = s;
-    s = (s_n + param_h * gdot * (CTX->dt)) / (1 + param_h * gdot * (CTX->dt)/ param_s_ss);
-    normWp = pow((s-s_k) / param_s_ss,2);
+    s = (s_n + params[mcH] * gdot * (CTX->dt)) / (1 + params[mcH] * gdot * (CTX->dt)/ params[mcSss]);
+    normWp = pow((s-s_k) / params[mcSss],2);
 
     /* compute updated Wp and residual norm */
     err += bpa_compute_Wp(Wp,gdot,normal,ome,d,Fe);
@@ -1055,8 +1105,11 @@ int BPA_int_alg(Constitutive_model *m,
     normWp = sqrt(normWp);
 
     /* COMPUTE NEW RESIDUAL AND NORM */
-    err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp, /*< out */
-                                   s, kappa, CTX->F, Fe, p_hmat);          /*< in */
+      err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
+                                     params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
+                                     params[mcCr], params[mcAlpha], s, kappa, CTX->F,
+                                     Fe, p_hmat);
+
     err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
     norm = cblas_dnrm2(tan_row,RES,1);
     /* output of the iterative procedure */
@@ -1065,11 +1118,12 @@ int BPA_int_alg(Constitutive_model *m,
     }
     iterWp++;
   }
-  assert(norm < TOL);
-  assert(normWp < TOL);
 
-  /* induce subdivision of PDE if too many iterations */
-  if (total_it >= 2*maxit){ err ++;}
+  /* induce subdivision of PDE if too many iterations or failed to
+     converge */
+  if (total_it >= 2*maxit
+      || norm > TOL
+      || normWp > TOL){ err ++;}
 
   /* Update state variables with converged values */
   err += bpa_update_state_variables(CTX->F,Fe, Fp, s, lam, m);
@@ -1238,6 +1292,8 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   const double *Fp_n = m->vars.Fs[_Fp_n].m_pdata;
   const double s = m->vars.state_vars->m_pdata[_s];
   const double s_n = m->vars.state_vars->m_pdata[_s_n];
+  const double *p = m->param->model_param;
+
 
   /* compute 4th order tensor operators */
   double M[tensor] = {};
@@ -1247,7 +1303,9 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   double DFe_DM[tensor4] = {};
   err += inv3x3(Fp,M);
   err += inv3x3(Fp_n,Mn);
-  err += bpa_compute_DM_DFe(DM_DFe, dt, s_n, s, Fe, F, m->param->p_hmat);
+  err += bpa_compute_DM_DFe(DM_DFe, p[mcGdot0], p[mcA], p[mcT], p[mcN],
+                            p[mcCr], p[mcAlpha], p[mcH], p[mcSss],
+                            dt, s_n, s, Fe, F, m->param->p_hmat);
 
   /* compute the tangent operator */
   double U[tensor4] = {};
@@ -1310,6 +1368,96 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   return err;
 }
 
+static int bpa_read(Model_parameters *p,
+                    FILE *in)
+{
+  int err = 0;
+
+  /* get pointer to parameter data */
+  double *param = p->model_param;
+  assert(param != NULL); // check the pointer
+
+  /* scan to non-blank/comment line */
+  err += scan_for_valid_line(in);
+
+  /* READ PROPERTIES IN ALPHABETICAL ORDER */
+  int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                     param + mcA, param + mcAlpha, param + mcCr,
+                     param + mcGdot0, param + mcH, param + mcN,
+                     param + mcS0, param + mcSss, param + mcT);
+  if (match != N_PARAM) err++;
+  assert(match == N_PARAM && "Did not read expected number of parameters");
+
+  /* scan past any other comment/blank lines in the block */
+  err += scan_for_valid_line(in);
+
+  /* not expecting EOF, check and return error if encountered */
+  if (feof(in)) err ++;
+  assert(!feof(in) && "EOF reached prematurely");
+
+  return err;
+}
+
+static int bpa_set_initial_values(Constitutive_model *m)
+{
+  int err = 0;
+
+  /* s is s0 at start */
+  m->vars.state_vars->m_pdata[_s] = m->param->model_param[mcS0];
+  m->vars.state_vars->m_pdata[_s_n] = m->param->model_param[mcS0];
+
+  m->vars.state_vars->m_pdata[_lam] = 0;
+  m->vars.state_vars->m_pdata[_lam_n] = 0;
+
+  return err;
+}
+
+static int bpa_write_restart(FILE *out,
+                             const Constitutive_model *m)
+{
+  /* write all state variables at n */
+  int err = 0;
+  const double *Fen = m->vars.Fs[_Fe_n].m_pdata;
+  const double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
+  const double *Fn = m->vars.Fs[_F_n].m_pdata;
+  const double *vars = m->vars.state_vars->m_pdata;
+  if(fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+             Fen[0], Fen[1], Fen[2], Fen[3], Fen[4],
+             Fen[5], Fen[6], Fen[7], Fen[8]) < 0) err ++;
+  if(fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+             Fpn[0], Fpn[1], Fpn[2], Fpn[3], Fpn[4],
+             Fpn[5], Fpn[6], Fpn[7], Fpn[8]) < 0) err ++;
+  if(fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+             Fn[0], Fn[1], Fn[2], Fn[3], Fn[4],
+             Fn[5], Fn[6], Fn[7], Fn[8]) < 0) err ++;
+  if(fprintf(out,"%.17e %.17e\n",vars[_s_n], vars[_lam_n]) < 0) err++;
+  return err;
+}
+
+static int bpa_read_restart(FILE *in,
+                            Constitutive_model *m)
+{
+  /* read all state variables at n and set all vars at n+1 = n */
+  int err = 0;
+  double *Fen = m->vars.Fs[_Fe_n].m_pdata;
+  double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
+  double *Fn = m->vars.Fs[_F_n].m_pdata;
+  double *vars = m->vars.state_vars->m_pdata;
+
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fen, Fen + 1, Fen + 2, Fen + 3, Fen + 4,
+            Fen + 5, Fen + 6, Fen + 7, Fen + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fpn, Fpn + 1, Fpn + 2, Fpn + 3, Fpn + 4,
+            Fpn + 5, Fpn + 6, Fpn + 7, Fpn + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            Fn, Fn + 1, Fn + 2, Fn + 3, Fn + 4,
+            Fn + 5, Fn + 6, Fn + 7, Fn + 8) != tensor) err++;
+  if(fscanf(in,"%lf %lf", vars + _s_n, vars + _lam_n) != 2) err++;
+  err += BPA_reset_vars(m);
+  return err;
+}
+
 /*
  * Public interface for the BPA model
  */
@@ -1329,23 +1477,24 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->get_pFn = bpa_get_Fpn;
   p->get_eF = bpa_get_Fe;
   p->get_eFn = bpa_get_Fen;
+
   p->get_hardening = bpa_get_hardening;
+
+  p->write_restart = bpa_write_restart;
+  p->read_restart = bpa_read_restart;
+
   p->destroy_ctx = plasticity_model_BPA_ctx_destroy;
   p->compute_dMdu = bpa_compute_dM_du;
 
-  return err;
-}
+  p->set_init_vals = bpa_set_initial_values;
+  p->read_param = bpa_read;
 
-int plasticity_model_BPA_set_initial_values(Constitutive_model *m)
-{
-  int err = 0;
+  p->type = BPA_PLASTICITY;
 
-  /* s is s0 at start */
-  m->vars.state_vars->m_pdata[_s] = param_s0;
-  m->vars.state_vars->m_pdata[_s_n] = param_s0;
+  p->n_param = N_PARAM;
+  p->model_param = calloc(N_PARAM, sizeof(*(p->model_param)));
 
-  m->vars.state_vars->m_pdata[_lam] = 0;
-  m->vars.state_vars->m_pdata[_lam_n] = 0;
+  // bpa_debug_set_default_param(p->model_param);
 
   return err;
 }

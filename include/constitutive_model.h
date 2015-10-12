@@ -311,7 +311,23 @@ typedef int (*usr_info)(Model_var_info **info);
  * A user described function that writes and read restart file at
  * integration point
  */
-typedef int (*usr_restart)(FILE *fp, const Constitutive_model *m);
+typedef int (*usr_w_restart)(FILE *fp,
+                             const Constitutive_model *m);
+typedef int (*usr_r_restart)(FILE *fp,
+                             Constitutive_model *m);
+
+/**
+ * User defined function to set the initial values of the state
+ * variables for the particular model.
+ */
+typedef int (*usr_set_init_vals)(Constitutive_model *m);
+
+/**
+ * User defined function for reading in material parameters from a
+ * file.
+ */
+typedef int (*usr_read_params)(Model_parameters *p,
+                               FILE *in);
 
 /**
  * Interface for accessing model parameters and modifying/updating the
@@ -349,14 +365,21 @@ struct Model_parameters {
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
   
-  usr_restart write_restart;
-  usr_restart read_restart;  
+  usr_w_restart write_restart;
+  usr_r_restart read_restart;
 
   usr_destroy_ctx destroy_ctx;
   usr_compute_dM_du compute_dMdu;
 
+  usr_set_init_vals set_init_vals;
+  usr_read_params read_param;
+
   /** Model type, see enumeration @model_type */
   size_t type;
+
+  /* array for storing the model constants. */
+  size_t n_param;
+  double *model_param;
 };
 
 /**
@@ -381,6 +404,10 @@ int model_parameters_initialize(Model_parameters *p,
                                 const size_t type);
 
 /**
+ * THIS FUNCTION IS TO BE DEPRECATED
+ * Need to properly read in model parameters for crystal plasticity
+ * and treat orientations separately.
+ *
  * function for reading extra prameters for plasticity, this is a temporal.
  * decision needs to be made how to pass material properties
  * \param[in/out] param_list, list of Model_parameters, unallocated on
@@ -427,6 +454,15 @@ int build_model_parameters_list(Model_parameters **param_list,
                                 const HOMMAT *hmat_list,
                                 const int type);
 
+
+/**
+ * Allocate and populate a list of Model_parameters given the number
+ * of materials.
+ */
+int read_model_parameters_list(Model_parameters **param_list,
+                               const int n_mat,
+                               const HOMMAT *hmat_list,
+                               FILE *in);
 /**
  * Free all of the memory assiciated with the list of model
  * parameters.
@@ -514,30 +550,30 @@ int constitutive_model_update_output_variables(SIG *sig,
                                                const double dt);
                                                
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    double alpha);
+                                              const int ii,
+                                              const int ndofn,
+                                              const int nne,
+                                              const int nsd,
+                                              const ELEMENT *elem,
+                                              const long *nod,
+                                              const NODE *node,
+                                              const double dt,
+                                              EPS *eps,
+                                              const SUPP sup,
+                                              const double *r_e,
+                                              double alpha);
                                     
 int residuals_el_crystal_plasticity_w_inertia(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const double alpha);                                    
+                                              const int ii,
+                                              const int ndofn,
+                                              const int nne,
+                                              const int nsd,
+                                              const ELEMENT *elem,
+                                              const long *nod,
+                                              const NODE *node,
+                                              const double dt,
+                                              EPS *eps,
+                                              const SUPP sup,
+                                              const double *r_e,
+                                              const double alpha);
 #endif
