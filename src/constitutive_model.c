@@ -896,6 +896,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -1079,6 +1080,7 @@ int residuals_el_crystal_plasticity(double *f,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -1314,6 +1316,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
@@ -1545,6 +1548,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     void *ctx = NULL;
     switch (m->param->type){
     case TESTING:
+    case HYPER_ELASTICITY:
       err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
       break;
     case CRYSTAL_PLASTICITY:
