@@ -54,6 +54,8 @@ EPS* build_eps_il (const long ne,
     p_pom->st = NULL;
 
     p_pom->dam = NULL;
+    p_pom->model = NULL;
+
     p_pom->T = NULL;
     p_pom->d_T = NULL;
     p_pom->GD = 0;
@@ -90,8 +92,9 @@ EPS* build_eps_il (const long ne,
 	pom[i].dam = (damage*) PGFEM_calloc (II,sizeof(damage));
 
         /* Generalized constitutive modeling interface */
-  if(analysis==CM)      
-    pom[i].model = PGFEM_calloc(II,sizeof(*(pom[i].model)));
+        if (analysis == CM) { 
+          pom[i].model = PGFEM_calloc(II,sizeof(*(pom[i].model)));
+        }
       
 	/* Pressure integration part */
 	if (analysis == STABILIZED
@@ -112,8 +115,9 @@ EPS* build_eps_il (const long ne,
 	}
 
 	for (j=0;j<II;j++){
-	  if(analysis==CM) 
-          err += constitutive_model_construct(pom[i].model + j);
+	  if (analysis == CM) {
+            err += constitutive_model_construct(pom[i].model + j);
+          }
 	  pom[i].il[j].o = (double *) PGFEM_calloc (SYM_TENSOR,sizeof(double));
 	  pom[i].il[j].F = (double *) PGFEM_calloc (TENSOR_2,sizeof(double));
 	
@@ -880,8 +884,7 @@ void destroy_eps_il(EPS* eps,
     }
 
     /* constitutive_model */
-    if(analysis==CM)
-    {  
+    if(analysis == CM) {
       if (p_eps->model != NULL) {
         for (int j = 0; j < n_ip; j++) {
           err += constitutive_model_destroy((p_eps->model) + j);

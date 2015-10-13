@@ -926,22 +926,22 @@ int single_scale_main(int argc,char *argv[])
     eps = build_eps_il (ne,elem,options.analysis_type);
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
-    /* parameter list and initialize const. model at int points.
-     * NOTE: should catch/handle returned error flag...
-     */
-    {
+    if (options.analysis_type == CM) {
+      /* parameter list and initialize const. model at int points.
+       * NOTE: should catch/handle returned error flag...
+       */
       char *cm_filename = NULL;
       alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
       FILE *cm_in = PGFEM_fopen(cm_filename, "r");
       read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
       free(cm_filename);
       fclose(cm_in);
-    }
-    init_all_constitutive_model(eps,ne,elem,param_list);
+      init_all_constitutive_model(eps,ne,elem,param_list);
 
-    /* This is a temporary function. Special reading/initialization
-       for the crystal plasticity model. */
-    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+      /* This is a temporary function. Special reading/initialization
+         for the crystal plasticity model. */
+      read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+    }
 
     /* alocation of pressure variables */
     int nVol = 1;
