@@ -93,7 +93,7 @@ static const long_opt_descr other_opts[] = {
 						      "\t\tthe provided filename."),0},
   {{"override-material-props",required_argument,NULL,'O'},("\n\t\tOverride the material properties in *.in\n"
                                                            "\t\twith those provided in the given file."),0},
-  {{"restart",required_argument,NULL,'r'},("Restart from specified step (FE2 only). Requires original\n"
+  {{"restart",required_argument,NULL,'r'},("Restart from specified step. Requires original\n"
 					   "\t\tinput files and dumped restart files for specified step."),0},
   {{"max-server-jobs",required_argument,NULL,'S'},("\n\t\tSet the maximum number of jobs allowed on a server (FE2)."),0},
   {{"no-migrate",no_argument,NULL,'N'},("Do not migrate cells between servers (FE2)."),0},

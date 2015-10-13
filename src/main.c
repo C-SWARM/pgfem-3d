@@ -92,7 +92,6 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
   FILE *fp_0 = fopen(filename,"r");
 
-  *restart = -1;
   if(fp_0 != NULL)
   {  
     while(fgets(line, 1024, fp_0)!=NULL) 
@@ -106,7 +105,7 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
     fclose(fp_0);
   }
   
-  if(*restart>=0)
+  if (*restart >= 0)
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
@@ -1028,7 +1027,7 @@ int single_scale_main(int argc,char *argv[])
     r_n_dof = aloc1(ndofd);
         
     rho = malloc(sizeof(double)*nmat);    
-    int restart_tim = 0;
+    int restart_tim = options.restart;
     
     alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
                                 myrank,ne,nn,nmat,times[1] - times[0], &restart_tim);
