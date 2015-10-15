@@ -652,7 +652,7 @@ int stiffness_el_hyper_elasticity(double *lk,
     Matrix_init(L,0.0);
     Matrix_init(S,0.0);    
     
-    constitutive_model_update_elasticity(m,&F,dt,&L,&S,compute_stiffness);
+    err += constitutive_model_update_elasticity(m,&F,dt,&L,&S,compute_stiffness);
     
     for(int a=0; a<nne; a++)
     {
@@ -776,7 +776,7 @@ int residuals_el_hyper_elasticity(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix_init(S,0.0);    
     
-    constitutive_model_update_elasticity(m,&F,dt,NULL,&S,compute_stiffness);             
+    err += constitutive_model_update_elasticity(m,&F,dt,NULL,&S,compute_stiffness);
     for(int a=0; a<nne; a++)
     {
       for(int b=0; b<nsd; b++)
@@ -912,7 +912,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     err += func->get_pF(m,&F2[pFnp1]);
     err += func->get_eF(m,&F2[eFnp1]);
 
-    Matrix_inv(F2[pFnp1], F2[pFnp1_I]);
+    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
     Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
     // <-- update plasticity part 
 
@@ -920,7 +920,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     Matrix_init(L,0.0);
     Matrix_init(F2[S],0.0);    
     
-    constitutive_model_update_elasticity(m,&F2[eFnp1],dt,&L,&F2[S],compute_stiffness);
+    err += constitutive_model_update_elasticity(m,&F2[eFnp1],dt,&L,&F2[S],compute_stiffness);
     // <-- update elasticity part
 
     // --> start computing tagent
@@ -1056,18 +1056,18 @@ int residuals_el_crystal_plasticity(double *f,
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
-    m->param->get_Fn(m,&F2[Fn]);
-    m->param->get_pFn(m,&F2[pFn]);    
+    err += m->param->get_Fn(m,&F2[Fn]);
+    err += m->param->get_pFn(m,&F2[pFn]);
 
-    Matrix_inv(F2[pFn], F2[pFnI]);
-    m->param->get_eFn(m,&F2[eFn]);
+    err += inv3x3(F2[pFn].m_pdata, F2[pFnI].m_pdata);
+    err += m->param->get_eFn(m,&F2[eFn]);
    
     // --> update plasticity part
     if(total_Lagrangian)
     {
       Matrix(double) FnI;
       Matrix_construct_redim(double, FnI,3,3);
-      Matrix_inv(F2[Fn],FnI);
+      err += inv3x3(F2[Fn].m_pdata,FnI.m_pdata);
       Matrix_AeqB(F2[Fnp1],1.0,F2[Fr]);  /* set F2[Fnp1] */
       Matrix_AxB(F2[Fr],1.0,0.0,F2[Fnp1],0,FnI,0);  /* recompute F2[Fr] */         
       Matrix_cleanup(FnI);          
@@ -1101,9 +1101,9 @@ int residuals_el_crystal_plasticity(double *f,
     // --> update elasticity part
     Matrix_init(F2[S],0.0);    
     
-    Matrix_inv(F2[pFnp1], F2[pFnp1_I]);
+    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
     Matrix_AxB(F2[eFnp1],1.0,0.0,F2[Fnp1],0,F2[pFnp1_I],0);
-    constitutive_model_update_elasticity(m,&F2[eFnp1],dt,NULL,&F2[S],compute_stiffness);
+    err += constitutive_model_update_elasticity(m,&F2[eFnp1],dt,NULL,&F2[S],compute_stiffness);
     // <-- update elasticity part
             
     Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);

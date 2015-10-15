@@ -231,7 +231,7 @@ typedef struct Matrix_##T                                               \
 } while(0)                                                              
 
 #define Matrix_inv(A, invA) do {                                        \
-  inverse((A).m_pdata,(A).m_row,(invA).m_pdata);                        \
+    inverse((A).m_pdata,(A).m_row,(invA).m_pdata);                      \
 } while(0)
 
 #define Matrix_inv_no_use(A, invA) do {                                 \

@@ -1088,8 +1088,6 @@ int BPA_int_alg(Constitutive_model *m,
       iter++;
     }
     total_it += iter;
-    /* assert(norm < TOL); */
-    /* if(norm > TOL) err++; */
 
     double s_k = s;
     s = (s_n + params[mcH] * gdot * (CTX->dt)) / (1 + params[mcH] * gdot * (CTX->dt)/ params[mcSss]);
@@ -1105,10 +1103,10 @@ int BPA_int_alg(Constitutive_model *m,
     normWp = sqrt(normWp);
 
     /* COMPUTE NEW RESIDUAL AND NORM */
-      err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
-                                     params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
-                                     params[mcCr], params[mcAlpha], s, kappa, CTX->F,
-                                     Fe, p_hmat);
+    err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
+                                   params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
+                                   params[mcCr], params[mcAlpha], s, kappa, CTX->F,
+                                   Fe, p_hmat);
 
     err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
     norm = cblas_dnrm2(tan_row,RES,1);

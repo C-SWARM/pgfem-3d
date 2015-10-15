@@ -693,8 +693,8 @@ int inverse(double const* A,
     } else {
       PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
     }
-    PGFEM_Abort();
-    abort();
+    /* PGFEM_Abort(); */
+    /* abort(); */
   }
 
   return info;
