@@ -416,13 +416,23 @@ double Newton_Raphson (const int print_level,
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
 		
-	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
-		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
-		     myrank,nproc,DomDof,GDof,
-		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+	INFO = stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+                            node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
+                            iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
+                            myrank,nproc,DomDof,GDof,
+                            comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
-//return 0.0;
+        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+        if (GInfo == 1) {
+          if(myrank == 0){
+            PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
+                         "Subdividing load.\n", __func__, __FILE__, __LINE__);
+          }
+          INFO = 1;
+          ART = 1;
+          goto rest;
+        }
+
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	  ART = 1;
@@ -578,8 +588,8 @@ double Newton_Raphson (const int print_level,
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
 	if(myrank == 0){
-	  PGFEM_printf("Inverted element detected (fd_residuals).\n"
-		 "Subdividing load.\n");
+          PGFEM_printf("Error detected (fd_residuals) %s:%s:%ld.\n"
+                       "Subdividing load.\n", __func__, __FILE__, __LINE__);
 	}
 	INFO = 1;
 	ART = 1;
