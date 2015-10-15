@@ -228,6 +228,7 @@ double Newton_Raphson (const int print_level,
 
   /* GOTO REST */
  rest:
+  fflush(PGFEM_stdout);
   if (INFO == 1 && ART == 0){
    
     /* Reset variables */
@@ -714,6 +715,7 @@ double Newton_Raphson (const int print_level,
 	       nor, nor2, usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
 	       usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 	PGFEM_printf("|R'u|/|R0'u0| = [%1.12e] || [%1.12e]\n",enorm,fabs(Genorm));
+	fflush(PGFEM_stdout);
       }
  
       if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){

@@ -1176,7 +1176,8 @@ int single_scale_main(int argc,char *argv[])
           continue;
         }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
+	fflush(PGFEM_stdout);
 	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
@@ -1187,6 +1188,7 @@ int single_scale_main(int argc,char *argv[])
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
 				       &options,NULL,alpha, r_n, r_n_1);
+	fflush(PGFEM_stdout);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1249,6 +1251,7 @@ int single_scale_main(int argc,char *argv[])
 	    PGFEM_printf("Forces on marked features:\n");
 	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
 			  n_feats,ndim);
+	    fflush(PGFEM_stdout);
 	  }
 	}
 	free(sur_forces);
