@@ -101,6 +101,15 @@ int init_all_constitutive_model(EPS *eps,
                                 const ELEMENT *elem,
                                 const Model_parameters *param_list);
 
+/**
+ * Reset the cinstitutive model at each integration point in the
+ * domain by calling its respective reset function.
+ *
+ * \return non-zero on error.
+ */
+int constitutive_model_reset_state(EPS *eps,
+                                   const int ne,
+                                   const ELEMENT *elem);
 
 /**
  * Compute the elastic stress and tangent tensors. Note that the total

@@ -9,6 +9,7 @@
 #include "MINI_3f_element.h"
 #include "res_fini_def.h"
 #include "elem3d.h"
+#include "constitutive_model.h"
 
 static const int MAX_STEP = 1000;
 static const double MIN_D_TIME = 1.0e-10;
@@ -214,6 +215,9 @@ void subdivision (long INFO,
       break;
     case MINI_3F:
       MINI_3f_reset(elem,ne,npres,4,sig,eps); 
+      break;
+    case CM:
+      constitutive_model_reset_state(eps, ne, elem);
       break;
     default: break;
     }

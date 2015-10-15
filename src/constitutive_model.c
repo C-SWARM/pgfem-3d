@@ -523,6 +523,25 @@ int init_all_constitutive_model(EPS *eps,
   return err;
 }
 
+int constitutive_model_reset_state(EPS *eps,
+                                   const int ne,
+                                   const ELEMENT *elem)
+{
+  int err = 0;
+  if (ne <= 0) return 1;
+
+  for (int i = 0; i < ne; i++) {
+    const ELEMENT *p_el = elem + i;
+    long n_ip = 0;
+    int_point(p_el->toe,&n_ip);
+    for (int j = 0; j < n_ip; j++) {
+      Constitutive_model *m = &(eps[i].model[j]);
+      m->param->reset_state_vars(m);
+    }
+  }
+  return err;
+}
+
 static int constitutive_model_update_time_steps(EPS *eps,
                                                 const int ne,
                                                 const ELEMENT *elem)

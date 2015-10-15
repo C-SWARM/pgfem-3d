@@ -245,6 +245,9 @@ double Newton_Raphson (const int print_level,
     case MINI_3F:
       MINI_3f_reset(elem,ne,npres,4,sig_e,eps);
       break;
+    case CM:
+      constitutive_model_reset_state(eps, ne, elem);
+      break;
     default: break;
     }
 
