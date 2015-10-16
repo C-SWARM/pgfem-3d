@@ -1014,6 +1014,13 @@ int stiffness_el_crystal_plasticity(double *lk,
     }
   }
   free(u);
+
+  /* check diagonal for zeros/nans */
+  for (int a = 0; a < nne; a++) {
+    for (int b = 0; b < nsd; b++) {
+      if ( !isnormal(lk[idx_K(a,b,a,b,nne,nsd)]) ) err++;
+    }
+  }
   
   Matrix_cleanup(L); 
 

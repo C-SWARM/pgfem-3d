@@ -158,7 +158,6 @@ double Newton_Raphson (const int print_level,
   double t = times[tim+1];
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
-  char  *error[] = {"inf","-inf","nan"};
   char str1[500];
   struct rusage usage;
 
@@ -469,18 +468,14 @@ double Newton_Raphson (const int print_level,
       /* Clear hypre errors */
       hypre__global_error = 0;
       
-      sprintf (str1,"%f",BS_nor);
-      for (N=0;N<3;N++){
-	M = 10; 
-	M = strcmp(error[N],str1);
-	if (M == 0){
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the solver: nor = %s\n",error[N]); 
-	  INFO = 1; 
-	  ART = 1;  
-	  goto rest;
-	}
+      if (!isfinite(BS_nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the solver: nor = %f\n",BS_nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
+
       /* Transform GLOBAL displacement vector to LOCAL */
       GToL (BS_x,rr,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
@@ -641,17 +636,13 @@ double Newton_Raphson (const int print_level,
       
       /* Normalize norm */
       nor /= nor1;
-      
-      sprintf (str1,"%f",nor);
-      for (N=0;N<3;N++){
-	M = 10;
-	M = strcmp(error[N],str1);
-	if (M == 0) {
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the algorithm : nor = %s\n",error[N]);
-	  INFO = 1;
-	  goto rest;
-	}
+
+      if (!isfinite(nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the algorithm : nor = %f\n",nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
       
       /* My Line search */
