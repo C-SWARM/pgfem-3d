@@ -8,6 +8,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdio.h>
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"
@@ -18,6 +19,18 @@
 #include "pgfem_comm.h"
 #include "sig.h"
 #include "eps.h"
+
+/**
+ * Scan the file for a valid line (non-blank and does not start with a
+ * '#').  This function may be called multiple times on the same file.
+ *
+ * \param[in,out] in, File to scan
+ *
+ * \return non-zero on error. Upon successful completion, 'in' is
+ * returned with the file position set to the beginning of the valid
+ * line.
+ */
+int scan_for_valid_line(FILE *in);
 
 void pack_2mat(const void **src,
 	       const int nrow,

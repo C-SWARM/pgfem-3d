@@ -92,7 +92,6 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
   FILE *fp_0 = fopen(filename,"r");
 
-  *restart = -1;
   if(fp_0 != NULL)
   {  
     while(fgets(line, 1024, fp_0)!=NULL) 
@@ -106,7 +105,7 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
     fclose(fp_0);
   }
   
-  if(*restart>=0)
+  if (*restart >= 0)
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
@@ -926,20 +925,22 @@ int single_scale_main(int argc,char *argv[])
     eps = build_eps_il (ne,elem,options.analysis_type);
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
-    /* parameter list and initialize const. model at int points.
-     * NOTE: should catch/handle returned error flag...
-     */     
-    build_model_parameters_list(&param_list,nhommat,matgeom,hommat,options.cm);
-    init_all_constitutive_model(eps,ne,elem,param_list);
-///////////////////////////////////////////////////////////////////////////////////////////    
-// temporal test cases
-// need extral material properties to run constitutive model
-// this can be done by reading values from files
-// ex) read_constitutive_model_parameters(eps,ne,elem,param_list,filename);
+    if (options.analysis_type == CM) {
+      /* parameter list and initialize const. model at int points.
+       * NOTE: should catch/handle returned error flag...
+       */
+      char *cm_filename = NULL;
+      alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
+      FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+      read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
+      free(cm_filename);
+      fclose(cm_in);
+      init_all_constitutive_model(eps,ne,elem,param_list);
 
-    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm); 
-///////////////////////////////////////////////////////////////////////////////////////////    
-    
+      /* This is a temporary function. Special reading/initialization
+         for the crystal plasticity model. */
+      read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+    }
 
     /* alocation of pressure variables */
     int nVol = 1;
@@ -1026,7 +1027,7 @@ int single_scale_main(int argc,char *argv[])
     r_n_dof = aloc1(ndofd);
         
     rho = malloc(sizeof(double)*nmat);    
-    int restart_tim = 0;
+    int restart_tim = options.restart;
     
     alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
                                 myrank,ne,nn,nmat,times[1] - times[0], &restart_tim);
@@ -1175,7 +1176,8 @@ int single_scale_main(int argc,char *argv[])
           continue;
         }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
+	fflush(PGFEM_stdout);
 	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
@@ -1186,6 +1188,7 @@ int single_scale_main(int argc,char *argv[])
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
 				       &options,NULL,alpha, r_n, r_n_1);
+	fflush(PGFEM_stdout);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1248,6 +1251,7 @@ int single_scale_main(int argc,char *argv[])
 	    PGFEM_printf("Forces on marked features:\n");
 	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
 			  n_feats,ndim);
+	    fflush(PGFEM_stdout);
 	  }
 	}
 	free(sur_forces);

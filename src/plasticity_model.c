@@ -637,35 +637,35 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
   double *state_var = (m->vars).state_vars[0].m_pdata;
 
     
-  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_Fn].m_pdata[   0],Fs[TENSOR_Fn].m_pdata[   1],Fs[TENSOR_Fn].m_pdata[   2],
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_Fn].m_pdata[   0],Fs[TENSOR_Fn].m_pdata[   1],Fs[TENSOR_Fn].m_pdata[   2],
                                                  Fs[TENSOR_Fn].m_pdata[   3],Fs[TENSOR_Fn].m_pdata[   4],Fs[TENSOR_Fn].m_pdata[   5],
                                                  Fs[TENSOR_Fn].m_pdata[   6],Fs[TENSOR_Fn].m_pdata[   7],Fs[TENSOR_Fn].m_pdata[   8]);
-  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_Fnm1].m_pdata[ 0],Fs[TENSOR_Fnm1].m_pdata[ 1],Fs[TENSOR_Fnm1].m_pdata[ 2],
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_Fnm1].m_pdata[ 0],Fs[TENSOR_Fnm1].m_pdata[ 1],Fs[TENSOR_Fnm1].m_pdata[ 2],
                                                  Fs[TENSOR_Fnm1].m_pdata[ 3],Fs[TENSOR_Fnm1].m_pdata[ 4],Fs[TENSOR_Fnm1].m_pdata[ 5],
                                                  Fs[TENSOR_Fnm1].m_pdata[ 6],Fs[TENSOR_Fnm1].m_pdata[ 7],Fs[TENSOR_Fnm1].m_pdata[ 8]);
-  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_pFn].m_pdata[  0],Fs[TENSOR_pFn].m_pdata[  1],Fs[TENSOR_pFn].m_pdata[  2],
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_pFn].m_pdata[  0],Fs[TENSOR_pFn].m_pdata[  1],Fs[TENSOR_pFn].m_pdata[  2],
                                                  Fs[TENSOR_pFn].m_pdata[  3],Fs[TENSOR_pFn].m_pdata[  4],Fs[TENSOR_pFn].m_pdata[  5],
                                                  Fs[TENSOR_pFn].m_pdata[  6],Fs[TENSOR_pFn].m_pdata[  7],Fs[TENSOR_pFn].m_pdata[  8]);
-  fprintf(fp, "%e %e %e %e %e %e %e %e %e\n",    Fs[TENSOR_pFnm1].m_pdata[0],Fs[TENSOR_pFnm1].m_pdata[1],Fs[TENSOR_pFnm1].m_pdata[2],
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_pFnm1].m_pdata[0],Fs[TENSOR_pFnm1].m_pdata[1],Fs[TENSOR_pFnm1].m_pdata[2],
                                                  Fs[TENSOR_pFnm1].m_pdata[3],Fs[TENSOR_pFnm1].m_pdata[4],Fs[TENSOR_pFnm1].m_pdata[5],
                                                  Fs[TENSOR_pFnm1].m_pdata[6],Fs[TENSOR_pFnm1].m_pdata[7],Fs[TENSOR_pFnm1].m_pdata[8]);
   const int N_SYS = (m->param)->N_SYS;                                                 
   for(int a=0; a<N_SYS; a++)
-    fprintf(fp, "%e ", Fs[TENSOR_tau_n].m_pdata[a]);
+    fprintf(fp, "%.17e ", Fs[TENSOR_tau_n].m_pdata[a]);
 
   fprintf(fp, "\n");
   
   for(int a=0; a<N_SYS; a++)
-    fprintf(fp, "%e ", Fs[TENSOR_gamma_dot_n].m_pdata[a]);
+    fprintf(fp, "%.17e ", Fs[TENSOR_gamma_dot_n].m_pdata[a]);
       
   fprintf(fp, "\n");
                                                    
-  fprintf(fp, "%e %e %e %e\n", state_var[VAR_g_n], state_var[VAR_g_nm1], state_var[VAR_L_n], state_var[VAR_L_nm1]);                                              
+  fprintf(fp, "%.17e %.17e %.17e %.17e\n", state_var[VAR_g_n], state_var[VAR_g_nm1], state_var[VAR_L_n], state_var[VAR_L_nm1]);
   
   return err;
 }
 
-static int plasticity_read_restart(FILE *fp, const Constitutive_model *m)
+static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
 {
   int err = 0;
   Matrix(double) *Fs = (m->vars).Fs;
@@ -702,6 +702,26 @@ static int plasticity_read_restart(FILE *fp, const Constitutive_model *m)
   return 0;  
 }
 
+/* THIS IS A FUNCTION STUB. */
+static int cp_set_init_vals(Constitutive_model *m)
+{
+  /* inital values are set in the more convoluted
+     read_constitutive_model_parameters->plasticity_model_read_parameters
+     calling sequence
+  */
+  return 0;
+}
+
+/* THIS IS A FUNCTION STUB. */
+static int cp_read(Model_parameters *p,
+                   FILE *in)
+{
+  /* model parameters are stored as state variables and are read in
+     through a differentfunction that should be deprecated in the
+     future. plasticity_model_read_parameters */
+  return scan_for_valid_line(in);
+}
+
 int plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -731,6 +751,14 @@ int plasticity_model_initialize(Model_parameters *p)
   
   p->destroy_ctx   = plasticity_model_ctx_destroy;
   p->compute_dMdu  = plasticity_compute_dMdu;
+
+  p->set_init_vals = cp_set_init_vals;
+  p->read_param = cp_read;
+
+  p->type = CRYSTAL_PLASTICITY;
+
+  p->n_param = 0;
+  p->model_param = NULL;
 
   return err;
 }

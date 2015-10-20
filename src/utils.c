@@ -25,6 +25,48 @@
 
 static const int periodic = 0;
 
+int scan_for_valid_line(FILE *in)
+{
+  static const size_t line_length = 1024;
+  static const char delim[] = " \t\n";
+
+  int err = 0;
+  char *line = malloc(line_length);
+  char *tok = NULL;
+  fpos_t pos;
+
+  /* scan for non-comment/blank line */
+  do{
+    /* get the starting file position for the line */
+    err += fgetpos(in,&pos);
+
+    /* get a line and exit if there is an error */
+    if ( fgets(line,line_length,in) == NULL) {
+      err++;
+      goto exit_err;
+    }
+
+    /* make sure got whole line (last char is '\n') */
+    if ( line[strlen(line) - 1] != '\n' && !feof(in)) {
+      fprintf(stderr,"ERROR: line too long (>%zd chars)! %s(%s)\n",
+              line_length, __func__, __FILE__);
+      err++;
+      goto exit_err;
+    }
+
+    /* get first token */
+    tok = strtok(line,delim);
+    if (tok == NULL) tok = line + strlen(line);
+  } while ( tok[0] == '#' || tok[0] == '\0');
+
+  /* return the file pointer to the beginning of the valid line */
+  err += fsetpos(in,&pos);
+
+ exit_err:
+  free(line);
+  return err;
+}
+
 void pack_2mat(const void **src,
 	       const int nrow,
 	       const int ncol,
@@ -651,8 +693,8 @@ int inverse(double const* A,
     } else {
       PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
     }
-    PGFEM_Abort();
-    abort();
+    /* PGFEM_Abort(); */
+    /* abort(); */
   }
 
   return info;

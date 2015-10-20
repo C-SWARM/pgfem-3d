@@ -97,6 +97,7 @@ int write_data_point(FILE *f,
 int main(int argc, char **argv)
 {
   int err = 0;
+  FILE *in = fopen("bpa.props","r");
   FILE *out = fopen("bpa.dat","w");
   HOMMAT *mat = malloc(sizeof(*mat));
   Model_parameters *p = malloc(sizeof(*p));
@@ -106,9 +107,9 @@ int main(int argc, char **argv)
   set_mat_values(mat);
   err += model_parameters_construct(p);
   err += model_parameters_initialize(p,NULL,NULL,mat,BPA_PLASTICITY);
+  err += p->read_param(p,in);
   err += constitutive_model_construct(m);
   err += constitutive_model_initialize(m,p);
-  err += plasticity_model_BPA_set_initial_values(m);
 
   /* get the model info */
   Model_var_info *info = NULL;
@@ -154,5 +155,6 @@ int main(int argc, char **argv)
   free(p);
   free(m);
   fclose(out);
+  fclose(in);
   return err;
 }

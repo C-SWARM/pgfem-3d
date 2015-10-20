@@ -158,7 +158,6 @@ double Newton_Raphson (const int print_level,
   double t = times[tim+1];
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
-  char  *error[] = {"inf","-inf","nan"};
   char str1[500];
   struct rusage usage;
 
@@ -228,6 +227,7 @@ double Newton_Raphson (const int print_level,
 
   /* GOTO REST */
  rest:
+  fflush(PGFEM_stdout);
   if (INFO == 1 && ART == 0){
    
     /* Reset variables */
@@ -244,6 +244,9 @@ double Newton_Raphson (const int print_level,
       break;
     case MINI_3F:
       MINI_3f_reset(elem,ne,npres,4,sig_e,eps);
+      break;
+    case CM:
+      constitutive_model_reset_state(eps, ne, elem);
       break;
     default: break;
     }
@@ -413,13 +416,23 @@ double Newton_Raphson (const int print_level,
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
 		
-	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
-		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
-		     myrank,nproc,DomDof,GDof,
-		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+	INFO = stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+                            node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
+                            iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
+                            myrank,nproc,DomDof,GDof,
+                            comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
-//return 0.0;
+        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+        if (GInfo == 1) {
+          if(myrank == 0){
+            PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
+                         "Subdividing load.\n", __func__, __FILE__, __LINE__);
+          }
+          INFO = 1;
+          ART = 1;
+          goto rest;
+        }
+
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	  ART = 1;
@@ -455,18 +468,14 @@ double Newton_Raphson (const int print_level,
       /* Clear hypre errors */
       hypre__global_error = 0;
       
-      sprintf (str1,"%f",BS_nor);
-      for (N=0;N<3;N++){
-	M = 10; 
-	M = strcmp(error[N],str1);
-	if (M == 0){
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the solver: nor = %s\n",error[N]); 
-	  INFO = 1; 
-	  ART = 1;  
-	  goto rest;
-	}
+      if (!isfinite(BS_nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the solver: nor = %f\n",BS_nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
+
       /* Transform GLOBAL displacement vector to LOCAL */
       GToL (BS_x,rr,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
@@ -575,8 +584,8 @@ double Newton_Raphson (const int print_level,
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
 	if(myrank == 0){
-	  PGFEM_printf("Inverted element detected (fd_residuals).\n"
-		 "Subdividing load.\n");
+          PGFEM_printf("Error detected (fd_residuals) %s:%s:%ld.\n"
+                       "Subdividing load.\n", __func__, __FILE__, __LINE__);
 	}
 	INFO = 1;
 	ART = 1;
@@ -627,17 +636,13 @@ double Newton_Raphson (const int print_level,
       
       /* Normalize norm */
       nor /= nor1;
-      
-      sprintf (str1,"%f",nor);
-      for (N=0;N<3;N++){
-	M = 10;
-	M = strcmp(error[N],str1);
-	if (M == 0) {
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the algorithm : nor = %s\n",error[N]);
-	  INFO = 1;
-	  goto rest;
-	}
+
+      if (!isfinite(nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the algorithm : nor = %f\n",nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
       
       /* My Line search */
@@ -701,6 +706,7 @@ double Newton_Raphson (const int print_level,
 	       nor, nor2, usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
 	       usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 	PGFEM_printf("|R'u|/|R0'u0| = [%1.12e] || [%1.12e]\n",enorm,fabs(Genorm));
+	fflush(PGFEM_stdout);
       }
  
       if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){
