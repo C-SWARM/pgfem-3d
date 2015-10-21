@@ -101,14 +101,14 @@ int main(int argc,char *argv[])
     for(int Load_Type = 0; Load_Type<6; Load_Type++)
       constitutive_model_test(hommat, NULL, Load_Type);
  
-    constitutive_model_test(hommat, NULL, -1);
+    constitutive_model_test(hommat, NULL, -1); // F(t)
   
     Matrix(double) L;
     Matrix_construct_init(double,L,3,3,0.0);  
     Mat_v(L,1,1) = -1.001;
     Mat_v(L,2,2) = Mat_v(L,3,3) = 0.4998;
   
-    constitutive_model_test(hommat, &L, -1); 
+    constitutive_model_test(hommat, &L, -1); // user defined L
   
     Matrix_cleanup(L);
   }

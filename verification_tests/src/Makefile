@@ -79,6 +79,7 @@ all:
 	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
 	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity.c
 	$(LINK) -o crystal_plasticity $(CFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
- 							
+	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.c
+	$(LINK) -o crystal_plasticity_verification_test $(CFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure

@@ -2485,8 +2485,8 @@ int plasticity_model_test_staggered_F_of_t(const HOMMAT *hmat)
   err += test_set_CM_interface_values(&Props,&Param,&Struc,&Solver,&m,hmat,N_SYS);  
 
   double T_Initial = 0.0;
-  double T_Final = 0.5;
-  double dt = 0.001;
+  double T_Final = 100.0;
+  double dt = 0.1;
   double Load_History = 1.0;
   
   char fn_out[1024];
@@ -2538,8 +2538,8 @@ int plasticity_model_test_staggered_F_of_t(const HOMMAT *hmat)
      
     //define Fnp1    
     Matrix_init(Fs[Fnp1], 0.0);
-    Mat_v(Fs[Fnp1],1,1) = 1.0 - t;
-    Mat_v(Fs[Fnp1],2,2) = Mat_v(Fs[Fnp1],3,3) = 1.0 + t*0.5;
+    Mat_v(Fs[Fnp1],1,1) = 1.0 - t*1.0e-3;
+    Mat_v(Fs[Fnp1],2,2) = Mat_v(Fs[Fnp1],3,3) = 1.0 + t*0.5*1.0e-3;
 
     plasticity_model_staggered_NR((Fs+pFnp1), &g_np1, &L_np1,
                      (Fs+Fnp1), (Fs+eFn), (Fs+pFn),                    
@@ -2807,11 +2807,11 @@ int plasticity_model_test(const HOMMAT *hmat, Matrix(double) *L_in, int Load_Typ
    
   if(1)
   { 
-    if(Load_Type<0) 
+    if(Load_Type<0 && L_in==NULL)
       err += plasticity_model_test_staggered_F_of_t(hmat);
     else
       err += plasticity_model_test_staggered(hmat, L_in, Load_Type);
-  }
+  }          
   else
     err += plasticity_model_test_no_staggered(hmat, L_in, Load_Type);    
    
