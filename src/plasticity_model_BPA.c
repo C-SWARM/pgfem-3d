@@ -480,7 +480,7 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
   const double rt2 = sqrt(2.0);
   double Dgdot_Dp = 0;
   err += bpa_compute_Dgdot_Ds_s(&Dgdot_Dp, param_gdot0, param_A, param_T, tau, s_s);
-  Dgdot_Dp *= param_alpha;
+  Dgdot_Dp *= -param_alpha;
 
   memset(Dgdot_DFe, 0, tensor * sizeof(*Dgdot_DFe));
   for (int i = 0; i < dim; i++) {
@@ -725,7 +725,7 @@ static int bpa_compute_step1_terms(double *gdot,
   pressure *= kappa / 2.0;
 
   /* compute the pressure-dependent athermal shear stress */
-  *s_s = s + param_alpha * pressure;
+  *s_s = s - param_alpha * pressure;
 
   /* compute the plastic backstress */
   double Sdev[tensor] = {};
