@@ -25,6 +25,32 @@ typedef struct none_ctx {
   double F[tensor];
 } none_ctx;
 
+static size_t he_get_size(const Constitutive_model *m)
+{
+  return ((g_n_Fs * tensor + g_n_vars) * sizeof(double));
+}
+
+static int he_pack(const Constitutive_model *m,
+                   char *buffer,
+                   size_t *pos)
+{
+  /* pack/unpack Fs */
+  const Matrix_double *Fs = m->vars.Fs;
+  pack_data(Fs[Fn].m_pdata, buffer, pos, tensor, sizeof(double));
+  pack_data(Fs[Fnp1].m_pdata, buffer, pos, tensor, sizeof(double));
+  return 0;
+}
+
+static int he_unpack(Constitutive_model *m,
+                     const char *buffer,
+                     size_t *pos)
+{
+  Matrix_double *Fs = m->vars.Fs;
+  unpack_data(buffer, Fs[Fn].m_pdata, pos, tensor, sizeof(double));
+  unpack_data(buffer, Fs[Fnp1].m_pdata, pos, tensor, sizeof(double));
+  return 0;
+}
+
 static void he_compute_C(double * restrict C,
                          const double * restrict F)
 {
@@ -266,6 +292,10 @@ int plasticity_model_none_initialize(Model_parameters *p)
 
   p->set_init_vals = he_set_initial_vals;
   p->read_param = he_read;
+
+  p->get_size = he_get_size;
+  p->pack = he_pack;
+  p->unpack = he_unpack;
 
   p->type = HYPER_ELASTICITY;
 
