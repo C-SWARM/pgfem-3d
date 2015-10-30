@@ -11,7 +11,7 @@
 #include "elem3d.h"
 #include "constitutive_model.h"
 
-static const int MAX_STEP = 1000;
+static const int MAX_STEP = 10000;
 static const double MIN_D_TIME = 1.0e-10;
 static const int periodic = 0;
 
@@ -239,7 +239,7 @@ void subdivision (long INFO,
 
     for (i=0;i<ndofd;i++) {rr[i] = d_r[i] = f_defl[i] = f[i] = 0.0;}
     
-    if (gama < 0.001 || *STEP > MAX_STEP || *dt  < MIN_D_TIME) {
+    if (gama < 1.0 / MAX_STEP || *STEP > MAX_STEP || *dt  < MIN_D_TIME) {
       if (myrank == 0)
 	PGFEM_printf ("Error in Subdivision routine\n");
       PGFEM_Comm_code_abort (mpi_comm,i);

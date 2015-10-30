@@ -856,7 +856,6 @@ static int bpa_compute_Wp(double *Wp,
 
   err += solve_Ax_b(tensor,tensor,A,Wp);
   if(err) PGFEM_printerr("WARNING: received error (%d) from 'solve_Ax_b'\n",err);
-  assert(err == 0);
   return err;
 }
 
@@ -1066,8 +1065,8 @@ int BPA_int_alg(Constitutive_model *m,
       int err_s = 0;
       err_s += solve_Ax_b(tan_row, tan_row, TAN, RES);
       if(err_s) PGFEM_printerr("WARNING: received error (%d) from 'solve_Ax_b'\n",err_s);
-      assert(err_s == 0);
       err += err_s;
+      if(err_s) goto exit_err;
 
       /* update deformation */
       err += bpa_update_solution(RES, Fe, &lam);
@@ -1125,6 +1124,7 @@ int BPA_int_alg(Constitutive_model *m,
 
   /* Update state variables with converged values */
   err += bpa_update_state_variables(CTX->F,Fe, Fp, s, lam, m);
+ exit_err:
   return err;
 }
 
