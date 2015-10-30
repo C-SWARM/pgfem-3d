@@ -339,6 +339,45 @@ typedef int (*usr_read_params)(Model_parameters *p,
                                FILE *in);
 
 /**
+ * User defined function that returns the size of the data to be
+ * packed/unpacked.
+ *
+ * Does not modify the CM object or any of the data it holds.
+ * \return size in bytes of the pack/unpack data
+ */
+typedef size_t (*usr_get_size)(const Constitutive_model *m);
+
+/**
+ * User defined function to pack the CM data into a buffer (see
+ * pack_data).
+ *
+ * Does not modify the CM object or any of the data it holds.
+ * \param[in,out] buffer, a buffer to insert data to
+ *
+ * \param[in,out] pos, insert position in the buffer. Upon exit - next
+ *                     insertion position.
+ * \return non-zero on error.
+ */
+typedef int (*usr_pack)(const Constitutive_model *m,
+                        char *buffer,
+                        size_t *pos);
+
+/**
+ * User defined function to unpack CM data from a buffer (see also
+ * usr_pack, unpack_data).
+ *
+ * \param[out] m, CM object with internal data set from the buffer
+ * \param[in] buffer, the buffer to read data from
+
+ * \param[in,out] pos, the position in buffer to begin reading from.
+ *                     Upon exit - position for next read.
+ * \return non-zero on error.
+ */
+typedef int (*usr_unpack)(Constitutive_model *m,
+                          const char *buffer,
+                          size_t *pos);
+
+/**
  * Interface for accessing model parameters and modifying/updating the
  * associated state variable(s) at integration points.
  */
@@ -382,6 +421,10 @@ struct Model_parameters {
 
   usr_set_init_vals set_init_vals;
   usr_read_params read_param;
+
+  usr_get_size get_size;
+  usr_pack pack;
+  usr_unpack unpack;
 
   /** Model type, see enumeration @model_type */
   size_t type;

@@ -139,6 +139,10 @@ int model_parameters_construct(Model_parameters *p)
   p->set_init_vals = NULL;
   p->read_param = NULL;
 
+  p->get_size = NULL;
+  p->pack = NULL;
+  p->unpack = NULL;
+
   p->type = -1;
   p->Psys = NULL;
   p->N_SYS = -1;
@@ -217,6 +221,10 @@ int model_parameters_destroy(Model_parameters *p)
 
   p->set_init_vals = NULL;
   p->read_param = NULL;
+
+  p->get_size = NULL;
+  p->pack = NULL;
+  p->unpack = NULL;
 
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
