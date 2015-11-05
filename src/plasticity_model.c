@@ -628,7 +628,27 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
     err += plasticity_compute_dMdu_npa(m,ctx,Grad_op,nne,ndofn,dM_du,CTX->alpha);
   return err;
 }            
-                      
+
+static int cp_write_tensor_restart(FILE *fp, const double *tensor)
+{
+  int err = 0;
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+          tensor[0], tensor[1], tensor[2],
+          tensor[3], tensor[4], tensor[5],
+          tensor[6], tensor[7], tensor[8]);
+  return err;
+}
+
+static int cp_read_tensor_restart(FILE *fp, double *tensor)
+{
+  int err = 0;
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+         &tensor[0], &tensor[1], &tensor[2],
+         &tensor[3], &tensor[4], &tensor[5],
+         &tensor[6], &tensor[7], &tensor[8]);
+  return err;
+}
+
 static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
 {
 
@@ -636,19 +656,11 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
   Matrix(double) *Fs = (m->vars).Fs;
   double *state_var = (m->vars).state_vars[0].m_pdata;
 
-    
-  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_Fn].m_pdata[   0],Fs[TENSOR_Fn].m_pdata[   1],Fs[TENSOR_Fn].m_pdata[   2],
-                                                 Fs[TENSOR_Fn].m_pdata[   3],Fs[TENSOR_Fn].m_pdata[   4],Fs[TENSOR_Fn].m_pdata[   5],
-                                                 Fs[TENSOR_Fn].m_pdata[   6],Fs[TENSOR_Fn].m_pdata[   7],Fs[TENSOR_Fn].m_pdata[   8]);
-  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_Fnm1].m_pdata[ 0],Fs[TENSOR_Fnm1].m_pdata[ 1],Fs[TENSOR_Fnm1].m_pdata[ 2],
-                                                 Fs[TENSOR_Fnm1].m_pdata[ 3],Fs[TENSOR_Fnm1].m_pdata[ 4],Fs[TENSOR_Fnm1].m_pdata[ 5],
-                                                 Fs[TENSOR_Fnm1].m_pdata[ 6],Fs[TENSOR_Fnm1].m_pdata[ 7],Fs[TENSOR_Fnm1].m_pdata[ 8]);
-  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_pFn].m_pdata[  0],Fs[TENSOR_pFn].m_pdata[  1],Fs[TENSOR_pFn].m_pdata[  2],
-                                                 Fs[TENSOR_pFn].m_pdata[  3],Fs[TENSOR_pFn].m_pdata[  4],Fs[TENSOR_pFn].m_pdata[  5],
-                                                 Fs[TENSOR_pFn].m_pdata[  6],Fs[TENSOR_pFn].m_pdata[  7],Fs[TENSOR_pFn].m_pdata[  8]);
-  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",    Fs[TENSOR_pFnm1].m_pdata[0],Fs[TENSOR_pFnm1].m_pdata[1],Fs[TENSOR_pFnm1].m_pdata[2],
-                                                 Fs[TENSOR_pFnm1].m_pdata[3],Fs[TENSOR_pFnm1].m_pdata[4],Fs[TENSOR_pFnm1].m_pdata[5],
-                                                 Fs[TENSOR_pFnm1].m_pdata[6],Fs[TENSOR_pFnm1].m_pdata[7],Fs[TENSOR_pFnm1].m_pdata[8]);
+  err += cp_write_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  err += cp_write_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  err += cp_write_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  err += cp_write_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
+
   const int N_SYS = (m->param)->N_SYS;                                                 
   for(int a=0; a<N_SYS; a++)
     fprintf(fp, "%.17e ", Fs[TENSOR_tau_n].m_pdata[a]);
@@ -660,7 +672,8 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
       
   fprintf(fp, "\n");
                                                    
-  fprintf(fp, "%.17e %.17e %.17e %.17e\n", state_var[VAR_g_n], state_var[VAR_g_nm1], state_var[VAR_L_n], state_var[VAR_L_nm1]);
+  fprintf(fp, "%.17e %.17e %.17e %.17e\n", state_var[VAR_g_n],
+          state_var[VAR_g_nm1], state_var[VAR_L_n], state_var[VAR_L_nm1]);
   
   return err;
 }
@@ -671,19 +684,10 @@ static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
   Matrix(double) *Fs = (m->vars).Fs;
   double *state_var = (m->vars).state_vars[0].m_pdata;
 
-    
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",    Fs[TENSOR_Fn].m_pdata+0,   Fs[TENSOR_Fn].m_pdata+1,   Fs[TENSOR_Fn].m_pdata+2,
-                                                       Fs[TENSOR_Fn].m_pdata+3,   Fs[TENSOR_Fn].m_pdata+4,   Fs[TENSOR_Fn].m_pdata+5,
-                                                       Fs[TENSOR_Fn].m_pdata+6,   Fs[TENSOR_Fn].m_pdata+7,   Fs[TENSOR_Fn].m_pdata+8);
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",  Fs[TENSOR_Fnm1].m_pdata+0, Fs[TENSOR_Fnm1].m_pdata+1, Fs[TENSOR_Fnm1].m_pdata+2,
-                                                     Fs[TENSOR_Fnm1].m_pdata+3, Fs[TENSOR_Fnm1].m_pdata+4, Fs[TENSOR_Fnm1].m_pdata+5,
-                                                     Fs[TENSOR_Fnm1].m_pdata+6, Fs[TENSOR_Fnm1].m_pdata+7, Fs[TENSOR_Fnm1].m_pdata+8);
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",   Fs[TENSOR_pFn].m_pdata+0,  Fs[TENSOR_pFn].m_pdata+1,  Fs[TENSOR_pFn].m_pdata+2,
-                                                      Fs[TENSOR_pFn].m_pdata+3,  Fs[TENSOR_pFn].m_pdata+4,  Fs[TENSOR_pFn].m_pdata+5,
-                                                      Fs[TENSOR_pFn].m_pdata+6,  Fs[TENSOR_pFn].m_pdata+7,  Fs[TENSOR_pFn].m_pdata+8);
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", Fs[TENSOR_pFnm1].m_pdata+0,Fs[TENSOR_pFnm1].m_pdata+1,Fs[TENSOR_pFnm1].m_pdata+2,
-                                                    Fs[TENSOR_pFnm1].m_pdata+3,Fs[TENSOR_pFnm1].m_pdata+4,Fs[TENSOR_pFnm1].m_pdata+5,
-                                                    Fs[TENSOR_pFnm1].m_pdata+6,Fs[TENSOR_pFnm1].m_pdata+7,Fs[TENSOR_pFnm1].m_pdata+8);
+  err += cp_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  err += cp_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  err += cp_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  err += cp_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
 
   const int N_SYS = (m->param)->N_SYS;                                                 
   for(int a=0; a<N_SYS; a++)
@@ -693,6 +697,8 @@ static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
     fscanf(fp, "%lf ", Fs[TENSOR_gamma_dot_n].m_pdata + a);
                                                         
   fscanf(fp, "%lf %lf %lf %lf\n", state_var+VAR_g_n, state_var+VAR_g_nm1, state_var+VAR_L_n, state_var+VAR_L_nm1);
+
+  /* set values at n+1 */
   Matrix_AeqB(Fs[TENSOR_Fnp1],     1.0,Fs[TENSOR_Fn]);                                                   
   Matrix_AeqB(Fs[TENSOR_pFnp1],    1.0,Fs[TENSOR_pFn]);  
   Matrix_AeqB(Fs[TENSOR_tau],      1.0,Fs[TENSOR_tau_n]);
