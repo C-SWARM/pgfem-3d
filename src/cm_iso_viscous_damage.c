@@ -21,7 +21,10 @@
 #include "constitutive_model.h"
 #include <math.h>
 #include <string.h>
+#include "utils.h"
+#include "index_macros.h"
 #include "data_structure_c.h"
+#include "new_potentials.h"
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
@@ -43,6 +46,22 @@ enum {Fn, F, NUM_Fs};
 enum {wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
 enum {Yin, p1, p2, mu, NUM_param};
+
+/**
+ * Matrix multiplication b = a'a, dim(a) = [3 3]
+ */
+static void ata(const double *a,
+                double *b)
+{
+  memset(b, 0, tensor * sizeof(*b));
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for(int k = 0; k < dim; k++) {
+        b[idx_2(i,j)] += a[idx_2(k,i)] * a[idx_2(k,j)];
+      }
+    }
+  }
+}
 
 static double ivd_weibull_function(const double Ybar,
                                    const double *params)
@@ -116,7 +135,10 @@ static int ivd_dev_stress(const Constitutive_model *m,
                           Matrix_double *devS)
 {
   int err = 0;
-
+  const ivd_ctx *CTX = ctx;
+  double C[tensor] = {0};
+  ata(CTX->F,C);
+  new_pot_compute_Sdev(C, m->param->p_hmat, devS->m_pdata);
   return err;
 }
 
@@ -125,7 +147,9 @@ static int ivd_dudj(const Constitutive_model *m,
                     double *dudj)
 {
   int err = 0;
-
+  const ivd_ctx *CTX = ctx;
+  double J = det3x3(CTX->F);
+  new_pot_compute_dudj(J, m->param->p_hmat, dudj);
   return err;
 }
 
@@ -134,7 +158,10 @@ static int ivd_dev_tangent(const Constitutive_model *m,
                            Matrix_double *devL)
 {
   int err = 0;
-
+  const ivd_ctx *CTX = ctx;
+  double C[tensor] = {0};
+  ata(CTX->F,C);
+  new_pot_compute_Sdev(C, m->param->p_hmat, devL->m_pdata);
   return err;
 }
 
@@ -143,7 +170,9 @@ static int ivd_d2udj2(const Constitutive_model *m,
                       double *d2udj2)
 {
   int err = 0;
-
+  const ivd_ctx *CTX = ctx;
+  double J = det3x3(CTX->F);
+  new_pot_compute_d2udj2(J, m->param->p_hmat, d2udj2);
   return err;
 }
 
@@ -258,9 +287,8 @@ static int ivd_compute_dMdu(const Constitutive_model *m,
                             const int ndofn,
                             double *dM_du)
 {
-  int err = 0;
-
-  return err;
+  memset(dM_du, 0, nne * nne * ndofn * ndofn * sizeof(*dM_du));
+  return 0;
 }
 
 static int ivd_set_init_vals(Constitutive_model *m)
