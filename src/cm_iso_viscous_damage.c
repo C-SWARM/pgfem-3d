@@ -172,27 +172,19 @@ static int ivd_get_info(Model_var_info **info)
   return err;
 }
 
-static int ivd_get_Fnm1(const Constitutive_model *m,
-                        Matrix_double *F)
-{
-  int err = 0;
-
-  return 0;
-}
-
 static int ivd_get_Fn(const Constitutive_model *m,
-                      Matrix_double *F)
+                      Matrix_double *FF)
 {
   int err = 0;
-
+  Matrix_copy(*FF, m->vars.Fs[Fn]);
   return err;
 }
 
 static int ivd_get_F(const Constitutive_model *m,
-                     Matrix_double *F)
+                     Matrix_double *FF)
 {
   int err = 0;
-
+  Matrix_copy(*FF, m->vars.Fs[F]);
   return err;
 }
 
@@ -204,7 +196,7 @@ static int ivd_get_F_I(const Constitutive_model *m,
                        Matrix_double *F)
 {
   int err = 0;
-
+  Matrix_eye(*F,3);
   return err;
 }
 
@@ -222,17 +214,32 @@ static int ivd_get_damage_nm1(const Constitutive_model *m,
   return 0;
 }
 
-static int ivd_write_restart(FILE *fp,
+static int ivd_write_restart(FILE *out,
                              const Constitutive_model *m)
 {
   int err = 0;
+  const double *FF = m->vars.Fs[Fn].m_pdata;
+  const double *vars = m->vars.state_vars->m_pdata;
+  if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+             FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
+  if(fprintf(out, "%.17e %.17e\n", vars[wn], vars[Xn]) < 0) err++;
+
+  /* do I need to write out the damaged flag(s)??? */
+
   return err;
 }
 
-static int ivd_read_restart(FILE *fp,
+static int ivd_read_restart(FILE *in,
                             Constitutive_model *m)
 {
   int err = 0;
+  double *FF = m->vars.Fs[Fn].m_pdata;
+  double *vars = m->vars.state_vars->m_pdata;
+  if(fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+            &FF[0], &FF[1], &FF[2], &FF[3],
+            &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor) err++;
+  if(fscanf(in, "%lf %lf", &vars[wn], &vars[Xn]) != 2) err++;
+  err += ivd_reset(m);
   return err;
 }
 
@@ -321,16 +328,16 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
   p->reset_state_vars = ivd_reset;
   p->get_var_info = ivd_get_info;
   p->get_Fn = ivd_get_Fn;
-  p->get_Fnm1 = ivd_get_Fnm1;
+  p->get_Fnm1 = NULL;
   p->get_pF = ivd_get_F_I;
   p->get_pFn = ivd_get_F_I;
-  p->get_pFnm1 = ivd_get_F_I;
+  p->get_pFnm1 = NULL;
   p->get_eF = ivd_get_F;
   p->get_eFn = ivd_get_Fn;
-  p->get_eFnm1 = ivd_get_Fnm1;
+  p->get_eFnm1 = NULL;
 
   p->get_hardening = ivd_get_damage;
-  p->get_hardening_nm1 = ivd_get_damage_nm1;
+  p->get_hardening_nm1 = NULL;
 
   p->write_restart = ivd_write_restart;
   p->read_restart = ivd_read_restart;
