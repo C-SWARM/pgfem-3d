@@ -44,3 +44,8 @@ void destroy_hommat(HOMMAT* hm, long nm)
   }
   free(hm);
 }
+
+double hommat_get_kappa(HOMMAT *mat)
+{
+  return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
+}
