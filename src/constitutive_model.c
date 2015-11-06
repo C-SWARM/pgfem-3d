@@ -133,6 +133,9 @@ int model_parameters_construct(Model_parameters *p)
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
 
+  p->write_restart = NULL;
+  p->read_restart = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
 
@@ -215,6 +218,9 @@ int model_parameters_destroy(Model_parameters *p)
 
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
+
+  p->write_restart = NULL;
+  p->read_restart = NULL;
 
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
