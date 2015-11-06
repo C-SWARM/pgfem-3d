@@ -22,10 +22,6 @@
 #include <math.h>
 #include <string.h>
 #include "data_structure_c.h"
-/* #include "utils.h" */
-/* #include "index_macros.h" */
-/* #include "mkl_cblas.h" */
-/* #include "mkl_lapack.h" */
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
@@ -154,14 +150,26 @@ static int ivd_d2udj2(const Constitutive_model *m,
 static int ivd_update(Constitutive_model *m)
 {
   int err = 0;
+  double *vars = m->vars.state_vars->m_pdata;
+  Matrix_copy(m->vars.Fs[Fn], m->vars.Fs[F]);
+  vars[wn] = vars[w];
+  vars[Xn] = vars[X];
+  vars[Hn] = vars[H];
 
+  /* flags? */
   return err;
 }
 
 static int ivd_reset(Constitutive_model *m)
 {
   int err = 0;
+  double *vars = m->vars.state_vars->m_pdata;
+  Matrix_copy(m->vars.Fs[F], m->vars.Fs[Fn]);
+  vars[w] = vars[wn];
+  vars[X] = vars[Xn];
+  vars[H] = vars[Hn];
 
+  /* flags? */
   return err;
 }
 
@@ -196,7 +204,7 @@ static int ivd_get_F_I(const Constitutive_model *m,
                        Matrix_double *F)
 {
   int err = 0;
-  Matrix_eye(*F,3);
+  Matrix_eye(*F, dim);
   return err;
 }
 
@@ -222,7 +230,7 @@ static int ivd_write_restart(FILE *out,
   const double *vars = m->vars.state_vars->m_pdata;
   if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
-  if(fprintf(out, "%.17e %.17e\n", vars[wn], vars[Xn]) < 0) err++;
+  if(fprintf(out, "%.17e %.17e %.17e\n", vars[wn], vars[Xn], vars[Hn]) < 0) err++;
 
   /* do I need to write out the damaged flag(s)??? */
 
@@ -238,7 +246,7 @@ static int ivd_read_restart(FILE *in,
   if(fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             &FF[0], &FF[1], &FF[2], &FF[3],
             &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor) err++;
-  if(fscanf(in, "%lf %lf", &vars[wn], &vars[Xn]) != 2) err++;
+  if(fscanf(in, "%lf %lf %lf", &vars[wn], &vars[Xn], &vars[Hn]) != 2) err++;
   err += ivd_reset(m);
   return err;
 }
@@ -258,7 +266,11 @@ static int ivd_compute_dMdu(const Constitutive_model *m,
 static int ivd_set_init_vals(Constitutive_model *m)
 {
   int err = 0;
-
+  Matrix_eye(m->vars.Fs[Fn], dim);
+  double *vars = m->vars.state_vars->m_pdata;
+  vars[wn] = vars[Xn] = vars[Hn] = 0.0;
+  /* flags? */
+  err += ivd_reset(m);
   return err;
 }
 
