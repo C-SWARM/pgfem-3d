@@ -259,6 +259,26 @@ static int ivd_read_param(Model_parameters *p,
                           FILE *in)
 {
   int err = 0;
+  /* get pointer to parameter data */
+  double *param = p->model_param;
+  assert(param != NULL); // check the pointer
+
+  /* scan to non-blank/comment line */
+  err += scan_for_valid_line(in);
+
+  /* READ PROPERTIES IN ALPHABETICAL ORDER */
+  int match = fscanf(in, "%lf %lf %lf %lf",
+                     param + mu, param + p1,
+                     param + p2, param + Yin);
+  if (match != NUM_param) err++;
+  assert(match == NUM_param && "Did not read expected number of parameters");
+
+  /* scan past any other comment/blank lines in the block */
+  err += scan_for_valid_line(in);
+
+  /* not expecting EOF, check and return error if encountered */
+  if (feof(in)) err ++;
+  assert(!feof(in) && "EOF reached prematurely");
 
   return err;
 }
@@ -331,7 +351,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   /* allocate room for parameters */
   p->n_param = NUM_param;
-  p->model_param = calloc(NUM_param, sizeof(double));
+  p->model_param = calloc(NUM_param, sizeof(*(p->model_param)));
 
   return err;
 }
