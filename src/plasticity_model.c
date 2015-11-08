@@ -21,6 +21,8 @@
 #define TENSOR4_LEN 81
 
 
+static const int FLAG_end = 0;
+
 enum variable_names {
   VAR_L_n,
   VAR_L_np1,
@@ -266,6 +268,9 @@ static int plasticity_info(Model_var_info **info)
   sprintf((*info)->var_names[VAR_G0],         "G0");         
   sprintf((*info)->var_names[VAR_gs_0],       "gs_0");       
   sprintf((*info)->var_names[VAR_w],           "w");
+
+  (*info)->n_flags = FLAG_end;
+  (*info)->flag_names = malloc(FLAG_end * sizeof( ((*info)->flag_names) ));
 
   return 0;
 }

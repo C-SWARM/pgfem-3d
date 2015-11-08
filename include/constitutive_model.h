@@ -40,6 +40,7 @@ enum model_type {
   CRYSTAL_PLASTICITY,
   BPA_PLASTICITY,
   ISO_VISCOUS_DAMAGE,
+  NUM_MODELS,
   TESTING=99
 };
 
@@ -286,8 +287,10 @@ typedef struct HOMMAT HOMMAT;
 struct Model_var_info {
   char **F_names;
   char **var_names;
+  char **flag_names;
   size_t n_Fs;
   size_t n_vars;
+  size_t n_flags;
 };
 
 #ifndef TYPE_MODEL_VAR_INFO

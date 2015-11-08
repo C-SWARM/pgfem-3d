@@ -17,7 +17,9 @@ int state_variables_build(State_variables *s)
   int err = 0;
   s->Fs = NULL;
   s->state_vars = NULL;
+  s->flags = NULL;
   s->n_Fs = 0;
+  s->n_flags = 0;
   return err;
 }
 
@@ -34,13 +36,18 @@ int state_variables_destroy(State_variables *s)
   Matrix_cleanup(s->state_vars[0]);
   free(s->state_vars);  
   s->state_vars = NULL;
+
+  free(s->flags);
+  s->flags = NULL;
+  s->n_flags = 0;
   
   return err;
 }
 
 int state_variables_initialize(State_variables *s,
                                const size_t n_Fs,
-                               const size_t n_vars)
+                               const size_t n_vars,
+                               const size_t n_flags)
 {
   int err = 0;
   s->n_Fs = n_Fs;
@@ -55,6 +62,9 @@ int state_variables_initialize(State_variables *s,
   s->state_vars = malloc(sizeof(*(s->state_vars)));
   
   Matrix_construct_redim(double, s->state_vars[0],n_vars,1);
+
+  s->n_flags = n_flags;
+  s->flags = calloc(n_flags, sizeof(*(s->flags)));
 
   return err;
 }

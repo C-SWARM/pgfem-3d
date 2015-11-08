@@ -33,8 +33,10 @@ struct State_variables {
 
   /** Handle to vector of state variables */
   Vector_double *state_vars;
+  int *flags;
 
   size_t n_Fs;
+  size_t n_flags;
 };
 
 #ifndef TYPE_STATE_VARIABLES
@@ -46,6 +48,7 @@ int state_variables_build(State_variables *s);
 int state_variables_destroy(State_variables *s);
 int state_variables_initialize(State_variables *s,
                                const size_t n_Fs,
-                               const size_t n_vars);
+                               const size_t n_vars,
+                               const size_t n_flags);
 
 #endif

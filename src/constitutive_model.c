@@ -13,6 +13,7 @@
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
 #include "plasticity_model_BPA.h"
+#include "cm_iso_viscous_damage.h"
 
 #include "material.h"
 #include "hommat.h"
@@ -49,7 +50,8 @@ int constitutive_model_initialize(Constitutive_model *m,
     m->param = p;
     Model_var_info *info = NULL;
     m->param->get_var_info(&info);
-    err += state_variables_initialize(&(m->vars),info->n_Fs,info->n_vars);
+    err += state_variables_initialize(&(m->vars), info->n_Fs,
+                                      info->n_vars, info->n_flags);
     m->param->set_init_vals(m);
     err += model_var_info_destroy(&info);
   }
@@ -73,6 +75,8 @@ int model_var_info_print(FILE *f,
   for(int i = 0, e = info->n_Fs; i < e; i++) fprintf(f,"%s ",info->F_names[i]);
   fprintf(f,"\nVar names: ");
   for(int i = 0, e = info->n_vars; i < e; i++) fprintf(f,"%s ",info->var_names[i]);
+  fprintf(f,"\nFlag names: ");
+  for(int i = 0, e = info->n_flags; i < e; i++) fprintf(f,"%s ",info->flag_names[i]);
   fprintf(f,"\n");
   return err;
 }
@@ -98,6 +102,13 @@ int model_var_info_destroy(Model_var_info **info)
   }
   if(t_info->var_names)
     free(t_info->var_names);
+
+  for (size_t i=0, e=t_info->n_flags; i < e; i++){
+    if(t_info->flag_names[i])
+      free(t_info->flag_names[i]);
+  }
+  if(t_info->flag_names)
+    free(t_info->flag_names);
 
   /* destroy memory for structure */
   free(t_info);
@@ -181,6 +192,9 @@ int model_parameters_initialize(Model_parameters *p,
   }
   case BPA_PLASTICITY:
     err += plasticity_model_BPA_initialize(p);
+    break;
+  case ISO_VISCOUS_DAMAGE:
+    err += iso_viscous_damage_model_initialize(p);
     break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);

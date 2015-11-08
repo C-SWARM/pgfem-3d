@@ -15,6 +15,7 @@ Define_Matrix(double);
 
 static const int g_n_Fs = 2;
 static const int g_n_vars = 0;
+static const int g_n_flags = 0;
 enum {Fn, Fnp1};
 
 /**
@@ -27,7 +28,8 @@ typedef struct none_ctx {
 
 static size_t he_get_size(const Constitutive_model *m)
 {
-  return ((g_n_Fs * tensor + g_n_vars) * sizeof(double));
+  return ((g_n_Fs * tensor + g_n_vars) * sizeof(double)
+          + g_n_flags * sizeof(int));
 }
 
 static int he_pack(const Constitutive_model *m,
@@ -153,8 +155,10 @@ static int plasticity_none_info(Model_var_info **info)
   (*info) = malloc(sizeof(**info));
   (*info)->n_Fs = g_n_Fs;
   (*info)->n_vars = g_n_vars;
+  (*info)->n_flags = g_n_flags;
   (*info)->F_names = malloc(g_n_Fs * sizeof( ((*info)->F_names) ));
   (*info)->var_names = malloc( g_n_vars * sizeof( ((*info)->var_names) ));
+  (*info)->flag_names = malloc( g_n_flags * sizeof( ((*info)->flag_names) ));
 
   /* allocate/copy strings */
   (*info)->F_names[Fnp1] = strdup("F");
