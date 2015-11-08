@@ -34,7 +34,6 @@ int state_variables_destroy(State_variables *s)
   Matrix_cleanup(s->state_vars[0]);
   free(s->state_vars);  
   s->state_vars = NULL;
-  s->n_vars = 0;
   
   return err;
 }
@@ -53,7 +52,6 @@ int state_variables_initialize(State_variables *s,
   }
 
   /* state variables is column vector */
-  s->n_vars = n_vars;
   s->state_vars = malloc(sizeof(*(s->state_vars)));
   
   Matrix_construct_redim(double, s->state_vars[0],n_vars,1);

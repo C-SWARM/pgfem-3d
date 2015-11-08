@@ -35,7 +35,6 @@ struct State_variables {
   Vector_double *state_vars;
 
   size_t n_Fs;
-  size_t n_vars;
 };
 
 #ifndef TYPE_STATE_VARIABLES
