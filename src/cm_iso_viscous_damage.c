@@ -161,7 +161,7 @@ static int ivd_dev_tangent(const Constitutive_model *m,
   const ivd_ctx *CTX = ctx;
   double C[tensor] = {0};
   ata(CTX->F,C);
-  new_pot_compute_Sdev(C, m->param->p_hmat, devL->m_pdata);
+  new_pot_compute_Ldev(C, m->param->p_hmat, devL->m_pdata);
   return err;
 }
 
@@ -180,12 +180,19 @@ static int ivd_update(Constitutive_model *m)
 {
   int err = 0;
   double *vars = m->vars.state_vars->m_pdata;
+  int *flags = m->vars.flags;
+
+  /* deformation gradients */
   Matrix_copy(m->vars.Fs[Fn], m->vars.Fs[F]);
+
+  /* state variables */
   vars[wn] = vars[w];
   vars[Xn] = vars[X];
   vars[Hn] = vars[H];
 
-  /* flags? */
+  /* flags */
+  flags[damaged_n] = flags[damaged];
+
   return err;
 }
 
@@ -193,12 +200,19 @@ static int ivd_reset(Constitutive_model *m)
 {
   int err = 0;
   double *vars = m->vars.state_vars->m_pdata;
+  int *flags = m->vars.flags;
+
+  /* deformation gradients */
   Matrix_copy(m->vars.Fs[F], m->vars.Fs[Fn]);
+
+  /* state variables */
   vars[w] = vars[wn];
   vars[X] = vars[Xn];
   vars[H] = vars[Hn];
 
-  /* flags? */
+  /* flags */
+  flags[damaged] = flags[damaged_n];
+
   return err;
 }
 
@@ -269,22 +283,16 @@ static int ivd_get_damage(const Constitutive_model *m,
   return 0;
 }
 
-static int ivd_get_damage_nm1(const Constitutive_model *m,
-                              double *w)
-{
-  *w = 0;
-  return 0;
-}
-
 static int ivd_write_restart(FILE *out,
                              const Constitutive_model *m)
 {
   int err = 0;
   const double *FF = m->vars.Fs[Fn].m_pdata;
   const double *vars = m->vars.state_vars->m_pdata;
+  const int *flags = m->vars.flags;
   if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
-  if(fprintf(out, "%.17e %.17e %.17e\n", vars[wn], vars[Xn], vars[Hn]) < 0) err++;
+  if(fprintf(out, "%.17e %.17e %.17e %d\n", vars[wn], vars[Xn], vars[Hn], flags[damaged_n]) < 0) err++;
 
   /* do I need to write out the damaged flag(s)??? */
 
@@ -297,10 +305,11 @@ static int ivd_read_restart(FILE *in,
   int err = 0;
   double *FF = m->vars.Fs[Fn].m_pdata;
   double *vars = m->vars.state_vars->m_pdata;
+  int *flags = m->vars.flags;
   if(fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             &FF[0], &FF[1], &FF[2], &FF[3],
             &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor) err++;
-  if(fscanf(in, "%lf %lf %lf", &vars[wn], &vars[Xn], &vars[Hn]) != 2) err++;
+  if(fscanf(in, "%lf %lf %lf %d", &vars[wn], &vars[Xn], &vars[Hn], &flags[damaged_n]) != 4) err++;
   err += ivd_reset(m);
   return err;
 }
@@ -357,25 +366,21 @@ static int ivd_read_param(Model_parameters *p,
 
 static size_t ivd_get_size(const Constitutive_model *m)
 {
-  return 0;
+  return state_variables_get_packed_size(&(m->vars));
 }
 
 static int ivd_pack(const Constitutive_model *m,
                     char *buffer,
                     size_t *pos)
 {
-  int err = 0;
-
-  return err;
+  return state_variables_pack(&(m->vars), buffer, pos);
 }
 
 static int ivd_unpack(Constitutive_model *m,
                       const char *buffer,
                       size_t *pos)
 {
-  int err = 0;
-
-  return err;
+  return state_variables_unpack(&(m->vars), buffer, pos);
 }
 
 /* API functions */
