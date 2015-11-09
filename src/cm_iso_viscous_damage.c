@@ -45,7 +45,7 @@ typedef struct {
 enum {Fn, F, NUM_Fs};
 enum {wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
-enum {Yin, p1, p2, mu, NUM_param};
+enum {mu, p1, p2, Yin, NUM_param};
 
 /**
  * Matrix multiplication b = a'a, dim(a) = [3 3]

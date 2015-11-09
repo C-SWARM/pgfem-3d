@@ -1,4 +1,4 @@
-bin_PROGRAMS = PGFem3D plasticity_model_BPA_driver unit_test_43_driver
+bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver
 all_sources = \
 ALM.c \
 Arc_length.c \
@@ -132,9 +132,13 @@ constitutive_model.c \
 post_processing.c \
 restart.c
 
-plasticity_model_BPA_driver_SOURCES = \
+BPA_driver_SOURCES = \
 $(all_sources) \
 plasticity_model_BPA_driver.c
+
+IVD_driver_SOURCES = \
+$(all_sources) \
+cm_iso_viscous_damage_driver.c
 
 unit_test_43_driver_SOURCES = \
 $(all_sources) \
@@ -156,11 +160,13 @@ AM_INCLUDES = $(VTK_IO_include) \
 all_libs = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 
 PGFem3D_LDADD = $(all_libs)
-plasticity_model_BPA_driver_LDADD = $(all_libs)
+BPA_driver_LDADD = $(all_libs)
+IVD_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
 
 AM_CFLAGS = $(AM_INCLUDES)
 
 PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-plasticity_model_BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+IVD_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 unit_test_43_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
