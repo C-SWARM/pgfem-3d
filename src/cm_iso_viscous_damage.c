@@ -205,6 +205,31 @@ static int ivd_reset(Constitutive_model *m)
 static int ivd_get_info(Model_var_info **info)
 {
   int err = 0;
+  /* make sure I don't leak memory */
+  if( *info != NULL) err += model_var_info_destroy(info);
+
+  /* allocate pointers */
+  (*info) = malloc(sizeof(**info));
+  (*info)->n_Fs = NUM_Fs;
+  (*info)->n_vars = NUM_vars;
+  (*info)->n_flags = NUM_flags;
+  (*info)->F_names = malloc(NUM_Fs * sizeof( ((*info)->F_names) ));
+  (*info)->var_names = malloc( NUM_vars * sizeof( ((*info)->var_names) ));
+  (*info)->flag_names = malloc( NUM_flags * sizeof( ((*info)->flag_names) ));
+
+  /* allocate/copy strings */
+  (*info)->F_names[F] = strdup("F");
+  (*info)->F_names[Fn]   = strdup("Fn");
+
+  (*info)->var_names[wn] = strdup("wn");
+  (*info)->var_names[w] = strdup("w");
+  (*info)->var_names[Xn] = strdup("Xn");
+  (*info)->var_names[X] = strdup("X");
+  (*info)->var_names[Hn] = strdup("Hn");
+  (*info)->var_names[H] = strdup("H");
+
+  (*info)->flag_names[damaged_n] = strdup("damaged_n");
+  (*info)->flag_names[damaged] = strdup("damaged");
 
   return err;
 }
