@@ -50,5 +50,12 @@ int state_variables_initialize(State_variables *s,
                                const size_t n_Fs,
                                const size_t n_vars,
                                const size_t n_flags);
+size_t state_variables_get_packed_size(const State_variables *s);
+int state_variables_pack(const State_variables *s,
+                         char *buffer,
+                         size_t *pos);
+int state_variables_unpack(State_variables *s,
+                           const char *buffer,
+                           size_t *pos);
 
 #endif
