@@ -84,8 +84,7 @@ static double ivd_weibull_evolution(const double Ybar,
 	  );
 }
 
-static int ivd_private_damage_int_alg(double *dw,
-                                      double *vars,
+static int ivd_private_damage_int_alg(double *vars,
                                       int *flags,
                                       const double *params,
                                       const double Ybar,
@@ -116,8 +115,6 @@ static int ivd_private_damage_int_alg(double *dw,
     vars[H] = 0.0;
   }
 
-  *dw = g;
-
   return err;
 }
 
@@ -126,6 +123,22 @@ static int ivd_int_alg(Constitutive_model *m,
                        const void *ctx)
 {
   int err = 0;
+  const ivd_ctx *CTX = ctx;
+  const double *params = m->param->model_param;
+  double *vars = m->vars.state_vars->m_pdata;
+  int *flags = m->vars.flags;
+
+  double Wdev = 0.0;
+  double U = 0.0;
+  double C[tensor] = {0};
+  ata(CTX->F,C);
+  const double J = det3x3(CTX->F);
+  new_pot_compute_Wdev(C, m->param->p_hmat, &Wdev);
+  new_pot_compute_U(J, m->param->p_hmat, &U);
+  const double Ybar =  Wdev + 0.5 * U * hommat_get_kappa(m->param->p_hmat);
+
+  /* integration algorithm */
+  err += ivd_private_damage_int_alg(vars, flags, params, Ybar, CTX->dt);
 
   return err;
 }
