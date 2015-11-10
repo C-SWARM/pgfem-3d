@@ -129,6 +129,7 @@ int model_parameters_construct(Model_parameters *p)
   p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
+  p->compute_AST = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
@@ -218,6 +219,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
+  p->compute_AST = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
@@ -324,8 +326,9 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   err += func->compute_dudj(m,ctx,&dudj);    
   Matrix_AplusB(*S, kappa*J*dudj,CI,1.0,*S);
   //compute stiffness
-  if(compute_stiffness)
-  {  
+  if (compute_stiffness && func->compute_AST != NULL) {
+    err += func->compute_AST(m, ctx, L);
+  } else if (compute_stiffness) {
     Matrix(double) CIoxCI, CICI;
     Matrix_construct_redim(double,CIoxCI,81,1);
     Matrix_construct_redim(double,CICI,81,1);             
@@ -355,7 +358,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
     }    
     Matrix_cleanup(CIoxCI);
     Matrix_cleanup(CICI);
-  }
+  } /* compute stiffness compute_AST does not exist */
 
   func->destroy_ctx(&ctx);  
   Matrix_cleanup(C);

@@ -402,6 +402,10 @@ struct Model_parameters {
   usr_scalar compute_dudj;
   usr_tensor compute_dev_tangent;
   usr_scalar compute_d2udj2;
+
+  /* compute the elastic algorithmic stiffness tangent */
+  usr_tensor compute_AST;
+
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
   usr_info get_var_info;
