@@ -135,7 +135,7 @@ static int ivd_int_alg(Constitutive_model *m,
   const double J = det3x3(CTX->F);
   new_pot_compute_Wdev(C, m->param->p_hmat, &Wdev);
   new_pot_compute_U(J, m->param->p_hmat, &U);
-  const double Ybar =  Wdev + 0.5 * U * hommat_get_kappa(m->param->p_hmat);
+  const double Ybar =  Wdev + U * hommat_get_kappa(m->param->p_hmat);
 
   /* integration algorithm */
   err += ivd_private_damage_int_alg(vars, flags, params, Ybar, CTX->dt);
