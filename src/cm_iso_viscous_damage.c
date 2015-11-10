@@ -30,6 +30,7 @@
    initialization list */
 #define dim  3
 #define tensor 9
+#define tensor4 81
 #define DAMAGE_THRESH 0.9999
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -118,7 +119,108 @@ static int ivd_private_damage_int_alg(double *vars,
   return err;
 }
 
+static int ivd_compute_Sbar(const Constitutive_model *m,
+                            const void *ctx,
+                            double *Sbar)
+{
+  int err = 0;
+  const double kappa = hommat_get_kappa(m->param->p_hmat);
+  const ivd_ctx *CTX = ctx;
+  const double J = det3x3(CTX->F);
+  double C[tensor] = {0};
+  double CI[tensor] = {0};
+  ata(CTX->F,C);
+  err += inv3x3(C, CI);
+  new_pot_compute_Sdev(C, m->param->p_hmat,Sbar);
+
+  double dudj = 0;
+  new_pot_compute_dudj(J, m->param->p_hmat, &dudj);
+
+  for (int i = 0; i < tensor; i++) {
+    Sbar[i] += kappa * J * dudj * CI[i];
+  }
+
+  return err;
+}
+
+static int ivd_compute_Lbar(const Constitutive_model *m,
+                            const void *ctx,
+                            double *Lbar)
+{
+  int err = 0;
+  const double kappa = hommat_get_kappa(m->param->p_hmat);
+  const ivd_ctx *CTX = ctx;
+  const double J = det3x3(CTX->F);
+  double C[tensor] = {0};
+  double C_I[tensor] = {0};
+  double dudj = 0.0;
+  double d2udj2 = 0.0;
+
+  ata(CTX->F,C);
+  err += inv3x3(C, C_I);
+  new_pot_compute_Ldev(C, m->param->p_hmat, Lbar);
+  new_pot_compute_dudj(J, m->param->p_hmat, &dudj);
+  new_pot_compute_d2udj2(J, m->param->p_hmat, &dudj);
+
+  for (int i=0; i < dim; i++) {
+    for (int j=0; j < dim; j++) {
+      for (int k=0; k < dim; k++) {
+	for (int l=0; l < dim; l++) {
+	  const int idx4 = idx_4(i,j,k,l);
+	  /* Deviatoric + Volumetric stiffness */
+	  Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
+                          * C_I[idx_2(i,j)] * C_I[idx_2(k,l)])
+			 - (2. * kappa * J * dudj
+                            * C_I[idx_2(i,k)] * C_I[idx_2(l,j)])
+                         );
+	}
+      }
+    }
+  }
+
+  return err;
+}
+
+static int ivd_modify_AST(const Constitutive_model *m,
+                          const void *ctx,
+                          double *L)
+{
+  int err = 0;
+  const ivd_ctx *CTX = ctx;
+  const double dmu = CTX->dt * m->param->model_param[mu];
+  const double evo = dmu * m->vars.state_vars->m_pdata[H] / (1.0 + dmu);
+  double Sbar[tensor] = {0};
+  err += ivd_compute_Sbar(m, ctx, Sbar);
+
+  for (int i=0; i < dim; i++) {
+    for (int j=0; j < dim; j++) {
+      for (int k=0; k < dim; k++) {
+	for (int l=0; l < dim; l++) {
+	  const int idx4 = idx_4(i,j,k,l);
+	  /* Deviatoric + Volumetric stiffness */
+	  L[idx4] -= evo * Sbar[idx_2(i,j)] * Sbar[idx_2(k,l)];
+        }
+      }
+    }
+  }
+
+  return err;
+}
 /* function stubs for CM interface */
+static int ivd_compute_AST(const Constitutive_model *m,
+                           const void *ctx,
+                           Matrix_double *L)
+{
+  int err = 0;
+  err += ivd_compute_Lbar(m, ctx, L->m_pdata);
+
+  if (m->vars.flags[damaged]) {
+    err += ivd_modify_AST(m, ctx, L->m_pdata);
+  }
+
+  return err;
+}
+
 static int ivd_int_alg(Constitutive_model *m,
                        const void *ctx)
 {
@@ -152,6 +254,10 @@ static int ivd_dev_stress(const Constitutive_model *m,
   double C[tensor] = {0};
   ata(CTX->F,C);
   new_pot_compute_Sdev(C, m->param->p_hmat, devS->m_pdata);
+
+  /* scale by damage variable */
+  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  for(int i = 0; i < tensor; i++) devS->m_pdata[i] *= dam;
   return err;
 }
 
@@ -163,6 +269,9 @@ static int ivd_dudj(const Constitutive_model *m,
   const ivd_ctx *CTX = ctx;
   double J = det3x3(CTX->F);
   new_pot_compute_dudj(J, m->param->p_hmat, dudj);
+
+  /* scale by damage variable */
+  *dudj *= (1.0 - m->vars.state_vars->m_pdata[w]);
   return err;
 }
 
@@ -175,6 +284,11 @@ static int ivd_dev_tangent(const Constitutive_model *m,
   double C[tensor] = {0};
   ata(CTX->F,C);
   new_pot_compute_Ldev(C, m->param->p_hmat, devL->m_pdata);
+
+  /* scale by damage variable */
+  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  for(int i = 0; i < tensor4; i++) devL->m_pdata[i] *= dam;
+
   return err;
 }
 
@@ -186,6 +300,9 @@ static int ivd_d2udj2(const Constitutive_model *m,
   const ivd_ctx *CTX = ctx;
   double J = det3x3(CTX->F);
   new_pot_compute_d2udj2(J, m->param->p_hmat, d2udj2);
+
+  /* scale by damage variable */
+  *d2udj2 *= (1.0 - m->vars.state_vars->m_pdata[w]);
   return err;
 }
 
@@ -407,6 +524,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
   p->compute_dudj = ivd_dudj;
   p->compute_dev_tangent = ivd_dev_tangent;
   p->compute_d2udj2 = ivd_d2udj2;
+  p->compute_AST = ivd_compute_AST;
   p->update_state_vars = ivd_update;
   p->reset_state_vars = ivd_reset;
   p->get_var_info = ivd_get_info;
