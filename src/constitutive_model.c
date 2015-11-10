@@ -319,19 +319,16 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   // compute stress
   double dudj = 0.0;
   double d2udj2 = 0.0;
-  double nu = (m->param->p_hmat)->nu;
-  double G = (m->param->p_hmat)->G;
-  double kappa = ((2.0*G *(1.0+nu))/(3.0*(1.0-2.0*nu)));    
+  const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += func->compute_dev_stress(m, ctx, S);
   err += func->compute_dudj(m,ctx,&dudj);    
   Matrix_AplusB(*S, kappa*J*dudj,CI,1.0,*S);
   //compute stiffness
   if(compute_stiffness)
   {  
-    Matrix(double) CIoxCI, CICI, SoxS;    
+    Matrix(double) CIoxCI, CICI;
     Matrix_construct_redim(double,CIoxCI,81,1);
     Matrix_construct_redim(double,CICI,81,1);             
-    Matrix_construct_redim(double,SoxS,81,1);
     
     err += func->compute_dev_tangent(m, ctx, L);              
     err += func->compute_d2udj2(m,ctx,&d2udj2);
@@ -345,22 +342,19 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
           for(int Q=1; Q<=3; Q++)
           {
             Tns4_v(CIoxCI,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);
-            Tns4_v(SoxS,I,JJ,P,Q) = Mat_v(*S,I,JJ)*Mat_v(*S,P,Q);            
             Tns4_v(CICI,I,JJ,P,Q) = Mat_v(CI,I,P)*Mat_v(CI,Q,JJ);
           }
         }
       }
     }
   
-    double H = 0.0; /* use stored damage evolution parameter */
     for(int I=1; I<=81; I++)
     {
       Vec_v(*L, I) += kappa*(J*dudj + J*J*d2udj2)*Vec_v(CIoxCI, I)
-                   - 2.0*kappa*J*dudj*Vec_v(CICI, I) - H*Vec_v(SoxS, I);
+                   - 2.0*kappa*J*dudj*Vec_v(CICI, I);
     }    
     Matrix_cleanup(CIoxCI);
     Matrix_cleanup(CICI);
-    Matrix_cleanup(SoxS);             
   }
 
   func->destroy_ctx(&ctx);  
