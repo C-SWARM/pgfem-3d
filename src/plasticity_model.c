@@ -65,6 +65,25 @@ typedef struct {
   Matrix(int) ip_ids;
 } IP_ID_LIST;
 
+static size_t cp_get_size(const Constitutive_model *m)
+{
+  return state_variables_get_packed_size(&(m->vars));
+}
+
+static int cp_pack(const Constitutive_model *m,
+                    char *buffer,
+                    size_t *pos)
+{
+  return state_variables_pack(&(m->vars), buffer, pos);
+}
+
+static int cp_unpack(Constitutive_model *m,
+                     const char *buffer,
+                     size_t *pos)
+{
+  return state_variables_unpack(&(m->vars), buffer, pos);
+}
+
 int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS);
 int compute_dMdu_(const Constitutive_model *m,
                  Matrix(double) *dMdu,
@@ -136,7 +155,7 @@ typedef struct plasticity_ctx {
 
 static double compute_bulk_mod(const HOMMAT *mat)
 {
-  return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
+  return hommat_get_kappa(mat);
 }
 
 static int plasticity_int_alg(Constitutive_model *m,
@@ -765,6 +784,10 @@ int plasticity_model_initialize(Model_parameters *p)
 
   p->set_init_vals = cp_set_init_vals;
   p->read_param = cp_read;
+
+  p->get_size = cp_get_size;
+  p->pack = cp_pack;
+  p->unpack = cp_unpack;
 
   p->type = CRYSTAL_PLASTICITY;
 
