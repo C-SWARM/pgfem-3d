@@ -242,6 +242,9 @@ static int ivd_int_alg(Constitutive_model *m,
   /* integration algorithm */
   err += ivd_private_damage_int_alg(vars, flags, params, Ybar, CTX->dt);
 
+  /* store the deformation gradient */
+  memcpy(m->vars.Fs[F].m_pdata, CTX->F, tensor * sizeof(double));
+
   return err;
 }
 
@@ -451,7 +454,7 @@ static int ivd_compute_dMdu(const Constitutive_model *m,
                             const int ndofn,
                             double *dM_du)
 {
-  memset(dM_du, 0, nne * nne * ndofn * ndofn * sizeof(*dM_du));
+  memset(dM_du, 0, tensor * nne *dim * sizeof(*dM_du));
   return 0;
 }
 
@@ -461,7 +464,7 @@ static int ivd_set_init_vals(Constitutive_model *m)
   Matrix_eye(m->vars.Fs[Fn], dim);
   double *vars = m->vars.state_vars->m_pdata;
   vars[wn] = vars[Xn] = vars[Hn] = 0.0;
-  /* flags? */
+  m->vars.flags[damaged_n] = 0;
   err += ivd_reset(m);
   return err;
 }
@@ -525,6 +528,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
   p->compute_dev_tangent = ivd_dev_tangent;
   p->compute_d2udj2 = ivd_d2udj2;
   p->compute_AST = ivd_compute_AST;
+  /* p->compute_AST = NULL; */
   p->update_state_vars = ivd_update;
   p->reset_state_vars = ivd_reset;
   p->get_var_info = ivd_get_info;
