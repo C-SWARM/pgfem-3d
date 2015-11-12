@@ -25,6 +25,55 @@ inline static double del(const int i, const int j)
   return ( (i==j)? 1.0:0.0 );
 }
 
+void new_pot_compute_Wdev(const double *Ce,
+                          const HOMMAT *p_hmat,
+                          double *Wdev)
+{
+  devPotentialFuncPtr W = getDevPotentialFunc(-1,p_hmat);
+  W(Ce,p_hmat,Wdev);
+}
+
+void new_pot_compute_U(const double J,
+                       const HOMMAT *p_hmat,
+                       double *U)
+{
+  UFuncPtr Ufunc = getUFunc(-1,p_hmat);
+  Ufunc(J,p_hmat,U);
+}
+
+void new_pot_compute_Sdev(const double *Ce,
+                          const HOMMAT *p_hmat,
+                          double *Sdev)
+{
+  devStressFuncPtr Stress = getDevStressFunc(-1,p_hmat);
+  Stress(Ce,p_hmat,Sdev);
+}
+
+void new_pot_compute_Ldev(const double *Ce,
+                          const HOMMAT *p_hmat,
+                          double *Ldev)
+{
+  matStiffFuncPtr Tangent = getMatStiffFunc(-1,p_hmat);
+  Tangent(Ce,p_hmat,Ldev);
+}
+
+void new_pot_compute_dudj(const double Je,
+                          const HOMMAT *p_hmat,
+                          double *dudj)
+{
+  dUdJFuncPtr Pressure = getDUdJFunc(-1,p_hmat);
+  Pressure(Je,p_hmat,dudj);
+}
+
+void new_pot_compute_d2udj2(const double Je,
+                            const HOMMAT *p_hmat,
+                            double *d2udj2)
+{
+  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,p_hmat);
+  D_Pressure(Je,p_hmat,d2udj2);
+}
+
+
 /*==== Get functions pointers ====*/
 
 devPotentialFuncPtr getDevPotentialFunc(const int flag,

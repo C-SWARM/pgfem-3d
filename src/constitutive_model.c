@@ -13,6 +13,7 @@
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
 #include "plasticity_model_BPA.h"
+#include "cm_iso_viscous_damage.h"
 
 #include "material.h"
 #include "hommat.h"
@@ -30,6 +31,40 @@ Define_Matrix(double);
 
 #define DIM 3
 #define TENSOR_LEN 9
+
+/* this is a wrapper function for the switch that was copy/pasted
+   everywhere. It is no big deal to keep adding to this private
+   function's argument list. Just put everything any model might need
+   and the switch will handle what is actually used. */
+static int construct_model_context(void **ctx,
+                                   const int type,
+                                   const double *F,
+                                   const double dt,
+                                   const double alpha)
+{
+  int err = 0;
+  switch(type) {
+  case TESTING:
+  case HYPER_ELASTICITY:
+    err += plasticity_model_none_ctx_build(ctx, F);
+    break;
+  case CRYSTAL_PLASTICITY:
+    err += plasticity_model_ctx_build(ctx, F, dt,alpha);
+    break;
+  case BPA_PLASTICITY:
+    err += plasticity_model_BPA_ctx_build(ctx, F, dt);
+    break;
+  case ISO_VISCOUS_DAMAGE:
+    err += iso_viscous_damage_model_ctx_build(ctx, F, dt);
+    break;
+  default:
+    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
+    err++;
+    break;
+  }
+  assert (err == 0);
+  return err;
+}
 
 int constitutive_model_construct(Constitutive_model *m)
 {
@@ -49,7 +84,8 @@ int constitutive_model_initialize(Constitutive_model *m,
     m->param = p;
     Model_var_info *info = NULL;
     m->param->get_var_info(&info);
-    err += state_variables_initialize(&(m->vars),info->n_Fs,info->n_vars);
+    err += state_variables_initialize(&(m->vars), info->n_Fs,
+                                      info->n_vars, info->n_flags);
     m->param->set_init_vals(m);
     err += model_var_info_destroy(&info);
   }
@@ -73,6 +109,8 @@ int model_var_info_print(FILE *f,
   for(int i = 0, e = info->n_Fs; i < e; i++) fprintf(f,"%s ",info->F_names[i]);
   fprintf(f,"\nVar names: ");
   for(int i = 0, e = info->n_vars; i < e; i++) fprintf(f,"%s ",info->var_names[i]);
+  fprintf(f,"\nFlag names: ");
+  for(int i = 0, e = info->n_flags; i < e; i++) fprintf(f,"%s ",info->flag_names[i]);
   fprintf(f,"\n");
   return err;
 }
@@ -99,6 +137,13 @@ int model_var_info_destroy(Model_var_info **info)
   if(t_info->var_names)
     free(t_info->var_names);
 
+  for (size_t i=0, e=t_info->n_flags; i < e; i++){
+    if(t_info->flag_names[i])
+      free(t_info->flag_names[i]);
+  }
+  if(t_info->flag_names)
+    free(t_info->flag_names);
+
   /* destroy memory for structure */
   free(t_info);
 
@@ -118,6 +163,7 @@ int model_parameters_construct(Model_parameters *p)
   p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
+  p->compute_AST = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
@@ -133,11 +179,18 @@ int model_parameters_construct(Model_parameters *p)
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
 
+  p->write_restart = NULL;
+  p->read_restart = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
 
   p->set_init_vals = NULL;
   p->read_param = NULL;
+
+  p->get_size = NULL;
+  p->pack = NULL;
+  p->unpack = NULL;
 
   p->type = -1;
   p->Psys = NULL;
@@ -175,6 +228,9 @@ int model_parameters_initialize(Model_parameters *p,
   case BPA_PLASTICITY:
     err += plasticity_model_BPA_initialize(p);
     break;
+  case ISO_VISCOUS_DAMAGE:
+    err += iso_viscous_damage_model_initialize(p);
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
     err++;
@@ -197,6 +253,7 @@ int model_parameters_destroy(Model_parameters *p)
   p->compute_dudj = NULL;
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
+  p->compute_AST = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
   p->get_var_info = NULL;
@@ -212,11 +269,18 @@ int model_parameters_destroy(Model_parameters *p)
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
 
+  p->write_restart = NULL;
+  p->read_restart = NULL;
+
   p->destroy_ctx = NULL;
   p->compute_dMdu = NULL;
 
   p->set_init_vals = NULL;
   p->read_param = NULL;
+
+  p->get_size = NULL;
+  p->pack = NULL;
+  p->unpack = NULL;
 
   if(p->Psys){
     Matrix_cleanup(*(p->Psys));
@@ -271,39 +335,22 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   Matrix_inv(C,CI);        
   Matrix_det(Fe, J);
 
-  switch(m->param->type) {
-  case TESTING:
-  case HYPER_ELASTICITY:
-    err += plasticity_model_none_ctx_build(&ctx, F->m_pdata);
-    break;
-  case CRYSTAL_PLASTICITY:
-    err += plasticity_model_ctx_build(&ctx, F->m_pdata, dt,alpha);
-    break;
-  case BPA_PLASTICITY:
-    err += plasticity_model_BPA_ctx_build(&ctx, F->m_pdata, dt);
-    break;
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",m->param->type);
-    err++;
-    break;
-  }
+  err += construct_model_context(&ctx, m->param->type, F->m_pdata, dt, alpha);
 
   // compute stress
   double dudj = 0.0;
   double d2udj2 = 0.0;
-  double nu = (m->param->p_hmat)->nu;
-  double G = (m->param->p_hmat)->G;
-  double kappa = ((2.0*G *(1.0+nu))/(3.0*(1.0-2.0*nu)));    
+  const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += func->compute_dev_stress(m, ctx, S);
   err += func->compute_dudj(m,ctx,&dudj);    
   Matrix_AplusB(*S, kappa*J*dudj,CI,1.0,*S);
   //compute stiffness
-  if(compute_stiffness)
-  {  
-    Matrix(double) CIoxCI, CICI, SoxS;    
+  if (compute_stiffness && func->compute_AST != NULL) {
+    err += func->compute_AST(m, ctx, L);
+  } else if (compute_stiffness) {
+    Matrix(double) CIoxCI, CICI;
     Matrix_construct_redim(double,CIoxCI,81,1);
     Matrix_construct_redim(double,CICI,81,1);             
-    Matrix_construct_redim(double,SoxS,81,1);
     
     err += func->compute_dev_tangent(m, ctx, L);              
     err += func->compute_d2udj2(m,ctx,&d2udj2);
@@ -317,23 +364,20 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
           for(int Q=1; Q<=3; Q++)
           {
             Tns4_v(CIoxCI,I,JJ,P,Q) = Mat_v(CI,I,JJ)*Mat_v(CI,P,Q);
-            Tns4_v(SoxS,I,JJ,P,Q) = Mat_v(*S,I,JJ)*Mat_v(*S,P,Q);            
             Tns4_v(CICI,I,JJ,P,Q) = Mat_v(CI,I,P)*Mat_v(CI,Q,JJ);
           }
         }
       }
     }
   
-    double H = 0.0; /* use stored damage evolution parameter */
     for(int I=1; I<=81; I++)
     {
       Vec_v(*L, I) += kappa*(J*dudj + J*J*d2udj2)*Vec_v(CIoxCI, I)
-                   - 2.0*kappa*J*dudj*Vec_v(CICI, I) - H*Vec_v(SoxS, I);
+                   - 2.0*kappa*J*dudj*Vec_v(CICI, I);
     }    
     Matrix_cleanup(CIoxCI);
     Matrix_cleanup(CICI);
-    Matrix_cleanup(SoxS);             
-  }
+  } /* compute stiffness compute_AST does not exist */
 
   func->destroy_ctx(&ctx);  
   Matrix_cleanup(C);
@@ -897,12 +941,11 @@ int stiffness_el_crystal_plasticity(double *lk,
     // --> update plasticity part
     if(total_Lagrangian)
     { 
-      Matrix(double) FnI;
-      Matrix_construct_redim(double, FnI,3,3);
-      Matrix_inv(F2[Fn],FnI);
-      Matrix_AeqB(F2[Fnp1],1.0,F2[Fr]);  /* set F2[Fnp1] */
-      Matrix_AxB(F2[Fr],1.0,0.0,F2[Fnp1],0,FnI,0);  /* recompute F2[Fr] */         
-      Matrix_cleanup(FnI);         
+      /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
+      Matrix_eye(F2[Fn],3);
+      Matrix_eye(F2[pFn],3);
+      Matrix_eye(F2[eFn],3);
+      Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
     {
@@ -913,19 +956,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     /* need to have called the integration algorithm. This should be
        done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
-    switch (m->param->type){
-    case TESTING:
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt,alpha);
-      break;
-    case BPA_PLASTICITY:
-      err += plasticity_model_BPA_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
-      break;      
-    default: assert(0); break;
-    }
+    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->destroy_ctx(&ctx);
     err += func->get_pF(m,&F2[pFnp1]);
@@ -1091,12 +1122,11 @@ int residuals_el_crystal_plasticity(double *f,
     // --> update plasticity part
     if(total_Lagrangian)
     {
-      Matrix(double) FnI;
-      Matrix_construct_redim(double, FnI,3,3);
-      err += inv3x3(F2[Fn].m_pdata,FnI.m_pdata);
-      Matrix_AeqB(F2[Fnp1],1.0,F2[Fr]);  /* set F2[Fnp1] */
-      Matrix_AxB(F2[Fr],1.0,0.0,F2[Fnp1],0,FnI,0);  /* recompute F2[Fr] */         
-      Matrix_cleanup(FnI);          
+      /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
+      Matrix_eye(F2[Fn],3);
+      Matrix_eye(F2[pFn],3);
+      Matrix_eye(F2[eFn],3);
+      Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
     {
@@ -1104,19 +1134,7 @@ int residuals_el_crystal_plasticity(double *f,
     }      
 
     void *ctx = NULL;
-    switch (m->param->type){
-    case TESTING:
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt,alpha);
-      break;
-    case BPA_PLASTICITY:
-      err += plasticity_model_BPA_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
-      break;      
-    default: assert(0); break;
-    }
+    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += m->param->integration_algorithm(m,ctx);
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
@@ -1340,19 +1358,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     /* need to have called the integration algorithm. This should be
        done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
-    switch (m->param->type){
-    case TESTING:
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt,alpha);
-      break;
-    case BPA_PLASTICITY:
-      err += plasticity_model_BPA_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
-      break;      
-    default: assert(0); break;
-    }
+    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
         
     err += m->param->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += m->param->destroy_ctx(&ctx);
@@ -1572,19 +1578,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
     void *ctx = NULL;
-    switch (m->param->type){
-    case TESTING:
-    case HYPER_ELASTICITY:
-      err += plasticity_model_none_ctx_build(&ctx,F2[Fnp1].m_pdata);
-      break;
-    case CRYSTAL_PLASTICITY:
-      err += plasticity_model_ctx_build(&ctx,F2[Fnp1].m_pdata,dt,alpha);
-      break;
-    case BPA_PLASTICITY:
-      err += plasticity_model_BPA_ctx_build(&ctx,F2[Fnp1].m_pdata,dt);
-      break;      
-    default: assert(0); break;
-    }
+    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += m->param->integration_algorithm(m,ctx);
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);

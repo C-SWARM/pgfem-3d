@@ -8,10 +8,35 @@ extern "C" {
 
 #include "hommat.h"
 
-/* This file contains functions to return stress, pressure and their
-   tangents.  The tangents are the derivatives with respect to their
-   native variable, i.e. it is up to the user to take care of chain
-   rule. e.g. dev_S = 2*d (dev_W)/dC, dev_L = 2*d (dev_S)/dC */
+  /* This file contains functions to return stress, pressure and their
+     tangents.  The tangents are the derivatives with respect to their
+     native variable, i.e. it is up to the user to take care of chain
+     rule. e.g. dev_S = 2*d (dev_W)/dC, dev_L = 2*d (dev_S)/dC */
+
+  /* Quick drivers */
+  void new_pot_compute_Wdev(const double *Ce,
+                            const HOMMAT *p_hmat,
+                            double *Wdev);
+
+  void new_pot_compute_U(const double J,
+                         const HOMMAT *p_hmat,
+                         double *U);
+
+  void new_pot_compute_Sdev(const double *Ce,
+                            const HOMMAT *p_hmat,
+                            double *Sdev);
+
+  void new_pot_compute_dudj(const double Je,
+                            const HOMMAT *p_hmat,
+                            double *dudj);
+
+  void new_pot_compute_Ldev(const double *Ce,
+                            const HOMMAT *p_hmat,
+                            double *Ldev);
+
+  void new_pot_compute_d2udj2(const double Je,
+                              const HOMMAT *p_hmat,
+                              double *d2udj2);
 
   /*===== Function types ====*/
   typedef void (*devPotentialFuncPtr)(double const *C,

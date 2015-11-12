@@ -685,7 +685,8 @@ int single_scale_main(int argc,char *argv[])
           PGFEM_printf("CRYSTAL PLASTICITY\n");
           break;                                                 
         case BPA_PLASTICITY:
-          PGFEM_printf("BPA_PLASTICITY\n");          
+          PGFEM_printf("BPA_PLASTICITY\n");
+          break;
         default:
           PGFEM_printf("HYPERELASTICITY\n");
           break;

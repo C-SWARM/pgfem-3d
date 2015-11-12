@@ -27,4 +27,10 @@ HOMMAT* build_hommat(long i);
 
 void destroy_hommat(HOMMAT* hm, long nm);
 
+/**
+ * \return bulk modulus (kappa) computed from linear elastic
+ * properties.
+ */
+double hommat_get_kappa(const HOMMAT *mat);
+
 #endif /* #ifndef  */

@@ -43,6 +43,7 @@ static const int BPA_PRINT_LEVEL = 0;
 /* constants/enums */
 static const int _n_Fs = 6;
 static const int _n_vars = 4;
+static const int _n_flags = 0;
 enum {_Fe,_Fp,_F,_Fe_n,_Fp_n,_F_n};
 enum {_s,_lam,_s_n,_lam_n};
 static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
@@ -53,6 +54,40 @@ enum {mcA, mcAlpha, mcCr, mcGdot0, mcH, mcN, mcS0, mcSss, mcT, N_PARAM};
 /*
  * Purely static functions
  */
+
+static size_t bpa_get_size(const Constitutive_model *m)
+{
+  return ((_n_Fs * tensor + _n_vars) * sizeof(double)
+          + _n_flags * sizeof(int));
+}
+
+static int bpa_pack(const Constitutive_model *m,
+                    char *buffer,
+                    size_t *pos)
+{
+  /* pack/unpack Fs */
+  const Matrix_double *Fs = m->vars.Fs;
+  const double *vars = m->vars.state_vars->m_pdata;
+  for (int i = 0; i < _n_Fs; i++) {
+    pack_data(Fs[i].m_pdata, buffer, pos, tensor, sizeof(double));
+  }
+  pack_data(vars, buffer, pos, _n_vars, sizeof(*vars));
+  return 0;
+}
+
+static int bpa_unpack(Constitutive_model *m,
+                      const char *buffer,
+                      size_t *pos)
+{
+  Matrix_double *Fs = m->vars.Fs;
+  double *vars = m->vars.state_vars->m_pdata;
+  for (int i = 0; i < _n_Fs; i++) {
+    unpack_data(buffer, Fs[i].m_pdata, pos, tensor, sizeof(double));
+  }
+  unpack_data(buffer, vars, pos, _n_vars, sizeof(double));
+  return 0;
+}
+
 static double bpa_compute_bulk_mod(const HOMMAT *mat)
 {
   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
@@ -1209,8 +1244,10 @@ int BPA_model_info(Model_var_info **info)
   (*info) = malloc(sizeof(**info));
   (*info)->n_Fs = _n_Fs;
   (*info)->n_vars = _n_vars;
+  (*info)->n_flags = _n_flags;
   (*info)->F_names = malloc(_n_Fs * sizeof( ((*info)->F_names) ));
   (*info)->var_names = malloc( _n_vars * sizeof( ((*info)->var_names) ));
+  (*info)->flag_names = malloc( _n_flags * sizeof( ((*info)->flag_names) ));
 
   /* allocate/copy strings */
   (*info)->F_names[_Fe] = strdup("Fe");
@@ -1486,6 +1523,10 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
 
   p->set_init_vals = bpa_set_initial_values;
   p->read_param = bpa_read;
+
+  p->get_size = bpa_get_size;
+  p->pack = bpa_pack;
+  p->unpack = bpa_unpack;
 
   p->type = BPA_PLASTICITY;
 

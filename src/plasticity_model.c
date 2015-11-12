@@ -21,6 +21,8 @@
 #define TENSOR4_LEN 81
 
 
+static const int FLAG_end = 0;
+
 enum variable_names {
   VAR_L_n,
   VAR_L_np1,
@@ -62,6 +64,25 @@ typedef struct {
   int mat_id;
   Matrix(int) ip_ids;
 } IP_ID_LIST;
+
+static size_t cp_get_size(const Constitutive_model *m)
+{
+  return state_variables_get_packed_size(&(m->vars));
+}
+
+static int cp_pack(const Constitutive_model *m,
+                    char *buffer,
+                    size_t *pos)
+{
+  return state_variables_pack(&(m->vars), buffer, pos);
+}
+
+static int cp_unpack(Constitutive_model *m,
+                     const char *buffer,
+                     size_t *pos)
+{
+  return state_variables_unpack(&(m->vars), buffer, pos);
+}
 
 int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS);
 int compute_dMdu_(const Constitutive_model *m,
@@ -134,7 +155,7 @@ typedef struct plasticity_ctx {
 
 static double compute_bulk_mod(const HOMMAT *mat)
 {
-  return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
+  return hommat_get_kappa(mat);
 }
 
 static int plasticity_int_alg(Constitutive_model *m,
@@ -266,6 +287,9 @@ static int plasticity_info(Model_var_info **info)
   sprintf((*info)->var_names[VAR_G0],         "G0");         
   sprintf((*info)->var_names[VAR_gs_0],       "gs_0");       
   sprintf((*info)->var_names[VAR_w],           "w");
+
+  (*info)->n_flags = FLAG_end;
+  (*info)->flag_names = malloc(FLAG_end * sizeof( ((*info)->flag_names) ));
 
   return 0;
 }
@@ -760,6 +784,10 @@ int plasticity_model_initialize(Model_parameters *p)
 
   p->set_init_vals = cp_set_init_vals;
   p->read_param = cp_read;
+
+  p->get_size = cp_get_size;
+  p->pack = cp_pack;
+  p->unpack = cp_unpack;
 
   p->type = CRYSTAL_PLASTICITY;
 

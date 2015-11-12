@@ -42,11 +42,6 @@ int plasticity_model_initialize(Model_parameters *p);
  * \param[in,out] ctx - handle to an opaque model context object.
  * \param[in] F - The *total* deformation gradient.
  * \return non-zero on internal error.
- *
- * CAVEATES: The addresses of C and J_or_Theta must remain valid
- * throughout the existence of the ctx. Destroying these memory
- * locations before calling plasticity_model_none_ctx_destroy may
- * invalidate ctx.
  */
 int plasticity_model_ctx_build(void **ctx,
                                const double *F,
