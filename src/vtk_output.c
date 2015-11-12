@@ -283,8 +283,7 @@ void VTK_print_vtu(char *path,
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"MacroDisplacement\""
 	    " NumberOfComponents=\"3\" format=\"ascii\">\n");
     double *jump = aloc1(3);
-    compute_interface_macro_jump_u(jump,sup,opts->analysis_type);
-    compute_interface_macro_grad_u(sup->F0,sup->lc,jump,sup->N0);
+    compute_macro_grad_u(sup->F0,sup,opts->analysis_type);
     for(int i=0; i<nn; i++){
       compute_interface_macro_disp_at_node(jump,&node[i],sup->F0,opts->analysis_type);
       PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",jump[0],jump[1],jump[2]);
