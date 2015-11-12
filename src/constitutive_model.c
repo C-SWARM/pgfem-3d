@@ -1078,7 +1078,7 @@ int residuals_el_crystal_plasticity(double *f,
   }
   
   enum {Fn,Fr,Fnp1,pFn,eFnp1,pFnp1,pFnp1_I,
-    L,S,pFnI,eFn,M,eFnM,ST_ab,AA,sAA,MTeFnT_sAA_eFnM,eFnMT,Fend}; 
+    L,S,eFn,M,eFnM,ST_ab,AA,sAA,MTeFnT_sAA_eFnM,eFnMT,Fend};
   
   /* second-order tensors */
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -1122,14 +1122,13 @@ int residuals_el_crystal_plasticity(double *f,
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
 
-    err += inv3x3(F2[pFn].m_pdata, F2[pFnI].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,F2[pFnI],0,F2[pFnp1],0);    
+    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
+    Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
     // <-- update plasticity part
 
     // --> update elasticity part
     Matrix_init(F2[S],0.0);    
-    
-    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
+
     Matrix_AxB(F2[eFnp1],1.0,0.0,F2[Fnp1],0,F2[pFnp1_I],0);
     err += constitutive_model_update_elasticity(m,&F2[eFnp1],dt,NULL,&F2[S],compute_stiffness);
     // <-- update elasticity part
