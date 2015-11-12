@@ -1100,8 +1100,6 @@ int residuals_el_crystal_plasticity(double *f,
 
     err += m->param->get_Fn(m,&F2[Fn]);
     err += m->param->get_pFn(m,&F2[pFn]);
-
-    err += inv3x3(F2[pFn].m_pdata, F2[pFnI].m_pdata);
     err += m->param->get_eFn(m,&F2[eFn]);
    
     // --> update plasticity part
@@ -1124,6 +1122,7 @@ int residuals_el_crystal_plasticity(double *f,
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
 
+    err += inv3x3(F2[pFn].m_pdata, F2[pFnI].m_pdata);
     Matrix_AxB(F2[M],1.0,0.0,F2[pFnI],0,F2[pFnp1],0);    
     // <-- update plasticity part
 
