@@ -17,7 +17,9 @@
 
 #include "hommat.h"
 #include "PGFEM_io.h"
+#include "PGFEM_mpi.h"
 #include "data_structure_c.h"
+#include "supp.h"
 #include "elem3d.h"
 #include "femlib.h"
 #include "index_macros.h"
@@ -29,6 +31,15 @@ Define_Matrix(double);
 
 #define DIM 3
 #define TENSOR_LEN 9
+
+/* add the macroscopic deformation gradient to the _TOTAL_ deformation
+   gradient */
+static void cm_add_macro_F(const SUPP sup,
+                           double * restrict F)
+{
+  const double * restrict F0 = sup->F0;
+  for (int i = 0; i < TENSOR_LEN; i++) F[i] += F0[i];
+}
 
 /* this is a wrapper function for the switch that was copy/pasted
    everywhere. It is no big deal to keep adding to this private
@@ -926,6 +937,10 @@ int stiffness_el_crystal_plasticity(double *lk,
     // --> update plasticity part
     if(total_Lagrangian)
     { 
+      if (sup->multi_scale) {
+        cm_add_macro_F(sup,F2[Fr].m_pdata);
+      }
+
       /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
       Matrix_eye(F2[Fn],3);
       Matrix_eye(F2[pFn],3);
@@ -934,6 +949,11 @@ int stiffness_el_crystal_plasticity(double *lk,
     }
     else
     {
+      if (sup->multi_scale) {
+        PGFEM_printerr("Multi-scale formulation does not support UL!\n");
+        PGFEM_Abort();
+      }
+
       Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn]+1    
     }   
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0); 
@@ -1105,6 +1125,10 @@ int residuals_el_crystal_plasticity(double *f,
     // --> update plasticity part
     if(total_Lagrangian)
     {
+      if (sup->multi_scale) {
+        cm_add_macro_F(sup,F2[Fr].m_pdata);
+      }
+
       /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
       Matrix_eye(F2[Fn],3);
       Matrix_eye(F2[pFn],3);
@@ -1113,6 +1137,11 @@ int residuals_el_crystal_plasticity(double *f,
     }
     else
     {
+      if (sup->multi_scale) {
+        PGFEM_printerr("Multi-scale formulation does not support UL!\n");
+        PGFEM_Abort();
+      }
+
       Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  /* compute F2[Fnp1] */    
     }      
 
