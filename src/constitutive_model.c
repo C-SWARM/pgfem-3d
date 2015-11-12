@@ -15,9 +15,7 @@
 #include "plasticity_model_BPA.h"
 #include "cm_iso_viscous_damage.h"
 
-#include "material.h"
 #include "hommat.h"
-#include "matgeom.h"
 #include "PGFEM_io.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
@@ -155,8 +153,6 @@ int model_parameters_construct(Model_parameters *p)
 {
   int err = 0;
   /* poison all values */
-  p->p_mat = NULL;
-  p->p_mgeom = NULL;
   p->p_hmat = NULL;
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
@@ -201,14 +197,10 @@ int model_parameters_construct(Model_parameters *p)
 }
 
 int model_parameters_initialize(Model_parameters *p,
-                                const MATERIAL *p_mat,
-                                const MATGEOM_1 *p_mgeom,
                                 const HOMMAT *p_hmat,
                                 const size_t type)
 {
   int err = 0;
-  p->p_mat = p_mat;
-  p->p_mgeom = p_mgeom;
   p->p_hmat = p_hmat;
   p->type = type;
   p->Psys = NULL;
@@ -243,8 +235,6 @@ int model_parameters_destroy(Model_parameters *p)
 {
   int err = 0;
   /* drop pointer to material (material free'd elsewhere) */
-  p->p_mat = NULL;
-  p->p_mgeom = NULL;
   p->p_hmat = NULL;
   
   /* drop function pointers */
@@ -389,7 +379,6 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
 
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
-                                const MATGEOM_1 *p_mgeom,
                                 const HOMMAT *hmat_list,
                                 const int type) /* <-- see #22 */
 {
@@ -403,8 +392,6 @@ int build_model_parameters_list(Model_parameters **param_list,
   for (int i = 0; i < n_mat; i++) {
     err += model_parameters_construct(&((*param_list)[i]) );
     err += model_parameters_initialize(&((*param_list)[i]),
-                                       NULL,
-                                       p_mgeom,
                                        hmat_list + i,
                                        type);
   }
@@ -484,8 +471,6 @@ int read_model_parameters_list(Model_parameters **param_list,
         /* construct and initialize this object */
         err += model_parameters_construct(&((*param_list)[idx]) );
         err += model_parameters_initialize(&((*param_list)[idx]),
-                                           NULL,
-                                           NULL,
                                            hmat_list + idx,
                                            model_type);
         err += ((*param_list)[idx]).read_param(&((*param_list)[idx]),in);

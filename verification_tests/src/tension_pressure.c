@@ -91,7 +91,7 @@ int main(int argc,char *argv[])
   EPS *eps = NULL;    
   eps = build_eps_il(ne,elem,options.analysis_type);
 
-  build_model_parameters_list(&param_list,nhommat,matgeom,hommat,options.cm);
+  build_model_parameters_list(&param_list,nhommat,hommat,options.cm);
   init_all_constitutive_model(eps,ne,elem,param_list);    
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs

@@ -2321,7 +2321,7 @@ int plasticity_model_test_staggered(const HOMMAT *hmat, Matrix(double) *L_in, in
   
   constitutive_model_construct(&m);
   model_parameters_construct(&p);  
-  model_parameters_initialize(&p, NULL, NULL, hmat, CRYSTAL_PLASTICITY);
+  model_parameters_initialize(&p, hmat, CRYSTAL_PLASTICITY);
   constitutive_model_initialize(&m, &p);
   
   p.N_SYS = plasticity_model_slip_system(p.Psys);
@@ -2504,7 +2504,7 @@ int plasticity_model_test_staggered_F_of_t(const HOMMAT *hmat)
   
   constitutive_model_construct(&m);
   model_parameters_construct(&p);  
-  model_parameters_initialize(&p, NULL, NULL, hmat, CRYSTAL_PLASTICITY);
+  model_parameters_initialize(&p, hmat, CRYSTAL_PLASTICITY);
   constitutive_model_initialize(&m, &p);
   
   p.N_SYS = plasticity_model_slip_system(p.Psys);
@@ -2644,7 +2644,7 @@ int plasticity_model_test_no_staggered(const HOMMAT *hmat, Matrix(double) *L_in,
   
   constitutive_model_construct(&m);
   model_parameters_construct(&p);  
-  model_parameters_initialize(&p, NULL, NULL, hmat, CRYSTAL_PLASTICITY);
+  model_parameters_initialize(&p, hmat, CRYSTAL_PLASTICITY);
   constitutive_model_initialize(&m, &p);
   
   p.N_SYS = plasticity_model_slip_system(p.Psys);

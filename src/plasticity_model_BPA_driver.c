@@ -106,7 +106,7 @@ int main(int argc, char **argv)
   /* initialize values */
   set_mat_values(mat);
   err += model_parameters_construct(p);
-  err += model_parameters_initialize(p,NULL,NULL,mat,BPA_PLASTICITY);
+  err += model_parameters_initialize(p, mat, BPA_PLASTICITY);
   err += p->read_param(p,in);
   err += constitutive_model_construct(m);
   err += constitutive_model_initialize(m,p);

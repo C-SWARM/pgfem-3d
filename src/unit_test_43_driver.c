@@ -23,7 +23,7 @@ int main(int argc, char **argv)
   if (test_all) {
     for (int i = 0; i < NUM_MODELS; i++) {
       err += model_parameters_construct(p);
-      err += model_parameters_initialize(p, NULL, NULL, NULL, i);
+      err += model_parameters_initialize(p, NULL, i);
       assert(err == 0);
 
       /* Create and print the model info */
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     }
   } else {
     err += model_parameters_construct(p);
-    err += model_parameters_initialize(p, NULL, NULL, NULL, test_single);
+    err += model_parameters_initialize(p, NULL, test_single);
     assert(err == 0);
 
     /* Create and print the model info */

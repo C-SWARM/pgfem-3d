@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include "state_variables.h" /* provides declaration of Matrix_double */
 #include "sig.h"
-#include "matgeom.h"
 #include "supp.h"
 
 #define PLASTICITY_TOTAL_LAGRANGIAN 1
@@ -260,20 +259,6 @@ typedef int (*usr_compute_dM_du)(const Constitutive_model *m,
                                  const int ndofn,
                                  double *dM_du);
 
-/** Pre-declare MATERIAL structure */
-struct MATERIAL;
-#ifndef TYPE_MATERIAL
-#define TYPE_MATERIAL
-typedef struct MATERIAL MATERIAL;
-#endif
-
-/** Pre-declare MATERIAL structure */
-struct MATGEOM_1;
-#ifndef TYPE_MATGEOM_1
-#define TYPE_MATGEOM_1
-typedef struct MATGEOM_1 MATGEOM_1;
-#endif
-
 /** Pre-declare HOMMAT structure */
 struct HOMMAT;
 #ifndef TYPE_HOMMAT
@@ -386,10 +371,6 @@ typedef int (*usr_unpack)(Constitutive_model *m,
  * associated state variable(s) at integration points.
  */
 struct Model_parameters {
-  /** Pointer to anisotropic material properties (props,orientation, etc.) */
-  const MATERIAL *p_mat;
-  /** Pointer to anisotropic material properties (props,orientation, etc.) */
-  const MATGEOM_1  *p_mgeom;  
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
   
@@ -458,8 +439,6 @@ int model_parameters_construct(Model_parameters *p);
  * \return non-zero on error.
  */
 int model_parameters_initialize(Model_parameters *p,
-                                const MATERIAL *p_mat,
-                                const MATGEOM_1 *p_mgeom,
                                 const HOMMAT *p_hmat,
                                 const size_t type);
 
@@ -495,22 +474,17 @@ int model_parameters_destroy(Model_parameters *p);
 
 /**
  * Allocate and populate a list of Model_parameters given the number
- * of materials. It seems that only one MATGEOM_1 exists, no matter
- * how many orientations are present, and that MATERIAL is not used by
- * any of the current implementation. Therefore the length of the list
- * is n_hmat.
+ * of materials.
  *
  * \param[in/out] param_list, list of Model_parameters, unallocated on
  *                            entry -- allocated on exit.
- * \param[in] n_mat, length oc hmat_list
- * \param[in] p_mgeom, pointer to material geometry object
+ * \param[in] n_mat, length of hmat_list
  * \param[in] hmat_list, list of homogenized material properies
  *
  * \return non-zero on error.
  */
 int build_model_parameters_list(Model_parameters **param_list,
                                 const int n_mat,
-                                const MATGEOM_1 *p_mgeom,
                                 const HOMMAT *hmat_list,
                                 const int type);
 

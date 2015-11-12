@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 
   Model_parameters *p = malloc(sizeof(*p));
   err += model_parameters_construct(p);
-  err += model_parameters_initialize(p, NULL, NULL, p_hmat, ISO_VISCOUS_DAMAGE);
+  err += model_parameters_initialize(p, p_hmat, ISO_VISCOUS_DAMAGE);
   if (in == NULL) {
     param_assign_values(p->model_param);
   } else {
