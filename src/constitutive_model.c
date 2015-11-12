@@ -941,12 +941,11 @@ int stiffness_el_crystal_plasticity(double *lk,
     // --> update plasticity part
     if(total_Lagrangian)
     { 
-      Matrix(double) FnI;
-      Matrix_construct_redim(double, FnI,3,3);
-      Matrix_inv(F2[Fn],FnI);
-      Matrix_AeqB(F2[Fnp1],1.0,F2[Fr]);  /* set F2[Fnp1] */
-      Matrix_AxB(F2[Fr],1.0,0.0,F2[Fnp1],0,FnI,0);  /* recompute F2[Fr] */         
-      Matrix_cleanup(FnI);         
+      /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
+      Matrix_eye(F2[Fn],3);
+      Matrix_eye(F2[pFn],3);
+      Matrix_eye(F2[eFn],3);
+      Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
     {
@@ -1123,12 +1122,11 @@ int residuals_el_crystal_plasticity(double *f,
     // --> update plasticity part
     if(total_Lagrangian)
     {
-      Matrix(double) FnI;
-      Matrix_construct_redim(double, FnI,3,3);
-      err += inv3x3(F2[Fn].m_pdata,FnI.m_pdata);
-      Matrix_AeqB(F2[Fnp1],1.0,F2[Fr]);  /* set F2[Fnp1] */
-      Matrix_AxB(F2[Fr],1.0,0.0,F2[Fnp1],0,FnI,0);  /* recompute F2[Fr] */         
-      Matrix_cleanup(FnI);          
+      /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
+      Matrix_eye(F2[Fn],3);
+      Matrix_eye(F2[pFn],3);
+      Matrix_eye(F2[eFn],3);
+      Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
     {
