@@ -917,7 +917,7 @@ double Newton_Raphson (const int print_level,
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
                                                 ndofn,r_n,dt,PLASTICITY_TOTAL_LAGRANGIAN);
       break;
-      case BPA_PLASTICITY:
+      case BPA_PLASTICITY: case TESTING:
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
                                                 ndofn,r_n,dt,1 /* TL */);
       break;
