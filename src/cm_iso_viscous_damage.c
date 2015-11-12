@@ -160,7 +160,7 @@ static int ivd_compute_Lbar(const Constitutive_model *m,
   err += inv3x3(C, C_I);
   new_pot_compute_Ldev(C, m->param->p_hmat, Lbar);
   new_pot_compute_dudj(J, m->param->p_hmat, &dudj);
-  new_pot_compute_d2udj2(J, m->param->p_hmat, &dudj);
+  new_pot_compute_d2udj2(J, m->param->p_hmat, &d2udj2);
 
   for (int i=0; i < dim; i++) {
     for (int j=0; j < dim; j++) {
@@ -212,8 +212,16 @@ static int ivd_compute_AST(const Constitutive_model *m,
                            Matrix_double *L)
 {
   int err = 0;
+  /* compute virgin material tangent */
   err += ivd_compute_Lbar(m, ctx, L->m_pdata);
 
+  /* scale by damage parameter */
+  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  for (int i = 0; i < tensor4; i++) {
+    L->m_pdata[i] *= dam;
+  }
+
+  /* if evolving damage, modify tangent */
   if (m->vars.flags[damaged]) {
     err += ivd_modify_AST(m, ctx, L->m_pdata);
   }
