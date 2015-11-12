@@ -1,5 +1,5 @@
 EXC = main_test
-OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v plasticity_model_BPA_driver.o)
+OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o)
 
 POST_PROCESSING=../include
 
@@ -37,12 +37,12 @@ VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 # Intel MKL: MKLROOT must be defined or define it here
 MKL_incl	= -I$(MKLROOT)/include
 MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
- 	     	  -Wl,--start-group \
- 	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
- 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
- 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
- 	     	  $(MKLROOT)/lib/intel64/libmkl_blas95_lp64.a \
- 	     	  -Wl,--end-group -lpthread
+	     	  -Wl,--start-group \
+	     	  $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
+	     	  $(MKLROOT)/lib/intel64/libmkl_blas95_lp64.a \
+	     	  -Wl,--end-group -lpthread
 
 
 CC = mpicc
@@ -51,20 +51,20 @@ LINK = mpicxx
 RM = rm -rf
 
 CFLAGS = -Wall -std=c99 -O3 -g
-	
+
 INCLUDES = -I$(pfem_incl_dir) \
                   $(CNSTVM_incl) \
 		  $(VTK_IO_incl) \
 		  $(MKL_incl) \
 		  -I$(POST_PROCESSING)
-	  
+
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
           $(CNSTVM_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib)
-	  	  		  		  		
+
 OBJ = $(SRC:.c=.o)
 
 all:
