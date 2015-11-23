@@ -21,7 +21,7 @@
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
 
-// #include "cm_j2_plasticity.h"
+#include "cm_j2_plasticity.h"
 #include "constitutive_model.h"
 #include <math.h>
 #include <string.h>
