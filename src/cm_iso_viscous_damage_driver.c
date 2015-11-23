@@ -88,7 +88,7 @@ static int compute_stress(double * restrict sig,
   sig[8] += p;
 
   return err;
-}                          
+}
 
 static void get_F(const double t,
                   const double nu,
@@ -109,9 +109,7 @@ static int write_data_point(FILE *f,
   int err = 0;
   double sig[9] = {};
   err += compute_stress(sig,m,ctx);
-  double dam = 0.0;
-  err += m->param->get_hardening(m, &dam);
-  fprintf(f,"%e\t%e\t%e\n", t, (1.0 - dam) * sig[8], dam);
+  fprintf(f,"%e\t%e\n", t,sig[8]);
   return err;
 }
 
