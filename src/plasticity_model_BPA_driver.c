@@ -58,7 +58,7 @@ int compute_stress(double * restrict sig,
   const double kappa = (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu));
   double p = 0;
   m->param->compute_dudj(m,ctx,&p);
-  p *= kappa / 2.0 ;
+  p *= kappa;
   Matrix_double S;
   Matrix_construct_redim(double,S,3,3);
   m->param->compute_dev_stress(m,ctx,&S);

@@ -64,7 +64,7 @@ static int compute_stress(double * restrict sig,
   double p = 0;
   const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += m->param->compute_dudj(m,ctx,&p);
-  p *= kappa / 2.0 ;
+  p *= kappa;
   Matrix_double S;
   Matrix_construct_redim(double,S,3,3);
   err += m->param->compute_dev_stress(m,ctx,&S);

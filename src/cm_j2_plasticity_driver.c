@@ -29,7 +29,7 @@ static void hommat_assign_values(HOMMAT *p_hmat)
   p_hmat->E = 0.0;
   p_hmat->G = 3.0e2;
   p_hmat->m10 = 0.0;
-  p_hmat->nu = 0.5;
+  p_hmat->nu = 0.49;
   p_hmat->devPotFlag = -1;
   p_hmat->volPotFlag = 2;
 
@@ -70,7 +70,7 @@ static int compute_stress(double * restrict sig,
   double p = 0;
   const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += m->param->compute_dudj(m,ctx,&p);
-  p *= kappa / 2.0 ;
+  p *= kappa;
   Matrix_double S;
   Matrix_construct_redim(double,S,3,3);
   err += m->param->compute_dev_stress(m,ctx,&S);
@@ -100,7 +100,7 @@ static void get_F(const double t,
                   const double nu,
                   double *F)
 {
-  const double rate = 0.001;
+  const double rate = 0.0001;
   memset(F, 0, 9*sizeof(*F));
   F[0] = F[4] = 1 - nu * rate * t;
   F[8] = 1 + rate * t;
