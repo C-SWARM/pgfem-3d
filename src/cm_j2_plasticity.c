@@ -36,6 +36,8 @@
 #define tensor 9
 #define tensor4 81
 
+static const double j2d_int_alg_tol = 1.0e-10;
+
 Define_Matrix(double);
 
 /* macros for easy access to Constitutive_model structure */
@@ -308,7 +310,6 @@ static int j2d_compute_sp_tr(const double *F,
   int err = 0;
   double Fubar[tensor] = {0};
   err += j2d_compute_Fubar(F, Fn, Fubar);
-  memcpy(sp_tr, spn, tensor * sizeof(*spn));
   j2d_push_forward(Fubar, spn, sp_tr);
   const double tr = (sp_tr[0] + sp_tr[4] + sp_tr[8]) / 3.0;
   sp_tr[0] -= tr;
@@ -371,9 +372,10 @@ static int j2d_int_alg(Constitutive_model *m,
   j2d_compute_sp_tr(F, Fn, spn, sp_tr);
 
   /* compute s_tr */
+  double s0[tensor] = {0};
   double s_tr[tensor] = {0};
-  j2d_compute_s0(param[G], bbar, s_tr);
-  for (int i = 0; i < tensor; i++) s_tr[i] -= sp_tr[i];
+  j2d_compute_s0(param[G], bbar, s0);
+  for (int i = 0; i < tensor; i++) s_tr[i] = s0[i] - sp_tr[i];
 
   /* compute ksi_tr and the normal of plastic loading */
   double n[tensor] = {0};
@@ -382,7 +384,7 @@ static int j2d_int_alg(Constitutive_model *m,
   /* yield function */
   const double phi = ksi_nrm - sqrt(2./3.) * (param[k0] + param[beta] * param[hp] * vars[epn]);
 
-  if (phi <= 0.0) {
+  if (phi <= j2d_int_alg_tol) {
     vars[gam] = 0.0;
     vars[ep] = vars[epn];
     memcpy(sp, sp_tr, tensor * sizeof(*sp));
@@ -394,6 +396,17 @@ static int j2d_int_alg(Constitutive_model *m,
     const double tmp = 2 * mu_bar * vars[gam];
     vars[ep] = vars[epn] + sqrt(2./3.) * vars[gam];
     for (int i = 0; i < tensor; i++) sp[i] = sp_tr[i] + tmp * n[i];
+  }
+
+  /* testing after the integration algorithm */
+  {
+    for (int i = 0; i < tensor; i++) s_tr[i] = s0[i] - sp[i];
+    const double ksi_nrm2 = j2d_compute_normal(s_tr, sp, param, n);
+    const double phi2 = ksi_nrm2 - sqrt(2./3.) * (param[k0] + param[beta] * param[hp] * vars[epn]);
+    if (phi2 > j2d_int_alg_tol) {
+      printf("UH OH... phi > 0 after integration algorithm...\n");
+      abort();
+    }
   }
 
   return err;
