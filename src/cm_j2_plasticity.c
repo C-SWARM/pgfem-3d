@@ -438,9 +438,8 @@ static int j2d_Sdev(const Constitutive_model *m,
                           cm_Fs_data(m, SP),
                           cm_param(m)[G],
                           sbar);
-  /* note that the pull back does not multiply by J */
   err += j2d_pull_back(ctx->F, sbar, Sdev->m_pdata);
-  const double dam = det3x3(ctx->F) * (1. - cm_vars(m)[w]);
+  const double dam = 1. - cm_vars(m)[w];
   for(int i = 0; i < tensor; i++) Sdev->m_pdata[i] *= dam;
   return err;
 }
