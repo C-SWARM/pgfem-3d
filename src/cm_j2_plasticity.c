@@ -58,7 +58,7 @@ typedef struct {
 enum {FN, FNP1, SPN, SP, NUM_Fs};
 enum {epn, ep, gam_n, gam, wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
-enum {G, nu, hp, beta, k0, mu, p1, p2, Yin, NUM_param};
+enum {G, nu, beta, hp, k0, mu, p1, p2, Yin, NUM_param};
 
 static int j2d_get_info(Model_var_info **info)
 {
@@ -228,7 +228,7 @@ static void j2d_bbar(const double * restrict F,
 static void j2d_dev(const double * restrict a,
                     double * restrict dev_a)
 {
-  const double tra = 1./3. * a[0] + a[4] + a[8];
+  const double tra = 1./3. * (a[0] + a[4] + a[8]);
   memcpy(dev_a, a, tensor * sizeof(*a));
   dev_a[0] -= tra;
   dev_a[4] -= tra;
