@@ -43,11 +43,12 @@ static void hommat_assign_values(HOMMAT *p_hmat)
   p_hmat->e4 = 0;
 }
 
-static void param_assign_values(double *param)
+static void param_assign_values(double *param,
+                                const HOMMAT *p_hmat)
 {
   /* elastic props */
-  param[0] = -1.0; /* G - reset from HOMMAT */
-  param[1] = -1.0; /* nu - reset from HOMMAT */
+  param[0] = p_hmat->G; /* G - reset from HOMMAT */
+  param[1] = p_hmat->nu; /* nu - reset from HOMMAT */
 
   /* plastic props */
   param[2] = 0.0; /* beta */
@@ -114,8 +115,8 @@ static int write_data_point(FILE *f,
   int err = 0;
   double sig[9] = {};
   err += compute_stress(sig,m,ctx);
-  double dam = 0.0;
-  fprintf(f,"%e\t%e\t%e\n", t, sig[8], dam);
+  double J = det3x3(m->vars.Fs[0].m_pdata);
+  fprintf(f,"%e\t%e\t%e\n", t, sig[8], J);
   return err;
 }
 
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
   err += model_parameters_construct(p);
   err += model_parameters_initialize(p, p_hmat, J2_PLASTICITY_DAMAGE);
   if (in == NULL) {
-    param_assign_values(p->model_param);
+    param_assign_values(p->model_param, p_hmat);
   } else {
     printf("READING PROPS FROM FILE\n\n");
     err += p->read_param(p, in);
