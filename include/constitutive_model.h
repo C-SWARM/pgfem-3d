@@ -100,6 +100,7 @@ int constitutive_model_destroy(Constitutive_model *m);
 int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const ELEMENT *elem,
+                                const int n_mat,
                                 const Model_parameters *param_list);
 
 /**
@@ -370,12 +371,26 @@ typedef int (*usr_unpack)(Constitutive_model *m,
  * Interface for accessing model parameters and modifying/updating the
  * associated state variable(s) at integration points.
  */
+ 
+struct MATERIAL_CONSTITUTIVE_MODEL;
+#ifndef TYPE_MATERIAL_CONSTITUTIVE_MODEL
+#define TYPE_MATERIAL_CONSTITUTIVE_MODEL
+typedef struct MATERIAL_CONSTITUTIVE_MODEL MATERIAL_CONSTITUTIVE_MODEL;
+#endif
+
+struct ELASTICITY;
+#ifndef TYPE_ELASTICITY
+#define TYPE_ELASTICITY
+typedef struct ELASTICITY ELASTICITY;
+#endif
+ 
 struct Model_parameters {
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
+  int mat_id; // Global material id, mat_id may not be the same as the hommat id
   
-  Matrix_double *Psys;
-  int N_SYS;
+  MATERIAL_CONSTITUTIVE_MODEL *cm_mat; 
+  ELASTICITY *cm_elast;
 
   /** access to user-defined functions */
   usr_int_alg integration_algorithm;
@@ -442,28 +457,6 @@ int model_parameters_initialize(Model_parameters *p,
                                 const HOMMAT *p_hmat,
                                 const size_t type);
 
-/**
- * THIS FUNCTION IS TO BE DEPRECATED
- * Need to properly read in model parameters for crystal plasticity
- * and treat orientations separately.
- *
- * function for reading extra prameters for plasticity, this is a temporal.
- * decision needs to be made how to pass material properties
- * \param[in/out] param_list, list of Model_parameters, unallocated on
- *                            entry -- allocated on exit.
- * \param[in] eps, pointer to strains EPS
- * \param[in] ne, number of elements
- * \param[in] elem, pointer to elements
- * \param[in] param_list, list of constitutive model parameters
- *
- * \return non-zero on error.
- */
-int read_constitutive_model_parameters(EPS *eps, 
-                                       const int ne, 
-                                       const ELEMENT *elem, 
-                                       const int n_mat, 
-                                       Model_parameters *param_list,
-                                       const int type); 
 
 /**
  * Destroy a Model_parameters object.
@@ -471,22 +464,6 @@ int read_constitutive_model_parameters(EPS *eps,
  * \return non-zero on error.
  */
 int model_parameters_destroy(Model_parameters *p);
-
-/**
- * Allocate and populate a list of Model_parameters given the number
- * of materials.
- *
- * \param[in/out] param_list, list of Model_parameters, unallocated on
- *                            entry -- allocated on exit.
- * \param[in] n_mat, length of hmat_list
- * \param[in] hmat_list, list of homogenized material properies
- *
- * \return non-zero on error.
- */
-int build_model_parameters_list(Model_parameters **param_list,
-                                const int n_mat,
-                                const HOMMAT *hmat_list,
-                                const int type);
 
 
 /**

@@ -567,7 +567,6 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   /* reset counters/flags */
   p->type = ISO_VISCOUS_DAMAGE;
-  p->N_SYS = 0;
 
   /* allocate room for parameters */
   p->n_param = NUM_param;

@@ -7,8 +7,6 @@
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 
-
-#include "CM.h"
 #include "constitutive_model.h"
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
@@ -23,6 +21,8 @@
 #include "elem3d.h"
 #include "femlib.h"
 #include "index_macros.h"
+#include "material_properties.h" // <= constitutive model material properties
+#include "hyperelasticity.h"     // <= constitutive model elasticity
 
 #ifndef _Matrix_double
 Define_Matrix(double);
@@ -165,6 +165,8 @@ int model_parameters_construct(Model_parameters *p)
   int err = 0;
   /* poison all values */
   p->p_hmat = NULL;
+  p->cm_mat = NULL;
+  p->cm_elast = NULL;
   p->integration_algorithm = NULL;
   p->compute_dev_stress = NULL;
   p->compute_dudj = NULL;
@@ -200,8 +202,6 @@ int model_parameters_construct(Model_parameters *p)
   p->unpack = NULL;
 
   p->type = -1;
-  p->Psys = NULL;
-  p->N_SYS = -1;
   p->n_param = -1;
   p->model_param = NULL;
   return err;
@@ -211,11 +211,27 @@ int model_parameters_initialize(Model_parameters *p,
                                 const HOMMAT *p_hmat,
                                 const size_t type)
 {
+  printf("this is running: model_parameters_initialize\n");
   int err = 0;
   p->p_hmat = p_hmat;
   p->type = type;
-  p->Psys = NULL;
-  p->N_SYS = 0;
+  
+  MATERIAL_CONSTITUTIVE_MODEL *cm_mat = malloc(sizeof(MATERIAL_CONSTITUTIVE_MODEL));
+  MATERIAL_ELASTICITY          *mat_e = malloc(sizeof(MATERIAL_ELASTICITY));
+  ELASTICITY *elast = malloc(sizeof(ELASTICITY));
+    
+  set_properties_using_E_and_nu(mat_e,p_hmat->E,p_hmat->nu);
+  mat_e->m01 = p_hmat->m01;
+  mat_e->m10 = p_hmat->m10;
+  mat_e->devPotFlag = p_hmat->devPotFlag;
+  mat_e->volPotFlag = p_hmat->volPotFlag;  
+
+  set_properties_constitutive_model(cm_mat,mat_e,NULL);      
+  construct_elasticity(elast, mat_e, 1);
+  
+  p->cm_mat   = cm_mat;
+  p->cm_elast = elast;  
+  
   switch(type) {
   case TESTING:
   case HYPER_ELASTICITY:
@@ -223,8 +239,6 @@ int model_parameters_initialize(Model_parameters *p,
     break;
   case CRYSTAL_PLASTICITY:
   {
-    p->Psys = malloc(sizeof(*(p->Psys)));
-    Matrix_construct(double,*(p->Psys));
     err += plasticity_model_initialize(p);
     break;
   }
@@ -245,8 +259,31 @@ int model_parameters_initialize(Model_parameters *p,
 int model_parameters_destroy(Model_parameters *p)
 {
   int err = 0;
+
+  switch(p->type) {
+  case TESTING:
+    break;
+  case HYPER_ELASTICITY:    
+    break;
+  case CRYSTAL_PLASTICITY:
+    err += plasticity_model_destory(p);
+    break;
+  case BPA_PLASTICITY:    
+    break;
+  case ISO_VISCOUS_DAMAGE:
+    break;
+  default:
+    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",p->type);
+    err++;
+    break;
+  }
+
   /* drop pointer to material (material free'd elsewhere) */
-  p->p_hmat = NULL;
+  p->p_hmat = NULL;    
+  free((p->cm_mat)->mat_e);
+  free(p->cm_mat);  
+  destruct_elasticity(p->cm_elast);
+  free(p->cm_elast);
   
   /* drop function pointers */
   p->integration_algorithm = NULL;
@@ -283,15 +320,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->pack = NULL;
   p->unpack = NULL;
 
-  if(p->Psys){
-    Matrix_cleanup(*(p->Psys));
-    free(p->Psys);
-  }
-  p->Psys = NULL;
-
   /* reset counters/flags */
   p->type = -1;
-  p->N_SYS = -1;
 
   /* free model constants */
   p->n_param = -1;
@@ -388,29 +418,6 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
 }
 
 
-int build_model_parameters_list(Model_parameters **param_list,
-                                const int n_mat,
-                                const HOMMAT *hmat_list,
-                                const int type) /* <-- see #22 */
-{
-  int err = 0;
-  if(type<0)
-    return err;  
-  if (n_mat <= 0) return 1;
-  
-  (*param_list) = malloc(n_mat*sizeof(**param_list));
-  
-  for (int i = 0; i < n_mat; i++) {
-    err += model_parameters_construct(&((*param_list)[i]) );
-    err += model_parameters_initialize(&((*param_list)[i]),
-                                       hmat_list + i,
-                                       type);
-  }
-
-  return err;
-}
-
-
 static int compare_mat_id(const void *a, const void *b)
 {
   return ((const HOMMAT *)a)->mat_id - ((const HOMMAT *)b)->mat_id;
@@ -480,11 +487,14 @@ int read_model_parameters_list(Model_parameters **param_list,
       if (!is_set[idx]) {
         is_set[idx] = 1;
         /* construct and initialize this object */
+        
         err += model_parameters_construct(&((*param_list)[idx]) );
         err += model_parameters_initialize(&((*param_list)[idx]),
                                            hmat_list + idx,
                                            model_type);
+                                                   
         err += ((*param_list)[idx]).read_param(&((*param_list)[idx]),in);
+        ((*param_list)[idx]).mat_id = key->mat_id;
       }
     }
 
@@ -521,34 +531,20 @@ int destroy_model_parameters_list(const int n_mat,
   }
   free(param_list);
   return 0;
-}
-
-int read_constitutive_model_parameters(EPS *eps,
-                                       const int ne,
-                                       const ELEMENT *elem,
-                                       const int n_mat,
-                                       Model_parameters *param_list,
-                                       const int type)
-{ 
-  int err = 0;
-  if(type < 0) return err;
-  if (type == CRYSTAL_PLASTICITY) {
-    plasticity_model_read_parameters(eps, ne, elem, n_mat, param_list);
-  }      
-  return err;   
 }                                
 
 int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const ELEMENT *elem,
+                                const int n_mat,
                                 const Model_parameters *param_list)
 {
   int err = 0;
   if (ne <= 0) return 1;
   if(param_list==NULL)
     return err;
-
-  for (int i = 0; i < ne; i++) {
+  
+  for(int i = 0; i < ne; i++) {
     /* aliases */
     EPS *p_eps = eps + i;
     const ELEMENT *p_el = elem + i;
@@ -560,6 +556,8 @@ int init_all_constitutive_model(EPS *eps,
       err += constitutive_model_initialize((p_eps->model) + j, p_param);
     }
   }
+  
+  plasticity_model_set_orientations(eps, ne, elem, n_mat, param_list); // nothing will happen if there is no use of the crystal plasticity model
   return err;
 }
 
@@ -651,7 +649,8 @@ int constitutive_model_update_time_steps_test(const ELEMENT *elem,
 
 int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_results)
 {
-  int err = plasticity_model_test(hmat, L_in, Print_results);
+  int err = 0;//plasticity_model_test(hmat, L_in, Print_results);
+  test_crystal_plasticity_single_crystal();
   return err;
 }
 

@@ -35,6 +35,8 @@ typedef struct Matrix_double Matrix_double;
  */
 int plasticity_model_initialize(Model_parameters *p);
 
+int plasticity_model_destory(Model_parameters *p);
+
 /**
  * Construct and initialize the model context for calling functions
  * through the plasticity interface.
@@ -67,12 +69,6 @@ int plasticity_model_ctx_destroy(void **ctx);
  */
 int plasticity_model_slip_system(Matrix_double *P);
 
-int plasticity_model_integration_ip(Matrix_double *pFnp1,
-                                    Constitutive_model *m,
-                                    const Matrix_double *Fnp1,
-                                    const Matrix_double *Fe_n,
-                                    const double dt);
-
 #ifndef ELEMENT_H
 typedef struct EPS EPS;
 #endif
@@ -81,11 +77,11 @@ typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 #endif
 
-int plasticity_model_read_parameters(EPS *eps,
-                                       const int ne,
-                                       const ELEMENT *elem,
-                                       const int n_mat,
-                                       Model_parameters *param_list);
+int plasticity_model_set_orientations(EPS *eps,
+                                const int ne,
+                                const ELEMENT *elem,
+                                const int n_mat,
+                                const Model_parameters *param_list);
 /** read material properties for plasticity
  * need to provide MATERIAL_PROPERTY.in with format as below
  *
@@ -130,5 +126,5 @@ int plasticity_model_read_parameters(EPS *eps,
 typedef struct HOMMAT HOMMAT;
 
 int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
- 
+void test_crystal_plasticity_single_crystal(void); 
 #endif

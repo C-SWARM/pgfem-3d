@@ -936,11 +936,7 @@ int single_scale_main(int argc,char *argv[])
       read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
       free(cm_filename);
       fclose(cm_in);
-      init_all_constitutive_model(eps,ne,elem,param_list);
-
-      /* This is a temporary function. Special reading/initialization
-         for the crystal plasticity model. */
-      read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+      init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
     }
 
     /* alocation of pressure variables */
@@ -1326,6 +1322,8 @@ int single_scale_main(int argc,char *argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////
+if(myrank==0)
+  constitutive_model_test(NULL, NULL, 0);
 /*{
               double G_gn = 0.0;
               Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
