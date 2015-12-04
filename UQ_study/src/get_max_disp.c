@@ -145,26 +145,72 @@ int main(int argc,char *argv[])
   else
     read_VTK_file(filename, u);
   
-  double disp_max = -1.0e-15;  
+  enum{MAX_H, MAX_DISP, MAX_END};
+  double value_max[MAX_END], Gvalue_max[MAX_END];
+  
+  for(int a=0; a<MAX_END; a++)
+  {
+    Gvalue_max[a] = -1.0e-15;
+     value_max[a] = -1.0e-15;
+  }  
   for(int a=0; a<nn; a++)
   {
-    double ux = u[a*3+0];
-    double uy = u[a*3+1];
-    double uz = u[a*3+2];
-    double disp = sqrt(ux*ux + uy*uy + uz*uz);
-    if(disp>disp_max)
-      disp_max = disp;
+    double x0 = node[a].x1_fd;
+    double y0 = node[a].x2_fd;
+    double z0 = node[a].x3_fd;    
+    
+    double x = u[a*3+0] + x0;
+    double y = u[a*3+1] + y0;
+    double z = u[a*3+2] + z0;
+    
+    double disp = sqrt(x*x + y*y);
+    if(fabs(x0)<1.0e-12 && z>value_max[MAX_H])
+      value_max[MAX_H] = z;
+      
+    if(disp>value_max[MAX_DISP])
+      value_max[MAX_DISP] = disp;
   }
     
-  double G_disp_max = 0.0;
-  MPI_Allreduce(&disp_max,&G_disp_max,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
+  Matrix(double) PK2,sigma,eFeff,sigma_dev,eFeffPK2;
+
+  Matrix_construct_init(double, PK2, 3,3,0.0);
+  Matrix_construct_init(double, sigma, 3,3,0.0);
+  Matrix_construct_init(double, eFeff, 3,3,0.0);
+  Matrix_construct_init(double, sigma_dev, 3,3,0.0);
+  Matrix_construct_init(double, eFeffPK2, 3,3,0.0);
+            
+  post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);
+  post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);              
+
+  MPI_Allreduce(value_max,Gvalue_max,MAX_END,MPI_DOUBLE,MPI_MAX,mpi_comm);
 
   if(myrank==0)
   {  
+    double det_Fe, tr_sigma;
+    Matrix_det(eFeff, det_Fe);
+    Matrix_AxB(eFeffPK2,1.0,0.0,eFeff,0,PK2,0);
+    Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);            
+    Matrix_trace(sigma,tr_sigma);
+    Matrix_eye(sigma_dev, 3);
+    Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);  
+
+    double norm_sigma;
+    Matrix_ddot(sigma_dev,sigma_dev,norm_sigma);  
+    double sigma_eff=sqrt(3.0/2.0*norm_sigma);
+        
+            
     FILE *fp = fopen("maximum_disp.out", "w");  
-    fprintf(fp, "%e\n", G_disp_max);
+    fprintf(fp, "%e %e %e\n", Gvalue_max[MAX_DISP], sigma_eff, Gvalue_max[MAX_H]);
     fclose(fp);
-  }  
+  } 
+
+
+  Matrix_cleanup(PK2);
+  Matrix_cleanup(sigma);
+  Matrix_cleanup(eFeff);
+  Matrix_cleanup(sigma_dev);
+  Matrix_cleanup(eFeffPK2);
+ 
   free(u);    
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
