@@ -255,10 +255,49 @@ static int fd_res_elem(double *fe,
   return err;
 }
 
-/* compute the local residual on a single bounding element */
-static int fd_res_belem()
+/* compute the residual for a single cohesive element */
+static int fd_res_coel(double *fe,
+                       const int i,
+                       NODE *node,
+                       COEL *coel,
+                       SUPP sup,
+                       const int ndofc,
+                       const double *d_r,
+                       const double nor_min,
+                       const int myrank)
 {
   int err = 0;
+  const int nne = coel[i].toe/2;
+  const int nnet = 2 * nne;
+  const int ndofe = coel[i].toe*ndofc;
+
+  long *nod = aloc1l (nnet);
+  double *r_e = aloc1 (ndofe);
+  double *x = aloc1 (nnet);
+  double *y = aloc1 (nnet);
+  double *z = aloc1 (nnet);
+  long *cn = aloc1l (ndofe);
+
+  for (int j = 0; j < nnet; j++)
+    nod[j] = coel[i].nod[j];
+
+  nodecoord_updated (nnet,nod,node,x,y,z);
+
+  /* code numbers on element */
+  get_dof_ids_on_elem_nodes(0,nnet,ndofc,nod,node,cn);
+
+  /* deformation on element */
+  def_elem (cn,ndofe,d_r,NULL,node,r_e,sup,0);
+
+  /* Residuals on element */
+  resid_co_elem (i,ndofc,nne,nod,x,y,z,coel,r_e,fe,nor_min,myrank);
+
+  dealoc1l (nod);
+  dealoc1 (r_e);
+  dealoc1 (x);
+  dealoc1 (y);
+  dealoc1 (z);
+  dealoc1l (cn);
 
   return err;
 }
@@ -306,7 +345,7 @@ int fd_residuals (double *f_u,
   MPI_Comm_size(mpi_comm,&nproc);
   MPI_Comm_rank(mpi_comm,&myrank);
 
-  for (int i=0;i<ne;i++){
+  for (int i=0;i<ne;i++) {
     const int nne = elem[i].toe;
     long *nod = aloc1l (nne);
     elemnodes (i,nne,nod,elem);
@@ -331,55 +370,22 @@ int fd_residuals (double *f_u,
 
   /**** COHESIVE ELEMENT RESIDUALS ****/
   if (opts->cohesive == 1){
-    int ndofc = 3;
+    const int ndofc = 3;
 
     for (int i=0;i<nce;i++){
 
-      int nne = coel[i].toe/2;
       int ndofe = coel[i].toe*ndofc;
-
       long *nod = aloc1l (coel[i].toe);
-      double *r_e = aloc1 (ndofe);
-      double *x = aloc1 (coel[i].toe);
-      double *y = aloc1 (coel[i].toe);
-      double *z = aloc1 (coel[i].toe);
       double *fe = aloc1 (ndofe);
-      long *cn = aloc1l (ndofe);
-
       for (int j=0;j<coel[i].toe;j++)
-	nod[j] = coel[i].nod[j];
+        nod[j] = coel[i].nod[j];
 
-      nodecoord_updated (coel[i].toe,nod,node,x,y,z);
-
-      /* code numbers on element */
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nod,node,cn);
-
-      /* deformation on element */
-      def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
-
-      /* Residuals on element */
-      resid_co_elem (i,ndofc,nne,nod,x,y,z,coel,r_e,fe,nor_min,myrank);
-
-      /* Localization */
-      {
-	int II = 0;
-	for (int k=0;k<coel[i].toe;k++){
-	  for (int kk=0;kk<ndofc;kk++){
-	    II = node[nod[k]].id[kk]-1;
-	    if (II < 0)
-	      continue;
-	    f_u[II] += fe[k*ndofc+kk];
-	  }/*end kk*/
-	}/*end k*/
-      }
+      err += fd_res_coel(fe, i, node, coel, sup, ndofc, d_r, nor_min, myrank);
+      fd_res_assemble(f_u, fe, node, coel[i].toe, ndofc, nod);
 
       dealoc1l (nod);
-      dealoc1 (r_e);
-      dealoc1 (x);
-      dealoc1 (y);
-      dealoc1 (z);
       dealoc1 (fe);
-      dealoc1l (cn);
+
     }/* end i < nce */
   }/* end coh == 1 */
 
