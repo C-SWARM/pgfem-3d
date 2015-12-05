@@ -50,7 +50,7 @@ SUPP read_supports (FILE *in,
     pom = 0;
     for (k=0;k<ndofn;k++){
       fscanf (in,"%ld",&node[n].id[k]);
-      if (node[n].id[k] <= -1 && pom == 0) {
+      if ((node[n].id[k] == 1 || node[n].id[k] <= -1) && pom == 0) {
 	sup->ndn++; pom = 1;
       }
     }/* end k */
@@ -75,7 +75,7 @@ SUPP read_supports (FILE *in,
   ii = 0;
   for (i=0;i<sup->nsn;i++){
     for (k=0;k<ndofn;k++){
-      if (node[sup->supp[i]].id[k] <= -1) {
+      if (node[n].id[k] == 1 || node[n].id[k] <= -1) {
 	sup->lnpd[ii] = sup->supp[i];
 	ii++;  break;
       }
