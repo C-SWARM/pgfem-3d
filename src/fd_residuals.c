@@ -539,6 +539,7 @@ int fd_res_compute_reactions(const long ndofn,
   err += MPI_Comm_rank(mpi_comm, &myrank);
   err += MPI_Reduce(rxn, RXN, n_rxn, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
   if (myrank == 0) {
+    PGFEM_printf("Reactions: (fixed 1 ... n)\n");
     print_array_d(PGFEM_stdout, RXN, n_rxn, 1, n_rxn);
   }
 
