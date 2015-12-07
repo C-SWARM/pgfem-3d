@@ -528,7 +528,6 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
         Matrix_det(eFnp1, J);
         U_func(J,&hommat[mat],&U);
 
-        LV += fe.detJxW/Jnp1;        
         LE += (W+kappa*U)*fe.detJxW/Jnp1;
         
         Matrix_cleanup(Fnp1);
@@ -545,7 +544,6 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
         Matrix_det(F, J);
         U_func(J,&hommat[mat],&U);
 
-        LV += fe.detJxW;        
         LE += (W+kappa*U)*fe.detJxW;
       }
     }
@@ -554,11 +552,8 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
   }
       
   MPI_Allreduce(&LE,GE,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
   Matrix_cleanup(F);
   Matrix_cleanup(C);
-  
-  *GE = *GE/GV;
 }
 
 

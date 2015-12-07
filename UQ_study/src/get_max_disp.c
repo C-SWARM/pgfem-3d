@@ -94,10 +94,22 @@ int main(int argc,char *argv[])
   build_model_parameters_list(&param_list,nhommat,hommat,options.cm);
   init_all_constitutive_model(eps,ne,elem,param_list);  
   
-  
+
+  FILE *in_st;
   char filename[1024];
-  sprintf (filename,"%s/%s%d.in.st",options.ipath,options.ifname,myrank);
-  FILE *in_st = fopen(filename,"r");
+
+  if(options.override_solver_file)
+  {
+    if(myrank == 0)
+	    printf("Overriding the default solver file with:\n%s\n", options.solver_file);
+
+    in_st = fopen(options.solver_file,"r");
+  }
+  else 
+  {
+    sprintf (filename,"%s/%s%d.in.st",options.ipath,options.ifname,myrank);
+    in_st = fopen(filename,"r");  
+  }
   
   double nor_min;
   long iter_max, npres, FNR, nt;
@@ -182,6 +194,9 @@ int main(int argc,char *argv[])
   post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);
   post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);              
 
+  double PE = 0.0;
+  post_processing_potential_energy(&PE,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);
+
   MPI_Allreduce(value_max,Gvalue_max,MAX_END,MPI_DOUBLE,MPI_MAX,mpi_comm);
 
   if(myrank==0)
@@ -200,7 +215,7 @@ int main(int argc,char *argv[])
         
             
     FILE *fp = fopen("maximum_disp.out", "w");  
-    fprintf(fp, "%e %e %e\n", Gvalue_max[MAX_DISP], sigma_eff, Gvalue_max[MAX_H]);
+    fprintf(fp, "%e %e %e %e\n", Gvalue_max[MAX_DISP], sigma_eff, Gvalue_max[MAX_H], PE);
     fclose(fp);
   } 
 
