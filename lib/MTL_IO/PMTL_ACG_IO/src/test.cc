@@ -16,11 +16,11 @@ int main(int argc,char *argv[])
   
   void *intf = NULL;
   
-  int elemno = 4;
+  int elemno = 1;
   int nne = 4;
   int N = elemno*nne - 2*(elemno-1);
   
-  printf("total number of degree freedom: %dx%d \n", N,N);
+  //printf("total number of degree freedom: %dx%d \n", N,N);
     
   double *b = (double *) malloc(sizeof(double)*N);  
   
@@ -48,12 +48,14 @@ int main(int argc,char *argv[])
   
     err += update_linear_system_A_IJ(intf,I,IN,J,JN,values, mpi_comm);
   }                                        
-//  err += set_solver_pc(intf, 0);
-//  err += solve_linear_system(intf);
+  err += set_solver_pc(intf, 0);
+  err += solve_linear_system(intf);
 
   err += destruct_solver(&intf);
     
-  printf("this is done\n");  
+
+
+ // printf("this is done\n");
   free(b); 
   
   MPI_Finalize(); 

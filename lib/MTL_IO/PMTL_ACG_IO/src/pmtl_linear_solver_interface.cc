@@ -16,13 +16,15 @@ namespace mpi = boost::mpi;
 #define CMatrix(T) mtl::compressed2D<T>
 
 #define Distribute(T) matrix::distributed<T>
-   
+#define DistributeV(T) vector::distributed<T>
+
 typedef struct MTL_SOLVER_INTF {
   CMatrix(double) A;
   Distribute(CMatrix(double)) AA;
   Vector(double) x;
   Vector(double) b;  
-  
+  DistributeV(Vector(double)) bb;
+  DistributeV(Vector(double)) xx;
   itl::pc::identity<CMatrix(double)> *P;
 } MTL_SOLVER_INTF;
 
@@ -99,7 +101,11 @@ int initialize_linear_system(void *m, int N)
 
   typedef mtl::matrix::distributed<mtl::compressed2D<double> >  matrix_type;
          matrix_type PA(N,N);
- // PA = 0.0;
+
+  typedef mtl::vector::distributed<mtl::dense_vector<double> >  vector_type;
+  	  	 vector_type  Pb(N,0.0);
+
+  PA = 0.0;
   intf->AA = PA;
   intf->b.change_dim(N);
   intf->x.change_dim(N); 
@@ -107,7 +113,8 @@ int initialize_linear_system(void *m, int N)
 //   intf->AA = 0.0;
   intf->b = 0.0;
   intf->x = 0.0;
-
+  intf->bb = Pb;
+  intf->xx = Pb;
   return err;
 }
 
@@ -120,14 +127,9 @@ int update_linear_system_A_IJ(void *m, int *I, int IN,
   boost::mpi::communicator comm(communicator(intf->AA));
   
   typedef Collection<CMatrix(double)>::value_type value_type;
-//  mtl::matrix::inserter<Distribute(CMatrix(double))> ins(intf->AA);  
+  {
+  mat::inserter<CMatrix(double), update_plus<value_type> > ins(intf->A, 3);
 
-typedef mtl::matrix::distributed<mtl::dense2D<double> >  matrix_type;
-         matrix_type PA(IN,JN);
-  
-  PA = 0.0; 
-  
-  std :: cout << PA;
    
   Matrix(double) temp(IN,JN);
   Vector(double) vI(IN), vJ(JN);
@@ -143,7 +145,32 @@ typedef mtl::matrix::distributed<mtl::dense2D<double> >  matrix_type;
   for(int a=0; a<JN; a++)
     vJ[a] = J[a];   
   
-  //ins << element_matrix(temp, vI, vJ);
+  ins << element_matrix(temp, vI, vJ);
+}
+ // std :: cout << intf->b <<"\n";
+
+  typedef mtl::matrix::distributed<mtl::compressed2D<double> >  matrix_type;
+  typedef mtl::vector::distributed<mtl::dense_vector<double> >  vector_type;
+  matrix_type PA(IN,JN);
+  vector_type Pb(IN,0.0);
+  {
+  mtl::matrix::inserter<matrix_type, mtl::operations::update_plus<double> > insA(PA);
+  mtl::vector::inserter<vector_type, mtl::operations::update_plus<double> > insV(Pb);
+
+  for (int i=0;i<IN;i++){
+	  insV[i] << intf->b[i];
+     for (int j=0;j<JN;j++) {
+       insA[i][j] << intf->A[i][j];
+     }
+   }
+  }
+
+
+
+  intf->AA=PA;
+  intf->bb=Pb;
+  //std :: cout << intf->AA <<"\n";
+ // std :: cout << intf->bb <<"\n";
   return err;
 }
 
@@ -207,7 +234,9 @@ int solve_linear_system(void *m)
   
   intf->x = 0.0;
   itl::cyclic_iteration<double> iter(intf->b, 100, 1.e-11, 0.0, 5);
-//  acg(intf->A, intf->x, intf->b, *(intf->P), iter);
+  cg(intf->AA, intf->xx, intf->bb, *(intf->P), iter);
+
+  std :: cout << intf->xx <<"\n";
   return err;
 }
 
