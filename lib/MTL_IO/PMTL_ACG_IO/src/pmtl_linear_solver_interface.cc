@@ -26,6 +26,8 @@ typedef struct MTL_SOLVER_INTF {
   DistributeV(Vector(double)) bb;
   DistributeV(Vector(double)) xx;
   itl::pc::identity<Distribute(CMatrix(double))> *P;
+
+  char* PC;
 } MTL_SOLVER_INTF;
 
 template <typename T>
@@ -115,6 +117,8 @@ int initialize_linear_system(void *m, int N)
   intf->x = 0.0;
   intf->bb = Pb;
   intf->xx = Pb;
+
+  intf->PC = "identity";
   return err;
 }
 
@@ -236,7 +240,20 @@ int solve_linear_system(void *m)
   
   intf->x = 0.0;
   itl::cyclic_iteration<double> iter(intf->b, 500, 1.e-6, 0.0, 5);
-  cg(intf->AA, intf->xx, intf->bb, *(intf->P), iter);
+
+
+
+  std :: cout << intf->PC <<"\n";
+  itl::pc::identity<Distribute(CMatrix(double))> PC(intf->AA);
+
+  if (intf->PC=="ilu_0") {
+   itl::pc::ilu_0<Distribute(CMatrix(double))> PC(intf->AA);
+  }
+  else if (intf->PC=="diagonal") {
+  itl::pc::diagonal<Distribute(CMatrix(double))> PC(intf->AA);
+  }
+
+  cg(intf->AA, intf->xx, intf->bb, PC, iter);
 
   std :: cout << intf->xx <<"\n";
   return err;

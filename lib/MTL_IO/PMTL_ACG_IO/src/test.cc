@@ -48,7 +48,7 @@ int main(int argc,char *argv[])
   
     err += update_linear_system_A_IJ(intf,I,IN,J,JN,values, mpi_comm);
   }                                        
-  err += set_solver_pc(intf, 0);
+//  err += set_solver_pc(intf, 0);
   err += solve_linear_system(intf);
 
   err += destruct_solver(&intf);
