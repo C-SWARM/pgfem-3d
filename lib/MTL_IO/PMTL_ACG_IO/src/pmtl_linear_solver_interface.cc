@@ -19,7 +19,7 @@ namespace mpi = boost::mpi;
    
 typedef struct MTL_SOLVER_INTF {
   CMatrix(double) A;
-//  Distribute(CMatrix(double)) AA;
+  Distribute(CMatrix(double)) AA;
   Vector(double) x;
   Vector(double) b;  
   
@@ -96,28 +96,39 @@ int initialize_linear_system(void *m, int N)
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
 
   intf->A.change_dim(N,N);
-/*  intf->AA.change_dim(N,N);
+
+  typedef mtl::matrix::distributed<mtl::compressed2D<double> >  matrix_type;
+         matrix_type PA(N,N);
+ // PA = 0.0;
+  intf->AA = PA;
   intf->b.change_dim(N);
   intf->x.change_dim(N); 
       
-  intf->A = 0.0;
+//   intf->AA = 0.0;
   intf->b = 0.0;
   intf->x = 0.0;
-*/  
+
   return err;
 }
 
 int update_linear_system_A_IJ(void *m, int *I, int IN,
-                                       int *J, int JN, double *values)
+                                       int *J, int JN, double *values, MPI_Comm comm_1)
 {   
   int err = 0;  
 
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
-//  boost::mpi::communicator comm(communicator(intf->AA));
+  boost::mpi::communicator comm(communicator(intf->AA));
   
   typedef Collection<CMatrix(double)>::value_type value_type;
 //  mtl::matrix::inserter<Distribute(CMatrix(double))> ins(intf->AA);  
-    
+
+typedef mtl::matrix::distributed<mtl::dense2D<double> >  matrix_type;
+         matrix_type PA(IN,JN);
+  
+  PA = 0.0; 
+  
+  std :: cout << PA;
+   
   Matrix(double) temp(IN,JN);
   Vector(double) vI(IN), vJ(JN);
   

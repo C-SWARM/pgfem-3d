@@ -30,9 +30,9 @@ int main(int argc,char *argv[])
   err += construct_solver(&intf);
   
   err += initialize_linear_system(intf, N);
-//  err += set_linear_system_b(intf, b, N); 
+  err += set_linear_system_b(intf, b, N); 
   
-/*  
+  
   for(int a=0; a<elemno; a++)
   {
     int id_0 = a*(nne - 2);
@@ -46,9 +46,8 @@ int main(int argc,char *argv[])
                          0.0,0.0,1.0,0.0,
                          0.0,0.0,0.0,1.0};
   
-    err += update_linear_system_A_IJ(intf,I,IN,J,JN,values);
-  }
-  */                                        
+    err += update_linear_system_A_IJ(intf,I,IN,J,JN,values, mpi_comm);
+  }                                        
 //  err += set_solver_pc(intf, 0);
 //  err += solve_linear_system(intf);
 
