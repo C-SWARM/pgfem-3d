@@ -1,0 +1,4 @@
+1. set environment variable for external libraries
+setenv PGFEM3D_EXT_LIB ${HOME}/lib/external
+
+2. make

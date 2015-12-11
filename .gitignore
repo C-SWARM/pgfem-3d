@@ -5,6 +5,10 @@ TAGS
 
 # built executable
 src/PGFem3D
+src/*driver
+
+# any user-made install dirs
+install/
 
 # autotools stuff
 Makefile.in
@@ -21,3 +25,6 @@ stamp-h1
 include/config.h*
 /config.status
 /config.log
+
+# other
+src/bpa.dat

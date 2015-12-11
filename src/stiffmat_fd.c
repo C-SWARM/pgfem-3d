@@ -5,6 +5,7 @@
  * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
 #include "stiffmat_fd.h"
+#include "assert.h"
 #include "enumerations.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
@@ -31,16 +32,111 @@
 #include "femlib.h"
 #include "dynamics.h"
 
+#include "constitutive_model.h"
+
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
 
 #define ndn 3
-#define N_VOL_TF 1
-#define MIN_DENSITY 1.0e-16
 
 static const int periodic = 0;
 
+int el_compute_stiffmat(int i,
+                        double *lk,
+                        long ndofn,
+                        long nne,
+                        long npres,
+                        int nVol,
+                        int nsd,
+                        ELEMENT *elem,
+                        NODE *node,
+                        HOMMAT *hommat,
+                        MATGEOM matgeom,
+                        SIG *sig,
+                        EPS *eps,
+                        SUPP sup,
+                        double dt,
+                        double nor_min,
+                        double stab,
+                        CRPL *crpl,
+                        long FNR,
+                        double lm,
+                        double *x,
+                        double *y,
+                        double *z,
+                        double *fe,
+                        long *nod,
+                        double *r_n,
+                        double *r_e,
+                        double alpha,
+                        int include_inertia,
+                        const int analysis,
+                        int cm)
+{
+  int err = 0;
+  if(include_inertia)
+  {
+    stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
+                               elem,hommat,nod,node,dt,
+                               sig,eps,sup,analysis,cm,alpha,r_n,r_e);          
+  }
+  else
+  {
+    switch(analysis){
+    case STABILIZED:
+      err += stiffmatel_st(i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
+			  sup,r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
+      break;
+    case MINI:
+      err += MINI_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			    hommat,nod,node,eps,sig,r_e);
+      break;
+    case MINI_3F:
+      err += MINI_3f_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+			      hommat,nod,node,eps,sig,r_e);
+      break;
+    case DISP:
+        err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+                               hommat,nod,node,eps,sig,sup,r_e);
+      break;
+    case TF:
+      stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
+                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
+      break;
+    case CM:
+      {
+        switch(cm) {
+        case CRYSTAL_PLASTICITY:
+          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
+                                                 nod,node,dt,eps,sup,r_e,
+                                                 PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
+          break;
+
+        case BPA_PLASTICITY: case TESTING:
+          err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
+                                                 nod,node,dt,eps,sup,r_e,
+                                                 1 /* TL */);
+          break;
+
+        case HYPER_ELASTICITY:
+          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,
+                                               nod,node,dt,eps,sup,r_e);
+          break;
+        default: assert(0 && "should never get here"); break;
+        }
+        break;
+      }
+    default:
+      err += stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
+                            hommat,node,sig,eps,r_e,npres,
+                            nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
+      break;
+    } // switch (analysis)
+  } // if(include_inertia)
+  
+  return err;
+}
 
 /* This function may not be used outside this file */
 static int el_stiffmat(int i, /* Element ID */
@@ -73,11 +169,11 @@ static int el_stiffmat(int i, /* Element ID */
 			int *Ddof,
 			int interior,
 			const int analysis,
+			const int cm,
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
 			double alpha, double *r_n, double *r_n_1)
 {
 /* make a decision to include ineria*/
-  
   const int mat = elem[i].mat[2];
   double rho = hommat[mat].density;
   long include_inertia = 1;
@@ -92,7 +188,7 @@ static int el_stiffmat(int i, /* Element ID */
   
   int err = 0;
   long j,l,nne,ndofe,*cnL,*cnG,*nod,II;
-  double *lk,*x,*y,*z,*r_e,*sup_def,*fe;
+  double *x,*y,*z,*r_e,*sup_def,*fe;
   long kk;
   
   /* Number of element nodes */
@@ -108,7 +204,6 @@ static int el_stiffmat(int i, /* Element ID */
   /* allocation */
   cnL = aloc1l (ndofe);
   cnG = aloc1l (ndofe);
-  lk = aloc1 ((ndofe*ndofe)); 
 
   const int nne_t = nne + elem[i].n_bub;
 
@@ -140,9 +235,28 @@ static int el_stiffmat(int i, /* Element ID */
     nodecoord_total (nne,nod,node,x,y,z);
   } else {
     switch(analysis){
-    case DISP: case TF:
+    case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
+    case TF:
+      nodecoord_total (nne,nod,node,x,y,z);
+      break;
+    case CM:
+    {  
+      switch(cm) {
+      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+        nodecoord_total (nne,nod,node,x,y,z);
+        break;
+      case CRYSTAL_PLASTICITY:
+        if(PLASTICITY_TOTAL_LAGRANGIAN)
+          nodecoord_total (nne,nod,node,x,y,z);
+        else              
+          nodecoord_updated (nne,nod,node,x,y,z);        
+        break;
+      default: assert(0 && "undefined CM type"); break;
+      }
+      break;      
+    }    
     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
@@ -175,9 +289,27 @@ static int el_stiffmat(int i, /* Element ID */
     def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
   } else {
     switch(analysis){
-    case DISP: case TF: /* TOTAL LAGRANGIAN */
+    case DISP:
+      def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+    case TF: /* TOTAL LAGRANGIAN */
       def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
       break;
+    case CM:
+    {  
+      switch(cm) {
+      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+        def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+        break;
+      case CRYSTAL_PLASTICITY:
+        if(PLASTICITY_TOTAL_LAGRANGIAN)
+          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+        else
+          def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+        break;
+      default: assert(0 && "undefined CM type"); break;
+      }
+      break;      
+    }
     default:
       def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
       break;
@@ -190,49 +322,17 @@ static int el_stiffmat(int i, /* Element ID */
       sup->defl_d[j] = sup_def[j];
    }
     
-  int nVol = N_VOL_TF;   
-  memset(lk,0, sizeof(double)*ndofe*ndofe);  
-  if(include_inertia)
-  {
-    stiffmat_disp_w_inertia_el(lk,i,ndofn,nne,npres,nVol,nsd,x, y, z,	
-                               elem,hommat,nod,node,dt,
-                               sig,eps,sup,analysis,alpha,r_n,r_e);          
-  }
-  else
-  {        
-  switch(analysis){
-  case STABILIZED:
-    err = stiffmatel_st(i,ndofn,nne,x,y,z,elem,hommat,nod,node,sig,eps,
-			 sup,r_e,npres,nor_min,lk,dt,stab,FNR,lm,fe);
-    break;
-  case MINI:
-    err = MINI_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-			   hommat,nod,node,eps,sig,r_e);
-    break;
-  case MINI_3F:
-    err = MINI_3f_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-			      hommat,nod,node,eps,sig,r_e);
-    break;
-  case DISP:
-    {
-    err = DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-			   hommat,nod,node,eps,sig,sup,r_e);
-			  }
-    break;
-  case TF:
-    stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
-                  x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,-1.0,r_e);
-        //stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
-        //          x,y,z,elem,hommat,nod,node,dt,sig,eps,sup,r_e);
-        break;
-  default:
-    err = stiffmatel_fd (i,ndofn,nne,nod,x,y,z,elem,matgeom,
-			 hommat,node,sig,eps,r_e,npres,
-			 nor_min,lk,dt,crpl,FNR,lm,fe,analysis);
-    break;
-  } /* switch (analysis) */
-  } /* if(include_inertia) */
-    
+  int nVol = N_VOL_TREE_FIELD;
+  Matrix(double) lk;
+  Matrix_construct_redim(double,lk,ndofe,ndofe);   
+  Matrix_init(lk, 0.0);
+  
+  err += el_compute_stiffmat(i,lk.m_pdata,ndofn,nne,npres,nVol,nsd,
+                             elem,node,hommat,matgeom,sig,eps,sup,
+                             dt,nor_min,stab,crpl,FNR,lm,
+                             x,y,z,fe,nod,r_n,r_e,
+                             alpha,include_inertia,analysis,cm);
+
   if (PFEM_DEBUG){
     char filename[50];
     switch(analysis){
@@ -252,7 +352,7 @@ static int el_stiffmat(int i, /* Element ID */
 
     FILE *output;
     output = fopen(filename,"a");
-    print_array_d(output,lk,ndofe*ndofe,ndofe,ndofe);
+    print_array_d(output,lk.m_pdata,ndofe*ndofe,ndofe,ndofe);
     fclose(output);
   }
 
@@ -268,14 +368,14 @@ static int el_stiffmat(int i, /* Element ID */
   }/* end periodic */
 
   /* Assembly */
-  PLoc_Sparse (Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,GDof,
+  PLoc_Sparse (Lk,lk.m_pdata,Ai,Ap,cnL,cnG,ndofe,Ddof,GDof,
 	       myrank,nproc,comm,interior,PGFEM_hypre,analysis);
 
   /*  dealocation  */
   free (cnL);
   free (cnG);
   free (nod);
-  free (lk);
+  Matrix_cleanup(lk);
   free (x);
   free (y);
   free (z);
@@ -632,45 +732,6 @@ int stiffmat_fd(int *Ap,
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
 				     mpi_comm,comm);
 
-  /* Lk = (double**) PGFEM_calloc (nproc,sizeof(double*)); */
-  /* for (i=0;i<nproc;i++) { */
-  /*   if (myrank == i || comm->S[i] == 0) */
-  /*     k = 1; */
-  /*   else  */
-  /*     k = comm->AS[i]; */
-  /*   Lk[i] = (double*) PGFEM_calloc (k,sizeof(double)); */
-  /* } */
-  /* if (Lk == NULL){ */
-  /*   PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__); */
-  /*   fflush(stdout);  */
-  /*   PGFEM_Comm_code_abort (mpi_comm,i); */
-  /* } */
-  
-  /* /\* Allocate recieve *\/ */
-  /* recieve = (double**) PGFEM_calloc (nproc,sizeof(double*)); */
-  /* for (i=0;i<nproc;i++) { */
-  /*   if (comm->AR[i] == 0) */
-  /*     KK = 1; */
-  /*   else */
-  /*     KK = comm->AR[i]; */
-  /*   recieve[i] = (double*) PGFEM_calloc (KK,sizeof(double)); */
-  /* } */
-  
-  /* /\* Allocate request fields *\/ */
-  /* if (comm->Nr == 0) */
-  /*   KK = 1; */
-  /* else */
-  /*   KK = comm->Nr; */
-  /* sta_r = (MPI_Status*) PGFEM_calloc (KK,sizeof(MPI_Status)); */
-  /* req_r = (MPI_Request*) PGFEM_calloc (KK,sizeof(MPI_Request)); */
-  
-  /* /\* Receive data *\/ */
-  /* for (i=0;i<comm->Nr;i++){ */
-  /*   KK = comm->Nrr[i]; */
-  /*   MPI_Irecv (recieve[KK],comm->AR[KK],MPI_DOUBLE,KK, */
-  /* 	       MPI_ANY_TAG,mpi_comm,&req_r[i]); */
-  /* }/\* end i < nproc *\/ */
-  
   /* Allocate */
   Ddof = aloc1i (nproc);
   
@@ -682,9 +743,10 @@ int stiffmat_fd(int *Ap,
   /***** COMM BOUNDARY ELEMENTS *****/
   for(i=0; i<nbndel; i++){
     err += el_stiffmat(bndel[i],Lk,Ap,Ai,ndofn,elem,node,hommat,
-		       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
-		       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
-		       Ddof,0,opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+                       matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
+                       dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
+                       Ddof,0,opts->analysis_type,opts->cm,PGFEM_hypre,
+                       alpha,r_n,r_n_1);
 
     /* If there is an error, complete communication and exit */
     if(err != 0) goto send;
@@ -793,12 +855,12 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,
 			    sig,eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,
 			    stab,FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	} else if (idx > 0 && bndel[idx-1] < i && i < bndel[idx]){
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	} else {
 	  PGFEM_printf("[%d]ERROR: problem in determining if element %ld"
 		 " is on interior.\n", myrank, i);
@@ -808,7 +870,7 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
 	}
       }
 
@@ -825,7 +887,7 @@ int stiffmat_fd(int *Ap,
       err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,FNR,
 			lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			opts->analysis_type,PGFEM_hypre,alpha,r_n,r_n_1);
+			opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
       /* If there is an error, complete communication and exit */
       if(err != 0) goto wait;
     }

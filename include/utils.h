@@ -8,6 +8,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdio.h>
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"
@@ -18,6 +19,18 @@
 #include "pgfem_comm.h"
 #include "sig.h"
 #include "eps.h"
+
+/**
+ * Scan the file for a valid line (non-blank and does not start with a
+ * '#').  This function may be called multiple times on the same file.
+ *
+ * \param[in,out] in, File to scan
+ *
+ * \return non-zero on error. Upon successful completion, 'in' is
+ * returned with the file position set to the beginning of the valid
+ * line.
+ */
+int scan_for_valid_line(FILE *in);
 
 void pack_2mat(const void **src,
 	       const int nrow,
@@ -209,6 +222,24 @@ int inv4x4(const double *mat,
 int inverse(double const* A,
 	    const int M,
 	    double *A_I);
+
+/**
+ * Compute the solution to Ax=b for an NxN system using LAPACK and
+ * return 0 on success.
+ *
+ * \param[in] n_eq, the number of equations to solve
+ * \param[in] mat_dim, the size of the (square) matrix
+ * \param[in] A, the coefficient matrix
+ * \param[in,out] b_x, on entry: RHS (b), on exit: solution (x)
+ * \return non-zero on recoverable error, abort on logic error
+ *
+ * CAVEATES: The matrix A is copied/transposed for migration to
+ * FORTRAN LAPACK routine.
+ */
+int solve_Ax_b(const int n_eq,
+               const int mat_dim,
+               const double *A,
+               double *b_x);
 
 /** Copy the transpose of 'mat' into 'mat_t'. */
 void transpose(double *mat_t,

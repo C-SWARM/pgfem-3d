@@ -197,7 +197,7 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   fe->ST = aloc1(3*3*nsd*nne);  
 }
 
-void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order)
+void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order, int is_total)
 {
   int nne = elem[e].toe;
     
@@ -210,7 +210,10 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const
   x = aloc1(nne);
   y = aloc1(nne);
   z = aloc1(nne);
-  nodecoord_total(nne,nod,node,x,y,z);
+  if(is_total)
+    nodecoord_total(nne,nod,node,x,y,z);
+  else
+    nodecoord_updated(nne,nod,node,x,y,z);
   
   Matrix(double) xe;  
   Matrix_construct_init(double,xe,nne,3,0.0); 

@@ -54,6 +54,8 @@
 
 #include "solver_file.h"
 
+#include "fd_residuals.h"
+
 static const int ndim = 3;
 static const long ARC = 1;
 
@@ -355,7 +357,7 @@ int multi_scale_main(int argc, char **argv)
 			  c->matgeom,c->supports,c->npres,
 			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
 			  s->crpl,macro->opts->stab,
-			  s->r,macro->opts);
+			  s->r,NULL,macro->opts,0.0);
     
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -537,6 +539,12 @@ int multi_scale_main(int argc, char **argv)
 	}
 	free(sur_forces);
       }
+
+      fd_res_compute_reactions(c->ndofn, c->npres, s->d_r, s->r, c->elem, c->node,
+                               c->matgeom, c->hommat, c->supports, s->eps,
+                               s->sig_e, solver_file->nonlin_tol,
+                               s->crpl, s->dt, s->times[s->tim+1], macro->opts->stab,
+                               c->mpi_comm, macro->opts, 0, NULL, NULL);
 
       if (solver_file->print_steps[s->tim] == 1){
 

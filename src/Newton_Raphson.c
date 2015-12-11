@@ -35,6 +35,8 @@
 #include "pgf_fe2_macro_client.h"
 #include "pgf_fe2_micro_server.h"
 
+#include "constitutive_model.h"
+
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
 #endif
@@ -91,72 +93,71 @@ static void set_time_macro(const int tim,
 }
 
 double Newton_Raphson (const int print_level,
-		       int *n_step,
-		       long ne,
-		       int n_be,
-		       long nn,
-		       long ndofn,
-		       long ndofd,
-		       long npres,
-		       long tim,
-		       double *times,
-		       double nor_min,
-		       double dt,
-		       ELEMENT *elem,
-		       BOUNDING_ELEMENT *b_elems,
-		       NODE *node,
-		       SUPP sup, 
-		       double *sup_defl, 
-		       HOMMAT *hommat,
-		       MATGEOM matgeom, 
-		       SIG *sig_e, 
-		       EPS *eps, 
-		       int *Ap, 
-		       int *Ai,
-		       double *r, /**< total displacement, i.e. for TL */
-		       double *f,
-		       double *d_r,
-		       double *rr,
-		       double *R,
-		       double *f_defl,
-		       double *RR,
-		       double *f_u,
-		       double *RRn,
-		       CRPL *crpl,
-		       double stab, 
-		       long nce,
-		       COEL *coel,
-		       long FNR,
-		       double *pores,
-		       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		       double *BS_x,
-		       double *BS_f, 
-		       double *BS_RR,
-		       double gama, 
-		       double GNOR,
-		       double nor1,
-		       double err,
-		       double *BS_f_u,
-		       long *DomDof,
-		       COMMUN comm,
-		       int GDof,
-		       long nt, 
-		       long iter_max, 
-		       double *NORM,
-		       long nbndel,
-		       long *bndel,
-		       MPI_Comm mpi_comm,
-		       const double VVolume,
-		       const PGFem3D_opt *opts,
-		       void *microscale,
-		       double alpha_alpha,
-           double *r_n,
-           double *r_n_1)
+                       int *n_step,
+                       long ne,
+                       int n_be,
+                       long nn,
+                       long ndofn,
+                       long ndofd,
+                       long npres,
+                       long tim,
+                       double *times,
+                       double nor_min,
+                       double dt,
+                       ELEMENT *elem,
+                       BOUNDING_ELEMENT *b_elems,
+                       NODE *node,
+                       SUPP sup,
+                       double *sup_defl,
+                       HOMMAT *hommat,
+                       MATGEOM matgeom,
+                       SIG *sig_e,
+                       EPS *eps,
+                       int *Ap,
+                       int *Ai,
+                       double *r, /**< total displacement, i.e. for TL */
+                       double *f,
+                       double *d_r,
+                       double *rr,
+                       double *R,
+                       double *f_defl,
+                       double *RR,
+                       double *f_u,
+                       double *RRn,
+                       CRPL *crpl,
+                       double stab,
+                       long nce,
+                       COEL *coel,
+                       long FNR,
+                       double *pores,
+                       PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                       double *BS_x,
+                       double *BS_f,
+                       double *BS_RR,
+                       double gama,
+                       double GNOR,
+                       double nor1,
+                       double err,
+                       double *BS_f_u,
+                       long *DomDof,
+                       COMMUN comm,
+                       int GDof,
+                       long nt,
+                       long iter_max,
+                       double *NORM,
+                       long nbndel,
+                       long *bndel,
+                       MPI_Comm mpi_comm,
+                       const double VVolume,
+                       const PGFem3D_opt *opts,
+                       void *microscale,
+                       double alpha_alpha,
+                       double *r_n,
+                       double *r_n_1)
 {
   double t = times[tim+1];
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
-  char  *error[] = {"inf","-inf","nan"};
   char str1[500];
   struct rusage usage;
 
@@ -226,6 +227,7 @@ double Newton_Raphson (const int print_level,
 
   /* GOTO REST */
  rest:
+  fflush(PGFEM_stdout);
   if (INFO == 1 && ART == 0){
    
     /* Reset variables */
@@ -242,6 +244,9 @@ double Newton_Raphson (const int print_level,
       break;
     case MINI_3F:
       MINI_3f_reset(elem,ne,npres,4,sig_e,eps);
+      break;
+    case CM:
+      constitutive_model_reset_state(eps, ne, elem);
       break;
     default: break;
     }
@@ -377,7 +382,7 @@ double Newton_Raphson (const int print_level,
       nulld (f_defl,ndofd);
       load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			  matgeom,sup,npres,nor_min,
-			  sig_e,eps,dt,crpl,stab,r,opts);
+			  sig_e,eps,dt,crpl,stab,r,r_n,opts,alpha_alpha);
 			  
       /* Generate the load and vectors */
       for (i=0;i<ndofd;i++)  {
@@ -411,13 +416,23 @@ double Newton_Raphson (const int print_level,
 	  ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
 	}
 		
-	stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
-		     node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
-		     iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
-		     myrank,nproc,DomDof,GDof,
-		     comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+	INFO = stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
+                            node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
+                            iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
+                            myrank,nproc,DomDof,GDof,
+                            comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
-//return 0.0;
+        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+        if (GInfo == 1) {
+          if(myrank == 0){
+            PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
+                         "Subdividing load.\n", __func__, __FILE__, __LINE__);
+          }
+          INFO = 1;
+          ART = 1;
+          goto rest;
+        }
+
 	/* turn off line search for server-style multiscale */
 	if(DEBUG_MULTISCALE_SERVER && microscale != NULL){
 	  ART = 1;
@@ -453,18 +468,14 @@ double Newton_Raphson (const int print_level,
       /* Clear hypre errors */
       hypre__global_error = 0;
       
-      sprintf (str1,"%f",BS_nor);
-      for (N=0;N<3;N++){
-	M = 10; 
-	M = strcmp(error[N],str1);
-	if (M == 0){
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the solver: nor = %s\n",error[N]); 
-	  INFO = 1; 
-	  ART = 1;  
-	  goto rest;
-	}
+      if (!isfinite(BS_nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the solver: nor = %f\n",BS_nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
+
       /* Transform GLOBAL displacement vector to LOCAL */
       GToL (BS_x,rr,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
@@ -573,8 +584,8 @@ double Newton_Raphson (const int print_level,
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
 	if(myrank == 0){
-	  PGFEM_printf("Inverted element detected (fd_residuals).\n"
-		 "Subdividing load.\n");
+          PGFEM_printf("Error detected (fd_residuals) %s:%s:%ld.\n"
+                       "Subdividing load.\n", __func__, __FILE__, __LINE__);
 	}
 	INFO = 1;
 	ART = 1;
@@ -625,17 +636,13 @@ double Newton_Raphson (const int print_level,
       
       /* Normalize norm */
       nor /= nor1;
-      
-      sprintf (str1,"%f",nor);
-      for (N=0;N<3;N++){
-	M = 10;
-	M = strcmp(error[N],str1);
-	if (M == 0) {
-	  if (myrank == 0) 
-	    PGFEM_printf("ERROR in the algorithm : nor = %s\n",error[N]);
-	  INFO = 1;
-	  goto rest;
-	}
+
+      if (!isfinite(nor)) {
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the algorithm : nor = %f\n",nor);
+        INFO = 1;
+        ART = 1;
+        goto rest;
       }
       
       /* My Line search */
@@ -699,6 +706,7 @@ double Newton_Raphson (const int print_level,
 	       nor, nor2, usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
 	       usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 	PGFEM_printf("|R'u|/|R0'u0| = [%1.12e] || [%1.12e]\n",enorm,fabs(Genorm));
+	fflush(PGFEM_stdout);
       }
  
       if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){
@@ -836,10 +844,24 @@ double Newton_Raphson (const int print_level,
 		     sig_e,hommat,d_r,r,mpi_comm);
       break;
     case TF:
-        update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
-            dt,t,mpi_comm);                          
-      break;                 	
-      
+      update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
+                                dt,t,mpi_comm);
+      break;                          
+    case CM:
+      {
+        switch(opts->cm)
+          {
+          case HYPER_ELASTICITY:
+            DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
+                           sig_e,hommat,d_r,r,mpi_comm);
+            break;
+          case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
+            /* updated later... */
+            break;
+          default: assert(0 && "undefined CM type"); break;
+          }
+        break;
+      }
     default: break;
     }
     
@@ -850,26 +872,59 @@ double Newton_Raphson (const int print_level,
        time step values r*/
     /* For FE2, these vectors are not allocated and are passed as NULL */
     if ( r_n_1 != NULL && r_n != NULL )
+    {
+      for(long a = 0; a<nn; a++)
       {
-        for(long a = 0; a<nn; a++)
-          {
-            for(long b = 0; b<ndofn; b++)
-              {
-                r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-                long id = node[a].id[b];
-                if(id>0)
-                  r_n[a*ndofn + b] = r[id-1];
-                else
-                  {
-                    if(id==0)
-                      r_n[a*ndofn + b] = 0.0;
-                    else
-                      r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
-                  }
-              }
+        for(long b = 0; b<ndofn; b++)
+        {
+          r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
+          long id = node[a].id[b];
+          if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY && !PLASTICITY_TOTAL_LAGRANGIAN) 
+          // Updated Lagrangian
+          {  
+            if(id>0)
+              r_n[a*ndofn + b] = d_r[id-1];
+            else
+            {
+              if(id==0)
+                r_n[a*ndofn + b] = 0.0;
+              else
+                r_n[a*ndofn + b] = sup->defl_d[abs(id)-1];
+            }
           }
+          else
+          // Total Lagrangian: DISP, TF
+          {
+            if(id>0)
+              r_n[a*ndofn + b] = r[id-1];
+            else
+            {
+              if(id==0)
+                r_n[a*ndofn + b] = 0.0;
+              else
+                r_n[a*ndofn + b] = sup->defl[abs(id)-1] + sup->defl_d[abs(id)-1];
+            }            
+          }   
+        }
       }
-
+    }
+    
+    /* update of internal variables and nodal coordinates */
+    if(opts->analysis_type==CM)
+    {
+      switch(opts->cm){
+      case CRYSTAL_PLASTICITY:
+      constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
+                                                ndofn,r_n,dt,PLASTICITY_TOTAL_LAGRANGIAN);
+      break;
+      case BPA_PLASTICITY: case TESTING:
+      constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
+                                                ndofn,r_n,dt,1 /* TL */);
+      break;
+      default: break;
+      }
+    }
+    
     if(opts->analysis_type==TF)
       {
         int nVol = 1;
@@ -888,7 +943,7 @@ double Newton_Raphson (const int print_level,
               }
           }
       }
-    
+        
     /* Null prescribed increment deformation */
     for (i=0;i<sup->npd;i++){  
       sup->defl[i] += sup->defl_d[i];

@@ -67,6 +67,11 @@
 #include "read_input_file.h"
 
 #include "three_field_element.h"
+#include "constitutive_model.h"
+#include "post_processing.h"
+#include "restart.h"
+
+#include "fd_residuals.h"
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -76,96 +81,9 @@ static const int ndim = 3;
 /*****************************************************/
 #define SAVE_RESTART_FILE 1
 
-#ifndef NO_VTK_LIB
-#include "PGFem3D_to_VTK.hpp"
-
-
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1)
-{
-  int err = 0;
-  char filename[1024];
-  
-  sprintf(filename,"%s/restart/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  err += read_VTK_file(filename, u0);      
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,*restart,opts->ofname,myrank, *restart);   
-  err += read_VTK_file(filename, u1);
-    
-  return err;
-}      
-
-#else
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1s)
-{
-  if(myrank==0)
-  {
-    PGFEM_printerr("Restart with VTK is not supported!\n");
-    PGFEM_printerr("Enforce to turn off restart!\n");
-  }
-  
-  *restart = -1;  
-  return 0;
-}
-#endif
-
-int write_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
-{
-  
-  char restart_path[1024];
-  sprintf(restart_path, "%s/restart/STEP_%.5d", opts->opath,stepno);
-                
-  if(make_path(restart_path,DIR_MODE) != 0)
-  {
-    PGFEM_printf("Directory (%s) not created!\n",restart_path);
-    abort();                   
-  }  
- 
-  char filename[1024];
-  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
-  FILE *fp = fopen(filename,"w");
-
-  if(fp == NULL)
-  {    
-    printf("Fail to open file [%s]. finishing\n", filename);
-    exit(0);  
-  }
-  
-  for(int a=0; a<nodeno; a++)
-  {
-    for(int b=0; b<nsd; b++)
-      fprintf(fp, "%e %e ", u0[a*nsd + b], u1[a*nsd + b]);
-    
-    fprintf(fp, "\n");    
-  }
-  
-  fclose(fp);
-  return 0;
-}
-
-
-int read_restart_disp(double *u0, double *u1, const PGFem3D_opt *opts, int myrank, int nodeno, int nsd, int stepno)
-{
- 
-  char filename[1024];
-  sprintf(filename,"%s/restart/STEP_%.5d/%s_%d_%d.res",opts->opath,stepno,opts->ofname,myrank, stepno);   
-  FILE *fp = fopen(filename,"r");
-
-  if(fp == NULL)
-  {    
-    printf("Fail to open file [%s]. finishing\n", filename);      
-    exit(0);  
-  }
-  
-  for(int a=0; a<nodeno; a++)
-  {
-    for(int b=0; b<nsd; b++)
-      fscanf(fp, "%lf %lf", u0+a*nsd + b, u1+a*nsd + b);    
-  }
-  
-  fclose(fp);
-  return 0;
-}
-
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts, int myrank, int nodeno, int nmat, double dt, int *restart)
+double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts,
+                           ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
+                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart)
 {
   char filename[1024];
   char line[1024];
@@ -176,7 +94,6 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
   FILE *fp_0 = fopen(filename,"r");
 
-  *restart = -1;
   if(fp_0 != NULL)
   {  
     while(fgets(line, 1024, fp_0)!=NULL) 
@@ -190,13 +107,11 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
     fclose(fp_0);
   }
   
-  if(*restart>0)
+  if (*restart >= 0)
   { 
     int nsd = 3;
-    if(opts->analysis_type==DISP)
-      read_restart_disp(u0, u1, opts, myrank, nodeno, nsd, *restart);
-    else
-      read_initial_from_VTK(opts, myrank, restart, u0, u1);
+    read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
+                 myrank,elemno,nodeno,nsd,restart);    
   } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -327,6 +242,7 @@ int single_scale_main(int argc,char *argv[])
   MATERIAL *mater = NULL;
   MATGEOM matgeom = NULL;
   HOMMAT *hommat = NULL;
+  Model_parameters *param_list = NULL;
   SIG *sig_e = NULL;
   SIG *sig_n = NULL;
   EPS *eps = NULL;
@@ -758,8 +674,27 @@ int single_scale_main(int argc,char *argv[])
     case TF:
         PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
                 "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n"); 
-      break;                            
-
+      break;     
+    case CM:
+    {
+      PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
+      switch(options.cm)
+      {
+        case HYPER_ELASTICITY:
+          PGFEM_printf("HYPERELASTICITY\n");
+          break;
+        case CRYSTAL_PLASTICITY:
+          PGFEM_printf("CRYSTAL PLASTICITY\n");
+          break;                                                 
+        case BPA_PLASTICITY:
+          PGFEM_printf("BPA_PLASTICITY\n");
+          break;
+        default:
+          PGFEM_printf("HYPERELASTICITY\n");
+          break;
+      }            
+      break;                                   
+    }
     default:
       PGFEM_printerr("ERROR: unrecognized analysis type!\n");
       PGFEM_Abort();
@@ -993,6 +928,23 @@ int single_scale_main(int argc,char *argv[])
     eps = build_eps_il (ne,elem,options.analysis_type);
     initialize_damage(ne,elem,hommat,eps,options.analysis_type);
   
+    if (options.analysis_type == CM) {
+      /* parameter list and initialize const. model at int points.
+       * NOTE: should catch/handle returned error flag...
+       */
+      char *cm_filename = NULL;
+      alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
+      FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+      read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
+      free(cm_filename);
+      fclose(cm_in);
+      init_all_constitutive_model(eps,ne,elem,param_list);
+
+      /* This is a temporary function. Special reading/initialization
+         for the crystal plasticity model. */
+      read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+    }
+
     /* alocation of pressure variables */
     int nVol = 1;
     switch(options.analysis_type){
@@ -1009,16 +961,17 @@ int single_scale_main(int argc,char *argv[])
 	npres = 4;
 	if(myrank == 0){
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
-		 "Re-setting to 4 and continuing...\n");
+                       "Re-setting to 4 and continuing...\n");
 	}
       }
       break;
-    case DISP:
+    case DISP: // intented not to have break
+    case CM:
       if(npres != 0){
 	npres = 0;
 	if (myrank == 0) {
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
-		 "Re-setting to 0 and continuing...\n");
+                       "Re-setting to 0 and continuing...\n");
 	}
       }
       break;
@@ -1027,7 +980,7 @@ int single_scale_main(int argc,char *argv[])
 	npres = 1;
 	if (myrank == 0) {
 	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
-		 "Re-setting to 1 and continuing...\n");
+                       "Re-setting to 1 and continuing...\n");
 	}
       }
       break;
@@ -1062,6 +1015,45 @@ int single_scale_main(int argc,char *argv[])
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
+    /*******************************************************************/
+    /* this is for inertia */
+    /* material density*/
+    double *rho;
+    double alpha = 0.5;    /* mid point rule alpha */
+    
+    double *r_n   = NULL; /* displacement at time is t_n*/
+    double *r_n_1 = NULL; /* displacement at time is t_n-1*/
+    double *r_n_dof = NULL;
+    
+    r_n   = aloc1(nn*ndofn);
+    r_n_1 = aloc1(nn*ndofn);
+    r_n_dof = aloc1(ndofd);
+        
+    rho = malloc(sizeof(double)*nmat);    
+    int restart_tim = options.restart;
+    
+    alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
+                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim);
+
+    for(long idx_a = 0; idx_a<nn; idx_a++)
+    {
+      for(long idx_b = 0; idx_b<ndofn; idx_b++)
+      {
+        long id = node[idx_a].id[idx_b];
+        if(id>0)
+        {  
+          r[id-1] = r_n[idx_a*ndofn + idx_b];
+        }    
+      }
+    }
+
+    for(int idx_a = 0; idx_a<nhommat; idx_a++)
+      hommat[idx_a].density = rho[hommat[idx_a].mat_id];
+
+    free(rho);
+
+    /*******************************************************************/
+    
     /* set finite deformations variables */
     set_fini_def (ne,npres,elem,eps,sig_e,options.analysis_type);
     if (options.analysis_type == FS_CRPL){
@@ -1081,8 +1073,8 @@ int single_scale_main(int argc,char *argv[])
     
     load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
 			matgeom,sup,npres,nor_min,sig_e,eps,dt,
-			crpl,options.stab,r,&options);
-    
+			crpl,options.stab,r,r_n,&options,alpha);
+		
     /*  NODE - generation of the load vector  */
     load_vec_node (R,nln,ndim,znod,node);
     /*  ELEMENT - generation of the load vector  */
@@ -1101,7 +1093,7 @@ int single_scale_main(int argc,char *argv[])
 
     /* Prescribed deflection */
     for (i=0;i<sup->npd;i++){
-      sup_defl[i] = sup->defl_d[i];
+      sup_defl[i] = sup->defl_d[i];      
     }
 
     /*=== NO PERIODIC ===*/
@@ -1126,49 +1118,6 @@ int single_scale_main(int argc,char *argv[])
       sup_check = aloc1(sup->npd);
     }
 
-    /*/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-    
-    /* this is for inertia */
-    /* material density*/
-    double *rho;
-    double alpha = 0.5;    /* mid point rule alpha */
-    
-    double *r_n   = NULL; /* displacement at time is t_n*/
-    double *r_n_1 = NULL; /* displacement at time is t_n-1*/
-    double *r_n_dof = NULL;
-    
-    r_n   = aloc1(nn*ndofn);
-    r_n_1 = aloc1(nn*ndofn);
-    r_n_dof = aloc1(ndofd);
-        
-    rho = malloc(sizeof(double)*nmat);    
-    int restart_tim = 0;
-    
-    alpha = read_initial_values(r_n_1, r_n, rho, &options, myrank, nn, nmat, times[1] - times[0], &restart_tim);
-    for(long idx_a = 0; idx_a<nn; idx_a++)
-    {
-      for(long idx_b = 0; idx_b<ndofn; idx_b++)
-      {
-        long id = node[idx_a].id[idx_b];
-        if(id>0)
-          r[id-1] = r_n[idx_a*ndofn + idx_b];
-      }
-    }
-
-    for(int idx_a = 0; idx_a<nhommat; idx_a++)
-      hommat[idx_a].density = rho[idx_a];
-
-    free(rho);
-
-/*////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-  
-
     while (nt > tim){
       dt = times[tim+1] - times[tim];
       if (dt <= 0.0){
@@ -1180,8 +1129,8 @@ int single_scale_main(int argc,char *argv[])
 
       if (myrank == 0){
 	PGFEM_printf("\nFinite deformations time step %ld) "
-	       " Time %e | dt = %e\n",
-	       tim,times[tim+1],dt);
+                     " Time %e | dt = %e\n",
+                     tim,times[tim+1],dt);
       }
 
       /*=== NEWTON RAPHSON ===*/
@@ -1196,7 +1145,7 @@ int single_scale_main(int argc,char *argv[])
 	  /*  read nodal prescribed deflection */
 	  for (i=0;i<sup->npd;i++){
 	    fscanf (in1,"%lf",&sup->defl_d[i]);
-	    sup_defl[i] = sup_check[i] = sup->defl_d[i];
+	    sup_defl[i] = sup_check[i] = sup->defl_d[i];	    
 	  }
 	  /* read nodal load in the subdomain */
 	  read_nodal_load (in1,nln,ndim,znod);
@@ -1222,11 +1171,16 @@ int single_scale_main(int argc,char *argv[])
 /////////////////////////////////////////////////////////////////////////////////////////////////
         if(tim<restart_tim+1)
         {
+          for (i=0;i<sup->npd;i++){  
+            sup->defl[i] += sup->defl_d[i];
+            sup->defl_d[i] = 0.0;
+          }          
           tim++;
           continue;
         }
 /////////////////////////////////////////////////////////////////////////////////////////////////
-		
+
+	fflush(PGFEM_stdout);
 	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
 				       times,nor_min,dt,elem,b_elems,node,
 				       sup,sup_defl,hommat,matgeom,sig_e,
@@ -1237,6 +1191,7 @@ int single_scale_main(int argc,char *argv[])
 				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
 				       &NORM,nbndel,bndel,mpi_comm,VVolume,
 				       &options,NULL,alpha, r_n, r_n_1);
+	fflush(PGFEM_stdout);
 
 	/* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1279,6 +1234,12 @@ int single_scale_main(int argc,char *argv[])
       /* Calculating equvivalent Mises stresses and strains vectors */
       Mises (ne,sig_e,eps,options.analysis_type);
 
+      /* update output stuff for CM interface */
+      if(options.analysis_type == CM && options.cm!=0){
+        constitutive_model_update_output_variables(sig_e, eps, ne,
+                                                   times[tim+1] - times[tim]);
+      }
+
       /* print tractions on marked features */
       {
 	double *sur_forces = NULL;
@@ -1293,10 +1254,16 @@ int single_scale_main(int argc,char *argv[])
 	    PGFEM_printf("Forces on marked features:\n");
 	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
 			  n_feats,ndim);
+	    fflush(PGFEM_stdout);
 	  }
 	}
 	free(sur_forces);
       }
+
+      fd_res_compute_reactions(ndofn, npres, d_r, r, elem, node,
+                               matgeom, hommat, sup, eps, sig_e, nor_min,
+                               crpl, dt, times[tim+1], options.stab, mpi_comm,
+                               &options, alpha, r_n, r_n_1);
 
       /* Calculate macro deformation gradient */
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
@@ -1359,35 +1326,80 @@ int single_scale_main(int argc,char *argv[])
 // this is only for the restart
               if(SAVE_RESTART_FILE)
               {
-                for(long a = 0; a<nn; a++)
-                {              
-                  for(long b = 0; b<ndofn; b++)
-                  {
-                    long id = node[a].id[b];
-                    if(id>0)
-                      r_n_dof[id-1] = r_n_1[a*ndofn + b];
-                  }
-                }
-                              
-                char restart_path[1024];
-                sprintf(restart_path, "%s/restart", options.opath);
-                
-                if(options.analysis_type==DISP)
-                {    
-                  if(make_path(restart_path,DIR_MODE) != 0)
-                  {
-                    PGFEM_printf("Directory (%s) not created!\n",restart_path);
-                    abort();                   
-                  }
-                  write_restart_disp(r_n_1, r_n, &options, myrank, nn, ndofn, tim);
-                }                
-                else
-                {
-                  VTK_print_vtu(restart_path,options.ofname,tim,
-                      myrank,ne,nn,node,elem,sup,r_n_dof,sig_e,eps,
-                      &options);
-                }                
+                  write_restart(r_n_1, r_n, &options, 
+                                elem, node,sig_e,eps,sup,
+                                myrank, ne, nn, ndofn, ndofd,tim);
               } 
+
+///////////////////////////////////////////////////////////////////////////////////      
+///////////////////////////////////////////////////////////////////////////////////
+/*{
+              double G_gn = 0.0;
+              Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
+
+              Matrix_construct_init(double, PK2, 3,3,0.0);
+              Matrix_construct_init(double, sigma, 3,3,0.0);
+              Matrix_construct_init(double, Feff, 3,3,0.0);
+              Matrix_construct_init(double, Eeff, 3,3,0.0);              
+              Matrix_construct_init(double, eFeff, 3,3,0.0);
+              Matrix_construct_init(double, E, 3,3,0.0);
+              Matrix_construct_init(double, PK2dev, 3,3,0.0);
+              Matrix_construct_init(double, sigma_dev, 3,3,0.0);
+              Matrix_construct_init(double, eFeffPK2, 3,3,0.0);
+            
+              post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
+              post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
+              post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);              
+              post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options); 
+                           
+              if(myrank==0)
+              { 
+                Matrix_eye(Eeff, 3);
+                Matrix_AxB(Eeff,0.5,-0.5,Feff,1,Feff,0);
+                double det_Fe;
+                Matrix_det(eFeff, det_Fe);
+                Matrix_AxB(eFeffPK2,1.0,0.0,eFeff,0,PK2,0);
+                Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);        
+                                
+                double trPK2, tr_sigma;
+                
+                Matrix_trace(PK2,trPK2);
+                Matrix_trace(sigma,tr_sigma);
+                Matrix_eye(PK2dev, 3);
+                Matrix_eye(sigma_dev, 3);  
+                
+                Matrix_AplusB(PK2dev,    1.0, PK2,      -trPK2/3.0, PK2dev);
+                Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);    
+    
+                double norm_sigma, norm_PK2;
+                Matrix_ddot(PK2dev,PK2dev,norm_PK2);    
+                Matrix_ddot(sigma_dev,sigma_dev,norm_sigma);
+    
+                double sigma_eff=sqrt(3.0/2.0*norm_sigma);
+                double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
+                              
+                
+                FILE *fp_ss;
+                if(tim==0) 
+                  fp_ss = fopen("strain_stress.txt", "w");
+                else
+                  fp_ss = fopen("strain_stress.txt", "a");
+                  
+                fprintf(fp_ss,"%e %e %e %e %e %e\n",times[tim+1],sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));                                    
+
+                fclose(fp_ss);
+              }
+
+              Matrix_cleanup(PK2);
+              Matrix_cleanup(sigma);
+              Matrix_cleanup(Feff);
+              Matrix_cleanup(Eeff);              
+              Matrix_cleanup(eFeff);
+              Matrix_cleanup(E);
+              Matrix_cleanup(PK2dev);
+              Matrix_cleanup(sigma_dev);
+              Matrix_cleanup(eFeffPK2);                           
+}*/              
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
@@ -1474,16 +1486,14 @@ int single_scale_main(int argc,char *argv[])
   dealoc1l (DomNe);
   dealoc1l (DomNn);
   free(dist);
-
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-
+  destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_sig_il(sig_e,elem,ne,options.analysis_type);
-
   if(options.cohesive == 1){
     destroy_coel(coel,nce);
     destroy_cohesive_props(n_co_props,co_props);

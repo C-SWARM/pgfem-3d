@@ -25,6 +25,48 @@
 
 static const int periodic = 0;
 
+int scan_for_valid_line(FILE *in)
+{
+  static const size_t line_length = 1024;
+  static const char delim[] = " \t\n";
+
+  int err = 0;
+  char *line = malloc(line_length);
+  char *tok = NULL;
+  fpos_t pos;
+
+  /* scan for non-comment/blank line */
+  do{
+    /* get the starting file position for the line */
+    err += fgetpos(in,&pos);
+
+    /* get a line and exit if there is an error */
+    if ( fgets(line,line_length,in) == NULL) {
+      err++;
+      goto exit_err;
+    }
+
+    /* make sure got whole line (last char is '\n') */
+    if ( line[strlen(line) - 1] != '\n' && !feof(in)) {
+      fprintf(stderr,"ERROR: line too long (>%zd chars)! %s(%s)\n",
+              line_length, __func__, __FILE__);
+      err++;
+      goto exit_err;
+    }
+
+    /* get first token */
+    tok = strtok(line,delim);
+    if (tok == NULL) tok = line + strlen(line);
+  } while ( tok[0] == '#' || tok[0] == '\0');
+
+  /* return the file pointer to the beginning of the valid line */
+  err += fsetpos(in,&pos);
+
+ exit_err:
+  free(line);
+  return err;
+}
+
 void pack_2mat(const void **src,
 	       const int nrow,
 	       const int ncol,
@@ -429,8 +471,8 @@ double getJacobian(const double *mat,
   return J;
 }
 
-int inv2x2(const double *mat,
-	   double *mat_inv)
+int inv2x2(const double * restrict mat,
+	   double * restrict mat_inv)
 {
   double A = det2x2(mat);
   if(A != 0.0){
@@ -442,8 +484,8 @@ int inv2x2(const double *mat,
   } else return 1;
 }
 
-int inv3x3(const double *mat,
-	   double *mat_inv)
+int inv3x3(const double * restrict  mat,
+	   double * restrict mat_inv)
 {
   double A = det3x3(mat);
 
@@ -651,15 +693,49 @@ int inverse(double const* A,
     } else {
       PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
     }
-    PGFEM_Abort();
-    abort();
+    /* PGFEM_Abort(); */
+    /* abort(); */
   }
 
   return info;
 }
 
-void transpose(double *mat_t,
-	       const double *mat,
+int solve_Ax_b(const int n_eq,
+               const int mat_dim,
+               const double *A,
+               double *b_x)
+{
+  int err = 0;
+  assert(n_eq <= mat_dim);
+  assert(n_eq > 0);
+
+  /* since we are calling a FORTRAN routine, we need to transpose the
+     matrix */
+  double *At = malloc(mat_dim*mat_dim*sizeof(*At));
+  transpose(At,A,mat_dim,mat_dim);
+
+  /* allocate workspace for LAPACK */
+  int *IPIV = malloc(mat_dim*sizeof(*IPIV));
+  int NRHS = 1;
+
+  /* call LAPACK for the solve */
+#ifdef ARCH_BGQ
+  dgesv(n_eq,NRHS,At,mat_dim,IPIV,b_x,mat_dim,&err);
+#else
+  dgesv(&n_eq,&NRHS,At,&mat_dim,IPIV,b_x,&mat_dim,&err);
+#endif
+
+  /* deallocate */
+  free(At);
+  free(IPIV);
+
+  /* negative error codes are programming error codes */
+  assert(err >= 0);
+  return err;
+}
+
+void transpose(double * restrict mat_t,
+	       const double * restrict mat,
 	       const int mat_row,
 	       const int mat_col)
 {

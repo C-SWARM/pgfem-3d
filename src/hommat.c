@@ -30,6 +30,7 @@ HOMMAT* build_hommat (long i)
     pom[ii].e4 = 0.0;
     pom[ii].devPotFlag = -1; /* poisoned */
     pom[ii].volPotFlag = -1; /* poisoned */
+    pom[ii].mat_id = -1;
   }
 
   return (pom);
@@ -42,4 +43,9 @@ void destroy_hommat(HOMMAT* hm, long nm)
     free(hm[i].L);
   }
   free(hm);
+}
+
+double hommat_get_kappa(const HOMMAT *mat)
+{
+  return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
 }
