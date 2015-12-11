@@ -71,6 +71,8 @@
 #include "post_processing.h"
 #include "restart.h"
 
+#include "fd_residuals.h"
+
 static const int periodic = 0;
 static const int ndim = 3;
 
@@ -1253,6 +1255,11 @@ int single_scale_main(int argc,char *argv[])
 	}
 	free(sur_forces);
       }
+
+      fd_res_compute_reactions(ndofn, npres, d_r, r, elem, node,
+                               matgeom, hommat, sup, eps, sig_e, nor_min,
+                               crpl, dt, times[tim+1], options.stab, mpi_comm,
+                               &options, alpha, r_n, r_n_1);
 
       /* Calculate macro deformation gradient */
       GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
