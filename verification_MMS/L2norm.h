@@ -32,7 +32,7 @@ void compute_L2_error(double *GL2_err, ELEMENT *elem, long ne, NODE *node, doubl
     elemnodes(e,nne,nod,elem);
     
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, 3);
+    FEMLIB_initialization_by_elem(&fe, e, elem, node, 3, 1);
                  
     for(int ip = 1; ip<=fe.nint; ip++)
     {
