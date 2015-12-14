@@ -52,7 +52,7 @@ static void param_assign_values(double *param,
 
   /* plastic props */
   param[2] = 0.0; /* beta */
-  param[3] = 300.0; /* hp */
+  param[3] = 3.0e2; /* hp */
   param[4] = 0.5; /* k0 */
 
   /* damage props */

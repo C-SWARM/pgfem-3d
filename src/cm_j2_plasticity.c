@@ -37,6 +37,7 @@
 #define tensor4 81
 
 static const double j2d_int_alg_tol = 1.0e-10;
+static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
 
 Define_Matrix(double);
 
@@ -182,6 +183,7 @@ static int j2d_read_param(Model_parameters *p,
   match += fscanf(in, "%lf %lf %lf",
                   param + beta, param + hp, param + k0);
 
+  err += scan_for_valid_line(in);
 
   /* DAMAGE PROPERTIES */
   match += fscanf(in, "%lf %lf %lf %lf",
@@ -412,6 +414,201 @@ static int j2d_int_alg(Constitutive_model *m,
   return err;
 }
 
+/* compute the deviatoric algorithmic elasto-plastic tangent in the
+   reference configuration */
+static int j2d_compute_Aep_dev(const Constitutive_model *m,
+                               const void *CTX,
+                               double * restrict Aep_dev)
+{
+  int err = 0;
+  const j2d_ctx *ctx = CTX;
+  const double *param = cm_param(m);
+  const double *Fn = cm_Fs_data(m, FN);
+  const double *spn = cm_Fs_data(m, SPN);
+
+  /* get pointer to scalar state variables */
+  const double *vars = cm_vars(m);
+
+  /* compute bbar at n + 1 */
+  const double J23 = pow(det3x3(ctx->F), -2./3.);
+  double bbar[tensor] = {0};
+  double devbbar[tensor] = {0};
+  double bI[tensor] = {0};
+  double FI[tensor] = {0};
+  j2d_bbar(ctx->F, bbar);
+  j2d_dev(bbar, devbbar);
+  err += inv3x3(bbar, bI);
+  for(int i = 0; i < tensor; i++) bI[i] *= J23;
+  err += inv3x3(ctx->F, FI);
+
+  /* compute Itr = G tr(bbar) - tr(Fubar spn Fubar') */
+  double sp_tr[tensor] = {0};
+  double Itr = 0;
+  {
+    double Fubar[tensor] = {0};
+    err += j2d_compute_Fubar(ctx->F, Fn, Fubar);
+    j2d_push_forward(Fubar, spn, sp_tr);
+    const double trace_sp = sp_tr[0] + sp_tr[4] + sp_tr[8];
+    sp_tr[0] -= trace_sp / 3.0;
+    sp_tr[4] -= trace_sp / 3.0;
+    sp_tr[8] -= trace_sp / 3.0;
+    Itr = param[G] * (bbar[0] + bbar[4] + bbar[8]) - trace_sp;
+  }
+
+  /* compute s_tr, normal and ||s_tr|| */
+  double s_tr[tensor] = {0};
+  double normal[tensor] = {0};
+  double zeros[tensor] = {0};
+  j2d_compute_s0(param[G], bbar, s_tr);
+  for (int i = 0; i < tensor; i++) s_tr[i] -= sp_tr[i];
+  const double norm_s_tr = j2d_compute_normal(s_tr, zeros, param, normal);
+
+  /* compute factors */
+  const double mu_bar = param[G] * J23 * (bbar[0] + bbar[4] + bbar[8]) / 3;
+  const double f0 = 1.0 - 2.0 * mu_bar * vars[gam] / norm_s_tr;
+  const double del0 = 1.0 + param[hp] / (3.0 * mu_bar);
+  const double f1 = (1.0 / del0 - 1.0 + f0);
+  const double del1 = f1 * 2./3. * Itr;
+  const double del2 = (1.0 / del0 - 1.0) * 4./3. * mu_bar * vars[gam] - 2./3. * norm_s_tr * f1;
+  const double del3 = 2.0 * norm_s_tr * f1;
+  const double del4 = (1.0 / del0  - 1.0) * 4./3. * param[G] * vars[gam] * J23;
+
+  /* compute pull-back terms */
+  double N[tensor] = {0};
+  double N2[tensor] = {0};
+  double DEVBBAR[tensor] = {0};
+  double Str[tensor] = {0};
+  {
+    /* compute n^2 = n n */
+    double n2[tensor] = {0};
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        for (int k = 0; k < dim; k++) {
+          n2[idx_2(i,j)] += normal[idx_2(i,k)] * normal[idx_2(k,j)];
+        }
+      }
+    }
+
+    /* compute intermediate products wkX = FI' X */
+    double wkN[tensor] = {0};
+    double wkN2[tensor] = {0};
+    double wkDBB[tensor] = {0};
+    double wkStr[tensor] = {0};
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        for (int k = 0; k < dim; k++) {
+          wkN[idx_2(i,j)]+= FI[idx_2(k,i)] * normal[idx_2(k,j)];
+          wkN2[idx_2(i,j)]+= FI[idx_2(k,i)] * n2[idx_2(k,j)];
+          wkDBB[idx_2(i,j)] += FI[idx_2(k,i)] * devbbar[idx_2(k,j)];
+          wkStr[idx_2(i,j)] += FI[idx_2(k,i)] * s_tr[idx_2(k,j)];
+        }
+      }
+    }
+
+    /* compute final products X = wkX FI */
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        for (int k = 0; k < dim; k++) {
+          N[idx_2(i,j)] += wkN[idx_2(i,k)] * FI[idx_2(k,j)];
+          DEVBBAR[idx_2(i,j)] += wkDBB[idx_2(i,k)] * FI[idx_2(k,j)];
+          N2[idx_2(i,j)] += wkN2[idx_2(i,k)] * FI[idx_2(k,j)];
+          wkStr[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(k,j)];
+        }
+      }
+    }
+  }
+
+  /* compute the algorithmic stiffness tensor */
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        for (int l = 0; l < dim; l++) {
+          Aep_dev[idx_4(i,j,k,l)] = (f0 * (2./3. * Itr
+                                           * ((bI[idx_2(i,j)] * bI[idx_2(k,l)]
+                                               + bI[idx_2(i,k)] * bI[idx_2(j,l)]) / 2.
+                                              - bI[idx_2(i,j)] * bI[idx_2(k,l)] / 3.)
+                                           - 2./3. *(Str[idx_2(i,j)] * bI[idx_2(k,l)]
+                                                     + bI[idx_2(i,j)] * Str[idx_2(k,l)]))
+                                     - del1 * N[idx_2(i,j)] * N[idx_2(k,l)]
+                                     - del2 * N[idx_2(i,j)] * bI[idx_2(k,l)]
+                                     - del3 * N[idx_2(i,j)] * N2[idx_2(k,l)]
+                                     + del4 * N[idx_2(i,j)] * DEVBBAR[idx_2(k,l)]);
+
+        }
+      }
+    }
+  }
+
+  return err;
+}
+
+static int j2d_compute_Lbar(const Constitutive_model *m,
+                            const void *CTX,
+                            double * restrict Lbar)
+{
+  int err = 0;
+  const j2d_ctx *ctx = CTX;
+  const double kappa = hommat_get_kappa(cm_hmat(m));
+  const double J = det3x3(ctx->F);
+  double C[tensor] = {0};
+  double C_I[tensor] = {0};
+  double dudj = 0.0;
+  double d2udj2 = 0.0;
+
+  /* compute C, CI */
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for(int k = 0; k < dim; k++) {
+        C[idx_2(i,j)] += ctx->F[idx_2(k,i)] * ctx->F[idx_2(k,j)];
+      }
+    }
+  }
+  err += inv3x3(C, C_I);
+
+  err += j2d_compute_Aep_dev(m, CTX, Lbar);
+  new_pot_compute_dudj(J, cm_hmat(m), &dudj);
+  new_pot_compute_d2udj2(J, cm_hmat(m), &d2udj2);
+
+  for (int i=0; i < dim; i++) {
+    for (int j=0; j < dim; j++) {
+      for (int k=0; k < dim; k++) {
+	for (int l=0; l < dim; l++) {
+	  const int idx4 = idx_4(i,j,k,l);
+	  /* Deviatoric + Volumetric stiffness */
+	  Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
+                          * C_I[idx_2(i,j)] * C_I[idx_2(k,l)])
+			 - (2. * kappa * J * dudj
+                            * C_I[idx_2(i,k)] * C_I[idx_2(l,j)])
+                         );
+	}
+      }
+    }
+  }
+
+  return err;
+}
+
+static int j2d_compute_AST(const Constitutive_model *m,
+                           const void *ctx,
+                           Matrix_double *L)
+{
+  int err = 0;
+  err += j2d_compute_Lbar(m, ctx, L->m_pdata);
+
+  /* scale by damage parameter */
+  const double dam = 1.0 - cm_vars(m)[w];
+  for (int i = 0; i < tensor4; i++) {
+    L->m_pdata[i] *= dam;
+  }
+
+  /* if evolving damage, modify tangent */
+  if (cm_flags(m)[damaged]) {
+    /* err += j2d_modify_AST(m, ctx, L->m_pdata); */
+  }
+
+  return err;
+}
+
 /* compute the deviatoric part of the effective (undamaged) Kirckhoff stress */
 static int j2d_compute_sbar(const double *F,
                             const double *sp,
@@ -461,6 +658,46 @@ static int j2d_dudj(const Constitutive_model *m,
   return err;
 }
 
+static int j2d_get_damage(const Constitutive_model *m,
+                          double *damage)
+{
+  int err = 0;
+  *damage = cm_vars(m)[wn];
+  return err;
+}
+
+static int j2d_identity_tensor(const Constitutive_model *m,
+                               Matrix_double *F)
+{
+  int err = 0;
+  Matrix_eye(*F, dim);
+  return err;
+}
+
+static int j2d_get_Fn(const Constitutive_model *m,
+                      Matrix_double *Fn)
+{
+  int err = 0;
+  Matrix_copy(*Fn, cm_Fs(m)[FN]);
+  return err;
+}
+
+static int j2d_get_Fnp1(const Constitutive_model *m,
+                        Matrix_double *Fnp1)
+{
+  int err = 0;
+  Matrix_copy(*Fnp1, cm_Fs(m)[FNP1]);
+  return err;
+}
+
+/* dummy functions for reading/writintg the restart files */
+static int j2d_read_restart(FILE *in,
+                            Constitutive_model *m)
+{return 0;}
+
+static int j2d_write_restart(FILE *out,
+                             const Constitutive_model *m)
+{return 0;}
 
 int j2d_plasticity_model_initialize(Model_parameters *p)
 {
@@ -472,24 +709,24 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
   p->compute_dudj = j2d_dudj;
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
-  p->compute_AST = NULL;
+  p->compute_AST = j2d_compute_AST;
   p->update_state_vars = j2d_update;
   p->reset_state_vars = j2d_reset;
   p->get_var_info = j2d_get_info;
-  p->get_Fn = NULL;
+  p->get_Fn = j2d_get_Fn;
   p->get_Fnm1 = NULL;
-  p->get_pF = NULL;
-  p->get_pFn = NULL;
+  p->get_pF = j2d_identity_tensor;
+  p->get_pFn = j2d_identity_tensor;
   p->get_pFnm1 = NULL;
-  p->get_eF = NULL;
-  p->get_eFn = NULL;
+  p->get_eF = j2d_get_Fnp1;
+  p->get_eFn = j2d_get_Fn;
   p->get_eFnm1 = NULL;
 
-  p->get_hardening = NULL;
+  p->get_hardening = j2d_get_damage;
   p->get_hardening_nm1 = NULL;
 
-  p->write_restart = NULL;
-  p->read_restart = NULL;
+  p->write_restart = j2d_write_restart;
+  p->read_restart = j2d_read_restart;
 
   p->destroy_ctx = j2d_plasticity_model_ctx_destroy;
   p->compute_dMdu = NULL;
