@@ -337,7 +337,9 @@ static double j2d_compute_normal(const double * restrict s_tr,
   nrm = sqrt(nrm);
 
   /* compute normal: n = ksi_tr / ||ksi_tr|| */
-  for(int i = 0; i < tensor; i++) n[i] /= nrm;
+  if(nrm > 0) {
+    for(int i = 0; i < tensor; i++) n[i] /= nrm;
+  }
   return nrm;
 }
 
@@ -512,7 +514,7 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
           N[idx_2(i,j)] += wkN[idx_2(i,k)] * FI[idx_2(k,j)];
           DEVBBAR[idx_2(i,j)] += wkDBB[idx_2(i,k)] * FI[idx_2(k,j)];
           N2[idx_2(i,j)] += wkN2[idx_2(i,k)] * FI[idx_2(k,j)];
-          wkStr[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(k,j)];
+          Str[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(k,j)];
         }
       }
     }
@@ -538,7 +540,6 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
       }
     }
   }
-
   return err;
 }
 
@@ -586,6 +587,17 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   }
 
   return err;
+}
+
+static int j2d_compute_dMdu(const Constitutive_model *m,
+                            const void *ctx,
+                            const double *Grad_op,
+                            const int nne,
+                            const int ndofn,
+                            double *dM_du)
+{
+  memset(dM_du, 0, tensor * nne *dim * sizeof(*dM_du));
+  return 0;
 }
 
 static int j2d_compute_AST(const Constitutive_model *m,
@@ -729,7 +741,7 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
   p->read_restart = j2d_read_restart;
 
   p->destroy_ctx = j2d_plasticity_model_ctx_destroy;
-  p->compute_dMdu = NULL;
+  p->compute_dMdu = j2d_compute_dMdu;
 
   p->set_init_vals = j2d_set_init_vals;
   p->read_param = j2d_read_param;
