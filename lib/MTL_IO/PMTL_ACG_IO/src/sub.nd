@@ -1,0 +1,19 @@
+#!/bin/csh
+
+# This is a simple sumbission script to test the driver and input files
+
+#$ -pe mpi-16 32
+#$ -o test_New.log
+#$ -q *@@cswarm
+#$ -v PGFEM3D_INSTALL
+ 
+
+module load pmtl/4.0-ompi
+
+echo "Job Started at:"
+date
+
+mpirun -np 32 ./test_mtl_acg
+
+echo "Job Ended at:"
+date

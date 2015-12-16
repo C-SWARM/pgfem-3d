@@ -1,0 +1,8 @@
+1) how to compile
+module load /afs/crc.nd.edu/group/cswarm/bin/../cswarm_modules/mtl/4.0 
+make
+
+2) test example
+cd ../examples/mtl_acg_test
+make
+./test_mtl_acg

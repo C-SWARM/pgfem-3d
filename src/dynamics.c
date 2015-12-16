@@ -10,12 +10,18 @@
 
 #define INTG_ORDER 0
 
-void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
-{
-  b[0] = 0.0;
-  b[1] = 0.0;
-  b[2] = 0.0;
-}
+#ifndef VERIFICATION_USING_MMS
+
+  void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
+  {
+    b[0] = 0.0;
+    b[1] = 0.0;
+    b[2] = 0.0;
+  }
+
+#else
+  #include "../verification_MMS/MMS.h"
+#endif
 
 void stiffmat_disp_w_inertia_el(double *Ks,
          const int ii,

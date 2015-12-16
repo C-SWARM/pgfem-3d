@@ -1,0 +1,24 @@
+SRC = $(shell ls *.cc)
+
+OBJ = $(SRC:.cc=.o)
+OLIB = libPMTL_ACG.a
+
+CC = mpicc
+CXX = mpicxx
+
+INCDIRS = -I../include
+CFLAGS = -DMTL_HAS_MPI
+
+all: $(OBJ) $(OLIB)
+
+%.o:%.cc
+	$(CXX) $(CFLAGS) $(INCDIRS) -c $<
+
+$(OLIB): $(OBJ)
+	$(AR) $(ARFLAGS) $(OLIB) $(OBJ)	
+	rm -rf $(OBJ)
+	mv $(OLIB) ../lib
+
+clean :
+	rm -rf *.o
+	
