@@ -27,7 +27,7 @@ typedef struct MTL_SOLVER_INTF {
   DistributeV(Vector(double)) xx;
   itl::pc::identity<Distribute(CMatrix(double))> *P;
 
-  char* PC;
+  char PC[1024];
 } MTL_SOLVER_INTF;
 
 template <typename T>
@@ -93,32 +93,36 @@ int destruct_solver(void **m)
   return err;
 }
 
-int initialize_linear_system(void *m, int N)
+int initialize_linear_system(void *m, int N, int nne)
 { 
   int err = 0;  
 
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
 
-  intf->A.change_dim(N,N);
-  intf->AA.change_dim(N,N);
-  intf->b.change_dim(N);
-  intf->x.change_dim(N); 
-  intf->bb.change_dim(N);
-  intf->xx.change_dim(N);
+  Vector(double) b(nne,0.0);
+  CMatrix(double) A(nne,nne);
+  A=0.0;
+  DistributeV(Vector(double)) Pb(N,0.0);
+  Distribute(CMatrix(double)) PA(N,N);
+  PA=0.0;
 
-  intf->AA = 0.0;
-  intf->A = 0.0;
-  intf->b = 0.0;
-  intf->x = 0.0;
-  intf->bb = 0.0;
-  intf->xx = 0.0;
+  intf->A=A;
+  intf->b=b;
+  intf->x=b;
 
-  intf->PC = "identity";
+  intf->AA=PA;
+
+  intf->bb=Pb;
+  intf->xx=Pb;
+
+
+
+  sprintf(intf->PC, "%s", "identity");
   return err;
 }
 
 int update_linear_system_A_IJ(void *m, int *I, int IN,
-                                       int *J, int JN, double *values, MPI_Comm comm_1)
+                                       int *J, int JN, int N, double *values, MPI_Comm comm_1)
 {   
   int err = 0;  
 
@@ -128,7 +132,6 @@ int update_linear_system_A_IJ(void *m, int *I, int IN,
   typedef Collection<CMatrix(double)>::value_type value_type;
   {
   mat::inserter<CMatrix(double), update_plus<value_type> > ins(intf->A, 3);
-
    
   Matrix(double) temp(IN,JN);
   Vector(double) vI(IN), vJ(JN);
@@ -139,73 +142,47 @@ int update_linear_system_A_IJ(void *m, int *I, int IN,
     A[a] = values[a];
     
   for(int a=0; a<IN; a++)
-    vI[a] = I[a];
+    vI[a] = a;
     
   for(int a=0; a<JN; a++)
-    vJ[a] = J[a];   
+    vJ[a] = a;
   
   ins << element_matrix(temp, vI, vJ);
 }
- // std :: cout << intf->b <<"\n";
+ // std :: cout << intf->A <<"\n";
 
-  typedef mtl::matrix::distributed<mtl::compressed2D<double> >  matrix_type;
-  typedef mtl::vector::distributed<mtl::dense_vector<double> >  vector_type;
-  matrix_type PA(IN,JN);
-  vector_type Pb(IN,0.0);
+
+
   {
-  mtl::matrix::inserter<matrix_type, mtl::operations::update_plus<double> > insA(PA);
-  mtl::vector::inserter<vector_type, mtl::operations::update_plus<double> > insV(Pb);
+  mtl::matrix::inserter<Distribute(CMatrix(double)), mtl::operations::update_plus<double> > insA(intf->AA);
+  mtl::vector::inserter< DistributeV(Vector(double)), mtl::operations::update_plus<double> > insV(intf->bb);
 
   for (int i=0;i<IN;i++){
-	  insV[i] << intf->b[i];
+	  int irow=I[i];
+	  insV[irow] << intf->b[i];
      for (int j=0;j<JN;j++) {
-       insA[i][j] << intf->A[i][j];
+      int icol=J[i];
+       insA[irow][icol] << intf->A[i][j];
      }
-   }
+    }
   }
 
 
+    mtl::par::sout << "The Matrix AA is\n" << intf->AA << "\n";
+    mtl::par::sout << "The Vector bb is\n" << intf->bb << "\n";
 
-   intf->AA=PA;
-//  intf->bb=Pb;
-   std :: cout << intf->AA <<"\n";
- // std :: cout << intf->bb <<"\n";
   return err;
 }
 
-int update_linear_system_A_IJ_(void *m, int *I, int IN,
-                                       int *J, int JN, double *values)
-{   
-  int err = 0;  
 
-  MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
-  
-  typedef Collection<CMatrix(double)>::value_type value_type;
-  mat::inserter<CMatrix(double), update_plus<value_type> > ins(intf->A, 3);
-    
-  Matrix(double) temp(IN,JN);
-  Vector(double) vI(IN), vJ(JN);
-  
-  double *A = temp.address_data();
-
-  for(int a=0; a<IN*JN; a++)
-    A[a] = values[a];
-    
-  for(int a=0; a<IN; a++)
-    vI[a] = I[a];
-    
-  for(int a=0; a<JN; a++)
-    vJ[a] = J[a];   
-  
-  ins << element_matrix(temp, vI, vJ);
-  return err;
-}
 
 int set_linear_system_b(void *m, double *values, int N)
 {   
   int err = 0;  
 
+
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
+  boost::mpi::communicator comm(communicator(intf->AA));
 
   double *b = (intf->b).address_data();
         
@@ -228,28 +205,25 @@ int set_solver_pc(void *m, int type)
   return err;
 }
 
-int solve_linear_system(void *m)
+int solve_linear_system(void *m,int N)
 {
   int err = 0;
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
   
-  intf->x = 0.0;
-  itl::cyclic_iteration<double> iter(intf->b, 500, 1.e-6, 0.0, 5);
+   intf->xx = 0.0;
 
+    itl::cyclic_iteration<double> iter(intf->bb, 500, 1.e-6, 0.0, 5);
 
+    itl::pc::identity<Distribute(CMatrix(double))> PC(intf->AA);
 
+   if (intf->PC=="ilu_0") {
+    itl::pc::ilu_0<Distribute(CMatrix(double))> PC(intf->AA);
+    }
+    else if (intf->PC=="diagonal") {
+    itl::pc::diagonal<Distribute(CMatrix(double))> PC(intf->AA);
+    }
 
-  itl::pc::identity<Distribute(CMatrix(double))> PC(intf->AA);
-
-  if (intf->PC=="ilu_0") {
-   itl::pc::ilu_0<Distribute(CMatrix(double))> PC(intf->AA);
-  }
-  else if (intf->PC=="diagonal") {
-  itl::pc::diagonal<Distribute(CMatrix(double))> PC(intf->AA);
-  }
-
-  cg(intf->AA, intf->xx, intf->bb, PC, iter);
-
+      bicgstab_2(intf->AA, intf->xx, intf->bb, PC, iter);
 
   return err;
 }

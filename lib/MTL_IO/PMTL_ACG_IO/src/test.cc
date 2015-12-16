@@ -16,11 +16,11 @@ int main(int argc,char *argv[])
   
   void *intf = NULL;
   
-  int elemno = 1;
+  int elemno = nproc;
   int nne = 4;
   int N = elemno*nne - 2*(elemno-1);
   
-  printf("total number of degree freedom: %dx%d \n", N,N);
+ // printf("total number of degree freedom: %dx%d \n", N,N);
     
   double *b = (double *) malloc(sizeof(double)*N);  
   
@@ -29,12 +29,14 @@ int main(int argc,char *argv[])
   
   err += construct_solver(&intf);
   
-  err += initialize_linear_system(intf, N);
-//  err += set_linear_system_b(intf, b, N); 
-  
-/*  
-  for(int a=0; a<elemno; a++)
-  {
+  err += initialize_linear_system(intf, N, nne);
+
+
+  err += set_linear_system_b(intf, b, nne);
+
+
+
+	int a =  myrank;
     int id_0 = a*(nne - 2);
     int I[4] = {id_0, id_0+1, id_0+2, id_0+3};
     int J[4] = {id_0, id_0+1, id_0+2, id_0+3};
@@ -46,18 +48,18 @@ int main(int argc,char *argv[])
                          0.0,0.0,1.0,0.0,
                          0.0,0.0,0.0,1.0};
   
-    err += update_linear_system_A_IJ(intf,I,IN,J,JN,values, mpi_comm);
-  }                                        
+    err += update_linear_system_A_IJ(intf,I,IN,J,JN,N,values, mpi_comm);
 
-  err += solve_linear_system(intf);
-*/
-  err += destruct_solver(&intf);
+
+    err += solve_linear_system(intf, N);
+
+ // err += destruct_solver(&intf);
     
 
 
-  printf("%d: this is done\n", myrank);
+ // printf("%d: this is done\n", myrank);
   free(b); 
-  
+
   MPI_Finalize(); 
   
   return 0;
