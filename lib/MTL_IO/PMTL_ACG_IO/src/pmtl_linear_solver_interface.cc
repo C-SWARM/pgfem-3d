@@ -67,28 +67,29 @@ void insert(Matrix(double) &m, Matrix(double) &input,int index1, int index2)
 }
 
 int construct_solver(void **m)
-{   
+{
   int err = 0;
-  MTL_SOLVER_INTF *temp = (MTL_SOLVER_INTF *) malloc(sizeof(MTL_SOLVER_INTF));
+//  MTL_SOLVER_INTF *temp = (MTL_SOLVER_INTF *) malloc(sizeof(MTL_SOLVER_INTF));
+  MTL_SOLVER_INTF *temp = new MTL_SOLVER_INTF;
   if(temp == NULL)
   {
     printf("construct_solver: Out of memory!\n");
     exit(1);
   }
-  
+
   *m = temp;
 
   return err;
 }
 
 int destruct_solver(void **m)
-{   
+{
   int err = 0;
   MTL_SOLVER_INTF *temp = (MTL_SOLVER_INTF *) *m;
-  
+
   *m = NULL;
-  
-  free(temp);
+
+  delete temp;
   return err;
 }
 
@@ -96,27 +97,21 @@ int initialize_linear_system(void *m, int N)
 { 
   int err = 0;  
 
-  mpi::communicator comm;
   MTL_SOLVER_INTF *intf = (MTL_SOLVER_INTF *) m;
 
   intf->A.change_dim(N,N);
-
-  typedef mtl::matrix::distributed<mtl::compressed2D<double> >  matrix_type;
-         matrix_type PA(N,N);
-
-  typedef mtl::vector::distributed<mtl::dense_vector<double> >  vector_type;
-  	  	 vector_type  Pb(N,0.0);
-
-  PA = 0.0;
-  intf->AA = PA;
+  intf->AA.change_dim(N,N);
   intf->b.change_dim(N);
   intf->x.change_dim(N); 
-      
-//   intf->AA = 0.0;
+  intf->bb.change_dim(N);
+  intf->xx.change_dim(N);
+
+  intf->AA = 0.0;
+  intf->A = 0.0;
   intf->b = 0.0;
   intf->x = 0.0;
-  intf->bb = Pb;
-  intf->xx = Pb;
+  intf->bb = 0.0;
+  intf->xx = 0.0;
 
   intf->PC = "identity";
   return err;
@@ -171,9 +166,9 @@ int update_linear_system_A_IJ(void *m, int *I, int IN,
 
 
 
-  intf->AA=PA;
-  intf->bb=Pb;
-  //std :: cout << intf->AA <<"\n";
+   intf->AA=PA;
+//  intf->bb=Pb;
+   std :: cout << intf->AA <<"\n";
  // std :: cout << intf->bb <<"\n";
   return err;
 }
@@ -243,7 +238,7 @@ int solve_linear_system(void *m)
 
 
 
-  std :: cout << intf->PC <<"\n";
+
   itl::pc::identity<Distribute(CMatrix(double))> PC(intf->AA);
 
   if (intf->PC=="ilu_0") {
@@ -255,7 +250,7 @@ int solve_linear_system(void *m)
 
   cg(intf->AA, intf->xx, intf->bb, PC, iter);
 
-  std :: cout << intf->xx <<"\n";
+
   return err;
 }
 
