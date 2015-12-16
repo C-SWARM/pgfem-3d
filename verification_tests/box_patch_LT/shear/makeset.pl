@@ -2,7 +2,7 @@
 
 $filebase = "box_LT";
 $ext = "st";
-$t3d_options = "-d .1 -p 8 -k 1"; #'-\$ -X';
+$t3d_options = "-d .4 -p 8 -k 1"; #'-\$ -X';
 $decomposition_options = '-sp -rn';
 $convert_options = '-v'; #'-pr 200.0 200.0 200.0';
 
