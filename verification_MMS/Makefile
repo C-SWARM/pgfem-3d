@@ -1,4 +1,4 @@
-OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o')
+OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o)
 
 pfem_incl_dir = $(TEST_DIR)/include
 
@@ -9,6 +9,10 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 # HYPRE
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 
+# CNSTVM
+CNSTVM_dir = $(shell grep 'cnstvm_lib' ../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Constitutive_Model_implicit' | sed 's/\/src //')
+CNSTVM_lib = -L$(CNSTVM_dir)/src -lCM
+CNSTVM_incl = -I$(CNSTVM_dir)/include
 
 # Compressed VTK I/O
 VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
@@ -49,12 +53,14 @@ CFLAGS = -Wall -std=c99 -O3 -g
 CFLAGS += $(DFLAGS)
 
 INCLUDES = -I$(pfem_incl_dir) \
+		  $(CNSTVM_incl) \
 		  $(VTK_IO_incl) \
 		  $(MKL_incl)
 	  
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
+	  $(CNSTVM_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib) 
 	  	  		  		  		

@@ -5,19 +5,10 @@
 #include "read_input_file.h"
 #include "L2norm.h"
 #include "PGFem3D_to_VTK.hpp"
-
+#include "post_processing.h"
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
-
-int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u, double *P, double *V)
-{
-  int err = 0;
-  char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,step,opts->ofname,myrank, step);   
-  err += read_VTK_file4TF(filename, u, P, V);      
-  return err;
-}      
 
 int main(int argc,char *argv[])
 {
@@ -135,9 +126,11 @@ int main(int argc,char *argv[])
   // read inputs
   double *u = aloc1(nn*ndofn);
   double *Ph = aloc1(ne);
-  double *Vh = aloc1(ne); 
-  read_from_VTK(&options, myrank, tim, u, Ph, Vh);
+  double *Vh = aloc1(ne);
 
+  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
+
+  read_VTK_file4TF(filename, u,Ph,Vh);
 
   /////////////////////////////////////////////////////////////////////////////////////
   // compute errors    
