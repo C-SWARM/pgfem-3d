@@ -416,9 +416,61 @@ static int j2d_int_alg(Constitutive_model *m,
   return err;
 }
 
-/* compute the deviatoric algorithmic elasto-plastic tangent in the
-   reference configuration */
-static int j2d_compute_Aep_dev(const Constitutive_model *m,
+/* compute the deviatoric initial/unloading tangent in the reference
+   configuration */
+static int j2d_unloading_Aep_dev(const Constitutive_model *m,
+                                 const void *CTX,
+                                 double * restrict Aep_dev)
+{
+  int err = 0;
+  memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
+
+  const j2d_ctx *ctx = CTX;
+  const double *F = cm_Fs_data(m,FNP1);
+  const double *Fn = cm_Fs_data(m, FN);
+  const double *spn = cm_Fs_data(m, SPN);
+
+  /* mu is shear modulus (G) in this context!!! */
+  const double mu = cm_param(m)[G];
+
+  /* compute C and related terms */
+  double C[tensor] = {0};
+  double CI[tensor] = {0};
+  cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
+              dim, dim, dim, 1.0, F, dim, F, dim, 0.0, C, dim);
+  err += inv3x3(C,CI);
+  const double Cpp = C[0] + C[4] + C[8];
+  const double J23 = pow(det3x3(C), -1./3.);
+
+  /* compute pull-back of spn */
+  double Spn[tensor] = {0};
+  err += j2d_pull_back(Fn, spn, Spn);
+
+  double CSp = 0.0;
+  for (int i = 0; i < tensor; i++) CSp += C[i] * Spn[i];
+
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      const int ij = idx_2(i,j);
+      for (int k = 0; k < dim; k++) {
+        for (int l = 0; l < dim; l++) {
+          const int ijkl = idx_4(i,j,k,l);
+          const int kl = idx_2(k,l);
+          Aep_dev[ijkl] = ((2./3. * J23 * (mu * Cpp - CSp)
+                            * (CI[idx_2(i,k)] * CI[idx_2(j,l)] + CI[ij] * CI[kl] / 3.))
+                           - 2./3. * J23 *(CI[ij] * (mu * eye[kl] - Spn[kl])
+                                           + (mu * eye[ij] - Spn[ij]) * CI[kl]));
+        }
+      }
+    }
+  }
+
+  return err;
+}
+
+/* compute the deviatoric plastic loading tangent in the reference
+   configuration */
+static int j2d_loading_Aep_dev(const Constitutive_model *m,
                                const void *CTX,
                                double * restrict Aep_dev)
 {
@@ -480,16 +532,20 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
   double N2[tensor] = {0};
   double DEVBBAR[tensor] = {0};
   double Str[tensor] = {0};
+  double CI[tensor] = {0};
   {
+    double C[tensor] = {0};
     /* compute n^2 = n n */
     double n2[tensor] = {0};
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         for (int k = 0; k < dim; k++) {
           n2[idx_2(i,j)] += normal[idx_2(i,k)] * normal[idx_2(k,j)];
+          C[idx_2(i,j)] += ctx->F[idx_2(k,i)] * ctx->F[idx_2(k,j)];
         }
       }
     }
+    err += inv3x3(C,CI);
 
     /* compute intermediate products wkX = FI' X */
     double wkN[tensor] = {0};
@@ -499,10 +555,10 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         for (int k = 0; k < dim; k++) {
-          wkN[idx_2(i,j)]+= FI[idx_2(k,i)] * normal[idx_2(k,j)];
-          wkN2[idx_2(i,j)]+= FI[idx_2(k,i)] * n2[idx_2(k,j)];
-          wkDBB[idx_2(i,j)] += FI[idx_2(k,i)] * devbbar[idx_2(k,j)];
-          wkStr[idx_2(i,j)] += FI[idx_2(k,i)] * s_tr[idx_2(k,j)];
+          wkN[idx_2(i,j)]+= FI[idx_2(i,k)] * normal[idx_2(k,j)];
+          wkN2[idx_2(i,j)]+= FI[idx_2(i,k)] * n2[idx_2(k,j)];
+          wkDBB[idx_2(i,j)] += FI[idx_2(i,k)] * devbbar[idx_2(k,j)];
+          wkStr[idx_2(i,j)] += FI[idx_2(i,k)] * s_tr[idx_2(k,j)];
         }
       }
     }
@@ -511,10 +567,10 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         for (int k = 0; k < dim; k++) {
-          N[idx_2(i,j)] += wkN[idx_2(i,k)] * FI[idx_2(k,j)];
-          DEVBBAR[idx_2(i,j)] += wkDBB[idx_2(i,k)] * FI[idx_2(k,j)];
-          N2[idx_2(i,j)] += wkN2[idx_2(i,k)] * FI[idx_2(k,j)];
-          Str[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(k,j)];
+          N[idx_2(i,j)] += wkN[idx_2(i,k)] * FI[idx_2(j,k)];
+          DEVBBAR[idx_2(i,j)] += wkDBB[idx_2(i,k)] * FI[idx_2(j,k)];
+          N2[idx_2(i,j)] += wkN2[idx_2(i,k)] * FI[idx_2(j,k)];
+          Str[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(j,k)];
         }
       }
     }
@@ -534,12 +590,13 @@ static int j2d_compute_Aep_dev(const Constitutive_model *m,
                                      - del1 * N[idx_2(i,j)] * N[idx_2(k,l)]
                                      - del2 * N[idx_2(i,j)] * bI[idx_2(k,l)]
                                      - del3 * N[idx_2(i,j)] * N2[idx_2(k,l)]
-                                     + del4 * N[idx_2(i,j)] * DEVBBAR[idx_2(k,l)]);
+                                     + del4 * N[idx_2(i,j)] * DEVBBAR[idx_2(k,l)]) / 2.;
 
         }
       }
     }
   }
+
   return err;
 }
 
@@ -557,16 +614,14 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   double d2udj2 = 0.0;
 
   /* compute C, CI */
-  for (int i = 0; i < dim; i++) {
-    for (int j = 0; j < dim; j++) {
-      for(int k = 0; k < dim; k++) {
-        C[idx_2(i,j)] += ctx->F[idx_2(k,i)] * ctx->F[idx_2(k,j)];
-      }
-    }
-  }
+  cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
+              dim, dim, dim, 1.0, ctx->F, dim, ctx->F, dim, 0.0, C, dim);
   err += inv3x3(C, C_I);
 
-  err += j2d_compute_Aep_dev(m, CTX, Lbar);
+  /* compute deviatoric tangent */
+  /* if (cm_vars(m)[gam] > 0) err += j2d_loading_Aep_dev(m, CTX, Lbar); */
+  /* else */ err += j2d_unloading_Aep_dev(m, CTX, Lbar);
+
   new_pot_compute_dudj(J, cm_hmat(m), &dudj);
   new_pot_compute_d2udj2(J, cm_hmat(m), &d2udj2);
 
