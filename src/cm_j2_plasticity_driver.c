@@ -27,7 +27,7 @@ static void hommat_assign_values(HOMMAT *p_hmat)
   /* parameter values from Mosby and Matous, MSMSE (2015) */
   p_hmat->m01 = 0.0;
   p_hmat->E = 0.0;
-  p_hmat->G = 3.0e2;
+  p_hmat->G = 6.0;
   p_hmat->m10 = 0.0;
   p_hmat->nu = 0.49;
   p_hmat->devPotFlag = -1;
@@ -103,7 +103,8 @@ static void get_F(const double t,
 {
   const double rate = 0.0001;
   memset(F, 0, 9*sizeof(*F));
-  F[0] = F[4] = 1 - nu * rate * t;
+  /* F[0] = F[4] = 1 - nu * rate * t; */
+  F[0] = F[4] = 1;
   F[8] = 1 + rate * t;
 }
 

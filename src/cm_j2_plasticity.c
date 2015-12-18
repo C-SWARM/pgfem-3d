@@ -468,6 +468,37 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   return err;
 }
 
+static int j2d_pull_back4(const double * restrict FI,
+                          const double * restrict aep,
+                          double * restrict Aep)
+{
+  int err = 0;
+  memset(Aep, 0, tensor4 * sizeof(*Aep));
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+        for (int l = 0; l < dim; l++) {
+          const int ijkl = idx_4(i,j,k,l);
+          for (int m = 0; m < dim; m++) {
+            for (int n = 0; n < dim; n++) {
+              for (int o = 0; o < dim; o++) {
+                for (int p = 0; p < dim; p++) {
+                  const int mnop = idx_4(m,n,o,p);
+                  Aep[ijkl] += (0.5 * FI[idx_2(i,m)] * FI[idx_2(j,n)]
+                                * FI[idx_2(k,o)] * FI[idx_2(l,p)]
+                                * aep[mnop]);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return err;
+}
+
 /* compute the deviatoric plastic loading tangent in the reference
    configuration */
 static int j2d_loading_Aep_dev(const Constitutive_model *m,
@@ -487,12 +518,9 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   const double J23 = pow(det3x3(ctx->F), -2./3.);
   double bbar[tensor] = {0};
   double devbbar[tensor] = {0};
-  double bI[tensor] = {0};
   double FI[tensor] = {0};
   j2d_bbar(ctx->F, bbar);
   j2d_dev(bbar, devbbar);
-  err += inv3x3(bbar, bI);
-  for(int i = 0; i < tensor; i++) bI[i] *= J23;
   err += inv3x3(ctx->F, FI);
 
   /* compute Itr = G tr(bbar) - tr(Fubar spn Fubar') */
@@ -512,10 +540,19 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   /* compute s_tr, normal and ||s_tr|| */
   double s_tr[tensor] = {0};
   double normal[tensor] = {0};
+  double normal2[tensor] = {0};
   double zeros[tensor] = {0};
   j2d_compute_s0(param[G], bbar, s_tr);
-  for (int i = 0; i < tensor; i++) s_tr[i] -= sp_tr[i];
-  const double norm_s_tr = j2d_compute_normal(s_tr, zeros, param, normal);
+  double norm_s_tr = 0.0;
+  for (int i = 0; i < tensor; i++) {
+    s_tr[i] -= sp_tr[i];
+    norm_s_tr += s_tr[i] * s_tr[i];
+  }
+  norm_s_tr = sqrt(norm_s_tr);
+
+  j2d_compute_normal(s_tr, sp_tr, param, normal);
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, dim, dim, dim,
+              1.0, normal, dim, normal, dim, 0.0, normal2, dim);
 
   /* compute factors */
   const double mu_bar = param[G] * J23 * (bbar[0] + bbar[4] + bbar[8]) / 3;
@@ -527,76 +564,34 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   const double del3 = 2.0 * norm_s_tr * f1;
   const double del4 = (1.0 / del0  - 1.0) * 4./3. * param[G] * vars[gam] * J23;
 
-  /* compute pull-back terms */
-  double N[tensor] = {0};
-  double N2[tensor] = {0};
-  double DEVBBAR[tensor] = {0};
-  double Str[tensor] = {0};
-  double CI[tensor] = {0};
-  {
-    double C[tensor] = {0};
-    /* compute n^2 = n n */
-    double n2[tensor] = {0};
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        for (int k = 0; k < dim; k++) {
-          n2[idx_2(i,j)] += normal[idx_2(i,k)] * normal[idx_2(k,j)];
-          C[idx_2(i,j)] += ctx->F[idx_2(k,i)] * ctx->F[idx_2(k,j)];
-        }
-      }
-    }
-    err += inv3x3(C,CI);
-
-    /* compute intermediate products wkX = FI' X */
-    double wkN[tensor] = {0};
-    double wkN2[tensor] = {0};
-    double wkDBB[tensor] = {0};
-    double wkStr[tensor] = {0};
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        for (int k = 0; k < dim; k++) {
-          wkN[idx_2(i,j)]+= FI[idx_2(i,k)] * normal[idx_2(k,j)];
-          wkN2[idx_2(i,j)]+= FI[idx_2(i,k)] * n2[idx_2(k,j)];
-          wkDBB[idx_2(i,j)] += FI[idx_2(i,k)] * devbbar[idx_2(k,j)];
-          wkStr[idx_2(i,j)] += FI[idx_2(i,k)] * s_tr[idx_2(k,j)];
-        }
-      }
-    }
-
-    /* compute final products X = wkX FI */
-    for (int i = 0; i < dim; i++) {
-      for (int j = 0; j < dim; j++) {
-        for (int k = 0; k < dim; k++) {
-          N[idx_2(i,j)] += wkN[idx_2(i,k)] * FI[idx_2(j,k)];
-          DEVBBAR[idx_2(i,j)] += wkDBB[idx_2(i,k)] * FI[idx_2(j,k)];
-          N2[idx_2(i,j)] += wkN2[idx_2(i,k)] * FI[idx_2(j,k)];
-          Str[idx_2(i,j)] += wkStr[idx_2(i,k)] * FI[idx_2(j,k)];
-        }
-      }
-    }
-  }
-
-  /* compute the algorithmic stiffness tensor */
+  /* compute aep according to box 5 in Simo and Ju 1989*/
+  double aep[tensor4] = {0};
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
+      const int ij = idx_2(i,j);
       for (int k = 0; k < dim; k++) {
+        const int ik = idx_2(i,k);
         for (int l = 0; l < dim; l++) {
-          Aep_dev[idx_4(i,j,k,l)] = (f0 * (2./3. * Itr
-                                           * ((bI[idx_2(i,j)] * bI[idx_2(k,l)]
-                                               + bI[idx_2(i,k)] * bI[idx_2(j,l)]) / 2.
-                                              - bI[idx_2(i,j)] * bI[idx_2(k,l)] / 3.)
-                                           - 2./3. *(Str[idx_2(i,j)] * bI[idx_2(k,l)]
-                                                     + bI[idx_2(i,j)] * Str[idx_2(k,l)]))
-                                     - del1 * N[idx_2(i,j)] * N[idx_2(k,l)]
-                                     - del2 * N[idx_2(i,j)] * bI[idx_2(k,l)]
-                                     - del3 * N[idx_2(i,j)] * N2[idx_2(k,l)]
-                                     + del4 * N[idx_2(i,j)] * DEVBBAR[idx_2(k,l)]) / 2.;
-
+          const int lj = idx_2(l,j);
+          const int kl = idx_2(k,l);
+          const int ijkl = idx_4(i,j,k,l);
+          aep[ijkl] = (/* f0 * (2./3. * Itr */
+                       /*       * ((eye[ij] * eye[kl] + eye[ik] * eye[lj]) * 0.5 */
+                       /*          - eye[ij] * eye[kl] / 3.) */
+                       /*       - 2./3. * (s_tr[ij] * eye[kl] + eye[ij] * s_tr[kl])) */
+                       - del1 * normal[ij] * normal[kl]
+                       - del2 * (normal[ij] * eye[kl] + normal[kl] * eye[ij])* 0.5
+                       - del3 * (normal[ij] * normal2[kl] + normal[kl] * normal2[ij])* 0.5
+                       - del4 * (normal[ij] * devbbar[kl] + normal[kl] * devbbar[ij])* 0.5);
         }
       }
     }
   }
 
+  err += j2d_pull_back4(FI, aep, Aep_dev);
+  double Ae[tensor4] = {0};
+  err += j2d_unloading_Aep_dev(m, CTX, Ae);
+  for (int i = 0; i < tensor4; i++) Aep_dev[i] += f0 * Ae[i];
   return err;
 }
 
@@ -619,8 +614,8 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   err += inv3x3(C, C_I);
 
   /* compute deviatoric tangent */
-  /* if (cm_vars(m)[gam] > 0) err += j2d_loading_Aep_dev(m, CTX, Lbar); */
-  /* else */ err += j2d_unloading_Aep_dev(m, CTX, Lbar);
+  if (cm_vars(m)[gam] > 0) err += j2d_loading_Aep_dev(m, CTX, Lbar);
+  else err += j2d_unloading_Aep_dev(m, CTX, Lbar);
 
   new_pot_compute_dudj(J, cm_hmat(m), &dudj);
   new_pot_compute_d2udj2(J, cm_hmat(m), &d2udj2);
