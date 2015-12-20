@@ -344,6 +344,21 @@ static double j2d_compute_normal(const double * restrict s_tr,
   return nrm;
 }
 
+/* Y = G / 2 *(tr(bbar) - 3) + k U */
+static int j2d_compute_Y0(const HOMMAT *p_hmat,
+                          const double *bbar,
+                          const double J,
+                          const double G,
+                          double *Y0)
+{
+  int err = 0;
+  const double kappa = hommat_get_kappa(p_hmat);
+  double U = 0.0;
+  new_pot_compute_U(J, p_hmat, &U);
+  *Y0 = 0.5 * G * (bbar[0] + bbar[4] + bbar[8] - 3.0) + kappa * U;
+  return 0;
+}
+
 /* see box 4 of Simo and Ju (1989) */
 static int j2d_int_alg(Constitutive_model *m,
                        const void *CTX)
@@ -369,7 +384,8 @@ static int j2d_int_alg(Constitutive_model *m,
   j2d_bbar(F, bbar);
 
   /* compute mu_bar */
-  double J23 = pow(det3x3(F), -2./3.);
+  const double J = det3x3(F);
+  const double J23 = pow(J, -2./3.);
   const double mu_bar = param[G] * J23 * (bbar[0] + bbar[4] + bbar[8]) / 3;
 
   /* compute sp_tr */
@@ -414,6 +430,12 @@ static int j2d_int_alg(Constitutive_model *m,
     }
   }
 
+  /* damage integration algorithm */
+  double Y0 = 0.0;
+  err += j2d_compute_Y0(cm_hmat(m), bbar, J, param[G], &Y0);
+  err += ivd_public_int_alg(&vars[w], &vars[X], &vars[H], &cm_flags(m)[damaged],
+                            vars[wn], vars[Xn], ctx->dt, Y0, param[mu],
+                            param[p1], param[p2], param[Yin]);
   return err;
 }
 
@@ -651,6 +673,70 @@ static int j2d_compute_dMdu(const Constitutive_model *m,
   return 0;
 }
 
+static int j2d_compute_S0_Sbar(const Constitutive_model *m,
+                               const void *CTX,
+                               double *S0,
+                               double *Sbar)
+{
+  int err = 0;
+  const j2d_ctx *ctx = CTX;
+
+  /* compute the current configuration deviatoric stresses */
+  double s0[tensor] = {0};
+  double sbar[tensor] = {0};
+  double bbar[tensor] = {0};
+  j2d_bbar(ctx->F, bbar);
+  j2d_compute_s0(cm_param(m)[G], bbar, s0);
+  for (int i = 0; i < tensor; i++) sbar[i] = s0[i] - cm_Fs_data(m, SP)[i];
+
+  /* perform pull-back */
+  err += j2d_pull_back(ctx->F, s0, S0);
+  err += j2d_pull_back(ctx->F, sbar, Sbar);
+
+  /* compute volumetric stress */
+  double C[tensor] = {0};
+  double CI[tensor] = {0};
+  cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, dim, dim, dim,
+              1.0, ctx->F, dim, ctx->F, dim, 0.0, C, dim);
+  err += inv3x3(C, CI);
+  const double J = det3x3(ctx->F);
+  const double kappa = hommat_get_kappa(cm_hmat(m));
+  double dudj = 0.0;
+  new_pot_compute_dudj(J, cm_hmat(m), &dudj);
+  for (int i = 0; i < tensor; i++) {
+    S0[i] += kappa * J * dudj * CI[i];
+    Sbar[i] += kappa * J * dudj * CI[i];
+  }
+
+  return err;
+}
+
+static int j2d_modify_AST(const Constitutive_model *m,
+                          const void *CTX,
+                          double *L)
+{
+  int err = 0;
+  const j2d_ctx *ctx = CTX;
+  const double dmu = ctx->dt * cm_param(m)[mu];
+  const double evo = dmu * cm_vars(m)[H] / (1.0 + dmu);
+  double S0[tensor] = {0};
+  double Sbar[tensor] = {0};
+  err += j2d_compute_S0_Sbar(m, CTX, S0, Sbar);
+
+  for (int i=0; i < dim; i++) {
+    for (int j=0; j < dim; j++) {
+      for (int k=0; k < dim; k++) {
+	for (int l=0; l < dim; l++) {
+	  const int idx4 = idx_4(i,j,k,l);
+	  L[idx4] -= evo * S0[idx_2(i,j)] * Sbar[idx_2(k,l)];
+        }
+      }
+    }
+  }
+
+  return err;
+}
+
 static int j2d_compute_AST(const Constitutive_model *m,
                            const void *ctx,
                            Matrix_double *L)
@@ -666,7 +752,7 @@ static int j2d_compute_AST(const Constitutive_model *m,
 
   /* if evolving damage, modify tangent */
   if (cm_flags(m)[damaged]) {
-    /* err += j2d_modify_AST(m, ctx, L->m_pdata); */
+    err += j2d_modify_AST(m, ctx, L->m_pdata);
   }
 
   return err;
