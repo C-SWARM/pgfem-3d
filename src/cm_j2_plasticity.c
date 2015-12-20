@@ -22,6 +22,7 @@
  */
 
 #include "cm_j2_plasticity.h"
+#include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
 #include <math.h>
 #include <string.h>

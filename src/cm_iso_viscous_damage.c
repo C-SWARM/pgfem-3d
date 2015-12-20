@@ -119,6 +119,47 @@ static int ivd_private_damage_int_alg(double *vars,
   return err;
 }
 
+int ivd_public_int_alg(double *var_w,
+                       double *var_X,
+                       double *var_H,
+                       int *flag_damaged,
+                       const double var_wn,
+                       const double var_Xn,
+                       const double dt,
+                       const double Ybar,
+                       const double param_mu,
+                       const double param_p1,
+                       const double param_p2,
+                       const double param_Yin)
+{
+  int err = 0;
+  double *params = calloc(NUM_param, sizeof(*params));
+  double *vars = calloc(NUM_vars, sizeof(*vars));
+  int *flags = calloc(NUM_flags, sizeof(*flags));
+
+  /* pack state at n */
+  params[mu] = param_mu;
+  params[p1] = param_p1;
+  params[p2] = param_p2;
+  params[Yin] = param_Yin;
+  vars[wn] = var_wn;
+  vars[Xn] = var_Xn;
+
+  /* run the integration algorithm */
+  err +=  ivd_private_damage_int_alg(vars, flags, params, Ybar, dt);
+
+  /* unpack the state at n+1 */
+  *var_w = vars[w];
+  *var_X = vars[X];
+  *flag_damaged = flags[damaged];
+
+  /* cleanup and exit */
+  free(params);
+  free(vars);
+  free(flags);
+  return err;
+}
+
 static int ivd_compute_Sbar(const Constitutive_model *m,
                             const void *ctx,
                             double *Sbar)
