@@ -151,6 +151,7 @@ int ivd_public_int_alg(double *var_w,
   /* unpack the state at n+1 */
   *var_w = vars[w];
   *var_X = vars[X];
+  *var_H = vars[H];
   *flag_damaged = flags[damaged];
 
   /* cleanup and exit */
