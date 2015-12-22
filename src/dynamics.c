@@ -8,10 +8,11 @@
 #include "three_field_element.h"
 #include "constitutive_model.h"
 
-#define INTG_ORDER 0
 
 #ifndef VERIFICATION_USING_MMS
-
+  
+  #define INTG_ORDER 0
+  
   void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
   {
     b[0] = 0.0;
@@ -20,6 +21,7 @@
   }
 
 #else
+  #define INTG_ORDER 1 
   #include "../verification_MMS/MMS.h"
 #endif
 
