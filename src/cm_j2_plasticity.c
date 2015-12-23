@@ -870,6 +870,26 @@ static int j2d_write_restart(FILE *out,
   return err;
 }
 
+static size_t j2d_get_size(const Constitutive_model *m)
+{
+  return state_variables_get_packed_size(&(m->vars));
+}
+
+static int j2d_pack(const Constitutive_model *m,
+                    char *buffer,
+                    size_t *pos)
+{
+  return state_variables_pack(&(m->vars), buffer, pos);
+}
+
+static int j2d_unpack(Constitutive_model *m,
+                      const char *buffer,
+                      size_t *pos)
+{
+  return state_variables_unpack(&(m->vars), buffer, pos);
+}
+
+
 int j2d_plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -905,9 +925,9 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
   p->set_init_vals = j2d_set_init_vals;
   p->read_param = j2d_read_param;
 
-  p->get_size = NULL;
-  p->pack = NULL;
-  p->unpack = NULL;
+  p->get_size = j2d_get_size;
+  p->pack = j2d_pack;
+  p->unpack = j2d_unpack;
 
   /* reset counters/flags */
   p->type = J2_PLASTICITY_DAMAGE;
