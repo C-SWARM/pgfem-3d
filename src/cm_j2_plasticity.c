@@ -419,17 +419,6 @@ static int j2d_int_alg(Constitutive_model *m,
     for (int i = 0; i < tensor; i++) sp[i] = sp_tr[i] + tmp * n[i];
   }
 
-  /* testing after the integration algorithm */
-  {
-    for (int i = 0; i < tensor; i++) s_tr[i] = s0[i] - sp[i];
-    const double ksi_nrm2 = j2d_compute_normal(s_tr, sp, param, n);
-    const double phi2 = ksi_nrm2 - sqrt(2./3.) * (param[k0] + param[beta] * param[hp] * vars[ep]);
-    if (phi2 > j2d_int_alg_tol) {
-      printf("UH OH... phi > 0 after integration algorithm...\n");
-      abort();
-    }
-  }
-
   /* damage integration algorithm */
   double Y0 = 0.0;
   err += j2d_compute_Y0(cm_hmat(m), bbar, J, param[G], &Y0);
