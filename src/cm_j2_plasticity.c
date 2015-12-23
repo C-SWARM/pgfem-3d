@@ -423,7 +423,7 @@ static int j2d_int_alg(Constitutive_model *m,
   {
     for (int i = 0; i < tensor; i++) s_tr[i] = s0[i] - sp[i];
     const double ksi_nrm2 = j2d_compute_normal(s_tr, sp, param, n);
-    const double phi2 = ksi_nrm2 - sqrt(2./3.) * (param[k0] + param[beta] * param[hp] * vars[epn]);
+    const double phi2 = ksi_nrm2 - sqrt(2./3.) * (param[k0] + param[beta] * param[hp] * vars[ep]);
     if (phi2 > j2d_int_alg_tol) {
       printf("UH OH... phi > 0 after integration algorithm...\n");
       abort();
@@ -507,7 +507,7 @@ static int j2d_pull_back4(const double * restrict FI,
               for (int o = 0; o < dim; o++) {
                 for (int p = 0; p < dim; p++) {
                   const int mnop = idx_4(m,n,o,p);
-                  Aep[ijkl] += (0.5 * FI[idx_2(i,m)] * FI[idx_2(j,n)]
+                  Aep[ijkl] += (FI[idx_2(i,m)] * FI[idx_2(j,n)]
                                 * FI[idx_2(k,o)] * FI[idx_2(l,p)]
                                 * aep[mnop]);
                 }
@@ -598,10 +598,8 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
           const int lj = idx_2(l,j);
           const int kl = idx_2(k,l);
           const int ijkl = idx_4(i,j,k,l);
-          aep[ijkl] = (/* f0 * (2./3. * Itr */
-                       /*       * ((eye[ij] * eye[kl] + eye[ik] * eye[lj]) * 0.5 */
-                       /*          - eye[ij] * eye[kl] / 3.) */
-                       /*       - 2./3. * (s_tr[ij] * eye[kl] + eye[ij] * s_tr[kl])) */
+          aep[ijkl] = (f0 * (2./3. * Itr * (eye[ik] * eye[lj] - eye[ij] * eye[kl] / 3.)
+                             - 2./3. * (s_tr[ij] * eye[kl] + eye[ij] * s_tr[kl]))
                        - del1 * normal[ij] * normal[kl]
                        - del2 * (normal[ij] * eye[kl] + normal[kl] * eye[ij])* 0.5
                        - del3 * (normal[ij] * normal2[kl] + normal[kl] * normal2[ij])* 0.5
@@ -612,9 +610,6 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   }
 
   err += j2d_pull_back4(FI, aep, Aep_dev);
-  double Ae[tensor4] = {0};
-  err += j2d_unloading_Aep_dev(m, CTX, Ae);
-  for (int i = 0; i < tensor4; i++) Aep_dev[i] += f0 * Ae[i];
   return err;
 }
 
@@ -723,12 +718,13 @@ static int j2d_modify_AST(const Constitutive_model *m,
   double Sbar[tensor] = {0};
   err += j2d_compute_S0_Sbar(m, CTX, S0, Sbar);
 
-  for (int i=0; i < dim; i++) {
-    for (int j=0; j < dim; j++) {
-      for (int k=0; k < dim; k++) {
-	for (int l=0; l < dim; l++) {
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      for (int k = 0; k < dim; k++) {
+	for (int l = 0; l < dim; l++) {
 	  const int idx4 = idx_4(i,j,k,l);
-	  L[idx4] -= evo * S0[idx_2(i,j)] * Sbar[idx_2(k,l)];
+	  L[idx4] -= evo * 0.5 * (Sbar[idx_2(i,j)] * S0[idx_2(k,l)]
+                                  + S0[idx_2(i,j)] * Sbar[idx_2(k,l)]);
         }
       }
     }
