@@ -824,14 +824,51 @@ static int j2d_get_Fnp1(const Constitutive_model *m,
   return err;
 }
 
-/* dummy functions for reading/writintg the restart files */
+static int j2d_read_tensor(FILE *in,
+                           double *FF)
+{
+  return (fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                 &FF[0], &FF[1], &FF[2], &FF[3],
+                 &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor);
+}
+
 static int j2d_read_restart(FILE *in,
                             Constitutive_model *m)
-{return 0;}
+{
+  int err = 0;
+  err += j2d_read_tensor(in, cm_Fs_data(m, FN));
+  err += j2d_read_tensor(in, cm_Fs_data(m, SPN));
+  double *vars = cm_vars(m);
+  int *flags = cm_flags(m);
+  if( fscanf(in, "%lf %lf %lf %lf %lf %d",
+             &vars[epn], &vars[gam_n],
+             &vars[wn], &vars[Xn], &vars[Hn],
+             &flags[damaged_n]) != 6 ) err ++;
+  err += j2d_reset(m);
+  return err;
+}
+
+static int j2d_write_tensor(FILE *out,
+                            const double *FF)
+{
+  return (fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+                  FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0);
+}
 
 static int j2d_write_restart(FILE *out,
                              const Constitutive_model *m)
-{return 0;}
+{
+  int err = 0;
+  err += j2d_write_tensor(out, cm_Fs_data(m, FN));
+  err += j2d_write_tensor(out, cm_Fs_data(m, SPN));
+  const double *vars = cm_vars(m);
+  const int *flags = cm_flags(m);
+  err += (fprintf(out, "%.17e %.17e %.17e %.17e %.17e %d\n",
+                  vars[epn], vars[gam_n],
+                  vars[wn], vars[Xn], vars[Hn],
+                  flags[damaged_n]) < 0);
+  return err;
+}
 
 int j2d_plasticity_model_initialize(Model_parameters *p)
 {

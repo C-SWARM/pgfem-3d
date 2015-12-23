@@ -476,9 +476,6 @@ static int ivd_write_restart(FILE *out,
   if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
   if(fprintf(out, "%.17e %.17e %.17e %d\n", vars[wn], vars[Xn], vars[Hn], flags[damaged_n]) < 0) err++;
-
-  /* do I need to write out the damaged flag(s)??? */
-
   return err;
 }
 
