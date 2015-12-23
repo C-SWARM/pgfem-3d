@@ -423,7 +423,7 @@ double Newton_Raphson (const int print_level,
                             comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
 
         MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-        if (GInfo == 1) {
+        if (GInfo != 0) {
           if(myrank == 0){
             PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
                          "Subdividing load.\n", __func__, __FILE__, __LINE__);

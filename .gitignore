@@ -2,6 +2,7 @@
 *~
 *.[ao]
 TAGS
+untracked/
 
 # built executable
 src/PGFem3D

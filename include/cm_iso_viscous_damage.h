@@ -59,6 +59,21 @@ int iso_viscous_damage_model_ctx_build(void **ctx,
  */
 int iso_viscous_damage_model_ctx_destroy(void **ctx);
 
-
+/**
+ * Provide a public interface to the integration algorithm to allow
+ * other constitutive models to include damage as well.
+ */
+int ivd_public_int_alg(double *var_w,
+                       double *var_X,
+                       double *var_H,
+                       int *flag_damaged,
+                       const double var_wn,
+                       const double var_Xn,
+                       const double dt,
+                       const double Ybar,
+                       const double param_mu,
+                       const double param_p1,
+                       const double param_p2,
+                       const double param_Yin);
 
 #endif
