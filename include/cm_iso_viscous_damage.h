@@ -72,6 +72,7 @@ int ivd_public_int_alg(double *var_w,
                        const double dt,
                        const double Ybar,
                        const double param_mu,
+                       const double param_ome_max,
                        const double param_p1,
                        const double param_p2,
                        const double param_Yin);

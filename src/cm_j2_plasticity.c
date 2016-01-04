@@ -37,6 +37,7 @@
 #define tensor 9
 #define tensor4 81
 
+static const double DAMAGE_THRESH = 0.9999;
 static const double j2d_int_alg_tol = 1.0e-10;
 static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
 
@@ -60,7 +61,7 @@ typedef struct {
 enum {FN, FNP1, SPN, SP, NUM_Fs};
 enum {epn, ep, gam_n, gam, wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
-enum {G, nu, beta, hp, k0, mu, p1, p2, Yin, NUM_param};
+enum {G, nu, beta, hp, k0, mu, ome_max, p1, p2, Yin, NUM_param};
 
 static int j2d_get_info(Model_var_info **info)
 {
@@ -187,12 +188,15 @@ static int j2d_read_param(Model_parameters *p,
   err += scan_for_valid_line(in);
 
   /* DAMAGE PROPERTIES */
-  match += fscanf(in, "%lf %lf %lf %lf",
-                  param + mu, param + p1,
+  match += fscanf(in, "%lf %lf %lf %lf %lf",
+                  param + mu, param + ome_max, param + p1,
                   param + p2, param + Yin);
 
   if (match != NUM_param) err++;
   assert(match == NUM_param && "Did not read expected number of parameters");
+
+  /* ome_max in [0, 1) */
+  if (param[ome_max] >= 1) param[ome_max] = DAMAGE_THRESH;
 
   /* scan past any other comment/blank lines in the block */
   err += scan_for_valid_line(in);
@@ -424,7 +428,7 @@ static int j2d_int_alg(Constitutive_model *m,
   err += j2d_compute_Y0(cm_hmat(m), bbar, J, param[G], &Y0);
   err += ivd_public_int_alg(&vars[w], &vars[X], &vars[H], &cm_flags(m)[damaged],
                             vars[wn], vars[Xn], ctx->dt, Y0, param[mu],
-                            param[p1], param[p2], param[Yin]);
+                            param[ome_max], param[p1], param[p2], param[Yin]);
   return err;
 }
 

@@ -31,7 +31,7 @@
 #define dim  3
 #define tensor 9
 #define tensor4 81
-#define DAMAGE_THRESH 0.9999
+static const double DAMAGE_THRESH = 0.9999;
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -46,7 +46,7 @@ typedef struct {
 enum {Fn, F, NUM_Fs};
 enum {wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
-enum {mu, p1, p2, Yin, NUM_param};
+enum {mu, ome_max, p1, p2, Yin, NUM_param};
 
 /**
  * Matrix multiplication b = a'a, dim(a) = [3 3]
@@ -68,7 +68,7 @@ static double ivd_weibull_function(const double Ybar,
                                    const double *params)
 {
   if(Ybar <= params[Yin]) return 0.0;
-  return (DAMAGE_THRESH - DAMAGE_THRESH
+  return (params[ome_max] - params[ome_max]
 	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]),
 		    params[p2])
 	       )
@@ -79,7 +79,7 @@ static double ivd_weibull_evolution(const double Ybar,
                                     const double *params)
 {
   if(Ybar <= params[Yin]) return 0.0;
-  return (DAMAGE_THRESH * params[p2] / (params[p1] * params[Yin])
+  return (params[ome_max] * params[p2] / (params[p1] * params[Yin])
 	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2]) )
 	  * pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2] - 1.0)
 	  );
@@ -128,6 +128,7 @@ int ivd_public_int_alg(double *var_w,
                        const double dt,
                        const double Ybar,
                        const double param_mu,
+                       const double param_ome_max,
                        const double param_p1,
                        const double param_p2,
                        const double param_Yin)
@@ -139,6 +140,7 @@ int ivd_public_int_alg(double *var_w,
 
   /* pack state at n */
   params[mu] = param_mu;
+  params[ome_max] = param_ome_max;
   params[p1] = param_p1;
   params[p2] = param_p2;
   params[Yin] = param_Yin;
@@ -528,11 +530,14 @@ static int ivd_read_param(Model_parameters *p,
   err += scan_for_valid_line(in);
 
   /* READ PROPERTIES IN ALPHABETICAL ORDER */
-  int match = fscanf(in, "%lf %lf %lf %lf",
-                     param + mu, param + p1,
+  int match = fscanf(in, "%lf %lf %lf %lf %lf",
+                     param + mu, param + ome_max, param + p1,
                      param + p2, param + Yin);
   if (match != NUM_param) err++;
   assert(match == NUM_param && "Did not read expected number of parameters");
+
+  /* ome_max in [0, 1) */
+  if (param[ome_max] >= 1) param[ome_max] = DAMAGE_THRESH;
 
   /* scan past any other comment/blank lines in the block */
   err += scan_for_valid_line(in);
