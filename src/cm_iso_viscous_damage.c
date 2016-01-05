@@ -31,7 +31,7 @@
 #define dim  3
 #define tensor 9
 #define tensor4 81
-#define DAMAGE_THRESH 0.9999
+static const double DAMAGE_THRESH = 0.9999;
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -46,7 +46,7 @@ typedef struct {
 enum {Fn, F, NUM_Fs};
 enum {wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
-enum {mu, p1, p2, Yin, NUM_param};
+enum {mu, ome_max, p1, p2, Yin, NUM_param};
 
 /**
  * Matrix multiplication b = a'a, dim(a) = [3 3]
@@ -68,7 +68,7 @@ static double ivd_weibull_function(const double Ybar,
                                    const double *params)
 {
   if(Ybar <= params[Yin]) return 0.0;
-  return (DAMAGE_THRESH - DAMAGE_THRESH
+  return (params[ome_max] - params[ome_max]
 	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]),
 		    params[p2])
 	       )
@@ -79,7 +79,7 @@ static double ivd_weibull_evolution(const double Ybar,
                                     const double *params)
 {
   if(Ybar <= params[Yin]) return 0.0;
-  return (DAMAGE_THRESH * params[p2] / (params[p1] * params[Yin])
+  return (params[ome_max] * params[p2] / (params[p1] * params[Yin])
 	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2]) )
 	  * pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2] - 1.0)
 	  );
@@ -116,6 +116,50 @@ static int ivd_private_damage_int_alg(double *vars,
     vars[H] = 0.0;
   }
 
+  return err;
+}
+
+int ivd_public_int_alg(double *var_w,
+                       double *var_X,
+                       double *var_H,
+                       int *flag_damaged,
+                       const double var_wn,
+                       const double var_Xn,
+                       const double dt,
+                       const double Ybar,
+                       const double param_mu,
+                       const double param_ome_max,
+                       const double param_p1,
+                       const double param_p2,
+                       const double param_Yin)
+{
+  int err = 0;
+  double *params = calloc(NUM_param, sizeof(*params));
+  double *vars = calloc(NUM_vars, sizeof(*vars));
+  int *flags = calloc(NUM_flags, sizeof(*flags));
+
+  /* pack state at n */
+  params[mu] = param_mu;
+  params[ome_max] = param_ome_max;
+  params[p1] = param_p1;
+  params[p2] = param_p2;
+  params[Yin] = param_Yin;
+  vars[wn] = var_wn;
+  vars[Xn] = var_Xn;
+
+  /* run the integration algorithm */
+  err +=  ivd_private_damage_int_alg(vars, flags, params, Ybar, dt);
+
+  /* unpack the state at n+1 */
+  *var_w = vars[w];
+  *var_X = vars[X];
+  *var_H = vars[H];
+  *flag_damaged = flags[damaged];
+
+  /* cleanup and exit */
+  free(params);
+  free(vars);
+  free(flags);
   return err;
 }
 
@@ -434,9 +478,6 @@ static int ivd_write_restart(FILE *out,
   if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
   if(fprintf(out, "%.17e %.17e %.17e %d\n", vars[wn], vars[Xn], vars[Hn], flags[damaged_n]) < 0) err++;
-
-  /* do I need to write out the damaged flag(s)??? */
-
   return err;
 }
 
@@ -489,11 +530,14 @@ static int ivd_read_param(Model_parameters *p,
   err += scan_for_valid_line(in);
 
   /* READ PROPERTIES IN ALPHABETICAL ORDER */
-  int match = fscanf(in, "%lf %lf %lf %lf",
-                     param + mu, param + p1,
+  int match = fscanf(in, "%lf %lf %lf %lf %lf",
+                     param + mu, param + ome_max, param + p1,
                      param + p2, param + Yin);
   if (match != NUM_param) err++;
   assert(match == NUM_param && "Did not read expected number of parameters");
+
+  /* ome_max in [0, 1) */
+  if (param[ome_max] >= 1) param[ome_max] = DAMAGE_THRESH;
 
   /* scan past any other comment/blank lines in the block */
   err += scan_for_valid_line(in);

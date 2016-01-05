@@ -62,7 +62,7 @@ int state_variables_initialize(State_variables *s,
   /* state variables is column vector */
   s->state_vars = malloc(sizeof(*(s->state_vars)));
   
-  Matrix_construct_redim(double, s->state_vars[0],n_vars,1);
+  Matrix_construct_init(double, s->state_vars[0], n_vars, 1, 0);
 
   s->n_flags = n_flags;
   s->flags = calloc(n_flags, sizeof(*(s->flags)));

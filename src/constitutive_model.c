@@ -12,6 +12,7 @@
 #include "plasticity_model.h"
 #include "plasticity_model_BPA.h"
 #include "cm_iso_viscous_damage.h"
+#include "cm_j2_plasticity.h"
 
 #include "hommat.h"
 #include "PGFEM_io.h"
@@ -65,6 +66,9 @@ static int construct_model_context(void **ctx,
     break;
   case ISO_VISCOUS_DAMAGE:
     err += iso_viscous_damage_model_ctx_build(ctx, F, dt);
+    break;
+  case J2_PLASTICITY_DAMAGE:
+    err += j2d_plasticity_model_ctx_build(ctx, F, dt);
     break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
@@ -246,6 +250,9 @@ int model_parameters_initialize(Model_parameters *p,
     break;
   case ISO_VISCOUS_DAMAGE:
     err += iso_viscous_damage_model_initialize(p);
+    break;
+  case J2_PLASTICITY_DAMAGE:
+    err += j2d_plasticity_model_initialize(p);
     break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
