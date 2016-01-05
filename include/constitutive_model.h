@@ -402,6 +402,7 @@ struct Model_parameters {
     
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
+  usr_get_var get_plast_strain_var;
   
   usr_w_restart write_restart;
   usr_r_restart read_restart;

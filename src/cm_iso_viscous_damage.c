@@ -468,6 +468,13 @@ static int ivd_get_damage(const Constitutive_model *m,
   return 0;
 }
 
+static int ivd_get_chi(const Constitutive_model *m,
+                       double *chi)
+{
+  *chi = m->vars.state_vars->m_pdata[Xn];
+  return 0;
+}
+
 static int ivd_write_restart(FILE *out,
                              const Constitutive_model *m)
 {
@@ -595,6 +602,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   p->get_hardening = ivd_get_damage;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = ivd_get_chi;
 
   p->write_restart = ivd_write_restart;
   p->read_restart = ivd_read_restart;

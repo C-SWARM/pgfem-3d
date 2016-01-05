@@ -6,6 +6,7 @@
 
 #include "plasticity_model.h"
 #include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 #include "new_potentials.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
@@ -776,6 +777,7 @@ int plasticity_model_initialize(Model_parameters *p)
     
   p->get_hardening     = plasticity_get_hardening_n;
   p->get_hardening_nm1 = plasticity_get_hardening_nm1;  
+  p->get_plast_strain_var = cm_get_lam_p;
   p->write_restart = plasticity_write_restart;
   p->read_restart  = plasticity_read_restart;
   

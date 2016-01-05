@@ -189,6 +189,7 @@ int model_parameters_construct(Model_parameters *p)
 
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = NULL;
 
   p->write_restart = NULL;
   p->read_restart = NULL;
@@ -276,6 +277,7 @@ int model_parameters_destroy(Model_parameters *p)
 
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = NULL;
 
   p->write_restart = NULL;
   p->read_restart = NULL;
@@ -1253,8 +1255,8 @@ int constitutive_model_update_output_variables(SIG *sig,
     /* store the hardening parameter */
     err += func->get_hardening(m, &eps[i].dam[ip].wn);
 
-    /* compute/store the plastic stretch */
-    eps[i].dam[ip].Xn = sqrt( cblas_ddot(TENSOR_LEN, pFd, 1, pFd, 1) / 3.0 );
+    /* compute/store the plastic strain variable */
+    err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
 
     /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
     double sigma[TENSOR_LEN] = {};

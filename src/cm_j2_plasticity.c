@@ -804,6 +804,14 @@ static int j2d_get_damage(const Constitutive_model *m,
   return err;
 }
 
+static int j2d_get_ep(const Constitutive_model *m,
+                      double *ep)
+{
+  int err = 0;
+  *ep = cm_vars(m)[epn];
+  return err;
+}
+
 static int j2d_identity_tensor(const Constitutive_model *m,
                                Matrix_double *F)
 {
@@ -919,6 +927,7 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
 
   p->get_hardening = j2d_get_damage;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = j2d_get_ep;
 
   p->write_restart = j2d_write_restart;
   p->read_restart = j2d_read_restart;
