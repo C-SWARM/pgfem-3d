@@ -403,6 +403,7 @@ struct Model_parameters {
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
   usr_get_var get_plast_strain_var;
+  usr_get_var get_subdiv_param;
   
   usr_w_restart write_restart;
   usr_r_restart read_restart;
@@ -612,4 +613,14 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
                                               const SUPP sup,
                                               const double *r_e,
                                               const double alpha);
+
+/**
+ * Compute the physics-based subdivision paramter for all integration
+ * points on the domain.
+ */
+int cm_get_subdivision_parameter(double *subdiv_param,
+                                 const int ne,
+                                 const ELEMENT *elem,
+                                 const EPS *eps);
+
 #endif

@@ -77,4 +77,13 @@ int ivd_public_int_alg(double *var_w,
                        const double param_p2,
                        const double param_Yin);
 
+/**
+ * Provide a public interface to the subdivision parameter to allow
+ * other constitutive models to subdivide in a consistent fashion when
+ * using the damage integration algorithm.
+ */
+int ivd_public_subdiv_param(const double var_wn,
+                            const double var_w,
+                            double *subdiv_param);
+
 #endif

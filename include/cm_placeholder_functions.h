@@ -38,11 +38,20 @@ int cm_get_F_eye(const Constitutive_model *m,
 int cm_get_lam_p(const Constitutive_model *m,
                  double *lam_p);
 
+/**
+ * Do not comupte dM_du and fill with zeros.
+ */
 int cm_compute_null_dMdu(const Constitutive_model *m,
                          const void *ctx,
                          const double *Grad_op,
                          const int nne,
                          const int ndofn,
                          double *dM_du);
+
+/**
+ * Do not cause subdivision (subdiv_param = 0)
+ */
+int cm_no_subdiv(const Constitutive_model *m,
+                 double *subdiv_param);
 
 #endif
