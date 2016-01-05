@@ -747,11 +747,13 @@ static int cp_read(Model_parameters *p,
   SLIP_SYSTEM *slip = malloc(sizeof(SLIP_SYSTEM));
 
   int unit_cell = -1;
-  match += fscanf(in, "%d %d", &unit_cell, (slip->ort_option)+0);
-  param_in += 2;
+  match += fscanf(in, "%d", &unit_cell);
+  param_in += 1;
   
   construct_slip_system(slip,unit_cell);
-  
+  match += fscanf(in, "%d", (slip->ort_option)+0);
+  param_in += 1;
+    
   if(slip->ort_option[0] == 0)
   {
     match += fscanf(in, "%d", (slip->ort_option)+1);
@@ -1466,8 +1468,7 @@ int plasticity_model_set_orientations(EPS *eps,
   {
     if(param_list[i].type==CRYSTAL_PLASTICITY)
     {
-      int save_orientations = 0;
-      SLIP_SYSTEM *slip = ((param_list[i].cm_mat)->mat_p)->slip;
+      SLIP_SYSTEM *slip = ((param_list[i].cm_mat)->mat_p)->slip;     
       switch(slip->ort_option[0])
       {
         case -1:

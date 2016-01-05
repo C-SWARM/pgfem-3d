@@ -211,7 +211,6 @@ int model_parameters_initialize(Model_parameters *p,
                                 const HOMMAT *p_hmat,
                                 const size_t type)
 {
-  printf("this is running: model_parameters_initialize\n");
   int err = 0;
   p->p_hmat = p_hmat;
   p->type = type;

@@ -83,10 +83,10 @@ int plasticity_model_set_orientations(EPS *eps,
                                 const int n_mat,
                                 const Model_parameters *param_list);
 /** read material properties for plasticity
- * need to provide MATERIAL_PROPERTY.in with format as below
+ * need to provide model_params.in with format as below
  *
  *------------------------------------------------------------------------------------------------
- * MATERIAL.in
+ * model_params.in
  *------------------------------------------------------------------------------------------------ 
  * # <= this denotes this line is a comment. It will be ignored.
  * # Number of material
@@ -100,7 +100,13 @@ int plasticity_model_set_orientations(EPS *eps,
  * # num_of_properties gamma_dot_0    m    G0    g0  gs_0 gamma_dot_s     w
  *                   7         1.0 0.05 200.0 210.0 330.0     50.0e+9 0.005
  * #
- * # orientation
+ * ######################################################################## 
+ * # unit_cell orientation
+ * ########################################################################
+ * # 0: FCC
+ * # 1: BCC not implemented
+ * # 2: HCP not implemented
+ * #
  * # -1: no orientation is used
  * # 0: random - each element will have random orientation using built in function
  * #             if 0 is followed, integration points in a element will have same orientation
@@ -109,18 +115,8 @@ int plasticity_model_set_orientations(EPS *eps,
  * # 2: file - orientation is givne by a file, need to provide file path with part of file name
  * #           path/orientation where path has files with name as orientation_*.in
  * # 3: provide material orientation directly
- * #    e.g) 3 0.1 0.1 0.1
- * 2 CRYSTAL_ORIENTATION/orientation
- * ########################################################################
- * # material 1
- * ########################################################################
- * # Material properties can be read from other material card as:
- * # # to read from other material card, use -1 followed by material file name
- * # 0.001 meter_scaling_factor is used in case if your domain unit is [mm], 
- * # because all material properties in MATERIAL_DATA are in [m]
- * 1 0.001
- * -1 /scratch365/cswarm/MATERIAL_DATA/MATERIAL_ALUMINUM-1100
- * -1
+ * #    e.g) 0 3 0.1 0.1 0.1
+ * 0 2 CRYSTAL_ORIENTATION/orientation
  */
 
 typedef struct HOMMAT HOMMAT;

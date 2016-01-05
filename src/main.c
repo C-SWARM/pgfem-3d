@@ -1329,8 +1329,8 @@ int single_scale_main(int argc,char *argv[])
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////
-if(myrank==0)
-  constitutive_model_test(NULL, NULL, 0);
+//if(myrank==0)
+//  constitutive_model_test(NULL, NULL, 0);
 /*{
               double G_gn = 0.0;
               Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
