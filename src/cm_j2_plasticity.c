@@ -804,6 +804,14 @@ static int j2d_get_damage(const Constitutive_model *m,
   return err;
 }
 
+static int j2d_get_ep(const Constitutive_model *m,
+                      double *ep)
+{
+  int err = 0;
+  *ep = cm_vars(m)[epn];
+  return err;
+}
+
 static int j2d_identity_tensor(const Constitutive_model *m,
                                Matrix_double *F)
 {
@@ -893,6 +901,24 @@ static int j2d_unpack(Constitutive_model *m,
   return state_variables_unpack(&(m->vars), buffer, pos);
 }
 
+static int j2d_get_subdiv_param(const Constitutive_model *m,
+                                double *subdiv_param)
+{
+  int err = 0;
+
+  /* compute the plastic subdivision parameter */
+  double plast_param = 0.0;
+  /* no subdivision scheme yet... */
+
+  /* compute the damage subdivision parameter */
+  double damage_param = 0.0;
+  err += ivd_public_subdiv_param(cm_vars(m)[wn], cm_vars(m)[w], &damage_param);
+
+  /* return the maximum subdivision parameter */
+  *subdiv_param = (plast_param >= damage_param)? plast_param : damage_param;
+
+  return err;
+}
 
 int j2d_plasticity_model_initialize(Model_parameters *p)
 {
@@ -919,6 +945,8 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
 
   p->get_hardening = j2d_get_damage;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = j2d_get_ep;
+  p->get_subdiv_param = j2d_get_subdiv_param;
 
   p->write_restart = j2d_write_restart;
   p->read_restart = j2d_read_restart;

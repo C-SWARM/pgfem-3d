@@ -18,6 +18,7 @@
 #include "plasticity_model_BPA.h"
 #include "_plasticity_model_BPA.h"
 #include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 #include "state_variables.h"
 #include "new_potentials.h"
 #include "data_structure_c.h"
@@ -1514,6 +1515,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->get_eFn = bpa_get_Fen;
 
   p->get_hardening = bpa_get_hardening;
+  p->get_plast_strain_var = cm_get_lam_p;
 
   p->write_restart = bpa_write_restart;
   p->read_restart = bpa_read_restart;

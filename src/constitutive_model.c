@@ -8,6 +8,7 @@
  */
 
 #include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
 #include "plasticity_model_BPA.h"
@@ -32,6 +33,7 @@ Define_Matrix(double);
 
 #define DIM 3
 #define TENSOR_LEN 9
+#define MAX(a, b) ((a) >= (b)? (a) : (b))
 
 /* add the macroscopic deformation gradient to the _TOTAL_ deformation
    gradient */
@@ -191,6 +193,8 @@ int model_parameters_construct(Model_parameters *p)
 
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = NULL;
+  p->get_subdiv_param = cm_no_subdiv;
 
   p->write_restart = NULL;
   p->read_restart = NULL;
@@ -312,6 +316,8 @@ int model_parameters_destroy(Model_parameters *p)
 
   p->get_hardening = NULL;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = NULL;
+  p->get_subdiv_param = NULL;
 
   p->write_restart = NULL;
   p->read_restart = NULL;
@@ -1251,8 +1257,8 @@ int constitutive_model_update_output_variables(SIG *sig,
     /* store the hardening parameter */
     err += func->get_hardening(m, &eps[i].dam[ip].wn);
 
-    /* compute/store the plastic stretch */
-    eps[i].dam[ip].Xn = sqrt( cblas_ddot(TENSOR_LEN, pFd, 1, pFd, 1) / 3.0 );
+    /* compute/store the plastic strain variable */
+    err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
 
     /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
     double sigma[TENSOR_LEN] = {};
@@ -1634,5 +1640,27 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
   free(F2);
 
   FEMLIB_destruct(&fe);
+  return err;
+}
+
+int cm_get_subdivision_parameter(double *subdiv_param,
+                                 const int ne,
+                                 const ELEMENT *elem,
+                                 const EPS *eps)
+{
+  int err = 0;
+  *subdiv_param = 0.0;
+  double cur_val = 0.0;
+  double max_val = 0.0;
+  for (int i = 0; i < ne; i++) {
+    long n_ip = 0;
+    int_point(elem[i].toe, &n_ip);
+    for (int ip = 0; ip < n_ip; ip++) {
+      err += eps[i].model[ip].param->get_subdiv_param(&(eps[i].model[ip]), &cur_val);
+      max_val = MAX(max_val, cur_val);
+    }
+  }
+
+  *subdiv_param = max_val;
   return err;
 }

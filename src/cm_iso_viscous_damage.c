@@ -32,6 +32,7 @@
 #define tensor 9
 #define tensor4 81
 static const double DAMAGE_THRESH = 0.9999;
+static const double DELTA_W_MAX = 0.05;
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -468,6 +469,13 @@ static int ivd_get_damage(const Constitutive_model *m,
   return 0;
 }
 
+static int ivd_get_chi(const Constitutive_model *m,
+                       double *chi)
+{
+  *chi = m->vars.state_vars->m_pdata[Xn];
+  return 0;
+}
+
 static int ivd_write_restart(FILE *out,
                              const Constitutive_model *m)
 {
@@ -568,6 +576,14 @@ static int ivd_unpack(Constitutive_model *m,
   return state_variables_unpack(&(m->vars), buffer, pos);
 }
 
+static int ivd_get_subdiv_param(const Constitutive_model *m,
+                                double *subdiv_param)
+{
+  return ivd_public_subdiv_param(m->vars.state_vars->m_pdata[wn],
+                                 m->vars.state_vars->m_pdata[w],
+                                 subdiv_param);
+}
+
 /* API functions */
 int iso_viscous_damage_model_initialize(Model_parameters *p)
 {
@@ -595,6 +611,8 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   p->get_hardening = ivd_get_damage;
   p->get_hardening_nm1 = NULL;
+  p->get_plast_strain_var = ivd_get_chi;
+  p->get_subdiv_param = ivd_get_subdiv_param;
 
   p->write_restart = ivd_write_restart;
   p->read_restart = ivd_read_restart;
@@ -636,4 +654,12 @@ int iso_viscous_damage_model_ctx_destroy(void **ctx)
   free(*ctx);
   *ctx = NULL;
   return err;
+}
+
+int ivd_public_subdiv_param(const double var_wn,
+                            const double var_w,
+                            double *subdiv_param)
+{
+  *subdiv_param = (var_w - var_wn) / DELTA_W_MAX;
+  return 0;
 }

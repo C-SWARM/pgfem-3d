@@ -5,6 +5,7 @@
 
 #include "plasticity_model_none.h"
 #include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 #include "new_potentials.h"
 #include "data_structure_c.h"
 
@@ -205,13 +206,6 @@ static int he_get_eFn(const Constitutive_model *m,
   return err;
 }
 
-static int he_get_hardening(const Constitutive_model *m,
-                            double *var)
-{
-  *var = 0.0;
-  return 0;
-}
-
 static int he_compute_dMdu(const Constitutive_model *m,
                            const void *ctx,
                            const double *Grad_op,
@@ -286,7 +280,8 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_eF = he_get_eF;
   p->get_eFn = he_get_eFn;
 
-  p->get_hardening = he_get_hardening;
+  p->get_hardening = cm_get_var_zero;
+  p->get_plast_strain_var = cm_get_var_zero;
 
   p->write_restart = he_write_restart;
   p->read_restart = he_read_restart;

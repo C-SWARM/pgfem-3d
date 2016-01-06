@@ -753,7 +753,11 @@ double Newton_Raphson (const int print_level,
     }/* end while nor > nor_min */
 
     /* before increment after convergence, check max damage */
-    alpha = max_damage/max_damage_per_step;
+    if (opts->analysis_type == CM) {
+      cm_get_subdivision_parameter(&alpha, ne, elem, eps);
+    } else {
+      alpha = max_damage/max_damage_per_step;
+    }
     MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
     if(myrank == 0){
       PGFEM_printf("Damage thresh alpha: %f (wmax: %f)\n"
