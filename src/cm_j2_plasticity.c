@@ -935,7 +935,6 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
 
   /* reset counters/flags */
   p->type = J2_PLASTICITY_DAMAGE;
-  p->N_SYS = 0;
 
   /* allocate room for parameters */
   p->n_param = NUM_param;

@@ -163,6 +163,7 @@ static int plasticity_int_alg(Constitutive_model *m,
 {
   int err = 0;
   const plasticity_ctx *CTX = ctx;
+  memcpy((m->vars).Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
   err += plasticity_model_integration_ip(m,CTX->dt);
   return err;
 }
@@ -734,13 +735,11 @@ static int cp_read(Model_parameters *p,
   err += scan_for_valid_line(in);
 
   /* READ PROPERTIES IN ALPHABETICAL ORDER */  
-  int param_in = 0;
+  int param_in = PARAM_NO;
   int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf",
                      param + PARAM_gamma_dot_0, param + PARAM_m,    param + PARAM_G0,
                      param + PARAM_g0,          param + PARAM_gs_0, param + PARAM_gamma_dot_s,
-                     param + PARAM_w);
-
-  param_in = PARAM_NO;                   
+                     param + PARAM_w);            
 
   err += scan_for_valid_line(in);
   
@@ -748,11 +747,11 @@ static int cp_read(Model_parameters *p,
 
   int unit_cell = -1;
   match += fscanf(in, "%d", &unit_cell);
-  param_in += 1;
+  param_in ++;
   
   construct_slip_system(slip,unit_cell);
   match += fscanf(in, "%d", (slip->ort_option)+0);
-  param_in += 1;
+  param_in++;
     
   if(slip->ort_option[0] == 0)
   {
@@ -1501,14 +1500,11 @@ int plasticity_model_set_orientations(EPS *eps,
   char file_in_ort[1024], default_ort_dir[1024];    
   sprintf(default_ort_dir, "CRYSTAL_ORIENTATION");
 
-  if(myrank==0)
-  {   
-    if(make_path(default_ort_dir,DIR_MODE) != 0)
-    {
-      PGFEM_printf("Directory [%s] not created!\n",default_ort_dir);
-      abort();
-    }
-  }  
+  if(make_path(default_ort_dir,DIR_MODE) != 0)
+  {
+    PGFEM_printf("Directory [%s] not created!\n",default_ort_dir);
+    abort();
+  }
   
   if(save_orientations)
   {  
@@ -1571,6 +1567,10 @@ int plasticity_model_set_orientations(EPS *eps,
 
 void test_crystal_plasticity_single_crystal(void)
 {
+  // test for defined F
+  // F = [1 - t,       0,       0
+  //          0, 1 + t/2,       0
+  //          0,       0, 1 + t/2];   
   double lame1 = 75600.0;
   double lame2     = 26100.0;
   double E = 70.0e+3;
@@ -1578,7 +1578,7 @@ void test_crystal_plasticity_single_crystal(void)
   
   double gamma_dot_0 = 1.0;
   double gamma_dot_s = 50.0e+9;
-  double m           = 0.05;  
+  double m           = 0.1;  
   double g0          = 210.0;
   double G0          = 200.0;
   double gs_0        = 330.0;
@@ -1628,7 +1628,7 @@ void test_crystal_plasticity_single_crystal(void)
   construct_elasticity(&elast, &mat_e, 1);  
 
   // set variables for integration
-  enum {M,MI,pFn,pFnp1,Fn,Fnp1,L,sigma,PK2dev,sigma_dev,F2end};
+  enum {M,MI,pFn,pFnp1,Fn,Fnp1,eFnp1,eFPK2,pFnp1_I,sigma,PK2dev,sigma_dev,F2end};
   Matrix(double) *F2 = malloc(F2end*sizeof(Matrix(double)));
   for (int a = 0; a < F2end; a++) {
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3,0.0);
@@ -1638,13 +1638,8 @@ void test_crystal_plasticity_single_crystal(void)
   double g_n,g_np1;
   g_n = g_np1 = mat_p.g0;
   
-  double dt = 0.001;
-  
-  double d = 1.0;
-  // set velocity gradient  
-  Mat_v(F2[L],1,1) = -d;
-  Mat_v(F2[L],2,2) = Mat_v(F2[L],3,3) = d/2;  
-  
+  double dt = 0.1;
+    
   // start integration  
   Matrix(double) PK2;
   PK2.m_row = PK2.m_col = DIM_3; PK2.m_pdata = elast.S;
@@ -1657,7 +1652,11 @@ void test_crystal_plasticity_single_crystal(void)
     double t = a*dt;
     
     // compute total deformation gradient using velocity gradient
-    Fnp1_Implicit(F2[Fnp1].m_pdata, F2[Fn].m_pdata, F2[L].m_pdata, dt); 
+    // Fnp1_Implicit(F2[Fnp1].m_pdata, F2[Fn].m_pdata, F2[L].m_pdata, dt); 
+    //define Fnp1    
+    Matrix_init(F2[Fnp1], 0.0);
+    Mat_v(F2[Fnp1],1,1) = 1.0 - t*1.0e-3;
+    Mat_v(F2[Fnp1],2,2) = Mat_v(F2[Fnp1],3,3) = 1.0 + t*0.5*1.0e-3;
     
     staggered_Newton_Rapson(F2[pFnp1].m_pdata,F2[M].m_pdata, &g_np1, &lambda, 
                             F2[pFn].m_pdata, F2[Fn].m_pdata,F2[Fnp1].m_pdata, 
@@ -1669,8 +1668,16 @@ void test_crystal_plasticity_single_crystal(void)
     
     
     // print result at time t
-    double trPK2, tr_sigma;
+    double det_eF;
     
+    // compute Caush stress
+    Matrix_inv(F2[pFnp1], F2[pFnp1_I]);
+    Matrix_AxB(F2[eFnp1],1.0,0.0,F2[Fnp1],0,F2[pFnp1_I],0);
+    Matrix_det(F2[eFnp1], det_eF);
+    Matrix_AxB(F2[eFPK2],1.0,0.0,F2[eFnp1],0,PK2,0);
+    Matrix_AxB(F2[sigma],1.0/det_eF,0.0,F2[eFPK2],0,F2[eFnp1],1);  
+    
+    double trPK2, tr_sigma;
     Matrix_trace(PK2,trPK2);
     Matrix_trace(F2[sigma],tr_sigma);
     Matrix_eye(F2[PK2dev], DIM_3);
@@ -1686,7 +1693,7 @@ void test_crystal_plasticity_single_crystal(void)
     double sigma_eff=sqrt(3.0/2.0*norm_sigma);
     double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
 
-    fprintf(fp, "%e %e %e %e %e %e\n",t,sigma_eff,PK2_eff, g_np1, 0.0, Mat_v(PK2,1,1));                    
+    fprintf(fp, "%e %e %e %e %e %e\n",t,sigma_eff,PK2_eff, g_np1, 0.0, Mat_v(PK2,1,1));
   }    
   
   fclose(fp);  

@@ -90,10 +90,18 @@ int main(int argc,char *argv[])
   EPS *eps = NULL;    
   eps = build_eps_il(ne,elem,options.analysis_type);
 
-  build_model_parameters_list(&param_list,nhommat,hommat,options.cm);
-  init_all_constitutive_model(eps,ne,elem,param_list);  
-/////////////////////////////////////////////////////////////////////////////////////
-// read inputs
+  if (options.analysis_type == CM) {
+    /* parameter list and initialize const. model at int points.
+     * NOTE: should catch/handle returned error flag...
+     */
+    char *cm_filename = NULL;
+    alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
+    FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+    read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
+    free(cm_filename);
+    fclose(cm_in);
+    init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
+  }
   char filename[1024];
   sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
   

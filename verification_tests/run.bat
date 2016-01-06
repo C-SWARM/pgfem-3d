@@ -19,4 +19,5 @@ O_FORMAT=out/box_LT_${NP}CPU/box
 
 BOX_COMP=${TEST_DIR}/verification_tests/box_compression
 mpirun -np ${NP} ${exe} -SS -cm 1 -V ${BOX_COMP}/input/box_LT_ ${BOX_COMP}/out/box_LT
+#mpirun -np ${NP} src/crystal_plasticity_verification_test -SS -cm 1 -V ${BOX_COMP}/input/box_LT_ ${BOX_COMP}/out/box_LT
 #mpirun -np ${NP} src/crystal_plasticity -SS -cm 1 ${BOX_COMP}/input/box_LT_ ${BOX_COMP}/out/box_LT

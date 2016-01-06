@@ -30,8 +30,12 @@ int main(int argc,char *argv[])
   MPI_Get_processor_name (processor_name,&namelen);
   PGFEM_initialize_io(NULL,NULL);  
   PGFem3D_opt options;
-  if (argc <= 2)
+  if (argc <= 2){
+    if(myrank == 0){
+      print_usage(stdout);
+    }
     exit(0);
+  }
 
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
@@ -89,7 +93,6 @@ int main(int argc,char *argv[])
   EPS *eps = NULL;    
   eps = build_eps_il(ne,elem,options.analysis_type);
 
-
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.
      * NOTE: should catch/handle returned error flag...
@@ -100,11 +103,7 @@ int main(int argc,char *argv[])
     read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
     free(cm_filename);
     fclose(cm_in);
-    init_all_constitutive_model(eps,ne,elem,param_list);
-
-    /* This is a temporary function. Special reading/initialization
-       for the crystal plasticity model. */
-    read_constitutive_model_parameters(eps,ne,elem,nhommat,param_list,options.cm);
+    init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
   }
 
   
@@ -116,7 +115,7 @@ int main(int argc,char *argv[])
   if(myrank==0)
   {
     constitutive_model_test(hommat, NULL, -1); // F(t)
-    FILE *fp_r = fopen("uniaxial_compression_F_of_t.txt", "r");
+    FILE *fp_r = fopen("single_crystal_results.txt", "r");
     for(int a=0; a<1000; a++)
     {
       fscanf(fp_r, "%lf %lf %lf %lf %lf %lf", temp+0, temp+1, temp+2, temp+3, temp+4, temp+5);
@@ -184,7 +183,7 @@ int main(int argc,char *argv[])
       else
         fp_ss = fopen("strain_stress_crystal_plasticity.txt", "a");
         
-      fprintf(fp_ss,"%e %e %e %e %e %e\n",dt*istep,sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));                                    
+      fprintf(fp_ss,"%e %e %e %e %e %e\n",dt*(istep+1),sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));                                    
 
       fclose(fp_ss);
       

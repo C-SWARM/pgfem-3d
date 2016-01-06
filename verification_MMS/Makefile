@@ -1,4 +1,4 @@
-OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o)
+OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o | grep -v cm_j2_plasticity_driver.o)
 
 pfem_incl_dir = $(TEST_DIR)/include
 
@@ -10,9 +10,12 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 
 # CNSTVM
-CNSTVM_dir = $(shell grep 'cnstvm_lib' ../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Constitutive_Model_implicit' | sed 's/\/src //')
-CNSTVM_lib = -L$(CNSTVM_dir)/src -lCM
-CNSTVM_incl = -I$(CNSTVM_dir)/include
+CNSTVM_dir = $(shell grep 'cnstvm_lib' ../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Generalizsed_constitutive_model' | sed 's/\/lib //')
+CNSTVM_lib = -L$(CNSTVM_dir)/lib -lConstitutiveModel
+CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
+              -I$(CNSTVM_dir)/material/include \
+              -I$(CNSTVM_dir)/elasticity/include \
+              -I$(CNSTVM_dir)/crystal_plasticity/include
 
 # Compressed VTK I/O
 VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
