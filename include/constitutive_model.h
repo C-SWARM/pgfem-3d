@@ -623,4 +623,13 @@ int cm_get_subdivision_parameter(double *subdiv_param,
                                  const ELEMENT *elem,
                                  const EPS *eps);
 
+/**
+ * Construct the model context for any model.
+ */
+int cm_construct_model_context(void **ctx,
+                               const int type,
+                               const double *F,
+                               const double dt,
+                               const double alpha);
+
 #endif

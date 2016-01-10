@@ -48,11 +48,11 @@ static void cm_add_macro_F(const SUPP sup,
    everywhere. It is no big deal to keep adding to this private
    function's argument list. Just put everything any model might need
    and the switch will handle what is actually used. */
-static int construct_model_context(void **ctx,
-                                   const int type,
-                                   const double *F,
-                                   const double dt,
-                                   const double alpha)
+int cm_construct_model_context(void **ctx,
+                               const int type,
+                               const double *F,
+                               const double dt,
+                               const double alpha)
 {
   int err = 0;
   switch(type) {
@@ -349,7 +349,7 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   Matrix_inv(C,CI);        
   Matrix_det(Fe, J);
 
-  err += construct_model_context(&ctx, m->param->type, F->m_pdata, dt, alpha);
+  err += cm_construct_model_context(&ctx, m->param->type, F->m_pdata, dt, alpha);
 
   // compute stress
   double dudj = 0.0;
@@ -974,7 +974,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     /* need to have called the integration algorithm. This should be
        done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
+    err += cm_construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->destroy_ctx(&ctx);
     err += func->get_pF(m,&F2[pFnp1]);
@@ -1159,7 +1159,7 @@ int residuals_el_crystal_plasticity(double *f,
     }      
 
     void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
+    err += cm_construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += m->param->integration_algorithm(m,ctx);
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
@@ -1383,7 +1383,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     /* need to have called the integration algorithm. This should be
        done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
+    err += cm_construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
         
     err += m->param->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += m->param->destroy_ctx(&ctx);
@@ -1603,7 +1603,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
     void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
+    err += cm_construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
     err += m->param->integration_algorithm(m,ctx);
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
