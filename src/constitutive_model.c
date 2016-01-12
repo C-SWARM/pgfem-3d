@@ -282,6 +282,8 @@ int model_parameters_destroy(Model_parameters *p)
     break;
   case ISO_VISCOUS_DAMAGE:
     break;
+  case J2_PLASTICITY_DAMAGE:
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",p->type);
     err++;
