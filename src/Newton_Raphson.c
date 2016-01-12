@@ -855,7 +855,7 @@ double Newton_Raphson (const int print_level,
       {
         switch(opts->cm)
           {
-          case HYPER_ELASTICITY:
+          case HYPER_ELASTICITY: case DISP:
             DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
                            sig_e,hommat,d_r,r,mpi_comm);
             break;

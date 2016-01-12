@@ -116,7 +116,7 @@ static int fd_res_elem(double *fe,
 
     case CM:
       switch(opts->cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING: case DISP:
         /* total Lagrangian */
         nodecoord_total (nne,nod,node,x,y,z);
         def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
@@ -180,7 +180,7 @@ static int fd_res_elem(double *fe,
         DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
 
         err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
-                             hommat,nod,node,eps,sig,sup,r_e);
+                             hommat,nod,node,eps,sig,sup,r_e,dt);
         for(long a = 0; a<ndofe; a++)
           fe[a] += -bf[a];
 
@@ -208,6 +208,19 @@ static int fd_res_elem(double *fe,
       {
         switch(opts->cm)
           {
+          case DISP: {
+            double *bf = aloc1(ndofe);
+            memset(bf, 0, sizeof(double)*ndofe);
+            DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
+
+            err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
+                                 hommat,nod,node,eps,sig,sup,r_e,dt);
+            for(long a = 0; a<ndofe; a++)
+              fe[a] += -bf[a];
+
+            dealoc1(bf);
+            break;
+          }
           case HYPER_ELASTICITY:
             {
               double *bf = aloc1(ndofe);

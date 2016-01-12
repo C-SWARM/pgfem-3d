@@ -26,6 +26,8 @@
 #include "cohesive_element_utils.h"
 #include "transform_coordinates.h"
 #include "index_macros.h"
+#include "data_structure_c.h"
+#include "constitutive_model.h"
 
 #ifndef DISP_DEBUG
 #define DISP_DEBUG 0
@@ -35,9 +37,12 @@
 #define DISP_DEBUG_NO_LM 1
 #endif
 
+Define_Matrix(double);
+
 static const int ndn = 3;
 static const double LAGRANGE_THRESH = 0.1;
 static const double DIFF_THRESH = 0.01;
+static const damage empty_damage = {0};
 
 static inline double del(const int i, const int j){ return (i==j?1.0:0.0); }
 
@@ -298,6 +303,28 @@ static int compute_K_10_e_at_ip(double *K_10_e,
 				const double *L);
 
 
+static int disp_cm_material_response(double *S,
+                                     double *L,
+                                     const Constitutive_model *m,
+                                     const double *F,
+                                     const double dt,
+                                     const int get_L)
+{
+  int err = 0;
+  Matrix_double MF, ML, MS;
+  Matrix_construct(double, MF);
+  Matrix_init_w_array(MF, ndn, ndn, F);
+  Matrix_construct_init(double, MS, ndn, ndn, 0.0);
+  Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
+
+  err += constitutive_model_update_elasticity(m, &MF, dt, &ML, &MS, get_L);
+
+  Matrix_cleanup(MF);
+  Matrix_cleanup(MS);
+  Matrix_cleanup(ML);
+  return err;
+}
+
 /*==============================================================*/
 /*               DEFINE  API  FUNCTIONS                         */
 /*==============================================================*/
@@ -336,11 +363,12 @@ int DISP_stiffmat_el(double *Ks,
 		     const EPS *eps,
 		     const SIG *sig,
 		     const SUPP sup,
-		     const double *disp) 
+		     const double *disp,
+                     const double dt) 
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
   const HOMMAT *ptrMat = &hommat[mat];
 
   int ndofe = 0;
@@ -437,11 +465,12 @@ int DISP_resid_el(double *R,
 		  const EPS *eps,
 		  const SIG *sig,
 		  const SUPP sup,
-		  const double *disp)
+		  const double *disp,
+                  const double dt)
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
   const HOMMAT *ptrMat = &hommat[mat];
 
   int ndofe = 0;
@@ -551,7 +580,7 @@ int DISP_resid_bnd_el(double *R,
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
-  const double kappa = ptrMat->E/(3.*(1.-2.*ptrMat->nu));
+  const double kappa = hommat_get_kappa(ptrMat);
   const int nne_ve = ptr_ve->toe;
   const int nne_be = ptr_be->nnodes;
 
@@ -697,7 +726,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
-  const double kappa = ptrMat->E/(3.*(1.-2.*ptrMat->nu));
+  const double kappa = hommat_get_kappa(ptrMat);
   const int nne_be = ptr_be->nnodes;
   const int nne_ve = ptr_ve->toe;
 
@@ -835,7 +864,7 @@ void DISP_increment_el(const ELEMENT *elem,
 		       const double *disp)
 {
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
 
   /* compute volume */
   double nc_vol;
@@ -1118,12 +1147,13 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 			     const EPS *eps,
 			     const SIG *sig,
 			     const SUPP sup,
-			     const double *disp)
+			     const double *disp,
+                             const double dt)
 {
   int err = 0;
   const ELEMENT *p_elem = elem + elem_id;
   const HOMMAT *p_hommat = &hommat[p_elem->mat[2]];
-  const double kappa = p_hommat->E/(3*(1-2*p_hommat->nu));
+  const double kappa = hommat_get_kappa(p_hommat);
   const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
   const int macro_ndof = macro_nnode*macro_ndofn;
 

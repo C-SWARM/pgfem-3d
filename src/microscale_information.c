@@ -629,9 +629,9 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 		   mpi_comm);
 
   if(!common->supports->multi_scale){
-  common->VVolume = T_VOLUME (common->ne,ndim,common->elem,common->node);
-  MPI_Allreduce(MPI_IN_PLACE,&common->VVolume,1,MPI_DOUBLE,
-		MPI_SUM,mpi_comm);
+    common->VVolume = T_VOLUME (common->ne,ndim,common->elem,common->node);
+    MPI_Allreduce(MPI_IN_PLACE,&common->VVolume,1,MPI_DOUBLE,
+                  MPI_SUM,mpi_comm);
   } else {
     common->VVolume = common->supports->v0;
   }

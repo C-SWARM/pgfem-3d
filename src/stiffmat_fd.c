@@ -98,7 +98,7 @@ int el_compute_stiffmat(int i,
       break;
     case DISP:
         err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-                               hommat,nod,node,eps,sig,sup,r_e);
+                                hommat,nod,node,eps,sig,sup,r_e,dt);
       break;
     case TF:
       stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,
@@ -107,6 +107,10 @@ int el_compute_stiffmat(int i,
     case CM:
       {
         switch(cm) {
+        case DISP:
+          err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
+                                  hommat,nod,node,eps,sig,sup,r_e,dt);
+          break;
         case CRYSTAL_PLASTICITY:
           err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
                                                  nod,node,dt,eps,sup,r_e,
@@ -244,7 +248,7 @@ static int el_stiffmat(int i, /* Element ID */
     case CM:
     {  
       switch(cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+      case HYPER_ELASTICITY: case BPA_PLASTICITY: case DISP: case TESTING:
         nodecoord_total (nne,nod,node,x,y,z);
         break;
       case CRYSTAL_PLASTICITY:
@@ -297,7 +301,7 @@ static int el_stiffmat(int i, /* Element ID */
     case CM:
     {  
       switch(cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+      case HYPER_ELASTICITY: case BPA_PLASTICITY: case DISP: case TESTING:
         def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
         break;
       case CRYSTAL_PLASTICITY:

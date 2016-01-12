@@ -593,7 +593,7 @@ static int compute_elem_micro_terms(const int elem_id,
 				    layer_thickness,c->VVolume,
 				    elem_id,ndofn,nne,x,y,z,c->elem,
 				    c->hommat,node_ids,c->node,
-				    s->eps,s->sig_e,c->supports,disp);
+				    s->eps,s->sig_e,c->supports,disp,s->dt);
     if(err){
       PGFEM_printerr("[%d]ERROR: DISP_cohe_micro_terms_el returned error status!\n",myrank);
       PGFEM_Abort();
