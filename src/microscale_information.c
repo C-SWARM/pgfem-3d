@@ -196,11 +196,17 @@ void build_MICROSCALE(MICROSCALE *microscale,
     PGFEM_Comm_code_abort(mpi_comm,0);
   }
 
-  if (microscale->opts->analysis_type != DISP){
+  switch (microscale->opts->analysis_type) {
+  case DISP: break;
+  case CM:
+    if (microscale->opts->cm == DISP) break;
+    /* deliberate drop through */
+  default:
     if(myrank == 0)
       PGFEM_printerr("ERROR: only DISP analysis is supported!"
 		     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mpi_comm,0);
+    break;
   }
 
   /* attempt to write to output directory */
@@ -426,6 +432,7 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   common->matgeom = NULL;
   common->nhommat = 0;
   common->hommat = NULL;
+  common->param_list = NULL;
   common->ensight = NULL;
   common->supports = NULL;
   common->n_co_props = 0;
@@ -544,6 +551,16 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
     dealoc3l(a,nmat,nmat);
     free(mater);
+
+    if (opts->analysis_type == CM) {
+      char *cm_filename = NULL;
+      alloc_sprintf(&cm_filename,"%s/model_params.in",opts->ipath);
+      FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+      read_model_parameters_list(&(common->param_list), common->nhommat,
+                                 common->hommat, cm_in);
+      free(cm_filename);
+      fclose(cm_in);
+    }
   }/* end reading *.in */
 
   /* read cohesive stuff */
@@ -695,6 +712,7 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_coel(common->coel,common->nce);
   destroy_matgeom(common->matgeom,common->n_orient);
   destroy_hommat(common->hommat,common->nhommat);
+  destroy_model_parameters_list(common->nhommat, common->param_list);
   destroy_ensight(common->ensight);
   destroy_supp(common->supports);
   destroy_cohesive_props(common->n_co_props,common->co_props);
@@ -771,6 +789,11 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
 
+  if (analysis == CM) {
+    init_all_constitutive_model(sol->eps, common->ne,
+                                common->elem, common->param_list);
+  }
+
   /* initialize state variable buffer at macro time (n) */
   /* length of the solution vector */
   sol->packed_state_var_len = local_len*len_double;
@@ -808,7 +831,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   switch(analysis){
   case STABILIZED: case MINI: case MINI_3F: sol->npres = 4; break;
-  case DISP: sol->npres = 0; break;
+  case DISP: case CM: sol->npres = 0; break;
   default: sol->npres = 1; break;
   }
   build_pressure_nodes(common->ne,sol->npres,common->elem,

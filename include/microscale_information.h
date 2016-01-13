@@ -21,6 +21,7 @@
 #include "cohesive_element.h"
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
+#include "constitutive_model.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +63,7 @@ extern "C" {
     MATGEOM matgeom; /**< !pointer */
     long nhommat;
     HOMMAT *hommat;
+    Model_parameters *param_list;
     ENSIGHT ensight; /**< !pointer */
     SUPP supports; /**< !pointer */
     int n_co_props;

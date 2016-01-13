@@ -465,6 +465,8 @@ static int compute_ms_cohe_job_micro_terms(const MS_COHE_JOB_INFO *job,
   /* error check analysis type */
   switch(o->analysis_type){
   case DISP: break;
+  case CM: if (o->cm == DISP) break;
+    /* deliberate drop through */
   default:
     PGFEM_printerr("ERROR: analysis type %d is not supported!\n"
 	    "%s:%s:%d",o->analysis_type,__func__,__FILE__,__LINE__);
@@ -572,6 +574,15 @@ static int compute_elem_micro_terms(const int elem_id,
 
   /* microscale node coordinates and displacements */
   switch(o->analysis_type){
+  case CM:
+    if (o->cm != DISP) {
+      PGFEM_printerr("ERROR: multiscale cohesive modeling not "
+                     "yet implemented for this analysis type (%d)!\n"
+                     "%s:%s:%d\n",o->analysis_type,__func__,__FILE__,__LINE__);
+      PGFEM_Abort();
+      break;
+    }
+    /* deliberate drop through */
   case DISP:
     nodecoord_total(nne,node_ids,c->node,x,y,z);
     /*==== microscale displacement ====*/
@@ -585,6 +596,15 @@ static int compute_elem_micro_terms(const int elem_id,
 
   /* compute the microscale contributions based on analysis type */
   switch(o->analysis_type){
+  case CM:
+    if (o->cm != DISP) {
+      PGFEM_printerr("ERROR: multiscale cohesive modeling not "
+                     "yet implemented for this analysis type (%d)!\n"
+                     "%s:%s:%d\n",o->analysis_type,__func__,__FILE__,__LINE__);
+      PGFEM_Abort();
+      break;
+    }
+    /* deliberate drop through */
   case DISP:
     err += DISP_cohe_micro_terms_el(K_00_e,K_01_e,K_10_e,traction_res_e,
 				    traction_e,
@@ -615,38 +635,6 @@ static int compute_elem_micro_terms(const int elem_id,
   /* traction.Add conttribution from LOCAL element */
   cblas_daxpy(macro_ndof,1.0,traction_res_e,1,job->traction_res,1);
   cblas_daxpy(ndim,1.0,traction_e,1,job->traction,1);
-
-  /* K_01 & K_10 */
-  /* { */
-  /*   for(int a=0; a<macro_nnode; a++){ */
-  /*     for(int b=0; b<macro_ndofn; b++){ */
-  /* 	for(int w=0; w<nne; w++){ */
-  /* 	  for(int g=0; g<ndim; g++){ */
-  /* 	    /\* column idx is simply the index of the macro dof *\/ */
-  /* 	    const int col_idx = idx_2_gen(a,b,macro_nnode,macro_ndofn); */
-
-  /* 	    /\* row idx is the global dof id *\/ */
-  /* 	    const int row_idx = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1; */
-
-  /* 	    /\* skip if boundary condition *\/  */
-  /* 	    if(row_idx < 0) continue; */
-
-  /* 	    /\* get indices *\/ */
-  /* 	    const int idx_01 = idx_K_gen(a,b,w,g,macro_nnode, */
-  /* 					 macro_ndofn,nne,ndim); */
-  /* 	    const int idx_10 = idx_K_gen(w,g,a,b,nne,ndim, */
-  /* 					 macro_nnode,macro_ndofn); */
-
-  /* 	    /\* add values to distributed matrix *\/ */
-  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
-  /* 						  K_01_e + idx_01,K_01); */
-  /* 	    err += PGFEM_par_matrix_add_to_values(1,&row_idx,&col_idx, */
-  /* 						  K_10_e + idx_10,K_10); */
-  /* 	  } */
-  /* 	} */
-  /*     } */
-  /*   } */
-  /* } */
 
   {
     /* allocate enough space for full matrix */

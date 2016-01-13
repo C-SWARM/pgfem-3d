@@ -1265,9 +1265,16 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 	  if(err != 0 ) goto exit_function;
 
 	  /* get material stress and stiffness */
-	  const damage *p_dam = &(eps[elem_id].dam[ip]);
-	  get_material_stress(kappa,p_hommat,C,C_I,J,Sbar);    
-	  get_material_stiffness(kappa,p_hommat,p_dam,C,C_I,J,Sbar,L);
+          const damage *p_dam = NULL;
+          if (eps[elem_id].model == NULL) {
+            p_dam = &(eps[elem_id].dam[ip]);
+            get_material_stress(kappa,p_hommat,C,C_I,J,Sbar);
+            get_material_stiffness(kappa,p_hommat,p_dam,C,C_I,J,Sbar,L);
+          } else {
+            p_dam = &empty_damage;
+            err += disp_cm_material_response(Sbar, L, eps[elem_id].model + ip,
+                                             F, dt, 1);
+          }
 
 	  /*=== OPTIMIZATION: Combine following function calls into
 	    one loop. This was not done originally for simplified
