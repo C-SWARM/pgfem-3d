@@ -318,6 +318,8 @@ static int disp_cm_material_response(double *S,
   Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
 
   err += constitutive_model_update_elasticity(m, &MF, dt, &ML, &MS, get_L);
+  memcpy(S, MS.m_pdata, 9 * sizeof(*S));
+  if(get_L) memcpy(L, ML.m_pdata, 81 * sizeof(*L));
 
   Matrix_cleanup(MF);
   Matrix_cleanup(MS);
@@ -421,9 +423,16 @@ int DISP_stiffmat_el(double *Ks,
 	/* inverted element detected, exit and return error */
 	if(err != 0 ) goto exit_function;
 
-	const damage *ptrDam = &(eps[ii].dam[ip]);
-	get_material_stress(kappa,&hommat[mat],C,C_I,J,Sbar);
-	get_material_stiffness(kappa,ptrMat,ptrDam,C,C_I,J,Sbar,L);
+	const damage *ptrDam = NULL;
+        if (eps[ii].model == NULL) {
+          ptrDam = &(eps[ii].dam[ip]);
+          get_material_stress(kappa,&hommat[mat],C,C_I,J,Sbar);
+          get_material_stiffness(kappa,ptrMat,ptrDam,C,C_I,J,Sbar,L);
+        } else {
+          ptrDam = &empty_damage;
+          err += disp_cm_material_response(Sbar, L, eps[ii].model + ip,
+                                           F, dt, 1);
+        }
 	disp_based_tan_at_ip(Ks,nne,ST,F,Sbar,L,ptrDam,jj,wt);
 	ip++;
       }
@@ -522,8 +531,19 @@ int DISP_resid_el(double *R,
 	/* inverted element detected, exit and return error */
 	if(err != 0) goto exit_function;
 
-	const damage *ptrDam = &(eps[ii].dam[ip]);
-	get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
+	const damage *ptrDam = NULL;
+        if (eps[ii].model == NULL) {
+          ptrDam = &(eps[ii].dam[ip]);
+          get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
+        } else {
+          ptrDam = &empty_damage;
+          void *ctx = NULL;
+          cm_construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5);
+          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx);
+          err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
+                                           F, dt, 0);
+          eps[ii].model[ip].param->destroy_ctx(&ctx);
+        }
 	disp_based_resid_at_ip(R,nne,ST,F,Sbar,ptrDam,jj,wt);
 	ip++;
       }
@@ -987,6 +1007,11 @@ void DISP_increment_el(const ELEMENT *elem,
 
 	/* update damage variables */
 	update_damage(&eps[ii].dam[ip]);
+
+        /* update constitutive model */
+        if (eps[ii].model != NULL) {
+          eps[ii].model[ip].param->update_state_vars(&eps[ii].model[ip]);
+        }
 
 	ip++;
       }
