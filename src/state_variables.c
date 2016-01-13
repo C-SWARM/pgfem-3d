@@ -78,7 +78,7 @@ size_t state_variables_get_packed_size(const State_variables *s)
      of each tensor just in case. */
   size_t len_Fs = 0;
   for (int i = 0, e = s->n_Fs; i < e; i++) {
-    len_Fs = s->Fs[i].m_col * s->Fs[i].m_row;
+    len_Fs += s->Fs[i].m_col * s->Fs[i].m_row;
   }
   const size_t len_vars = s->state_vars->m_col * s->state_vars->m_row;
   return ( (len_Fs + len_vars) * sizeof(double) + s->n_flags * sizeof(int) );
