@@ -844,6 +844,14 @@ int residuals_el_hyper_elasticity(double *f,
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+
+    {
+      /* check that deformation is invertible -> J > 0 */
+      int terr = 0;
+      double tJ = 0.0;
+      tJ = getJacobian(F.m_pdata, ii, &terr);
+      err += terr;
+    }
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix_init(S,0.0);    
@@ -1157,6 +1165,14 @@ int residuals_el_crystal_plasticity(double *f,
 
       Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  /* compute F2[Fnp1] */    
     }      
+
+    {
+      /* check that deformation is invertible -> J > 0 */
+      int terr = 0;
+      double tJ = 0.0;
+      tJ = getJacobian(F2[Fnp1].m_pdata, ii, &terr);
+      err += terr;
+    }
 
     void *ctx = NULL;
     err += cm_construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha);
@@ -1523,6 +1539,15 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
         
   Matrix_AeqBT(F2[MT],1.0,F2[M]);  
   Matrix_init(F2[S],0.0);    
+
+    {
+      /* check that deformation is invertible -> J > 0 */
+      int terr = 0;
+      double tJ = 0.0;
+      tJ = getJacobian(F2[Fnpa].m_pdata, ii, &terr);
+      err += terr;
+    }
+
   constitutive_model_update_elasticity(m,&F2[eFnpa],dt,NULL,&F2[S],compute_stiffness);
   
   for(int a=0; a<nne; a++)
@@ -1599,6 +1624,14 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fnp1]);
+
+    {
+      /* check that deformation is invertible -> J > 0 */
+      int terr = 0;
+      double tJ = 0.0;
+      tJ = getJacobian(F2[Fnp1].m_pdata, ii, &terr);
+      err += terr;
+    }
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
