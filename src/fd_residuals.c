@@ -534,6 +534,11 @@ int fd_res_compute_reactions(const long ndofn,
                        dt, t, stab, mpi_comm, opts, alpha, r_n, r_n_1,
                        include_inertia);
 
+    /* Previous may have called integration algorithm. Need to reset
+       state variables to retain consistent tangent and to ensure we
+       didn't play with any rate sensitive behavior */
+    if (opts->analysis_type == CM) constitutive_model_reset_state(eps, ne, elem);
+
     long *cn = aloc1l (ndofe);
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
 
