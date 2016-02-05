@@ -20,4 +20,6 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);
 void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);
+void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *node, EPS *eps,
+                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);                    
 #endif
