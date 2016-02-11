@@ -20,10 +20,12 @@
 #include "state_variables.h" /* provides declaration of Matrix_double */
 #include "sig.h"
 #include "supp.h"
+#include "PGFem3D_options.h"
 
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
+
 
 #ifndef PGFEM3D_DEV_TEST
 #define PGFEM3D_DEV_TEST 1
@@ -570,7 +572,7 @@ int residuals_el_crystal_plasticity(double *f,
 int constitutive_model_update_output_variables(SIG *sig,
                                                EPS *eps,
                                                NODE *node,
-                                               ELEMENT *elem,                                               
+                                               ELEMENT *elem,
                                                const int ne,
                                                const double dt,
                                                PGFem3D_opt *opts);
