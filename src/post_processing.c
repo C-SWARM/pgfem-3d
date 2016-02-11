@@ -87,7 +87,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, H
   Matrix_cleanup(devS);        
 }
 
-void post_processing_compute_stress_plasticity_ip(FEMLIB *fe, int e, int ip, Matrix(double) *S, double *Jnp1, 
+void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix(double) *S, double *Jnp1, 
                                                   HOMMAT *hommat, ELEMENT *elem, EPS *eps)
 {
   int total_Lagrangian = 0;
@@ -113,12 +113,12 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
   
   int nsd = 3;
   Matrix(double) F,S,LS;
@@ -187,18 +187,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
         }           
         case CM:
         {
-          switch(opts->cm)
-          {
-            case HYPER_ELASTICITY:
-              post_processing_compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
-              break;
-            case CRYSTAL_PLASTICITY:
-              post_processing_compute_stress_plasticity_ip(&fe,e,ip,&S,&Jnp1,hommat,elem,eps);
-              break;          
-            case BPA_PLASTICITY:
-            default:
-              break;
-          }
+          post_processing_compute_stress4CM(&fe,e,ip,&S,&Jnp1,hommat,elem,eps);
           break;
         }      
         default:
@@ -234,12 +223,12 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;    
   
   int nsd = 3;
   Matrix(double) F,LF;
@@ -273,7 +262,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
       FEMLIB_update_shape_tensor(&fe);
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       
-      if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+      if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
@@ -316,12 +305,12 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;    
   
   int nsd = 3;
   Matrix(double) F,LF;
@@ -355,7 +344,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
       FEMLIB_update_shape_tensor(&fe);
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       
-      if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+      if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
@@ -402,14 +391,12 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }
-  else
-    return;     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;    
   
   int nsd = 3;
   double L_gn = 0.0;
@@ -428,10 +415,11 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
       
-      Constitutive_model *m = &(eps[e].model[ip-1]);
-        
-      double *state_var = (m->vars).state_vars[0].m_pdata;  
-      double g_n = state_var[3]; // VAR_g_np1 = 3
+      Constitutive_model *m = &(eps[e].model[ip-1]);        
+      double g_n = 0.0;      
+      m->param->get_hardening(m,&g_n);      
+      
+      
       double Jnp1 = 0.0;
       Matrix(double) Fnp1;
       Matrix_construct_redim(double,Fnp1,3,3);
@@ -459,12 +447,12 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0; 
   
   int nsd = 3;
   Matrix(double) F,C;
@@ -506,7 +494,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
       FEMLIB_update_shape_tensor(&fe);
       FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
       
-      if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
+      if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;

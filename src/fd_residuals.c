@@ -116,25 +116,18 @@ static int fd_res_elem(double *fe,
 
     case CM:
       switch(opts->cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
-        /* total Lagrangian */
+      case UPDATED_LAGRANGIAN:
+        nodecoord_updated (nne,nod,node,x,y,z);
+        def_elem(cn,ndofe,d_r,elem,node,r_e,sup,0);
+        break;
+      case TOTAL_LAGRANGIAN:        
         nodecoord_total (nne,nod,node,x,y,z);
         def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
         break;
-
-      case CRYSTAL_PLASTICITY:
-        if(PLASTICITY_TOTAL_LAGRANGIAN)
-          {
-            nodecoord_total (nne,nod,node,x,y,z);
-            def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
-          }
-        else
-          {
-            nodecoord_updated (nne,nod,node,x,y,z);
-            def_elem(cn,ndofe,d_r,elem,node,r_e,sup,0);
-          }
+      case MIXED_ANALYSIS_MODE:
+        nodecoord_total (nne,nod,node,x,y,z);
+        def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
         break;
-
       default: assert(0 && "undefined CM type"); break;
       }
       break;
@@ -208,26 +201,12 @@ static int fd_res_elem(double *fe,
       {
         switch(opts->cm)
           {
-          case HYPER_ELASTICITY:
-            {
-              double *bf = aloc1(ndofe);
-              memset(bf, 0, sizeof(double)*ndofe);
-              DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
-
-              err += residuals_el_hyper_elasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                   dt,eps,sup,r_e);
-
-              for(long a = 0; a<ndofe; a++)
-                fe[a] += -bf[a];
-
-              dealoc1(bf);
-              break;
-            }
-          case CRYSTAL_PLASTICITY:
+          case UPDATED_LAGRANGIAN: // intentionally left to flow
+          case TOTAL_LAGRANGIAN:
             err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                   dt,eps,sup,r_e, PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
+                                                   dt,eps,sup,r_e, opts->cm);
             break;
-          case BPA_PLASTICITY: case TESTING:
+          case MIXED_ANALYSIS_MODE:
             err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
                                                    dt,eps,sup,r_e, 1 /* TL */);
             break;

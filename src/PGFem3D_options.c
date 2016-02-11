@@ -43,9 +43,9 @@ static const long_opt_descr analysis_opts[] = {
   {{"disp",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based finite strains analysis",0},
   {{"tf",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based 3 field finite strains analysis",0},
   {{"cm",required_argument,NULL,2},"Use of constitutive model interface\n"
-                                   "\t\t arg = 0: Hyperelasticity\n"
-                                   "\t\t arg = 1: Crystal plasticity\n"
-                                   "\t\t arg = 2: BPA_plasticity",0},  
+                                   "\t\t arg = 0: Updated Lagrangian\n"
+                                   "\t\t arg = 1: Total Lagrangian\n"
+                                   "\t\t arg = 2: Mixed analysis mode",0},  
   {{"coh",no_argument,NULL,1},"\tCohesive elements",0},
   {{"ms",no_argument,NULL,'m'},("\tINTERFACE or BULK multiscale modeling.\n"
 				"\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
@@ -338,7 +338,7 @@ void print_interpreted_options(const PGFem3D_opt *opts)
     break; 
   case CM:
     PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE:\n"
-		 "HYPERELASTICITY, CRYSTAL PLASTICITY, AND BPA_PLASTICITY\n");
+		 "UPDATED LAGRANGIAN, TOTAL LAGRANGIAN, AND MIXED ANALYSIS MODE\n");
     break;    
        
 

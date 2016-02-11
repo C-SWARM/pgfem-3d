@@ -14,10 +14,10 @@ Define_Matrix(double);
 #define tensor 9
 #define dim 3
 
-static const int g_n_Fs = 2;
+static const int g_n_Fs = 3;
 static const int g_n_vars = 0;
 static const int g_n_flags = 0;
-enum {Fn, Fnp1};
+enum {Fnm1, Fn, Fnp1, F};
 
 /**
  * Private structure for use exclusively with this model and
@@ -134,7 +134,8 @@ static int plasticity_none_d2udj2(const Constitutive_model *m,
 static int plasticity_none_update(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_AeqB(m->vars.Fs[Fn], 1.0, m->vars.Fs[Fnp1]);
+  Matrix_AeqB(m->vars.Fs[Fnm1], 1.0, m->vars.Fs[Fn]);
+  Matrix_AeqB(m->vars.Fs[Fn],   1.0, m->vars.Fs[Fnp1]);
   return err;
 }
 
@@ -162,9 +163,10 @@ static int plasticity_none_info(Model_var_info **info)
   (*info)->flag_names = malloc( g_n_flags * sizeof( ((*info)->flag_names) ));
 
   /* allocate/copy strings */
-  (*info)->F_names[Fnp1] = strdup("F");
+  (*info)->F_names[Fnm1] = strdup("Fnm1");  
   (*info)->F_names[Fn]   = strdup("Fn");
-
+  (*info)->F_names[Fnp1] = strdup("F");
+  
   return err;
 }
 
@@ -176,18 +178,20 @@ static int he_get_Fn(const Constitutive_model *m,
   return err;
 }
 
-static int he_get_pF(const Constitutive_model *m,
+static int he_get_Fnm1(const Constitutive_model *m,
+                     Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F, 1.0, m->vars.Fs[Fnm1]);
+  return err;
+}
+
+static int he_get_eye(const Constitutive_model *m,
                      Matrix_double *F)
 {
   int err = 0;
   Matrix_eye(*F,3);
   return err;
-}
-
-static int he_get_pFn(const Constitutive_model *m,
-                      Matrix_double *F)
-{
-  return he_get_pF(m,F);
 }
 
 static int he_get_eF(const Constitutive_model *m,
@@ -203,6 +207,14 @@ static int he_get_eFn(const Constitutive_model *m,
 {
   int err = 0;
   err += he_get_Fn(m,F);
+  return err;
+}
+
+static int he_get_eFnm1(const Constitutive_model *m,
+                      Matrix_double *F)
+{
+  int err = 0;
+  err += he_get_Fnm1(m,F);
   return err;
 }
 
@@ -274,11 +286,14 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
   p->get_var_info = plasticity_none_info;
-  p->get_Fn = he_get_Fn;
-  p->get_pF = he_get_pF;
-  p->get_pFn = he_get_pFn;
-  p->get_eF = he_get_eF;
-  p->get_eFn = he_get_eFn;
+  p->get_Fn    = he_get_Fn;
+  p->get_Fnm1  = he_get_Fnm1;  
+  p->get_pF    = he_get_eye;
+  p->get_pFn   = he_get_eye;
+  p->get_pFnm1 = he_get_eye;      
+  p->get_eF    = he_get_eF;
+  p->get_eFn   = he_get_eFn;
+  p->get_eFnm1 = he_get_eFnm1;
 
   p->get_hardening = cm_get_var_zero;
   p->get_plast_strain_var = cm_get_var_zero;

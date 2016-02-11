@@ -155,19 +155,16 @@ int load_vec_node_defl (double *f,
       case CM:
         {
           switch(opts->cm) {
-          case TESTING: case HYPER_ELASTICITY: case BPA_PLASTICITY: /* total Lagrangian */
+            case UPDATED_LAGRANGIAN:
+              nodecoord_updated(nne,nod,node,x,y,z);
+              break;
+          case TOTAL_LAGRANGIAN: /* total Lagrangian */
             nodecoord_total(nne,nod,node,x,y,z);
             def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;
-          case CRYSTAL_PLASTICITY:
-            if(PLASTICITY_TOTAL_LAGRANGIAN)
-            {  
-              nodecoord_total(nne,nod,node,x,y,z);
-              def_elem(cn,ndofe,r,elem,node,r_e,sup,1);              
-            }
-            else              
-              nodecoord_updated(nne,nod,node,x,y,z);
-
+          case MIXED_ANALYSIS_MODE: /* total Lagrangian */
+            nodecoord_total(nne,nod,node,x,y,z);
+            def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
             break;
           default: assert(0 && "should never reach this case"); break;
           }
@@ -267,13 +264,13 @@ int load_vec_node_defl (double *f,
 	  {
       switch(opts->cm)
       {
-        case HYPER_ELASTICITY:
+        case UPDATED_LAGRANGIAN:
+          nodecoord_updated(nne_ve,ve_nod,node,x,y,z);
+          break;        
+        case TOTAL_LAGRANGIAN:
           nodecoord_total(nne_ve,ve_nod,node,x,y,z);
           break;
-        case CRYSTAL_PLASTICITY:
-          nodecoord_updated(nne_ve,ve_nod,node,x,y,z);          
-          break;                                                 
-        case BPA_PLASTICITY:
+        case MIXED_ANALYSIS_MODE:
         default:
           nodecoord_total(nne_ve,ve_nod,node,x,y,z);
           break;

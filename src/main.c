@@ -81,7 +81,7 @@ static const int ndim = 3;
 /*****************************************************/
 #define SAVE_RESTART_FILE 1
 
-double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_opt *opts,
+double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opts,
                            ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
                            int myrank, int elemno, int nodeno, int nmat, double dt, int *restart)
 {
@@ -116,13 +116,24 @@ double read_initial_values(double *u0, double *u1, double *rho, const PGFem3D_op
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
-
        
   if(fp == NULL)
   {    
     if(myrank==0)
       printf("Fail to open file [%s]. Quasi steady state\n", filename);
     return alpha;
+  }
+  else
+  {
+    if(opts->analysis_type == CM && opts->cm == UPDATED_LAGRANGIAN)
+    { 
+      opts->cm = TOTAL_LAGRANGIAN; 
+      if(myrank==0)
+      {  
+        printf("Updated Lagrangian is currently unavailable with inertia.\n");
+        printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
+      }        
+    }        
   }
 
   if(myrank==0)
@@ -680,17 +691,17 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
       switch(options.cm)
       {
-        case HYPER_ELASTICITY:
-          PGFEM_printf("HYPERELASTICITY\n");
+        case UPDATED_LAGRANGIAN:
+          PGFEM_printf("UPDATED LAGRANGIAN\n");
           break;
-        case CRYSTAL_PLASTICITY:
-          PGFEM_printf("CRYSTAL PLASTICITY\n");
+        case TOTAL_LAGRANGIAN:
+          PGFEM_printf("TOTAL LAGRANGIAN\n");
           break;                                                 
-        case BPA_PLASTICITY:
-          PGFEM_printf("BPA_PLASTICITY\n");
+        case MIXED_ANALYSIS_MODE:
+          PGFEM_printf("MIXED ANALYSIS MODE\n");
           break;
         default:
-          PGFEM_printf("HYPERELASTICITY\n");
+          PGFEM_printf("UPDATED LAGRANGIAN\n");
           break;
       }            
       break;                                   
@@ -1232,8 +1243,8 @@ int single_scale_main(int argc,char *argv[])
 
       /* update output stuff for CM interface */
       if(options.analysis_type == CM && options.cm!=0){
-        constitutive_model_update_output_variables(sig_e, eps, ne,
-                                                   times[tim+1] - times[tim]);
+        constitutive_model_update_output_variables(sig_e,eps,node,elem,ne, 
+                                                   times[tim+1] - times[tim],&options);
       }
 
       /* print tractions on marked features */

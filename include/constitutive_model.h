@@ -21,8 +21,6 @@
 #include "sig.h"
 #include "supp.h"
 
-#define PLASTICITY_TOTAL_LAGRANGIAN 1
-
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -41,7 +39,17 @@ enum model_type {
   ISO_VISCOUS_DAMAGE,
   J2_PLASTICITY_DAMAGE,
   NUM_MODELS,
-  TESTING=99
+  TESTING=99,
+  CM_UQCM=100
+};
+
+/**
+ * Enumeration for the frame
+ */
+enum integration_frame {
+  UPDATED_LAGRANGIAN,
+  TOTAL_LAGRANGIAN,
+  MIXED_ANALYSIS_MODE
 };
 
 /**
@@ -389,6 +397,7 @@ struct Model_parameters {
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
+  int uqcm;   // UQ study through constitutive model 0: no, or yes
   
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat; 
   ELASTICITY *cm_elast;
@@ -560,8 +569,11 @@ int residuals_el_crystal_plasticity(double *f,
 
 int constitutive_model_update_output_variables(SIG *sig,
                                                EPS *eps,
+                                               NODE *node,
+                                               ELEMENT *elem,                                               
                                                const int ne,
-                                               const double dt);
+                                               const double dt,
+                                               PGFem3D_opt *opts);
                                                
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,
                                               const int ii,

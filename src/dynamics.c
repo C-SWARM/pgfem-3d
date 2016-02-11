@@ -103,36 +103,13 @@ void stiffmat_disp_w_inertia_el(double *Ks,
       break;
     case CM:
     {
-      switch(cm) {
-      case CRYSTAL_PLASTICITY:
-        err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
-                                               nod,node,dt,eps,sup,r_e,alpha);
+      err += stiffness_el_crystal_plasticity_w_inertia(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
+                                             nod,node,dt,eps,sup,r_e,alpha);
                                                
-        for(long a = 0; a<ndofe*ndofe; a++)
-          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];
+      for(long a = 0; a<ndofe*ndofe; a++)
+        Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];
 
-        break;
-      case BPA_PLASTICITY: case TESTING:
-        err += stiffness_el_crystal_plasticity(Ks,ii,ndofn,nne,nsd,elem,
-                                               nod,node,dt,eps,sup,r_e,
-                                               1 /* TL */);
-        break;
-      
-      case HYPER_ELASTICITY:
-        err += stiffness_el_hyper_elasticity(Kuu_K.m_pdata,ii,ndofn,nne,nsd,elem,
-                                             nod,node,dt,eps,sup,u.m_pdata);
-          
-        for(long a = 0; a<ndofe*ndofe; a++)
-          Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
-      
-      break;
-      
-                                             
-        break;
-      default: assert(0 && "should never get here"); break;
-      }
-      break;      
-      
+      break;        
     }  
       
     default:
@@ -363,49 +340,17 @@ int residuals_w_inertia_el(double *fe, int i,
 	  }
 	  case CM:
 	  {
-      switch(opts->cm)
-      {
-        case HYPER_ELASTICITY:
-        {
-	        double *f_n_a   = aloc1(ndofe);
-	        double *f_n_1_a = aloc1(ndofe);      
+  	  double *f_n   = aloc1(ndofe);    
+    	memset(f_n, 0, sizeof(double)*ndofe);       
 
-          err += residuals_el_hyper_elasticity(f_n_a,i,ndofn,nne,nsd,elem,nod,node,
-                                               dt,eps,sup,r_n_a);		           
+      err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
+                                            dt,eps,sup,r_e,alpha);  
 
-           
-          err += residuals_el_hyper_elasticity(f_n_1_a,i,ndofn,nne,nsd,elem,nod,node,
-                                               dt,eps,sup,r_n_1_a);
-
-	        for(long a = 0; a<ndofe; a++)
-	          fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
-	          
-	        free(f_n_a);
-	        free(f_n_1_a);          
-          
-          break;
-        }
-        case CRYSTAL_PLASTICITY:
-        {
-    	    double *f_n   = aloc1(ndofe);    
-    	    memset(f_n, 0, sizeof(double)*ndofe);       
-
-          err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
-                                               dt,eps,sup,r_e,alpha);  
-
-	        for(long a = 0; a<ndofe; a++)
-	          fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
+	    for(long a = 0; a<ndofe; a++)
+	      fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
 	        
-	        free(f_n);                                                                                                           
-          break;
-        }  
-        case BPA_PLASTICITY: case TESTING:
-          err += residuals_el_crystal_plasticity(fe,i,ndofn,nne,nsd,elem,nod,node,
-                                                 dt,eps,sup,r_e, 1 /* TL */);
-          break;
-        default: assert(0 && "undefined CM type"); break;
-      }
-      break;	    
+	    free(f_n);
+	    break;                                                                                                           
 	  }  
     default:
       printf("Only displacement based element and three field element are supported\n");

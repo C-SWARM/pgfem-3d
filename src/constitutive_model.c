@@ -14,6 +14,7 @@
 #include "plasticity_model_BPA.h"
 #include "cm_iso_viscous_damage.h"
 #include "cm_j2_plasticity.h"
+#include "cm_uqcm.h"
 
 #include "hommat.h"
 #include "PGFEM_io.h"
@@ -25,6 +26,7 @@
 #include "index_macros.h"
 #include "material_properties.h" // <= constitutive model material properties
 #include "hyperelasticity.h"     // <= constitutive model elasticity
+#include <string.h>
 
 #ifndef _Matrix_double
 Define_Matrix(double);
@@ -357,30 +359,46 @@ int constitutive_model_update_elasticity(const Constitutive_model *m,
   const Model_parameters *func = m->param;
   double J;
   int alpha = -1.0;
-  Matrix(double) Fe,C, CI;    
+    
+  if(m->param->type == HYPER_ELASTICITY && m->param->type == CRYSTAL_PLASTICITY)
+  {
+    ELASTICITY *elast = (m->param)->cm_elast; // get elasticity handle
+    double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
+    double *tempL = elast->L;
+    elast->S = S->m_pdata;
+    elast->L = L->m_pdata;
+    
+    if(F==NULL)
+    {
+      Matrix(double) Fe;      
+      Matrix_construct_redim(double, Fe, 3,3);
+      func->get_eF(m,&Fe);
+      elast->update_elasticity(elast,Fe.m_pdata,compute_stiffness);      
+      Matrix_cleanup(Fe);
+    }
+    else
+      elast->update_elasticity(elast,F->m_pdata,compute_stiffness);
+
+    elast->S = tempS;
+    elast->L = tempL;
+    return err;
+  }  
+  
+  Matrix(double) C, CI, Fe;    
   Matrix_construct_redim(double,C,3,3); 
   Matrix_construct_redim(double,CI,3,3);     
-  Matrix_construct_redim(double, Fe, 3,3);
-
-  /* this is TEMPORARY until expand hyperelastic to maintain an
-     elastic deformation gradient */
-  switch (m->param->type){
-  case HYPER_ELASTICITY:
-    Matrix_AeqB(Fe,1.0,*F);
-    break;
-  case CRYSTAL_PLASTICITY:
-    Matrix_AeqB(Fe,1.0,*F);
-    break;
-  default:    
+  Matrix_construct_redim(double,Fe,3,3);  
+    
+  if(F==NULL)
     func->get_eF(m,&Fe);
-    break;
-  }
+  else
+    Matrix_AeqB(Fe,1.0,*F);        
 
   Matrix_AxB(C, 1.0, 0.0, Fe, 1, Fe, 0);
   Matrix_inv(C,CI);        
   Matrix_det(Fe, J);
 
-  err += construct_model_context(&ctx, m->param->type, F->m_pdata, dt, alpha);
+  err += construct_model_context(&ctx, m->param->type, Fe.m_pdata, dt, alpha);
 
   // compute stress
   double dudj = 0.0;
@@ -503,6 +521,15 @@ int read_model_parameters_list(Model_parameters **param_list,
         /* construct and initialize this object */
         
         err += model_parameters_construct(&((*param_list)[idx]) );
+        if(model_type==CM_UQCM)
+        {
+          ((*param_list) + idx)->uqcm = 1;
+          err += scan_for_valid_line(in);
+          fscanf(in, "%d", &model_type);
+        }
+        else
+          ((*param_list) + idx)->uqcm = 0;
+          
         err += model_parameters_initialize(&((*param_list)[idx]),
                                            hmat_list + idx,
                                            model_type);
@@ -724,7 +751,7 @@ int stiffness_el_hyper_elasticity(double *lk,
     Matrix_init(L,0.0);
     Matrix_init(S,0.0);    
     
-    err += constitutive_model_update_elasticity(m,&F,dt,&L,&S,compute_stiffness);
+    err += constitutive_model_update_elasticity(m,NULL,dt,&L,&S,compute_stiffness);
     
     for(int a=0; a<nne; a++)
     {
@@ -856,7 +883,7 @@ int residuals_el_hyper_elasticity(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     Matrix_init(S,0.0);    
     
-    err += constitutive_model_update_elasticity(m,&F,dt,NULL,&S,compute_stiffness);
+    err += constitutive_model_update_elasticity(m,NULL,dt,NULL,&S,compute_stiffness);
     for(int a=0; a<nne; a++)
     {
       for(int b=0; b<nsd; b++)
@@ -920,7 +947,7 @@ int stiffness_el_crystal_plasticity(double *lk,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,dMdu,eFnp1,pFnp1,pFnp1_I,S,
+  enum {Fn,Fr,Fnp1,pFn,dMdu,pFnp1,pFnp1_I,S,
     eFn,M,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
     MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,
     MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,
@@ -941,6 +968,9 @@ int stiffness_el_crystal_plasticity(double *lk,
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
   int compute_stiffness = 1;      
 
+  MATERIAL_ELASTICITY mat_e_new;
+  MATERIAL_ELASTICITY *mat_e_in;
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
@@ -948,7 +978,7 @@ int stiffness_el_crystal_plasticity(double *lk,
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fr]);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
-
+    
     /* get a shortened pointer for simplified CM function calls */
     const Model_parameters *func = m->param;
     err += func->get_Fn(m,&F2[Fn]);
@@ -986,7 +1016,6 @@ int stiffness_el_crystal_plasticity(double *lk,
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->destroy_ctx(&ctx);
     err += func->get_pF(m,&F2[pFnp1]);
-    err += func->get_eF(m,&F2[eFnp1]);
 
     err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
     Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
@@ -995,8 +1024,19 @@ int stiffness_el_crystal_plasticity(double *lk,
     // --> update elasticity part
     Matrix_init(L,0.0);
     Matrix_init(F2[S],0.0);    
-    
-    err += constitutive_model_update_elasticity(m,&F2[eFnp1],dt,&L,&F2[S],compute_stiffness);
+
+    if((m->param)->uqcm)
+    { 
+      double *x_ip = (fe.x_ip).m_pdata;      
+      ELASTICITY *elast = (m->param)->cm_elast;
+      MATERIAL_ELASTICITY *mat_e_in = elast->mat;
+      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
+      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
+      err += constitutive_model_update_elasticity(m,NULL,dt,&L,&F2[S],compute_stiffness);
+      elast->mat = mat_e_in;
+    }
+    else
+      err += constitutive_model_update_elasticity(m,NULL,dt,&L,&F2[S],compute_stiffness);    
     // <-- update elasticity part
 
     // --> start computing tagent
@@ -1118,7 +1158,7 @@ int residuals_el_crystal_plasticity(double *f,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,eFnp1,pFnp1,pFnp1_I,
+  enum {Fn,Fr,Fnp1,pFn,pFnp1,pFnp1_I,
     L,S,eFn,M,eFnM,ST_ab,AA,sAA,MTeFnT_sAA_eFnM,eFnMT,Fend};
   
   /* second-order tensors */
@@ -1130,7 +1170,10 @@ int residuals_el_crystal_plasticity(double *f,
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
   int compute_stiffness = 0;
-   
+
+  MATERIAL_ELASTICITY mat_e_new;
+  MATERIAL_ELASTICITY *mat_e_in;
+     
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);
@@ -1186,10 +1229,21 @@ int residuals_el_crystal_plasticity(double *f,
 
     // --> update elasticity part
     Matrix_init(F2[S],0.0);    
-
-    Matrix_AxB(F2[eFnp1],1.0,0.0,F2[Fnp1],0,F2[pFnp1_I],0);
-    err += constitutive_model_update_elasticity(m,&F2[eFnp1],dt,NULL,&F2[S],compute_stiffness);
+    
+    if((m->param)->uqcm)
+    { 
+      double *x_ip = (fe.x_ip).m_pdata;      
+      ELASTICITY *elast = (m->param)->cm_elast;
+      MATERIAL_ELASTICITY *mat_e_in = elast->mat;
+      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
+      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
+      err += constitutive_model_update_elasticity(m,NULL,dt,NULL,&F2[S],compute_stiffness);
+      elast->mat = mat_e_in;
+    }
+    else
+      err += constitutive_model_update_elasticity(m,NULL,dt,NULL,&F2[S],compute_stiffness);    
     // <-- update elasticity part
+    
             
     Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
     Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
@@ -1229,11 +1283,18 @@ int residuals_el_crystal_plasticity(double *f,
 
 int constitutive_model_update_output_variables(SIG *sig,
                                                EPS *eps,
+                                               NODE *node,
+                                               ELEMENT *elem,
                                                const int ne,
-                                               const double dt)
+                                               const double dt,
+                                               PGFem3D_opt *opts)
 {
   int err = 0;
-
+ 
+  int total_Lagrangian = 1; 
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+    
   static const double eye[TENSOR_LEN] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
   /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
   const int ip = 0;
@@ -1245,6 +1306,9 @@ int constitutive_model_update_output_variables(SIG *sig,
   Matrix_construct_redim(double, pF, DIM, DIM);
   Matrix_construct_redim(double, S, DIM, DIM);
 
+  MATERIAL_ELASTICITY mat_e_new;
+  MATERIAL_ELASTICITY *mat_e_in;
+
   for (int i = 0; i < ne; i++) {
     /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
     const Constitutive_model *m = eps[i].model;
@@ -1253,7 +1317,26 @@ int constitutive_model_update_output_variables(SIG *sig,
     err += func->get_Fn(m, &F);
     err += func->get_eFn(m, &eF);
     err += func->get_pFn(m, &pF);
-    err += constitutive_model_update_elasticity(m,&eF,dt,NULL,&S,0);
+    
+    if((m->param)->uqcm)
+    {
+      FEMLIB fe;
+      FEMLIB_initialization_by_elem(&fe,i,elem,node,0,total_Lagrangian);  
+      FEMLIB_elem_basis_V(&fe, ip+1);     
+       
+      double *x_ip = (fe.x_ip).m_pdata;            
+      
+      ELASTICITY *elast = (m->param)->cm_elast;
+      MATERIAL_ELASTICITY *mat_e_in = elast->mat;
+      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
+      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
+      err += constitutive_model_update_elasticity(m,&eF,dt,NULL,&S,0);
+      elast->mat = mat_e_in;
+      FEMLIB_destruct(&fe);
+    }
+    else
+      err += constitutive_model_update_elasticity(m,&eF,dt,NULL,&S,0);
+    // <-- update elasticity part
 
     /* get aliases to Matrix data for simpler access */
     const double *Sd = S.m_pdata;
@@ -1699,3 +1782,42 @@ int cm_get_subdivision_parameter(double *subdiv_param,
   *subdiv_param = max_val;
   return err;
 }
+
+int stiffness_el_constitutive_model(double *lk,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e,
+                                    const int total_Lagrangian)
+{
+  int err = 0;
+  
+  return err;
+  
+}
+
+int residuals_el_constitutive_model(double *f,
+                                    const int ii,
+                                    const int ndofn,
+                                    const int nne,
+                                    const int nsd,
+                                    const ELEMENT *elem,
+                                    const long *nod,
+                                    const NODE *node,
+                                    const double dt,
+                                    EPS *eps,
+                                    const SUPP sup,
+                                    const double *r_e,
+                                    const int total_Lagrangian)
+{
+  int err = 0;
+  
+  return err;
+}                                    

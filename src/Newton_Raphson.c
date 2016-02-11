@@ -851,21 +851,6 @@ double Newton_Raphson (const int print_level,
       update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
                                 dt,t,mpi_comm);
       break;                          
-    case CM:
-      {
-        switch(opts->cm)
-          {
-          case HYPER_ELASTICITY:
-            DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-                           sig_e,hommat,d_r,r,mpi_comm);
-            break;
-          case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
-            /* updated later... */
-            break;
-          default: assert(0 && "undefined CM type"); break;
-          }
-        break;
-      }
     default: break;
     }
     
@@ -883,7 +868,7 @@ double Newton_Raphson (const int print_level,
         {
           r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
           long id = node[a].id[b];
-          if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY && !PLASTICITY_TOTAL_LAGRANGIAN) 
+          if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN) 
           // Updated Lagrangian
           {  
             if(id>0)
@@ -917,14 +902,15 @@ double Newton_Raphson (const int print_level,
     if(opts->analysis_type==CM)
     {
       switch(opts->cm){
-      case CRYSTAL_PLASTICITY:
+      case UPDATED_LAGRANGIAN:
+      case TOTAL_LAGRANGIAN:        
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
-                                                ndofn,r_n,dt,PLASTICITY_TOTAL_LAGRANGIAN);
-      break;
-      case BPA_PLASTICITY: case TESTING:
+                                                ndofn,r_n,dt,opts->cm);
+        break;
+      case MIXED_ANALYSIS_MODE:
       constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
                                                 ndofn,r_n,dt,1 /* TL */);
-      break;
+        break;
       default: break;
       }
     }

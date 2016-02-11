@@ -107,22 +107,19 @@ int el_compute_stiffmat(int i,
     case CM:
       {
         switch(cm) {
-        case CRYSTAL_PLASTICITY:
+        case UPDATED_LAGRANGIAN: // intentionally left to flow
+        case TOTAL_LAGRANGIAN:          
           err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
                                                  nod,node,dt,eps,sup,r_e,
-                                                 PLASTICITY_TOTAL_LAGRANGIAN /* UL */);
+                                                 cm);
           break;
 
-        case BPA_PLASTICITY: case TESTING:
+        case MIXED_ANALYSIS_MODE:
           err += stiffness_el_crystal_plasticity(lk,i,ndofn,nne,nsd,elem,
                                                  nod,node,dt,eps,sup,r_e,
                                                  1 /* TL */);
           break;
 
-        case HYPER_ELASTICITY:
-          err += stiffness_el_hyper_elasticity(lk,i,ndofn,nne,nsd,elem,
-                                               nod,node,dt,eps,sup,r_e);
-          break;
         default: assert(0 && "should never get here"); break;
         }
         break;
@@ -244,15 +241,15 @@ static int el_stiffmat(int i, /* Element ID */
     case CM:
     {  
       switch(cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+      case UPDATED_LAGRANGIAN:
+        nodecoord_updated (nne,nod,node,x,y,z);        
+        break;        
+      case TOTAL_LAGRANGIAN:
         nodecoord_total (nne,nod,node,x,y,z);
         break;
-      case CRYSTAL_PLASTICITY:
-        if(PLASTICITY_TOTAL_LAGRANGIAN)
-          nodecoord_total (nne,nod,node,x,y,z);
-        else              
-          nodecoord_updated (nne,nod,node,x,y,z);        
-        break;
+      case MIXED_ANALYSIS_MODE: // Total_lagrangian
+        nodecoord_total (nne,nod,node,x,y,z);
+        break;        
       default: assert(0 && "undefined CM type"); break;
       }
       break;      
@@ -297,15 +294,16 @@ static int el_stiffmat(int i, /* Element ID */
     case CM:
     {  
       switch(cm) {
-      case HYPER_ELASTICITY: case BPA_PLASTICITY: case TESTING:
+      case UPDATED_LAGRANGIAN:
+        def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
+        break;                
+      case TOTAL_LAGRANGIAN:
         def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
         break;
-      case CRYSTAL_PLASTICITY:
-        if(PLASTICITY_TOTAL_LAGRANGIAN)
-          def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
-        else
-          def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
-        break;
+      case MIXED_ANALYSIS_MODE:
+        def_elem_total(cnL,ndofe,r,d_r,elem,node,sup,r_e);
+        break;        
+
       default: assert(0 && "undefined CM type"); break;
       }
       break;      
