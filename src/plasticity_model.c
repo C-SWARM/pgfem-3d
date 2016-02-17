@@ -608,7 +608,6 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   free(F2);
 
   /* clean up */
-  Matrix_cleanup(L);
   Matrix_cleanup(Grad_op_ab);
   destruct_slip_system(&slip);
   free(tau);
