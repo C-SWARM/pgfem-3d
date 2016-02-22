@@ -550,12 +550,12 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
-  
-  if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-  {  
-    total_Lagrangian = PLASTICITY_TOTAL_LAGRANGIAN;
+
+  if(opts->analysis_type==CM)
     intg_order = 0;
-  }     
+    
+  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;      
   
   int nsd = 3;
 
