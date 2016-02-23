@@ -133,13 +133,20 @@ int constitutive_model_reset_state(EPS *eps,
  * (L) if non-zero. Otherwise L is unchanged.
  *
  * \return non-zero on internal error.
- */
-int constitutive_model_update_elasticity(const Constitutive_model *m,
-                                         const Matrix_double *F,
-                                         const double dt,
-                                         Matrix_double *L,
-                                         Matrix_double *S,
-                                         const int compute_stiffness);
+ */ 
+
+int constitutive_model_defaut_update_elasticity(const Constitutive_model *m,
+                                                Matrix_double *eF,
+                                                Matrix_double *L,
+                                                Matrix_double *S,
+                                                const int compute_stiffness);
+
+typedef int (*usr_update_elasticity) (const Constitutive_model *m,
+                                      const void *ctx,
+                                      Matrix_double *L,
+                                      Matrix_double *S,
+                                      const int compute_stiffness);
+
 
 /**
  * User defined function for the Constitutive_model integration
@@ -413,6 +420,7 @@ struct Model_parameters {
 
   /* compute the elastic algorithmic stiffness tangent */
   usr_tensor compute_AST;
+  usr_update_elasticity update_elasticity;
 
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
@@ -575,7 +583,8 @@ int constitutive_model_update_output_variables(SIG *sig,
                                                ELEMENT *elem,
                                                const int ne,
                                                const double dt,
-                                               PGFem3D_opt *opts);
+                                               PGFem3D_opt *opts,
+                                               double alpha);
                                                
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,
                                               const int ii,

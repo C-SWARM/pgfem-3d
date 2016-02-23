@@ -101,7 +101,7 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix(double)
   m->param->get_Fn(m,&Fnp1);
   m->param->get_eFn(m,&eFnp1);
 
-  constitutive_model_update_elasticity(m,&eFnp1,0.0,NULL,S,compute_stiffness);  
+  constitutive_model_defaut_update_elasticity(m,&eFnp1,NULL,S,compute_stiffness);  
   Matrix_det(Fnp1, *Jnp1);
   
   Matrix_cleanup(Fnp1);

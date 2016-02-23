@@ -48,7 +48,8 @@ int plasticity_model_destory(Model_parameters *p);
 int plasticity_model_ctx_build(void **ctx,
                                const double *F,
                                const double dt,
-                               const double alpha);
+                               const double alpha,
+                               const double *eFnpa);
 
 /**
  * Destroy the model context and invalidate the handle.

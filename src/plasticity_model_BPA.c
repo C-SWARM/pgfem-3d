@@ -1494,6 +1494,23 @@ static int bpa_read_restart(FILE *in,
   return err;
 }
 
+int plasticity_model_BPA_update_elasticity(const Constitutive_model *m,
+                                       const void *ctx,
+                                       Matrix_double *L,
+                                       Matrix_double *S,
+                                       const int compute_stiffness)
+{
+  int err = 0;
+  Matrix(double) eF;
+  Matrix_construct_redim(double,eF,dim,dim);
+  (m->param)->get_eF(m,&eF);
+  
+  err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+ 
+  Matrix_cleanup(eF);  
+  return err;
+}
+
 /*
  * Public interface for the BPA model
  */
@@ -1505,6 +1522,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->compute_dudj = BPA_dudj;
   p->compute_dev_tangent = BPA_dev_tangent;
   p->compute_d2udj2 = BPA_d2udj2;
+  p->update_elasticity = plasticity_model_BPA_update_elasticity;
   p->update_state_vars = BPA_update_vars;
   p->reset_state_vars = BPA_reset_vars;
   p->get_var_info = BPA_model_info;

@@ -152,6 +152,7 @@ typedef struct plasticity_ctx {
   double F[DIM_3x3];
   double dt; /* time increment */
   double alpha; // mid point alpha
+  Matrix(double) *eFnpa;
 } plasticity_ctx;
 
 static double compute_bulk_mod(const HOMMAT *mat)
@@ -792,6 +793,33 @@ static int cp_read(Model_parameters *p,
   return err;
 }
 
+int plasticity_model_update_elasticity(const Constitutive_model *m,
+                                       const void *ctx_in,
+                                       Matrix_double *L,
+                                       Matrix_double *S,
+                                       const int compute_stiffness)
+{
+  int err = 0;
+  const plasticity_ctx *ctx = ctx_in;
+  
+  // if transient cases, 
+  // get_eF is not working because eF needs to be updated using mid-point alpha
+  // below checks whether to use get_eF or give eFnpa in ctx
+
+  if(ctx->eFnpa)
+    err += constitutive_model_defaut_update_elasticity(m, (ctx->eFnpa), L, S, compute_stiffness);  
+  else
+  {
+    Matrix(double) eF;    
+    Matrix_construct_redim(double,eF,DIM_3,DIM_3);
+    plasticity_get_eF(m,&eF);      
+    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+    Matrix_cleanup(eF);   
+  }
+      
+  return err;
+}
+
 int plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -801,6 +829,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->compute_dev_stress = plasticity_dev_stress;
   p->compute_dudj = plasticity_dudj;
   p->compute_dev_tangent = plasticity_dev_tangent;
+  p->update_elasticity = plasticity_model_update_elasticity;
   p->compute_d2udj2 = plasticity_d2udj2;
   p->update_state_vars = plasticity_update;
   p->reset_state_vars = plasticity_reset;
@@ -849,13 +878,24 @@ int plasticity_model_destory(Model_parameters *p)
 int plasticity_model_ctx_build(void **ctx,
                                const double *F,
                                const double dt,
-                               const double alpha)
+                               const double alpha,
+                               const double *eFnpa)
 {
   int err = 0;
   plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
 
   /* copy data into context */
   memcpy(t_ctx->F, F, DIM_3x3 * sizeof(*F));
+
+  t_ctx->eFnpa = NULL;
+  if(eFnpa)
+  {
+    t_ctx->eFnpa = malloc(sizeof(Matrix(double)));
+    Matrix_construct_redim(double, *(t_ctx->eFnpa), DIM_3, DIM_3);
+    for(int a=0; a<DIM_3x3; a++)
+      (t_ctx->eFnpa)->m_pdata[a] = eFnpa[a];
+  }
+  
   t_ctx->dt = dt;
   t_ctx->alpha = alpha;
 
@@ -874,10 +914,12 @@ int plasticity_model_ctx_destroy(void **ctx)
   /* there are no internal pointers */
 
   /* free object memory */
+  if(t_ctx->eFnpa)
+    Matrix_cleanup(*(t_ctx->eFnpa));
+
   free(t_ctx);
   return err;
 }
-
 
 static int compute_P_alpha_of_Psys(double *P_sys,
                                    const int alpha,
@@ -1097,28 +1139,6 @@ int compute_dMdu(const Constitutive_model *m,
   Matrix_cleanup(V);
 
   return 0;
-}
-
-int plasticity_model_slip_system(Matrix(double) *P)
-{
-  int err = 0;
-  int N_SYS = 12; // depended on slip system
-
-  int j_max = DIM_3;  
-  Matrix_redim(*P, N_SYS*j_max*j_max, 1);
-  double *P_sys = P->m_pdata;
-  
-  for (int k = 0; k<N_SYS; k++)
-  {
-    for (int j = 0; j<j_max; j++)
-    {
-      for (int i = 0; i<j_max; i++){}
-//        P_sys[Index_3D(k,j,i,j_max,j_max)] = 0.0;
-    }
-//    P_sys_sp(k, P_sys);
-  }
-  
-  return N_SYS;  
 }
 
 int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS)

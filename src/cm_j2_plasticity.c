@@ -920,6 +920,27 @@ static int j2d_get_subdiv_param(const Constitutive_model *m,
   return err;
 }
 
+int j2d_update_elasticity(const Constitutive_model *m,
+                          const void *ctx,
+                          Matrix_double *L,
+                          Matrix_double *S,
+                          const int compute_stiffness)
+{
+  int err = 0;
+
+  double S0[tensor] = {0};
+  err += j2d_compute_S0_Sbar(m,ctx,S0,S->m_pdata);
+
+  double dam = (1.0 - cm_vars(m)[w]);  
+  for(int a=0; a<tensor; a++)
+    S->m_pdata[a] *= dam;
+  
+  if(compute_stiffness)
+    err += j2d_compute_AST(m, ctx, L); //compute stiffness
+
+  return err;
+}
+
 int j2d_plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -931,6 +952,7 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
   p->compute_dev_tangent = NULL;
   p->compute_d2udj2 = NULL;
   p->compute_AST = j2d_compute_AST;
+  p->update_elasticity = j2d_update_elasticity;
   p->update_state_vars = j2d_update;
   p->reset_state_vars = j2d_reset;
   p->get_var_info = j2d_get_info;

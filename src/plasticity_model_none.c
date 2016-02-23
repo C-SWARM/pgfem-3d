@@ -25,6 +25,7 @@ enum {Fnm1, Fn, Fnp1, F};
  */
 typedef struct none_ctx {
   double F[tensor];
+  Matrix(double) *eFnpa;
 } none_ctx;
 
 static size_t he_get_size(const Constitutive_model *m)
@@ -273,6 +274,33 @@ static int he_read_restart(FILE *in,
   return err;
 }
 
+int plasticity_model_none_elasticity(const Constitutive_model *m,
+                                     const void *ctx_in,
+                                     Matrix_double *L,
+                                     Matrix_double *S,
+                                     const int compute_stiffness)
+{
+  int err = 0;
+  const none_ctx *ctx = ctx_in;
+  
+  // if transient cases, 
+  // get_eF is not working because eF needs to be updated using mid-point alpha
+  // below checks whether to use get_eF or give eFnpa in ctx
+
+  if(ctx->eFnpa)
+    err += constitutive_model_defaut_update_elasticity(m, (ctx->eFnpa), L, S, compute_stiffness);  
+  else
+  {
+    Matrix(double) eF;    
+    Matrix_construct_redim(double,eF,dim,dim);
+    he_get_eF(m,&eF);      
+    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+    Matrix_cleanup(eF);   
+  }
+      
+  return err;
+}
+
 int plasticity_model_none_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -282,6 +310,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->compute_dev_stress = plasticity_none_dev_stress;
   p->compute_dudj = plasticity_none_dudj;
   p->compute_dev_tangent = plasticity_none_dev_tangent;
+  p->update_elasticity = plasticity_model_none_elasticity;
   p->compute_d2udj2 = plasticity_none_d2udj2;
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
@@ -320,7 +349,8 @@ int plasticity_model_none_initialize(Model_parameters *p)
 }
 
 int plasticity_model_none_ctx_build(void **ctx,
-                                    const double *F)
+                                    const double *F,
+                                    const double *eFnpa)
 {
   int err = 0;
   none_ctx *t_ctx = malloc(sizeof(none_ctx));
@@ -328,6 +358,15 @@ int plasticity_model_none_ctx_build(void **ctx,
   /* assign internal pointers. NOTE: We are copying the pointer NOT
      the value. No additional memory is allocated. */
   memcpy(t_ctx->F, F, tensor * sizeof(*F));
+  
+  t_ctx->eFnpa = NULL;
+  if(eFnpa)
+  {
+    t_ctx->eFnpa = malloc(sizeof(Matrix(double)));
+    Matrix_construct_redim(double, *(t_ctx->eFnpa), dim, dim);
+    for(int a=0; a<tensor; a++)
+      (t_ctx->eFnpa)->m_pdata[a] = eFnpa[a];
+  }   
 
   /* assign handle */
   *ctx = t_ctx;
@@ -344,6 +383,9 @@ int plasticity_model_none_ctx_destroy(void **ctx)
   /* we do not control memory for internal pointers */
 
   /* free object memory */
+  if(t_ctx->eFnpa)
+    Matrix_cleanup(*(t_ctx->eFnpa));
+    
   free(t_ctx);
   return err;
 }

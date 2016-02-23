@@ -584,6 +584,25 @@ static int ivd_get_subdiv_param(const Constitutive_model *m,
                                  subdiv_param);
 }
 
+int ivd_update_elasticity(const Constitutive_model *m,
+                          const void *ctx,
+                          Matrix_double *L,
+                          Matrix_double *S,
+                          const int compute_stiffness)
+{
+  int err = 0;
+
+  err += ivd_compute_Sbar(m,ctx,S->m_pdata);
+  double dam = (1.0 - m->vars.state_vars->m_pdata[w]);  
+  for(int a=0; a<tensor; a++)
+    S->m_pdata[a] *= dam;
+  
+  if(compute_stiffness)
+    err += ivd_compute_AST(m, ctx, L); //compute stiffness
+
+  return err;
+}
+
 /* API functions */
 int iso_viscous_damage_model_initialize(Model_parameters *p)
 {
@@ -596,6 +615,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
   p->compute_dev_tangent = ivd_dev_tangent;
   p->compute_d2udj2 = ivd_d2udj2;
   p->compute_AST = ivd_compute_AST;
+  p->update_elasticity = ivd_update_elasticity;
   /* p->compute_AST = NULL; */
   p->update_state_vars = ivd_update;
   p->reset_state_vars = ivd_reset;

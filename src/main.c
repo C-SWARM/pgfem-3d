@@ -1244,7 +1244,7 @@ int single_scale_main(int argc,char *argv[])
       /* update output stuff for CM interface */
       if(options.analysis_type == CM && options.cm!=0){
         constitutive_model_update_output_variables(sig_e,eps,node,elem,ne, 
-                                                   times[tim+1] - times[tim],&options);
+                                                   times[tim+1] - times[tim],&options, alpha);
       }
 
       /* print tractions on marked features */

@@ -33,7 +33,8 @@ int plasticity_model_none_initialize(Model_parameters *p);
  * \return non-zero on internal error.
  */
 int plasticity_model_none_ctx_build(void **ctx,
-                                    const double *F);
+                                    const double *F,
+                                    const double *eFnpa);
 
 /**
  * Destroy the model context and invalidate the handle.
