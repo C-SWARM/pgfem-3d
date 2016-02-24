@@ -16,6 +16,8 @@ extern "C" {
     /** Coordinates of node */
     double x1,x2,x3,x1_fd,x2_fd,x3_fd;
 
+    long loc_id; /**< Local node number, required for sorting */
+
     long *id, /**< Local ID of DOFs on node. */
 
       *Gid, /**< Global ID of DOFs on node. */
@@ -59,6 +61,38 @@ extern "C" {
   void write_node(FILE *ofile,
 		  const int nnodes,
 		  const NODE *nodes);
+
+  /**
+   * Sort the nodes by their local node numbers (loc_id).
+   */
+  void nodes_sort_loc_id(const int nnode,
+                         NODE *nodes);
+
+  /**
+   * Sort the nodes by their ownership (Dom) with ascending global
+   * node numbers (Gnn) then ascending local node numbers (loc_id).
+   *
+   * NOTE: The nodes MUST be re-sorted using `nodes_sort_loc_id` when
+   * this ordering is no longer needed. Chaos will ensue otherwise.
+   */
+  void nodes_sort_own_Gnn(const int nnode,
+                          NODE *nodes);
+
+  /**
+   * Compute the index range of Global Nodes owned by the specified domain.
+   *
+   * For valid results, requires the nodes to be sorted by
+   * `nodes_sort_own_Gnn`. Index range may include duplicate global node
+   * numbersin the case of periodicity.
+   *
+   * \return non-zero if no shared/global nodes are owned by the
+   * specified domain. On success, `range` specifies matches in
+   * [range[0], range[1]).
+   */
+  int nodes_get_Gnn_idx_range(const int nnode,
+                              const NODE *nodes,
+                              const int dom,
+                              int range[2]);
 
 #ifdef __cplusplus
 }
