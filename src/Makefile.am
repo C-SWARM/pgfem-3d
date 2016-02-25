@@ -1,4 +1,4 @@
-bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver
+bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver comm_hints_driver
 all_sources = \
 ALM.c \
 Arc_length.c \
@@ -133,7 +133,10 @@ cm_uqcm.c \
 state_variables.c \
 constitutive_model.c \
 post_processing.c \
+comm_hints.c \
 restart.c
+
+comm_hints_driver_SOURCES = comm_hints.c comm_hints_driver.c
 
 BPA_driver_SOURCES = \
 $(all_sources) \
