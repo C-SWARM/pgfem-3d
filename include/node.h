@@ -75,8 +75,8 @@ extern "C" {
    * NOTE: The nodes MUST be re-sorted using `nodes_sort_loc_id` when
    * this ordering is no longer needed. Chaos will ensue otherwise.
    */
-  void nodes_sort_own_Gnn(const int nnode,
-                          NODE *nodes);
+  void nodes_sort_own_Gnn_loc(const int nnode,
+                              NODE *nodes);
 
   /**
    * Compute the index range of Global Nodes owned by the specified domain.
@@ -93,6 +93,27 @@ extern "C" {
                               const NODE *nodes,
                               const int dom,
                               int range[2]);
+
+  /**
+   * Filter the shared nodes and return a pointer to the beginning of
+   * the list of shared nodes and the number of shared nodes.
+   *
+   * Leaves the node list sorted in the following way: local nodes (Gnn
+   * < 0) in loc_id order, shared nodes sorted by owning->Gnn->loc_id
+   *
+   * The node list *MUST* be re-sorted using nodes_sort_loc_id before
+   * calling any FE routines.
+   *
+   * Upon completion `shared` points to the beginning of the shared
+   * node list. `n_shared` is the number of shared nodes. Note that
+   * there is no allocation or copying involved.
+   *
+   * \return non-zero on internal error
+   */
+  int nodes_filter_shared_nodes(const int nnode,
+                                NODE *nodes,
+                                int *n_shared,
+                                NODE **shared);
 
 #ifdef __cplusplus
 }

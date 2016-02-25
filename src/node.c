@@ -176,6 +176,14 @@ static int node_comp_own_Gnn(const void *a,
   else return node_comp_Gnn(a,b);
 }
 
+static int node_comp_Gnn_loc(const void *a,
+                             const void *b)
+{
+  int Gnn = node_comp_Gnn(a,b);
+  if (Gnn) return Gnn;
+  else return node_comp_loc_id(a,b);
+}
+
 static int node_comp_own_Gnn_loc(const void *a,
                                  const void *b)
 {
@@ -190,8 +198,8 @@ void nodes_sort_loc_id(const int nnode,
   qsort(nodes, nnode, sizeof(*nodes), node_comp_loc_id);
 }
 
-void nodes_sort_own_Gnn(const int nnode,
-                        NODE *nodes)
+void nodes_sort_own_Gnn_loc(const int nnode,
+                            NODE *nodes)
 {
   qsort(nodes, nnode, sizeof(*nodes), node_comp_own_Gnn_loc);
 }
@@ -208,9 +216,9 @@ void nodes_sort_own_Gnn(const int nnode,
  * [range[0], range[1]).
  */
 int nodes_get_Gnn_idx_range(const int nnode,
-                             const NODE *nodes,
-                             const int dom,
-                             int range[2])
+                            const NODE *nodes,
+                            const int dom,
+                            int range[2])
 {
   int err = 0;
   /* create a node for comparison */
@@ -246,6 +254,34 @@ int nodes_get_Gnn_idx_range(const int nnode,
   /* perform pointer arithmetic w.r.t nodes to get the index range */
   range[0] = ptr_lb - nodes;
   range[1] = ptr_ub - nodes;
+
+  return err;
+}
+
+int nodes_filter_shared_nodes(const int nnode,
+                              NODE *nodes,
+                              int *n_shared,
+                              NODE **shared)
+{
+  int err = 0;
+
+  /* sort by Gnn */
+  qsort(nodes, nnode, sizeof(*nodes), node_comp_Gnn_loc);
+
+  /* perform linear search from the end to find the beginning of the
+     shared nodes list. We start from the end as typically there are
+     fewer boundary nodes than local nodes. */
+  NODE *ptr = &nodes[nnode-1];
+  while (ptr->Gnn >= 0) --ptr;
+  ++ptr; /* lower bound is inclusive, increment pointer */
+
+  /* compute number of shared nodes and starting index */
+  *n_shared = nnode - (ptr - nodes);
+  *shared = ptr;
+  assert(*n_shared >= 0); /* check for implementation error */
+
+  /* re-sort shared nodes by own->Gnn->loc_id */
+  qsort(ptr, *n_shared, sizeof(*ptr), node_comp_own_Gnn_loc);
 
   return err;
 }
