@@ -89,10 +89,10 @@ extern "C" {
    * specified domain. On success, `range` specifies matches in
    * [range[0], range[1]).
    */
-  int nodes_get_Gnn_idx_range(const int nnode,
-                              const NODE *nodes,
-                              const int dom,
-                              int range[2]);
+  int nodes_get_shared_idx_range(const int nnode,
+                                 const NODE *nodes,
+                                 const int dom,
+                                 int range[2]);
 
   /**
    * Filter the shared nodes and return a pointer to the beginning of
@@ -113,7 +113,7 @@ extern "C" {
   int nodes_filter_shared_nodes(const int nnode,
                                 NODE *nodes,
                                 int *n_shared,
-                                NODE **shared);
+                                const NODE **shared);
 
 #ifdef __cplusplus
 }

@@ -168,7 +168,7 @@ static long comm_hints_GRedist_node(const int nproc,
 
   /* get the reduced list of shared global nodes */
   int n_shared = 0;
-  NODE *shared = NULL;
+  const NODE *shared = NULL;
   err += nodes_filter_shared_nodes(nnode, nodes, &n_shared, &shared);
 
   /* get the owned Gnn and Gid and pack into a buffer to
@@ -182,7 +182,7 @@ static long comm_hints_GRedist_node(const int nproc,
    */
   long *owned_Gnn_Gid = NULL;
   int len_owned_Gnn_Gid = 0;
-  if (nodes_get_Gnn_idx_range(n_shared, shared, myrank, owned_range)) {
+  if (!nodes_get_shared_idx_range(n_shared, shared, myrank, owned_range)) {
     owned_gnn = owned_range[1] - owned_range[0];
     len_owned_Gnn_Gid = owned_gnn * (ndofn + 1);
     owned_Gnn_Gid = malloc(len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid));
@@ -191,18 +191,23 @@ static long comm_hints_GRedist_node(const int nproc,
        found (e.g., periodic nodes). Additionally construct the
        owned_Gnn_Gid buffer */
     int idx = 0;
-    for (int i = owned_range[0], e = owned_range[1] - 1; i < e; i++) {
+    int i, e;
+    for (i = owned_range[0], e = owned_range[1] - 1; i < e; i++) {
       owned_Gnn_Gid[idx++] = shared[i].Gnn;
       memcpy(owned_Gnn_Gid + idx, shared[i].Gid, ndofn * sizeof(*owned_Gnn_Gid));
       idx += ndofn;
       if (shared[i].Gnn == shared[i+1].Gnn) owned_gnn--;
     }
+    owned_Gnn_Gid[idx++] = shared[i].Gnn;
+    memcpy(owned_Gnn_Gid + idx, shared[i].Gid, ndofn * sizeof(*owned_Gnn_Gid));
   }
 
   /* initialize communication of the owned node information based on
-     the communication hints */
-  const int nsend = Comm_hints_nsend(hints);
-  const int *send = Comm_hints_send_list(hints);
+     the communication hints -- NOTE: This is a SCATTER
+     operation. ***Therefore, we use the receive hints to post
+     sends.*** */
+  const int nsend = Comm_hints_nrecv(hints);
+  const int *send = Comm_hints_recv_list(hints);
   MPI_Request *req = malloc(nsend * sizeof(*req));
   for (int i = 0; i < nsend; i++) {
     err += MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
@@ -212,9 +217,11 @@ static long comm_hints_GRedist_node(const int nproc,
   /* reduce the total number of boundary nodes */
   MPI_Allreduce(&owned_gnn, &total_gnn, 1, MPI_LONG, MPI_SUM, comm);
 
-  /* busy loop: Probe for message, post matching receive, do work */
-  const int nrecv = Comm_hints_nrecv(hints);
-  const int *recv = Comm_hints_recv_list(hints);
+  /* busy loop: Probe for message, post matching receive, do work --
+     NOTE: This is a SCATTER operation. ***Therefore, we use the send
+     hints to post receives.*** */
+  const int nrecv = Comm_hints_nsend(hints);
+  const int *recv = Comm_hints_send_list(hints);
   int *finished = calloc(nrecv, sizeof(*finished));
   int remaining = nrecv;
   while (remaining > 0) {
@@ -248,8 +255,7 @@ static long comm_hints_GRedist_node(const int nproc,
        nodes we need to work on that are owned by the current
        domain */
     int range[2] = {0};
-    int found = nodes_get_Gnn_idx_range(n_shared, shared, recv[idx], range);
-    if (!found) {
+    if (nodes_get_shared_idx_range(n_shared, shared, recv[idx], range)) {
       PGFEM_printerr("ERROR: got bad hints on proc [%d] for proc [%d]! No matching nodes\n",
                      myrank, recv[idx]);
       PGFEM_Abort();
@@ -305,6 +311,7 @@ static long comm_hints_GRedist_node(const int nproc,
   /* cleanup */
   free(owned_Gnn_Gid);
   free(finished);
+  free(req);
   return total_gnn;
 }
 

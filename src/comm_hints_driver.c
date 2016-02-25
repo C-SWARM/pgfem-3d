@@ -25,7 +25,7 @@ static void print_test_comm_hints_file(const char *fn)
 int main(int argc, char **argv)
 {
   int err = 0;
-  char *filename = Comm_hints_filename("./", "test", 0);
+  char *filename = Comm_hints_filename("./", "test_", 0);
   print_test_comm_hints_file(filename);
 
   Comm_hints *hints = Comm_hints_construct();

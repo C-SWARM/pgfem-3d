@@ -26,9 +26,11 @@ Comm_hints* Comm_hints_construct()
 
 int Comm_hints_destroy(Comm_hints *hints)
 {
-  free(hints->send);
-  free(hints->recv);
-  free(hints);
+  if (hints) {
+    free(hints->send);
+    free(hints->recv);
+    free(hints);
+  }
   return 0;
 }
 
@@ -110,8 +112,9 @@ char* Comm_hints_filename(const char *ipath,
                           const int rank)
 {
   char *str = NULL;
-  int nchar = snprintf(str, 0, "%s/%s_comm_hints_%d.in", ipath, base_filename, rank);
+  const char format[] = "%s/%scomm_hints_%d.in";
+  int nchar = snprintf(str, 0, format, ipath, base_filename, rank);
   str = malloc(nchar + 1);
-  sprintf(str, "%s/%s_comm_hints_%d.in", ipath, base_filename, rank);
+  sprintf(str, format, ipath, base_filename, rank);
   return str;
 }

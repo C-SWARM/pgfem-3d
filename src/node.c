@@ -215,10 +215,10 @@ void nodes_sort_own_Gnn_loc(const int nnode,
  * specified domain. On success, `range` specifies matches in
  * [range[0], range[1]).
  */
-int nodes_get_Gnn_idx_range(const int nnode,
-                            const NODE *nodes,
-                            const int dom,
-                            int range[2])
+int nodes_get_shared_idx_range(const int nnode,
+                               const NODE *nodes,
+                               const int dom,
+                               int range[2])
 {
   int err = 0;
   /* create a node for comparison */
@@ -226,23 +226,32 @@ int nodes_get_Gnn_idx_range(const int nnode,
   comp_node.Dom = dom;
 
   /* search for a node with matching ownership */
-  NODE *ptr_lb = bsearch(&comp_node, nodes, nnode,
-                         sizeof(*nodes), node_comp_Gnn);
+  const NODE *ptr_lb = bsearch(&comp_node, nodes, nnode,
+                               sizeof(*nodes), node_comp_own);
 
   /* exit early if no match found */
   if (!ptr_lb) return 1;
 
   /* linearly search for bounds */
-  NODE *ptr_ub = ptr_lb;
-  while (ptr_ub->Dom == dom) ++ptr_ub;
+  const NODE *ptr_ub = ptr_lb;
+  while (ptr_ub->Dom == dom) {
+    /* limit the search by the length of the array */
+    if((++ptr_ub - nodes) == nnode) break;
+  }
   if (ptr_lb->Gnn < 0) {
     /* matched node is purely local -> search forward for first owned
        boundary node */
-    while (ptr_lb->Gnn < 0 && ptr_lb->Dom == dom) ++ptr_lb;
+    while (ptr_lb->Gnn < 0 && ptr_lb->Dom == dom) {
+      /* limit the search by the length of the array */
+      if((++ptr_lb - nodes) == nnode) break;
+    }
   } else {
     /* matched node is on the boundary -> search backward for first
        owned boundary node */
-    while (ptr_lb->Gnn >= 0 && ptr_lb->Dom == dom) --ptr_lb;
+    while (ptr_lb->Gnn >= 0 && ptr_lb->Dom == dom) {
+      /* limit the search by the length of the array */
+      if((--ptr_lb - nodes) < 0) break;
+    }
 
     /* Lower-bound is inclusive -> increment pointer */
     ++ptr_lb;
@@ -261,7 +270,7 @@ int nodes_get_Gnn_idx_range(const int nnode,
 int nodes_filter_shared_nodes(const int nnode,
                               NODE *nodes,
                               int *n_shared,
-                              NODE **shared)
+                              const NODE **shared)
 {
   int err = 0;
 
@@ -272,7 +281,7 @@ int nodes_filter_shared_nodes(const int nnode,
      shared nodes list. We start from the end as typically there are
      fewer boundary nodes than local nodes. */
   NODE *ptr = &nodes[nnode-1];
-  while (ptr->Gnn >= 0) --ptr;
+  while (ptr->Gnn >= 0) if ((--ptr - nodes) < 0) break;
   ++ptr; /* lower bound is inclusive, increment pointer */
 
   /* compute number of shared nodes and starting index */
