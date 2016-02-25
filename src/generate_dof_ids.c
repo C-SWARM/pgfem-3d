@@ -272,6 +272,7 @@ int distribute_global_dof_ids(const int nelem,
 			      ELEMENT *elems,
 			      COEL *coel,
 			      BOUNDING_ELEMENT *b_elems,
+                              const Comm_hints *hints,
 			      MPI_Comm mpi_comm)
 {
   int myrank = 0;
@@ -281,8 +282,8 @@ int distribute_global_dof_ids(const int nelem,
 
   /* Distrubute the global dofs on the nodes and return the number of
      communication boundary nodes */
-  int n_bnd_nodes = GRedist_node(nproc,myrank,nnode,
-				 ndofn,nodes,mpi_comm);
+  int n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
+				 ndofn, nodes, hints, mpi_comm);
 
   /* Under current formulation, element dofs are always owned by the
      current domain and no communication is required. */

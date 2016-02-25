@@ -12,12 +12,15 @@
 #define PFEM_DEBUG 0
 #endif
 
-long GRedist_node (const int nproc,
-		   const int myrank,
-		   const long nn,
-		   const long ndofn,
-		   NODE *node,
-		   const MPI_Comm Comm)
+/**
+ * Original implementation of GRedist_node
+ */
+static long fallback_GRedist_node(const int nproc,
+                                  const int myrank,
+                                  const long nn,
+                                  const long ndofn,
+                                  NODE *node,
+                                  const MPI_Comm Comm)
 {
   long NBN = 0; /* return value */
 
@@ -141,4 +144,35 @@ long GRedist_node (const int nproc,
   free(displ);
 
   return (NBN);
+}
+
+/**
+ * New implementation of GRedist_node that avoids global communication
+ *
+ * \return total number of global nodes
+ */
+static long comm_hints_GRedist_node(const int nproc,
+                                    const int myrank,
+                                    const long nnode,
+                                    const long ndofn,
+                                    NODE *nodes,
+                                    const Comm_hints *hints,
+                                    const MPI_Comm comm)
+{
+  long owned_gnn = 0;
+  long total_gnn = -1;
+
+  return total_gnn;
+}
+
+long GRedist_node (const int nproc,
+		   const int myrank,
+		   const long nn,
+		   const long ndofn,
+		   NODE *node,
+                   const Comm_hints *hints,
+		   const MPI_Comm Comm)
+{
+  if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm);
+  else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm);
 }

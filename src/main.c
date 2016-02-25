@@ -632,7 +632,7 @@ int single_scale_main(int argc,char *argv[])
   renumber_global_dof_ids(ne,nce,n_be,nn,ndofn,DomDof,node,
 			  elem,coel,b_elems,mpi_comm);
   NBN = distribute_global_dof_ids(ne,nce,n_be,nn,ndofn,ndim,node,
-				  elem,coel,b_elems,mpi_comm);
+				  elem,coel,b_elems, NULL, mpi_comm);
 
   if (myrank == 0){
     PrintTitleV1();
