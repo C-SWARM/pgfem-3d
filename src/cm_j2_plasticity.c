@@ -620,7 +620,7 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   double d2udj2 = 0.0;
 
   /* compute C, CI */
-  cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans,
+  cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
               dim, dim, dim, 1.0, ctx->F, dim, ctx->F, dim, 0.0, C, dim);
   err += inv3x3(C, C_I);
 
