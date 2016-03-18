@@ -458,6 +458,9 @@ struct Model_parameters {
   /* array for storing the model constants. */
   size_t n_param;
   double *model_param;
+  /* array for storing the model integer type constant */
+  size_t n_param_index;
+  int *model_param_index;
 };
 
 /**

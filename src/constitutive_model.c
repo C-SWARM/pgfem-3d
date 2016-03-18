@@ -213,9 +213,11 @@ int model_parameters_construct(Model_parameters *p)
   p->pack = NULL;
   p->unpack = NULL;
 
-  p->type = -1;
-  p->n_param = -1;
-  p->model_param = NULL;
+  p->type              = -1;
+  p->n_param           = -1;
+  p->model_param       = NULL;
+  p->n_param_index     = -1;
+  p->model_param_index = NULL;
   return err;
 }
 
@@ -345,6 +347,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->n_param = -1;
   free(p->model_param);
   p->model_param = NULL;
+  p->n_param_index = -1;
+  p->model_param_index = NULL;
 
   return err;
 }

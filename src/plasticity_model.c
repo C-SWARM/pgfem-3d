@@ -60,8 +60,19 @@ enum param_names {
   PARAM_g0,  
   PARAM_gs_0,  
   PARAM_gamma_dot_s, 
-  PARAM_w,  
+  PARAM_w,
+  PARAM_tol_hardening,
+  PARAM_tol_M,
+  PARAM_computer_zero,
   PARAM_NO
+};
+
+enum param_index_names {
+  PARAM_max_itr_stag,
+  PARAM_max_itr_hardening,
+  PARAM_max_itr_M,
+  PARAM_max_subdivision,
+  PARAM_INX_NO
 };
 
 Define_Matrix(double);
@@ -111,10 +122,9 @@ int compute_dMdu(const Constitutive_model *m,
                  const double *gamma_dots,
                  double *Psys,
                  const double dt);
-int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, int *max_mat_id, EPS *eps, const ELEMENT *elem, int ne)
+int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, EPS *eps, const ELEMENT *elem, int ne)
 {
   int cnt = 0;
-  *max_mat_id = 0;
   for(int a=0; a<ne; a++)
   {
     long n_ip = 0;
@@ -123,8 +133,6 @@ int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, int *max_mat_
     elm_ip_map[a].e_id = a;
     elm_ip_map[a].n_ip = n_ip;
     elm_ip_map[a].mat_id = elem[a].mat[0];
-    if(elm_ip_map[a].mat_id>*max_mat_id)
-      *max_mat_id = elm_ip_map[a].mat_id;
       
     for(int b=1; b<=n_ip; b++)
     {
@@ -729,14 +737,16 @@ static int cp_read(Model_parameters *p,
   int err = 0;
 
   /* get pointer to parameter data */
-  double *param = p->model_param;
-  assert(param != NULL); // check the pointer
+  double *param     = p->model_param;
+  int    *param_idx = p->model_param_index;
+  assert(param     != NULL); // check the pointer
+  assert(param_idx != NULL); // check the pointer
 
   /* scan to non-blank/comment line */
   err += scan_for_valid_line(in);
 
   /* READ PROPERTIES IN ALPHABETICAL ORDER */  
-  int param_in = PARAM_NO;
+  int param_in = PARAM_NO-3;
   int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf",
                      param + PARAM_gamma_dot_0, param + PARAM_m,    param + PARAM_G0,
                      param + PARAM_g0,          param + PARAM_gs_0, param + PARAM_gamma_dot_s,
@@ -777,7 +787,42 @@ static int cp_read(Model_parameters *p,
 
   /* scan past any other comment/blank lines in the block */
   err += scan_for_valid_line(in);
+  
+  int set_cp_solver = 0;
+  int param_read_no = fscanf(in, "%d", &set_cp_solver);
+  
+  int read_solver_info = 0;
+  if(param_read_no==1)
+  {
+    if(set_cp_solver)
+      read_solver_info = 1;
+  }
+  
+  if(read_solver_info)
+  {
+    match = fscanf(in, "%d %d %d %d %lf %lf %lf", param_idx + PARAM_max_itr_stag,
+                                                  param_idx + PARAM_max_itr_hardening,
+                                                  param_idx + PARAM_max_itr_M,
+                                                  param_idx + PARAM_max_subdivision,                                
+                                                  param     + PARAM_tol_hardening,
+                                                  param     + PARAM_tol_M,
+                                                  param     + PARAM_computer_zero);
+    if (match != 7) err++;
+    assert(match == 7 && "Did not read expected number of parameters"); 
+  }
+  else // use default 
+  {
+    param_idx[PARAM_max_itr_stag]      = 15;
+    param_idx[PARAM_max_itr_hardening] = 1;
+    param_idx[PARAM_max_itr_M]         = 50;
+    param_idx[PARAM_max_subdivision]   = -1;
+        param[PARAM_tol_hardening]     = 1.0e-6;
+        param[PARAM_tol_M]             = 1.0e-6;
+        param[PARAM_computer_zero]     = 1.0e-15;
+  }  
 
+  err += scan_for_valid_line(in);
+  
   /* not expecting EOF, check and return error if encountered */
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
@@ -863,7 +908,8 @@ int plasticity_model_initialize(Model_parameters *p)
 
   p->n_param = PARAM_NO;
   p->model_param = calloc(PARAM_NO, sizeof(*(p->model_param)));
-
+  p->n_param_index = PARAM_INX_NO;
+  p->model_param_index = calloc(PARAM_INX_NO, sizeof(*(p->model_param_index)));
   return err;
 }
 
@@ -1168,20 +1214,18 @@ int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
 {
   int err = 0;
   
-  int max_itr_stag      = 100;
-  int max_itr_hardening = 5;
-  int max_itr_M         = 100;
-  double tol_hardening  = 1.0e-6;
-  double tol_M          = 1.0e-6;
-  double computer_zero  = 1.0e-15;
-
+  double *param     = (m->param)->model_param;
+  int    *param_idx = (m->param)->model_param_index;
+    
   CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
-  set_crystal_plasticity_solver_info(&solver_info,max_itr_stag,
-                                                  max_itr_hardening,
-                                                  max_itr_M,
-                                                  tol_hardening,
-                                                  tol_M,
-                                                  computer_zero);  
+  set_crystal_plasticity_solver_info(&solver_info,param_idx[PARAM_max_itr_stag],
+                                                  param_idx[PARAM_max_itr_hardening],
+                                                  param_idx[PARAM_max_itr_M],
+                                                  param[PARAM_tol_hardening],
+                                                  param[PARAM_tol_M],
+                                                  param[PARAM_computer_zero]);
+  solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
+    
   enum {M,eFnp1,C,pFnp1_I,F2end};
   Matrix(double) *F2 = malloc(F2end*sizeof(Matrix(double)));
   for (int a = 0; a < F2end; a++) {
@@ -1458,12 +1502,7 @@ int plasticity_model_set_orientations(EPS *eps,
 
   // build element ip ids that will be used to assign element orientation
   IP_ID_LIST *elm_ip_map = malloc(sizeof(IP_ID_LIST)*ne);
-  int max_mat_id = 0;
-  int total_mat_no = 0;
-  int cnt_of_ips = plasticity_model_construct_elem_ip_map(elm_ip_map, &max_mat_id, eps, elem, ne);
-  MPI_Allreduce(&max_mat_id,&total_mat_no,1,MPI_INT,MPI_MAX,mpi_comm);
- 
-  total_mat_no += 1; 
+  int cnt_of_ips = plasticity_model_construct_elem_ip_map(elm_ip_map, eps, elem, ne);
     
   Matrix(int) e_ids;
   Matrix(double) angles;
@@ -1546,12 +1585,15 @@ int plasticity_model_set_orientations(EPS *eps,
   }
   
   for(int a=0; a<ne; a++) {
-    const int mat = elem[a].mat[2];    
     long n_ip = 0;
     int_point(elem[a].toe,&n_ip);
     for(int ip=0; ip<n_ip; ip++)
     {
       Constitutive_model *m = &(eps[a].model[ip]);
+
+      if(m->param->type != CRYSTAL_PLASTICITY)
+        continue;
+
       double *state_var = (m->vars).state_vars[0].m_pdata;
       MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((m->param)->cm_mat)->mat_p;
             
