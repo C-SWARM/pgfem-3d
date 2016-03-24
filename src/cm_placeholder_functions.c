@@ -34,6 +34,7 @@ int cm_get_lam_p(const Constitutive_model *m,
 
   /* compute lam_p = sqrt( tr(Cp) / 3 ) */
   /* tr(Cp) = Fp : Fp */
+  Matrix_AxB(Cp,1.0,0.0,Fp,1,Fp,0);
   *lam_p = 0.0;
   for (int i = 0; i < tensor; i++) {
     *lam_p += Cp.m_pdata[i] * Cp.m_pdata[i];
