@@ -119,6 +119,14 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
 	fe->nne = nne;
   fe->elem_type = e_type;
   fe->intg_order = i_order;
+  
+  if(i_order<1)
+  {
+    if(nne==QTETRAHEDRON)
+      i_order = 1;
+    if(nne==HEXAHEDRAL)
+      i_order = 1;    
+  }
 
   nint = FEMLIB_determine_integration_type(e_type, i_order);
   fe->nint = nint;
@@ -138,42 +146,76 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   long npt_x, npt_y, npt_z;
   
   //currently supports for TETRAHEDRON
-  switch(i_order)
+  switch(e_type)
   {
-    case 0:
-      int_tetra_1(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-                  fe->weights.m_pdata);
-      npt_x = 1;
-      npt_y = 1;
-      npt_z = 1;
+    case TETRAHEDRON:
+    case QTETRAHEDRON:
+    {  
+      switch(i_order)
+      {
+        case 0:
+          int_tetra_1(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                      fe->weights.m_pdata);
+          npt_x = 1;
+          npt_y = 1;
+          npt_z = 1;
+          break;
+        case 1:
+          int_tetra_4(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                      fe->weights.m_pdata);
+          npt_x = 1;
+          npt_y = 1;
+          npt_z = 4;
+          break;
+        case 2:
+          int_tetra_5(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                      fe->weights.m_pdata);
+          npt_x = 1;
+          npt_y = 1;
+          npt_z = 5;
+          break;
+        case 3:              
+          int_tetra_11(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                      fe->weights.m_pdata);
+          npt_x = 1;
+          npt_y = 1;
+          npt_z = 11;               
+      
+          break;
+        default:
+          integrate(e_type, &npt_x, &npt_y, &npt_z,
+                  fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);               
+      }
       break;
-    case 1:
-      int_tetra_4(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-                  fe->weights.m_pdata);
-      npt_x = 1;
-      npt_y = 1;
-      npt_z = 4;
+    }  
+    case HEXAHEDRAL:
+    {  
+      switch(i_order)
+      {
+        case 1:
+          intpoints_2(fe->ksi.m_pdata,fe->weights.m_pdata);
+          npt_x = 2;
+          npt_y = 2;
+          npt_z = 2;
+          break;
+        case 2:
+          intpoints_3(fe->ksi.m_pdata,fe->weights.m_pdata);
+          npt_x = 3;
+          npt_y = 3;
+          npt_z = 3;
+          break;          
+        case 3:              
+        default:
+          integrate(e_type, &npt_x, &npt_y, &npt_z,
+                  fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
+                  fe->weights.m_pdata);               
+      }
       break;
-    case 2:
-      int_tetra_5(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-                  fe->weights.m_pdata);
-      npt_x = 1;
-      npt_y = 1;
-      npt_z = 5;
-      break;
-    case 3:              
-      int_tetra_11(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-                  fe->weights.m_pdata);
-      npt_x = 1;
-      npt_y = 1;
-      npt_z = 11;               
-
-      break;
-   default:
-      integrate(e_type, &npt_x, &npt_y, &npt_z,
-              fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-              fe->weights.m_pdata);               
-  }  
+    }
+      
+  }
+      
 
   Matrix_construct(int, fe->itg_ids); 
   Matrix_redim(fe->itg_ids, npt_x*npt_y*npt_z, nsd);
