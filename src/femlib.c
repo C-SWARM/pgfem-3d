@@ -22,7 +22,7 @@ Define_Matrix(int);
 #define LINE           1
 #define TRIANGLE       3
 #define QUADRILATERAL  4
-#define TETRAHEDRON    5
+#define TETRAHEDRON    4
 #define HEXAHEDRAL     8
 #define QTETRAHEDRON   10
 
@@ -37,9 +37,7 @@ long FEMLIB_determine_integration_type(int e_type, int i_order)
       	  return 1;
         case TRIANGLE:
       	  return 1;
-        case QUADRILATERAL:
-      	  return 1;
-        case TETRAHEDRON:
+        case TETRAHEDRON: // QUADRILATERAL
       	  return 1;
         default:
           return 1;
@@ -52,9 +50,7 @@ long FEMLIB_determine_integration_type(int e_type, int i_order)
       	  return 2;
         case TRIANGLE:
       	  return 3;
-        case QUADRILATERAL:
-      	  return 4;
-        case TETRAHEDRON:
+        case TETRAHEDRON: //QUADRILATERAL
         	return 4;
         case HEXAHEDRAL:
       	  return 8;
@@ -153,6 +149,7 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
     {  
       switch(i_order)
       {
+
         case 0:
           int_tetra_1(fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
                       fe->weights.m_pdata);
@@ -216,7 +213,6 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
       
   }
       
-
   Matrix_construct(int, fe->itg_ids); 
   Matrix_redim(fe->itg_ids, npt_x*npt_y*npt_z, nsd);
 
