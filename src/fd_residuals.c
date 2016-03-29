@@ -513,7 +513,7 @@ int fd_res_compute_reactions(const long ndofn,
         rxn[labs(cn[j])] += fe[j];
       }
     }
-
+    free(nod);
     free(cn);
     free(fe);
   }
