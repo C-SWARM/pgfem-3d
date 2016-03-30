@@ -961,7 +961,11 @@ int plasticity_model_ctx_destroy(void **ctx)
 
   /* free object memory */
   if(t_ctx->eFnpa)
+  {  
     Matrix_cleanup(*(t_ctx->eFnpa));
+    free(t_ctx->eFnpa);
+  }
+    
 
   free(t_ctx);
   return err;
