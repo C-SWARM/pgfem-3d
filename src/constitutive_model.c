@@ -1715,7 +1715,8 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
 int cm_get_subdivision_parameter(double *subdiv_param,
                                  const int ne,
                                  const ELEMENT *elem,
-                                 const EPS *eps)
+                                 const EPS *eps,
+                                 const double dt)
 {
   int err = 0;
   *subdiv_param = 0.0;
@@ -1725,7 +1726,7 @@ int cm_get_subdivision_parameter(double *subdiv_param,
     long n_ip = 0;
     int_point(elem[i].toe, &n_ip);
     for (int ip = 0; ip < n_ip; ip++) {
-      err += eps[i].model[ip].param->get_subdiv_param(&(eps[i].model[ip]), &cur_val);
+      err += eps[i].model[ip].param->get_subdiv_param(&(eps[i].model[ip]), &cur_val, dt);
       max_val = MAX(max_val, cur_val);
     }
   }

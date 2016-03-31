@@ -902,7 +902,8 @@ static int j2d_unpack(Constitutive_model *m,
 }
 
 static int j2d_get_subdiv_param(const Constitutive_model *m,
-                                double *subdiv_param)
+                                double *subdiv_param,
+                                double dt)
 {
   int err = 0;
 

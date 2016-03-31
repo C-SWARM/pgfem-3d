@@ -25,6 +25,8 @@
 #define DIM_3x3x3   27
 #define DIM_3x3x3x3 81
 
+#define MAX_D_GAMMA 0.005
+
 
 static const int FLAG_end = 0;
 
@@ -865,6 +867,21 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
   return err;
 }
 
+int plasticity_model_get_subdiv_param(const Constitutive_model *m,
+                                double *subdiv_param, double dt)
+{
+  int err = 0;
+  SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;  
+  Matrix(double) *Fs = (m->vars).Fs;
+  
+  double gamma_np1 = 0.0;
+  for(int a=0; a<slip->N_SYS; a++)
+    gamma_np1 += fabs(Fs[TENSOR_gamma_dot].m_pdata[a]);
+  
+  *subdiv_param = dt*gamma_np1/MAX_D_GAMMA;
+  return err;
+}
+
 int plasticity_model_initialize(Model_parameters *p)
 {
   int err = 0;
@@ -878,6 +895,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->compute_d2udj2 = plasticity_d2udj2;
   p->update_state_vars = plasticity_update;
   p->reset_state_vars = plasticity_reset;
+  p->get_subdiv_param = plasticity_model_get_subdiv_param;
   p->get_var_info = plasticity_info;
   p->get_Fn    = plasticity_get_Fn;
   p->get_Fnm1  = plasticity_get_Fnm1;  

@@ -228,7 +228,24 @@ typedef int (*usr_increment)(Constitutive_model *m);
 typedef int (*usr_get_var)(const Constitutive_model *m,
                            double *var);
 
-
+/**
+ * User defined function to return a time dependent state variable. 
+ * Note that this
+ * function *DOES NOT* modify the internal state variables. This
+ * function shall be implemented such that destroying the returned
+ * variable does not modify the internal state of the
+ * Constitutive_model object.
+ *
+ * \param[in] m - constant reference to a Constitiutive_model object.
+ * \param[in] t - constant t (time). 
+ * \param[out] var - contains the value of the state variable upon
+ *                   exit.
+ * \return non-zero on internal error
+ */
+typedef int (*usr_get_var_of_t)(const Constitutive_model *m,
+                           double *var,
+                           const double t);
+                           
 /**
  * User defined function to return the deformation gradient. Note that
  * this function *DOES NOT* modify the internal state variables. This
@@ -437,7 +454,7 @@ struct Model_parameters {
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
   usr_get_var get_plast_strain_var;
-  usr_get_var get_subdiv_param;
+  usr_get_var_of_t get_subdiv_param;
   
   usr_w_restart write_restart;
   usr_r_restart read_restart;
@@ -624,6 +641,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
 int cm_get_subdivision_parameter(double *subdiv_param,
                                  const int ne,
                                  const ELEMENT *elem,
-                                 const EPS *eps);
+                                 const EPS *eps,
+                                 const double dt);
 
 #endif

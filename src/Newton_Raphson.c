@@ -754,7 +754,7 @@ double Newton_Raphson (const int print_level,
 
     /* before increment after convergence, check max damage */
     if (opts->analysis_type == CM) {
-      cm_get_subdivision_parameter(&alpha, ne, elem, eps);
+      cm_get_subdivision_parameter(&alpha, ne, elem, eps, dt);
     } else {
       alpha = max_damage/max_damage_per_step;
     }
