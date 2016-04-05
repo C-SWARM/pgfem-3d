@@ -33,8 +33,10 @@ int state_variables_destroy(State_variables *s)
   free(s->Fs);
   s->Fs = NULL;
   s->n_Fs = 0;  
-  
-  Matrix_cleanup(s->state_vars[0]);
+
+  if (s->state_vars) {
+    Matrix_cleanup(s->state_vars[0]);
+  }
   free(s->state_vars);  
   s->state_vars = NULL;
 
@@ -76,7 +78,7 @@ size_t state_variables_get_packed_size(const State_variables *s)
      of each tensor just in case. */
   size_t len_Fs = 0;
   for (int i = 0, e = s->n_Fs; i < e; i++) {
-    len_Fs = s->Fs[i].m_col * s->Fs[i].m_row;
+    len_Fs += s->Fs[i].m_col * s->Fs[i].m_row;
   }
   const size_t len_vars = s->state_vars->m_col * s->state_vars->m_row;
   return ( (len_Fs + len_vars) * sizeof(double) + s->n_flags * sizeof(int) );

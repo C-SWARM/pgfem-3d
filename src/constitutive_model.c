@@ -50,7 +50,7 @@ static void cm_add_macro_F(const SUPP sup,
    everywhere. It is no big deal to keep adding to this private
    function's argument list. Just put everything any model might need
    and the switch will handle what is actually used. */
-static int construct_model_context(void **ctx,
+int construct_model_context(void **ctx,
                                    const int type,
                                    const double *F,
                                    const double dt,

@@ -41,6 +41,8 @@ static const long_opt_descr analysis_opts[] = {
   {{"he",no_argument,NULL,2},"\tFinite strains analysis using MINI element",0},
   {{"he3",no_argument,NULL,2},"\tFinite strains analysis using bubble-enhanced 3-Field element",0},
   {{"disp",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based finite strains analysis",0},
+  {{"disp-cm",no_argument,NULL,2},"(BETA) TOTAL Lagrangian displacement-based finite strains analysis\n"
+   "\t\t Provides access to CM models",0},
   {{"tf",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based 3 field finite strains analysis",0},
   {{"cm",required_argument,NULL,2},"Use of constitutive model interface\n"
                                    "\t\t arg = 0: Updated Lagrangian\n"
@@ -457,6 +459,9 @@ void re_parse_command_line(const int myrank,
       } else if(strcmp("cm",opts[opts_idx].name) == 0){
 	options->analysis_type = CM;
 	options->cm = atof(optarg);	
+      } else if(strcmp("disp-cm",opts[opts_idx].name) == 0){
+	options->analysis_type = CM;
+	options->cm = DISP;	
       }
       
       break;
