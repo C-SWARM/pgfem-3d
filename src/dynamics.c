@@ -83,7 +83,7 @@ void stiffmat_disp_w_inertia_el(double *Ks,
   {
     case DISP:
       err = DISP_stiffmat_el(Kuu_K.m_pdata,ii,ndofn,nne,x,y,z,elem,
-                             hommat,nod,node,eps,sig,sup,u.m_pdata);
+                             hommat,nod,node,eps,sig,sup,u.m_pdata,dt);
 
       for(long a = 0; a<ndofe*ndofe; a++)
         Ks[a] = -Kuu_I.m_pdata[a]-alpha*(1.0-alpha)*dt*Kuu_K.m_pdata[a];                                
@@ -311,10 +311,10 @@ int residuals_w_inertia_el(double *fe, int i,
 	    double *f_n_1_a = aloc1(ndofe);      
        
 	    err =  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
-	         hommat,nod,node,eps,sig,sup,r_n_1_a);                                             
-	       
+                                 hommat,nod,node,eps,sig,sup,r_n_1_a, dt);
+
 	    err =  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
-	        hommat,nod,node,eps,sig,sup,r_n_a);
+                                 hommat,nod,node,eps,sig,sup,r_n_a, dt);
             	
 	    for(long a = 0; a<ndofe; a++)
 	      fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];

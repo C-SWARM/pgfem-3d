@@ -173,7 +173,7 @@ static int fd_res_elem(double *fe,
         DISP_resid_body_force_el(bf,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t);
 
         err =  DISP_resid_el(fe,i,ndofn,nne,x,y,z,elem,
-                             hommat,nod,node,eps,sig,sup,r_e);
+                             hommat,nod,node,eps,sig,sup,r_e,dt);
         for(long a = 0; a<ndofe; a++)
           fe[a] += -bf[a];
 

@@ -98,7 +98,7 @@ int el_compute_stiffmat(int i,
       break;
     case DISP:
         err += DISP_stiffmat_el(lk,i,ndofn,nne,x,y,z,elem,
-                               hommat,nod,node,eps,sig,sup,r_e);
+                                hommat,nod,node,eps,sig,sup,r_e,dt);
       break;
     case TF:
       stiffmat_3f_el(lk,i,ndofn,nne,npres,nVol,nsd,

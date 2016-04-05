@@ -158,15 +158,15 @@ int load_vec_node_defl (double *f,
             case UPDATED_LAGRANGIAN:
               nodecoord_updated(nne,nod,node,x,y,z);
               break;
-          case TOTAL_LAGRANGIAN: /* total Lagrangian */
-            nodecoord_total(nne,nod,node,x,y,z);
-            def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
-            break;
-          case MIXED_ANALYSIS_MODE: /* total Lagrangian */
-            nodecoord_total(nne,nod,node,x,y,z);
-            def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
-            break;
-          default: assert(0 && "should never reach this case"); break;
+            case TOTAL_LAGRANGIAN: /* total Lagrangian */
+              nodecoord_total(nne,nod,node,x,y,z);
+              def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+              break;
+            case MIXED_ANALYSIS_MODE: /* total Lagrangian */
+              nodecoord_total(nne,nod,node,x,y,z);
+              def_elem(cn,ndofe,r,elem,node,r_e,sup,1);
+              break;
+            default: assert(0 && "should never reach this case"); break;
           }
         }
         break;
