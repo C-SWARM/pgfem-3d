@@ -314,7 +314,8 @@ int main(int argc,char *argv[])
   int nid_down = -1;  
   
   FILE *fp = fopen("displacement.out", "w");
-  
+  FILE *fpVec = fopen("displacement.out.vec", "w");
+
   for(int A=0; A<ostepno; A++)
   {
     sprintf(filename,"%s/VTK/STEP_%.5ld/%s_%d_%ld.vtu",options.opath,ostep.m_pdata[A],options.ofname,myrank,ostep.m_pdata[A]);   
@@ -425,14 +426,17 @@ int main(int argc,char *argv[])
       disp[a-1] = (G_disp_up[a] - G_disp_down[a])/dz*(z - G_disp_down[0]) + G_disp_down[a];
     }
         
-    if(myrank==0)
+    if(myrank==0){
       fprintf(fp, "%e %e %e %e\n",t.m_pdata[ostep.m_pdata[A]], disp[0],disp[1],disp[2]); 
-    
+      fprintf(fpVec, "%e\n", disp[0]);
+      fprintf(fpVec, "%e\n", disp[1]);
+      fprintf(fpVec, "%e\n", disp[2]);   
+    }
     free(u); 
   }
   
   fclose(fp);  
-  
+  fclose(fpVec);
   Matrix_cleanup(t);
   Matrix_cleanup(ostep);
  
