@@ -228,6 +228,14 @@ double Newton_Raphson (const int print_level,
   /* GOTO REST */
  rest:
   fflush(PGFEM_stdout);
+
+  if(INFO==1)
+    ART = 1;  
+
+  if(myrank==0)
+  {
+    printf("================> INFO = %ld, ART = %ld\n", INFO, ART);
+  }
   if (INFO == 1 && ART == 0){
    
     /* Reset variables */

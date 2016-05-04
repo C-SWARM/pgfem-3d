@@ -315,7 +315,7 @@ static int plasticity_get_eF(const Constitutive_model *m,
   int err = 0;
   Matrix(double) invFp;
   Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  Matrix_inv(m->vars.Fs[TENSOR_pFnp1],invFp);
+  err += inv3x3(m->vars.Fs[TENSOR_pFnp1].m_pdata,invFp.m_pdata);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnp1], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
@@ -327,7 +327,7 @@ static int plasticity_get_eFn(const Constitutive_model *m,
   int err = 0;
   Matrix(double) invFp;
   Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  Matrix_inv(m->vars.Fs[TENSOR_pFn],invFp);
+  err += inv3x3(m->vars.Fs[TENSOR_pFn].m_pdata, invFp.m_pdata);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fn], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
@@ -354,8 +354,8 @@ static int plasticity_get_eFnm1(const Constitutive_model *m,
 {
   int err = 0;
   Matrix(double) invFp;
-  Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  Matrix_inv(m->vars.Fs[TENSOR_pFnm1],invFp);
+  Matrix_construct_redim(double,invFp,DIM_3,DIM_3);  
+  err += inv3x3(m->vars.Fs[TENSOR_pFnm1].m_pdata,invFp.m_pdata);
   Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnm1], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
@@ -455,7 +455,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     Matrix(double) pFnp1_I;
     Matrix_construct_redim(double, pFnp1_I, DIM_3, DIM_3);
     Matrix_construct_redim(double, M, DIM_3, DIM_3);
-    Matrix_inv(m->vars.Fs[TENSOR_pFnp1], pFnp1_I);
+    err += inv3x3(m->vars.Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);
     Matrix_AxB(M, 1.0, 0.0, m->vars.Fs[TENSOR_pFn], 0, pFnp1_I, 0);
     Matrix_cleanup(pFnp1_I);
   }
@@ -551,7 +551,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   mid_point_rule(F2[Fnpa].m_pdata, F2[Fn].m_pdata, F2[Fnp1].m_pdata, alpha, DIM_3x3);  
   mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, DIM_3x3);  
 
-  Matrix_inv(F2[pFnpa],   F2[Mnpa]);
+  err += inv3x3(F2[pFnpa].m_pdata, F2[Mnpa].m_pdata);
   Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);  
     
   ELASTICITY *elast = (m->param)->cm_elast;
@@ -1028,7 +1028,7 @@ static int compute_C_D_alpha(const Constitutive_model *m,
   Matrix_Tns4_dd_Tns2(LC, *L, *C);     // LC = L:C
   Matrix_AxB(AA,1.0,1.0,LC,0,*Pa,0);   // AA = AA + L:C*Pa
 
-  Matrix_inv(*M,MI);
+  int err = inv3x3(M->m_pdata,MI.m_pdata);
   Matrix_AxB(CAA,1.0,0.0,*C,0,AA,0);   
   Matrix_AxB(*aC,1.0,0.0,MI,1,CAA,0);
 
@@ -1042,7 +1042,7 @@ static int compute_C_D_alpha(const Constitutive_model *m,
   Matrix_cleanup(eFnp1AA);
   Matrix_cleanup(eFnp1AAMT);       
   Matrix_cleanup(MI);          
-  return 0;
+  return err;
 }
 
 int compute_dMdu(const Constitutive_model *m,
@@ -1270,7 +1270,7 @@ int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
   state_var[VAR_g_np1] =  g_np1;
   state_var[VAR_L_np1] =  L_np1;
   
-  Matrix_inv(Fs[TENSOR_pFnp1],F2[pFnp1_I]);
+  err += inv3x3(Fs[TENSOR_pFnp1].m_pdata,F2[pFnp1_I].m_pdata);
   Matrix_AxB(F2[eFnp1],1.0,0.0,Fs[TENSOR_Fnp1],0,F2[pFnp1_I],0);  
   Matrix_AxB(F2[C], 1.0, 0.0, F2[eFnp1],1,F2[eFnp1],0);
   

@@ -664,11 +664,14 @@ int inverse(double const* A,
 #else
     dgetrf(&M,&M,A_I,&M,iPerm,&info);
 #endif
-    if(info<0){
-      PGFEM_printerr("WARNING: illegal parameter given"
-	      " to dgetrf at position %d.\n",info);
-    } else if(info>0){
-      PGFEM_printerr("WARNING: factor U is singular.\n");
+    if(UTILS_DEBUG)
+    {  
+      if(info<0){
+        PGFEM_printerr("WARNING: illegal parameter given"
+	        " to dgetrf at position %d.\n",info);
+      } else if(info>0){
+        PGFEM_printerr("WARNING: factor U is singular.\n");
+      }
     }
 
     /* Compute inverse using factored matrix */
@@ -677,24 +680,29 @@ int inverse(double const* A,
 #else
     dgetri(&M,A_I,&M,iPerm,work,&lwork,&info);
 #endif
-    if(info<0){
-      PGFEM_printerr("WARNING: illegal parameter given"
-	      " to dgetri at position %d.\n",info);
+    if(UTILS_DEBUG)
+    {  
+      if(info<0){
+        PGFEM_printerr("WARNING: illegal parameter given"
+	        " to dgetri at position %d.\n",info);
+      }
     } 
   
     free(iPerm);
     free(work);
     break;
   }/* switch M */
-
-  if(info != 0){
-    if(info > 0){
-      PGFEM_printerr("ERROR: Matrix is singular, inverse not computed.\n");
-    } else {
-      PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
-    }
+  if(UTILS_DEBUG)
+  {  
+    if(info != 0){
+      if(info > 0){
+        PGFEM_printerr("ERROR: Matrix is singular, inverse not computed.\n");
+      } else {
+        PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
+      }
     /* PGFEM_Abort(); */
     /* abort(); */
+    }
   }
 
   return info;
