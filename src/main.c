@@ -97,13 +97,13 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
   if(fp_0 != NULL)
   {  
     while(fgets(line, 1024, fp_0)!=NULL) 
-	  {
-	    if(line[0]=='#')
-	      continue;
+    {
+      if(line[0]=='#')
+        continue;
         
-	    sscanf(line, "%d", restart);
-	    break;
-	  }
+      sscanf(line, "%d", restart);
+      break;
+    }
     fclose(fp_0);
   }
   
@@ -139,20 +139,20 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
   if(myrank==0)
   {
     while(fgets(line, 1024, fp)!=NULL) 
-	  {
-	    if(line[0]=='#')
-	      continue;
+    {
+      if(line[0]=='#')
+        continue;
       
-	    double temp;  
-	    sscanf(line, "%lf", &temp);
-	    break;
-	  }
+      double temp;  
+      sscanf(line, "%lf", &temp);
+      break;
+    }
   }
   
   while(fgets(line, 1024, fp)!=NULL) 
   {
     if(line[0]=='#')
-	    continue;
+      continue;
         
     sscanf(line, "%lf", &alpha);
     break;
@@ -162,13 +162,13 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
-	    continue;
+      continue;
     for(int a=0; a<nmat; a++)
-  	{    
-	    sscanf(line, "%lf", rho+a);
-	    if(a<nmat-1)
-	      fgets(line, 1024, fp);      
-	  }
+    {    
+      sscanf(line, "%lf", rho+a);
+      if(a<nmat-1)
+        fgets(line, 1024, fp);      
+    }
     break;
   } 
   if(*restart>0)
@@ -180,7 +180,7 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
-	    continue;
+      continue;
         
     long nid;
     double u[3], v[3];        
@@ -438,8 +438,8 @@ int single_scale_main(int argc,char *argv[])
      || options.analysis_type >= ANALYSIS_MAX){
     if(myrank == 0){
       PGFEM_printerr("ERROR: Unregognized analysis type given (%d)!"
-	      " Please provide an analysis type (see the help menu).\n",
-	      options.analysis_type);
+        " Please provide an analysis type (see the help menu).\n",
+        options.analysis_type);
     }
     PGFEM_Abort();
   }
@@ -447,8 +447,8 @@ int single_scale_main(int argc,char *argv[])
   if(options.restart){
     if(myrank == 0){
       PGFEM_printerr("WARNING: Restart is not currently supported!\n"
-	      "Starting the simulation from the beginning with "
-	      "given options.\n");
+        "Starting the simulation from the beginning with "
+        "given options.\n");
     }
   }
 
@@ -458,7 +458,7 @@ int single_scale_main(int argc,char *argv[])
   if(make_path(options.opath,DIR_MODE) != 0){
     if(myrank == 0){
       PGFEM_printf("Could not create path (%s)!\n"
-	     "Please check input and try again.\n\n",options.opath);
+       "Please check input and try again.\n\n",options.opath);
       print_usage(stdout);
     }
     PGFEM_Comm_code_abort(mpi_comm,-1);
@@ -468,12 +468,12 @@ int single_scale_main(int argc,char *argv[])
   {
     int in_err = 0;
     in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-			     &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-			     &elem,&mater,&matgeom,&sup,&nln,&znod,
-			     &nle_s,&zele_s,&nle_v,&zele_v);
+           &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+           &elem,&mater,&matgeom,&sup,&nln,&znod,
+           &nle_s,&zele_s,&nle_v,&zele_v);
     if(in_err){
       PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-	      myrank);
+        myrank);
       PGFEM_Abort();
     }
 
@@ -486,9 +486,9 @@ int single_scale_main(int argc,char *argv[])
   if(options.override_pre_disp){
     if(override_prescribed_displacements(sup,&options) != 0){
       PGFEM_printerr("[%d]ERROR: an error was encountered when"
-	      " reading the displacement override file.\n"
-	      "Be sure that there are enough prescribed"
-	      " displacements in the file.\n",myrank);
+        " reading the displacement override file.\n"
+        "Be sure that there are enough prescribed"
+        " displacements in the file.\n",myrank);
       PGFEM_Abort();
     }
   }
@@ -499,9 +499,9 @@ int single_scale_main(int argc,char *argv[])
     int ms_err = read_interface_macro_normal_lc(options.ipath,sup);
     if(ms_err != 0){
       PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
-	      "Check that the file \"%s/normal.in\""
-	      " exists and try again.\n",
-	      myrank,options.ipath);
+        "Check that the file \"%s/normal.in\""
+        " exists and try again.\n",
+        myrank,options.ipath);
       PGFEM_Abort();
     }
   }
@@ -539,7 +539,7 @@ int single_scale_main(int argc,char *argv[])
   /* creates material matrices of the homogeneous medium : LOCAL
      COORDINATE SYSTEM */
   hom_matrices (a,ne,nmat,nc,elem,mater,matgeom,
-		hommat,matgeom->SH,options.analysis_type);
+  	hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
   free(mater);
@@ -578,8 +578,8 @@ int single_scale_main(int argc,char *argv[])
       
     /* read the cohesive element info */
     coel = read_cohe_elem (in1,ncom,ndim,nn,node,&nce,
-			   comat,ensight,options.vis_format,
-			   myrank,co_props);
+         comat,ensight,options.vis_format,
+         myrank,co_props);
     dealoc2 (comat,ncom);
     PGFEM_fclose (in1);
 
@@ -589,9 +589,9 @@ int single_scale_main(int argc,char *argv[])
 
   /* use new functions to get code numbers */
   ndofd = generate_local_dof_ids(ne,nce,nn,ndofn,node,
-				 elem,coel,b_elems,mpi_comm);
+         elem,coel,b_elems,mpi_comm);
   DomDof[myrank] = generate_global_dof_ids(ne,nce,nn,ndofn,node,
-					   elem,coel,b_elems,mpi_comm);
+             elem,coel,b_elems,mpi_comm);
 
   /* Gather degrees of freedom from all domains */
   MPI_Allgather (MPI_IN_PLACE,1,MPI_LONG,DomDof,1,MPI_LONG,mpi_comm);
@@ -630,9 +630,9 @@ int single_scale_main(int argc,char *argv[])
   set_HYPRE_row_col_bounds(PGFEM_hypre,Gndof,DomDof,myrank);
 
   renumber_global_dof_ids(ne,nce,n_be,nn,ndofn,DomDof,node,
-			  elem,coel,b_elems,mpi_comm);
+        elem,coel,b_elems,mpi_comm);
   NBN = distribute_global_dof_ids(ne,nce,n_be,nn,ndofn,ndim,node,
-				  elem,coel,b_elems,mpi_comm);
+          elem,coel,b_elems,mpi_comm);
 
   if (myrank == 0){
     PrintTitleV1();
@@ -661,15 +661,15 @@ int single_scale_main(int argc,char *argv[])
     case STABILIZED:
       if (options.cohesive == 0 && gem == 0) {
 	PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
-		options.stab);
+  	options.stab);
       } else if( options.cohesive == 1) {
 	PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION"
-		" WITH COHESIVE FRACTURE : stb = %12.5e\n",
-		options.stab);
+    " WITH COHESIVE FRACTURE : stb = %12.5e\n",
+  	options.stab);
       } else if ( gem == 1) {
 	PGFEM_printf ("GENERALIZED FINITE ELEMENT METHOD\n");
 	PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
-		options.stab);
+  	options.stab);
       }
       break;
     case MINI:
@@ -680,7 +680,7 @@ int single_scale_main(int argc,char *argv[])
       break;
     case DISP:
       PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
-	     "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
+       "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
       break;
     case TF:
         PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
@@ -761,8 +761,8 @@ int single_scale_main(int argc,char *argv[])
     initialize_commun(comm);
 
     Ai = Psparse_ApAi (nproc,myrank,ne,n_be,nn,ndofn,ndofd,
-		       elem,b_elems,node,Ap,nce,coel,DomDof,
-		       &GDof,comm,mpi_comm,options.cohesive);
+           elem,b_elems,node,Ap,nce,coel,DomDof,
+           &GDof,comm,mpi_comm,options.cohesive);
 
     pgfem_comm_build_fast_maps(comm,ndofd,DomDof[myrank],GDof);
 
@@ -828,17 +828,17 @@ int single_scale_main(int argc,char *argv[])
       alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
 
       read_applied_surface_tractions_fname(trac_fname,&n_feats,
-    					   &feat_type,&feat_id,&loads);
+                 &feat_type,&feat_id,&loads);
 
       generate_applied_surface_traction_list(ne,elem,
-    					     n_feats,feat_type,
-    					     feat_id,&n_sur_trac_elem,
-    					     &ste);
+                   n_feats,feat_type,
+                   feat_id,&n_sur_trac_elem,
+                   &ste);
 
       compute_applied_traction_res(ndofn,node,elem,
-    				   n_sur_trac_elem,ste,
-    				   n_feats,loads,
-    				   nodal_forces);
+               n_sur_trac_elem,ste,
+               n_feats,loads,
+               nodal_forces);
 
       double tmp_sum = 0.0;
       for(int i=0; i<ndofd; i++){
@@ -846,7 +846,7 @@ int single_scale_main(int argc,char *argv[])
       }
  
       MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
-    		    MPI_SUM,mpi_comm);
+            MPI_SUM,mpi_comm);
 
       if(myrank == 0){
     	PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
@@ -867,7 +867,7 @@ int single_scale_main(int argc,char *argv[])
     if(options.override_solver_file){
       if(myrank == 0){
 	PGFEM_printf("Overriding the default solver file with:\n%s\n",
-	       options.solver_file);
+         options.solver_file);
       }
       in1 = PGFEM_fopen(options.solver_file,"r");
     } else {
@@ -898,7 +898,7 @@ int single_scale_main(int argc,char *argv[])
     if(options.solverpackage == HYPRE){ /* HYPRE */
       /* Initialize HYPRE */
       hypre_initialize(Ap,Ai,DomDof[myrank],ni,err,PGFEM_hypre,
-		       &options,mpi_comm);
+           &options,mpi_comm);
     }
 
     /*=== CRYSTAL PLASTICITY ===*/
@@ -967,9 +967,9 @@ int single_scale_main(int argc,char *argv[])
       if(npres != 4){
 	npres = 4;
 	if(myrank == 0){
-	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
+    PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
                        "Re-setting to 4 and continuing...\n");
-	}
+  }
       }
       break;
     case DISP: // intented not to have break
@@ -977,46 +977,46 @@ int single_scale_main(int argc,char *argv[])
       if(npres != 0){
 	npres = 0;
 	if (myrank == 0) {
-	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
+    PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
                        "Re-setting to 0 and continuing...\n");
-	}
+  }
       }
       break;
     default:
       if(npres != 1){
 	npres = 1;
 	if (myrank == 0) {
-	  PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
+    PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
                        "Re-setting to 1 and continuing...\n");
-	}
+  }
       }
       break;
     }/* switch */
     build_pressure_nodes (ne,npres,elem,sig_e,eps,options.analysis_type);
     build_crystal_plast (ne,elem,sig_e,eps,crpl,
-			 options.analysis_type,options.plc);
+       options.analysis_type,options.plc);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* \/ initialized element varialbes */    
     if(options.analysis_type==TF)
-    {		            
+    {                
     	for (int e=0;e<ne;e++)
-    	{
-    	  if(npres==1)
-    	  {
+      {
+        if(npres==1)
+        {
         	eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
-      	  for(int a=0; a<3; a++)
-      		  eps[e].d_T[a] = 0.0;
+          for(int a=0; a<3; a++)
+            eps[e].d_T[a] = 0.0;
         }
     
-       	eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));	
+       	eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));  
       	for(int a=0; a<nVol*3; a++)
-      		eps[e].T[a] = 1.0;
-      }		  
+        	eps[e].T[a] = 1.0;
+      }      
     }    
-    /* /\ initialized element varialbes */  			 
+    /* /\ initialized element varialbes */         
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1065,7 +1065,7 @@ int single_scale_main(int argc,char *argv[])
     set_fini_def (ne,npres,elem,eps,sig_e,options.analysis_type);
     if (options.analysis_type == FS_CRPL){
       set_fini_def_pl (ne,npres,elem,eps,sig_e,crpl,
-		       options.analysis_type,options.plc);
+           options.analysis_type,options.plc);
     }
 
     /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
@@ -1079,9 +1079,9 @@ int single_scale_main(int argc,char *argv[])
     }
     
     load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
-			matgeom,sup,npres,nor_min,sig_e,eps,dt,
-			crpl,options.stab,r,r_n,&options,alpha);
-		
+    	matgeom,sup,npres,nor_min,sig_e,eps,dt,
+    	crpl,options.stab,r,r_n,&options,alpha);
+    
     /*  NODE - generation of the load vector  */
     load_vec_node (R,nln,ndim,znod,node);
     /*  ELEMENT - generation of the load vector  */
@@ -1125,56 +1125,58 @@ int single_scale_main(int argc,char *argv[])
       sup_check = aloc1(sup->npd);
     }
 
-    while (nt > tim){
-      dt = times[tim+1] - times[tim];
-      if (dt <= 0.0){
-	if (myrank == 0) {
-	  PGFEM_printf("Incorrect dt\n");
-	}
-	PGFEM_Comm_code_abort(mpi_comm,0);
+  while (nt > tim)
+  {
+    dt = times[tim+1] - times[tim];
+    if (dt <= 0.0){
+      if (myrank == 0) {
+        PGFEM_printf("Incorrect dt\n");
       }
+      PGFEM_Comm_code_abort(mpi_comm,0);
+    }
 
-      if (myrank == 0){
-	PGFEM_printf("\nFinite deformations time step %ld) "
+    if (myrank == 0){
+      PGFEM_printf("\nFinite deformations time step %ld) "
                      " Time %e | dt = %e\n",
                      tim,times[tim+1],dt);
+    }
+
+    /*=== NEWTON RAPHSON ===*/
+    if (FNR == 0 || FNR == 1)
+    {
+      if (tim_load[tim] == 1 && tim == 0) {
+        if (myrank == 0){
+          PGFEM_printf ("Incorrect load input for Time = 0\n");
+        }
+      PGFEM_Comm_code_abort (mpi_comm,0);
+    }
+    if (tim_load[tim] == 1 && tim != 0) {
+    /*  read nodal prescribed deflection */
+      for (i=0;i<sup->npd;i++){
+        fscanf (in1,"%lf",&sup->defl_d[i]);
+        sup_defl[i] = sup_check[i] = sup->defl_d[i];      
       }
+      /* read nodal load in the subdomain */
+      read_nodal_load (in1,nln,ndim,znod);
+      /* read elem surface load */
+      read_elem_surface_load (in1,nle_s,ndim,elem,zele_s);
+      /*  NODE - generation of the load vector  */
+      load_vec_node (R,nln,ndim,znod,node);
+      /*  ELEMENT - generation of the load vector  */
+      load_vec_elem_sur (R,nle_s,ndim,elem,zele_s);
 
-      /*=== NEWTON RAPHSON ===*/
-      if (FNR == 0 || FNR == 1){
-	if (tim_load[tim] == 1 && tim == 0) {
-	  if (myrank == 0){
-	    PGFEM_printf ("Incorrect load input for Time = 0\n");
-	  }
-	  PGFEM_Comm_code_abort (mpi_comm,0);
-	}
-	if (tim_load[tim] == 1 && tim != 0) {
-	  /*  read nodal prescribed deflection */
-	  for (i=0;i<sup->npd;i++){
-	    fscanf (in1,"%lf",&sup->defl_d[i]);
-	    sup_defl[i] = sup_check[i] = sup->defl_d[i];	    
-	  }
-	  /* read nodal load in the subdomain */
-	  read_nodal_load (in1,nln,ndim,znod);
-	  /* read elem surface load */
-	  read_elem_surface_load (in1,nle_s,ndim,elem,zele_s);
-	  /*  NODE - generation of the load vector  */
-	  load_vec_node (R,nln,ndim,znod,node);
-	  /*  ELEMENT - generation of the load vector  */
-	  load_vec_elem_sur (R,nle_s,ndim,elem,zele_s);
+      /*
+      R   -> Incramental forces 
+      RR  -> Total forces for sudivided increment 
+      RRn -> Total force after equiblirium
+      */
 
-	  /*
-	    R   -> Incramental forces 
-	    RR  -> Total forces for sudivided increment 
-	    RRn -> Total force after equiblirium
-	  */
+      /* push nodal_forces to s->R */
+      vvplus  (R,nodal_forces,ndofd);
 
-	  /* push nodal_forces to s->R */
-	  vvplus  (R,nodal_forces,ndofd);
-
-	} /* end load increment */
+    } /* end load increment */
 	int n_step = 0;
-	
+  
 /////////////////////////////////////////////////////////////////////////////////////////////////
         if(tim<restart_tim+1)
         {
@@ -1189,52 +1191,52 @@ int single_scale_main(int argc,char *argv[])
 
 	fflush(PGFEM_stdout);
 	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
-				       times,nor_min,dt,elem,b_elems,node,
-				       sup,sup_defl,hommat,matgeom,sig_e,
-				       eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
-				       f_u,RRn,crpl,options.stab,
-				       nce,coel,FNR,&pores,PGFEM_hypre,
-				       BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
-				       BS_f_u,DomDof,comm,GDof,nt,iter_max,
-				       &NORM,nbndel,bndel,mpi_comm,VVolume,
-				       &options,NULL,alpha, r_n, r_n_1);
+               times,nor_min,dt,elem,b_elems,node,
+               sup,sup_defl,hommat,matgeom,sig_e,
+               eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
+               f_u,RRn,crpl,options.stab,
+               nce,coel,FNR,&pores,PGFEM_hypre,
+               BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
+               BS_f_u,DomDof,comm,GDof,nt,iter_max,
+               &NORM,nbndel,bndel,mpi_comm,VVolume,
+               &options,NULL,alpha, r_n, r_n_1);
 	fflush(PGFEM_stdout);
 
-	/* Null global vectors */
+  /* Null global vectors */
 	for (i=0;i<ndofd;i++){
-	  RRn[i] += R[i];
-	  RR[i] = RRn[i];
-	  R[i] = 0.0;
-	}
+    RRn[i] += R[i];
+    RR[i] = RRn[i];
+    R[i] = 0.0;
+  }
 
-	/* null the prescribed displacement increment */
+  /* null the prescribed displacement increment */
 	nulld(sup_defl,sup->npd);
       }/* end NR */
 
       /*=== ARC LENGTH ===*/
       if (FNR == 2 || FNR == 3){
 	dlm = Arc_length ( ne,n_be,nn,ndofn,ndofd,npres,nt,tim,times,
-			   nor_min,iter_max,dt,dt0,elem,b_elems,nbndel,
-			   bndel,node,sup,sup_defl,hommat,matgeom,sig_e,
-			   eps,Ap,Ai,PGFEM_hypre,RRn,f_defl,crpl,
-			   options.stab,
-			   nce,coel,r,f,d_r,D_R,rr,R,RR,f_u,U,DK,dR,
-			   BS_f,BS_d_r,BS_D_R,BS_rr,BS_R,BS_RR,BS_f_u,
-			   BS_U,BS_DK,BS_dR,FNR,lm,dAL0,&DET,&dlm0,&DLM,
-			   options.vis_format,options.smoothing,
-			   sig_n,out_dat,print,&AT,ARC,
-			   (times[tim+1]-times[tim])/dt0*dALMAX,&ITT,
-			   &dAL,&pores,DomDof,GDof,comm,err,&NORM,
-			   mpi_comm,VVolume,&options);
+         nor_min,iter_max,dt,dt0,elem,b_elems,nbndel,
+         bndel,node,sup,sup_defl,hommat,matgeom,sig_e,
+         eps,Ap,Ai,PGFEM_hypre,RRn,f_defl,crpl,
+         options.stab,
+         nce,coel,r,f,d_r,D_R,rr,R,RR,f_u,U,DK,dR,
+         BS_f,BS_d_r,BS_D_R,BS_rr,BS_R,BS_RR,BS_f_u,
+         BS_U,BS_DK,BS_dR,FNR,lm,dAL0,&DET,&dlm0,&DLM,
+         options.vis_format,options.smoothing,
+         sig_n,out_dat,print,&AT,ARC,
+         (times[tim+1]-times[tim])/dt0*dALMAX,&ITT,
+         &dAL,&pores,DomDof,GDof,comm,err,&NORM,
+         mpi_comm,VVolume,&options);
 
-	/* Load multiplier */
+  /* Load multiplier */
 	lm += dlm;
 	dlm = 0.0;
-	
-	/* Total force vector */
+  
+  /* Total force vector */
 	for (i=0;i<ndofd;i++){
-	  RR[i] = lm*R[i];
-	}
+    RR[i] = lm*R[i];
+  }
       }/* end AL */
 
       /*=== OUTPUT ===*/
@@ -1251,19 +1253,19 @@ int single_scale_main(int argc,char *argv[])
       {
 	double *sur_forces = NULL;
 	if(n_feats > 0){
-	  sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
-	  compute_resultant_force(n_feats,n_sur_trac_elem,
-				  ste,node,elem,
-				  sig_e,eps,sur_forces);
-	  MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
-			MPI_DOUBLE,MPI_SUM,mpi_comm);
-	  if(myrank == 0){
-	    PGFEM_printf("Forces on marked features:\n");
-	    print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
-			  n_feats,ndim);
-	    fflush(PGFEM_stdout);
-	  }
-	}
+    sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+    compute_resultant_force(n_feats,n_sur_trac_elem,
+          ste,node,elem,
+          sig_e,eps,sur_forces);
+    MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+    	MPI_DOUBLE,MPI_SUM,mpi_comm);
+    if(myrank == 0){
+      PGFEM_printf("Forces on marked features:\n");
+      print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+        n_feats,ndim);
+      fflush(PGFEM_stdout);
+    }
+  }
 	free(sur_forces);
       }
 
@@ -1300,33 +1302,33 @@ int single_scale_main(int argc,char *argv[])
 
       if (print[tim] == 1 && options.vis_format != VIS_NONE ) {
 	if(options.ascii){
-	  ASCII_output(&options,mpi_comm,tim,times,Gnn,nn,ne,nce,ndofd,
-		       DomDof,Ap,FNR,lm,pores,VVolume,node,elem,sup,
-		       r,eps,sig_e,sig_n,coel);
-	} /* End ASCII output */
+    ASCII_output(&options,mpi_comm,tim,times,Gnn,nn,ne,nce,ndofd,
+           DomDof,Ap,FNR,lm,pores,VVolume,node,elem,sup,
+           r,eps,sig_e,sig_n,coel);
+  } /* End ASCII output */
 
 	switch(options.vis_format){
 	case VIS_ELIXIR:/* Print to elix file */
-	  sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
-	  elixir (filename,nn,ne,ndim,node,elem,sup,r,sig_e,
-		  sig_n,eps,options.smoothing,nce,coel,&options);
-	  break;
+    sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
+    elixir (filename,nn,ne,ndim,node,elem,sup,r,sig_e,
+      sig_n,eps,options.smoothing,nce,coel,&options);
+    break;
 	case VIS_ENSIGHT:/* Print to EnSight files */
-	  sprintf (filename,"%s",out_dat);
-	  EnSight (filename,tim,nt,nn,ne,ndim,node,elem,sup,
-		   r,sig_e,sig_n,eps,options.smoothing,nce,coel,
-		   /*nge,geel,ngn,gnod,*/FNR,lm,ensight,mpi_comm,
-		   &options);
-	  break;
+    sprintf (filename,"%s",out_dat);
+    EnSight (filename,tim,nt,nn,ne,ndim,node,elem,sup,
+       r,sig_e,sig_n,eps,options.smoothing,nce,coel,
+       /*nge,geel,ngn,gnod,*/FNR,lm,ensight,mpi_comm,
+       &options);
+    break;
 	case VIS_VTK:/* Print to VTK files */
-	  if(myrank == 0){
-	    VTK_print_master(options.opath,options.ofname,
-			     tim,nproc,&options);
-	  }
+    if(myrank == 0){
+      VTK_print_master(options.opath,options.ofname,
+           tim,nproc,&options);
+    }
 
-	  VTK_print_vtu(options.opath,options.ofname,tim,
-			myrank,ne,nn,node,elem,sup,r,sig_e,eps,
-			&options);
+    VTK_print_vtu(options.opath,options.ofname,tim,
+    	myrank,ne,nn,node,elem,sup,r,sig_e,eps,
+      &options);
 
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////                          
@@ -1412,20 +1414,20 @@ int single_scale_main(int argc,char *argv[])
 ///////////////////////////////////////////////////////////////////////////////////      
 ///////////////////////////////////////////////////////////////////////////////////  
 
-	  if (options.cohesive == 1){
-	    if(myrank == 0){
-	      VTK_print_cohesive_master(options.opath,
-					options.ofname,tim,nproc,
-					&options);
-	    }
+    if (options.cohesive == 1){
+      if(myrank == 0){
+        VTK_print_cohesive_master(options.opath,
+        	options.ofname,tim,nproc,
+          &options);
+      }
 
-	    VTK_print_cohesive_vtu(options.opath,options.ofname,
-				   tim,myrank,nce,node,coel,sup,r,ensight,
-				   &options);
-	  }
-	  break;
+      VTK_print_cohesive_vtu(options.opath,options.ofname,
+           tim,myrank,nce,node,coel,sup,r,ensight,
+           &options);
+    }
+    break;
 	default: /* no output */ break;
-	}/* switch(format) */
+  }/* switch(format) */
 
       }/* end output */
  
@@ -1522,12 +1524,12 @@ int single_scale_main(int argc,char *argv[])
     getrusage (RUSAGE_SELF, &usage);
     PGFEM_printf ("\n");  
     PGFEM_printf ("Time of analysis on processor [%d] - "
-	    " System %ld.%ld, User %ld.%ld.\n",
-	    myrank,usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
-	    usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
+      " System %ld.%ld, User %ld.%ld.\n",
+      myrank,usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
+      usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
 
     PGFEM_printf ("Total HYPRE solve time on processor [%d] - %f\n",
-	    myrank,hypre_time);
+      myrank,hypre_time);
     PGFEM_printf("Total time (no MPI_Init()) - %f\n",total_time);
   }
 
