@@ -1124,10 +1124,77 @@ int single_scale_main(int argc,char *argv[])
     if(sup->npd > 0){
       sup_check = aloc1(sup->npd);
     }
+  
+  FIELD_VARIABLES variables;
+  variables.ndofn  = ndofn;
+  variables.ndofd  = ndofd;
+  variables.npres  = npres;
+  variables.u_np1  = r;
+  variables.u_n    = r_n;
+  variables.u_nm1  = r_n_1;
+  variables.d_u    = d_r;  /**< workspace for local increment of the solution n->n+1 */             
+  variables.dd_u   = rr; /**< workspace for local _iterative_ increment of the solution */        
+  variables.f      = f; /**< workspace for local residual */                                        
+  variables.R      = R; /**< [in] vector of Neumann loads */                                        
+  variables.f_defl = f_defl; /**< workspace for the load vector due to derichlet conditions */      
+  variables.RR     = RR; /**< [out] total Neumann load */                                           
+  variables.f_u    = f_u; /**< workspace for load due to body force */                              
+  variables.RRn    = RRn;/**< [in] Neumann load to time n */                                        
+  variables.pores  = &pores; /**< [out] opening volume of failed cohesive interfaces */              
+  variables.BS_x   = BS_x; /**< workspace for the locally owned part of the global solution 'rr'. */
+  variables.BS_f   = BS_f; /**< Global part of 'f'. */                                              
+  variables.BS_f_u = BS_f_u; /**< Global part of 'f_u'. */                                          
+  variables.BS_RR  = BS_RR; /**< Global part of 'RR'. */                                            
+  variables.NORM   = &NORM; /**< [out] residual of first iteration (tim = 0, iter = 0). */           
+  variables.sig    = sig_e;
+  variables.eps    = eps;
 
+  GRID grid;
+  grid.ne      = ne;
+  grid.nn      = nn;
+  grid.n_be    = n_be;
+  grid.nce     = nce; /**< number of COEL (cohesive elements) */
+  grid.node    = node;
+  grid.element = elem;
+  grid.b_elems = b_elems;
+  grid.coel    = coel; /**< list of cohesive elements */
+
+  MATERIAL_PROPERTY mat;
+  mat.hommat  = hommat;
+  mat.matgeom = matgeom;
+
+  LOADING_STEPS load;
+  load.sup      = sup;
+  load.sup_defl = sup_defl;
+
+  COMMUNICATION_STRUCTURE com;
+  com.Ap     = Ap;
+	com.Ai     = Ai;
+  com.DomDof = DomDof;
+  com.nbndel = nbndel;
+  com.bndel  = bndel;
+  com.comm   = comm;
+  com.GDof   = GDof;
+    
+  SOLVER_OPTIONS sol;
+  
+  sol.times       = times;
+  sol.nor_min     = nor_min;  
+  sol.iter_max    = iter_max;
+  sol.alpha       = alpha;
+  sol.microscale  = NULL;
+  sol.stab        = options.stab;
+  sol.PGFEM_hypre = PGFEM_hypre;
+  sol.FNR         = FNR;
+  sol.gama        = gama;
+  sol.err         = err;
+
+  sol.dt_np1 = times[1] - times[0];
   while (nt > tim)
   {
-    dt = times[tim+1] - times[tim];
+    sol.tim = tim;
+    sol.dt_n = sol.dt_np1;
+    sol.dt_np1 = dt = times[tim+1] - times[tim];
     if (dt <= 0.0){
       if (myrank == 0) {
         PGFEM_printf("Incorrect dt\n");
@@ -1175,32 +1242,36 @@ int single_scale_main(int argc,char *argv[])
       vvplus  (R,nodal_forces,ndofd);
 
     } /* end load increment */
-	int n_step = 0;
+	  int n_step = 0;
+	  sol.n_step = &n_step;
   
 /////////////////////////////////////////////////////////////////////////////////////////////////
-        if(tim<restart_tim+1)
-        {
-          for (i=0;i<sup->npd;i++){  
-            sup->defl[i] += sup->defl_d[i];
-            sup->defl_d[i] = 0.0;
-          }          
-          tim++;
-          continue;
-        }
+    if(tim<restart_tim+1)
+    {
+      for (i=0;i<sup->npd;i++){  
+        sup->defl[i] += sup->defl_d[i];
+        sup->defl_d[i] = 0.0;
+      }          
+      tim++;
+      continue;
+    }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-	fflush(PGFEM_stdout);
-	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
-               times,nor_min,dt,elem,b_elems,node,
-               sup,sup_defl,hommat,matgeom,sig_e,
-               eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
-               f_u,RRn,crpl,options.stab,
-               nce,coel,FNR,&pores,PGFEM_hypre,
-               BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
-               BS_f_u,DomDof,comm,GDof,nt,iter_max,
-               &NORM,nbndel,bndel,mpi_comm,VVolume,
-               &options,NULL,alpha, r_n, r_n_1);
-	fflush(PGFEM_stdout);
+  	fflush(PGFEM_stdout);
+/*  	hypre_time += Newton_Raphson ( 1,&n_step,ne,n_be,nn,ndofn,ndofd,npres,tim,
+                 times,nor_min,dt,elem,b_elems,node,
+                 sup,sup_defl,hommat,matgeom,sig_e,
+                 eps,Ap,Ai,r,f,d_r,rr,R,f_defl,RR,
+                 f_u,RRn,crpl,options.stab,
+                 nce,coel,FNR,&pores,PGFEM_hypre,
+                 BS_x,BS_f,BS_RR,gama,GNOR,nor1,err,
+                 BS_f_u,DomDof,comm,GDof,nt,iter_max,
+                 &NORM,nbndel,bndel,mpi_comm,VVolume,
+                 &options,NULL,alpha, r_n, r_n_1);
+  	fflush(PGFEM_stdout);
+  */	
+    hypre_time += Newton_Raphson_test(1, &grid, &mat, &variables, &sol, &load, &com,
+                                      crpl, GNOR, nor1, nt, mpi_comm, VVolume, &options);  	
 
   /* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1275,12 +1346,12 @@ int single_scale_main(int argc,char *argv[])
                                &options, alpha, r_n, r_n_1);
 
       /* Calculate macro deformation gradient */
-      GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
-      GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
-      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
+//      GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
+//      GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
+//      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
 
       /* print GF & GS to file */
-      if(myrank == 0){                
+      if(myrank == -1){                
 	sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
 	out = fopen(filename,"w");
 	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);

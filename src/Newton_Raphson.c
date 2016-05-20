@@ -92,6 +92,83 @@ static void set_time_macro(const int tim,
   times[tim + 1] = time_np1;
 }
 
+double Newton_Raphson_test(const int print_level,
+                           GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *variables,
+                           SOLVER_OPTIONS *sol,
+                           LOADING_STEPS *load,
+                           COMMUNICATION_STRUCTURE *com, 
+                           CRPL *crpl, /**< Crystal plasticity stuff */
+                           double GNOR, /**< should be local variable. */
+                           double nor1, /**< should be local variable. */
+                           long nt, /**< _DEPRECATED_ */
+                           MPI_Comm mpi_comm,
+                           const double VVolume, /**< original volume of the domain */
+                           const PGFem3D_opt *opts /**< structure of options */)
+{
+  return Newton_Raphson(print_level,sol->n_step,
+                       grid->ne,
+                       grid->n_be,
+                       grid->nn,
+                       variables->ndofn,
+                       variables->ndofd,
+                       variables->npres,
+                       sol->tim,
+                       sol->times,
+                       sol->nor_min,
+                       sol->dt_np1,
+                       grid->element,
+                       grid->b_elems,
+                       grid->node,
+                       load->sup,
+                       load->sup_defl,
+                       mat->hommat,
+                       mat->matgeom,
+                       variables->sig,
+                       variables->eps,
+                       com->Ap,
+                       com->Ai,
+                       variables->u_np1,
+                       variables->f,
+                       variables->d_u,
+                       variables->dd_u,
+                       variables->R,
+                       variables->f_defl,
+                       variables->RR,
+                       variables->f_u,
+                       variables->RRn,
+                       crpl,
+                       sol->stab,
+                       grid->nce,
+                       grid->coel,
+                       sol->FNR,
+                       variables->pores,
+                       sol->PGFEM_hypre,
+                       variables->BS_x,
+                       variables->BS_f,
+                       variables->BS_RR,
+                       sol->gama,
+                       GNOR,
+                       nor1,
+                       sol->err,
+                       variables->BS_f_u,
+                       com->DomDof,
+                       com->comm,
+                       com->GDof,
+                       nt,
+                       sol->iter_max,
+                       variables->NORM,
+                       com->nbndel,
+                       com->bndel,
+                       mpi_comm,
+                       VVolume,
+                       opts,
+                       sol->microscale,
+                       sol->alpha,
+                       variables->u_n,
+                       variables->u_nm1);
+}                           
 double Newton_Raphson (const int print_level,
                        int *n_step,
                        long ne,
@@ -731,13 +808,13 @@ double Newton_Raphson (const int print_level,
       }
 
       /* Check energy norm for convergence */
-      if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
-	if(myrank == 0){
-	  PGFEM_printf("Converged on energy norm\n");
-	}
-	INFO = 0;
-	break;
-      }
+//      if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
+//	if(myrank == 0){
+//	  PGFEM_printf("Converged on energy norm\n");
+//	}
+//	INFO = 0;
+//	break;
+//      }
       
       /* Max number of iterations restart */
       if (iter > (iter_max-1) && nor > ERROR) {

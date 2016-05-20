@@ -1263,7 +1263,7 @@ int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
   ELASTICITY *elasticity = (m->param)->cm_elast;
   
-  staggered_Newton_Rapson(Fs[TENSOR_pFnp1].m_pdata,F2[M].m_pdata, &g_np1, &L_np1, 
+  err += staggered_Newton_Rapson(Fs[TENSOR_pFnp1].m_pdata,F2[M].m_pdata, &g_np1, &L_np1, 
                           Fs[TENSOR_pFn].m_pdata, Fs[TENSOR_Fn].m_pdata, Fs[TENSOR_Fnp1].m_pdata,
                           g_n, dt, cm_mat, elasticity, &solver_info);  
     
