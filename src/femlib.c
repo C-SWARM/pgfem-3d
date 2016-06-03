@@ -127,9 +127,9 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   nint = FEMLIB_determine_integration_type(e_type, i_order);
   fe->nint = nint;
 
-  Matrix_construct_redim(double,fe->ksi       ,nint,1);
-  Matrix_construct_redim(double,fe->eta       ,nint,1);    
-  Matrix_construct_redim(double,fe->zet       ,nint,1);    
+  Matrix_construct_redim(double,fe->ksi       ,nint,1); memset((fe->ksi).m_pdata,0,sizeof(double)*nint);
+  Matrix_construct_redim(double,fe->eta       ,nint,1); memset((fe->eta).m_pdata,0,sizeof(double)*nint);   
+  Matrix_construct_redim(double,fe->zet       ,nint,1); memset((fe->zet).m_pdata,0,sizeof(double)*nint);   
   Matrix_construct_redim(double,fe->weights   ,nint,1);
   Matrix_construct_redim(double,fe->N         ,nne ,1);
   Matrix_construct_redim(double,fe->dN        ,nne ,nsd);
@@ -340,7 +340,7 @@ void FEMLIB_elem_basis_V(FEMLIB *fe, long ip)
   fe->temp_v.eta_ip = eta_;
   fe->temp_v.zet_ip = zet_;
   fe->temp_v.w_ip   = wt;
-  
+
   shape_func(ksi_, eta_, zet_, fe->nne, fe->N.m_pdata);
     
   fe->detJ = deriv(ksi_, eta_, zet_, fe->nne, 
