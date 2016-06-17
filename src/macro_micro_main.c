@@ -31,7 +31,6 @@
 #include "Psparse_ApAi.h"
 #include "read_cryst_plast.h"
 #include "renumber_ID.h"
-#include "RNPsparse_ApAi.h"
 #include "set_fini_def.h"
 #include "skyline.h"
 #include "utils.h"

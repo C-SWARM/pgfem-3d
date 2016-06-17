@@ -1,10 +1,8 @@
 /** This file defines some routines related to the node structure such
     as allocation, deallocation, reading and writing */
 #include "node.h"
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
+#include <assert.h>
 
 NODE* build_node (const long nn,
 		  const long ndofn)
@@ -66,6 +64,7 @@ long read_nodes (FILE *in,
       long Dom = 0;
       fscanf (in,"%ld %ld %ld",&Gnn,&Dom,&id);
       p_node = &node[id];
+      p_node->loc_id = id;
       p_node->Gnn = Gnn;
       p_node->Dom = Dom;
     }
@@ -149,4 +148,149 @@ void write_node(FILE *ofile,
     }
     PGFEM_fprintf(ofile,"\n");
   }
+}
+
+static int node_comp_loc_id(const void *a,
+                            const void *b)
+{
+  return (((NODE*) a)->loc_id - ((NODE*) b)->loc_id);
+}
+
+static int node_comp_own(const void *a,
+                         const void *b)
+{
+  return (((NODE*) a)->Dom - ((NODE*) b)->Dom);
+}
+
+static int node_comp_Gnn(const void *a,
+                         const void *b)
+{
+  return (((NODE*) a)->Gnn - ((NODE*) b)->Gnn);
+}
+
+static int node_comp_own_Gnn(const void *a,
+                             const void *b)
+{
+  int own = node_comp_own(a,b);
+  if (own) return own;
+  else return node_comp_Gnn(a,b);
+}
+
+static int node_comp_Gnn_loc(const void *a,
+                             const void *b)
+{
+  int Gnn = node_comp_Gnn(a,b);
+  if (Gnn) return Gnn;
+  else return node_comp_loc_id(a,b);
+}
+
+static int node_comp_own_Gnn_loc(const void *a,
+                                 const void *b)
+{
+  int own_gnn = node_comp_own_Gnn(a,b);
+  if (own_gnn) return own_gnn;
+  else return node_comp_loc_id(a,b);
+}
+
+void nodes_sort_loc_id(const int nnode,
+                       NODE *nodes)
+{
+  qsort(nodes, nnode, sizeof(*nodes), node_comp_loc_id);
+}
+
+void nodes_sort_own_Gnn_loc(const int nnode,
+                            NODE *nodes)
+{
+  qsort(nodes, nnode, sizeof(*nodes), node_comp_own_Gnn_loc);
+}
+
+/**
+ * Compute the index range of Global Nodes owned by the specified domain.
+ *
+ * For valid results, requires the nodes to be sorted by
+ * `nodes_sort_own_Gnn`. Index range may include duplicate global node
+ * numbersin the case of periodicity.
+ *
+ * \return non-zero if no shared/global nodes are owned by the
+ * specified domain. On success, `range` specifies matches in
+ * [range[0], range[1]).
+ */
+int nodes_get_shared_idx_range(const int nnode,
+                               const NODE *nodes,
+                               const int dom,
+                               int range[2])
+{
+  int err = 0;
+  /* create a node for comparison */
+  NODE comp_node = {0};
+  comp_node.Dom = dom;
+
+  /* search for a node with matching ownership */
+  const NODE *ptr_lb = bsearch(&comp_node, nodes, nnode,
+                               sizeof(*nodes), node_comp_own);
+
+  /* exit early if no match found */
+  if (!ptr_lb) return 1;
+
+  /* linearly search for bounds */
+  const NODE *ptr_ub = ptr_lb;
+  while (ptr_ub->Dom == dom) {
+    /* limit the search by the length of the array */
+    if((++ptr_ub - nodes) == nnode) break;
+  }
+  if (ptr_lb->Gnn < 0) {
+    /* matched node is purely local -> search forward for first owned
+       boundary node */
+    while (ptr_lb->Gnn < 0 && ptr_lb->Dom == dom) {
+      /* limit the search by the length of the array */
+      if((++ptr_lb - nodes) == nnode) break;
+    }
+  } else {
+    /* matched node is on the boundary -> search backward for first
+       owned boundary node */
+    while (ptr_lb->Gnn >= 0 && ptr_lb->Dom == dom) {
+      /* limit the search by the length of the array */
+      if((--ptr_lb - nodes) < 0) break;
+    }
+
+    /* Lower-bound is inclusive -> increment pointer */
+    ++ptr_lb;
+  }
+
+  assert(ptr_lb != ptr_ub);
+  if (ptr_lb == ptr_ub) err++;
+
+  /* perform pointer arithmetic w.r.t nodes to get the index range */
+  range[0] = ptr_lb - nodes;
+  range[1] = ptr_ub - nodes;
+
+  return err;
+}
+
+int nodes_filter_shared_nodes(const int nnode,
+                              NODE *nodes,
+                              int *n_shared,
+                              const NODE **shared)
+{
+  int err = 0;
+
+  /* sort by Gnn */
+  qsort(nodes, nnode, sizeof(*nodes), node_comp_Gnn_loc);
+
+  /* perform linear search from the end to find the beginning of the
+     shared nodes list. We start from the end as typically there are
+     fewer boundary nodes than local nodes. */
+  NODE *ptr = &nodes[nnode-1];
+  while (ptr->Gnn >= 0) if ((--ptr - nodes) < 0) break;
+  ++ptr; /* lower bound is inclusive, increment pointer */
+
+  /* compute number of shared nodes and starting index */
+  *n_shared = nnode - (ptr - nodes);
+  *shared = ptr;
+  assert(*n_shared >= 0); /* check for implementation error */
+
+  /* re-sort shared nodes by own->Gnn->loc_id */
+  qsort(ptr, *n_shared, sizeof(*ptr), node_comp_own_Gnn_loc);
+
+  return err;
 }

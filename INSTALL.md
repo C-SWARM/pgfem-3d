@@ -14,6 +14,10 @@ While many of these libraries have newer versions available, these
 versions will not break our build tree and are known to work properly
 for our cases.
 
+PGFem3D also depends on the internal library
+`Generalizsed_constitutive_model` available at
+git@gitlab-cswarm.crc.nd.edu:Constitutive_Model/Generalizsed_constitutive_model.git
+
 We are using the GNU autotools to build this project. If a configure
 script does not exist, recreate it using 'autoreconf -if'. We
 currently requrie the following options to be specified in the
@@ -21,6 +25,7 @@ configuration step:
 
   --with-hypre-dir=<path>
   --with-suitesparse-dir=<path>
+  --with-cnstvm-dir=<path>
 
 Use of the VTK libraries is off by default but may be enabled with the
 following options:
@@ -48,6 +53,7 @@ A sample `config.site` might look like the following:
 # required options
 with_hypre_dir=/path/to/hypre-2.4.0b
 with_suitesparse_dir=/path/to/suitesparse
+with_cnstvm_dir=/path/to/Generalizsed_constitutive_model
 
 # enable/disable vtk
 enable_vtk=yes

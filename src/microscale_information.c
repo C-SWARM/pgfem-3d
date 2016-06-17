@@ -627,7 +627,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				       0,common->nn,
 				       common->ndofn,ndim,
 				       common->node,common->elem,
-				       common->coel,NULL,mpi_comm);
+				       common->coel,NULL, NULL, mpi_comm);
 
   /* global stiffness pattern and communication structure */
   common->Ap = PGFEM_calloc(common->DomDof[myrank]+1,sizeof(int));

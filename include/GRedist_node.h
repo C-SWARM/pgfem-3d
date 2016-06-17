@@ -4,6 +4,7 @@
 
 #include "PGFEM_mpi.h"
 #include "node.h"
+#include "comm_hints.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,7 @@ extern "C" {
 		     const long nn,
 		     const long ndofn,
 		     NODE *node,
+                     const Comm_hints *hints,
 		     const MPI_Comm Comm);
 
 #ifdef __cplusplus

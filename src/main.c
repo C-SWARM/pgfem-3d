@@ -46,7 +46,6 @@
 #include "Psparse_ApAi.h"
 #include "read_cryst_plast.h"
 #include "renumber_ID.h"
-#include "RNPsparse_ApAi.h"
 #include "set_fini_def.h"
 #include "skyline.h"
 #include "utils.h"
@@ -71,6 +70,7 @@
 #include "post_processing.h"
 #include "restart.h"
 
+#include "comm_hints.h"
 #include "fd_residuals.h"
 
 static const int periodic = 0;
@@ -358,6 +358,8 @@ int single_scale_main(int argc,char *argv[])
 
   double hypre_time = 0.0;
 
+  Comm_hints *hints = NULL;
+
   /* ***** Set up debug log ***** */
   FILE *debug_log = NULL;
   /* debug_log = fopen("debug.log","w"); */
@@ -480,6 +482,23 @@ int single_scale_main(int argc,char *argv[])
     /* TEMP reset ndofn for testing. In many/most cases ndofn should
        actually be ndim */
     /* ndofn = 3; */
+  }
+
+  /*=== READ COMM HINTS ===*/
+  {
+    char *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
+    hints = Comm_hints_construct();
+    int ch_err = Comm_hints_read_filename(hints, fn);
+    MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+    if (ch_err) {
+      Comm_hints_destroy(hints);
+      hints = NULL;
+      if (myrank == 0) {
+        PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
+                       "Proceeding using fallback functions.\n");
+      }
+    }
+    free(fn);
   }
 
   /*=== OVERRIDE PRESCRIBED DISPLACEMENTS ===*/
@@ -632,7 +651,7 @@ int single_scale_main(int argc,char *argv[])
   renumber_global_dof_ids(ne,nce,n_be,nn,ndofn,DomDof,node,
         elem,coel,b_elems,mpi_comm);
   NBN = distribute_global_dof_ids(ne,nce,n_be,nn,ndofn,ndim,node,
-          elem,coel,b_elems,mpi_comm);
+				  elem,coel,b_elems, hints, mpi_comm);
 
   if (myrank == 0){
     PrintTitleV1();
@@ -1588,6 +1607,7 @@ int single_scale_main(int argc,char *argv[])
   destroy_elem(elem,ne);
   destroy_bounding_elements(n_be,b_elems);
   destroy_node(nn,node);
+  Comm_hints_destroy(hints);
 
   /*=== PRINT TIME OF ANALYSIS ===*/
   total_time += MPI_Wtime();

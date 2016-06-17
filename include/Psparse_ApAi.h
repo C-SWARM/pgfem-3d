@@ -43,7 +43,7 @@ extern "C" {
 		     const int cohesive);
 
 #ifdef __cplusplus
-{
+}
 #endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef PSPARSE_APAI_H */

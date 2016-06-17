@@ -19,6 +19,7 @@ extern "C" {
 #include "element.h"
 #include "cohesive_element.h"
 #include "bounding_element.h"
+#include "comm_hints.h"
 
   /** Generate the local dof id numbers and return the number of local
       dofs */
@@ -70,6 +71,7 @@ extern "C" {
 				ELEMENT *elems,
 				COEL *coel,
 				BOUNDING_ELEMENT *b_elems,
+                                const Comm_hints *hints,
 				MPI_Comm mpi_comm);
 
 #ifdef __cplusplus
