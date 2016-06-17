@@ -50,7 +50,7 @@ static void cm_add_macro_F(const SUPP sup,
    everywhere. It is no big deal to keep adding to this private
    function's argument list. Just put everything any model might need
    and the switch will handle what is actually used. */
-static int construct_model_context(void **ctx,
+int construct_model_context(void **ctx,
                                    const int type,
                                    const double *F,
                                    const double dt,
@@ -213,9 +213,11 @@ int model_parameters_construct(Model_parameters *p)
   p->pack = NULL;
   p->unpack = NULL;
 
-  p->type = -1;
-  p->n_param = -1;
-  p->model_param = NULL;
+  p->type              = -1;
+  p->n_param           = -1;
+  p->model_param       = NULL;
+  p->n_param_index     = -1;
+  p->model_param_index = NULL;
   return err;
 }
 
@@ -345,6 +347,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->n_param = -1;
   free(p->model_param);
   p->model_param = NULL;
+  p->n_param_index = -1;
+  p->model_param_index = NULL;
 
   return err;
 }
@@ -1711,7 +1715,8 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
 int cm_get_subdivision_parameter(double *subdiv_param,
                                  const int ne,
                                  const ELEMENT *elem,
-                                 const EPS *eps)
+                                 const EPS *eps,
+                                 const double dt)
 {
   int err = 0;
   *subdiv_param = 0.0;
@@ -1721,7 +1726,7 @@ int cm_get_subdivision_parameter(double *subdiv_param,
     long n_ip = 0;
     int_point(elem[i].toe, &n_ip);
     for (int ip = 0; ip < n_ip; ip++) {
-      err += eps[i].model[ip].param->get_subdiv_param(&(eps[i].model[ip]), &cur_val);
+      err += eps[i].model[ip].param->get_subdiv_param(&(eps[i].model[ip]), &cur_val, dt);
       max_val = MAX(max_val, cur_val);
     }
   }

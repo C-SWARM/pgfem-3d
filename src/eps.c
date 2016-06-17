@@ -486,6 +486,10 @@ static size_t sizeof_eps(const EPS *eps,
     s += pt_I * (sizeof_IL0_eps(analysis)
 		 + sizeof_IL1_eps(analysis)
 		 + sizeof_damage((eps->dam)));
+
+    if (eps->model != NULL) {
+      s += pt_I * eps->model->param->get_size(eps->model);
+    }
   }
 
   if(pt_J > 0){
@@ -715,6 +719,9 @@ static void pack_eps(const EPS *src,
 
   for(int i=0; i<pt_I; i++){
     pack_damage((src->dam)+i,buffer,pos);
+    if (src->model != NULL) {
+      src->model[i].param->pack(src->model + i, buffer, pos);
+    }
     pack_IL0_eps((src->il)+i,analysis,buffer,pos);
     pack_IL1_eps((src->d_il)+i,analysis,buffer,pos);
   }
@@ -745,6 +752,9 @@ static void unpack_eps(EPS *dest,
 
   for(int i=0; i<pt_I; i++){
     unpack_damage((dest->dam)+i,buffer,pos);
+    if (dest->model != NULL) {
+      dest->model[i].param->unpack(dest->model + i, buffer, pos);
+    }
     unpack_IL0_eps((dest->il)+i,analysis,buffer,pos);
     unpack_IL1_eps((dest->d_il)+i,analysis,buffer,pos);
   }

@@ -1,5 +1,5 @@
 EXC = main_test
-OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o | grep -v cm_j2_plasticity_driver.o)
+OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v plasticity_model_BPA_driver.o | grep -v cm_iso_viscous_damage_driver.o | grep -v unit_test_43_driver.o | grep -v cm_j2_plasticity_driver.o | grep -v CH_layer_driver.o)
 
 POST_PROCESSING=../include
 

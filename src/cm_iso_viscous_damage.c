@@ -577,7 +577,8 @@ static int ivd_unpack(Constitutive_model *m,
 }
 
 static int ivd_get_subdiv_param(const Constitutive_model *m,
-                                double *subdiv_param)
+                                double *subdiv_param,
+                                double dt)
 {
   return ivd_public_subdiv_param(m->vars.state_vars->m_pdata[wn],
                                  m->vars.state_vars->m_pdata[w],

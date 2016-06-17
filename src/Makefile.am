@@ -1,4 +1,4 @@
-bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver comm_hints_driver
+bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver CH_layer_driver comm_hints_driver
 all_sources = \
 ALM.c \
 Arc_length.c \
@@ -150,6 +150,10 @@ J2D_driver_SOURCES = \
 $(all_sources) \
 cm_j2_plasticity_driver.c
 
+CH_layer_driver_SOURCES = \
+$(all_sources) \
+CH_layer_driver.c
+
 unit_test_43_driver_SOURCES = \
 $(all_sources) \
 unit_test_43_driver.c
@@ -173,6 +177,7 @@ PGFem3D_LDADD = $(all_libs)
 BPA_driver_LDADD = $(all_libs)
 IVD_driver_LDADD = $(all_libs)
 J2D_driver_LDADD = $(all_libs)
+CH_layer_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
 
 AM_CFLAGS = $(AM_INCLUDES)
@@ -181,4 +186,5 @@ PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS)
 BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 IVD_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 J2D_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+CH_layer_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 unit_test_43_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@

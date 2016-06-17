@@ -26,6 +26,8 @@
 #include "cohesive_element_utils.h"
 #include "transform_coordinates.h"
 #include "index_macros.h"
+#include "data_structure_c.h"
+#include "constitutive_model.h"
 
 #ifndef DISP_DEBUG
 #define DISP_DEBUG 0
@@ -35,9 +37,12 @@
 #define DISP_DEBUG_NO_LM 1
 #endif
 
+Define_Matrix(double);
+
 static const int ndn = 3;
 static const double LAGRANGE_THRESH = 0.1;
 static const double DIFF_THRESH = 0.01;
+static const damage empty_damage = {0};
 
 static inline double del(const int i, const int j){ return (i==j?1.0:0.0); }
 
@@ -298,6 +303,30 @@ static int compute_K_10_e_at_ip(double *K_10_e,
 				const double *L);
 
 
+static int disp_cm_material_response(double *S,
+                                     double *L,
+                                     const Constitutive_model *m,
+                                     const double *F,
+                                     const double dt,
+                                     const int get_L)
+{
+  int err = 0;
+  Matrix_double MF, ML, MS;
+  Matrix_construct(double, MF);
+  Matrix_init_w_array(MF, ndn, ndn, F);
+  Matrix_construct_init(double, MS, ndn, ndn, 0.0);
+  Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
+
+  err += constitutive_model_defaut_update_elasticity(m, &MF, &ML, &MS, get_L);
+  memcpy(S, MS.m_pdata, 9 * sizeof(*S));
+  if(get_L) memcpy(L, ML.m_pdata, 81 * sizeof(*L));
+
+  Matrix_cleanup(MF);
+  Matrix_cleanup(MS);
+  Matrix_cleanup(ML);
+  return err;
+}
+
 /*==============================================================*/
 /*               DEFINE  API  FUNCTIONS                         */
 /*==============================================================*/
@@ -336,11 +365,12 @@ int DISP_stiffmat_el(double *Ks,
 		     const EPS *eps,
 		     const SIG *sig,
 		     const SUPP sup,
-		     const double *disp) 
+		     const double *disp,
+                     const double dt) 
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
   const HOMMAT *ptrMat = &hommat[mat];
 
   int ndofe = 0;
@@ -393,9 +423,16 @@ int DISP_stiffmat_el(double *Ks,
 	/* inverted element detected, exit and return error */
 	if(err != 0 ) goto exit_function;
 
-	const damage *ptrDam = &(eps[ii].dam[ip]);
-	get_material_stress(kappa,&hommat[mat],C,C_I,J,Sbar);
-	get_material_stiffness(kappa,ptrMat,ptrDam,C,C_I,J,Sbar,L);
+	const damage *ptrDam = NULL;
+        if (eps[ii].model == NULL) {
+          ptrDam = &(eps[ii].dam[ip]);
+          get_material_stress(kappa,&hommat[mat],C,C_I,J,Sbar);
+          get_material_stiffness(kappa,ptrMat,ptrDam,C,C_I,J,Sbar,L);
+        } else {
+          ptrDam = &empty_damage;
+          err += disp_cm_material_response(Sbar, L, eps[ii].model + ip,
+                                           F, dt, 1);
+        }
 	disp_based_tan_at_ip(Ks,nne,ST,F,Sbar,L,ptrDam,jj,wt);
 	ip++;
       }
@@ -437,11 +474,12 @@ int DISP_resid_el(double *R,
 		  const EPS *eps,
 		  const SIG *sig,
 		  const SUPP sup,
-		  const double *disp)
+		  const double *disp,
+                  const double dt)
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
   const HOMMAT *ptrMat = &hommat[mat];
 
   int ndofe = 0;
@@ -493,8 +531,19 @@ int DISP_resid_el(double *R,
 	/* inverted element detected, exit and return error */
 	if(err != 0) goto exit_function;
 
-	const damage *ptrDam = &(eps[ii].dam[ip]);
-	get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
+	const damage *ptrDam = NULL;
+        if (eps[ii].model == NULL) {
+          ptrDam = &(eps[ii].dam[ip]);
+          get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
+        } else {
+          ptrDam = &empty_damage;
+          void *ctx = NULL;
+          construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5, NULL);
+          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx);
+          err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
+                                           F, dt, 0);
+          eps[ii].model[ip].param->destroy_ctx(&ctx);
+        }
 	disp_based_resid_at_ip(R,nne,ST,F,Sbar,ptrDam,jj,wt);
 	ip++;
       }
@@ -551,7 +600,7 @@ int DISP_resid_bnd_el(double *R,
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
-  const double kappa = ptrMat->E/(3.*(1.-2.*ptrMat->nu));
+  const double kappa = hommat_get_kappa(ptrMat);
   const int nne_ve = ptr_ve->toe;
   const int nne_be = ptr_be->nnodes;
 
@@ -697,7 +746,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
-  const double kappa = ptrMat->E/(3.*(1.-2.*ptrMat->nu));
+  const double kappa = hommat_get_kappa(ptrMat);
   const int nne_be = ptr_be->nnodes;
   const int nne_ve = ptr_ve->toe;
 
@@ -835,7 +884,7 @@ void DISP_increment_el(const ELEMENT *elem,
 		       const double *disp)
 {
   const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3*(1-2*hommat[mat].nu));
+  const double kappa = hommat_get_kappa(&(hommat[mat]));
 
   /* compute volume */
   double nc_vol;
@@ -958,6 +1007,11 @@ void DISP_increment_el(const ELEMENT *elem,
 
 	/* update damage variables */
 	update_damage(&eps[ii].dam[ip]);
+
+        /* update constitutive model */
+        if (eps[ii].model != NULL) {
+          eps[ii].model[ip].param->update_state_vars(&eps[ii].model[ip]);
+        }
 
 	ip++;
       }
@@ -1118,12 +1172,13 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 			     const EPS *eps,
 			     const SIG *sig,
 			     const SUPP sup,
-			     const double *disp)
+			     const double *disp,
+                             const double dt)
 {
   int err = 0;
   const ELEMENT *p_elem = elem + elem_id;
   const HOMMAT *p_hommat = &hommat[p_elem->mat[2]];
-  const double kappa = p_hommat->E/(3*(1-2*p_hommat->nu));
+  const double kappa = hommat_get_kappa(p_hommat);
   const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
   const int macro_ndof = macro_nnode*macro_ndofn;
 
@@ -1210,9 +1265,16 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 	  if(err != 0 ) goto exit_function;
 
 	  /* get material stress and stiffness */
-	  const damage *p_dam = &(eps[elem_id].dam[ip]);
-	  get_material_stress(kappa,p_hommat,C,C_I,J,Sbar);    
-	  get_material_stiffness(kappa,p_hommat,p_dam,C,C_I,J,Sbar,L);
+          const damage *p_dam = NULL;
+          if (eps[elem_id].model == NULL) {
+            p_dam = &(eps[elem_id].dam[ip]);
+            get_material_stress(kappa,p_hommat,C,C_I,J,Sbar);
+            get_material_stiffness(kappa,p_hommat,p_dam,C,C_I,J,Sbar,L);
+          } else {
+            p_dam = &empty_damage;
+            err += disp_cm_material_response(Sbar, L, eps[elem_id].model + ip,
+                                             F, dt, 1);
+          }
 
 	  /*=== OPTIMIZATION: Combine following function calls into
 	    one loop. This was not done originally for simplified

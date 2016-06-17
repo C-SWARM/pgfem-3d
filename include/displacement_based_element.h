@@ -47,7 +47,8 @@ extern "C" {
 		       const EPS *eps,
 		       const SIG *sig,
 		       const SUPP sup,
-		       const double *disp);
+		       const double *disp,
+                       const double dt);
 
   /** Compute the element residual for a volumetric element */
   int DISP_resid_el(double *R,
@@ -64,7 +65,8 @@ extern "C" {
 		    const EPS *eps,
 		    const SIG *sig,
 		    const SUPP sup,
-		    const double *disp);
+		    const double *disp,
+                    const double dt);
 
   /** Compute the residual on a boundary element (Lagrange multiplier
       formulation) */
@@ -162,7 +164,8 @@ extern "C" {
 			       const EPS *eps,
 			       const SIG *sig,
 			       const SUPP sup,
-			       const double *disp);
+			       const double *disp,
+                               const double dt);
 
 #ifdef __cplusplus
 }

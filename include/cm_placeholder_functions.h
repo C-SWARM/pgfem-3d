@@ -52,6 +52,7 @@ int cm_compute_null_dMdu(const Constitutive_model *m,
  * Do not cause subdivision (subdiv_param = 0)
  */
 int cm_no_subdiv(const Constitutive_model *m,
-                 double *subdiv_param);
+                 double *subdiv_param,
+                 const double dt);
 
 #endif
