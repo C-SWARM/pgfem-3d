@@ -1309,6 +1309,7 @@ int stiffness_el_crystal_plasticity(double *lk,
                                               elem, nod, node, dt, eps, sup, r_e);
   return err;                                                  
 }                                    
+
 int residuals_el_crystal_plasticity_UL(double *f,
                                     const int ii,
                                     const int ndofn,
@@ -1457,8 +1458,6 @@ int residuals_el_crystal_plasticity_UL(double *f,
   return err;
 }
 
-//***************************************************************************************
-
 int residuals_el_crystal_plasticity_TL(double *f,
                                     const int ii,
                                     const int ndofn,
@@ -1474,7 +1473,7 @@ int residuals_el_crystal_plasticity_TL(double *f,
 {
   int err = 0;
   double alpha = -1.0; // if alpha < 0, no inertia
-  int total_Lagrangian = 0;
+  int total_Lagrangian = 1;
     
   double *u = (double *) malloc(sizeof(double)*nne*nsd);
   
@@ -1580,10 +1579,6 @@ int residuals_el_crystal_plasticity_TL(double *f,
   return err;
 }
 
-
-
-
-//***************************************************************************************
 int residuals_el_crystal_plasticity(double *f,
                                     const int ii,
                                     const int ndofn,
