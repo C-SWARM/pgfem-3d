@@ -4,6 +4,7 @@
 #define PGFEM_OPTIONS_H
 
 #include "PGFEM_io.h"
+#include "enumerations.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,6 +19,9 @@ extern "C" {
     int precond;
     int kdim;
     int maxit;
+    int solution_scheme_opt[SOLUTION_SCHEME_OPT_NO]; // set numerical solutions scheme options
+                                                     // solution_scheme_opt[0]: for line search
+                                                     // solution_scheme_opt[0]: for line search    
 
     /* analysis options */
     int analysis_type;
@@ -41,6 +45,8 @@ extern "C" {
     int restart;
     int max_n_jobs;
     int no_migrate;
+    int comp_print_reaction; // compute and print reaction forces
+    int comp_print_macro;    // compute and print macro values (GF, GP, GS)
 
     /* input overrides */
     int override_pre_disp;

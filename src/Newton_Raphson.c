@@ -288,7 +288,7 @@ double Newton_Raphson (const int print_level,
 
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
-  STEP = 1;
+  STEP = 12;
   DT = 0.0;
   ERROR = nor_min;
   iter = 0;
@@ -305,14 +305,14 @@ double Newton_Raphson (const int print_level,
   /* GOTO REST */
  rest:
   fflush(PGFEM_stdout);
-
-  if(INFO==1)
+  
+  if(INFO==1 && opts->solution_scheme_opt[LINE_SEARCH]==0)
+  {  
     ART = 1;  
-
-  if(myrank==0)
-  {
-    printf("================> INFO = %ld, ART = %ld\n", INFO, ART);
+    if(myrank==0)
+      printf("Imposed to use NO Line search [INFO = %ld, ART = %ld]\n", INFO, ART);
   }
+
   if (INFO == 1 && ART == 0){
    
     /* Reset variables */

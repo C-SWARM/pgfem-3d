@@ -1359,36 +1359,43 @@ int single_scale_main(int argc,char *argv[])
 	free(sur_forces);
       }
 
+    if(options.comp_print_reaction)
+    {
       fd_res_compute_reactions(ndofn, npres, d_r, r, elem, node,
                                matgeom, hommat, sup, eps, sig_e, nor_min,
                                crpl, dt, times[tim+1], options.stab, mpi_comm,
                                &options, alpha, r_n, r_n_1);
+    }
 
+    if(options.comp_print_macro)
+    {  
       /* Calculate macro deformation gradient */
-//      GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
-//      GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
-//      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
+      GF = computeMacroF(elem,ne,node,nn,eps,oVolume,mpi_comm);
+      GS = computeMacroS(elem,ne,node,nn,sig_e,oVolume,mpi_comm);
+      GP = computeMacroP(elem,ne,node,nn,sig_e,eps,oVolume,mpi_comm);           
 
       /* print GF & GS to file */
-      if(myrank == -1){                
-	sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
-	out = fopen(filename,"w");
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
-	PGFEM_fprintf(out,"\n");
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
-	PGFEM_fprintf(out,"\n");
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
-	PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
-	fclose(out);
+      if(myrank==0)
+      {
+        sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
+        out = fopen(filename,"w");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
+        PGFEM_fprintf(out,"\n");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
+        PGFEM_fprintf(out,"\n");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
+        fclose(out);
       }
 
       free(GF);
       free(GS);
       free(GP);
+    }
 
       if (print[tim] == 1 && options.vis_format != VIS_NONE ) {
 	if(options.ascii){

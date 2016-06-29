@@ -65,7 +65,9 @@ static const long_opt_descr solver_opts[] = {
   {{"hybrid",no_argument,NULL,3},"\tUse the HYPRE Hybrid (GMRES) solver\n"
    "\t\t(adaptively switches preconditioner)",0},
   {{"kdim",required_argument,NULL,3},"Set the Krylov dimension",0},
-  {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0}
+  {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0},
+  {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
+  {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0}
 };
 
 static const long_opt_descr precond_opts[] = {
@@ -101,7 +103,9 @@ static const long_opt_descr other_opts[] = {
   {{"no-migrate",no_argument,NULL,'N'},("Do not migrate cells between servers (FE2)."),0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
-  {{"help",no_argument,NULL,'h'},"Print this message and exit",1}
+  {{"help",no_argument,NULL,'h'},"Print this message and exit",1},
+  {{"no-compute-reactions",no_argument,NULL,'R'},"\n\t\tNo compute and print reaction forces",0},
+  {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0}
 
 };
 
@@ -186,6 +190,8 @@ void set_default_options(PGFem3D_opt *options)
   options->precond = EUCLID;
   options->kdim = 500;
   options->maxit = 1000;
+  options->solution_scheme_opt[LINE_SEARCH]            = 1;
+  options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 0;  
 
   /* analysis options */
   options->analysis_type = -1;
@@ -218,6 +224,8 @@ void set_default_options(PGFem3D_opt *options)
   options->override_solver_file = 0;
   options->solver_file = NULL;
   options->override_material_props = NULL;
+  options->comp_print_reaction = 1;
+  options->comp_print_macro = 1;
 
   /* I/O file names */
   options->ipath = NULL;
@@ -236,6 +244,15 @@ void print_options(FILE *out,
   PGFEM_fprintf(out,"Preconditioner: %d\n",options->precond);
   PGFEM_fprintf(out,"Kdim:           %d\n",options->kdim);
   PGFEM_fprintf(out,"Max It:         %d\n",options->maxit);
+  if(options->solution_scheme_opt[LINE_SEARCH])
+      PGFEM_fprintf(out,"LINE SEARCH is enabled\n");
+  else
+      PGFEM_fprintf(out,"LINE SEARCH is disabled\n");
+      
+  if(options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING])
+      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is enabled\n");
+  else
+      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");      
 
   PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
   PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
@@ -487,6 +504,10 @@ void re_parse_command_line(const int myrank,
 	options->kdim = (int) atof(optarg);
       } else if(strcmp("maxit",opts[opts_idx].name) == 0){
 	options->maxit = (int) atof(optarg);
+      } else if(strcmp("noLS",opts[opts_idx].name) == 0){
+	options->solution_scheme_opt[LINE_SEARCH] = 0;
+      } else if(strcmp("at",opts[opts_idx].name) == 0){
+	options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
       }
       break;
 
@@ -569,6 +590,12 @@ void re_parse_command_line(const int myrank,
     case 9999: /* debug mode */
       options->debug = 1;
       break;
+    case 'R':
+      options->comp_print_reaction = 0;
+      break;
+    case 'M':
+      options->comp_print_macro = 0;
+      break;  
 
     default:
       PGFEM_printf("How did I get here???\n");
