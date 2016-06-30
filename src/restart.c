@@ -201,9 +201,35 @@ int read_restart_plasticity(double *u0, double *u1, const PGFem3D_opt *opts,
 
 int read_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
-                 int myrank, int elemno, int nodeno, int nsd, int *stepno)
+                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1)
 {
   int err = 0;
+  
+  // write time stepping info
+  char fn[1024];
+  sprintf(fn, "%s/restart/STEP_%.5d/time_step_info.res",opts->opath,*stepno);
+
+  double t[3];
+  t[0] = t[1] = t[2] = -1.0;
+  
+  FILE *fp = fopen(fn, "r");    
+  
+  if(fp != NULL)
+  { 
+    fscanf(fp, "%lf %lf %lf\n", t+0, t+1, t+2);  
+    *tnm1 = t[1];
+    
+    if(myrank==0)
+      printf("read time stpe info %e %e %e\n", t[0], t[1], t[2]); 
+    
+    fclose(fp);
+  }
+  else
+  {
+    if(myrank==0)
+      printf("WARNING: cannot read time steps info [%s] \n", fn);
+  }
+    
   switch(opts->analysis_type)
   {
     case DISP:
@@ -222,7 +248,7 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
 
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                   ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
-                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno)
+                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times)
 {
   int err = 0;
   int nsd = 3;
@@ -233,7 +259,7 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
     PGFEM_printf("Directory (%s) not created!\n",restart_path);
     abort();                   
   }
-                
+  
   switch(opts->analysis_type)
   {
     case DISP:
@@ -261,6 +287,30 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
       free(r_n_dof);              
       break;
     }
-  }  
+  }
+  
+  if(myrank==0)
+  {
+    // write time stepping info
+    char fn[1024];
+    sprintf(fn, "%s/STEP_%.5d/time_step_info.res", restart_path,stepno);
+    
+    FILE *fp = fopen(fn, "w");
+    if(fp==NULL)
+    {
+      printf("Cannot create a file [%s]\n", fn);
+      printf("Anyway continue ...\n");
+    }
+    else
+    {  
+      if(stepno>0)
+        fprintf(fp, "%e %e %e\n", times[stepno-1], times[stepno], times[stepno+1]);  
+      else
+        fprintf(fp, "0.0 %e %e\n", times[stepno], times[stepno+1]);
+                  
+      fclose(fp);
+    }
+  }
+      
   return err;
 }

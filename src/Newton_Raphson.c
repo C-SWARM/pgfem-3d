@@ -288,7 +288,7 @@ double Newton_Raphson (const int print_level,
 
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
-  STEP = 12;
+  STEP = 1;
   DT = 0.0;
   ERROR = nor_min;
   iter = 0;
@@ -344,6 +344,7 @@ double Newton_Raphson (const int print_level,
     
     ART = 1;
   } else {
+
     subdivision (INFO,&dt,&STEP,&DIV,tim,times,&ST,ne,
 		 ndofn,ndofd,npres,elem,crpl,eps,sig_e,
 		 sup,sup_defl,rr,d_r,f_defl,f,RRn,R,&GAMA,

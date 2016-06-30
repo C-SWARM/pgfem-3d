@@ -83,7 +83,7 @@ static const int ndim = 3;
 
 double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opts,
                            ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
-                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart)
+                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart, double *tnm1)
 {
   char filename[1024];
   char line[1024];
@@ -111,7 +111,9 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
-                 myrank,elemno,nodeno,nsd,restart);    
+                 myrank,elemno,nodeno,nsd,restart,tnm1);
+    if(myrank==0)            
+      printf("-----------------------\n%d: %e\n------------------------------\n", myrank, *tnm1);                 
   } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -1058,8 +1060,9 @@ int single_scale_main(int argc,char *argv[])
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = options.restart;
     
+    double tnm1 = -1.0;
     alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
-                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim);
+                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim, &tnm1);
 
     for(long idx_a = 0; idx_a<nn; idx_a++)
     {
@@ -1274,6 +1277,10 @@ int single_scale_main(int argc,char *argv[])
       tim++;
       continue;
     }
+    
+    if(tim==restart_tim+1 && tnm1>0)
+      times[tim-1] = tnm1;
+      
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
   	fflush(PGFEM_stdout);
@@ -1434,7 +1441,7 @@ int single_scale_main(int argc,char *argv[])
               {
                   write_restart(r_n_1, r_n, &options, 
                                 elem, node,sig_e,eps,sup,
-                                myrank, ne, nn, ndofn, ndofd,tim);
+                                myrank, ne, nn, ndofn, ndofd, tim, times);
               } 
 
 ///////////////////////////////////////////////////////////////////////////////////      
