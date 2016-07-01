@@ -217,7 +217,8 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
   if(fp != NULL)
   { 
     fscanf(fp, "%lf %lf %lf\n", t+0, t+1, t+2);  
-    *tnm1 = t[1];
+    tnm1[0] = t[0];
+    tnm1[1] = t[1];
     
     if(myrank==0)
       printf("read time stpe info %e %e %e\n", t[0], t[1], t[2]); 

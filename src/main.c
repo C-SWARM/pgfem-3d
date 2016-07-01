@@ -112,8 +112,6 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
                  myrank,elemno,nodeno,nsd,restart,tnm1);
-    if(myrank==0)            
-      printf("-----------------------\n%d: %e\n------------------------------\n", myrank, *tnm1);                 
   } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -1060,9 +1058,9 @@ int single_scale_main(int argc,char *argv[])
     rho = malloc(sizeof(double)*nmat);    
     int restart_tim = options.restart;
     
-    double tnm1 = -1.0;
+    double tnm1[2] = {-1.0,-1.0};
     alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
-                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim, &tnm1);
+                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim, tnm1);
 
     for(long idx_a = 0; idx_a<nn; idx_a++)
     {
@@ -1278,9 +1276,16 @@ int single_scale_main(int argc,char *argv[])
       continue;
     }
     
-    if(tim==restart_tim+1 && tnm1>0)
-      times[tim-1] = tnm1;
-      
+    if(tim==restart_tim+1 && tnm1[1]>0)
+    {  
+      times[tim-1] = tnm1[1]; // tnm1[0] = times[tim-2]
+                              // tnm1[1] = times[tim-1]
+                              // tnm1[2] = times[tim]
+
+                              // if restart_tim==0: tim = 1
+      if(tim>=2)              // if restart_tim==1: tim = 2
+        times[tim-2] = tnm1[0];
+    } 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
   	fflush(PGFEM_stdout);
