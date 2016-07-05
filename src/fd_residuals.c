@@ -62,7 +62,7 @@ static int fd_res_elem(double *fe,
                        SIG *sig,
                        const double nor_min,
                        CRPL *crpl,
-                       const double dt,
+                       const double *dts,
                        const double t,
                        const double stab,
                        MPI_Comm mpi_comm,
@@ -73,6 +73,7 @@ static int fd_res_elem(double *fe,
                        const int include_inertia)
 {
   int err = 0;
+  double dt = dts[DT_NP1];
 
   /* Number of element nodes */
   int nne = elem[i].toe;
@@ -150,7 +151,7 @@ static int fd_res_elem(double *fe,
   if(include_inertia) {
     residuals_w_inertia_el(fe,i,nne,ndofn,npres,nVol,
                            ndofe,r_e,node,elem,hommat,sup,eps,sig,
-                           nod,cn,x,y,z,dt,t,opts,alpha,r_n,r_n_1);
+                           nod,cn,x,y,z,dts,t,opts,alpha,r_n,r_n_1);
   } else {
     /* Residuals on element */
     switch(opts->analysis_type) {
@@ -298,7 +299,7 @@ int fd_residuals (double *f_u,
                   SIG *sig,
                   double nor_min,
                   CRPL *crpl,
-                  double dt,
+                  double *dts,
                   double t,
                   double stab,
                   long nce,
@@ -334,7 +335,7 @@ int fd_residuals (double *f_u,
 
     err += fd_res_elem(fe, i, elem, ndofn, npres, d_r, r, node,
                        matgeom, hommat, sup, eps, sig, nor_min,
-                       crpl, dt, t, stab, mpi_comm, opts, alpha,
+                       crpl, dts, t, stab, mpi_comm, opts, alpha,
                        r_n, r_n_1, include_inertia);
 
     fd_res_assemble(f_u, fe, node, nne, ndofn, nod);
@@ -469,7 +470,7 @@ int fd_res_compute_reactions(const long ndofn,
                              SIG *sig,
                              const double nor_min,
                              CRPL *crpl,
-                             const double dt,
+                             const double *dts,
                              const double t,
                              const double stab,
                              MPI_Comm mpi_comm,
@@ -497,7 +498,7 @@ int fd_res_compute_reactions(const long ndofn,
 
     err += fd_res_elem(fe, el_id[i], elem, ndofn, npres, d_r, r, node,
                        matgeom, hommat, sup, eps, sig, nor_min, crpl,
-                       dt, t, stab, mpi_comm, opts, alpha, r_n, r_n_1,
+                       dts, t, stab, mpi_comm, opts, alpha, r_n, r_n_1,
                        include_inertia);
 
     /* Previous may have called integration algorithm. Need to reset

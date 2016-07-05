@@ -282,6 +282,8 @@ double D_lam_ALM2 (double *BS_rr,
 		   const PGFem3D_opt *opts)
 {
   double t = 0.0;
+  double dts[2];
+  dts[0] = dts[1] = dt;
   double alpha_alpha = 0.0;
   double *r_n = NULL;
   double *r_n_1 = NULL;
@@ -453,7 +455,7 @@ double D_lam_ALM2 (double *BS_rr,
   for (i=0;i<ndofd;i++ ) f_u[i] = 0.0;
   GToL(p1,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
   fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dt,t,stab,nce,
+		hommat,sup,eps,sig,nor_min,crpl,dts,t,stab,nce,
 		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
   LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
@@ -472,7 +474,7 @@ double D_lam_ALM2 (double *BS_rr,
   GToL(p2,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
 
   fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dt,t,stab,nce,
+		hommat,sup,eps,sig,nor_min,crpl,dts,t,stab,nce,
 		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
   LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);

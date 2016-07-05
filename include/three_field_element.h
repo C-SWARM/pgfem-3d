@@ -33,7 +33,7 @@ void residuals_3f_w_inertia_el(double *f,const int ii,
         const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
         const double *x,const double *y,const double *z,
         const ELEMENT *elem,const HOMMAT *hommat,const NODE *node,
-        double dt,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
+        const double *dts,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
 		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1);

@@ -186,7 +186,7 @@ void DISP_resid_w_inertia_el(double *f,
          const double *z,		     
          const ELEMENT *elem,
          const HOMMAT *hommat,
-		     const NODE *node, double dt, double t,
+		     const NODE *node, const double *dts, double t,
 		     double *r_2, double* r_1, double *r_0, double alpha)		     
 {
   const int mat = elem[ii].mat[2];
@@ -231,12 +231,12 @@ void DISP_resid_w_inertia_el(double *f,
       for(long b = 0; b<3; b++)
       {
         long id = a*ndofn + b;
-        Vec_v(du,b+1) += Vec_v(fe.N,a+1)*(r_2[id]-2.0*r_1[id]+r_0[id]);
+        Vec_v(du,b+1) += Vec_v(fe.N,a+1)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
       }
     }
     
-    double t1 = t-dt;
-    double t0 = t - dt - dt;
+    double t1 = t-dts[DT_NP1];
+    double t0 = t - dts[DT_NP1] - dts[DT_N];
     
 //    if(t0>=0) 
       MMS_body_force(bf0, &hommat[mat], t0, X[0], X[1], X[2]);
@@ -254,9 +254,9 @@ void DISP_resid_w_inertia_el(double *f,
       for(long b=0; b<3; b++)
 	    {
 	      long id = a*ndofn + b;
-	      f[id] += rho/dt*Vec_v(fe.N,a+1)*Vec_v(  du,b+1)*fe.detJxW;
-        f[id] -= (1.0-alpha)*dt*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;
-        f[id] -= alpha*dt*bf_n1a[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
+	      f[id] += rho/dts[DT_NP1]/dts[DT_N]*Vec_v(fe.N,a+1)*Vec_v(du,b+1)*fe.detJxW;
+        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*Vec_v(fe.N,a+1)*fe.detJxW;
+        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*Vec_v(fe.N,a+1)*fe.detJxW;	      	      	      
 	    }
 	  }	          
   }
@@ -275,7 +275,7 @@ int residuals_w_inertia_el(double *fe, int i,
 			int nne, long ndofn, long npres, long nVol,long ndofe, double *r_e,                               
 		  NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig,
 		  long* nod, long *cn, double *x, double *y, double *z,                                
-		  double dt, double t, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1)
+		  const double *dts, double t, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1)
 {
 	int nsd = 3;
 	int err = 0;
@@ -301,7 +301,7 @@ int residuals_w_inertia_el(double *fe, int i,
 	mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe);
 	
   if(opts->analysis_type == DISP || opts->analysis_type == TF || opts->analysis_type == CM) 
-    DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dt,t,r_e, r0, r0_, alpha);   
+    DISP_resid_w_inertia_el(f_i,i,ndofn,nne,x,y,z,elem,hommat,node,dts,t,r_e, r0, r0_, alpha);   
 
   switch(opts->analysis_type)
   {   		
@@ -311,13 +311,13 @@ int residuals_w_inertia_el(double *fe, int i,
 	    double *f_n_1_a = aloc1(ndofe);      
        
 	    err =  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
-                                 hommat,nod,node,eps,sig,sup,r_n_1_a, dt);
+                                 hommat,nod,node,eps,sig,sup,r_n_1_a, dts[DT_N]);
 
 	    err =  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
-                                 hommat,nod,node,eps,sig,sup,r_n_a, dt);
+                                 hommat,nod,node,eps,sig,sup,r_n_a, dts[DT_NP1]);
             	
 	    for(long a = 0; a<ndofe; a++)
-	      fe[a] = -f_i[a] - (1.0-alpha)*dt*f_n_a[a] - alpha*dt*f_n_1_a[a];
+	      fe[a] = -f_i[a] - (1.0-alpha)*dts[DT_NP1]*f_n_a[a] - alpha*dts[DT_N]*f_n_1_a[a];
 	      
 	    free(f_n_a);
 	    free(f_n_1_a);		      
@@ -329,7 +329,7 @@ int residuals_w_inertia_el(double *fe, int i,
       if(0<alpha && alpha<1.0)
       {	    
 	      residuals_3f_w_inertia_el(fe,i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,
-	                                dt,sig,eps,alpha,r_n_a,r_n_1_a);
+	                                dts,sig,eps,alpha,r_n_a,r_n_1_a);
 	    }
 	                              
 	    for(long a = 0; a<ndofe; a++)
@@ -344,7 +344,7 @@ int residuals_w_inertia_el(double *fe, int i,
     	memset(f_n, 0, sizeof(double)*ndofe);       
 
       err += residuals_el_crystal_plasticity_w_inertia(f_n,i,ndofn,nne,nsd,elem,nod,node,
-                                            dt,eps,sup,r_e,alpha);  
+                                            dts,eps,sup,r_e,alpha);  
 
 	    for(long a = 0; a<ndofe; a++)
 	      fe[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]

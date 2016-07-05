@@ -54,6 +54,7 @@
 #include "solver_file.h"
 
 #include "fd_residuals.h"
+#include "dynamics.h"
 
 static const int ndim = 3;
 static const long ARC = 1;
@@ -539,10 +540,19 @@ int multi_scale_main(int argc, char **argv)
 	free(sur_forces);
       }
 
+      double dts[2];
+      
+      if(s->tim==0)
+        dts[DT_N] = s->times[s->tim+1] - s->times[s->tim];
+      else  
+        dts[DT_N] = s->times[s->tim] - s->times[s->tim-1];
+    
+      dts[DT_NP1] = s->times[s->tim+1] - s->times[s->tim]; 
+                                
       fd_res_compute_reactions(c->ndofn, c->npres, s->d_r, s->r, c->elem, c->node,
                                c->matgeom, c->hommat, c->supports, s->eps,
                                s->sig_e, solver_file->nonlin_tol,
-                               s->crpl, s->dt, s->times[s->tim+1], macro->opts->stab,
+                               s->crpl, dts, s->times[s->tim+1], macro->opts->stab,
                                c->mpi_comm, macro->opts, 0, NULL, NULL);
 
       if (solver_file->print_steps[s->tim] == 1){

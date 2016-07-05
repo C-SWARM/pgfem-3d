@@ -742,7 +742,7 @@ void residuals_3f_w_inertia_el(double *f,
         const ELEMENT *elem,
         const HOMMAT *hommat,
         const NODE *node,
-        double dt,
+        const double *dts,
         SIG *sig,
         EPS *eps,
         double alpha, double *r_n_a, double *r_n_1_a)
@@ -766,9 +766,9 @@ void residuals_3f_w_inertia_el(double *f,
   {
     alpha_1 = 1.0 - alpha;
     alpha_2 = alpha;
-    dt_alpha_1_minus_alpha = dt*alpha_1*alpha_2; 
-    dt_alpha_1 = -dt*alpha_1;  
-    dt_alpha_2 = -dt*alpha_2;  
+    dt_alpha_1_minus_alpha = dts[DT_NP1]*alpha_1*alpha_2; 
+    dt_alpha_1 = -dts[DT_NP1]*alpha_1;  
+    dt_alpha_2 = -dts[DT_N]*alpha_2;  
   } 
   
   double *u1 = aloc1(nne*nsd);

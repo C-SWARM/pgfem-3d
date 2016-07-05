@@ -50,6 +50,8 @@
 #include "bounding_element_utils.h"
 #endif
 
+#include "dynamics.h"
+
 static const int periodic = 0;
 
 long LINE_S1 (double *nor,
@@ -75,7 +77,7 @@ long LINE_S1 (double *nor,
 	      SIG *sig_e,
 	      double nor_min,
 	      CRPL *crpl,
-	      double dt,
+	      double *dts,
 	      double stab,
 	      long nce,
 	      COEL *coel,
@@ -97,7 +99,7 @@ long LINE_S1 (double *nor,
 	      double *dissipation,
 	      const PGFem3D_opt *opts)
 {
-
+  double dt = dts[DT_NP1];
   double t = 0.0;
   double alpha = 0.0;
   double *r_n = NULL;
@@ -160,7 +162,7 @@ long LINE_S1 (double *nor,
 
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
 		  nce,coel,mpi_comm,opts,alpha,r_n,r_n_1);
     
     /* Transform LOCAL load vector to GLOBAL */
@@ -226,7 +228,7 @@ long LINE_S3 (double *nor,
 	      SIG *sig_e,
 	      double nor_min,
 	      CRPL *crpl,
-	      double dt,
+	      double *dts,
 	      double t,
 	      double stab,
 	      long nce,
@@ -250,6 +252,7 @@ long LINE_S3 (double *nor,
   long i,j,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,nor3;
   char  *error[]={"inf","-inf","nan"},str1[500];
+  double dt = dts[DT_NP1];
   
   int myrank,nproc;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -352,7 +355,7 @@ long LINE_S3 (double *nor,
 
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
 		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
 	
     /* Compute Euclidian norm */
@@ -411,7 +414,7 @@ long ALINE_S3 (long ARC,
 	       long npres,
 	       long tim,
 	       double nor_min,
-	       double dt,
+	       double *dts,
 	       double stab,
 	       long nce,
 	       double dlm,
@@ -451,7 +454,7 @@ long ALINE_S3 (long ARC,
 		double *dissipation,
 		const PGFem3D_opt *opts )
 {
-
+  double dt = dts[DT_NP1];
   double t = 0.0;
   double alpha = 0.0;
   double *r_n = NULL;
@@ -591,7 +594,7 @@ long ALINE_S3 (long ARC,
     
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
 		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
     
     /* Compute Euclidean norm */

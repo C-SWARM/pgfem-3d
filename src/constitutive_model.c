@@ -27,6 +27,7 @@
 #include "material_properties.h" // <= constitutive model material properties
 #include "hyperelasticity.h"     // <= constitutive model elasticity
 #include <string.h>
+#include "dynamics.h"
 
 #ifndef _Matrix_double
 Define_Matrix(double);
@@ -2012,7 +2013,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
                                     const ELEMENT *elem,
                                     const long *nod,
                                     const NODE *node,
-                                    const double dt,
+                                    const double *dts,
                                     EPS *eps,
                                     const SUPP sup,
                                     const double *r_e,
@@ -2063,7 +2064,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
     void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);
+    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL);
     err += m->param->integration_algorithm(m,ctx);
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
@@ -2073,16 +2074,16 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     err += m->param->get_Fn(m,  &F2[Fn]);
     err += m->param->get_Fnm1(m,&F2[Fnm1]);
     
-    double dt_1_minus_alpha = -dt*(1.0-alpha);
+    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,nne,nsd,
-                                elem,nod,node,dt,
+                                elem,nod,node,dts[DT_NP1],
                                 &F2[pFnp1],&F2[pFn],&F2[Fnp1],&F2[Fn],
                                 alpha, dt_1_minus_alpha,&fe);
                                 
-    double dt_alpha = -dt*alpha;
+    double dt_alpha = -dts[DT_N]*alpha;
 
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,nne,nsd,
-                                elem,nod,node,dt,
+                                elem,nod,node,dts[DT_N],
                                 &F2[pFn],&F2[pFnm1],&F2[Fn],&F2[Fnm1],
                                 alpha, dt_alpha,&fe);
   }

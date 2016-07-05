@@ -25,6 +25,8 @@
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
 #include "displacement_based_element.h"
+#include "dynamics.h"
+
 
 #ifndef ARC_DEBUG
 #define ARC_DEBUG 0
@@ -136,6 +138,8 @@ double Arc_length (long ne,
 
 */
 {
+  double dts[2];
+  dts[0] = dts[1] = dt;
   double t = 0.0;
   double *r_n = NULL;
   double *r_n_1 = NULL;
@@ -220,6 +224,8 @@ double Arc_length (long ne,
 		     sup_defl,rr,d_r,D_R,f_defl,f,&GAMA,&DT,
 		     &OME,stab,dAL0,*DAL,dALMAX,nor_min,dlm0,
 		     ITT,iter,iter_max,TYPE,mpi_comm,opts->analysis_type);
+	
+	dts[DT_NP1] = dt;	     
     
   if (periodic == 1) ART = 1;
   else               ART = 0;
@@ -409,7 +415,7 @@ double Arc_length (long ne,
     
     /* Residuals */
     fd_residuals(f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
 		  nce,coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
     
     /* Compute Euclidian norm */
@@ -670,7 +676,7 @@ double Arc_length (long ne,
       
       /* Residuals */
       fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		    hommat,sup,eps,sig_e,nor_min,crpl,dt,t,stab,
+		    hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
 		    nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
 
       /* Compute Euclidean norm */
@@ -700,7 +706,7 @@ double Arc_length (long ne,
       /* LINE SEARCH */
       if (ART == 0) {
 	INFO = ALINE_S3 (ARC,&DLM,&nor,&nor2,&gama,nor1,LS1,iter,ne,n_be,
-			 ndofd,ndofn,npres,tim,nor_min,dt,stab,nce,
+			 ndofd,ndofn,npres,tim,nor_min,dts,stab,nce,
 			 dlm,lm,dAL,d_r,r,D_R,node,elem,b_elems,matgeom,
 			 hommat,sup,eps,sig_e,crpl,coel,f_u,f,R,BS_f,
 			 BS_R,BS_D_R,BS_d_r,BS_DK,BS_U,BS_rr,
@@ -883,7 +889,7 @@ double Arc_length (long ne,
       for (i=0;i<ndofd;i++) {f_u[i] = 0.0; d_r[i] = 0.0;}
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,
 		    b_elems,matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+		    nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
       for (i=0;i<ndofd;i++) f[i] = lm*R[i] - f_u[i];
       
       LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);

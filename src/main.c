@@ -72,6 +72,7 @@
 
 #include "comm_hints.h"
 #include "fd_residuals.h"
+#include "dynamics.h"
 
 static const int periodic = 0;
 static const int ndim = 3;
@@ -1373,9 +1374,17 @@ int single_scale_main(int argc,char *argv[])
 
     if(options.comp_print_reaction)
     {
+      double dts[2];
+      if(tim==0)
+        dts[DT_N] = times[tim+1] - times[tim];
+      else  
+        dts[DT_N] = times[tim] - times[tim-1];
+    
+      dts[DT_NP1] = times[tim+1] - times[tim]; 
+  
       fd_res_compute_reactions(ndofn, npres, d_r, r, elem, node,
                                matgeom, hommat, sup, eps, sig_e, nor_min,
-                               crpl, dt, times[tim+1], options.stab, mpi_comm,
+                               crpl, dts, times[tim+1], options.stab, mpi_comm,
                                &options, alpha, r_n, r_n_1);
     }
 

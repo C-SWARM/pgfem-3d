@@ -36,6 +36,7 @@
 #include "pgf_fe2_micro_server.h"
 
 #include "constitutive_model.h"
+#include "dynamics.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -233,6 +234,15 @@ double Newton_Raphson (const int print_level,
                        double *r_n_1)
 {
   double t = times[tim+1];
+  double dts[2];
+
+  if(tim==0)
+    dts[DT_N] = times[tim+1] - times[tim];
+  else  
+    dts[DT_N] = times[tim] - times[tim-1];
+    
+  dts[DT_NP1] = times[tim+1] - times[tim];  
+  
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
   char str1[500];
@@ -350,7 +360,10 @@ double Newton_Raphson (const int print_level,
                    sup,sup_defl,rr,d_r,f_defl,f,RRn,R,&GAMA,
                    &DT,&OME,stab,iter,iter_max,alpha,mpi_comm,
                    opts->analysis_type);
-      
+    
+      dts[DT_NP1] = dt; // update dt_np1
+                        // dt_n is updated when Newton Raphson is completed without error
+
       gam = ART = 0;
       
     }
@@ -418,7 +431,7 @@ double Newton_Raphson (const int print_level,
         nulld (f_u,ndofd);
         INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                 matgeom,hommat,sup,eps,sig_e,
-                nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
         for (i=0;i<ndofd;i++){
           f[i] = - f_u[i];
           R[i] = RR[i] = 0.0;
@@ -453,7 +466,7 @@ double Newton_Raphson (const int print_level,
           
           fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                         matgeom,hommat,sup,eps,sig_e,
-                        nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                        nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
         } else {
           nulld (f_u,ndofd);
         }
@@ -659,7 +672,7 @@ double Newton_Raphson (const int print_level,
         /* Residuals */
         INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,
                              b_elems,matgeom,hommat,sup,
-                             eps,sig_e,nor_min,crpl,dt,t,stab,
+                             eps,sig_e,nor_min,crpl,dts,t,stab,
                              nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
         
         MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -730,7 +743,7 @@ double Newton_Raphson (const int print_level,
         if (ART == 0) {
           INFO = LINE_S3 (&nor,&nor2,&gama,nor1,NOR,LS1,iter,f_u,
                           ne,n_be,ndofd,ndofn,npres,d_r,r,node,elem,b_elems,
-                          matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dt,t,
+                          matgeom,hommat,sup,eps,sig_e,nor_min,crpl,dts,t,
                           stab,nce,coel,f,rr,RR,tim,
                           /*GNOD *gnod,GEEL *geel,*/
                           BS_f,BS_RR,BS_f_u,DomDof,comm,GDof,STEP,mpi_comm,
@@ -1030,6 +1043,9 @@ double Newton_Raphson (const int print_level,
         }
       }
       
+      // Update time steps
+      dts[DT_N] = dts[DT_NP1];
+      
       /* Null prescribed increment deformation */
       for (i=0;i<sup->npd;i++){
         sup->defl[i] += sup->defl_d[i];
@@ -1066,7 +1082,7 @@ double Newton_Raphson (const int print_level,
         }
         fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                       matgeom,hommat,sup,eps,sig_e,
-                      nor_min,crpl,dt,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                      nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
         
         for (i=0;i<ndofd;i++) f[i] = RR[i] - f_u[i];
         /* print_array_d(stdout,RR,ndofd,1,ndofd); */
