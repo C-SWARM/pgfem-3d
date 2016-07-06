@@ -5,9 +5,8 @@ NP=4
 branch=adaptive_time_stepping
 name=box
 TEST_DIR=$PWD
-IN_DIR=${TEST_DIR}/${name}_${NP}CPU
+IN_DIR=${TEST_DIR}/../inputs/${name}_${NP}CPU_ss
 exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
-#override="-override-pre-disp initial_disp.in"
 
 input=${IN_DIR}/${name}_
 OUTDIR=${TEST_DIR}/out/${name}_${NP}CPU
