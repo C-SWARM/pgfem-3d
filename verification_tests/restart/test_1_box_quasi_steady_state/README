@@ -1,0 +1,10 @@
+# This test performs a simple box compression test
+# to verifiy the restart of the PGFem3D
+# First, it runs a crystal plasticity simulation for 5 steps and restarts the run from 4th step
+# The comparision at the 5th step obtained by restart should match 
+# results obtained from the full simulation runs.
+
+# how to run
+module load mvapich2/2.1-intel-15.0-mlx
+./runit >& out.log
+
