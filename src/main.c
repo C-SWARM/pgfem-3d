@@ -84,7 +84,7 @@ static const int ndim = 3;
 
 double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opts,
                            ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
-                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart, double *tnm1)
+                           int myrank, int elemno, int nodeno, int nmat, double dt, int *restart, double *tnm1, double *NORM)
 {
   char filename[1024];
   char line[1024];
@@ -93,26 +93,29 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
     rho[a] = 0.0;
     
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
-  FILE *fp_0 = fopen(filename,"r");
 
-  if(fp_0 != NULL)
-  {  
-    while(fgets(line, 1024, fp_0)!=NULL) 
-    {
-      if(line[0]=='#')
-        continue;
+  if(*restart < 0)
+  {
+    FILE *fp_0 = fopen(filename,"r");
+
+    if(fp_0 != NULL)
+    {  
+      while(fgets(line, 1024, fp_0)!=NULL) 
+      {
+        if(line[0]=='#')
+          continue;
         
-      sscanf(line, "%d", restart);
-      break;
+        sscanf(line, "%d", restart);
+        break;
+      }
+      fclose(fp_0);
     }
-    fclose(fp_0);
   }
-  
-  if (*restart >= 0)
+  else
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
-                 myrank,elemno,nodeno,nsd,restart,tnm1);
+                 myrank,elemno,nodeno,nsd,restart,tnm1, NORM);
   } 
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -1061,7 +1064,7 @@ int single_scale_main(int argc,char *argv[])
     
     double tnm1[2] = {-1.0,-1.0};
     alpha = read_initial_values(r_n_1,r_n,rho,&options,elem,node,sig_e,eps,sup,
-                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim, tnm1);
+                                myrank,ne,nn,nmat,times[1] - times[0], &restart_tim, tnm1, &NORM);
 
     for(long idx_a = 0; idx_a<nn; idx_a++)
     {
@@ -1303,7 +1306,7 @@ int single_scale_main(int argc,char *argv[])
   	fflush(PGFEM_stdout);
   */	
     hypre_time += Newton_Raphson_test(1, &grid, &mat, &variables, &sol, &load, &com,
-                                      crpl, GNOR, nor1, nt, mpi_comm, VVolume, &options);  	
+                                      crpl, GNOR, nor1, nt, mpi_comm, VVolume, &options);
 
   /* Null global vectors */
 	for (i=0;i<ndofd;i++){
@@ -1455,7 +1458,7 @@ int single_scale_main(int argc,char *argv[])
               {
                   write_restart(r_n_1, r_n, &options, 
                                 elem, node,sig_e,eps,sup,
-                                myrank, ne, nn, ndofn, ndofd, tim, times);
+                                myrank, ne, nn, ndofn, ndofd, tim, times, NORM);
               } 
 
 ///////////////////////////////////////////////////////////////////////////////////      

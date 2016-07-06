@@ -11,9 +11,9 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, dou
 
 int read_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
-                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1);
+                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1, double *NORM);
                  
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                   ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
-                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times);
+                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times, double NORM);
 #endif

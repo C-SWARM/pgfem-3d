@@ -201,7 +201,7 @@ int read_restart_plasticity(double *u0, double *u1, const PGFem3D_opt *opts,
 
 int read_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
-                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1)
+                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1, double *NORM)
 {
   int err = 0;
   
@@ -211,17 +211,18 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
 
   double t[3];
   t[0] = t[1] = t[2] = -1.0;
+  *NORM = 0.0;
   
   FILE *fp = fopen(fn, "r");    
   
   if(fp != NULL)
   { 
-    fscanf(fp, "%lf %lf %lf\n", t+0, t+1, t+2);  
+    fscanf(fp, "%lf %lf %lf %lf\n", t+0, t+1, t+2, NORM);  
     tnm1[0] = t[0];
     tnm1[1] = t[1];
     
     if(myrank==0)
-      printf("read time stpe info %e %e %e\n", t[0], t[1], t[2]); 
+      printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e, NORM = %e\n", t[0], t[1], t[2], *NORM); 
     
     fclose(fp);
   }
@@ -249,7 +250,8 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
 
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                   ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
-                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times)
+                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times,
+                  double NORM)
 {
   int err = 0;
   int nsd = 3;
@@ -305,9 +307,9 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
     else
     {  
       if(stepno>0)
-        fprintf(fp, "%e %e %e\n", times[stepno-1], times[stepno], times[stepno+1]);  
+        fprintf(fp, "%e %e %e %e\n", times[stepno-1], times[stepno], times[stepno+1], NORM);  
       else
-        fprintf(fp, "0.0 %e %e\n", times[stepno], times[stepno+1]);
+        fprintf(fp, "0.0 %e %e %e\n", times[stepno], times[stepno+1], NORM);
                   
       fclose(fp);
     }
