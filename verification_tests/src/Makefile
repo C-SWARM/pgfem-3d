@@ -85,4 +85,4 @@ all:
 	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.c
 	$(LINK) -o crystal_plasticity_verification_test $(CFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
 clean:  
-	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure
+	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure UQ_study crystal_plasticity  crystal_plasticity_verification_test

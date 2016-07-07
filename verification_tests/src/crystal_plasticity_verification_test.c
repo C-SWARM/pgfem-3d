@@ -131,10 +131,12 @@ int main(int argc,char *argv[])
   Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
   double Err_of_stress = 0.0;  
 
+  double tnm1[2] = {-1.0,-1.0};
+  double NORM = 0.0;
   for(int istep=0; istep<1000; istep++)
   {
     read_restart(u0,u1,&options,elem,node,NULL,eps,sup,
-                 myrank,ne,nn,nsd,&istep); 
+                 myrank,ne,nn,nsd,&istep,tnm1,&NORM); 
 
     Matrix_construct_init(double, PK2, 3,3,0.0);
     Matrix_construct_init(double, sigma, 3,3,0.0);
