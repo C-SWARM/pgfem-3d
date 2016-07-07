@@ -817,13 +817,13 @@ double Newton_Raphson (const int print_level,
         }
         
         /* Check energy norm for convergence */
-//      if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
-//	if(myrank == 0){
-//	  PGFEM_printf("Converged on energy norm\n");
-//	}
-//	INFO = 0;
-//	break;
-//      }
+        if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
+          if(myrank == 0){
+            PGFEM_printf("Converged on energy norm\n");
+          }
+          INFO = 0;
+          break;
+        }
         
         /* Max number of iterations restart */
         if (iter > (iter_max-1) && nor > ERROR) {
