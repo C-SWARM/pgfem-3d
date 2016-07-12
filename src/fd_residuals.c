@@ -149,7 +149,7 @@ static int fd_res_elem(double *fe,
   int nsd = 3;
 
   if(include_inertia) {
-    residuals_w_inertia_el(fe,i,nne,ndofn,npres,nVol,
+    err + residuals_w_inertia_el(fe,i,nne,ndofn,npres,nVol,
                            ndofe,r_e,node,elem,hommat,sup,eps,sig,
                            nod,cn,x,y,z,dts,t,opts,alpha,r_n,r_n_1);
   } else {
