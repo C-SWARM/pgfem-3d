@@ -12,7 +12,7 @@
 #include "constitutive_model.h"
 
 static const int MAX_STEP = 10000;
-static const double MIN_D_TIME = 1.0e-10;
+static const double MIN_D_TIME = 1.0e-15;
 static const int periodic = 0;
 
 void subdivision (long INFO,
