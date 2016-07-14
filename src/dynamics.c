@@ -310,10 +310,10 @@ int residuals_w_inertia_el(double *fe, int i,
 	    double *f_n_a   = aloc1(ndofe);
 	    double *f_n_1_a = aloc1(ndofe);      
        
-	    err =  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
+	    err +=  DISP_resid_el(f_n_1_a,i,ndofn,nne,x,y,z,elem,
                                  hommat,nod,node,eps,sig,sup,r_n_1_a, dts[DT_N]);
 
-	    err =  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
+	    err +=  DISP_resid_el(f_n_a,i,ndofn,nne,x,y,z,elem,
                                  hommat,nod,node,eps,sig,sup,r_n_a, dts[DT_NP1]);
             	
 	    for(long a = 0; a<ndofe; a++)
