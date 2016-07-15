@@ -67,7 +67,8 @@ static const long_opt_descr solver_opts[] = {
   {{"kdim",required_argument,NULL,3},"Set the Krylov dimension",0},
   {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0},
   {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
-  {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0}
+  {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0},
+  {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0}  
 };
 
 static const long_opt_descr precond_opts[] = {
@@ -190,8 +191,9 @@ void set_default_options(PGFem3D_opt *options)
   options->precond = EUCLID;
   options->kdim = 500;
   options->maxit = 1000;
-  options->solution_scheme_opt[LINE_SEARCH]            = 1;
-  options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 0;  
+  options->solution_scheme_opt[LINE_SEARCH]              = 1;
+  options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING]   = 0;
+  options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 1;    
 
   /* analysis options */
   options->analysis_type = -1;
@@ -252,8 +254,13 @@ void print_options(FILE *out,
   if(options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING])
       PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is enabled\n");
   else
-      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");      
-
+      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");
+            
+  if(options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
+      PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is enabled\n");
+  else
+      PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is disabled\n");
+      
   PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
   PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
   PGFEM_fprintf(out,"Stab parameter:     %.12e\n",options->stab);
@@ -508,6 +515,8 @@ void re_parse_command_line(const int myrank,
 	options->solution_scheme_opt[LINE_SEARCH] = 0;
       } else if(strcmp("at",opts[opts_idx].name) == 0){
 	options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
+      } else if(strcmp("noCCE",opts[opts_idx].name) == 0){
+	options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
       }
       break;
 

@@ -196,8 +196,8 @@ void subdivision (long INFO,
     }/* end DIV != 0 */
     
     if (myrank == 0){
-      PGFEM_printf ("\n[%ld] Sub. steps = %ld :: gama = %f ||"
-	      " Time %f | dt = %f\n",
+      PGFEM_printf ("\n[%ld] Sub. steps = %ld :: gama = %e ||"
+	      " Time %e | dt = %e\n",
 	      tim,*STEP,gama,times[tim+1],*dt);
     }
     

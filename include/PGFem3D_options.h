@@ -21,7 +21,8 @@ extern "C" {
     int maxit;
     int solution_scheme_opt[SOLUTION_SCHEME_OPT_NO]; // set numerical solutions scheme options
                                                      // solution_scheme_opt[0]: for line search
-                                                     // solution_scheme_opt[0]: for line search    
+                                                     // solution_scheme_opt[1]: for adaptive time stepping    
+                                                     // solution_scheme_opt[2]: check convergence on energy norm   
 
     /* analysis options */
     int analysis_type;

@@ -390,7 +390,7 @@ double Newton_Raphson (const int print_level,
     INFO = 0;
     while (STEP > DIV){
       if ((STEP > 1 || ST == 1) && myrank == 0 ){
-        PGFEM_printf ("\nSTEP = %ld :: NS =  %ld || Time %f | dt = %10.10f\n",
+        PGFEM_printf ("\nSTEP = %ld :: NS =  %ld || Time %e | dt = %e\n",
                 DIV,STEP,times[tim+1],dt);
       }
       bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
@@ -817,12 +817,15 @@ double Newton_Raphson (const int print_level,
         }
         
         /* Check energy norm for convergence */
-        if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
-          if(myrank == 0){
-            PGFEM_printf("Converged on energy norm\n");
+        if(opts->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
+        {  
+          if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
+            if(myrank == 0){
+              PGFEM_printf("Converged on energy norm\n");
+            }
+            INFO = 0;
+            break;
           }
-          INFO = 0;
-          break;
         }
         
         /* Max number of iterations restart */
