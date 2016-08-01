@@ -494,7 +494,7 @@ double Newton_Raphson (const int print_level,
       
       iter = 0;
       nor = nor2 = GNOR = 10.0;
-      
+
       while (nor > ERROR
               && nor2 > zero_tol
               /* && nor2 > ERROR*ERROR */ /* norm of the residual < error^2
@@ -1137,6 +1137,7 @@ double Newton_Raphson (const int print_level,
                         dt,stab,mpi_comm,opts->analysis_type);
     }
     
+    times[tim] = times[tim+1] - dts[DT_NP1];
     return (solve_time);
     
 }
