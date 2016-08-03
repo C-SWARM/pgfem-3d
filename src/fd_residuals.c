@@ -482,7 +482,7 @@ int fd_res_compute_reactions(const long ndofn,
   int err = 0;
 
   /* make decision to include ineria*/
-  const long include_inertia = (fabs(hommat[elem[0].mat[2]].density) < MIN_DENSITY) ? 0 : 1;
+  const long include_inertia = 0; //computing reaction in quasi-steady state gives correct results
 
   const int ne = sup->nde;
   const long *el_id = sup->lepd;
