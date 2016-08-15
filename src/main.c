@@ -94,6 +94,8 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
     
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,0);
 
+  // restart option from command line is -1
+  // check restart form initial file. 
   if(*restart < 0)
   {
     FILE *fp_0 = fopen(filename,"r");
@@ -111,7 +113,9 @@ double read_initial_values(double *u0, double *u1, double *rho, PGFem3D_opt *opt
       fclose(fp_0);
     }
   }
-  else
+
+  // check restart and read values
+  if(*restart >= 0) 
   { 
     int nsd = 3;
     read_restart(u0,u1,opts,elem,node,sig_e,eps,sup,
