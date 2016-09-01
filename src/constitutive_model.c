@@ -237,6 +237,8 @@ int model_parameters_initialize(Model_parameters *p,
   set_properties_using_E_and_nu(mat_e,p_hmat->E,p_hmat->nu);
   mat_e->m01 = p_hmat->m01;
   mat_e->m10 = p_hmat->m10;
+  mat_e->G   = p_hmat->G;
+  mat_e->kappa = hommat_get_kappa(p_hmat);
   mat_e->devPotFlag = p_hmat->devPotFlag;
   mat_e->volPotFlag = p_hmat->volPotFlag;  
 
@@ -1400,6 +1402,8 @@ int residuals_el_crystal_plasticity_UL(double *f,
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);
     err += m->param->integration_algorithm(m,ctx);
+    if(err>0)
+    	return err;
     err += m->param->get_pF(m,&F2[pFnp1]);
 
     err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
@@ -1526,6 +1530,8 @@ int residuals_el_crystal_plasticity_TL(double *f,
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fr].m_pdata,dt,alpha, NULL);
     err += m->param->integration_algorithm(m,ctx);
+    if(err>0)
+    	return err;    
     err += m->param->get_pF(m,&F2[pFnp1]);
 
     err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata);    
@@ -2066,6 +2072,8 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL);
     err += m->param->integration_algorithm(m,ctx);
+    if(err>0)
+    	return err;    
     err += m->param->destroy_ctx(&ctx);
     err += m->param->get_pF(m,&F2[pFnp1]);
     err += m->param->get_pFn(m,&F2[pFn]);

@@ -1,0 +1,130 @@
+vertex 1 xyz 0.000000e+00 0.000000e+00 0.000000e+00
+vertex 2 xyz 5.000000e-01 0.000000e+00 0.000000e+00
+vertex 3 xyz 5.000000e-01 5.000000e-01 0.000000e+00
+vertex 4 xyz 0.000000e+00 5.000000e-01 0.000000e+00
+vertex 5 xyz 0.000000e+00 0.000000e+00 5.000000e-01
+vertex 6 xyz 5.000000e-01 0.000000e+00 5.000000e-01
+vertex 7 xyz 5.000000e-01 5.000000e-01 5.000000e-01
+vertex 8 xyz 0.000000e+00 5.000000e-01 5.000000e-01
+vertex 9 xyz 1.000000e+00 0.000000e+00 0.000000e+00
+vertex 10 xyz 1.000000e+00 5.000000e-01 0.000000e+00
+vertex 11 xyz 1.000000e+00 0.000000e+00 5.000000e-01
+vertex 12 xyz 1.000000e+00 5.000000e-01 5.000000e-01
+vertex 13 xyz 1.000000e+00 1.000000e+00 0.000000e+00
+vertex 14 xyz 5.000000e-01 1.000000e+00 0.000000e+00
+vertex 15 xyz 1.000000e+00 1.000000e+00 5.000000e-01
+vertex 16 xyz 5.000000e-01 1.000000e+00 5.000000e-01
+vertex 17 xyz 0.000000e+00 1.000000e+00 0.000000e+00
+vertex 18 xyz 0.000000e+00 1.000000e+00 5.000000e-01
+vertex 19 xyz 0.000000e+00 0.000000e+00 1.000000e+00
+vertex 20 xyz 5.000000e-01 0.000000e+00 1.000000e+00
+vertex 21 xyz 5.000000e-01 5.000000e-01 1.000000e+00
+vertex 22 xyz 0.000000e+00 5.000000e-01 1.000000e+00
+vertex 23 xyz 1.000000e+00 0.000000e+00 1.000000e+00
+vertex 24 xyz 1.000000e+00 5.000000e-01 1.000000e+00
+vertex 25 xyz 1.000000e+00 1.000000e+00 1.000000e+00
+vertex 26 xyz 5.000000e-01 1.000000e+00 1.000000e+00
+vertex 27 xyz 0.000000e+00 1.000000e+00 1.000000e+00
+
+curve 1 vertex 1 2
+curve 2 vertex 4 1
+curve 3 vertex 5 1
+curve 4 vertex 3 2
+curve 5 vertex 6 2
+curve 6 vertex 2 9
+curve 7 vertex 4 3
+curve 8 vertex 7 3
+curve 9 vertex 3 10
+curve 10 vertex 3 14
+curve 11 vertex 8 4
+curve 12 vertex 17 4
+curve 13 vertex 5 6
+curve 14 vertex 8 5
+curve 15 vertex 19 5
+curve 16 vertex 7 6
+curve 17 vertex 6 11
+curve 18 vertex 20 6
+curve 19 vertex 8 7
+curve 20 vertex 7 12
+curve 21 vertex 7 16
+curve 22 vertex 21 7
+curve 23 vertex 18 8
+curve 24 vertex 22 8
+curve 25 vertex 9 10
+curve 26 vertex 11 9
+curve 27 vertex 12 10
+curve 28 vertex 10 13
+curve 29 vertex 11 12
+curve 30 vertex 23 11
+curve 31 vertex 12 15
+curve 32 vertex 24 12
+curve 33 vertex 13 14
+curve 34 vertex 13 15
+curve 35 vertex 14 16
+curve 36 vertex 14 17
+curve 37 vertex 15 16
+curve 38 vertex 15 25
+curve 39 vertex 16 18
+curve 40 vertex 16 26
+curve 41 vertex 17 18
+curve 42 vertex 18 27
+curve 43 vertex 19 20
+curve 44 vertex 22 19
+curve 45 vertex 21 20
+curve 46 vertex 20 23
+curve 47 vertex 22 21
+curve 48 vertex 21 24
+curve 49 vertex 26 21
+curve 50 vertex 27 22
+curve 51 vertex 24 23
+curve 52 vertex 25 24
+curve 53 vertex 26 25
+curve 54 vertex 27 26
+
+patch 1 normal -0.000000e+00 -0.000000e+00 -1.000000e+00 boundary curve -2 7 4 -1 
+patch 2 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -3 -14 11 2 
+patch 3 normal -0.000000e+00 -1.000000e+00 -0.000000e+00 boundary curve 1 -5 -13 3 
+patch 4 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 13 -16 -19 14 
+patch 5 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve -7 -11 19 8 
+patch 6 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -4 -8 16 5 
+patch 7 normal -0.000000e+00 -0.000000e+00 -1.000000e+00 boundary curve -4 9 -25 -6 
+patch 8 normal -0.000000e+00 -1.000000e+00 -0.000000e+00 boundary curve 6 -26 -17 5 
+patch 9 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 17 29 -20 16 
+patch 10 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve -9 -8 20 27 
+patch 11 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve 25 -27 -29 26 
+patch 12 normal -0.000000e+00 -0.000000e+00 -1.000000e+00 boundary curve 10 -33 -28 -9 
+patch 13 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -8 21 -35 -10 
+patch 14 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 20 31 37 -21 
+patch 15 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve 33 35 -37 -34 
+patch 16 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve 28 34 -31 27 
+patch 17 normal -0.000000e+00 -0.000000e+00 -1.000000e+00 boundary curve -12 -36 -10 -7 
+patch 18 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -11 -23 -41 12 
+patch 19 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 19 21 39 23 
+patch 20 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve 36 41 -39 -35 
+patch 21 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -15 -44 24 14 
+patch 22 normal -0.000000e+00 -1.000000e+00 -0.000000e+00 boundary curve 13 -18 -43 15 
+patch 23 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 43 -45 -47 44 
+patch 24 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve -19 -24 47 22 
+patch 25 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -16 -22 45 18 
+patch 26 normal -0.000000e+00 -1.000000e+00 -0.000000e+00 boundary curve 17 -30 -46 18 
+patch 27 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 46 -51 -48 45 
+patch 28 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve -20 -22 48 32 
+patch 29 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve 29 -32 51 30 
+patch 30 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -22 -49 -40 -21 
+patch 31 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 48 -52 -53 49 
+patch 32 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve 37 40 53 -38 
+patch 33 normal 1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve 31 38 52 32 
+patch 34 normal -1.000000e+00 -0.000000e+00 -0.000000e+00 boundary curve -24 -50 -42 23 
+patch 35 normal -0.000000e+00 -0.000000e+00 1.000000e+00 boundary curve 47 -49 -54 50 
+patch 36 normal -0.000000e+00 1.000000e+00 -0.000000e+00 boundary curve 39 42 54 -40 
+
+region 1 boundary patch 1 2 3 4 5 6 size def property 0
+region 2 boundary patch 7 -6 8 9 10 11 size def property 1
+region 3 boundary patch 12 13 -10 14 15 16 size def property 2
+region 4 boundary patch 17 18 -5 19 20 -13 size def property 3
+region 5 boundary patch -4 21 22 23 24 25 size def property 4
+region 6 boundary patch -9 -25 26 27 28 29 size def property 5
+region 7 boundary patch -14 30 -28 31 32 33 size def property 6
+region 8 boundary patch -19 34 -24 35 36 -30 size def property 7
+
+

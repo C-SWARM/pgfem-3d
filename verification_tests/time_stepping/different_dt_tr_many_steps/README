@@ -1,0 +1,35 @@
+# 1. copy geometry
+cp ../inputs/box_8_domain/box.* .
+
+# 2. generate mesh
+./makeset.pl -np 32
+
+# 3. make transient
+cd box_32CPU
+
+cp -s ../box_0.initial
+for ((i=1; i<32; i++)); do
+  cp -s ../${name}_1.initial ${name}_${i}.initial
+done
+
+# 4. copy model_params.in file
+cp ../model_params.in .
+cd ..
+
+# 5. run PGFem3D for constant dt
+mpirun -np 32 $PGFEM3D_INSTALL/adaptive_time_stepping/bin/PGFem3D -SS -disp -V -kdim 1000 -maxit 1000 -override-pre-disp initial_disp.in -override-solver-file box_0.in.st_dt_em8 -noCCE -no-compute-macro box_32CPU/box_ out/dt_em8/box_32CPU/box
+
+# 6. run PGFem3D for 1:4 dts
+mpirun -np 32 $PGFEM3D_INSTALL/adaptive_time_stepping/bin/PGFem3D -SS -disp -V -kdim 1000 -maxit 1000 -override-pre-disp initial_disp.in -override-solver-file box_0.in.st_dt_em8_14 -noCCE -no-compute-macro box_32CPU/box_ out/dt_em8_14_disp/box_32CPU/box
+
+# 6. run PGFem3D for 1:4 dts with constitutive model
+mpirun -np 32 $PGFEM3D_INSTALL/adaptive_time_stepping/bin/PGFem3D -SS -cm 1 -V -kdim 1000 -maxit 1000 -override-pre-disp initial_disp.in -override-solver-file box_0.in.st_dt_em8_14 -noCCE -no-compute-macro box_32CPU/box_ out/dt_em8_14_cm/box_32CPU/box
+
+# 7. extract displacements for three runs (dt_em8, dt_em8_14_disp, and dt_em8_14_cm) from restart files at a node (T3D vertex id 7, center point of the box)
+# 8. compare results to see whether they are same within a tolerance.
+
+# 9. cleanup
+./makeset.pl clean
+rm box.out.header box.t3d
+rm -rf out
+
