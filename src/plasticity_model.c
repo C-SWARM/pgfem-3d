@@ -1145,10 +1145,6 @@ int compute_dMdu(const Constitutive_model *m,
     Matrix_AplusB(sum_Pa, 1.0, sum_Pa, drdg, Pa);
     Matrix_AplusB(sum_aD, 1.0, sum_aD, R2_a, aD);
         
-    Matrix_AOxB(aCxPa, aC, Pa);
-    Matrix_AOxB(aDxPa, aD, Pa);
-    
-    
     Matrix_AplusB(U, 1.0, U, drdtau, aCxPa);    
     Matrix_AplusB(B, 1.0, B, drdtau, aDxPa);            
   } 
