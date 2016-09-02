@@ -516,8 +516,9 @@ double Newton_Raphson (const int print_level,
                               myrank,nproc,DomDof,GDof,
                               comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
           
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-          if (GInfo != 0) {
+          // if INFO value greater than 0, the previous computation has an error
+          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
+          if (GInfo > 0) {
             if(myrank == 0){
               PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
                       "Subdividing load.\n", __func__, __FILE__, __LINE__);
@@ -612,8 +613,9 @@ double Newton_Raphson (const int print_level,
                                   eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts);
           
           /* Gather INFO from all domains */
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-          if (GInfo == 1) {
+          // if INFO value greater than 0, the previous computation has an error
+          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
+          if (GInfo > 0) { // if not 0, an error is detected
             ART = 1;
             INFO = 1;
             goto rest;
@@ -632,8 +634,9 @@ double Newton_Raphson (const int print_level,
                                   opts->analysis_type);
         
         bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
-        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-        if (GInfo == 1) {
+        // if INFO value greater than 0, the previous computation has an error
+        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+        if (GInfo > 0) { // if not 0, an error is detected
           if(myrank == 0){
             PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
                     "Subdividing load.\n");
@@ -675,8 +678,9 @@ double Newton_Raphson (const int print_level,
                              eps,sig_e,nor_min,crpl,dts,t,stab,
                              nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
         
-        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-        if (GInfo == 1) {
+        // if INFO value greater than 0, the previous computation has an error
+        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+        if (GInfo > 0) { // if not 0, an error is detected
           if(myrank == 0){
             PGFEM_printf("Error detected (fd_residuals) %s:%s:%ld.\n"
                     "Subdividing load.\n", __func__, __FILE__, __LINE__);
@@ -750,8 +754,9 @@ double Newton_Raphson (const int print_level,
                           &max_damage, &dissipation, opts,alpha_alpha,r_n,r_n_1);
           
           /* Gather infos */
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
-          if (GInfo == 1) { /* ERROR in line search */
+          // if INFO value greater than 0, the previous computation has an error
+          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+          if (GInfo > 0) { /* ERROR in line search */
             if (myrank == 0){
               PGFEM_printf("Error in the line search algorithm\n");
             }
