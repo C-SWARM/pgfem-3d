@@ -307,9 +307,9 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
     else
     {  
       if(stepno>0)
-        fprintf(fp, "%e %e %e %e\n", times[stepno-1], times[stepno], times[stepno+1], NORM);  
+        fprintf(fp, "%.17e %.17e %.17e %.17e\n", times[stepno-1], times[stepno], times[stepno+1], NORM);  
       else
-        fprintf(fp, "0.0 %e %e %e\n", times[stepno], times[stepno+1], NORM);
+        fprintf(fp, "0.0 %.17e %.17e %.17e\n", times[stepno], times[stepno+1], NORM);
                   
       fclose(fp);
     }
