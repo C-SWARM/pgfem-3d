@@ -1,13 +1,3 @@
-/*
- * In this implmentation, initial displacement, velocity, and material density are spcicified in file_base_*.initial files.
- * NON zero density triggers adding inertia. If density is equal to zero, no inertia and transient terms are evaluated.
- */
-/*
- * Restart is added which is dependent on read_VTK_file(char fn[], double *r) which can be found lib/VTK_IO/src (written in C++)
- * For the restart you have to set #define SAVE_RESTART_FILE 1.
- * When you restart the simulation, change -1 to your time step number in the file_base_0.inital
- * Nov. 17/2014, Sangmin Lee
- */
 
 /* HEADER */
 
@@ -1023,9 +1013,6 @@ int single_scale_main(int argc,char *argv[])
     build_crystal_plast (ne,elem,sig_e,eps,crpl,
             options.analysis_type,options.plc);
     
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /* \/ initialized element varialbes */
     if(options.analysis_type==TF)
     {
@@ -1044,15 +1031,10 @@ int single_scale_main(int argc,char *argv[])
       }
     }
     /* /\ initialized element varialbes */
-    
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
-    
+        
     /*******************************************************************/
-    /* this is for inertia */
-    /* material density*/
-    double *rho;
+    /* this is for inertia */    
+    double *rho;           /* mass density */
     double alpha = 0.5;    /* mid point rule alpha */
     
     double *r_n   = NULL; /* displacement at time is t_n*/
@@ -1455,89 +1437,13 @@ int single_scale_main(int argc,char *argv[])
                     myrank,ne,nn,node,elem,sup,r,sig_e,eps,
                     &options);
             
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-// this is only for the restart
+            // save restart files
             if(SAVE_RESTART_FILE)
             {
               write_restart(r_n_1, r_n, &options,
                       elem, node,sig_e,eps,sup,
                       myrank, ne, nn, ndofn, ndofd, tim, times, NORM);
             }
-            
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
-//if(myrank==0)
-//  constitutive_model_test(NULL, NULL, 0);
-            /*{
-              double G_gn = 0.0;
-              Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
- 
-              Matrix_construct_init(double, PK2, 3,3,0.0);
-              Matrix_construct_init(double, sigma, 3,3,0.0);
-              Matrix_construct_init(double, Feff, 3,3,0.0);
-              Matrix_construct_init(double, Eeff, 3,3,0.0);
-              Matrix_construct_init(double, eFeff, 3,3,0.0);
-              Matrix_construct_init(double, E, 3,3,0.0);
-              Matrix_construct_init(double, PK2dev, 3,3,0.0);
-              Matrix_construct_init(double, sigma_dev, 3,3,0.0);
-              Matrix_construct_init(double, eFeffPK2, 3,3,0.0);
- 
-              post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
-              post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
-              post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
-              post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,r_n,ndofn,mpi_comm, &options);
- 
-              if(myrank==0)
-              {
-                Matrix_eye(Eeff, 3);
-                Matrix_AxB(Eeff,0.5,-0.5,Feff,1,Feff,0);
-                double det_Fe;
-                Matrix_det(eFeff, det_Fe);
-                Matrix_AxB(eFeffPK2,1.0,0.0,eFeff,0,PK2,0);
-                Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);
- 
-                double trPK2, tr_sigma;
- 
-                Matrix_trace(PK2,trPK2);
-                Matrix_trace(sigma,tr_sigma);
-                Matrix_eye(PK2dev, 3);
-                Matrix_eye(sigma_dev, 3);
- 
-                Matrix_AplusB(PK2dev,    1.0, PK2,      -trPK2/3.0, PK2dev);
-                Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);
- 
-                double norm_sigma, norm_PK2;
-                Matrix_ddot(PK2dev,PK2dev,norm_PK2);
-                Matrix_ddot(sigma_dev,sigma_dev,norm_sigma);
- 
-                double sigma_eff=sqrt(3.0/2.0*norm_sigma);
-                double PK2_eff = sqrt(3.0/2.0*norm_PK2);
- 
- 
-                FILE *fp_ss;
-                if(tim==0)
-                  fp_ss = fopen("strain_stress.txt", "w");
-                else
-                  fp_ss = fopen("strain_stress.txt", "a");
- 
-                fprintf(fp_ss,"%e %e %e %e %e %e\n",times[tim+1],sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));
- 
-                fclose(fp_ss);
-              }
- 
-              Matrix_cleanup(PK2);
-              Matrix_cleanup(sigma);
-              Matrix_cleanup(Feff);
-              Matrix_cleanup(Eeff);
-              Matrix_cleanup(eFeff);
-              Matrix_cleanup(E);
-              Matrix_cleanup(PK2dev);
-              Matrix_cleanup(sigma_dev);
-              Matrix_cleanup(eFeffPK2);
-}*/
-///////////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////
             
             if (options.cohesive == 1){
               if(myrank == 0){
@@ -1587,15 +1493,10 @@ int single_scale_main(int argc,char *argv[])
     dealoc1 (DK);
     dealoc1 (D_R);
     free(bndel);
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////
     dealoc1(r_n);
     dealoc1(r_n_1);
     dealoc1(r_n_dof);
-////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     /* HYPRE */
     if (options.solverpackage == HYPRE){
       destroy_PGFEM_HYPRE_solve_info(PGFEM_hypre);
