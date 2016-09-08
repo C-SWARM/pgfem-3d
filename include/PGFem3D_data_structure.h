@@ -78,11 +78,11 @@ typedef struct {
   double *times;    /// list of time
   double dt_n;      /// dt at n
   double dt_np1;    /// dt at n+1
-  int *n_step;      /// 
-  double nor_min;   /// 
+  int *n_step;      /// the number of nonlinear steps taken to solve the given increment
+  double nor_min;   /// nonlinearr convergence tolerance
   long iter_max;    /// maximum number of iterations
   double alpha;     /// midpoint rule alpha
-  void *microscale;
+  void *microscale; /// Container of microscale information
   double stab;      /// stabilization parameter (for -st branch) 
   PGFEM_HYPRE_solve_info *PGFEM_hypre; /// custom HYPRE solver object 
   long FNR;         /// "Full Newton-Raphson" == 0, only compute tangent on 1st iteration 
@@ -92,8 +92,8 @@ typedef struct {
 
 /// struct for the boundary conditions
 typedef struct {
-  SUPP sup;
-  double *sup_defl;
+  SUPP sup;         /// list of Dirichlet boundary conditions
+  double *sup_defl; /// sum of Dirichlet BC increments to step n
 } LOADING_STEPS;
 
 /// struct for the communication
