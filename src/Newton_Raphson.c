@@ -4,6 +4,8 @@
 #include <sys/resource.h>
 #include <assert.h>
 
+
+#include "PGFem3D_data_structure.h"
 #include "PGFEM_io.h"
 #include "enumerations.h"
 #include "fd_increment.h"

@@ -8,6 +8,7 @@
 #ifndef NEWTON_RAPHSON_H
 #define NEWTON_RAPHSON_H
 
+#include "PGFem3D_data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "matgeom.h"
@@ -26,82 +27,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-/* this is temporal to test adaptive time stepping */ 
-
-typedef struct {
-  long ne;
-  long nn;
-  int n_be;
-  long nce; /**< number of COEL (cohesive elements) */
-  NODE *node;
-  ELEMENT *element;
-  BOUNDING_ELEMENT *b_elems;
-  COEL *coel; /**< list of cohesive elements */
-} GRID;
-
-typedef struct {
-  long ndofn;
-  long ndofd;
-  long npres;  
-  double *u_np1;
-  double *u_n;
-  double *u_nm1;
-  double *d_u;  /**< workspace for local increment of the solution n->n+1 */
-  double *dd_u; /**< workspace for local _iterative_ increment of the solution */
-  double *f; /**< workspace for local residual */
-  double *R; /**< [in] vector of Neumann loads */
-  double *f_defl; /**< workspace for the load vector due to derichlet conditions */
-  double *RR; /**< [out] total Neumann load */
-  double *f_u; /**< workspace for load due to body force */
-  double *RRn;/**< [in] Neumann load to time n */
-  double *pores; /**< [out] opening volume of failed cohesive interfaces */
-  double *BS_x; /**< workspace for the locally owned part of the global solution 'rr'. */
-  double *BS_f; /**< Global part of 'f'. */
-  double *BS_f_u; /**< Global part of 'f_u'. */  
-  double *BS_RR; /**< Global part of 'RR'. */
-  double *NORM; /**< [out] residual of first iteration (tim = 0, iter = 0). */    
-  SIG *sig;
-  EPS *eps;  
-} FIELD_VARIABLES;
-
-typedef struct {
-  HOMMAT *hommat;  /**< list of material properites */
-  MATGEOM matgeom; /**< information related to material geometry (for crystal plasticity) */
-} MATERIAL_PROPERTY;
-
-typedef struct {
-  long tim;
-  double *times;
-  double dt_n;
-  double dt_np1;
-  int *n_step;
-  double nor_min;
-  long iter_max;
-  double alpha;
-  void *microscale;
-  double stab; /**< stabilization parameter (for -st branch) */
-  PGFEM_HYPRE_solve_info *PGFEM_hypre; /**< custom HYPRE solver object */
-  long FNR; /**< "Full Newton-Raphson" == 0, only compute tangent on 1st iteration */
-  double gama; /**< related to linesearch, but is modified internally... */
-  double err; /**< linear solve tolerance */
-} SOLVER_OPTIONS;
-
-typedef struct {
-  SUPP sup;
-  double *sup_defl;
-} LOADING_STEPS;
-
-typedef struct {
-  int *Ap; /**< n_cols in each owned row of global stiffness matrix */
-	int *Ai; /**< column ids for owned rows of global stiffness matrix */
-  long *DomDof; /**< number of global DOFs on each domain */
-  long nbndel; /**< number of ELEMENT on the communication boundary */
-  long *bndel; /**< ELEMENT ids on the communication boundary */
-  COMMUN comm; /**< sparse communication structure */
-  int GDof; /**< maximum id of locally owned global DOF */
-} COMMUNICATION_STRUCTURE;
-
 
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
