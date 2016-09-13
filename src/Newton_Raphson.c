@@ -94,7 +94,23 @@ static void set_time_macro(const int tim,
 {
   times[tim + 1] = time_np1;
 }
-
+    
+/// Newton Raphson iterative solver
+///
+/// \param[in] print_level print level for a summary of the entire function call
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] time_steps object for time stepping
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \return non-zero on internal error
+/// \param[in] opts structure PGFem3D option
+/// \return time spent for this routine
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
                            MATERIAL_PROPERTY *mat,
@@ -102,14 +118,14 @@ double Newton_Raphson_test(const int print_level,
                            SOLVER_OPTIONS *sol,
                            LOADING_STEPS *load,
                            COMMUNICATION_STRUCTURE *com,
-                           CRPL *crpl,             /**< Crystal plasticity stuff */
-                           double GNOR,            /**< should be local variable. */
-                           double nor1,            /**< should be local variable. */
-                           long nt,                /**< _DEPRECATED_ */
+                           PGFem3D_TIME_STEPPING *time_steps,
+                           CRPL *crpl,
                            MPI_Comm mpi_comm,
-                           const double VVolume,   /**< original volume of the domain */
-                           const PGFem3D_opt *opts /**< structure of options */)
+                           const double VVolume,
+                           const PGFem3D_opt *opts)
 {
+  double GNOR; // global norm of residual
+  double nor1; // 
   return Newton_Raphson(print_level,sol->n_step,
                         grid->ne,
                         grid->n_be,
@@ -117,10 +133,10 @@ double Newton_Raphson_test(const int print_level,
                         variables->ndofn,
                         variables->ndofd,
                         variables->npres,
-                        sol->tim,
-                        sol->times,
+                        time_steps->tim,
+                        time_steps->times,
                         sol->nor_min,
-                        sol->dt_np1,
+                        time_steps->dt_np1,
                         grid->element,
                         grid->b_elems,
                         grid->node,
@@ -142,11 +158,11 @@ double Newton_Raphson_test(const int print_level,
                         variables->f_u,
                         variables->RRn,
                         crpl,
-                        sol->stab,
+                        opts->stab,
                         grid->nce,
                         grid->coel,
                         sol->FNR,
-                        variables->pores,
+                        &(variables->pores),
                         sol->PGFEM_hypre,
                         variables->BS_x,
                         variables->BS_f,
@@ -159,9 +175,9 @@ double Newton_Raphson_test(const int print_level,
                         com->DomDof,
                         com->comm,
                         com->GDof,
-                        nt,
+                        time_steps->nt,
                         sol->iter_max,
-                        variables->NORM,
+                        &(variables->NORM),
                         com->nbndel,
                         com->bndel,
                         mpi_comm,
@@ -376,7 +392,7 @@ double Newton_Raphson (const int print_level,
       ZeroHypreK(PGFEM_hypre,Ai,DomDof[myrank]);
       
       /* start the microscale jobs. Do not compute equilibrium. Use
-       sol->d_r (no displacement increments) for displacement dof
+       d_r (no displacement increments) for displacement dof
        vector */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) microscale;
       pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,

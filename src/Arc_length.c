@@ -26,6 +26,7 @@
 #include "MINI_3f_element.h"
 #include "displacement_based_element.h"
 #include "dynamics.h"
+#include "PGFem3D_data_structure.h"
 
 
 #ifndef ARC_DEBUG
@@ -46,7 +47,208 @@
 
 static const int periodic = 0;
 
-double Arc_length (long ne,
+/// initialize arc length variable object
+/// assign defaults (zoro for single member varialbes and NULL for member arrays and structs
+///                  except ARC=1)
+/// 
+/// \param[in, out] arc an object for arc length analysis containing additional variables
+/// \return non-zero on internal error
+int arc_length_variable_initialization(ARC_LENGTH_VARIABLES *arc)
+{
+  int err = 0;
+  arc->dt0    = 0.0;
+  arc->D_R    = NULL;
+  arc->U      = NULL;
+  arc->DK     = NULL;
+  arc->dR     = NULL;
+  arc->BS_d_r = NULL;
+  arc->BS_D_R = NULL;
+  arc->BS_rr  = NULL;
+  arc->BS_R   = NULL;
+  arc->BS_U   = NULL;
+  arc->BS_DK  = NULL;
+  arc->BS_dR  = NULL;
+  arc->lm     = 0.0;
+  arc->dAL0   = 0.0;
+  arc->DET0   = 0.0;
+  arc->DLM0   = 0.0;
+  arc->DLM    = 0.0;
+  arc->AT     = 0;
+  arc->ARC    = 1;
+  arc->dALMAX = 0.0;
+  arc->ITT    = 0;
+  arc->DAL    = 0.0;
+  return err;
+}
+
+/// construct arc length variable object
+/// create memory space for member arrays and structs
+/// 
+/// \param[in, out] arc an object for arc length analysis containing additional variables
+/// \param[in] fv an object containing all field variables
+/// \param[in] com an object for communication
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int construct_arc_length_variable(ARC_LENGTH_VARIABLES *arc,
+                                  FIELD_VARIABLES *fv,
+                                  COMMUNICATION_STRUCTURE *com,
+                                  int myrank)
+{
+  int err = 0;
+  arc->D_R    = aloc1(fv->ndofd);
+  arc->U      = aloc1(fv->ndofd);
+  arc->DK     = aloc1(fv->ndofd);
+  arc->dR     = aloc1(fv->ndofd);
+  arc->BS_d_r = aloc1(com->DomDof[myrank]);
+  arc->BS_D_R = aloc1(com->DomDof[myrank]);
+  arc->BS_rr  = aloc1(com->DomDof[myrank]);
+  arc->BS_R   = aloc1(com->DomDof[myrank]);
+  arc->BS_U   = aloc1(com->DomDof[myrank]);
+  arc->BS_DK  = aloc1(com->DomDof[myrank]);
+  arc->BS_dR  = aloc1(com->DomDof[myrank]);
+  return err;
+} 
+
+/// destruct arc length variable object
+/// free memory spaces for member arrays and structs
+/// 
+/// \param[in, out] arc an object for arc length analysis containing additional variables
+/// \return non-zero on internal error
+int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc)
+{
+  int err = 0;
+  if(NULL != arc->D_R)    free(arc->D_R);
+  if(NULL != arc->U)      free(arc->U);
+  if(NULL != arc->DK)     free(arc->DK);
+  if(NULL != arc->dR)     free(arc->dR);
+  if(NULL != arc->BS_d_r) free(arc->BS_d_r);
+  if(NULL != arc->BS_D_R) free(arc->BS_D_R);
+  if(NULL != arc->BS_rr)  free(arc->BS_rr);
+  if(NULL != arc->BS_R)   free(arc->BS_R);
+  if(NULL != arc->BS_U)   free(arc->BS_U);
+  if(NULL != arc->BS_DK)  free(arc->BS_DK);
+  if(NULL != arc->BS_dR)  free(arc->BS_dR);
+  err += arc_length_variable_initialization(arc);
+  return err;
+} 
+
+/// Perform arc length analysis.
+/// It calls the lagacy Arc_length function which requires many function arguments.
+/// Later, this function needs to be combined with Arc_length function. 
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] time_steps object for time stepping
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in, out] arc an object for Arc length scheme, cotains variables related to Arc length
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \return load multiplier
+double Arc_length_test(GRID *grid,
+                       MATERIAL_PROPERTY *mat,
+                       FIELD_VARIABLES *fv,
+                       SOLVER_OPTIONS *sol,
+                       LOADING_STEPS *load,
+                       COMMUNICATION_STRUCTURE *com,
+                       PGFem3D_TIME_STEPPING *time_steps, 
+                       CRPL *crpl,
+                       ARC_LENGTH_VARIABLES *arc,                		   
+                       MPI_Comm mpi_comm,
+                       const double VVolume,
+                       const PGFem3D_opt *opts
+                       )
+{
+  double dALMAX = (time_steps->dt_np1)/(arc->dt0)*(arc->dALMAX);
+  char out_dat[500];
+  sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
+  return Arc_length(grid->ne,
+                    grid->n_be,
+                    grid->nn,
+                    fv->ndofn,
+                    fv->ndofd,
+                    fv->npres,
+                    time_steps->nt,
+                    time_steps->tim,
+                    time_steps->times,
+                    sol->nor_min,
+                    sol->iter_max,
+                    time_steps->dt_np1,
+                    arc->dt0,
+                    grid->element,
+                    grid->b_elems,
+                    com->nbndel,
+                    com->bndel,
+                    grid->node,
+                    load->sup,
+                    load->sup_defl,
+                    mat->hommat,
+                    mat->matgeom,
+                    fv->sig,
+                    fv->eps,
+                    com->Ap,
+                    com->Ai,
+                    sol->PGFEM_hypre,
+                    fv->RRn,
+                    fv->f_defl,
+                    crpl,
+                    opts->stab,
+                    grid->nce,
+                    grid->coel,
+                    fv->u_np1,
+                    fv->f,
+                    fv->d_u,
+                    arc->D_R,
+                    fv->dd_u,
+                    fv->R,
+                    fv->RR,
+                    fv->f_u,
+                    arc->U,
+                    arc->DK,
+                    arc->dR,
+                    fv->BS_f,
+                    arc->BS_d_r,
+                    arc->BS_D_R,
+                    arc->BS_rr,
+                    arc->BS_R,
+                    fv->BS_RR,
+                    fv->BS_f_u,
+                    arc->BS_U,
+                    arc->BS_DK,
+                    arc->BS_dR,
+                    sol->FNR,
+                    arc->lm,
+                    arc->dAL0,
+                    &(arc->DET0),
+                    &(arc->DLM0),
+                    &(arc->DLM),
+                    opts->vis_format,
+                    opts->smoothing,
+                    fv->sig_n,
+                    out_dat,
+                    time_steps->print,
+                    &(arc->AT),
+                    arc->ARC,
+                    dALMAX,
+                    &(arc->ITT),
+                    &(arc->DAL),
+                    &(fv->pores),
+                    com->DomDof,
+                    com->GDof,
+                    com->comm,
+                    sol->err,
+                    &(fv->NORM),
+                    mpi_comm,
+                    VVolume,
+                    opts);
+}
+
+
+double Arc_length(long ne,
 		   int n_be,
 		   long nn,
 		   long ndofn,

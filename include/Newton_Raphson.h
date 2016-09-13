@@ -28,21 +28,35 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
+/// Perform Newton Raphson iteration
+///
+/// \param[in] print_level print level for a summary of the entire function call
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] time_steps object for time stepping
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \return non-zero on internal error
+/// \param[in] opts structure PGFem3D option
+/// \return time spent for this routine
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
                            MATERIAL_PROPERTY *mat,
                            FIELD_VARIABLES *variables,
                            SOLVER_OPTIONS *sol,
                            LOADING_STEPS *load,
-                           COMMUNICATION_STRUCTURE *com, 
-                           CRPL *crpl, /**< Crystal plasticity stuff */
-                           double GNOR, /**< should be local variable. */
-                           double nor1, /**< should be local variable. */
-                           long nt, /**< _DEPRECATED_ */
+                           COMMUNICATION_STRUCTURE *com,
+                           PGFem3D_TIME_STEPPING *time_steps,
+                           CRPL *crpl,
                            MPI_Comm mpi_comm,
-                           const double VVolume, /**< original volume of the domain */
-                           const PGFem3D_opt *opts /**< structure of options */);
-			 
+                           const double VVolume,
+                           const PGFem3D_opt *opts);
+
   /**
    * \brief Newton-Raphson solution algorithm.
    *

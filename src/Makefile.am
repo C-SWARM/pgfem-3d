@@ -134,7 +134,8 @@ state_variables.c \
 constitutive_model.c \
 post_processing.c \
 comm_hints.c \
-restart.c
+restart.c \ 
+PGFem3D_data_structure.c
 
 comm_hints_driver_SOURCES = comm_hints.c comm_hints_driver.c
 
