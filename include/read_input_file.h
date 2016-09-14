@@ -44,34 +44,61 @@ extern "C" {
 		      long *nel_v,
 		      ZATELEM **zelem_v);
 		      
-  /// read mesh file
-  ///
-  /// \param[out] grid a mesh object
-  /// \param[out] mat a material object
-  /// \param[out] variables object for field variables
-  /// \param[out] sol object for solution scheme
-  /// \param[out] load object for loading
-  /// \param[in] comm MPI_COMM_WORLD
-  /// \param[in] opts structure PGFem3D option
-  /// \return non-zero on internal error
-  int read_mesh_file(GRID *grid, 
+/// Read mesh info, boundary conditions, and material properties.
+/// from main input files (*.in)
+///
+/// \param[out] grid a mesh object
+/// \param[out] mat a material object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+int read_mesh_file(GRID *grid, 
+                   MATERIAL_PROPERTY *mat,
+                   FIELD_VARIABLES *variables,
+                   SOLVER_OPTIONS *sol,
+                   LOADING_STEPS *load,
+                   MPI_Comm mpi_comm,
+                   const PGFem3D_opt *opts);
+
+/// Read solver file for time stepping. 
+///
+/// \param[out] time_steps object for time stepping
+/// \param[out] mat a material object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
+/// \param[out] arc an object for Arc length scheme
+/// \param[out] crpl object for lagcy crystal plasticity
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      MATERIAL_PROPERTY *mat,
                      FIELD_VARIABLES *variables,
                      SOLVER_OPTIONS *sol,
                      LOADING_STEPS *load,
-                     MPI_Comm mpi_comm,
-                     const PGFem3D_opt *opts);
+                     ARC_LENGTH_VARIABLES *arc,
+                     CRPL *crpl,
+                     const PGFem3D_opt *opts,
+                     int myrank);
 
-  int read_solver_file(PGFem3D_TIME_STEPPING *ts,
-                       MATERIAL_PROPERTY *mat,
-                       FIELD_VARIABLES *variables,
-                       SOLVER_OPTIONS *sol,
-                       LOADING_STEPS *load,
-                       ARC_LENGTH_VARIABLES *arc,
-                       CRPL *crpl,
-                       const PGFem3D_opt *opts,
-                       int myrank);
 
+/// Read initial conditions.
+///
+/// \param[out] grid a mesh object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
+/// \param[out] time_steps object for time stepping
+/// \param[in, out] restart an integer for restart number (time step number) 
+/// \param[out] tnm1 if restart, read time step info from the previous run
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 int read_initial_values(GRID *grid,
                         MATERIAL_PROPERTY *mat,
                         FIELD_VARIABLES *fv,
@@ -82,7 +109,16 @@ int read_initial_values(GRID *grid,
                         int *restart, 
                         double *tnm1, 
                         int myrank);
-                       
+
+/// Read loads increments.
+///
+/// \param[in] grid a mesh object
+/// \param[in] variables object for field variables
+/// \param[out] load object for loading
+/// \param[in] tim time step ID
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error 
 int read_and_apply_load_increments(GRID *grid,
                                    FIELD_VARIABLES *variables,
                                    LOADING_STEPS *load, 
@@ -90,6 +126,15 @@ int read_and_apply_load_increments(GRID *grid,
                                    MPI_Comm mpi_comm,
                                    int myrank);
 
+/// Read read cohesive elements.
+///
+/// \param[out] grid a mesh object
+/// \param[out] mat a material object
+/// \param[in] opts structure PGFem3D option
+/// \param[in] ensight ENSIGHT object
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error  
 int read_cohesive_elements(GRID *grid,
                            MATERIAL_PROPERTY *mat,
                            const PGFem3D_opt *opts,

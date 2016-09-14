@@ -168,13 +168,17 @@ int read_input_file(const PGFem3D_opt *opts,
   return err;
 }
 
-/// read mesh file
+/// This function read mesh info, boundary conditions, and material properties 
+/// from main input files (*.in). While reading inputs, node, element, material, 
+/// and support objects are constructed. This function still utilizes 
+/// lagacy function (read_input_file). Later, this function and read_input_file need to
+/// be combined.
 ///
 /// \param[out] grid a mesh object
 /// \param[out] mat a material object
-/// \param[out] variables a mesh object
-/// \param[out] sol a mesh object
-/// \param[out] load a mesh object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
@@ -234,10 +238,24 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
   return err;
 } 
 
-/// read solver file for time stepping
+/// Read solver file for time stepping.
+/// If command line includes override solver file option, all solver files will be overrided.
+/// At the end of this function, file pointer is stored in LOADING_STEPS 
+/// in order to read load increments as time elapses.
+/// Detailed slover file format can be found at the following link:
+/// https://wiki-cswarm.crc.nd.edu/foswiki/pub/Main/CodeDevelopment/PGFem3DQuickStarts/generate_input_file.pdf
 ///
-///////////////////////////////////////////////////////////////
-// read input file name
+/// \param[out] time_steps object for time stepping
+/// \param[out] mat a material object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
+/// \param[out] arc an object for Arc length scheme
+/// \param[out] crpl object for lagcy crystal plasticity
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      MATERIAL_PROPERTY *mat,
                      FIELD_VARIABLES *variables,
@@ -293,6 +311,23 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   return 0;
 }
 
+/// Read initial conditions.
+/// If no restart, this function reads initial conditions from *.initial files. 
+/// The file format can be found at the following link:
+/// https://gitlab-cswarm.crc.nd.edu/pgfem_3d/pgfem_3d/wikis/how-to-set-initial-values
+/// If restart is set from the commend line, *.inital files are used only for reading 
+/// mid point rule and material densities. Initial conditions are set by reading restart files.   
+///
+/// \param[out] grid a mesh object
+/// \param[out] variables object for field variables
+/// \param[out] sol object for solution scheme
+/// \param[out] load object for loading
+/// \param[out] time_steps object for time stepping
+/// \param[in, out] restart an integer for restart number (time step number) 
+/// \param[out] tnm1 if restart, read time step info from the previous run
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 int read_initial_values(GRID *grid,
                         MATERIAL_PROPERTY *mat,
                         FIELD_VARIABLES *fv,
@@ -435,6 +470,20 @@ int read_initial_values(GRID *grid,
   return err;
 }
 
+/// Read loads increments.
+/// As time is elapsing, loads increments are read from solver file which 
+/// file pointer is saved in LOADING_STEPS. Prior to run this function, 
+/// read_initial_values function shold be called which open and the solver file pointer.
+/// The file pointer will be freed when LOADING_STEPS object is destoryed.
+/// The number of loads increments should be exact as read before in read_initial_values.
+///
+/// \param[in] grid a mesh object
+/// \param[in] variables object for field variables
+/// \param[out] load object for loading
+/// \param[in] tim time step ID
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error 
 int read_and_apply_load_increments(GRID *grid,
                                    FIELD_VARIABLES *variables,
                                    LOADING_STEPS *load, 
@@ -473,7 +522,19 @@ int read_and_apply_load_increments(GRID *grid,
   return err;
 }
 
-
+/// Read read cohesive elements.
+/// This function was part of the main function and extracted to 
+/// Modularized reading cohesive elements and reorganize the main function structures.
+/// The function call read not only cohesive elements but also cohesive properties (*.in.co_props).
+/// The functin dependency includes lagacy code (read_cohe_elem) to read *.in.co files, too.
+///
+/// \param[out] grid a mesh object
+/// \param[out] mat a material object
+/// \param[in] opts structure PGFem3D option
+/// \param[in] ensight ENSIGHT object
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error  
 int read_cohesive_elements(GRID *grid,
                            MATERIAL_PROPERTY *mat,
                            const PGFem3D_opt *opts,
