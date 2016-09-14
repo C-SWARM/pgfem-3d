@@ -73,8 +73,10 @@ int arc_length_variable_initialization(ARC_LENGTH_VARIABLES *arc)
   arc->DET0   = 0.0;
   arc->DLM0   = 0.0;
   arc->DLM    = 0.0;
-  arc->AT     = 0;
-  arc->ARC    = 1;
+  arc->AT     = 0;  
+  arc->ARC    = 1; // ARC LENGTH METHOD
+                   // ARC == 0 :: Crisfield
+                   // ARC == 1 :: Simo ONLY ARC LENG METHOD FOR PARALELL
   arc->dALMAX = 0.0;
   arc->ITT    = 0;
   arc->DAL    = 0.0;

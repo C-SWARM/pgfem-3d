@@ -275,11 +275,7 @@ int single_scale_main(int argc,char *argv[])
     
   struct rusage usage;
 
-  double nor1 = 0.0;
   double VVolume = 0.0;
-  
-  FILE *in1 = NULL;
-  FILE *out = NULL;
 
   Model_parameters *param_list = NULL;
 
@@ -288,18 +284,10 @@ int single_scale_main(int argc,char *argv[])
   /* boundary elements */
   
   long gem = 0;
-  long temp_int = 0;
   long sky = 0;
   
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = NULL;
-  
-  double GNOR = 0.0;
-  
-  /* ARC LENGTH METHOD 
-   * ARC == 0 :: Crisfield
-   * ARC == 1 :: Simo ONLY ARC LENG METHOD FOR PARALELL
-   */
   
   /* MI */
   double GVolume = 0.0;
@@ -595,7 +583,7 @@ int single_scale_main(int argc,char *argv[])
     
     /* Total number of nonzeros and skyline */
     MPI_Reduce (&(com.Ap[com.DomDof[myrank]]),&APP,1,MPI_INT,MPI_SUM,0,mpi_comm);
-    temp_int = skyline((int) com.DomDof[myrank],com.Ap,com.Ai,dist[myrank]);
+    long temp_int = skyline((int) com.DomDof[myrank],com.Ap,com.Ai,dist[myrank]);
     MPI_Reduce (&temp_int,&sky,1,MPI_INT,MPI_SUM,0,mpi_comm);
     
     if (myrank == 0){
@@ -1023,8 +1011,9 @@ int single_scale_main(int argc,char *argv[])
         /* print GF & GS to file */
         if(myrank==0)
         {
+          
           sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
-          out = fopen(filename,"w");
+          FILE *out = fopen(filename,"w");
           PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
           PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
           PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
