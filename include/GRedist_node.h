@@ -17,8 +17,9 @@ extern "C" {
 		     const long nn,
 		     const long ndofn,
 		     NODE *node,
-                     const Comm_hints *hints,
-		     const MPI_Comm Comm);
+         const Comm_hints *hints,         
+		     const MPI_Comm Comm,
+		     const int mp_id);
 
 #ifdef __cplusplus
 }

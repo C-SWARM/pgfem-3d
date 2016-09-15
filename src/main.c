@@ -245,7 +245,7 @@ int print_PGFem3D_final(double total_time,
 
 int single_scale_main(int argc,char *argv[])
 {
-  int err = 0;
+  int err = 0; int mp_id = 0;
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
    * may change */
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
@@ -254,23 +254,38 @@ int single_scale_main(int argc,char *argv[])
   // create and initialization of PGFem3D objects
   //----------------------------------------------------------------------
   //---->
+  // Multiphysics
+  MULTIPHYSICS mp;
+  mp.physicsno = 1;
+  mp.physics_ids = (int *) malloc(sizeof(int)*mp.physicsno);
+  mp.physics_ids[0] = MULTIPHYSICS_MECHANICAL;
+//  mp.physics_ids[1] = MULTIPHYSICS_THERMAL;
+
+  // Mechanical part
   FIELD_VARIABLES variables;
   GRID grid;
   MATERIAL_PROPERTY mat;
   LOADING_STEPS load;
   COMMUNICATION_STRUCTURE com;
-  SOLVER_OPTIONS sol;  
+  SOLVER_OPTIONS sol_M;
   PGFem3D_TIME_STEPPING time_steps;
-  ARC_LENGTH_VARIABLES arc;
+  ARC_LENGTH_VARIABLES arc;  
 
   err += time_stepping_initialization(&time_steps);
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
   err += field_varialbe_initialization(&variables);
   err += material_initialization(&mat);
-  err += solution_scheme_initialization(&sol);
+  err += solution_scheme_initialization(&sol_M);
   err += loading_steps_initialization(&load);
   err += communication_structure_initialization(&com);  
   err += arc_length_variable_initialization(&arc);
+  
+  //Thermal part  
+  FIELD_VARIABLES_THERMAL T;
+  LOADING_STEPS load_T;      
+  SOLVER_OPTIONS sol_T;
+
+  err += solution_scheme_initialization(&sol_T);
   //<---------------------------------------------------------------------
     
   struct rusage usage;
@@ -361,9 +376,12 @@ int single_scale_main(int argc,char *argv[])
   
   /* set up solver variables */
   if(options.solverpackage == HYPRE){
-    initialize_PGFEM_HYPRE_solve_info(&(sol.PGFEM_hypre));
-    (sol.PGFEM_hypre)->solver_type = options.solver;
-    (sol.PGFEM_hypre)->precond_type = options.precond;
+    initialize_PGFEM_HYPRE_solve_info(&(sol_M.PGFEM_hypre));
+    initialize_PGFEM_HYPRE_solve_info(&(sol_T.PGFEM_hypre));    
+    (sol_M.PGFEM_hypre)->solver_type = options.solver;
+    (sol_M.PGFEM_hypre)->precond_type = options.precond;
+    (sol_T.PGFEM_hypre)->solver_type = options.solver;
+    (sol_T.PGFEM_hypre)->precond_type = options.precond;    
   } else {
     if(myrank == 0){
       PGFEM_printerr("ERROR: Only HYPRE solvers are supported.\n");
@@ -416,7 +434,7 @@ int single_scale_main(int argc,char *argv[])
   //---->  
   {
     int in_err = 0;            
-    in_err = read_mesh_file(&grid,&mat,&variables,&sol,&load,mpi_comm,&options);
+    in_err = read_mesh_file(&grid,&mat,&variables,&sol_M,&load,&mp,mpi_comm,&options);
             
     if(in_err){
       PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
@@ -519,9 +537,13 @@ int single_scale_main(int argc,char *argv[])
   
   /* use new functions to get code numbers */
   variables.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
-          grid.element,grid.coel,grid.b_elems,mpi_comm);
+          grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
+/*          
+  T.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
+          grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
+  */                
   com.DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
-          grid.element,grid.coel,grid.b_elems,mpi_comm);
+          grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
   
   /* Gather degrees of freedom from all domains */
   MPI_Allgather (MPI_IN_PLACE,1,MPI_LONG,com.DomDof,1,MPI_LONG,mpi_comm);
@@ -554,12 +576,12 @@ int single_scale_main(int argc,char *argv[])
   }
   
   /* Compute global matrix row partitioning */
-  set_HYPRE_row_col_bounds(sol.PGFEM_hypre,variables.Gndof,com.DomDof,myrank);
+  set_HYPRE_row_col_bounds(sol_M.PGFEM_hypre,variables.Gndof,com.DomDof,myrank);
   
   renumber_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,variables.ndofn,com.DomDof,grid.node,
-          grid.element,grid.coel,grid.b_elems,mpi_comm);
+          grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
   com.NBN = distribute_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,variables.ndofn,ndim,grid.node,
-          grid.element,grid.coel,grid.b_elems, com.hints, mpi_comm);
+          grid.element,grid.coel,grid.b_elems, com.hints, mpi_comm,mp_id);
 
   //---------------------------------------------------------------------- 
   // print simulation setting info
@@ -577,7 +599,7 @@ int single_scale_main(int argc,char *argv[])
     
     com.Ai = Psparse_ApAi (com.nproc,myrank,grid.ne,grid.n_be,grid.nn,variables.ndofn,variables.ndofd,
             grid.element,grid.b_elems,grid.node,com.Ap,grid.nce,grid.coel,com.DomDof,
-            &(com.GDof),com.comm ,mpi_comm,options.cohesive);
+            &(com.GDof),com.comm ,mpi_comm,options.cohesive,mp_id);
     
     pgfem_comm_build_fast_maps(com.comm ,variables.ndofd,com.DomDof[myrank],com.GDof);
     
@@ -653,19 +675,19 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps, &mat, &variables, &sol, &load, &arc, crpl, &options, myrank);
+    err += read_solver_file(&time_steps, &mat, &variables, &sol_M, &load, &arc, crpl, &options, myrank);
     //<---------------------------------------------------------------------    
                          
     
     // Nonlinear solver
     if (myrank == 0) {
-      if (sol.FNR == 0 || sol.FNR == 1) {
+      if (sol_M.FNR == 0 || sol_M.FNR == 1) {
         PGFEM_printf ("\nNONLINEAR SOLVER : NEWTON-RAPHSON METHOD\n");
       }
-      if ((sol.FNR == 2 || sol.FNR == 3) && arc.ARC == 0){
+      if ((sol_M.FNR == 2 || sol_M.FNR == 3) && arc.ARC == 0){
         PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Crisfield\n");
       }
-      if ((sol.FNR == 2 || sol.FNR == 3) && arc.ARC == 1) {
+      if ((sol_M.FNR == 2 || sol_M.FNR == 3) && arc.ARC == 1) {
         PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
       }
     }
@@ -673,7 +695,7 @@ int single_scale_main(int argc,char *argv[])
     /* HYPRE INITIALIZATION ROUTINES */
     if(options.solverpackage == HYPRE){ /* HYPRE */
       /* Initialize HYPRE */
-      hypre_initialize(com.Ap,com.Ai,com.DomDof[myrank],sol.iter_max_sol,sol.err,sol.PGFEM_hypre,
+      hypre_initialize(com.Ap,com.Ai,com.DomDof[myrank],sol_M.iter_max_sol,sol_M.err,sol_M.PGFEM_hypre,
               &options,mpi_comm);
     }
     
@@ -681,7 +703,7 @@ int single_scale_main(int argc,char *argv[])
     /* alocation of the sigma vector */
     err += construct_field_varialbe(&variables, &grid, &com, &options, myrank);
     
-    if (sol.FNR == 2 || sol.FNR == 3)
+    if (sol_M.FNR == 2 || sol_M.FNR == 3)
       err += construct_arc_length_variable(&arc, &variables, &com, myrank);
 
     /* push nodal_forces to s->R */
@@ -777,7 +799,7 @@ int single_scale_main(int argc,char *argv[])
     err += read_initial_values(&grid, 
                                &mat, 
                                &variables, 
-                               &sol, 
+                               &sol_M, 
                                &load, 
                                &time_steps, 
                                &options, 
@@ -789,7 +811,7 @@ int single_scale_main(int argc,char *argv[])
     {
       for(long idx_b = 0; idx_b<variables.ndofn; idx_b++)
       {
-        long id = grid.node[idx_a].id[idx_b];
+        long id = grid.node[idx_a].id_map[mp_id].id[idx_b];
         if(id>0)
           variables.u_np1[id-1] = variables.u_n[idx_a*variables.ndofn + idx_b];
       }
@@ -815,11 +837,11 @@ int single_scale_main(int argc,char *argv[])
     }
     
     load_vec_node_defl (variables.f_defl,grid.ne,variables.ndofn,grid.element,grid.b_elems,grid.node,mat.hommat,
-            mat.matgeom,load.sup,variables.npres,sol.nor_min,variables.sig,variables.eps,time_steps.dt_np1,
-            crpl,options.stab,variables.u_np1,variables.u_n,&options,sol.alpha);
+            mat.matgeom,load.sup,variables.npres,sol_M.nor_min,variables.sig,variables.eps,time_steps.dt_np1,
+            crpl,options.stab,variables.u_np1,variables.u_n,&options,sol_M.alpha,MULTIPHYSICS_MECHANICAL);
     
     /*  NODE - generation of the load vector  */
-    load_vec_node (variables.R,load.nln,ndim,load.znod,grid.node);
+    load_vec_node (variables.R,load.nln,ndim,load.znod,grid.node,mp_id);
     /*  ELEMENT - generation of the load vector  */
     load_vec_elem_sur (variables.R,load.nle_s,ndim,grid.element,load.zele_s);
     
@@ -832,7 +854,7 @@ int single_scale_main(int argc,char *argv[])
     vvminus (variables.f,variables.f_defl,variables.ndofd);
     
     /* Transform LOCAL load vector to GLOBAL */
-    if(sol.FNR == 2 || sol.FNR == 3)
+    if(sol_M.FNR == 2 || sol_M.FNR == 3)
       LToG (variables.R,arc.BS_R,myrank,com.nproc,variables.ndofd,com.DomDof,com.GDof,com.comm ,mpi_comm);
     
     /* Prescribed deflection */
@@ -882,7 +904,7 @@ int single_scale_main(int argc,char *argv[])
       }
       
       /*=== NEWTON RAPHSON ===*/
-      if (sol.FNR == 0 || sol.FNR == 1)
+      if (sol_M.FNR == 0 || sol_M.FNR == 1)
       {
         //----------------------------------------------------------------------
         // file pointer (solver file) is active and used to update loads increments        
@@ -892,12 +914,12 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R        
         //----------------------------------------------------------------------
         //---->        
-        err += read_and_apply_load_increments(&grid, &variables, &load, tim, mpi_comm, myrank);
+        err += read_and_apply_load_increments(&grid, &variables, &load, &mp, tim, mpi_comm, myrank);
         vvplus(variables.R,nodal_forces,variables.ndofd);
         //<---------------------------------------------------------------------
     
         int n_step = 0;
-        sol.n_step = &n_step;
+        sol_M.n_step = &n_step;
 
         //----------------------------------------------------------------------
         // add load increments util time reaches the restart point
@@ -925,10 +947,14 @@ int single_scale_main(int argc,char *argv[])
             time_steps.times[tim-2] = tnm1[0];
         }
 
-        
+
+        //----------------------------------------------------------------------
+        // Perform Newton Raphson interation
+        //----------------------------------------------------------------------
+        //---->        
         fflush(PGFEM_stdout);
-        hypre_time += Newton_Raphson_test(1,&grid,&mat,&variables,&sol,&load,&com,&time_steps,
-                                             crpl,mpi_comm,VVolume,&options);
+        hypre_time += Newton_Raphson_test(1,&grid,&mat,&variables,&sol_M,&load,&com,&time_steps,
+                                          crpl,mpi_comm,VVolume,&options, 0);
         
         /* Null global vectors */
         for (long i=0;i<variables.ndofd;i++){
@@ -942,9 +968,9 @@ int single_scale_main(int argc,char *argv[])
       }/* end NR */
       
       /*=== ARC LENGTH ===*/
-      if(sol.FNR == 2 || sol.FNR == 3){
-        double dlm = Arc_length_test(&grid,&mat,&variables,&sol,&load,&com,&time_steps,
-                                     crpl,&arc,mpi_comm,VVolume,&options);
+      if(sol_M.FNR == 2 || sol_M.FNR == 3){
+        double dlm = Arc_length_test(&grid,&mat,&variables,&sol_M,&load,&com,&time_steps,
+                                     crpl,&arc,mpi_comm,VVolume,&options, 0);
         
         /* Load multiplier */
         arc.lm += dlm;
@@ -962,7 +988,7 @@ int single_scale_main(int argc,char *argv[])
       /* update output stuff for CM interface */
       if(options.analysis_type == CM && options.cm!=0){
         constitutive_model_update_output_variables(variables.sig,variables.eps,grid.node,grid.element,grid.ne,
-                time_steps.dt_np1,&options, sol.alpha);
+                time_steps.dt_np1,&options, sol_M.alpha);
       }
       
       /* print tractions on marked features */
@@ -996,9 +1022,9 @@ int single_scale_main(int argc,char *argv[])
         dts[DT_NP1] = time_steps.times[tim+1] - time_steps.times[tim];
         
         fd_res_compute_reactions(variables.ndofn, variables.npres, variables.d_u, variables.u_np1, grid.element, grid.node,
-                mat.matgeom, mat.hommat, load.sup, variables.eps, variables.sig, sol.nor_min,
+                mat.matgeom, mat.hommat, load.sup, variables.eps, variables.sig, sol_M.nor_min,
                 crpl, dts, time_steps.times[tim+1], options.stab, mpi_comm,
-                &options, sol.alpha, variables.u_n, variables.u_nm1);
+                &options, sol_M.alpha, variables.u_n, variables.u_nm1,mp_id);
       }
       
       if(options.comp_print_macro)
@@ -1035,7 +1061,7 @@ int single_scale_main(int argc,char *argv[])
       if (time_steps.print[tim] == 1 && options.vis_format != VIS_NONE ) {
         if(options.ascii){
           ASCII_output(&options,mpi_comm,tim,time_steps.times,grid.Gnn,grid.nn,grid.ne,grid.nce,variables.ndofd,
-                  com.DomDof,com.Ap,sol.FNR,arc.lm,variables.pores,VVolume,grid.node,grid.element,load.sup,
+                  com.DomDof,com.Ap,sol_M.FNR,arc.lm,variables.pores,VVolume,grid.node,grid.element,load.sup,
                   variables.u_np1,variables.eps,variables.sig,variables.sig_n,grid.coel);
         } /* End ASCII output */
         
@@ -1049,7 +1075,7 @@ int single_scale_main(int argc,char *argv[])
             sprintf (filename,"%s",out_dat);
             EnSight (filename,tim,time_steps.nt,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sup,
                     variables.u_np1,variables.sig,variables.sig_n,variables.eps,options.smoothing,grid.nce,grid.coel,
-                    /*nge,geel,ngn,gnod,*/sol.FNR,arc.lm,ensight,mpi_comm,
+                    /*nge,geel,ngn,gnod,*/sol_M.FNR,arc.lm,ensight,mpi_comm,
                     &options);
             break;
           case VIS_VTK:/* Print to VTK files */
@@ -1060,14 +1086,15 @@ int single_scale_main(int argc,char *argv[])
             
             VTK_print_vtu(options.opath,options.ofname,tim,
                     myrank,grid.ne,grid.nn,grid.node,grid.element,load.sup,variables.u_np1,variables.sig,variables.eps,
-                    &options);
+                    &options,mp_id);
             
             // save restart files
             if(SAVE_RESTART_FILE)
             {
               write_restart(variables.u_nm1, variables.u_n, &options,
                       grid.element, grid.node,variables.sig,variables.eps,load.sup,
-                      myrank, grid.ne, grid.nn, variables.ndofn, variables.ndofd, tim, time_steps.times, variables.NORM);
+                      myrank, grid.ne, grid.nn, variables.ndofn, variables.ndofd, tim, time_steps.times, variables.NORM,
+                      mp_id);
             }
             
             if (options.cohesive == 1){
@@ -1079,7 +1106,7 @@ int single_scale_main(int argc,char *argv[])
               
               VTK_print_cohesive_vtu(options.opath,options.ofname,
                       tim,myrank,grid.nce,grid.node,grid.coel,load.sup,variables.u_np1,ensight,
-                      &options);
+                      &options,mp_id);
             }
             break;
           default: /* no output */ break;
@@ -1105,7 +1132,7 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   if (options.solverpackage == HYPRE)
-    destroy_PGFEM_HYPRE_solve_info(sol.PGFEM_hypre);
+    destroy_PGFEM_HYPRE_solve_info(sol_M.PGFEM_hypre);
     
   err += destruct_time_stepping(&time_steps);  
   
@@ -1117,10 +1144,10 @@ int single_scale_main(int argc,char *argv[])
   err += destruct_loading_steps(&load);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
   err += destruct_material(&mat, &options);
-  err += destruct_grid(&grid, &options);
+  err += destruct_grid(&grid, &options, &mp);
   err += destruct_communication_structure(&com);  
 
-  if (sol.FNR == 2 || sol.FNR == 3)
+  if (sol_M.FNR == 2 || sol_M.FNR == 3)
     err += destruct_arc_length_variable(&arc);
     
   destroy_ensight(ensight);

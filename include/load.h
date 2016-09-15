@@ -36,7 +36,8 @@ void load_vec_node (double *f,
 		    const long nln,
 		    const long ndofn,
 		    const ZATNODE *znode,
-		    const NODE *node);
+		    const NODE *node,
+		    const int mp_id);
 
 /**
  * \brief Compute the load vector from the prescribed boundary
@@ -60,7 +61,8 @@ int load_vec_node_defl (double *f,
 			double stab,
 			double *r,
 			double *r_n,
-			const PGFem3D_opt *opts,double alpha);
+			const PGFem3D_opt *opts,double alpha,
+			const int mp_id);
 
 /**
  * \brief Compute the load vector from the elements with surface load

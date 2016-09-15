@@ -1115,7 +1115,8 @@ void stiffmat (long *adr,
 	       long *ci,
 	       long typsolveru,
 	       double *k,
-	       const PGFem3D_opt *opts)
+	       const PGFem3D_opt *opts,
+	       const int mp_id)
      /*
        
      k - stiffness matrix of the subdomain
@@ -1159,7 +1160,7 @@ void stiffmat (long *adr,
     stiffmatel (i,x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
     
     /* ID numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     /* Assembly */
     if (typsolveru == 0) localizat (k,lk,adr,cn,ndofe);

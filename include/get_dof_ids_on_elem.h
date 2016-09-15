@@ -28,7 +28,8 @@ extern "C" {
 			       const NODE *nodes,
 			       const BOUNDING_ELEMENT *b_elems,
 			       const ELEMENT *ptr_cur_elem,
-			       long *dof_ids);
+			       long *dof_ids,
+			       const int mp_id);
 
   /** Get only the id numbers for degrees of freedom associated with
       nodes. This function can replace calls to 'codenum' when the
@@ -38,7 +39,8 @@ extern "C" {
 				 const int n_dof_per_node,
 				 const long *node_ids_on_elem,
 				 const NODE *nodes,
-				 long *dof_ids);
+				 long *dof_ids,
+				 const int mp_id);
 
   /** Get only the id numbers for degrees of freedom associated with the element */
   void get_dof_ids_on_elem(const int global,
@@ -60,7 +62,8 @@ extern "C" {
 			       const NODE *nodes,
 			       const BOUNDING_ELEMENT *ptr_cur_be,
 			       const ELEMENT *elems,
-			       long *dof_ids);
+			       long *dof_ids,
+			       const int mp_id);
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

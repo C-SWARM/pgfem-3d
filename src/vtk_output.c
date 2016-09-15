@@ -217,7 +217,8 @@ void VTK_print_vtu(char *path,
 		   double *r,
 		   SIG *sig,
 		   EPS *eps,
-		   const PGFem3D_opt *opts)
+		   const PGFem3D_opt *opts,
+		   const int mp_id)
 {
   char cur_dir = '.';
   char *ptr_path = path;
@@ -270,9 +271,9 @@ void VTK_print_vtu(char *path,
 	  " NumberOfComponents=\"3\" format=\"ascii\">\n");
   for (int i=0; i<nn; i++){ /* For each node */
     for (int j=0; j<3; j++){ /* For each direction */
-      if (node[i].id[j] == 0) PGFEM_fprintf(out,"%12.12e ",0.0);
-      if (node[i].id[j] >  0) PGFEM_fprintf(out,"%12.12e ",r[node[i].id[j]-1]);
-      if (node[i].id[j] <  0) PGFEM_fprintf(out,"%12.12e ",sup->defl[abs(node[i].id[j])-1]);
+      if (node[i].id_map[mp_id].id[j] == 0) PGFEM_fprintf(out,"%12.12e ",0.0);
+      if (node[i].id_map[mp_id].id[j] >  0) PGFEM_fprintf(out,"%12.12e ",r[node[i].id_map[mp_id].id[j]-1]);
+      if (node[i].id_map[mp_id].id[j] <  0) PGFEM_fprintf(out,"%12.12e ",sup->defl[abs(node[i].id_map[mp_id].id[j])-1]);
     }
     PGFEM_fprintf(out,"\n");
   }
@@ -302,7 +303,7 @@ void VTK_print_vtu(char *path,
   case MINI_3F:
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"Pressure\" format=\"ascii\">\n");
     for (int i=0; i<nn; i++){
-      PGFEM_fprintf(out,"%12.12e\n",r[node[i].id[3]-1]);
+      PGFEM_fprintf(out,"%12.12e\n",r[node[i].id_map[mp_id].id[3]-1]);
     }
     PGFEM_fprintf(out,"</DataArray>\n");
     break;
@@ -512,7 +513,8 @@ void VTK_print_cohesive_vtu(char *path,
 			    SUPP sup,
 			    double *r,
 			    ENSIGHT ensight,
-			    const PGFem3D_opt *opts)
+			    const PGFem3D_opt *opts,
+			    const int mp_id)
 {
   char cur_dir = '.';
   char *ptr_path = path;
@@ -563,42 +565,42 @@ void VTK_print_cohesive_vtu(char *path,
 	  " NumberOfComponents=\"3\">\n");
   for (int i=0;i<ensight->ncn;i++){
     for(int j=0; j<3; j++){
-      if (node[ensight->Sm[i]].id[j] == 0 && node[ensight->Sp[i]].id[j] == 0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] == 0 && node[ensight->Sp[i]].id_map[mp_id].id[j] == 0)
 	PGFEM_fprintf(out,"%12.12e ",0.0);
 
-      if (node[ensight->Sm[i]].id[j] == 0 && node[ensight->Sp[i]].id[j] >  0)
-	PGFEM_fprintf(out,"%12.12e ",1./2.*(0.0 + r[node[ensight->Sp[i]].id[j]-1]));
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] == 0 && node[ensight->Sp[i]].id_map[mp_id].id[j] >  0)
+	PGFEM_fprintf(out,"%12.12e ",1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[mp_id].id[j]-1]));
 
-      if (node[ensight->Sm[i]].id[j] == 0 && node[ensight->Sp[i]].id[j] < 0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] == 0 && node[ensight->Sp[i]].id_map[mp_id].id[j] < 0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id[j])-1]));
+		1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id_map[mp_id].id[j])-1]));
 
-      if (node[ensight->Sm[i]].id[j] >  0 && node[ensight->Sp[i]].id[j] == 0)
-	PGFEM_fprintf(out,"%12.12e ",1./2.*(r[node[ensight->Sm[i]].id[j]-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] >  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] == 0)
+	PGFEM_fprintf(out,"%12.12e ",1./2.*(r[node[ensight->Sm[i]].id_map[mp_id].id[j]-1] + 0.0));
 
-      if (node[ensight->Sm[i]].id[j] <  0 && node[ensight->Sp[i]].id[j] == 0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] <  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] == 0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[j])-1] + 0.0));
+		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[mp_id].id[j])-1] + 0.0));
 
-      if (node[ensight->Sm[i]].id[j] >  0 && node[ensight->Sp[i]].id[j] <  0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] >  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] <  0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(r[node[ensight->Sm[i]].id[j]-1]
-		       + sup->defl[abs(node[ensight->Sp[i]].id[j])-1]));
+		1./2.*(r[node[ensight->Sm[i]].id_map[mp_id].id[j]-1]
+		       + sup->defl[abs(node[ensight->Sp[i]].id_map[mp_id].id[j])-1]));
 
-      if (node[ensight->Sm[i]].id[j] <  0 && node[ensight->Sp[i]].id[j] >  0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] <  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] >  0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[j])-1]
-		       + r[node[ensight->Sp[i]].id[j]-1]));
+		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[mp_id].id[j])-1]
+		       + r[node[ensight->Sp[i]].id_map[mp_id].id[j]-1]));
 
-      if (node[ensight->Sm[i]].id[j] <  0 && node[ensight->Sp[i]].id[j] <  0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] <  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] <  0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[j])-1]
-		       + sup->defl[abs(node[ensight->Sp[i]].id[j])-1]));
+		1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[mp_id].id[j])-1]
+		       + sup->defl[abs(node[ensight->Sp[i]].id_map[mp_id].id[j])-1]));
 
-      if (node[ensight->Sm[i]].id[j] >  0 && node[ensight->Sp[i]].id[j] >  0)
+      if (node[ensight->Sm[i]].id_map[mp_id].id[j] >  0 && node[ensight->Sp[i]].id_map[mp_id].id[j] >  0)
 	PGFEM_fprintf(out,"%12.12e ",
-		1./2.*(r[node[ensight->Sm[i]].id[j]-1]
-		       + r[node[ensight->Sp[i]].id[j]-1]));
+		1./2.*(r[node[ensight->Sm[i]].id_map[mp_id].id[j]-1]
+		       + r[node[ensight->Sp[i]].id_map[mp_id].id[j]-1]));
     }
     PGFEM_fprintf(out,"\n");
   }

@@ -131,7 +131,8 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
 }
 
 int pgf_FE2_restart_read_macro(MACROSCALE *macro,
-			       const size_t step)
+			       const size_t step,
+			       const int mp_id)
 {
   int err = 0;
 
@@ -170,7 +171,7 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   double nor_min = 1e-5;
   if(macro->opts->cohesive){
     increment_cohesive_elements(c->nce,c->coel,&pores,
-				c->node,c->supports,s->d_r);
+				c->node,c->supports,s->d_r,mp_id);
   }
 
   /* Finite deformations increment */
@@ -180,25 +181,25 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
     fd_increment (c->ne,c->nn,c->ndofn,c->npres,c->matgeom,c->hommat,
 		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
 		  nor_min,s->crpl,s->dt,c->nce,c->coel,&pores,c->mpi_comm,
-		  c->VVolume,macro->opts);
+		  c->VVolume,macro->opts,mp_id);
     break;
   case STABILIZED:
     st_increment (c->ne,c->nn,c->ndofn,c->ndofd,c->matgeom,c->hommat,
 		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
 		  nor_min,macro->opts->stab,s->dt,c->nce,c->coel,&pores,
-		  c->mpi_comm,macro->opts->cohesive);
+		  c->mpi_comm,macro->opts->cohesive,mp_id);
     break;
   case MINI:
     MINI_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
-		   c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm);
+		   c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm,mp_id);
     break;
   case MINI_3F:
     MINI_3f_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
-		      c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm);
+		      c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm,mp_id);
     break;
   case DISP:
     DISP_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,c->supports,s->eps,
-		   s->sig_e,c->hommat,s->d_r,s->r,c->mpi_comm);
+		   s->sig_e,c->hommat,s->d_r,s->r,c->mpi_comm,mp_id);
     break;
   default: break;
   }

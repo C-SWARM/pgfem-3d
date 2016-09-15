@@ -34,7 +34,7 @@ extern "C" {
       communication on mpi_comm->mm_inter and mpi_comm->micro */
   int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
 			      const PGFEM_ms_job_intercomm *ic,
-			      MICROSCALE *microscale);
+			      MICROSCALE *microscale,const int mp_id);
 
   /** compute a microscale job on the master of a microscale work
       group. Collective communication on mpi_comm->micro. */
@@ -44,12 +44,13 @@ extern "C" {
 		       char *in_buffer,
 		       char *out_buffer,
 		       MICROSCALE *micro,
-		       int *exit_server);
+		       int *exit_server,
+		       const int mp_id);
 
   /** compute a microscale job on the slaves of a microscale work
       group. Collective communication on mpi_comm->micro */
   int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
-		      MICROSCALE *micro);
+		      MICROSCALE *micro,const int mp_id);
 
   /** compute a microscale job. Collective communication on
       micro->common->mpi_comm. */
@@ -57,7 +58,8 @@ extern "C" {
 			     const int buff_len, /**< n_elem in buffer */
 			     char *buffer,       /**< buffer of job info */
 			     MICROSCALE *micro,
-			     int *exit_server);
+			     int *exit_server,
+			     const int mp_id);
 
 
   /** start computing struff for the macroscale --> initializes and

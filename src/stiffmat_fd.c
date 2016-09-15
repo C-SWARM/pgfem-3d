@@ -168,7 +168,8 @@ static int el_stiffmat(int i, /* Element ID */
 			const int analysis,
 			const int cm,
 			PGFEM_HYPRE_solve_info *PGFEM_hypre,
-			double alpha, double *r_n, double *r_n_1)
+			double alpha, double *r_n, double *r_n_1,
+			const int mp_id)
 {
 /* make a decision to include ineria*/
   const int mat = elem[i].mat[2];
@@ -266,8 +267,8 @@ static int el_stiffmat(int i, /* Element ID */
   }
     
   /* code numbers on element */
-  get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cnL);
-  get_dof_ids_on_elem_nodes(1,nne,ndofn,nod,node,cnG);
+  get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cnL,mp_id);
+  get_dof_ids_on_elem_nodes(1,nne,ndofn,nod,node,cnG,mp_id);
     
   /*=== deformation on element ===*/
 
@@ -358,7 +359,7 @@ static int el_stiffmat(int i, /* Element ID */
   if (periodic == 1 && (FNR == 2 || FNR == 3)){
     for (l=0;l<nne;l++){
       for (kk=0;kk<node[nod[l]].ndofn;kk++){
-	II = node[nod[l]].id[kk]-1;
+	II = node[nod[l]].id_map[mp_id].id[kk]-1;
 	if (II < 0)  continue;
 	f_u[II] += fe[l*node[nod[l]].ndofn+kk];
       }/*end l */
@@ -415,7 +416,8 @@ static void coel_stiffmat(int i, /* coel ID */
 			  int *Ddof,
 			  int interior,
 			  const int analysis,
-			  PGFEM_HYPRE_solve_info *PGFEM_hypre)
+			  PGFEM_HYPRE_solve_info *PGFEM_hypre,
+			  const int mp_id)
 {
   long j,l,nne,ndofe,*cnL,*cnG,*nod,P,R,II;
   double *lk,*x,*y,*z,*r_e,*sup_def,*fe, *X, *Y;
@@ -453,8 +455,8 @@ static void coel_stiffmat(int i, /* coel ID */
   nodecoord_updated (coel[i].toe,nod,node,x,y,z);
       
   /* code numbers on element */
-  get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nod,node,cnL);
-  get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nod,node,cnG);
+  get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nod,node,cnL,mp_id);
+  get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nod,node,cnG,mp_id);
 
   /* deformation on element */
   if (iter == 0){
@@ -485,7 +487,7 @@ static void coel_stiffmat(int i, /* coel ID */
 	}
       }
       for (P=0;P<3;P++){
-	II = node[nod[j]].id[P];
+	II = node[nod[j]].id_map[mp_id].id[P];
 	    
 	if (P == 0)
 	  x[j] = Y[P];
@@ -529,7 +531,7 @@ static void coel_stiffmat(int i, /* coel ID */
   if (periodic == 1 && (FNR == 2 || FNR == 3)){
     for (l=0;l<coel[i].toe;l++){
       for (kk=0;kk<ndofc;kk++){
-	II = node[nod[l]].id[kk]-1;
+	II = node[nod[l]].id_map[mp_id].id[kk]-1;
 	if (II < 0)  continue;
 	f_u[II] += fe[l*ndofc+kk];
       }/*end l */
@@ -581,7 +583,8 @@ static int bnd_el_stiffmat(int belem_id,
 			   int *Ddof,
 			   int interior,
 			   const int analysis,
-			   PGFEM_HYPRE_solve_info *PGFEM_hypre)
+			   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+			   const int mp_id)
 {
   int err = 0;
   const BOUNDING_ELEMENT *ptr_be = &b_elems[belem_id];
@@ -608,8 +611,8 @@ static int bnd_el_stiffmat(int belem_id,
   long *cn_ve = aloc1l(ndof_ve);
   long *Gcn_ve = aloc1l(ndof_ve);
 
-  get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn_ve);
-  get_dof_ids_on_bnd_elem(1,ndofn,node,ptr_be,elem,Gcn_ve);
+  get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn_ve, mp_id);
+  get_dof_ids_on_bnd_elem(1,ndofn,node,ptr_be,elem,Gcn_ve,mp_id);
 
   /* compute the deformation on the element */
   double *v_disp = aloc1(ndof_ve);
@@ -709,7 +712,8 @@ int stiffmat_fd(int *Ap,
 		 COMMUN comm,
 		 MPI_Comm mpi_comm,
 		 PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		 const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1)
+		 const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
+		 const int mp_id)
 {
   int err = 0;
   long i,ndofc;
@@ -744,7 +748,7 @@ int stiffmat_fd(int *Ap,
                        matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
                        dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,comm,
                        Ddof,0,opts->analysis_type,opts->cm,PGFEM_hypre,
-                       alpha,r_n,r_n_1);
+                       alpha,r_n,r_n_1,mp_id);
 
     /* If there is an error, complete communication and exit */
     if(err != 0) goto send;
@@ -767,7 +771,7 @@ int stiffmat_fd(int *Ap,
       coel_stiffmat(i,Lk,Ap,Ai,ndofc,elem,node,eps,
 		    d_r,r,npres,sup,iter,nor_min,dt,crpl,
 		    stab,coel,FNR,lm,f_u,myrank,nproc,DomDof,
-		    GDof,comm,Ddof,0,opts->analysis_type,PGFEM_hypre);
+		    GDof,comm,Ddof,0,opts->analysis_type,PGFEM_hypre, mp_id);
     }
   }
 
@@ -787,7 +791,7 @@ int stiffmat_fd(int *Ap,
     err += bnd_el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,b_elems,node,hommat,
 			   matgeom,sig,eps,d_r,r,npres,sup,iter,nor_min,
 			   dt,crpl,stab,FNR,lm,f_u,myrank,nproc,GDof,
-			   comm,Ddof,0,opts->analysis_type,PGFEM_hypre);
+			   comm,Ddof,0,opts->analysis_type,PGFEM_hypre,mp_id);
 
     /* If there is an error, complete communication and exit */
     if(err != 0) goto send;
@@ -853,12 +857,12 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,
 			    sig,eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,
 			    stab,FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1, mp_id);
 	} else if (idx > 0 && bndel[idx-1] < i && i < bndel[idx]){
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1, mp_id);
 	} else {
 	  PGFEM_printf("[%d]ERROR: problem in determining if element %ld"
 		 " is on interior.\n", myrank, i);
@@ -868,7 +872,7 @@ int stiffmat_fd(int *Ap,
 	  err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			    eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,
 			    FNR,lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
+			    opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1, mp_id);
 	}
       }
 
@@ -885,7 +889,7 @@ int stiffmat_fd(int *Ap,
       err = el_stiffmat(i,Lk,Ap,Ai,ndofn,elem,node,hommat,matgeom,sig,
 			eps,d_r,r,npres,sup,iter,nor_min,dt,crpl,stab,FNR,
 			lm,f_u,myrank,nproc,GDof,comm,Ddof,1,
-			opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1);
+			opts->analysis_type,opts->cm,PGFEM_hypre,alpha,r_n,r_n_1, mp_id);
       /* If there is an error, complete communication and exit */
       if(err != 0) goto wait;
     }

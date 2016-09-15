@@ -95,7 +95,8 @@ int read_input_file(const PGFem3D_opt *opts,
 		    long *nel_s,
 		    ZATELEM **zelem_s,
 		    long *nel_v,
-		    ZATELEM **zelem_v)
+		    ZATELEM **zelem_v,
+		    const int phyicsno)
 {
   int err = 0;
   int myrank = 0;
@@ -117,14 +118,16 @@ int read_input_file(const PGFem3D_opt *opts,
   default: *ndofn = ndim; break;
   }
 
-  (*node) = build_node(*nn,*ndofn);
+  (*node) = build_node_multi_physic(*nn,*ndofn,phyicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
   (*material) = PGFEM_calloc(*nmat,sizeof(MATERIAL));
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
 
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
   /* NOTE: Supports assume only ndim supported dofs per node! */
-  *sup = read_supports(in,*nn,ndim,*node);
+  
+  for(int ia=0; ia<phyicsno; ia++)
+    sup[ia] = read_supports(in,*nn,ndim,*node, ia);
 
   read_elem(in,*ne,*elem,*sup,opts->legacy);
 
@@ -179,6 +182,7 @@ int read_input_file(const PGFem3D_opt *opts,
 /// \param[out] variables object for field variables
 /// \param[out] sol object for solution scheme
 /// \param[out] load object for loading
+/// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
@@ -187,6 +191,7 @@ int read_mesh_file(GRID *grid,
                    FIELD_VARIABLES *variables,
                    SOLVER_OPTIONS *sol,
                    LOADING_STEPS *load,
+                   MULTIPHYSICS *mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts)
 {
@@ -212,7 +217,8 @@ int read_mesh_file(GRID *grid,
                             &(load->nle_s),
                             &(load->zele_s),
                             &(load->nle_v),
-                            &(load->zele_v));
+                            &(load->zele_v),
+                            mp->physicsno);
   return err;
 }                   
 
@@ -480,13 +486,15 @@ int read_initial_values(GRID *grid,
 /// \param[in] grid a mesh object
 /// \param[in] variables object for field variables
 /// \param[out] load object for loading
+/// \param[in] mp multiphysics object
 /// \param[in] tim time step ID
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error 
 int read_and_apply_load_increments(GRID *grid,
                                    FIELD_VARIABLES *variables,
-                                   LOADING_STEPS *load, 
+                                   LOADING_STEPS *load,
+                                   MULTIPHYSICS *mp, 
                                    long tim, 
                                    MPI_Comm mpi_comm,
                                    int myrank)
@@ -503,20 +511,22 @@ int read_and_apply_load_increments(GRID *grid,
   if (load->tim_load[tim] == 1 && tim != 0)
   {
     //  read nodal prescribed deflection
-    for(long ia=0;ia<load->sup->npd;ia++)
+    for(int iA=0; iA<mp->physicsno; iA++)
     {
-      fscanf (load->solver_file,"%lf",((load->sup)->defl_d) + ia);
-      (load->sup_defl)[ia] = (load->sup)->defl_d[ia];
-    }
-    // read nodal load in the subdomain
-    read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);
-    // read elem surface load */
-    read_elem_surface_load(load->solver_file,load->nle_s,grid->nsd,grid->element,load->zele_s);
-    //  NODE - generation of the load vector 
-    load_vec_node(variables->R,load->nln,ndim,load->znod,grid->node);
-    //  ELEMENT - generation of the load vector
-    load_vec_elem_sur(variables->R,load->nle_s,grid->nsd,grid->element,load->zele_s);
-    
+      for(long ia=0;ia<load->sup->npd;ia++)
+      {
+        fscanf (load->solver_file,"%lf",((load->sup)[iA].defl_d) + ia);
+        (load->sup_defl)[ia] = (load->sup)[iA].defl_d[ia];
+      }
+      // read nodal load in the subdomain
+      read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);
+      // read elem surface load */
+      read_elem_surface_load(load->solver_file,load->nle_s,grid->nsd,grid->element,load->zele_s);
+      //  NODE - generation of the load vector 
+      load_vec_node(variables->R,load->nln,ndim,load->znod,grid->node,iA);
+      //  ELEMENT - generation of the load vector
+      load_vec_elem_sur(variables->R,load->nle_s,grid->nsd,grid->element,load->zele_s);
+    }    
   } /* end load increment */
           
   return err;

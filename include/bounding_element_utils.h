@@ -58,7 +58,8 @@ extern "C" {
 				const NODE *nodes,
 				const long *DomDof,
 				const MPI_Comm mpi_comm,
-				long *perm);
+				long *perm,
+				const int mp_id);
 
 #ifdef __cplusplus
 }

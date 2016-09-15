@@ -72,12 +72,12 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   for(int i=0; i<nnode; i++){
     double displ[3] = {0.0,0.0,0.0};
     for(int j=0; j<3; j++){
-      if(nodes[i].id[j] == 0){
+      if(nodes[i].id_map[0].id[j] == 0){
 	displ[j] = 0.0;
-      }else if(nodes[i].id[j] > 0){
-	displ[j] = dofs[nodes[i].id[j]-1];
-      } else if(nodes[i].id[j] <  0){
-	displ[j] = supports->defl[abs(nodes[i].id[j])-1];
+      }else if(nodes[i].id_map[0].id[j] > 0){
+	displ[j] = dofs[nodes[i].id_map[0].id[j]-1];
+      } else if(nodes[i].id_map[0].id[j] <  0){
+	displ[j] = supports->defl[abs(nodes[i].id_map[0].id[j])-1];
       }
     }
     points->SetPoint(i,nodes[i].x1_fd,nodes[i].x2_fd,nodes[i].x3_fd);
@@ -87,7 +87,7 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
       macro_disp->SetTuple3(i,displ[0],displ[1],displ[2]);
     }
     if(have_pressure){
-      pressure->SetValue(i,dofs[nodes[i].id[3]-1]);
+      pressure->SetValue(i,dofs[nodes[i].id_map[0].id[3]-1]);
     }
   }
 

@@ -15,7 +15,8 @@
 SUPP read_supports (FILE *in,
 		    long nn,
 		    long ndofn,
-		    NODE *node)
+		    NODE *node,
+		    const int mp_id)
 /*
   in    - Input file
   nl    - Number of layers
@@ -49,8 +50,8 @@ SUPP read_supports (FILE *in,
     
     pom = 0;
     for (k=0;k<ndofn;k++){
-      fscanf (in,"%ld",&node[n].id[k]);
-      if ((node[n].id[k] == 1 || node[n].id[k] <= -1) && pom == 0) {
+      fscanf (in,"%ld",&node[n].id_map[mp_id].id[k]);
+      if ((node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) && pom == 0) {
 	sup->ndn++; pom = 1;
       }
     }/* end k */
@@ -75,7 +76,7 @@ SUPP read_supports (FILE *in,
   ii = 0;
   for (i=0;i<sup->nsn;i++){
     for (k=0;k<ndofn;k++){
-      if (node[n].id[k] == 1 || node[n].id[k] <= -1) {
+      if (node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) {
 	sup->lnpd[ii] = sup->supp[i];
 	ii++;  break;
       }

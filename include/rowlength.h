@@ -17,7 +17,8 @@ extern "C" {
 		  long ndof,
 		  NODE *node,
 		  ELEMENT *elem,
-		  long gr4);
+		  long gr4,
+		  const int mp_id);
 
 #ifdef __cplusplus
 }

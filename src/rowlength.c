@@ -12,7 +12,8 @@ void rowlength (long *adr,
 		long ndof,
 		NODE *node,
 		ELEMENT *elem,
-		long gr4)
+		long gr4,
+		const int mp_id)
 {
   long i,k,nne,ndofe,min;
   long *nod,*cn;
@@ -30,7 +31,7 @@ void rowlength (long *adr,
     ndofe = get_ndof_on_elem_nodes(nne,nod,node);
     
     if (gr4 == 0) { for (k=0;k<nne;k++) cn[k] = nod[k]+1; }
-    else get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    else get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 	 
     min = ndof+4;
     

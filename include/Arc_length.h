@@ -92,6 +92,7 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
 /// \return load multiplier
 double Arc_length_test(GRID *grid,
                        MATERIAL_PROPERTY *mat,
@@ -104,8 +105,9 @@ double Arc_length_test(GRID *grid,
                        ARC_LENGTH_VARIABLES *arc,                		   
                        MPI_Comm mpi_comm,
                        const double VVolume,
-                       const PGFem3D_opt *opts);
-                       
+                       const PGFem3D_opt *opts,
+                       const int mp_id);
+
   double Arc_length (long ne,
 		     int n_be,
 		     long nn,
@@ -188,7 +190,8 @@ double Arc_length_test(GRID *grid,
 		     double *NORM,
 		     MPI_Comm mpi_comm,
 		     const double VVolume,
-		     const PGFem3D_opt *opts);
+		     const PGFem3D_opt *opts,
+		     const int mp_id);
 
 #ifdef __cplusplus
 }

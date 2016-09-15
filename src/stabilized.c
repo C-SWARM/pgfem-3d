@@ -998,7 +998,8 @@ int st_increment (long ne,
 		  COEL *coel,
 		  double *pores,
 		  MPI_Comm mpi_comm,
-		  const int coh)
+		  const int coh,
+		  const int mp_id)
 {
   static const int ndn = 3;
   int err = 0;
@@ -1052,7 +1053,7 @@ int st_increment (long ne,
     a = aloc1 (ndofe);
     
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Coordinates/deformation on element */
     if(sup->multi_scale){
@@ -1219,7 +1220,7 @@ int st_increment (long ne,
   /*********************/
    for (ii=0;ii<nn;ii++){
     for (i=0;i<ndn;i++){
-      II = node[ii].id[i];
+      II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + r[II-1] + d_r[II-1];
 	else if (i == 1) node[ii].x2 = node[ii].x2_fd + r[II-1] + d_r[II-1];

@@ -65,7 +65,8 @@ extern "C" {
 		     double *r,
 		     SIG *sig,
 		     EPS *eps,
-		     const PGFem3D_opt *opts);
+		     const PGFem3D_opt *opts,
+		     const int mp_id);
 
   /** Print the individual vtu files for the cohesive elements */
   void VTK_print_cohesive_vtu(char *path,
@@ -78,7 +79,8 @@ extern "C" {
 			      SUPP sup,
 			      double *r,
 			      ENSIGHT ensight,
-			      const PGFem3D_opt *opts);
+			      const PGFem3D_opt *opts,
+			      const int mp_id);
 
 
 

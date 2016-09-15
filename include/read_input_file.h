@@ -42,7 +42,8 @@ extern "C" {
 		      long *nel_s,
 		      ZATELEM **zelem_s,
 		      long *nel_v,
-		      ZATELEM **zelem_v);
+		      ZATELEM **zelem_v,
+		      const int phyicsno);
 		      
 /// Read mesh info, boundary conditions, and material properties.
 /// from main input files (*.in)
@@ -52,6 +53,7 @@ extern "C" {
 /// \param[out] variables object for field variables
 /// \param[out] sol object for solution scheme
 /// \param[out] load object for loading
+/// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
@@ -60,6 +62,7 @@ int read_mesh_file(GRID *grid,
                    FIELD_VARIABLES *variables,
                    SOLVER_OPTIONS *sol,
                    LOADING_STEPS *load,
+                   MULTIPHYSICS *mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts);
 
@@ -115,13 +118,15 @@ int read_initial_values(GRID *grid,
 /// \param[in] grid a mesh object
 /// \param[in] variables object for field variables
 /// \param[out] load object for loading
+/// \param[in] mp multiphysics object
 /// \param[in] tim time step ID
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error 
 int read_and_apply_load_increments(GRID *grid,
                                    FIELD_VARIABLES *variables,
-                                   LOADING_STEPS *load, 
+                                   LOADING_STEPS *load,
+                                   MULTIPHYSICS *mp,  
                                    long tim, 
                                    MPI_Comm mpi_comm,
                                    int myrank);

@@ -59,13 +59,14 @@ void load_vec_node (double *f,
 		    const long nln,
 		    const long ndofn,
 		    const ZATNODE *znode,
-		    const NODE *node)
+		    const NODE *node,
+		    const int mp_id)
 {
   long i,j,ii;
   
   for (i=0;i<nln;i++){
     for (j=0;j<ndofn;j++){
-      ii = node[znode[i].nod].id[j]-1;
+      ii = node[znode[i].nod].id_map[mp_id].id[j]-1;
       if (ii < 0)  continue;
       f[ii] += znode[i].load[j];
     }
@@ -91,7 +92,8 @@ int load_vec_node_defl (double *f,
                         double *r,
                         double *r_n,
                         const PGFem3D_opt *opts,
-                        double alpha)
+                        double alpha,
+                        const int mp_id)
 {
   int err = 0;
   double *fe = NULL;
@@ -120,7 +122,7 @@ int load_vec_node_defl (double *f,
     /* Element Dof */
     int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
     long *cn = aloc1l (ndofe);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* element tangent */
     double *lk= aloc1 (ndofe*ndofe);
@@ -216,7 +218,7 @@ int load_vec_node_defl (double *f,
       int II = 0;
       for (jj=0;jj<nne;jj++){
 	for (int ii=0;ii<node[nod[jj]].ndofn;ii++){
-	  II = node[nod[jj]].id[ii]-1;
+	  II = node[nod[jj]].id_map[mp_id].id[ii]-1;
 	  if (II < 0)  continue;
 	  f[II] += floc[k+ii];
 	}/*end ii*/
@@ -287,7 +289,7 @@ int load_vec_node_defl (double *f,
     double *floc = aloc1(ndof_ve);
     double *rloc = aloc1(ndof_ve);
     long *cn_ve = aloc1l(ndof_ve);
-    get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn_ve);
+    get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn_ve,mp_id);
     /* get displacements */
     double *ve_disp = aloc1(ndof_ve);
     if(opts->analysis_type == DISP){ /* TOTAL LAGRANGIAN formulation */
@@ -326,7 +328,7 @@ int load_vec_node_defl (double *f,
       int II = 0;
       for (int jj=0;jj<nne_ve;jj++){
 	for (int ii=0;ii<node[ve_nod[jj]].ndofn;ii++){
-	  II = node[ve_nod[jj]].id[ii]-1;
+	  II = node[ve_nod[jj]].id_map[mp_id].id[ii]-1;
 	  if (II < 0)  continue;
 	  f[II] += floc[j+ii];
 	}/*end ii*/

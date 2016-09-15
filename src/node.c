@@ -4,35 +4,60 @@
 #include "allocation.h"
 #include <assert.h>
 
-NODE* build_node (const long nn,
-		  const long ndofn)
-     /*
-       ne - Number of nodes
-       ndofn - number of DOF of one node
-     */
+/// build node array.
+/// Multiphysics needs many ids for nodal variables.
+/// To assign local and global ids according to the number physics,
+/// an array of id_map object is created as many as number of physics.
+/// In id_map, ids is also created based on the number of dofs for 
+/// the individual physics.
+///
+/// \param[in] nn number of nodes
+/// \param[in] ndofn number of dofs on a node
+/// \param[in] physicsno number of physics
+/// \return node array
+NODE* build_node_multi_physic(const long nn,
+                              const long ndofn,
+                              const int physicsno)
 {
   NODE *pom = (NODE*) PGFEM_calloc (nn, sizeof(NODE));
   
-  for (int ii=0;ii<nn;ii++){	 
-    pom[ii].id = (long*) PGFEM_calloc (ndofn,sizeof(long));
-    pom[ii].Gid = (long*) PGFEM_calloc (ndofn,sizeof(long));
-
-    pom[ii].ndofn = ndofn;
+  for(int ia=0;ia<nn;ia++)
+  {
+    pom[ia].id_map = (NODE_ID_MAP *) malloc(physicsno*sizeof(NODE_ID_MAP));
+    for(int ib=0; ib<physicsno; ib++)
+    {    	 
+      pom[ia].id_map[ib].id  = (long*) PGFEM_calloc (ndofn,sizeof(long));
+      pom[ia].id_map[ib].Gid = (long*) PGFEM_calloc (ndofn,sizeof(long));
+    }
+    pom[ia].ndofn = ndofn;
   }
   
   return (pom);
 }
 
-void destroy_node(const long nn,
-		  NODE* nod)
+/// destroy node array.
+///
+/// \param[in] nn number of nodes
+/// \param[in] physicsno number of physics
+/// 
+/// \return non-zero on internal error
+int destroy_node_multi_physic(const long nn,
+                              NODE* node,
+                              const int physicsno)
 {
-  for(long i=0; i<nn; i++){
-    free(nod[i].id);
-    free(nod[i].Gid);
+  int err = 0;  
+  for(int ia=0; ia<nn; ia++)
+  {
+    for(int ib=0; ib<physicsno; ib++)
+    {    	 
+      free(node[ia].id_map[ib].id);
+      free(node[ia].id_map[ib].Gid);
+    }
+    free(node[ia].id_map);
   }
-  free(nod);
+  free(node);
+  return err;
 }
-
 
 long read_nodes (FILE *in,
 		 const long nn,
@@ -115,7 +140,8 @@ long read_nodes (FILE *in,
 
 void write_node_fname(const char *filename,
 		      const int nnodes,
-		      const NODE *nodes)
+		      const NODE *nodes,
+		      const int mp_id)
 {
   FILE *ofile = fopen(filename,"w");
   if(ofile == NULL){
@@ -123,14 +149,15 @@ void write_node_fname(const char *filename,
     PGFEM_Abort();
   }
 
-  write_node(ofile,nnodes,nodes);
+  write_node(ofile,nnodes,nodes,mp_id);
 
   fclose(ofile);
 }
 
 void write_node(FILE *ofile,
 		const int nnodes,
-		const NODE *nodes)
+		const NODE *nodes,
+		const int mp_id)
 {
   /* write header describing format */
   PGFEM_fprintf(ofile,"  Gnn DOM   Lnn       X            Y            Z"
@@ -144,7 +171,7 @@ void write_node(FILE *ofile,
 	    p_node->x1,p_node->x2,p_node->x3,
 	    p_node->x1_fd,p_node->x2_fd,p_node->x3_fd);
     for(int j=0; j<p_node->ndofn; j++){
-      PGFEM_fprintf(ofile,"%5ld::%-5ld ",p_node->id[j],p_node->Gid[j]);
+      PGFEM_fprintf(ofile,"%5ld::%-5ld ",p_node->id_map[mp_id].id[j],p_node->id_map[mp_id].Gid[j]);
     }
     PGFEM_fprintf(ofile,"\n");
   }

@@ -28,7 +28,8 @@ static const int ndim = 3;
 static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
-				    COMMON_MICROSCALE *common);
+				    COMMON_MICROSCALE *common,
+				    const int mp_id);
 static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 
 static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol);
@@ -178,7 +179,8 @@ void initialize_MICROSCALE(MICROSCALE **microscale)
 void build_MICROSCALE(MICROSCALE *microscale,
 		      MPI_Comm mpi_comm,
 		      const int argc,
-		      char **argv)
+		      char **argv,
+		      const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -219,7 +221,7 @@ void build_MICROSCALE(MICROSCALE *microscale,
   }
 
   /*=== BUILD COMMON ===*/
-  build_COMMON_MICROSCALE(microscale->opts,mpi_comm,microscale->common);
+  build_COMMON_MICROSCALE(microscale->opts,mpi_comm,microscale->common,mp_id);
   microscale->common->supports->multi_scale = microscale->opts->multi_scale;
 
 }/* build_MICROSCALE */
@@ -448,7 +450,7 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
 
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
-				    COMMON_MICROSCALE *common)
+				    COMMON_MICROSCALE *common, const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -491,13 +493,14 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     long n_con = 0;
     MATERIAL *mater = NULL;
 
+    int physicsno = 1; // currently support only mechanical part
     err = read_input_file(opts,mpi_comm,&common->nn, &Gnn,&common->ndofn,
 			  &common->ne, &ni,&common->lin_err,
 			  &common->lim_zero,&nmat,&n_con,
 			  &common->n_orient,&common->node,
 			  &common->elem,&mater,&common->matgeom,
 			  &common->supports,&nln,&znod,&nle_s,&zele_s,
-			  &nle_v,&zele_v);
+			  &nle_v,&zele_v, physicsno);
 
     /* error reading file(s) */
     if(err){
@@ -603,12 +606,12 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
   common->ndofd = generate_local_dof_ids(common->ne,common->nce,common->nn,
 					 common->ndofn,common->node,
 					 common->elem,common->coel,NULL,
-					 mpi_comm);
+					 mpi_comm,mp_id);
 
   common->DomDof[myrank] =
     generate_global_dof_ids(common->ne,common->nce,common->nn,
 			    common->ndofn,common->node,common->elem,
-			    common->coel,NULL,mpi_comm);
+			    common->coel,NULL,mpi_comm,mp_id);
 
   MPI_Allgather(MPI_IN_PLACE,1,MPI_LONG,common->DomDof,
 		1,MPI_LONG,mpi_comm);
@@ -621,13 +624,13 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
   renumber_global_dof_ids(common->ne,common->nce,0,common->nn,
 			  common->ndofn,common->DomDof,common->node,
-			  common->elem,common->coel,NULL,mpi_comm);
+			  common->elem,common->coel,NULL,mpi_comm,mp_id);
 
   long NBN = distribute_global_dof_ids(common->ne,common->nce,
 				       0,common->nn,
 				       common->ndofn,ndim,
 				       common->node,common->elem,
-				       common->coel,NULL, NULL, mpi_comm);
+				       common->coel,NULL, NULL, mpi_comm,mp_id);
 
   /* global stiffness pattern and communication structure */
   common->Ap = PGFEM_calloc(common->DomDof[myrank]+1,sizeof(int));
@@ -637,7 +640,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 			    common->ndofn,common->ndofd,common->elem,
 			    NULL,common->node,common->Ap,common->nce,
 			    common->coel,common->DomDof,&common->GDof,
-			    common->pgfem_comm,mpi_comm,opts->cohesive);
+			    common->pgfem_comm,mpi_comm,opts->cohesive,mp_id);
   pgfem_comm_build_fast_maps(common->pgfem_comm,common->ndofd,
 			     common->DomDof[myrank],common->GDof);
 
@@ -700,6 +703,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
 {
   int nproc = 0;
+  int mp_id = 0; // id of mutiphysics. Supported only Mechanical part (=0)
   MPI_Comm_size(common->mpi_comm,&nproc);
   destroy_PGFEM_HYPRE_solve_info(common->SOLVER);
   free(common->Ap);
@@ -707,7 +711,7 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_commun(common->pgfem_comm,nproc);
   free(common->bndel);
   free(common->DomDof);
-  destroy_node(common->nn,common->node);
+  destroy_node_multi_physic(common->nn,common->node,mp_id);
   destroy_elem(common->elem,common->ne);
   destroy_coel(common->coel,common->nce);
   destroy_matgeom(common->matgeom,common->n_orient);

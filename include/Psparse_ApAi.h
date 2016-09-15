@@ -40,7 +40,8 @@ extern "C" {
 		     int *GDof,
 		     COMMUN comm,
 		     MPI_Comm Comm_Orig,
-		     const int cohesive);
+		     const int cohesive,
+		     const int mp_id);
 
 #ifdef __cplusplus
 }

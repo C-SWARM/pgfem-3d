@@ -582,7 +582,8 @@ int constitutive_model_update_time_steps_test(const ELEMENT *elem,
                                               const int ndofn,
                                               const double* r,
                                               const double dt,
-                                              const int total_Lagrangian)
+                                              const int total_Lagrangian,
+                                              const int mp_id)
 {
   int nsd = 3;
   int err = 0;
@@ -596,7 +597,7 @@ int constitutive_model_update_time_steps_test(const ELEMENT *elem,
   if(total_Lagrangian) {
     for(int n = 0;n<nn; n++) {
       for(int a=0;a<nsd;a++) {
-        int II = node[n].id[a];
+        int II = node[n].id_map[mp_id].id[a];
         if (II != 0){
           if (a == 0)      node[n].x1 = node[n].x1_fd + r[n*ndofn + a];
           else if (a == 1) node[n].x2 = node[n].x2_fd + r[n*ndofn + a];
@@ -607,7 +608,7 @@ int constitutive_model_update_time_steps_test(const ELEMENT *elem,
   } else {
     for(int n = 0;n<nn; n++) {
       for(int a=0;a<nsd;a++) {
-        int II = node[n].id[a];
+        int II = node[n].id_map[mp_id].id[a];
         if (II != 0){
           if (a == 0)      node[n].x1 += r[n*ndofn + a];
           else if (a == 1) node[n].x2 += r[n*ndofn + a];

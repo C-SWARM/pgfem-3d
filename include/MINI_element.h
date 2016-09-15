@@ -83,7 +83,8 @@ extern "C" {
 			 const HOMMAT *hommat,
 			 const double *sol, /* accum. solution  on incr */
 			 const double *dsol, /* sol from current iter */
-			 const int iter);
+			 const int iter,
+			 const int mp_id);
 
   /** Increment an element after a converged solution is obtained */
   void MINI_increment_el(ELEMENT *elem,
@@ -111,7 +112,8 @@ extern "C" {
 		      SIG *sig,
 		      const HOMMAT *hommat,
 		      const double *sol,
-		      const MPI_Comm mpi_comm);
+		      const MPI_Comm mpi_comm,
+		      const int mp_id);
 
   void MINI_check_resid(const int ndofn,
 			const int ne,
@@ -127,7 +129,8 @@ extern "C" {
 			const int ndofd,
 			const int GDof,
 			const COMMUN comm,
-			const MPI_Comm mpi_comm);
+			const MPI_Comm mpi_comm,
+			const int mp_id);
 
 #ifdef __cplusplus
 }

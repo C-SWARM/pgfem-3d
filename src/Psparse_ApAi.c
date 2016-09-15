@@ -90,7 +90,8 @@ int* Psparse_ApAi (int nproc,
 		   int *GDof,
 		   COMMUN comm,
 		   MPI_Comm Comm_Orig,
-		   const int cohesive)
+		   const int cohesive,
+		   const int mp_id)
 {
   char jmeno[200];
   FILE *out=NULL;
@@ -141,7 +142,7 @@ int* Psparse_ApAi (int nproc,
     /* Element Dof */
     ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL);
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
     
     for (j=0;j<ndofe;j++){/* row */
       II = cnL[j]-1;
@@ -170,7 +171,7 @@ int* Psparse_ApAi (int nproc,
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
 	nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL);
+      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL,mp_id);
       
       for (j=0;j<ndofe;j++){/* row */
 	II = cncL[j]-1;
@@ -200,8 +201,8 @@ int* Psparse_ApAi (int nproc,
     /* Element Dof */
     ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL);
-    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG);
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
+    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id);
     
     for (j=0;j<ndofe;j++){/* row */
       II = cnL[j]-1;
@@ -224,8 +225,8 @@ int* Psparse_ApAi (int nproc,
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
 	nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL);
-      get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nodc,node,cncG);
+      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL,mp_id);
+      get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nodc,node,cncG,mp_id);
 
       for (j=0;j<ndofe;j++){/* row */
 	II = cncL[j]-1;
@@ -476,10 +477,10 @@ int* Psparse_ApAi (int nproc,
     PGFEM_fprintf (out,"NODES\n");
     for (i=0;i<nn;i++){
       PGFEM_fprintf (out,"[%ld] || LID : %ld %ld %ld %ld ||"
-		     " GID : %ld %ld %ld %ld\n", i,node[i].id[0],
-		     node[i].id[1],node[i].id[2],node[i].id[3],
-		     node[i].Gid[0],
-		     node[i].Gid[1],node[i].Gid[2],node[i].Gid[3]);
+		     " GID : %ld %ld %ld %ld\n", i,node[i].id_map[mp_id].id[0],
+		     node[i].id_map[mp_id].id[1],node[i].id_map[mp_id].id[2],node[i].id_map[mp_id].id[3],
+		     node[i].id_map[mp_id].Gid[0],
+		     node[i].id_map[mp_id].Gid[1],node[i].id_map[mp_id].Gid[2],node[i].id_map[mp_id].Gid[3]);
     }
     
     PGFEM_fprintf (out,"\n");

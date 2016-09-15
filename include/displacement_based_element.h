@@ -133,7 +133,8 @@ extern "C" {
 		      const HOMMAT *hommat,
 		      const double *sol_incr,
 		      const double *sol,
-		      MPI_Comm mpi_comm);
+		      MPI_Comm mpi_comm,
+		      const int mp_id);
 
   /** Compute element contributions to macro and mixed tangents in
       multiscale modeling of coheisive interfaces */

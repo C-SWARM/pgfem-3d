@@ -43,6 +43,7 @@ extern "C" {
 /// \param[in] VVolume original volume of the domain
 /// \return non-zero on internal error
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
@@ -55,7 +56,8 @@ double Newton_Raphson_test(const int print_level,
                            CRPL *crpl,
                            MPI_Comm mpi_comm,
                            const double VVolume,
-                           const PGFem3D_opt *opts);
+                           const PGFem3D_opt *opts,
+                           int mp_id);
 
   /**
    * \brief Newton-Raphson solution algorithm.
@@ -142,9 +144,9 @@ double Newton_Raphson_test(const int print_level,
 			 void *microscale, /**< Container of microscale information. */
 			 double alpha_alpha, /**< mid_point_rule alpha */
 			 double *r_n, /**< local total solution vector to times[tim-1] */
-			 double *r_n_1 /**< local total solution vector to times[tim-2] */			 
+			 double *r_n_1, /**< local total solution vector to times[tim-2] */
+			 const int mp_id			 
 			 );
-
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

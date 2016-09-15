@@ -62,6 +62,7 @@ static const long ARC = 1;
 int multi_scale_main(int argc, char **argv)
 {
   int err = 0;
+  int mp_id = 0;
   /* intitialize MPI */
   err += MPI_Init(&argc,&argv);
   /* initialize PGFEM_io */
@@ -112,7 +113,7 @@ int multi_scale_main(int argc, char **argv)
   MICROSCALE *micro = NULL;
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
     initialize_MACROSCALE(&macro);
-    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv);
+    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id);
     build_MACROSCALE_solution(macro);
   } else if(mpi_comm->valid_micro){/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
@@ -148,7 +149,7 @@ int multi_scale_main(int argc, char **argv)
     }
 
     /*=== BUILD MICROSCALE ===*/
-    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv);
+    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id);
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
 		   mpi_comm->rank_world,__func__,__FILE__,__LINE__);
@@ -169,7 +170,7 @@ int multi_scale_main(int argc, char **argv)
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */
-    err += pgf_FE2_micro_server_START(mpi_comm,micro);
+    err += pgf_FE2_micro_server_START(mpi_comm,micro,mp_id);
 
     /* destroy the microscale */
     destroy_MICROSCALE(micro);
@@ -179,7 +180,7 @@ int multi_scale_main(int argc, char **argv)
     pgf_FE2_macro_client_init(&client);
 
     /* create the list of jobs */
-    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm);
+    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm,mp_id);
 
     /* determine the initial job assignment*/
     pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
@@ -303,7 +304,7 @@ int multi_scale_main(int argc, char **argv)
 			       c->supports->npd,c->supports->defl_d);
 
       /* read restart files and set current equilibrium state */
-      pgf_FE2_restart_read_macro(macro,macro->opts->restart);
+      pgf_FE2_restart_read_macro(macro,macro->opts->restart,mp_id);
       s->tim = macro->opts->restart;
 
       /* send a job to compute the first tangent */
@@ -357,7 +358,7 @@ int multi_scale_main(int argc, char **argv)
 			  c->matgeom,c->supports,c->npres,
 			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
 			  s->crpl,macro->opts->stab,
-			  s->r,NULL,macro->opts,0.0);
+			  s->r,NULL,macro->opts,0.0,mp_id);
     
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -454,7 +455,7 @@ int multi_scale_main(int argc, char **argv)
 				       solver_file->max_nonlin_iter,
 				       &(s->NORM),c->nbndel,c->bndel,
 				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,
-				       NULL,NULL);
+				       NULL,NULL,mp_id);
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
@@ -505,7 +506,7 @@ int multi_scale_main(int argc, char **argv)
 			   ARC,tmp_val,&ITT,&dAL,
 			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
 			   c->lim_zero,&s->NORM,c->mpi_comm,
-			   c->VVolume,macro->opts);
+			   c->VVolume,macro->opts,mp_id);
 
 	/* Load multiplier */
 	lm += dlm;
@@ -553,7 +554,7 @@ int multi_scale_main(int argc, char **argv)
                                c->matgeom, c->hommat, c->supports, s->eps,
                                s->sig_e, solver_file->nonlin_tol,
                                s->crpl, dts, s->times[s->tim+1], macro->opts->stab,
-                               c->mpi_comm, macro->opts, 0, NULL, NULL);
+                               c->mpi_comm, macro->opts, 0, NULL, NULL,mp_id);
 
       if (solver_file->print_steps[s->tim] == 1){
 
@@ -604,7 +605,7 @@ int multi_scale_main(int argc, char **argv)
 	    VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
 			  mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
 			  c->supports,s->r,s->sig_e,s->eps,
-			  macro->opts);
+			  macro->opts,mp_id);
 
 	    if (macro->opts->cohesive == 1){
 	      if(mpi_comm->rank_macro == 0){
@@ -616,7 +617,7 @@ int multi_scale_main(int argc, char **argv)
 	      VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
 				     s->tim,mpi_comm->rank_macro,c->nce,c->node,
 				     c->coel,c->supports,s->r,c->ensight,
-				     macro->opts);
+				     macro->opts,mp_id);
 	    }
 	    break;
 	  default: /* no output */ break;

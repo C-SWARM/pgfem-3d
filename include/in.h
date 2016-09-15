@@ -25,7 +25,8 @@
 SUPP read_supports (FILE *in,
 		    long nn,
 		    long ndofn,
-		    NODE *node);
+		    NODE *node,
+		    const int mp_id);
 
 /**
  * Read material property listing for material mat_id [0,nmat).

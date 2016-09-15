@@ -114,7 +114,8 @@ extern "C" {
 				  double *pores,
 				  const NODE *node,
 				  const SUPP sup,
-				  const double *d_r);
+				  const double *d_r,
+				  const int mp_id);
 
   /**
    * Get the storage size (in bytes) of the internal state variables

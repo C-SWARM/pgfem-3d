@@ -480,7 +480,8 @@ void stress (long ne,
 	     SIG *sig,
 	     EPS *eps,
 	     SUPP sup,
-	     const int analysis);
+	     const int analysis,
+	     const int mp_id);
 
 void Mises_sig (long ne,
 		SIG *sig,
@@ -530,7 +531,8 @@ void str_solve (double *r,
 		SIG *sig_e,
 		SIG *sig_n,
 		SUPP sup,
-		const int analysis);
+		const int analysis,
+		const int mp_id);
 
 void str_prj_load (long ii,
 		   long kk,
@@ -613,7 +615,8 @@ void check_equi (double *fu,
 		 NODE *node,
 		 MATGEOM matgeom,
 		 SIG *sig,
-		 const int analysis);
+		 const int analysis,
+		 const int mp_id);
 
 double* Energy_functional (long ne,
 			   long ndofn,
@@ -634,7 +637,8 @@ long* sparse_ApAi (long ne,
 		   long ndofn,
 		   ELEMENT *elem,
 		   NODE *node,
-		   long *Ap);
+		   long *Ap,
+		   const int mp_id);
 
 /****************************************************************/
 

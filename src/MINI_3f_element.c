@@ -1295,7 +1295,8 @@ int MINI_3f_update_bubble(ELEMENT *elem,
 			  const HOMMAT *hommat,
 			  const double *sol, /* accum. solution  on incr */
 			  const double *dsol, /* sol from current iter */
-			  const int iter)
+			  const int iter,
+			  const int mp_id)
 {
   int err = 0;
 
@@ -1326,7 +1327,7 @@ int MINI_3f_update_bubble(ELEMENT *elem,
     elemnodes(i,nne,nod,elem);
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_updated(nne,nod,node,x,y,z);
@@ -1643,7 +1644,8 @@ void MINI_3f_increment(ELEMENT *elem,
 		       SIG *sig,
 		       const HOMMAT *hommat,
 		       const double *sol,
-		       const MPI_Comm mpi_comm)
+		       const MPI_Comm mpi_comm,
+		       const int mp_id)
 {
   const int ndn = 3;
   int nne, mat, nne_t, II;
@@ -1670,7 +1672,7 @@ void MINI_3f_increment(ELEMENT *elem,
     elemnodes(i,nne,nod,elem);
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_updated(nne,nod,node,x,y,z);
@@ -1693,7 +1695,7 @@ void MINI_3f_increment(ELEMENT *elem,
   /*** Update Coordinates ***/
   for (int ii=0;ii<nnodes;ii++){
     for (int i=0;i<ndn;i++){
-      II = node[ii].id[i];
+      II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
   	if (i == 0) node[ii].x1 += sol[II-1];
   	if (i == 1) node[ii].x2 += sol[II-1];
@@ -1732,7 +1734,8 @@ void MINI_3f_check_resid(const int ndofn,
 			 const int ndofd,
 			 const int GDof,
 			 const COMMUN comm,
-			 const MPI_Comm mpi_comm)
+			 const MPI_Comm mpi_comm,
+			 const int mp_id)
 {
   /* compute the norm of the residauls for each variable */
   int myrank,nproc;
@@ -1790,7 +1793,7 @@ void MINI_3f_check_resid(const int ndofn,
     element_center(nne,x,y,z);
 
     /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);    
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);    
     
     /* deformation on element */
     def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
@@ -2050,7 +2053,7 @@ void MINI_3f_check_resid(const int ndofn,
     int j = 0;
     for (int k=0;k<nne;k++){
       for (int kk=0;kk<node[nod[k]].ndofn;kk++){
-	int II = node[nod[k]].id[kk]-1;
+	int II = node[nod[k]].id_map[mp_id].id[kk]-1;
 	if (II < 0) continue;
 	if (kk<node[nod[k]].ndofn-1){
 	  f_u[II] += fe[j+kk];

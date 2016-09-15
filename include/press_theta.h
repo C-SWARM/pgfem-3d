@@ -39,7 +39,8 @@ extern "C" {
 		    double nor_min,
 		    double dt,
 		    CRPL *crpl,
-		    const PGFem3D_opt *opts);
+		    const PGFem3D_opt *opts,
+		    const int mp_id);
 
 #ifdef __cplusplus
 }

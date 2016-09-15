@@ -42,7 +42,8 @@ extern "C" {
 		     double *pores,
 		     MPI_Comm mpi_comm,
 		     const double VVolume,
-		     const PGFem3D_opt *opts);
+		     const PGFem3D_opt *opts,
+		     const int mp_id);
 
 #ifdef __cplusplus
 }

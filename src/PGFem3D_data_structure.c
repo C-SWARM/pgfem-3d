@@ -78,12 +78,13 @@ int grid_initialization(GRID *grid)
 /// \param[in, out] grid an object containing all mesh data
 /// \return non-zero on internal error
 int destruct_grid(GRID *grid, 
-                  const PGFem3D_opt *opts)
+                  const PGFem3D_opt *opts,
+                  MULTIPHYSICS *mp)
 {
   int err = 0;
   destroy_bounding_elements(grid->n_be,grid->b_elems);
   destroy_elem(grid->element,grid->ne);
-  destroy_node(grid->nn,grid->node);
+  destroy_node_multi_physic(grid->nn,grid->node, mp->physicsno);
   
   if(opts->cohesive == 1)
     destroy_coel(grid->coel,grid->nce);
@@ -206,6 +207,26 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
     destroy_sig_el(fv->sig_n, grid->nn);
     
   err += field_varialbe_initialization(fv);  
+  return err;
+}
+
+
+/// initialize field variables thermal part
+/// 
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \return non-zero on internal error
+int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
+{
+  int err = 0;
+  fv->Gndof = 0;
+  fv->ndofn = 1;
+  fv->ndofd = 0;
+  fv->T_np1 = NULL;
+  fv->T_n   = NULL;
+  fv->T_nm1 = NULL;
+  fv->dT    = NULL;
+  fv->dd_T  = NULL;
+  fv->NORM  = 0;
   return err;
 }
 

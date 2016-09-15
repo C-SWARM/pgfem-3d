@@ -32,7 +32,8 @@ extern "C" {
 				    const int group_id,
 				    long *Gn_jobs,
 				    long **n_job_dom,
-				    MS_COHE_JOB_INFO **job_list);
+				    MS_COHE_JOB_INFO **job_list,
+				    const int mp_id);
 
   /** Update the displacement jump for each job in the list. This is
       the ONLY thing that is updated */
@@ -53,14 +54,16 @@ extern "C" {
 			      const MPI_Comm macro_mpi_comm,
 			      MS_COHE_JOB_INFO *job_list,
 			      PGFEM_HYPRE_solve_info *macro_solver,
-			      MICROSCALE *microscale);
+			      MICROSCALE *microscale,
+			      const int mp_id);
 
   /** Assemble the residuals computed from the last call to *insert
       function name*. No communication */
   int assemble_ms_cohe_res(const MICROSCALE *micro,
 			   const MS_COHE_JOB_INFO *jobs,
 			   const MPI_Comm macro_mpi_comm,
-			   double *macro_loc_res);
+			   double *macro_loc_res,
+			   const int mp_id);
 
   /** destroy the list of jobs */
   void destroy_ms_cohe_job_list(const long Gn_job,

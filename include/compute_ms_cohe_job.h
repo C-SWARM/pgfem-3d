@@ -16,7 +16,8 @@ extern "C" {
       microscale cohesive job. */
   int compute_ms_cohe_job(const int job_id,
 			  MS_COHE_JOB_INFO *p_job,
-			  MICROSCALE *microscale);
+			  MICROSCALE *microscale,
+			  const int mp_id);
 
   /** Assemble the macroscale cohesive residual to the local vector on
       the owning domain. NO COMMUNICATION */
@@ -24,7 +25,8 @@ extern "C" {
 			       const MS_COHE_JOB_INFO *p_job,
 			       const MPI_Comm micro_comm,
 			       const MPI_Comm macro_comm,
-			       double *loc_res);
+			       double *loc_res,
+			       const int mp_id);
 
 #ifdef __cplusplus
 }

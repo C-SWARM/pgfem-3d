@@ -11,29 +11,27 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
+  typedef struct {
+    long *id;
+    long *Gid;    
+  } NODE_ID_MAP;
+  
   /** Structure of node properties */
   struct NODE{
     /** Coordinates of node */
     double x1,x2,x3,x1_fd,x2_fd,x3_fd;
 
-    long loc_id; /**< Local node number, required for sorting */
+    long loc_id; //Local node number, required for sorting
+    NODE_ID_MAP *id_map; // id maps for physics
 
-    long *id, /**< Local ID of DOFs on node. */
-
-      *Gid, /**< Global ID of DOFs on node. */
-
-      Gnn, /**< Global node number. */
-
-      Dom, /**< Which processor the node lives on. This is how
-	      interfacial nodes are identified. */
-
-      Pr, /**< Identifies the node as a periodic node. If the node is
-	     periodic, this variable contains the node number it is periodic
-	     with/to. */
-
-      ndofn, /**< Number of DOFs on the node */
-
-      pr; /**< Property of node. */
+    long Gnn; /**< Global node number. */
+    long Dom; /**< Which processor the node lives on. This is how
+	                 interfacial nodes are identified. */
+    long Pr;  /**< Identifies the node as a periodic node. If the node is
+	                 periodic, this variable contains the node number it is periodic
+	                 with/to. */
+    long ndofn;/**< Number of DOFs on the node */
+    long pr;   /**< Property of node. */
 
     int model_type;
     int model_id;
@@ -46,6 +44,32 @@ extern "C" {
   void destroy_node(const long nn,
 		    NODE* node);
 
+/// build node array.
+/// Multiphysics needs many ids for nodal variables.
+/// To assign local and global ids according to the number physics,
+/// an array of id_map object is created as many as number of physics.
+/// In id_map, ids is also created based on the number of dofs for 
+/// the individual physics.
+///
+/// \param[in] nn number of nodes
+/// \param[in] ndofn number of dofs on a node
+/// \param[in] physicsno number of physics
+/// \return node array
+NODE* build_node_multi_physic(const long nn,
+                              const long ndofn,
+                              const int physicsno);
+		    
+/// destroy node array.
+///
+/// \param[in] nn number of nodes
+/// \param[in] physicsno number of physics
+/// 
+/// \return non-zero on internal error
+int destroy_node_multi_physic(const long nn,
+                              NODE* node,
+                              const int physicsno);
+
+
   /* Function reads parameters of nodes */
   long read_nodes (FILE *in,
 		   const long nn,
@@ -56,11 +80,13 @@ extern "C" {
   /** */
   void write_node_fname(const char *filename,
 			const int nnodes,
-			const NODE *nodes);
+			const NODE *nodes,
+			const int mp_id);
 
   void write_node(FILE *ofile,
 		  const int nnodes,
-		  const NODE *nodes);
+		  const NODE *nodes,
+		  const int mp_id);
 
   /**
    * Sort the nodes by their local node numbers (loc_id).

@@ -134,122 +134,6 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc)
   return err;
 } 
 
-/// Perform arc length analysis.
-/// It calls the lagacy Arc_length function which requires many function arguments.
-/// Later, this function needs to be combined with Arc_length function. 
-///
-/// \param[in] grid a mesh object
-/// \param[in] mat a material object
-/// \param[in,out] fv object for field variables
-/// \param[in] sol object for solution scheme
-/// \param[in] load object for loading
-/// \param[in] time_steps object for time stepping
-/// \param[in] comm MPI_COMM_WORLD
-/// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in, out] arc an object for Arc length scheme, cotains variables related to Arc length
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] VVolume original volume of the domain
-/// \param[in] opts structure PGFem3D option
-/// \return load multiplier
-double Arc_length_test(GRID *grid,
-                       MATERIAL_PROPERTY *mat,
-                       FIELD_VARIABLES *fv,
-                       SOLVER_OPTIONS *sol,
-                       LOADING_STEPS *load,
-                       COMMUNICATION_STRUCTURE *com,
-                       PGFem3D_TIME_STEPPING *time_steps, 
-                       CRPL *crpl,
-                       ARC_LENGTH_VARIABLES *arc,                		   
-                       MPI_Comm mpi_comm,
-                       const double VVolume,
-                       const PGFem3D_opt *opts
-                       )
-{
-  double dALMAX = (time_steps->dt_np1)/(arc->dt0)*(arc->dALMAX);
-  char out_dat[500];
-  sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
-  return Arc_length(grid->ne,
-                    grid->n_be,
-                    grid->nn,
-                    fv->ndofn,
-                    fv->ndofd,
-                    fv->npres,
-                    time_steps->nt,
-                    time_steps->tim,
-                    time_steps->times,
-                    sol->nor_min,
-                    sol->iter_max,
-                    time_steps->dt_np1,
-                    arc->dt0,
-                    grid->element,
-                    grid->b_elems,
-                    com->nbndel,
-                    com->bndel,
-                    grid->node,
-                    load->sup,
-                    load->sup_defl,
-                    mat->hommat,
-                    mat->matgeom,
-                    fv->sig,
-                    fv->eps,
-                    com->Ap,
-                    com->Ai,
-                    sol->PGFEM_hypre,
-                    fv->RRn,
-                    fv->f_defl,
-                    crpl,
-                    opts->stab,
-                    grid->nce,
-                    grid->coel,
-                    fv->u_np1,
-                    fv->f,
-                    fv->d_u,
-                    arc->D_R,
-                    fv->dd_u,
-                    fv->R,
-                    fv->RR,
-                    fv->f_u,
-                    arc->U,
-                    arc->DK,
-                    arc->dR,
-                    fv->BS_f,
-                    arc->BS_d_r,
-                    arc->BS_D_R,
-                    arc->BS_rr,
-                    arc->BS_R,
-                    fv->BS_RR,
-                    fv->BS_f_u,
-                    arc->BS_U,
-                    arc->BS_DK,
-                    arc->BS_dR,
-                    sol->FNR,
-                    arc->lm,
-                    arc->dAL0,
-                    &(arc->DET0),
-                    &(arc->DLM0),
-                    &(arc->DLM),
-                    opts->vis_format,
-                    opts->smoothing,
-                    fv->sig_n,
-                    out_dat,
-                    time_steps->print,
-                    &(arc->AT),
-                    arc->ARC,
-                    dALMAX,
-                    &(arc->ITT),
-                    &(arc->DAL),
-                    &(fv->pores),
-                    com->DomDof,
-                    com->GDof,
-                    com->comm,
-                    sol->err,
-                    &(fv->NORM),
-                    mpi_comm,
-                    VVolume,
-                    opts);
-}
-
-
 double Arc_length(long ne,
 		   int n_be,
 		   long nn,
@@ -332,7 +216,8 @@ double Arc_length(long ne,
 		   double *NORM,
 		   MPI_Comm mpi_comm,
 		   const double VVolume,
-		   const PGFem3D_opt *opts)
+		   const PGFem3D_opt *opts,
+		   const int mp_id)
 /*
   ARC == 0 :: Crisfield
   ARC == 1 :: Simo - ONLY THIS CAN BE USED WITH PARALLEL FRAMEWORK
@@ -469,7 +354,8 @@ double Arc_length(long ne,
     stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		 node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
 		 nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm0,R,myrank,
-		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+		 nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1,
+		 mp_id);
 
     /* Assemble the matrix */
     HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
@@ -582,15 +468,15 @@ double Arc_length(long ne,
     case FS_CRPL:
     case FINITE_STRAIN:
       press_theta (ne,ndofn,npres,elem,node,f_u,d_r,sup,
-		   matgeom,hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
+		   matgeom,hommat,eps,sig_e,iter,nor_min,dt,crpl,opts,mp_id);
       break;
     case MINI:
       MINI_update_bubble(elem,ne,node,ndofn,sup,
-			 eps,sig_e,hommat,f_u,d_r,iter);
+			 eps,sig_e,hommat,f_u,d_r,iter,mp_id);
       break;
     case MINI_3F:
       MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
-			 eps,sig_e,hommat,f_u,d_r,iter);
+			 eps,sig_e,hommat,f_u,d_r,iter,mp_id);
       break;
     default:
       break;
@@ -602,7 +488,7 @@ double Arc_length(long ne,
     if (opts->analysis_type == FS_CRPL) {
       INFO = integration_alg (ne,ndofn,ndofd,npres,crpl,elem,
 			      node,f_u,d_r,sup,matgeom,hommat,
-			      eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts); 
+			      eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts,mp_id); 
 
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -615,12 +501,13 @@ double Arc_length(long ne,
     vol_damage_int_alg(ne,ndofn,d_r,r,elem,node,
 		       hommat,sup,dt,iter,mpi_comm,
 		       eps,sig_e,&max_damage,&dissipation,
-		       opts->analysis_type);
+		       opts->analysis_type,mp_id);
     
     /* Residuals */
     fd_residuals(f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,matgeom,
 		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		  nce,coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+		  nce,coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+		  mp_id);
     
     /* Compute Euclidian norm */
     for (i=0;i<ndofd;i++) f[i] = (lm + dlm)*R[i] - f_u[i];  
@@ -692,7 +579,8 @@ double Arc_length(long ne,
       stiffmat_fd (Ap,Ai,ne,n_be,ndofn,elem,b_elems,nbndel,bndel,
 		   node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,iter,
 		   nor_min,dt,crpl,stab,nce,coel,FNR,lm+dlm,f_u,myrank,
-		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+		   nproc,DomDof,GDof,comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1,
+		   mp_id);
 	
       /* Assemble the matrix */
       HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
@@ -799,7 +687,7 @@ double Arc_length(long ne,
 	  DLM = D_lam_ALM2 (BS_rr,BS_U,BS_R,BS_DK,dlm,lm,dAL,ne,n_be,ndofd,
 			    npres,BS_d_r,r,node,elem,b_elems,matgeom,hommat,
 			    sup,eps,sig_e,nor_min,crpl,dt,stab,nce,coel,
-			    DomDof,GDof,comm,mpi_comm,opts);
+			    DomDof,GDof,comm,mpi_comm,opts,mp_id);
 	}
       }
       if (ARC == 1)
@@ -837,15 +725,15 @@ double Arc_length(long ne,
       case FS_CRPL:
       case FINITE_STRAIN:
 	press_theta (ne,ndofn,npres,elem,node,d_r,D_R,sup,matgeom,
-		     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
+		     hommat,eps,sig_e,iter,nor_min,dt,crpl,opts,mp_id);
 	break;
       case MINI:
 	MINI_update_bubble(elem,ne,node,ndofn,sup,
-			   eps,sig_e,hommat,d_r,D_R,iter);
+			   eps,sig_e,hommat,d_r,D_R,iter,mp_id);
 	break;
       case MINI_3F:
 	MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
-			      eps,sig_e,hommat,d_r,D_R,iter);
+			      eps,sig_e,hommat,d_r,D_R,iter,mp_id);
 	break;
       default:
 	break;
@@ -857,7 +745,7 @@ double Arc_length(long ne,
       if (opts->analysis_type == FS_CRPL) {
 	INFO = integration_alg (ne,ndofn,ndofd,npres,crpl,elem,
 				node,d_r,D_R,sup,matgeom,hommat,
-				eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts);
+				eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts,mp_id);
       
 	/* Gather INFO from all domains */
 	MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -876,12 +764,13 @@ double Arc_length(long ne,
       vol_damage_int_alg(ne,ndofn,f,r,elem,node,
 			 hommat,sup,dt,iter,mpi_comm,
 			 eps,sig_e,&max_damage,&dissipation,
-			 opts->analysis_type);
+			 opts->analysis_type,mp_id);
       
       /* Residuals */
       fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
 		    hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		    nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+		    nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+		    mp_id);
 
       /* Compute Euclidean norm */
       for (i=0;i<ndofd;i++)
@@ -915,7 +804,7 @@ double Arc_length(long ne,
 			 hommat,sup,eps,sig_e,crpl,coel,f_u,f,R,BS_f,
 			 BS_R,BS_D_R,BS_d_r,BS_DK,BS_U,BS_rr,
 			 DomDof,GDof,comm,STEP,mpi_comm,&max_damage,
-			 &dissipation,opts );
+			 &dissipation,opts,mp_id);
 
 	/* Gather INFO from all domains */
 	MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -1000,7 +889,7 @@ double Arc_length(long ne,
     
     /* increment coheisve elements */
     if(opts->cohesive){
-      increment_cohesive_elements(nce,coel,pores,node,sup,d_r);
+      increment_cohesive_elements(nce,coel,pores,node,sup,d_r,mp_id);
     }
 
     /* Finite deformations increment */
@@ -1009,24 +898,24 @@ double Arc_length(long ne,
     case FINITE_STRAIN:
       fd_increment (ne,nn,ndofn,npres,matgeom,hommat,elem,node,sup,
 		    eps,sig_e,d_r,r,nor_min,crpl,dt,nce,coel,
-		    pores,mpi_comm,VVolume,opts);
+		    pores,mpi_comm,VVolume,opts, mp_id);
       break;
     case STABILIZED:
       st_increment (ne,nn,ndofn,ndofd,matgeom,hommat,elem,node,sup,
 		    eps,sig_e,d_r,r,nor_min,stab,dt,nce,coel,
-		    pores,mpi_comm,opts->cohesive);
+		    pores,mpi_comm,opts->cohesive,mp_id);
       break;
     case MINI:
       MINI_increment(elem,ne,node,nn,ndofn,sup,eps,
-		     sig_e,hommat,d_r,mpi_comm);
+		     sig_e,hommat,d_r,mpi_comm,mp_id);
       break;
     case MINI_3F:
       MINI_3f_increment(elem,ne,node,nn,ndofn,sup,eps,
-			sig_e,hommat,d_r,mpi_comm);
+			sig_e,hommat,d_r,mpi_comm,mp_id);
       break;
     case DISP:
       DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-		     sig_e,hommat,d_r,r,mpi_comm);
+		     sig_e,hommat,d_r,r,mpi_comm,mp_id);
       break;
     default:
       break;
@@ -1093,7 +982,8 @@ double Arc_length(long ne,
       for (i=0;i<ndofd;i++) {f_u[i] = 0.0; d_r[i] = 0.0;}
       fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,
 		    b_elems,matgeom,hommat,sup,eps,sig_e,
-		    nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+		    nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+		    mp_id);
       for (i=0;i<ndofd;i++) f[i] = lm*R[i] - f_u[i];
       
       LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
@@ -1171,4 +1061,120 @@ double Arc_length(long ne,
   }/*end SUBDIVISION */
 
   return (DDLM);
+}
+
+/// Perform arc length analysis.
+/// It calls the lagacy Arc_length function which requires many function arguments.
+/// Later, this function needs to be combined with Arc_length function. 
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] time_steps object for time stepping
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in, out] arc an object for Arc length scheme, cotains variables related to Arc length
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \return load multiplier
+double Arc_length_test(GRID *grid,
+                       MATERIAL_PROPERTY *mat,
+                       FIELD_VARIABLES *fv,
+                       SOLVER_OPTIONS *sol,
+                       LOADING_STEPS *load,
+                       COMMUNICATION_STRUCTURE *com,
+                       PGFem3D_TIME_STEPPING *time_steps, 
+                       CRPL *crpl,
+                       ARC_LENGTH_VARIABLES *arc,                		   
+                       MPI_Comm mpi_comm,
+                       const double VVolume,
+                       const PGFem3D_opt *opts,
+                       const int mp_id)
+{
+  double dALMAX = (time_steps->dt_np1)/(arc->dt0)*(arc->dALMAX);
+  char out_dat[500];
+  sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
+  return Arc_length(grid->ne,
+                    grid->n_be,
+                    grid->nn,
+                    fv->ndofn,
+                    fv->ndofd,
+                    fv->npres,
+                    time_steps->nt,
+                    time_steps->tim,
+                    time_steps->times,
+                    sol->nor_min,
+                    sol->iter_max,
+                    time_steps->dt_np1,
+                    arc->dt0,
+                    grid->element,
+                    grid->b_elems,
+                    com->nbndel,
+                    com->bndel,
+                    grid->node,
+                    load->sup,
+                    load->sup_defl,
+                    mat->hommat,
+                    mat->matgeom,
+                    fv->sig,
+                    fv->eps,
+                    com->Ap,
+                    com->Ai,
+                    sol->PGFEM_hypre,
+                    fv->RRn,
+                    fv->f_defl,
+                    crpl,
+                    opts->stab,
+                    grid->nce,
+                    grid->coel,
+                    fv->u_np1,
+                    fv->f,
+                    fv->d_u,
+                    arc->D_R,
+                    fv->dd_u,
+                    fv->R,
+                    fv->RR,
+                    fv->f_u,
+                    arc->U,
+                    arc->DK,
+                    arc->dR,
+                    fv->BS_f,
+                    arc->BS_d_r,
+                    arc->BS_D_R,
+                    arc->BS_rr,
+                    arc->BS_R,
+                    fv->BS_RR,
+                    fv->BS_f_u,
+                    arc->BS_U,
+                    arc->BS_DK,
+                    arc->BS_dR,
+                    sol->FNR,
+                    arc->lm,
+                    arc->dAL0,
+                    &(arc->DET0),
+                    &(arc->DLM0),
+                    &(arc->DLM),
+                    opts->vis_format,
+                    opts->smoothing,
+                    fv->sig_n,
+                    out_dat,
+                    time_steps->print,
+                    &(arc->AT),
+                    arc->ARC,
+                    dALMAX,
+                    &(arc->ITT),
+                    &(arc->DAL),
+                    &(fv->pores),
+                    com->DomDof,
+                    com->GDof,
+                    com->comm,
+                    sol->err,
+                    &(fv->NORM),
+                    mpi_comm,
+                    VVolume,
+                    opts,
+                    mp_id);
 }

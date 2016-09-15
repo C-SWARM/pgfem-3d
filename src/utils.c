@@ -1709,7 +1709,8 @@ void stress (long ne,
 	     SIG *sig,
 	     EPS *eps,
 	     SUPP sup,
-	     const int analysis)
+	     const int analysis,
+	     const int mp_id)
 /*
        
  */
@@ -1744,7 +1745,7 @@ void stress (long ne,
       break;
     }
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     /* vector of nodal deformation on the element */
     def_elem (cn,ndofe,r,elem,node,r_e,sup,0);
     
@@ -2022,7 +2023,8 @@ void str_solve (double *r,
 		SIG *sig_e,
 		SIG *sig_n,
 		SUPP sup,
-		const int analysis)
+		const int analysis,
+		const int mp_id)
 /*
        
  */
@@ -2061,7 +2063,7 @@ void str_solve (double *r,
       }
 
       /* Id numbers */
-      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
       
       if (analysis == ELASTIC || analysis == TP_ELASTO_PLASTIC) {
 	/* material stiffnes matrix of the element */
@@ -2431,7 +2433,8 @@ void check_equi (double *fu,
 		 NODE *node,
 		 MATGEOM matgeom,
 		 SIG *sig,
-		 const int analysis)
+		 const int analysis,
+		 const int mp_id)
 /*
        
  */
@@ -2470,7 +2473,7 @@ void check_equi (double *fu,
     /* Localization */
     for (j=0;j<nne;j++){
       for (i=0;i<ndofn;i++){
-	JJ = node[nod[j]].id[i]-1;
+	JJ = node[nod[j]].id_map[mp_id].id[i]-1;
 	if (JJ < 0)  continue;
 	fu[JJ] += fe[j*ndofn+i];
       }/* end j */
@@ -3200,7 +3203,8 @@ long* sparse_ApAi (long ne,
 		   long ndofn,
 		   ELEMENT *elem,
 		   NODE *node,
-		   long *Ap)
+		   long *Ap,
+		   const int mp_id)
 /*
   Sparse nonsymmetric column storage format Ap
 */
@@ -3216,7 +3220,7 @@ long* sparse_ApAi (long ne,
     nne = elem[i].toe;  
     ndofe = ndofn*nne;
     elemnodes (i,nne,nod,elem);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     for (j=0;j<ndofe;j++){
       II = cn[j]-1;
@@ -3242,7 +3246,7 @@ long* sparse_ApAi (long ne,
     nne = elem[i].toe;  
     ndofe = ndofn*nne;
     elemnodes (i,nne,nod,elem);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     for (j=0;j<ndofe;j++){
       II = cn[j]-1;

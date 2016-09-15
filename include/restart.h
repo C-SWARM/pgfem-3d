@@ -15,5 +15,6 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
                  
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                   ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
-                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times, double NORM);
+                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times, double NORM,
+                  const int mp_id);
 #endif

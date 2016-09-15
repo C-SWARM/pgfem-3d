@@ -19,7 +19,8 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 					  NODE *nodes,
 					  ELEMENT *elems,
 					  BOUNDING_ELEMENT *b_elems,
-					  MPI_Comm mpi_comm);
+					  MPI_Comm mpi_comm,
+					  const int mp_id);
 
 static int generate_local_dof_ids_on_coel(const int nnode,
 					  const int ndofn,
@@ -28,7 +29,8 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 					  int *visited_node_dof,
 					  NODE *nodes,
 					  COEL *coel,
-					  MPI_Comm mpi_comm);
+					  MPI_Comm mpi_comm,
+					  const int mp_id);
 
 static int generate_global_dof_ids_on_elem(const int ndofn,
 					   const int start_id,
@@ -37,7 +39,8 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 					   NODE *nodes,
 					   ELEMENT *elems,
 					   BOUNDING_ELEMENT *b_elems,
-					   MPI_Comm mpi_comm);
+					   MPI_Comm mpi_comm,
+					   const int mp_id);
 
 static int generate_global_dof_ids_on_coel(const int ndofn,
 					   const int start_id,
@@ -45,7 +48,8 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 					   int *visited_node_dof,
 					   NODE *nodes,
 					   COEL *coel,
-					   MPI_Comm mpi_comm);
+					   MPI_Comm mpi_comm,
+					   const int mp_id);
 
 static void distribute_global_dof_ids_on_bounding_elements
 (const int n_belem,
@@ -62,7 +66,8 @@ int generate_local_dof_ids(const int nelem,
 			   ELEMENT *elems,
 			   COEL *coel,
 			   BOUNDING_ELEMENT *b_elems,
-			   MPI_Comm mpi_comm)
+			   MPI_Comm mpi_comm,
+			   const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -92,7 +97,7 @@ int generate_local_dof_ids(const int nelem,
     ndof += generate_local_dof_ids_on_elem(nnode,ndofn,ndof,
 					   i,visited_node_dof,
 					   nodes,elems,b_elems,
-					   mpi_comm);
+					   mpi_comm,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -102,7 +107,7 @@ int generate_local_dof_ids(const int nelem,
   for(int i=0; i<ncoel; i++){
     ndof += generate_local_dof_ids_on_coel(nnode,ndofn,ndof,
 					   i,visited_node_dof,
-					   nodes,coel,mpi_comm);
+					   nodes,coel,mpi_comm,mp_id);
   }
 
   /* some periodic nodes may not actually be a part of an element,
@@ -126,13 +131,13 @@ int generate_local_dof_ids(const int nelem,
 	      err = 1;
 	      break;
 	    } else {
-	      nodes[i].id[j] = nodes[nodes[i].Pr].id[j];
+	      nodes[i].id_map[mp_id].id[j] = nodes[nodes[i].Pr].id_map[mp_id].id[j];
 	      visited_node_dof[idx] = 1;
 	    }
 	  }
 	} else { /* pressure node */
 	  PGFEM_printerr("[%d] TESTING: Periodic pressure node (%d)\n",myrank,i);
-	  nodes[i].id[j] = ndof;
+	  nodes[i].id_map[mp_id].id[j] = ndof;
 	  ndof ++;
 	}
       }
@@ -166,7 +171,8 @@ int generate_global_dof_ids(const int nelem,
 			    ELEMENT *elems,
 			    COEL *coel,
 			    BOUNDING_ELEMENT *b_elems,
-			    MPI_Comm mpi_comm)
+			    MPI_Comm mpi_comm,
+			    const int mp_id)
 {
   int *visited_node_dof = PGFEM_calloc(nnode*ndofn,sizeof(int));
   int ndof = 1;
@@ -174,7 +180,7 @@ int generate_global_dof_ids(const int nelem,
   for(int i=0; i<nelem; i++){
     ndof += generate_global_dof_ids_on_elem(ndofn,ndof,i,visited_node_dof,
 					    nodes,elems,b_elems,
-					    mpi_comm);
+					    mpi_comm,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -183,7 +189,7 @@ int generate_global_dof_ids(const int nelem,
      the element. See similar note in Psparse_ApAi*/
   for(int i=0; i<ncoel; i++){
     ndof += generate_global_dof_ids_on_coel(ndofn,ndof,i,visited_node_dof,
-					    nodes,coel,mpi_comm);
+					    nodes,coel,mpi_comm,mp_id);
   }
 
   /* sanity check */
@@ -216,7 +222,8 @@ void renumber_global_dof_ids(const int nelem,
 			     ELEMENT *elems,
 			     COEL *coel,
 			     BOUNDING_ELEMENT *b_elems,
-			     MPI_Comm mpi_comm)
+			     MPI_Comm mpi_comm,
+			     const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -253,8 +260,8 @@ void renumber_global_dof_ids(const int nelem,
   for(int i=0; i<nnode; i++){
     if(nodes[i].Dom == myrank){
       for(int j=0; j<nodes[i].ndofn; j++){
-	if(nodes[i].Gid[j] > 0){
-	  nodes[i].Gid[j] += dof_id_adder;
+	if(nodes[i].id_map[mp_id].Gid[j] > 0){
+	  nodes[i].id_map[mp_id].Gid[j] += dof_id_adder;
 	}
       }
     }
@@ -272,8 +279,9 @@ int distribute_global_dof_ids(const int nelem,
 			      ELEMENT *elems,
 			      COEL *coel,
 			      BOUNDING_ELEMENT *b_elems,
-                              const Comm_hints *hints,
-			      MPI_Comm mpi_comm)
+            const Comm_hints *hints,
+			      MPI_Comm mpi_comm,
+			      const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -283,7 +291,7 @@ int distribute_global_dof_ids(const int nelem,
   /* Distrubute the global dofs on the nodes and return the number of
      communication boundary nodes */
   int n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
-				 ndofn, nodes, hints, mpi_comm);
+				 ndofn, nodes, hints, mpi_comm,mp_id);
 
   /* Under current formulation, element dofs are always owned by the
      current domain and no communication is required. */
@@ -303,7 +311,8 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 					  NODE *nodes,
 					  ELEMENT *elems,
 					  BOUNDING_ELEMENT *b_elems,
-					  MPI_Comm mpi_comm)
+					  MPI_Comm mpi_comm,
+					  const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -321,26 +330,26 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
-	if(ptr_node->id[j] < 0){ /* prescribed dof */
+	if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
 	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id[j] == 1){ /* fixed dof */
-	  ptr_node->id[j] = 0;
+	} else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
+	  ptr_node->id_map[mp_id].id[j] = 0;
 	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id[j] >= 0){
+	} else if(ptr_node->id_map[mp_id].id[j] >= 0){
 	  /* periodic node/dofs. Do not set pressure periodic! */
 	  if(ptr_node->Pr != -1 && j < ndn){ 
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    /* if the dof id has not been set yet on the master node,
 	       set it now */
 	    if(!visited_node_dof[pdof_idx]){
-	      nodes[ptr_node->Pr].id[j] = start_id + id_adder;
+	      nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
 	      visited_node_dof[pdof_idx] = 1;
 	      id_adder ++;
 	    }
-	    ptr_node->id[j] = nodes[ptr_node->Pr].id[j];
+	    ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
 	    visited_node_dof[dof_idx] = 1;
 	  } else {
-	    ptr_node->id[j] = start_id + id_adder;
+	    ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
 	    id_adder ++;
 	    visited_node_dof[dof_idx] = 1;
 	  }
@@ -410,7 +419,8 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 					  int *visited_node_dof,
 					  NODE *nodes,
 					  COEL *coel,
-					  MPI_Comm mpi_comm)
+					  MPI_Comm mpi_comm,
+					  const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -428,26 +438,26 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
-	if(ptr_node->id[j] < 0){ /* prescribed dof */
+	if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
 	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id[j] == 1){ /* fixed dof */
-	  ptr_node->id[j] = 0;
+	} else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
+	  ptr_node->id_map[mp_id].id[j] = 0;
 	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id[j] >= 0){
+	} else if(ptr_node->id_map[mp_id].id[j] >= 0){
 	  /* periodic node/dofs. Do not set pressure periodic! */
 	  if(ptr_node->Pr != -1 && j < ndn){
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    /* if the dof id has not been set yet on the master node,
 	       set it now */
 	    if(!visited_node_dof[pdof_idx]){
-	      nodes[ptr_node->Pr].id[j] = start_id + id_adder;
+	      nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
 	      visited_node_dof[pdof_idx] = 1;
 	      id_adder ++;
 	    }
-	    ptr_node->id[j] = nodes[ptr_node->Pr].id[j];
+	    ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
 	    visited_node_dof[dof_idx] = 1;
 	  } else {
-	    ptr_node->id[j] = start_id + id_adder;
+	    ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
 	    id_adder ++;
 	    visited_node_dof[dof_idx] = 1;
 	  }
@@ -468,7 +478,8 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 					   NODE *nodes,
 					   ELEMENT *elems,
 					   BOUNDING_ELEMENT *b_elems,
-					   MPI_Comm mpi_comm)
+					   MPI_Comm mpi_comm,
+					   const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -491,8 +502,8 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
       for(int j=0; j<ptr_node->ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	if(!visited_node_dof[dof_idx]){
-	  if(ptr_node->id[j] <= 0){ /* prescribed or supported dof */
-	    ptr_node->Gid[j] = ptr_node->id[j];
+	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
+	    ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
 	    visited_node_dof[dof_idx] = 1;
 	  }
 	  /* periodic node/dofs. Do not set pressure periodic! */
@@ -500,14 +511,14 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
-	      ptr_pnode->Gid[j] = start_id + id_adder;
+	      ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
 	      visited_node_dof[pdof_idx] = 1;
 	      id_adder ++;
 	    }
-	    ptr_node->Gid[j] = ptr_pnode->Gid[j];
+	    ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
 	    visited_node_dof[dof_idx] = 1;
 	  } else { /* all other nodes */
-	    ptr_node->Gid[j] = start_id + id_adder;
+	    ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
 	    visited_node_dof[dof_idx] = 1;
 	    id_adder ++;
 	  }
@@ -574,7 +585,8 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 					   int *visited_node_dof,
 					   NODE *nodes,
 					   COEL *coel,
-					   MPI_Comm mpi_comm)
+					   MPI_Comm mpi_comm,
+					   const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -597,8 +609,8 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
       for(int j=0; j<ptr_node->ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	if(!visited_node_dof[dof_idx]){
-	  if(ptr_node->id[j] <= 0){ /* prescribed or supported dof */
-	    ptr_node->Gid[j] = ptr_node->id[j];
+	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
+	    ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
 	    visited_node_dof[dof_idx] = 1;
 	  }
 	  /* periodic node/dofs. Do not set pressure periodic! */
@@ -606,14 +618,14 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
 	    const int pdof_idx = ptr_node->Pr*ndofn + j;
 	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
-	      ptr_pnode->Gid[j] = start_id + id_adder;
+	      ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
 	      visited_node_dof[pdof_idx] = 1;
 	      id_adder ++;
 	    }
-	    ptr_node->Gid[j] = ptr_pnode->Gid[j];
+	    ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
 	    visited_node_dof[dof_idx] = 1;
 	  } else { /* all other nodes */
-	    ptr_node->Gid[j] = start_id + id_adder;
+	    ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
 	    visited_node_dof[dof_idx] = 1;
 	    id_adder ++;
 	  }

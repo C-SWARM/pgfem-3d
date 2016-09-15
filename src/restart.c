@@ -251,7 +251,7 @@ int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                   ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
                   int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times,
-                  double NORM)
+                  double NORM, const int mp_id)
 {
   int err = 0;
   int nsd = 3;
@@ -279,14 +279,14 @@ int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
       {              
         for(long b = 0; b<ndofn; b++)
         {
-          long id = node[a].id[b];
+          long id = node[a].id_map[mp_id].id[b];
           if(id>0)
           r_n_dof[id-1] = u0[a*ndofn + b];
         }
       }            
       VTK_print_vtu(restart_path,opts->ofname,stepno,
                     myrank,elemno,nodeno,node,elem,sup,r_n_dof,sig_e,eps,
-                    opts);
+                    opts, mp_id);
       free(r_n_dof);              
       break;
     }

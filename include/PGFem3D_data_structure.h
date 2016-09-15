@@ -82,6 +82,19 @@ typedef struct {
   SIG *sig_n;     /// smoothed stress
 } FIELD_VARIABLES;
 
+/// struct for field variables
+typedef struct {
+  long Gndof;   /// total number of degree freedom
+  long ndofn;     /// number of degree of freedom on a node
+  long ndofd;     /// number of degree of freedom in the domain
+  double *T_np1;  /// displacement at n+1
+  double *T_n;    /// displacement at n
+  double *T_nm1;  /// displacement at n-1
+  double *dT;     /// workspace for local increment of the temperature solution n->n+1 
+  double *dd_T;   /// workspace for local _iterative_ increment of the solution 
+  double NORM;    /// [out] residual of first iteration (tim = 0, iter = 0).
+} FIELD_VARIABLES_THERMAL;
+
 /// struct for material properties
 typedef struct {
   double *density; /// list of material density
@@ -138,6 +151,18 @@ typedef struct {
   Comm_hints *hints; /// Comm_hints structure
 } COMMUNICATION_STRUCTURE;
 
+/// for setting physics ids
+enum {MULTIPHYSICS_MECHANICAL, 
+      MULTIPHYSICS_THERMAL,
+      MULTIPHYSICS_CHEMICAL, 
+      MULTIPHYSICS_NO} MULTIPHYSICS_ANALYSIS;
+
+/// struct for setting multiphysics
+typedef struct {
+  int physicsno;      /// number of physics 
+  char **physicsname; /// physics names
+  int *physics_ids;   /// physics ids
+} MULTIPHYSICS;
 
 /// initialize time stepping variable
 ///
@@ -162,7 +187,8 @@ int grid_initialization(GRID *grid);
 /// \param[in, out] grid an object containing all mesh data
 /// \return non-zero on internal error
 int destruct_grid(GRID *grid, 
-                  const PGFem3D_opt *opts);
+                  const PGFem3D_opt *opts,
+                  MULTIPHYSICS *mp);
 
 
 /// initialize field variables
@@ -194,6 +220,12 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 int destruct_field_varialbe(FIELD_VARIABLES *fv, 
                             GRID *grid,
                             const PGFem3D_opt *opts); 
+
+/// initialize field variables thermal part
+/// 
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \return non-zero on internal error
+int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv);
 
 /// initialize material properties
 ///

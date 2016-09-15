@@ -200,7 +200,8 @@ extern "C" {
   void build_MICROSCALE(MICROSCALE *microscale,
 			MPI_Comm mpi_comm,
 			const int argc,
-			char **argv);
+			char **argv,
+			const int mp_id);
 
   /** build n solutions to compute on the scale */
   void build_MICROSCALE_solutions(const int n_solutions,
@@ -238,8 +239,8 @@ extern "C" {
   typedef MICROSCALE MACROSCALE;
 #endif
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
-#define build_MACROSCALE(macro,comm,argc,argv)	\
-  build_MICROSCALE(macro,comm,argc,argv)
+#define build_MACROSCALE(macro,comm,argc,argv,mp_id)	\
+  build_MICROSCALE(macro,comm,argc,argv,mp_id)
 #define build_MACROSCALE_solution(macro) \
   build_MICROSCALE_solutions(1,macro)
 #define destroy_MACROSCALE(macro) destroy_MICROSCALE(macro)

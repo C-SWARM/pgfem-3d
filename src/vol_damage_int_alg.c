@@ -113,7 +113,8 @@ int vol_damage_int_alg(const int ne,
 		       SIG *sig,
 		       double *max_omega,
 		       double *dissipation,
-		       const int analysis)
+		       const int analysis,
+		       const int mp_id)
 {
   const int ndn = 3;
   int err = 0;
@@ -166,7 +167,7 @@ int vol_damage_int_alg(const int ne,
     double *z = (double*) PGFEM_calloc(nne,sizeof(double));
 
     /* get dof id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* get nodal coordinates */
     switch(analysis){

@@ -97,7 +97,8 @@ long LINE_S1 (double *nor,
 	      MPI_Comm mpi_comm,
 	      double *max_damage,
 	      double *dissipation,
-	      const PGFem3D_opt *opts)
+	      const PGFem3D_opt *opts,
+	      const int mp_id)
 {
   double dt = dts[DT_NP1];
   double t = 0.0;
@@ -129,7 +130,7 @@ long LINE_S1 (double *nor,
     if (opts->analysis_type == FS_CRPL ) {
       INFO = integration_alg (ne,ndofn,ndofd,npres,crpl,elem,node,
 			      d_r,f,sup,matgeom,hommat,eps,sig_e,
-			      tim,iter,dt,nor_min,STEP,1,opts);
+			      tim,iter,dt,nor_min,STEP,1,opts,mp_id);
 	    
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -148,7 +149,7 @@ long LINE_S1 (double *nor,
     INFO = vol_damage_int_alg(ne,ndofn,f,r,elem,node,
 			      hommat,sup,dt,iter,mpi_comm,
 			      eps,sig_e,max_damage,dissipation,
-			      opts->analysis_type);
+			      opts->analysis_type,mp_id);
       
     MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
     if (GInfo == 1) {
@@ -163,7 +164,7 @@ long LINE_S1 (double *nor,
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
 		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		  nce,coel,mpi_comm,opts,alpha,r_n,r_n_1);
+		  nce,coel,mpi_comm,opts,alpha,r_n,r_n_1,mp_id);
     
     /* Transform LOCAL load vector to GLOBAL */
     LToG (f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
@@ -247,7 +248,8 @@ long LINE_S3 (double *nor,
 	      MPI_Comm mpi_comm,
 	      double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1)
+		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
+		const int mp_id)
 {
   long i,j,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,nor3;
@@ -320,7 +322,7 @@ long LINE_S3 (double *nor,
     if (opts->analysis_type == FS_CRPL) {
       INFO = integration_alg (ne,ndofn,ndofd,npres,crpl,elem,
 			      node,d_r,f,sup,matgeom,hommat,eps,
-			      sig_e,tim,iter,dt,nor_min,STEP,1,opts);
+			      sig_e,tim,iter,dt,nor_min,STEP,1,opts,mp_id);
     
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -339,7 +341,7 @@ long LINE_S3 (double *nor,
     INFO = vol_damage_int_alg(ne,ndofn,f,r,elem,node,
 			      hommat,sup,dt,iter,mpi_comm,
 			      eps,sig_e,max_damage,dissipation,
-			      opts->analysis_type);
+			      opts->analysis_type,mp_id);
 
     bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
 
@@ -356,7 +358,7 @@ long LINE_S3 (double *nor,
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
 		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
+		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1,mp_id);
 	
     /* Compute Euclidian norm */
     for (i=0;i<ndofd;i++)
@@ -452,7 +454,8 @@ long ALINE_S3 (long ARC,
 	       MPI_Comm mpi_comm,
 	      double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts )
+		const PGFem3D_opt *opts,
+		const int mp_id)
 {
   double dt = dts[DT_NP1];
   double t = 0.0;
@@ -561,7 +564,7 @@ long ALINE_S3 (long ARC,
     if (opts->analysis_type == FS_CRPL) {
       INFO=integration_alg (ne,ndofn,ndofd,npres,crpl,elem,node,
 			    d_r,D_R,sup,matgeom,hommat,eps,sig_e,
-			    tim,iter,dt,nor_min,STEP,0,opts); 
+			    tim,iter,dt,nor_min,STEP,0,opts,mp_id); 
       
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -580,7 +583,7 @@ long ALINE_S3 (long ARC,
     INFO = vol_damage_int_alg(ne,ndofn,f,r,elem,node,
 			      hommat,sup,dt,iter,mpi_comm,
 			      eps,sig_e,max_damage,dissipation,
-			      opts->analysis_type);
+			      opts->analysis_type,mp_id);
       
     MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
     if (GInfo == 1) {
@@ -595,7 +598,7 @@ long ALINE_S3 (long ARC,
     /* Residuals */
     fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
 		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1);
+		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1,mp_id);
     
     /* Compute Euclidean norm */
     for (i=0;i<ndofd;i++)

@@ -45,7 +45,8 @@ static int create_local_ms_cohe_job_list(const long nce,
 					 const long n_jobs,
 					 const MPI_Comm macro_mpi_comm,
 					 MS_COHE_JOB_INFO *job_list,
-					 int *local_buffer_size);
+					 int *local_buffer_size,
+					 const int mp_id);
 
 /** update the local job list displacement jumps */
 static int update_loc_ms_cohe_job_list(const int nce,
@@ -86,7 +87,8 @@ int create_group_ms_cohe_job_list(const long nce,
 				  const int group_id,
 				  long *Gn_jobs,
 				  long **n_job_dom,
-				  MS_COHE_JOB_INFO **job_list)
+				  MS_COHE_JOB_INFO **job_list,
+				  const int mp_id)
 {
   int err = 0;
   int myrank = 0;
@@ -118,7 +120,7 @@ int create_group_ms_cohe_job_list(const long nce,
 				       (*n_job_dom)[myrank],
 				       macro_mpi_comm,
 				       *job_list + job_id_start,
-				       &buff_sizes[myrank]);
+				       &buff_sizes[myrank],mp_id);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -240,7 +242,8 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 			    const MPI_Comm macro_mpi_comm,
 			    MS_COHE_JOB_INFO *job_list,
 			    PGFEM_HYPRE_solve_info *macro_solver,
-			    MICROSCALE *microscale)
+			    MICROSCALE *microscale,
+			    const int mp_id)
 {
   int err = 0;
   int macro_rank = 0;
@@ -276,7 +279,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   /* for each solution, compute job */
   for(int i=0; i<n_sols; i++){
     MS_COHE_JOB_INFO *job = job_list + i;
-    err += compute_ms_cohe_job(i,job,microscale);
+    err += compute_ms_cohe_job(i,job,microscale,mp_id);
 
     /* assemble tangent if owning process */
     if(macro_rank == job->proc_id){
@@ -359,7 +362,8 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 int assemble_ms_cohe_res(const MICROSCALE *micro,
 			 const MS_COHE_JOB_INFO *jobs,
 			 const MPI_Comm macro_mpi_comm,
-			 double *macro_loc_res)
+			 double *macro_loc_res,
+			 const int mp_id)
 {
   int err = 0;
 
@@ -373,7 +377,8 @@ int assemble_ms_cohe_res(const MICROSCALE *micro,
     err += assemble_ms_cohe_job_res(i,jobs+i,
 				    micro->common->mpi_comm,
 				    macro_mpi_comm,
-				    macro_loc_res);
+				    macro_loc_res,
+				    mp_id);
   }
 
   /* redirect I/O to macroscale */
@@ -422,7 +427,8 @@ static int create_local_ms_cohe_job_list(const long nce,
 					 const long n_jobs,
 					 const MPI_Comm macro_mpi_comm,
 					 MS_COHE_JOB_INFO *job_list,
-					 int *local_buffer_size)
+					 int *local_buffer_size,
+					 const int mp_id)
 {
   int err = 0;
   int myrank_macro = 0;
@@ -446,8 +452,8 @@ static int create_local_ms_cohe_job_list(const long nce,
     double *shape = PGFEM_calloc(nne,sizeof(double));
     long *loc_dof_ids = PGFEM_calloc(nne*ndim,sizeof(long));
     long *g_dof_ids = PGFEM_calloc(nne*ndim,sizeof(long));
-    get_dof_ids_on_elem_nodes(0,nne,ndim,cel->nod,node,loc_dof_ids);
-    get_dof_ids_on_elem_nodes(1,nne,ndim,cel->nod,node,g_dof_ids);
+    get_dof_ids_on_elem_nodes(0,nne,ndim,cel->nod,node,loc_dof_ids,mp_id);
+    get_dof_ids_on_elem_nodes(1,nne,ndim,cel->nod,node,g_dof_ids  ,mp_id);
 
     double *x = PGFEM_calloc(nne,sizeof(double));
     double *y = PGFEM_calloc(nne,sizeof(double));

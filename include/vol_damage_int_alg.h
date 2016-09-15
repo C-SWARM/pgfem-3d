@@ -48,7 +48,8 @@ extern "C" {
 			 SIG *sig,
 			 double *max_omega,
 			 double *dissipation,
-			 const int analysis);
+			 const int analysis,
+			 const int mp_id);
 
 #ifdef __cplusplus
 }

@@ -103,7 +103,8 @@ extern "C" {
 		   COMMUN comm,
 		   MPI_Comm mpi_comm,
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
+		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
+		   const int mp_id);
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

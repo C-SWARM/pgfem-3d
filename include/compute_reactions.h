@@ -45,7 +45,8 @@ int compute_reactions(long ne,
 		      double dt,
 		      double stab,
 		      MPI_Comm mpi_comm,
-		      const int analysis);
+		      const int analysis,
+		      const int mp_id);
 
 #ifdef __cplusplus
 }

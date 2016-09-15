@@ -1924,7 +1924,8 @@ void evaluate_theta_w_inertia_el(const int ii,
 
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1)
+		           MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1,
+		           const int mp_id)
 {
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
@@ -1964,7 +1965,7 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
     nodecoord_total(nne,nod,node,x,y,z);
 
     /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     /* deformation on element */
     def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);
@@ -2032,7 +2033,7 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
 
 void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-		           MPI_Comm mpi_comm)
+		           MPI_Comm mpi_comm,const int mp_id)
 {
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
@@ -2063,7 +2064,7 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
     nodecoord_total(nne,nod,node,x,y,z);
 
     // code numbers on element
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     // deformation on element
     def_elem_total(cn,ndofe,r,d_r,elem,node,sup,r_e);

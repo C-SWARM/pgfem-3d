@@ -1051,7 +1051,8 @@ void DISP_increment(const ELEMENT *elem,
 		    const HOMMAT *hommat,
 		    const double *sol_incr,
 		    const double *sol,
-		    MPI_Comm mpi_comm)
+		    MPI_Comm mpi_comm,
+		    const int mp_id)
 {
   /* for each element */
   for (int i=0; i<nelem; i++){
@@ -1071,7 +1072,7 @@ void DISP_increment(const ELEMENT *elem,
     long *nod = ptr_elem->nod;
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_total(nne,nod,node,x,y,z);
@@ -1095,7 +1096,7 @@ void DISP_increment(const ELEMENT *elem,
   /* Total Lagrangian formaulation takes gradients w.r.t. xi_fd */
   for (int ii=0;ii<nnodes;ii++){
     for (int i=0;i<ndn;i++){
-      int II = node[ii].id[i];
+      int II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + sol[II-1] + sol_incr[II-1];
 	else if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];

@@ -94,7 +94,7 @@ static void set_time_macro(const int tim,
 {
   times[tim + 1] = time_np1;
 }
-    
+
 /// Newton Raphson iterative solver
 ///
 /// \param[in] print_level print level for a summary of the entire function call
@@ -110,6 +110,7 @@ static void set_time_macro(const int tim,
 /// \param[in] VVolume original volume of the domain
 /// \return non-zero on internal error
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
@@ -122,7 +123,8 @@ double Newton_Raphson_test(const int print_level,
                            CRPL *crpl,
                            MPI_Comm mpi_comm,
                            const double VVolume,
-                           const PGFem3D_opt *opts)
+                           const PGFem3D_opt *opts,
+                           int mp_id)
 {
   double GNOR; // global norm of residual
   double nor1; // 
@@ -186,70 +188,73 @@ double Newton_Raphson_test(const int print_level,
                         sol->microscale,
                         sol->alpha,
                         variables->u_n,
-                        variables->u_nm1);
+                        variables->u_nm1,
+                        mp_id);
 }
-double Newton_Raphson (const int print_level,
-                       int *n_step,
-                       long ne,
-                       int n_be,
-                       long nn,
-                       long ndofn,
-                       long ndofd,
-                       long npres,
-                       long tim,
-                       double *times,
-                       double nor_min,
-                       double dt,
-                       ELEMENT *elem,
-                       BOUNDING_ELEMENT *b_elems,
-                       NODE *node,
-                       SUPP sup,
-                       double *sup_defl,
-                       HOMMAT *hommat,
-                       MATGEOM matgeom,
-                       SIG *sig_e,
-                       EPS *eps,
-                       int *Ap,
-                       int *Ai,
-                       double *r, /**< total displacement, i.e. for TL */
-                       double *f,
-                       double *d_r,
-                       double *rr,
-                       double *R,
-                       double *f_defl,
-                       double *RR,
-                       double *f_u,
-                       double *RRn,
-                       CRPL *crpl,
-                       double stab,
-                       long nce,
-                       COEL *coel,
-                       long FNR,
-                       double *pores,
-                       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                       double *BS_x,
-                       double *BS_f,
-                       double *BS_RR,
-                       double gama,
-                       double GNOR,
-                       double nor1,
-                       double err,
-                       double *BS_f_u,
-                       long *DomDof,
-                       COMMUN comm,
-                       int GDof,
-                       long nt,
-                       long iter_max,
-                       double *NORM,
-                       long nbndel,
-                       long *bndel,
-                       MPI_Comm mpi_comm,
-                       const double VVolume,
-                       const PGFem3D_opt *opts,
-                       void *microscale,
-                       double alpha_alpha,
-                       double *r_n,
-                       double *r_n_1)
+    
+double Newton_Raphson(const int print_level,
+                      int *n_step,
+                      long ne,
+                      int n_be,
+                      long nn,
+                      long ndofn,
+                      long ndofd,
+                      long npres,
+                      long tim,
+                      double *times,
+                      double nor_min,
+                      double dt,
+                      ELEMENT *elem,
+                      BOUNDING_ELEMENT *b_elems,
+                      NODE *node,
+                      SUPP sup,
+                      double *sup_defl,
+                      HOMMAT *hommat,
+                      MATGEOM matgeom,
+                      SIG *sig_e,
+                      EPS *eps,
+                      int *Ap,
+                      int *Ai,
+                      double *r, /**< total displacement, i.e. for TL */
+                      double *f,
+                      double *d_r,
+                      double *rr,
+                      double *R,
+                      double *f_defl,
+                      double *RR,
+                      double *f_u,
+                      double *RRn,
+                      CRPL *crpl,
+                      double stab,
+                      long nce,
+                      COEL *coel,
+                      long FNR,
+                      double *pores,
+                      PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                      double *BS_x,
+                      double *BS_f,
+                      double *BS_RR,
+                      double gama,
+                      double GNOR,
+                      double nor1,
+                      double err,
+                      double *BS_f_u,
+                      long *DomDof,
+                      COMMUN comm,
+                      int GDof,
+                      long nt,
+                      long iter_max,
+                      double *NORM,
+                      long nbndel,
+                      long *bndel,
+                      MPI_Comm mpi_comm,
+                      const double VVolume,
+                      const PGFem3D_opt *opts,
+                      void *microscale,
+                      double alpha_alpha,
+                      double *r_n,
+                      double *r_n_1,
+                      const int mp_id)
 {
   double t = times[tim+1];
   double dts[2];
@@ -449,7 +454,9 @@ double Newton_Raphson (const int print_level,
         nulld (f_u,ndofd);
         INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                 matgeom,hommat,sup,eps,sig_e,
-                nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+                mp_id);
+                
         for (i=0;i<ndofd;i++){
           f[i] = - f_u[i];
           R[i] = RR[i] = 0.0;
@@ -480,11 +487,12 @@ double Newton_Raphson (const int print_level,
           vol_damage_int_alg(ne,ndofn,d_r,r,elem,node,
                              hommat,sup,dt,iter,mpi_comm,
                              eps,sig_e,&max_damage,&dissipation,
-                             opts->analysis_type);
+                             opts->analysis_type,mp_id);
           
           fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                         matgeom,hommat,sup,eps,sig_e,
-                        nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                        nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+                        mp_id);
         } else {
           nulld (f_u,ndofd);
         }
@@ -494,7 +502,7 @@ double Newton_Raphson (const int print_level,
         nulld (f_defl,ndofd);
         load_vec_node_defl (f_defl,ne,ndofn,elem,b_elems,node,hommat,
                             matgeom,sup,npres,nor_min,
-                            sig_e,eps,dt,crpl,stab,r,r_n,opts,alpha_alpha);
+                            sig_e,eps,dt,crpl,stab,r,r_n,opts,alpha_alpha, mp_id);
         
         /* Generate the load and vectors */
         for (i=0;i<ndofd;i++)  {
@@ -532,7 +540,8 @@ double Newton_Raphson (const int print_level,
                               node,hommat,matgeom,sig_e,eps,d_r,r,npres,sup,
                               iter,nor_min,dt,crpl,stab,nce,coel,0,0.0,f_u,
                               myrank,nproc,DomDof,GDof,
-                              comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1);
+                              comm,mpi_comm,PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1,
+                              mp_id);
           
           // if INFO value greater than 0, the previous computation has an error
           MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
@@ -603,19 +612,19 @@ double Newton_Raphson (const int print_level,
           case FS_CRPL:
           case FINITE_STRAIN:
             press_theta (ne,ndofn,npres,elem,node,d_r,rr,sup,matgeom,
-                         hommat,eps,sig_e,iter,nor_min,dt,crpl,opts);
+                         hommat,eps,sig_e,iter,nor_min,dt,crpl,opts,mp_id);
             break;
           case MINI:
             MINI_update_bubble(elem,ne,node,ndofn,sup,
-                               eps,sig_e,hommat,d_r,rr,iter);
+                               eps,sig_e,hommat,d_r,rr,iter,mp_id);
             break;
           case MINI_3F:
             MINI_3f_update_bubble(elem,ne,node,ndofn,sup,
-                                  eps,sig_e,hommat,d_r,rr,iter);
+                                  eps,sig_e,hommat,d_r,rr,iter,mp_id);
             break;
           case TF:
             update_3f(ne,ndofn,npres,d_r,r,rr,node,elem,hommat,sup,eps,sig_e,
-                      dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                      dt,t,mpi_comm,opts,alpha_alpha,r_n,r_n_1,mp_id);
             
             break;
           default:
@@ -628,7 +637,7 @@ double Newton_Raphson (const int print_level,
         if (opts->analysis_type == FS_CRPL) {
           INFO = integration_alg (ne,ndofn,ndofd,npres,crpl,elem,
                                   node,d_r,rr,sup,matgeom,hommat,
-                                  eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts);
+                                  eps,sig_e,tim,iter,dt,nor_min,STEP,0,opts,mp_id);
           
           /* Gather INFO from all domains */
           // if INFO value greater than 0, the previous computation has an error
@@ -649,7 +658,7 @@ double Newton_Raphson (const int print_level,
         INFO = vol_damage_int_alg(ne,ndofn,f,r,elem,node,
                                   hommat,sup,dt,iter,mpi_comm,
                                   eps,sig_e,&max_damage,&dissipation,
-                                  opts->analysis_type);
+                                  opts->analysis_type,mp_id);
         
         bounding_element_communicate_damage(n_be,b_elems,ne,eps,mpi_comm);
         // if INFO value greater than 0, the previous computation has an error
@@ -694,7 +703,8 @@ double Newton_Raphson (const int print_level,
         INFO = fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,
                              b_elems,matgeom,hommat,sup,
                              eps,sig_e,nor_min,crpl,dts,t,stab,
-                             nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                             nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+                             mp_id);
         
         // if INFO value greater than 0, the previous computation has an error
         MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
@@ -769,7 +779,7 @@ double Newton_Raphson (const int print_level,
                           stab,nce,coel,f,rr,RR,tim,
                           /*GNOD *gnod,GEEL *geel,*/
                           BS_f,BS_RR,BS_f_u,DomDof,comm,GDof,STEP,mpi_comm,
-                          &max_damage, &dissipation, opts,alpha_alpha,r_n,r_n_1);
+                          &max_damage, &dissipation, opts,alpha_alpha,r_n,r_n_1,mp_id);
           
           /* Gather infos */
           // if INFO value greater than 0, the previous computation has an error
@@ -830,12 +840,12 @@ double Newton_Raphson (const int print_level,
           if(opts->analysis_type == MINI){
             MINI_check_resid(ndofn,ne,elem,node,hommat,eps,
                              sig_e,d_r,sup,RR,DomDof,ndofd,
-                             GDof,comm,mpi_comm);
+                             GDof,comm,mpi_comm,mp_id);
           }
           if(opts->analysis_type == MINI_3F){
             MINI_3f_check_resid(ndofn,ne,elem,node,hommat,eps,
                                 sig_e,d_r,sup,RR,DomDof,ndofd,
-                                GDof,comm,mpi_comm);
+                                GDof,comm,mpi_comm,mp_id);
           }
         }
         
@@ -937,7 +947,7 @@ double Newton_Raphson (const int print_level,
       
       /* increment coheisve elements */
       if(opts->cohesive){
-        increment_cohesive_elements(nce,coel,pores,node,sup,d_r);
+        increment_cohesive_elements(nce,coel,pores,node,sup,d_r,mp_id);
       }
       
       /* Finite deformations increment */
@@ -947,29 +957,29 @@ double Newton_Raphson (const int print_level,
           fd_increment (ne,nn,ndofn,npres,matgeom,hommat,
                         elem,node,sup,eps,sig_e,d_r,r,
                         nor_min,crpl,dt,nce,coel,pores,mpi_comm,
-                        VVolume,opts);
+                        VVolume,opts, mp_id);
           break;
         case STABILIZED:
           st_increment (ne,nn,ndofn,ndofd,matgeom,hommat,
                         elem,node,sup,eps,sig_e,d_r,r,
                         nor_min,stab,dt,nce,coel,pores,mpi_comm,
-                        opts->cohesive);
+                        opts->cohesive,mp_id);
           break;
         case MINI:
           MINI_increment(elem,ne,node,nn,ndofn,
-                         sup,eps,sig_e,hommat,d_r,mpi_comm);
+                         sup,eps,sig_e,hommat,d_r,mpi_comm,mp_id);
           break;
         case MINI_3F:
           MINI_3f_increment(elem,ne,node,nn,ndofn,
-                            sup,eps,sig_e,hommat,d_r,mpi_comm);
+                            sup,eps,sig_e,hommat,d_r,mpi_comm,mp_id);
           break;
         case DISP:
           DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-                         sig_e,hommat,d_r,r,mpi_comm);
+                         sig_e,hommat,d_r,r,mpi_comm,mp_id);
           break;
         case TF:
           update_3f_state_variables(ne,ndofn,npres,d_r,r,node,elem,hommat,sup,eps,sig_e,
-                                    dt,t,mpi_comm);
+                                    dt,t,mpi_comm,mp_id);
           break;
         case CM:
         {
@@ -977,7 +987,7 @@ double Newton_Raphson (const int print_level,
           {
             case HYPER_ELASTICITY: case DISP:
               DISP_increment(elem,ne,node,nn,ndofn,sup,eps,
-                             sig_e,hommat,d_r,r,mpi_comm);
+                             sig_e,hommat,d_r,r,mpi_comm,mp_id);
               break;
             case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
               /* updated later... */
@@ -1002,7 +1012,7 @@ double Newton_Raphson (const int print_level,
           for(long b = 0; b<ndofn; b++)
           {
             r_n_1[a*ndofn + b] = r_n[a*ndofn + b];
-            long id = node[a].id[b];
+            long id = node[a].id_map[mp_id].id[b];
             if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
               // Updated Lagrangian
             {
@@ -1040,11 +1050,11 @@ double Newton_Raphson (const int print_level,
           case UPDATED_LAGRANGIAN:
           case TOTAL_LAGRANGIAN:
             constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
-                                                      ndofn,r_n,dt,opts->cm);
+                                                      ndofn,r_n,dt,opts->cm,mp_id);
             break;
           case MIXED_ANALYSIS_MODE:
             constitutive_model_update_time_steps_test(elem,node,eps,ne,nn,
-                                                      ndofn,r_n,dt,1 /* TL */);
+                                                      ndofn,r_n,dt,1 /* TL */,mp_id);
             break;
           default: break;
         }
@@ -1099,16 +1109,17 @@ double Newton_Raphson (const int print_level,
         if(opts->analysis_type == MINI){
           MINI_check_resid(ndofn,ne,elem,node,hommat,eps,
                            sig_e,d_r,sup,RR,DomDof,ndofd,
-                           GDof,comm,mpi_comm);
+                           GDof,comm,mpi_comm,mp_id);
         }
         if(opts->analysis_type == MINI_3F){
           MINI_3f_check_resid(ndofn,ne,elem,node,hommat,eps,
                               sig_e,d_r,sup,RR,DomDof,ndofd,
-                              GDof,comm,mpi_comm);
+                              GDof,comm,mpi_comm,mp_id);
         }
         fd_residuals (f_u,ne,n_be,ndofn,npres,d_r,r,node,elem,b_elems,
                       matgeom,hommat,sup,eps,sig_e,
-                      nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+                      nor_min,crpl,dts,t,stab,nce,coel,mpi_comm,opts,alpha_alpha,r_n,r_n_1,
+                      mp_id);
         
         for (i=0;i<ndofd;i++) f[i] = RR[i] - f_u[i];
         /* print_array_d(stdout,RR,ndofd,1,ndofd); */
@@ -1133,7 +1144,7 @@ double Newton_Raphson (const int print_level,
             VTK_print_master(opts->opath,fname,*n_step,nproc,opts);
           }
           VTK_print_vtu(opts->opath,fname,*n_step,myrank,ne,nn,node,
-                        elem,sup,r,sig_e,eps,opts);
+                        elem,sup,r,sig_e,eps,opts,mp_id);
         }
       }
       
@@ -1157,7 +1168,7 @@ double Newton_Raphson (const int print_level,
     if(NR_COMPUTE_REACTIONS && !sup->multi_scale){
       compute_reactions(ne,ndofn,npres,r,node,elem,matgeom,
                         hommat,sup,eps,sig_e,nor_min,crpl,
-                        dt,stab,mpi_comm,opts->analysis_type);
+                        dt,stab,mpi_comm,opts->analysis_type,mp_id);
     }
     
     times[tim] = times[tim+1] - dts[DT_NP1];

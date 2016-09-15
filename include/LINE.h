@@ -99,7 +99,8 @@ extern "C" {
 		MPI_Comm mpi_comm,
 		double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts);
+		const PGFem3D_opt *opts,
+		const int mp_id);
 
   long LINE_S3 (double *nor,
 		double *nor2,
@@ -145,7 +146,8 @@ extern "C" {
 		MPI_Comm mpi_comm,
 		double *max_damage,
 		double *dissipation,
-		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1);
+		const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
+		const int mp_id);
 
   long ALINE_S3 (long ARC,
 		 double *DLM,
@@ -200,7 +202,8 @@ extern "C" {
 		 MPI_Comm mpi_comm ,
 		 double *max_damage,
 		 double *dissipation,
-		 const PGFem3D_opt *opts);
+		 const PGFem3D_opt *opts,
+		 const int mp_id);
 
 #ifdef __cplusplus
 }

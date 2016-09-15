@@ -537,7 +537,8 @@ int constitutive_model_update_time_steps_test(const ELEMENT *elem,
                                               const int ndofn,
                                               const double* r,
                                               const double dt,
-                                              const int total_Lagrangian);
+                                              const int total_Lagrangian,
+                                              const int mp_id);
 
 int constitutive_model_test(const HOMMAT *hmat,
                             Matrix_double *L_in,

@@ -35,11 +35,12 @@ static void fd_res_assemble(double *f_u,
                             const NODE *node,
                             const int nne,
                             const int ndofn,
-                            const long *nod)
+                            const long *nod,
+                            const int mp_id)
 {
   for (int k = 0; k < nne; k++) {
     for (int kk = 0; kk < ndofn; kk++){
-      int II = node[nod[k]].id[kk] - 1;
+      int II = node[nod[k]].id_map[mp_id].id[kk] - 1;
       if (II < 0) continue;
       f_u[II] += fe[k * ndofn + kk];
     }
@@ -70,7 +71,8 @@ static int fd_res_elem(double *fe,
                        const double alpha,
                        double *r_n,
                        double *r_n_1,
-                       const int include_inertia)
+                       const int include_inertia,
+                       const int mp_id)
 {
   int err = 0;
   double dt = dts[DT_NP1];
@@ -101,7 +103,7 @@ static int fd_res_elem(double *fe,
 
   long *cn = aloc1l (ndofe);
   /* code numbers on element */
-  get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+  get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
   /* coordinates */
   if(sup->multi_scale) {
@@ -244,7 +246,8 @@ static int fd_res_coel(double *fe,
                        const int ndofc,
                        const double *d_r,
                        const double nor_min,
-                       const int myrank)
+                       const int myrank,
+                       const int mp_id)
 {
   int err = 0;
   const int nne = coel[i].toe/2;
@@ -264,7 +267,7 @@ static int fd_res_coel(double *fe,
   nodecoord_updated (nnet,nod,node,x,y,z);
 
   /* code numbers on element */
-  get_dof_ids_on_elem_nodes(0,nnet,ndofc,nod,node,cn);
+  get_dof_ids_on_elem_nodes(0,nnet,ndofc,nod,node,cn,mp_id);
 
   /* deformation on element */
   def_elem (cn,ndofe,d_r,NULL,node,r_e,sup,0);
@@ -308,7 +311,8 @@ int fd_residuals (double *f_u,
                   const PGFem3D_opt *opts,
                   double alpha,
                   double *r_n,
-                  double *r_n_1)
+                  double *r_n_1,
+                  const int mp_id)
 {
   /* make decision to include ineria*/
   const int mat = elem[0].mat[2];
@@ -336,9 +340,9 @@ int fd_residuals (double *f_u,
     err += fd_res_elem(fe, i, elem, ndofn, npres, d_r, r, node,
                        matgeom, hommat, sup, eps, sig, nor_min,
                        crpl, dts, t, stab, mpi_comm, opts, alpha,
-                       r_n, r_n_1, include_inertia);
+                       r_n, r_n_1, include_inertia,mp_id);
 
-    fd_res_assemble(f_u, fe, node, nne, ndofn, nod);
+    fd_res_assemble(f_u, fe, node, nne, ndofn, nod, mp_id);
 
     dealoc1l (nod);
     dealoc1 (fe);
@@ -360,8 +364,8 @@ int fd_residuals (double *f_u,
       for (int j=0;j<coel[i].toe;j++)
         nod[j] = coel[i].nod[j];
 
-      err += fd_res_coel(fe, i, node, coel, sup, ndofc, d_r, nor_min, myrank);
-      fd_res_assemble(f_u, fe, node, coel[i].toe, ndofc, nod);
+      err += fd_res_coel(fe, i, node, coel, sup, ndofc, d_r, nor_min, myrank,mp_id);
+      fd_res_assemble(f_u, fe, node, coel[i].toe, ndofc, nod, mp_id);
 
       dealoc1l (nod);
       dealoc1 (fe);
@@ -400,8 +404,8 @@ int fd_residuals (double *f_u,
     long *cn = aloc1l(ndofe);
     long *Gcn = aloc1l(ndofe);
 
-    get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn);
-    get_dof_ids_on_bnd_elem(1,ndofn,node,ptr_be,elem,Gcn);
+    get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn ,mp_id);
+    get_dof_ids_on_bnd_elem(1,ndofn,node,ptr_be,elem,Gcn,mp_id);
 
     /* compute the deformation on the element */
     def_elem(cn,ndofe,d_r,NULL,NULL,r_e,sup,0);
@@ -477,7 +481,8 @@ int fd_res_compute_reactions(const long ndofn,
                              const PGFem3D_opt *opts,
                              const double alpha,
                              double *r_n,
-                             double *r_n_1)
+                             double *r_n_1,
+                             const int mp_id)
 {
   int err = 0;
 
@@ -499,7 +504,7 @@ int fd_res_compute_reactions(const long ndofn,
     err += fd_res_elem(fe, el_id[i], elem, ndofn, npres, d_r, r, node,
                        matgeom, hommat, sup, eps, sig, nor_min, crpl,
                        dts, t, stab, mpi_comm, opts, alpha, r_n, r_n_1,
-                       include_inertia);
+                       include_inertia,mp_id);
 
     /* Previous may have called integration algorithm. Need to reset
        state variables to retain consistent tangent and to ensure we
@@ -507,7 +512,7 @@ int fd_res_compute_reactions(const long ndofn,
     if (opts->analysis_type == CM) constitutive_model_reset_state(eps, ne, elem);
 
     long *cn = aloc1l (ndofe);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     for (int j = 0; j < ndofe; j++) {
       if (cn[j] <= 0) {

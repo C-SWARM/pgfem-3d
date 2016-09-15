@@ -120,7 +120,8 @@ extern "C" {
 		       GNOD *gnod,
 		       GEEL *geel*/  ,
 		     MPI_Comm mpi_comm,
-		     const PGFem3D_opt *opts);
+		     const PGFem3D_opt *opts,
+		     const int mp_id);
 
   double d_ALM4 (long ndofd,
 		 double *BS_rr,
