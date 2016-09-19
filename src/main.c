@@ -256,7 +256,7 @@ int single_scale_main(int argc,char *argv[])
   //---->
   // Multiphysics
   MULTIPHYSICS mp;
-  int physicsno = 2;
+  int physicsno = 1;
   err += multiphysics_initialization(&mp);
   err += construct_multiphysics(&mp, physicsno);
 
@@ -546,33 +546,9 @@ int single_scale_main(int argc,char *argv[])
   if(options.cohesive == 1)
     err += read_cohesive_elements(&grid,&mat, &options, ensight, mpi_comm, myrank);
 
-
-  printf("------------------------------\n");
-  for(int ia=0; ia<grid.nn; ia++)
-  {
-    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
-                               grid.node[ia].id_map[0].id[0],
-                               grid.node[ia].id_map[0].id[1],
-                               grid.node[ia].id_map[0].id[2],
-                               grid.node[ia].id_map[1].id[0]);
-  } 
-
-  
   /* use new functions to get code numbers */
   variables.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
           grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
-
-  printf("------------------------------\n");
-
-  for(int ia=0; ia<grid.nn; ia++)
-  {
-    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
-                               grid.node[ia].id_map[0].id[0],
-                               grid.node[ia].id_map[0].id[1],
-                               grid.node[ia].id_map[0].id[2],
-                               grid.node[ia].id_map[1].id[0]);
-  }          
-
 
   if(2==physicsno)
   {  
@@ -580,15 +556,6 @@ int single_scale_main(int argc,char *argv[])
             grid.element,grid.coel,grid.b_elems,mpi_comm,1);
   }
   
-  printf("------------------------------\n");
-  for(int ia=0; ia<grid.nn; ia++)
-  {
-    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
-                               grid.node[ia].id_map[0].id[0],
-                               grid.node[ia].id_map[0].id[1],
-                               grid.node[ia].id_map[0].id[2],
-                               grid.node[ia].id_map[1].id[0]);
-  }          
   com.DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
           grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
   
