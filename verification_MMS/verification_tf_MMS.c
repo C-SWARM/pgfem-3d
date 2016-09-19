@@ -60,10 +60,12 @@ int main(int argc,char *argv[])
   
   
   int in_err = 0;
+  int physicsno = 1;
+  int ndim = 3;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-		     &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-		     &elem,&mater,&matgeom,&sup,&nln,&znod,
-		     &nle_s,&zele_s,&nle_v,&zele_v);
+         &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+         &elem,&mater,&matgeom,&sup,&nln,&znod,
+         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
 	    myrank);
@@ -155,7 +157,7 @@ int main(int argc,char *argv[])
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
-  destroy_node(nn,node);
+  destroy_node_multi_physics(nn,node,physicsno);
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();

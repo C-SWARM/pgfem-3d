@@ -10,7 +10,8 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
 
 # HYPRE
-HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
+HYPRE_inc	= -I$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/include
+HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/lib -lHYPRE
 
 # CNSTVM
 CNSTVM_dir = $(shell grep 'cnstvm_lib' ../../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Generalizsed_constitutive_model' | sed 's/\/lib //')
@@ -56,6 +57,7 @@ RM = rm -rf
 CFLAGS = -Wall -std=c99 -O3 -g
 
 INCLUDES = -I$(pfem_incl_dir) \
+		$(HYPRE_inc) \
                   $(CNSTVM_incl) \
 		  $(VTK_IO_incl) \
 		  $(MKL_incl) \
