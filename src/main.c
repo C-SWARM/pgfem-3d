@@ -664,7 +664,7 @@ int single_scale_main(int argc,char *argv[])
       compute_applied_traction_res(variables.ndofn,grid.node,grid.element,
               n_sur_trac_elem,ste,
               n_feats,loads,
-              nodal_forces);
+              nodal_forces, mp_id);
       
       double tmp_sum = 0.0;
       for(int i=0; i<variables.ndofd; i++){

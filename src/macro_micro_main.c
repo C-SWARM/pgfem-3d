@@ -220,7 +220,7 @@ int multi_scale_main(int argc, char **argv)
       compute_applied_traction_res(c->ndofn,c->node,c->elem,
 				   n_sur_trac_elem,ste,
 				   n_feats,loads,
-				   nodal_forces);
+				   nodal_forces,mp_id);
 
       double tmp_sum = 0.0;
       for(int i=0; i<c->ndofd; i++){
