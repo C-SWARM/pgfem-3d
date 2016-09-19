@@ -4,6 +4,19 @@
 #include "allocation.h"
 #include <assert.h>
 
+
+NODE* build_node(const long nn,
+                 const long ndofn)
+{
+  return build_node_multi_physics(nn,ndofn,1);                   
+}
+
+void destroy_node(const long nn,
+                  NODE* node)
+{
+  destroy_node_multi_physics(nn, node, 1);
+}                  
+
 /// build node array.
 /// Multiphysics needs many ids for nodal variables.
 /// To assign local and global ids according to the number physics,
@@ -15,7 +28,7 @@
 /// \param[in] ndofn number of dofs on a node
 /// \param[in] physicsno number of physics
 /// \return node array
-NODE* build_node_multi_physic(const long nn,
+NODE* build_node_multi_physics(const long nn,
                               const long ndofn,
                               const int physicsno)
 {
@@ -41,7 +54,7 @@ NODE* build_node_multi_physic(const long nn,
 /// \param[in] physicsno number of physics
 /// 
 /// \return non-zero on internal error
-int destroy_node_multi_physic(const long nn,
+int destroy_node_multi_physics(const long nn,
                               NODE* node,
                               const int physicsno)
 {
