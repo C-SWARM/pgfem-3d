@@ -325,7 +325,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
 
-    for(int j=0; j<ptr_node->ndofn; j++){
+    for(int j=0; j<ndofn; j++){
       const int dof_idx = node_id*ndofn + j;
 
       /* set dof id only if the dof has not been previously visited */
@@ -433,7 +433,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
-    for(int j=0; j<ptr_node->ndofn; j++){
+    for(int j=0; j<ndofn; j++){
       const int dof_idx = node_id*ndofn + j;
 
       /* set dof id only if the dof has not been previously visited */
@@ -493,13 +493,13 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
-      for(int j=0; j<ptr_node->ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
-      for(int j=0; j<ptr_node->ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	if(!visited_node_dof[dof_idx]){
 	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
@@ -600,13 +600,13 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
     const int node_id = elem_nod[i];
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
-      for(int j=0; j<ptr_node->ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
-      for(int j=0; j<ptr_node->ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	const int dof_idx = node_id*ndofn + j;
 	if(!visited_node_dof[dof_idx]){
 	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */

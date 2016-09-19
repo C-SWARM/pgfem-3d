@@ -76,6 +76,7 @@ int grid_initialization(GRID *grid)
 /// free memory spaces for member arrays and structs
 ///
 /// \param[in, out] grid an object containing all mesh data
+/// \param[in] mp multiphysics object
 /// \return non-zero on internal error
 int destruct_grid(GRID *grid, 
                   const PGFem3D_opt *opts,
@@ -84,7 +85,7 @@ int destruct_grid(GRID *grid,
   int err = 0;
   destroy_bounding_elements(grid->n_be,grid->b_elems);
   destroy_elem(grid->element,grid->ne);
-  destroy_node_multi_physic(grid->nn,grid->node, mp->physicsno);
+  destroy_node_multi_physics(grid->nn,grid->node, mp->physicsno);
   
   if(opts->cohesive == 1)
     destroy_coel(grid->coel,grid->nce);
@@ -102,6 +103,7 @@ int destruct_grid(GRID *grid,
 int field_varialbe_initialization(FIELD_VARIABLES *fv)
 {
   int err = 0;
+  fv->Gndof  = 0;
   fv->ndofn  = 0;
   fv->ndofd  = 0;
   fv->npres  = 0;
@@ -125,6 +127,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->NORM   = 0.0;
   fv->sig    = NULL;
   fv->eps    = NULL;
+  fv->sig_n  = NULL;
   return err;
 }
 
@@ -302,7 +305,7 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol)
 int loading_steps_initialization(LOADING_STEPS *load)
 {
   int err = 0;
-  load->sup         = NULL;
+  load->sups        = NULL;
   load->sup_defl    = NULL;
   load->nln         = 0;
   load->nle_s       = 0;
@@ -320,8 +323,9 @@ int loading_steps_initialization(LOADING_STEPS *load)
 /// free memory spaces for member arrays and structs
 ///
 /// \param[in, out] load an object containing boundary increments
+/// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_loading_steps(LOADING_STEPS *load)
+int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
   int err = 0;  
   if(NULL != load->sup_defl) free(load->sup_defl);
@@ -332,7 +336,10 @@ int destruct_loading_steps(LOADING_STEPS *load)
   destroy_zatelem(load->zele_s, load->nle_s);
   destroy_zatelem(load->zele_v, load->nle_v);
 
-  destroy_supp(load->sup);
+  for(int ia=0; ia<mp->physicsno; ia++)
+    destroy_supp(load->sups[ia]);
+  
+  free(load->sups);  
   
   err += loading_steps_initialization(load);
   return err;
@@ -379,3 +386,64 @@ int destruct_communication_structure(COMMUNICATION_STRUCTURE *com)
   err += communication_structure_initialization(com);
   return err;
 }
+
+/// initialize multiphysics object
+/// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
+///
+/// \param[in, out] mp an object for multiphysics stepping
+/// \return non-zero on internal error
+int multiphysics_initialization(MULTIPHYSICS *mp)
+{
+  int err = 0;
+  mp->physicsno   = 0;
+  mp->physicsname = NULL;
+  mp->physics_ids = NULL;
+  mp->ndim        = NULL;
+  return err = 0;
+}
+
+
+/// construct multiphysics object
+/// create memory space for member arrays and structs
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] physicsno number of physics
+/// \return non-zero on internal error
+int construct_multiphysics(MULTIPHYSICS *mp, 
+                           int physicsno)
+{
+  int err = 0;
+  mp->physicsno   = physicsno;
+  mp->physicsname = (char **) malloc(sizeof(char *)*physicsno);
+  mp->physics_ids = (int*) malloc(sizeof(int)*physicsno);
+  mp->ndim        = (int*) malloc(sizeof(int)*physicsno);
+  for(int ia=0; ia<physicsno; ia++)
+  {
+    mp->physicsname[ia] = (char *) malloc(sizeof(char)*1024);
+    mp->physics_ids[ia] = 0;
+    mp->ndim[ia]        = 0;
+  }
+  return err = 0;  
+}
+                           
+/// destruct multiphysics object
+/// free memory spaces for member arrays and structs
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \return non-zero on internal error
+int destruct_multiphysics(MULTIPHYSICS *mp)
+{
+  int err = 0;
+  if(NULL != mp->physicsname)
+  {  
+    for(int ia=0; ia<  mp->physicsno; ia++)
+      if(NULL != mp->physicsname[ia]) free(mp->physicsname[ia]);
+    
+    free(mp->physicsname);
+  }
+  if(NULL != mp->physics_ids) free(mp->physics_ids);
+  if(NULL != mp->ndim)        free(mp->ndim);
+  err += multiphysics_initialization(mp);  
+  return err = 0;  
+}
+

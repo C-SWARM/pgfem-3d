@@ -65,7 +65,6 @@
 #include "dynamics.h"
 
 static const int periodic = 0;
-static const int ndim = 3;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -173,7 +172,7 @@ int print_PGFem3D_run_info(int argc,char *argv[],
   }
   
   if(opts->multi_scale){
-    if((load->sup)->npd>= 9){
+    if((load->sups[MULTIPHYSICS_MECHANICAL])->npd>= 9){
       PGFEM_printf("*** BULK Multiscale Modelling ***\n");
     } else {
       PGFEM_printf("*** INTERFACE Multiscale Modelling ***\n");
@@ -245,7 +244,8 @@ int print_PGFem3D_final(double total_time,
 
 int single_scale_main(int argc,char *argv[])
 {
-  int err = 0; int mp_id = 0;
+  int err = 0; int mp_id = MULTIPHYSICS_MECHANICAL;
+  static const int ndim = 3;
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
    * may change */
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
@@ -256,11 +256,19 @@ int single_scale_main(int argc,char *argv[])
   //---->
   // Multiphysics
   MULTIPHYSICS mp;
-  mp.physicsno = 1;
-  mp.physics_ids = (int *) malloc(sizeof(int)*mp.physicsno);
-  mp.physics_ids[0] = MULTIPHYSICS_MECHANICAL;
-//  mp.physics_ids[1] = MULTIPHYSICS_THERMAL;
+  int physicsno = 2;
+  err += multiphysics_initialization(&mp);
+  err += construct_multiphysics(&mp, physicsno);
 
+  mp.physics_ids[MULTIPHYSICS_MECHANICAL] = 0;
+  mp.ndim[MULTIPHYSICS_MECHANICAL]        = 3;
+  
+  if(2==physicsno)
+  {  
+    mp.physics_ids[MULTIPHYSICS_THERMAL]    = 1;
+    mp.ndim[MULTIPHYSICS_THERMAL]           = 1;
+  }
+  
   // Mechanical part
   FIELD_VARIABLES variables;
   GRID grid;
@@ -277,6 +285,7 @@ int single_scale_main(int argc,char *argv[])
   err += material_initialization(&mat);
   err += solution_scheme_initialization(&sol_M);
   err += loading_steps_initialization(&load);
+  load.sups = (SUPP *) malloc(sizeof(SUPP)*mp.physicsno);
   err += communication_structure_initialization(&com);  
   err += arc_length_variable_initialization(&arc);
   
@@ -284,7 +293,9 @@ int single_scale_main(int argc,char *argv[])
   FIELD_VARIABLES_THERMAL T;
   LOADING_STEPS load_T;      
   SOLVER_OPTIONS sol_T;
+  T.ndofn = 1;
 
+  err += thermal_field_varialbe_initialization(&T);
   err += solution_scheme_initialization(&sol_T);
   //<---------------------------------------------------------------------
     
@@ -463,7 +474,7 @@ int single_scale_main(int argc,char *argv[])
   
   /*=== OVERRIDE PRESCRIBED DISPLACEMENTS ===*/
   if(options.override_pre_disp){
-    if(override_prescribed_displacements(load.sup,&options) != 0){
+    if(override_prescribed_displacements(load.sups[mp_id],&options) != 0){
       PGFEM_printerr("[%d]ERROR: an error was encountered when"
               " reading the displacement override file.\n"
               "Be sure that there are enough prescribed"
@@ -474,8 +485,8 @@ int single_scale_main(int argc,char *argv[])
   
   /*=== MULTISCALE INFORMATION ===*/
   if(options.multi_scale){
-    (load.sup)->multi_scale = options.multi_scale;
-    int ms_err = read_interface_macro_normal_lc(options.ipath,load.sup);
+    (load.sups[mp_id])->multi_scale = options.multi_scale;
+    int ms_err = read_interface_macro_normal_lc(options.ipath,load.sups[mp_id]);
     if(ms_err != 0){
       PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
               "Check that the file \"%s/normal.in\""
@@ -499,7 +510,7 @@ int single_scale_main(int argc,char *argv[])
   /*==== ADDITIONAL SETUP ===*/
   
   /* list of elements with prescribed deflection */
-  list_el_prescribed_def (load.sup,grid.node,grid.element,grid.b_elems,grid.ne,grid.n_be,grid.nn);
+  list_el_prescribed_def (load.sups[mp_id],grid.node,grid.element,grid.b_elems,grid.ne,grid.n_be,grid.nn);
   
   /* list of elements on the COMMUNICATION boundary */
   com.nbndel = 0;
@@ -534,14 +545,50 @@ int single_scale_main(int argc,char *argv[])
   // Read cohesive elements
   if(options.cohesive == 1)
     err += read_cohesive_elements(&grid,&mat, &options, ensight, mpi_comm, myrank);
+
+
+  printf("------------------------------\n");
+  for(int ia=0; ia<grid.nn; ia++)
+  {
+    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
+                               grid.node[ia].id_map[0].id[0],
+                               grid.node[ia].id_map[0].id[1],
+                               grid.node[ia].id_map[0].id[2],
+                               grid.node[ia].id_map[1].id[0]);
+  } 
+
   
   /* use new functions to get code numbers */
   variables.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
           grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
-/*          
-  T.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
-          grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
-  */                
+
+  printf("------------------------------\n");
+
+  for(int ia=0; ia<grid.nn; ia++)
+  {
+    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
+                               grid.node[ia].id_map[0].id[0],
+                               grid.node[ia].id_map[0].id[1],
+                               grid.node[ia].id_map[0].id[2],
+                               grid.node[ia].id_map[1].id[0]);
+  }          
+
+
+  if(2==physicsno)
+  {  
+    T.ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,T.ndofn,grid.node,
+            grid.element,grid.coel,grid.b_elems,mpi_comm,1);
+  }
+  
+  printf("------------------------------\n");
+  for(int ia=0; ia<grid.nn; ia++)
+  {
+    printf("%3d %3ld %3ld %3ld %3ld\n", ia,
+                               grid.node[ia].id_map[0].id[0],
+                               grid.node[ia].id_map[0].id[1],
+                               grid.node[ia].id_map[0].id[2],
+                               grid.node[ia].id_map[1].id[0]);
+  }          
   com.DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,variables.ndofn,grid.node,
           grid.element,grid.coel,grid.b_elems,mpi_comm,mp_id);
   
@@ -571,7 +618,7 @@ int single_scale_main(int argc,char *argv[])
   }
   
   for (long i=0;i<com.nproc;i++) {
-    variables.Gndof += com.DomDof[i];
+    variables.Gndof += com.DomDof[i];    
     grid.Gne += DomNe[i];
   }
   
@@ -620,8 +667,8 @@ int single_scale_main(int argc,char *argv[])
     
     /* allocate vectors */
         
-    if((load.sup)->npd > 0){
-      load.sup_defl = aloc1((load.sup)->npd);
+    if((load.sups[mp_id])->npd > 0){
+      load.sup_defl = aloc1((load.sups[mp_id])->npd);
     } else {
       load.sup_defl = NULL;
     }    
@@ -671,7 +718,8 @@ int single_scale_main(int argc,char *argv[])
     }
 
     //----------------------------------------------------------------------
-    // read solver file, file pointer (solver file) will not be freed and
+    // read solver file ( *.in.st)
+    // file pointer (solver file) will not be freed and
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
@@ -837,8 +885,8 @@ int single_scale_main(int argc,char *argv[])
     }
     
     load_vec_node_defl (variables.f_defl,grid.ne,variables.ndofn,grid.element,grid.b_elems,grid.node,mat.hommat,
-            mat.matgeom,load.sup,variables.npres,sol_M.nor_min,variables.sig,variables.eps,time_steps.dt_np1,
-            crpl,options.stab,variables.u_np1,variables.u_n,&options,sol_M.alpha,MULTIPHYSICS_MECHANICAL);
+            mat.matgeom,load.sups[mp_id],variables.npres,sol_M.nor_min,variables.sig,variables.eps,time_steps.dt_np1,
+            crpl,options.stab,variables.u_np1,variables.u_n,&options,sol_M.alpha,mp_id);
     
     /*  NODE - generation of the load vector  */
     load_vec_node (variables.R,load.nln,ndim,load.znod,grid.node,mp_id);
@@ -858,8 +906,8 @@ int single_scale_main(int argc,char *argv[])
       LToG (variables.R,arc.BS_R,myrank,com.nproc,variables.ndofd,com.DomDof,com.GDof,com.comm ,mpi_comm);
     
     /* Prescribed deflection */
-    for (long i=0;i<(load.sup)->npd;i++){
-      load.sup_defl[i] = (load.sup)->defl_d[i];
+    for (long i=0;i<(load.sups[mp_id])->npd;i++){
+      load.sup_defl[i] = (load.sups[mp_id])->defl_d[i];
     }
     
     /*=== NO PERIODIC ===*/
@@ -927,9 +975,9 @@ int single_scale_main(int argc,char *argv[])
         //---->
         if(tim<restart_tim+1)
         {
-          for (long i=0;i<(load.sup)->npd;i++){
-            (load.sup)->defl[i] += (load.sup)->defl_d[i];
-            (load.sup)->defl_d[i] = 0.0;
+          for (long i=0;i<(load.sups[mp_id])->npd;i++){
+            (load.sups[mp_id])->defl[i] += (load.sups[mp_id])->defl_d[i];
+            (load.sups[mp_id])->defl_d[i] = 0.0;
           }
           (tim)++;
           continue;
@@ -964,7 +1012,7 @@ int single_scale_main(int argc,char *argv[])
         }
         
         /* null the prescribed displacement increment */
-        nulld(load.sup_defl,(load.sup)->npd);
+        nulld(load.sup_defl,(load.sups[mp_id])->npd);
       }/* end NR */
       
       /*=== ARC LENGTH ===*/
@@ -1022,7 +1070,7 @@ int single_scale_main(int argc,char *argv[])
         dts[DT_NP1] = time_steps.times[tim+1] - time_steps.times[tim];
         
         fd_res_compute_reactions(variables.ndofn, variables.npres, variables.d_u, variables.u_np1, grid.element, grid.node,
-                mat.matgeom, mat.hommat, load.sup, variables.eps, variables.sig, sol_M.nor_min,
+                mat.matgeom, mat.hommat, load.sups[mp_id], variables.eps, variables.sig, sol_M.nor_min,
                 crpl, dts, time_steps.times[tim+1], options.stab, mpi_comm,
                 &options, sol_M.alpha, variables.u_n, variables.u_nm1,mp_id);
       }
@@ -1061,19 +1109,19 @@ int single_scale_main(int argc,char *argv[])
       if (time_steps.print[tim] == 1 && options.vis_format != VIS_NONE ) {
         if(options.ascii){
           ASCII_output(&options,mpi_comm,tim,time_steps.times,grid.Gnn,grid.nn,grid.ne,grid.nce,variables.ndofd,
-                  com.DomDof,com.Ap,sol_M.FNR,arc.lm,variables.pores,VVolume,grid.node,grid.element,load.sup,
+                  com.DomDof,com.Ap,sol_M.FNR,arc.lm,variables.pores,VVolume,grid.node,grid.element,load.sups[mp_id],
                   variables.u_np1,variables.eps,variables.sig,variables.sig_n,grid.coel);
         } /* End ASCII output */
         
         switch(options.vis_format){
           case VIS_ELIXIR:/* Print to elix file */
             sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
-            elixir (filename,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sup,variables.u_np1,variables.sig,
+            elixir (filename,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sups[mp_id],variables.u_np1,variables.sig,
                     variables.sig_n,variables.eps,options.smoothing,grid.nce,grid.coel,&options);
             break;
           case VIS_ENSIGHT:/* Print to EnSight files */
             sprintf (filename,"%s",out_dat);
-            EnSight (filename,tim,time_steps.nt,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sup,
+            EnSight (filename,tim,time_steps.nt,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sups[mp_id],
                     variables.u_np1,variables.sig,variables.sig_n,variables.eps,options.smoothing,grid.nce,grid.coel,
                     /*nge,geel,ngn,gnod,*/sol_M.FNR,arc.lm,ensight,mpi_comm,
                     &options);
@@ -1085,14 +1133,14 @@ int single_scale_main(int argc,char *argv[])
             }
             
             VTK_print_vtu(options.opath,options.ofname,tim,
-                    myrank,grid.ne,grid.nn,grid.node,grid.element,load.sup,variables.u_np1,variables.sig,variables.eps,
+                    myrank,grid.ne,grid.nn,grid.node,grid.element,load.sups[mp_id],variables.u_np1,variables.sig,variables.eps,
                     &options,mp_id);
             
             // save restart files
             if(SAVE_RESTART_FILE)
             {
               write_restart(variables.u_nm1, variables.u_n, &options,
-                      grid.element, grid.node,variables.sig,variables.eps,load.sup,
+                      grid.element, grid.node,variables.sig,variables.eps,load.sups[mp_id],
                       myrank, grid.ne, grid.nn, variables.ndofn, variables.ndofd, tim, time_steps.times, variables.NORM,
                       mp_id);
             }
@@ -1105,7 +1153,7 @@ int single_scale_main(int argc,char *argv[])
               }
               
               VTK_print_cohesive_vtu(options.opath,options.ofname,
-                      tim,myrank,grid.nce,grid.node,grid.coel,load.sup,variables.u_np1,ensight,
+                      tim,myrank,grid.nce,grid.node,grid.coel,load.sups[mp_id],variables.u_np1,ensight,
                       &options,mp_id);
             }
             break;
@@ -1141,11 +1189,12 @@ int single_scale_main(int argc,char *argv[])
   free(dist);
     
   err += destruct_field_varialbe(&variables, &grid, &options);
-  err += destruct_loading_steps(&load);
+  err += destruct_loading_steps(&load, &mp);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
   err += destruct_material(&mat, &options);
   err += destruct_grid(&grid, &options, &mp);
   err += destruct_communication_structure(&com);  
+  err += destruct_multiphysics(&mp);
 
   if (sol_M.FNR == 2 || sol_M.FNR == 3)
     err += destruct_arc_length_variable(&arc);

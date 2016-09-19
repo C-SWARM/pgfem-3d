@@ -500,7 +500,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 			  &common->n_orient,&common->node,
 			  &common->elem,&mater,&common->matgeom,
 			  &common->supports,&nln,&znod,&nle_s,&zele_s,
-			  &nle_v,&zele_v, physicsno);
+			  &nle_v,&zele_v, physicsno, &ndim);
 
     /* error reading file(s) */
     if(err){
@@ -711,7 +711,7 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_commun(common->pgfem_comm,nproc);
   free(common->bndel);
   free(common->DomDof);
-  destroy_node_multi_physic(common->nn,common->node,mp_id);
+  destroy_node_multi_physics(common->nn,common->node,mp_id);
   destroy_elem(common->elem,common->ne);
   destroy_coel(common->coel,common->nce);
   destroy_matgeom(common->matgeom,common->n_orient);

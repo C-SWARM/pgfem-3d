@@ -125,7 +125,7 @@ typedef struct {
 
 /// struct for the boundary conditions
 typedef struct {
-  SUPP sup;          /// list of Dirichlet boundary conditions
+  SUPP *sups;
   double *sup_defl;  /// sum of Dirichlet BC increments to step n
   long nln;       ;  /// number of nodes with loads
   long nle_s;        /// number of surface element with loads
@@ -162,6 +162,7 @@ typedef struct {
   int physicsno;      /// number of physics 
   char **physicsname; /// physics names
   int *physics_ids;   /// physics ids
+  int *ndim;
 } MULTIPHYSICS;
 
 /// initialize time stepping variable
@@ -185,6 +186,7 @@ int grid_initialization(GRID *grid);
 /// destruct of mesh
 ///
 /// \param[in, out] grid an object containing all mesh data
+/// \param[in] mp multiphysics object
 /// \return non-zero on internal error
 int destruct_grid(GRID *grid, 
                   const PGFem3D_opt *opts,
@@ -256,8 +258,9 @@ int loading_steps_initialization(LOADING_STEPS *load);
 /// destruct loading steps object
 ///
 /// \param[in, out] load an object containing boundary increments
+/// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_loading_steps(LOADING_STEPS *load);
+int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp);
 
 /// initialize communication structures
 ///
@@ -271,4 +274,26 @@ int communication_structure_initialization(COMMUNICATION_STRUCTURE *com);
 /// \param[in, out] com an object for communication
 /// \return non-zero on internal error
 int destruct_communication_structure(COMMUNICATION_STRUCTURE *com);
+
+/// initialize multiphysics object
+///
+/// \param[in, out] mp an object for multiphysics stepping
+/// \return non-zero on internal error
+int multiphysics_initialization(MULTIPHYSICS *mp);
+
+
+/// construct multiphysics object
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] physicsno number of physics
+/// \return non-zero on internal error
+int construct_multiphysics(MULTIPHYSICS *mp, 
+                           int physicsno);
+                           
+/// destruct multiphysics object
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \return non-zero on internal error
+int destruct_multiphysics(MULTIPHYSICS *mp);                           
+
 #endif

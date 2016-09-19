@@ -21,8 +21,6 @@
 #include "constitutive_model.h"
 #include "restart.h"
 
-static const int ndim = 3;
-
 /// count number of ranges that are seperated by comma
 /// 
 /// \param[in] str a string containing ranges
@@ -96,7 +94,8 @@ int read_input_file(const PGFem3D_opt *opts,
 		    ZATELEM **zelem_s,
 		    long *nel_v,
 		    ZATELEM **zelem_v,
-		    const int phyicsno)
+		    const int phyicsno,
+		    const int *ndim)
 {
   int err = 0;
   int myrank = 0;
@@ -115,10 +114,10 @@ int read_input_file(const PGFem3D_opt *opts,
   /* Set ndofn according to analysis type */
   switch(opts->analysis_type){
   case STABILIZED: case MINI: case MINI_3F: *ndofn = 4; break;
-  default: *ndofn = ndim; break;
+  default: *ndofn = ndim[MULTIPHYSICS_MECHANICAL]; break;
   }
 
-  (*node) = build_node_multi_physic(*nn,*ndofn,phyicsno);
+  (*node) = build_node_multi_physics(*nn,*ndofn,phyicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
   (*material) = PGFEM_calloc(*nmat,sizeof(MATERIAL));
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
@@ -127,8 +126,8 @@ int read_input_file(const PGFem3D_opt *opts,
   /* NOTE: Supports assume only ndim supported dofs per node! */
   
   for(int ia=0; ia<phyicsno; ia++)
-    sup[ia] = read_supports(in,*nn,ndim,*node, ia);
-
+    sup[ia] = read_supports(in,*nn,ndim[ia],*node, ia);    
+ 
   read_elem(in,*ne,*elem,*sup,opts->legacy);
 
   for(int i=0, e=*nmat; i<e; i++){
@@ -152,15 +151,15 @@ int read_input_file(const PGFem3D_opt *opts,
      directions */
   /* node */
   fscanf(in,"%ld",nln);
-  *znod = build_zatnode (ndim,*nln);
-  read_nodal_load (in,*nln,ndim,*znod);
+  *znod = build_zatnode (ndim[MULTIPHYSICS_MECHANICAL],*nln);
+  read_nodal_load (in,*nln,ndim[MULTIPHYSICS_MECHANICAL],*znod);
   /* surface */
   fscanf (in,"%ld",nel_s);
-  *zelem_s = build_zatelem (ndim,*nel_s);
-  read_elem_surface_load (in,*nel_s,ndim,*elem,*zelem_s);
+  *zelem_s = build_zatelem (ndim[MULTIPHYSICS_MECHANICAL],*nel_s);
+  read_elem_surface_load (in,*nel_s,ndim[MULTIPHYSICS_MECHANICAL],*elem,*zelem_s);
   /* volume */
   fscanf (in,"%ld",nel_v);
-  *zelem_v = build_zatelem (ndim,*nel_v);
+  *zelem_v = build_zatelem (ndim[MULTIPHYSICS_MECHANICAL],*nel_v);
 
   /* check the ferror bit */
   if(ferror(in)) err++;
@@ -211,14 +210,15 @@ int read_mesh_file(GRID *grid,
                             &(grid->element),
                             &(mat->mater),
                             &(mat->matgeom),
-                            &(load->sup),
+                            load->sups,
                             &(load->nln),
                             &(load->znod),
                             &(load->nle_s),
                             &(load->zele_s),
                             &(load->nle_v),
                             &(load->zele_v),
-                            mp->physicsno);
+                            mp->physicsno,
+                            mp->ndim);
   return err;
 }                   
 
@@ -377,7 +377,7 @@ int read_initial_values(GRID *grid,
   if(*restart >= 0)
   {
     int nsd = 3;
-    read_restart(fv->u_nm1,fv->u_n,opts,grid->element,grid->node,fv->sig,fv->eps,load->sup,
+    read_restart(fv->u_nm1,fv->u_n,opts,grid->element,grid->node,fv->sig,fv->eps,load->sups[MULTIPHYSICS_MECHANICAL],
             myrank,grid->ne,grid->nn,nsd,restart,tnm1, &(fv->NORM));
   }
   
@@ -500,6 +500,7 @@ int read_and_apply_load_increments(GRID *grid,
                                    int myrank)
 {
   int err = 0;
+  int ndim = 3;
   
   if (load->tim_load[tim] == 1 && tim == 0)
   {
@@ -511,22 +512,20 @@ int read_and_apply_load_increments(GRID *grid,
   if (load->tim_load[tim] == 1 && tim != 0)
   {
     //  read nodal prescribed deflection
-    for(int iA=0; iA<mp->physicsno; iA++)
+    for(long ia=0;ia<load->sups[MULTIPHYSICS_MECHANICAL]->npd;ia++)
     {
-      for(long ia=0;ia<load->sup->npd;ia++)
-      {
-        fscanf (load->solver_file,"%lf",((load->sup)[iA].defl_d) + ia);
-        (load->sup_defl)[ia] = (load->sup)[iA].defl_d[ia];
-      }
-      // read nodal load in the subdomain
-      read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);
-      // read elem surface load */
-      read_elem_surface_load(load->solver_file,load->nle_s,grid->nsd,grid->element,load->zele_s);
-      //  NODE - generation of the load vector 
-      load_vec_node(variables->R,load->nln,ndim,load->znod,grid->node,iA);
-      //  ELEMENT - generation of the load vector
-      load_vec_elem_sur(variables->R,load->nle_s,grid->nsd,grid->element,load->zele_s);
-    }    
+      fscanf (load->solver_file,"%lf",(load->sups[MULTIPHYSICS_MECHANICAL])->defl_d + ia);
+      (load->sup_defl)[ia] = load->sups[MULTIPHYSICS_MECHANICAL]->defl_d[ia];
+    }
+    // read nodal load in the subdomain
+    read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);
+    // read elem surface load */
+    read_elem_surface_load(load->solver_file,load->nle_s,grid->nsd,grid->element,load->zele_s);
+    //  NODE - generation of the load vector 
+    load_vec_node(variables->R,load->nln,ndim,load->znod,grid->node,MULTIPHYSICS_MECHANICAL);
+    //  ELEMENT - generation of the load vector
+    load_vec_elem_sur(variables->R,load->nle_s,grid->nsd,grid->element,load->zele_s);
+
   } /* end load increment */
           
   return err;

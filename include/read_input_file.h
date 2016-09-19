@@ -43,7 +43,8 @@ extern "C" {
 		      ZATELEM **zelem_s,
 		      long *nel_v,
 		      ZATELEM **zelem_v,
-		      const int phyicsno);
+		      const int phyicsno,
+		      const int *ndim);
 		      
 /// Read mesh info, boundary conditions, and material properties.
 /// from main input files (*.in)
