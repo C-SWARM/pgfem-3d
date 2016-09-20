@@ -930,7 +930,8 @@ int single_scale_main(int argc,char *argv[])
         //----------------------------------------------------------------------
         //---->        
         err += read_and_apply_load_increments(&grid, &variables, &load, &mp, tim, mpi_comm, myrank);
-        vvplus(variables.R,nodal_forces,variables.ndofd);
+        if (load.tim_load[tim] == 1 && tim != 0)
+          vvplus(variables.R,nodal_forces,variables.ndofd);
         //<---------------------------------------------------------------------
     
         int n_step = 0;
