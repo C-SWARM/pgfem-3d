@@ -379,9 +379,9 @@ int destruct_communication_structure(COMMUNICATION_STRUCTURE *com)
   if(NULL != com->Ap) free(com->Ap);
 	if(NULL != com->Ai) free(com->Ai);
   if(NULL != com->DomDof) free(com->DomDof);
-  if(NULL != com->bndel) free(com->bndel);
-  destroy_commun(com->comm ,com->nproc);  
-  Comm_hints_destroy(com->hints);
+  if(NULL != com->bndel)  free(com->bndel);
+  if(NULL != com->comm)   destroy_commun(com->comm ,com->nproc);  
+  if(NULL != com->hints)  Comm_hints_destroy(com->hints);
   
   err += communication_structure_initialization(com);
   return err;
