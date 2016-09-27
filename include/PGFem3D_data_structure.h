@@ -206,22 +206,26 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv);
 /// \param[in] com an object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
+/// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int construct_field_varialbe(FIELD_VARIABLES *fv, 
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
-                             int myrank);
+                             int myrank,
+                             int mp_id);
 
 /// destruct field variables
 /// 
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int destruct_field_varialbe(FIELD_VARIABLES *fv, 
                             GRID *grid,
-                            const PGFem3D_opt *opts); 
+                            const PGFem3D_opt *opts,
+                            int mp_id); 
 
 /// initialize field variables thermal part
 /// 
@@ -290,6 +294,20 @@ int multiphysics_initialization(MULTIPHYSICS *mp);
 int construct_multiphysics(MULTIPHYSICS *mp, 
                            int physicsno);
                            
+/// set a physics
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] obj_id id to access each physics 
+/// \param[in] mp_id multiphysics id
+/// \param[in] n_dof number of degree freedom of the physics
+/// \param[in] name physics name
+/// \return non-zero on internal error
+int set_a_physics(MULTIPHYSICS *mp,
+                  int obj_id,
+                  int mp_id, 
+                  int n_dof,
+                  char *name);
+                                             
 /// destruct multiphysics object
 /// 
 /// \param[in, out] mp an object for multiphysics stepping

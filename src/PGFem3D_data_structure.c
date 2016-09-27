@@ -141,12 +141,14 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
 /// \param[in] com an object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
+/// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int construct_field_varialbe(FIELD_VARIABLES *fv, 
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
-                             int myrank)
+                             int myrank,
+                             int mp_id)
 {
   int err = 0;
   long DomDof_myrank = com->DomDof[myrank];
@@ -167,11 +169,13 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   fv->BS_f_u = aloc1(DomDof_myrank);
   fv->BS_RR  = aloc1(DomDof_myrank);
   fv->NORM   = 0.0;
-  fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
-  fv->eps = build_eps_il(grid->ne,grid->element,opts->analysis_type);
-  if (opts->smoothing == 0)
-    fv->sig_n = build_sig_el(grid->nn);
-
+//  if(mp_id == MULTIPHYSICS_MECHANICAL)
+  {
+    fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
+    fv->eps = build_eps_il(grid->ne,grid->element,opts->analysis_type);
+    if (opts->smoothing == 0)
+      fv->sig_n = build_sig_el(grid->nn);
+  }
   return err;
 }
 
@@ -182,10 +186,12 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int destruct_field_varialbe(FIELD_VARIABLES *fv, 
                             GRID *grid,
-                            const PGFem3D_opt *opts)
+                            const PGFem3D_opt *opts,
+                            int mp_id)
 {
   int err = 0;
   if(NULL != fv->u_np1)  free(fv->u_np1);
@@ -203,11 +209,14 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
   if(NULL != fv->BS_f)   free(fv->BS_f);
   if(NULL != fv->BS_f_u) free(fv->BS_f_u);
   if(NULL != fv->BS_RR)  free(fv->BS_RR);
-    
-  destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
-  destroy_sig_il(fv->sig,grid->element,grid->ne,opts->analysis_type);
-  if(opts->smoothing == 0)
-    destroy_sig_el(fv->sig_n, grid->nn);
+  
+//  if(mp_id==MULTIPHYSICS_MECHANICAL)
+  {  
+    destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
+    destroy_sig_il(fv->sig,grid->element,grid->ne,opts->analysis_type);
+    if(opts->smoothing == 0)
+      destroy_sig_el(fv->sig_n, grid->nn);
+  }
     
   err += field_varialbe_initialization(fv);  
   return err;
@@ -423,6 +432,28 @@ int construct_multiphysics(MULTIPHYSICS *mp,
     mp->physics_ids[ia] = 0;
     mp->ndim[ia]        = 0;
   }
+  return err = 0;  
+}
+
+/// set a physics
+/// set physics id, number of degree freedom, and name
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] obj_id id to access each physics 
+/// \param[in] mp_id multiphysics id
+/// \param[in] n_dof number of degree freedom of the physics
+/// \param[in] name physics name
+/// \return non-zero on internal error
+int set_a_physics(MULTIPHYSICS *mp,
+                  int obj_id,
+                  int mp_id, 
+                  int n_dof,
+                  char *name)
+{
+  int err = 0;
+  mp->physics_ids[obj_id] = mp_id; 
+  mp->ndim[obj_id]        = n_dof;
+  sprintf(mp->physicsname[obj_id], "%s", name);
   return err = 0;  
 }
                            

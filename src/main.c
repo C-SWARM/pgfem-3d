@@ -84,7 +84,6 @@ static const int periodic = 0;
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int print_PGFem3D_run_info(int argc,char *argv[],
-                           FIELD_VARIABLES *fv,
                            GRID *grid,
                            COMMUNICATION_STRUCTURE *com,
                            LOADING_STEPS *load,
@@ -210,7 +209,6 @@ int print_PGFem3D_run_info(int argc,char *argv[],
   PGFEM_printf ("Total number of elements                 : %ld\n", grid->Gne);
   PGFEM_printf ("Number of elems on the COMM interfaces   : %ld\n", grid->Gnbndel);
   PGFEM_printf ("Total number of bounding (surf) elems    : %d\n",  grid->Gn_be);
-  PGFEM_printf ("Total number of degrees of freedom       : %ld\n", fv->Gndof);
 
   return err;
 }
@@ -263,24 +261,18 @@ int single_scale_main(int argc,char *argv[])
   int physicsno = 2;
   err += multiphysics_initialization(&mp);
   err += construct_multiphysics(&mp, physicsno);
-
-  mp.physics_ids[MULTIPHYSICS_MECHANICAL] = 0;
-  mp.ndim[MULTIPHYSICS_MECHANICAL]        = 3;
   
-  if(2==physicsno)
-  {  
-    mp.physics_ids[MULTIPHYSICS_THERMAL]    = 1;
-    mp.ndim[MULTIPHYSICS_THERMAL]           = 1;
-  }
+  err += set_a_physics(&mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
+  err += set_a_physics(&mp, 1, MULTIPHYSICS_THERMAL,    3, "Thermal");    
   
   FIELD_VARIABLES *fv          =         (FIELD_VARIABLES *) malloc(physicsno*sizeof(FIELD_VARIABLES));
   SOLVER_OPTIONS  *sol         =          (SOLVER_OPTIONS *) malloc(physicsno*sizeof(SOLVER_OPTIONS));
-  COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(physicsno*sizeof(COMMUNICATION_STRUCTURE));;
+  COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(physicsno*sizeof(COMMUNICATION_STRUCTURE));
 
   for(int ia = 0; ia<physicsno; ia++)
   {
     err += field_varialbe_initialization(fv+ia);
-    fv[mp_id_T].ndofn = mp.ndim[ia];    
+    fv[ia].ndofn = mp.ndim[ia];    
     err += solution_scheme_initialization(sol+ia);
     err += communication_structure_initialization(com+ia);      
   }
@@ -478,7 +470,7 @@ int single_scale_main(int argc,char *argv[])
   
   for(int ia=0; ia<physicsno; ia++)
   {
-    if(ia!=mp_id_M)
+    if(mp.physics_ids[ia]!=mp_id_M)
       continue;
       
     /*=== OVERRIDE PRESCRIBED DISPLACEMENTS ===*/
@@ -530,7 +522,7 @@ int single_scale_main(int argc,char *argv[])
   for(int ia=0; ia<physicsno; ia++)
   {
     
-    if(ia==mp_id_M)
+    if(mp.physics_ids[ia]==mp_id_M)
     {
       //material matrices (Mechanical part) of the phases
       Mat_3D_orthotropic (mat.nmat,mat.mater,options.analysis_type);
@@ -642,7 +634,12 @@ int single_scale_main(int argc,char *argv[])
     //---->    
     if (myrank == 0)
     {
-      err += print_PGFem3D_run_info(argc, argv, fv+ia, &grid, com+ia, &load, gem, &options);
+      if(ia==0) // print onece
+        err += print_PGFem3D_run_info(argc, argv, &grid, com+ia, &load, gem, &options);
+
+      PGFEM_printf ("---------------------------------------------\n");
+      PGFEM_printf ("Physics name: %s\n", mp.physicsname[ia]);      
+      PGFEM_printf ("Total number of degrees of freedom       : %ld\n", fv[ia].Gndof);
       PGFEM_printf ("Total number of nonzeros in the matrix   : %d\n",APP);
       PGFEM_printf ("Symmetric skyline (including diagonal)   : %ld\n",sky);
     }
@@ -734,16 +731,21 @@ int single_scale_main(int argc,char *argv[])
     /* HYPRE INITIALIZATION ROUTINES */
     if(options.solverpackage == HYPRE){ /* HYPRE */
       /* Initialize HYPRE */
-      hypre_initialize(com[mp_id_M].Ap,com[mp_id_M].Ai,com[mp_id_M].DomDof[myrank],sol[mp_id_M].iter_max_sol,sol[mp_id_M].err,sol[mp_id_M].PGFEM_hypre,
-              &options,mpi_comm);
-              
-      hypre_initialize(com[mp_id_T].Ap,com[mp_id_T].Ai,com[mp_id_T].DomDof[myrank],sol[mp_id_T].iter_max_sol,sol[mp_id_T].err,sol[mp_id_T].PGFEM_hypre,
-              &options,mpi_comm);              
+      for(int ia=0; ia<physicsno; ia++)
+      {
+        hypre_initialize(com[ia].Ap,
+                         com[ia].Ai,
+                         com[ia].DomDof[myrank],
+                         sol[ia].iter_max_sol,
+                         sol[ia].err,
+                         sol[ia].PGFEM_hypre,
+                         &options,mpi_comm);
+      }
     }
-    
 
     /* alocation of the sigma vector */
-    err += construct_field_varialbe(fv+mp_id_M, &grid, com+mp_id_M, &options, myrank);
+    for(int ia=0; ia<mp.physicsno; ia++)
+      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, myrank, mp.physics_ids[ia]);
     
     if (sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
       err += construct_arc_length_variable(&arc, fv+mp_id_M, com+mp_id_M, myrank);
@@ -963,6 +965,7 @@ int single_scale_main(int argc,char *argv[])
     
         int n_step = 0;
         sol[mp_id_M].n_step = &n_step;
+        sol[mp_id_T].n_step = &n_step;
 
         //----------------------------------------------------------------------
         // add load increments util time reaches the restart point
@@ -996,7 +999,7 @@ int single_scale_main(int argc,char *argv[])
         //----------------------------------------------------------------------
         //---->        
         fflush(PGFEM_stdout);
-        hypre_time += Newton_Raphson_test(1,&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
+        hypre_time += Newton_Raphson_test(1,&grid,&mat,fv+mp_id_M,sol+0,&load,com+mp_id_M,&time_steps,
                                           crpl,mpi_comm,VVolume,&options, 0);
         
         /* Null global vectors */
@@ -1183,11 +1186,7 @@ int single_scale_main(int argc,char *argv[])
   err += destruct_time_stepping(&time_steps);  
   
   for(int ia=0; ia<physicsno; ia++)
-  {
-    if(ia==mp_id_T)
-      continue;  
-    err += destruct_field_varialbe(fv+ia, &grid, &options);
-  }
+    err += destruct_field_varialbe(fv+ia, &grid, &options, mp.physics_ids[ia]);
   
   free(fv);  
 
