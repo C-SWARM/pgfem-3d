@@ -8,4 +8,4 @@ The dependency is applied to both PGFem3D and energy euation, because
 the energy equation takes Fnite element structures from PGFem3D and PGFem3D uses energy euations
 for solving heat conduction problems.
 
-This libray will be build when PGFem3D is build at the top level.
+This libray will be built when PGFem3D is compiled at the top level.
