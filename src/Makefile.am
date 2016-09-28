@@ -166,13 +166,17 @@ super_main.c
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
 VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 
+energy_equation_include=-I$(top_srcdir)/energy_equation/include
+energy_equation_lib=-L$(top_srcdir)/energy_equation/src -lPGFem3D_Energy_equation
+
 AM_INCLUDES = $(VTK_IO_include) \
+              $(energy_equation_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
 	      $(cnstvm_include) \
 	      $(mkl_include)
 
-all_libs = $(VTK_IO_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
+all_libs = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 
 PGFem3D_LDADD = $(all_libs)
 BPA_driver_LDADD = $(all_libs)
