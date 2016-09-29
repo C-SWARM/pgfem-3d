@@ -69,6 +69,15 @@ extern "C" {
 			     MPI_Request *req_s,
 			     MPI_Request *req_r,
 			     const COMMUN pgfem_comm);
+	
+	typedef struct PGFEM_HYPRE_solve_info PGFEM_HYPRE_solve_info;
+			     
+  /** Assemble non-local parts as they arrive */
+  int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
+			       MPI_Status *sta_r,
+			       MPI_Request *req_r,
+			       PGFEM_HYPRE_solve_info *PGFEM_hypre,
+			       double **recv);
 
   /**
    * Build the fast LG and GL index maps.

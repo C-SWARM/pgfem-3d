@@ -263,7 +263,7 @@ int single_scale_main(int argc,char *argv[])
   err += construct_multiphysics(&mp, physicsno);
   
   err += set_a_physics(&mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
-  err += set_a_physics(&mp, 1, MULTIPHYSICS_THERMAL,    3, "Thermal");    
+  err += set_a_physics(&mp, 1, MULTIPHYSICS_THERMAL,    1, "Thermal");    
   
   FIELD_VARIABLES *fv          =         (FIELD_VARIABLES *) malloc(physicsno*sizeof(FIELD_VARIABLES));
   SOLVER_OPTIONS  *sol         =          (SOLVER_OPTIONS *) malloc(physicsno*sizeof(SOLVER_OPTIONS));
@@ -999,8 +999,9 @@ int single_scale_main(int argc,char *argv[])
         //----------------------------------------------------------------------
         //---->        
         fflush(PGFEM_stdout);
-        hypre_time += Newton_Raphson_test(1,&grid,&mat,fv+mp_id_M,sol+0,&load,com+mp_id_M,&time_steps,
-                                          crpl,mpi_comm,VVolume,&options, 0);
+        
+        hypre_time += Multiphysics_Newton_Raphson(1,&grid,&mat,fv,sol,&load,com,&time_steps,
+                                          crpl,mpi_comm,VVolume,&options,&mp);
         
         /* Null global vectors */
         for (long i=0;i<fv[mp_id_M].ndofd;i++){

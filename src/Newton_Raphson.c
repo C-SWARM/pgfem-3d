@@ -39,6 +39,7 @@
 
 #include "constitutive_model.h"
 #include "dynamics.h"
+#include "energy_equation.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -153,6 +154,7 @@ long compute_residuals_for_NR(GRID *grid,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
+                              MULTIPHYSICS *mp,
                               int mp_id,
                               double t,
                               double *dts,
@@ -164,41 +166,86 @@ long compute_residuals_for_NR(GRID *grid,
     f = fv->f;
   else
     f = fv->d_u;
-    
-  INFO = fd_residuals(fv->f_u,
-                      grid->ne,
-                      grid->n_be,
-                      fv->ndofn,
-                      fv->npres,
-                      f,
-                      fv->u_np1,
-                      grid->node,
-                      grid->element,
-                      grid->b_elems,
-                      mat->matgeom,
-                      mat->hommat,
-                      load->sups[mp_id],
-                      fv->eps,
-                      fv->sig,
-                      sol->nor_min,
-                      crpl,
-                      dts,
-                      t,
-                      opts->stab,
-                      grid->nce,
-                      grid->coel,
-                      mpi_comm,
-                      opts,
-                      sol->alpha,
-                      fv->u_n,
-                      fv->u_nm1,
-                      mp_id);
-  
+  switch(mp->physics_ids[mp_id])
+  {
+    case MULTIPHYSICS_MECHANICAL:
+      INFO = fd_residuals(fv->f_u,
+                          grid->ne,
+                          grid->n_be,
+                          fv->ndofn,
+                          fv->npres,
+                          f,
+                          fv->u_np1,
+                          grid->node,
+                          grid->element,
+                          grid->b_elems,
+                          mat->matgeom,
+                          mat->hommat,
+                          load->sups[mp_id],
+                          fv->eps,
+                          fv->sig,
+                          sol->nor_min,
+                          crpl,
+                          dts,
+                          t,
+                          opts->stab,
+                          grid->nce,
+                          grid->coel,
+                          mpi_comm,
+                          opts,
+                          sol->alpha,
+                          fv->u_n,
+                          fv->u_nm1,
+                          mp_id);
+      break;
+    case MULTIPHYSICS_THERMAL:
+        INFO = energy_equation_compute_residuals(grid,mat,fv,mp_id);
+      break;
+    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
+    default: 
+      printf("%s is not defined (compute_residuals_for_NR)\n", mp->physicsname[mp_id]);
+  }
+     
   return INFO;
 }
 
+long compute_stiffness_for_NR(GRID *grid,
+                              MATERIAL_PROPERTY *mat,
+                              FIELD_VARIABLES *fv,
+                              SOLVER_OPTIONS *sol,
+                              LOADING_STEPS *load,
+                              COMMUNICATION_STRUCTURE *com,
+                              CRPL *crpl,
+                              MPI_Comm mpi_comm,
+                              const PGFem3D_opt *opts,
+                              MULTIPHYSICS *mp,
+                              int mp_id,
+                              double dt,
+                              long iter,
+                              int myrank)
+{
+  long INFO = 0;
+  switch(mp->physics_ids[mp_id])
+  {
+    case MULTIPHYSICS_MECHANICAL:
+      INFO = stiffmat_fd(com->Ap,com->Ai,grid->ne,grid->n_be,fv->ndofn,grid->element,grid->b_elems,com->nbndel,com->bndel,
+                         grid->node,mat->hommat,mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],
+                         iter,sol->nor_min,dt,crpl,opts->stab,grid->nce,grid->coel,0,0.0,fv->f_u,
+                         myrank,com->nproc,com->DomDof,com->GDof,
+                         com->comm,mpi_comm,sol->PGFEM_hypre,opts,sol->alpha,fv->u_n,fv->u_nm1,
+                         mp_id);
+      break;
+    case MULTIPHYSICS_THERMAL:
+      INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,com,mpi_comm,myrank,opts,mp_id);
+      break;
+    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
+    default: 
+      printf("%s is not defined (compute_stiffness_for_NR)\n", mp->physicsname[mp_id]);
+  }
 
-int update_values_for_next_NR_(GRID *grid,
+  return INFO;  
+}
+int update_values_for_next_NR(GRID *grid,
                                MATERIAL_PROPERTY *mat,
                                FIELD_VARIABLES *fv,
                                SOLVER_OPTIONS *sol,
@@ -371,34 +418,44 @@ int update_values_for_next_NR_(GRID *grid,
 /// \param[in] print_level print level for a summary of the entire function call
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
-/// \param[in] sol object for solution scheme
+/// \param[in,out] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
 /// \param[in] load object for loading
+/// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 double Newton_Raphson_test(const int print_level,
                            GRID *grid,
                            MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
+                           FIELD_VARIABLES *FV,
+                           SOLVER_OPTIONS *SOL,
                            LOADING_STEPS *load,
-                           COMMUNICATION_STRUCTURE *com,
+                           COMMUNICATION_STRUCTURE *COM,
                            PGFem3D_TIME_STEPPING *time_steps,
                            CRPL *crpl,
                            MPI_Comm mpi_comm,
                            const double VVolume,
                            const PGFem3D_opt *opts,
-                           int mp_id)
+                           MULTIPHYSICS *mp,
+                           int mp_id,
+                           int myrank)                                        
 {
+  // use pointers for physics[mp_id]
+  SOLVER_OPTIONS          *sol = SOL + mp_id;
+  FIELD_VARIABLES         *fv =  FV  + mp_id;
+  COMMUNICATION_STRUCTURE *com = COM + mp_id;
+  
   double GNOR; // global norm of residual
   double nor1; // 
 
+  // set time variables
   long tim = time_steps->tim;
   double *times = time_steps->times;
   double dt = time_steps->dt_np1;
@@ -449,11 +506,6 @@ double Newton_Raphson_test(const int print_level,
   /* option '-no-migrate' */
   const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
   
-  /* MPI stuff */
-  int nproc,myrank;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
-  
   switch(opts->analysis_type){
     case STABILIZED:
     case MINI:
@@ -472,15 +524,6 @@ double Newton_Raphson_test(const int print_level,
   DT = 0.0;
   ERROR = sol->nor_min;
   iter = 0;
-  
-  /* introduce imperfection in the displacements (useful for
-   * homogeneous deformations in homogeneous materials, i.e. when you
-   * should be doing it by hand...) */
-  /* if(iter == 0 && tim == 0){ */
-  /*   for(int i=0; i< ndofd; i++){ */
-  /*     d_r[i] += 0.0003; */
-  /*   } */
-  /* } */
   
   /* GOTO REST */
   rest:
@@ -582,7 +625,7 @@ double Newton_Raphson_test(const int print_level,
         
         /* Residuals */
         nulld (fv->f_u,fv->ndofd);
-        INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,
+        INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                         mp_id,t,dts, 1);
                 
         for (i=0;i<fv->ndofd;i++){
@@ -617,7 +660,7 @@ double Newton_Raphson_test(const int print_level,
                              fv->eps,fv->sig,&max_damage,&dissipation,
                              opts->analysis_type,mp_id);
           
-          compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,
+          compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                    mp_id,t,dts, 0);
         } else {
           nulld (fv->f_u,fv->ndofd);
@@ -639,10 +682,10 @@ double Newton_Raphson_test(const int print_level,
       }
       
       /* Transform LOCAL load vector to GLOBAL */
-      LToG (fv->f,fv->BS_f,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+      LToG (fv->f,fv->BS_f,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
       
       /* Transform LOCAL load vector to GLOBAL */
-      LToG (fv->RR,fv->BS_RR,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+      LToG (fv->RR,fv->BS_RR,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
       
       iter = 0;
       nor = nor2 = GNOR = 10.0;
@@ -662,12 +705,9 @@ double Newton_Raphson_test(const int print_level,
             ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
           }
           
-          INFO = stiffmat_fd (com->Ap,com->Ai,grid->ne,grid->n_be,fv->ndofn,grid->element,grid->b_elems,com->nbndel,com->bndel,
-                              grid->node,mat->hommat,mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],
-                              iter,sol->nor_min,dt,crpl,opts->stab,grid->nce,grid->coel,0,0.0,fv->f_u,
-                              myrank,nproc,com->DomDof,com->GDof,
-                              com->comm,mpi_comm,sol->PGFEM_hypre,opts,sol->alpha,fv->u_n,fv->u_nm1,
-                              mp_id);
+          //compute stiffness matrix
+          INFO =  compute_stiffness_for_NR(grid,mat,fv,sol,load,com,crpl,mpi_comm,
+                                           opts,mp,mp_id,dt,iter,myrank);          
           
           // if INFO value greater than 0, the previous computation has an error
           MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
@@ -725,7 +765,7 @@ double Newton_Raphson_test(const int print_level,
         }
         
         /* Transform GLOBAL displacement vector to LOCAL */
-        GToL (fv->BS_x,fv->dd_u,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+        GToL (fv->BS_x,fv->dd_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
         
         /* LINE SEARCH */
         tmp  = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
@@ -826,7 +866,7 @@ double Newton_Raphson_test(const int print_level,
         }
         
         /* Residuals */
-        INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,
+        INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                         mp_id,t,dts, 1);
         
         // if INFO value greater than 0, the previous computation has an error
@@ -861,7 +901,7 @@ double Newton_Raphson_test(const int print_level,
         }
         
         /* Transform LOCAL load vector to GLOBAL */
-        LToG (fv->f_u,fv->BS_f_u,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+        LToG (fv->f_u,fv->BS_f_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
         
         /* Compute Euclidian norm */
         for (i=0;i<com->DomDof[myrank];i++)
@@ -941,7 +981,7 @@ double Newton_Raphson_test(const int print_level,
         
         
         /* Compute the energy norm E_norm = abs(R ddu/(R0 ddu0)) */
-        LToG(fv->dd_u,fv->BS_x,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+        LToG(fv->dd_u,fv->BS_x,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
         enorm = ss(fv->BS_f,fv->BS_x,com->DomDof[myrank]);
         MPI_Allreduce(&enorm,&Genorm,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
         if((tim == 0 && iter == 0)) ENORM = Genorm;
@@ -1070,7 +1110,7 @@ double Newton_Raphson_test(const int print_level,
       
       // update converged values and apply increments 
       // for next Newton Raphson step
-      update_values_for_next_NR_(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp_id,t,dt,dts);
+      update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp_id,t,dt,dts);
       
       /* finish microscale update */
       if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
@@ -1081,7 +1121,6 @@ double Newton_Raphson_test(const int print_level,
       
       /************* TEST THE UPDATE FROM N TO N+1  *************/
       if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){
-        printf("this is running\n");
         for (i=0;i<fv->ndofd;i++) {fv->f_u[i] = 0.0; fv->d_u[i] = 0.0;}
         
         if(opts->analysis_type == MINI){
@@ -1094,13 +1133,13 @@ double Newton_Raphson_test(const int print_level,
                               fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
                               com->GDof,com->comm,mpi_comm,mp_id);
         }
-        compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,
+        compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                  mp_id,t,dts, 0);
         
         for (i=0;i<fv->ndofd;i++) fv->f[i] = fv->RR[i] - fv->f_u[i];
         /* print_array_d(stdout,RR,ndofd,1,ndofd); */
         
-        LToG(fv->f,fv->BS_f,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+        LToG(fv->f,fv->BS_f,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
         nor = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
         MPI_Allreduce(&nor,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
         nor = sqrt (tmp);
@@ -1117,7 +1156,7 @@ double Newton_Raphson_test(const int print_level,
           char fname[100];
           sprintf(fname,"%s_%ld",opts->ofname,tim);
           if(myrank == 0){
-            VTK_print_master(opts->opath,fname,*(sol->n_step),nproc,opts);
+            VTK_print_master(opts->opath,fname,*(sol->n_step),com->nproc,opts);
           }
           VTK_print_vtu(opts->opath,fname,*(sol->n_step),myrank,grid->ne,grid->nn,grid->node,
                         grid->element,load->sups[mp_id],fv->u_np1,fv->sig,fv->eps,opts,mp_id);
@@ -1153,88 +1192,67 @@ double Newton_Raphson_test(const int print_level,
 }
 
 
-
-
-double Newton_Raphson_test_xx(const int print_level,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *variables,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
-                           COMMUNICATION_STRUCTURE *com,
-                           PGFem3D_TIME_STEPPING *time_steps,
-                           CRPL *crpl,
-                           MPI_Comm mpi_comm,
-                           const double VVolume,
-                           const PGFem3D_opt *opts,
-                           int mp_id)
+/// Staggered Newton Raphson iterative solver for multiphysics problems
+///
+/// \param[in] print_level print level for a summary of the entire function call
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] COM object array for communications
+/// \param[in] time_steps object for time stepping
+/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \return time spent for this routine
+double Multiphysics_Newton_Raphson(const int print_level,
+                                   GRID *grid,
+                                   MATERIAL_PROPERTY *mat,
+                                   FIELD_VARIABLES *FV,
+                                   SOLVER_OPTIONS *SOL,
+                                   LOADING_STEPS *load,
+                                   COMMUNICATION_STRUCTURE *COM,
+                                   PGFem3D_TIME_STEPPING *time_steps,
+                                   CRPL *crpl,
+                                   MPI_Comm mpi_comm,
+                                   const double VVolume,
+                                   const PGFem3D_opt *opts,
+                                   MULTIPHYSICS *mp)
 {
-  double GNOR; // global norm of residual
-  double nor1; // 
-  return Newton_Raphson(print_level,sol->n_step,
-                        grid->ne,
-                        grid->n_be,
-                        grid->nn,
-                        variables->ndofn,
-                        variables->ndofd,
-                        variables->npres,
-                        time_steps->tim,
-                        time_steps->times,
-                        sol->nor_min,
-                        time_steps->dt_np1,
-                        grid->element,
-                        grid->b_elems,
-                        grid->node,
-                        load->sups[mp_id],
-                        load->sup_defl,
-                        mat->hommat,
-                        mat->matgeom,
-                        variables->sig,
-                        variables->eps,
-                        com->Ap,
-                        com->Ai,
-                        variables->u_np1,
-                        variables->f,
-                        variables->d_u,
-                        variables->dd_u,
-                        variables->R,
-                        variables->f_defl,
-                        variables->RR,
-                        variables->f_u,
-                        variables->RRn,
-                        crpl,
-                        opts->stab,
-                        grid->nce,
-                        grid->coel,
-                        sol->FNR,
-                        &(variables->pores),
-                        sol->PGFEM_hypre,
-                        variables->BS_x,
-                        variables->BS_f,
-                        variables->BS_RR,
-                        sol->gama,
-                        GNOR,
-                        nor1,
-                        sol->err,
-                        variables->BS_f_u,
-                        com->DomDof,
-                        com->comm,
-                        com->GDof,
-                        time_steps->nt,
-                        sol->iter_max,
-                        &(variables->NORM),
-                        com->nbndel,
-                        com->bndel,
-                        mpi_comm,
-                        VVolume,
-                        opts,
-                        sol->microscale,
-                        sol->alpha,
-                        variables->u_n,
-                        variables->u_nm1,
-                        mp_id);
+  double solve_time = 0.0;
+  int max_itr = 1; // temporal setup for max. iteration
+  //MPI rank
+  int myrank;
+  MPI_Comm_rank(mpi_comm,&myrank);
+  
+  //print start
+  if(myrank==0)
+  {  
+    printf("<< Staggered Newton Raphon iteration starts >>\n");
+  }
+  for(int ia=0; ia<max_itr; ia++)
+  {
+    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    {
+      //print current physics name
+      if(myrank==0)
+      {
+        printf("----------------------------------------------------------------------\n");    
+        printf("(%d) Newton Raphon iteration for : %s\n", ia, mp->physicsname[mp_id]);  
+        printf("----------------------------------------------------------------------\n");    
+      }
+      solve_time += Newton_Raphson_test(print_level,
+                                        grid,mat,FV,SOL,load,COM,time_steps,
+                                        crpl,mpi_comm,VVolume,opts,mp,mp_id,myrank);
+    }
+  }  
+  return solve_time;  
 }
-    
+
 double Newton_Raphson(const int print_level,
                       int *n_step,
                       long ne,

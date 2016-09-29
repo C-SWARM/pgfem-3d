@@ -28,36 +28,37 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-/// Perform Newton Raphson iteration
+/// Perform Newton Staggered Newton Raphson
 ///
 /// \param[in] print_level print level for a summary of the entire function call
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
-/// \param[in] sol object for solution scheme
+/// \param[in,out] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
 /// \param[in] load object for loading
+/// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
-/// \return non-zero on internal error
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
-double Newton_Raphson_test(const int print_level,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *variables,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
-                           COMMUNICATION_STRUCTURE *com,
-                           PGFem3D_TIME_STEPPING *time_steps,
-                           CRPL *crpl,
-                           MPI_Comm mpi_comm,
-                           const double VVolume,
-                           const PGFem3D_opt *opts,
-                           int mp_id);
+double Multiphysics_Newton_Raphson(const int print_level,
+                                   GRID *grid,
+                                   MATERIAL_PROPERTY *mat,
+                                   FIELD_VARIABLES *FV,
+                                   SOLVER_OPTIONS *SOL,
+                                   LOADING_STEPS *load,
+                                   COMMUNICATION_STRUCTURE *COM,
+                                   PGFem3D_TIME_STEPPING *time_steps,
+                                   CRPL *crpl,
+                                   MPI_Comm mpi_comm,
+                                   const double VVolume,
+                                   const PGFem3D_opt *opts,
+                                   MULTIPHYSICS *mp);
 
   /**
    * \brief Newton-Raphson solution algorithm.
