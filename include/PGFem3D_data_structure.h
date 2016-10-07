@@ -162,7 +162,10 @@ typedef struct {
   int physicsno;      /// number of physics 
   char **physicsname; /// physics names
   int *physics_ids;   /// physics ids
-  int *ndim;
+  int *ndim;          /// degree of feedom of the physics 
+  int *write_no;      /// number of variables to be written as results
+  int **write_ids;    /// index of physical varialbes to be written
+  //
 } MULTIPHYSICS;
 
 /// initialize time stepping variable
@@ -242,6 +245,7 @@ int material_initialization(MATERIAL_PROPERTY *mat);
 /// destruct material properties
 ///
 /// \param[in, out] mat an object containing all material parameters
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int destruct_material(MATERIAL_PROPERTY *mat,
                       const PGFem3D_opt *opts);                            
@@ -312,6 +316,16 @@ int set_a_physics(MULTIPHYSICS *mp,
 /// 
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int destruct_multiphysics(MULTIPHYSICS *mp);                           
+int destruct_multiphysics(MULTIPHYSICS *mp);
+
+/// read and construct multiphysics
+/// 
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] opts structure PGFem3D option 
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int read_multiphysics_settings(MULTIPHYSICS *mp,
+                               const PGFem3D_opt *opts,
+                               int myrank);                           
 
 #endif

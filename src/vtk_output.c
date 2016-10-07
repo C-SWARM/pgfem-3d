@@ -725,3 +725,78 @@ void VTK_print_cohesive_vtu(char *path,
   /* Close file */
   fclose(out);
 }
+
+int VTK_construct_PMR(PRINT_MULTIPHYSICS_RESULT* pmr,
+                      char file_in,
+                      FIELD_VARIABLES *FV)
+{
+  return 0;
+}                      
+                       
+int VTK_get_file_pointer(FILE *out, 
+                         const PGFem3D_opt *opts,
+                         int time,
+                         int myrank)
+{
+  int err = 0;
+  
+  char c_dir = '.';
+  char *o_dir = "VTK";
+  char *s_dir = "STEP_";  
+  
+  char *ptr_path = opts->opath;
+  char *base_name = opts->ofname;
+  
+  char dir_name[500];
+  if(ptr_path == NULL) ptr_path = &c_dir;
+    
+  sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,o_dir,s_dir,time);
+  if(make_path(dir_name,DIR_MODE) != 0){
+    PGFEM_printf("Directory (%s) not created!\n",dir_name);
+    abort();
+  }
+
+  /* Build filename and open file */
+  char *filename;
+  filename = (char*) PGFEM_calloc(500, sizeof(char));
+  sprintf(filename,"%s/%s_%d_%d.vtu",dir_name,base_name,myrank,time);
+
+  if((out = fopen(filename,"w")) == NULL){
+    PGFEM_printerr("ERROR: Cannot open file to write pvtu file! (%s)\n",
+	    filename);
+    abort();
+  }
+  free(filename);  
+  return err;
+}
+
+int VTK_write_multiphysics_vtu_header(FILE *out, long nodeno, long elemno)
+{
+  int err = 0;
+  /* Print header information */
+  PGFEM_fprintf(out,"<?xml version=\"1.0\"?>\n");
+  PGFEM_fprintf(out,"<VTKFile type=\"UnstructuredGrid\" version=\"0.1\""
+	  " byte_order=\"LittleEndian\">\n");
+  PGFEM_fprintf(out,"<UnstructuredGrid>\n");
+  PGFEM_fprintf(out,"<Piece NumberOfPoints=\"%ld\" NumberOfCells=\"%ld\" >\n",
+	  nodeno,elemno);
+	return err;
+}
+
+int VTK_write_multiphysics_vtu(GRID *grid,
+                               LOADING_STEPS *load,
+                               PRINT_MULTIPHYSICS_RESULT *pD,
+                               int datano,
+                               const PGFem3D_opt *opts,
+                               int time,
+                               int myrank)
+{
+  int err = 0;
+  FILE *out;
+  err += VTK_get_file_pointer(out,opts,time,myrank);
+  err += VTK_write_multiphysics_vtu_header(out,grid->nn,grid->ne);
+  
+  for(int ia=0; ia<datano; ia++)
+    pD[ia].write_vtk(pD+ia,grid,load,out);
+  return err;
+}                   

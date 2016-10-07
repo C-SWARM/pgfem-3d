@@ -34,6 +34,8 @@
 #include "PGFem3D_options.h"
 #endif
 
+#include "PGFem3D_data_structure.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
@@ -82,7 +84,32 @@ extern "C" {
 			      const PGFem3D_opt *opts,
 			      const int mp_id);
 
+struct PRINT_MULTIPHYSICS_RESULT;
+#ifndef TYPE_PRINT_MULTIPHYSICS_RESULT
+#define TYPE_PRINT_MULTIPHYSICS_RESULT
+typedef struct PRINT_MULTIPHYSICS_RESULT PRINT_MULTIPHYSICS_RESULT;
+#endif
 
+typedef int (*write_vtk) (PRINT_MULTIPHYSICS_RESULT *pmr,
+                          GRID *grid,
+                          LOADING_STEPS *load,
+                          FILE *out); 
+
+struct PRINT_MULTIPHYSICS_RESULT
+{
+  int variable_id;
+  char *variable_name;
+  char *data_format;
+  int data_type;
+  void *p_data;
+  int m_row;
+  int m_col;
+  write_vtk write_vtk;  
+};
+
+
+int write_VTK_out(GRID *grid,
+                  PRINT_MULTIPHYSICS_RESULT *pD);
 
 #ifdef __cplusplus
 }

@@ -11,6 +11,7 @@
 #include "hypre_global.h"
 #include "pgfem_comm.h"
 #include "comm_hints.h"
+#include "utils.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -411,6 +412,8 @@ int multiphysics_initialization(MULTIPHYSICS *mp)
   mp->physicsname = NULL;
   mp->physics_ids = NULL;
   mp->ndim        = NULL;
+  mp->write_no    = NULL;
+  mp->write_ids   = NULL;  
   return err = 0;
 }
 
@@ -429,11 +432,15 @@ int construct_multiphysics(MULTIPHYSICS *mp,
   mp->physicsname = (char **) malloc(sizeof(char *)*physicsno);
   mp->physics_ids = (int*) malloc(sizeof(int)*physicsno);
   mp->ndim        = (int*) malloc(sizeof(int)*physicsno);
+  mp->write_no    = (int*) malloc(sizeof(int)*physicsno);
+  mp->write_ids   = (int**) malloc(sizeof(int *)*physicsno);
   for(int ia=0; ia<physicsno; ia++)
   {
     mp->physicsname[ia] = (char *) malloc(sizeof(char)*1024);
     mp->physics_ids[ia] = 0;
     mp->ndim[ia]        = 0;
+    mp->write_no[ia]    = 0;
+    mp->write_ids[ia]   = NULL;
   }
   return err = 0;  
 }
@@ -475,9 +482,139 @@ int destruct_multiphysics(MULTIPHYSICS *mp)
     
     free(mp->physicsname);
   }
+  
+  if(NULL != mp->write_ids)
+  {  
+    for(int ia=0; ia<  mp->physicsno; ia++)
+      if(NULL != mp->write_ids[ia])   free(mp->write_ids[ia]);
+    
+    free(mp->write_ids);
+  }
+  
   if(NULL != mp->physics_ids) free(mp->physics_ids);
   if(NULL != mp->ndim)        free(mp->ndim);
+  if(NULL != mp->write_no)    free(mp->write_no);
   err += multiphysics_initialization(mp);  
   return err = 0;  
 }
 
+/// read and construct multiphysics
+/// if multiphysics.in is not provied, default(mechanical) will be set
+/// the file format is as below:
+///
+/// multiphysics.in
+/// # <= comments
+/// # Number of physic
+/// 2
+/// ######################################################
+/// # Physics setting for thermal part
+/// # [Physics id] = 0: Mechanical
+/// #                1: Thermal
+/// #                2: Chemistry (Not available)
+/// #
+/// # [Physics id] [Physics name] [degree of freedom]
+/// 1 Thermal 1
+/// #
+/// # Print result
+/// # [number of varialbs to be printed]
+/// 2
+/// # [data id] = 0: temperature
+/// #             1: heat flux
+/// # curretly temperature and heat flux are supported
+/// 0 1
+/// # end of thermal
+/// ######################################################
+/// # Physics setting for mechanical part
+/// 0 Mechanical 3
+/// #
+/// # Print result
+/// 3
+/// # [data id] = 0: Displacement
+/// #             1: CauchyStress
+/// #             2: EulerStrain
+/// #             3: EffectiveStrain
+/// #             4: EffectiveStress
+/// #             5: CellProperty
+/// #             6: Damage
+/// #             7: Chi for damage model
+/// #             8: F(total deformation gradient)
+/// #             9: P(1st Piola Kirchhoff stress)
+/// #             10: W(strain energy density)
+/// 0 1 5
+///
+/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int read_multiphysics_settings(MULTIPHYSICS *mp,
+                               const PGFem3D_opt *opts,
+                               int myrank)
+{
+  int err = 0;
+  int physicsno = 0;
+  
+  char filename[1024];
+  sprintf(filename,"%s/multiphysics.in",opts->ipath);
+  FILE *in = NULL;
+  in = fopen(filename,"r");
+  
+  if(in==NULL) // check file is readable 
+  {
+    if(myrank==0)
+    {  
+      printf("no [%s/multiphysics.in] is provided\n", opts->ipath);
+      printf("Use default setting (Mechanical only).\n");
+    }
+  }
+  else
+  {        
+    err += scan_for_valid_line(in);
+    fscanf(in, "%d", &physicsno);
+    if(physicsno>0)
+    {  
+      err += construct_multiphysics(mp, physicsno);
+
+      int physics_id, ndof;
+      char name[1024];
+
+      for(int ia=0; ia<physicsno; ia++)
+      {
+        err += scan_for_valid_line(in);
+        fscanf(in, "%d%s%d", &physics_id,name,&ndof);
+        err += set_a_physics(mp, ia,physics_id,ndof, name);
+        err += scan_for_valid_line(in);
+        fscanf(in, "%d", mp->write_no+ia);
+        mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
+        err += scan_for_valid_line(in);
+        for(int ib=0; ib<mp->write_no[ia]; ib++)
+          fscanf(in, "%d", mp->write_ids[ia]+ib);
+      }
+    }
+    fclose(in); // close file
+  }
+    
+  if(physicsno<=0)
+  {  
+    err += construct_multiphysics(mp, 1);
+    err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
+    mp->write_no[0] = 2;
+    mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
+    mp->write_ids[0][0] = 0;
+    mp->write_ids[0][1] = 1;                  
+  }
+  // print multiphysics setting
+  printf("Total number of physics: %d\n", mp->physicsno);
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    printf("%d. physics name \t\t= %s\n", ia, mp->physicsname[ia]);
+    printf("   number of unknown on node \t= %d\n", mp->ndim[ia]);
+    printf("   number of output variables \t= %d", mp->write_no[ia]);
+    printf(", ids = ");
+    for(int ib=0; ib<mp->write_no[ia]; ib++)
+      printf("%d ", mp->write_ids[ia][ib]);
+
+    printf("\n\n");      
+  }
+  return err;
+}
+                               

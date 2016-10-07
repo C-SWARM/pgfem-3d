@@ -1260,8 +1260,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
   }
   for(int ia=0; ia<max_itr; ia++)
   {
-//    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
-    for(int mp_id=0; mp_id<2; mp_id++)    
+    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
     {
       //print current physics name
       if(myrank==0)

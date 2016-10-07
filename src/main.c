@@ -398,67 +398,15 @@ int print_results(GRID *grid,
 int single_scale_main(int argc,char *argv[])
 {
   int err = 0; 
-  int mp_id_M = 1;
-  int mp_id_T = 0;
-  int mp_id_C = -1;
-  
+
   static const int ndim = 3;
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
    * may change */
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
-
-  //----------------------------------------------------------------------
-  // create and initialization of PGFem3D objects
-  //----------------------------------------------------------------------
-  //---->
-  // Multiphysics
-  MULTIPHYSICS mp;
-  int physicsno = 2;
-  err += multiphysics_initialization(&mp);
-  err += construct_multiphysics(&mp, physicsno);
-  
-  err += set_a_physics(&mp, mp_id_M, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
-  err += set_a_physics(&mp, mp_id_T, MULTIPHYSICS_THERMAL,    1, "Thermal");    
-  
-  FIELD_VARIABLES *fv          =         (FIELD_VARIABLES *) malloc(physicsno*sizeof(FIELD_VARIABLES));
-  SOLVER_OPTIONS  *sol         =          (SOLVER_OPTIONS *) malloc(physicsno*sizeof(SOLVER_OPTIONS));
-  COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(physicsno*sizeof(COMMUNICATION_STRUCTURE));
-
-  for(int ia = 0; ia<physicsno; ia++)
-  {
-    err += field_varialbe_initialization(fv+ia);
-    fv[ia].ndofn = mp.ndim[ia];    
-    err += solution_scheme_initialization(sol+ia);
-    err += communication_structure_initialization(com+ia);      
-  }
-    
-  GRID grid;
-  MATERIAL_PROPERTY mat;
-  PGFem3D_TIME_STEPPING time_steps;
-  LOADING_STEPS load;  
-  ARC_LENGTH_VARIABLES arc;  
-
-  err += time_stepping_initialization(&time_steps);
-  err += grid_initialization(&grid); // grid.nsd = 3 is the default
-  err += material_initialization(&mat);
-  err += loading_steps_initialization(&load);
-  load.sups     = (SUPP *) malloc(sizeof(SUPP)*physicsno);
-  load.sup_defl = (double **) malloc(sizeof(double *)*physicsno);
-  err += arc_length_variable_initialization(&arc);
-
-  //<---------------------------------------------------------------------
-    
   struct rusage usage;
 
-  double VVolume = 0.0;
-
   Model_parameters *param_list = NULL;
-
   char filename[500],in_dat[500];
-  
-  /* boundary elements */
-  
-  long gem = 0;
   
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = NULL;
@@ -472,10 +420,11 @@ int single_scale_main(int argc,char *argv[])
   /* Ensight */
   ENSIGHT ensight;
   
-  /* original volume */
-  double oVolume = 0.0;
-  
+  double oVolume = 0.0; // original volume
+  double VVolume = 0.0; // deformed volume 
   double hypre_time = 0.0;
+  long gem = 0;
+  int myrank = 0;  
     
   /* ***** Set up debug log ***** */
   FILE *debug_log = NULL;
@@ -483,8 +432,7 @@ int single_scale_main(int argc,char *argv[])
   debug_log = stdout;
   /* debug_log = stderr; */
   
-  int myrank = 0;
-  
+
   /*=== END INITIALIZATION === */
   
   int flag_MPI_Init;
@@ -495,9 +443,6 @@ int single_scale_main(int argc,char *argv[])
   }
   
   MPI_Comm_rank (mpi_comm,&myrank);
-  MPI_Comm_size (mpi_comm,&(com[0].nproc)); 
-  for(int ia=1; ia<physicsno; ia++)    
-    com[ia].nproc = com[0].nproc;
     
   MPI_Get_processor_name (processor_name,&namelen);
   PGFEM_initialize_io(NULL,NULL);
@@ -530,11 +475,55 @@ int single_scale_main(int argc,char *argv[])
   if(myrank == 0){
     print_options(stdout,&options);
   }
+
+  //----------------------------------------------------------------------
+  // create and initialization of PGFem3D objects
+  //----------------------------------------------------------------------
+  //---->
+  // Multiphysics setting
+  int mp_id_M = 0;
+  MULTIPHYSICS mp;
+  err += read_multiphysics_settings(&mp,&options,myrank);
+  
+  FIELD_VARIABLES         *fv  =         (FIELD_VARIABLES *) malloc(mp.physicsno*sizeof(FIELD_VARIABLES));
+  SOLVER_OPTIONS          *sol =          (SOLVER_OPTIONS *) malloc(mp.physicsno*sizeof(SOLVER_OPTIONS));
+  COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(mp.physicsno*sizeof(COMMUNICATION_STRUCTURE));
+
+  for(int ia = 0; ia<mp.physicsno; ia++)
+  {
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      mp_id_M = ia;
+      
+    err += field_varialbe_initialization(fv+ia);
+    fv[ia].ndofn = mp.ndim[ia];    
+    err += solution_scheme_initialization(sol+ia);
+    err += communication_structure_initialization(com+ia);      
+  }
+    
+  GRID                  grid;
+  MATERIAL_PROPERTY     mat;
+  PGFem3D_TIME_STEPPING time_steps;
+  LOADING_STEPS         load;  
+  ARC_LENGTH_VARIABLES  arc;  
+
+  err += time_stepping_initialization(&time_steps);
+  err += grid_initialization(&grid); // grid.nsd = 3 is the default
+  err += material_initialization(&mat);
+  err += loading_steps_initialization(&load);
+  load.sups     = (SUPP *) malloc(sizeof(SUPP)*mp.physicsno);
+  load.sup_defl = (double **) malloc(sizeof(double *)*mp.physicsno);
+  err += arc_length_variable_initialization(&arc);
+
+  //<---------------------------------------------------------------------  
+  
+  MPI_Comm_size (mpi_comm,&(com[0].nproc)); 
+  for(int ia=1; ia<mp.physicsno; ia++)    
+    com[ia].nproc = com[0].nproc;  
   
   /* set up solver variables */
   if(options.solverpackage == HYPRE)
   {
-    for(int ia=0; ia<physicsno; ia++)
+    for(int ia=0; ia<mp.physicsno; ia++)
     {
       initialize_PGFEM_HYPRE_solve_info(&(sol[ia].PGFEM_hypre));
       (sol[ia].PGFEM_hypre)->solver_type = options.solver;
@@ -620,10 +609,10 @@ int single_scale_main(int argc,char *argv[])
   
   // use commuincation hints build at 0 for other physics (>0) 
   // memory will be deallocated once by checking is it NULL
-  for(int ia=1; ia<physicsno; ia++)
+  for(int ia=1; ia<mp.physicsno; ia++)
     com[ia].hints = com[0].hints;
   
-  for(int ia=0; ia<physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     if(mp.physics_ids[ia]!=MULTIPHYSICS_MECHANICAL)
       continue;
@@ -667,7 +656,7 @@ int single_scale_main(int argc,char *argv[])
   /*==== ADDITIONAL SETUP ===*/
   
   /* list of elements with prescribed deflection */
-  for(int ia=0; ia<physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
     list_el_prescribed_def(load.sups[ia],grid.node,grid.element,grid.b_elems,grid.ne,grid.n_be,grid.nn);
   
   /* list of elements on the COMMUNICATION boundary */
@@ -675,7 +664,7 @@ int single_scale_main(int argc,char *argv[])
   com[0].nbndel = 0;
   com[0].bndel = list_boundary_el(grid.ne,grid.element,grid.nn,grid.node,myrank,&(com[0].nbndel));
 
-  for(int ia=0; ia<physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     
     if(mp.physics_ids[ia]==MULTIPHYSICS_MECHANICAL)
@@ -737,11 +726,11 @@ int single_scale_main(int argc,char *argv[])
     PGFEM_printf(" Done.\nRedistributing information...");                          
     
 
-  for(int ia=0; ia<physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {  
     fv[ia].ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
                                           grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
-    printf("---------> %ld\n", fv[ia].ndofn);                                          
+                                          
     com[ia].DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
                                                      grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
     // Gather degrees of freedom from all domains
@@ -890,7 +879,7 @@ int single_scale_main(int argc,char *argv[])
     /* HYPRE INITIALIZATION ROUTINES */
     if(options.solverpackage == HYPRE){ /* HYPRE */
       /* Initialize HYPRE */
-      for(int ia=0; ia<physicsno; ia++)
+      for(int ia=0; ia<mp.physicsno; ia++)
       {
         hypre_initialize(com[ia].Ap,
                          com[ia].Ai,
@@ -1127,8 +1116,8 @@ int single_scale_main(int argc,char *argv[])
         //<---------------------------------------------------------------------
     
         int n_step = 0;
-        sol[mp_id_M].n_step = &n_step;
-        sol[mp_id_T].n_step = &n_step;
+        for(int ia=0; ia<mp.physicsno; ia++)
+          sol[ia].n_step = &n_step;
 
         //----------------------------------------------------------------------
         // add load increments util time reaches the restart point
@@ -1245,14 +1234,14 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   if (options.solverpackage == HYPRE)
-  {  
-    destroy_PGFEM_HYPRE_solve_info(sol[mp_id_M].PGFEM_hypre);
-    destroy_PGFEM_HYPRE_solve_info(sol[mp_id_T].PGFEM_hypre);
+  {
+    for(int ia=0; ia<mp.physicsno; ia++)  
+      destroy_PGFEM_HYPRE_solve_info(sol[ia].PGFEM_hypre);
   }
     
   err += destruct_time_stepping(&time_steps);  
   
-  for(int ia=0; ia<physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
     err += destruct_field_varialbe(fv+ia, &grid, &options, mp.physics_ids[ia]);
   
   free(fv);  
@@ -1261,16 +1250,24 @@ int single_scale_main(int argc,char *argv[])
   err += destroy_model_parameters_list(mat.nhommat,param_list);
   err += destruct_material(&mat, &options);
   err += destruct_grid(&grid, &options, &mp);
-  err += destruct_communication_structure(com+mp_id_M);  
-  err += destruct_multiphysics(&mp);
   
-  com[mp_id_T].bndel = NULL;
-  com[mp_id_T].hints = NULL;
-  err += destruct_communication_structure(com+mp_id_T); 
-
-  if (sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
-    err += destruct_arc_length_variable(&arc);
+  for(int ia=0; ia<mp.physicsno; ia++)
+  {
+    if(ia>0)
+    {
+      com[ia].bndel = NULL;
+      com[ia].hints = NULL;        
+    }      
+    err += destruct_communication_structure(com+ia);
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+    {
+      if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
+        err += destruct_arc_length_variable(&arc);      
+    }
+  }
     
+  err += destruct_multiphysics(&mp);
+
   destroy_ensight(ensight);
   //<---------------------------------------------------------------------  
 
