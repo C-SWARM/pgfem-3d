@@ -1,5 +1,7 @@
 /* HEADER */
 
+
+#include "PGFem3D_data_structure.h"
 #include "load.h"
 #include "enumerations.h"
 #include "incl.h"
@@ -18,6 +20,7 @@
 #include "stiffmat_fd.h"
 #include "dynamics.h"
 #include "constitutive_model.h"
+#include "energy_equation.h"
 
 long* compute_times_load (FILE *in1,
 			  const long nt,
@@ -349,6 +352,80 @@ int load_vec_node_defl (double *f,
 
     if(err != 0) return err;
   }/* end for each bounding element (i) in the list */
+  return err;
+}
+
+/// Compute load vector for prescribed BCs(Dirichlet)
+/// This compute load, f, as below:
+/// [Kii Kio]<ui>   <bi>
+/// [Koi Koo]<uo> = <bo>
+/// [Kii][ui] = <bi> - [Kio]<uo>
+/// where f = [Kio]<uo>, uo is Drichlet BCs
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv field variable object
+/// \param[in] sol solution scheme object
+/// \param[in] load object for loading
+/// \param[in] dt time step
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int compute_load_vector_for_prescribed_BC(GRID *grid,
+                                          MATERIAL_PROPERTY *mat,
+                                          FIELD_VARIABLES *fv,
+                                          SOLVER_OPTIONS *sol,
+                                          LOADING_STEPS *load,
+                                          double dt,                                          
+                                          CRPL *crpl,
+                                          const PGFem3D_opt *opts,
+                                          MULTIPHYSICS *mp,
+                                          int mp_id,
+                                          int myrank)
+{
+  int err = 0;
+  switch(mp->physics_ids[mp_id])
+  {
+    case MULTIPHYSICS_MECHANICAL:
+      err += load_vec_node_defl(fv->f_defl,
+                                grid->ne,
+                                fv->ndofn,
+                                grid->element,
+                                grid->b_elems,
+                                grid->node,
+                                mat->hommat,
+                                mat->matgeom,
+                                load->sups[mp_id],
+                                fv->npres,
+                                sol->nor_min,
+                                fv->sig,
+                                fv->eps,
+                                dt,
+                                crpl,
+                                opts->stab,
+                                fv->u_np1,
+                                fv->u_n,
+                                opts,
+                                sol->alpha,
+                                mp_id);
+      break;                                  
+    case MULTIPHYSICS_THERMAL:
+      err += energy_equation_compute_load4pBCs(grid,
+                                               mat,
+                                               fv,
+                                               sol,
+                                               load,
+                                               myrank,
+                                               opts,
+                                               mp_id);
+      break;                                         
+    default:
+      printf("%s is not supported\n", mp->physicsname[mp_id]);                                               
+  
+  }
   return err;
 }
 

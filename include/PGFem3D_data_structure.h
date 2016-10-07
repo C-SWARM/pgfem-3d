@@ -126,7 +126,7 @@ typedef struct {
 /// struct for the boundary conditions
 typedef struct {
   SUPP *sups;
-  double *sup_defl;  /// sum of Dirichlet BC increments to step n
+  double **sup_defl;  /// sum of Dirichlet BC increments to step n
   long nln;       ;  /// number of nodes with loads
   long nle_s;        /// number of surface element with loads
   long nle_v;        /// number of volume element with loads

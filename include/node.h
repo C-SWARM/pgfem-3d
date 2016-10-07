@@ -39,7 +39,7 @@ extern "C" {
   typedef struct NODE NODE;
 
   NODE* build_node(const long nn,
-		   const long ndofn);
+		   const int ndofn);
 
   void destroy_node(const long nn,
 		    NODE* node);
@@ -56,7 +56,7 @@ extern "C" {
 /// \param[in] physicsno number of physics
 /// \return node array
 NODE* build_node_multi_physics(const long nn,
-                              const long ndofn,
+                              const int *ndofn,
                               const int physicsno);
 		    
 /// destroy node array.

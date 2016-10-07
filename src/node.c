@@ -6,9 +6,9 @@
 
 
 NODE* build_node(const long nn,
-                 const long ndofn)
+                 const int ndofn)
 {
-  return build_node_multi_physics(nn,ndofn,1);                   
+  return build_node_multi_physics(nn,&ndofn,1);                   
 }
 
 void destroy_node(const long nn,
@@ -29,20 +29,19 @@ void destroy_node(const long nn,
 /// \param[in] physicsno number of physics
 /// \return node array
 NODE* build_node_multi_physics(const long nn,
-                              const long ndofn,
-                              const int physicsno)
-{
+                               const int *ndofn,
+                               const int physicsno)
+{  
   NODE *pom = (NODE*) PGFEM_calloc (nn, sizeof(NODE));
-  
   for(int ia=0;ia<nn;ia++)
   {
     pom[ia].id_map = (NODE_ID_MAP *) malloc(physicsno*sizeof(NODE_ID_MAP));
     for(int ib=0; ib<physicsno; ib++)
     {    	 
-      pom[ia].id_map[ib].id  = (long*) PGFEM_calloc (ndofn,sizeof(long));
-      pom[ia].id_map[ib].Gid = (long*) PGFEM_calloc (ndofn,sizeof(long));
+      pom[ia].id_map[ib].id  = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
+      pom[ia].id_map[ib].Gid = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
     }
-    pom[ia].ndofn = ndofn;
+    pom[ia].ndofn = ndofn[1];
   }
   
   return (pom);

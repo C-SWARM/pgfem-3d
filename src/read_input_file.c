@@ -94,7 +94,7 @@ int read_input_file(const PGFem3D_opt *opts,
 		    ZATELEM **zelem_s,
 		    long *nel_v,
 		    ZATELEM **zelem_v,
-		    const int phyicsno,
+		    const int physicsno,
 		    const int *ndim)
 {
   int err = 0;
@@ -114,10 +114,10 @@ int read_input_file(const PGFem3D_opt *opts,
   /* Set ndofn according to analysis type */
   switch(opts->analysis_type){
   case STABILIZED: case MINI: case MINI_3F: *ndofn = 4; break;
-  default: *ndofn = ndim[MULTIPHYSICS_MECHANICAL]; break;
+  default: *ndofn = 3; break;
   }
 
-  (*node) = build_node_multi_physics(*nn,*ndofn,phyicsno);
+  (*node) = build_node_multi_physics(*nn,ndim,physicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
   (*material) = PGFEM_calloc(*nmat,sizeof(MATERIAL));
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
@@ -125,7 +125,7 @@ int read_input_file(const PGFem3D_opt *opts,
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
   /* NOTE: Supports assume only ndim supported dofs per node! */
   
-  for(int ia=0; ia<phyicsno; ia++)
+  for(int ia=0; ia<physicsno; ia++)
     sup[ia] = read_supports(in,*nn,ndim[ia],*node, ia);    
  
   read_elem(in,*ne,*elem,*sup,opts->legacy);
@@ -151,15 +151,15 @@ int read_input_file(const PGFem3D_opt *opts,
      directions */
   /* node */
   fscanf(in,"%ld",nln);
-  *znod = build_zatnode (ndim[MULTIPHYSICS_MECHANICAL],*nln);
-  read_nodal_load (in,*nln,ndim[MULTIPHYSICS_MECHANICAL],*znod);
+  *znod = build_zatnode (*ndofn,*nln);
+  read_nodal_load (in,*nln,*ndofn,*znod);
   /* surface */
   fscanf (in,"%ld",nel_s);
-  *zelem_s = build_zatelem (ndim[MULTIPHYSICS_MECHANICAL],*nel_s);
-  read_elem_surface_load (in,*nel_s,ndim[MULTIPHYSICS_MECHANICAL],*elem,*zelem_s);
+  *zelem_s = build_zatelem (*ndofn,*nel_s);
+  read_elem_surface_load (in,*nel_s,*ndofn,*elem,*zelem_s);
   /* volume */
   fscanf (in,"%ld",nel_v);
-  *zelem_v = build_zatelem (ndim[MULTIPHYSICS_MECHANICAL],*nel_v);
+  *zelem_v = build_zatelem (*ndofn,*nel_v);
 
   /* check the ferror bit */
   if(ferror(in)) err++;
@@ -178,8 +178,8 @@ int read_input_file(const PGFem3D_opt *opts,
 ///
 /// \param[out] grid a mesh object
 /// \param[out] mat a material object
-/// \param[out] variables object for field variables
-/// \param[out] sol object for solution scheme
+/// \param[out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
@@ -187,24 +187,25 @@ int read_input_file(const PGFem3D_opt *opts,
 /// \return non-zero on internal error
 int read_mesh_file(GRID *grid, 
                    MATERIAL_PROPERTY *mat,
-                   FIELD_VARIABLES *variables,
-                   SOLVER_OPTIONS *sol,
+                   FIELD_VARIABLES *FV,
+                   SOLVER_OPTIONS *SOL,
                    LOADING_STEPS *load,
                    MULTIPHYSICS *mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts)
 {
+  long ndofn;
   int err = read_input_file(opts,
                             mpi_comm,
                             &(grid->nn),
                             &(grid->Gnn),
-                            &(variables->ndofn),
+                            &ndofn,
                             &(grid->ne),
-                            &(sol->iter_max_sol),
-                            &(sol->err),
-                            &(sol->computer_zero),
+                            &(SOL[0].iter_max_sol),
+                            &(SOL[0].err),
+                            &(SOL[0].computer_zero),
                             &(mat->nmat),
-                            &(variables->n_concentrations),
+                            &(FV[0].n_concentrations),
                             &(mat->n_orient),
                             &(grid->node),
                             &(grid->element),
@@ -219,6 +220,41 @@ int read_mesh_file(GRID *grid,
                             &(load->zele_v),
                             mp->physicsno,
                             mp->ndim);
+  // update numerical solution scheme parameters
+  for(int iA=1; iA<mp->physicsno; iA++)
+  {
+    SOL[iA].iter_max_sol  = SOL[0].iter_max_sol;
+    SOL[iA].err           = SOL[0].err; 
+    SOL[iA].computer_zero = SOL[0].computer_zero;
+    FV[iA].n_concentrations = FV[0].n_concentrations;
+    if(mp->physics_ids[iA]==MULTIPHYSICS_MECHANICAL)
+      FV[iA].ndofn = ndofn;   
+  }                            
+  // need to update number of elements that have prescribed BCs (supported)                             
+  for (long ia=0;ia<grid->ne;ia++)
+  {
+    for(int iA = 1; iA<mp->physicsno; iA++) // iA = 0 is alreaded accounted in read_elem in read_input_file
+    {
+      const long *nod = grid->element[ia].nod;
+      const int nne = grid->element[ia].toe;
+      int is_it_supp = 0;
+      for(long ja=0; ja<load->sups[iA]->ndn; ja++)
+      {
+        for (int ka=0; ka<nne; ka++)
+        {
+          if(load->sups[iA]->lnpd[ja] == nod[ka])
+          {
+            is_it_supp = 1;
+            break;
+          }
+        }
+        if(is_it_supp)
+          break;        
+      }
+      if(is_it_supp)    
+      (load->sups[iA]->nde)++;
+    }
+  }                        
   return err;
 }                   
 
@@ -253,22 +289,24 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
 ///
 /// \param[out] time_steps object for time stepping
 /// \param[out] mat a material object
-/// \param[out] variables object for field variables
-/// \param[out] sol object for solution scheme
+/// \param[out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[out] arc an object for Arc length scheme
 /// \param[out] crpl object for lagcy crystal plasticity
+/// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *variables,
-                     SOLVER_OPTIONS *sol,
+                     FIELD_VARIABLES *FV,
+                     SOLVER_OPTIONS *SOL,
                      LOADING_STEPS *load,
-                     ARC_LENGTH_VARIABLES *arc,
+                     ARC_LENGTH_VARIABLES *arc,                    
                      CRPL *crpl,
+                     MULTIPHYSICS *mp,
                      const PGFem3D_opt *opts,
                      int myrank)
 {
@@ -294,8 +332,10 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     fp = fopen(filename,"r");
   }
   
-  fscanf (fp,"%lf %ld %ld %ld",&(sol->nor_min),&(sol->iter_max),&(variables->npres),&(sol->FNR));
-  if (sol->FNR == 2 || sol->FNR == 3)
+  long npres = 0;
+  
+  fscanf (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&npres,&(SOL[0].FNR));
+  if (SOL[0].FNR == 2 || SOL[0].FNR == 3)
     fscanf (fp,"%lf %lf",&(arc->dAL0),&(arc->dALMAX));
 
   // CRYSTAL PLASTICITY
@@ -314,6 +354,22 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                           // while time is elapsing
                           // this file point needs to be freed end of the simulation
                           // by calling destruction of the LOADING_STEPS
+
+  // update numerical solution scheme parameters and field variables
+  for(int iA=1; iA<mp->physicsno; iA++)
+  {
+    // apply only mechanical part
+    if(mp->physics_ids[iA] == MULTIPHYSICS_MECHANICAL)
+      FV[iA].npres = npres;
+          
+    if(iA==0)
+      continue;
+      
+    SOL[iA].nor_min  = SOL[0].nor_min;
+    SOL[iA].iter_max = SOL[0].iter_max; 
+    SOL[iA].FNR      = SOL[0].FNR;
+  }
+                            
   return 0;
 }
 
@@ -324,14 +380,16 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// If restart is set from the commend line, *.inital files are used only for reading 
 /// mid point rule and material densities. Initial conditions are set by reading restart files.   
 ///
-/// \param[out] grid a mesh object
-/// \param[out] variables object for field variables
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv object for field variables
 /// \param[out] sol object for solution scheme
 /// \param[out] load object for loading
-/// \param[out] time_steps object for time stepping
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
-/// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_initial_values(GRID *grid,
@@ -341,11 +399,13 @@ int read_initial_values(GRID *grid,
                         LOADING_STEPS *load,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
+                        MULTIPHYSICS *mp,
                         int *restart, 
                         double *tnm1, 
                         int myrank)
 {
   int err = 0;
+  int mp_id = 0;
   
   char filename[1024];
   char line[1024];
@@ -377,8 +437,8 @@ int read_initial_values(GRID *grid,
   if(*restart >= 0)
   {
     int nsd = 3;
-    read_restart(fv->u_nm1,fv->u_n,opts,grid->element,grid->node,fv->sig,fv->eps,load->sups[MULTIPHYSICS_MECHANICAL],
-            myrank,grid->ne,grid->nn,nsd,restart,tnm1, &(fv->NORM));
+    read_restart(fv[mp_id].u_nm1,fv[mp_id].u_n,opts,grid->element,grid->node,fv[mp_id].sig,fv[mp_id].eps,load->sups[mp_id],
+            myrank,grid->ne,grid->nn,nsd,restart,tnm1, &(fv[mp_id].NORM));
   }
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
@@ -421,7 +481,7 @@ int read_initial_values(GRID *grid,
     if(line[0]=='#')
       continue;
     
-    sscanf(line, "%lf", &(sol->alpha));
+    sscanf(line, "%lf", &(sol[mp_id].alpha));
     break;
   }
   
@@ -464,13 +524,23 @@ int read_initial_values(GRID *grid,
     double u[3], v[3];
     sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
     
-    fv->u_n[nid*3+0] = u[0];
-    fv->u_n[nid*3+1] = u[1];
-    fv->u_n[nid*3+2] = u[2];
-    fv->u_nm1[nid*3+0] = u[0]-dt*v[0];
-    fv->u_nm1[nid*3+1] = u[1]-dt*v[1];
-    fv->u_nm1[nid*3+2] = u[2]-dt*v[2];
+    fv[mp_id].u_n[nid*3+0] = u[0];
+    fv[mp_id].u_n[nid*3+1] = u[1];
+    fv[mp_id].u_n[nid*3+2] = u[2];
+    fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
+    fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
+    fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
   }
+  
+  for(long idx_a = 0; idx_a<grid->nn; idx_a++)
+  {
+    for(long idx_b = 0; idx_b<fv[mp_id].ndofn; idx_b++)
+    {
+      long id = grid->node[idx_a].id_map[mp_id].id[idx_b];
+      if(id>0)
+        fv[mp_id].u_np1[id-1] = fv[mp_id].u_n[idx_a*fv[mp_id].ndofn + idx_b];
+    }
+  }  
   
   fclose(fp);
   return err;
@@ -512,10 +582,13 @@ int read_and_apply_load_increments(GRID *grid,
   if (load->tim_load[tim] == 1 && tim != 0)
   {
     //  read nodal prescribed deflection
-    for(long ia=0;ia<load->sups[MULTIPHYSICS_MECHANICAL]->npd;ia++)
+    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
     {
-      fscanf (load->solver_file,"%lf",(load->sups[MULTIPHYSICS_MECHANICAL])->defl_d + ia);
-      (load->sup_defl)[ia] = load->sups[MULTIPHYSICS_MECHANICAL]->defl_d[ia];
+      for(long ia=0;ia<load->sups[mp_id]->npd;ia++)
+      {
+        fscanf (load->solver_file,"%lf",(load->sups[mp_id])->defl_d + ia);
+        (load->sup_defl[mp_id])[ia] = load->sups[mp_id]->defl_d[ia];
+      }
     }
     // read nodal load in the subdomain
     read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);

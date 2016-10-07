@@ -73,5 +73,30 @@ void load_vec_elem_sur (double *f,
 			const long ndofn,
 			const ELEMENT *elem,
 			const ZATELEM *zele_s);
-
+			
+/// Compute load vector for prescribed BCs(Dirichlet)
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv field variable object
+/// \param[in] sol solution scheme object
+/// \param[in] load object for loading
+/// \param[in] dt time step
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int compute_load_vector_for_prescribed_BC(GRID *grid,
+                                          MATERIAL_PROPERTY *mat,
+                                          FIELD_VARIABLES *fv,
+                                          SOLVER_OPTIONS *sol,
+                                          LOADING_STEPS *load,
+                                          double dt,                                          
+                                          CRPL *crpl,
+                                          const PGFem3D_opt *opts,
+                                          MULTIPHYSICS *mp,
+                                          int mp_id,
+                                          int myrank);
 #endif

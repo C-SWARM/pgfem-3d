@@ -51,8 +51,8 @@ extern "C" {
 ///
 /// \param[out] grid a mesh object
 /// \param[out] mat a material object
-/// \param[out] variables object for field variables
-/// \param[out] sol object for solution scheme
+/// \param[out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
@@ -60,8 +60,8 @@ extern "C" {
 /// \return non-zero on internal error
 int read_mesh_file(GRID *grid, 
                    MATERIAL_PROPERTY *mat,
-                   FIELD_VARIABLES *variables,
-                   SOLVER_OPTIONS *sol,
+                   FIELD_VARIABLES *FV,
+                   SOLVER_OPTIONS *SOL,
                    LOADING_STEPS *load,
                    MULTIPHYSICS *mp,
                    MPI_Comm mpi_comm,
@@ -71,36 +71,40 @@ int read_mesh_file(GRID *grid,
 ///
 /// \param[out] time_steps object for time stepping
 /// \param[out] mat a material object
-/// \param[out] variables object for field variables
-/// \param[out] sol object for solution scheme
+/// \param[out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[out] arc an object for Arc length scheme
 /// \param[out] crpl object for lagcy crystal plasticity
+/// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *variables,
-                     SOLVER_OPTIONS *sol,
+                     FIELD_VARIABLES *FV,
+                     SOLVER_OPTIONS *SOL,
                      LOADING_STEPS *load,
-                     ARC_LENGTH_VARIABLES *arc,
+                     ARC_LENGTH_VARIABLES *arc,                    
                      CRPL *crpl,
+                     MULTIPHYSICS *mp,
                      const PGFem3D_opt *opts,
                      int myrank);
 
 
 /// Read initial conditions.
 ///
-/// \param[out] grid a mesh object
-/// \param[out] variables object for field variables
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv object for field variables
 /// \param[out] sol object for solution scheme
 /// \param[out] load object for loading
-/// \param[out] time_steps object for time stepping
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
-/// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_initial_values(GRID *grid,
@@ -110,6 +114,7 @@ int read_initial_values(GRID *grid,
                         LOADING_STEPS *load,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
+                        MULTIPHYSICS *mp,
                         int *restart, 
                         double *tnm1, 
                         int myrank);

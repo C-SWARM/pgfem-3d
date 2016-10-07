@@ -337,7 +337,6 @@ int loading_steps_initialization(LOADING_STEPS *load)
 int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
   int err = 0;  
-  if(NULL != load->sup_defl) free(load->sup_defl);
   if(NULL != load->tim_load) free(load->tim_load);
   if(NULL != load->solver_file) fclose(load->solver_file);
           
@@ -346,8 +345,12 @@ int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
   destroy_zatelem(load->zele_v, load->nle_v);
 
   for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    if(NULL != load->sup_defl[ia]) free(load->sup_defl[ia]);    
     destroy_supp(load->sups[ia]);
+  }
   
+  free(load->sup_defl);
   free(load->sups);  
   
   err += loading_steps_initialization(load);

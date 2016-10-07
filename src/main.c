@@ -240,12 +240,167 @@ int print_PGFem3D_final(double total_time,
   return err;
 }
 
+/// print simulation results
+/// output format is VTK so that this function calls VTK_IO library
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] COM object array for communications
+/// \param[in] time_steps object for time stepping
+/// \param[in] arc extra variables for Arc length
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] tim current time step number
+/// \return non-zero on internal error
+int print_results(GRID *grid,
+                  MATERIAL_PROPERTY *mat,
+                  FIELD_VARIABLES *FV,
+                  SOLVER_OPTIONS *SOL,
+                  LOADING_STEPS *load,
+                  COMMUNICATION_STRUCTURE *COM,
+                  PGFem3D_TIME_STEPPING *time_steps,
+                  ARC_LENGTH_VARIABLES *arc,
+                  CRPL *crpl,
+                  ENSIGHT ensight,
+                  MPI_Comm mpi_comm,
+                  const double oVolume,
+                  const double VVolume,
+                  const PGFem3D_opt *opts,
+                  MULTIPHYSICS *mp,
+                  int mp_id,
+                  long tim,
+                  int myrank) 
+{
+  int err = 0;
+  SOLVER_OPTIONS          *sol = SOL + mp_id;
+  FIELD_VARIABLES         *fv =  FV  + mp_id;
+  COMMUNICATION_STRUCTURE *com = COM + mp_id;
+  SUPP sup = load->sups[mp_id];
+  
+  // output file name
+  char filename[500],out_dat[500];
+  sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
+  
+  if(opts->comp_print_reaction)
+  {
+    double dts[2];
+    if(tim==0)
+      dts[DT_N] = time_steps->times[tim+1] - time_steps->times[tim];
+    else
+      dts[DT_N] = time_steps->times[tim] - time_steps->times[tim-1];
+    
+    dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
+    
+    fd_res_compute_reactions(fv->ndofn, fv->npres, fv->d_u, fv->u_np1, grid->element, grid->node,
+            mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
+            crpl, dts, time_steps->times[tim+1], opts->stab, mpi_comm,
+            opts, sol->alpha, fv->u_n, fv->u_nm1,mp_id);
+  }
+  
+  if(opts->comp_print_macro)
+  {
+    /* Calculate macro deformation gradient */
+    double *GF = computeMacroF(grid->element,grid->ne,grid->node,grid->nn,fv->eps,oVolume,mpi_comm);
+    double *GS = computeMacroS(grid->element,grid->ne,grid->node,grid->nn,fv->sig,oVolume,mpi_comm);
+    double *GP = computeMacroP(grid->element,grid->ne,grid->node,grid->nn,fv->sig,fv->eps,oVolume,mpi_comm);
+    
+    /* print GF & GS to file */
+    if(myrank==0)
+    {
+      
+      sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
+      FILE *out = fopen(filename,"w");
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
+      PGFEM_fprintf(out,"\n");
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
+      PGFEM_fprintf(out,"\n");
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
+      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
+      fclose(out);
+    }
+    
+    free(GF);
+    free(GS);
+    free(GP);
+  }
+  
+  if (time_steps->print[tim] == 1 && opts->vis_format != VIS_NONE ) {
+    if(opts->ascii){
+      ASCII_output(opts,mpi_comm,tim,time_steps->times,grid->Gnn,grid->nn,grid->ne,grid->nce,fv->ndofd,
+              com->DomDof,com->Ap,sol->FNR,arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
+              fv->u_np1,fv->eps,fv->sig,fv->sig_n,grid->coel);
+    } /* End ASCII output */
+    
+    switch(opts->vis_format){
+      case VIS_ELIXIR:/* Print to elix file */
+        sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
+        elixir (filename,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,fv->u_np1,fv->sig,
+                fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,opts);
+        break;
+      case VIS_ENSIGHT:/* Print to EnSight files */
+        sprintf (filename,"%s",out_dat);
+        EnSight (filename,tim,time_steps->nt,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,
+                fv->u_np1,fv->sig,fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,
+                /*nge,geel,ngn,gnod,*/sol->FNR,arc->lm,ensight,mpi_comm,
+                opts);
+        break;
+      case VIS_VTK:/* Print to VTK files */
+        if(myrank == 0){
+          VTK_print_master(opts->opath,opts->ofname,
+                  tim,com->nproc,opts);
+        }
+        
+        VTK_print_vtu(opts->opath,opts->ofname,tim,
+                myrank,grid->ne,grid->nn,grid->node,grid->element,sup,fv->u_np1,fv->sig,fv->eps,
+                opts,mp_id);
+        
+        // save restart files
+        if(SAVE_RESTART_FILE)
+        {
+          write_restart(fv->u_nm1, fv->u_n, opts,
+                  grid->element, grid->node,fv->sig,fv->eps,sup,
+                  myrank, grid->ne, grid->nn, fv->ndofn, fv->ndofd, tim, time_steps->times, fv->NORM,
+                  mp_id);
+        }
+        
+        if (opts->cohesive == 1){
+          if(myrank == 0){
+            VTK_print_cohesive_master(opts->opath,
+                    opts->ofname,tim,com->nproc,
+                    opts);
+          }
+          
+          VTK_print_cohesive_vtu(opts->opath,opts->ofname,
+                  tim,myrank,grid->nce,grid->node,grid->coel,sup,fv->u_np1,ensight,
+                  opts,mp_id);
+        }
+        break;
+      default: /* no output */ break;
+    }/* switch(format) */
+    
+  }/* end output */
+  
+  return err;
+}
+
+
 int single_scale_main(int argc,char *argv[])
 {
   int err = 0; 
-  int mp_id_M = MULTIPHYSICS_MECHANICAL;
-  int mp_id_T = MULTIPHYSICS_THERMAL;
-  int mp_id_C = MULTIPHYSICS_CHEMICAL;
+  int mp_id_M = 1;
+  int mp_id_T = 0;
+  int mp_id_C = -1;
   
   static const int ndim = 3;
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
@@ -262,8 +417,8 @@ int single_scale_main(int argc,char *argv[])
   err += multiphysics_initialization(&mp);
   err += construct_multiphysics(&mp, physicsno);
   
-  err += set_a_physics(&mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
-  err += set_a_physics(&mp, 1, MULTIPHYSICS_THERMAL,    1, "Thermal");    
+  err += set_a_physics(&mp, mp_id_M, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
+  err += set_a_physics(&mp, mp_id_T, MULTIPHYSICS_THERMAL,    1, "Thermal");    
   
   FIELD_VARIABLES *fv          =         (FIELD_VARIABLES *) malloc(physicsno*sizeof(FIELD_VARIABLES));
   SOLVER_OPTIONS  *sol         =          (SOLVER_OPTIONS *) malloc(physicsno*sizeof(SOLVER_OPTIONS));
@@ -287,7 +442,8 @@ int single_scale_main(int argc,char *argv[])
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
   err += material_initialization(&mat);
   err += loading_steps_initialization(&load);
-  load.sups = (SUPP *) malloc(sizeof(SUPP)*physicsno);
+  load.sups     = (SUPP *) malloc(sizeof(SUPP)*physicsno);
+  load.sup_defl = (double **) malloc(sizeof(double *)*physicsno);
   err += arc_length_variable_initialization(&arc);
 
   //<---------------------------------------------------------------------
@@ -298,7 +454,7 @@ int single_scale_main(int argc,char *argv[])
 
   Model_parameters *param_list = NULL;
 
-  char filename[500],in_dat[500],out_dat[500];
+  char filename[500],in_dat[500];
   
   /* boundary elements */
   
@@ -419,7 +575,6 @@ int single_scale_main(int argc,char *argv[])
   }
   
   sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
-  sprintf(out_dat,"%s/%s",options.opath,options.ofname);
   
   if(make_path(options.opath,DIR_MODE) != 0){
     if(myrank == 0){
@@ -436,8 +591,8 @@ int single_scale_main(int argc,char *argv[])
   //---->  
   {
     int in_err = 0;            
-    in_err = read_mesh_file(&grid,&mat,fv+0,sol+0,&load,&mp,mpi_comm,&options);
-            
+    in_err = read_mesh_file(&grid,&mat,fv,sol,&load,&mp,mpi_comm,&options);
+
     if(in_err){
       PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
               myrank);
@@ -470,12 +625,12 @@ int single_scale_main(int argc,char *argv[])
   
   for(int ia=0; ia<physicsno; ia++)
   {
-    if(mp.physics_ids[ia]!=mp_id_M)
+    if(mp.physics_ids[ia]!=MULTIPHYSICS_MECHANICAL)
       continue;
       
     /*=== OVERRIDE PRESCRIBED DISPLACEMENTS ===*/
     if(options.override_pre_disp){
-      if(override_prescribed_displacements(load.sups[mp_id_M],&options) != 0){
+      if(override_prescribed_displacements(load.sups[ia],&options) != 0){
         PGFEM_printerr("[%d]ERROR: an error was encountered when"
                 " reading the displacement override file.\n"
                 "Be sure that there are enough prescribed"
@@ -487,7 +642,7 @@ int single_scale_main(int argc,char *argv[])
     /*=== MULTISCALE INFORMATION ===*/
     if(options.multi_scale){
       (load.sups[mp_id_M])->multi_scale = options.multi_scale;
-      int ms_err = read_interface_macro_normal_lc(options.ipath,load.sups[mp_id_M]);
+      int ms_err = read_interface_macro_normal_lc(options.ipath,load.sups[ia]);
       if(ms_err != 0){
         PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
                 "Check that the file \"%s/normal.in\""
@@ -512,7 +667,8 @@ int single_scale_main(int argc,char *argv[])
   /*==== ADDITIONAL SETUP ===*/
   
   /* list of elements with prescribed deflection */
-  list_el_prescribed_def(load.sups[mp_id_M],grid.node,grid.element,grid.b_elems,grid.ne,grid.n_be,grid.nn);
+  for(int ia=0; ia<physicsno; ia++)
+    list_el_prescribed_def(load.sups[ia],grid.node,grid.element,grid.b_elems,grid.ne,grid.n_be,grid.nn);
   
   /* list of elements on the COMMUNICATION boundary */
   //build for 0
@@ -522,21 +678,21 @@ int single_scale_main(int argc,char *argv[])
   for(int ia=0; ia<physicsno; ia++)
   {
     
-    if(mp.physics_ids[ia]==mp_id_M)
+    if(mp.physics_ids[ia]==MULTIPHYSICS_MECHANICAL)
     {
       //material matrices (Mechanical part) of the phases
       Mat_3D_orthotropic (mat.nmat,mat.mater,options.analysis_type);
   
       long ***a = NULL;
-      a = aloc3l (mat.nmat,mat.nmat,fv[mp_id_M].n_concentrations);
-      mat.nhommat = list (a,grid.ne,mat.nmat,fv[mp_id_M].n_concentrations,grid.element);
+      a = aloc3l (mat.nmat,mat.nmat,fv[ia].n_concentrations);
+      mat.nhommat = list (a,grid.ne,mat.nmat,fv[ia].n_concentrations,grid.element);
   
       //alocation of the material matrices
       mat.hommat = build_hommat (mat.nhommat);
   
       //creates material matrices of the homogeneous medium : LOCAL
       // COORDINATE SYSTEM
-      hom_matrices (a,grid.ne,mat.nmat,fv[mp_id_M].n_concentrations,grid.element,mat.mater,mat.matgeom,
+      hom_matrices (a,grid.ne,mat.nmat,fv[ia].n_concentrations,grid.element,mat.mater,mat.matgeom,
               mat.hommat,mat.matgeom->SH,options.analysis_type);
   
       dealoc3l(a,mat.nmat,mat.nmat);
@@ -585,6 +741,7 @@ int single_scale_main(int argc,char *argv[])
   {  
     fv[ia].ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
                                           grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
+    printf("---------> %ld\n", fv[ia].ndofn);                                          
     com[ia].DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
                                                      grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
     // Gather degrees of freedom from all domains
@@ -640,7 +797,7 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf ("---------------------------------------------\n");
       PGFEM_printf ("Physics name: %s\n", mp.physicsname[ia]);      
       PGFEM_printf ("Total number of degrees of freedom       : %ld\n", fv[ia].Gndof);
-      PGFEM_printf ("Total number of nonzeros in the matrix   : %d\n",APP);
+      PGFEM_printf ("Total number of nonzeros in the matrix   : %d\n", APP);
       PGFEM_printf ("Symmetric skyline (including diagonal)   : %ld\n",sky);
     }
     //<---------------------------------------------------------------------
@@ -653,14 +810,16 @@ int single_scale_main(int argc,char *argv[])
   if (myrank == 0 && options.cohesive == 1)
     PGFEM_printf ("Number of cohesive elements              : %ld\n",grid.Gnce);  
   
-
+  for(int ia=0; ia<mp.physicsno; ia++)
   {        
-    if((load.sups[mp_id_M])->npd > 0){
-      load.sup_defl = aloc1((load.sups[mp_id_M])->npd);
+    if((load.sups[ia])->npd > 0){
+      load.sup_defl[ia] = aloc1((load.sups[ia])->npd);
     } else {
-      load.sup_defl = NULL;
+      load.sup_defl[ia] = NULL;
     }    
-    
+  }
+
+  {            
     /*=== TESTING ===*/
     double *nodal_forces = PGFEM_calloc(fv[mp_id_M].ndofd,sizeof(double));
     int n_feats = 0;
@@ -711,7 +870,7 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps, &mat, fv+mp_id_M, sol+mp_id_M, &load, &arc, crpl, &options, myrank);
+    err += read_solver_file(&time_steps,&mat,fv, sol,&load,&arc,crpl,&mp,&options,myrank);
     //<---------------------------------------------------------------------    
                          
     
@@ -745,98 +904,103 @@ int single_scale_main(int argc,char *argv[])
 
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
-      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, myrank, mp.physics_ids[ia]);
-    
-    if (sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
-      err += construct_arc_length_variable(&arc, fv+mp_id_M, com+mp_id_M, myrank);
-
-    /* push nodal_forces to s->R */
-    vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
-    
-    /* alocation of the eps vector */
-    initialize_damage(grid.ne,grid.element,mat.hommat,fv[mp_id_M].eps,options.analysis_type);
-
-
-    
-    if (options.analysis_type == CM) {
-      /* parameter list and initialize const. model at int points.
-       * NOTE: should catch/handle returned error flag...
-       */
-      char *cm_filename = NULL;
-      alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
-      FILE *cm_in = PGFEM_fopen(cm_filename, "r");
-      read_model_parameters_list(&param_list, mat.nhommat, mat.hommat, cm_in);
-      free(cm_filename);
-      fclose(cm_in);
-      init_all_constitutive_model(fv[mp_id_M].eps,grid.ne,grid.element,mat.nhommat,param_list);
-    }
-    
-    /* alocation of pressure variables */
-    int nVol = 1;
-    switch(options.analysis_type){
-      case TF:
-        nVol = 1;
-        if(grid.element[0].toe==10 && fv[mp_id_M].ndofn==3)
-        {
-          fv[mp_id_M].npres = 1;
-          nVol = 1;
-        }
-        break;
-      case STABILIZED: case MINI: case MINI_3F:
-        if(fv[mp_id_M].npres != 4){
-          fv[mp_id_M].npres = 4;
-          if(myrank == 0){
-            PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
-                    "Re-setting to 4 and continuing...\n");
-          }
-        }
-        break;
-      case DISP: // intented not to have break
-      case CM:
-        if(fv[mp_id_M].npres != 0){
-          fv[mp_id_M].npres = 0;
-          if (myrank == 0) {
-            PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
-                    "Re-setting to 0 and continuing...\n");
-          }
-        }
-        break;
-      default:
-        if(fv[mp_id_M].npres != 1){
-          fv[mp_id_M].npres = 1;
-          if (myrank == 0) {
-            PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
-                    "Re-setting to 1 and continuing...\n");
-          }
-        }
-        break;
-    }/* switch */
-    build_pressure_nodes (grid.ne,fv[mp_id_M].npres,grid.element,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);
-    build_crystal_plast (grid.ne,grid.element,fv[mp_id_M].sig,fv[mp_id_M].eps,crpl,
-            options.analysis_type,options.plc);
-    
-    /* \/ initialized element varialbes */
-    if(options.analysis_type==TF)
     {
-      for (int e=0;e<grid.ne;e++)
-      {
-        if(fv[mp_id_M].npres==1)
-        {
-          fv[mp_id_M].eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
-          for(int a=0; a<3; a++)
-            fv[mp_id_M].eps[e].d_T[a] = 0.0;
+      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, myrank, mp.physics_ids[ia]);
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
+      { 
+        // set extra variables for arc lengh
+        if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
+          err += construct_arc_length_variable(&arc, fv+ia, com+ia, myrank);
+
+        /* push nodal_forces to s->R */
+        vvplus(fv[ia].R,nodal_forces,fv[ia].ndofd);
+    
+        /* alocation of the eps vector */
+        initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
+
+        if (options.analysis_type == CM) {
+        /* parameter list and initialize const. model at int points.
+         * NOTE: should catch/handle returned error flag...
+         */
+          char *cm_filename = NULL;
+          alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
+          FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+          read_model_parameters_list(&param_list, mat.nhommat, mat.hommat, cm_in);
+          free(cm_filename);
+          fclose(cm_in);
+          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
         }
+    
+        /* alocation of pressure variables */
+        int nVol = 1;
+        switch(options.analysis_type){
+          case TF:
+            nVol = 1;
+            if(grid.element[0].toe==10 && fv[ia].ndofn==3)
+            {
+              fv[ia].npres = 1;
+              nVol = 1;
+            }
+            break;
+          case STABILIZED: case MINI: case MINI_3F:
+            if(fv[ia].npres != 4){
+              fv[ia].npres = 4;
+              if(myrank == 0){
+                PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
+                        "Re-setting to 4 and continuing...\n");
+              }
+            }
+            break;
+          case DISP: // intented not to have break
+          case CM:
+            if(fv[ia].npres != 0){
+              fv[ia].npres = 0;
+              if (myrank == 0) {
+                PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
+                        "Re-setting to 0 and continuing...\n");
+              }
+            }
+            break;
+          default:
+            if(fv[ia].npres != 1){
+              fv[ia].npres = 1;
+              if (myrank == 0) {
+                PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
+                        "Re-setting to 1 and continuing...\n");
+              }
+            }
+            break;
+        }/* switch */
+        build_pressure_nodes (grid.ne,fv[ia].npres,grid.element,fv[ia].sig,fv[ia].eps,options.analysis_type);
+        build_crystal_plast (grid.ne,grid.element,fv[ia].sig,fv[ia].eps,crpl,
+                options.analysis_type,options.plc);
         
-        fv[mp_id_M].eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));
-        for(int a=0; a<nVol*3; a++)
-          fv[mp_id_M].eps[e].T[a] = 1.0;
+        /* \/ initialized element varialbes */
+        if(options.analysis_type==TF)
+        {
+          for (int e=0;e<grid.ne;e++)
+          {
+            if(fv[ia].npres==1)
+            {
+              fv[ia].eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
+              for(int a=0; a<3; a++)
+                fv[ia].eps[e].d_T[a] = 0.0;
+            }
+            
+            fv[ia].eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));
+            for(int a=0; a<nVol*3; a++)
+              fv[ia].eps[e].T[a] = 1.0;
+          }
+        }
       }
     }
     /* /\ initialized element varialbes */
+
+    //----------------------------------------------------------------------
+    // read initial conditions
+    //----------------------------------------------------------------------
+    //---->
         
-    /*******************************************************************/
-    /* this is for inertia */    
-                
     int restart_tim = options.restart;
     
     double tnm1[2] = {-1.0,-1.0};
@@ -846,64 +1010,63 @@ int single_scale_main(int argc,char *argv[])
                                sol+mp_id_M, 
                                &load, 
                                &time_steps, 
-                               &options, 
+                               &options,
+                               &mp, 
                                &restart_tim, 
                                tnm1, 
                                myrank);
-    
-    for(long idx_a = 0; idx_a<grid.nn; idx_a++)
-    {
-      for(long idx_b = 0; idx_b<fv[mp_id_M].ndofn; idx_b++)
-      {
-        long id = grid.node[idx_a].id_map[mp_id_M].id[idx_b];
-        if(id>0)
-          fv[mp_id_M].u_np1[id-1] = fv[mp_id_M].u_n[idx_a*fv[mp_id_M].ndofn + idx_b];
-      }
-    }
-    
-    /*******************************************************************/
-    
-    /* set finite deformations variables */
-    set_fini_def (grid.ne,fv[mp_id_M].npres,grid.element,fv[mp_id_M].eps,fv[mp_id_M].sig,options.analysis_type);
-    if (options.analysis_type == FS_CRPL){
-      set_fini_def_pl (grid.ne,fv[mp_id_M].npres,grid.element,fv[mp_id_M].eps,fv[mp_id_M].sig,crpl,
-              options.analysis_type,options.plc);
-    }
-    
-    /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
-     * of the load vector  */
+    //<---------------------------------------------------------------------                               
+
+    // set the first time step size
     time_steps.dt_np1 = arc.dt0 = time_steps.times[1] - time_steps.times[0];
-    if (time_steps.dt_np1 == 0.0){
+    if (time_steps.dt_np1 == 0.0)
+    {
       if (myrank == 0){
         PGFEM_printf("Incorrect dt\n");
       }
       PGFEM_Comm_code_abort(mpi_comm,0);
-    }
+    }    
     
-    load_vec_node_defl (fv[mp_id_M].f_defl,grid.ne,fv[mp_id_M].ndofn,grid.element,grid.b_elems,grid.node,mat.hommat,
-            mat.matgeom,load.sups[mp_id_M],fv[mp_id_M].npres,sol[mp_id_M].nor_min,fv[mp_id_M].sig,fv[mp_id_M].eps,time_steps.dt_np1,
-            crpl,options.stab,fv[mp_id_M].u_np1,fv[mp_id_M].u_n,&options,sol[mp_id_M].alpha,mp_id_M);
+    for(int ia=0; ia<mp.physicsno; ia++)
+    {
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      {  
+        /* set finite deformations variables */
+        set_fini_def(grid.ne,fv[ia].npres,grid.element,fv[ia].eps,fv[ia].sig,options.analysis_type);
+        if (options.analysis_type == FS_CRPL)
+        {
+          set_fini_def_pl(grid.ne,fv[ia].npres,grid.element,fv[ia].eps,fv[ia].sig,crpl,
+                          options.analysis_type,options.plc);
+        }
+      }
+
+      //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
+      // of the load vector        
+      err += compute_load_vector_for_prescribed_BC(&grid,&mat,fv+ia,sol+ia,&load,time_steps.dt_np1,crpl,
+                                                   &options,&mp,ia,myrank);                                          
+
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      {        
+                               
+        /*  NODE - generation of the load vector  */
+        load_vec_node(fv[ia].R,load.nln,ndim,load.znod,grid.node,ia);
+        /*  ELEMENT - generation of the load vector  */
+        load_vec_elem_sur(fv[ia].R,load.nle_s,ndim,grid.element,load.zele_s);
+      }
+      /* R   -> Incramental forces
+       * RR  -> Total forces for sudivided increment
+       * RRn -> Total force after equiblirium */
     
-    /*  NODE - generation of the load vector  */
-    load_vec_node (fv[mp_id_M].R,load.nln,ndim,load.znod,grid.node,mp_id_M);
-    /*  ELEMENT - generation of the load vector  */
-    load_vec_elem_sur (fv[mp_id_M].R,load.nle_s,ndim,grid.element,load.zele_s);
+      vvplus  (fv[ia].f, fv[ia].R,     fv[ia].ndofd);
+      vvplus  (fv[ia].RR,fv[ia].f,     fv[ia].ndofd);
+      vvminus (fv[ia].f, fv[ia].f_defl,fv[ia].ndofd);    
     
-    /* R   -> Incramental forces
-     * RR  -> Total forces for sudivided increment
-     * RRn -> Total force after equiblirium */
+      /* Transform LOCAL load vector to GLOBAL */
+      if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
+        LToG (fv[ia].R,arc.BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
     
-    vvplus  (fv[mp_id_M].f,fv[mp_id_M].R,fv[mp_id_M].ndofd);
-    vvplus  (fv[mp_id_M].RR,fv[mp_id_M].f,fv[mp_id_M].ndofd);
-    vvminus (fv[mp_id_M].f,fv[mp_id_M].f_defl,fv[mp_id_M].ndofd);
-    
-    /* Transform LOCAL load vector to GLOBAL */
-    if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
-      LToG (fv[mp_id_M].R,arc.BS_R,myrank,com[mp_id_M].nproc,fv[mp_id_M].ndofd,com[mp_id_M].DomDof,com[mp_id_M].GDof,com[mp_id_M].comm ,mpi_comm);
-    
-    /* Prescribed deflection */
-    for (long i=0;i<(load.sups[mp_id_M])->npd;i++){
-      load.sup_defl[i] = (load.sups[mp_id_M])->defl_d[i];
+      for (long ib=0;ib<(load.sups[ia])->npd;ib++)
+        load.sup_defl[ia][ib] = (load.sups[ia])->defl_d[ib];
     }
     
     /*=== NO PERIODIC ===*/
@@ -985,11 +1148,11 @@ int single_scale_main(int argc,char *argv[])
         if(tim==restart_tim+1 && tnm1[1]>0)
         {
           time_steps.times[tim-1] = tnm1[1]; // tnm1[0] = times[tim-2]
-                                                        // tnm1[1] = times[tim-1]
-                                                        // tnm1[2] = times[tim]
+                                             // tnm1[1] = times[tim-1]
+                                             // tnm1[2] = times[tim]
           
-          // if restart_tim==0: tim = 1
-          if(tim>=2)              // if restart_tim==1: tim = 2
+                                             // if restart_tim==0: tim = 1
+          if(tim>=2)                         // if restart_tim==1: tim = 2
             time_steps.times[tim-2] = tnm1[0];
         }
 
@@ -1001,7 +1164,7 @@ int single_scale_main(int argc,char *argv[])
         fflush(PGFEM_stdout);
         
         hypre_time += Multiphysics_Newton_Raphson(1,&grid,&mat,fv,sol,&load,com,&time_steps,
-                                          crpl,mpi_comm,VVolume,&options,&mp);
+                                                  crpl,mpi_comm,VVolume,&options,&mp);
         
         /* Null global vectors */
         for (long i=0;i<fv[mp_id_M].ndofd;i++){
@@ -1011,7 +1174,8 @@ int single_scale_main(int argc,char *argv[])
         }
         
         /* null the prescribed displacement increment */
-        nulld(load.sup_defl,(load.sups[mp_id_M])->npd);
+        for(int ia=0; ia<mp.physicsno; ia++)
+          nulld(load.sup_defl[ia],(load.sups[ia])->npd);
       }/* end NR */
       
       /*=== ARC LENGTH ===*/
@@ -1058,109 +1222,11 @@ int single_scale_main(int argc,char *argv[])
         free(sur_forces);
       }
       
-      if(options.comp_print_reaction)
-      {
-        double dts[2];
-        if(tim==0)
-          dts[DT_N] = time_steps.times[tim+1] - time_steps.times[tim];
-        else
-          dts[DT_N] = time_steps.times[tim] - time_steps.times[tim-1];
-        
-        dts[DT_NP1] = time_steps.times[tim+1] - time_steps.times[tim];
-        
-        fd_res_compute_reactions(fv[mp_id_M].ndofn, fv[mp_id_M].npres, fv[mp_id_M].d_u, fv[mp_id_M].u_np1, grid.element, grid.node,
-                mat.matgeom, mat.hommat, load.sups[mp_id_M], fv[mp_id_M].eps, fv[mp_id_M].sig, sol[mp_id_M].nor_min,
-                crpl, dts, time_steps.times[tim+1], options.stab, mpi_comm,
-                &options, sol[mp_id_M].alpha, fv[mp_id_M].u_n, fv[mp_id_M].u_nm1,mp_id_M);
-      }
-      
-      if(options.comp_print_macro)
-      {
-        /* Calculate macro deformation gradient */
-        double *GF = computeMacroF(grid.element,grid.ne,grid.node,grid.nn,fv[mp_id_M].eps,oVolume,mpi_comm);
-        double *GS = computeMacroS(grid.element,grid.ne,grid.node,grid.nn,fv[mp_id_M].sig,oVolume,mpi_comm);
-        double *GP = computeMacroP(grid.element,grid.ne,grid.node,grid.nn,fv[mp_id_M].sig,fv[mp_id_M].eps,oVolume,mpi_comm);
-        
-        /* print GF & GS to file */
-        if(myrank==0)
-        {
-          
-          sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
-          FILE *out = fopen(filename,"w");
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
-          PGFEM_fprintf(out,"\n");
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
-          PGFEM_fprintf(out,"\n");
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
-          PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
-          fclose(out);
-        }
-        
-        free(GF);
-        free(GS);
-        free(GP);
-      }
-      
-      if (time_steps.print[tim] == 1 && options.vis_format != VIS_NONE ) {
-        if(options.ascii){
-          ASCII_output(&options,mpi_comm,tim,time_steps.times,grid.Gnn,grid.nn,grid.ne,grid.nce,fv[mp_id_M].ndofd,
-                  com[mp_id_M].DomDof,com[mp_id_M].Ap,sol[mp_id_M].FNR,arc.lm,fv[mp_id_M].pores,VVolume,grid.node,grid.element,load.sups[mp_id_M],
-                  fv[mp_id_M].u_np1,fv[mp_id_M].eps,fv[mp_id_M].sig,fv[mp_id_M].sig_n,grid.coel);
-        } /* End ASCII output */
-        
-        switch(options.vis_format){
-          case VIS_ELIXIR:/* Print to elix file */
-            sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
-            elixir (filename,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sups[mp_id_M],fv[mp_id_M].u_np1,fv[mp_id_M].sig,
-                    fv[mp_id_M].sig_n,fv[mp_id_M].eps,options.smoothing,grid.nce,grid.coel,&options);
-            break;
-          case VIS_ENSIGHT:/* Print to EnSight files */
-            sprintf (filename,"%s",out_dat);
-            EnSight (filename,tim,time_steps.nt,grid.nn,grid.ne,ndim,grid.node,grid.element,load.sups[mp_id_M],
-                    fv[mp_id_M].u_np1,fv[mp_id_M].sig,fv[mp_id_M].sig_n,fv[mp_id_M].eps,options.smoothing,grid.nce,grid.coel,
-                    /*nge,geel,ngn,gnod,*/sol[mp_id_M].FNR,arc.lm,ensight,mpi_comm,
-                    &options);
-            break;
-          case VIS_VTK:/* Print to VTK files */
-            if(myrank == 0){
-              VTK_print_master(options.opath,options.ofname,
-                      tim,com[mp_id_M].nproc,&options);
-            }
-            
-            VTK_print_vtu(options.opath,options.ofname,tim,
-                    myrank,grid.ne,grid.nn,grid.node,grid.element,load.sups[mp_id_M],fv[mp_id_M].u_np1,fv[mp_id_M].sig,fv[mp_id_M].eps,
-                    &options,mp_id_M);
-            
-            // save restart files
-            if(SAVE_RESTART_FILE)
-            {
-              write_restart(fv[mp_id_M].u_nm1, fv[mp_id_M].u_n, &options,
-                      grid.element, grid.node,fv[mp_id_M].sig,fv[mp_id_M].eps,load.sups[mp_id_M],
-                      myrank, grid.ne, grid.nn, fv[mp_id_M].ndofn, fv[mp_id_M].ndofd, tim, time_steps.times, fv[mp_id_M].NORM,
-                      mp_id_M);
-            }
-            
-            if (options.cohesive == 1){
-              if(myrank == 0){
-                VTK_print_cohesive_master(options.opath,
-                        options.ofname,tim,com[mp_id_M].nproc,
-                        &options);
-              }
-              
-              VTK_print_cohesive_vtu(options.opath,options.ofname,
-                      tim,myrank,grid.nce,grid.node,grid.coel,load.sups[mp_id_M],fv[mp_id_M].u_np1,ensight,
-                      &options,mp_id_M);
-            }
-            break;
-          default: /* no output */ break;
-        }/* switch(format) */
-        
-      }/* end output */
-      
+      // print simulation results
+      err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,&arc,
+                           crpl,ensight,mpi_comm,oVolume,VVolume,
+                           &options,&mp,mp_id_M,tim,myrank);
+                              
       if (myrank == 0){
         PGFEM_printf("\n");
         PGFEM_printf("*********************************************\n");

@@ -199,7 +199,7 @@ long compute_residuals_for_NR(GRID *grid,
                           mp_id);
       break;
     case MULTIPHYSICS_THERMAL:
-        INFO = energy_equation_compute_residuals(grid,mat,fv,mp_id);
+        INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation);
       break;
     case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
     default: 
@@ -254,6 +254,7 @@ int update_values_for_next_NR(GRID *grid,
                                MPI_Comm mpi_comm,
                                const double VVolume,
                                const PGFem3D_opt *opts,
+                               MULTIPHYSICS *mp,
                                int mp_id,
                                double t,
                                double dt,
@@ -261,62 +262,71 @@ int update_values_for_next_NR(GRID *grid,
 {
   int err = 0;
 
-  /* increment coheisve elements */
-  if(opts->cohesive){
-    increment_cohesive_elements(grid->nce,grid->coel,&(fv->pores),grid->node,load->sups[mp_id],fv->d_u,mp_id);
-  }  
+  switch(mp->physics_ids[mp_id])
+  {
+    case MULTIPHYSICS_MECHANICAL:
+    {  
+      /* increment coheisve elements */
+      if(opts->cohesive)
+        increment_cohesive_elements(grid->nce,grid->coel,&(fv->pores),grid->node,load->sups[mp_id],fv->d_u,mp_id);
   
-  /* Finite deformations increment */
-  switch(opts->analysis_type){
-    case FS_CRPL:
-    case FINITE_STRAIN:
-      fd_increment (grid->ne,grid->nn,fv->ndofn,fv->npres,mat->matgeom,mat->hommat,
-                    grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
-                    sol->nor_min,crpl,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
-                    VVolume,opts, mp_id);
-      break;
-    case STABILIZED:
-      st_increment (grid->ne,grid->nn,fv->ndofn,fv->ndofd,mat->matgeom,mat->hommat,
-                    grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
-                    sol->nor_min,opts->stab,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
-                    opts->cohesive,mp_id);
-      break;
-    case MINI:
-      MINI_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
-                     load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
-      break;
-    case MINI_3F:
-      MINI_3f_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
-                        load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
-      break;
-    case DISP:
-      DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
-                     fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
-      break;
-    case TF:
-      update_3f_state_variables(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
-                                dt,t,mpi_comm,mp_id);
-      break;
-    case CM:
-    {
-      switch(opts->cm)
-      {
-        case HYPER_ELASTICITY: case DISP:
+      /* Finite deformations increment */
+      switch(opts->analysis_type){
+        case FS_CRPL:
+        case FINITE_STRAIN:
+          fd_increment (grid->ne,grid->nn,fv->ndofn,fv->npres,mat->matgeom,mat->hommat,
+                        grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
+                        sol->nor_min,crpl,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
+                        VVolume,opts, mp_id);
+          break;
+        case STABILIZED:
+          st_increment (grid->ne,grid->nn,fv->ndofn,fv->ndofd,mat->matgeom,mat->hommat,
+                        grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
+                        sol->nor_min,opts->stab,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
+                        opts->cohesive,mp_id);
+          break;
+        case MINI:
+          MINI_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
+                         load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
+          break;
+        case MINI_3F:
+          MINI_3f_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
+                            load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
+          break;
+        case DISP:
           DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
                          fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
           break;
-        case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
-          /* updated later... */
+        case TF:
+          update_3f_state_variables(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
+                                    dt,t,mpi_comm,mp_id);
           break;
-        default: assert(0 && "undefined CM type"); break;
+        case CM:
+        {
+          switch(opts->cm)
+          {
+            case HYPER_ELASTICITY: case DISP:
+              DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
+                             fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
+              break;
+            case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
+              /* updated later... */
+              break;
+            default: assert(0 && "undefined CM type"); break;
+          }
+          break;
+        }
+        default: break;
       }
       break;
     }
-    default: break;
+    case MULTIPHYSICS_THERMAL:
+      break;
+    case MULTIPHYSICS_CHEMICAL:
+      break;
   }
-  
   /* Add deformation increment into displacement vector */
-  vvplus (fv->u_np1,fv->d_u,fv->ndofd);
+  vvplus(fv->u_np1,fv->d_u,fv->ndofd);
   
   // update previous time step values, u_n and u_nm1 from current
   //  time step values u_np1
@@ -359,42 +369,44 @@ int update_values_for_next_NR(GRID *grid,
     }
   }
   
-  /* update of internal fv and nodal coordinates */
-  if(opts->analysis_type==CM)
-  {
-    switch(opts->cm){
-      case UPDATED_LAGRANGIAN:
-      case TOTAL_LAGRANGIAN:
-        constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
-                                                  fv->ndofn,fv->u_n,dt,opts->cm,mp_id);
-        break;
-      case MIXED_ANALYSIS_MODE:
-        constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
-                                                  fv->ndofn,fv->u_n,dt,1 /* TL */,mp_id);
-        break;
-      default: break;
-    }
-  }
-  
-  if(opts->analysis_type==TF)
-  {
-    int nVol = 1;
-    for (int e=0;e<grid->ne;e++)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  {  
+    /* update of internal fv and nodal coordinates */
+    if(opts->analysis_type==CM)
     {
-      if(fv->npres==1)
-      {
-        fv->eps[e].d_T[2] = fv->eps[e].d_T[1];
-        fv->eps[e].d_T[1] = fv->eps[e].d_T[0];
-        
+      switch(opts->cm){
+        case UPDATED_LAGRANGIAN:
+        case TOTAL_LAGRANGIAN:
+          constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
+                                                    fv->ndofn,fv->u_n,dt,opts->cm,mp_id);
+          break;
+        case MIXED_ANALYSIS_MODE:
+          constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
+                                                    fv->ndofn,fv->u_n,dt,1 /* TL */,mp_id);
+          break;
+        default: break;
       }
-      for(int a=0; a<nVol; a++)
+    }
+    
+    if(opts->analysis_type==TF)
+    {
+      int nVol = 1;
+      for (int e=0;e<grid->ne;e++)
       {
-        fv->eps[e].T[a*3+2] = fv->eps[e].T[a*3+1];
-        fv->eps[e].T[a*3+1] = fv->eps[e].T[a*3+0];
+        if(fv->npres==1)
+        {
+          fv->eps[e].d_T[2] = fv->eps[e].d_T[1];
+          fv->eps[e].d_T[1] = fv->eps[e].d_T[0];
+          
+        }
+        for(int a=0; a<nVol; a++)
+        {
+          fv->eps[e].T[a*3+2] = fv->eps[e].T[a*3+1];
+          fv->eps[e].T[a*3+1] = fv->eps[e].T[a*3+0];
+        }
       }
     }
   }
-  
   // Update time steps
   dts[DT_N] = dts[DT_NP1];
   
@@ -423,7 +435,6 @@ int update_values_for_next_NR(GRID *grid,
 /// \param[in] load object for loading
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
-/// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
@@ -552,7 +563,7 @@ double Newton_Raphson_test(const int print_level,
       
       subdivision (INFO,&dt,&STEP,&DIV,tim,times,&ST,grid->ne,
                    fv->ndofn,fv->ndofd,fv->npres,grid->element,crpl,fv->eps,fv->sig,
-                   load->sups[mp_id],load->sup_defl,fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
+                   load->sups[mp_id],load->sup_defl[mp_id],fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
                    &DT,&OME,opts->stab,iter,sol->iter_max,alpha,mpi_comm,
                    opts->analysis_type);
     
@@ -637,7 +648,7 @@ double Newton_Raphson_test(const int print_level,
       else{
         
         for (i=0;i<(load->sups[mp_id])->npd;i++)
-          (load->sups[mp_id])->defl_d[i] = load->sup_defl[i]/STEP;
+          (load->sups[mp_id])->defl_d[i] = load->sup_defl[mp_id][i]/STEP;
         
         /* Compute macro interface deformation gradient */
         if((load->sups[mp_id])->multi_scale){
@@ -669,9 +680,9 @@ double Newton_Raphson_test(const int print_level,
         /*  NODE (PRESCRIBED DEFLECTION)
             - SUPPORT COORDINATES generation of the load vector  */
         nulld (fv->f_defl,fv->ndofd);
-        load_vec_node_defl (fv->f_defl,grid->ne,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
-                            mat->matgeom,load->sups[mp_id],fv->npres,sol->nor_min,
-                            fv->sig,fv->eps,dt,crpl,opts->stab,fv->u_np1,fv->u_n,opts,sol->alpha, mp_id);
+
+        compute_load_vector_for_prescribed_BC(grid,mat,fv,sol,load,dt,crpl,
+                                              opts,mp,mp_id,myrank); 
         
         /* Generate the load and vectors */
         for (i=0;i<fv->ndofd;i++)  {
@@ -736,8 +747,18 @@ double Newton_Raphson_test(const int print_level,
         
         /*=== Solve the system of equations ===*/
         SOLVER_INFO s_info;
+
         solve_time += solve_system(opts,fv->BS_f,fv->BS_x,tim,iter,com->DomDof,&s_info,
                                    sol->PGFEM_hypre,mpi_comm);
+
+//        if(mp_id==1)
+//        {  
+//          HYPRE_IJMatrixPrint((sol->PGFEM_hypre)->hypre_k,"test_k.txt");
+//          for(int ia=0; ia<fv->ndofd; ia++)
+//            printf("%e %e\n", fv->BS_f[ia], fv->BS_x[ia]);
+//          
+//        }                                   
+                                   
         if(myrank == 0){
           solve_system_check_error(PGFEM_stdout,s_info);
         }
@@ -1033,7 +1054,7 @@ double Newton_Raphson_test(const int print_level,
               nor = 0.0;
             } else {
               if (myrank == 0)
-                PGFEM_printf ("Error in the iteration : iter > iter_max\n");
+                PGFEM_printf ("Error in the iteration : iter > iter_max (%d, %d)\n", sol->iter_max, iter);
               INFO = 1;
               if (gam == 0)
                 ART = 1;
@@ -1046,10 +1067,13 @@ double Newton_Raphson_test(const int print_level,
       }/* end while nor > nor_min */
       
       /* before increment after convergence, check max damage */
-      if (opts->analysis_type == CM) {
-        cm_get_subdivision_parameter(&alpha, grid->ne, grid->element, fv->eps, dt);
-      } else {
-        alpha = max_damage/max_damage_per_step;
+      if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+      {  
+        if (opts->analysis_type == CM) {
+          cm_get_subdivision_parameter(&alpha, grid->ne, grid->element, fv->eps, dt);
+        } else {
+          alpha = max_damage/max_damage_per_step;
+        }
       }
       MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
       if(myrank == 0){
@@ -1110,7 +1134,7 @@ double Newton_Raphson_test(const int print_level,
       
       // update converged values and apply increments 
       // for next Newton Raphson step
-      update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp_id,t,dt,dts);
+      update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp,mp_id,t,dt,dts);
       
       /* finish microscale update */
       if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
@@ -1236,7 +1260,8 @@ double Multiphysics_Newton_Raphson(const int print_level,
   }
   for(int ia=0; ia<max_itr; ia++)
   {
-    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+//    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    for(int mp_id=0; mp_id<2; mp_id++)    
     {
       //print current physics name
       if(myrank==0)
