@@ -56,7 +56,7 @@ int compute_reactions(long ne,
       long *nod = ptr_elem->nod;
 
       /* Element Dof */
-      const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+      const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
       /* allocation */
       double *r_e = aloc1 (ndofe);
@@ -130,13 +130,13 @@ int compute_reactions(long ne,
       /* fe contains the local residual vector on the element. */
       int j = 0;
       for (int k=0; k<nne; k++){
-	for(int kk=0; kk<node[nod[k]].ndofn; kk++){
+	for(int kk=0; kk<ndofn; kk++){
 	  long II = node[nod[k]].id_map[mp_id].id[kk];
 	  if (II <= -1){ /* dof is prescribed displacement */
 	    rxn[abs(II + 1)] -= fe[j+kk]; /* add value to appropriate pre. disp. */
 	  }
 	}
-	j += node[nod[k]].ndofn;
+	j += ndofn;
       }
 
       /* deallocate */

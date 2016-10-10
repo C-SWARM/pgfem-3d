@@ -140,7 +140,7 @@ int* Psparse_ApAi (int nproc,
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);
+    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
     /* Id numbers */
     get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
     
@@ -199,7 +199,7 @@ int* Psparse_ApAi (int nproc,
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);
+    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
     /* Id numbers */
     get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
     get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id);

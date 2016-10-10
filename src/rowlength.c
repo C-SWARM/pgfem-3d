@@ -28,7 +28,7 @@ void rowlength (long *adr,
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     
     if (gr4 == 0) { for (k=0;k<nne;k++) cn[k] = nod[k]+1; }
     else get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);

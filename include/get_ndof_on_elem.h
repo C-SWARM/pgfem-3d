@@ -26,12 +26,14 @@ extern "C" {
 			     const long *node_ids_on_elem,
 			     const NODE *nodes,
 			     const BOUNDING_ELEMENT *b_elems,
-			     const ELEMENT *ptr_cur_elem);
+			     const ELEMENT *ptr_cur_elem,
+			     const int ndofn);
 
   /** Get the number of dofs associated with the nodes only */
   int get_ndof_on_elem_nodes(const int n_nodes_on_elem,
 			     const long *node_ids_on_elem,
-			     const NODE *nodes);
+			     const NODE *nodes,
+			     const int ndofn);
 
   /** Get the number of degrees of freedom associated with all
       bounding elements on the element. */
@@ -43,7 +45,8 @@ extern "C" {
       and dofs associated with the volume element nodes */
   int get_ndof_on_bnd_elem(const NODE *nodes,
 			   const BOUNDING_ELEMENT *ptr_cur_be,
-			   const ELEMENT *elems);
+			   const ELEMENT *elems,
+			   const int ndofn);
 
 
 #ifdef __cplusplus

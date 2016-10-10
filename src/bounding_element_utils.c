@@ -508,8 +508,8 @@ int compute_block_permutation(const int n_be,
   for(int i=0; i<n_be; i++){
     const BOUNDING_ELEMENT *p_be = &b_elems[i];
     const ELEMENT *p_ve = &elems[p_be->vol_elem_id];
-    const int ndofe = get_ndof_on_bnd_elem(nodes,p_be,elems);
-    const int ndof_ve = get_ndof_on_elem_nodes(p_ve->toe,p_ve->nod,nodes);
+    const int ndofe = get_ndof_on_bnd_elem(nodes,p_be,elems,ndofn);
+    const int ndof_ve = get_ndof_on_elem_nodes(p_ve->toe,p_ve->nod,nodes,ndofn);
     long *dof = aloc1l(ndofe);
     get_dof_ids_on_bnd_elem(1,ndofn,nodes,p_be,elems,dof,mp_id);
     for(int j=0; j<ndofe; j++){

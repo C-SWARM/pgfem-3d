@@ -30,7 +30,7 @@ extern "C" {
     long Pr;  /**< Identifies the node as a periodic node. If the node is
 	                 periodic, this variable contains the node number it is periodic
 	                 with/to. */
-    long ndofn;/**< Number of DOFs on the node */
+//    long ndofn;/**< Number of DOFs on the node */
     long pr;   /**< Property of node. */
 
     int model_type;
@@ -81,11 +81,13 @@ int destroy_node_multi_physics(const long nn,
   void write_node_fname(const char *filename,
 			const int nnodes,
 			const NODE *nodes,
+			const int ndofn,			
 			const int mp_id);
 
   void write_node(FILE *ofile,
 		  const int nnodes,
 		  const NODE *nodes,
+		  const int ndofn,		  
 		  const int mp_id);
 
   /**

@@ -84,7 +84,7 @@ static int fd_res_elem(double *fe,
   long *nod = aloc1l (nne);
   elemnodes (i,nne,nod,elem);
   /* Element Dof */
-  int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+  int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
   /* allocation */
   double *r_e = aloc1 (ndofe);
@@ -334,7 +334,7 @@ int fd_residuals (double *f_u,
     long *nod = aloc1l (nne);
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     double *fe = aloc1 (ndofe);
 
     err += fd_res_elem(fe, i, elem, ndofn, npres, d_r, r, node,
@@ -398,7 +398,7 @@ int fd_residuals (double *f_u,
       break;
     }
 
-    int ndofe = get_ndof_on_bnd_elem(node,ptr_be,elem);
+    int ndofe = get_ndof_on_bnd_elem(node,ptr_be,elem,ndofn);
     double *r_e = aloc1(ndofe);
     double *fe = aloc1(ndofe);
     long *cn = aloc1l(ndofe);
@@ -498,7 +498,7 @@ int fd_res_compute_reactions(const long ndofn,
     const int nne = elem[el_id[i]].toe;
     long *nod = aloc1l (nne);
     elemnodes (el_id[i],nne,nod,elem);
-    const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     double *fe = aloc1 (ndofe);
 
     err += fd_res_elem(fe, el_id[i], elem, ndofn, npres, d_r, r, node,

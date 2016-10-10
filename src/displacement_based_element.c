@@ -375,7 +375,7 @@ int DISP_stiffmat_el(double *Ks,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   /* make sure the stiffenss matrix contains all zeros */
@@ -484,7 +484,7 @@ int DISP_resid_el(double *R,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   } 
 
   /* Make sure that the residual vector contains zeros */
@@ -905,7 +905,7 @@ void DISP_increment_el(const ELEMENT *elem,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   double *F, *C, *C_I, *Sbar, J;
@@ -1180,7 +1180,7 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
   const ELEMENT *p_elem = elem + elem_id;
   const HOMMAT *p_hommat = &hommat[p_elem->mat[2]];
   const double kappa = hommat_get_kappa(p_hommat);
-  const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+  const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
   const int macro_ndof = macro_nnode*macro_ndofn;
 
   /* ensure null values of matrices */

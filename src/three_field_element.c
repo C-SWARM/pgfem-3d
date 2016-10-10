@@ -1950,7 +1950,7 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
     int nne = elem[i].toe;
     long *nod = aloc1l (nne);
     elemnodes (i,nne,nod,elem);
-    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
     double *r_e = aloc1 (ndofe);
     double *dr_e = aloc1 (ndofe);
@@ -2050,7 +2050,7 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
     int nne = elem[i].toe;
     long *nod = aloc1l (nne);
     elemnodes (i,nne,nod,elem);
-    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
     double *r_e = aloc1 (ndofe);
 

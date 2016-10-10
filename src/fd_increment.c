@@ -120,7 +120,7 @@ void fd_increment (long ne,
     nod = aloc1l (nne);
     elemnodes (ii,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     
     x = aloc1 (nne);
     y = aloc1 (nne);

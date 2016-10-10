@@ -41,7 +41,6 @@ NODE* build_node_multi_physics(const long nn,
       pom[ia].id_map[ib].id  = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
       pom[ia].id_map[ib].Gid = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
     }
-    pom[ia].ndofn = ndofn[1];
   }
   
   return (pom);
@@ -153,6 +152,7 @@ long read_nodes (FILE *in,
 void write_node_fname(const char *filename,
 		      const int nnodes,
 		      const NODE *nodes,
+		      const int ndofn,
 		      const int mp_id)
 {
   FILE *ofile = fopen(filename,"w");
@@ -161,7 +161,7 @@ void write_node_fname(const char *filename,
     PGFEM_Abort();
   }
 
-  write_node(ofile,nnodes,nodes,mp_id);
+  write_node(ofile,nnodes,nodes,mp_id,ndofn);
 
   fclose(ofile);
 }
@@ -169,6 +169,7 @@ void write_node_fname(const char *filename,
 void write_node(FILE *ofile,
 		const int nnodes,
 		const NODE *nodes,
+		const int ndofn,
 		const int mp_id)
 {
   /* write header describing format */
@@ -182,7 +183,7 @@ void write_node(FILE *ofile,
     PGFEM_fprintf(ofile,"%12.5e %12.5e %12.5e    %12.5e %12.5e %12.5e    ",
 	    p_node->x1,p_node->x2,p_node->x3,
 	    p_node->x1_fd,p_node->x2_fd,p_node->x3_fd);
-    for(int j=0; j<p_node->ndofn; j++){
+    for(int j=0; j<ndofn; j++){
       PGFEM_fprintf(ofile,"%5ld::%-5ld ",p_node->id_map[mp_id].id[j],p_node->id_map[mp_id].Gid[j]);
     }
     PGFEM_fprintf(ofile,"\n");

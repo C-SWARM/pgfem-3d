@@ -259,7 +259,7 @@ void renumber_global_dof_ids(const int nelem,
   /*=== NODES ===*/
   for(int i=0; i<nnode; i++){
     if(nodes[i].Dom == myrank){
-      for(int j=0; j<nodes[i].ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	if(nodes[i].id_map[mp_id].Gid[j] > 0){
 	  nodes[i].id_map[mp_id].Gid[j] += dof_id_adder;
 	}

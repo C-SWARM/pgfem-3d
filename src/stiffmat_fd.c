@@ -197,7 +197,7 @@ static int el_stiffmat(int i, /* Element ID */
   elemnodes (i,nne,nod,elem);
     
   /* Element Dof */
-  ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+  ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
   /* allocation */
   cnL = aloc1l (ndofe);
@@ -358,10 +358,10 @@ static int el_stiffmat(int i, /* Element ID */
   /* Localization of TANGENTIAL LOAD VECTOR */
   if (periodic == 1 && (FNR == 2 || FNR == 3)){
     for (l=0;l<nne;l++){
-      for (kk=0;kk<node[nod[l]].ndofn;kk++){
+      for (kk=0;kk<ndofn;kk++){
 	II = node[nod[l]].id_map[mp_id].id[kk]-1;
 	if (II < 0)  continue;
-	f_u[II] += fe[l*node[nod[l]].ndofn+kk];
+	f_u[II] += fe[l*ndofn+kk];
       }/*end l */
     }/*end kk */
   }/* end periodic */
@@ -606,7 +606,7 @@ static int bnd_el_stiffmat(int belem_id,
   }
 
   /* get the local and global dof id's */
-  int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);
+  int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem,ndofn);
 
   long *cn_ve = aloc1l(ndof_ve);
   long *Gcn_ve = aloc1l(ndof_ve);

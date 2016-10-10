@@ -564,7 +564,7 @@ static int compute_elem_micro_terms(const int elem_id,
   const int ndofn = c->ndofn;
   const int nne = elem->toe;
   const long *node_ids = elem->nod;
-  const int ndofe = get_ndof_on_elem_nodes(nne,node_ids,c->node);
+  const int ndofe = get_ndof_on_elem_nodes(nne,node_ids,c->node,ndofn);
 
   /* allocate microscale information */
   long *local_dof_ids = PGFEM_calloc(ndofe,sizeof(long));

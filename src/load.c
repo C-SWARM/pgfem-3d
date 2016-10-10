@@ -123,7 +123,7 @@ int load_vec_node_defl (double *f,
     long *nod = elem[sup->lepd[i]].nod;
     
     /* Element Dof */
-    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     long *cn = aloc1l (ndofe);
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
@@ -201,7 +201,7 @@ int load_vec_node_defl (double *f,
       int k = 0;
       int jj = 0;
       for (int ii=0;ii<nne;ii++){
-	for (jj=0;jj<node[nod[ii]].ndofn;jj++){
+	for (jj=0;jj<ndofn;jj++){
 	  if (jj  < ndn && cn[k+jj] <= -1)
 	    rloc[k+jj] = sup->defl_d[abs(cn[k+jj])-1];
 	  else
@@ -220,12 +220,12 @@ int load_vec_node_defl (double *f,
       int jj = 0;
       int II = 0;
       for (jj=0;jj<nne;jj++){
-	for (int ii=0;ii<node[nod[jj]].ndofn;ii++){
+	for (int ii=0;ii<ndofn;ii++){
 	  II = node[nod[jj]].id_map[mp_id].id[ii]-1;
 	  if (II < 0)  continue;
 	  f[II] += floc[k+ii];
 	}/*end ii*/
-	k += node[nod[jj]].ndofn;
+	k += ndofn;
       }/*end jj*/
     }
 
@@ -254,7 +254,7 @@ int load_vec_node_defl (double *f,
     const int nne_ve = ptr_ve->toe;
 
     /* get ndofs on element */
-    int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem);
+    int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem,ndofn);
 
     /* get coordinates of volume element nodes */
     double *x = aloc1(nne_ve);
@@ -312,7 +312,7 @@ int load_vec_node_defl (double *f,
       int k = 0;
       int jj = 0;
       for (int ii=0;ii<nne_ve;ii++){
-	for (jj=0;jj<node[ve_nod[ii]].ndofn;jj++){
+	for (jj=0;jj<ndofn;jj++){
 	  if (jj  < ndn && cn_ve[k+jj] <= -1)
 	    rloc[k+jj] = sup->defl_d[abs(cn_ve[k+jj])-1];
 	  else
@@ -330,12 +330,12 @@ int load_vec_node_defl (double *f,
       int j = 0;
       int II = 0;
       for (int jj=0;jj<nne_ve;jj++){
-	for (int ii=0;ii<node[ve_nod[jj]].ndofn;ii++){
+	for (int ii=0;ii<ndofn;ii++){
 	  II = node[ve_nod[jj]].id_map[mp_id].id[ii]-1;
 	  if (II < 0)  continue;
 	  f[II] += floc[j+ii];
 	}/*end ii*/
-	j += node[ve_nod[jj]].ndofn;
+	j += ndofn;
       }/*end jj*/
     }
 

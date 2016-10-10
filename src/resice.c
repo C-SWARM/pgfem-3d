@@ -394,7 +394,7 @@ void strci_scr (long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node, const int
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     /* Id numbers */
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
@@ -443,7 +443,7 @@ void aci_scr (long *ci,long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node, co
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     /* Id numbers */
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 

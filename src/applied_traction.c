@@ -233,7 +233,7 @@ int compute_applied_traction_res(const int ndofn,
     if(nne_3D==10)
       int_order = 2;
 
-    const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes);
+    const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes,ndofn);
     long *cn = PGFEM_calloc(ndofe,sizeof(long));
     double *res_el = PGFEM_calloc(ndofe,sizeof(double));
     get_dof_ids_on_elem_nodes(0,nne_3D,ndofn,nod_3D,nodes,cn,mp_id);
