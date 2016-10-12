@@ -90,27 +90,68 @@ struct PRINT_MULTIPHYSICS_RESULT;
 typedef struct PRINT_MULTIPHYSICS_RESULT PRINT_MULTIPHYSICS_RESULT;
 #endif
 
-typedef int (*write_vtk) (PRINT_MULTIPHYSICS_RESULT *pmr,
+enum{MECHANICAL_Var_Displacement,
+     MECHANICAL_Var_MacroDisplacement,
+     MECHANICAL_Var_NodalPressure,
+     MECHANICAL_Var_CauchyStress,
+     MECHANICAL_Var_EulerStrain,
+     MECHANICAL_Var_EffectiveStrain,
+     MECHANICAL_Var_EffectiveStress,
+     MECHANICAL_Var_CellProperty,
+     MECHANICAL_Var_Damage,
+     MECHANICAL_Var_Chi,
+     MECHANICAL_Var_F,
+     MECHANICAL_Var_P,
+     MECHANICAL_Var_W,
+     MECHANICAL_Var_ElementPressure,
+     MECHANICAL_Var_ElementVolume,
+     MECHANICAL_Var_NO} MECHANICAL_Var;
+      
+enum{THERMAL_Var_Temperature,
+     THERMAL_Var_HeatFlux,
+     Thermal_Var_NO} THERMAL_Var;
+     
+typedef int (*write_vtk) (FILE *out,
                           GRID *grid,
+                          FIELD_VARIABLES *fv,                          
                           LOADING_STEPS *load,
-                          FILE *out); 
+                          PRINT_MULTIPHYSICS_RESULT *pmr,
+                          const PGFem3D_opt *opts); 
 
 struct PRINT_MULTIPHYSICS_RESULT
 {
-  int variable_id;
-  char *variable_name;
-  char *data_format;
-  int data_type;
+  int mp_id;
+  int physics_id;
+  char variable_name[1024];
+  int is_point_data;  
   void *p_data;
   int m_row;
   int m_col;
+  char data_type[1024];
   write_vtk write_vtk;  
 };
 
+int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
+                                  int datano,
+                                  const PGFem3D_opt *opts,
+                                  int time,
+                                  int myrank,
+                                  int nproc);
 
-int write_VTK_out(GRID *grid,
-                  PRINT_MULTIPHYSICS_RESULT *pD);
-
+int VTK_write_multiphysics_vtu(GRID *grid,
+                               FIELD_VARIABLES *FV,
+                               LOADING_STEPS *load,
+                               PRINT_MULTIPHYSICS_RESULT *pD,
+                               int datano,
+                               const PGFem3D_opt *opts,
+                               int time,
+                               int myrank);
+                               
+int VTK_construct_PMR(GRID *grid,
+                      FIELD_VARIABLES *FV,
+                      MULTIPHYSICS *mp,
+                      PRINT_MULTIPHYSICS_RESULT *pmr);
+                  
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

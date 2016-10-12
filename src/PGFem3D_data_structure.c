@@ -413,7 +413,8 @@ int multiphysics_initialization(MULTIPHYSICS *mp)
   mp->physics_ids = NULL;
   mp->ndim        = NULL;
   mp->write_no    = NULL;
-  mp->write_ids   = NULL;  
+  mp->write_ids   = NULL;
+  mp->total_write_no = 0;  
   return err = 0;
 }
 
@@ -442,6 +443,7 @@ int construct_multiphysics(MULTIPHYSICS *mp,
     mp->write_no[ia]    = 0;
     mp->write_ids[ia]   = NULL;
   }
+  mp->total_write_no  = 0;
   return err = 0;  
 }
 
@@ -576,7 +578,7 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
 
       int physics_id, ndof;
       char name[1024];
-
+      int cnt_pmr = 0;
       for(int ia=0; ia<physicsno; ia++)
       {
         err += scan_for_valid_line(in);
@@ -586,9 +588,11 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
         fscanf(in, "%d", mp->write_no+ia);
         mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
         err += scan_for_valid_line(in);
+        cnt_pmr += mp->write_no[ia];
         for(int ib=0; ib<mp->write_no[ia]; ib++)
           fscanf(in, "%d", mp->write_ids[ia]+ib);
       }
+      mp->total_write_no  = cnt_pmr;
     }
     fclose(in); // close file
   }
@@ -599,8 +603,9 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
     mp->write_no[0] = 2;
     mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
-    mp->write_ids[0][0] = 0;
-    mp->write_ids[0][1] = 1;                  
+    mp->write_ids[0][0] = 0; // Displacement
+    mp->write_ids[0][1] = 3; // CauchyStress
+    mp->total_write_no  = 2;                  
   }
   // print multiphysics setting
   printf("Total number of physics: %d\n", mp->physicsno);

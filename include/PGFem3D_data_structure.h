@@ -164,8 +164,8 @@ typedef struct {
   int *physics_ids;   /// physics ids
   int *ndim;          /// degree of feedom of the physics 
   int *write_no;      /// number of variables to be written as results
-  int **write_ids;    /// index of physical varialbes to be written
-  //
+  int total_write_no; /// total number of variables to be written as results
+  int **write_ids;    /// index of physical varialbes to be written  
 } MULTIPHYSICS;
 
 /// initialize time stepping variable

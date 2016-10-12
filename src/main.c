@@ -269,6 +269,7 @@ int print_results(GRID *grid,
                   ARC_LENGTH_VARIABLES *arc,
                   CRPL *crpl,
                   ENSIGHT ensight,
+                  PRINT_MULTIPHYSICS_RESULT *pmr,
                   MPI_Comm mpi_comm,
                   const double oVolume,
                   const double VVolume,
@@ -356,14 +357,18 @@ int print_results(GRID *grid,
                 opts);
         break;
       case VIS_VTK:/* Print to VTK files */
+      {          
         if(myrank == 0){
-          VTK_print_master(opts->opath,opts->ofname,
-                  tim,com->nproc,opts);
+//          VTK_print_master(opts->opath,opts->ofname,
+//                  tim,com->nproc,opts);
+          err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,com->nproc);
         }
         
-        VTK_print_vtu(opts->opath,opts->ofname,tim,
+/*        VTK_print_vtu(opts->opath,opts->ofname,tim,
                 myrank,grid->ne,grid->nn,grid->node,grid->element,sup,fv->u_np1,fv->sig,fv->eps,
-                opts,mp_id);
+                opts,mp_id);        
+*/
+        err += VTK_write_multiphysics_vtu(grid,FV,load,pmr,mp->total_write_no,opts,tim,myrank);        
         
         // save restart files
         if(SAVE_RESTART_FILE)
@@ -386,6 +391,7 @@ int print_results(GRID *grid,
                   opts,mp_id);
         }
         break;
+      }
       default: /* no output */ break;
     }/* switch(format) */
     
@@ -986,6 +992,18 @@ int single_scale_main(int argc,char *argv[])
     /* /\ initialized element varialbes */
 
     //----------------------------------------------------------------------
+    // set writting output options for Multiphysics
+    //----------------------------------------------------------------------
+    //---->
+    int pmr_no = 0;
+    PRINT_MULTIPHYSICS_RESULT *pmr = NULL;
+        
+    pmr = (PRINT_MULTIPHYSICS_RESULT *) malloc(sizeof(PRINT_MULTIPHYSICS_RESULT)*mp.total_write_no);   
+    err += VTK_construct_PMR(&grid, fv, &mp, pmr);
+    //<---------------------------------------------------------------------                      
+
+
+    //----------------------------------------------------------------------
     // read initial conditions
     //----------------------------------------------------------------------
     //---->
@@ -1213,7 +1231,7 @@ int single_scale_main(int argc,char *argv[])
       
       // print simulation results
       err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,&arc,
-                           crpl,ensight,mpi_comm,oVolume,VVolume,
+                           crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
                            &options,&mp,mp_id_M,tim,myrank);
                               
       if (myrank == 0){
@@ -1226,7 +1244,8 @@ int single_scale_main(int argc,char *argv[])
     }/* end while */
     
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
-    free(nodal_forces);  
+    free(nodal_forces);
+    if(pmr!=NULL) free(pmr);    
   }
 
   //----------------------------------------------------------------------
@@ -1244,7 +1263,7 @@ int single_scale_main(int argc,char *argv[])
   for(int ia=0; ia<mp.physicsno; ia++)
     err += destruct_field_varialbe(fv+ia, &grid, &options, mp.physics_ids[ia]);
   
-  free(fv);  
+  free(fv);
 
   err += destruct_loading_steps(&load, &mp);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
