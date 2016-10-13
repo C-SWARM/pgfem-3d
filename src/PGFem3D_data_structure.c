@@ -12,6 +12,7 @@
 #include "pgfem_comm.h"
 #include "comm_hints.h"
 #include "utils.h"
+#include "vtk_output.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -450,7 +451,7 @@ int construct_multiphysics(MULTIPHYSICS *mp,
 /// set a physics
 /// set physics id, number of degree freedom, and name
 /// 
-/// \param[in, out] mp an object for multiphysics stepping
+/// \param[in, out] mp an object for multiphysics
 /// \param[in] obj_id id to access each physics 
 /// \param[in] mp_id multiphysics id
 /// \param[in] n_dof number of degree freedom of the physics
@@ -586,11 +587,40 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
         err += set_a_physics(mp, ia,physics_id,ndof, name);
         err += scan_for_valid_line(in);
         fscanf(in, "%d", mp->write_no+ia);
-        mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
-        err += scan_for_valid_line(in);
-        cnt_pmr += mp->write_no[ia];
-        for(int ib=0; ib<mp->write_no[ia]; ib++)
-          fscanf(in, "%d", mp->write_ids[ia]+ib);
+        
+        if(mp->write_no[ia]>0) 
+        {
+          // read from file for writing results  
+          mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
+          err += scan_for_valid_line(in);
+          cnt_pmr += mp->write_no[ia];
+          for(int ib=0; ib<mp->write_no[ia]; ib++)
+            fscanf(in, "%d", mp->write_ids[ia]+ib);
+        }
+        if(mp->write_no[ia]==-1)
+        {
+          switch(physics_id)
+          {
+            case MULTIPHYSICS_MECHANICAL:
+              mp->write_no[ia] = MECHANICAL_Var_NO;
+              break;
+            case MULTIPHYSICS_THERMAL:
+              mp->write_no[ia] = Thermal_Var_NO;
+              break;
+            case MULTIPHYSICS_CHEMICAL:
+              mp->write_no[ia] = CHEMICAL_Var_NO;
+              break;
+            default:
+              mp->write_no[ia] = MECHANICAL_Var_NO;
+          }    
+              
+          // set default : all outputs
+          mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
+          err += scan_for_valid_line(in);
+          cnt_pmr += mp->write_no[ia];
+          for(int ib=0; ib<mp->write_no[ia]; ib++)
+            mp->write_ids[ia][ib] = ib;
+        }                    
       }
       mp->total_write_no  = cnt_pmr;
     }
@@ -601,24 +631,27 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
   {  
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
-    mp->write_no[0] = 2;
+    mp->write_no[0] = MECHANICAL_Var_NO;
     mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
-    mp->write_ids[0][0] = 0; // Displacement
-    mp->write_ids[0][1] = 3; // CauchyStress
-    mp->total_write_no  = 2;                  
+    for(int ib=0; ib<mp->write_no[0]; ib++)
+      mp->write_ids[0][ib] = ib;
+    mp->total_write_no  = MECHANICAL_Var_NO;                  
   }
   // print multiphysics setting
-  printf("Total number of physics: %d\n", mp->physicsno);
-  for(int ia=0; ia<mp->physicsno; ia++)
-  {
-    printf("%d. physics name \t\t= %s\n", ia, mp->physicsname[ia]);
-    printf("   number of unknown on node \t= %d\n", mp->ndim[ia]);
-    printf("   number of output variables \t= %d", mp->write_no[ia]);
-    printf(", ids = ");
-    for(int ib=0; ib<mp->write_no[ia]; ib++)
-      printf("%d ", mp->write_ids[ia][ib]);
+  if(myrank==0)
+  {  
+    printf("Total number of physics: %d\n", mp->physicsno);
+    for(int ia=0; ia<mp->physicsno; ia++)
+    {
+      printf("%d. physics name \t\t= %s\n", ia, mp->physicsname[ia]);
+      printf("   number of unknown on node \t= %d\n", mp->ndim[ia]);
+      printf("   number of output variables \t= %d", mp->write_no[ia]);
+      printf(", ids = ");
+      for(int ib=0; ib<mp->write_no[ia]; ib++)
+        printf("%d ", mp->write_ids[ia][ib]);
 
-    printf("\n\n");      
+      printf("\n\n");      
+    }
   }
   return err;
 }

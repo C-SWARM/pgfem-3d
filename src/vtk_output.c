@@ -726,6 +726,15 @@ void VTK_print_cohesive_vtu(char *path,
   fclose(out);
 }
 
+/// determine filename for outputs from the commend line options for ouput
+///
+/// \param[out] filename vtk ouput filename
+/// \param[in] opts structure PGFem3D option
+/// \param[in] time time step number
+/// \param[in] myrank current process rank
+/// \param[in] is_it_master if 1 filename is set for master vtk file, 
+///                         if 0 filenmae is set for vtu file.
+/// \return non-zero on internal error
 int VTK_get_filename(char *filename, 
                      const PGFem3D_opt *opts,
                      int time,
@@ -764,7 +773,18 @@ int VTK_get_filename(char *filename,
   return err;
 }
 
-int VTK_write_multiphysics_header(FILE *out, int is_it_master, long nodeno, long elemno)
+/// write vtk header
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] is_it_master if 1 filename is set for master vtk file, 
+///                         if 0 filenmae is set for vtu file.
+/// \param[in] nodeno number of nodes
+/// \param[in] elemno number of elements
+/// \return non-zero on internal error
+int VTK_write_multiphysics_header(FILE *out, 
+                                  int is_it_master, 
+                                  long nodeno, 
+                                  long elemno)
 {
   int err = 0;
   char vtk_file_format[1024];
@@ -784,6 +804,13 @@ int VTK_write_multiphysics_header(FILE *out, int is_it_master, long nodeno, long
   return err;
 }
 
+/// write vtk footer
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] opts structure PGFem3D option
+/// \param[in] nproc number of MPI processes
+/// \param[in] time time step number
+/// \return non-zero on internal error
 int VTK_write_multiphysics_master_footer(FILE *out,
                                          const PGFem3D_opt *opts,
                                          int nproc,
@@ -806,6 +833,11 @@ int VTK_write_multiphysics_master_footer(FILE *out,
   return err;
 }
 
+/// write data array header
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \return non-zero on internal error
 int VTK_write_multiphysics_DataArray_header(FILE *out,
                                             PRINT_MULTIPHYSICS_RESULT *pmr)
 {
@@ -818,6 +850,10 @@ int VTK_write_multiphysics_DataArray_header(FILE *out,
   return err;
 }
 
+/// write data array footer
+///
+/// \param[in] out file pointer for writing vtk file
+/// \return non-zero on internal error
 int VTK_write_multiphysics_DataArray_footer(FILE *out)
 {
   int err = 0;
@@ -825,6 +861,15 @@ int VTK_write_multiphysics_DataArray_footer(FILE *out)
   return err;
 }
 
+/// write vtk master file based on physics
+///
+/// \param[in] pD a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] datano number data(vaialbes) to be written
+/// \param[in] opts structure PGFem3D option
+/// \param[in] time time step number
+/// \param[in] myrank current process rank
+/// \param[in] nproc number of MPI processes
+/// \return non-zero on internal error
 int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                                   int datano,
                                   const PGFem3D_opt *opts,
@@ -890,6 +935,12 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
   return err;
 }
 
+
+/// write mesh info
+///
+/// \param[in] grid an object containing all mesh data
+/// \param[in] out file pointer for writing vtk file
+/// \return non-zero on internal error
 int VTK_write_mesh(GRID *grid,
                    FILE *out)
 {
@@ -949,7 +1000,22 @@ int VTK_write_mesh(GRID *grid,
   return err;  
 }
 
-
+/// write simulation results in vtk format based on physics
+///
+/// By providing PRINT_MULTIPHYSICS_RESULT objects,
+/// number of variables to be witten can be determined at runtime.
+/// This function call will create output directory if the foder doesn't exist prior, and 
+/// every process will create vtu files. 
+///
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pD a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] datano number data(vaialbes) to be written
+/// \param[in] opts structure PGFem3D option
+/// \param[in] time time step number
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 int VTK_write_multiphysics_vtu(GRID *grid,
                                FIELD_VARIABLES *FV,
                                LOADING_STEPS *load,
@@ -999,6 +1065,19 @@ int VTK_write_multiphysics_vtu(GRID *grid,
   return err;
 }
 
+
+/// write double array in vtk format
+///
+/// A double array in PRINT_MULTIPHYSICS_RESULT object is used to write vtk file.
+/// Prior to call this function, pmr->p_data should be created first.
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_double(FILE *out,
                           GRID *grid,
                           FIELD_VARIABLES *FV,                          
@@ -1021,6 +1100,17 @@ int VTK_write_data_double(FILE *out,
   return err;
 }
 
+/// write Macro Displacement for Mechanical part
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_MacroDisplacement(FILE *out,
                                      GRID *grid,
                                      FIELD_VARIABLES *FV,                          
@@ -1048,6 +1138,17 @@ int VTK_write_data_MacroDisplacement(FILE *out,
   return err;
 }
 
+/// write nodal displacement for Mechanical part
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_Nodal_pressure(FILE *out,
                                   GRID *grid,
                                   FIELD_VARIABLES *FV,                          
@@ -1080,6 +1181,18 @@ int VTK_write_data_Nodal_pressure(FILE *out,
   return err;
 }
 
+/// write Cauchy Stress for Mechanical part
+///
+/// s(1,1), s(2,2), s(3,3), s(2,3), s(1,3),  s(1,2) components will be written 
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_CauchyStress(FILE *out,
                                 GRID *grid,
                                 FIELD_VARIABLES *FV,                          
@@ -1102,6 +1215,18 @@ int VTK_write_data_CauchyStress(FILE *out,
   return err;
 }
 
+/// write Euler Strain for Mechanical part
+///
+/// e(1,1), e(2,2), e(3,3), e(2,3), e(1,3),  e(1,2) components will be written 
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_EulerStrain(FILE *out,
                                GRID *grid,
                                FIELD_VARIABLES *FV,                          
@@ -1124,6 +1249,18 @@ int VTK_write_data_EulerStrain(FILE *out,
   return err;
 }  
 
+/// write Effective Strain for Mechanical part
+///
+/// Eeq = sqrt(2/3.*(e(1,1)^2 + e(2,2)^2 + e(3,3)^2 + 2*(e(2,3)^2 + e(1,3)^2+ e(1,2)^2)))
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_EffectiveStrain(FILE *out,
                                    GRID *grid,
                                    FIELD_VARIABLES *FV,                          
@@ -1142,6 +1279,19 @@ int VTK_write_data_EffectiveStrain(FILE *out,
   return err;
 }
 
+
+/// write Effective Stress for Mechanical part
+///
+/// Seq = sqrt(2/3.*(s(1,1)^2 + s(2,2)^2 + s(3,3)^2 + 2*(s(2,3)^2 + s(1,3)^2+ s(1,2)^2)))
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_EffectiveStress(FILE *out,
                                GRID *grid,
                                FIELD_VARIABLES *FV,                          
@@ -1160,6 +1310,18 @@ int VTK_write_data_EffectiveStress(FILE *out,
   return err;
 }
 
+/// write material ids
+///
+/// id starts from 0 to positive integrers, but it prints doulble
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_CellProperty(FILE *out,
                                 GRID *grid,
                                 FIELD_VARIABLES *FV,                          
@@ -1170,14 +1332,26 @@ int VTK_write_data_CellProperty(FILE *out,
   int err = 0;
   ELEMENT *elem = grid->element;
   
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%ld\n",elem[i].pr);
+
+  err += VTK_write_multiphysics_DataArray_footer(out);     
   
   return err;
 }
 
-
+/// write damage parameters
+///
+/// prints 0<= damage <1 
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
 int VTK_write_data_Damage(FILE *out,
                           GRID *grid,
                           FIELD_VARIABLES *FV,                          
@@ -1196,6 +1370,17 @@ int VTK_write_data_Damage(FILE *out,
   return err;
 }
 
+/// write softening parameters
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_Chi(FILE *out,
                        GRID *grid,
                        FIELD_VARIABLES *FV,                          
@@ -1214,6 +1399,18 @@ int VTK_write_data_Chi(FILE *out,
   return err;
 }
 
+/// write total deformation gradient
+///
+/// F = 3 by 3 matrix (2nd order tensor)
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_F(FILE *out,
                      GRID *grid,
                      FIELD_VARIABLES *FV,                          
@@ -1224,18 +1421,30 @@ int VTK_write_data_F(FILE *out,
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
   
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
   for (int i=0; i<grid->ne; i++)
   {
     const double *F = eps[i].il[0].F;
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e "
-	        	          "%12.12e %12.12e %12.12e %12.12e\n",
-		                  F[0],F[1],F[2],F[3],F[4],F[5],F[6],F[7],F[8]);
+                      "%12.12e %12.12e %12.12e %12.12e %12.12e\n",
+                      F[0],F[1],F[2],F[3],F[4],F[5],F[6],F[7],F[8]);
   }    
-  
+  err += VTK_write_multiphysics_DataArray_footer(out); 
   return err;
 }
 
+/// write 1st Piola Kirchhoff stress (PK1 stress)
+///
+/// P = 3 by 3 matrix (2nd order tensor)
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_P(FILE *out,
                      GRID *grid,
                      FIELD_VARIABLES *FV,                          
@@ -1268,13 +1477,26 @@ int VTK_write_data_P(FILE *out,
                 1.0,F,ndim,S,ndim,0.0,P,ndim);    
     
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e "
-	        	          "%12.12e %12.12e %12.12e %12.12e\n",
-		                  P[0],P[1],P[2],P[3],P[4],P[5],P[6],P[7],P[8]);
+                      "%12.12e %12.12e %12.12e %12.12e %12.12e\n",
+                      P[0],P[1],P[2],P[3],P[4],P[5],P[6],P[7],P[8]);
   }    
   err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
+
+/// write strain energe
+///
+/// W = /hat{W} + U
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_W(FILE *out,
                      GRID *grid,
                      FIELD_VARIABLES *FV,                          
@@ -1294,6 +1516,21 @@ int VTK_write_data_W(FILE *out,
   return err;
 }    
 
+
+/// write Element Pressure
+///
+/// For incompressible material, solution scheme is stabilized using three-field mixed method.
+/// Additional variables : pressure and volume.
+/// This function prints pressure computed in quadratic tetrahedral elements.
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_ElementPressure(FILE *out,
                                   GRID *grid,
                                   FIELD_VARIABLES *FV,                          
@@ -1317,6 +1554,20 @@ int VTK_write_data_ElementPressure(FILE *out,
   return err;
 }
 
+/// write Element Pressure
+///
+/// For incompressible material, solution scheme is stabilized using three-field mixed method.
+/// Additional variables : pressure and volume.
+/// This function prints volume.
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_ElementVolume(FILE *out,
                                   GRID *grid,
                                   FIELD_VARIABLES *FV,                          
@@ -1339,6 +1590,18 @@ int VTK_write_data_ElementVolume(FILE *out,
   return err;
 }
 
+/// write Heat Flux
+///
+/// q = k*grad(T)
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
 int VTK_write_data_HeatFlux(FILE *out,
                             GRID *grid,
                             FIELD_VARIABLES *FV,                          
@@ -1360,6 +1623,17 @@ int VTK_write_data_HeatFlux(FILE *out,
   return err;
 }
 
+/// construct PRINT_MULTIPHYSICS_RESULT array based on physics
+///
+/// Different physics looks different output categories (switch).
+/// If the selection of output variable is not in these categories, default outputs will be used.
+/// default: Displacement for Mechanical
+///          Temperature for Thermal 
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] mp an object for multiphysics stepping
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \return non-zero on internal error
 int VTK_construct_PMR(GRID *grid,
                       FIELD_VARIABLES *FV,
                       MULTIPHYSICS *mp,
