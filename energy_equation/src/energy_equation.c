@@ -6,6 +6,16 @@
 #include "PLoc_Sparse.h"
 #include <math.h>
 
+/// determine whether the element is on communication boundary or in interior
+/// 
+/// If the element is interior, return 1 or return 0 (on communication boundary)
+///
+/// \parma[in] eid element id
+/// \param[in,out] idx id of bndel (communication boundary element)
+/// \param[in,out] skip count element on communication boundary
+/// \param[in] com an object for communication
+/// \param[in] myrank current process rank
+/// \return return 1 if the element is interior or 0 if the element on the communication boundary
 int is_element_interior(int eid, int *idx, int *skip, COMMUNICATION_STRUCTURE *com,
                         int myrank)
 { 
@@ -44,6 +54,16 @@ int is_element_interior(int eid, int *idx, int *skip, COMMUNICATION_STRUCTURE *c
   return is_it_in;    
 } 
 
+/// assemble residuals for heat conduction problem
+/// 
+/// element-wize residuals are merged into global residual vector
+///
+/// \param[in] fe container of finite element resources
+/// \param[in] fi local residual(element-wize)
+/// \param[in] grid a mesh object
+/// \param[in,out] fv field variable object
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int energy_equation_residuals_assemble(FEMLIB *fe,
                                        double *fi,
                                        GRID *grid,
@@ -65,6 +85,20 @@ int energy_equation_residuals_assemble(FEMLIB *fe,
   return err;
 }
 
+/// compute residuals for heat conduction problem at the element level
+///
+/// Actual computation for constructing residual vector takes place here.
+/// Memory of the residual vector should be allocated before this function calls.
+///
+/// \param[in] fe container of finite element resources
+/// \param[out] fi_in local residual vector (element level) 
+/// \param[in] du temperature increment
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in] fv field variable object 
+/// \param[in] load object for loading
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            double *fi_in,
                                            double *du,
@@ -135,6 +169,20 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   return err;
 }
 
+/// compute residuals for heat conduction problem
+///
+/// Every element will be visited to compute residuals and local residuals are
+/// assembled to global residual vector. The actual computation for constructing
+/// residuals takes place in energy_equation_compute_residuals_elem function.
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] fv field variable object 
+/// \param[in] load object for loading
+/// \param[in] mp_id mutiphysics id
+/// \param[in] use_updated if use_updated=1, compute residuals updated temperature
+///                           use_updated=0, compute residuals using temporal temperature
+/// \return non-zero on internal error
 int energy_equation_compute_residuals(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
@@ -173,6 +221,30 @@ int energy_equation_compute_residuals(GRID *grid,
   return err;
 }
 
+/// compute stiffness for heat conduction problem at the element level
+///
+/// Actual computation for constructing stiffness matrix takes place here.
+/// Local memory for the element level stiffness matrix is created and 
+/// merged into memory for assembling and communications.
+///
+/// \param[in] fe container of finite element resources
+/// \param[out] LK local stiffness matrix for assmebling and communication 
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in] fv field variable object 
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com object for communications
+/// \param[in] Ddof number of degree of freedoms accumulated through processes
+/// \param[in] myrank current process rank
+/// \param[in] interior indentifier to distinguish element in interior or
+///             communication boundary.
+/// \param[in] mp_id mutiphysics id
+/// \param[in] do_assemble if yes, assmeble computed element stiffness matrix into 
+///            sparce solver matrix or compute element stiffness only
+/// \param[in] compute_load4pBCs, if yes, compute external flux due to Dirichlet BCs
+///                               if no, no compute external flux due to Dirichlet BCs
+/// \return non-zero on internal error
 int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            double **Lk,                                           
                                            GRID *grid,
@@ -286,22 +358,21 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   return err;
 }
 
+/// compute stiffness for heat conduction problem
 ///
+/// In building global stiffness matrix, elements on communcation boundary are
+/// first computed and interior elements are visited later. As soon as stiffness is 
+/// computed on the communcation boundary, communication is established and the interior stiffness
+/// is commputed. In this way, the communcation and the computation are overlaid.
 ///
-///
-/// \param[in] print_level print level for a summary of the entire function call
-/// \param[in] grid a mesh object
+/// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
-/// \param[in,out] FV array of field variable object
-/// \param[in] SOL object array for solution scheme
-/// \param[in] load object for loading
-/// \param[in] COM object array for communications
-/// \param[in] time_steps object for time stepping
-/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] fv field variable object 
+/// \param[in] sol object for solution scheme
+/// \param[in] com object for communications
 /// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] VVolume original volume of the domain
+/// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
-/// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness(GRID *grid,
@@ -406,6 +477,25 @@ int energy_equation_compute_stiffness(GRID *grid,
   return err;
 }
 
+/// compute flux due to Dirichlet BCs
+///
+/// Compute flux vector for prescribed BCs(Dirichlet)
+/// This compute load, f, as below:
+/// [Kii Kio]<ui>   <bi>
+/// [Koi Koo]<uo> = <bo>
+/// [Kii][ui] = <bi> - [Kio]<uo>
+/// where f = [Kio]<uo>, uo is Drichlet BCs  
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in] fv field variable object 
+/// \param[in] sol object for solution scheme
+/// \param[in] com object for communications
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int energy_equation_compute_load4pBCs(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
