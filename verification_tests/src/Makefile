@@ -26,6 +26,9 @@ VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
 VTK_IO_incl	= -I$(VTK_IO_dir)/include
 VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
 
+energy_equation_include = -I$(TEST_DIR)/energy_equation/include
+energy_equation_lib     = -L$(TEST_DIR)/energy_equation/src -lPGFem3D_Energy_equation
+
 # VTK
 VTK_dir		= /opt/crc/vtk/5.10.1/gcc
 VTK_incl	= -I$(VTK_dir)/include/vtk-6.0
@@ -57,18 +60,21 @@ RM = rm -rf
 CFLAGS = -Wall -std=c99 -O3 -g
 
 INCLUDES = -I$(pfem_incl_dir) \
-		$(HYPRE_inc) \
-                  $(CNSTVM_incl) \
-		  $(VTK_IO_incl) \
-		  $(MKL_incl) \
-		  -I$(POST_PROCESSING)
+	    $(HYPRE_inc) \
+	    $(CNSTVM_incl) \
+	    $(VTK_IO_incl) \
+	    $(MKL_incl) \
+	   -I$(POST_PROCESSING) \
+	    $(energy_equation_include)
+
 
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
           $(CNSTVM_lib) \
 	  $(VTK_lib) \
-	  $(MKL_lib)
+	  $(MKL_lib) \
+	  $(energy_equation_lib)
 
 OBJ = $(SRC:.c=.o)
 

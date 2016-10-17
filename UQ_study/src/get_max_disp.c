@@ -221,10 +221,12 @@ int main(int argc,char *argv[])
   Model_parameters *param_list = NULL;   
   
   int in_err = 0;
+  int physicsno = 1;
+  int ndim = 3;  
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
          &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
          &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v);
+         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
       myrank);
