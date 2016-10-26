@@ -20,6 +20,7 @@
 #include "load.h"
 #include "constitutive_model.h"
 #include "restart.h"
+#include "gen_path.h"
 
 /// count number of ranges that are seperated by comma
 /// 
@@ -373,7 +374,8 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   return 0;
 }
 
-/// Read initial conditions.
+/// Read initial conditions from lagcy format.
+///
 /// If no restart, this function reads initial conditions from *.initial files. 
 /// The file format can be found at the following link:
 /// https://gitlab-cswarm.crc.nd.edu/pgfem_3d/pgfem_3d/wikis/how-to-set-initial-values
@@ -392,17 +394,17 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_initial_values(GRID *grid,
-                        MATERIAL_PROPERTY *mat,
-                        FIELD_VARIABLES *fv,
-                        SOLVER_OPTIONS *sol,
-                        LOADING_STEPS *load,
-                        PGFem3D_TIME_STEPPING *ts,
-                        PGFem3D_opt *opts,
-                        MULTIPHYSICS *mp,
-                        int *restart, 
-                        double *tnm1, 
-                        int myrank)
+int read_initial_values_lagcy(GRID *grid,
+                              MATERIAL_PROPERTY *mat,
+                              FIELD_VARIABLES *fv,
+                              SOLVER_OPTIONS *sol,
+                              LOADING_STEPS *load,
+                              PGFem3D_TIME_STEPPING *ts,
+                              PGFem3D_opt *opts,
+                              MULTIPHYSICS *mp,
+                              int *restart, 
+                              double *tnm1, 
+                              int myrank)
 {
   int err = 0;
   int mp_id = 0;
@@ -543,6 +545,269 @@ int read_initial_values(GRID *grid,
   }  
   
   fclose(fp);
+  return err;
+}
+
+
+int read_initial_for_Mechanical(FILE *fp,
+                                GRID *grid,
+                                MATERIAL_PROPERTY *mat, 
+                                FIELD_VARIABLES *fv,
+                                SOLVER_OPTIONS *sol,
+                                PGFem3D_TIME_STEPPING *ts,
+                                PGFem3D_opt *opts,
+                                int myrank,
+                                int mp_id)
+{
+  int err = 0;
+  char line[1024];
+  double dt = ts->times[1] - ts->times[0];;
+    
+  if(opts->analysis_type == CM && opts->cm == UPDATED_LAGRANGIAN)
+  {
+    opts->cm = TOTAL_LAGRANGIAN;
+    if(myrank==0)
+    {
+      printf("Updated Lagrangian is currently unavailable with inertia.\n");
+      printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
+    }
+  }
+  
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+      continue;
+    
+    sscanf(line, "%lf", &(sol->alpha));
+    break;
+  }
+  
+  // read material density density
+  double *rho = (double *) malloc(sizeof(double)*mat->nmat);  
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+      continue;
+    for(int a=0; a<mat->nmat; a++)
+    {
+      sscanf(line, "%lf", rho+a);
+      if(a<mat->nmat-1)
+        fgets(line, 1024, fp);
+    }
+    break;
+  }
+
+  for(int ia = 0; ia<mat->nhommat; ia++)
+  {
+    (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
+    if(myrank==0)
+      printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
+  }  
+  
+  free(rho);
+    
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+      continue;
+    
+    long nid;
+    double u[3], v[3];
+    sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
+    
+    fv->u_n[nid*3+0] = u[0];
+    fv->u_n[nid*3+1] = u[1];
+    fv->u_n[nid*3+2] = u[2];
+    fv->u_nm1[nid*3+0] = u[0]-dt*v[0];
+    fv->u_nm1[nid*3+1] = u[1]-dt*v[1];
+    fv->u_nm1[nid*3+2] = u[2]-dt*v[2];
+  }
+  
+  for(long idx_a = 0; idx_a<grid->nn; idx_a++)
+  {
+    for(long idx_b = 0; idx_b<fv->ndofn; idx_b++)
+    {
+      long id = grid->node[idx_a].id_map[mp_id].id[idx_b];
+      if(id>0)
+        fv->u_np1[id-1] = fv->u_n[idx_a*fv->ndofn + idx_b];
+    }
+  }  
+  
+  
+  return err;
+}
+
+
+int read_initial_for_Thermal(FILE *fp,
+                             GRID *grid,
+                             MATERIAL_PROPERTY *mat, 
+                             FIELD_VARIABLES *fv,
+                             SOLVER_OPTIONS *sol,
+                             PGFem3D_TIME_STEPPING *ts,
+                             PGFem3D_opt *opts,
+                             int myrank,
+                             int mp_id)
+{
+  int err = 0;
+  char line[1024];
+
+  double T0 = 300.0;
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+      continue;
+    
+    sscanf(line, "%lf", &T0);
+    fv->u0 = T0; // set reference temperature
+    if(myrank==0)
+      printf("Default initial temperature: %e\n", T0);
+
+    break;
+  }  
+  
+  // set default
+  for(int ia=0; ia<grid->nn; ia++)
+    fv->u_n[ia] = T0;
+      
+  while(fgets(line, 1024, fp)!=NULL)
+  {
+    if(line[0]=='#')
+      continue;
+    
+    long nid;
+    double u;
+    sscanf(line, "%ld %lf", &nid, &u);
+    
+    fv->u_n[nid] = u;
+  }
+  
+  for(int ia = 0; ia<grid->nn; ia++)
+  {
+    long id = grid->node[ia].id_map[mp_id].id[0];
+    if(id>0)
+      fv->u_np1[id-1] = fv->u_n[ia];    
+  }  
+  
+  return err;
+}
+
+/// Read initial conditions from lagcy format.
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
+/// \param[out] load object for loading
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in, out] restart an integer for restart number (time step number) 
+/// \param[out] tnm1 if restart, read time step info from the previous run
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int read_initial_values_IC(GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *FV,
+                           SOLVER_OPTIONS *SOL,
+                           LOADING_STEPS *load,
+                           PGFem3D_TIME_STEPPING *ts,
+                           PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int *restart, 
+                           double *tnm1, 
+                           int myrank)
+{
+  int err = 0;
+  int mp_id = 0;
+  
+  char IC[1024];
+  sprintf(IC,"%s/IC",opts->ipath);
+  
+  char fn_0[1024], fn[1024];
+  
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    sprintf(fn_0,"%s/%s_0.initial",IC,mp->physicsname[ia]);
+    sprintf(fn  ,"%s/%s_%d.initial",IC,mp->physicsname[ia], myrank);
+    
+    FILE *fp = NULL;
+    fp = fopen(fn, "r");
+    
+    if(fp==NULL)
+    {  
+      fp = fopen(fn_0, "r");
+      if(fp==NULL)
+      { 
+        if(myrank==0) 
+          printf("No [%s] exists. Use default ICs.\n", fn_0);
+
+        continue;
+      }
+    }
+    switch(mp->physics_ids[ia])
+    {
+      case MULTIPHYSICS_MECHANICAL:
+        err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+        break;
+      case MULTIPHYSICS_THERMAL:
+        err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);        
+        break;
+      case MULTIPHYSICS_CHEMICAL:
+        break;
+      default:
+        break;  
+    }
+    
+    fclose(fp);
+  }
+  return err;
+}
+
+
+
+/// Read initial conditions.
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
+/// \param[out] load object for loading
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in, out] restart an integer for restart number (time step number) 
+/// \param[out] tnm1 if restart, read time step info from the previous run
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int read_initial_values(GRID *grid,
+                        MATERIAL_PROPERTY *mat,
+                        FIELD_VARIABLES *FV,
+                        SOLVER_OPTIONS *SOL,
+                        LOADING_STEPS *load,
+                        PGFem3D_TIME_STEPPING *ts,
+                        PGFem3D_opt *opts,
+                        MULTIPHYSICS *mp,
+                        int *restart, 
+                        double *tnm1, 
+                        int myrank)
+{
+  int err = 0;
+  char IC[1024];
+  sprintf(IC,"%s/IC",opts->ipath);
+  
+  if(is_directory_exist(IC))
+  { 
+    if(myrank==0) 
+      printf("IC directory exists, read initial conditions from IC\n");
+    err += read_initial_values_IC(grid,mat,FV,SOL,load,ts,opts,mp,restart,tnm1,myrank);
+  }     
+  else
+  {
+    if(myrank==0)  
+      printf("No IC directory exists, read inital conditions from *.initial\n");
+
+    err += read_initial_values_lagcy(grid,mat,FV+0,SOL+0,load,ts,opts,mp,restart,tnm1,myrank);
+  }
   return err;
 }
 

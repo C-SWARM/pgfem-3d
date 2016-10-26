@@ -97,8 +97,8 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 ///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] fv object for field variables
-/// \param[out] sol object for solution scheme
+/// \param[in,out] FV array of field variable object
+/// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
@@ -109,8 +109,8 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// \return non-zero on internal error
 int read_initial_values(GRID *grid,
                         MATERIAL_PROPERTY *mat,
-                        FIELD_VARIABLES *fv,
-                        SOLVER_OPTIONS *sol,
+                        FIELD_VARIABLES *FV,
+                        SOLVER_OPTIONS *SOL,
                         LOADING_STEPS *load,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
