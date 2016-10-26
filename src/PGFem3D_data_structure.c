@@ -105,6 +105,7 @@ int destruct_grid(GRID *grid,
 int field_varialbe_initialization(FIELD_VARIABLES *fv)
 {
   int err = 0;
+  fv->u0     = 0.0;
   fv->Gndof  = 0;
   fv->ndofn  = 0;
   fv->ndofd  = 0;
@@ -130,6 +131,9 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->sig    = NULL;
   fv->eps    = NULL;
   fv->sig_n  = NULL;
+  fv->n_coupled = 0;
+  fv->coupled_physics_ids = NULL;
+  fv->fvs    = NULL;
   return err;
 }
 
@@ -210,8 +214,9 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
   if(NULL != fv->BS_x)   free(fv->BS_x);
   if(NULL != fv->BS_f)   free(fv->BS_f);
   if(NULL != fv->BS_f_u) free(fv->BS_f_u);
-  if(NULL != fv->BS_RR)  free(fv->BS_RR);
-  
+  if(NULL != fv->BS_RR)  free(fv->BS_RR);  
+  if(NULL != fv->coupled_physics_ids) free(fv->coupled_physics_ids);  
+  if(NULL != fv->fvs)    free(fv->fvs);
 //  if(mp_id==MULTIPHYSICS_MECHANICAL)
   {  
     destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
@@ -415,6 +420,7 @@ int multiphysics_initialization(MULTIPHYSICS *mp)
   mp->ndim        = NULL;
   mp->write_no    = NULL;
   mp->write_ids   = NULL;
+  mp->coupled_ids = NULL;
   mp->total_write_no = 0;  
   return err = 0;
 }
@@ -436,6 +442,8 @@ int construct_multiphysics(MULTIPHYSICS *mp,
   mp->ndim        = (int*) malloc(sizeof(int)*physicsno);
   mp->write_no    = (int*) malloc(sizeof(int)*physicsno);
   mp->write_ids   = (int**) malloc(sizeof(int *)*physicsno);
+  mp->coupled_ids = (int**) malloc(sizeof(int *)*physicsno);
+
   for(int ia=0; ia<physicsno; ia++)
   {
     mp->physicsname[ia] = (char *) malloc(sizeof(char)*1024);
@@ -443,6 +451,7 @@ int construct_multiphysics(MULTIPHYSICS *mp,
     mp->ndim[ia]        = 0;
     mp->write_no[ia]    = 0;
     mp->write_ids[ia]   = NULL;
+    mp->coupled_ids[ia] = NULL;
   }
   mp->total_write_no  = 0;
   return err = 0;  
@@ -480,11 +489,19 @@ int destruct_multiphysics(MULTIPHYSICS *mp)
   int err = 0;
   if(NULL != mp->physicsname)
   {  
-    for(int ia=0; ia<  mp->physicsno; ia++)
+    for(int ia=0; ia<mp->physicsno; ia++)
       if(NULL != mp->physicsname[ia]) free(mp->physicsname[ia]);
     
     free(mp->physicsname);
   }
+
+  if(NULL != mp->coupled_ids)
+  {  
+    for(int ia=0; ia<mp->physicsno; ia++)
+      if(NULL != mp->coupled_ids[ia])   free(mp->coupled_ids[ia]);
+    
+    free(mp->coupled_ids);
+  }  
   
   if(NULL != mp->write_ids)
   {  
@@ -578,16 +595,33 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
       err += construct_multiphysics(mp, physicsno);
 
       int physics_id, ndof;
+      int n_couple;
+  
       char name[1024];
       int cnt_pmr = 0;
       for(int ia=0; ia<physicsno; ia++)
       {
+        // read physics id, physics name and number of degree of freedons on node
         err += scan_for_valid_line(in);
         fscanf(in, "%d%s%d", &physics_id,name,&ndof);
         err += set_a_physics(mp, ia,physics_id,ndof, name);
+        
+        // read ids for coupling
+        err += scan_for_valid_line(in);
+        fscanf(in, "%d", &n_couple);
+        
+        if(n_couple<0)
+          n_couple = 0;
+          
+        mp->coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));        
+        mp->coupled_ids[ia][0] = n_couple;
+        for(int ib = 0; ib<n_couple; ib++)
+          fscanf(in, "%d", (mp->coupled_ids[ia])+(ib+1));
+
+        // read ids for writing results
         err += scan_for_valid_line(in);
         fscanf(in, "%d", mp->write_no+ia);
-        
+          
         if(mp->write_no[ia]>0) 
         {
           // read from file for writing results  
@@ -631,7 +665,9 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
   {  
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
-    mp->write_no[0] = MECHANICAL_Var_NO;
+    mp->coupled_ids[0][0] = 0;
+        
+    mp->write_no[0] = MECHANICAL_Var_NO;    
     mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
     for(int ib=0; ib<mp->write_no[0]; ib++)
       mp->write_ids[0][ib] = ib;
@@ -644,8 +680,15 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
     for(int ia=0; ia<mp->physicsno; ia++)
     {
       printf("%d. physics name \t\t= %s\n", ia, mp->physicsname[ia]);
-      printf("   number of unknown on node \t= %d\n", mp->ndim[ia]);
-      printf("   number of output variables \t= %d", mp->write_no[ia]);
+      printf("   # of unknown on node \t= %d\n", mp->ndim[ia]);
+      printf("   # of physics to be coupled \t= %d", mp->coupled_ids[ia][0]);
+      printf(", ids = ");
+      for(int ib=0; ib<mp->coupled_ids[ia][0]; ib++)
+        printf("%d ", mp->coupled_ids[ia][ib+1]);
+        
+      printf("\n");
+      
+      printf("   # of output variables \t= %d", mp->write_no[ia]);
       printf(", ids = ");
       for(int ib=0; ib<mp->write_no[ia]; ib++)
         printf("%d ", mp->write_ids[ia][ib]);
@@ -656,3 +699,4 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
   return err;
 }
                                
+

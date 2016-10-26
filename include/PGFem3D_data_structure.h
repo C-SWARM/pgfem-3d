@@ -54,8 +54,11 @@ typedef struct {
 } GRID;
 
 /// struct for field variables
-typedef struct {
-  long Gndof;   /// total number of degree freedom
+typedef struct FIELD_VARIABLES FIELD_VARIABLES;
+
+typedef struct FIELD_VARIABLES {
+  double u0;      /// reference value of field variables
+  long Gndof;     /// total number of degree freedom
   long ndofn;     /// number of degree of freedom on a node
   long ndofd;     /// number of degree of freedom in the domain
   long npres;     /// number of pressure per element
@@ -80,6 +83,12 @@ typedef struct {
   SIG *sig;       /// pointer for the stress
   EPS *eps;       /// pointer for strain
   SIG *sig_n;     /// smoothed stress
+  int n_coupled;  /// number of coupled physics
+  int *coupled_physics_ids;     /// array of phyiscs ids to be coupled
+                                /// it tells physics e.g.) fv.coupled_physics_ids[ib] == MULTIPHYSICS_MECHANICAL 
+                                ///                        fv.coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
+                                ///                               :                         :
+  struct FIELD_VARIABLES **fvs; /// array of FIELD_VARIABLES pointers for multiphysics coupling
 } FIELD_VARIABLES;
 
 /// struct for field variables
@@ -165,7 +174,8 @@ typedef struct {
   int *ndim;          /// degree of feedom of the physics 
   int *write_no;      /// number of variables to be written as results
   int total_write_no; /// total number of variables to be written as results
-  int **write_ids;    /// index of physical varialbes to be written  
+  int **write_ids;    /// index of physical varialbes to be written
+  int **coupled_ids;  /// coupled physics id
 } MULTIPHYSICS;
 
 /// initialize time stepping variable

@@ -501,7 +501,26 @@ int single_scale_main(int argc,char *argv[])
       mp_id_M = ia;
       
     err += field_varialbe_initialization(fv+ia);
-    fv[ia].ndofn = mp.ndim[ia];    
+    fv[ia].ndofn = mp.ndim[ia];
+    fv[ia].n_coupled = mp.coupled_ids[ia][0];
+    // create memories for saving coupling info
+    if(mp.coupled_ids[ia][0]>0)
+    { 
+      fv[ia].coupled_physics_ids = (int *) malloc((mp.coupled_ids[ia][0])*sizeof(int)); 
+      fv[ia].fvs = (FIELD_VARIABLES **) malloc((mp.coupled_ids[ia][0])*sizeof(FIELD_VARIABLES *));
+    }  
+
+    // save coupling info
+    for(int ib=0; ib<mp.coupled_ids[ia][0]; ib++)
+    {
+      int mp_cp_id = mp.coupled_ids[ia][ib+1];
+      // tells physics e.g.) fv[ia].coupled_physics_ids[ib] == MULTIPHYSICS_MECHANICAL 
+      // tells physics e.g.) fv[ia].coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
+      //                                      :                    :       
+      fv[ia].coupled_physics_ids[ib] = mp.physics_ids[mp_cp_id];
+      fv[ia].fvs[ib] = fv + mp_cp_id;
+    }
+
     err += solution_scheme_initialization(sol+ia);
     err += communication_structure_initialization(com+ia);      
   }
@@ -1013,8 +1032,8 @@ int single_scale_main(int argc,char *argv[])
     double tnm1[2] = {-1.0,-1.0};
     err += read_initial_values(&grid, 
                                &mat, 
-                               fv+mp_id_M, 
-                               sol+mp_id_M, 
+                               fv, 
+                               sol, 
                                &load, 
                                &time_steps, 
                                &options,
