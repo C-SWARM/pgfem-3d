@@ -13,13 +13,15 @@
 /// \param[in] mp_id mutiphysics id
 /// \param[in] use_updated if use_updated=1, compute residuals updated temperature
 ///                           use_updated=0, compute residuals using temporal temperature
+/// \param[in] dt time step size
 /// \return non-zero on internal error
 int energy_equation_compute_residuals(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
                                       LOADING_STEPS *load,
                                       const int mp_id,
-                                      int use_updated);
+                                      int use_updated,
+                                      double dt);
 
 /// compute stiffness for heat conduction problem
 ///
@@ -32,6 +34,7 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
@@ -41,7 +44,8 @@ int energy_equation_compute_stiffness(GRID *grid,
                                       MPI_Comm mpi_comm,
                                       int myrank,
                                       const PGFem3D_opt *opts,
-                                      const int mp_id);
+                                      const int mp_id,
+                                      double dt);
 
 /// compute flux due to Dirichlet BCs
 ///
@@ -54,6 +58,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
 /// \return non-zero on internal error                                      
 int energy_equation_compute_load4pBCs(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
@@ -62,5 +67,6 @@ int energy_equation_compute_load4pBCs(GRID *grid,
                                       LOADING_STEPS *load,
                                       int myrank,
                                       const PGFem3D_opt *opts,
-                                      const int mp_id);
+                                      const int mp_id,
+                                      double dt);
 #endif

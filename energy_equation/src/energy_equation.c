@@ -5,6 +5,168 @@
 #include "get_dof_ids_on_elem.h"
 #include "PLoc_Sparse.h"
 #include <math.h>
+#include "constitutive_model.h"
+#include "material_properties.h" // <= constitutive model material properties
+#include "hyperelasticity.h"     // <= constitutive model elasticity
+
+double compute_mechanical_heat_gen_plastic(MATERIAL_PROPERTY *mat,
+                                           FIELD_VARIABLES *fv_m,
+                                           double dT,
+                                           double dt,
+                                           int eid,
+                                           int ip)
+{
+  int err = 0;
+  double Q_m = 0.0;
+  int compute_stiffness = 0;
+
+  Matrix(double) F, eF, pF, pFI, pFn, pFdot, S, eP, pP;
+  Matrix_construct_init(double, F,    3,3,0.0);
+  Matrix_construct_init(double, eF,    3,3,0.0);
+  Matrix_construct_init(double, pF,    3,3,0.0);
+  Matrix_construct_init(double, pFI,   3,3,0.0);  
+  Matrix_construct_init(double, pFn,   3,3,0.0);
+  Matrix_construct_init(double, pFdot, 3,3,0.0);
+  Matrix_construct_init(double, S,     3,3,0.0);
+  Matrix_construct_init(double, eP,    3,3,0.0);
+  Matrix_construct_init(double, pP,    3,3,0.0);    
+  
+  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+  const Model_parameters *func = m->param;
+
+  err += func->get_Fn(   m, &F);  
+  err += func->get_eFn(  m, &eF);
+  err += func->get_pFn(  m, &pF);
+  err += func->get_pFnm1(m, &pFn);
+  
+  Matrix_inv(pF, pFI);
+
+  for(int ia=0; ia<9; ia++)
+    pFdot.m_pdata[ia] = (pF.m_pdata[ia] - pFn.m_pdata[ia])/dt;   
+    
+  ELASTICITY *elast = (m->param)->cm_elast;
+
+  double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
+  double *tempL = elast->L; 
+  elast->S = S.m_pdata;
+  elast->L = NULL;       
+  
+  elast->update_elasticity(elast,eF.m_pdata,compute_stiffness);
+  Matrix_AxB(eP,1.0,0.0,eF,0,S,0);
+  for(int ik = 1; ik<=3; ik++)
+  {
+    for(int N = 1; N<=3; N++)
+    {
+      for(int ia = 1; ia<=3; ia++)
+      {
+        for(int ja = 1; ja<=3; ja++)
+        {
+          for(int M = 1; M<=3; M++)
+            Mat_v(pP,ik,N) += -Mat_v(eP,ia,ja)*Mat_v(F,ia,M)*Mat_v(pFI,M,ik)*Mat_v(pFI,N,ja);
+        }
+      }
+    }
+  }  
+
+  Matrix_ddot(pP, pFdot, Q_m);
+  
+  elast->S = tempS;
+  elast->L = tempL;        
+
+  Matrix_cleanup(F);
+  Matrix_cleanup(eF);  
+  Matrix_cleanup(pF);
+  Matrix_cleanup(pFI);  
+  Matrix_cleanup(pFn);
+  Matrix_cleanup(pFdot);
+  Matrix_cleanup(S);
+  Matrix_cleanup(eP);
+  Matrix_cleanup(pP);
+
+  return -Q_m;
+}
+
+double compute_mechanical_heat_gen_elastic(MATERIAL_PROPERTY *mat,
+                                           FIELD_VARIABLES *fv_m,
+                                           double dT,
+                                           double dt,
+                                           int eid,
+                                           int ip)
+{
+  int err = 0;
+  double Q_m = 0.0;
+  int compute_stiffness = 1;
+  double alpha = 24.0e-6;
+
+  double Tdot = dT/dt;
+  Matrix(double) hF,hFp,hFpp, S, P, L;
+  Matrix_construct_init(double, S,    3,3,0.0);  
+  Matrix_construct_init(double, P,    3,3,0.0);
+  Matrix_construct_init(double, hF,   3,3,0.0);
+  Matrix_construct_init(double, hFp,  3,3,0.0);
+  Matrix_construct_init(double, hFpp, 3,3,0.0);
+  
+  Matrix_construct_init(double, L, 81, 1, 0.0);
+  Mat_v(hF,  1,1) = Mat_v(hF,  2,2) = Mat_v(hF,  3,3) = 1.0 + alpha*dt;
+  Mat_v(hFp, 1,1) = Mat_v(hFp, 2,2) = Mat_v(hFp, 3,3) = alpha;
+  Mat_v(hFpp,1,1) = Mat_v(hFpp,2,2) = Mat_v(hFpp,3,3) = 0.0;
+  
+  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+  ELASTICITY *elast = (m->param)->cm_elast;
+
+  double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
+  double *tempL = elast->L; 
+  elast->S = S.m_pdata;
+  elast->L = L.m_pdata;       
+  
+  elast->update_elasticity(elast,hF.m_pdata,compute_stiffness);
+
+  Matrix_Tns4_dd_Tns2(P, L, hFp);
+  Matrix_ddot(P, hFp, Q_m);
+
+  Q_m *= Tdot;
+  double Q_m_temp = 0.0;
+  Matrix_ddot(P, hFpp, Q_m_temp);
+  Q_m += Q_m_temp*Tdot;
+  
+  elast->S = tempS;
+  elast->L = tempL;        
+  
+  Matrix_cleanup(S);
+  Matrix_cleanup(P);
+  Matrix_cleanup(hF);
+  Matrix_cleanup(hFp);
+  Matrix_cleanup(hFpp);
+  Matrix_cleanup(L);  
+
+  return Q_m;
+}
+
+int get_temperature_elem(const long *cn,
+                         const long ndofe,
+                         const double *T,
+                         const double *dT,
+                         const ELEMENT *elem,
+                         const NODE *node,
+                         const SUPP sup,
+                         double *T_e,
+                         double T0)
+{
+  int err = 0;
+  for(int i=0; i< ndofe; i++){
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0){
+      T_e[i] = T0;
+    } else if (id > 0){
+      T_e[i] = T[aid] + dT[aid];
+    } else {
+      T_e[i] = T0 + sup->defl[aid] + sup->defl_d[aid];
+    }
+  }
+  return err;
+}
 
 /// determine whether the element is on communication boundary or in interior
 /// 
@@ -95,9 +257,10 @@ int energy_equation_residuals_assemble(FEMLIB *fe,
 /// \param[in] du temperature increment
 /// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
-/// \param[in] fv field variable object 
+/// \param[in] FV array of field variable object 
 /// \param[in] load object for loading
 /// \param[in] mp_id mutiphysics id
+/// \param[in] dt_in time step size
 /// \return non-zero on internal error
 int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            double *fi_in,
@@ -106,12 +269,23 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            MATERIAL_PROPERTY *mat,
                                            FIELD_VARIABLES *fv,
                                            LOADING_STEPS *load,
-                                           int mp_id)
+                                           int mp_id,
+                                           double dt_in)
                                            
 {
   int err = 0;
-  double Q = 0.0;
-  double k = 1.0;
+  
+  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];
+  double rho_0 = (mat->hommat[mat_id]).density;
+  int eid = fe->curt_elem_id;
+  
+  double k     = 0.21; //temporal conductivity
+  double Q     = 0.0;
+  double Cv    = 900.0e+3;
+  
+  double dt = 1.0; // for the quasi steady state
+  if(rho_0>0)
+    dt = dt_in;  
   
   SUPP sup = load->sups[mp_id];
 
@@ -126,13 +300,20 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   
   get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL,mp_id); 
   
-  Matrix(double) q, dT, T;  
+  Matrix(double) q, Tnp1, Tn;  
   Matrix_construct_redim(double, q,grid->nsd,1);
-  Matrix_construct_redim(double,dT,grid->nsd,1);
-  Matrix_construct_init(double, T,fe->nne,1,0.0); 
+  Matrix_construct_init(double, Tnp1,fe->nne,1,0.0); 
+  Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
   
   //compute nodal value
-  def_elem_total(cnL,ndofe,fv->u_np1,du,grid->element,grid->node,sup,T.m_pdata);  
+  get_temperature_elem(cnL,ndofe,fv->u_np1,du,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
+  
+  int myrank = 0;
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  MPI_Comm_rank (mpi_comm,&myrank);
+
+  for(int ia=0; ia<fe->nne; ia++)
+    Vec_v(Tn,   ia+1) = fv->u_n[nod[ia]];
   
   for(int ip = 1; ip<=fe->nint; ip++)
   {
@@ -141,30 +322,48 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     FEMLIB_update_shape_tensor(fe);
     
     double Temp = 0.0;
+    double dT   = 0.0;
     Matrix_init( q,0.0);
-    Matrix_init(dT,0.0);
             
     // compute varialbes at the integration point
     for(int ia=1; ia<=fe->nne; ia++)
     {       
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(q,ib) += k*Mat_v(fe->dN,ia,ib)*Vec_v(T, ia);
+        Vec_v(q,ib) += k*Mat_v(fe->dN,ia,ib)*Vec_v(Tnp1, ia);
         
-      Temp += Vec_v(fe->N,ia)*Vec_v(T, ia);
+      Temp += Vec_v(fe->N,ia)*Vec_v(Tnp1, ia);
+      dT   += Vec_v(fe->N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
     }
     
+    if(fv->n_coupled > 0)
+    {  
+      FIELD_VARIABLES *fv_m = fv->fvs[0];
+      switch(fv->coupled_physics_ids[0])
+      {
+        case MULTIPHYSICS_MECHANICAL:
+        {
+          //Q += compute_mechanical_heat_gen_elastic(mat,fv_m,dT,dt,eid,ip);
+          Q += compute_mechanical_heat_gen_plastic(mat,fv_m,dT,dt,eid,ip);          
+          break;
+        }  
+        default:
+          Q += 0.0;
+      }    
+    }
+      
+    // R = rho_0*Cv*dT + dt*grad.q - dt*Q = 0;
     for(int ia=1; ia<=fe->nne; ia++)
-    {
-      Vec_v(fi,ia) += Vec_v(fe->N,ia)*Q*(fe->detJxW);
+    {      
+      Vec_v(fi,ia) += rho_0*Cv*Vec_v(fe->N,ia)*(dT - dt*Q)*(fe->detJxW);
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(fi,ia) += Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
+        Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
     }  
   }
   
   free(cnL);
   Matrix_cleanup(q);
-  Matrix_cleanup(dT);
-  Matrix_cleanup(T);    
+  Matrix_cleanup(Tnp1);
+  Matrix_cleanup(Tn);
   
   return err;
 }
@@ -182,13 +381,15 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] use_updated if use_updated=1, compute residuals updated temperature
 ///                           use_updated=0, compute residuals using temporal temperature
+/// \param[in] dt time step size
 /// \return non-zero on internal error
 int energy_equation_compute_residuals(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
                                       LOADING_STEPS *load,
                                       const int mp_id,
-                                      int use_updated)
+                                      int use_updated,
+                                      double dt)
 {
   int err = 0;
   int total_Lagrangian = 0;
@@ -198,7 +399,7 @@ int energy_equation_compute_residuals(GRID *grid,
   if(use_updated)
     du = fv->f;
   else
-    du = fv->d_u;
+    du = fv->d_u;  
     
   for(int eid=0; eid<grid->ne; eid++)
   {
@@ -212,7 +413,7 @@ int energy_equation_compute_residuals(GRID *grid,
     // fe needs to be updated by integration points 
     Matrix(double) fi;
     Matrix_construct_init(double, fi, fe.nne, 1, 0.0);
-    err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id);
+    err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id,dt);
     err += energy_equation_residuals_assemble(&fe,fi.m_pdata,grid,fv,mp_id);
     
     Matrix_cleanup(fi);
@@ -244,6 +445,7 @@ int energy_equation_compute_residuals(GRID *grid,
 ///            sparce solver matrix or compute element stiffness only
 /// \param[in] compute_load4pBCs, if yes, compute external flux due to Dirichlet BCs
 ///                               if no, no compute external flux due to Dirichlet BCs
+/// \param[in] dt_in time step size
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            double **Lk,                                           
@@ -259,14 +461,21 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            const PGFem3D_opt *opts,
                                            int mp_id,
                                            int do_assemble,
-                                           int compute_load4pBCs)
+                                           int compute_load4pBCs,
+                                           double dt_in)
                                            
-{
+{  
   int err = 0;
-  double k = 1.0; //temporal conductivity
+  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];
+  double rho_0 = (mat->hommat[mat_id]).density;
+    
+  double k     = 0.21; //temporal conductivity
+  double Q     = 0.0;
+  double Cv    = 900.0e+3;
   
-  const int mat_id = grid->element[fe->curt_elem_id].mat[2];
-  double rho = mat->hommat[mat_id].density;  
+  double dt = 1.0; // for the quasi steady state
+  if(rho_0>0)
+    dt = dt_in;    
   
   long *nod = fe->node_id.m_pdata;
   int ndofn = fv->ndofn;  
@@ -278,8 +487,8 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   get_dof_ids_on_elem_nodes(1,fe->nne,ndofn,nod,grid->node,cnG,mp_id);
   
   Matrix(double) lk;
-  Matrix_construct_init(double,lk,ndofe,ndofe,0.0);   
-  
+  Matrix_construct_init(double,lk,ndofe,ndofe,0.0);
+
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     // Udate basis functions at the integration points.
@@ -289,9 +498,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     {
       for(int ib=1; ib<=fe->nne; ib++)
       {
-        Mat_v(lk,ia,ib) += Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
+        Mat_v(lk,ia,ib) += rho_0*Cv*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
         for(int im = 1; im<=grid->nsd; im++)
-          Mat_v(lk,ia,ib) += k*Mat_v(fe->dN,ia,im)*Mat_v(fe->dN,ib,im)*(fe->detJxW);
+          Mat_v(lk,ia,ib) += dt*k*Mat_v(fe->dN,ia,im)*Mat_v(fe->dN,ib,im)*(fe->detJxW);
       }
     }  
   } 
@@ -309,7 +518,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                 com->comm,
                 interior,
                 sol->PGFEM_hypre,
-                opts->analysis_type);
+                opts->analysis_type);                               
   }
   
   if(compute_load4pBCs)
@@ -374,6 +583,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
@@ -383,7 +593,8 @@ int energy_equation_compute_stiffness(GRID *grid,
                                       MPI_Comm mpi_comm,
                                       int myrank,
                                       const PGFem3D_opt *opts,
-                                      const int mp_id)
+                                      const int mp_id,
+                                      double dt)
 {
   int err = 0;
   int total_Lagrangian  = 0;
@@ -412,13 +623,13 @@ int energy_equation_compute_stiffness(GRID *grid,
     // it provide element wise integration info 
     // such as basis function, weights, ... 
     FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    FEMLIB_initialization_by_elem(&fe,com->bndel[eid],grid->element,grid->node,intg_order,total_Lagrangian);
 
     // do volume integration at an element
     int interior = 0;
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,NULL,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs);
+                                                  do_assemble,compute_load4pBCs,dt);
     
     FEMLIB_destruct(&fe);
     if(err != 0)
@@ -441,15 +652,16 @@ int energy_equation_compute_stiffness(GRID *grid,
     
     if(is_it_in==0)
       continue;
-      
+    
     FEMLIB fe;
     FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
     
     // do volume integration at an element
     int interior = 1;
+    
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,NULL,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs);
+                                                  do_assemble,compute_load4pBCs,dt);
       
     FEMLIB_destruct(&fe);
     if(err != 0)
@@ -495,6 +707,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
 /// \return non-zero on internal error
 int energy_equation_compute_load4pBCs(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
@@ -503,7 +716,8 @@ int energy_equation_compute_load4pBCs(GRID *grid,
                                       LOADING_STEPS *load,
                                       int myrank,
                                       const PGFem3D_opt *opts,
-                                      const int mp_id)
+                                      const int mp_id,
+                                      double dt)
 {
   int err = 0;
   int total_Lagrangian = 0;
@@ -521,7 +735,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
     // do volume integration at an element
     err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,NULL,NULL,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs);    
+                                                  do_assemble,compute_load4pBCs,dt);    
     FEMLIB_destruct(&fe);
     if(err != 0)
       break;      

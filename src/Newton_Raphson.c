@@ -159,7 +159,7 @@ long compute_residuals_for_NR(GRID *grid,
                               double t,
                               double *dts,
                               int updated_deformation)
-{ 
+{
   long INFO;
   double *f;
   if(updated_deformation)
@@ -199,7 +199,7 @@ long compute_residuals_for_NR(GRID *grid,
                           mp_id);
       break;
     case MULTIPHYSICS_THERMAL:
-        INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation);
+        INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation,dts[DT_NP1]);
       break;
     case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
     default: 
@@ -223,7 +223,7 @@ long compute_stiffness_for_NR(GRID *grid,
                               double dt,
                               long iter,
                               int myrank)
-{
+{ 
   long INFO = 0;
   switch(mp->physics_ids[mp_id])
   {
@@ -236,7 +236,7 @@ long compute_stiffness_for_NR(GRID *grid,
                          mp_id);
       break;
     case MULTIPHYSICS_THERMAL:
-      INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,com,mpi_comm,myrank,opts,mp_id);
+      INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,com,mpi_comm,myrank,opts,mp_id,dt);
       break;
     case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
     default: 
@@ -347,9 +347,9 @@ int update_values_for_next_NR(GRID *grid,
           else
           {
             if(id==0)
-              fv->u_n[a*fv->ndofn + b] = 0.0;
+              fv->u_n[a*fv->ndofn + b] = fv->u0;
             else
-              fv->u_n[a*fv->ndofn + b] = (load->sups[mp_id])->defl_d[abs(id)-1];
+              fv->u_n[a*fv->ndofn + b] = fv->u0 + (load->sups[mp_id])->defl_d[abs(id)-1];
           }
         }
         else
@@ -360,9 +360,9 @@ int update_values_for_next_NR(GRID *grid,
           else
           {
             if(id==0)
-              fv->u_n[a*fv->ndofn + b] = 0.0;
+              fv->u_n[a*fv->ndofn + b] = fv->u0;
             else
-              fv->u_n[a*fv->ndofn + b] = (load->sups[mp_id])->defl[abs(id)-1] + (load->sups[mp_id])->defl_d[abs(id)-1];
+              fv->u_n[a*fv->ndofn + b] = fv->u0 + (load->sups[mp_id])->defl[abs(id)-1] + (load->sups[mp_id])->defl_d[abs(id)-1];
           }
         }
       }
@@ -544,7 +544,7 @@ double Newton_Raphson_test(const int print_level,
     {
       ART = 1;
       if(myrank==0)
-        printf("Imposed to use NO Line search [INFO = %ld, ART = %ld]\n", INFO, ART);
+        printf("Imposed to use NO Line search [INFO = %ld, ART = %ld]\n", INFO, ART);        
     }
     
     if (INFO == 1 && ART == 0)
@@ -751,14 +751,15 @@ double Newton_Raphson_test(const int print_level,
         solve_time += solve_system(opts,fv->BS_f,fv->BS_x,tim,iter,com->DomDof,&s_info,
                                    sol->PGFEM_hypre,mpi_comm);
 
-//        if(mp_id==1)
-//        {  
-//          HYPRE_IJMatrixPrint((sol->PGFEM_hypre)->hypre_k,"test_k.txt");
-//          for(int ia=0; ia<fv->ndofd; ia++)
-//            printf("%e %e\n", fv->BS_f[ia], fv->BS_x[ia]);
-//          
-//        }                                   
-                                   
+        if(mp_id==-1)
+        { 
+
+          HYPRE_IJMatrixPrint((sol->PGFEM_hypre)->hypre_k,"test_k.txt");
+          for(int ia=0; ia<com->DomDof[myrank]; ia++)
+            printf("%d %e %e\n", myrank, fv->BS_f[ia], fv->BS_x[ia]);
+          exit(0);
+        }
+       
         if(myrank == 0){
           solve_system_check_error(PGFEM_stdout,s_info);
         }
@@ -938,6 +939,8 @@ double Newton_Raphson_test(const int print_level,
          * MM 6/27/2012*/
           /* take maximum */
           if(nor > fv->NORM)	fv->NORM = nor;
+          if(fv->NORM<sol->computer_zero)
+            fv->NORM = sol->computer_zero;
         }
         
         

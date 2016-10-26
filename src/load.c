@@ -420,7 +420,8 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                                load,
                                                myrank,
                                                opts,
-                                               mp_id);
+                                               mp_id,
+                                               dt);
       break;                                         
     default:
       printf("%s is not supported\n", mp->physicsname[mp_id]);                                               
