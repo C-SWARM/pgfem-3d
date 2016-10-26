@@ -422,6 +422,27 @@ void def_elem_total (const long *cn,
 		     const SUPP sup,
 		     double *r_e);
 
+/// compute value of nodal variables 
+///
+/// \param[in] cn id of nodal values
+/// \param[in] ndofe number of degree of freedom on an element
+/// \param[in] r nodal variables at n+1
+/// \param[in] d_r nodal variable increments at n+1 
+/// \param[in] elem ELEMENT object
+/// \param[in] node NODE object
+/// \param[out] r_e computed nodal variables for an element
+/// \param[in] reference nodal value
+/// \return non-zero on interal error  
+int def_elem_with_reference(const long *cn,
+                             const long ndofe,
+                             const double *r,
+                             const double *d_r,
+                             const ELEMENT *elem,
+                             const NODE *node,
+                             const SUPP sup,
+                             double *r_e,
+                             double r0);
+
 /** Returns the local node numbers in a given element in nod[]. */
 void elemnodes (const long ii,
 		const long nne,

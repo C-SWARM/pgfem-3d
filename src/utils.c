@@ -1356,6 +1356,46 @@ void def_elem_total (const long *cn,
   }
 }
 
+/// compute value of nodal variables 
+///
+/// On an element, nodal values (displacement, temperature, ...) from
+/// the reference value instead of zero are computed. 
+///
+/// \param[in] cn id of nodal values
+/// \param[in] ndofe number of degree of freedom on an element
+/// \param[in] r nodal variables at n+1
+/// \param[in] d_r nodal variable increments at n+1 
+/// \param[in] elem ELEMENT object
+/// \param[in] node NODE object
+/// \param[out] r_e computed nodal variables for an element
+/// \param[in] reference nodal value
+/// \return non-zero on interal error  
+int def_elem_with_reference(const long *cn,
+                             const long ndofe,
+                             const double *r,
+                             const double *d_r,
+                             const ELEMENT *elem,
+                             const NODE *node,
+                             const SUPP sup,
+                             double *r_e,
+                             double r0)
+{
+  int err = 0;
+  for(int i=0; i< ndofe; i++)
+  {
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0)
+      r_e[i] = r0;
+    else if (id > 0)
+      r_e[i] = r[aid] + d_r[aid];
+    else 
+      r_e[i] = sup->defl[aid] + sup->defl_d[aid];
+  }
+  return err;
+}
+
 void elemnodes (const long ii,
 		const long nne,
 		long *nod,
