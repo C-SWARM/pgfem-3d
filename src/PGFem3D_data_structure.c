@@ -665,6 +665,8 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
   {  
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
+
+    mp->coupled_ids[0] = (int *) malloc(sizeof(int)); 
     mp->coupled_ids[0][0] = 0;
         
     mp->write_no[0] = MECHANICAL_Var_NO;    
