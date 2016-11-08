@@ -753,10 +753,19 @@ double Newton_Raphson_test(const int print_level,
 
         if(mp_id==-1)
         { 
-
-          HYPRE_IJMatrixPrint((sol->PGFEM_hypre)->hypre_k,"test_k.txt");
+          PGFEM_HYPRE_solve_info *PGFEM_hypre = sol->PGFEM_hypre;
+          HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_k.txt");
+          char fn_f[1024];
+          sprintf(fn_f, "test_f.txt.%.5d", myrank);
+          
+          FILE *fp_f = fopen(fn_f, "w");
+          fprintf(fp_f, "%d %d\n", PGFEM_hypre->ilower,
+                                    PGFEM_hypre->iupper);
           for(int ia=0; ia<com->DomDof[myrank]; ia++)
-            printf("%d %e %e\n", myrank, fv->BS_f[ia], fv->BS_x[ia]);
+            fprintf(fp_f, "%d %e\n", PGFEM_hypre->ilower +ia, fv->BS_f[ia]);
+            
+          fclose(fp_f);  
+          
           exit(0);
         }
        
@@ -1035,7 +1044,7 @@ double Newton_Raphson_test(const int print_level,
                                 com->GDof,com->comm,mpi_comm,mp_id);
           }
         }
-        
+
         /* Check energy norm for convergence */
         if(opts->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
         {  
