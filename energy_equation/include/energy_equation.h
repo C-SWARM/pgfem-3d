@@ -1,3 +1,10 @@
+/// Declare energy equation: function for computing stiffness matrix and residual vector
+/// 
+/// Authors:
+///  Sangmin Lee, [1], <slee43@nd.edu>
+///  [1] - University of Notre Dame, Notre Dame, IN
+
+
 #pragma once
 #ifndef H__PGFEM3D_ENERGY_EQUATION__H
 #define H__PGFEM3D_ENERGY_EQUATION__H

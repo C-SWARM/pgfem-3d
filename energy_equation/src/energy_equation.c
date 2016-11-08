@@ -1,3 +1,9 @@
+/// Define energy equation: function for computing stiffness matrix and residual vector
+/// 
+/// Authors:
+///  Sangmin Lee, [1], <slee43@nd.edu>
+///  [1] - University of Notre Dame, Notre Dame, IN
+
 #include "energy_equation.h"
 #include "femlib.h"
 #include "PGFem3D_data_structure.h"
