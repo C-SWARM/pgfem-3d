@@ -68,6 +68,9 @@ ELEMENT* build_elem (FILE *in,
 
     pom[ii].nod = (long*) PGFEM_calloc (pom[ii].toe,sizeof(long));
     pom[ii].mat = (long*) PGFEM_calloc (3,sizeof(long));
+    // elem[ii].mat[0] -> Matrix
+    // elem[ii].mat[1] -> Fiber
+    // elem[ii].mat[2] -> Homogeneous    
     pom[ii].hom = (long*) PGFEM_calloc (2,sizeof(long));
 
     /* bounding features */
