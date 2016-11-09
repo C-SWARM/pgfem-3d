@@ -22,6 +22,163 @@
 #include "restart.h"
 #include "gen_path.h"
 
+/// read mechanical part of material properties
+///
+/// \param[in] fp file pointer for reading mechanical part of material properties
+/// \param[in,out] mat material property object
+/// \param[in] opts PGFem3D options
+/// \return non-zero on interal error
+int read_material_for_Mechanical(FILE *fp,
+                                 MATERIAL_PROPERTY *mat,
+                                 const PGFem3D_opt *opts)
+{
+  int err = 0;  
+  for(int ia=0; ia<mat->nmat; ia++)
+  {
+    scan_for_valid_line(fp);
+    if(read_material(fp,ia,mat->mater,opts->legacy))
+      PGFEM_Abort();
+  }  
+  return err;
+}
+
+/// read mechanical part of material properties
+///
+/// \param[in] fp file pointer for reading mechanical part of material properties
+/// \param[in,out] mat material property object
+/// \param[in] opts PGFem3D options
+/// \return non-zero on interal error
+int read_material_for_Thermal(FILE *fp,
+                              MATERIAL_PROPERTY *mat,
+                              const PGFem3D_opt *opts)
+{
+  int err = 0;  
+  int param_in = 10;
+  
+  MATERIAL_THERMAL *thermal = (MATERIAL_THERMAL *) malloc(sizeof(MATERIAL_THERMAL)*(mat->nmat));
+  
+  for(int ia=0; ia<mat->nmat; ia++)
+  {
+    double cp;
+    double k[9];
+
+    int match = 0;
+    scan_for_valid_line(fp);
+    match += fscanf(fp, "%lf", &cp);
+     
+    scan_for_valid_line(fp);
+    match += fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", k+0, k+1, k+2
+                                                             , k+3, k+4, k+5
+                                                             , k+6, k+7, k+8);
+    if(match != param_in)                                                         
+      PGFEM_Abort();
+      
+    thermal[ia].cp = cp;
+    for(int ib=0; ib<9; ib++)
+      thermal[ia].k[ib] = k[ib];  
+  }
+  
+  mat->thermal = thermal; 
+  return err;
+}
+                                                                
+/// read material properties for multiphysics problem
+///
+/// \param[in,out] mat material property object
+/// \param[in] opts PGFem3D options
+/// \param[in] mp multiphysics object
+/// \return non-zero on interal error
+int read_multiphysics_material_properties(MATERIAL_PROPERTY *mat,
+                                          const PGFem3D_opt *opts,
+                                          const MULTIPHYSICS *mp)
+{
+  int err = 0;
+
+  int myrank = 0; 
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+
+  char dirname[1024], fn[1024];
+  sprintf(dirname,"%s/Material",opts->ipath);
+      
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    sprintf(fn,"%s/%s.mat",dirname,mp->physicsname[ia]);
+    
+    FILE *fp = NULL;
+    fp = fopen(fn, "r");
+    
+    if(fp==NULL)
+    { 
+      if(myrank==0) 
+        printf("No [%s] exists.\n", fn);
+
+      continue;      
+    }
+    
+    switch(mp->physics_ids[ia])
+    {
+      case MULTIPHYSICS_MECHANICAL:
+        err += read_material_for_Mechanical(fp,mat,opts);
+        break;
+      case MULTIPHYSICS_THERMAL:
+        err += read_material_for_Thermal(fp,mat,opts);        
+        break;
+      case MULTIPHYSICS_CHEMICAL:
+        break;
+      default:
+        break;  
+    }
+    fclose(fp);        
+  }
+  
+  // read and set general material properties e.g. density
+  
+  mat->density = (double *) malloc(sizeof(double)*(mat->nmat));
+  double *d = mat->density;
+  for(int ia=0; ia<mat->nmat; ia++)
+    d[ia] = 0.0;  
+    
+  sprintf(fn,"%s/material.mat",dirname);
+  FILE *fp = NULL;
+  fp = fopen(fn, "r");
+  
+  if(fp == NULL)
+  {
+    if(myrank==0)
+      printf("No [%s] exists. \nDensity is set to zero.\n", fn);
+    
+    return err;  
+  }
+  
+  int match = 0;    
+  for(int ia=0; ia<mat->nmat; ia++)
+  {
+    scan_for_valid_line(fp);
+    match += fscanf(fp, "%lf", d+ia);
+  }
+
+  fclose(fp);   
+  
+  // check number of densities that is read.
+  if(match != mat->nmat)
+  {
+    if(myrank==0)
+      printf("Material density is not read as many as number of materials.\n");      
+
+    PGFEM_Abort();
+  }
+  else
+  {
+    for(int ia = 0; ia<mat->nhommat; ia++)
+    {
+      (mat->hommat[ia]).density = d[(mat->hommat[ia]).mat_id];
+      if(myrank==0)
+        printf("Density(%d), %e\n", ia, (mat->hommat[ia]).density);
+    }      
+  }
+  return err;
+}                                          
+
 /// count number of ranges that are seperated by comma
 /// 
 /// \param[in] str a string containing ranges
@@ -136,6 +293,7 @@ int read_input_file(const PGFem3D_opt *opts,
       PGFEM_Abort();
     }
   }
+  
   if (feof(in)) {
     PGFEM_printerr("ERROR: prematurely reached EOF in %s(%s)\n",
                    __func__,__FILE__);
@@ -221,6 +379,9 @@ int read_mesh_file(GRID *grid,
                             &(load->zele_v),
                             mp->physicsno,
                             mp->ndim);
+  // read multiphysics material properties
+  err += read_multiphysics_material_properties(mat,opts,mp);
+
   // update numerical solution scheme parameters
   for(int iA=1; iA<mp->physicsno; iA++)
   {

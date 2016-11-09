@@ -258,7 +258,9 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
 int material_initialization(MATERIAL_PROPERTY *mat)
 {
   int err = 0;
+  mat->density  = NULL;
   mat->mater    = NULL;
+  mat->thermal  = NULL;
   mat->hommat   = NULL;
   mat->matgeom  = NULL;
   mat->co_props = NULL;      
@@ -279,7 +281,9 @@ int destruct_material(MATERIAL_PROPERTY *mat,
                       const PGFem3D_opt *opts)
 {
   int err = 0;
-  if(NULL != mat->mater) free(mat->mater);
+  if(NULL != mat->density) free(mat->density);
+  if(NULL != mat->mater)   free(mat->mater);
+  if(NULL != mat->thermal) free(mat->thermal);
   destroy_matgeom(mat->matgeom,mat->n_orient);
   destroy_hommat(mat->hommat,mat->nhommat);
 

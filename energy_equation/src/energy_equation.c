@@ -281,13 +281,17 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 {
   int err = 0;
   
-  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];
+  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];  
   double rho_0 = (mat->hommat[mat_id]).density;
   int eid = fe->curt_elem_id;
   
-  double k     = 0.21; //temporal conductivity
-  double Q     = 0.0;
-  double Cv    = 900.0e+3;
+  MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
+  Matrix(double) k;
+  k.m_pdata = thermal->k;
+  k.m_row = k.m_col = 3;
+  
+  double cp = thermal->cp;
+  double Q = 0.0;
   
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
@@ -333,9 +337,15 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
             
     // compute varialbes at the integration point
     for(int ia=1; ia<=fe->nne; ia++)
-    {       
+    { 
+      // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
+      // q = [nsd, 1] = k*dN'*T
+     
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(q,ib) += k*Mat_v(fe->dN,ia,ib)*Vec_v(Tnp1, ia);
+      {
+        for(int ic=1; ic<grid->nsd; ic++)        
+          Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe->dN,ia,ic)*Vec_v(Tnp1, ia);
+      }
         
       Temp += Vec_v(fe->N,ia)*Vec_v(Tnp1, ia);
       dT   += Vec_v(fe->N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
@@ -357,10 +367,10 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       }    
     }
       
-    // R = rho_0*Cv*dT + dt*grad.q - dt*Q = 0;
+    // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
     for(int ia=1; ia<=fe->nne; ia++)
     {      
-      Vec_v(fi,ia) += rho_0*Cv*Vec_v(fe->N,ia)*(dT - dt*Q)*(fe->detJxW);
+      Vec_v(fi,ia) += rho_0*cp*Vec_v(fe->N,ia)*(dT - dt*Q)*(fe->detJxW);
       for(int ib=1; ib<=grid->nsd; ib++)
         Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
     }  
@@ -472,12 +482,17 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            
 {  
   int err = 0;
-  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];
+  const int mat_id = (grid->element[fe->curt_elem_id]).mat[2];  
   double rho_0 = (mat->hommat[mat_id]).density;
-    
-  double k     = 0.21; //temporal conductivity
-  double Q     = 0.0;
-  double Cv    = 900.0e+3;
+  int eid = fe->curt_elem_id;
+  
+  MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
+  Matrix(double) k;
+  k.m_pdata = thermal->k;
+  k.m_row = k.m_col = 3;
+  
+  double cp = thermal->cp;
+  double Q = 0.0;
   
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
@@ -504,9 +519,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     {
       for(int ib=1; ib<=fe->nne; ib++)
       {
-        Mat_v(lk,ia,ib) += rho_0*Cv*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
+        Mat_v(lk,ia,ib) += rho_0*cp*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
         for(int im = 1; im<=grid->nsd; im++)
-          Mat_v(lk,ia,ib) += dt*k*Mat_v(fe->dN,ia,im)*Mat_v(fe->dN,ib,im)*(fe->detJxW);
+        {
+          for(int in = 1; in<=grid->nsd; in++)
+            Mat_v(lk,ia,ib) += dt*Mat_v(fe->dN,ia,in)*Mat_v(k, in, im)*Mat_v(fe->dN,ib,im)*(fe->detJxW);
+        }    
       }
     }  
   } 

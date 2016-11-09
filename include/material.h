@@ -20,4 +20,9 @@ struct MATERIAL{
 typedef struct MATERIAL MATERIAL;
 #endif
 
+typedef struct {
+  double k[9]; /// heat conductivity
+  double cp;   /// heat capacity
+} MATERIAL_THERMAL;
+
 #endif /* #ifndef  */

@@ -106,8 +106,10 @@ typedef struct {
 
 /// struct for material properties
 typedef struct {
-  double *density; /// list of material density
-  MATERIAL *mater; /// list of material properites
+  double           *density; /// list of material density
+  MATERIAL         *mater; /// list of material properites (Mechanical)
+  MATERIAL_THERMAL *thermal; /// list of material properites (Thermal)
+
   HOMMAT *hommat;  /// list of homogeneous material properites 
   MATGEOM matgeom; /// information related to material geometry (for crystal plasticity)
   long nhommat;    /// number of homogeneous materials
