@@ -694,4 +694,16 @@ double area (long nne,
 void Logarithmic_strain (double **F,
 			 double **EL);
 void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
+
+/// determine whether the element is on communication boundary or in interior
+/// 
+/// \parma[in] eid element id
+/// \param[in,out] idx id of bndel (communication boundary element)
+/// \param[in,out] skip count element on communication boundary
+/// \param[in] nbndel number of elements on communication boundary
+/// \param[in] bndel list of elements on communcation boundary
+/// \param[in] myrank current process rank
+/// \return return 1 if the element is interior or 0 if the element on the communication boundary
+int is_element_interior(int eid, int *idx, int *skip, long nbndel, long *bndel, int myrank);
+
 #endif

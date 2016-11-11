@@ -3349,3 +3349,52 @@ void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
   }
 }
 
+/// determine whether the element is on communication boundary or in interior
+/// 
+/// If the element is interior, return 1 or return 0 (on communication boundary)
+///
+/// \parma[in] eid element id
+/// \param[in,out] idx id of bndel (communication boundary element)
+/// \param[in,out] skip count element on communication boundary
+/// \param[in] nbndel number of elements on communication boundary
+/// \param[in] bndel list of elements on communcation boundary
+/// \param[in] myrank current process rank
+/// \return return 1 if the element is interior or 0 if the element on the communication boundary
+int is_element_interior(int eid, int *idx, int *skip, long nbndel, long *bndel, int myrank)
+{ 
+  int is_it_in = 1;
+  if(nbndel > 0) // most of time it is ture
+  {
+    if(*idx < nbndel-1)
+    {
+      if(eid == 0 && *idx == 0 && bndel[*idx] == 0)
+      {
+        (*idx)++;
+        (*skip)++;
+        is_it_in = 0;
+      } 
+      else if(eid == bndel[*idx])
+      {
+        (*idx)++;
+        (*skip)++;
+        is_it_in = 0;
+      } 
+      else if (*idx == 0 && eid < bndel[*idx])
+        is_it_in = 1;
+      else if (*idx > 0 &&bndel[*idx-1] < eid && eid < bndel[*idx])
+        is_it_in = 1;
+      else 
+      {
+        is_it_in = -1;
+        PGFEM_printf("[%d]ERROR: problem in determining if element %ld"
+                     " is on interior.\n", myrank, eid);
+      }
+    } 
+    else if(eid == bndel[nbndel-1])
+      is_it_in = 0;
+  }
+  
+  return is_it_in;    
+} 
+
+
