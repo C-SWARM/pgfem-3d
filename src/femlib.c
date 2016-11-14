@@ -241,51 +241,29 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const
     
   FEMLIB_initialization(fe, nne, i_order, nne);
   
-  long *nod = aloc1l (nne);
+  long *nod = (fe->node_id).m_pdata;  // no memory is allocated
   elemnodes(e,nne,nod,elem);
   
-  double *x,*y,*z;
-  x = aloc1(nne);
-  y = aloc1(nne);
-  z = aloc1(nne);
+  double *x = (fe->temp_v).x.m_pdata; // no memory is allocated
+  double *y = (fe->temp_v).y.m_pdata;
+  double *z = (fe->temp_v).z.m_pdata; 
+  
   if(is_total)
     nodecoord_total(nne,nod,node,x,y,z);
   else
     nodecoord_updated(nne,nod,node,x,y,z);
   
-  Matrix(double) xe;  
-  Matrix_construct_init(double,xe,nne,3,0.0); 
-  
   for(int a=0; a<nne; a++)
   {
-    Vec_v(fe->node_id, a+1) = nod[a];
-    Mat_v(xe, a+1, 1) = x[a];  
-    Mat_v(xe, a+1, 2) = y[a];  
-    Mat_v(xe, a+1, 3) = z[a];  
+    Mat_v(fe->node_coord, a+1, 1) = x[a];  
+    Mat_v(fe->node_coord, a+1, 2) = y[a];  
+    Mat_v(fe->node_coord, a+1, 3) = z[a];    
   }
-  FEMLIB_set_element(fe, xe, e);  
   
-  dealoc1(nod);
-  
-  dealoc1(x);
-  dealoc1(y);
-  dealoc1(z);
-  Matrix_cleanup(xe);       
+  fe->curt_elem_id = e;
 }
 
-void FEMLIB_set_element(FEMLIB *fe, Matrix(double) x, int eid)
-{
-  Matrix_AeqB(fe->node_coord,1.0,x);	
-  fe->curt_elem_id = eid;
-  for(int a = 1; a<=fe->nne; a++)
-  {
-  	Mat_v(fe->temp_v.x, a, 1) = Mat_v(x, a, 1);
-  	Mat_v(fe->temp_v.y, a, 1) = Mat_v(x, a, 2);
-  	Mat_v(fe->temp_v.z, a, 1) = Mat_v(x, a, 3);  	  	
-  }  
-}
-
-void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) N)
+void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) *N)
 {
   double ksi_, eta_, zet_, wt;	
                
@@ -309,7 +287,7 @@ void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) N)
     wt = Mat_v(fe->weights, itg_id_ip_3, 1);
   } 
   
-  shape_func(ksi_, eta_, zet_, nne, N.m_pdata);
+  shape_func(ksi_, eta_, zet_, nne, N->m_pdata);
 }  
 
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip)
@@ -369,12 +347,12 @@ void FEMLIB_update_shape_tensor(FEMLIB *fe)
   shapeTensor2array(fe->ST,CONST_4(double) fe->ST_tensor,fe->nne);
 }
 
-void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) F)
+void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) *F)
 {
   double **F_mat;  
   F_mat = aloc2(3,3);                 
   def_grad_get(fe->nne,ndofn,CONST_4(double) fe->ST_tensor,u,F_mat);
-  mat2array(F.m_pdata,CONST_2(double) F_mat,3,3);
+  mat2array(F->m_pdata,CONST_2(double) F_mat,3,3);
   dealoc2(F_mat,3);  
 }
 

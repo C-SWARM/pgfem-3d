@@ -167,7 +167,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     {     
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
       double Pn = 0.0;  
       double Jnp1 = 1.0;
       switch(opts->analysis_type)
@@ -177,7 +177,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
           break;
         case TF:
         {
-          FEMLIB_elem_shape_function(&fe,ip,npres, Np);
+          FEMLIB_elem_shape_function(&fe,ip,npres, &Np);
   
           for(int a=1; a<=npres; a++)
             Pn += Vec_v(Np,a)*Vec_v(P,a);
@@ -260,7 +260,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     {      
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
       
       if(opts->analysis_type==CM)
       { 
@@ -342,7 +342,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
     {      
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
       
       if(opts->analysis_type==CM)
       { 
@@ -492,7 +492,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
     {      
       FEMLIB_elem_basis_V(&fe, ip);  
       FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,F);
+      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
       
       if(opts->analysis_type==CM)
       { 
