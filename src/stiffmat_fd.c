@@ -33,6 +33,7 @@
 #include "dynamics.h"
 
 #include "constitutive_model.h"
+#include "PGFem3D_data_structure.h"
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -920,5 +921,508 @@ int stiffmat_fd(int *Ap,
   free (req_s);
   free (req_r);
 
+  return err;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////
+int el_compute_stiffmat_MP(FEMLIB *fe,
+        int eid,
+        double *lk,
+        long nne,
+        GRID *grid,
+        MATERIAL_PROPERTY *mat,
+        FIELD_VARIABLES *fv,
+        SOLVER_OPTIONS *sol,
+        LOADING_STEPS *load,
+        COMMUNICATION_STRUCTURE *com,
+        CRPL *crpl,
+        MPI_Comm mpi_comm,
+        const PGFem3D_opt *opts,
+        MULTIPHYSICS *mp,
+        int mp_id,
+        double dt,
+        double lm,
+        double *be,
+        long *nod,
+        double *r_e,
+        int include_inertia)
+{
+  int err = 0;
+  
+  int nVol = N_VOL_TREE_FIELD;
+  SUPP sup = load->sups[mp_id];  
+  
+  double *x = (fe->temp_v).x.m_pdata;
+  double *y = (fe->temp_v).y.m_pdata;
+  double *z = (fe->temp_v).z.m_pdata;    
+  
+  if(include_inertia)
+  {
+    stiffmat_disp_w_inertia_el(lk,eid,fv->ndofn,nne,fv->npres,nVol,grid->nsd,x, y, z,
+            grid->element,mat->hommat,nod,grid->node,dt,
+            fv->sig,fv->eps,sup,opts->analysis_type,opts->cm,sol->alpha,fv->u_n,r_e);
+  }
+  else
+  {
+    switch(opts->analysis_type){
+      case STABILIZED:
+        err += stiffmatel_st(eid,fv->ndofn,nne,x,y,z,grid->element,mat->hommat,nod,grid->node,fv->sig,fv->eps,
+                sup,r_e,fv->npres,sol->nor_min,lk,dt,opts->stab,sol->FNR,lm,be);
+        break;
+      case MINI:
+        err += MINI_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+                mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
+        break;
+      case MINI_3F:
+        err += MINI_3f_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+                mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
+        break;
+      case DISP:
+        err += DISP_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+                mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
+        break;
+      case TF:
+        stiffmat_3f_el(lk,eid,fv->ndofn,nne,fv->npres,nVol,grid->nsd,
+                x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
+        break;
+      case CM:
+      {
+        switch(opts->cm) {
+          case UPDATED_LAGRANGIAN: // intentionally left to flow
+          case TOTAL_LAGRANGIAN:
+            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,nne,grid->nsd,grid->element,
+                    nod,grid->node,dt,fv->eps,sup,r_e,
+                    opts->cm);
+            break;
+            
+          case MIXED_ANALYSIS_MODE:
+            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,nne,grid->nsd,grid->element,
+                    nod,grid->node,dt,fv->eps,sup,r_e,
+                    1 /* TL */);
+            break;
+            
+          default: assert(0 && "should never get here"); break;
+        }
+        break;
+      }
+      default:
+        err += stiffmatel_fd (eid,fv->ndofn,nne,nod,x,y,z,grid->element,mat->matgeom,
+                mat->hommat,grid->node,fv->sig,fv->eps,r_e,fv->npres,
+                sol->nor_min,lk,dt,crpl,sol->FNR,lm,be,opts->analysis_type);
+        break;
+    } // switch (analysis)
+  } // if(include_inertia)
+  
+  return err;
+}
+
+
+
+/* This function may not be used outside this file */
+static int el_stiffmat_MP(int eid,
+        double **Lk,
+        int *Ddof,
+        int interior,
+        GRID *grid,
+        MATERIAL_PROPERTY *mat,
+        FIELD_VARIABLES *fv,
+        SOLVER_OPTIONS *sol,
+        LOADING_STEPS *load,
+        COMMUNICATION_STRUCTURE *com,
+        CRPL *crpl,
+        MPI_Comm mpi_comm,
+        const PGFem3D_opt *opts,
+        MULTIPHYSICS *mp,
+        int mp_id,
+        double dt,
+        long iter,
+        int myrank)
+{
+  SUPP sup = load->sups[mp_id];
+  /* make a decision to include ineria*/
+  const int mat_id = grid->element[eid].mat[2];
+  double rho = mat->hommat[mat_id].density;
+  long include_inertia = 1;
+  int nsd = 3;
+  double lm = 0.0;
+  
+  int intg_order = 0;
+  
+  if(fabs(rho)<MIN_DENSITY)
+  {
+    include_inertia = 0;
+  }
+  /* decision end*/
+  
+  
+  int err = 0;
+  long j,l,nne,ndofe,*cnL,*cnG,*nod,II;
+  double *x,*y,*z,*r_e,*sup_def,*be;
+  long kk;
+  
+  /* Number of element nodes */
+  nne = grid->element[eid].toe;
+  
+  /* Nodes on element */
+  nod = aloc1l (nne);
+  elemnodes (eid,nne,nod,grid->element);
+  
+  /* Element Dof */
+  ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
+  
+  /* allocation */
+  cnL = aloc1l (ndofe);
+  cnG = aloc1l (ndofe);
+  
+  int total_Lagrangian = 0;
+  // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
+  // are total Lagrangian based
+
+  switch(opts->analysis_type)
+  {
+    case DISP: // intented to flow
+    case TF:
+      total_Lagrangian = 1;
+      break;
+    case CM:
+      if(opts->cm != UPDATED_LAGRANGIAN)
+        total_Lagrangian = 1;
+      
+      break;
+  }
+  
+  FEMLIB fe;
+  FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+  
+  r_e = aloc1 (ndofe);
+  be = aloc1 (ndofe);
+  if(sup->npd>0){
+    sup_def = aloc1(sup->npd);
+  } else {
+    sup_def = NULL;
+  }
+  
+  /* code numbers on element */
+  get_dof_ids_on_elem_nodes(0,nne,fv->ndofn,nod,grid->node,cnL,mp_id);
+  get_dof_ids_on_elem_nodes(1,nne,fv->ndofn,nod,grid->node,cnG,mp_id);
+  
+  /*=== deformation on element ===*/
+  
+  /* set the increment of applied def=0 on first iter */
+  if (iter == 0) {
+    for (j=0;j<sup->npd;j++){
+      sup_def[j] = sup->defl_d[j];
+      sup->defl_d[j] = 0.0;
+    }
+  }
+  
+  /* get the deformation on the element */
+  if(sup->multi_scale){
+    /* multi-scale analysis is TOTAL LAGRANGIAN for all element
+     * formulations */
+    def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
+  } else {
+    switch(opts->analysis_type){
+      case DISP:
+        def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
+      case TF: /* TOTAL LAGRANGIAN */
+        def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
+        break;
+      case CM:
+      {
+        switch(opts->cm) {
+          case UPDATED_LAGRANGIAN:
+            def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
+            break;
+          case TOTAL_LAGRANGIAN:
+            def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
+            break;
+          case MIXED_ANALYSIS_MODE:
+            def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
+            break;
+            
+          default: assert(0 && "undefined CM type"); break;
+        }
+        break;
+      }
+      default:
+        def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
+        break;
+    }
+  }
+  
+  /* recover thei increment of applied def on first iter */
+  if (iter == 0){
+    for (j=0;j<sup->npd;j++)
+      sup->defl_d[j] = sup_def[j];
+  }
+  
+  int nVol = N_VOL_TREE_FIELD;
+  Matrix(double) lk;
+  Matrix_construct_redim(double,lk,ndofe,ndofe);
+  Matrix_init(lk, 0.0);
+  
+  err += el_compute_stiffmat_MP(&fe, eid,lk.m_pdata,nne,grid,mat,fv,sol,load,com,
+          crpl,mpi_comm,opts,mp,mp_id,dt,lm,
+          be,nod,r_e,include_inertia);
+
+  FEMLIB_destruct(&fe);          
+  
+  if (PFEM_DEBUG){
+    char filename[50];
+    switch(opts->analysis_type){
+      case STABILIZED:
+        sprintf(filename,"stab_stiff_%d.log",myrank);
+        break;
+      case MINI:
+        sprintf(filename,"MINI_stiff_%d.log",myrank);
+        break;
+      case MINI_3F:
+        sprintf(filename,"MINI_3f_stiff_%d.log",myrank);
+        break;
+      default:
+        sprintf(filename,"stiff_%d.log",myrank);
+        break;
+    }
+    
+    FILE *output;
+    output = fopen(filename,"a");
+    print_array_d(output,lk.m_pdata,ndofe*ndofe,ndofe,ndofe);
+    fclose(output);
+  }
+  
+  /* Localization of TANGENTIAL LOAD VECTOR */
+  if (periodic == 1 && (sol->FNR == 2 || sol->FNR == 3)){
+    for (l=0;l<nne;l++){
+      for (kk=0;kk<fv->ndofn;kk++){
+        II = grid->node[nod[l]].id_map[mp_id].id[kk]-1;
+        if (II < 0)  continue;
+        fv->f_u[II] += be[l*fv->ndofn+kk];
+      }/*end l */
+    }/*end kk */
+  }/* end periodic */
+  
+  /* Assembly */
+  PLoc_Sparse (Lk,lk.m_pdata,com->Ai,com->Ap,cnL,cnG,ndofe,Ddof,com->GDof,
+          myrank,com->nproc,com->comm,interior,sol->PGFEM_hypre,opts->analysis_type);
+  
+  /*  dealocation  */
+  free (cnL);
+  free (cnG);
+  free (nod);
+  Matrix_cleanup(lk);
+  free (be);
+  free (r_e);
+  free (sup_def);
+  
+  return err;
+  
+} /* ELEMENT STIFFNESS */
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+/// Compute stiffnes
+///
+///
+/// Computes element stiffness matrices and assembles local
+/// part. Off-process portions of the matrix are communicated via
+/// non-blocking point-to-point send/receives using information in
+/// COMMUN. Elements with global DOFs are computed first to overlap
+/// communication with computation of fully local elements.
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com communication object
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dt time step
+/// \param[in] iter number of Newton Raphson interataions
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int stiffmat_fd_MP(GRID *grid,
+        MATERIAL_PROPERTY *mat,
+        FIELD_VARIABLES *fv,
+        SOLVER_OPTIONS *sol,
+        LOADING_STEPS *load,
+        COMMUNICATION_STRUCTURE *com,
+        CRPL *crpl,
+        MPI_Comm mpi_comm,
+        const PGFem3D_opt *opts,
+        MULTIPHYSICS *mp,
+        int mp_id,
+        double dt,
+        long iter,
+        int myrank)
+{
+  int err = 0;
+  int total_Lagrangian  = 0;
+  int intg_order        = 0;
+  int do_assemble       = 1; // udate stiffness matrix
+  int compute_load4pBCs = 0; // if 1, compute load due to Dirichlet BCs.
+  // if 0, update only stiffness
+  double lm = 0.0;
+  
+  double **Lk,**recieve;
+  MPI_Status *sta_s,*sta_r;
+  MPI_Request *req_s,*req_r;
+  
+  err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
+          mpi_comm,com->comm);
+  
+  Matrix(int) Ddof;
+  Matrix_construct_redim(int, Ddof,com->nproc,1);
+  
+  Ddof.m_pdata[0] = com->DomDof[0];
+  for (int ia=1; ia<com->nproc; ia++)
+    Ddof.m_pdata[ia] = Ddof.m_pdata[ia-1] + com->DomDof[ia];
+  
+  for(int eid=0; eid<com->nbndel; eid++)
+  {
+    err += el_stiffmat_MP(com->bndel[eid],Lk,Ddof.m_pdata,0,grid,mat,fv,sol,load,com,crpl,
+            mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+
+    if(err != 0)
+      break;
+  }
+  
+  if(err==0)
+  {
+    // COHESIVE ELEMENTS
+    // Need to split into boundary and interior parts as with the
+    //  regular elements
+    if (opts->cohesive == 1)
+    {
+      long ndofc = 3;
+      if (sol->nor_min < 1.e-10)
+        sol->nor_min = 1.e-10;
+      
+      for(int eid=0; eid<grid->nce; eid++)
+      {
+        coel_stiffmat(eid,Lk,com->Ap,com->Ai,ndofc,grid->element,grid->node,fv->eps,
+                fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,dt,crpl,
+                opts->stab,grid->coel,0,0,fv->f_u,myrank,com->nproc,com->DomDof,
+                com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->PGFEM_hypre, mp_id);
+      }
+    }
+  }
+  
+  if(err==0)
+  {
+    // BOUNDING ELEMENTS
+    // In the future, these elements will be listed as with the
+    // volumetric elements to properly overlay computation and
+    // communication. For now, this is the best place for them as they
+    // are a proportinally smaller group than the interior volume
+    // elements for typical problems and are guarenteed to be on the
+    // communication boundary for periodic domains.
+    
+    // temporary for compile testing
+    // int n_be = 0;
+    // BOUNDING_ELEMENT *b_elems = NULL;
+    for(int eid=0; eid<grid->n_be; eid++){
+      err += bnd_el_stiffmat(eid,Lk,com->Ap,com->Ai,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
+              mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,
+              dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,myrank,com->nproc,com->GDof,
+              com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->PGFEM_hypre,mp_id);
+      
+      // If there is an error, complete exit the loop
+      if(err != 0)
+        break;
+    }
+  }
+  
+  if (PFEM_DEBUG)
+  {
+    char ofile[50];
+    switch(opts->analysis_type){
+      case STABILIZED:
+        sprintf(ofile,"stab_el_stiff_send_%d.log",myrank);
+        break;
+      case MINI:
+        sprintf(ofile,"MINI_el_stiff_send_%d.log",myrank);
+        break;
+      case MINI_3F:
+        sprintf(ofile,"MINI_3f_el_stiff_send_%d.log",myrank);
+        break;
+      default:
+        sprintf(ofile,"el_stiff_send_%d.log",myrank);
+        break;
+    }
+    
+    FILE *out;
+    out = fopen(ofile,"a");
+    for(int send_proc=0; send_proc<com->nproc; send_proc++)
+    {
+      if(send_proc==myrank || (com->comm)->S[send_proc] ==0)
+        continue;
+      
+      for(int n_data=0; n_data<(com->comm)->AS[send_proc]; n_data++)
+      {
+        PGFEM_fprintf(out,"%12.12e ",Lk[send_proc][n_data]);
+      }
+      PGFEM_fprintf(out,"\n");
+    }
+    PGFEM_fprintf(out,"\n");
+    fclose(out);
+  }
+  
+  /// SEND BOUNDARY AND COEL
+  err += send_stiffmat_comm(&sta_s,&req_s,Lk,mpi_comm,com->comm);
+  
+  int skip = 0;
+  int idx  = 0;
+  
+  for(int eid=0; eid<grid->ne; eid++)
+  {
+    int is_it_in = is_element_interior(eid,&idx,&skip,com->nbndel,com->bndel,myrank);
+    
+    if(is_it_in==-1)
+    {
+      err = 1;
+      break;
+    }
+    
+    if(is_it_in==0)
+      continue;
+    
+    
+    // do volume integration at an element
+    int interior = 1;
+    
+    err += el_stiffmat_MP(eid,Lk,Ddof.m_pdata,1,grid,mat,fv,sol,load,com,crpl,
+            mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+    
+    if(err != 0)
+      break;
+  }
+  
+  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->PGFEM_hypre,recieve);
+  err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
+  
+  // stiffnes build is completed
+  // deallocate memory
+  for(int ia=0; ia<com->nproc; ia++)
+  {
+    free (recieve[ia]);
+    free(Lk[ia]);
+  }
+  free (recieve);
+  free (Lk);
+  free (sta_s);
+  free (sta_r);
+  free (req_s);
+  free (req_r);
+  
+  Matrix_cleanup(Ddof);
   return err;
 }

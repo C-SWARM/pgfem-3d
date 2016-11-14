@@ -17,6 +17,7 @@
 #include "pgfem_comm.h"
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
+#include "PGFem3D_data_structure.h"
 
 
 #ifdef __cplusplus
@@ -105,7 +106,40 @@ extern "C" {
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
 		   const int mp_id);
-
+		   
+/// Compute stiffnes
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com communication object
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dt time step
+/// \param[in] iter number of Newton Raphson interataions
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int stiffmat_fd_MP(GRID *grid,
+                   MATERIAL_PROPERTY *mat,
+                   FIELD_VARIABLES *fv,
+                   SOLVER_OPTIONS *sol,
+                   LOADING_STEPS *load,
+                   COMMUNICATION_STRUCTURE *com,
+                   CRPL *crpl,
+                   MPI_Comm mpi_comm,
+                   const PGFem3D_opt *opts,
+                   MULTIPHYSICS *mp,
+                   int mp_id,
+                   double dt,
+                   long iter,
+                   int myrank);
+                   
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
 			       MPI_Status *sta_r,

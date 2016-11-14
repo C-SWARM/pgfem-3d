@@ -40,6 +40,7 @@
 #include "constitutive_model.h"
 #include "dynamics.h"
 #include "energy_equation.h"
+#include "PGFem3D_data_structure.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -209,6 +210,24 @@ long compute_residuals_for_NR(GRID *grid,
   return INFO;
 }
 
+/// Compute stiffnes
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com communication object
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dt time step
+/// \param[in] iter number of Newton Raphson interataions
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 long compute_stiffness_for_NR(GRID *grid,
                               MATERIAL_PROPERTY *mat,
                               FIELD_VARIABLES *fv,
@@ -228,12 +247,15 @@ long compute_stiffness_for_NR(GRID *grid,
   switch(mp->physics_ids[mp_id])
   {
     case MULTIPHYSICS_MECHANICAL:
+      INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+/*
       INFO = stiffmat_fd(com->Ap,com->Ai,grid->ne,grid->n_be,fv->ndofn,grid->element,grid->b_elems,com->nbndel,com->bndel,
                          grid->node,mat->hommat,mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],
                          iter,sol->nor_min,dt,crpl,opts->stab,grid->nce,grid->coel,0,0.0,fv->f_u,
                          myrank,com->nproc,com->DomDof,com->GDof,
                          com->comm,mpi_comm,sol->PGFEM_hypre,opts,sol->alpha,fv->u_n,fv->u_nm1,
-                         mp_id);
+                         mp_id);     
+*/                          
       break;
     case MULTIPHYSICS_THERMAL:
       INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,com,mpi_comm,myrank,opts,mp_id,dt);
