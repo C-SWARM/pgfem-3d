@@ -48,119 +48,12 @@ typedef struct {
  } FEMLIB;
 
 long FEMLIB_determine_integration_type(int e_type, int i_order);
-
-//  FEMLIB(long elem_type, long intg_order = 1)
-//  {
-//  	integration_points(elem_type, intg_order);
-//  };
-
 void FEMLIB_set_variable_size(TEMP_VARIABLES *v, int nne);
-void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne);
 void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order, int is_total);
-void FEMLIB_set_element(FEMLIB *fe, Matrix(double) x, int eid);
-void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) N);
+void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) *N);
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip);
 void FEMLIB_update_shape_tensor(FEMLIB *fe);
-void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) F);
+void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) *F);
 double FEMLIB_elem_volume(FEMLIB *fe);
 void FEMLIB_destruct(FEMLIB *fe);
-
-/*  
-void FEMLIB_integration_points(FEMLIB *fe, long e_type, long i_order)
-{ 
-	nsd = 3;
-  elem_type = e_type;
-  intg_order = i_order;
-
-  long intg_type = FEMLIB_determine_integration_type(e_type, i_order);
-
-  int_point(intg_type, &nint);
-  
-  fe->ksi.redim(nint);
-  eta.redim(nint);
-  zet.redim(nint);
-  weights.redim(nint);  
-  
-  long npt_x, npt_y, npt_z;
-  integrate(e_type, &npt_x, &npt_y, &npt_z,
-          ksi.m_pdata, eta.m_pdata, zet.m_pdata,
-          weights.m_pdata);
-
-  long cnt = 0;
-  itg_ids.redim(npt_x*npt_y*npt_z, nsd);
-  for(int a=1; a<=npt_x; a++)
-  {
-  	for(int b=1; b<=npt_y; b++)
-    {
-    	for(int c=1; c<=npt_z; c++)
-    	{
-    		cnt++;
-        itg_ids(cnt, 1) = a; itg_ids(cnt, 2) = b;  itg_ids(cnt, 3) = c;    		
-       }
-     }
-   }           
-}
-
-void FEMLIB::initialize_integration(long nne_, long nsd_)
-{
-	nne = nne_;
-	nsd = nsd_;
-  N.redim(nne);	
-  dN.redim(nne, nsd);
-  temp_v.set_variable_size(nne);
-  x_ip.redim(nsd);
-}
-
-void FEMLIB::set_element(Matrix<double> &x, long eid)
-{
-  node_coord = x;	
-  curt_elem_id = eid;
-  for(int a = 1; a<=nne; a++)
-  {
-  	temp_v.x(a) = x(a, 1);
-  	temp_v.y(a) = x(a, 2);
-  	temp_v.z(a) = x(a, 3);  	  	
-  }  
-}
-
-void FEMLIB::elem_basis_V(long ip)
-{
-  
-  double ksi_, eta_, zet_, wt;	
-  int err;
-               
-        
-  if(elem_type == HEXAHEDRAL)
-  {// hexahedron 
-    ksi_ = ksi(itg_ids(ip, 1));
-    eta_ = eta(itg_ids(ip, 2));
-    zet_ = zet(itg_ids(ip, 3));
-    wt = weights(itg_ids(ip, 1))*weights(itg_ids(ip, 2))*weights(itg_ids(ip, 3));
-  } 
-  else 
-  { // tetrahedron type
-    ksi_ = ksi(itg_ids(ip, 3));
-    eta_ = eta(itg_ids(ip, 3));
-    zet_ = zet(itg_ids(ip, 3));
-    wt = weights(itg_ids(ip, 3));
-  }
-    	
-  shape_func(ksi_, eta_, zet_, nne, N.m_pdata);
-  detJ = deriv(ksi_, eta_, zet_, nne, temp_v.x.m_pdata, temp_v.y.m_pdata, temp_v.z.m_pdata, 
-               temp_v.N_x.m_pdata, temp_v.N_y.m_pdata, temp_v.N_z.m_pdata);
-
-  x_ip.redim(nsd);
-  for(int a = 1; a<=nne; a++)
-  {
-  	dN(a, 1) = temp_v.N_x(a);
-  	dN(a, 2) = temp_v.N_y(a);
-  	dN(a, 3) = temp_v.N_z(a);
-  	x_ip(1) += N(a)*node_coord(a, 1);
-  	x_ip(2) += N(a)*node_coord(a, 2);
-  	x_ip(3) += N(a)*node_coord(a, 3);  	  	
-  }
-
-  detJxW = detJ*wt;
-}
-	*/
 #endif

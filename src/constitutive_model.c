@@ -677,7 +677,7 @@ int stiffness_el_hyper_elasticity(double *lk,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     
@@ -808,7 +808,7 @@ int residuals_el_hyper_elasticity(double *f,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
 
     {
       /* check that deformation is invertible -> J > 0 */
@@ -917,7 +917,7 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fr]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     
@@ -1130,7 +1130,7 @@ int stiffness_el_crystal_plasticity_TL(double *lk,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fr]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
     
@@ -1360,7 +1360,7 @@ int residuals_el_crystal_plasticity_UL(double *f,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fr]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
@@ -1512,7 +1512,7 @@ int residuals_el_crystal_plasticity_TL(double *f,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fr]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
    
@@ -1804,7 +1804,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fnp1]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fnp1);
     
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
@@ -2057,7 +2057,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
   {
     FEMLIB_elem_basis_V(&fe, ip);
     FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2[Fnp1]);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fnp1);
 
     {
       /* check that deformation is invertible -> J > 0 */

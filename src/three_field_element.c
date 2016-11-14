@@ -525,10 +525,10 @@ void stiffmat_3f_el(double *Ks,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe, ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe, ip,nVol, Nt);
+    FEMLIB_elem_shape_function(&fe, ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe, ip,nVol, &Nt);
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);    
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);    
               
     double Tn = 0.0; 
     double Pn = 0.0;
@@ -662,10 +662,10 @@ void residuals_3f_el(double *f,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe, ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe, ip,nVol, Nt);
+    FEMLIB_elem_shape_function(&fe, ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe, ip,nVol, &Nt);
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
                   
     double Tn = 0.0; 
     double Pn = 0.0;
@@ -843,11 +843,11 @@ void residuals_3f_w_inertia_el(double *f,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe, ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe, ip,nVol, Nt);
+    FEMLIB_elem_shape_function(&fe, ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe, ip,nVol, &Nt);
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u1,F1);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u2,F2);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u1,&F1);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u2,&F2);
 
                   
     double Tn1 = 0.0; // 1: n-1+alpha
@@ -1080,10 +1080,10 @@ void update_3f_state_variables_el(const int ii,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe,ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe,ip,nVol, Nt);    
+    FEMLIB_elem_shape_function(&fe,ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe,ip,nVol, &Nt);    
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
                   
     double Tn = 0.0; 
     double Pn = 0.0;
@@ -1177,10 +1177,10 @@ void evaluate_PT_el(const int ii,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe,ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe,ip,nVol, Nt);
+    FEMLIB_elem_shape_function(&fe,ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe,ip,nVol, &Nt);
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
               
     double Tn = 0.0; 
     double Pn = 0.0;
@@ -1375,11 +1375,11 @@ void evaluate_PT_w_inertia_el(const int ii,
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     FEMLIB_elem_basis_V(&fe, ip);  
-    FEMLIB_elem_shape_function(&fe, ip,npres,Np);
-    FEMLIB_elem_shape_function(&fe, ip,nVol, Nt);   
+    FEMLIB_elem_shape_function(&fe, ip,npres,&Np);
+    FEMLIB_elem_shape_function(&fe, ip,nVol, &Nt);   
     FEMLIB_update_shape_tensor(&fe);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u1,F1);
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u2,F2);    
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u1,&F1);
+    FEMLIB_update_deformation_gradient(&fe,ndofn,u2,&F2);    
     
     double Tn1 = 0.0; // 1: n-1+alpha
     double Tn2 = 0.0; // 2: n+alpha
