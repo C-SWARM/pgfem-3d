@@ -25,8 +25,14 @@ typedef struct {
   double ksi_ip, eta_ip, zet_ip, w_ip;
 } TEMP_VARIABLES;
 
+
+struct FEMLIB;
+#ifndef TYPE_FEMLIB
+#define TYPE_FEMLIB
+typedef struct FEMLIB FEMLIB;
+#endif
  
-typedef struct {
+struct FEMLIB {
   Matrix(double) N;
   Matrix(double) dN;
   
@@ -45,11 +51,40 @@ typedef struct {
   double ****ST_tensor;
   double *ST;
          
- } FEMLIB;
+ };
 
 long FEMLIB_determine_integration_type(int e_type, int i_order);
-void FEMLIB_set_variable_size(TEMP_VARIABLES *v, int nne);
+
+/// set FEM libray by element
+///
+/// \param[out] fe self of FEMLIB
+/// \param[in] e element id
+/// \param[in] elem list of ELEMENT
+/// \param[in] node list of NODE
+/// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
+/// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
+/// \return void
 void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order, int is_total);
+
+/// set FEM libray by element with bubble
+///
+/// Set the FEM library same as FEMLIB_initialization_by_elem, but if bubble is added, it computes
+/// center node in the element (MINI and MINI_3F)
+///
+/// \param[out] fe self of FEMLIB
+/// \param[in] e element id
+/// \param[in] elem list of ELEMENT
+/// \param[in] node list of NODE
+/// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
+/// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
+/// \return void
+void FEMLIB_initialization_by_elem_w_bubble(FEMLIB *fe, 
+                                            int e, 
+                                            const ELEMENT *elem, 
+                                            const NODE *node, 
+                                            int i_order, 
+                                            int is_total);
+                                            
 void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) *N);
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip);
 void FEMLIB_update_shape_tensor(FEMLIB *fe);
