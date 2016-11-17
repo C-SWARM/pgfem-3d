@@ -22,6 +22,8 @@
 #include "supp.h"
 #include "PGFem3D_options.h"
 
+#include "PGFem3D_data_structure.h"
+
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -299,7 +301,7 @@ typedef int (*usr_compute_dM_du)(const Constitutive_model *m,
 struct HOMMAT;
 #ifndef TYPE_HOMMAT
 #define TYPE_HOMMAT
-typedef struct HOMMAT HOMMAT;
+typedef struct HOMMAT FEMLIB;
 #endif
 
 /**
@@ -654,4 +656,26 @@ int construct_model_context(void **ctx,
                                    const double dt,
                                    const double alpha,
                                    const double *eFnpa);
+
+struct FEMLIB;
+#ifndef TYPE_FEMLIB
+#define TYPE_FEMLIB
+typedef struct FEMLIB FEMLIB;
+#endif
+
+int stiffness_el_constitutive_model(FEMLIB *fe,
+                                    double *lk,
+                                    double *r_e,
+                                    GRID *grid,
+                                    MATERIAL_PROPERTY *mat,
+                                    FIELD_VARIABLES *fv,
+                                    SOLVER_OPTIONS *sol,
+                                    LOADING_STEPS *load,
+                                    COMMUNICATION_STRUCTURE *com,
+                                    CRPL *crpl,
+                                    MPI_Comm mpi_comm,
+                                    const PGFem3D_opt *opts,
+                                    MULTIPHYSICS *mp,
+                                    int mp_id,
+                                    double dt);
 #endif

@@ -926,10 +926,10 @@ int stiffmat_fd(int *Ap,
 
 
 ///////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////
 int el_compute_stiffmat_MP(FEMLIB *fe,
-        int eid,
         double *lk,
-        long nne,
         GRID *grid,
         MATERIAL_PROPERTY *mat,
         FIELD_VARIABLES *fv,
@@ -944,11 +944,22 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
         double dt,
         double lm,
         double *be,
-        long *nod,
-        double *r_e,
-        int include_inertia)
+        double *r_e)
 {
-  int err = 0;
+  int err = 0;  
+  int eid = fe->curt_elem_id;
+
+  const int mat_id = grid->element[eid].mat[2];
+  double rho = mat->hommat[mat_id].density;
+
+  long *nod = (fe->node_id).m_pdata; // list of node ids in this element    
+
+  // make a decision to include ineria
+  long include_inertia = 1;
+  if(fabs(rho)<MIN_DENSITY)
+  {
+    include_inertia = 0;
+  }
   
   int nVol = N_VOL_TREE_FIELD;
   SUPP sup = load->sups[mp_id];  
@@ -959,7 +970,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
   
   if(include_inertia)
   {
-    stiffmat_disp_w_inertia_el(lk,eid,fv->ndofn,nne,fv->npres,nVol,grid->nsd,x, y, z,
+    stiffmat_disp_w_inertia_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,x, y, z,
             grid->element,mat->hommat,nod,grid->node,dt,
             fv->sig,fv->eps,sup,opts->analysis_type,opts->cm,sol->alpha,fv->u_n,r_e);
   }
@@ -967,23 +978,23 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
   {
     switch(opts->analysis_type){
       case STABILIZED:
-        err += stiffmatel_st(eid,fv->ndofn,nne,x,y,z,grid->element,mat->hommat,nod,grid->node,fv->sig,fv->eps,
+        err += stiffmatel_st(eid,fv->ndofn,fe->nne,x,y,z,grid->element,mat->hommat,nod,grid->node,fv->sig,fv->eps,
                 sup,r_e,fv->npres,sol->nor_min,lk,dt,opts->stab,sol->FNR,lm,be);
         break;
       case MINI:
-        err += MINI_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+        err += MINI_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
                 mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
         break;
       case MINI_3F:
-        err += MINI_3f_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+        err += MINI_3f_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
                 mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
         break;
       case DISP:
-        err += DISP_stiffmat_el(lk,eid,fv->ndofn,nne,x,y,z,grid->element,
+        err += DISP_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
                 mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
         break;
       case TF:
-        stiffmat_3f_el(lk,eid,fv->ndofn,nne,fv->npres,nVol,grid->nsd,
+        stiffmat_3f_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,
                 x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
         break;
       case CM:
@@ -991,13 +1002,13 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
         switch(opts->cm) {
           case UPDATED_LAGRANGIAN: // intentionally left to flow
           case TOTAL_LAGRANGIAN:
-            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,nne,grid->nsd,grid->element,
+            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,fe->nne,grid->nsd,grid->element,
                     nod,grid->node,dt,fv->eps,sup,r_e,
                     opts->cm);
             break;
             
           case MIXED_ANALYSIS_MODE:
-            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,nne,grid->nsd,grid->element,
+            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,fe->nne,grid->nsd,grid->element,
                     nod,grid->node,dt,fv->eps,sup,r_e,
                     1 /* TL */);
             break;
@@ -1007,7 +1018,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
         break;
       }
       default:
-        err += stiffmatel_fd (eid,fv->ndofn,nne,nod,x,y,z,grid->element,mat->matgeom,
+        err += stiffmatel_fd (eid,fv->ndofn,fe->nne,nod,x,y,z,grid->element,mat->matgeom,
                 mat->hommat,grid->node,fv->sig,fv->eps,r_e,fv->npres,
                 sol->nor_min,lk,dt,crpl,sol->FNR,lm,be,opts->analysis_type);
         break;
@@ -1039,46 +1050,15 @@ static int el_stiffmat_MP(int eid,
         long iter,
         int myrank)
 {
-  SUPP sup = load->sups[mp_id];
-  /* make a decision to include ineria*/
-  const int mat_id = grid->element[eid].mat[2];
-  double rho = mat->hommat[mat_id].density;
-  long include_inertia = 1;
-  int nsd = 3;
+  int err = 0;
   double lm = 0.0;
-  
   int intg_order = 0;
   
-  if(fabs(rho)<MIN_DENSITY)
-  {
-    include_inertia = 0;
-  }
-  /* decision end*/
-  
-  
-  int err = 0;
-  long j,l,nne,ndofe,*cnL,*cnG,*nod,II;
-  double *x,*y,*z,*r_e,*sup_def,*be;
-  long kk;
-  
-  /* Number of element nodes */
-  nne = grid->element[eid].toe;
-  
-  /* Nodes on element */
-  nod = aloc1l (nne);
-  elemnodes (eid,nne,nod,grid->element);
-  
-  /* Element Dof */
-  ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
-  
-  /* allocation */
-  cnL = aloc1l (ndofe);
-  cnG = aloc1l (ndofe);
-  
-  int total_Lagrangian = 0;
-  // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
-  // are total Lagrangian based
+  SUPP sup = load->sups[mp_id];
 
+  // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
+  // are total Lagrangian based  
+  int total_Lagrangian = 0;  
   switch(opts->analysis_type)
   {
     case DISP: // intented to flow
@@ -1091,47 +1071,66 @@ static int el_stiffmat_MP(int eid,
       
       break;
   }
-  
+
+  // set FEMLIB  
   FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+  if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
+    FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);    
+  else
+    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);  
   
+  long *nod = (fe.node_id).m_pdata; // list of node ids in this element  
+  
+  /* Element Dof */
+  long ndofe = get_ndof_on_elem_nodes(fe.nne,nod,grid->node,fv->ndofn);
+  
+  
+  long*cnL,*cnG;
+  double *r_e,*sup_def,*be;
+  
+  /* allocation */
+  cnL = aloc1l (ndofe);
+  cnG = aloc1l (ndofe);
   r_e = aloc1 (ndofe);
   be = aloc1 (ndofe);
-  if(sup->npd>0){
+
+  if(sup->npd>0)
     sup_def = aloc1(sup->npd);
-  } else {
+  else
     sup_def = NULL;
-  }
+    
   
-  /* code numbers on element */
-  get_dof_ids_on_elem_nodes(0,nne,fv->ndofn,nod,grid->node,cnL,mp_id);
-  get_dof_ids_on_elem_nodes(1,nne,fv->ndofn,nod,grid->node,cnG,mp_id);
+  //global local ids on element
+  get_dof_ids_on_elem_nodes(0,fe.nne,fv->ndofn,nod,grid->node,cnL,mp_id);
+  get_dof_ids_on_elem_nodes(1,fe.nne,fv->ndofn,nod,grid->node,cnG,mp_id);
   
-  /*=== deformation on element ===*/
-  
-  /* set the increment of applied def=0 on first iter */
-  if (iter == 0) {
-    for (j=0;j<sup->npd;j++){
+  // deformation on element  
+  // set the increment of applied def=0 on first iter
+  if (iter == 0) 
+  {
+    for(int j=0;j<sup->npd;j++)
+    {
       sup_def[j] = sup->defl_d[j];
       sup->defl_d[j] = 0.0;
     }
   }
   
-  /* get the deformation on the element */
-  if(sup->multi_scale){
-    /* multi-scale analysis is TOTAL LAGRANGIAN for all element
-     * formulations */
+  // get the deformation on the element
+  if(sup->multi_scale)
     def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-  } else {
-    switch(opts->analysis_type){
+  else 
+  {
+    switch(opts->analysis_type)
+    {
       case DISP:
         def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-      case TF: /* TOTAL LAGRANGIAN */
+      case TF: // TOTAL LAGRANGIAN
         def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
         break;
       case CM:
       {
-        switch(opts->cm) {
+        switch(opts->cm)
+        {
           case UPDATED_LAGRANGIAN:
             def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
             break;
@@ -1153,8 +1152,9 @@ static int el_stiffmat_MP(int eid,
   }
   
   /* recover thei increment of applied def on first iter */
-  if (iter == 0){
-    for (j=0;j<sup->npd;j++)
+  if (iter == 0)
+  {
+    for(int j=0; j<sup->npd; j++)
       sup->defl_d[j] = sup_def[j];
   }
   
@@ -1163,9 +1163,8 @@ static int el_stiffmat_MP(int eid,
   Matrix_construct_redim(double,lk,ndofe,ndofe);
   Matrix_init(lk, 0.0);
   
-  err += el_compute_stiffmat_MP(&fe, eid,lk.m_pdata,nne,grid,mat,fv,sol,load,com,
-          crpl,mpi_comm,opts,mp,mp_id,dt,lm,
-          be,nod,r_e,include_inertia);
+  err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,com,
+                                crpl,mpi_comm,opts,mp,mp_id,dt,lm,be,r_e);
 
   FEMLIB_destruct(&fe);          
   
@@ -1193,24 +1192,28 @@ static int el_stiffmat_MP(int eid,
   }
   
   /* Localization of TANGENTIAL LOAD VECTOR */
-  if (periodic == 1 && (sol->FNR == 2 || sol->FNR == 3)){
-    for (l=0;l<nne;l++){
-      for (kk=0;kk<fv->ndofn;kk++){
-        II = grid->node[nod[l]].id_map[mp_id].id[kk]-1;
-        if (II < 0)  continue;
+  if (periodic == 1 && (sol->FNR == 2 || sol->FNR == 3))
+  {
+    for(int l=0; l<fe.nne; l++)
+    {
+      for(int kk=0; kk<fv->ndofn; kk++)
+      {
+        long II = grid->node[nod[l]].id_map[mp_id].id[kk]-1;
+        if(II < 0)
+          continue;
+          
         fv->f_u[II] += be[l*fv->ndofn+kk];
-      }/*end l */
-    }/*end kk */
-  }/* end periodic */
+      }
+    }
+  }// end periodic
   
-  /* Assembly */
+  // Assembly
   PLoc_Sparse (Lk,lk.m_pdata,com->Ai,com->Ap,cnL,cnG,ndofe,Ddof,com->GDof,
           myrank,com->nproc,com->comm,interior,sol->PGFEM_hypre,opts->analysis_type);
   
-  /*  dealocation  */
+  //  dealocation
   free (cnL);
   free (cnG);
-  free (nod);
   Matrix_cleanup(lk);
   free (be);
   free (r_e);
@@ -1218,7 +1221,7 @@ static int el_stiffmat_MP(int eid,
   
   return err;
   
-} /* ELEMENT STIFFNESS */
+} // ELEMENT STIFFNESS
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
