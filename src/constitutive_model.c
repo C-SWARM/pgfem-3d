@@ -35,8 +35,11 @@ Define_Matrix(double);
 #define _Matrix_double 1
 #endif
 
-#define DIM 3
-#define TENSOR_LEN 9
+#define DIM_3        3
+#define DIM_3x3      9
+#define DIM_3x3x3   27
+#define DIM_3x3x3x3 81
+
 #define MAX(a, b) ((a) >= (b)? (a) : (b))
 
 /* add the macroscopic deformation gradient to the _TOTAL_ deformation
@@ -45,7 +48,7 @@ static void cm_add_macro_F(const SUPP sup,
                            double * restrict F)
 {
   const double * restrict F0 = sup->F0;
-  for (int i = 0; i < TENSOR_LEN; i++) F[i] += F0[i];
+  for (int i = 0; i < DIM_3x3; i++) F[i] += F0[i];
 }
 
 /* this is a wrapper function for the switch that was copy/pasted
@@ -629,243 +632,125 @@ int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_r
   return err;
 }
 
-int stiffness_el_hyper_elasticity(double *lk,
-                                  const int ii,
-                                  const int ndofn,
-                                  const int nne,
-                                  const int nsd,
-                                  const ELEMENT *elem,
-                                  const long *nod,
-                                  const NODE *node,
-                                  const double dt,
-                                  EPS *eps,
-                                  const SUPP sup,
-                                  const double *r_e)
+inline int compute_stiffness_matrix(double *lk,
+                                    const FEMLIB *fe,
+                                    const Matrix(double) *Fr,
+                                    const Matrix(double) *eFnMT,
+                                    const Matrix(double) *eFn,
+                                    const Matrix(double) *M,
+                                    const Matrix(double) *FrTFr,
+                                    const Matrix(double) *eFnM,
+                                    const Matrix(double) *S,
+                                    const Matrix(double) *L,
+                                    double *dMdu_all,
+                                    const double Jn)
 {
   int err = 0;
-  double alpha = -1.0;
-  int total_Lagrangian = 1;
-  int compute_stiffness = 1;
+  const int nne = fe->nne;
+  const int nsd = fe->nsd;
   
-  double *u;
-  u = (double *) malloc(sizeof(double)*nne*nsd);
-
-  for(int a=0;a<nne;a++)
+  Matrix(double) ST_ab, ST_wg, dMdu; // no memory is created
+  ST_ab.m_row = ST_ab.m_col = DIM_3;
+  ST_wg.m_row = ST_wg.m_col = DIM_3;
+   dMdu.m_row =  dMdu.m_col = DIM_3;
+    
+  enum {MTeFnT_sAA_eFn,
+        MTeFnT_sAA_eFnM,
+        sBB,sCC,
+        dCdu,
+        temp_F_1,
+        temp_F_2,
+        Fend};
+  
+  // 2nd order tensors
+  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
+  for (int a = 0; a < Fend; a++) {
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
+  }  
+  
+  for(int a=0; a<nne; a++)
   {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  Matrix(double) F,L,S,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,LsBB;
-
-  Matrix_construct_redim(double, F   ,3,3);
-  Matrix_construct_redim(double, L   ,81,1);  
-  Matrix_construct_redim(double, S   ,3,3);    
-  Matrix_construct_redim(double, AA  ,3,3);
-  Matrix_construct_redim(double, BB  ,3,3);
-  Matrix_construct_redim(double, CC  ,3,3);  
-  Matrix_construct_redim(double, sAA ,3,3);
-  Matrix_construct_redim(double, sBB ,3,3);  
-  Matrix_construct_redim(double, sCC ,3,3);    
-  Matrix_construct_redim(double, LsBB,3,3);
-  
-  Matrix_construct(double,ST_ab);
-  Matrix_construct(double,ST_wg);
-  
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);   
-  
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
-    
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-    
-    Matrix_init(L,0.0);
-    Matrix_init(S,0.0);    
-    
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F.m_pdata,dt,alpha, NULL);    
-    err += (m->param)->update_elasticity(m,ctx,&L,&S,compute_stiffness);
-    err += (m->param)->destroy_ctx(&ctx);
-
-    
-    for(int a=0; a<nne; a++)
+    for(int b=0; b<nsd; b++)
     {
-      for(int b=0; b<nsd; b++)
+      const int id_ab = idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd);
+      ST_ab.m_pdata = (fe->ST)+id_ab;
+
+      int AA  = temp_F_1; 
+      int sAA = temp_F_2;
+      Matrix_AxB(F2[AA],1.0,0.0,*Fr,1,ST_ab,0);
+      Matrix_symmetric(F2[AA],F2[sAA]);
+      
+      Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,*eFnMT,F2[sAA],*eFn);        
+      Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,*M,0);
+
+      for(int w=0; w<nne; w++)
       {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
+        for(int g=0; g<nsd; g++)
+        { 
+          const int id_wg = idx_4_gen(w,g,0,0,nne,nsd,nsd,nsd);
+          ST_wg.m_pdata = (fe->ST)+id_wg;
 
-        cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-                    3,3,3,1.0,F.m_pdata,3,ptrST_ab,3,0.0,AA.m_pdata,3);
-        Matrix_symmetric(AA,sAA);
-        
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          { 
-            const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)];             
-            for(int _i=0; _i<nsd; _i++)
-            {
-                for(int _j=0; _j<nsd; _j++)
-                {
-                    BB.m_pdata[idx_2(_i,_j)] = CC.m_pdata[idx_2(_i,_j)] = 0.0;
-                    for(int _k=0; _k<nsd; _k++)
-                    {
-                        /* BB = F' ST_wg */
-                        BB.m_pdata[idx_2(_i,_j)] += F.m_pdata[idx_2(_k,_i)]*ptrST_wg[idx_2(_k,_j)];
-                        
-                        /* CC = ST_wg' ST_ab */
-                        CC.m_pdata[idx_2(_i,_j)] += ptrST_wg[idx_2(_k,_i)]*ptrST_ab[idx_2(_k,_j)];
-                    }
-                }
-            }           
-            
-            Matrix_symmetric(BB,sBB);
-            Matrix_symmetric(CC,sCC);
-            
-            Matrix_init(LsBB,0.0);
-            for(int _i=0; _i<9; _i++)
-            {
-              if(fabs(sBB.m_pdata[_i]) < 1.0e-15) continue;
-              for(int _j=0; _j<9; _j++)
-                LsBB.m_pdata[_j] += L.m_pdata[9*_j+_i]*sBB.m_pdata[_i];
-            }            
-            
-            //Matrix_Tns4_dd_Tns2(LsBB,L,sBB);
+          dMdu.m_pdata = dMdu_all + id_wg;
 
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-            for(int n=0; n<9; n++)
-            {                 
-              lk[lk_idx] += fe.detJxW*(sAA.m_pdata[n]*LsBB.m_pdata[n]
-                                       + S.m_pdata[n]*sCC.m_pdata[n]);
-            }
-          }
+          int BB = temp_F_1;
+          Matrix_AxB(F2[BB],1.0,0.0,*Fr,1,ST_wg,0); 
+          Matrix_symmetric(F2[BB],F2[sBB]);
+
+          int CC = temp_F_1;
+          Matrix_AxB(F2[CC], 1.0,0.0,ST_ab,1,ST_wg,0);
+          Matrix_symmetric(F2[CC],F2[sCC]);
+
+          // compute F2[dCdu]
+          int MTeFnT_FrTFreFn     = temp_F_1;
+          int MTeFnT_FrTFreFndMdu = temp_F_2;
+          Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFn],1.0,0.0,*eFnMT,*FrTFr,*eFn);            
+          Matrix_AxB(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[MTeFnT_FrTFreFn],0,dMdu,0);                                    
+          Matrix_symmetric(F2[MTeFnT_FrTFreFndMdu],F2[dCdu]);
+                      
+          Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,*eFnMT,F2[sBB],*eFnM);            
+          
+          // compute F2[MTeFnT_sAA_eFnM]:L:F2[dCdu]
+          int L_dCdu = temp_F_1;
+          Matrix_Tns4_dd_Tns2(F2[L_dCdu],*L,F2[dCdu]);
+          double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
+          Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[L_dCdu],MTeFnT_sAA_eFnM_L_dCdu);
+          
+          // compute F2[MTeFnT_sCC_eFnM]
+          int MTeFnT_sCC_eFnM = temp_F_1;
+          Matrix_Tns2_AxBxC(F2[MTeFnT_sCC_eFnM],1.0,0.0,*eFnMT,F2[sCC],*eFnM);
+                      
+          // compute F2[MTeFnT_sCC_eFnM]:F2[S]
+          double MTeFnT_sCC_eFnM_S = 0.0;
+          Matrix_ddot(F2[MTeFnT_sCC_eFnM],*S,MTeFnT_sCC_eFnM_S);
+          
+          // compute F2[MTeFnT_sAA_eFndMdu]
+          int MTeFnT_sAA_eFndMdu  = temp_F_1;
+          int sMTeFnT_sAA_eFndMdu = temp_F_2;
+          Matrix_AxB(F2[MTeFnT_sAA_eFndMdu],1.0,0.0,F2[MTeFnT_sAA_eFn],0,dMdu,0);    
+          Matrix_symmetric(F2[MTeFnT_sAA_eFndMdu], F2[sMTeFnT_sAA_eFndMdu]);        
+
+          // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
+          double sMTeFnT_sAA_eFndMdu_S = 0.0;            
+          Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],*S,sMTeFnT_sAA_eFndMdu_S);
+          
+          const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
+                    
+          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);            
         }
       }
     }
   }
-  free(u);
   
-  Matrix_cleanup(F);
-  Matrix_cleanup(L);  
-  Matrix_cleanup(S);    
-  Matrix_cleanup(ST_ab);
-  Matrix_cleanup(ST_wg);
-  Matrix_cleanup(AA);
-  Matrix_cleanup(BB);
-  Matrix_cleanup(CC);  
-  Matrix_cleanup(sAA);
-  Matrix_cleanup(sBB);  
-  Matrix_cleanup(sCC);    
-  Matrix_cleanup(LsBB);
-    
-  FEMLIB_destruct(&fe);
+  // cleanup list of 2nd order tenosors
+  for(int a = 0; a < Fend; a++)
+    Matrix_cleanup(F2[a]);
+
+  free(F2);
   
   return err;
 }
 
-int residuals_el_hyper_elasticity(double *f,
-                                  const int ii,
-                                  const int ndofn,
-                                  const int nne,
-                                  const int nsd,
-                                  const ELEMENT *elem,
-                                  const long *nod,
-                                  const NODE *node,
-                                  const double dt,
-                                  EPS *eps,
-                                  const SUPP sup,
-                                  const double *r_e)
-{
-  int err = 0;
-  double alpha = -1.0;
-  int total_Lagrangian = 1;
-  int compute_stiffness = 0;  
-  double *u;
-  u = (double *) malloc(sizeof(double)*nne*nsd);
-
-  for(int a=0;a<nne;a++)
-  {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  Matrix(double) F,S,ST_ab,AA,sAA;
-
-  Matrix_construct_redim(double, F   ,3,3);
-  Matrix_construct_redim(double, S   ,3,3);    
-  Matrix_construct_redim(double, AA  ,3,3);
-  Matrix_construct_redim(double, sAA ,3,3);
-  
-  Matrix_construct(double,ST_ab);
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
-
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,&F);
-
-    {
-      /* check that deformation is invertible -> J > 0 */
-      int terr = 0;
-      double tJ = 0.0;
-      tJ = getJacobian(F.m_pdata, ii, &terr);
-      err += terr;
-    }
-    
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-    Matrix_init(S,0.0);    
-
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F.m_pdata,dt,alpha, NULL);    
-    err += (m->param)->update_elasticity(m,ctx,NULL,&S,compute_stiffness);
-    err += (m->param)->destroy_ctx(&ctx);
-        
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-
-
-        cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-                    3,3,3,1.0,F.m_pdata,3,ptrST_ab,3,0.0,AA.m_pdata,3);
-//        Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
-//        Matrix_AxB(AA,1.0,0.0,F,1,ST_ab,0); 
-        Matrix_symmetric(AA,sAA);
-
-//        Matrix_init_w_array(ST_ab,3,3,ptrST_ab);
-//        Matrix_AxB(AA,1.0,0.0,F,1,ST_ab,0); 
-//        Matrix_symmetric(AA,sAA);
-        
-        int fe_id = a*ndofn + b;              
-                
-        for(int n=0; n<9; n++)
-          f[fe_id] += fe.detJxW*sAA.m_pdata[n]*S.m_pdata[n];
-      }
-    }
-  }
-  
-  free(u);
-  Matrix_cleanup(F);
-  Matrix_cleanup(S);
-  Matrix_cleanup(AA);
-  Matrix_cleanup(sAA);
-  Matrix_cleanup(ST_ab);  
-    
-  FEMLIB_destruct(&fe);
-  return err;
-}        
-
-int stiffness_el_crystal_plasticity_UL(double *lk,
+int stiffness_el_crystal_plasticity(double *lk,
                                     const int ii,
                                     const int ndofn,
                                     const int nne,
@@ -876,11 +761,11 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
                                     const double dt,
                                     EPS *eps,
                                     const SUPP sup,
-                                    const double *r_e)
+                                    const double *r_e,
+                                    const int total_Lagrangian)
 {
   int err = 0;
   double alpha = -1.0; // if alpha < 0, no inertia
-  int total_Lagrangian = 0;
 
   double *u = malloc(sizeof(*u)*nne*nsd);
   double *dMdu_all = malloc(sizeof(*dMdu_all) * 9 * nne * nsd);
@@ -891,21 +776,17 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,dMdu,pFnp1,pFnp1_I,S,
-    eFn,M,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
-    MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,
-    MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,
-    L_dCdu,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,
-    sMTeFnT_sAA_eFndMdu,eFnMT,Fend};
+  enum {Fn,Fr,Fnp1,pFn,pFnp1,pFnp1_I,S,
+        eFn,M,eFnM,eFnMT,FrTFr,Fend};
   
   Matrix(double) L;  
-  Matrix_construct_redim(double,L ,81,1);  
+  Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
 
   /* list of second-order tensors */
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
 
   FEMLIB fe;
@@ -925,11 +806,7 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
     
     /* get a shortened pointer for simplified CM function calls */
     const Model_parameters *func = m->param;
-    err += func->get_Fn(m,&F2[Fn]);
-    err += func->get_pFn(m,&F2[pFn]);
-    err += func->get_eFn(m,&F2[eFn]);
-    
-    // --> update plasticity part
+        
     if(total_Lagrangian)
     { 
       if (sup->multi_scale) {
@@ -937,9 +814,9 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
       }
 
       /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
-      Matrix_eye(F2[Fn],3);
-      Matrix_eye(F2[pFn],3);
-      Matrix_eye(F2[eFn],3);
+      Matrix_eye(F2[Fn],DIM_3);
+      Matrix_eye(F2[pFn],DIM_3);
+      Matrix_eye(F2[eFn],DIM_3);
       Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
@@ -949,12 +826,14 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
         PGFEM_Abort();
       }
 
-      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn]+1    
+      err += func->get_Fn( m, F2 +  Fn);
+      err += func->get_pFn(m, F2 + pFn);
+      err += func->get_eFn(m, F2 + eFn);
+      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn+1] = Fr*Fn    
     }   
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0); 
 
-    /* need to have called the integration algorithm. This should be
-       done OUTSIDE of the stiffness/tangent functions */
+   // --> update plasticity part
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
@@ -992,70 +871,10 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
         
     double Jn; Matrix_det(F2[Fn], Jn);
 
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
-        
-        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFn]);        
-        Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[M],0);  
+    err += compute_stiffness_matrix(lk,&fe,
+                                    F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
+                                    &L,dMdu_all,Jn);
 
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          { 
-            const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)]; 
-            const double* const ptr_dMdu_wg = &(dMdu_all[idx_4_gen(w,g,0,0,
-                                                                   nne,nsd,nsd,nsd)]);
-
-            Matrix_init_w_array(F2[ST_wg],3,3,ptrST_wg); 
-            Matrix_init_w_array(F2[dMdu],3,3,ptr_dMdu_wg);
-
-            Matrix_AxB(F2[BB],1.0,0.0,F2[Fr],1,F2[ST_wg],0); 
-            Matrix_symmetric(F2[BB],F2[sBB]);
-            Matrix_AxB(F2[CC], 1.0,0.0,F2[ST_ab],1,F2[ST_wg],0);
-            Matrix_symmetric(F2[CC],F2[sCC]);
-            
-            // compute F2[dCdu]
-            Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFn],1.0,0.0,F2[eFnMT],F2[FrTFr],F2[eFn]);            
-            Matrix_AxB(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[MTeFnT_FrTFreFn],0,F2[dMdu],0);                                    
-            Matrix_symmetric(F2[MTeFnT_FrTFreFndMdu],F2[dCdu]);
-                        
-            Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,F2[eFnMT],F2[sBB],F2[eFnM]);            
-            
-            // compute F2[MTeFnT_sAA_eFnM]:L:F2[dCdu]
-            Matrix_Tns4_dd_Tns2(F2[L_dCdu],L,F2[dCdu]);
-            double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
-            Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[L_dCdu],MTeFnT_sAA_eFnM_L_dCdu);
-            
-            // compute F2[MTeFnT_sCC_eFnM]
-            Matrix_Tns2_AxBxC(F2[MTeFnT_sCC_eFnM],1.0,0.0,F2[eFnMT],F2[sCC],F2[eFnM]);
-                        
-            // compute F2[MTeFnT_sCC_eFnM]:F2[S]
-            double MTeFnT_sCC_eFnM_S = 0.0;
-            Matrix_ddot(F2[MTeFnT_sCC_eFnM],F2[S],MTeFnT_sCC_eFnM_S);
-            
-            // compute F2[MTeFnT_sAA_eFndMdu]
-            Matrix_AxB(F2[MTeFnT_sAA_eFndMdu],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[dMdu],0);    
-            Matrix_symmetric(F2[MTeFnT_sAA_eFndMdu], F2[sMTeFnT_sAA_eFndMdu]);        
-
-            // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
-            double sMTeFnT_sAA_eFndMdu_S = 0.0;            
-            Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],F2[S],sMTeFnT_sAA_eFndMdu_S);
-            
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-                      
-            lk[lk_idx] += 1.0/Jn*fe.detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);            
-          }
-        }
-      }
-    }
   }
   free(u);
 
@@ -1069,9 +888,9 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
   Matrix_cleanup(L); 
 
   /* destroy second-order tensors */
-  for (int a = 0; a < Fend; a++) {
+  for (int a = 0; a < Fend; a++)
     Matrix_cleanup(F2[a]);
-  }
+
   free(F2);
 
   FEMLIB_destruct(&fe);
@@ -1080,220 +899,7 @@ int stiffness_el_crystal_plasticity_UL(double *lk,
   return err;
 } 
 
-int stiffness_el_crystal_plasticity_TL(double *lk,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e)
-{
-  int err = 0;
-  double alpha = -1.0; // if alpha < 0, no inertia
-  int total_Lagrangian = 1;
-
-  double *u = malloc(sizeof(*u)*nne*nsd);
-  double *dMdu_all = malloc(sizeof(*dMdu_all) * 9 * nne * nsd);
-
-  for(int a=0;a<nne;a++)
-  {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  enum {Fr,dMdu,pFnp1,S,M,MT,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
-    MT_sAA,MT_sAA_M,FrTFr,MT_FrTFrdMdu,dCdu,
-    L_dCdu,MT_sCC_M,MT_sAA_dMdu,
-    sMT_sAA_dMdu,Fend};
-  
-  Matrix(double) L;  
-  Matrix_construct_redim(double,L ,81,1);  
-
-  /* list of second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
-  }
-
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
-  int compute_stiffness = 1;      
-
-  MATERIAL_ELASTICITY mat_e_new;
-  MATERIAL_ELASTICITY *mat_e_in;
-
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
-    
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-    
-    /* get a shortened pointer for simplified CM function calls */
-    const Model_parameters *func = m->param;    
-    
-    // --> update plasticity part
-    if (sup->multi_scale)
-      cm_add_macro_F(sup,F2[Fr].m_pdata);
-   
-    Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0); 
-
-    /* need to have called the integration algorithm. This should be
-       done OUTSIDE of the stiffness/tangent functions */
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fr].m_pdata,dt,alpha, NULL);
-    err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
-    err += func->get_pF(m,&F2[pFnp1]);
-
-    err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata);    
-    // <-- update plasticity part 
-
-    // --> update elasticity part
-    Matrix_init(L,0.0);
-    Matrix_init(F2[S],0.0);    
-
-    if((m->param)->uqcm)
-    { 
-      double *x_ip = (fe.x_ip).m_pdata;      
-      ELASTICITY *elast = (m->param)->cm_elast;
-      mat_e_in = elast->mat;
-      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
-      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,&L,&F2[S],compute_stiffness);
-      elast->mat = mat_e_in;
-    }
-    else
-      err += (m->param)->update_elasticity(m,ctx,&L,&F2[S],compute_stiffness);
-    // <-- update elasticity part
-    
-    err += func->destroy_ctx(&ctx);    
-
-    // --> start computing tagent
-
-    Matrix_AeqBT(F2[MT],1.0,F2[M]);
-        
-    double Jn = 1.0;
-
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
-        
-        Matrix_AxB(F2[MT_sAA],1.0,0.0,F2[MT],0,F2[sAA],0);        
-        Matrix_AxB(F2[MT_sAA_M],1.0,0.0,F2[MT_sAA],0,F2[M],0);  
-
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          { 
-            const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)]; 
-            const double* const ptr_dMdu_wg = &(dMdu_all[idx_4_gen(w,g,0,0,
-                                                                   nne,nsd,nsd,nsd)]);
-
-            Matrix_init_w_array(F2[ST_wg],3,3,ptrST_wg); 
-            Matrix_init_w_array(F2[dMdu],3,3,ptr_dMdu_wg);
-
-//            Matrix_AxB(F2[BB],1.0,0.0,F2[Fr],   1,F2[ST_wg],0);             
-//            Matrix_AxB(F2[CC],1.0,0.0,F2[ST_ab],1,F2[ST_wg],0);
-            for(int ia=1; ia<=3; ia++)
-            {
-              for(int ib=1; ib<=3; ib++)
-              {
-                Mat_v(F2[BB], ia,ib) = 0.0;
-                Mat_v(F2[CC], ia,ib) = 0.0;                
-                for(int ic=1; ic<=3; ic++)
-                {
-                  Mat_v(F2[BB], ia,ib) += Mat_v(F2[Fr],    ic,ia)*Mat_v(F2[ST_wg], ic,ib);
-                  Mat_v(F2[CC], ia,ib) += Mat_v(F2[ST_ab], ic,ia)*Mat_v(F2[ST_wg], ic,ib);
-                }                  
-              }
-            }
-            
-            // compute for F2[dCdu]
-            Matrix_Tns2_AxBxC(F2[MT_FrTFrdMdu],1.0,0.0,F2[MT],F2[FrTFr],F2[dMdu]);            
-            
-            // compute F2[MT_sAA_dMdu]
-            Matrix_AxB(F2[MT_sAA_dMdu],1.0,0.0,F2[MT_sAA],0,F2[dMdu],0); 
-               
-            //Matrix_symmetric(F2[MT_sAA_dMdu], F2[sMT_sAA_dMdu]);            
-            //Matrix_symmetric(F2[BB],F2[sBB]);            
-            //Matrix_symmetric(F2[CC],F2[sCC]);
-            //Matrix_symmetric(F2[MT_FrTFrdMdu],F2[dCdu]);
-            for(int ia=1; ia<=3; ia++)
-            {
-              for(int ib=1; ib<=3; ib++)
-              {
-                Mat_v(F2[sMT_sAA_dMdu], ia, ib) = 0.5*(Mat_v(F2[MT_sAA_dMdu],  ia, ib)+Mat_v(F2[MT_sAA_dMdu],  ib, ia));
-                Mat_v(F2[sBB],          ia, ib) = 0.5*(Mat_v(F2[BB],           ia, ib)+Mat_v(F2[BB],           ib, ia));
-                Mat_v(F2[sCC],          ia, ib) = 0.5*(Mat_v(F2[CC],           ia, ib)+Mat_v(F2[CC],           ib, ia));
-                Mat_v(F2[dCdu],         ia, ib) = 0.5*(Mat_v(F2[MT_FrTFrdMdu], ia, ib)+Mat_v(F2[MT_FrTFrdMdu], ib, ia));
-              }
-            }            
-                        
-            Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,F2[MT],F2[sBB],F2[M]);     // compute for F2[dCdu]          
-            Matrix_Tns2_AxBxC(F2[MT_sCC_M],1.0,0.0,F2[MT],F2[sCC],F2[M]); // compute F2[MT_sCC_M]
-            
-            // compute F2[MT_sAA_M]:L:F2[dCdu]
-            Matrix_Tns4_dd_Tns2(F2[L_dCdu],L,F2[dCdu]);
-            double MT_sAA_M_L_dCdu = 0.0;
-            Matrix_ddot(F2[MT_sAA_M],F2[L_dCdu],MT_sAA_M_L_dCdu);
-                        
-            // compute F2[MT_sCC_M]:F2[S]
-            double MT_sCC_M_S = 0.0;
-            Matrix_ddot(F2[MT_sCC_M],F2[S],MT_sCC_M_S);
-            
-        
-
-            // compute F2[MT_sAA_dMdu]:F2[S]
-            double sMT_sAA_dMdu_S = 0.0;            
-            Matrix_ddot(F2[sMT_sAA_dMdu],F2[S],sMT_sAA_dMdu_S);
-            
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-                      
-            lk[lk_idx] += 1.0/Jn*fe.detJxW*(MT_sAA_M_L_dCdu + 2.0*sMT_sAA_dMdu_S + MT_sCC_M_S);            
-          }
-        }
-      }
-    }
-  }
-  free(u);
-
-  /* check diagonal for zeros/nans */
-  for (int a = 0; a < nne; a++) {
-    for (int b = 0; b < nsd; b++) {
-      if ( !isnormal(lk[idx_K(a,b,a,b,nne,nsd)]) ) err++;
-    }
-  }
-  
-  Matrix_cleanup(L); 
-
-  /* destroy second-order tensors */
-  for (int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
-
-  FEMLIB_destruct(&fe);
-  free(dMdu_all);
- 
-  return err;  
-}
-                                    
-
-int stiffness_el_crystal_plasticity(double *lk,
+int residuals_el_crystal_plasticity(double *f,
                                     const int ii,
                                     const int ndofn,
                                     const int nne,
@@ -1308,31 +914,7 @@ int stiffness_el_crystal_plasticity(double *lk,
                                     const int total_Lagrangian)
 {
   int err = 0;
-  if(total_Lagrangian)
-    err += stiffness_el_crystal_plasticity_TL(lk, ii, ndofn, nne, nsd, 
-                                              elem, nod, node, dt, eps, sup, r_e);
-  else
-    err += stiffness_el_crystal_plasticity_UL(lk, ii, ndofn, nne, nsd, 
-                                              elem, nod, node, dt, eps, sup, r_e);
-  return err;                                                  
-}                                    
-
-int residuals_el_crystal_plasticity_UL(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e)
-{
-  int err = 0;
   double alpha = -1.0; // if alpha < 0, no inertia
-  int total_Lagrangian = 0;
     
   double *u = (double *) malloc(sizeof(double)*nne*nsd);
   
@@ -1348,7 +930,7 @@ int residuals_el_crystal_plasticity_UL(double *f,
   /* second-order tensors */
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
 
   FEMLIB fe;
@@ -1378,9 +960,9 @@ int residuals_el_crystal_plasticity_UL(double *f,
       }
 
       /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
-      Matrix_eye(F2[Fn],3);
-      Matrix_eye(F2[pFn],3);
-      Matrix_eye(F2[eFn],3);
+      Matrix_eye(F2[Fn],DIM_3);
+      Matrix_eye(F2[pFn],DIM_3);
+      Matrix_eye(F2[eFn],DIM_3);
       Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
@@ -1444,7 +1026,7 @@ int residuals_el_crystal_plasticity_UL(double *f,
       {
         const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
                                                 nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
+        Matrix_init_w_array(F2[ST_ab],DIM_3,DIM_3,ptrST_ab);
         Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
         Matrix_symmetric(F2[AA],F2[sAA]);
     
@@ -1470,153 +1052,6 @@ int residuals_el_crystal_plasticity_UL(double *f,
   return err;
 }
 
-int residuals_el_crystal_plasticity_TL(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e)
-{
-  int err = 0;
-  double alpha = -1.0; // if alpha < 0, no inertia
-  int total_Lagrangian = 1;
-    
-  double *u = (double *) malloc(sizeof(double)*nne*nsd);
-  
-  for(int a=0;a<nne;a++)
-  {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  enum {Fr,pFnp1,L,S,M,MT,ST_ab,AA,sAA,MT_sAA_M,Fend};
-  
-  /* second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
-  }
-
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
-  int compute_stiffness = 0;
-
-  MATERIAL_ELASTICITY mat_e_new;
-  MATERIAL_ELASTICITY *mat_e_in;
-     
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
-
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-   
-    if (sup->multi_scale)
-        cm_add_macro_F(sup,F2[Fr].m_pdata);
-
-    {
-      /* check that deformation is invertible -> J > 0 */
-      int terr = 0;
-      double tJ = 0.0;
-      tJ = getJacobian(F2[Fr].m_pdata, ii, &terr);
-      err += terr;
-    }
-
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fr].m_pdata,dt,alpha, NULL);
-    err += m->param->integration_algorithm(m,ctx);
-    if(err>0)
-    	return err;    
-    err += m->param->get_pF(m,&F2[pFnp1]);
-
-    err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata);    
-    // <-- update plasticity part
-
-    // --> update elasticity part
-    Matrix_init(F2[S],0.0);    
-    
-    if((m->param)->uqcm)
-    { 
-      double *x_ip = (fe.x_ip).m_pdata;      
-      ELASTICITY *elast = (m->param)->cm_elast;
-      mat_e_in = elast->mat;
-      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
-      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,NULL,&F2[S],compute_stiffness);
-      elast->mat = mat_e_in;
-    }
-    else
-      err += (m->param)->update_elasticity(m,ctx,NULL,&F2[S],compute_stiffness);
-    // <-- update elasticity part
-
-    err += m->param->destroy_ctx(&ctx);
-                
-    Matrix_AeqBT(F2[MT],1.0,F2[M]);
-    double Jn = 1.0;
-    
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
-
-        Matrix_Tns2_AxBxC(F2[MT_sAA_M],1.0,0.0,F2[MT],F2[sAA],F2[M]);
-        double MT_sAA_M_S = 0.0; 
-        Matrix_ddot(F2[MT_sAA_M],F2[S],MT_sAA_M_S);          
-        
-        int fe_id = a*ndofn + b;              
-        f[fe_id] += 1.0/Jn*fe.detJxW*MT_sAA_M_S;
-      }
-    }       
-  }
-  
-  free(u);
-  
-  /* destroyu list of second-order tenosors */
-  for(int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
-
-  FEMLIB_destruct(&fe);
-  return err;
-}
-
-int residuals_el_crystal_plasticity(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const int total_Lagrangian)
-{
-  int err = 0;
-  if(total_Lagrangian)
-    err += residuals_el_crystal_plasticity_TL(f, ii, ndofn, nne, nsd, 
-                                              elem, nod, node, dt, eps, sup, r_e);
-  else
-    err += residuals_el_crystal_plasticity_UL(f, ii, ndofn, nne, nsd, 
-                                              elem, nod, node, dt, eps, sup, r_e);          
-  return err;
-}                                    
-                                    
 int constitutive_model_update_output_variables(SIG *sig,
                                                EPS *eps,
                                                NODE *node,
@@ -1632,16 +1067,16 @@ int constitutive_model_update_output_variables(SIG *sig,
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
     
-  static const double eye[TENSOR_LEN] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  static const double eye[DIM_3x3] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
   /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
   const int ip = 0;
 
   /* deformation gradient */
   Matrix_double F, eF, pF, S;
-  Matrix_construct_redim(double, F, DIM, DIM);
-  Matrix_construct_redim(double, eF, DIM, DIM);
-  Matrix_construct_redim(double, pF, DIM, DIM);
-  Matrix_construct_redim(double, S, DIM, DIM);
+  Matrix_construct_redim(double, F, DIM_3, DIM_3);
+  Matrix_construct_redim(double, eF, DIM_3, DIM_3);
+  Matrix_construct_redim(double, pF, DIM_3, DIM_3);
+  Matrix_construct_redim(double, S, DIM_3, DIM_3);
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
@@ -1696,7 +1131,7 @@ int constitutive_model_update_output_variables(SIG *sig,
     sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
 
     /* store elastic deformation */
-    memcpy(eps[i].il[ip].F, eFd, TENSOR_LEN * sizeof(*eFd));
+    memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
 
     /* store the hardening parameter */
     err += func->get_hardening(m, &eps[i].dam[ip].wn);
@@ -1705,15 +1140,15 @@ int constitutive_model_update_output_variables(SIG *sig,
     err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
 
     /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
-    double sigma[TENSOR_LEN] = {};
-    double temp[TENSOR_LEN] = {};
-    double temp_I[TENSOR_LEN] = {};
+    double sigma[DIM_3x3] = {};
+    double temp[DIM_3x3] = {};
+    double temp_I[DIM_3x3] = {};
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                DIM,DIM,DIM, 1.0 / eJ, eFd, DIM, Sd, DIM,
-                0.0, temp,DIM);
+                DIM_3,DIM_3,DIM_3, 1.0 / eJ, eFd, DIM_3, Sd, DIM_3,
+                0.0, temp,DIM_3);
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                DIM, DIM, DIM, 1.0, temp, DIM, eFd, DIM,
-                0.0, sigma, DIM);
+                DIM_3, DIM_3, DIM_3, 1.0, temp, DIM_3, eFd, DIM_3,
+                0.0, sigma, DIM_3);
 
     /* store symmetric part */
     sig[i].el.o[0] = sigma[idx_2(0,0)]; /* XX */
@@ -1725,11 +1160,11 @@ int constitutive_model_update_output_variables(SIG *sig,
 
     /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                DIM, DIM, DIM, 1.0, eFd, DIM, eFd, DIM,
-                0.0, temp, DIM);
+                DIM_3, DIM_3, DIM_3, 1.0, eFd, DIM_3, eFd, DIM_3,
+                0.0, temp, DIM_3);
     err += inv3x3(temp, temp_I);
     /* e <-- temp is the Euler strain */
-    for(int i = 0; i < TENSOR_LEN; i++){
+    for(int i = 0; i < DIM_3x3; i++){
       temp[i] = 0.5*(eye[i]-temp_I[i]);
     }
 
@@ -1754,7 +1189,6 @@ int constitutive_model_update_output_variables(SIG *sig,
 
   return err;
 }
-
 
 
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,
@@ -1782,20 +1216,18 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,dMdu,eFnpa,pFnp1,pFnpa,S,
-    M,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
-    MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,MTeFnT_FrTFreFndMdu,dCdu,
-    L_dCdu,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,
-    sMTeFnT_sAA_eFndMdu,eFnMT,Fend};
+  enum {Fn,Fr,Fnp1,pFn,pFnp1,S,
+        eFnpa,pFnpa,
+        eFn,M,eFnM,eFnMT,FrTFr,Fend};
   
   Matrix(double) L;  
-  Matrix_construct_redim(double,L ,81,1);  
+  Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
 
   /* list of second-order tensors */
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
 
   FEMLIB fe;
@@ -1822,8 +1254,6 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
     
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0);  
 
-    /* need to have called the integration algorithm. This should be
-       done OUTSIDE of the stiffness/tangent functions */
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, F2[eFnpa].m_pdata);
         
@@ -1842,77 +1272,16 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
       
     // --> start computing tagent
     //Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
+    Matrix_eye(F2[eFn],DIM_3);
     Matrix_AeqB(F2[eFnM],1.0,F2[M]); // eFn = 1 for total_Lagrangian
     Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
         
     double Jn; // Matrix_det(F2[Fn], Jn);
     Jn = 1.0;
 
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0);
-        Matrix_symmetric(F2[AA],F2[sAA]);
-
-//        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFn]);
-        Matrix_AxB(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],0,F2[sAA],0);
-//       Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[M],0);
-        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[eFnMT],F2[sAA],F2[M]);
-
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          {
-            const double* const ptrST_wg = &(fe.ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)];
-            const double* const ptr_dMdu_wg = &(dMdu_all[idx_4_gen(w,g,0,0,
-                                                                   nne,nsd,nsd,nsd)]);
-
-            Matrix_init_w_array(F2[ST_wg],3,3,ptrST_wg);
-            Matrix_init_w_array(F2[dMdu],3,3,ptr_dMdu_wg);
-            
-            Matrix_AxB(F2[BB],1.0,0.0,F2[Fr],1,F2[ST_wg],0);
-            Matrix_symmetric(F2[BB],F2[sBB]);
-            Matrix_AxB(F2[CC], 1.0,0.0,F2[ST_ab],1,F2[ST_wg],0);
-            Matrix_symmetric(F2[CC],F2[sCC]);
-
-            // compute F2[dCdu]
-//            Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFn],1.0,0.0,F2[eFnMT],F2[FrTFr],F2[eFn]);
-            Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[eFnMT],F2[FrTFr],F2[dMdu]);
-//            Matrix_AxB(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[MTeFnT_FrTFreFn],0,F2[dMdu],0);
-            Matrix_symmetric(F2[MTeFnT_FrTFreFndMdu],F2[dCdu]);
-                        
-            Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,F2[eFnMT],F2[sBB],F2[eFnM]);
-            
-            // compute F2[MTeFnT_sAA_eFnM]:L:F2[dCdu]
-            Matrix_Tns4_dd_Tns2(F2[L_dCdu],L,F2[dCdu]);
-            double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
-            Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[L_dCdu],MTeFnT_sAA_eFnM_L_dCdu);
-            
-            // compute F2[MTeFnT_sCC_eFnM]
-            Matrix_Tns2_AxBxC(F2[MTeFnT_sCC_eFnM],1.0,0.0,F2[eFnMT],F2[sCC],F2[eFnM]);
-                        
-            // compute F2[MTeFnT_sCC_eFnM]:F2[S]
-            double MTeFnT_sCC_eFnM_S = 0.0;
-            Matrix_ddot(F2[MTeFnT_sCC_eFnM],F2[S],MTeFnT_sCC_eFnM_S);
-            
-            // compute F2[MTeFnT_sAA_eFndMdu]
-            Matrix_AxB(F2[MTeFnT_sAA_eFndMdu],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[dMdu],0);
-            Matrix_symmetric(F2[MTeFnT_sAA_eFndMdu], F2[sMTeFnT_sAA_eFndMdu]);
-
-            // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
-            double sMTeFnT_sAA_eFndMdu_S = 0.0;
-            Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],F2[S],sMTeFnT_sAA_eFndMdu_S);
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);
-            lk[lk_idx] += 1.0/Jn*fe.detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);
-          }
-        }
-      }
-    }
+    err += compute_stiffness_matrix(lk,&fe,
+                                    F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
+                                    &L,dMdu_all,Jn);
   }
   free(u);
   
@@ -1929,6 +1298,8 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
  
   return err;
 }
+
+
 
 int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
                                     const Constitutive_model *m,
@@ -1991,7 +1362,7 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
       {
         const double* const ptrST_ab = &(fe->ST)[idx_4_gen(a,b,0,0,
                                               nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
+        Matrix_init_w_array(F2[ST_ab],DIM_3,DIM_3,ptrST_ab);
         Matrix_AxB(F2[AA],1.0,0.0,F2[Fnpa],1,F2[ST_ab],0); 
         Matrix_symmetric(F2[AA],F2[sAA]);
     
@@ -2045,7 +1416,7 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
 
   FEMLIB fe;
@@ -2260,17 +1631,13 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     for(int b=0; b<nsd;b++)
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
-  
-  enum {Fn,Fr,Fnp1,pFn,dMdu,pFnp1,pFnp1_I,S,
-        eFn,M,eFnM,ST_ab,ST_wg,AA,BB,CC,sAA,sBB,sCC,
-        MTeFnT_sAA_eFn,MTeFnT_sAA_eFnM,FrTFr,
-        MTeFnT_FrTFreFn,MTeFnT_FrTFreFndMdu,dCdu,
-        L_dCdu,MTeFnT_sCC_eFnM,MTeFnT_sAA_eFndMdu,
-        sMTeFnT_sAA_eFndMdu,eFnMT,
-        hFn,hFnp1,Fend};
 
+  enum {Fn,Fr,Fnp1,pFn,pFnp1,pFnp1_I,S,
+        eFn,M,eFnM,eFnMT,FrTFr,
+        hFn,hFnp1,hFnp1_I,N,Fend};
+          
   Matrix(double) L;  
-  Matrix_construct_redim(double,L ,81,1);
+  Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);
     
   Matrix(double) Tnp1, Tn, Tnm1;    
   FIELD_VARIABLES *fv_h = NULL;
@@ -2301,7 +1668,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
 
   int compute_stiffness = 1;      
@@ -2319,11 +1686,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     
     /* get a shortened pointer for simplified CM function calls */
     const Model_parameters *func = m->param;
-    err += func->get_Fn( m, F2 +  Fn);
-    err += func->get_pFn(m, F2 + pFn);
-    err += func->get_eFn(m, F2 + eFn);
 
     // --> update deformations due to coupled physics
+    Matrix_eye(F2[N],DIM_3);
     if(fv->n_coupled > 0)
     { 
       switch(fv->coupled_physics_ids[0])
@@ -2334,6 +1699,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
           err += compute_temperature_at_ip(fe,grid,mat,
                                            Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                            F2[hFnp1].m_pdata,F2[hFn].m_pdata);
+          inv3x3(F2[hFnp1].m_pdata, F2[hFnp1_I].m_pdata);
+          Matrix_AxB(F2[N],1.0,0.0,F2[hFn],0,F2[hFnp1_I],0);
           break;
         }  
         case MULTIPHYSICS_CHEMICAL:
@@ -2350,9 +1717,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
         cm_add_macro_F(sup,F2[Fr].m_pdata);
 
       // TOTAL LAGRANGIAN FORMULATION all _Fn = 1
-      Matrix_eye(F2[Fn], 3);
-      Matrix_eye(F2[pFn],3);
-      Matrix_eye(F2[eFn],3);
+      Matrix_eye(F2[Fn], DIM_3);
+      Matrix_eye(F2[pFn],DIM_3);
+      Matrix_eye(F2[eFn],DIM_3);
       Matrix_copy(F2[Fnp1], F2[Fr]);
     }
     else
@@ -2362,19 +1729,21 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
         PGFEM_Abort();
       }
 
-      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn+1]   
+      err += func->get_Fn( m, F2 +  Fn);
+      err += func->get_pFn(m, F2 + pFn);
+      err += func->get_eFn(m, F2 + eFn);
+      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0); // F2[Fn+1] = Fr*Fn   
     }   
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0); 
 
-    /* need to have called the integration algorithm. This should be
-       done OUTSIDE of the stiffness/tangent functions */
+    // --> update plasticity part
     void *ctx = NULL;
     err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
     err += func->get_pF(m,F2+pFnp1);
 
     err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
+    Matrix_Tns2_AxBxC(F2[M],1.0,0.0,F2[pFn],F2[N],F2[pFnp1_I]);
     // <-- update plasticity part 
 
     // --> update elasticity part
@@ -2404,71 +1773,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
         
     double Jn; Matrix_det(F2[Fn], Jn);
-
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe->ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],3,3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
-        
-        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFn]);        
-        Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[M],0);  
-
-        for(int w=0; w<nne; w++)
-        {
-          for(int g=0; g<nsd; g++)
-          { 
-            const double* const ptrST_wg = &(fe->ST)[idx_4_gen(w,g,0,0,
-                                                      nne,nsd,nsd,nsd)]; 
-            const double* const ptr_dMdu_wg = &(dMdu_all[idx_4_gen(w,g,0,0,
-                                                                   nne,nsd,nsd,nsd)]);
-
-            Matrix_init_w_array(F2[ST_wg],3,3,ptrST_wg); 
-            Matrix_init_w_array(F2[dMdu],3,3,ptr_dMdu_wg);
-
-            Matrix_AxB(F2[BB],1.0,0.0,F2[Fr],1,F2[ST_wg],0); 
-            Matrix_symmetric(F2[BB],F2[sBB]);
-            Matrix_AxB(F2[CC], 1.0,0.0,F2[ST_ab],1,F2[ST_wg],0);
-            Matrix_symmetric(F2[CC],F2[sCC]);
-            
-            // compute F2[dCdu]
-            Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFn],1.0,0.0,F2[eFnMT],F2[FrTFr],F2[eFn]);            
-            Matrix_AxB(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[MTeFnT_FrTFreFn],0,F2[dMdu],0);                                    
-            Matrix_symmetric(F2[MTeFnT_FrTFreFndMdu],F2[dCdu]);
-                        
-            Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,F2[eFnMT],F2[sBB],F2[eFnM]);            
-            
-            // compute F2[MTeFnT_sAA_eFnM]:L:F2[dCdu]
-            Matrix_Tns4_dd_Tns2(F2[L_dCdu],L,F2[dCdu]);
-            double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
-            Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[L_dCdu],MTeFnT_sAA_eFnM_L_dCdu);
-            
-            // compute F2[MTeFnT_sCC_eFnM]
-            Matrix_Tns2_AxBxC(F2[MTeFnT_sCC_eFnM],1.0,0.0,F2[eFnMT],F2[sCC],F2[eFnM]);
-                        
-            // compute F2[MTeFnT_sCC_eFnM]:F2[S]
-            double MTeFnT_sCC_eFnM_S = 0.0;
-            Matrix_ddot(F2[MTeFnT_sCC_eFnM],F2[S],MTeFnT_sCC_eFnM_S);
-            
-            // compute F2[MTeFnT_sAA_eFndMdu]
-            Matrix_AxB(F2[MTeFnT_sAA_eFndMdu],1.0,0.0,F2[MTeFnT_sAA_eFn],0,F2[dMdu],0);    
-            Matrix_symmetric(F2[MTeFnT_sAA_eFndMdu], F2[sMTeFnT_sAA_eFndMdu]);        
-
-            // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
-            double sMTeFnT_sAA_eFndMdu_S = 0.0;            
-            Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],F2[S],sMTeFnT_sAA_eFndMdu_S);
-            
-            const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
-                      
-            lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);            
-          }
-        }
-      }
-    }
+    err += compute_stiffness_matrix(lk,fe,
+                                    F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
+                                    &L,dMdu_all,Jn);
   }
   free(u);
 
@@ -2498,6 +1805,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
  
   return err;
 }
+
 
 int residuals_el_constitutive_model(double *f,
                                     const int ii,
