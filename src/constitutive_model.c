@@ -51,6 +51,65 @@ static void cm_add_macro_F(const SUPP sup,
   for (int i = 0; i < DIM_3x3; i++) F[i] += F0[i];
 }
 
+/// construct Matrix(double) array
+///
+/// \param[out] F_out Matrix array to be created
+/// \param[in] row number of rows of each Matrix
+/// \param[in] col number of columns of each Matrix
+/// \param[in] num size of array
+/// \param[in] initialize if 1, initialize each matrix to zero
+/// \return non-zero on internal error
+int construct_matrix_array(Matrix(double) **F_out, 
+                           const int row, 
+                           const int col, 
+                           int num, 
+                           int initialize)
+{
+  int err = 0;
+
+  Matrix(double) *F = NULL;
+  F = malloc(num*sizeof(Matrix(double)));
+  
+  if(F==NULL)
+  {  
+    printf("Memory allocation error [%s:%s:%d]\n", __func__, __FILE__,__LINE__);
+    err++;
+    return err; 
+  }  
+  for(int ia = 0; ia < num; ia++)
+  {
+    if(initialize)
+      Matrix_construct_init(double, F[ia],row,col,0.0);
+    else
+      Matrix_construct_redim(double, F[ia],row,col);      
+  }
+  
+  *F_out = F; 
+    
+  return err;
+}
+
+
+/// cleanup Matrix(double) array
+///
+/// \param[out] F_in Matrix array to be deallocated
+/// \param[in] num size of array
+/// \return non-zero on internal error
+int cleanup_matrix_array(Matrix(double) **F_in, int num)
+{
+  int err = 0;
+
+  Matrix(double) *F = *F_in;
+  for(int ia = 0; ia < num; ia++)
+    Matrix_cleanup(F[ia]);
+
+  free(F);
+  
+  *F_in = NULL; 
+    
+  return err;
+}
+
 /* this is a wrapper function for the switch that was copy/pasted
    everywhere. It is no big deal to keep adding to this private
    function's argument list. Just put everything any model might need
@@ -662,11 +721,9 @@ inline int compute_stiffness_matrix(double *lk,
         temp_F_2,
         Fend};
   
-  // 2nd order tensors
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }  
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);   
   
   for(int a=0; a<nne; a++)
   {
@@ -741,15 +798,61 @@ inline int compute_stiffness_matrix(double *lk,
     }
   }
   
-  // cleanup list of 2nd order tenosors
-  for(int a = 0; a < Fend; a++)
-    Matrix_cleanup(F2[a]);
-
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
   
   return err;
 }
 
+inline int compute_residual_vector(double *f,
+                                   const FEMLIB *fe,
+                                   const Matrix(double) *Fr,
+                                   const Matrix(double) *eFnMT,
+                                   const Matrix(double) *eFnM,
+                                   const Matrix(double) *S,
+                                   const double Jn)
+{
+  int err = 0;
+  const int nne = fe->nne;
+  const int nsd = fe->nsd;
+  
+  Matrix(double) ST_ab; // no memory is created
+  ST_ab.m_row = ST_ab.m_col = DIM_3;
+
+  enum {temp_F_1, temp_F_2, Fend};
+  
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
+
+  for(int a=0; a<nne; a++)
+  {
+    for(int b=0; b<nsd; b++)
+    {
+      const int id_ab = idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd);
+      ST_ab.m_pdata = (fe->ST)+id_ab;
+      
+      int AA  = temp_F_1; 
+      int sAA = temp_F_2;
+      Matrix_AxB(F2[AA],1.0,0.0,*Fr,1,ST_ab,0);
+      Matrix_symmetric(F2[AA],F2[sAA]);
+      
+      int MTeFnT_sAA_eFnM = temp_F_1;
+      Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFnM],1.0,0.0,*eFnMT,F2[sAA],*eFnM);
+      
+      double MTeFnT_sAA_eFnM_S = 0.0; 
+      Matrix_ddot(F2[MTeFnT_sAA_eFnM],*S,MTeFnT_sAA_eFnM_S);       
+            
+      int fe_id = a*nsd + b;              
+      f[fe_id] += 1.0/Jn*fe->detJxW*MTeFnT_sAA_eFnM_S;              
+    }
+  }
+  
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
+       
+  return err;
+}
 int stiffness_el_crystal_plasticity(double *lk,
                                     const int ii,
                                     const int ndofn,
@@ -782,12 +885,9 @@ int stiffness_el_crystal_plasticity(double *lk,
   Matrix(double) L;  
   Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
 
-  /* list of second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
 
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
@@ -887,11 +987,8 @@ int stiffness_el_crystal_plasticity(double *lk,
   
   Matrix_cleanup(L); 
 
-  /* destroy second-order tensors */
-  for (int a = 0; a < Fend; a++)
-    Matrix_cleanup(F2[a]);
-
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
 
   FEMLIB_destruct(&fe);
   free(dMdu_all);
@@ -924,14 +1021,16 @@ int residuals_el_crystal_plasticity(double *f,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,pFnp1,pFnp1_I,
-    L,S,eFn,M,eFnM,ST_ab,AA,sAA,MTeFnT_sAA_eFnM,eFnMT,Fend};
+  enum {Fr,Fnp1,pFnp1,
+        L,S,M,eFnM,eFnMT,
+        temp_F_1,
+        temp_F_2,F_eye,Fend};
   
-  /* second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
+  
+  Matrix_eye(F2[F_eye], DIM_3);
 
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
@@ -948,22 +1047,16 @@ int residuals_el_crystal_plasticity(double *f,
 
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
-    err += m->param->get_Fn(m,&F2[Fn]);
-    err += m->param->get_pFn(m,&F2[pFn]);
-    err += m->param->get_eFn(m,&F2[eFn]);
-   
     // --> update plasticity part
+    double Jn = 1.0;
     if(total_Lagrangian)
     {
       if (sup->multi_scale) {
         cm_add_macro_F(sup,F2[Fr].m_pdata);
       }
 
-      /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
-      Matrix_eye(F2[Fn],DIM_3);
-      Matrix_eye(F2[pFn],DIM_3);
-      Matrix_eye(F2[eFn],DIM_3);
-      Matrix_copy(F2[Fnp1], F2[Fr]);
+      // TOTAL LAGRANGIAN FORMULATION Fn = 1, Fnp1 = Fr
+      Matrix_copy(F2[Fnp1], F2[Fr]);      
     }
     else
     {
@@ -971,8 +1064,11 @@ int residuals_el_crystal_plasticity(double *f,
         PGFEM_printerr("Multi-scale formulation does not support UL!\n");
         PGFEM_Abort();
       }
-
-      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  /* compute F2[Fnp1] */    
+ 
+      int Fn = temp_F_1;
+      err += m->param->get_Fn(m, F2+Fn);      
+      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // compute F2[Fnp1] = Fr*Fn
+      Matrix_det(F2[Fn], Jn);   
     }      
 
     {
@@ -988,10 +1084,19 @@ int residuals_el_crystal_plasticity(double *f,
     err += m->param->integration_algorithm(m,ctx);
     if(err>0)
     	return err;
-    err += m->param->get_pF(m,&F2[pFnp1]);
+    err += m->param->get_pF(m,F2+pFnp1);
 
-    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
+    if(total_Lagrangian)
+      err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata);
+    else
+    {
+      int pFn     = temp_F_1;
+      int pFnp1_I = temp_F_2;
+      err += m->param->get_pFn(m,F2+pFn);
+      err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
+      Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
+    }
+      
     // <-- update plasticity part
       
     // --> update elasticity part
@@ -1004,49 +1109,38 @@ int residuals_el_crystal_plasticity(double *f,
       mat_e_in = elast->mat;
       err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
       elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,NULL,&F2[S],compute_stiffness);
+      err += (m->param)->update_elasticity(m,ctx,NULL,F2+S,compute_stiffness);
       elast->mat = mat_e_in;
     }
     else
-      err += (m->param)->update_elasticity(m,ctx,NULL,&F2[S],compute_stiffness);
+      err += (m->param)->update_elasticity(m,ctx,NULL,F2+S,compute_stiffness);
     // <-- update elasticity part
       
     err += m->param->destroy_ctx(&ctx);
 
     if(err!=0)
       break;     
-              
-    Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
-    Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
-    double Jn; Matrix_det(F2[Fn], Jn);
-      
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe.ST)[idx_4_gen(a,b,0,0,
-                                                nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],DIM_3,DIM_3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fr],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
     
-        Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[eFnMT],F2[sAA],F2[eFnM]);
-        double MTeFnT_sAA_eFnM_S = 0.0; 
-        Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[S],MTeFnT_sAA_eFnM_S);          
-        
-        int fe_id = a*ndofn + b;              
-        f[fe_id] += 1.0/Jn*fe.detJxW*MTeFnT_sAA_eFnM_S;
-      }
+    if(total_Lagrangian)
+    {
+      Matrix_AeqB(F2[eFnM],1.0,F2[M]);
+      Matrix_AeqBT(F2[eFnMT],1.0,F2[M]);      
     }
+    else
+    {
+      int eFn = temp_F_1;
+      err += m->param->get_eFn(m,F2+eFn);
+      Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
+      Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
+    }
+      
+    err += compute_residual_vector(f,&fe,F2+Fr,F2+eFnMT,F2+eFnM,F2+S,Jn);
   }       
   
   free(u);
   
-  /* destroyu list of second-order tenosors */
-  for(int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
 
   FEMLIB_destruct(&fe);
   return err;
@@ -1223,12 +1317,9 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
   Matrix(double) L;  
   Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
 
-  /* list of second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
 
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);
@@ -1287,11 +1378,8 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
   
   Matrix_cleanup(L);
 
-  /* destroy second-order tensors */
-  for (int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
 
   FEMLIB_destruct(&fe);
   free(dMdu_all);
@@ -1299,35 +1387,28 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
   return err;
 }
 
-
-
 int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
-                                    const Constitutive_model *m,
-                                    const int ii,
-                                    const int ndofn,                                    
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    Matrix(double) *pFnp1,
-                                    Matrix(double) *pFn,
-                                    Matrix(double) *Fnp1,
-                                    Matrix(double) *Fn,
-                                    double alpha,
-                                    double dt_alpha_1_minus_alpha,
-                                    FEMLIB *fe)
+                                                 const Constitutive_model *m,
+                                                 const int ii,
+                                                 const int ndofn,
+                                                 Matrix(double) *pFnp1,
+                                                 Matrix(double) *pFn,
+                                                 Matrix(double) *Fnp1,
+                                                 Matrix(double) *Fn,
+                                                 double alpha,
+                                                 double dt_alpha_1_minus_alpha,
+                                                 FEMLIB *fe)
 {
   // Total Lagrangian based
-  int err = 0;   
-  enum {M,eFnpa,pFnpa,Fnpa,S,ST_ab,AA,sAA,MT,MT_sAA_M,Fend}; 
+  int err = 0;
+  const int nne = fe->nne;
+  const int nsd = fe->nsd;  
   
-  // second-order tensors
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],nsd,nsd);
-  }
+  enum {M,eFnpa,pFnpa,Fnpa,S,MT,Fend}; 
+  
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
 
   int compute_stiffness = 0;
    
@@ -1341,7 +1422,7 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
   Matrix_init(F2[S],0.0);    
 
   {
-    /* check that deformation is invertible -> J > 0 */
+    // check that deformation is invertible -> J > 0
     int terr = 0;
     double tJ = 0.0;
     tJ = getJacobian(F2[Fnpa].m_pdata, ii, &terr);
@@ -1355,48 +1436,29 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
   err += m->param->destroy_ctx(&ctx);
 
   if(err==0)
-  {  
-    for(int a=0; a<nne; a++)
-    {
-      for(int b=0; b<nsd; b++)
-      {
-        const double* const ptrST_ab = &(fe->ST)[idx_4_gen(a,b,0,0,
-                                              nne,nsd,nsd,nsd)];
-        Matrix_init_w_array(F2[ST_ab],DIM_3,DIM_3,ptrST_ab);
-        Matrix_AxB(F2[AA],1.0,0.0,F2[Fnpa],1,F2[ST_ab],0); 
-        Matrix_symmetric(F2[AA],F2[sAA]);
-    
-        Matrix_Tns2_AxBxC(F2[MT_sAA_M],1.0,0.0,F2[MT],F2[sAA],F2[M]);
-        double MT_sAA_M_S = 0.0; 
-        Matrix_ddot(F2[MT_sAA_M],F2[S],MT_sAA_M_S);          
-      
-        int fe_id = a*ndofn + b;              
-        f[fe_id] += dt_alpha_1_minus_alpha*fe->detJxW*MT_sAA_M_S;
-      }
-    }
+  { 
+    double Jn = 1.0; 
+    err += compute_residual_vector(f,fe,F2+Fnpa,F2+MT,F2+M,F2+S,Jn/dt_alpha_1_minus_alpha);
   }          
   
-  // destroyu list of second-order tenosors
-  for(int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
   return err;
 }
 
 int residuals_el_crystal_plasticity_w_inertia(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double *dts,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const double alpha)
+                                              const int ii,
+                                              const int ndofn,
+                                              const int nne,
+                                              const int nsd,
+                                              const ELEMENT *elem,
+                                              const long *nod,
+                                              const NODE *node,
+                                              const double *dts,
+                                              EPS *eps,
+                                              const SUPP sup,
+                                              const double *r_e,
+                                              const double alpha)
 {
   int err = 0;
   int total_Lagrangian = 1;
@@ -1413,11 +1475,9 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
   
   enum {Fnp1,Fn,Fnm1,pFnp1,pFn,pFnm1,Fend}; 
   
-  // second-order tensors
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
 
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
@@ -1432,14 +1492,6 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     FEMLIB_update_shape_tensor(&fe);  
     FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fnp1);
 
-    {
-      /* check that deformation is invertible -> J > 0 */
-      int terr = 0;
-      double tJ = 0.0;
-      tJ = getJacobian(F2[Fnp1].m_pdata, ii, &terr);
-      err += terr;
-    }
-
     Constitutive_model *m = &(eps[ii].model[ip-1]);
 
     void *ctx = NULL;
@@ -1448,25 +1500,22 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     if(err>0)
     	return err;    
     err += m->param->destroy_ctx(&ctx);
-    err += m->param->get_pF(m,&F2[pFnp1]);
-    err += m->param->get_pFn(m,&F2[pFn]);
-    err += m->param->get_pFnm1(m,&F2[pFnm1]); 
-
-    err += m->param->get_Fn(m,  &F2[Fn]);
-    err += m->param->get_Fnm1(m,&F2[Fnm1]);
+    err += m->param->get_pF(m,    F2+pFnp1);
+    err += m->param->get_pFn(m,   F2+pFn);
+    err += m->param->get_pFnm1(m, F2+pFnm1); 
+    err += m->param->get_Fn(m,    F2+Fn);
+    err += m->param->get_Fnm1(m,  F2+Fnm1);
     
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,nne,nsd,
-                                elem,nod,node,dts[DT_NP1],
-                                &F2[pFnp1],&F2[pFn],&F2[Fnp1],&F2[Fn],
-                                alpha, dt_1_minus_alpha,&fe);
+    err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,
+                                                        F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,
+                                                        alpha, dt_1_minus_alpha,&fe);
                                 
     double dt_alpha = -dts[DT_N]*alpha;
 
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,nne,nsd,
-                                elem,nod,node,dts[DT_N],
-                                &F2[pFn],&F2[pFnm1],&F2[Fn],&F2[Fnm1],
-                                alpha, dt_alpha,&fe);
+    err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,
+                                                        F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,
+                                                        alpha, dt_alpha,&fe);
   }
   
   for(int a=0; a<nne*nsd; a++)
@@ -1477,11 +1526,8 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
   free(f_npa);
   free(f_nm1pa);
   
-  // destroyu list of second-order tenosors
-  for(int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
 
   FEMLIB_destruct(&fe);
   return err;
@@ -1664,12 +1710,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     }
   }  
 
-  /* list of second-order tensors */
-  Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
-  
-  for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
-  }
+  // list of second-order tensors
+  Matrix(double) *F2;
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
 
   int compute_stiffness = 1;      
 
@@ -1795,11 +1838,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     Matrix_cleanup(Tn);
   }
 
-  /* destroy second-order tensors */
-  for (int a = 0; a < Fend; a++) {
-    Matrix_cleanup(F2[a]);
-  }
-  free(F2);
+  // destroy second-order tensors
+  err += cleanup_matrix_array(&F2, Fend);
 
   free(dMdu_all);
  
