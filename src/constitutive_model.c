@@ -853,6 +853,8 @@ inline int compute_residual_vector(double *f,
        
   return err;
 }
+
+
 int stiffness_el_crystal_plasticity(double *lk,
                                     const int ii,
                                     const int ndofn,
@@ -879,8 +881,9 @@ int stiffness_el_crystal_plasticity(double *lk,
       u[a*nsd+b] = r_e[a*ndofn+b];  
   }
   
-  enum {Fn,Fr,Fnp1,pFn,pFnp1,pFnp1_I,S,
-        eFn,M,eFnM,eFnMT,FrTFr,Fend};
+  enum {Fr,Fnp1,pFnp1,S,
+        eFn,M,eFnM,eFnMT,FrTFr,
+        temp_F_1,temp_F_2,Fend};
   
   Matrix(double) L;  
   Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
@@ -906,7 +909,8 @@ int stiffness_el_crystal_plasticity(double *lk,
     
     /* get a shortened pointer for simplified CM function calls */
     const Model_parameters *func = m->param;
-        
+    
+    double Jn = 1.0;    
     if(total_Lagrangian)
     { 
       if (sup->multi_scale) {
@@ -914,8 +918,6 @@ int stiffness_el_crystal_plasticity(double *lk,
       }
 
       /* TOTAL LAGRANGIAN FORMULATION F*n = 1 */
-      Matrix_eye(F2[Fn],DIM_3);
-      Matrix_eye(F2[pFn],DIM_3);
       Matrix_eye(F2[eFn],DIM_3);
       Matrix_copy(F2[Fnp1], F2[Fr]);
     }
@@ -925,11 +927,11 @@ int stiffness_el_crystal_plasticity(double *lk,
         PGFEM_printerr("Multi-scale formulation does not support UL!\n");
         PGFEM_Abort();
       }
-
-      err += func->get_Fn( m, F2 +  Fn);
-      err += func->get_pFn(m, F2 + pFn);
+      int Fn = temp_F_1;
+      err += func->get_Fn( m, F2 +  Fn);      
       err += func->get_eFn(m, F2 + eFn);
-      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn+1] = Fr*Fn    
+      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // F2[Fn+1] = Fr*Fn
+      Matrix_det(F2[Fn], Jn);    
     }   
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0); 
 
@@ -939,8 +941,17 @@ int stiffness_el_crystal_plasticity(double *lk,
     err += func->compute_dMdu(m, ctx, fe.ST, nne, ndofn, dMdu_all);
     err += func->get_pF(m,&F2[pFnp1]);
 
-    err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
+    
+    if(total_Lagrangian)
+      err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata); //pFn=1, M = pFn*pFnp1_I
+    else
+    {
+      int pFn     = temp_F_1;
+      int pFnp1_I = temp_F_2;
+      err += func->get_pFn(m, F2+pFn);
+      err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);        
+      Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
+    }
     // <-- update plasticity part 
 
     // --> update elasticity part
@@ -966,11 +977,16 @@ int stiffness_el_crystal_plasticity(double *lk,
       break;    
 
     // --> start computing tagent
-    Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
-    Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
-        
-    double Jn; Matrix_det(F2[Fn], Jn);
-
+    if(total_Lagrangian)
+    {
+      Matrix_AeqB(F2[eFnM],1.0,F2[M]);
+      Matrix_AeqBT(F2[eFnMT],1.0,F2[M]);      
+    }
+    else
+    {  
+      Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
+      Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
+    }    
     err += compute_stiffness_matrix(lk,&fe,
                                     F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
                                     &L,dMdu_all,Jn);
@@ -994,7 +1010,7 @@ int stiffness_el_crystal_plasticity(double *lk,
   free(dMdu_all);
  
   return err;
-} 
+}
 
 int residuals_el_crystal_plasticity(double *f,
                                     const int ii,
