@@ -25,6 +25,7 @@
 #include "dynamics.h"
 
 #include "constitutive_model.h"
+#include "PGFem3D_data_structure.h"
 
 #define ndn 3
 
@@ -457,6 +458,194 @@ int fd_residuals (double *f_u,
   return err;
 }
 
+/// Compute residuals
+///
+/// Compute redidual vector for mechanical problem. 
+/// Integration algorithm will be perfromed based on constitutive model.
+/// If either integration algorithm if faild to converge or jacobian of the 
+/// deformation gradient is small than zero, element loop will be stopped and
+/// return non-zero value.    
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dts time step sizes a n, and n+1
+/// \return non-zero on internal error
+long fd_residuals_MP(GRID *grid,
+                     MATERIAL_PROPERTY *mat,
+                     FIELD_VARIABLES *fv,
+                     SOLVER_OPTIONS *sol,
+                     LOADING_STEPS *load,
+                     CRPL *crpl,
+                     MPI_Comm mpi_comm,
+                     const PGFem3D_opt *opts,
+                     MULTIPHYSICS *mp,
+                     int mp_id,
+                     double t,
+                     double *dts,
+                     int updated_deformation)
+{
+  int err = 0;
+  ELEMENT *elem = grid->element;
+  BOUNDING_ELEMENT *b_elems = grid->b_elems;
+  SUPP sup = load->sups[mp_id];
+   
+  double *f;
+  if(updated_deformation)
+    f = fv->f;
+  else
+    f = fv->d_u;  
+  
+  /* make decision to include ineria*/
+  const int mat_id = grid->element[0].mat[2];
+  double rho = mat->hommat[mat_id].density;
+  long include_inertia = 1;
+
+  if(fabs(rho)<MIN_DENSITY)
+    include_inertia = 0;
+
+  /* decision end*/
+
+  int myrank,nproc;
+  MPI_Comm_size(mpi_comm,&nproc);
+  MPI_Comm_rank(mpi_comm,&myrank);
+
+  for (int i=0;i<grid->ne;i++) {
+    const int nne = elem[i].toe;
+    long *nod = aloc1l (nne);
+    elemnodes (i,nne,nod,elem);
+    /* Element Dof */
+    const int ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
+    double *fe = aloc1 (ndofe);
+
+    err += fd_res_elem(fe, i, elem, fv->ndofn, fv->npres, f, fv->u_np1, grid->node,
+                       mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
+                       crpl, dts, t, opts->stab, mpi_comm, opts, sol->alpha,
+                       fv->u_n, fv->u_n, include_inertia,mp_id);
+
+    fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
+
+    dealoc1l (nod);
+    dealoc1 (fe);
+
+    /*** RETURN on error ***/
+    if(err != 0) return err;
+
+  }/* end i < grid->ne*/
+
+  /**** COHESIVE ELEMENT RESIDUALS ****/
+  if (opts->cohesive == 1){
+    COEL *coel = grid->coel;
+    const int ndofc = 3;
+
+    for (int i=0;i<grid->nce;i++){
+
+      int ndofe = coel[i].toe*ndofc;
+      long *nod = aloc1l (coel[i].toe);
+      double *fe = aloc1 (ndofe);
+      for (int j=0;j<coel[i].toe;j++)
+        nod[j] = coel[i].nod[j];
+
+      err += fd_res_coel(fe, i, grid->node, coel, sup, ndofc, f, sol->nor_min, myrank,mp_id);
+      fd_res_assemble(fv->f_u, fe, grid->node, coel[i].toe, ndofc, nod, mp_id);
+
+      dealoc1l (nod);
+      dealoc1 (fe);
+
+    }/* end i < grid->nce */
+  }/* end coh == 1 */
+
+  /*===============================================
+    |             BOUNDARY ELEMENTS               |
+    ===============================================*/
+
+  for (int i=0; i<grid->n_be; i++){
+
+    /* get the coordinates and dof id's on the element nodes */
+    const long *ptr_vnodes = elem[b_elems[i].vol_elem_id].nod; /* --"-- */
+    const ELEMENT *ptr_elem = elem + b_elems[i].vol_elem_id; /* --"-- */
+    const BOUNDING_ELEMENT *ptr_be = &b_elems[i];
+    const int nne = ptr_elem->toe;
+
+    double *x = aloc1(nne);
+    double *y = aloc1(nne);
+    double *z = aloc1(nne);
+
+    switch(opts->analysis_type){
+    case DISP:
+      nodecoord_total(nne,ptr_vnodes,grid->node,x,y,z);
+      break;
+    default:
+      nodecoord_updated(nne,ptr_vnodes,grid->node,x,y,z);
+      break;
+    }
+
+    int ndofe = get_ndof_on_bnd_elem(grid->node,ptr_be,elem,fv->ndofn);
+    double *r_e = aloc1(ndofe);
+    double *fe = aloc1(ndofe);
+    long *cn = aloc1l(ndofe);
+    long *Gcn = aloc1l(ndofe);
+
+    get_dof_ids_on_bnd_elem(0,fv->ndofn,grid->node,ptr_be,elem,cn ,mp_id);
+    get_dof_ids_on_bnd_elem(1,fv->ndofn,grid->node,ptr_be,elem,Gcn,mp_id);
+
+    /* compute the deformation on the element */
+    def_elem(cn,ndofe,f,NULL,NULL,r_e,sup,0);
+
+    /* TOTAL LAGRANGIAN formulation */
+    if(opts->analysis_type == DISP){
+      double *r_en = aloc1(ndofe);
+      def_elem(cn,ndofe,fv->u_np1,NULL,NULL,r_en,sup,1);
+      vvplus(r_e,r_en,ndofe);
+      free(r_en);
+    }
+
+    /* for debugging */
+    double *RR = aloc1(ndofe);
+    def_elem(cn,ndofe,fv->f_u,NULL,NULL,RR,sup,2);
+
+    if(opts->analysis_type == DISP){
+      err += DISP_resid_bnd_el(fe,i,fv->ndofn,ndofe,x,y,z,b_elems,elem,
+			       mat->hommat,grid->node,fv->eps,fv->sig,sup,r_e);
+    } else {
+      /* not implemented/needed so do nothing */
+    }
+
+    /* Assembly to local part of the residual vector */
+    {
+      for(int j=0; j<ndofe; j++){
+	int II = cn[j] - 1;
+	if(II >= 0){
+	  fv->f_u[II] += fe[j];
+	}
+      }
+    }
+
+    def_elem(cn,ndofe,fv->f_u,NULL,NULL,RR,sup,2);
+
+    free(x);
+    free(y);
+    free(z);
+
+    free(r_e);
+    free(fe);
+    free(cn);
+    free(Gcn);
+    free(RR);
+
+    /*** RETURN on error ***/
+    if(err != 0) return err;
+  } /* for each bounding element */
+  
+  return err;  
+}
 
 /* compute the reaction force for each magnitude of prescribed
    deflection. CAVEATS: Does not include contributions from cohesive

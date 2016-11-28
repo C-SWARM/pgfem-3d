@@ -162,42 +162,10 @@ long compute_residuals_for_NR(GRID *grid,
                               int updated_deformation)
 {
   long INFO;
-  double *f;
-  if(updated_deformation)
-    f = fv->f;
-  else
-    f = fv->d_u;
   switch(mp->physics_ids[mp_id])
   {
     case MULTIPHYSICS_MECHANICAL:
-      INFO = fd_residuals(fv->f_u,
-                          grid->ne,
-                          grid->n_be,
-                          fv->ndofn,
-                          fv->npres,
-                          f,
-                          fv->u_np1,
-                          grid->node,
-                          grid->element,
-                          grid->b_elems,
-                          mat->matgeom,
-                          mat->hommat,
-                          load->sups[mp_id],
-                          fv->eps,
-                          fv->sig,
-                          sol->nor_min,
-                          crpl,
-                          dts,
-                          t,
-                          opts->stab,
-                          grid->nce,
-                          grid->coel,
-                          mpi_comm,
-                          opts,
-                          sol->alpha,
-                          fv->u_n,
-                          fv->u_nm1,
-                          mp_id);
+      INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,updated_deformation);
       break;
     case MULTIPHYSICS_THERMAL:
         INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation,dts[DT_NP1]);
