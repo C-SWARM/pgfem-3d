@@ -134,7 +134,7 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix_redim(p, m, n) do {                                      \
   Matrix_cleanup(p);                                                    \
-  (p).m_pdata =malloc((p).sizeof_T*(m)*(n));                           \
+  (p).m_pdata =malloc((p).sizeof_T*(m)*(n));                            \
   (p).temp    = NULL;                                                   \
   (p).m_row = m;                                                        \
   (p).m_col = n;                                                        \
@@ -146,9 +146,9 @@ typedef struct Matrix_##T                                               \
 } while(0)
 
 #define Matrix_init(p, value) do {                                      \
-  long MaTtEmPVar_a;                                                             \
-  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < (p).m_row*(p).m_col; MaTtEmPVar_a++){                       \
-      (p).m_pdata[MaTtEmPVar_a] =  value;                                        \
+  long MaTtEmPVar_a;                                                    \
+  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < (p).m_row*(p).m_col; MaTtEmPVar_a++){ \
+      (p).m_pdata[MaTtEmPVar_a] =  value;                               \
   }                                                                     \
 } while(0) 
 
@@ -165,12 +165,7 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix_init_w_array(p, m, n, q) do {                            \
   Matrix_check_null_and_redim(p, m, n);                                 \
-  long MaTtEmPVar_a, MaTtEmPVar_b;                                                        \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= (p).m_row; MaTtEmPVar_a++){                                \
-    for(MaTtEmPVar_b = 1; MaTtEmPVar_b <= (p).m_col; MaTtEmPVar_b++){                              \
-      Mat_v(p, MaTtEmPVar_a, MaTtEmPVar_b) =  (q)[(MaTtEmPVar_a-1)*(n) + (MaTtEmPVar_b-1)];                 \
-    }                                                                   \
-  }                                                                     \
+  memcpy((p).m_pdata,q,m*n*sizeof(*((p).m_pdata)));                     \
 } while(0)
 
 /* A = delta_ij */
@@ -215,7 +210,7 @@ typedef struct Matrix_##T                                               \
     break;                                                              \
   };                                                                    \
                                                                         \
-  if((A).m_row==3){                                                       \
+  if((A).m_row==3){                                                     \
     ddet  = Mat_v(A, 1, 1)*Mat_v(A, 2, 2)*Mat_v(A, 3, 3);               \
     ddet += Mat_v(A, 1, 2)*Mat_v(A, 2, 3)*Mat_v(A, 3, 1);               \
     ddet += Mat_v(A, 1, 3)*Mat_v(A, 3, 2)*Mat_v(A, 2, 1);               \
