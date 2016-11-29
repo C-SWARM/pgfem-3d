@@ -458,6 +458,171 @@ int fd_residuals (double *f_u,
   return err;
 }
 
+
+/// Compute residuals on a single element
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dts time step sizes a n, and n+1
+/// \return non-zero on internal error
+
+static int fd_res_elem_MP(double *be,
+        const int eid,
+        GRID *grid,
+        MATERIAL_PROPERTY *mat,
+        FIELD_VARIABLES *fv,
+        SOLVER_OPTIONS *sol,
+        LOADING_STEPS *load,
+        CRPL *crpl,
+        MPI_Comm mpi_comm,
+        const PGFem3D_opt *opts,
+        MULTIPHYSICS *mp,
+        int mp_id,
+        double t,
+        double *dts,
+        int include_inertia,
+        int updated_deformation)
+{
+  int err = 0;
+  int intg_order = 0;
+  double dt = dts[DT_NP1];
+  
+  ELEMENT *elem = grid->element;
+  SUPP sup = load->sups[mp_id];
+  
+  double *f;
+  if(updated_deformation)
+    f = fv->f;
+  else
+    f = fv->d_u;
+  
+  int total_Lagrangian = 0;
+  switch(opts->analysis_type)
+  {
+    case DISP: // intented to flow
+    case TF:
+      total_Lagrangian = 1;
+      break;
+    case CM:
+      if(opts->cm != UPDATED_LAGRANGIAN)
+        total_Lagrangian = 1;
+      
+      break;
+  }
+  
+  if(sup->multi_scale)
+    total_Lagrangian = 1;
+  
+  // set FEMLIB
+  FEMLIB fe;
+  if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
+    FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+  else
+    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+  
+  long *nod = (fe.node_id).m_pdata; // list of node ids in this element
+  
+  /* Element Dof */
+  long ndofe = get_ndof_on_elem_nodes(fe.nne,nod,grid->node,fv->ndofn);
+  
+  long *cn;
+  double *r_e;
+  
+  /* allocation */
+  cn  = aloc1l (ndofe);
+  r_e = aloc1 (ndofe);
+  
+  //global local ids on element
+  get_dof_ids_on_elem_nodes(0,fe.nne,fv->ndofn,nod,grid->node,cn,mp_id);
+  
+  // get the deformation on the element
+  if(total_Lagrangian)
+    def_elem_total(cn,ndofe,fv->u_np1,f,grid->element,grid->node,sup,r_e);
+  else
+    def_elem (cn,ndofe,f,grid->element,grid->node,r_e,sup,0);
+  
+  int nVol = N_VOL_TREE_FIELD;
+  int nsd = 3;
+  
+  double *x = (fe.temp_v).x.m_pdata;
+  double *y = (fe.temp_v).y.m_pdata;
+  double *z = (fe.temp_v).z.m_pdata;
+  
+  if(include_inertia) {
+    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,nVol,
+                                  ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
+                                  nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);
+  } else {
+    /* Residuals on element */
+    switch(opts->analysis_type) {
+      case STABILIZED:
+        err = resid_st_elem (eid,fv->ndofn,fe.nne,elem,nod,grid->node,mat->hommat,
+                             x,y,z,fv->eps,fv->sig,sup,r_e,sol->nor_min,be,dt,opts->stab);
+        break;
+      case MINI:
+        err = MINI_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                            nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
+        break;
+      case MINI_3F:
+        err = MINI_3f_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                               nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
+        break;
+      case DISP:
+      {
+        double *bf = aloc1(ndofe);
+        memset(bf, 0, sizeof(double)*ndofe);
+        DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
+        
+        err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
+        for(long a = 0; a<ndofe; a++)
+          be[a] += -bf[a];
+        
+        dealoc1(bf);
+        break;
+      }
+      case TF:
+      {
+        double *bf = aloc1(ndofe);
+        memset(bf, 0, sizeof(double)*ndofe);
+        DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
+                
+        residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,nVol,nsd,
+                        x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
+        for(long a = 0; a<ndofe; a++)
+          be[a] += -bf[a];
+        
+        dealoc1(bf);
+        break;
+      }
+      case CM:
+        err += residuals_el_crystal_plasticity(be,eid,fv->ndofn,fe.nne,nsd,elem,nod,grid->node,
+                                               dt,fv->eps,sup,r_e, total_Lagrangian);
+        break;      
+      default:
+        err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
+                             mat->hommat,x,y,z,fv->eps,fv->sig,r_e,fv->npres,
+                             sol->nor_min,be,crpl,dt,opts->analysis_type);
+        
+        break;
+    }
+  }
+  
+  
+  dealoc1 (r_e);
+  dealoc1l (cn);
+  
+  return err;
+}
+
 /// Compute residuals
 ///
 /// Compute redidual vector for mechanical problem. 
@@ -525,10 +690,9 @@ long fd_residuals_MP(GRID *grid,
     const int ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
     double *fe = aloc1 (ndofe);
 
-    err += fd_res_elem(fe, i, elem, fv->ndofn, fv->npres, f, fv->u_np1, grid->node,
-                       mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
-                       crpl, dts, t, opts->stab, mpi_comm, opts, sol->alpha,
-                       fv->u_n, fv->u_n, include_inertia,mp_id);
+    err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
+                          mpi_comm, opts, mp, mp_id, t, dts, 
+                          include_inertia, updated_deformation);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
 
