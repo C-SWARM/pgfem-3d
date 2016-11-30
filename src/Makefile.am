@@ -92,7 +92,7 @@ pgfem_comm.c \
 tfa.c \
 hommat.c \
 sig.c \
-supp.c \
+supp.cc \
 mesh_load.c \
 material.c \
 eps.c \
