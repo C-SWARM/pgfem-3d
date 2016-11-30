@@ -12,7 +12,7 @@ Psparse_ApAi.c \
 Re1_Re2_Re3.c \
 TA_GA.c \
 addresses.cc \
-build_distribution.cc \
+build_distribution.c \
 def_grad.c \
 differentiation_of_UU.c \
 elem3d.c \
@@ -81,10 +81,10 @@ node.c \
 element.c \
 solve_system.c \
 PGFEM_HYPRE_preconditioners.c \
-allocation.cc \
+allocation.c \
 cohesive_element_utils.c \
 cohesive_element.c \
-cohesive_potentials.cc \
+cohesive_potentials.c \
 quadrature_rules.c \
 integrate_surface.c \
 applied_traction.c \
@@ -92,7 +92,7 @@ pgfem_comm.c \
 tfa.c \
 hommat.c \
 sig.c \
-supp.cc \
+supp.c \
 mesh_load.c \
 material.c \
 eps.c \
@@ -180,7 +180,8 @@ J2D_driver_LDADD = $(all_libs)
 CH_layer_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
 
-AM_CFLAGS = $(AM_INCLUDES)
+AM_CPPFLAGS = $(AM_INCLUDES)
+AM_CXXFLAGS = -Drestrict  -fpermissive
 
 PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@

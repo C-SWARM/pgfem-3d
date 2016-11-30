@@ -1,0 +1,19 @@
+with_mpi=yes  
+CC=mpicc 
+CXX=mpicxx 
+CFLAGS="-std=c99 -O0 -g"
+CXXFLAGS="-std=c99 -Drestrict -fpermissive -O0 -g"
+
+with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/gcc/4.9.2/mpich/3.1.2
+with_suitesparse_dir=/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1_gcc
+with_cnstvm_dir=/afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model
+
+with_special_link='$(CXX)' 
+with_mkl=no 
+with_mkl_override="-I/afs/crc.nd.edu/group/cswarm/Generalizsed_constitutive_model/mkl_include/include" 
+with_cblas_include="-I/opt/crc/scilib/atlas/3.8.3-1/gnu/include" 
+with_cblas_lib="-L/opt/crc/scilib/atlas/3.8.3-1/gnu/lib -llapack -lptcblas -lptf77blas -lcblas -lf77blas -latlas" 
+with_lapack_include="-I/opt/crc/scilib/atlas/3.8.3-1/gnu/include" 
+with_lapack_lib="-L/opt/crc/scilib/atlas/3.8.3-1/gnu/lib -llapack -lptcblas -lptf77blas -lcblas -lf77blas -latlas"
+
+enable_vtk=no
