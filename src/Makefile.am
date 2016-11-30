@@ -11,8 +11,8 @@ PLoc_Sparse.c \
 Psparse_ApAi.c \
 Re1_Re2_Re3.c \
 TA_GA.c \
-addresses.c \
-build_distribution.c \
+addresses.cc \
+build_distribution.cc \
 def_grad.c \
 differentiation_of_UU.c \
 elem3d.c \
@@ -81,7 +81,7 @@ node.c \
 element.c \
 solve_system.c \
 PGFEM_HYPRE_preconditioners.c \
-allocation.c \
+allocation.cc \
 cohesive_element_utils.c \
 cohesive_element.c \
 cohesive_potentials.c \
