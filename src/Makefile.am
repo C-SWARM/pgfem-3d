@@ -2,7 +2,7 @@ bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver CH_l
 all_sources = \
 ALM.cc \
 Arc_length.c \
-boomerAMGInterface.c \
+boomerAMGInterface.cc \
 GRedist_node.c \
 LINE.c \
 Newton_Raphson.c \
@@ -19,7 +19,7 @@ elem3d.c \
 fd_increment.c \
 fd_residuals.c \
 homogen.c \
-hypre_interface.c \
+hypre_interface.cc \
 in.c \
 initial_guess.c \
 integration.c \

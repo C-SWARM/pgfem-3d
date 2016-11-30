@@ -6,17 +6,21 @@ module load mpich/3.1.2-gcc
 module load gcc
  
 
-
-#cd /afs/crc.nd.edu/group/cswarm/Generalizsed_constitutive_model
+cd /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc 
 #git pull
 #echo "++++++++++++ finished pulling Generalized_constitutive_model +++++++++++"
+setenv MKLROOT /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc/mkl_include
+#make CC=mpicc CXX=mpicxx CFLAGS="-std=c99 -O3 -g" CXXFLAGS="-std=c99 -O3 -g"
 #make clean
 #make
-#echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
-#echo "    "
+echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
+echo "    "
 
+cp /afs/crc.nd.edu/user/i/iviti/pgconvert/pgfem_3d/build/convert2cc/share/config.site-gcc /afs/crc.nd.edu/user/i/iviti/pgconvert/pgfem_3d/build/convert2cc/share/config.site
 
-#cd /afs/crc.nd.edu/group/cswarm/pgfem_3d
+setenv CPLUS_INCLUDE_PATH /afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/gcc/4.9.2/mpich/3.1.2/include
+
+cd /afs/crc.nd.edu/user/i/iviti/pgconvert/pgfem_3d 
 #git pull
 make distclean
 echo "++++++++++++ finished pulling pgfem_3d +++++++++++"

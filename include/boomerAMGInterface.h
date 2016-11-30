@@ -7,6 +7,12 @@
 #include "hypre_global.h"
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+
 typedef struct boomerAMGOptions{
 
   /* Required options to set */
@@ -81,10 +87,17 @@ typedef struct boomerAMGOptions{
 
 } boomerAMGOptions;
 
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
+
 int initializeBoomerAMG(HYPRE_Solver *hypre_pc,
 			boomerAMGOptions *options,
 			const MPI_Comm mpi_comm);
 
 void setBoomerAMGOptions(boomerAMGOptions *options);
+
+
 
 #endif

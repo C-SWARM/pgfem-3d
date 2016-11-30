@@ -15,6 +15,11 @@
 
 /* HYPRE */
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+
 /**
  * @name Structure to contain HYPRE objects and pass them around easily
  */
@@ -93,6 +98,10 @@ int PGFEM_HYPRE_create_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 
 
 int destroy_HYPRE_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 
 #endif /* #ifndef HYPRE_GLOBAL_H */
