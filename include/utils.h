@@ -20,6 +20,10 @@
 #include "sig.h"
 #include "eps.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Scan the file for a valid line (non-blank and does not start with a
  * '#').  This function may be called multiple times on the same file.
@@ -669,4 +673,9 @@ double area (long nne,
 void Logarithmic_strain (double **F,
 			 double **EL);
 void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

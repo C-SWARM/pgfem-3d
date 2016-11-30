@@ -1,6 +1,6 @@
 bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver CH_layer_driver comm_hints_driver
 all_sources = \
-ALM.c \
+ALM.cc \
 Arc_length.c \
 boomerAMGInterface.c \
 GRedist_node.c \
