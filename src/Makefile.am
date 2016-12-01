@@ -24,7 +24,7 @@ in.cc \
 initial_guess.cc \
 integration.c \
 load.c \
-localizat.c \
+localizat.cc \
 macroscopic_load_AL.c \
 matice.c \
 matrix_printing.c \
