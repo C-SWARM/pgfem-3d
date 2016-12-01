@@ -100,7 +100,7 @@ matgeom.cc \
 crpl.cc \
 ensight.cc \
 read_input_file.c \
-microscale_information.c \
+microscale_information.cc \
 ms_cohe_job_info.c \
 ms_cohe_job_list.c \
 PGFEM_par_matvec.c \
