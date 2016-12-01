@@ -33,7 +33,7 @@ null.cc \
 out.cc \
 press_theta.cc \
 pressu_shape.cc \
-Printing.c \
+Printing.cc \
 print_dist.c \
 read_cryst_plast.c \
 renumber_ID.c \
