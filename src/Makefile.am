@@ -106,7 +106,7 @@ ms_cohe_job_list.c \
 PGFEM_par_matvec.c \
 compute_ms_cohe_job.c \
 PGFEM_io.cc \
-PGFEM_mpi.c \
+PGFEM_mpi.cc \
 ms_job_intercomm.cc \
 macro_micro_functions.c \
 pgf_fe2_micro_server.c \
