@@ -41,7 +41,7 @@ res_fini_def.cc \
 resice.cc \
 resid_on_elem.cc \
 rn_skyline.cc \
-rowlength.c \
+rowlength.cc \
 set_fini_def.c \
 SetGlobalNodeNumbers.c \
 skyline.c \
