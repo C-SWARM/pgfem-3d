@@ -53,7 +53,7 @@ subdivision.c \
 tensors.cc \
 utils.c \
 incl.cc \
-profiler.c \
+profiler.cc \
 potential.cc \
 computeMacroF.c \
 computeMacroS.c \
