@@ -79,7 +79,7 @@ transform_coordinates.c \
 generate_dof_ids.c \
 node.cc \
 element.cc \
-solve_system.c \
+solve_system.cc \
 PGFEM_HYPRE_preconditioners.c \
 allocation.cc \
 cohesive_element_utils.cc \
