@@ -6,7 +6,7 @@ boomerAMGInterface.cc \
 GRedist_node.cc \
 LINE.cc \
 Newton_Raphson.c \
-PLC.c \
+PLC.cc \
 PLoc_Sparse.c \
 Psparse_ApAi.c \
 Re1_Re2_Re3.c \
