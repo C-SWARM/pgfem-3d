@@ -42,7 +42,7 @@ resice.cc \
 resid_on_elem.cc \
 rn_skyline.cc \
 rowlength.cc \
-set_fini_def.c \
+set_fini_def.cc \
 SetGlobalNodeNumbers.c \
 skyline.c \
 stabilized.c \
