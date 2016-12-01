@@ -26,7 +26,7 @@ integration.c \
 load.c \
 localizat.cc \
 macroscopic_load_AL.cc \
-matice.c \
+matice.cc \
 matrix_printing.c \
 metis_printing.c \
 null.c \
