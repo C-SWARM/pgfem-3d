@@ -39,7 +39,7 @@ read_cryst_plast.cc \
 renumber_ID.cc \
 res_fini_def.cc \
 resice.cc \
-resid_on_elem.c \
+resid_on_elem.cc \
 rn_skyline.c \
 rowlength.c \
 set_fini_def.c \
