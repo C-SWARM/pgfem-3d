@@ -28,7 +28,7 @@ localizat.cc \
 macroscopic_load_AL.cc \
 matice.cc \
 matrix_printing.cc \
-metis_printing.c \
+metis_printing.cc \
 null.c \
 out.c \
 press_theta.c \
