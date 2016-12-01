@@ -97,7 +97,7 @@ mesh_load.c \
 material.c \
 eps.cc \
 matgeom.c \
-crpl.c \
+crpl.cc \
 ensight.c \
 read_input_file.c \
 microscale_information.c \
