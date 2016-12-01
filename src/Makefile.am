@@ -3,7 +3,7 @@ all_sources = \
 ALM.cc \
 Arc_length.cc \
 boomerAMGInterface.cc \
-GRedist_node.c \
+GRedist_node.cc \
 LINE.c \
 Newton_Raphson.c \
 PLC.c \
