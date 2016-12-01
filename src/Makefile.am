@@ -32,7 +32,7 @@ metis_printing.cc \
 null.cc \
 out.cc \
 press_theta.cc \
-pressu_shape.c \
+pressu_shape.cc \
 Printing.c \
 print_dist.c \
 read_cryst_plast.c \
