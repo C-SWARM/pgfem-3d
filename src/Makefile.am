@@ -67,7 +67,7 @@ displacement_based_element.c \
 PGFem3D_options.c \
 gen_path.cc \
 volumetric_damage.c \
-initialize_damage.c \
+initialize_damage.cc \
 vol_damage_int_alg.c \
 interface_macro.c \
 compute_reactions.c \
