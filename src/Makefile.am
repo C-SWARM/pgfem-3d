@@ -47,7 +47,7 @@ SetGlobalNodeNumbers.cc \
 skyline.cc \
 stabilized.c \
 stiffmat_fd.c \
-stiffmatel_fd.c \
+stiffmatel_fd.cc \
 stress_strain.c \
 subdivision.c \
 tensors.cc \
