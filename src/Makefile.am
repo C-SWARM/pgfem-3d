@@ -90,7 +90,7 @@ integrate_surface.c \
 applied_traction.c \
 pgfem_comm.c \
 tfa.c \
-hommat.c \
+hommat.cc \
 sig.c \
 supp.cc \
 mesh_load.c \
