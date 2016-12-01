@@ -54,7 +54,7 @@ tensors.cc \
 utils.c \
 incl.cc \
 profiler.c \
-potential.c \
+potential.cc \
 computeMacroF.c \
 computeMacroS.c \
 vtk_output.c \
