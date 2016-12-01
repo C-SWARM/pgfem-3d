@@ -25,7 +25,7 @@ initial_guess.cc \
 integration.c \
 load.c \
 localizat.cc \
-macroscopic_load_AL.c \
+macroscopic_load_AL.cc \
 matice.c \
 matrix_printing.c \
 metis_printing.c \
