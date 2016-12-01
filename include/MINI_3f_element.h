@@ -21,8 +21,9 @@
 #include "pgfem_comm.h"
 
 #ifdef __cplusplus
-{
-#endif
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 
   /** Reset the internal variables for the MINI_3f element */
   void MINI_3f_reset(ELEMENT *elem,
@@ -132,7 +133,9 @@
 			   const COMMUN comm,
 			   const MPI_Comm mpi_comm);
 
+
 #ifdef __cplusplus
 }
-#endif
+#endif /* #ifdef __cplusplus */
+
 #endif
