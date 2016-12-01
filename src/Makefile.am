@@ -20,7 +20,7 @@ fd_increment.cc \
 fd_residuals.c \
 homogen.cc \
 hypre_interface.cc \
-in.c \
+in.cc \
 initial_guess.c \
 integration.c \
 load.c \
