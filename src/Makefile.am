@@ -96,7 +96,7 @@ supp.cc \
 mesh_load.c \
 material.cc \
 eps.cc \
-matgeom.c \
+matgeom.cc \
 crpl.cc \
 ensight.cc \
 read_input_file.c \
