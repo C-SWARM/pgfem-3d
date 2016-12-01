@@ -43,7 +43,7 @@ resid_on_elem.cc \
 rn_skyline.cc \
 rowlength.cc \
 set_fini_def.cc \
-SetGlobalNodeNumbers.c \
+SetGlobalNodeNumbers.cc \
 skyline.c \
 stabilized.c \
 stiffmat_fd.c \
