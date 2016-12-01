@@ -77,7 +77,7 @@ get_dof_ids_on_elem.c \
 get_ndof_on_elem.c \
 transform_coordinates.c \
 generate_dof_ids.c \
-node.c \
+node.cc \
 element.cc \
 solve_system.c \
 PGFEM_HYPRE_preconditioners.c \
