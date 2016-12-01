@@ -16,7 +16,7 @@ build_distribution.cc \
 def_grad.cc \
 differentiation_of_UU.c \
 elem3d.cc \
-fd_increment.c \
+fd_increment.cc \
 fd_residuals.c \
 homogen.c \
 hypre_interface.cc \
