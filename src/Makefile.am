@@ -8,7 +8,7 @@ LINE.cc \
 Newton_Raphson.c \
 PLC.cc \
 PLoc_Sparse.cc \
-Psparse_ApAi.c \
+Psparse_ApAi.cc \
 Re1_Re2_Re3.c \
 TA_GA.c \
 addresses.cc \
