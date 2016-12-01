@@ -44,7 +44,7 @@ rn_skyline.cc \
 rowlength.cc \
 set_fini_def.cc \
 SetGlobalNodeNumbers.cc \
-skyline.c \
+skyline.cc \
 stabilized.c \
 stiffmat_fd.c \
 stiffmatel_fd.c \
