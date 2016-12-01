@@ -31,6 +31,10 @@
 #include "PGFem3D_options.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 void Mat_3D_orthotropic (const long nmat,
 			 MATERIAL *mater,
 			 const int analysis);
@@ -131,5 +135,9 @@ void A_D_tensors (long ii,
 		  TFA *tfa,
 		  long SHAPE,
 		  long TYPE);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif
