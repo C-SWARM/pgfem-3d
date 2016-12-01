@@ -31,7 +31,7 @@ matrix_printing.cc \
 metis_printing.cc \
 null.cc \
 out.cc \
-press_theta.c \
+press_theta.cc \
 pressu_shape.c \
 Printing.c \
 print_dist.c \
