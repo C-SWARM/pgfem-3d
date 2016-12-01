@@ -94,7 +94,7 @@ hommat.cc \
 sig.c \
 supp.cc \
 mesh_load.c \
-material.c \
+material.cc \
 eps.cc \
 matgeom.c \
 crpl.cc \
