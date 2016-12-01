@@ -38,7 +38,7 @@ print_dist.c \
 read_cryst_plast.cc \
 renumber_ID.cc \
 res_fini_def.cc \
-resice.c \
+resice.cc \
 resid_on_elem.c \
 rn_skyline.c \
 rowlength.c \
