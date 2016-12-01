@@ -50,7 +50,7 @@ stiffmat_fd.c \
 stiffmatel_fd.c \
 stress_strain.c \
 subdivision.c \
-tensors.c \
+tensors.cc \
 utils.c \
 incl.c \
 profiler.c \
@@ -82,8 +82,8 @@ element.c \
 solve_system.c \
 PGFEM_HYPRE_preconditioners.c \
 allocation.cc \
-cohesive_element_utils.c \
-cohesive_element.c \
+cohesive_element_utils.cc \
+cohesive_element.cc \
 cohesive_potentials.cc \
 quadrature_rules.c \
 integrate_surface.c \
@@ -95,7 +95,7 @@ sig.c \
 supp.cc \
 mesh_load.c \
 material.c \
-eps.c \
+eps.cc \
 matgeom.c \
 crpl.c \
 ensight.c \

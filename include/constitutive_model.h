@@ -22,6 +22,11 @@
 #include "supp.h"
 #include "PGFem3D_options.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -653,4 +658,9 @@ int construct_model_context(void **ctx,
                                    const double dt,
                                    const double alpha,
                                    const double *eFnpa);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif
