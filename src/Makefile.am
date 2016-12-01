@@ -9,7 +9,7 @@ Newton_Raphson.c \
 PLC.cc \
 PLoc_Sparse.cc \
 Psparse_ApAi.cc \
-Re1_Re2_Re3.c \
+Re1_Re2_Re3.cc \
 TA_GA.c \
 addresses.cc \
 build_distribution.cc \
