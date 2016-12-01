@@ -64,7 +64,7 @@ two_field_element.c \
 Hu_Washizu_element.c \
 new_potentials.c \
 displacement_based_element.c \
-PGFem3D_options.c \
+PGFem3D_options.cc \
 gen_path.cc \
 volumetric_damage.c \
 initialize_damage.cc \
