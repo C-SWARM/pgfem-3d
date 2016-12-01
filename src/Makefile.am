@@ -65,7 +65,7 @@ Hu_Washizu_element.c \
 new_potentials.c \
 displacement_based_element.c \
 PGFem3D_options.c \
-gen_path.c \
+gen_path.cc \
 volumetric_damage.c \
 initialize_damage.c \
 vol_damage_int_alg.c \
