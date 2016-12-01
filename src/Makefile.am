@@ -21,7 +21,7 @@ fd_residuals.c \
 homogen.cc \
 hypre_interface.cc \
 in.cc \
-initial_guess.c \
+initial_guess.cc \
 integration.c \
 load.c \
 localizat.c \
