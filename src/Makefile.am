@@ -98,7 +98,7 @@ material.c \
 eps.cc \
 matgeom.c \
 crpl.cc \
-ensight.c \
+ensight.cc \
 read_input_file.c \
 microscale_information.c \
 ms_cohe_job_info.c \
