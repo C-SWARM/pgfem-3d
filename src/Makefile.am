@@ -36,7 +36,7 @@ pressu_shape.cc \
 Printing.cc \
 print_dist.c \
 read_cryst_plast.cc \
-renumber_ID.c \
+renumber_ID.cc \
 res_fini_def.c \
 resice.c \
 resid_on_elem.c \
