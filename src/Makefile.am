@@ -101,7 +101,7 @@ crpl.cc \
 ensight.cc \
 read_input_file.c \
 microscale_information.cc \
-ms_cohe_job_info.c \
+ms_cohe_job_info.cc \
 ms_cohe_job_list.c \
 PGFEM_par_matvec.c \
 compute_ms_cohe_job.c \
