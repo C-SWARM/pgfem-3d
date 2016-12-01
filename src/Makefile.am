@@ -52,7 +52,7 @@ stress_strain.c \
 subdivision.c \
 tensors.cc \
 utils.c \
-incl.c \
+incl.cc \
 profiler.c \
 potential.c \
 computeMacroF.c \
