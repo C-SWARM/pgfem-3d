@@ -40,7 +40,7 @@ renumber_ID.cc \
 res_fini_def.cc \
 resice.cc \
 resid_on_elem.cc \
-rn_skyline.c \
+rn_skyline.cc \
 rowlength.c \
 set_fini_def.c \
 SetGlobalNodeNumbers.c \
