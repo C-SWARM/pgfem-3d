@@ -13,7 +13,7 @@ Re1_Re2_Re3.c \
 TA_GA.c \
 addresses.cc \
 build_distribution.cc \
-def_grad.c \
+def_grad.cc \
 differentiation_of_UU.c \
 elem3d.c \
 fd_increment.c \
