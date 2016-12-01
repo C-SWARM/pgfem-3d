@@ -91,7 +91,7 @@ applied_traction.c \
 pgfem_comm.cc \
 tfa.c \
 hommat.cc \
-sig.c \
+sig.cc \
 supp.cc \
 mesh_load.cc \
 material.cc \
