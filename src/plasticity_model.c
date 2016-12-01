@@ -157,16 +157,16 @@ int plasticity_model_cleanup_elem_ip_map(IP_ID_LIST *elm_ip_map, int ne)
  * associated functions.
  */
 typedef struct plasticity_ctx {
-  const double *F;
+  double *F;
   double dt;    // time increment
   double alpha; // mid point alpha
-  const double *eFnpa;
+  double *eFnpa;
   int is_coulpled_with_thermal;
   double *hFn;
   double *hFnp1;  
 } plasticity_ctx;
 
-inline int compute_M(Matrix(double) *M, 
+ int compute_M(Matrix(double) *M, 
                       const Matrix(double) *pFn, 
                       const Matrix(double) *N,
                       const Matrix(double) *pFnp1_I,                      
@@ -180,7 +180,7 @@ inline int compute_M(Matrix(double) *M,
   return err;
 }
 
-inline int compute_eF(Matrix(double) *eF, 
+ int compute_eF(Matrix(double) *eF, 
                       const Matrix(double) *F,
                       const Matrix(double) *hF_I,
                       const Matrix(double) *pF_I,
@@ -471,38 +471,48 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
   /* compute M at n+1, again, this information is in CM */
   Matrix(double) M, eFn, eFnp1;
   {
-    Matrix(double) pFnp1_I, pFn_I;
-    Matrix_construct_redim(double, pFnp1_I, DIM_3, DIM_3);
-    Matrix_construct_redim(double, pFn_I,   DIM_3, DIM_3);    
+    Matrix(double) pFnp1_I;
+    Matrix_construct_redim(double, pFnp1_I, DIM_3, DIM_3);   
     Matrix_construct_redim(double, M,       DIM_3, DIM_3);
     Matrix_construct_redim(double, eFn,     DIM_3, DIM_3);
     Matrix_construct_redim(double, eFnp1,   DIM_3, DIM_3);
 
-    Matrix(double) hFn, hFnp1, hFn_I, hFnp1_I, N;
-      hFn.m_row =   hFn.m_col = DIM_3;   hFn.m_pdata = CTX->hFn;
-    hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = CTX->hFnp1;
-
-    Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
-    Matrix_construct_redim(double, hFn_I,   DIM_3, DIM_3);
-    Matrix_construct_redim(double, N,       DIM_3, DIM_3);    
-        
     err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);
-    err += inv3x3(Fs[TENSOR_pFn].m_pdata,   pFn_I.m_pdata);
-    err += inv3x3(CTX->hFn,   hFnp1_I.m_pdata);
-    err += inv3x3(CTX->hFnp1,   hFn_I.m_pdata);    
-    
-    Matrix_AxB(N,1.0,0.0,hFn,0,hFnp1_I,0);
-        
-    err += compute_M(&M, Fs+TENSOR_Fn, &N, &pFnp1_I, CTX);
 
-    err += compute_eF(&eFn,   Fs+TENSOR_Fn,  &hFn_I,   &pFn_I,   CTX);
-    err += compute_eF(&eFnp1, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, CTX);
+    if(CTX->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFn, hFnp1, hFn_I, hFnp1_I, N, pFn_I;
+        hFn.m_row =   hFn.m_col = DIM_3;   hFn.m_pdata = CTX->hFn;
+      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = CTX->hFnp1;
+
+      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+      Matrix_construct_redim(double, hFn_I,   DIM_3, DIM_3);
+      Matrix_construct_redim(double, N,       DIM_3, DIM_3);
+      Matrix_construct_redim(double, pFn_I,   DIM_3, DIM_3);     
+        
+      err += inv3x3(Fs[TENSOR_pFn].m_pdata,   pFn_I.m_pdata);
+      err += inv3x3(CTX->hFn,     hFn_I.m_pdata);
+      err += inv3x3(CTX->hFnp1, hFnp1_I.m_pdata);    
     
+      Matrix_AxB(N,1.0,0.0,hFn,0,hFnp1_I,0);
+        
+      err += compute_M(&M, Fs+TENSOR_Fn, &N, &pFnp1_I, CTX);
+
+      err += compute_eF(&eFn,   Fs+TENSOR_Fn,  &hFn_I,   &pFn_I,   CTX);
+      err += compute_eF(&eFnp1, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, CTX);
+    
+      Matrix_cleanup(pFn_I);
+      Matrix_cleanup(hFn_I);
+      Matrix_cleanup(hFnp1_I);
+      Matrix_cleanup(N);
+    }
+    else
+    {
+      Matrix_AxB(M, 1.0, 0.0, m->vars.Fs[TENSOR_pFn], 0, pFnp1_I, 0);
+      err += m->param->get_eFn(m,&eFn);
+      err += m->param->get_eF(m,&eFnp1);      
+    }
     Matrix_cleanup(pFnp1_I);
-    Matrix_cleanup(pFn_I);
-    Matrix_cleanup(hFn_I);
-    Matrix_cleanup(hFnp1_I);
-    Matrix_cleanup(N);        
   }
 
   ELASTICITY *elast = (m->param)->cm_elast;
@@ -577,7 +587,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha*beta times. This should be improved */
   const plasticity_ctx *CTX = ctx;
   
-  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnp1,pFn,Mnpa,Fend}; 
+  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnpa_I,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -596,20 +606,21 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   mid_point_rule(F2[Fnpa].m_pdata, F2[Fn].m_pdata, F2[Fnp1].m_pdata, alpha, DIM_3x3);  
   mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, DIM_3x3);  
 
-  err += inv3x3(F2[pFnpa].m_pdata, F2[Mnpa].m_pdata); // Total Lagrangian
+  err += inv3x3(F2[pFnpa].m_pdata, F2[pFnpa_I].m_pdata); // Total Lagrangian
+
+  Matrix_eye(F2[hFnpa_I],DIM_3);
   if(CTX->is_coulpled_with_thermal)
   {
-    Matrix(double) hFnpa, hFnpa_I;
-    Matrix_construct_redim(double, hFnpa,   DIM_3, DIM_3);
-    Matrix_construct_redim(double, hFnpa_I, DIM_3, DIM_3);
+    Matrix(double) hFnpa;
+    Matrix_construct_redim(double, hFnpa,   DIM_3, DIM_3);   
     
     mid_point_rule(hFnpa.m_pdata, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);
-    err += compute_eF(F2+eFnpa, F2+Fnpa, &hFnpa_I, F2+Mnpa, CTX);
-    Matrix_cleanup(hFnpa);
-    Matrix_cleanup(hFnpa_I);    
+    err += inv3x3(hFnpa.m_pdata, F2[hFnpa_I].m_pdata);    
+    Matrix_cleanup(hFnpa);  
   }
-  else
-    Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);
+
+  Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnpa_I],0,F2[pFnpa_I],0);  
+  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);
     
   ELASTICITY *elast = (m->param)->cm_elast;
   elast->update_elasticity(elast,F2[eFnpa].m_pdata, 1);
@@ -909,17 +920,39 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
   // if transient cases, 
   // get_eF is not working because eF needs to be updated using mid-point alpha
   // below checks whether to use get_eF or give eFnpa in ctx
-  
-  Matrix(double) eF;  
+
   if(ctx->eFnpa)
-    Matrix_init_w_array(eF,DIM_3,DIM_3,ctx->eFnpa);
+  {
+    Matrix(double) eF;
+    eF.m_row = eF.m_col = DIM_3; eF.m_pdata = ctx->eFnpa;
+    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+  }    
   else
   {
-    Matrix_construct_redim(double,eF,DIM_3,DIM_3);
-    plasticity_get_eF(m,&eF);      
+    // shorthand of deformation gradients
+    Matrix(double) *Fs = m->vars.Fs;  
+    Matrix(double) eF, pFnp1_I;  
+    Matrix_construct_redim(double,eF,      DIM_3,DIM_3); 
+    Matrix_construct_redim(double,pFnp1_I, DIM_3, DIM_3);  
+  
+    err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);    
+    if(ctx->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFnp1, hFnp1_I;
+      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = ctx->hFnp1;
+      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+
+      err += inv3x3(ctx->hFnp1,   hFnp1_I.m_pdata);    
+      err += compute_eF(&eF, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, ctx);
+    }
+    else
+      Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
+      
+    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+
+    Matrix_cleanup(eF);
+    Matrix_cleanup(pFnp1_I);
   }
-  err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
-  Matrix_cleanup(eF);
       
   return err;
 }
@@ -997,10 +1030,10 @@ int plasticity_model_destory(Model_parameters *p)
   return err;
 }
 int plasticity_model_ctx_build(void **ctx,
-                               const double *F,
+                               double *F,
                                const double dt,
                                const double alpha,
-                               const double *eFnpa,
+                               double *eFnpa,
                                double *hFn,
                                double *hFnp1,
                                const int is_coulpled_with_thermal)

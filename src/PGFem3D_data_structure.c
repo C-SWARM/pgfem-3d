@@ -110,6 +110,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->ndofn  = 0;
   fv->ndofd  = 0;
   fv->npres  = 0;
+  fv->nVol   = 0;
   fv->n_concentrations = 0;
   fv->u_np1  = NULL;
   fv->u_n    = NULL;

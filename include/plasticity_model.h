@@ -49,10 +49,10 @@ int plasticity_model_destory(Model_parameters *p);
 /// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
 /// \return non-zero on internal error.
 int plasticity_model_ctx_build(void **ctx,
-                               const double *F,
+                               double *F,
                                const double dt,
                                const double alpha,
-                               const double *eFnpa,
+                               double *eFnpa,
                                double *hFn,
                                double *hFnp1,
                                const int is_coulpled_with_thermal);

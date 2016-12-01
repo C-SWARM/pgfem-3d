@@ -929,22 +929,20 @@ int stiffmat_fd(int *Ap,
 
 ///////////////////////////////////////////////////////////////////////////////////
 int el_compute_stiffmat_MP(FEMLIB *fe,
-        double *lk,
-        GRID *grid,
-        MATERIAL_PROPERTY *mat,
-        FIELD_VARIABLES *fv,
-        SOLVER_OPTIONS *sol,
-        LOADING_STEPS *load,
-        COMMUNICATION_STRUCTURE *com,
-        CRPL *crpl,
-        MPI_Comm mpi_comm,
-        const PGFem3D_opt *opts,
-        MULTIPHYSICS *mp,
-        int mp_id,
-        double dt,
-        double lm,
-        double *be,
-        double *r_e)
+                           double *lk,
+                           GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *fv,
+                           SOLVER_OPTIONS *sol,
+                           LOADING_STEPS *load,
+                           CRPL *crpl,
+                           const PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int mp_id,
+                           double dt,
+                           double lm,
+                           double *be,
+                           double *r_e)
 {
   int err = 0;  
   int eid = fe->curt_elem_id;
@@ -998,25 +996,10 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                 x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
         break;
       case CM:
-      {
-        switch(opts->cm) {
-          case UPDATED_LAGRANGIAN: // intentionally left to flow
-          case TOTAL_LAGRANGIAN:
-            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,fe->nne,grid->nsd,grid->element,
-                    nod,grid->node,dt,fv->eps,sup,r_e,
-                    opts->cm);
-            break;
+        err += stiffness_el_constitutive_model(fe,lk,r_e,grid,mat,fv,sol,load,crpl,
+                                               opts,mp,mp_id,dt);
             
-          case MIXED_ANALYSIS_MODE:
-            err += stiffness_el_crystal_plasticity(lk,eid,fv->ndofn,fe->nne,grid->nsd,grid->element,
-                    nod,grid->node,dt,fv->eps,sup,r_e,
-                    1 /* TL */);
-            break;
-            
-          default: assert(0 && "should never get here"); break;
-        }
         break;
-      }
       default:
         err += stiffmatel_fd (eid,fv->ndofn,fe->nne,nod,x,y,z,grid->element,mat->matgeom,
                 mat->hommat,grid->node,fv->sig,fv->eps,r_e,fv->npres,
@@ -1025,6 +1008,13 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
     } // switch (analysis)
   } // if(include_inertia)
   
+  if(err>0)
+  {
+    int myrank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+    
+    printf("Error is detected: rank= %d, eid = %d\n",myrank, eid);
+  }
   return err;
 }
 
@@ -1071,7 +1061,10 @@ static int el_stiffmat_MP(int eid,
       
       break;
   }
-
+  
+  if(sup->multi_scale)
+    total_Lagrangian = 1;
+    
   // set FEMLIB  
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
@@ -1116,40 +1109,10 @@ static int el_stiffmat_MP(int eid,
   }
   
   // get the deformation on the element
-  if(sup->multi_scale)
+  if(total_Lagrangian)
     def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
   else 
-  {
-    switch(opts->analysis_type)
-    {
-      case DISP:
-        def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-      case TF: // TOTAL LAGRANGIAN
-        def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-        break;
-      case CM:
-      {
-        switch(opts->cm)
-        {
-          case UPDATED_LAGRANGIAN:
-            def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
-            break;
-          case TOTAL_LAGRANGIAN:
-            def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-            break;
-          case MIXED_ANALYSIS_MODE:
-            def_elem_total(cnL,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,sup,r_e);
-            break;
-            
-          default: assert(0 && "undefined CM type"); break;
-        }
-        break;
-      }
-      default:
-        def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
-        break;
-    }
-  }
+    def_elem (cnL,ndofe,fv->d_u,grid->element,grid->node,r_e,sup,0);
   
   /* recover thei increment of applied def on first iter */
   if (iter == 0)
@@ -1163,8 +1126,8 @@ static int el_stiffmat_MP(int eid,
   Matrix_construct_redim(double,lk,ndofe,ndofe);
   Matrix_init(lk, 0.0);
   
-  err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,com,
-                                crpl,mpi_comm,opts,mp,mp_id,dt,lm,be,r_e);
+  err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
+                                crpl,opts,mp,mp_id,dt,lm,be,r_e);
 
   FEMLIB_destruct(&fe);          
   

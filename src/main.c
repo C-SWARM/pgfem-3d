@@ -946,14 +946,12 @@ int single_scale_main(int argc,char *argv[])
         }
     
         /* alocation of pressure variables */
-        int nVol = 1;
         switch(options.analysis_type){
           case TF:
-            nVol = 1;
             if(grid.element[0].toe==10 && fv[ia].ndofn==3)
             {
               fv[ia].npres = 1;
-              nVol = 1;
+              fv[ia].nVol = 1;
             }
             break;
           case STABILIZED: case MINI: case MINI_3F:
@@ -1001,8 +999,8 @@ int single_scale_main(int argc,char *argv[])
                 fv[ia].eps[e].d_T[a] = 0.0;
             }
             
-            fv[ia].eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));
-            for(int a=0; a<nVol*3; a++)
+            fv[ia].eps[e].T   = (double *) PGFEM_calloc((fv[ia].nVol)*3,sizeof(double));
+            for(int a=0; a<(fv[ia].nVol)*3; a++)
               fv[ia].eps[e].T[a] = 1.0;
           }
         }

@@ -652,16 +652,30 @@ int cm_get_subdivision_parameter(double *subdiv_param,
  */
 int construct_model_context(void **ctx,
                                    const int type,
-                                   const double *F,
+                                   double *F,
                                    const double dt,
                                    const double alpha,
-                                   const double *eFnpa);
+                                   double *eFnpa);
 
 struct FEMLIB;
 #ifndef TYPE_FEMLIB
 #define TYPE_FEMLIB
 typedef struct FEMLIB FEMLIB;
 #endif
+
+int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
+                                              double *lk,
+                                              double *r_e,
+                                              GRID *grid,
+                                              MATERIAL_PROPERTY *mat,
+                                              FIELD_VARIABLES *fv,
+                                              SOLVER_OPTIONS *sol,
+                                              LOADING_STEPS *load,
+                                              CRPL *crpl,
+                                              const PGFem3D_opt *opts,
+                                              MULTIPHYSICS *mp,
+                                              int mp_id,
+                                              double dt);
 
 int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double *lk,
@@ -671,11 +685,23 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     FIELD_VARIABLES *fv,
                                     SOLVER_OPTIONS *sol,
                                     LOADING_STEPS *load,
-                                    COMMUNICATION_STRUCTURE *com,
                                     CRPL *crpl,
-                                    MPI_Comm mpi_comm,
                                     const PGFem3D_opt *opts,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
                                     double dt);
+
+int residuals_el_constitutive_model(FEMLIB *fe,
+                                    double *f,
+                                    double *r_e,
+                                    GRID *grid,
+                                    MATERIAL_PROPERTY *mat,
+                                    FIELD_VARIABLES *fv,
+                                    SOLVER_OPTIONS *sol,
+                                    LOADING_STEPS *load,
+                                    CRPL *crpl,
+                                    const PGFem3D_opt *opts,
+                                    MULTIPHYSICS *mp,
+                                    int mp_id,
+                                    double dt);                                    
 #endif

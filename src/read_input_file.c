@@ -828,8 +828,10 @@ int read_initial_for_Thermal(FILE *fp,
   
   // set default
   for(int ia=0; ia<grid->nn; ia++)
+  {
+    fv->u_nm1[ia] = T0;
     fv->u_n[ia] = T0;
-      
+  }    
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
@@ -840,6 +842,7 @@ int read_initial_for_Thermal(FILE *fp,
     sscanf(line, "%ld %lf", &nid, &u);
     
     fv->u_n[nid] = u;
+    fv->u_nm1[nid] = u;
   }
   
   for(int ia = 0; ia<grid->nn; ia++)

@@ -62,6 +62,7 @@ typedef struct FIELD_VARIABLES {
   long ndofn;     /// number of degree of freedom on a node
   long ndofd;     /// number of degree of freedom in the domain
   long npres;     /// number of pressure per element
+  long nVol;      /// number of volume per element
   long n_concentrations; /// number of concentrations
   double *u_np1;  /// displacement at n+1
   double *u_n;    /// displacement at n

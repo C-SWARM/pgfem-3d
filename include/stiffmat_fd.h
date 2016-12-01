@@ -18,7 +18,7 @@
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
 #include "PGFem3D_data_structure.h"
-
+#include "femlib.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -106,6 +106,22 @@ extern "C" {
 		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
 		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
 		   const int mp_id);
+
+int el_compute_stiffmat_MP(FEMLIB *fe,
+                           double *lk,
+                           GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *fv,
+                           SOLVER_OPTIONS *sol,
+                           LOADING_STEPS *load,
+                           CRPL *crpl,
+                           const PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int mp_id,
+                           double dt,
+                           double lm,
+                           double *be,
+                           double *r_e);
 		   
 /// Compute stiffnes
 ///

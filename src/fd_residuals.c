@@ -549,7 +549,6 @@ static int fd_res_elem_MP(double *be,
   else
     def_elem (cn,ndofe,f,grid->element,grid->node,r_e,sup,0);
   
-  int nVol = N_VOL_TREE_FIELD;
   int nsd = 3;
   
   double *x = (fe.temp_v).x.m_pdata;
@@ -557,7 +556,7 @@ static int fd_res_elem_MP(double *be,
   double *z = (fe.temp_v).z.m_pdata;
   
   if(include_inertia) {
-    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,nVol,
+    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
                                   ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
                                   nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);
   } else {
@@ -595,7 +594,7 @@ static int fd_res_elem_MP(double *be,
         memset(bf, 0, sizeof(double)*ndofe);
         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
                 
-        residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,nVol,nsd,
+        residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
                         x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
         for(long a = 0; a<ndofe; a++)
           be[a] += -bf[a];
@@ -604,8 +603,8 @@ static int fd_res_elem_MP(double *be,
         break;
       }
       case CM:
-        err += residuals_el_crystal_plasticity(be,eid,fv->ndofn,fe.nne,nsd,elem,nod,grid->node,
-                                               dt,fv->eps,sup,r_e, total_Lagrangian);
+        err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
+                                               opts,mp,mp_id,dt);                                            
         break;      
       default:
         err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
