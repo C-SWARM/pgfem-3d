@@ -35,7 +35,7 @@ press_theta.cc \
 pressu_shape.cc \
 Printing.cc \
 print_dist.c \
-read_cryst_plast.c \
+read_cryst_plast.cc \
 renumber_ID.c \
 res_fini_def.c \
 resice.c \
