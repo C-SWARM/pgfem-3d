@@ -85,7 +85,7 @@ allocation.cc \
 cohesive_element_utils.cc \
 cohesive_element.cc \
 cohesive_potentials.cc \
-quadrature_rules.c \
+quadrature_rules.cc \
 integrate_surface.c \
 applied_traction.c \
 pgfem_comm.cc \
