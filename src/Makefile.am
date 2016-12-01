@@ -88,7 +88,7 @@ cohesive_potentials.cc \
 quadrature_rules.c \
 integrate_surface.c \
 applied_traction.c \
-pgfem_comm.c \
+pgfem_comm.cc \
 tfa.c \
 hommat.cc \
 sig.c \
