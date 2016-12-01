@@ -99,7 +99,7 @@ eps.cc \
 matgeom.cc \
 crpl.cc \
 ensight.cc \
-read_input_file.c \
+read_input_file.cc \
 microscale_information.cc \
 ms_cohe_job_info.cc \
 ms_cohe_job_list.c \
