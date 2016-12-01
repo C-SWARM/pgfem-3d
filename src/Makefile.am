@@ -4,7 +4,7 @@ ALM.cc \
 Arc_length.cc \
 boomerAMGInterface.cc \
 GRedist_node.cc \
-LINE.c \
+LINE.cc \
 Newton_Raphson.c \
 PLC.c \
 PLoc_Sparse.c \
