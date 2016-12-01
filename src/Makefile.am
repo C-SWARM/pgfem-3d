@@ -30,7 +30,7 @@ matice.cc \
 matrix_printing.cc \
 metis_printing.cc \
 null.cc \
-out.c \
+out.cc \
 press_theta.c \
 pressu_shape.c \
 Printing.c \
