@@ -93,7 +93,7 @@ tfa.c \
 hommat.cc \
 sig.c \
 supp.cc \
-mesh_load.c \
+mesh_load.cc \
 material.cc \
 eps.cc \
 matgeom.cc \
