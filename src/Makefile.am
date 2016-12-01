@@ -7,7 +7,7 @@ GRedist_node.cc \
 LINE.cc \
 Newton_Raphson.c \
 PLC.cc \
-PLoc_Sparse.c \
+PLoc_Sparse.cc \
 Psparse_ApAi.c \
 Re1_Re2_Re3.c \
 TA_GA.c \
