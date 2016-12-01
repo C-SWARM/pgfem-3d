@@ -29,7 +29,7 @@ macroscopic_load_AL.cc \
 matice.cc \
 matrix_printing.cc \
 metis_printing.cc \
-null.c \
+null.cc \
 out.c \
 press_theta.c \
 pressu_shape.c \
