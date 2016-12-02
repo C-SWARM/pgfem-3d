@@ -18,13 +18,13 @@ module load gcc
 #echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
 #echo "    "
 
-cp /afs/crc.nd.edu/user/i/iviti/pgconvert/pgfem_3d/build/convert2cc/share/config.site-gcc /afs/crc.nd.edu/user/i/iviti/pgconvert/pgfem_3d/build/convert2cc/share/config.site
+cp ./build/convert2cc/share/config.site-gcc ./build/convert2cc/share/config.site
 
 #cd /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d 
 #git pull
 make distclean
 echo "++++++++++++ finished pulling pgfem_3d +++++++++++"
-setenv PGFEM3D_INSTALL /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/build
+setenv PGFEM3D_INSTALL $PWD/build
 ./reconf_git_branch.sh
 #make clean
 make 
