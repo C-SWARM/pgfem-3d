@@ -119,7 +119,7 @@ pgf_fe2_compute_max_n_jobs.c \
 solver_file.c \
 condense.c \
 three_field_element.c \
-femlib.c \
+femlib.cc \
 macro_micro_main.c \
 main.c \
 dynamics.c \

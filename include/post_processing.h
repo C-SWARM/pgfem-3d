@@ -5,6 +5,9 @@
 #include "femlib.h"
 #include "eps.h"
 #include "PGFem3D_options.h"
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
 int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u);
 
@@ -22,4 +25,9 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);
 void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts);                    
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif
