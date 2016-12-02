@@ -58,7 +58,7 @@ potential.cc \
 computeMacroF.c \
 computeMacroS.c \
 vtk_output.c \
-MINI_element.c \
+MINI_element.cc \
 MINI_3f_element.cc \
 two_field_element.c \
 Hu_Washizu_element.cc \
