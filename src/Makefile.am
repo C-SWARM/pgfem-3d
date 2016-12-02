@@ -5,7 +5,7 @@ Arc_length.cc \
 boomerAMGInterface.cc \
 GRedist_node.cc \
 LINE.cc \
-Newton_Raphson.c \
+Newton_Raphson.cc \
 PLC.cc \
 PLoc_Sparse.cc \
 Psparse_ApAi.cc \
