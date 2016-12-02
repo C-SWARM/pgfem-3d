@@ -63,7 +63,7 @@ MINI_3f_element.c \
 two_field_element.c \
 Hu_Washizu_element.c \
 new_potentials.c \
-displacement_based_element.c \
+displacement_based_element.cc \
 PGFem3D_options.cc \
 gen_path.cc \
 volumetric_damage.c \
