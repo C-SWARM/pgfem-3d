@@ -86,7 +86,7 @@ cohesive_element_utils.cc \
 cohesive_element.cc \
 cohesive_potentials.cc \
 quadrature_rules.cc \
-integrate_surface.c \
+integrate_surface.cc \
 applied_traction.c \
 pgfem_comm.cc \
 tfa.c \
