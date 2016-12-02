@@ -62,7 +62,7 @@ MINI_element.cc \
 MINI_3f_element.cc \
 two_field_element.c \
 Hu_Washizu_element.cc \
-new_potentials.c \
+new_potentials.cc \
 displacement_based_element.cc \
 PGFem3D_options.cc \
 gen_path.cc \
