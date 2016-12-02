@@ -45,7 +45,7 @@ rowlength.cc \
 set_fini_def.cc \
 SetGlobalNodeNumbers.cc \
 skyline.cc \
-stabilized.c \
+stabilized.cc \
 stiffmat_fd.c \
 stiffmatel_fd.cc \
 stress_strain.c \
@@ -103,7 +103,7 @@ read_input_file.cc \
 microscale_information.cc \
 ms_cohe_job_info.cc \
 ms_cohe_job_list.c \
-PGFEM_par_matvec.c \
+PGFEM_par_matvec.cc \
 compute_ms_cohe_job.c \
 PGFEM_io.cc \
 PGFEM_mpi.cc \
