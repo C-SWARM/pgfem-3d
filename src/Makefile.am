@@ -69,7 +69,7 @@ gen_path.cc \
 volumetric_damage.c \
 initialize_damage.cc \
 vol_damage_int_alg.c \
-interface_macro.c \
+interface_macro.cc \
 compute_reactions.c \
 bounding_element.c \
 bounding_element_utils.c \
