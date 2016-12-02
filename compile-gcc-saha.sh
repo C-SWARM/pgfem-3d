@@ -8,19 +8,19 @@ module load atlas/3.8.3
 module load gcc
  
 
-cd /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc 
+#cd /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc 
 #git pull
 #echo "++++++++++++ finished pulling Generalized_constitutive_model +++++++++++"
-setenv MKLROOT /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc/mkl_include
+#setenv MKLROOT /afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc/mkl_include
 #make CC=mpicc CXX=mpicxx CFLAGS="-std=c99 -O3 -g" CXXFLAGS="-std=c99 -O3 -g"
 #make clean
 #make
-echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
-echo "    "
+#echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
+#echo "    "
 
 cp /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/build/convert2cc/share/config.site-gcc /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/build/convert2cc/share/config.site
 
-cd /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d 
+#cd /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d 
 #git pull
 make distclean
 echo "++++++++++++ finished pulling pgfem_3d +++++++++++"
