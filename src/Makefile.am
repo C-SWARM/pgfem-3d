@@ -133,7 +133,7 @@ cm_uqcm.c \
 state_variables.c \
 constitutive_model.c \
 post_processing.c \
-comm_hints.c \
+comm_hints.cc \
 restart.c
 
 comm_hints_driver_SOURCES = comm_hints.cc comm_hints_driver.cc
