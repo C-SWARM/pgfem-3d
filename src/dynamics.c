@@ -25,120 +25,6 @@
   #include "../verification_MMS/MMS.h"
 #endif
 
-int stiffness_with_inertia(FEMLIB *fe,
-                           double *Ks,
-                           double *r_e,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
-                           CRPL *crpl,
-                           const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
-                           int mp_id,
-                           double dt)		     
-{
-  int err = 0;
-  int eid = fe->curt_elem_id;
-  
-  const int mat_id = grid->element[eid].mat[2];
-  double rho = mat->hommat[mat_id].density;  
-   
-  int nne = fe->nne;
-  int ndofn = fv->ndofn;
-  int ndofe = nne*ndofn;
-
-  Matrix(double) Kuu_K,Kuu_I, u, u_n;
-  Matrix_construct_init(double,Kuu_I,ndofe,ndofe,0.0);
-  Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);  
-  Matrix_construct_init(double,u,ndofe,1,0.0);
-  Matrix_construct_init(double,u_n,ndofe,1,0.0);      
-
-  /* make sure the stiffenss matrix contains all zeros */  
-  memset(Ks,0,ndofe*ndofe*sizeof(double));
-  
-  const long *nod = (fe->node_id).m_pdata;      
-  for (long I=0;I<nne;I++)
-  {
-    for(long J=0; J<ndofn; J++)
-      Mat_v(u_n,I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];  
-  }
-   
-  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe); 
-  
-  if(opts->analysis_type == DISP || 
-     opts->analysis_type == TF   || 
-     opts->analysis_type == CM)      
-  {    
-    for(int ip = 1; ip<=fe->nint; ip++)
-    {
-      FEMLIB_elem_basis_V(fe, ip); 
-    
-      for(long a = 0; a<nne; a++)
-      {
-        for(long c=0; c<nne; c++)
-        {
-          for(long b=1; b<=ndofn; b++)
-            Mat_v(Kuu_I,a*ndofn+b,c*ndofn+b) += rho/dt*Vec_v(fe->N,a+1)*Vec_v(fe->N,c+1)*fe->detJxW;
-        }
-	    } 
-    }    
-  }
-  
-  double *x = (fe->temp_v).x.m_pdata;
-  double *y = (fe->temp_v).y.m_pdata;
-  double *z = (fe->temp_v).z.m_pdata;
-
-  SUPP sup = load->sups[mp_id];
-  
-  switch(opts->analysis_type)
-  {
-    case DISP:
-      err = DISP_stiffmat_el(Kuu_K.m_pdata,eid,ndofn,nne,x,y,z,grid->element,
-                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,u.m_pdata,dt);
-
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];                                
-      
-      break;
-
-    case TF:
-      if(0<sol->alpha && sol->alpha<1.0)
-      {
-        stiffmat_3f_el(Kuu_K.m_pdata,eid,ndofn,nne,fv->npres,fv->nVol,fe->nsd,x,y,z,
-                                 grid->element,mat->hommat,nod,grid->node,dt,
-                                 fv->sig,fv->eps,sup,sol->alpha,u.m_pdata);                                                              
-      }                          
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
-
-      break;
-    case CM:
-    {
-      err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
-                                                       grid,mat,fv,sol,load,crpl,
-                                                       opts,mp,mp_id,dt);
-                                                    
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a]; 
-
-      break;        
-    }  
-      
-    default:
-      printf("Only displacement based element and three field element are supported\n");
-      break;                         
-  }              
-
-  Matrix_cleanup(Kuu_I); 
-  Matrix_cleanup(Kuu_K);  
-  Matrix_cleanup(u); 
-  Matrix_cleanup(u_n);
-  
-  return err;  
-}
-
 void stiffmat_disp_w_inertia_el(double *Ks,
          const int ii,
          const int ndofn,
@@ -479,3 +365,252 @@ int residuals_w_inertia_el(double *fe, int i,
 	return err;
 } 
 
+
+int residual_with_inertia(FEMLIB *fe,
+                          double *be,
+                          double *r_e,
+                          GRID *grid,
+                          MATERIAL_PROPERTY *mat,
+                          FIELD_VARIABLES *fv,
+                          SOLVER_OPTIONS *sol,
+                          LOADING_STEPS *load,
+                          CRPL *crpl,
+                          const PGFem3D_opt *opts,
+                          MULTIPHYSICS *mp,
+                          int mp_id,
+                          double *dts,
+                          double t)
+{
+  int err = 0;
+  	
+  if(!(opts->analysis_type == DISP || opts->analysis_type == TF || opts->analysis_type == CM))
+  {
+    int myrank = 0;  
+    MPI_Comm_rank (MPI_COMM_WORLD,&myrank);     
+    if(myrank==0) 
+      printf("With inertia is supported only for analysis type = DISP or TF or CM\n"); 
+    
+    return err;
+  }
+
+	int nsd = 3;
+  int eid = fe->curt_elem_id;
+  
+  const int mat_id = grid->element[eid].mat[2];
+  double rho = mat->hommat[mat_id].density;  
+   
+  int nne = fe->nne;
+  int ndofn = fv->ndofn;
+  int ndofe = nne*ndofn;
+
+  double *r_n_a   = aloc1(ndofe);
+  double *r_n_1_a = aloc1(ndofe);   			
+	double *r0      = aloc1(ndofe);
+	double *r0_     = aloc1(ndofe); 	
+	double *f_i     = aloc1(ndofe);
+	memset(be,  0, sizeof(double)*ndofe);
+	memset(f_i, 0, sizeof(double)*ndofe);
+	
+	const long *nod = (fe->node_id).m_pdata;  
+			
+	for(int I=0;I<nne;I++)
+	{
+	  for(int J=0; J<nsd; J++)
+	  {
+	     r0[I*ndofn + J] =   fv->u_n[nod[I]*ndofn + J];
+	    r0_[I*ndofn + J] = fv->u_nm1[nod[I]*ndofn + J];            
+	  }
+	}
+		
+	mid_point_rule(r_n_1_a,r0_,r0,  sol->alpha, ndofe); 
+	mid_point_rule(r_n_a,  r0, r_e, sol->alpha, ndofe);
+
+  double *x = (fe->temp_v).x.m_pdata;
+  double *y = (fe->temp_v).y.m_pdata;
+  double *z = (fe->temp_v).z.m_pdata;
+  SUPP sup = load->sups[mp_id];
+  
+  
+  DISP_resid_w_inertia_el(f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha);   
+   
+  switch(opts->analysis_type)
+  {   		
+    case DISP:
+    {   
+	    double *f_n_a   = aloc1(ndofe);
+	    double *f_n_1_a = aloc1(ndofe);      
+       
+	    err +=  DISP_resid_el(f_n_1_a,eid,ndofn,nne,x,y,z,grid->element,
+                            mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_1_a, dts[DT_N]);
+
+	    err +=  DISP_resid_el(f_n_a,eid,ndofn,nne,x,y,z,grid->element,
+                            mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_a, dts[DT_NP1]);
+            	
+	    for(long a = 0; a<ndofe; a++)
+	      be[a] = -f_i[a] - (1.0-(sol->alpha))*dts[DT_NP1]*f_n_a[a] - (sol->alpha)*dts[DT_N]*f_n_1_a[a];
+	      
+	    free(f_n_a);
+	    free(f_n_1_a);		      
+	      
+	    break;
+	  }  
+	  case TF:
+	  {  
+      if(0<(sol->alpha) && (sol->alpha)<1.0)
+      {	    
+	      residuals_3f_w_inertia_el(be,eid,ndofn,nne,fv->npres,fv->nVol,nsd,x,y,z,grid->element,mat->hommat,grid->node,
+	                                dts,fv->sig,fv->eps,sol->alpha,r_n_a,r_n_1_a);
+	    }
+	                              
+	    for(long a = 0; a<ndofe; a++)
+	      be[a] -= f_i[a];
+	      
+	    break;
+	    
+	  }
+	  case CM:
+	  {
+  	  double *f_n   = aloc1(ndofe);    
+    	memset(f_n, 0, sizeof(double)*ndofe);       
+/*
+      err += residuals_el_crystal_plasticity_w_inertia(f_n,eid,ndofn,nne,nsd,elem,nod,node,
+                                            dts,eps,sup,r_e,alpha);  
+*/
+	    for(long a = 0; a<ndofe; a++)
+	      be[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
+	        
+	    free(f_n);
+	    break;                                                                                                           
+	  }  
+    default:
+      printf("Only displacement based element and three field element are supported\n");
+  	  break;
+  }
+
+	free(r_n_a);
+	free(r_n_1_a);	
+	free(r0);
+	free(r0_);
+	free(f_i);	
+	return err;
+} 
+
+int stiffness_with_inertia(FEMLIB *fe,
+                           double *Ks,
+                           double *r_e,
+                           GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *fv,
+                           SOLVER_OPTIONS *sol,
+                           LOADING_STEPS *load,
+                           CRPL *crpl,
+                           const PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int mp_id,
+                           double dt)		     
+{
+  
+  int err = 0;
+  int eid = fe->curt_elem_id;
+
+    int myrank = 0;  
+    MPI_Comm_rank (MPI_COMM_WORLD,&myrank);     
+    if(myrank==0 && eid == 0) 
+      printf("this is runnig\n"); 
+  
+  const int mat_id = grid->element[eid].mat[2];
+  double rho = mat->hommat[mat_id].density;  
+   
+  int nne = fe->nne;
+  int ndofn = fv->ndofn;
+  int ndofe = nne*ndofn;
+
+  Matrix(double) Kuu_K,Kuu_I, u, u_n;
+  Matrix_construct_init(double,Kuu_I,ndofe,ndofe,0.0);
+  Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);  
+  Matrix_construct_init(double,u,ndofe,1,0.0);
+  Matrix_construct_init(double,u_n,ndofe,1,0.0);      
+
+  /* make sure the stiffenss matrix contains all zeros */  
+  memset(Ks,0,ndofe*ndofe*sizeof(double));
+  
+  const long *nod = (fe->node_id).m_pdata;      
+  for (long I=0;I<nne;I++)
+  {
+    for(long J=0; J<ndofn; J++)
+      Mat_v(u_n,I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];  
+  }
+   
+  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe); 
+  
+  if(opts->analysis_type == DISP || 
+     opts->analysis_type == TF   || 
+     opts->analysis_type == CM)      
+  {    
+    for(int ip = 1; ip<=fe->nint; ip++)
+    {
+      FEMLIB_elem_basis_V(fe, ip); 
+    
+      for(long a = 0; a<nne; a++)
+      {
+        for(long c=0; c<nne; c++)
+        {
+          for(long b=1; b<=ndofn; b++)
+            Mat_v(Kuu_I,a*ndofn+b,c*ndofn+b) += rho/dt*Vec_v(fe->N,a+1)*Vec_v(fe->N,c+1)*fe->detJxW;
+        }
+	    } 
+    }    
+  }
+  
+  double *x = (fe->temp_v).x.m_pdata;
+  double *y = (fe->temp_v).y.m_pdata;
+  double *z = (fe->temp_v).z.m_pdata;
+
+  SUPP sup = load->sups[mp_id];
+  
+  switch(opts->analysis_type)
+  {
+    case DISP:
+      err = DISP_stiffmat_el(Kuu_K.m_pdata,eid,ndofn,nne,x,y,z,grid->element,
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,u.m_pdata,dt);
+
+      for(long a = 0; a<ndofe*ndofe; a++)
+        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];                                
+      
+      break;
+
+    case TF:
+      if(0<sol->alpha && sol->alpha<1.0)
+      {
+        stiffmat_3f_el(Kuu_K.m_pdata,eid,ndofn,nne,fv->npres,fv->nVol,fe->nsd,x,y,z,
+                                 grid->element,mat->hommat,nod,grid->node,dt,
+                                 fv->sig,fv->eps,sup,sol->alpha,u.m_pdata);                                                              
+      }                          
+      for(long a = 0; a<ndofe*ndofe; a++)
+        Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
+
+      break;
+    case CM:
+    {
+      err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
+                                                       grid,mat,fv,sol,load,crpl,
+                                                       opts,mp,mp_id,dt);
+                                                    
+      for(long a = 0; a<ndofe*ndofe; a++)
+        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a]; 
+
+      break;        
+    }  
+      
+    default:
+      printf("Only displacement based element and three field element are supported\n");
+      break;                         
+  }              
+
+  Matrix_cleanup(Kuu_I); 
+  Matrix_cleanup(Kuu_K);  
+  Matrix_cleanup(u); 
+  Matrix_cleanup(u_n);
+  
+  return err;  
+}

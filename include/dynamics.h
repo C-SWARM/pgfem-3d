@@ -8,6 +8,7 @@
 #include "sig.h"
 #include "eps.h"
 #include "PGFem3D_options.h"
+#include "PGFem3D_data_structure.h"
 
 #define MIN_DENSITY 1.0e-16
 #define DT_NP1 0
@@ -57,7 +58,41 @@ int residuals_w_inertia_el(double *fe, int i,
 		  NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig,
 		  long* nod, long *cn, double *x, double *y, double *z,                                
 		  const double *dts, double t, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1);
-		  
+
+struct FEMLIB;
+#ifndef TYPE_FEMLIB
+#define TYPE_FEMLIB
+typedef struct FEMLIB FEMLIB;
+#endif
+
+int residual_with_inertia(FEMLIB *fe,
+                          double *be,
+                          double *r_e,
+                          GRID *grid,
+                          MATERIAL_PROPERTY *mat,
+                          FIELD_VARIABLES *fv,
+                          SOLVER_OPTIONS *sol,
+                          LOADING_STEPS *load,
+                          CRPL *crpl,
+                          const PGFem3D_opt *opts,
+                          MULTIPHYSICS *mp,
+                          int mp_id,
+                          double *dts,
+                          double t);
+
+int stiffness_with_inertia(FEMLIB *fe,
+                           double *Ks,
+                           double *r_e,
+                           GRID *grid,
+                           MATERIAL_PROPERTY *mat,
+                           FIELD_VARIABLES *fv,
+                           SOLVER_OPTIONS *sol,
+                           LOADING_STEPS *load,
+                           CRPL *crpl,
+                           const PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int mp_id,
+                           double dt);
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

@@ -968,9 +968,11 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
   
   if(include_inertia)
   {
+    err += stiffness_with_inertia(fe,lk,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dt);
+    /*
     stiffmat_disp_w_inertia_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,x, y, z,
             grid->element,mat->hommat,nod,grid->node,dt,
-            fv->sig,fv->eps,sup,opts->analysis_type,opts->cm,sol->alpha,fv->u_n,r_e);
+            fv->sig,fv->eps,sup,opts->analysis_type,opts->cm,sol->alpha,fv->u_n,r_e);*/
   }
   else
   {
