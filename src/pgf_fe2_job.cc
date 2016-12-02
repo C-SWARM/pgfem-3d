@@ -48,16 +48,16 @@ static inline int pgf_FE2_job_private_compare_size_t(const size_t *a,
 int pgf_FE2_job_compare_state(const void *a,
 			      const void *b)
 {
-  const pgf_FE2_job *A = a;
-  const pgf_FE2_job *B = b;
+  auto A = (pgf_FE2_job *) a;
+  auto B = (pgf_FE2_job *) b;
   return pgf_FE2_job_private_compare_int(&(A->state),&(B->state));
 }
 
 int pgf_FE2_job_compare_time(const void *a,
 			     const void *b)
 {
-  const pgf_FE2_job *A = a;
-  const pgf_FE2_job *B = b;
+  auto A = (pgf_FE2_job *) a;
+  auto B = (pgf_FE2_job *) b;
   return pgf_FE2_job_private_compare_size_t(&(A->time),&(B->time));
 }
 
@@ -65,8 +65,8 @@ int pgf_FE2_job_compare_time(const void *a,
 int pgf_FE2_job_compare_id(const void *a,
 			   const void *b)
 {
-  const pgf_FE2_job *A = a;
-  const pgf_FE2_job *B = b;
+  auto A = (pgf_FE2_job *) a;
+  auto B = (pgf_FE2_job *) b;
   return pgf_FE2_job_private_compare_size_t(&(A->id),&(B->id));
 }
 

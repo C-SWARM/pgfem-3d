@@ -12,9 +12,6 @@
 #include "microscale_information.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 /**
  * Structure for maintaining communication information related to a
@@ -31,6 +28,9 @@ struct pgf_FE2_job_comm_buf{
 typedef struct pgf_FE2_job_comm_buf pgf_FE2_job_comm_buf;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 /**
  * Set a valid initial state for a pgf_FE2_job_comm_buf object.
  *
@@ -55,6 +55,9 @@ void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
  */
 void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf);
 
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 /**
  * Enumeration for the progression of job states.
  */
@@ -88,6 +91,10 @@ struct pgf_FE2_job{
 typedef struct pgf_FE2_job pgf_FE2_job;
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 /**
  * Sets/allocates an initial valid state for a pgf_FE2_job object.
  */

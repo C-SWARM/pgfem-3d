@@ -2,7 +2,7 @@ with_mpi=yes
 CC=mpicc
 CXX=mpicxx
 CFLAGS="-Wall -std=gnu99 -O0 -g"
-CXXFLAGS="-Wall -std=gnu99 -Drestrict -fpermissive -O0 -g"
+CXXFLAGS="-Wall -std=c++14 -Drestrict -fpermissive -O0 -g"
 
 
 with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/intel/15.0/mvapich2/2.1

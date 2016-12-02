@@ -3,6 +3,8 @@
 module purge 
 module load opt_local/1.0 
 module load mpich/3.1.2-gcc
+module load hypre/2.4.0b-mpich-3.1.2-gcc-4.9.2
+module load atlas/3.8.3
 module load gcc
  
 
@@ -17,8 +19,6 @@ echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++
 echo "    "
 
 cp /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/build/convert2cc/share/config.site-gcc /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/build/convert2cc/share/config.site
-
-setenv CPLUS_INCLUDE_PATH /afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/gcc/4.9.2/mpich/3.1.2/include
 
 cd /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d 
 #git pull
