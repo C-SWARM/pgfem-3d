@@ -136,7 +136,7 @@ post_processing.c \
 comm_hints.c \
 restart.c
 
-comm_hints_driver_SOURCES = comm_hints.c comm_hints_driver.c
+comm_hints_driver_SOURCES = comm_hints.cc comm_hints_driver.cc
 
 BPA_driver_SOURCES = \
 $(all_sources) \
