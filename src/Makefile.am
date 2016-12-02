@@ -17,7 +17,7 @@ def_grad.cc \
 differentiation_of_UU.c \
 elem3d.cc \
 fd_increment.cc \
-fd_residuals.c \
+fd_residuals.cc \
 homogen.cc \
 hypre_interface.cc \
 in.cc \

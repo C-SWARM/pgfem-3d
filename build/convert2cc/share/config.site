@@ -1,20 +1,24 @@
-with_mpi=yes  
-CC=mpicc 
-CXX=mpicxx 
-CFLAGS="-std=gnu99 -O0 -g"
-CXXFLAGS="-std=c++14 -Drestrict -fpermissive -O0 -g"
-##CXXFLAGS="-std=c++14 -O0 -g"
+with_mpi=yes
+CC=mpicc
+CXX=mpicxx
+CFLAGS="-Wall -std=gnu99 -O0 -g"
+CXXFLAGS="-Wall -std=c++14 -Drestrict -fpermissive -O0 -g"
 
-with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/gcc/4.9.2/mpich/3.1.2
-with_suitesparse_dir=/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1_gcc
-with_cnstvm_dir=/afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc
 
-with_special_link='$(CXX)' 
-with_mkl=no 
-with_mkl_override="-I/afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model_gcc/mkl_include/include" 
-with_cblas_include="-I/opt/crc/scilib/atlas/3.8.3-1/gnu/include" 
-with_cblas_lib="-L/opt/crc/scilib/atlas/3.8.3-1/gnu/lib -llapack -lptcblas -lptf77blas -lcblas -lf77blas -latlas" 
-with_lapack_include="-I/opt/crc/scilib/atlas/3.8.3-1/gnu/include" 
-with_lapack_lib="-L/opt/crc/scilib/atlas/3.8.3-1/gnu/lib -llapack -lptcblas -lptf77blas -lcblas -lf77blas -latlas"
+with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/intel/15.0/mvapich2/2.1
+with_suitesparse_dir=/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1
+with_cnstvm_dir=/afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model
 
 enable_vtk=no
+
+# required extra opts for enable_vtk=yes
+#vtk_dir=/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib
+#with_vtk_include="-I$vtk_dir/include/vtk-7.0"
+
+#with_vtk_libs="-Wl,-rpath=/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib/lib
+#-L/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib/lib
+#-lvtkIOXML-7.0 -lvtkIOXMLParser-7.0 \
+#-lvtkIOCore-7.0 -lvtkzlib-7.0 -lvtkCommonExecutionModel-7.0
+#-lvtkCommonDataModel-7.0 -lvtkCommonMisc-7.0 -lvtkCommonSystem-7.0 \
+#-lvtkCommonTransforms-7.0 -lvtkCommonMath-7.0 -lvtkIOGeometry-7.0
+#-lvtkCommonCore-7.0 -lvtksys-7.0 -lvtkexpat-7.0"
