@@ -18,7 +18,7 @@ module load gcc
 #echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
 #echo "    "
 
-cp ./build/convert2cc/share/config.site-gcc ./build/convert2cc/share/config.site
+cp config.site-gcc ./build/convert2cc/share/config.site
 
 #cd /afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d 
 #git pull

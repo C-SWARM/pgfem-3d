@@ -13,7 +13,7 @@ module load pgfem3d/mvapich2-2.1-intel-15.0-mlx
 #echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
 #echo "    "
 
-cp ./build/convert2cc/share/config.site-intel ./build/convert2cc/share/config.site
+cp config.site-intel ./build/convert2cc/share/config.site
 
 #cd /afs/crc.nd.edu/group/cswarm/pgfem_3d
 #git pull
