@@ -61,7 +61,7 @@ vtk_output.c \
 MINI_element.c \
 MINI_3f_element.c \
 two_field_element.c \
-Hu_Washizu_element.c \
+Hu_Washizu_element.cc \
 new_potentials.c \
 displacement_based_element.cc \
 PGFem3D_options.cc \
