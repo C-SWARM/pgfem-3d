@@ -23,7 +23,7 @@ hypre_interface.cc \
 in.cc \
 initial_guess.cc \
 integration.c \
-load.c \
+load.cc \
 localizat.cc \
 macroscopic_load_AL.cc \
 matice.cc \
