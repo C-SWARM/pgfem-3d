@@ -48,7 +48,7 @@ skyline.cc \
 stabilized.cc \
 stiffmat_fd.cc \
 stiffmatel_fd.cc \
-stress_strain.c \
+stress_strain.cc \
 subdivision.c \
 tensors.cc \
 utils.c \
