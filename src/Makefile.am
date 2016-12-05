@@ -75,7 +75,7 @@ bounding_element.c \
 bounding_element_utils.c \
 get_dof_ids_on_elem.c \
 get_ndof_on_elem.c \
-transform_coordinates.c \
+transform_coordinates.cc \
 generate_dof_ids.c \
 node.cc \
 element.cc \
