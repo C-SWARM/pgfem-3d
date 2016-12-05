@@ -122,7 +122,7 @@ three_field_element.c \
 femlib.cc \
 macro_micro_main.c \
 main.c \
-dynamics.c \
+dynamics.cc \
 plasticity_model.c \
 plasticity_model_none.c \
 plasticity_model_BPA.c \
