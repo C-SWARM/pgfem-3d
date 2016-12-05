@@ -89,7 +89,7 @@ quadrature_rules.cc \
 integrate_surface.cc \
 applied_traction.c \
 pgfem_comm.cc \
-tfa.c \
+tfa.cc \
 hommat.cc \
 sig.cc \
 supp.cc \
