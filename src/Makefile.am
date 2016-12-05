@@ -49,7 +49,7 @@ stabilized.cc \
 stiffmat_fd.cc \
 stiffmatel_fd.cc \
 stress_strain.cc \
-subdivision.c \
+subdivision.cc \
 tensors.cc \
 utils.c \
 incl.cc \
