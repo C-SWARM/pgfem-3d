@@ -130,7 +130,7 @@ cm_iso_viscous_damage.c \
 cm_j2_plasticity.c \
 cm_placeholder_functions.cc \
 cm_uqcm.c \
-state_variables.c \
+state_variables.cc \
 constitutive_model.c \
 post_processing.c \
 comm_hints.cc \
