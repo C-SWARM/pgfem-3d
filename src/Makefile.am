@@ -68,7 +68,7 @@ PGFem3D_options.cc \
 gen_path.cc \
 volumetric_damage.c \
 initialize_damage.cc \
-vol_damage_int_alg.c \
+vol_damage_int_alg.cc \
 interface_macro.cc \
 compute_reactions.c \
 bounding_element.c \
