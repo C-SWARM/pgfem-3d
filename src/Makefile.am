@@ -104,7 +104,7 @@ microscale_information.cc \
 ms_cohe_job_info.cc \
 ms_cohe_job_list.c \
 PGFEM_par_matvec.cc \
-compute_ms_cohe_job.c \
+compute_ms_cohe_job.cc \
 PGFEM_io.cc \
 PGFEM_mpi.cc \
 ms_job_intercomm.cc \
@@ -115,7 +115,7 @@ pgf_fe2_server_rebalance.c \
 pgf_fe2_rebalancer.c \
 pgf_fe2_macro_client.c \
 pgf_fe2_restart.cc \
-pgf_fe2_compute_max_n_jobs.c \
+pgf_fe2_compute_max_n_jobs.cc \
 solver_file.c \
 condense.c \
 three_field_element.c \
