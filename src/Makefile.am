@@ -46,7 +46,7 @@ set_fini_def.cc \
 SetGlobalNodeNumbers.cc \
 skyline.cc \
 stabilized.cc \
-stiffmat_fd.c \
+stiffmat_fd.cc \
 stiffmatel_fd.cc \
 stress_strain.c \
 subdivision.c \
