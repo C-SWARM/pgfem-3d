@@ -10,7 +10,7 @@ PLC.cc \
 PLoc_Sparse.cc \
 Psparse_ApAi.cc \
 Re1_Re2_Re3.cc \
-TA_GA.c \
+TA_GA.cc \
 addresses.cc \
 build_distribution.cc \
 def_grad.cc \
