@@ -60,7 +60,7 @@ computeMacroS.c \
 vtk_output.c \
 MINI_element.cc \
 MINI_3f_element.cc \
-two_field_element.c \
+two_field_element.cc \
 Hu_Washizu_element.cc \
 new_potentials.cc \
 displacement_based_element.cc \
