@@ -156,7 +156,7 @@ CH_layer_driver.c
 
 unit_test_43_driver_SOURCES = \
 $(all_sources) \
-unit_test_43_driver.c
+unit_test_43_driver.cc
 
 PGFem3D_SOURCES = \
 $(all_sources) \
