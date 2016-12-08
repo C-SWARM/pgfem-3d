@@ -275,126 +275,143 @@ int print_results(GRID *grid,
                   const double VVolume,
                   const PGFem3D_opt *opts,
                   MULTIPHYSICS *mp,
-                  int mp_id,
                   long tim,
                   int myrank) 
 {
   int err = 0;
-  SOLVER_OPTIONS          *sol = SOL + mp_id;
-  FIELD_VARIABLES         *fv =  FV  + mp_id;
-  COMMUNICATION_STRUCTURE *com = COM + mp_id;
-  SUPP sup = load->sups[mp_id];
   
+  int is_mechanical_active = 0;
+  SOLVER_OPTIONS          *sol = NULL;
+  FIELD_VARIABLES         *fv  = NULL;
+  COMMUNICATION_STRUCTURE *com = NULL;
+  SUPP sup = NULL;
+  int mp_id_M = -1;
+  
+  for(int ia = 0; ia<mp->physicsno; ia++)
+  {
+    if(mp->physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+    {
+      mp_id_M = ia;
+      sol = SOL + mp_id_M;
+      fv  = FV  + mp_id_M;
+      com = COM + mp_id_M;
+      sup = load->sups[mp_id_M];
+    }
+  }
+          
   // output file name
   char filename[500],out_dat[500];
   sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
-  
-  if(opts->comp_print_reaction)
+
+  if(mp_id_M >= 0)
   {
-    double dts[2];
-    if(tim==0)
-      dts[DT_N] = time_steps->times[tim+1] - time_steps->times[tim];
-    else
-      dts[DT_N] = time_steps->times[tim] - time_steps->times[tim-1];
-    
-    dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
-    
-    fd_res_compute_reactions(fv->ndofn, fv->npres, fv->d_u, fv->u_np1, grid->element, grid->node,
-            mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
-            crpl, dts, time_steps->times[tim+1], opts->stab, mpi_comm,
-            opts, sol->alpha, fv->u_n, fv->u_nm1,mp_id);
-  }
-  
-  if(opts->comp_print_macro)
-  {
-    /* Calculate macro deformation gradient */
-    double *GF = computeMacroF(grid->element,grid->ne,grid->node,grid->nn,fv->eps,oVolume,mpi_comm);
-    double *GS = computeMacroS(grid->element,grid->ne,grid->node,grid->nn,fv->sig,oVolume,mpi_comm);
-    double *GP = computeMacroP(grid->element,grid->ne,grid->node,grid->nn,fv->sig,fv->eps,oVolume,mpi_comm);
-    
-    /* print GF & GS to file */
-    if(myrank==0)
+    if(opts->comp_print_reaction)
     {
+      double dts[2];
+      if(tim==0)
+        dts[DT_N] = time_steps->times[tim+1] - time_steps->times[tim];
+      else
+        dts[DT_N] = time_steps->times[tim] - time_steps->times[tim-1];
       
-      sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
-      FILE *out = fopen(filename,"w");
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
-      PGFEM_fprintf(out,"\n");
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
-      PGFEM_fprintf(out,"\n");
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
-      PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
-      fclose(out);
+      dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
+      
+      fd_res_compute_reactions(fv->ndofn, fv->npres, fv->d_u, fv->u_np1, grid->element, grid->node,
+                               mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
+                               crpl, dts, time_steps->times[tim+1], opts->stab, mpi_comm,
+                               opts, sol->alpha, fv->u_n, fv->u_nm1,mp_id_M);
     }
-    
-    free(GF);
-    free(GS);
-    free(GP);
+  
+    if(opts->comp_print_macro)
+    {
+      /* Calculate macro deformation gradient */
+      double *GF = computeMacroF(grid->element,grid->ne,grid->node,grid->nn,fv->eps,oVolume,mpi_comm);
+      double *GS = computeMacroS(grid->element,grid->ne,grid->node,grid->nn,fv->sig,oVolume,mpi_comm);
+      double *GP = computeMacroP(grid->element,grid->ne,grid->node,grid->nn,fv->sig,fv->eps,oVolume,mpi_comm);
+      
+      /* print GF & GS to file */
+      if(myrank==0)
+      {
+        
+        sprintf(filename,"%s_macro.out.%ld",out_dat,tim);
+        FILE *out = fopen(filename,"w");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[0],GF[1],GF[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[3],GF[4],GF[5]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GF[6],GF[7],GF[8]);
+        PGFEM_fprintf(out,"\n");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\t",GS[0],GS[1],GS[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GS[3],GS[4],GS[5]);
+        PGFEM_fprintf(out,"\n");
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[0],GP[1],GP[2]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[3],GP[4],GP[5]);
+        PGFEM_fprintf(out,"%8.8e\t%8.8e\t%8.8e\n",GP[6],GP[7],GP[8]);
+        fclose(out);
+      }
+      
+      free(GF);
+      free(GS);
+      free(GP);
+    }
   }
   
-  if (time_steps->print[tim] == 1 && opts->vis_format != VIS_NONE ) {
-    if(opts->ascii){
+  if (time_steps->print[tim] == 1 && opts->vis_format != VIS_NONE )
+  {
+    if(opts->ascii && mp_id_M >= 0)
+    {
       ASCII_output(opts,mpi_comm,tim,time_steps->times,grid->Gnn,grid->nn,grid->ne,grid->nce,fv->ndofd,
               com->DomDof,com->Ap,sol->FNR,arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
               fv->u_np1,fv->eps,fv->sig,fv->sig_n,grid->coel);
     } /* End ASCII output */
     
-    switch(opts->vis_format){
-      case VIS_ELIXIR:/* Print to elix file */
-        sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
-        elixir (filename,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,fv->u_np1,fv->sig,
-                fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,opts);
-        break;
-      case VIS_ENSIGHT:/* Print to EnSight files */
-        sprintf (filename,"%s",out_dat);
-        EnSight (filename,tim,time_steps->nt,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,
-                fv->u_np1,fv->sig,fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,
-                /*nge,geel,ngn,gnod,*/sol->FNR,arc->lm,ensight,mpi_comm,
-                opts);
-        break;
-      case VIS_VTK:/* Print to VTK files */
-      {          
-        if(myrank == 0){
-//          VTK_print_master(opts->opath,opts->ofname,
-//                  tim,com->nproc,opts);
-          err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,com->nproc);
-        }
+    if(opts->vis_format == VIS_VTK)
+    {          
+      if(myrank == 0)
+        err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,COM[0].nproc);
+      
+      err += VTK_write_multiphysics_vtu(grid,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
+
+      // print cohesive element results
+      if((mp_id_M >= 0) && (opts->cohesive == 1))
+      {
+        if(myrank == 0)
+          VTK_print_cohesive_master(opts->opath,opts->ofname,tim,com->nproc,opts);
         
-/*        VTK_print_vtu(opts->opath,opts->ofname,tim,
-                myrank,grid->ne,grid->nn,grid->node,grid->element,sup,fv->u_np1,fv->sig,fv->eps,
-                opts,mp_id);        
-*/
-        err += VTK_write_multiphysics_vtu(grid,FV,load,pmr,mp->total_write_no,opts,tim,myrank);        
-        
-        // save restart files
-        if(SAVE_RESTART_FILE)
-        {
-          write_restart(fv->u_nm1, fv->u_n, opts,
-                  grid->element, grid->node,fv->sig,fv->eps,sup,
-                  myrank, grid->ne, grid->nn, fv->ndofn, fv->ndofd, tim, time_steps->times, fv->NORM,
-                  mp_id);
-        }
-        
-        if (opts->cohesive == 1){
-          if(myrank == 0){
-            VTK_print_cohesive_master(opts->opath,
-                    opts->ofname,tim,com->nproc,
-                    opts);
-          }
-          
-          VTK_print_cohesive_vtu(opts->opath,opts->ofname,
-                  tim,myrank,grid->nce,grid->node,grid->coel,sup,fv->u_np1,ensight,
-                  opts,mp_id);
-        }
-        break;
+        VTK_print_cohesive_vtu(opts->opath,opts->ofname,tim,myrank,
+                               grid->nce,grid->node,grid->coel,sup,fv->u_np1,ensight,
+                               opts,mp_id_M);
       }
-      default: /* no output */ break;
-    }/* switch(format) */
-    
+    }
+    else
+    {
+      if(mp_id_M >= 0)
+      {  
+        switch(opts->vis_format)
+        {
+          case VIS_ELIXIR:/* Print to elix file */
+            sprintf (filename,"%s_%d.elx%ld",out_dat,myrank,tim);
+            elixir (filename,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,fv->u_np1,fv->sig,
+                    fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,opts);
+            break;
+          case VIS_ENSIGHT:/* Print to EnSight files */
+            sprintf (filename,"%s",out_dat);
+            EnSight (filename,tim,time_steps->nt,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,
+                    fv->u_np1,fv->sig,fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,
+                    /*nge,geel,ngn,gnod,*/sol->FNR,arc->lm,ensight,mpi_comm,
+                    opts);
+            break;
+          case VIS_VTK:/* Print to VTK files */
+          default: /* no output */ break;
+        }/* switch(format) */
+      }
+    }
+
+    // write restart files
+    if(mp_id_M >= 0 && SAVE_RESTART_FILE)
+    {
+      write_restart(fv->u_nm1, fv->u_n, opts,
+                    grid->element, grid->node,fv->sig,fv->eps,sup,
+                    myrank, grid->ne, grid->nn, fv->ndofn, fv->ndofd, tim, time_steps->times, fv->NORM,
+                    mp_id_M);
+    }
   }/* end output */
   
   return err;
@@ -487,7 +504,7 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   // Multiphysics setting
-  int mp_id_M = 0;
+  int mp_id_M = -1;
   MULTIPHYSICS mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
   
@@ -654,7 +671,8 @@ int single_scale_main(int argc,char *argv[])
     }
   
     /*=== MULTISCALE INFORMATION ===*/
-    if(options.multi_scale){
+    if(options.multi_scale && (mp_id_M >=0))
+    {
       (load.sups[mp_id_M])->multi_scale = options.multi_scale;
       int ms_err = read_interface_macro_normal_lc(options.ipath,load.sups[ia]);
       if(ms_err != 0){
@@ -834,12 +852,16 @@ int single_scale_main(int argc,char *argv[])
   }
 
   {            
-    /*=== TESTING ===*/
-    double *nodal_forces = PGFEM_calloc(fv[mp_id_M].ndofd,sizeof(double));
+    // set for surface tractions
+    double *nodal_forces = NULL;
+    SUR_TRAC_ELEM *ste = NULL;
     int n_feats = 0;
     int n_sur_trac_elem = 0;
-    SUR_TRAC_ELEM *ste = NULL;
-    {
+    
+    if(mp_id_M >=0)
+    {  
+      nodal_forces = PGFEM_calloc(fv[mp_id_M].ndofd,sizeof(double));
+      
       int *feat_type = NULL;
       int *feat_id = NULL;
       double *loads = NULL;
@@ -1135,7 +1157,7 @@ int single_scale_main(int argc,char *argv[])
       }
       
       /*=== NEWTON RAPHSON ===*/
-      if (sol[mp_id_M].FNR == 0 || sol[mp_id_M].FNR == 1)
+      if(sol[0].FNR == 0 || sol[0].FNR == 1)
       {
         //----------------------------------------------------------------------
         // file pointer (solver file) is active and used to update loads increments        
@@ -1144,10 +1166,13 @@ int single_scale_main(int argc,char *argv[])
         // fv[mp_id_M].RRn -> Total force after equiblirium    
         // push nodal_forces to s->R        
         //----------------------------------------------------------------------
-        //---->        
-        err += read_and_apply_load_increments(&grid, fv+mp_id_M, &load, &mp, tim, mpi_comm, myrank);
-        if (load.tim_load[tim] == 1 && tim != 0)
-          vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
+        //---->         
+        if(mp_id_M >= 0)
+        {         
+          err += read_and_apply_load_increments(&grid, fv+mp_id_M, &load, &mp, tim, mpi_comm, myrank);
+          if (load.tim_load[tim] == 1 && tim != 0)
+            vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
+        }
         //<---------------------------------------------------------------------
     
         int n_step = 0;
@@ -1160,9 +1185,12 @@ int single_scale_main(int argc,char *argv[])
         //---->
         if(tim<restart_tim+1)
         {
-          for (long i=0;i<(load.sups[mp_id_M])->npd;i++){
-            (load.sups[mp_id_M])->defl[i] += (load.sups[mp_id_M])->defl_d[i];
-            (load.sups[mp_id_M])->defl_d[i] = 0.0;
+          for(int ia=0; ia<mp.physicsno; ia++)
+          {
+            for (long i=0;i<(load.sups[ia])->npd;i++){
+              (load.sups[ia])->defl[i] += (load.sups[ia])->defl_d[i];
+              (load.sups[ia])->defl_d[i] = 0.0;
+            }
           }
           (tim)++;
           continue;
@@ -1190,66 +1218,73 @@ int single_scale_main(int argc,char *argv[])
         hypre_time += Multiphysics_Newton_Raphson(1,&grid,&mat,fv,sol,&load,com,&time_steps,
                                                   crpl,mpi_comm,VVolume,&options,&mp);
         
-        /* Null global vectors */
-        for (long i=0;i<fv[mp_id_M].ndofd;i++){
-          fv[mp_id_M].RRn[i] += fv[mp_id_M].R[i];
-          fv[mp_id_M].RR[i] = fv[mp_id_M].RRn[i];
-          fv[mp_id_M].R[i] = 0.0;
-        }
-        
-        /* null the prescribed displacement increment */
-        for(int ia=0; ia<mp.physicsno; ia++)
+        for(int ia = 0; ia<mp.physicsno; ia++)
+        {
+          /* null the prescribed BCs increment */
           nulld(load.sup_defl[ia],(load.sups[ia])->npd);
+            
+          /* Null global vectors */
+          for (long i=0;i<fv[ia].ndofd;i++){
+            fv[ia].RRn[i] += fv[ia].R[i];
+            fv[ia].RR[i]   = fv[ia].RRn[i];
+            fv[ia].R[i]    = 0.0;
+          }
+        }
       }/* end NR */
       
       /*=== ARC LENGTH ===*/
-      if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3){
-        double dlm = Arc_length_test(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
+      
+      if(mp_id_M >= 0)
+      {
+        if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
+        {
+          double dlm = Arc_length_test(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
                                      crpl,&arc,mpi_comm,VVolume,&options, 0);
         
-        /* Load multiplier */
-        arc.lm += dlm;
+          /* Load multiplier */
+          arc.lm += dlm;
         
-        /* Total force vector */
-        for (long i=0;i<fv[mp_id_M].ndofd;i++){
-          fv[mp_id_M].RR[i] = arc.lm*fv[mp_id_M].R[i];
-        }
-      }/* end AL */
-      
-      /*=== OUTPUT ===*/
-      /* Calculating equvivalent Mises stresses and strains vectors */
-      Mises (grid.ne,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);
-      
-      /* update output stuff for CM interface */
-      if(options.analysis_type == CM && options.cm!=0){
-        constitutive_model_update_output_variables(fv[mp_id_M].sig,fv[mp_id_M].eps,grid.node,grid.element,grid.ne,
-                time_steps.dt_np1,&options, sol[mp_id_M].alpha);
-      }
-      
-      /* print tractions on marked features */
-      {
-        double *sur_forces = NULL;
-        if(n_feats > 0){
-          sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
-          compute_resultant_force(n_feats,n_sur_trac_elem,
-                  ste,grid.node,grid.element,
-                  fv[mp_id_M].sig,fv[mp_id_M].eps,sur_forces);
-          MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
-                  MPI_DOUBLE,MPI_SUM,mpi_comm);
-          if(myrank == 0){
-            PGFEM_printf("Forces on marked features:\n");
-            print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
-                    n_feats,ndim);
-            fflush(PGFEM_stdout);
+          /* Total force vector */
+          for (long i=0;i<fv[mp_id_M].ndofd;i++){
+            fv[mp_id_M].RR[i] = arc.lm*fv[mp_id_M].R[i];
           }
+        }/* end AL */
+      
+        /*=== OUTPUT ===*/
+        /* Calculating equvivalent Mises stresses and strains vectors */
+        Mises (grid.ne,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);
+        
+        /* update output stuff for CM interface */
+        if(options.analysis_type == CM && options.cm!=0){
+          constitutive_model_update_output_variables(fv[mp_id_M].sig,fv[mp_id_M].eps,grid.node,grid.element,grid.ne,
+                  time_steps.dt_np1,&options, sol[mp_id_M].alpha);
         }
-        free(sur_forces);
+        
+        /* print tractions on marked features */
+        {
+          double *sur_forces = NULL;
+          if(n_feats > 0){
+            sur_forces = PGFEM_calloc(n_feats*ndim,sizeof(double));
+            compute_resultant_force(n_feats,n_sur_trac_elem,
+                    ste,grid.node,grid.element,
+                    fv[mp_id_M].sig,fv[mp_id_M].eps,sur_forces);
+            MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
+                    MPI_DOUBLE,MPI_SUM,mpi_comm);
+            if(myrank == 0){
+              PGFEM_printf("Forces on marked features:\n");
+              print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+                      n_feats,ndim);
+              fflush(PGFEM_stdout);
+            }
+          }
+          free(sur_forces);
+        }
       }
       
       // print simulation results
       err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,&arc,
                            crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
-                           &options,&mp,mp_id_M,tim,myrank);
+                           &options,&mp,tim,myrank);
                               
       if (myrank == 0){
         PGFEM_printf("\n");
@@ -1260,8 +1295,11 @@ int single_scale_main(int argc,char *argv[])
       tim++;
     }/* end while */
     
-    destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
-    free(nodal_forces);
+    if(mp_id_M >=0)
+    {
+      destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
+      free(nodal_forces);
+    }
     if(pmr!=NULL) free(pmr);    
   }
 

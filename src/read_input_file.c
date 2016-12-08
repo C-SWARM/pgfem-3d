@@ -478,7 +478,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   // at commandline
   char filename[1024];
   char in_dat[1024];
-  FILE *fp;
+  FILE *fp = NULL;
   if(opts->override_solver_file)
   {
     if(myrank == 0)
@@ -492,6 +492,11 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     sprintf(in_dat,"%s/%s",opts->ipath,opts->ifname);    
     sprintf(filename,"%s%d.in.st",in_dat,myrank);
     fp = fopen(filename,"r");
+    if(fp==NULL)
+    {
+      sprintf(filename,"%s%d.in.st",in_dat,0);
+      fp = fopen(filename,"r");      
+    }      
   }
   
   long npres = 0;

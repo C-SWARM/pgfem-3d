@@ -512,11 +512,6 @@ int stiffness_with_inertia(FEMLIB *fe,
   
   int err = 0;
   int eid = fe->curt_elem_id;
-
-    int myrank = 0;  
-    MPI_Comm_rank (MPI_COMM_WORLD,&myrank);     
-    if(myrank==0 && eid == 0) 
-      printf("this is runnig\n"); 
   
   const int mat_id = grid->element[eid].mat[2];
   double rho = mat->hommat[mat_id].density;  

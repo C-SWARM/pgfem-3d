@@ -389,9 +389,8 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   int err = 0;
   
   int eid = fe->curt_elem_id;  
-  const int hmat_id = (grid->element[eid]).mat[2];  
-  double rho_0 = (mat->hommat[hmat_id]).density;
-  const int mat_id = (mat->hommat[hmat_id]).mat_id;
+  const int mat_id = (grid->element[eid]).mat[0];  
+  double rho_0 = mat->density[mat_id];
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
   Matrix(double) k;
@@ -451,7 +450,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
      
       for(int ib=1; ib<=grid->nsd; ib++)
       {
-        for(int ic=1; ic<grid->nsd; ic++)        
+        for(int ic=1; ic<=grid->nsd; ic++)        
           Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe->dN,ia,ic)*Vec_v(Tnp1, ia);
       }
         
@@ -475,7 +474,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
           Q += 0.0;
       }    
     }
-      
+
     // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
     for(int ia=1; ia<=fe->nne; ia++)
     {      
@@ -592,9 +591,8 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 {  
   int err = 0;
   int eid = fe->curt_elem_id;  
-  const int hmat_id = (grid->element[eid]).mat[2];  
-  double rho_0 = (mat->hommat[hmat_id]).density;
-  const int mat_id = (mat->hommat[hmat_id]).mat_id;
+  const int mat_id = (grid->element[eid]).mat[0];  
+  double rho_0 = mat->density[mat_id];
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
   Matrix(double) k;
