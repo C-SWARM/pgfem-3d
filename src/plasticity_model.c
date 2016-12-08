@@ -106,8 +106,6 @@ static int cp_unpack(Constitutive_model *m,
   return state_variables_unpack(&(m->vars), buffer, pos);
 }
 
-int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS);
-
 int compute_dMdu(const Constitutive_model *m,
                  Matrix(double) *dMdu,
                  const Matrix(double) *Grad_du,
@@ -1295,28 +1293,6 @@ int compute_dMdu(const Constitutive_model *m,
   return 0;
 }
 
-int plasticity_rotate_crystal(Matrix(double) *R, double *Psys_in, double *Psys_out, int N_SYS)
-{
-  int err = 0;
-  Matrix(double) RT, Pa_in, Pa_out;
-  
-  Matrix_construct_redim(double, RT, DIM_3,DIM_3);
-  Matrix_construct(double, Pa_in); // <= this will use pointer, no need Matrix_cleanup  
-  Matrix_construct(double, Pa_out); // <= this will use pointer, no need Matrix_cleanup    
-  Matrix_AeqBT(RT,1.0,*R);
-  
-  Pa_in.m_col = Pa_in.m_row = DIM_3;
-  Pa_out.m_col = Pa_out.m_row = DIM_3;  
-  for(int a=0; a<N_SYS; a++)
-  {
-    Pa_in.m_pdata = &(Psys_in[a*DIM_3x3]);
-    Pa_out.m_pdata = &(Psys_out[a*DIM_3x3]);
-    Matrix_Tns2_AxBxC(Pa_out,1.0,0.0,*R,Pa_in,RT);    
-  }
-  Matrix_cleanup(RT);
-  return err;
-} 
-
 
 static int plasticity_int_alg(Constitutive_model *m,
                               const void *ctx)
@@ -1352,7 +1328,15 @@ static int plasticity_int_alg(Constitutive_model *m,
   
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
   ELASTICITY *elasticity = (m->param)->cm_elast;
-  
+
+  // compute slip system and rotate orientation
+  SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;
+  SLIP_SYSTEM slip;
+  construct_slip_system(&slip,slip_in->unit_cell);
+  rotate_crystal_orientation(&slip, Fs[TENSOR_R].m_pdata, slip_in);
+  (cm_mat->mat_p)->slip = &slip;
+ 
+  // perform integration algorithm for the crystal plasticity 
   if(CTX->is_coulpled_with_thermal)
   {  
     err += staggered_Newton_Rapson_generalized(Fs[TENSOR_pFnp1].m_pdata,
@@ -1373,6 +1357,8 @@ static int plasticity_int_alg(Constitutive_model *m,
                                    Fs[TENSOR_Fnp1].m_pdata,
                                    g_n, dt, cm_mat, elasticity, &solver_info);     
   }    
+ 
+  // update compute values from integration algorithm  
   state_var[VAR_g_np1] =  g_np1;
   state_var[VAR_L_np1] =  L_np1;
   
@@ -1394,12 +1380,15 @@ static int plasticity_int_alg(Constitutive_model *m,
   Matrix_AxB(F2[C], 1.0, 0.0, F2[eFnp1],1,F2[eFnp1],0);
   
   elasticity->update_elasticity(elasticity,F2[eFnp1].m_pdata, 0);
-  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,F2[C].m_pdata, elasticity->S, (cm_mat->mat_p)->slip);
+  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,F2[C].m_pdata, elasticity->S, &slip);
   err += compute_gamma_dots(Fs[TENSOR_gamma_dot].m_pdata, Fs[TENSOR_tau].m_pdata, g_np1, cm_mat->mat_p);
 
   for(int a = 0; a < F2end; a++)
     Matrix_cleanup(F2[a]);   
   free(F2);
+  
+  (cm_mat->mat_p)->slip = slip_in;
+  destruct_slip_system(&slip);
 
   return err;
 }
@@ -1701,14 +1690,16 @@ int plasticity_model_set_orientations(EPS *eps,
   char file_in_ort[1024], default_ort_dir[1024];    
   sprintf(default_ort_dir, "CRYSTAL_ORIENTATION");
 
-  if(make_path(default_ort_dir,DIR_MODE) != 0)
-  {
-    PGFEM_printf("Directory [%s] not created!\n",default_ort_dir);
-    abort();
-  }
-  
   if(save_orientations)
-  {  
+  {
+    // check default CRYSTAL_ORIENTATION directory exists 
+    if(make_path(default_ort_dir,DIR_MODE) != 0)
+    {
+      PGFEM_printf("Directory [%s] not created!\n",default_ort_dir);
+      abort();
+    }
+  
+    // write crystal orientations
     char fn_orientation[1024];
     sprintf(fn_orientation, "%s/orientation_%d.in", default_ort_dir, myrank);  
     FILE *fp_ort = fopen(fn_orientation, "w");
