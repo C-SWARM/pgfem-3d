@@ -34,7 +34,7 @@ out.cc \
 press_theta.cc \
 pressu_shape.cc \
 Printing.cc \
-print_dist.c \
+print_dist.cc \
 read_cryst_plast.cc \
 renumber_ID.cc \
 res_fini_def.cc \
@@ -71,12 +71,12 @@ initialize_damage.cc \
 vol_damage_int_alg.cc \
 interface_macro.cc \
 compute_reactions.c \
-bounding_element.c \
+bounding_element.cc \
 bounding_element_utils.c \
-get_dof_ids_on_elem.c \
+get_dof_ids_on_elem.cc \
 get_ndof_on_elem.c \
 transform_coordinates.cc \
-generate_dof_ids.c \
+generate_dof_ids.cc \
 node.cc \
 element.cc \
 solve_system.cc \

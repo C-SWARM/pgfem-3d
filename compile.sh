@@ -3,6 +3,7 @@
 module purge 
 module load opt_local/1.0 
 module load pgfem3d/mvapich2-2.1-intel-15.0-mlx
+module load gcc/6.2.0    # to get support for c++14
 
 
 #cd /afs/crc.nd.edu/group/cswarm/Generalizsed_constitutive_model
