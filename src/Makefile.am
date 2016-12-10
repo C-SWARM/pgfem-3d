@@ -55,8 +55,8 @@ utils.c \
 incl.cc \
 profiler.cc \
 potential.cc \
-computeMacroF.c \
-computeMacroS.c \
+computeMacroF.cc \
+computeMacroS.cc \
 vtk_output.c \
 MINI_element.cc \
 MINI_3f_element.cc \
@@ -74,7 +74,7 @@ compute_reactions.c \
 bounding_element.cc \
 bounding_element_utils.c \
 get_dof_ids_on_elem.cc \
-get_ndof_on_elem.c \
+get_ndof_on_elem.cc \
 transform_coordinates.cc \
 generate_dof_ids.cc \
 node.cc \
