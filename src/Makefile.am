@@ -70,7 +70,7 @@ volumetric_damage.c \
 initialize_damage.cc \
 vol_damage_int_alg.cc \
 interface_macro.cc \
-compute_reactions.c \
+compute_reactions.cc \
 bounding_element.cc \
 bounding_element_utils.c \
 get_dof_ids_on_elem.cc \

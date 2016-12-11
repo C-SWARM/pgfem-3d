@@ -10,15 +10,15 @@
 #ifndef MS_COHE_JOB_LIST_H
 #define MS_COHE_JOB_LIST_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "PGFEM_mpi.h"
 #include "cohesive_element.h"
 #include "node.h"
 #include "ms_cohe_job_info.h"
 #include "microscale_information.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** Create the list of jobs to be performed on the communicator
       'ms_comm'. Returns the number of jobs on 'ms_comm' (Gnjobs), the
