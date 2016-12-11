@@ -14,6 +14,10 @@
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Specify the minimum tag upper bound prescribed in the MPI
  * standard. It seems that querying MPI_TAG_UB may not be accurate for
@@ -101,5 +105,11 @@ void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **server,
  * The printed line(s) begins with "SERVER STATS"
  */
 void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server *server);
+
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif
