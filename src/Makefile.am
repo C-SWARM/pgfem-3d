@@ -72,7 +72,7 @@ vol_damage_int_alg.cc \
 interface_macro.cc \
 compute_reactions.cc \
 bounding_element.cc \
-bounding_element_utils.c \
+bounding_element_utils.cc \
 get_dof_ids_on_elem.cc \
 get_ndof_on_elem.cc \
 transform_coordinates.cc \
@@ -87,7 +87,7 @@ cohesive_element.cc \
 cohesive_potentials.cc \
 quadrature_rules.cc \
 integrate_surface.cc \
-applied_traction.c \
+applied_traction.cc \
 pgfem_comm.cc \
 tfa.cc \
 hommat.cc \
