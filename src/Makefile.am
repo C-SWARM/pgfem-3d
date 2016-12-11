@@ -111,7 +111,7 @@ ms_job_intercomm.cc \
 macro_micro_functions.c \
 pgf_fe2_micro_server.c \
 pgf_fe2_job.cc \
-pgf_fe2_server_rebalance.c \
+pgf_fe2_server_rebalance.cc \
 pgf_fe2_rebalancer.c \
 pgf_fe2_macro_client.c \
 pgf_fe2_restart.cc \

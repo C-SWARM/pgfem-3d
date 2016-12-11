@@ -2,6 +2,7 @@ with_mpi=yes
 CC=mpicc
 CXX=mpicxx
 CFLAGS="-Wall -std=gnu99 -O0 -g"
+#CFLAGS="-Wall -std=c99 -O0 -g"
 CXXFLAGS="-Wall -std=c++14 -Drestrict -fpermissive -O0 -g"
 
 
