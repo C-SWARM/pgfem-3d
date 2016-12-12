@@ -102,6 +102,7 @@ extern "C" {
 
   /** Print a summary of the solution method */
   void print_interpreted_options(const PGFem3D_opt *opts);
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */
