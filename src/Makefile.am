@@ -118,7 +118,7 @@ pgf_fe2_restart.cc \
 pgf_fe2_compute_max_n_jobs.cc \
 solver_file.c \
 condense.cc \
-three_field_element.c \
+three_field_element.cc \
 femlib.cc \
 macro_micro_main.c \
 main.c \
