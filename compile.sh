@@ -17,7 +17,6 @@ autoreconf -if
 #echo "++++++++++++ finished compiling Generalized_constitutive_model +++++++++++"
 #echo "    "
 
-
 cp config.site-intel ./build/convert2cc/share/config.site
 
 #cd /afs/crc.nd.edu/group/cswarm/pgfem_3d
