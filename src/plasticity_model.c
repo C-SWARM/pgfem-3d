@@ -1271,10 +1271,7 @@ int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
 int plasticity_model_construct_rotation(EPS *eps, Matrix(int) *e_ids, Matrix(double) *angles)
 {
   int err = 0;
-  Matrix(double) Ax, Ay, Az;
-  Matrix_construct_init(double, Ax, DIM_3,DIM_3, 0.0);
-  Matrix_construct_init(double, Ay, DIM_3,DIM_3, 0.0);
-  Matrix_construct_init(double, Az, DIM_3,DIM_3, 0.0);    
+  double Ax[DIM_3x3], Az[DIM_3x3], Ay[DIM_3x3];   
   
   for(int a=0; a<e_ids->m_row; a++)
   {
@@ -1288,25 +1285,12 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix(int) *e_ids, Matrix(dou
     double phi   = angles->m_pdata[a*DIM_3+0]; // NOTE: phi = Mat_v(*angles, a+1, 1) is not working, do not know why.
     double theta = angles->m_pdata[a*DIM_3+1];
     double psi   = angles->m_pdata[a*DIM_3+2];
-    Mat_v(Ax,1,1) = 1.0;
-    Mat_v(Ax,1,2) = Mat_v(Ax,1,3) = Mat_v(Ax,2,1) = Mat_v(Ax,3,1) = 0.0;
-    Mat_v(Ax,2,2) =  cos(phi); Mat_v(Ax,2,3) = sin(phi);
-    Mat_v(Ax,3,2) = -sin(phi); Mat_v(Ax,3,3) = cos(phi);    
-  
-    Mat_v(Ay,2,2) = 1.0;
-    Mat_v(Ay,2,1) = Mat_v(Ay,2,3) = Mat_v(Ay,1,2) = Mat_v(Ay,3,2) = 0.0;
-    Mat_v(Ay,1,1) = cos(theta); Mat_v(Ay,1,3) = -sin(theta);
-    Mat_v(Ay,3,1) = sin(theta); Mat_v(Ay,3,3) =  cos(theta);
-  
-    Mat_v(Az,3,3) = 1.0;
-    Mat_v(Az,3,1) = Mat_v(Az,3,2) = Mat_v(Az,1,3) = Mat_v(Az,2,3) = 0.0;
-    Mat_v(Az,1,1) =  cos(psi); Mat_v(Az,1,2) = sin(psi);
-    Mat_v(Az,2,1) = -sin(psi); Mat_v(Az,2,2) = cos(psi);            
-    Matrix_Tns2_AxBxC(Fs[TENSOR_R],1.0,0.0,Az,Ay,Ax);
+
+    // compute rotation matrix of Euler angles
+    // Fs[TENSOR_R] = Az(psi)*Ay(theta)*Ax(phi)
+    err += rotation_matrix_of_Euler_angles(Fs[TENSOR_R].m_pdata, 
+                                           Ax, Ay, Az, phi, theta, psi);     
   }
-  Matrix_cleanup(Ax);
-  Matrix_cleanup(Ay);
-  Matrix_cleanup(Az);
   return err;
 }
 
