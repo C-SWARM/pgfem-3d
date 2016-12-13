@@ -109,10 +109,10 @@ PGFEM_io.cc \
 PGFEM_mpi.c \
 ms_job_intercomm.c \
 macro_micro_functions.c \
-pgf_fe2_micro_server.c \
+pgf_fe2_micro_server.cc \
 pgf_fe2_job.cc \
 pgf_fe2_server_rebalance.cc \
-pgf_fe2_rebalancer.c \
+pgf_fe2_rebalancer.cc \
 pgf_fe2_macro_client.cc \
 pgf_fe2_restart.cc \
 pgf_fe2_compute_max_n_jobs.cc \

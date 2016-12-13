@@ -74,7 +74,7 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server)
  */
 static int pgf_FE2_micro_server_done(pgf_FE2_micro_server *server)
 {
-  pgf_FE2_job *restrict jobs = server->jobs; /* alias */
+  pgf_FE2_job *jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
     if(pgf_FE2_job_complete(jobs + i) != FE2_STATE_DONE) return 0;
   }
@@ -87,7 +87,7 @@ static int pgf_FE2_micro_server_done(pgf_FE2_micro_server *server)
 static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
 					  const PGFEM_mpi_comm *mpi_comm)
 {
-  pgf_FE2_job *restrict jobs = server->jobs; /* alias */
+  pgf_FE2_job *jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
     pgf_FE2_job_get_info(jobs + i,mpi_comm);
   }
@@ -100,7 +100,7 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
 					       MICROSCALE *micro,
 					       const PGFEM_mpi_comm *mpi_comm)
 {
-  pgf_FE2_job *restrict jobs = server->jobs; /* alias */
+  pgf_FE2_job *jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
     pgf_FE2_job_compute(jobs + i,micro,mpi_comm);
   }
