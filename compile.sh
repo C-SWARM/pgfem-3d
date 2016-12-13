@@ -26,7 +26,7 @@ make distclean
 echo "++++++++++++ finished pulling pgfem_3d +++++++++++"
 setenv PGFEM3D_INSTALL $PWD/build
 ./reconf_git_branch.sh
-make 
+make -j 8
 echo "++++++++++++ finished compiling pgfem_3d +++++++++++"
 #make install 
 echo "++++++++++++ finished building pgfem_3d +++++++++++"

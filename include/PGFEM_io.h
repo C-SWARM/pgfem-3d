@@ -12,11 +12,13 @@
 #ifndef PGFEM_IO_H
 #define PGFEM_IO_H
 
+#include <stdio.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#include <stdio.h>
 
   /* FILE pointers that get switched about */
   extern FILE *PGFEM_stdout;

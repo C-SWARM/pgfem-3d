@@ -101,13 +101,13 @@ crpl.cc \
 ensight.cc \
 read_input_file.cc \
 microscale_information.cc \
-ms_cohe_job_info.cc \
+ms_cohe_job_info.c \
 ms_cohe_job_list.c \
 PGFEM_par_matvec.cc \
 compute_ms_cohe_job.cc \
 PGFEM_io.cc \
-PGFEM_mpi.cc \
-ms_job_intercomm.cc \
+PGFEM_mpi.c \
+ms_job_intercomm.c \
 macro_micro_functions.c \
 pgf_fe2_micro_server.c \
 pgf_fe2_job.cc \
