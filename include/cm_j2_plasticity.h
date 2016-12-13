@@ -26,6 +26,10 @@ typedef struct Constitutive_model Constitutive_model;
 typedef struct Model_parameters Model_parameters;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -46,5 +50,10 @@ int j2d_plasticity_model_initialize(Model_parameters *p);
 int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double *F,
                                    const double dt);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

@@ -127,7 +127,7 @@ plasticity_model.c \
 plasticity_model_none.c \
 plasticity_model_BPA.c \
 cm_iso_viscous_damage.c \
-cm_j2_plasticity.c \
+cm_j2_plasticity.cc \
 cm_placeholder_functions.cc \
 cm_uqcm.c \
 state_variables.cc \
