@@ -66,7 +66,7 @@ new_potentials.cc \
 displacement_based_element.cc \
 PGFem3D_options.cc \
 gen_path.cc \
-volumetric_damage.c \
+volumetric_damage.cc \
 initialize_damage.cc \
 vol_damage_int_alg.cc \
 interface_macro.cc \
@@ -116,7 +116,7 @@ pgf_fe2_rebalancer.c \
 pgf_fe2_macro_client.c \
 pgf_fe2_restart.cc \
 pgf_fe2_compute_max_n_jobs.cc \
-solver_file.c \
+solver_file.cc \
 condense.cc \
 three_field_element.cc \
 femlib.cc \
