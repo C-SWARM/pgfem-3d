@@ -15,7 +15,6 @@
 #include <stdlib.h> /* for size_t */
 
 
-
 /* pre-declare MICROSCALE and MACROSCALE */
 struct MICROSCALE;
 #ifndef TYPEDEF_MICROSCALE

@@ -113,7 +113,7 @@ pgf_fe2_micro_server.c \
 pgf_fe2_job.cc \
 pgf_fe2_server_rebalance.cc \
 pgf_fe2_rebalancer.c \
-pgf_fe2_macro_client.c \
+pgf_fe2_macro_client.cc \
 pgf_fe2_restart.cc \
 pgf_fe2_compute_max_n_jobs.cc \
 solver_file.cc \
