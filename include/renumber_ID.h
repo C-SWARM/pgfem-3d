@@ -5,13 +5,14 @@
 #include "node.h"
 #endif
 
+#ifndef PGFEM_MPI_H
+#include "PGFEM_mpi.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#ifndef PGFEM_MPI_H
-#include "PGFEM_mpi.h"
-#endif
 
   /** This function is used after creating the reorder mapping to
       re-assign the global ID numbers. The variable ndofd is the

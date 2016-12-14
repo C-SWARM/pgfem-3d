@@ -37,5 +37,4 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
 }
 #endif /* #ifdef __cplusplus */
 
-
 #endif /* #ifndef  */

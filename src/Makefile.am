@@ -120,8 +120,8 @@ solver_file.cc \
 condense.cc \
 three_field_element.cc \
 femlib.cc \
-macro_micro_main.c \
-main.c \
+macro_micro_main.cc \
+main.cc \
 dynamics.cc \
 plasticity_model.c \
 plasticity_model_none.c \
