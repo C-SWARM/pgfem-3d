@@ -58,14 +58,14 @@ extern "C" {
 		    const char *file,
 		    const long line);
 
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #define PGFEM_fopen(filename,mode)			\
   PGFEM_FOPEN(filename,mode,__func__,__FILE__,__LINE__)
 #define PGFEM_fclose(a) fclose(a)
 
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 #endif /* #ifndef  */
 
 /* include block
