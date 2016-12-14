@@ -124,7 +124,7 @@ macro_micro_main.cc \
 main.cc \
 dynamics.cc \
 plasticity_model.c \
-plasticity_model_none.c \
+plasticity_model_none.cc \
 plasticity_model_BPA.c \
 cm_iso_viscous_damage.cc \
 cm_j2_plasticity.cc \
@@ -140,7 +140,7 @@ comm_hints_driver_SOURCES = comm_hints.cc comm_hints_driver.cc
 
 BPA_driver_SOURCES = \
 $(all_sources) \
-plasticity_model_BPA_driver.c
+plasticity_model_BPA_driver.cc
 
 IVD_driver_SOURCES = \
 $(all_sources) \

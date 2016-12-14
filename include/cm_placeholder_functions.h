@@ -63,5 +63,4 @@ int cm_no_subdiv(const Constitutive_model *m,
 }
 #endif /* #ifdef __cplusplus */
 
-
 #endif

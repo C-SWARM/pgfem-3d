@@ -49,7 +49,7 @@ void get_F(const double t,
   F[8] = 1 - rate * t;
 }
 
-int compute_stress(double * restrict sig,
+int compute_stress(double *sig,
                    const Constitutive_model *m,
                    const void *ctx)
 {
