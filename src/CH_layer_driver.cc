@@ -34,8 +34,8 @@ static const double NORMAL[dim] = {[2] = 1.0};
  * Compute the deformation gradient.
  */
 void get_F0(const double lc,
-            const double * restrict jumpu,
-            const double * restrict N,
+            const double *jumpu,
+            const double *N,
             double *F0)
 {
   for (int i = 0; i < dim; i++) {
@@ -50,8 +50,8 @@ void get_F0(const double lc,
  */
 void compute_jumpu(const int step,
                    const double du,
-                   const double *restrict dir,
-                   double *restrict jumpu)
+                   const double *dir,
+                   double *jumpu)
 {
   for (int i =0; i < dim; i++) {
     jumpu[i] = (step + 1) * du * dir[i];

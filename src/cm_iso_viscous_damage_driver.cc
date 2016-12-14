@@ -1,11 +1,15 @@
 /**
- * This is a driver program for the J2 Plasticity + Damage model.
+ * This is a driver program for the Isotropic Viscous Damage  model.
  *
  * REFERENCES:
  *
  * Simo, J. C., and J. W. Ju. "On continuum damage-elastoplasticity at
  * finite strains." Computational Mechanics 5.5 (1989): 375-400.
  *
+ * Mosby, Matthew and K. Matous. "On mechanics and material length scales of failure
+ * in heterogeneous interfaces using a finite strain high performance
+ * solver." Modelling and Simulation in Materials Science and
+ * Engineering 23.8 (2015): 085014.
  *
  * AUTHORS:
  *   Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
@@ -14,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "cm_j2_plasticity.h"
+#include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
 #include "hommat.h"
 #include "data_structure_c.h"
@@ -26,11 +30,11 @@ static void hommat_assign_values(HOMMAT *p_hmat)
 {
   /* parameter values from Mosby and Matous, MSMSE (2015) */
   p_hmat->m01 = 0.0;
-  p_hmat->E = 0.0;
-  p_hmat->G = 6.0;
-  p_hmat->m10 = 0.0;
-  p_hmat->nu = 0.49;
-  p_hmat->devPotFlag = -1;
+  p_hmat->E = 8.0e2;
+  p_hmat->G = 2.985e2;
+  p_hmat->m10 = 0.5 * p_hmat->G;
+  p_hmat->nu = 0.34;
+  p_hmat->devPotFlag = 1;
   p_hmat->volPotFlag = 2;
 
   /* unused */
@@ -43,27 +47,16 @@ static void hommat_assign_values(HOMMAT *p_hmat)
   p_hmat->e4 = 0;
 }
 
-static void param_assign_values(double *param,
-                                const HOMMAT *p_hmat)
+static void param_assign_values(double *param)
 {
-  /* elastic props */
-  param[0] = p_hmat->G; /* G - reset from HOMMAT */
-  param[1] = p_hmat->nu; /* nu - reset from HOMMAT */
-
-  /* plastic props */
-  param[2] = 0.0; /* beta */
-  param[3] = 3.0e2; /* hp */
-  param[4] = 0.5; /* k0 */
-
-  /* damage props */
-  param[5] = 0.0; /* mu */
-  param[6] = 0.0; /* p1 */
-  param[7] = 0.0; /* p2 */
-  param[8] = 0.0; /* Yin */
-
+  /* parameter values from Mosby and Matous, MSMSE (2015) */
+  param[0] = 100.0; /* mu */
+  param[1] = 8.0;   /* p1 */
+  param[2] = 2.5;   /* p2 */
+  param[3] = 0.15;  /* Yin */
 }
 
-static int compute_stress(double * restrict sig,
+static int compute_stress(double *sig,
                           const Constitutive_model *m,
                           const void *ctx)
 {
@@ -95,16 +88,16 @@ static int compute_stress(double * restrict sig,
   sig[8] += p;
 
   return err;
-}                          
+}
 
 static void get_F(const double t,
                   const double nu,
                   double *F)
 {
-  const double rate = 0.0001;
+  const double rate = 0.001;
   memset(F, 0, 9*sizeof(*F));
-  /* F[0] = F[4] = 1 - nu * rate * t; */
-  F[0] = F[4] = 1;
+  /* compression */
+  F[0] = F[4] = 1 - nu * rate * t;
   F[8] = 1 + rate * t;
 }
 
@@ -116,16 +109,15 @@ static int write_data_point(FILE *f,
   int err = 0;
   double sig[9] = {};
   err += compute_stress(sig,m,ctx);
-  double J = det3x3(m->vars.Fs[0].m_pdata);
-  fprintf(f,"%e\t%e\t%e\n", t, sig[8], J);
+  fprintf(f,"%e\t%e\n", t,sig[8]);
   return err;
 }
 
 int main(int argc, char **argv)
 {
   int err = 0;
-  FILE *in = fopen("j2d.props","r");
-  FILE *out = fopen("j2d.dat","w");
+  FILE *in = fopen("ivd.props","r");
+  FILE *out = fopen("ivd.dat","w");
 
   HOMMAT *p_hmat = calloc(1, sizeof(*p_hmat));
   hommat_assign_values(p_hmat);
@@ -133,9 +125,9 @@ int main(int argc, char **argv)
 
   Model_parameters *p = malloc(sizeof(*p));
   err += model_parameters_construct(p);
-  err += model_parameters_initialize(p, p_hmat, J2_PLASTICITY_DAMAGE);
+  err += model_parameters_initialize(p, p_hmat, ISO_VISCOUS_DAMAGE);
   if (in == NULL) {
-    param_assign_values(p->model_param, p_hmat);
+    param_assign_values(p->model_param);
   } else {
     printf("READING PROPS FROM FILE\n\n");
     err += p->read_param(p, in);
@@ -154,12 +146,12 @@ int main(int argc, char **argv)
   const int n_step = 20;
   for (int i = 0; i < n_step; i++) {
     printf("STEP [%d]=================================\n",i);
-    get_F(t,p_hmat->nu, F);
-    err += j2d_plasticity_model_ctx_build(&ctx, F, dt);
+    get_F(t,p_hmat->nu,F);
+    err += iso_viscous_damage_model_ctx_build(&ctx, F, dt);
     err += m->param->integration_algorithm(m, ctx);
     err += m->param->update_state_vars(m);
-    err += write_data_point(stdout,ctx,m,t);
-    /* err += write_data_point(out,ctx,m,t); */
+    /* err += write_data_point(stdout,ctx,m,t); */
+    err += write_data_point(out,ctx,m,t);
     err += m->param->destroy_ctx(&ctx);
     t += dt;
     /* printf("\n"); */

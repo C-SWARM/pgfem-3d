@@ -144,15 +144,15 @@ plasticity_model_BPA_driver.c
 
 IVD_driver_SOURCES = \
 $(all_sources) \
-cm_iso_viscous_damage_driver.c
+cm_iso_viscous_damage_driver.cc
 
 J2D_driver_SOURCES = \
 $(all_sources) \
-cm_j2_plasticity_driver.c
+cm_j2_plasticity_driver.cc
 
 CH_layer_driver_SOURCES = \
 $(all_sources) \
-CH_layer_driver.c
+CH_layer_driver.cc
 
 unit_test_43_driver_SOURCES = \
 $(all_sources) \
