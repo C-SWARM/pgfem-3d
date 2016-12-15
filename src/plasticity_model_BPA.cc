@@ -102,8 +102,8 @@ static void bpa_compute_Ce(double *Ce,
               0.0,Ce,dim);
 }
 
-static void bpa_compute_Cp(double * restrict Cp,
-                           const double * restrict Fp)
+static void bpa_compute_Cp(double *Cp,
+                           const double *Fp)
 {
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
               dim,dim,dim,1.0,Fp,dim,Fp,dim,
@@ -115,8 +115,8 @@ static double bpa_compute_plam(const double *Cp)
   return sqrt((Cp[0] + Cp[4] + Cp[8]) / 3.0);
 }
 
-static void bpa_compute_Cpdev(double * restrict Cpdev,
-                              const double * restrict Cp)
+static void bpa_compute_Cpdev(double *Cpdev,
+                              const double *Cp)
 {
   const double lam = (Cp[0] + Cp[4] + Cp[8]) / 3.0;
   memcpy(Cpdev, Cp, tensor * sizeof(*Cp));
@@ -125,9 +125,9 @@ static void bpa_compute_Cpdev(double * restrict Cpdev,
   Cpdev[8] -= lam;
 }
 
-static void bpa_compute_Fp(double * restrict Fp,
-                           const double * restrict F,
-                           const double * restrict Fe)
+static void bpa_compute_Fp(double *Fp,
+                           const double *F,
+                           const double *Fe)
 {
   double invFe[tensor] = {};
   inv3x3(Fe,invFe);
@@ -168,12 +168,12 @@ static void bpa_compute_d2udj2(const double Je,
   D_Pressure(Je,p_hmat,d2udj2);
 }
 
-int bpa_compute_loading_dir(double * restrict normal,
-                            double * restrict eq_sig_dev,
-                            double * restrict tau,
-                            const double * restrict Sdev,
-                            const double * restrict Bdev,
-                            const double * restrict Fe)
+int bpa_compute_loading_dir(double *normal,
+                            double *eq_sig_dev,
+                            double *tau,
+                            const double *Sdev,
+                            const double *Bdev,
+                            const double *Fe)
 {
   int err = 0;
 
@@ -220,16 +220,16 @@ static int bpa_compute_gdot(double *gdot,
   return err;
 }
 
-static int bpa_compute_res_vec(double * restrict RES,
+static int bpa_compute_res_vec(double *RES,
                                const double dt,
                                const double gdot,
                                const double lam,
                                const double Jp,
-                               const double * restrict n,
-                               const double * restrict Mn,
-                               const double * restrict Wp,
-                               const double * restrict F,
-                               const double * restrict Fe)
+                               const double *n,
+                               const double *Mn,
+                               const double *Wp,
+                               const double *F,
+                               const double *Fe)
 {
   int err = 0;
 
@@ -320,8 +320,8 @@ static int bpa_compute_Bdev(double *Bdev,
   return err;
 }
 
-static int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
-                                 const double * restrict Fp,
+static int bpa_compute_DBdev_DFp(double *DB_DFp,
+                                 const double *Fp,
                                  const double param_N,
                                  const double param_Cr)
 {
@@ -361,9 +361,9 @@ static int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
   return err;
 }
 
-static int bpa_compute_DSdev_DFe(double * restrict DSdev_DFe,
-                                 const double * restrict Ce,
-                                 const double * restrict Fe,
+static int bpa_compute_DSdev_DFe(double *DSdev_DFe,
+                                 const double *Ce,
+                                 const double *Fe,
                                  const HOMMAT *p_hmat)
 {
   int err = 0;
@@ -387,9 +387,9 @@ static int bpa_compute_DSdev_DFe(double * restrict DSdev_DFe,
   return err;
 }
 
-static int bpa_compute_DFp_DFe(double * restrict DFp_DFe,
-                               const double * restrict invFe,
-                               const double * restrict Fp)
+static int bpa_compute_DFp_DFe(double *DFp_DFe,
+                               const double *invFe,
+                               const double *Fp)
 {
   int err = 0;
   for (int i = 0; i < dim; i++) {
@@ -404,10 +404,10 @@ static int bpa_compute_DFp_DFe(double * restrict DFp_DFe,
   return err;
 }
 
-static int bpa_compute_Dsig_DFe(double * restrict Dsig_DFe,
-                                const double * restrict F,
-                                const double * restrict Fe,
-                                const double * restrict Fp,
+static int bpa_compute_Dsig_DFe(double *Dsig_DFe,
+                                const double *F,
+                                const double *Fe,
+                                const double *Fp,
                                 const HOMMAT *p_hmat,
                                 const double param_N,
                                 const double param_Cr)
@@ -497,16 +497,16 @@ static int bpa_compute_Dgdot_Ds_s(double *Dgdot_Ds,
   return err;
 }
 
-static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
+static int bpa_compute_Dgdot_DFe(double *Dgdot_DFe,
                                  const double param_gdot0,
                                  const double param_A,
                                  const double param_T,
                                  const double param_alpha,
                                  const double s_s,
                                  const double tau,
-                                 const double * restrict Dsig_DFe,
-                                 const double * restrict normal,
-                                 const double * restrict Dp_DFe)
+                                 const double *Dsig_DFe,
+                                 const double *normal,
+                                 const double *Dp_DFe)
 {
   int err = 0;
   double Dgdot_Dtau = 0;
@@ -533,8 +533,8 @@ static int bpa_compute_Dgdot_DFe(double * restrict Dgdot_DFe,
   return err;
 }
 
-int bpa_compute_Dn_Dsig(double * restrict Dn_Dsig,
-                        const double * restrict n,
+int bpa_compute_Dn_Dsig(double *Dn_Dsig,
+                        const double *n,
                         const double tau)
 {
   int err = 0;
@@ -558,10 +558,10 @@ int bpa_compute_Dn_Dsig(double * restrict Dn_Dsig,
   return err;
 }
 
-static int bpa_compute_Dn_DFe(double * restrict Dn_DFe,
+static int bpa_compute_Dn_DFe(double *Dn_DFe,
                               const double tau,
-                              const double * restrict Dsig_DFe,
-                              const double * restrict n)
+                              const double *Dsig_DFe,
+                              const double *n)
 {
   int err = 0;
   double Dn_Dsig[tensor4] = {};
@@ -584,8 +584,8 @@ static int bpa_compute_Dn_DFe(double * restrict Dn_DFe,
   return err;
 }
 
-static int bpa_compute_Dp_DFe(double * restrict Dp_DFe,
-                              const double * restrict Fe,
+static int bpa_compute_Dp_DFe(double *Dp_DFe,
+                              const double *Fe,
                               const HOMMAT *p_hmat)
 {
   int err = 0;
@@ -605,7 +605,7 @@ static int bpa_compute_Dp_DFe(double * restrict Dp_DFe,
   return err;
 }
 
-static int bpa_compute_tan_Fe_Fe(double * restrict tan,
+static int bpa_compute_tan_Fe_Fe(double *tan,
                                  const double param_gdot0,
                                  const double param_A,
                                  const double param_T,
@@ -617,12 +617,12 @@ static int bpa_compute_tan_Fe_Fe(double * restrict tan,
                                  const double tau,
                                  const double s_s,
                                  const double lam,
-                                 const double * restrict eff_sig,
-                                 const double * restrict F,
-                                 const double * restrict n,
-                                 const double * restrict Mn,
-                                 const double * restrict Fe,
-                                 const double * restrict Fp,
+                                 const double *eff_sig,
+                                 const double *F,
+                                 const double *n,
+                                 const double *Mn,
+                                 const double *Fe,
+                                 const double *Fp,
                                  const HOMMAT *p_hmat)
 {
   int err = 0;
@@ -684,7 +684,7 @@ static int bpa_compute_tan_Fe_lam(double *tan,
   return err;
 }
     
-static int bpa_compute_tan(double * restrict tan,
+static int bpa_compute_tan(double *tan,
                            const double param_gdot0,
                            const double param_A,
                            const double param_T,
@@ -696,12 +696,12 @@ static int bpa_compute_tan(double * restrict tan,
                            const double tau,
                            const double s_s,
                            const double lam,
-                           const double * restrict eff_sig,
-                           const double * restrict n,
-                           const double * restrict Mn,
-                           const double * restrict F,
-                           const double * restrict Fe,
-                           const double * restrict Fp,
+                           const double *eff_sig,
+                           const double *n,
+                           const double *Mn,
+                           const double *F,
+                           const double *Fe,
+                           const double *Fp,
                            const HOMMAT *p_hmat)
 {
   int err = 0;
@@ -824,9 +824,9 @@ static int bpa_update_state_variables(const double *F,
  * Update the current value of the solution with the increment
  *
  */
-static int bpa_update_solution(const double * restrict increment,
-                               double * restrict Fe,
-                               double * restrict lam)
+static int bpa_update_solution(const double *increment,
+                               double *Fe,
+                               double *lam)
 {
   int err = 0;
   for (int i = 0; i < tensor; i++) {
@@ -836,12 +836,12 @@ static int bpa_update_solution(const double * restrict increment,
   return err;
 }
 
-static int bpa_compute_vel_grad(const double * restrict F,
-                                const double * restrict Fn,
+static int bpa_compute_vel_grad(const double *F,
+                                const double *Fn,
                                 const double dt,
-                                double * restrict L,
-                                double * restrict d,
-                                double * restrict ome)
+                                double *L,
+                                double *d,
+                                double *ome)
 {
   int err = 0;
 
@@ -870,10 +870,10 @@ static int bpa_compute_vel_grad(const double * restrict F,
 
 static int bpa_compute_Wp(double *Wp,
                           const double gdot,
-                          const double * restrict n,
-                          const double * restrict ome,
-                          const double * restrict d,
-                          const double * restrict Fe)
+                          const double *n,
+                          const double *ome,
+                          const double *d,
+                          const double *Fe)
 {
   int err = 0;
   memset(Wp, 0, tensor * sizeof(*Wp));
@@ -905,9 +905,9 @@ static int bpa_get_state_at_n(const Constitutive_model *m,
   return err;
 }
 
-static int bpa_compute_Dtau_DFe(double * restrict Dtau_DFe,
-                                const double * restrict n,
-                                const double * restrict Dsig_DFe)
+static int bpa_compute_Dtau_DFe(double *Dtau_DFe,
+                                const double *n,
+                                const double *Dsig_DFe)
 {
   int err = 0;
   const double rt2 = sqrt(2.0);
@@ -924,7 +924,7 @@ static int bpa_compute_Dtau_DFe(double * restrict Dtau_DFe,
   return err;
 }
 
-static int bpa_compute_Ds_Dgdot(double * restrict Ds_Dgdot,
+static int bpa_compute_Ds_Dgdot(double *Ds_Dgdot,
                                 const double param_h,
                                 const double param_s_ss,
                                 const double s_n,
@@ -937,14 +937,14 @@ static int bpa_compute_Ds_Dgdot(double * restrict Ds_Dgdot,
   return err;
 }
 
-static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
+static int bpa_compute_Ds_DFe(double *Ds_DFe,
                               const double param_h,
                               const double param_s_ss,
                               const double s_n,
                               const double dt,
                               const double gdot,
                               const double Dgdot_Dss,
-                              const double * restrict Dgdot_DFe)
+                              const double *Dgdot_DFe)
 {
   int err = 0;
   double Ds_Dgdot = 0.0;
@@ -957,7 +957,7 @@ static int bpa_compute_Ds_DFe(double * restrict Ds_DFe,
   return err;
 }
 
-static int bpa_compute_DM_DFe(double * restrict DM_DFe,
+static int bpa_compute_DM_DFe(double *DM_DFe,
                               const double param_gdot0,
                               const double param_A,
                               const double param_T,
@@ -969,8 +969,8 @@ static int bpa_compute_DM_DFe(double * restrict DM_DFe,
                               const double dt,
                               const double s_n,
                               const double s,
-                              const double * restrict Fe,
-                              const double * restrict F,
+                              const double *Fe,
+                              const double *F,
                               const HOMMAT *p_hmat)
 {
   int err = 0;
@@ -1033,7 +1033,7 @@ int BPA_int_alg(Constitutive_model *m,
                 const void *ctx)
 {
   int err = 0;
-  const BPA_ctx *CTX = ctx;
+  auto CTX = (BPA_ctx *) ctx;
   const HOMMAT *p_hmat = m->param->p_hmat;
   const double kappa = bpa_compute_bulk_mod(p_hmat);
   const double *Fn = m->vars.Fs[_F_n].m_pdata;
@@ -1320,7 +1320,7 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
                              double *dM_du) /* _ab */
 {
   int err = 0;
-  const BPA_ctx *CTX = ctx;
+  auto CTX = (BPA_ctx *) ctx;
   const double *F = CTX->F;
   const double dt = CTX->dt;
   const double *Fe = m->vars.Fs[_Fe].m_pdata;
