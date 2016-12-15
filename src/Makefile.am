@@ -22,7 +22,7 @@ homogen.cc \
 hypre_interface.cc \
 in.cc \
 initial_guess.cc \
-integration.c \
+integration.cc \
 load.cc \
 localizat.cc \
 macroscopic_load_AL.cc \
@@ -57,7 +57,7 @@ profiler.cc \
 potential.cc \
 computeMacroF.cc \
 computeMacroS.cc \
-vtk_output.c \
+vtk_output.cc \
 MINI_element.cc \
 MINI_3f_element.cc \
 two_field_element.cc \
