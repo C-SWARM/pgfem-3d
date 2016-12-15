@@ -14,7 +14,7 @@ TA_GA.cc \
 addresses.cc \
 build_distribution.cc \
 def_grad.cc \
-differentiation_of_UU.c \
+differentiation_of_UU.cc \
 elem3d.cc \
 fd_increment.cc \
 fd_residuals.cc \
@@ -80,7 +80,7 @@ generate_dof_ids.cc \
 node.cc \
 element.cc \
 solve_system.cc \
-PGFEM_HYPRE_preconditioners.c \
+PGFEM_HYPRE_preconditioners.cc \
 allocation.cc \
 cohesive_element_utils.cc \
 cohesive_element.cc \
