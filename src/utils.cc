@@ -471,8 +471,8 @@ double getJacobian(const double *mat,
   return J;
 }
 
-int inv2x2(const double * restrict mat,
-	   double * restrict mat_inv)
+int inv2x2(const double *mat,
+	   double *mat_inv)
 {
   double A = det2x2(mat);
   if(A != 0.0){
@@ -484,8 +484,8 @@ int inv2x2(const double * restrict mat,
   } else return 1;
 }
 
-int inv3x3(const double * restrict  mat,
-	   double * restrict mat_inv)
+int inv3x3(const double *mat,
+	   double *mat_inv)
 {
   double A = det3x3(mat);
 
@@ -742,8 +742,8 @@ int solve_Ax_b(const int n_eq,
   return err;
 }
 
-void transpose(double * restrict mat_t,
-	       const double * restrict mat,
+void transpose(double *mat_t,
+	       const double *mat,
 	       const int mat_row,
 	       const int mat_col)
 {

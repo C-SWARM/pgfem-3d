@@ -51,7 +51,7 @@ stiffmatel_fd.cc \
 stress_strain.cc \
 subdivision.cc \
 tensors.cc \
-utils.c \
+utils.cc \
 incl.cc \
 profiler.cc \
 potential.cc \
@@ -107,7 +107,7 @@ PGFEM_par_matvec.cc \
 compute_ms_cohe_job.cc \
 PGFEM_io.cc \
 PGFEM_mpi.c \
-ms_job_intercomm.c \
+ms_job_intercomm.cc \
 macro_micro_functions.c \
 pgf_fe2_micro_server.cc \
 pgf_fe2_job.cc \
