@@ -1,0 +1,14 @@
+1 # number of materials
+
+0 1
+{
+# gamma_dot_0 m    G0     g0      gs_0    gamma_dot_s     w
+          1.0 0.05 58.41  27.17   61.8    50.0e+9         0.005
+# 0 0 0
+# 0 1
+# 0 3 0.1 0.1 0.1
+ 0 2 CO/co
+# read_OnOff max_itr_stag  max_itr_hardening  max_itr_M  max_subdivision tol_hardening  tol_M   computer_zero
+  1          10             1                  20        -1               1.0e-5      1.0e-5  1.0e-15
+}
+
