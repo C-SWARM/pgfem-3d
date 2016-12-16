@@ -123,7 +123,7 @@ femlib.cc \
 macro_micro_main.cc \
 main.cc \
 dynamics.cc \
-plasticity_model.c \
+plasticity_model.cc \
 plasticity_model_none.cc \
 plasticity_model_BPA.cc \
 cm_iso_viscous_damage.cc \

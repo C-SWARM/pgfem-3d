@@ -8,7 +8,8 @@ CXXFLAGS="-Wall -std=c++14 -Drestrict -fpermissive -Ofast -g"
 with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/intel/15.0/mvapich2/2.1
 with_suitesparse_dir=/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1
 #with_cnstvm_dir=/afs/crc.nd.edu/user/i/iviti/Generalizsed_constitutive_model
-with_cnstvm_dir=/afs/crc.nd.edu/group/cswarm/Generalizsed_constitutive_model
+#with_cnstvm_dir=/afs/crc.nd.edu/group/cswarm/Generalizsed_constitutive_model
+with_cnstvm_dir=/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model
 
 enable_vtk=no
 
