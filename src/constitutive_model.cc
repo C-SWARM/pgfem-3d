@@ -41,9 +41,9 @@ Define_Matrix(double);
 /* add the macroscopic deformation gradient to the _TOTAL_ deformation
    gradient */
 static void cm_add_macro_F(const SUPP sup,
-                           double * restrict F)
+                           double *F)
 {
-  const double * restrict F0 = sup->F0;
+  const double *F0 = sup->F0;
   for (int i = 0; i < TENSOR_LEN; i++) F[i] += F0[i];
 }
 

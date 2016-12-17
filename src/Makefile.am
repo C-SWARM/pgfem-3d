@@ -129,9 +129,9 @@ plasticity_model_BPA.cc \
 cm_iso_viscous_damage.cc \
 cm_j2_plasticity.cc \
 cm_placeholder_functions.cc \
-cm_uqcm.c \
+cm_uqcm.cc \
 state_variables.cc \
-constitutive_model.c \
+constitutive_model.cc \
 post_processing.cc \
 comm_hints.cc \
 restart.cc
