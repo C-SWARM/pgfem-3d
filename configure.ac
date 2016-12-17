@@ -5,7 +5,7 @@ AC_PREREQ([2.63])
 AC_INIT([PGFem3D], [X.X], [bugs@cswarm.nd.edu])
 AM_INIT_AUTOMAKE([-Wall foreign])
 
-AC_CONFIG_SRCDIR([src/super_main.c])
+AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
 
 # Checks for programs.

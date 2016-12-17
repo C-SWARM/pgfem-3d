@@ -160,7 +160,7 @@ unit_test_43_driver.cc
 
 PGFem3D_SOURCES = \
 $(all_sources) \
-super_main.c
+super_main.cc
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
 VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
