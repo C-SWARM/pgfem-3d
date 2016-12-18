@@ -1,10 +1,5 @@
 #!/bin/csh
 
-setenv CPLUS_INCLUDE_PATH /afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1/UMFPACK/Include:/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1/UFconfig:/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1/AMD/Include:/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/intel/15.0/mvapich2/2.1/include:/afs/crc.nd.edu/user/k/ksaha/Ivan/pgfem_3d/lib/VTK_IO/include:/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model/material/include:/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model/elasticity/include:/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model/crystal_plasticity/include:/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model/utils/include
-
-
-setenv LD_LIBRARY_PATH /afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model/lib
-
 module purge 
 module load opt_local/1.0 
 module load pgfem3d/mvapich2-2.1-intel-15.0-mlx

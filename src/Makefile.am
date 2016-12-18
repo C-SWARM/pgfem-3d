@@ -180,11 +180,11 @@ J2D_driver_LDADD = $(all_libs)
 CH_layer_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
 
-AM_CFLAGS = $(AM_INCLUDES)
+AM_CXXFLAGS = $(AM_INCLUDES)
 
-PGFem3D_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-BPA_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-IVD_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-J2D_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-CH_layer_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-unit_test_43_driver_LINK = $(PGFem3D_linker) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+PGFem3D_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+BPA_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+IVD_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+J2D_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+CH_layer_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+unit_test_43_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
