@@ -185,28 +185,33 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
       break;
     }  
     case HEXAHEDRAL:
-    {  
+    {
+      double gk[5]; // maximum integration order = 5
+      double w[5];  // maximum integration order = 5
+      int n = 0;
       switch(i_order)
       {
         case 1:
-          intpoints_2(fe->ksi.m_pdata,fe->weights.m_pdata);
-          npt_x = 2;
-          npt_y = 2;
-          npt_z = 2;
+          intpoints_2(gk,w);
+          n = 2;
           break;
         case 2:
-          intpoints_3(fe->ksi.m_pdata,fe->weights.m_pdata);
-          npt_x = 3;
-          npt_y = 3;
-          npt_z = 3;
+          intpoints_3(gk,w);
+          n=3;
           break;          
         case 3:              
         default:
-          integrate(e_type, &npt_x, &npt_y, &npt_z,
-                  fe->ksi.m_pdata, fe->eta.m_pdata, fe->zet.m_pdata,
-                  fe->weights.m_pdata);               
+          integrate(e_type, &npt_x, &npt_y, &npt_z, gk, NULL, NULL, w);               
       }
-      break;
+      npt_x = npt_y = npt_z = n;
+      for(int ia=0; ia<n; ia++)
+      {
+        fe->ksi.m_pdata[ia] = gk[ia];
+        fe->eta.m_pdata[ia] = gk[ia];
+        fe->zet.m_pdata[ia] = gk[ia];
+        fe->weights.m_pdata[ia] = w[ia];
+      }
+      break;      
     }
       
   }

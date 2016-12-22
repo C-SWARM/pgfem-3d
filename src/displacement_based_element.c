@@ -1831,8 +1831,8 @@ static int integration_help(const int elem_id,
   const int ip = k;
   if(nne == 8){/* hexahedron */
     ksi = int_pt_ksi[i];
-    eta = int_pt_eta[j];
-    zet = int_pt_zet[k];
+    eta = int_pt_ksi[j];
+    zet = int_pt_ksi[k];
     (*wt) = weights[i]*weights[j]*weights[k];
   } else { /* tetrahedron type */
     ksi = int_pt_ksi[ip];

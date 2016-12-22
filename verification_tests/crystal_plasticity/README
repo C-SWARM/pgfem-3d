@@ -1,0 +1,23 @@
+# Two tests are implemented to test crystal plasticity orientation: tension and compression [1999 Zacharia]
+# Number of partitions and number of elements are fixed to 8 and 257, respectively since the crystal orientations
+# are generated randomly for specific meshes (257 elements and 8 partition domains).
+#
+# The time step requires 5000 to finish the whole simulation, but the tests only go to 50 steps in order to save
+# the run time on Jenkins. Since the crystal orientations are dependent on F ( especially elastic part), results
+# are verified by comparing deformation gradients between computed and pre-computed values.
+#
+# how to run
+
+# usage: ./run_test.sh [test_name] [gen_mesh]
+#        [test_name] : test_name = tension or compression
+#        [gen_mesh]  : if gen_mesh = 1: cleanup everything and re-generate the finite element mesh and run the test
+#                            otherwise: run the test without re-generating meshes
+
+./run_test.sh compression 1
+./run_test.sh tension 1
+
+for (( i=0; i<8; i++ )) do
+  fn=box_${i}_49.res
+  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 compression/box_8CPU/restart/STEP_00049/${fn} ref_out_compression/${fn}
+  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 tension/box_8CPU/restart/STEP_00049/${fn} ref_out_tension/${fn}
+done
