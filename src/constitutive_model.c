@@ -1199,115 +1199,127 @@ int constitutive_model_update_output_variables(SIG *sig,
     total_Lagrangian = 0;
     
   static const double eye[DIM_3x3] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
-  /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
-  const int ip = 0;
 
   /* deformation gradient */
   Matrix_double F, eF, pF, S;
-  Matrix_construct_redim(double, F, DIM_3, DIM_3);
+  Matrix_construct_redim(double, F,  DIM_3, DIM_3);
   Matrix_construct_redim(double, eF, DIM_3, DIM_3);
   Matrix_construct_redim(double, pF, DIM_3, DIM_3);
-  Matrix_construct_redim(double, S, DIM_3, DIM_3);
+  Matrix_construct_redim(double, S,  DIM_3, DIM_3);
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
 
-  for (int i = 0; i < ne; i++) {
-    /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
-    const Constitutive_model *m = eps[i].model;
-    const Model_parameters *func = m->param;
+  for (int i = 0; i < ne; i++)
+  {
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe,i,elem,node,0,total_Lagrangian);
 
-    err += func->get_Fn(m, &F);
-    err += func->get_eFn(m, &eF);
-    err += func->get_pFn(m, &pF);
-
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F.m_pdata,dt,alpha,NULL);  
-          
-    if((m->param)->uqcm)
+    memset(sig[i].el.o,0,6*sizeof(double));
+    memset(eps[i].el.o,0,6*sizeof(double));
+    double volume = 0.0;
+    
+    for(int ip=0; ip<fe.nint; ip++)
     {
-      FEMLIB fe;
-      FEMLIB_initialization_by_elem(&fe,i,elem,node,0,total_Lagrangian);  
-      FEMLIB_elem_basis_V(&fe, ip+1);     
-       
-      double *x_ip = (fe.x_ip).m_pdata;            
+      FEMLIB_elem_basis_V(&fe, ip+1); 
+      Constitutive_model *m = &(eps[i].model[ip-1]);
+      const Model_parameters *func = m->param;
+
+      err += func->get_Fn(m, &F);
+      err += func->get_eFn(m, &eF);
+      err += func->get_pFn(m, &pF);
+
+      void *ctx = NULL;
+      err += construct_model_context(&ctx, m->param->type, F.m_pdata,dt,alpha,NULL);  
+          
+      if((m->param)->uqcm)
+      {       
+        double *x_ip = (fe.x_ip).m_pdata;            
       
-      ELASTICITY *elast = (m->param)->cm_elast;
-      mat_e_in = elast->mat;
-      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
-      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation  
-      err += (m->param)->update_elasticity(m,ctx,NULL,&S,0);
+        ELASTICITY *elast = (m->param)->cm_elast;
+        mat_e_in = elast->mat;
+        err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
+        elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation  
+        err += (m->param)->update_elasticity(m,ctx,NULL,&S,0);
       
-      elast->mat = mat_e_in;
-      FEMLIB_destruct(&fe);
+        elast->mat = mat_e_in;
+      }
+      else
+        err += (m->param)->update_elasticity(m,ctx,NULL,&S,0);
+
+      err += (m->param)->destroy_ctx(&ctx);
+      // <-- update elasticity part
+
+      /* get aliases to Matrix data for simpler access */
+      const double *Sd = S.m_pdata;
+      const double *eFd = eF.m_pdata;
+      const double *pFd = pF.m_pdata;
+      const double eJ = det3x3(eFd);      
+
+      /* store symmetric part of S (PK2) */
+      sig[i].il[ip].o[0] = Sd[idx_2(0,0)]; /* XX */
+      sig[i].il[ip].o[1] = Sd[idx_2(1,1)]; /* YY */
+      sig[i].il[ip].o[2] = Sd[idx_2(2,2)]; /* ZZ */
+      sig[i].il[ip].o[3] = Sd[idx_2(1,2)]; /* YZ */
+      sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
+      sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
+
+      /* store elastic deformation */
+      memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
+
+      /* store the hardening parameter */
+      err += func->get_hardening(m, &eps[i].dam[ip].wn);
+
+      /* compute/store the plastic strain variable */
+      err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
+
+      /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
+      double sigma[DIM_3x3] = {};
+      double temp[DIM_3x3] = {};
+      double temp_I[DIM_3x3] = {};
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                  DIM_3,DIM_3,DIM_3, 1.0 / eJ, eFd, DIM_3, Sd, DIM_3,
+                  0.0, temp,DIM_3);
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                  DIM_3, DIM_3, DIM_3, 1.0, temp, DIM_3, eFd, DIM_3,
+                  0.0, sigma, DIM_3);
+
+      volume += fe.detJxW;
+      
+      /* store symmetric part */
+      sig[i].el.o[0] += fe.detJxW*sigma[idx_2(0,0)]; /* XX */
+      sig[i].el.o[1] += fe.detJxW*sigma[idx_2(1,1)]; /* YY */
+      sig[i].el.o[2] += fe.detJxW*sigma[idx_2(2,2)]; /* ZZ */
+      sig[i].el.o[3] += fe.detJxW*sigma[idx_2(1,2)]; /* YZ */
+      sig[i].el.o[4] += fe.detJxW*sigma[idx_2(0,2)]; /* XZ */
+      sig[i].el.o[5] += fe.detJxW*sigma[idx_2(0,1)]; /* XY */
+
+      /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                  DIM_3, DIM_3, DIM_3, 1.0, eFd, DIM_3, eFd, DIM_3,
+                  0.0, temp, DIM_3);
+      err += inv3x3(temp, temp_I);
+      /* e <-- temp is the Euler strain */
+      for(int i = 0; i < DIM_3x3; i++)
+        temp[i] = 0.5*(eye[i]-temp_I[i]);
+
+      /* store symmetric part (also Eng. strain) */
+      eps[i].el.o[0] += fe.detJxW*temp[idx_2(0,0)];
+      eps[i].el.o[1] += fe.detJxW*temp[idx_2(1,1)];
+      eps[i].el.o[2] += fe.detJxW*temp[idx_2(2,2)];
+
+      eps[i].el.o[3] += fe.detJxW*2.0*temp[idx_2(1,2)];
+      eps[i].el.o[4] += fe.detJxW*2.0*temp[idx_2(0,2)];
+      eps[i].el.o[5] += fe.detJxW*2.0*temp[idx_2(0,1)];
+
     }
-    else
-      err += (m->param)->update_elasticity(m,ctx,NULL,&S,0);
-
-    err += (m->param)->destroy_ctx(&ctx);
-    // <-- update elasticity part
-
-    /* get aliases to Matrix data for simpler access */
-    const double *Sd = S.m_pdata;
-    const double *eFd = eF.m_pdata;
-    const double *pFd = pF.m_pdata;
-    const double eJ = det3x3(eFd);
-
-    /* store symmetric part of S (PK2) */
-    sig[i].il[ip].o[0] = Sd[idx_2(0,0)]; /* XX */
-    sig[i].il[ip].o[1] = Sd[idx_2(1,1)]; /* YY */
-    sig[i].il[ip].o[2] = Sd[idx_2(2,2)]; /* ZZ */
-    sig[i].il[ip].o[3] = Sd[idx_2(1,2)]; /* YZ */
-    sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
-    sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
-
-    /* store elastic deformation */
-    memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
-
-    /* store the hardening parameter */
-    err += func->get_hardening(m, &eps[i].dam[ip].wn);
-
-    /* compute/store the plastic strain variable */
-    err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
-
-    /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
-    double sigma[DIM_3x3] = {};
-    double temp[DIM_3x3] = {};
-    double temp_I[DIM_3x3] = {};
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                DIM_3,DIM_3,DIM_3, 1.0 / eJ, eFd, DIM_3, Sd, DIM_3,
-                0.0, temp,DIM_3);
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                DIM_3, DIM_3, DIM_3, 1.0, temp, DIM_3, eFd, DIM_3,
-                0.0, sigma, DIM_3);
-
-    /* store symmetric part */
-    sig[i].el.o[0] = sigma[idx_2(0,0)]; /* XX */
-    sig[i].el.o[1] = sigma[idx_2(1,1)]; /* YY */
-    sig[i].el.o[2] = sigma[idx_2(2,2)]; /* ZZ */
-    sig[i].el.o[3] = sigma[idx_2(1,2)]; /* YZ */
-    sig[i].el.o[4] = sigma[idx_2(0,2)]; /* XZ */
-    sig[i].el.o[5] = sigma[idx_2(0,1)]; /* XY */
-
-    /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                DIM_3, DIM_3, DIM_3, 1.0, eFd, DIM_3, eFd, DIM_3,
-                0.0, temp, DIM_3);
-    err += inv3x3(temp, temp_I);
-    /* e <-- temp is the Euler strain */
-    for(int i = 0; i < DIM_3x3; i++){
-      temp[i] = 0.5*(eye[i]-temp_I[i]);
+    for(int ia=0; ia<6; ia++)
+    {
+      sig[i].el.o[ia] = sig[i].el.o[ia]/volume;
+      eps[i].el.o[ia] = eps[i].el.o[ia]/volume;
     }
 
-    /* store symmetric part (also Eng. strain) */
-    eps[i].el.o[0] = temp[idx_2(0,0)];
-    eps[i].el.o[1] = temp[idx_2(1,1)];
-    eps[i].el.o[2] = temp[idx_2(2,2)];
-
-    eps[i].el.o[3] = 2. * temp[idx_2(1,2)];
-    eps[i].el.o[4] = 2. * temp[idx_2(0,2)];
-    eps[i].el.o[5] = 2. * temp[idx_2(0,1)];
-
+    FEMLIB_destruct(&fe);
   }
 
   Matrix_cleanup(F);
@@ -1315,12 +1327,8 @@ int constitutive_model_update_output_variables(SIG *sig,
   Matrix_cleanup(pF);
   Matrix_cleanup(S);
 
-  /* Compute equivalent stress and strain */
-  Mises (ne, sig, eps, 0);
-
   return err;
 }
-
 
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,
                                     const int ii,

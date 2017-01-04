@@ -1251,14 +1251,13 @@ int single_scale_main(int argc,char *argv[])
         }/* end AL */
       
         /*=== OUTPUT ===*/
-        /* Calculating equvivalent Mises stresses and strains vectors */
-        Mises (grid.ne,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);
-        
         /* update output stuff for CM interface */
         if(options.analysis_type == CM && options.cm!=0){
           constitutive_model_update_output_variables(fv[mp_id_M].sig,fv[mp_id_M].eps,grid.node,grid.element,grid.ne,
                   time_steps.dt_np1,&options, sol[mp_id_M].alpha);
         }
+        /* Calculating equvivalent Mises stresses and strains vectors */
+        Mises (grid.ne,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);        
         
         /* print tractions on marked features */
         {
