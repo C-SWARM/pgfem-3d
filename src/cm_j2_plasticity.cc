@@ -39,7 +39,8 @@
 
 static const double DAMAGE_THRESH = 0.9999;
 static const double j2d_int_alg_tol = 1.0e-10;
-static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+//static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
 Define_Matrix(double);
 
@@ -999,6 +1000,7 @@ int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double dt)
 {
   j2d_ctx *CTX = malloc(sizeof(*CTX));
+  //CTX = (j2d_ctx *) malloc(sizeof(*CTX));
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;
   *ctx = CTX;

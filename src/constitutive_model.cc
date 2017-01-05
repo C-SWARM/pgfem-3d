@@ -1630,7 +1630,8 @@ int constitutive_model_update_output_variables(SIG *sig,
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
     
-  static const double eye[TENSOR_LEN] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  //static const double eye[TENSOR_LEN] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  static const double eye[TENSOR_LEN] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; 
   /* *** ASSUME LINEAR ELEMENTS -- 1 INTEGRATION POINT *** */
   const int ip = 0;
 

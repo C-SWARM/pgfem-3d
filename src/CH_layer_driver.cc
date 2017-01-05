@@ -24,11 +24,14 @@ Define_Matrix(double);
 
 #define dim 3
 #define tensor 9
-static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+//static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; 
 static const double LC = 0.20;
 static const double JUMPU = 0.001;
-static const double DIR[dim] = {[2] = 1.0};
-static const double NORMAL[dim] = {[2] = 1.0};
+//static const double DIR[dim] = {[2] = 1.0};
+static const double DIR[dim] = {0.0, 0.0, 1.0};
+//static const double NORMAL[dim] = {[2] = 1.0};
+static const double NORMAL[dim] = {0.0, 0.0, 1.0};
 
 /**
  * Compute the deformation gradient.
