@@ -108,7 +108,7 @@ compute_ms_cohe_job.cc \
 PGFEM_io.cc \
 PGFEM_mpi.cc \
 ms_job_intercomm.cc \
-macro_micro_functions.c \
+macro_micro_functions.cc \
 pgf_fe2_micro_server.cc \
 pgf_fe2_job.cc \
 pgf_fe2_server_rebalance.cc \
