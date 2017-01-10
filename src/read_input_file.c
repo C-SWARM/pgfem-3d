@@ -556,7 +556,6 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -568,7 +567,6 @@ int read_initial_values_lagcy(GRID *grid,
                               PGFem3D_TIME_STEPPING *ts,
                               PGFem3D_opt *opts,
                               MULTIPHYSICS *mp,
-                              int *restart, 
                               double *tnm1, 
                               int myrank)
 {
@@ -583,7 +581,7 @@ int read_initial_values_lagcy(GRID *grid,
   
   // restart option from command line is -1
   // check restart form initial file.
-  if(*restart < 0)
+  if(opts->restart < 0)
   {
     FILE *fp_0 = fopen(filename,"r");
     
@@ -594,7 +592,7 @@ int read_initial_values_lagcy(GRID *grid,
         if(line[0]=='#')
           continue;
         
-        sscanf(line, "%d", restart);
+        sscanf(line, "%d", &(opts->restart));
         break;
       }
       fclose(fp_0);
@@ -602,12 +600,8 @@ int read_initial_values_lagcy(GRID *grid,
   }
   
   // check restart and read values
-  if(*restart >= 0)
-  {
-    int nsd = 3;
-    read_restart(fv[mp_id].u_nm1,fv[mp_id].u_n,opts,grid->element,grid->node,fv[mp_id].sig,fv[mp_id].eps,load->sups[mp_id],
-            myrank,grid->ne,grid->nn,nsd,restart,tnm1, &(fv[mp_id].NORM));
-  }
+  if(opts->restart >= 0)
+    err += read_restart(grid,fv,load,opts,mp,tnm1,myrank);
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
@@ -653,7 +647,7 @@ int read_initial_values_lagcy(GRID *grid,
     break;
   }
   
-  // read material density density
+  // read material density
   double *rho = (double *) malloc(sizeof(double)*mat->nmat);  
   while(fgets(line, 1024, fp)!=NULL)
   {
@@ -677,27 +671,24 @@ int read_initial_values_lagcy(GRID *grid,
   
   free(rho);
   
-  if(*restart>0)
-  {
-    fclose(fp);
-    return 0;
-  }
-  
-  while(fgets(line, 1024, fp)!=NULL)
-  {
-    if(line[0]=='#')
-      continue;
+  if(opts->restart<0)
+  {  
+    while(fgets(line, 1024, fp)!=NULL)
+    {
+      if(line[0]=='#')
+        continue;
     
-    long nid;
-    double u[3], v[3];
-    sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
+      long nid;
+      double u[3], v[3];
+      sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
     
-    fv[mp_id].u_n[nid*3+0] = u[0];
-    fv[mp_id].u_n[nid*3+1] = u[1];
-    fv[mp_id].u_n[nid*3+2] = u[2];
-    fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
-    fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
-    fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
+      fv[mp_id].u_n[nid*3+0] = u[0];
+      fv[mp_id].u_n[nid*3+1] = u[1];
+      fv[mp_id].u_n[nid*3+2] = u[2];
+      fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
+      fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
+      fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
+    }
   }
   
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)
@@ -771,22 +762,25 @@ int read_initial_for_Mechanical(FILE *fp,
   }  
   
   free(rho);
+
+  if(opts->restart < 0)
+  {      
+    while(fgets(line, 1024, fp)!=NULL)
+    {
+      if(line[0]=='#')
+        continue;
     
-  while(fgets(line, 1024, fp)!=NULL)
-  {
-    if(line[0]=='#')
-      continue;
+      long nid;
+      double u[3], v[3];
+      sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
     
-    long nid;
-    double u[3], v[3];
-    sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
-    
-    fv->u_n[nid*3+0] = u[0];
-    fv->u_n[nid*3+1] = u[1];
-    fv->u_n[nid*3+2] = u[2];
-    fv->u_nm1[nid*3+0] = u[0]-dt*v[0];
-    fv->u_nm1[nid*3+1] = u[1]-dt*v[1];
-    fv->u_nm1[nid*3+2] = u[2]-dt*v[2];
+      fv->u_n[nid*3+0] = u[0];
+      fv->u_n[nid*3+1] = u[1];
+      fv->u_n[nid*3+2] = u[2];
+      fv->u_nm1[nid*3+0] = u[0]-dt*v[0];
+      fv->u_nm1[nid*3+1] = u[1]-dt*v[1];
+      fv->u_nm1[nid*3+2] = u[2]-dt*v[2];
+    }
   }
   
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)
@@ -799,7 +793,7 @@ int read_initial_for_Mechanical(FILE *fp,
     }
   }  
   
-  
+  fclose(fp);
   return err;
 }
 
@@ -830,24 +824,28 @@ int read_initial_for_Thermal(FILE *fp,
 
     break;
   }  
-  
-  // set default
-  for(int ia=0; ia<grid->nn; ia++)
-  {
-    fv->u_nm1[ia] = T0;
-    fv->u_n[ia] = T0;
-  }    
-  while(fgets(line, 1024, fp)!=NULL)
-  {
-    if(line[0]=='#')
-      continue;
+
+  if(opts->restart < 0)
+  {      
+    // set default
+    for(int ia=0; ia<grid->nn; ia++)
+    {
+      fv->u_nm1[ia] = T0;
+      fv->u_n[ia] = T0;
+    }
+      
+    while(fgets(line, 1024, fp)!=NULL)
+    {
+      if(line[0]=='#')
+        continue;
     
-    long nid;
-    double u;
-    sscanf(line, "%ld %lf", &nid, &u);
+      long nid;
+      double u;
+      sscanf(line, "%ld %lf", &nid, &u);
     
-    fv->u_n[nid] = u;
-    fv->u_nm1[nid] = u;
+      fv->u_n[nid] = u;
+      fv->u_nm1[nid] = u;
+    }
   }
   
   for(int ia = 0; ia<grid->nn; ia++)
@@ -870,7 +868,6 @@ int read_initial_for_Thermal(FILE *fp,
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -882,17 +879,20 @@ int read_initial_values_IC(GRID *grid,
                            PGFem3D_TIME_STEPPING *ts,
                            PGFem3D_opt *opts,
                            MULTIPHYSICS *mp,
-                           int *restart, 
                            double *tnm1, 
                            int myrank)
 {
   int err = 0;
   int mp_id = 0;
   
+  // check restart and read restart values
+ if(opts->restart >= 0)
+    err += read_restart(grid,FV,load,opts,mp,tnm1,myrank);  
+  
   char IC[1024];
   sprintf(IC,"%s/IC",opts->ipath);
   
-  char fn_0[1024], fn[1024];
+  char fn_0[1024], fn[1024];  
   
   for(int ia=0; ia<mp->physicsno; ia++)
   {
@@ -944,7 +944,6 @@ int read_initial_values_IC(GRID *grid,
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -956,7 +955,6 @@ int read_initial_values(GRID *grid,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
                         MULTIPHYSICS *mp,
-                        int *restart, 
                         double *tnm1, 
                         int myrank)
 {
@@ -968,14 +966,14 @@ int read_initial_values(GRID *grid,
   { 
     if(myrank==0) 
       printf("IC directory exists, read initial conditions from IC\n");
-    err += read_initial_values_IC(grid,mat,FV,SOL,load,ts,opts,mp,restart,tnm1,myrank);
+    err += read_initial_values_IC(grid,mat,FV,SOL,load,ts,opts,mp,tnm1,myrank);
   }     
   else
   {
     if(myrank==0)  
       printf("No IC directory exists, read inital conditions from *.initial\n");
 
-    err += read_initial_values_lagcy(grid,mat,FV+0,SOL+0,load,ts,opts,mp,restart,tnm1,myrank);
+    err += read_initial_values_lagcy(grid,mat,FV+0,SOL+0,load,ts,opts,mp,tnm1,myrank);
   }
   return err;
 }

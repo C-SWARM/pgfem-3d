@@ -53,7 +53,7 @@ void VTK_print_master(char *path,
     abort();
   }
 
-  sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,out_dir,step_dir,time);
+  sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
 
   /* write header information */
   PGFEM_fprintf(out,"<?xml version=\"1.0\"?>\n");
@@ -103,7 +103,7 @@ void VTK_print_master(char *path,
   PGFEM_fprintf(out,"</PPoints>\n");
 
   /* write piece list */
-  sprintf(dir_name,"%s%.5d",step_dir,time);
+  sprintf(dir_name,"%s%.6d",step_dir,time);
   for (int i=0; i< nproc; i++){
     sprintf(filename,"%s/%s_%d_%d.vtu",dir_name,base_name,i,time);
     PGFEM_fprintf(out,"<Piece Source=\"%s\"/>\n",filename);
@@ -149,7 +149,7 @@ void VTK_print_cohesive_master(char *path,
     abort();
   }
 
-  sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,out_dir,step_dir,time);
+  sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
 
   /* write header information */
   PGFEM_fprintf(out,"<?xml version=\"1.0\"?>\n");
@@ -190,7 +190,7 @@ void VTK_print_cohesive_master(char *path,
   PGFEM_fprintf(out,"</PPoints>\n");
 
   /* write piece list */
-  sprintf(dir_name,"%s%.5d",step_dir,time);
+  sprintf(dir_name,"%s%.6d",step_dir,time);
   for (int i=0; i< nproc; i++){
     sprintf(filename,"%s/%s_cohesive_%d_%d.vtu",dir_name,base_name,i,time);
     PGFEM_fprintf(out,"<Piece Source=\"%s\"/>\n",filename);
@@ -224,7 +224,7 @@ void VTK_print_vtu(char *path,
   char *ptr_path = path;
   char dir_name[500];
   if(ptr_path == NULL) ptr_path = &cur_dir;
-  sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,out_dir,step_dir,time);
+  sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
   if(make_path(dir_name,DIR_MODE) != 0){
     PGFEM_printf("Directory (%s) not created!\n",dir_name);
     abort();
@@ -520,7 +520,7 @@ void VTK_print_cohesive_vtu(char *path,
   char *ptr_path = path;
   char dir_name[500];
   if(ptr_path == NULL) ptr_path = &cur_dir;
-  sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,out_dir,step_dir,time);
+  sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
   if(make_path(dir_name,DIR_MODE) != 0){
     PGFEM_printf("Directory (%s) not created!\n",dir_name);
     abort();
@@ -756,7 +756,7 @@ int VTK_get_filename(char *filename,
   if(is_it_master)
     sprintf(dir_name,"%s/%s",ptr_path,o_dir);
   else
-    sprintf(dir_name,"%s/%s/%s%.5d",ptr_path,o_dir,s_dir,time);
+    sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,o_dir,s_dir,time);
 
   if(make_path(dir_name,DIR_MODE) != 0)
   {
@@ -822,7 +822,7 @@ int VTK_write_multiphysics_master_footer(FILE *out,
   char dir_name[1024];  
   char filename[1024];
   /* write piece list */
-  sprintf(dir_name,"%s%.5d",s_dir,time);
+  sprintf(dir_name,"%s%.6d",s_dir,time);
   for (int ia=0; ia< nproc; ia++){
     sprintf(filename,"%s/%s_%d_%d.vtu",dir_name,base_name,ia,time);
     PGFEM_fprintf(out,"<Piece Source=\"%s\"/>\n",filename);

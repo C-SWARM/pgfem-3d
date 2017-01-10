@@ -103,7 +103,6 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in, out] restart an integer for restart number (time step number) 
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -115,7 +114,6 @@ int read_initial_values(GRID *grid,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
                         MULTIPHYSICS *mp,
-                        int *restart, 
                         double *tnm1, 
                         int myrank);
 

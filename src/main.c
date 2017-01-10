@@ -405,12 +405,10 @@ int print_results(GRID *grid,
     }
 
     // write restart files
-    if(mp_id_M >= 0 && SAVE_RESTART_FILE)
+    if(SAVE_RESTART_FILE)
     {
-      write_restart(fv->u_nm1, fv->u_n, opts,
-                    grid->element, grid->node,fv->sig,fv->eps,sup,
-                    myrank, grid->ne, grid->nn, fv->ndofn, fv->ndofd, tim, time_steps->times, fv->NORM,
-                    mp_id_M);
+      write_restart(grid,FV,load,time_steps,opts,mp,myrank,tim);
+      
     }
   }/* end output */
   
@@ -1046,21 +1044,8 @@ int single_scale_main(int argc,char *argv[])
     // read initial conditions
     //----------------------------------------------------------------------
     //---->
-        
-    int restart_tim = options.restart;
-    
     double tnm1[2] = {-1.0,-1.0};
-    err += read_initial_values(&grid, 
-                               &mat, 
-                               fv, 
-                               sol, 
-                               &load, 
-                               &time_steps, 
-                               &options,
-                               &mp, 
-                               &restart_tim, 
-                               tnm1, 
-                               myrank);
+    err += read_initial_values(&grid,&mat,fv,sol,&load,&time_steps,&options,&mp,tnm1,myrank);
     //<---------------------------------------------------------------------                               
 
     // set the first time step size
@@ -1150,7 +1135,8 @@ int single_scale_main(int argc,char *argv[])
         PGFEM_Comm_code_abort(mpi_comm,0);
       }
       
-      if (myrank == 0){
+      if((myrank==0) && (tim>options.restart))
+      {
         PGFEM_printf("\nFinite deformations time step %ld) "
                 " Time %e | dt = %e\n",
                 tim,time_steps.times[tim+1],time_steps.dt_np1);
@@ -1183,7 +1169,7 @@ int single_scale_main(int argc,char *argv[])
         // add load increments util time reaches the restart point
         //----------------------------------------------------------------------
         //---->
-        if(tim<restart_tim+1)
+        if(tim<options.restart+1)
         {
           for(int ia=0; ia<mp.physicsno; ia++)
           {
@@ -1197,14 +1183,14 @@ int single_scale_main(int argc,char *argv[])
         }
         //<---------------------------------------------------------------------
         
-        if(tim==restart_tim+1 && tnm1[1]>0)
+        if(tim==options.restart+1 && tnm1[1]>0)
         {
           time_steps.times[tim-1] = tnm1[1]; // tnm1[0] = times[tim-2]
                                              // tnm1[1] = times[tim-1]
                                              // tnm1[2] = times[tim]
           
-                                             // if restart_tim==0: tim = 1
-          if(tim>=2)                         // if restart_tim==1: tim = 2
+                                             // if options.restart==0: tim = 1
+          if(tim>=2)                         // if options.restart==1: tim = 2
             time_steps.times[tim-2] = tnm1[0];
         }
 
