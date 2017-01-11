@@ -117,7 +117,7 @@ AS_IF([test "x$with_mkl" = xyes],
 	    $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
 	    $(MKLROOT)/lib/intel64/libmkl_sequential.a \
 	    $(MKLROOT)/lib/intel64/libmkl_core.a \
-	    -Wl,--end-group -lpthread'])
+	    -Wl,--end-group -lpthread -lm -ldl'])
 	    ],
 	    [
 	    AC_MSG_NOTICE([Using specified CBLAS/LAPACK])
