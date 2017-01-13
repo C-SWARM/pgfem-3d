@@ -53,7 +53,7 @@ LINK = mpicxx
 
 RM = rm -rf
 
-CFLAGS = -Wall -std=c99 -O3 -g
+CXXFLAGS = -Wall -std=c++14 -fpermissive -O3 -g
 
 INCLUDES = -I$(pfem_incl_dir) \
                   $(CNSTVM_incl) \
@@ -71,18 +71,18 @@ LIBS	= $(VTK_IO_lib) \
 OBJ = $(SRC:.cc=.o)
 
 all:
-#	$(CXX) -c $(INCLUDES) $(CFLAGS) post_processing.cc 	
-	$(CXX) -c $(INCLUDES) $(CFLAGS) shear.cc 		
-	$(LINK) -o shear $(CFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
-	$(CXX) -c $(INCLUDES) $(CFLAGS) tension_disp.cc 		
-	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
-	$(CXX) -c $(INCLUDES) $(CFLAGS) tension_pressure.cc 		
-	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
-	$(CXX) -c $(INCLUDES) $(CFLAGS) UQ_study.cc 		
-	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
-	$(CXX) -c $(INCLUDES) $(CFLAGS) crystal_plasticity.cc
-	$(LINK) -o crystal_plasticity $(CFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
-	$(CXX) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.cc
-	$(LINK) -o crystal_plasticity_verification_test $(CFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
+#	$(CXX) -c $(INCLUDES) $(CXXFLAGS) post_processing.cc 	
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) shear.cc 		
+	$(LINK) -o shear $(CXXFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) tension_disp.cc 		
+	$(LINK) -o tension_disp $(CXXFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) tension_pressure.cc 		
+	$(LINK) -o tension_pressure $(CXXFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) UQ_study.cc 		
+	$(LINK) -o UQ_study $(CXXFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) crystal_plasticity.cc
+	$(LINK) -o crystal_plasticity $(CXXFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) crystal_plasticity_verification_test.cc
+	$(LINK) -o crystal_plasticity_verification_test $(CXXFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure UQ_study crystal_plasticity  crystal_plasticity_verification_test
