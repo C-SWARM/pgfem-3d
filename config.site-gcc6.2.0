@@ -1,0 +1,26 @@
+with_mpi=yes
+CC=mpicc
+CXX=mpicxx
+CFLAGS="-Wall -std=gnu99 -O3 -g"
+#CXXFLAGS="-Wall -std=gnu99 -Ofast -g"
+#CXXFLAGS="-Wall -std=gnu++14 -Drestrict -fpermissive -O3 -g"  # requires recent gcc
+CXXFLAGS="-Wall -std=c++14 -Drestrict -fpermissive -O3 -g"  # requires recent gcc
+
+
+with_hypre_dir=/afs/crc.nd.edu/group/cswarm/hypre/2.4.0b/gcc/6.2.0/mvapich2/2.2
+with_suitesparse_dir=/afs/crc.nd.edu/group/cswarm/SuiteSparse/src/SuiteSparse-2.1.1_gcc6.2.0
+with_cnstvm_dir=/afs/crc.nd.edu/user/k/ksaha/Ivan/Generalizsed_constitutive_model
+
+enable_vtk=no
+
+# required extra opts for enable_vtk=yes
+#vtk_dir=/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib
+#with_vtk_include="-I$vtk_dir/include/vtk-7.0"
+
+#with_vtk_libs="-Wl,-rpath=/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib/lib
+#-L/afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib/lib
+#-lvtkIOXML-7.0 -lvtkIOXMLParser-7.0 \
+#-lvtkIOCore-7.0 -lvtkzlib-7.0 -lvtkCommonExecutionModel-7.0
+#-lvtkCommonDataModel-7.0 -lvtkCommonMisc-7.0 -lvtkCommonSystem-7.0 \
+#-lvtkCommonTransforms-7.0 -lvtkCommonMath-7.0 -lvtkIOGeometry-7.0
+#-lvtkCommonCore-7.0 -lvtksys-7.0 -lvtkexpat-7.0"
