@@ -48,7 +48,7 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	     	  -Wl,--end-group -lpthread
 
 
-CC = mpicc
+CXX = mpicxx
 LINK = mpicxx
 
 RM = rm -rf
@@ -68,21 +68,21 @@ LIBS	= $(VTK_IO_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib)
 
-OBJ = $(SRC:.c=.o)
+OBJ = $(SRC:.cc=.o)
 
 all:
-#	$(CC) -c $(INCLUDES) $(CFLAGS) post_processing.c 	
-	$(CC) -c $(INCLUDES) $(CFLAGS) shear.c 		
+#	$(CXX) -c $(INCLUDES) $(CFLAGS) post_processing.cc 	
+	$(CXX) -c $(INCLUDES) $(CFLAGS) shear.cc 		
 	$(LINK) -o shear $(CFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) tension_disp.c 		
+	$(CXX) -c $(INCLUDES) $(CFLAGS) tension_disp.cc 		
 	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) tension_pressure.c 		
+	$(CXX) -c $(INCLUDES) $(CFLAGS) tension_pressure.cc 		
 	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
-	$(CC) -c $(INCLUDES) $(CFLAGS) UQ_study.c 		
+	$(CXX) -c $(INCLUDES) $(CFLAGS) UQ_study.cc 		
 	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
-	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity.c
+	$(CXX) -c $(INCLUDES) $(CFLAGS) crystal_plasticity.cc
 	$(LINK) -o crystal_plasticity $(CFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.c
+	$(CXX) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.cc
 	$(LINK) -o crystal_plasticity_verification_test $(CFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure UQ_study crystal_plasticity  crystal_plasticity_verification_test
