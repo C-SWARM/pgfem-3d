@@ -306,6 +306,39 @@ static int plasticity_info(Model_var_info **info)
   return 0;
 }
 
+static int plasticity_get_eF_with_thermal(const Constitutive_model *m,
+                                          Matrix(double) *eF,
+                                          const Matrix(double) *hFI,
+                                          const int stepno)
+{
+  int err = 0;
+  double temp[DIM_3x3];
+  Matrix(double) pFI;
+  pFI.m_pdata = temp; pFI.m_row = pFI.m_col = DIM_3;
+  
+  switch(stepno)
+  {
+    case 0: // n-1
+      Matrix_inv(m->vars.Fs[TENSOR_pFnm1], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars.Fs[TENSOR_Fnm1],*hFI,pFI);
+      break;
+    case 1: // n
+      Matrix_inv(m->vars.Fs[TENSOR_pFn], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars.Fs[TENSOR_Fn],*hFI,pFI);      
+      break;
+    case 2: // n+1
+      Matrix_inv(m->vars.Fs[TENSOR_pFnp1], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars.Fs[TENSOR_Fnp1],*hFI,pFI);      
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+
+  return err;      
+}                          
+                                  
 static int plasticity_get_pF(const Constitutive_model *m,
                              Matrix(double) *F)
 {
@@ -942,6 +975,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
 
       err += inv3x3(ctx->hFnp1,   hFnp1_I.m_pdata);    
       err += compute_eF(&eF, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, ctx);
+      Matrix_cleanup(hFnp1_I);
     }
     else
       Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
@@ -993,6 +1027,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_eF    = plasticity_get_eF;
   p->get_eFn   = plasticity_get_eFn;
   p->get_eFnm1 = plasticity_get_eFnm1;
+  p->get_eF_of_hF = plasticity_get_eF_with_thermal;
     
   p->get_hardening     = plasticity_get_hardening_n;
   p->get_hardening_nm1 = plasticity_get_hardening_nm1;  

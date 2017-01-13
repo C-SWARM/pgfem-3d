@@ -1238,10 +1238,19 @@ int single_scale_main(int argc,char *argv[])
       
         /*=== OUTPUT ===*/
         /* update output stuff for CM interface */
-        if(options.analysis_type == CM && options.cm!=0){
-          constitutive_model_update_output_variables(fv[mp_id_M].sig,fv[mp_id_M].eps,grid.node,grid.element,grid.ne,
-                  time_steps.dt_np1,&options, sol[mp_id_M].alpha);
+        if(options.analysis_type == CM && options.cm!=0)
+        {  
+          constitutive_model_update_output_variables(&grid,
+                                                     &mat,
+                                                     fv,
+                                                     &load,
+                                                     &options,
+                                                     &mp,
+                                                     mp_id_M,
+                                                     time_steps.dt_np1,
+                                                     sol[mp_id_M].alpha);
         }
+
         /* Calculating equvivalent Mises stresses and strains vectors */
         Mises (grid.ne,fv[mp_id_M].sig,fv[mp_id_M].eps,options.analysis_type);        
         

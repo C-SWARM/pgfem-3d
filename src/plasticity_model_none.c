@@ -24,8 +24,11 @@ enum {Fnm1, Fn, Fnp1, F};
  * associated functions.
  */
 typedef struct none_ctx {
-  double F[tensor];
-  Matrix(double) *eFnpa;
+  double *F;
+  double *eFnpa;
+  int is_coulpled_with_thermal;
+  double *hFn;
+  double *hFnp1;   
 } none_ctx;
 
 static size_t he_get_size(const Constitutive_model *m)
@@ -89,7 +92,7 @@ static int plasticity_none_dev_stress(const Constitutive_model *m,
   int err = 0;
   const none_ctx *CTX = ctx;
   devStressFuncPtr Stress = getDevStressFunc(-1,m->param->p_hmat);
-  double C[tensor] = {};
+  double C[tensor] = {};  
   he_compute_C(C,CTX->F);
   Stress(C,m->param->p_hmat,stress->m_pdata);
   return err;
@@ -169,6 +172,33 @@ static int plasticity_none_info(Model_var_info **info)
   (*info)->F_names[Fnp1] = strdup("F");
   
   return err;
+}
+
+static int he_get_eF_with_thermal(const Constitutive_model *m,
+                                  Matrix(double) *eF,
+                                  const Matrix(double) *hFI,
+                                  const int stepno)
+{
+  int err = 0;
+  
+  switch(stepno)
+  {
+    case 0: // n-1
+      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fnm1],0,*hFI,0);
+      break;
+    case 1: // n
+      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fn],0,*hFI,0);
+      break;
+    case 2: // n+1
+      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fnp1],0,*hFI,0);
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+
+  return err;      
 }
 
 static int he_get_Fn(const Constitutive_model *m,
@@ -288,14 +318,31 @@ int plasticity_model_none_elasticity(const Constitutive_model *m,
   // below checks whether to use get_eF or give eFnpa in ctx
 
   if(ctx->eFnpa)
-    err += constitutive_model_defaut_update_elasticity(m, (ctx->eFnpa), L, S, compute_stiffness);  
+  {
+    Matrix(double) eF;
+    eF.m_row = eF.m_col = dim; eF.m_pdata = ctx->eFnpa;
+    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);
+  }
   else
   {
-    Matrix(double) eF;    
-    Matrix_construct_redim(double,eF,dim,dim);
-    he_get_eF(m,&eF);      
-    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
-    Matrix_cleanup(eF);   
+  	Matrix(double) *Fs = m->vars.Fs; 
+
+    if(ctx->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFnp1, hFnp1_I, eF;    
+      Matrix_construct_redim(double,eF,dim,dim);
+          
+      hFnp1.m_row = hFnp1.m_col = dim; hFnp1.m_pdata = ctx->hFnp1;
+      Matrix_construct_redim(double, hFnp1_I, dim, dim);
+
+      err += inv3x3(ctx->hFnp1,hFnp1_I.m_pdata);
+      Matrix_AxB(eF, 1.0,0.0,Fs[Fnp1],0,hFnp1_I,0);
+      err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);
+      Matrix_cleanup(hFnp1_I);
+      Matrix_cleanup(eF);      
+    }
+    else
+    	err += constitutive_model_defaut_update_elasticity(m, Fs+Fnp1, L, S, compute_stiffness);
   }
       
   return err;
@@ -323,6 +370,7 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->get_eF    = he_get_eF;
   p->get_eFn   = he_get_eFn;
   p->get_eFnm1 = he_get_eFnm1;
+  p->get_eF_of_hF = he_get_eF_with_thermal;
 
   p->get_hardening = cm_get_var_zero;
   p->get_plast_strain_var = cm_get_var_zero;
@@ -349,24 +397,29 @@ int plasticity_model_none_initialize(Model_parameters *p)
 }
 
 int plasticity_model_none_ctx_build(void **ctx,
-                                    const double *F,
-                                    const double *eFnpa)
+                                    double *F,
+                                    double *eFnpa,
+                                    double *hFn,
+                                    double *hFnp1,
+                                    const int is_coulpled_with_thermal)
 {
   int err = 0;
   none_ctx *t_ctx = malloc(sizeof(none_ctx));
 
   /* assign internal pointers. NOTE: We are copying the pointer NOT
      the value. No additional memory is allocated. */
-  memcpy(t_ctx->F, F, tensor * sizeof(*F));
-  
+
+  t_ctx->F     = NULL;  
   t_ctx->eFnpa = NULL;
-  if(eFnpa)
-  {
-    t_ctx->eFnpa = malloc(sizeof(Matrix(double)));
-    Matrix_construct_redim(double, *(t_ctx->eFnpa), dim, dim);
-    for(int a=0; a<tensor; a++)
-      (t_ctx->eFnpa)->m_pdata[a] = eFnpa[a];
-  }   
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;  
+
+  t_ctx->F = F;    
+  t_ctx->eFnpa = eFnpa;
+  
+  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
+  t_ctx->hFn  = hFn;
+  t_ctx->hFnp1= hFnp1;  
 
   /* assign handle */
   *ctx = t_ctx;
@@ -382,12 +435,11 @@ int plasticity_model_none_ctx_destroy(void **ctx)
 
   /* we do not control memory for internal pointers */
 
-  /* free object memory */
-  if(t_ctx->eFnpa)
-  {  
-    Matrix_cleanup(*(t_ctx->eFnpa));
-    free(t_ctx->eFnpa);
-  }    
+  // no memory was created
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;    
     
   free(t_ctx);
   return err;

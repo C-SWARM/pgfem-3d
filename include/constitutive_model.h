@@ -262,6 +262,25 @@ typedef int (*usr_get_var_of_t)(const Constitutive_model *m,
  */
 typedef int (*usr_get_F)(const Constitutive_model *m,
                          Matrix_double *F);
+                         
+/**
+ * User defined function to return the deformation gradient. Note that
+ * this function *DOES NOT* modify the internal state variables. This
+ * function shall be implemented such that destroying the returned
+ * deformation gradient does not modify the internal state of the
+ * Constitutive_model object.
+ *
+ * \param[in] m - constant reference to a Constitiutive_model object.
+ * \param[out] F - reference to Matrix object that contains the
+ *                 deformation gradient upon exit.
+ * \param[in] hFI inverse of thermal part of the deformation gradient
+ * \param[in] stepno time step number n-1 = 0, n = 1, n+1 = 2
+ * \return non-zero on internal error
+ */
+typedef int (*usr_get_F_with_thermal)(const Constitutive_model *m,
+                                      Matrix_double *F,
+                                      const Matrix_double *hFI,
+                                      const int stepno);                         
 
 /**
  * User defined function to destroy a context for the model. This
@@ -452,6 +471,8 @@ struct Model_parameters {
   usr_get_F get_eF;
   usr_get_F get_eFn;
   usr_get_F get_eFnm1;
+  usr_get_F_with_thermal get_eF_of_hF;
+  
     
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
@@ -600,13 +621,14 @@ int residuals_el_crystal_plasticity(double *f,
                                     const double *r_e,
                                     const int total_Lagrangian);
 
-int constitutive_model_update_output_variables(SIG *sig,
-                                               EPS *eps,
-                                               NODE *node,
-                                               ELEMENT *elem,
-                                               const int ne,
-                                               const double dt,
+int constitutive_model_update_output_variables(GRID *grid,
+                                               MATERIAL_PROPERTY *mat,
+                                               FIELD_VARIABLES *FV,
+                                               LOADING_STEPS *load,
                                                PGFem3D_opt *opts,
+                                               MULTIPHYSICS *mp,
+                                               int mp_id,
+                                               const double dt,
                                                double alpha);
                                                
 int stiffness_el_crystal_plasticity_w_inertia(double *lk,

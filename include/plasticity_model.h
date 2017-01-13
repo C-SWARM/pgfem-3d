@@ -38,7 +38,7 @@ int plasticity_model_initialize(Model_parameters *p);
 int plasticity_model_destory(Model_parameters *p);
 
 /// Construct and initialize the model context for calling functions
-/// through the plasticity interface.
+/// through the constitutive model interface.
 /// 
 /// \param[in,out] ctx - handle to an opaque model context object.
 /// \param[in] F The total deformation gradient.
@@ -47,6 +47,7 @@ int plasticity_model_destory(Model_parameters *p);
 /// \param[in] eFnpa elastic deformation gradient at t = n + alpha
 /// \param[in] hFn thermal part deformation gradient at t = n
 /// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
+/// \param[in] is_coulpled_with_thermal flag for coupling with thermal
 /// \return non-zero on internal error.
 int plasticity_model_ctx_build(void **ctx,
                                double *F,
