@@ -550,8 +550,7 @@ int single_scale_main(int argc,char *argv[])
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
   err += material_initialization(&mat);
   err += loading_steps_initialization(&load);
-  load.sups     = (SUPP *) malloc(sizeof(SUPP)*mp.physicsno);
-  load.sup_defl = (double **) malloc(sizeof(double *)*mp.physicsno);
+  err += construct_loading_steps(&load, &mp);
   err += arc_length_variable_initialization(&arc);
 
   //<---------------------------------------------------------------------  
@@ -1152,18 +1151,18 @@ int single_scale_main(int argc,char *argv[])
         // fv[mp_id_M].RRn -> Total force after equiblirium    
         // push nodal_forces to s->R        
         //----------------------------------------------------------------------
-        //---->         
-        if(mp_id_M >= 0)
-        {         
-          err += read_and_apply_load_increments(&grid, fv+mp_id_M, &load, &mp, tim, mpi_comm, myrank);
-          if (load.tim_load[tim] == 1 && tim != 0)
+        //---->
+          err += read_and_apply_load_increments(&grid, fv, &load, &mp, tim, mpi_comm, myrank);
+
+        for(int ia=0; ia<mp.physicsno; ia++)
+          sol[ia].n_step = 0;  
+                
+        if(mp_id_M>=0)
+        {
+          if(load.tim_load[mp_id_M][tim] == 1 && tim != 0)  
             vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
         }
         //<---------------------------------------------------------------------
-    
-        int n_step = 0;
-        for(int ia=0; ia<mp.physicsno; ia++)
-          sol[ia].n_step = &n_step;
 
         //----------------------------------------------------------------------
         // add load increments util time reaches the restart point

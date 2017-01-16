@@ -513,15 +513,60 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   
   err += read_time_steps(fp, ts);
   
-  long nlod_tim = 0;
-  fscanf (fp,"%ld",&nlod_tim);
-  /* read times dependent load */
-  load->tim_load = compute_times_load(fp,ts->nt,nlod_tim);
-  load->solver_file = fp; // load increments are still need to be read 
-                          // while time is elapsing
-                          // this file point needs to be freed end of the simulation
-                          // by calling destruction of the LOADING_STEPS
+  // loading history exists in load directory
+  char load_path[1024];
+  char load_fn[1024];
+  sprintf(load_path,"%s/load",opts->ipath);
 
+  int is_load_exist = 0;
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    sprintf(load_fn,"%s/%s.load",load_path,mp->physicsname[ia]);
+    load->solver_file[ia] = NULL;
+    load->solver_file[ia] = fopen(load_fn, "r"); // Load increments are needed to be read
+                                             // while time is elapsing.
+                                             // This file point needs to be freed end of the simulation
+                                             // by calling destruction of the LOADING_STEPS 
+    
+    if(load->solver_file[ia]==NULL)
+      continue;
+    
+    is_load_exist = 1;
+    long nlod_tim = 0;
+    fscanf(load->solver_file[ia],"%ld",&nlod_tim);
+    
+    // read times dependent load
+    load->tim_load[ia] = NULL;
+    load->tim_load[ia] = compute_times_load(load->solver_file[ia],ts->nt,nlod_tim);
+  }
+
+  // if no load directory exists, 
+  // loading history will be read and saved only in the 1st physics
+  // from the lagacy solver file.
+  if(is_load_exist==0)
+  { 
+    long nlod_tim = 0;
+    fscanf (fp,"%ld",&nlod_tim);
+    /* read times dependent load */
+    load->tim_load[0] = compute_times_load(fp,ts->nt,nlod_tim);
+    load->solver_file[0] = fp; // load increments are still need to be read 
+                               // while time is elapsing
+                               // this file point needs to be freed end of the simulation
+                               // by calling destruction of the LOADING_STEPS
+  }
+
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    // if loading is not defined, set default (all zeros)
+    if(load->solver_file[ia] == NULL)
+    {  
+      if(ts->nt == 0)
+        load->tim_load[ia] = aloc1l(1);
+      else
+        load->tim_load[ia] = aloc1l(ts->nt);
+    }      
+  }
+  
   // update numerical solution scheme parameters and field variables
   for(int iA=1; iA<mp->physicsno; iA++)
   {
@@ -986,7 +1031,7 @@ int read_initial_values(GRID *grid,
 /// The number of loads increments should be exact as read before in read_initial_values.
 ///
 /// \param[in] grid a mesh object
-/// \param[in] variables object for field variables
+/// \param[in] fv object for field variables
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
 /// \param[in] tim time step ID
@@ -994,7 +1039,7 @@ int read_initial_values(GRID *grid,
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error 
 int read_and_apply_load_increments(GRID *grid,
-                                   FIELD_VARIABLES *variables,
+                                   FIELD_VARIABLES *fv,
                                    LOADING_STEPS *load,
                                    MULTIPHYSICS *mp, 
                                    long tim, 
@@ -1002,36 +1047,40 @@ int read_and_apply_load_increments(GRID *grid,
                                    int myrank)
 {
   int err = 0;
-  int ndim = 3;
-  
-  if (load->tim_load[tim] == 1 && tim == 0)
-  {
-    if (myrank == 0)
-      PGFEM_printf ("Incorrect load input for Time = 0\n");
 
-    PGFEM_Comm_code_abort(mpi_comm,0);
-  }
-  if (load->tim_load[tim] == 1 && tim != 0)
+  //  read nodal prescribed boundary values
+  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
   {
-    //  read nodal prescribed deflection
-    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    if(load->solver_file[mp_id]==NULL)
+      continue;
+      
+    if(load->tim_load[mp_id][tim] == 1 && tim == 0)
     {
+      if (myrank == 0)
+        PGFEM_printf ("Incorrect load input for Time = 0\n");
+
+      PGFEM_Comm_code_abort(mpi_comm,0);
+    }
+    else
+    {  
       for(long ia=0;ia<load->sups[mp_id]->npd;ia++)
       {
-        fscanf (load->solver_file,"%lf",(load->sups[mp_id])->defl_d + ia);
+        fscanf(load->solver_file[mp_id],"%lf",(load->sups[mp_id])->defl_d + ia);
         (load->sup_defl[mp_id])[ia] = load->sups[mp_id]->defl_d[ia];
       }
+      if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
+      {  
+        // read nodal load in the subdomain
+        read_nodal_load(load->solver_file[mp_id],load->nln,grid->nsd,load->znod);
+        // read elem surface load */
+        read_elem_surface_load(load->solver_file[mp_id],load->nle_s,grid->nsd,grid->element,load->zele_s);
+        //  NODE - generation of the load vector 
+        load_vec_node(fv[mp_id].R,load->nln,grid->nsd,load->znod,grid->node,MULTIPHYSICS_MECHANICAL);
+        //  ELEMENT - generation of the load vector
+        load_vec_elem_sur(fv[mp_id].R,load->nle_s,grid->nsd,grid->element,load->zele_s);
+      }
     }
-    // read nodal load in the subdomain
-    read_nodal_load(load->solver_file,load->nln,grid->nsd,load->znod);
-    // read elem surface load */
-    read_elem_surface_load(load->solver_file,load->nle_s,grid->nsd,grid->element,load->zele_s);
-    //  NODE - generation of the load vector 
-    load_vec_node(variables->R,load->nln,ndim,load->znod,grid->node,MULTIPHYSICS_MECHANICAL);
-    //  ELEMENT - generation of the load vector
-    load_vec_elem_sur(variables->R,load->nle_s,grid->nsd,grid->element,load->zele_s);
-
-  } /* end load increment */
+  }
           
   return err;
 }

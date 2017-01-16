@@ -122,7 +122,7 @@ typedef struct {
 
 /// struct for solution scheme
 typedef struct {
-  int *n_step;      /// the number of nonlinear steps taken to solve the given increment
+  int n_step;      /// the number of nonlinear steps taken to solve the given increment
   double nor_min;   /// nonlinearr convergence tolerance for Newton Raphson
   long iter_max;    /// maximum number of iterations for Newton Raphson
   double alpha;     /// midpoint rule alpha
@@ -138,15 +138,15 @@ typedef struct {
 /// struct for the boundary conditions
 typedef struct {
   SUPP *sups;
-  double **sup_defl;  /// sum of Dirichlet BC increments to step n
+  double **sup_defl; /// sum of Dirichlet BC increments to step n
   long nln;       ;  /// number of nodes with loads
   long nle_s;        /// number of surface element with loads
   long nle_v;        /// number of volume element with loads
   ZATNODE *znod;     /// list of nodes with loads
   ZATELEM *zele_s;   /// list of surface element with loads
   ZATELEM *zele_v;   /// list of volume element with loads
-  long *tim_load;    /// list of time steps to be saved
-  FILE *solver_file; /// file pointer for reading loads increments
+  long **tim_load;   /// list of time steps to be saved
+  FILE **solver_file;/// file pointer for reading loads increments
 } LOADING_STEPS;
 
 /// struct for the communication
@@ -275,6 +275,13 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol);
 /// \param[in, out] load an object containing boundary increments
 /// \return non-zero on internal error
 int loading_steps_initialization(LOADING_STEPS *load);
+
+/// construct loading steps object
+///
+/// \param[in, out] load an object containing boundary increments
+/// \param[in] mp multiphysics object
+/// \return non-zero on internal error
+int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp);
 
 /// destruct loading steps object
 ///

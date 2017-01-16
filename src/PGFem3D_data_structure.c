@@ -339,6 +339,23 @@ int loading_steps_initialization(LOADING_STEPS *load)
   return err;
 }
 
+/// construct loading steps object
+/// free memory spaces for member arrays and structs
+///
+/// \param[in, out] load an object containing boundary increments
+/// \param[in] mp multiphysics object
+/// \return non-zero on internal error
+int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
+{
+  int err = 0;  
+
+  load->sups        = (SUPP *)    malloc(sizeof(SUPP)*mp->physicsno);
+  load->sup_defl    = (double **) malloc(sizeof(double *)*mp->physicsno);
+  load->tim_load    = (long **)   malloc(sizeof(long *)*mp->physicsno);
+  load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp->physicsno);
+  
+  return err;
+}
 
 /// destruct loading steps object
 /// free memory spaces for member arrays and structs
@@ -349,8 +366,6 @@ int loading_steps_initialization(LOADING_STEPS *load)
 int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
   int err = 0;  
-  if(NULL != load->tim_load) free(load->tim_load);
-  if(NULL != load->solver_file) fclose(load->solver_file);
           
   destroy_zatnode(load->znod,   load->nln);
   destroy_zatelem(load->zele_s, load->nle_s);
@@ -358,12 +373,16 @@ int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 
   for(int ia=0; ia<mp->physicsno; ia++)
   {
-    if(NULL != load->sup_defl[ia]) free(load->sup_defl[ia]);    
-    destroy_supp(load->sups[ia]);
+    destroy_supp(load->sups[ia]);    
+    if(NULL != load->tim_load[ia]) free(load->tim_load[ia]);    
+    if(NULL != load->sup_defl[ia]) free(load->sup_defl[ia]);
+    if(NULL != load->solver_file[ia]) fclose(load->solver_file[ia]);      
   }
-  
-  free(load->sup_defl);
   free(load->sups);  
+  free(load->tim_load);
+  free(load->sup_defl);
+  free(load->solver_file);
+
   
   err += loading_steps_initialization(load);
   return err;

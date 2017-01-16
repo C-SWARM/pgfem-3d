@@ -517,7 +517,7 @@ double Newton_Raphson_test(const int print_level,
       break;
   }
   
-  *(sol->n_step) = 0;
+  sol->n_step = 0;
   
   /* SUBDIVISION */
   DIV = ST = GAMA = OME = INFO = ART = 0;
@@ -1114,7 +1114,7 @@ double Newton_Raphson_test(const int print_level,
       ST = GAMA = gam = ART = 0;
       
       /* increment the step counter */
-      *(sol->n_step) ++;
+      (sol->n_step)++;
       
       /* /\* turn off line search *\/ */
       /* ART = 1; */
@@ -1182,9 +1182,9 @@ double Newton_Raphson_test(const int print_level,
           char fname[100];
           sprintf(fname,"%s_%ld",opts->ofname,tim);
           if(myrank == 0){
-            VTK_print_master(opts->opath,fname,*(sol->n_step),com->nproc,opts);
+            VTK_print_master(opts->opath,fname,sol->n_step,com->nproc,opts);
           }
-          VTK_print_vtu(opts->opath,fname,*(sol->n_step),myrank,grid->ne,grid->nn,grid->node,
+          VTK_print_vtu(opts->opath,fname,sol->n_step,myrank,grid->ne,grid->nn,grid->node,
                         grid->element,load->sups[mp_id],fv->u_np1,fv->sig,fv->eps,opts,mp_id);
         }
       }
