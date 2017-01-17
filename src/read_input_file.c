@@ -1061,7 +1061,8 @@ int read_and_apply_load_increments(GRID *grid,
 
       PGFEM_Comm_code_abort(mpi_comm,0);
     }
-    else
+    
+    if(load->tim_load[mp_id][tim] == 1 && tim != 0)
     {  
       for(long ia=0;ia<load->sups[mp_id]->npd;ia++)
       {
