@@ -785,11 +785,11 @@ long fd_residuals_MP(GRID *grid,
 
     /* Assembly to local part of the residual vector */
     {
-      for(int j=0; j<ndofe; j++){
-	int II = cn[j] - 1;
-	if(II >= 0){
-	  fv->f_u[II] += fe[j];
-	}
+      for(int j=0; j<ndofe; j++)
+      {
+        int II = cn[j] - 1;
+        if(II >= 0)
+          fv->f_u[II] += fe[j];
       }
     }
 
@@ -883,6 +883,98 @@ int fd_res_compute_reactions(const long ndofn,
   err += MPI_Comm_rank(mpi_comm, &myrank);
   err += MPI_Reduce(rxn, RXN, n_rxn, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
   if (myrank == 0) {
+    PGFEM_printf("Reactions: (fixed 1 ... n)\n");
+    print_array_d(PGFEM_stdout, RXN, n_rxn, 1, n_rxn);
+  }
+
+  free(rxn);
+  free(RXN);
+  return err;
+}
+
+
+/// compute the reaction force for multiphysics mode (for each magnitude of prescribed
+/// deflection). CAVEATS: Does not include contributions from cohesive
+/// or boundary elements.
+///
+/// 
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dts time step sizes a n, and n+1
+/// \return non-zero on internal error
+int fd_res_compute_reactions_MP(GRID *grid,
+                                MATERIAL_PROPERTY *mat,
+                                FIELD_VARIABLES *fv,
+                                SOLVER_OPTIONS *sol,
+                                LOADING_STEPS *load,
+                                CRPL *crpl,
+                                MPI_Comm mpi_comm,
+                                const PGFem3D_opt *opts,
+                                MULTIPHYSICS *mp,
+                                int mp_id,
+                                double t,
+                                double *dts)
+{
+  int err = 0;
+
+  //computing reaction in quasi-steady state gives correct results
+  const long include_inertia = 0;
+  
+  const int updated_deformation = 0;
+
+  ELEMENT *elem = grid->element;
+  SUPP sup = load->sups[mp_id];
+  
+  const int ne = sup->nde;
+  const long *el_id = sup->lepd;
+  const int n_rxn = sup->npd + 1;
+  double *rxn = PGFEM_calloc(n_rxn, sizeof(*rxn));
+  double *RXN = PGFEM_calloc(n_rxn, sizeof(*RXN));
+  for(int i = 0; i < ne; i++) 
+  {
+    const int nne = elem[el_id[i]].toe;
+    long *nod = aloc1l(nne);
+    elemnodes(el_id[i],nne,nod,elem);
+    const int ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
+    double *fe = aloc1(ndofe);
+
+    err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
+                          mpi_comm, opts, mp, mp_id, t, dts, 
+                          include_inertia, updated_deformation);
+
+    // Previous may have called integration algorithm. Need to reset
+    // state variables to retain consistent tangent and to ensure we
+    // didn't play with any rate sensitive behavior
+    if (opts->analysis_type == CM) 
+      constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
+
+    long *cn = aloc1l (ndofe);
+    get_dof_ids_on_elem_nodes(0,nne,fv->ndofn,nod,grid->node,cn,mp_id);
+
+    for (int j = 0; j < ndofe; j++) 
+    {
+      if (cn[j] <= 0)
+        rxn[labs(cn[j])] += fe[j];
+    }
+    free(nod);
+    free(cn);
+    free(fe);
+  }
+
+  /* communicate reactions on all domains */
+  int myrank = -1;
+  err += MPI_Comm_rank(mpi_comm, &myrank);
+  err += MPI_Reduce(rxn, RXN, n_rxn, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
+  if (myrank == 0)
+  {
     PGFEM_printf("Reactions: (fixed 1 ... n)\n");
     print_array_d(PGFEM_stdout, RXN, n_rxn, 1, n_rxn);
   }

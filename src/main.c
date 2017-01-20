@@ -314,11 +314,9 @@ int print_results(GRID *grid,
         dts[DT_N] = time_steps->times[tim] - time_steps->times[tim-1];
       
       dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
-      
-      fd_res_compute_reactions(fv->ndofn, fv->npres, fv->d_u, fv->u_np1, grid->element, grid->node,
-                               mat->matgeom, mat->hommat, sup, fv->eps, fv->sig, sol->nor_min,
-                               crpl, dts, time_steps->times[tim+1], opts->stab, mpi_comm,
-                               opts, sol->alpha, fv->u_n, fv->u_nm1,mp_id_M);
+
+      err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
+                                         mp_id_M,time_steps->times[tim+1],dts);
     }
   
     if(opts->comp_print_macro)
