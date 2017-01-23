@@ -1116,7 +1116,7 @@ int stiffness_el_crystal_plasticity_TL(double *lk,
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
   
   for (int a = 0; a < Fend; a++) {
-    Matrix_construct_redim(double, F2[a],3,3);
+    Matrix_construct_init(double, F2[a],3,3,0.0);
   }
 
   FEMLIB fe;
