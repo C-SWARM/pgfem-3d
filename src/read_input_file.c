@@ -838,7 +838,6 @@ int read_initial_for_Mechanical(FILE *fp,
     }
   }  
   
-  fclose(fp);
   return err;
 }
 
