@@ -44,6 +44,10 @@ AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
 		fi
 ])
 
+AC_LANG_PUSH([C++])
+AC_C_RESTRICT
+AC_LANG_POP([C++])
+
 AC_PROG_CC_STDC
 AC_PROG_RANLIB
 
