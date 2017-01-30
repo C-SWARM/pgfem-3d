@@ -21,6 +21,258 @@
 #define DIM_3x3x3   27
 #define DIM_3x3x3x3 81
 
+#define Tns6_v(p, I,J,K,L,M,N) (p).m_pdata[DIM_3x3x3x3*3*(I-1)+DIM_3x3x3x3*(J-1)+DIM_3x3x3*(K-1)+DIM_3x3*(L-1)+DIM_3*(M-1)+(N-1)]
+
+/// compute derivative of PK1 w.r.t F
+///
+/// dPdF(I,J,K,L) = delta(I,K)*S(L,J) + F(I,M)*C(M,J,P,Q)*dEdF(P,Q,K,L)
+/// dEdF(P,Q,K,L) = delt(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
+///
+/// \param[out] dPdF coumputed 4th order tensor
+/// \param[in] S PK2 stress
+/// \param[in] dWdE elasticity tensor
+/// \param[in] F deformation gradient tensor
+/// \return non-zero on internal error
+int compute_dPdF(Matrix(double) *dPdF,
+                 Matrix(double) *S,
+                 Matrix(double) *dWdE,
+                 Matrix(double) *F)
+{
+  int err = 0;
+  Matrix(double) delta;
+  Matrix_construct_redim(double, delta,DIM_3,DIM_3x3);
+  Matrix_eye(delta,DIM_3);
+  
+  for(int I=1; I<=DIM_3; I++)
+  {
+    for(int J=1; J<=DIM_3; J++)
+    {
+      for(int K=1; K<=DIM_3; K++)
+      {
+        for(int L=1; L<=DIM_3; L++)
+        {
+          Tns4_v(*dPdF,I,J,K,L) = 0.0;
+          for(int M=1; M<=DIM_3; M++)
+          {
+            Tns4_v(*dPdF,I,J,K,L) += Mat_v(delta,I,K)*Mat_v(*S,M,J);
+            for(int P=1; P<=DIM_3; P++)
+            {
+              for(int Q=1; Q<=DIM_3; Q++)
+              {
+                Tns4_v(*dPdF,I,J,K,L) += Mat_v(*F,I,M)*Tns4_v(*dWdE,M,J,P,Q)*
+                                         (Mat_v(delta,P,L)*Mat_v(*F,K,Q)+Mat_v(*F,K,P)*Mat_v(*F,Q,L));
+              }
+            }
+          }                  
+        }
+      }
+    }
+  }
+  Matrix_cleanup(delta);
+  return err;
+}                 
+
+
+/// compute derivative of PK1 w.r.t F
+///
+/// d2PdF2(I,J,K,L,AB) = delta(I,K)*dWdE(L,J,M,X) + dEdF(M,N,A,X)
+///                    + delta(I,A)*dWdE(B,J,P,Q) + dEdF(P,Q,K,L)
+///                    + F(I,M)*dCdE(M,J,P,Q,X,Y)*dEdF(X,Y,A,B)*dEdF(P,Q,K,L)
+///                    + F(I,M)*dWdE(M,J,P,Q)*d2EdF2(P,Q,K,L,A,B)
+/// dEdF(P,Q,K,L) = delt(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
+///
+/// \param[out] d2PdF2 coumputed 6th order tensor
+/// \param[in] S PK2 stress
+/// \param[in] dWdE elasticity tensor
+/// \param[in] dCdE 6th order dCdE tensor
+/// \param[in] F deformation gradient tensor
+/// \return non-zero on internal error
+int compute_d2PdF2(Matrix(double) *d2PdF2,
+                   Matrix(double) *S,
+                   Matrix(double) *dWdE,
+                   Matrix(double) *dCdE,
+                   Matrix(double) *F)
+{
+  int err = 0;
+  Matrix(double) delta, dEdF;
+  Matrix_construct_redim(double, delta,DIM_3,DIM_3x3);
+  Matrix_construct_redim(double, dEdF,DIM_3x3x3x3,1);  
+  Matrix_eye(delta,DIM_3);
+  
+  for(int K=1; K<=DIM_3; K++)
+  {
+    for(int L=1; L<=DIM_3; L++)
+    {
+
+      for(int P=1; P<=DIM_3; P++)
+      {
+        for(int Q=1; Q<=DIM_3; Q++)
+         Tns4_v(dEdF,P,Q,K,L) = Mat_v(delta,P,L)*Mat_v(*F,K,Q) + Mat_v(*F,K,P)*Mat_v(delta,Q,L);
+      }
+    }
+  }
+                
+  
+  for(int I=1; I<=DIM_3; I++)
+  {
+    for(int J=1; J<=DIM_3; J++)
+    {
+      for(int K=1; K<=DIM_3; K++)
+      {
+        for(int L=1; L<=DIM_3; L++)
+        {
+          for(int A=1; A<=DIM_3; A++)
+          {
+            for(int B=1; B<=DIM_3; B++)
+            {
+              Tns6_v(*d2PdF2,I,J,K,L,A,B) = 0.0;
+              
+              for(int P=1; P<=DIM_3; P++)
+              {
+                for(int Q=1; Q<=DIM_3; Q++)
+                {
+                  double d2EdF2_PQKLAB = Mat_v(delta,P,L)*Mat_v(delta,K,A)*Mat_v(delta,Q,B)
+                                       + Mat_v(delta,K,A)*Mat_v(delta,P,A)*Mat_v(delta,Q,L);
+                                       
+                  Tns6_v(*d2PdF2,I,J,K,L,A,B) += Mat_v(delta,I,A)*Tns4_v(*dWdE,B,J,P,Q)*Tns4_v(dEdF,P,Q,K,L);
+                  for(int M=1; M<=DIM_3; M++)
+                  {
+                    Tns6_v(*d2PdF2,I,J,K,L,A,B) += Mat_v(*F,I,M)*Tns4_v(*dWdE,M,J,P,Q)*d2EdF2_PQKLAB;
+                    for(int X=1; X<=DIM_3; X++)
+                    {
+                      Tns6_v(*d2PdF2,I,J,K,L,A,B) += Mat_v(delta,I,K)*Tns4_v(*dWdE,L,J,M,X)*Tns4_v(dEdF,M,X,A,B);
+                      for(int Y=1; Y<=DIM_3; Y++)
+                        Tns6_v(*d2PdF2,I,J,K,L,A,B) += Mat_v(*F,I,M)*Tns6_v(*dCdE,M,J,P,Q,X,Y)*Tns4_v(dEdF,X,Y,A,B)*Tns4_v(dEdF,P,Q,K,L);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }    
+
+  Matrix_cleanup(delta);
+  Matrix_cleanup(dEdF);
+  return err;
+}
+ 
+/// compute ABC = A:B:C, A,B,C are all 4th order tensors
+///
+/// ABC(I,J,K,L) = A(I,J,M,N)*B(M,N,O,P)*C(O,P,K,L);
+///
+/// \param[out] ABC computed 4th order tensor
+/// \param[in] A 1st 4th order tensor
+/// \param[in] B 2nd 4th order tensor
+/// \param[in] B 2nd 4th order tensor
+/// \return non-zero on internal error
+int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
+                             Matrix(double) *A,
+                             Matrix(double) *B,
+                             Matrix(double) *C)
+{
+  int err = 0;
+  double temp[DIM_3x3x3x3];
+  Matrix(double) T;
+  T.m_pdata = temp;
+  T.m_row = DIM_3x3x3x3;
+  T.m_col = 1;
+  
+  for(int I=1; I<=DIM_3; I++)
+  {
+    for(int J=1; J<=DIM_3; J++)
+    {
+      for(int K=1; K<=DIM_3; K++)
+      {
+        for(int L=1; L<=DIM_3; L++)
+        {
+          Tns4_v(T,I,J,K,L) = 0.0;
+          for(int M=1; M<=DIM_3; M++)
+          {
+            for(int N=1; N<=DIM_3; N++)
+              Tns4_v(T,I,J,K,L) += Tns4_v(*A,I,J,M,N)*Tns4_v(*B,N,N,K,L);
+          }                  
+        }
+      }
+    }
+  }
+  
+  for(int I=1; I<=DIM_3; I++)
+  {
+    for(int J=1; J<=DIM_3; J++)
+    {
+      for(int K=1; K<=DIM_3; K++)
+      {
+        for(int L=1; L<=DIM_3; L++)
+        {
+          Tns4_v(*ABC,I,J,K,L) = 0.0;
+          for(int M=1; M<=DIM_3; M++)
+          {
+            for(int N=1; N<=DIM_3; N++)
+              Tns4_v(*ABC,I,J,K,L) += Tns4_v(T,I,J,M,N)*Tns4_v(*C,N,N,K,L);
+          }                  
+        }
+      }
+    }
+  }  
+  
+  return err;
+}                             
+
+
+/// compute deformation gradient due to heat expansion
+///
+/// \param[out] hF deformation gradient due to heat expansion
+/// \param[in] dT temperature difference
+/// \param[in] mat MATERIAL_PROPERTY object
+/// \param[in] mat_id material id
+/// \param[in] diff_order, if 0 deformation gradient
+///                        if 1 1st order of differentiation of hF w.r.t temperature
+///                        if 2 2nd order of differentiation of hF w.r.t temperature
+/// \return non-zero with interal error
+int compute_hF(Matrix(double) *hF, 
+               double dT,
+               const MATERIAL_PROPERTY *mat,
+               const int mat_id,
+               const int diff_order)
+{
+  int err = 0.0;
+  // compute thermal part of deformation gradient    
+  double ax = mat->mater[mat_id].ax;
+  double ay = mat->mater[mat_id].ay;
+  double az = mat->mater[mat_id].az;  
+  
+  Matrix_init(*hF, 0.0);
+  switch(diff_order)
+  {
+    case 0:
+      Mat_v(*hF, 1,1) = 1.0 + ax*dT;  
+      Mat_v(*hF, 2,2) = 1.0 + ay*dT;
+      Mat_v(*hF, 3,3) = 1.0 + az*dT;
+      break;
+    case 1:
+      Mat_v(*hF, 1,1) = ax;
+      Mat_v(*hF, 2,2) = ay;
+      Mat_v(*hF, 3,3) = az;
+      break;
+    case 2:
+      Mat_v(*hF, 1,1) = 0.0;  
+      Mat_v(*hF, 2,2) = 0.0;
+      Mat_v(*hF, 3,3) = 0.0;
+      break;
+  }    
+  return err;
+}                
+
+/// compute differentiation eF w.r.t hF
+///
+/// \param[out] dF computed 4th order tensor 
+/// \param[in] F total deformation tensor
+/// \param[in] pFI inverse of the plastic part deformation gradient
+/// \param[in] hFI inverse of the thermal part deformation gradient
+/// \return non-zero on interal error
 int compute_deF_over_dhF(Matrix(double) *dF,
                          Matrix(double) *F,
                          Matrix(double) *pFI, 
@@ -35,10 +287,11 @@ int compute_deF_over_dhF(Matrix(double) *dF,
       {
         for(int L=1; L<=DIM_3; L++)
         {
+          Tns4_v(*dF,I,J,K,L) = 0.0;
           for(int M=1; M<=DIM_3; M++)
           {
             for(int N=1; N<=DIM_3; N++)
-              Tns4_v(*dF,I,J,K,L) = -Mat_v(*F,I,M)*Mat_v(*hFI,M,K)*Mat_v(*hFI,L,N)*Mat_v(*pFI,N,J);
+              Tns4_v(*dF,I,J,K,L) -= Mat_v(*F,I,M)*Mat_v(*hFI,M,K)*Mat_v(*hFI,L,N)*Mat_v(*pFI,N,J);
           }
         }
       }
@@ -47,31 +300,19 @@ int compute_deF_over_dhF(Matrix(double) *dF,
   return err;
 }                         
 
-int compute_xB(Matrix(double) *xB,
-               Matrix(double) *eF,
-               Matrix(double) *dFdF,
-               Matrix(double) *S,
-               Matrix(double) *L4)
+/// compute differentiation eF w.r.t pF
+///
+/// \param[out] dF computed 4th order tensor 
+/// \param[in] F total deformation tensor
+/// \param[in] pFI inverse of the plastic part deformation gradient
+/// \param[in] hFI inverse of the thermal part deformation gradient
+/// \return non-zero on interal error
+int compute_deF_over_dpF(Matrix(double) *dF,
+                         Matrix(double) *F,
+                         Matrix(double) *pFI, 
+                         Matrix(double) *hFI)
 {
-  int err = 0;
-  Matrix(double) eB;
-  Matrix_construct_redim(double, eB,DIM_3x3x3x3,1);
-
-  for(int I=1; I<=DIM_3; I++)
-  {
-    for(int K=1; K<=DIM_3; K++)
-    {
-      for(int J=1; J<=DIM_3; J++)
-      {
-        for(int L=1; L<=DIM_3; L++)
-        {
-          for(int M=1; M<=DIM_3; M++)
-            Tns4_v(eB,I,K,J,L) = Mat_v(*S,L,K)*(I==J) + Mat_v(*eF,I,J)*Tns4_v(*L4,J,K,L,M)*Mat_v(*eF,J,M);
-        }
-      }
-    }
-  }  
-    
+  int err = 0;  
   for(int I=1; I<=DIM_3; I++)
   {
     for(int J=1; J<=DIM_3; J++)
@@ -80,217 +321,228 @@ int compute_xB(Matrix(double) *xB,
       {
         for(int L=1; L<=DIM_3; L++)
         {
+          Tns4_v(*dF,I,J,K,L) = 0.0;
           for(int M=1; M<=DIM_3; M++)
           {
             for(int N=1; N<=DIM_3; N++)
+              Tns4_v(*dF,I,J,K,L) -= Mat_v(*F,I,M)*Mat_v(*hFI,M,N)*Mat_v(*pFI,N,K)*Mat_v(*pFI,L,J);
+          }
+        }
+      }
+    }
+  }
+  return err;
+}
+
+/// compute heat generation due to mechanical
+///
+/// \param[out] Q thermal source due to mechanical work
+/// \param[out] DQ tangent of heat generation w.r.t temperature (computed only if compute_tangent = 1)
+/// \param[in] mat MATERIAL_PROPERTY object
+/// \param[in] fv_m mechanical FIELD_VARIABLES object
+/// \param[in] dT temperature change
+/// \param[in] dt time step size
+/// \param[in] eid element id
+/// \param[in] ip integration point id
+/// \param[in] mat_id material id
+/// \return non-zero on internal error
+int compute_mechanical_heat_gen(double *Q,
+                                double *DQ,
+                                const MATERIAL_PROPERTY *mat,
+                                const FIELD_VARIABLES *fv_m,
+                                const double T,
+                                const double dT,
+                                const double dt,
+                                const int eid,
+                                const int ip,
+                                const int mat_id,
+                                const int compute_tangent)
+{  
+  int err = 0;
+  int compute_stiffness = 1;
+  double rho_0 = mat->density[mat_id];
+  
+  double Tdot = dT/dt;
+
+  // construct 4th order tensors
+  enum {dWdE,dPdF,d2fdhF2,deFdhF,d2eFdhF2,deFdpF,hB,F4_temp,F4end};
+  Matrix(double) *F4 = malloc(F4end*sizeof(Matrix(double)));
+  for (int a = 0; a < F4end; a++)
+    Matrix_construct_init(double, F4[a],DIM_3x3x3x3,1,0.0);
+  
+  // construct 2nd order tensors    
+  enum {F,eF,pF,pFI,pFn,pFdot,hF,hFI,hFp,hFpp,eS,eP,dfdhF,F2_temp,F2end};
+  Matrix(double) *F2 = malloc(F2end*sizeof(Matrix(double)));
+  for (int a = 0; a < F2end; a++)
+    Matrix_construct_init(double, F2[a],DIM_3,DIM_3 ,0.0);
+
+  // 1. compute deformation gradient of thermal expansions
+  int diff_order = 0; // if 0 deformation gradient
+                      // if 1 1st order of differentiation of hF w.r.t temperature
+                      // if 2 2nd order of differentiation of hF w.r.t temperature
+  err += compute_hF(F2+hF,   dT, mat, mat_id, diff_order);
+  err += compute_hF(F2+hFp,  dT, mat, mat_id, 1);
+  err += compute_hF(F2+hFpp, dT, mat, mat_id, 2);
+  
+  Matrix_inv(F2[hF],F2[hFI]);
+  
+  // 2. obtain deformation gradient from mechanical part 
+  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+  const Model_parameters *func = m->param;
+  ELASTICITY *elast = (m->param)->cm_elast;
+  double *tempS = elast->S; // temporal pointer to update F4[dWdE], and F2[S] using elast
+  double *tempL = elast->L;   
+  elast->S = F2[eS].m_pdata;
+  elast->L = F4[dWdE].m_pdata;
+  
+  int stepno = 1; // 0 = time step = n-1
+                  // 1 = time step = n
+                  // 2 = time step = n+1
+  err += m->param->get_eF_of_hF(m,F2+eF,F2+hFI,stepno);
+
+  
+  elast->update_elasticity(elast,F2[eF].m_pdata,compute_stiffness);
+  Matrix_AxB(F2[eP],1.0,0.0,F2[eF],0,F2[eS],0);
+    
+  err += func->get_Fn(   m, F2+F);
+  err += func->get_pFn(  m, F2+pF);
+  err += func->get_pFnm1(m, F2+pFn);
+  for(int ia=0; ia<9; ia++)
+    F2[pFdot].m_pdata[ia] = (F2[pF].m_pdata[ia] - F2[pFn].m_pdata[ia])/dt;   
+
+  // 4. start computations
+  // compute dPdF
+  err += compute_dPdF(F4+dPdF,F2+eS,F4+dWdE,F2+eF);
+  // compute deFdhF
+  Matrix_inv(F2[pF], F2[pFI]);
+  err += compute_deF_over_dhF(F4+deFdhF,F2+F,F2+pFI,F2+hFI);
+  // compute dfdhF, f=Psi(potential function) 
+  Matrix_Tns2_dd_Tns4(F2[dfdhF],F2[eP],F4[deFdhF]);
+  // compute d2fdhF2 
+  err += compute_Ten4_A_dd_B_dd_C(F4+d2fdhF2, F4+dPdF,F4+deFdhF,F4+deFdhF);
+
+  // compute deFdpF
+  err += compute_deF_over_dpF(F4+deFdpF,F2+F,F2+pFI,F2+hFI);
+  // compute heat generations
+  // xi = dhFdT:d2fdhF2:dhFdT + dfdhF:hFpp
+
+  double xi = 0.0;
+  double Q_e = 0.0;  
+  double Q_p = 0.0;
+  for(int I = 1; I<=DIM_3; I++)
+  {
+    for(int J = 1; J<=DIM_3; J++)
+    {
+      xi += Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
+      for(int K = 1; K<=DIM_3; K++)
+      {
+        for(int L = 1; L<=DIM_3; L++)
+        {
+          xi += Mat_v(F2[hFp],I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp],K,L);
+          Q_p -= Mat_v(F2[eP],I,J)*Tns4_v(F4[deFdpF],I,J,K,L)*Mat_v(F2[pFdot],K,L);
+        }
+      }
+    }
+  } 
+  
+  Q_e = xi*T*Tdot;  
+  *Q = rho_0*(Q_e + Q_p);
+    
+  // compute tangent of Qe
+  double DQe =0.0;
+  double DQp = 0.0;
+  if(compute_tangent)
+  {
+    double Dxi = 0.0;
+    Matrix(double) d3WdC3, d2PdF2, df3dhF3;
+    Matrix_construct_redim(double,d3WdC3,DIM_3x3x3x3*DIM_3x3,1);
+    Matrix_construct_redim(double,d2PdF2, DIM_3x3x3x3*DIM_3x3,1);
+    Matrix_construct_redim(double,df3dhF3,DIM_3x3x3x3*DIM_3x3,1);
+        
+    err += elast->compute_d3W_dC3(elast,F2[eF].m_pdata,d3WdC3.m_pdata);
+    err += compute_d2PdF2(&d2PdF2,F2+eS,F4+dWdE,&d3WdC3,F2+eF);
+    
+    for(int I=1; I<=DIM_3; I++)
+    {
+      for(int J=1; J<=DIM_3; J++)
+      {
+        for(int K=1; K<=DIM_3; K++)
+        {
+          for(int L=1; L<=DIM_3; L++)
+          {
+            for(int M=1; M<=DIM_3; M++)
             {
-              for(int Q=1; Q<=DIM_3; Q++)
+              for(int N=1; N<=DIM_3; N++)
               {
-                for(int R=1; R<=DIM_3; R++)                
-                  Tns4_v(*xB,I,J,K,L) = Tns4_v(*dFdF,I,J,M,N)*Tns4_v(eB,N,N,Q,R)*Tns4_v(*dFdF,Q,R,K,L);
+                Tns6_v(df3dhF3,I,J,K,L,M,N) = 0.0;
+                for(int O=1; O<=DIM_3; O++)
+                {
+                  for(int P=1; P<=DIM_3; P++)
+                  {
+                    for(int A=1; A<=DIM_3; A++)
+                    {
+                      for(int B=1; B<=DIM_3; B++)
+                      {
+                        for(int C=1; C<=DIM_3; C++)
+                        {
+                          for(int D=1; D<=DIM_3; D++)
+                            Tns6_v(df3dhF3,I,J,K,L,M,N) += Tns6_v(d2PdF2,I,J,K,L,O,P)*Tns4_v(F2[deFdhF],O,P,A,B)*Tns4_v(F2[deFdhF],A,B,C,D)*Tns4_v(F2[deFdhF],C,D,M,N);
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
         }
       }
     }
-  }
-  Matrix_cleanup(eB);
-  return err;
-} 
-/// compute heat generation due to plastic flow
-///
-/// \param[in] mat MATERIAL_PROPERTY object
-/// \param[in] fv_m mechanical FIELD_VARIABLES object
-/// \param[in] dT temperature change
-/// \param[in] dt time step size
-/// \param[in] eid element id
-/// \param[in] ip integration point id
-/// \param[in] mat_id material id
-/// \return heat rate
-double compute_mechanical_heat_gen_plastic(const MATERIAL_PROPERTY *mat,
-                                           const FIELD_VARIABLES *fv_m,
-                                           const double dT,
-                                           const double dt,
-                                           const int eid,
-                                           const int ip,
-                                           const int mat_id)
-{
-  int err = 0;
-  double Q_m = 0.0;
-  int compute_stiffness = 0;
 
-  Matrix(double) F, eF, pF, pFI, pFn, pFdot, S, eP, pP;
-  Matrix_construct_init(double, F,    DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, eF,    DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, pF,    DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, pFI,   DIM_3,DIM_3,0.0);  
-  Matrix_construct_init(double, pFn,   DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, pFdot, DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, S,     DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, eP,    DIM_3,DIM_3,0.0);
-  Matrix_construct_init(double, pP,    DIM_3,DIM_3,0.0);    
-  
-  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
-  const Model_parameters *func = m->param;
-
-  err += func->get_Fn(   m, &F);  
-  err += func->get_eFn(  m, &eF);
-  err += func->get_pFn(  m, &pF);
-  err += func->get_pFnm1(m, &pFn);
-  
-  Matrix_inv(pF, pFI);
-
-  for(int ia=0; ia<9; ia++)
-    pFdot.m_pdata[ia] = (pF.m_pdata[ia] - pFn.m_pdata[ia])/dt;   
-    
-  ELASTICITY *elast = (m->param)->cm_elast;
-
-  double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
-  double *tempL = elast->L; 
-  elast->S = S.m_pdata;
-  elast->L = NULL;       
-  
-  elast->update_elasticity(elast,eF.m_pdata,compute_stiffness);
-  Matrix_AxB(eP,1.0,0.0,eF,0,S,0);
-  for(int ik = 1; ik<=DIM_3; ik++)
-  {
-    for(int N = 1; N<=DIM_3; N++)
+    for(int I=1; I<=DIM_3; I++)
     {
-      for(int ia = 1; ia<=DIM_3; ia++)
+      for(int J=1; J<=DIM_3; J++)
       {
-        for(int ja = 1; ja<=DIM_3; ja++)
+        DQe += Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
+        for(int K=1; K<=DIM_3; K++)
         {
-          for(int M = 1; M<=DIM_3; M++)
-            Mat_v(pP,ik,N) += -Mat_v(eP,ia,ja)*Mat_v(F,ia,M)*Mat_v(pFI,M,ik)*Mat_v(pFI,N,ja);
+          for(int L=1; L<=DIM_3; L++)
+          {
+            DQe += Mat_v(F2[hFpp],I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp], K,L); 
+                +  Mat_v(F2[hFp], I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFpp],K,L);
+                +  Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp],K,L)*Mat_v(F2[hFpp], I,J);
+                +  Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
+
+            for(int M=1; M<=DIM_3; M++)
+            {
+              for(int N=1; N<=DIM_3; N++)
+                DQe += Mat_v(F2[hFp],I,J)*Tns6_v(df3dhF3,I,J,K,L,M,N)*Mat_v(F2[hFp],M,N)*Mat_v(F2[hFp],K,L);
+            }
+          }
         }
       }
     }
-  }  
 
-  Matrix_ddot(pP, pFdot, Q_m);
-  
+    DQe += xi*(dT/dt + T/dt) + Dxi*dT/dt*T;
+    Matrix_cleanup(d3WdC3);
+    Matrix_cleanup(d2PdF2);
+    Matrix_cleanup(df3dhF3);
+  }
+
   elast->S = tempS;
-  elast->L = tempL;        
+  elast->L = tempL;
 
-  Matrix_cleanup(F);
-  Matrix_cleanup(eF);  
-  Matrix_cleanup(pF);
-  Matrix_cleanup(pFI);  
-  Matrix_cleanup(pFn);
-  Matrix_cleanup(pFdot);
-  Matrix_cleanup(S);
-  Matrix_cleanup(eP);
-  Matrix_cleanup(pP);
-
-  return -Q_m;
-}
-
-/// compute heat generation due to elastic flow
-///
-/// \param[in] mat MATERIAL_PROPERTY object
-/// \param[in] fv_m mechanical FIELD_VARIABLES object
-/// \param[in] dT temperature change
-/// \param[in] dt time step size
-/// \param[in] eid element id
-/// \param[in] ip integration point id
-/// \param[in] mat_id material id
-/// \return heat rate
-double compute_mechanical_heat_gen_elastic(const MATERIAL_PROPERTY *mat,
-                                           const FIELD_VARIABLES *fv_m,
-                                           const double T,
-                                           const double dT,
-                                           const double dt,
-                                           const int eid,
-                                           const int ip,
-                                           const int mat_id)
-{
-  int err = 0;
-  double Q_m = 0.0;
-  int compute_stiffness = 1;
-  
-  double Tdot = dT/dt;
-
-  Matrix(double) L, deF_dhF, hB;
-  Matrix_construct_init(double, L,       DIM_3x3x3x3, 1, 0.0);
-  Matrix_construct_init(double, deF_dhF, DIM_3x3x3x3, 1, 0.0);
-  Matrix_construct_init(double, hB,      DIM_3x3x3x3, 1, 0.0);    
-      
-  enum {F,eF,pF,pFI,hF,hFI,hFp,hFp_d,hFpp,S,eP,hP,F2end};
-  Matrix(double) *F2 = malloc(F2end*sizeof(Matrix(double)));
-  for (int a = 0; a < F2end; a++) {
-    Matrix_construct_init(double, F2[a],DIM_3,DIM_3 ,0.0);
-  }  
-
-  // get mechanical part of deformation gradient
-  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
-  const Model_parameters *func = m->param;
-  ELASTICITY *elast = (m->param)->cm_elast;
-  err += func->get_Fn(   m, F2+F);  
-  err += func->get_eFn(  m, F2+eF);
-  err += func->get_pFn(  m, F2+pF);
-
-  // compute thermal part of deformation gradient    
-  double ax = mat->mater[mat_id].ax;
-  double ay = mat->mater[mat_id].ay;
-  double az = mat->mater[mat_id].az;  
-
-  Mat_v(F2[hF],  1,1) = 1.0 + ax*dT;  
-  Mat_v(F2[hF],  2,2) = 1.0 + ay*dT;
-  Mat_v(F2[hF],  3,3) = 1.0 + az*dT;
-  
-  Mat_v(F2[hFp], 1,1) = ax;
-  Mat_v(F2[hFp], 2,2) = ay;
-  Mat_v(F2[hFp], 3,3) = az;
-  
-  Mat_v(F2[hFpp], 1,1) = Mat_v(F2[hFpp], 2,2) = Mat_v(F2[hFpp], 3,3) = 0.0;
-
-  Matrix_AeqB(F2[hFp_d], Tdot, F2[hFpp]);
-  Matrix_inv(F2[hF], F2[hFI]);
-  Matrix_inv(F2[pF], F2[pFI]);  
-
-
-  double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
-  double *tempL = elast->L; 
-  elast->S = F2[S].m_pdata;
-  elast->L = L.m_pdata;
-  
-  elast->update_elasticity(elast,F2[eF].m_pdata,compute_stiffness);
-  Matrix_AxB(F2[eP],1.0,0.0,F2[eF],0,F2[S],0);  
-  
-  err += compute_deF_over_dhF(&deF_dhF,F2+F,F2+pFI,F2+hFI);  
-  err += compute_xB(&hB,F2+eF,&deF_dhF,F2+S,&L);
-
-  
-  for(int I = 1; I<=DIM_3; I++)
-  {
-    for(int J = 1; J<=DIM_3; J++)
-    {
-      Q_m += Mat_v(F2[hP],I,J)*Mat_v(F2[hFpp],I,J);
-      for(int K = 1; K<=DIM_3; K++)
-      {
-        for(int L = 1; L<=DIM_3; L++)
-          Q_m += Mat_v(F2[hFp],I,J)*Tns4_v(hB,I,J,K,L)*Mat_v(F2[hFp],I,J);
-      }
-    }
-  } 
-
-  Q_m *= T*Tdot;
-  
-  elast->S = tempS;
-  elast->L = tempL;        
+  for(int a = 0; a < F4end; a++)
+    Matrix_cleanup(F4[a]);   
+  free(F4);
   
   for(int a = 0; a < F2end; a++)
     Matrix_cleanup(F2[a]);   
   free(F2);
-  
-  Matrix_cleanup(L);
-  Matrix_cleanup(deF_dhF);
-  Matrix_cleanup(hB);  
 
-  return Q_m;
-}
-
+  return err;
+}     
+                                      
 /// compute temperature on node in a element
 ///
 /// \param[in] cn local DOF ids for field variables
@@ -387,6 +639,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            
 {
   int err = 0;
+  double Jn = 1.0; // Total Lagrangian = 1.0; // it is updated if mechanical is coupled.
   
   int eid = fe->curt_elem_id;  
   const int mat_id = (grid->element[eid]).mat[0];  
@@ -464,12 +717,12 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       switch(fv->coupled_physics_ids[0])
       {
         case MULTIPHYSICS_MECHANICAL:
-        {
-          Q += compute_mechanical_heat_gen_elastic(mat,fv_m,Temp,dT,dt,eid,ip,mat_id);
-          Q += compute_mechanical_heat_gen_plastic(mat,fv_m,dT,dt,eid,ip,mat_id);
+        {  
+          int compute_tangent = 0;
+          double DQ = 0.0;
+          err += compute_mechanical_heat_gen(&Q,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
           break;
-        }  
-        
+        }          
         default:
           Q += 0.0;
       }    
@@ -480,7 +733,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     {      
       Vec_v(fi,ia) += rho_0*cp*Vec_v(fe->N,ia)*(dT - dt*Q)*(fe->detJxW);
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
+        Vec_v(fi,ia) += 1.0/Jn*dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
     }  
   }
   
@@ -523,8 +776,8 @@ int energy_equation_compute_residuals(GRID *grid,
   if(use_updated)
     du = fv->f;
   else
-    du = fv->d_u;  
-    
+    du = fv->d_u;
+        
   for(int eid=0; eid<grid->ne; eid++)
   {
     // Construct finite element library.
@@ -588,9 +841,10 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            int compute_load4pBCs,
                                            double dt_in)
                                            
-{  
+{
   int err = 0;
   int eid = fe->curt_elem_id;  
+
   const int mat_id = (grid->element[eid]).mat[0];  
   double rho_0 = mat->density[mat_id];
   
@@ -600,11 +854,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   k.m_row = k.m_col = DIM_3;
   
   double cp = thermal->cp;
-  double Q = 0.0;
   
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
-    dt = dt_in;    
+    dt = dt_in;
+  
+  SUPP sup = load->sups[mp_id];
   
   long *nod = fe->node_id.m_pdata;
   int ndofn = fv->ndofn;  
@@ -617,17 +872,59 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   
   Matrix(double) lk;
   Matrix_construct_init(double,lk,ndofe,ndofe,0.0);
+  
+  Matrix(double) Tnp1, Tn;  
+  Matrix_construct_init(double, Tnp1,fe->nne,1,0.0); 
+  Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
+    
+  //compute nodal value
+  get_temperature_elem(cnL,ndofe,fv->u_np1,fv->f,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
+
+  for(int ia=0; ia<fe->nne; ia++)
+    Vec_v(Tn,   ia+1) = fv->u_n[nod[ia]];    
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
-    // Udate basis functions at the integration points.
+    // Udate basis functions at the integration points.    
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);
+    
+    double Temp = 0.0;
+    double dT   = 0.0;
+    
+    // compute varialbes at the integration point
+    for(int ia=1; ia<=fe->nne; ia++)
+    { 
+      Temp += Vec_v(fe->N,ia)*Vec_v(Tnp1, ia);
+      dT   += Vec_v(fe->N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
+    }
+    
+    double DQ = 0.0;
+    
+    if(fv->n_coupled > 0)
+    {  
+      FIELD_VARIABLES *fv_m = fv->fvs[0];
+      switch(fv->coupled_physics_ids[0])
+      {
+        case MULTIPHYSICS_MECHANICAL:
+        {  
+          int compute_tangent = 1;
+          double Q = 0.0;
+          err += compute_mechanical_heat_gen(&Q,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+          break;
+        }          
+        default:
+          DQ = 0.0;
+      }    
+    }    
+    
+    // R = rho_0*cp*(Tnp1-Tn) + dt*grad.q - dt*Q = 0;
+    // DR = rho_0*cp*dT + dt*D[grad.q]dT - dt*D[Q]dT = 0;    
     for(int ia=1; ia<=fe->nne; ia++)
     {
       for(int ib=1; ib<=fe->nne; ib++)
       {
-        Mat_v(lk,ia,ib) += rho_0*cp*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
+        Mat_v(lk,ia,ib) += (rho_0*cp - dt*DQ)*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
         for(int im = 1; im<=grid->nsd; im++)
         {
           for(int in = 1; in<=grid->nsd; in++)
@@ -696,6 +993,8 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     
   free(cnL);
   free(cnG);
+  Matrix_cleanup(Tnp1);
+  Matrix_cleanup(Tn);  
   return err;
 }
 
@@ -710,6 +1009,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 /// \param[in] mat a material object
 /// \param[in] fv field variable object 
 /// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
 /// \param[in] com object for communications
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
@@ -721,6 +1021,7 @@ int energy_equation_compute_stiffness(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
                                       SOLVER_OPTIONS *sol,
+                                      LOADING_STEPS *load,
                                       COMMUNICATION_STRUCTURE *com,
                                       MPI_Comm mpi_comm,
                                       int myrank,
@@ -759,7 +1060,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
     // do volume integration at an element
     int interior = 0;
-    err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,NULL,com,Ddof.m_pdata,
+    err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt);
     
@@ -791,7 +1092,7 @@ int energy_equation_compute_stiffness(GRID *grid,
     // do volume integration at an element
     int interior = 1;
     
-    err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,NULL,com,Ddof.m_pdata,
+    err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt);
       

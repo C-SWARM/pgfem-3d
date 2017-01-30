@@ -36,6 +36,7 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \param[in] mat a material object
 /// \param[in] fv field variable object 
 /// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
 /// \param[in] com object for communications
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
@@ -47,6 +48,7 @@ int energy_equation_compute_stiffness(GRID *grid,
                                       MATERIAL_PROPERTY *mat,
                                       FIELD_VARIABLES *fv,
                                       SOLVER_OPTIONS *sol,
+                                      LOADING_STEPS *load,
                                       COMMUNICATION_STRUCTURE *com,
                                       MPI_Comm mpi_comm,
                                       int myrank,

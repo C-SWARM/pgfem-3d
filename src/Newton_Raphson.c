@@ -226,7 +226,7 @@ long compute_stiffness_for_NR(GRID *grid,
 */                          
       break;
     case MULTIPHYSICS_THERMAL:
-      INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,com,mpi_comm,myrank,opts,mp_id,dt);
+      INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,load,com,mpi_comm,myrank,opts,mp_id,dt);
       break;
     case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
     default: 
