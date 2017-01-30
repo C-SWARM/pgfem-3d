@@ -178,8 +178,8 @@ static int plasticity_int_alg(Constitutive_model *m,
   return err;
 }
 
-static int cp_compute_eC(const double *eF,
-                         double *eC)
+static int cp_compute_eC(const double * restrict eF,
+                         double * restrict eC)
 {
   int err = 0;
   memset(eC, 0, DIM_3x3 * sizeof(*eC));

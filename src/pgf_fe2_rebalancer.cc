@@ -519,7 +519,7 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
 						 const pgf_FE2_micro_server *server)
 {
   const pgf_FE2_job *j = server->jobs;
-  size_t *keep = all_parts->keep;
+  size_t *restrict keep = all_parts->keep;
   for(size_t i=0, e=server->n_jobs; i<e; i++){
     size_t off = new_partition_get_offset_keep(all_parts);
     keep[off + NEW_PART_JOB_ID] = j[i].id;

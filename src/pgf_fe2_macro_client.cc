@@ -247,7 +247,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   client->bcast.ranks = malloc(n_comm*sizeof(*(client->bcast.ranks)));
   client->bcast.req = calloc(n_comm,sizeof(*(client->bcast.req)));
   {
-    int *r = client->bcast.ranks; /* restrict alias */
+    int * restrict r = client->bcast.ranks; /* restrict alias */
     r[0] = rank + nproc_macro;
     for(size_t i=1; i<n_comm; i++){
       r[i] = r[i-1] + nproc_macro;
@@ -432,11 +432,11 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   int nproc_macro = 0;
   const int rank = mpi_comm->rank_macro;
   MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-  int *n_jobs = malloc(nproc_macro*sizeof(*n_jobs));
-  int *displ = malloc(nproc_macro*sizeof(*n_jobs));
-  int *id = malloc(client->n_jobs_glob*sizeof(*id));
-  int *proc = malloc(client->n_jobs_glob*sizeof(*proc));
-  int *time = malloc(client->n_jobs_glob*sizeof(*time));
+  int *restrict n_jobs = malloc(nproc_macro*sizeof(*n_jobs));
+  int *restrict displ = malloc(nproc_macro*sizeof(*n_jobs));
+  int *restrict id = malloc(client->n_jobs_glob*sizeof(*id));
+  int *restrict proc = malloc(client->n_jobs_glob*sizeof(*proc));
+  int *restrict time = malloc(client->n_jobs_glob*sizeof(*time));
 
   n_jobs[rank] = client->n_jobs_loc;
   MPI_Allgather(MPI_IN_PLACE,1,MPI_INT,n_jobs,1,MPI_INT,mpi_comm->macro);

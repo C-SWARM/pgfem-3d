@@ -55,8 +55,8 @@ static int he_unpack(Constitutive_model *m,
   return 0;
 }
 
-static void he_compute_C(double *C,
-                         const double *F)
+static void he_compute_C(double * restrict C,
+                         const double * restrict F)
 {
   memset(C, 0, tensor * sizeof(*C));
   for (int i = 0; i < dim; i++){

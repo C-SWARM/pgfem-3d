@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "PGFEM_mpi.h"
 
 #ifdef __cplusplus
 extern "C" {

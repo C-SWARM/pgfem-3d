@@ -56,7 +56,7 @@ static void param_assign_values(double *param)
   param[3] = 0.15;  /* Yin */
 }
 
-static int compute_stress(double *sig,
+static int compute_stress(double * restrict sig,
                           const Constitutive_model *m,
                           const void *ctx)
 {
