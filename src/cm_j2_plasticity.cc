@@ -442,7 +442,8 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   int err = 0;
   memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
 
-  const j2d_ctx *ctx = CTX;
+  //const j2d_ctx *ctx = CTX;
+  const auto ctx = (j2d_ctx *) CTX;
   const double *F = cm_Fs_data(m,FNP1);
   const double *Fn = cm_Fs_data(m, FN);
   const double *spn = cm_Fs_data(m, SPN);

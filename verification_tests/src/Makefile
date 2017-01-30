@@ -7,7 +7,7 @@ pfem_incl_dir = $(TEST_DIR)/include
 
 # SUITESPARSE
 SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
-		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
+            		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
 
 # HYPRE
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
@@ -45,28 +45,26 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_blas95_lp64.a \
-	     	  -Wl,--end-group -lpthread
+	     	  -Wl,--end-group -lpthread -lm -ldl
 
 
 CXX = mpicxx
 LINK = mpicxx
 
-RM = rm -rf
-
-CXXFLAGS = -Wall -std=c++14 -fpermissive -O3 -g
+CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g
 
 INCLUDES = -I$(pfem_incl_dir) \
-                  $(CNSTVM_incl) \
-		  $(VTK_IO_incl) \
-		  $(MKL_incl) \
-		  -I$(POST_PROCESSING)
+             $(CNSTVM_incl) \
+		         $(VTK_IO_incl) \
+		         $(MKL_incl) \
+		       -I$(POST_PROCESSING)
 
 LIBS	= $(VTK_IO_lib) \
-	  $(SUITESPARSE_lib) \
-	  $(HYPRE_lib) \
-          $(CNSTVM_lib) \
-	  $(VTK_lib) \
-	  $(MKL_lib)
+	      $(SUITESPARSE_lib) \
+	      $(HYPRE_lib) \
+        $(CNSTVM_lib) \
+	      $(VTK_lib) \
+	      $(MKL_lib)
 
 OBJ = $(SRC:.cc=.o)
 
