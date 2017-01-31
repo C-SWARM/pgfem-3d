@@ -21,11 +21,12 @@ CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
 VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
 VTK_IO_incl	= -I$(VTK_IO_dir)/include
 VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
+#VTK_IO_lib	= $(VTK_IO_dir)/src/libPGFem3D_to_VTK.a
 
 # VTK
-VTK_dir		= /opt/crc/vtk/5.10.1/gcc
-VTK_incl	= -I$(VTK_dir)/include/vtk-6.0
-VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
+VTK_dir	 = /opt/crc/vtk/5.10.1/gcc
+VTK_incl = -I$(VTK_dir)/include/vtk-6.0
+VTK_lib	 = -Wl,-rpath=$(VTK_dir)/lib \
 		  -L$(VTK_dir)/lib -lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 \
 		  -lvtkIOCore-6.0 -lvtkzlib-6.0 \
 		  -lvtkCommonExecutionModel-6.0 -lvtkCommonDataModel-6.0 \
@@ -35,8 +36,8 @@ VTK_lib		= -Wl,-rpath=$(VTK_dir)/lib \
 	 	  -lvtksys-6.0 -lvtkexpat-6.0
 
 # Intel MKL: MKLROOT must be defined or define it here
-MKL_incl        = -I$(MKLROOT)/include
-MKL_lib         = $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
+MKL_incl  = -I$(MKLROOT)/include
+MKL_lib   = $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	          -Wl,--start-group \
 	          $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
 	          $(MKLROOT)/lib/intel64/libmkl_sequential.a \
@@ -44,16 +45,15 @@ MKL_lib         = $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	          $(MKLROOT)/lib/intel64/libmkl_blas95_lp64.a \
 	          -Wl,--end-group -lpthread
 
-CC = mpicc
+CXX = mpicxx
 LINK = mpicxx
 
 RM = rm -rf
 
-DFLAGS = 
-DFLAGS += -DVERIFICATION_USING_MMS=1
+DFLAGS = -DVERIFICATION_USING_MMS=1
 
-CFLAGS = -Wall -std=c99 -O3 -g
-CFLAGS += $(DFLAGS)
+CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g 
+CXXFLAGS += $(DFLAGS)
 
 INCLUDES = -I$(pfem_incl_dir) \
 		  $(CNSTVM_incl) \
@@ -66,15 +66,16 @@ LIBS	= $(VTK_IO_lib) \
 	  $(CNSTVM_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib) 
-	  	  		  		  		
-OBJ = $(SRC:.c=.o)
+
+#SRC = verification_tf_MMS.cc
+OBJ = $(SRC:.cc=.o)
 
 all:	
-#	$(CC) -c $(INCLUDES) $(CFLAGS) MMS.c 		
-	$(CC) -c $(INCLUDES) $(CFLAGS) ../src/dynamics.c
-	$(LINK) -o PGFem3D $(CFLAGS) $(OBJS) $(LIBS) ../src/super_main.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) verification_tf_MMS.c 		
-	$(LINK) -o verification_tf_MMS $(CFLAGS) verification_tf_MMS.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
+#	$(CXX) -c $(INCLUDES) $(CXXFLAGS) MMS.cc 		
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) ../src/dynamics.cc
+	$(LINK) -o PGFem3D $(CXXFLAGS) $(OBJS) $(LIBS) ../src/super_main.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) verification_tf_MMS.cc 		
+	$(LINK) -o verification_tf_MMS $(CXXFLAGS) verification_tf_MMS.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
 
 
  							
