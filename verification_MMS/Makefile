@@ -24,24 +24,17 @@ VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
 #VTK_IO_lib	= $(VTK_IO_dir)/src/libPGFem3D_to_VTK.a
 
 # VTK
-VTK_dir	 = /afs/crc.nd.edu/group/cswarm/VTK/7.0.0/intel/15.0/mvapich2/2.1/static-lib
-VTK_incl = -I$(VTK_dir)/include/vtk-7.0
-VTK_lib= -Wl,-rpath=$vtk_dir/lib -L$vtk_dir/lib \
-         -lvtkIOXML-7.0 -lvtkIOXMLParser-7.0 -lvtkIOCore-7.0 -lvtkzlib-7.0 \
-         -lvtkCommonExecutionModel-7.0 -lvtkCommonDataModel-7.0 \
-         -lvtkCommonMisc-7.0 -lvtkCommonSystem-7.0 -lvtkCommonTransforms-7.0 \
-         -lvtkCommonMath-7.0 -lvtkIOGeometry-7.0 -lvtkCommonCore-7.0 \
-         -lvtksys-7.0 -lvtkexpat-7.0
+VTK_dir   = /opt/crc/vtk/5.10.1/gcc
+VTK_incl  = -I$(VTK_dir)/include/vtk-6.0
+VTK_lib   = -Wl,-rpath=$(VTK_dir)/lib \
+      -L$(VTK_dir)/lib -lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 \
+      -lvtkIOCore-6.0 -lvtkzlib-6.0 \
+      -lvtkCommonExecutionModel-6.0 -lvtkCommonDataModel-6.0 \
+      -lvtkCommonMisc-6.0 -lvtkCommonSystem-6.0 \
+      -lvtkCommonTransforms-6.0 -lvtkCommonMath-6.0 \
+      -lvtkIOGeometry-6.0 -lvtkCommonCore-6.0 \
+      -lvtksys-6.0 -lvtkexpat-6.0
 
-
-VTK_lib	 = -Wl,-rpath=$(VTK_dir)/lib \
-		  -L$(VTK_dir)/lib -lvtkIOXML-7.0 -lvtkIOXMLParser-7.0 \
-		  -lvtkIOCore-7.0 -lvtkzlib-7.0 \
-		  -lvtkCommonExecutionModel-7.0 -lvtkCommonDataModel-7.0 \
-		  -lvtkCommonMisc-7.0 -lvtkCommonSystem-7.0 \
-		  -lvtkCommonTransforms-7.0 -lvtkCommonMath-7.0 \
-		  -lvtkIOGeometry-7.0 -lvtkCommonCore-7.0 \
-	 	  -lvtksys-7.0 -lvtkexpat-7.0
 
 # Intel MKL: MKLROOT must be defined or define it here
 MKL_incl  = -I$(MKLROOT)/include
