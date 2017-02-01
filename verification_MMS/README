@@ -6,3 +6,6 @@ setenv PGFEM3D_EXT_LIB ${HOME}/lib/external
 
 2. make
 3. ./run.bat
+
+
+Note: this test requires to set 'enable_vtk=yes' into confi.site
