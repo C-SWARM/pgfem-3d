@@ -266,6 +266,44 @@ static int plasticity_reset(Constitutive_model *m)
   return err;
 }
 
+static int plasticity_reset_using_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs    = (m->vars).Fs;
+  Matrix(double) *Fs_in = var->Fs;
+  double *state_var    = (m->vars).state_vars[0].m_pdata;
+  double *state_var_in = var->state_vars[0].m_pdata;
+  Matrix_AeqB(Fs[TENSOR_Fn],   1.0,Fs_in[TENSOR_Fn]);
+  Matrix_AeqB(Fs[TENSOR_pFn],  1.0,Fs_in[TENSOR_pFn]);
+  Matrix_AeqB(Fs[TENSOR_Fnm1], 1.0,Fs_in[TENSOR_Fnm1]);
+  Matrix_AeqB(Fs[TENSOR_pFnm1],1.0,Fs_in[TENSOR_pFnm1]);
+    
+  state_var[VAR_g_n]   = state_var_in[VAR_g_n];
+  state_var[VAR_L_n]   = state_var_in[VAR_L_n];
+  state_var[VAR_g_nm1] = state_var_in[VAR_g_nm1];
+  state_var[VAR_L_nm1] = state_var_in[VAR_L_nm1];  
+  return err;
+}
+
+static int plasticity_save_to_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs_in = (m->vars).Fs;
+  Matrix(double) *Fs    = var->Fs;
+  double *state_var    = (m->vars).state_vars[0].m_pdata;
+  double *state_var_in = var->state_vars[0].m_pdata;
+  Matrix_AeqB(Fs[TENSOR_Fn],   1.0,Fs_in[TENSOR_Fn]);
+  Matrix_AeqB(Fs[TENSOR_pFn],  1.0,Fs_in[TENSOR_pFn]);
+  Matrix_AeqB(Fs[TENSOR_Fnm1], 1.0,Fs_in[TENSOR_Fnm1]);
+  Matrix_AeqB(Fs[TENSOR_pFnm1],1.0,Fs_in[TENSOR_pFnm1]);
+    
+  state_var[VAR_g_n]   = state_var_in[VAR_g_n];
+  state_var[VAR_L_n]   = state_var_in[VAR_L_n];
+  state_var[VAR_g_nm1] = state_var_in[VAR_g_nm1];
+  state_var[VAR_L_nm1] = state_var_in[VAR_L_nm1];  
+  return err;
+}
+
 static int plasticity_info(Model_var_info **info)
 {
   *info = malloc(sizeof(**info));
@@ -1017,6 +1055,8 @@ int plasticity_model_initialize(Model_parameters *p)
   p->compute_d2udj2 = plasticity_d2udj2;
   p->update_state_vars = plasticity_update;
   p->reset_state_vars = plasticity_reset;
+  p->reset_state_vars_using_temporal = plasticity_reset_using_temporal;
+  p->save_state_vars_to_temporal = plasticity_save_to_temporal;
   p->get_subdiv_param = plasticity_model_get_subdiv_param;
   p->get_var_info = plasticity_info;
   p->get_Fn    = plasticity_get_Fn;

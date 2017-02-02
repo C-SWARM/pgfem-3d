@@ -150,6 +150,29 @@ static int plasticity_none_reset(Constitutive_model *m)
   return err;
 }
 
+
+static int plasticity_none_reset_using_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs    = (m->vars).Fs;
+  Matrix(double) *Fs_in = var->Fs;
+  Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
+  Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
+
+  return err;
+}
+
+static int plasticity_none_save_to_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs_in = (m->vars).Fs;
+  Matrix(double) *Fs    = var->Fs;
+  Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
+  Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
+  
+  return err;
+}
+
 static int plasticity_none_info(Model_var_info **info)
 {
   int err = 0;
@@ -361,6 +384,8 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->compute_d2udj2 = plasticity_none_d2udj2;
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
+  p->reset_state_vars_using_temporal = plasticity_none_reset_using_temporal;
+  p->save_state_vars_to_temporal = plasticity_none_save_to_temporal;  
   p->get_var_info = plasticity_none_info;
   p->get_Fn    = he_get_Fn;
   p->get_Fnm1  = he_get_Fnm1;  
