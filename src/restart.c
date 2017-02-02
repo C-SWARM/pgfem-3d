@@ -64,12 +64,14 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, double *u0, doubl
 /// large time step size.
 ///
 /// \param[in,out] fv array of field variable object, fv.NORM will be updated
+/// \param[in,out] time_steps object for time stepping, time_steps.tns are updated
 /// \param[in] opts PGFem3D commend line options
 /// \param[in] mp multiphysics object
 /// \param[out] tnm1 times at t(n-1), t(n) 
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error 
 int read_time_step_info(FIELD_VARIABLES *fv,
+                        PGFem3D_TIME_STEPPING *time_steps,
                         const PGFem3D_opt *opts,
                         MULTIPHYSICS *mp,
                         double *tnm1,
@@ -98,9 +100,9 @@ int read_time_step_info(FIELD_VARIABLES *fv,
     
     for(int ia=0; ia<mp->physicsno; ia++)
     {
-      fscanf(fp, "%lf", &(fv[ia].NORM));    
+      fscanf(fp, "%lf", &(fv[ia].NORM), time_steps->tns+ia);    
       if(myrank==0)
-        printf(", NORM = %e",fv[ia].NORM); 
+        printf("\t\t%s: NORM = %e, t(n) = %e\n",mp->physicsname[ia], fv[ia].NORM, time_steps->tns[ia]); 
     }
     if(myrank==0)
       printf("\n");
@@ -159,7 +161,7 @@ int write_time_step_info(FIELD_VARIABLES *fv,
         fprintf(fp, "0.0 %.17e %.17e ", times[stepno], times[stepno+1]);
       
       for(int ia=0; ia<mp->physicsno; ia++)
-        fprintf(fp, "%.17e ",fv[ia].NORM);  
+        fprintf(fp, "\n%.17e %.17e",fv[ia].NORM, time_steps->tns[ia]);
 
       fprintf(fp, "\n");
                           
@@ -396,6 +398,7 @@ int read_restart_thermal(GRID *grid,
 ///
 /// \param[in] grid a mesh object
 /// \param[in, out] fv array of field variable object
+/// \param[in, out] time_steps object for time stepping
 /// \param[in] load object for loading
 /// \param[in] opts PGFem3D commend line options
 /// \param[in] mp multiphysics object
@@ -404,6 +407,7 @@ int read_restart_thermal(GRID *grid,
 /// \return non-zero on internal error
 int read_restart(GRID *grid,
                  FIELD_VARIABLES *fv,
+                 PGFem3D_TIME_STEPPING *time_steps,
                  LOADING_STEPS *load,
                  const PGFem3D_opt *opts,
                  MULTIPHYSICS *mp,
@@ -438,7 +442,7 @@ int read_restart(GRID *grid,
     }
   }
   // read time stepping info  
-  err += read_time_step_info(fv,opts,mp,tnm1,myrank);
+  err += read_time_step_info(fv,time_steps,opts,mp,tnm1,myrank);
     
   return err;
 }

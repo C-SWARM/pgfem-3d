@@ -12,6 +12,7 @@
 ///
 /// \param[in] grid a mesh object
 /// \param[in, out] fv array of field variable object
+/// \param[in, out] time_steps object for time stepping
 /// \param[in] load object for loading
 /// \param[in] opts PGFem3D commend line options
 /// \param[in] mp multiphysics object
@@ -19,12 +20,13 @@
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_restart(GRID *grid,
-                  FIELD_VARIABLES *fv,
-                  LOADING_STEPS *load,
-                  const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp,
-                  double *tnm1,
-                  int myrank);
+                 FIELD_VARIABLES *fv,
+                 PGFem3D_TIME_STEPPING *time_steps,
+                 LOADING_STEPS *load,
+                 const PGFem3D_opt *opts,
+                 MULTIPHYSICS *mp,
+                 double *tnm1,
+                 int myrank);
 
 /// write restart files for mechanical part
 ///
