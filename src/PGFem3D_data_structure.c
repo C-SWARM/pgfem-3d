@@ -407,6 +407,7 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol)
   sol->err           = 0.0;
   sol->iter_max_sol  = 0;
   sol->computer_zero = 0.0;
+  sol->run_integration_algorithm = 1;
   return err;
 }
 

@@ -2350,7 +2350,8 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     else
       err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL);
 
-    err += m->param->integration_algorithm(m,ctx);
+    if(sol->run_integration_algorithm)
+      err += m->param->integration_algorithm(m,ctx); // perform integration algorithm
 
     if(err>0)
     	return err;    
@@ -2534,8 +2535,10 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                                   F2[hFnm1].m_pdata,F2[hFn].m_pdata);
     else
       err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);      
+    
+    if(sol->run_integration_algorithm)
+      err += m->param->integration_algorithm(m,ctx); // perform integration algorithm
 
-    err += m->param->integration_algorithm(m,ctx); // perform integration algorithm
     if(err>0)
     	return err;
 

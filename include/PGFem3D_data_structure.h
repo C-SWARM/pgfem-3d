@@ -144,7 +144,8 @@ typedef struct {
   double gama;      /// related to linesearch, but is modified internally... 
   double err;       /// linear solve tolerance 
   long iter_max_sol;/// maximum number of iterations for linear solver 
-  double computer_zero; /// computer zero   
+  double computer_zero; /// computer zero 
+  int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals  
 } SOLVER_OPTIONS;
 
 /// struct for the boundary conditions
