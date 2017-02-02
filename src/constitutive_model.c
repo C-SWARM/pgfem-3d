@@ -369,6 +369,8 @@ int model_parameters_construct(Model_parameters *p)
   p->update_elasticity = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
+  p->reset_state_vars_using_temporal = NULL;
+  p->save_state_vars_to_temporal = NULL;  
   p->get_var_info = NULL;
   p->get_Fn = NULL;
   p->get_Fnm1 = NULL;
@@ -499,6 +501,8 @@ int model_parameters_destroy(Model_parameters *p)
   p->compute_AST = NULL;
   p->update_state_vars = NULL;
   p->reset_state_vars = NULL;
+  p->reset_state_vars_using_temporal = NULL;
+  p->save_state_vars_to_temporal = NULL;
   p->get_var_info = NULL;
   p->get_Fn = NULL;
   p->get_Fnm1 = NULL;
@@ -733,6 +737,69 @@ int constitutive_model_reset_state(EPS *eps,
     for (int j = 0; j < n_ip; j++) {
       Constitutive_model *m = &(eps[i].model[j]);
       m->param->reset_state_vars(m);
+    }
+  }
+  return err;
+}
+
+/// save state variables 
+///
+/// temporary save state variables to use when solution step is failed and requires go to initial step
+/// 
+/// \param[in, out] fv an object containing all field variables
+/// \param[in] grid an object containing all mesh data
+/// \return non-zero on internal error
+int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
+                                                   GRID *grid)
+{
+  int err = 0;
+  State_variables *var = fv->temporal->var;
+  
+  int intg_order = 0;
+  const ELEMENT *elem = grid->element;
+  
+  int list_id = 0;
+  for(int eid=0; eid<grid->ne; eid++)
+  {
+    int nne = elem[eid].toe;
+    long nint = FEMLIB_determine_integration_type(nne, intg_order);
+    for (int ip = 0; ip < nint; ip++) 
+    {
+      Constitutive_model *m = &(fv->eps[eid].model[ip]);
+      m->param->save_state_vars_to_temporal(m, var+list_id);
+      list_id++;
+    }
+  }
+  return err;
+}
+
+/// reset state variables using priori store values
+///
+/// temporary save state variables update state variables 
+/// when solution step is failed and requires go to initial step
+/// 
+/// \param[in, out] fv an object containing all field variables
+/// \param[in] grid an object containing all mesh data
+/// \return non-zero on internal error
+int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
+                                                  GRID *grid)
+{
+  int err = 0;
+  State_variables *var = fv->temporal->var;
+  
+  int intg_order = 0;
+  const ELEMENT *elem = grid->element;
+  
+  int list_id = 0;
+  for(int eid=0; eid<grid->ne; eid++)
+  {
+    int nne = elem[eid].toe;
+    long nint = FEMLIB_determine_integration_type(nne, intg_order);
+    for (int ip = 0; ip < nint; ip++) 
+    {
+      Constitutive_model *m = &(fv->eps[eid].model[ip]);
+      m->param->reset_state_vars_using_temporal(m, var+list_id);
+      list_id++;
     }
   }
   return err;

@@ -115,6 +115,26 @@ int init_all_constitutive_model(EPS *eps,
                                 const ELEMENT *elem,
                                 const int n_mat,
                                 const Model_parameters *param_list);
+/// save state variables 
+///
+/// temporary save state variables to use when solution step is failed and requires go to initial step
+/// 
+/// \param[in, out] fv an object containing all field variables
+/// \param[in] grid an object containing all mesh data
+/// \return non-zero on internal error
+int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
+                                                   GRID *grid);
+
+/// reset state variables using priori store values
+///
+/// temporary save state variables update state variables 
+/// when solution step is failed and requires go to initial step
+/// 
+/// \param[in, out] fv an object containing all field variables
+/// \param[in] grid an object containing all mesh data
+/// \return non-zero on internal error
+int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
+                                                  GRID *grid);                                
 
 /**
  * Reset the cinstitutive model at each integration point in the
@@ -230,6 +250,17 @@ typedef int (*usr_increment)(Constitutive_model *m);
 typedef int (*usr_get_var)(const Constitutive_model *m,
                            double *var);
 
+/**
+ * User defined function to store or get a state variable. This
+ * function can be used to *MODIFY* the internal state variables. 
+ *
+ * \param[in] m - constant reference to a Constitiutive_model object.
+ * \param[in,out] var - contains state variables to store or get
+ * \return non-zero on internal error
+ */
+typedef int (*usr_temporal_updates)(const Constitutive_model *m,
+                                    State_variables *var);
+                           
 /**
  * User defined function to return a time dependent state variable. 
  * Note that this
@@ -462,6 +493,8 @@ struct Model_parameters {
 
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
+  usr_temporal_updates reset_state_vars_using_temporal;
+  usr_temporal_updates save_state_vars_to_temporal;
   usr_info get_var_info;
   usr_get_F get_Fn;
   usr_get_F get_Fnm1;  
