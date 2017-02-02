@@ -1611,13 +1611,45 @@ int VTK_write_data_HeatFlux(FILE *out,
 {
   int err = 0;
   
-  SIG *sig = FV[pmr->mp_id].sig;
+  EPS *eps = FV[pmr->mp_id].eps;
   
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
   for (int ia=0; ia<grid->ne; ia++)
   {
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",
-                  sig[ia].el.o[0],sig[ia].el.o[1],sig[ia].el.o[2]);
+                  eps[ia].el.o[0],eps[ia].el.o[1],eps[ia].el.o[2]);
+  }
+  err += VTK_write_multiphysics_DataArray_footer(out);    
+  return err;
+}
+
+/// write Heat Generations due to Mechanical work
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+int VTK_write_data_HeatGeneration(FILE *out,
+                                  GRID *grid,
+                                  FIELD_VARIABLES *FV,                          
+                                  LOADING_STEPS *load,
+                                  PRINT_MULTIPHYSICS_RESULT *pmr,
+                                  const PGFem3D_opt *opts)
+{
+  int err = 0;
+  
+  EPS *eps = FV[pmr->mp_id].eps;
+  
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    PGFEM_fprintf(out,"%12.12e %12.12e\n",
+                  eps[ia].el.o[3],eps[ia].el.o[4]);
   }
   err += VTK_write_multiphysics_DataArray_footer(out);    
   return err;
@@ -1773,6 +1805,11 @@ int VTK_construct_PMR(GRID *grid,
               pmr[cnt_pmr].write_vtk     = VTK_write_data_HeatFlux;
               sprintf(pmr[cnt_pmr].variable_name, "HeatFlux");
               break;
+            case THERMAL_Var_HeatGenerations:
+              pmr[cnt_pmr].m_col         = 2;
+              pmr[cnt_pmr].write_vtk     = VTK_write_data_HeatGeneration;
+              sprintf(pmr[cnt_pmr].variable_name, "HeatGenerations");
+              break;                
             default:
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;

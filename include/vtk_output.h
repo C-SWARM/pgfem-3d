@@ -113,6 +113,7 @@ enum{MECHANICAL_Var_Displacement,
 /// for writing simulation resuls       
 enum{THERMAL_Var_Temperature,
      THERMAL_Var_HeatFlux,
+     THERMAL_Var_HeatGenerations,     
      Thermal_Var_NO} THERMAL_Var;
 
 /// Chemical part of index of output vailabes
