@@ -50,7 +50,7 @@ int get_nodal_temperatures(FEMLIB *fe,
                            double *Tn_e,
                            double *Tnm1_e)
 {
-  int err;
+  int err = 0;
 
   int nne = fe->nne;
   long *cn = aloc1l(nne);
