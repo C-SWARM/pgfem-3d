@@ -656,7 +656,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha*beta times. This should be improved */
   const plasticity_ctx *CTX = ctx;
   
-  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnpa_I,Fend}; 
+  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnI,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -677,18 +677,11 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
 
   err += inv3x3(F2[pFnpa].m_pdata, F2[pFnpa_I].m_pdata); // Total Lagrangian
 
-  Matrix_eye(F2[hFnpa_I],DIM_3);
+  Matrix_eye(F2[hFnI],DIM_3);
   if(CTX->is_coulpled_with_thermal)
-  {
-    Matrix(double) hFnpa;
-    Matrix_construct_redim(double, hFnpa,   DIM_3, DIM_3);   
-    
-    mid_point_rule(hFnpa.m_pdata, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);
-    err += inv3x3(hFnpa.m_pdata, F2[hFnpa_I].m_pdata);    
-    Matrix_cleanup(hFnpa);  
-  }
+    err += inv3x3(CTX->hFnp1, F2[hFnI].m_pdata);    
 
-  Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnpa_I],0,F2[pFnpa_I],0);  
+  Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnI],0,F2[pFnpa_I],0);  
   Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);
     
   ELASTICITY *elast = (m->param)->cm_elast;
