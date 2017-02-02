@@ -3,11 +3,12 @@
 #ifndef PGFEM_HYPRE_PRECOND_H
 #define PGFEM_HYPRE_PRECOND_H
 
+#include "HYPRE.h"
+#include "HYPRE_parcsr_ls.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-#include "HYPRE.h"
-#include "HYPRE_parcsr_ls.h"
 
   /** Diagonal scale preconditioner */
   int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc);

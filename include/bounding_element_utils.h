@@ -3,10 +3,6 @@
 #ifndef BOUNDING_ELEMENT_UTILS_H
 #define BOUNDING_ELEMENT_UTILS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"
@@ -14,6 +10,10 @@ extern "C" {
 #include "sig.h"
 #include "eps.h"
 #include "pgfem_comm.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** get the element local node numbers, i.e. ordering in volumetric
       element connectivity */

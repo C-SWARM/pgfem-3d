@@ -263,7 +263,8 @@ int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
   return err;
 }
 
-inline int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
+//inline int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
+int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
 				       int *n_comms)
 {
   int err = 0;

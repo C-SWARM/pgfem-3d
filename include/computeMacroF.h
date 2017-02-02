@@ -1,10 +1,6 @@
 #ifndef COMPUTE_MACRO_F_H
 #define COMPUTE_MACRO_F_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
 #endif
@@ -20,6 +16,10 @@ extern "C" {
 #ifndef EPS_H
 #include "eps.h"
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** Compute volume average deformation gradient.  Contains global
       communication. */

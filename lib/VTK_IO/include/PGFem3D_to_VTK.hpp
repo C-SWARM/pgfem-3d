@@ -7,10 +7,6 @@
 // with c/c++ when wrapped with extern c
 #include "mpi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "element.h"
 #include "node.h"
 #include "supp.h"
@@ -18,6 +14,10 @@ extern "C" {
 #include "eps.h"
 #include "enumerations.h"
 #include "interface_macro.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
 /** Create a vtkUnstructuredGrid object from a PGFem3D mesh and
     associated information. ***CURRENTLY ONLY SUPPORT LINEAR TETRAS
@@ -43,6 +43,7 @@ void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
 				       
 int read_VTK_file(char fn[], double *r);	
 int read_VTK_file4TF(char fn[], double *r, double *P, double *V);				       
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

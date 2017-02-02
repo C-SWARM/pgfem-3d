@@ -12,6 +12,10 @@
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Structure for handling information about how a server is to be
  * rebalanced. Describes what jobs are to be kept, what jobs should be
@@ -114,5 +118,10 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
  */
 int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
 					       const PGFEM_mpi_comm *mpi_comm);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

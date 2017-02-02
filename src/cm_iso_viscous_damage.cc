@@ -170,7 +170,7 @@ static int ivd_compute_Sbar(const Constitutive_model *m,
 {
   int err = 0;
   const double kappa = hommat_get_kappa(m->param->p_hmat);
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   const double J = det3x3(CTX->F);
   double C[tensor] = {0};
   double CI[tensor] = {0};
@@ -194,7 +194,7 @@ static int ivd_compute_Lbar(const Constitutive_model *m,
 {
   int err = 0;
   const double kappa = hommat_get_kappa(m->param->p_hmat);
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   const double J = det3x3(CTX->F);
   double C[tensor] = {0};
   double C_I[tensor] = {0};
@@ -231,7 +231,7 @@ static int ivd_modify_AST(const Constitutive_model *m,
                           double *L)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   const double dmu = CTX->dt * m->param->model_param[mu];
   const double evo = dmu * m->vars.state_vars->m_pdata[H] / (1.0 + dmu);
   double Sbar[tensor] = {0};
@@ -278,7 +278,7 @@ static int ivd_int_alg(Constitutive_model *m,
                        const void *ctx)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   const double *params = m->param->model_param;
   double *vars = m->vars.state_vars->m_pdata;
   int *flags = m->vars.flags;
@@ -306,7 +306,7 @@ static int ivd_dev_stress(const Constitutive_model *m,
                           Matrix_double *devS)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   double C[tensor] = {0};
   ata(CTX->F,C);
   new_pot_compute_Sdev(C, m->param->p_hmat, devS->m_pdata);
@@ -322,7 +322,7 @@ static int ivd_dudj(const Constitutive_model *m,
                     double *dudj)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   double J = det3x3(CTX->F);
   new_pot_compute_dudj(J, m->param->p_hmat, dudj);
 
@@ -336,7 +336,7 @@ static int ivd_dev_tangent(const Constitutive_model *m,
                            Matrix_double *devL)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   double C[tensor] = {0};
   ata(CTX->F,C);
   new_pot_compute_Ldev(C, m->param->p_hmat, devL->m_pdata);
@@ -353,7 +353,7 @@ static int ivd_d2udj2(const Constitutive_model *m,
                       double *d2udj2)
 {
   int err = 0;
-  const ivd_ctx *CTX = ctx;
+  auto CTX = (ivd_ctx *) ctx;
   double J = det3x3(CTX->F);
   new_pot_compute_d2udj2(J, m->param->p_hmat, d2udj2);
 

@@ -1,9 +1,6 @@
 #ifndef _THREE_FIELD_ELEMENT_H_
 #define _THREE_FIELD_ELEMENT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "femlib.h"
 #include "elem3d.h"
@@ -13,6 +10,12 @@ extern "C" {
 #include "eps.h"
 #include "tensors.h"
 #define N_VOL_TREE_FIELD 1
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+
 void resid_w_inertia_Ru_ip(double *fu,
         int nne, double *ST, double *F, double *S, double jj, double wt, double Pn);
 
@@ -44,8 +47,12 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
 		           		           
 void compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm,int analysis);		           
+
+
+
 #ifdef __cplusplus
 }
-#endif
+#endif /* #ifdef __cplusplus */
+
 
 #endif

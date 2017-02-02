@@ -2,10 +2,6 @@
 #ifndef GET_DOF_IDS_ON_ELEM_H
 #define GET_DOF_IDS_ON_ELEM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #ifndef ELEMENT_H
 #include "element.h"
 #endif
@@ -17,6 +13,10 @@ extern "C" {
 #ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** Get the id numbers for all degrees of freedom which need to be
       assembled from the element. */

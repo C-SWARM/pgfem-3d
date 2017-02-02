@@ -2,10 +2,6 @@
 #ifndef APPLIED_TRACTION_H
 #define APPLIED_TRACTION_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
 #endif
@@ -25,6 +21,11 @@ extern "C" {
 #ifndef EPS_H
 #include "eps.h"
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 
   typedef struct SURFACE_TRACTION_ELEM{
     int elem_id; /**< index to get elem from array */

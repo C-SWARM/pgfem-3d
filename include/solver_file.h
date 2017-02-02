@@ -13,6 +13,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "PGFEM_mpi.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
 struct SOLVER_FILE {
   FILE *file; /**< file to read data from */ 
@@ -75,4 +80,9 @@ int solver_file_scan_to_step(SOLVER_FILE *sf,
 			     const size_t step,
 			     const size_t len_load,
 			     double *incr_load);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif /* #ifndef  */

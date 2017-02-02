@@ -7,13 +7,13 @@
 #ifndef MACRO_MICRO_FUNCTIONS_H
 #define MACRO_MICRO_FUNCTIONS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "microscale_information.h"
 #include "ms_cohe_job_info.h"
 #include "ms_job_intercomm.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   struct pgf_FE2_macro_client;
   struct PGFEM_mpi_comm;
@@ -88,6 +88,7 @@ extern "C" {
   /** updates the cohesive element associated with job */
   int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
 			     MACROSCALE *macro);
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

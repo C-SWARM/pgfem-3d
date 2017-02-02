@@ -22,6 +22,10 @@
 #include "crpl.h"
 #include "PGFem3D_options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * \brief Get the list of times to increment the load from the file.
  */
@@ -71,5 +75,10 @@ void load_vec_elem_sur (double *f,
 			const long ndofn,
 			const ELEMENT *elem,
 			const ZATELEM *zele_s);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 
 #endif

@@ -14,6 +14,11 @@
 #include "hommat.h"
 #include "PGFem3D_options.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Get the number of integration points for the element.
  */
@@ -193,5 +198,10 @@ void stiffmatel (long ii,
 		 NODE *node,
 		 double *K,
 		 const PGFem3D_opt *opts);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

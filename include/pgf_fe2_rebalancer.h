@@ -11,6 +11,10 @@
 #include "PGFEM_mpi.h"
 #include "pgf_fe2_server_rebalance.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Allows for switching of different rebalancing heuristics. May
  * incorporate into API in the future.
@@ -76,4 +80,11 @@ void rebalance_partitions_greedy(const size_t n_parts,
 void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
 						     const void *np,
 						     pgf_FE2_server_rebalance **rb);
+
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

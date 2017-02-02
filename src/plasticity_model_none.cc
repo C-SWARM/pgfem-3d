@@ -77,7 +77,7 @@ static int plasticity_none_int_alg(Constitutive_model *m,
                                    const void *ctx)
 {
   int err = 0;
-  const none_ctx *CTX = ctx;
+  auto CTX = (none_ctx *) ctx;
   memcpy(m->vars.Fs[Fnp1].m_pdata, CTX->F, tensor * sizeof(*CTX->F));
   return err;
 }
@@ -87,7 +87,7 @@ static int plasticity_none_dev_stress(const Constitutive_model *m,
                                       Matrix_double *stress)
 {
   int err = 0;
-  const none_ctx *CTX = ctx;
+  auto CTX = (none_ctx *) ctx;
   devStressFuncPtr Stress = getDevStressFunc(-1,m->param->p_hmat);
   double C[tensor] = {};
   he_compute_C(C,CTX->F);
@@ -100,7 +100,7 @@ static int plasticity_none_dudj(const Constitutive_model *m,
                                 double *dudj)
 {
   int err = 0;
-  const none_ctx *CTX = ctx;
+  auto CTX = (none_ctx *) ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
   const double J = det3x3(CTX->F);
   Pressure(J,m->param->p_hmat,dudj);
@@ -112,7 +112,7 @@ static int plasticity_none_dev_tangent(const Constitutive_model *m,
                                        Matrix_double *tangent)
 {
   int err = 0;
-  const none_ctx *CTX = ctx;
+  auto CTX = (none_ctx *) ctx;
   matStiffFuncPtr Tangent = getMatStiffFunc(-1,m->param->p_hmat);
   double C[tensor] = {};
   he_compute_C(C,CTX->F);
@@ -125,7 +125,7 @@ static int plasticity_none_d2udj2(const Constitutive_model *m,
                                   double *d2udj2)
 {
   int err = 0;
-  const none_ctx *CTX = ctx;
+  auto CTX = (none_ctx *) ctx;
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
   const double J = det3x3(CTX->F);
   D_Pressure(J,m->param->p_hmat,d2udj2);
@@ -281,7 +281,7 @@ int plasticity_model_none_elasticity(const Constitutive_model *m,
                                      const int compute_stiffness)
 {
   int err = 0;
-  const none_ctx *ctx = ctx_in;
+  auto ctx = (none_ctx *) ctx_in;
   
   // if transient cases, 
   // get_eF is not working because eF needs to be updated using mid-point alpha

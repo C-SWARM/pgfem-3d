@@ -205,7 +205,7 @@ void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
 						     const void *np,
 						     pgf_FE2_server_rebalance **rb)
 {
-  const new_partition *NP = np;
+  auto NP = (new_partition *) np;
   for(int i=0; i<n_parts; i++){
     new_partition_to_pgf_FE2_server_rebalance(NP + i, rb + i);
   }
@@ -353,8 +353,8 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 static int new_partition_buf_compare_time(const void *a,
 					  const void *b)
 {
-  const size_t *A = a;
-  const size_t *B = b;
+  auto A = (size_t *) a;
+  auto B = (size_t *) b;
   return ((A[NEW_PART_TIME] < B[NEW_PART_TIME])
 	  - (A[NEW_PART_TIME] > B[NEW_PART_TIME]));
 }
