@@ -78,4 +78,16 @@ int energy_equation_compute_load4pBCs(GRID *grid,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt);
+                                      
+/// update for for print
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] fv field variable object 
+/// \param[in] dt time step size
+/// \return non-zero on internal error
+int update_thermal_flux4print(GRID *grid,
+                              MATERIAL_PROPERTY *mat,
+                              FIELD_VARIABLES *fv,
+                              double dt);
 #endif

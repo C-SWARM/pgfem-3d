@@ -336,7 +336,8 @@ int compute_deF_over_dpF(Matrix(double) *dF,
 
 /// compute heat generation due to mechanical
 ///
-/// \param[out] Q thermal source due to mechanical work
+/// \param[out] Qe thermal source due to mechanical work (elastic part)
+/// \param[out] Qp thermal source due to mechanical work (plastic part)
 /// \param[out] DQ tangent of heat generation w.r.t temperature (computed only if compute_tangent = 1)
 /// \param[in] mat MATERIAL_PROPERTY object
 /// \param[in] fv_m mechanical FIELD_VARIABLES object
@@ -346,7 +347,8 @@ int compute_deF_over_dpF(Matrix(double) *dF,
 /// \param[in] ip integration point id
 /// \param[in] mat_id material id
 /// \return non-zero on internal error
-int compute_mechanical_heat_gen(double *Q,
+int compute_mechanical_heat_gen(double *Qe,
+                                double *Qp,
                                 double *DQ,
                                 const MATERIAL_PROPERTY *mat,
                                 const FIELD_VARIABLES *fv_m,
@@ -427,7 +429,6 @@ int compute_mechanical_heat_gen(double *Q,
   // xi = dhFdT:d2fdhF2:dhFdT + dfdhF:hFpp
 
   double xi = 0.0;
-  double Q_e = 0.0;  
   double Q_p = 0.0;
   for(int I = 1; I<=DIM_3; I++)
   {
@@ -445,8 +446,8 @@ int compute_mechanical_heat_gen(double *Q,
     }
   } 
   
-  Q_e = xi*T*Tdot;  
-  *Q = rho_0*(Q_e + Q_p);
+  *Qe = rho_0*xi*T*Tdot;  
+  *Qp = rho_0*Q_p;
     
   // compute tangent of Qe
   double DQe =0.0;
@@ -720,7 +721,10 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
         {  
           int compute_tangent = 0;
           double DQ = 0.0;
-          err += compute_mechanical_heat_gen(&Q,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+          double Qe = 0.0;
+          double Qp = 0.0;
+          err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+          Q += Qe + Qp;
           break;
         }          
         default:
@@ -731,7 +735,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
     for(int ia=1; ia<=fe->nne; ia++)
     {      
-      Vec_v(fi,ia) += rho_0*cp*Vec_v(fe->N,ia)*(dT - dt*Q)*(fe->detJxW);
+      Vec_v(fi,ia) += Vec_v(fe->N,ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW);
       for(int ib=1; ib<=grid->nsd; ib++)
         Vec_v(fi,ia) += 1.0/Jn*dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
     }  
@@ -908,9 +912,10 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       {
         case MULTIPHYSICS_MECHANICAL:
         {  
-          int compute_tangent = 1;
-          double Q = 0.0;
-          err += compute_mechanical_heat_gen(&Q,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+          int compute_tangent = 0;
+          double Qe = 0.0;
+          double Qp = 0.0;
+          err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
           break;
         }          
         default:
@@ -1177,3 +1182,122 @@ int energy_equation_compute_load4pBCs(GRID *grid,
   return err;
 }
 
+/// update for for print
+///
+/// compute and store values (e.g flux) for print
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] fv a field variable object 
+/// \param[in] dt time step size
+/// \return non-zero on internal error
+int update_thermal_flux4print(GRID *grid,
+                              MATERIAL_PROPERTY *mat,
+                              FIELD_VARIABLES *fv,
+                              double dt)
+{
+  int err = 0;
+  int total_Lagrangian = 0;
+  int intg_order = 0;
+
+  EPS *eps = fv->eps;
+  
+  for(int eid=0; eid<grid->ne; eid++)
+  {    
+    FEMLIB fe;
+    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+
+    memset(eps[eid].el.o,0,6*sizeof(double));
+
+    // get material constants (parameters)
+    const int mat_id = (grid->element[eid]).mat[0];  
+    double rho_0 = mat->density[mat_id];
+  
+    MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
+    Matrix(double) k;
+    k.m_pdata = thermal->k;
+    k.m_row = k.m_col = DIM_3;
+
+    double cp = thermal->cp;
+      
+    // compute noda values
+    Matrix(double) q, Tnp1, Tn;  
+    Matrix_construct_redim(double, q,grid->nsd,1);    
+    Matrix_construct_init(double, Tnp1,fe.nne,1,0.0); 
+    Matrix_construct_init(double, Tn,  fe.nne,1,0.0);
+    
+    long *nod = fe.node_id.m_pdata;
+    for(int ia=0; ia<fe.nne; ia++)
+    {
+      Vec_v(Tnp1, ia+1) = fv->u_n[nod[ia]];
+      Vec_v(Tn,   ia+1) = fv->u_nm1[nod[ia]];
+    }
+    
+    // do integration point loop
+    double volume = 0.0;
+    for(int ip = 1; ip<=fe.nint; ip++)
+    {
+      FEMLIB_elem_basis_V(&fe, ip);
+      FEMLIB_update_shape_tensor(&fe);
+    
+      double Temp = 0.0;
+      double dT   = 0.0;
+      Matrix_init( q,0.0);
+      
+      // compute values at the integration point 
+      for(int ia=1; ia<=fe.nne; ia++)
+      { 
+        // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
+        // q = [nsd, 1] = k*dN'*T
+     
+        for(int ib=1; ib<=grid->nsd; ib++)
+        {
+          for(int ic=1; ic<=grid->nsd; ic++)        
+            Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe.dN,ia,ic)*Vec_v(Tnp1, ia);
+        }
+        
+        Temp += Vec_v(fe.N,ia)*Vec_v(Tnp1, ia);
+        dT   += Vec_v(fe.N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
+      }
+      
+      // compute heat sources 
+      double Qe = 0.0;
+      double Qp = 0.0;
+      double DQ = 0.0;      
+      if(fv->n_coupled > 0)
+      {
+        FIELD_VARIABLES *fv_m = fv->fvs[0];
+        switch(fv->coupled_physics_ids[0])
+        {
+          case MULTIPHYSICS_MECHANICAL:
+          {  
+            int compute_tangent = 0;
+            err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+            break;
+          }          
+          default:
+          Qe = 0.0;
+          Qp = 0.0;
+          DQ = 0.0;
+        }    
+      }
+      
+      // save the values
+      fv->eps[eid].el.o[0] += fe.detJxW*Vec_v(q,1);
+      fv->eps[eid].el.o[1] += fe.detJxW*Vec_v(q,2);
+      fv->eps[eid].el.o[2] += fe.detJxW*Vec_v(q,3);
+      fv->eps[eid].el.o[3] += fe.detJxW*Qe;
+      fv->eps[eid].el.o[4] += fe.detJxW*Qp;
+      volume += fe.detJxW;
+    }
+    for(int ia=0; ia<6; ia++)
+      eps[eid].el.o[ia] = eps[eid].el.o[ia]/volume;
+    
+    Matrix_cleanup(q);
+    Matrix_cleanup(Tnp1);
+    Matrix_cleanup(Tn);
+  
+    FEMLIB_destruct(&fe);    
+  }
+  return err;
+}
