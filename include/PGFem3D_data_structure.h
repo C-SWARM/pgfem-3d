@@ -22,6 +22,7 @@
 #include "hypre_global.h"
 #include "pgfem_comm.h"
 #include "comm_hints.h"
+#include "state_variables.h"
 
 /// Time stepping struct
 /// Has time stepping information
@@ -52,6 +53,15 @@ typedef struct {
   BOUNDING_ELEMENT *b_elems; /// list of bounding element
   COEL *coel;                /// list of cohesive elements 
 } GRID;
+
+/// struct for field variables
+typedef struct FIELD_VARIABLES_TEMPORAL FIELD_VARIABLES_TEMPORAL;
+typedef struct FIELD_VARIABLES_TEMPORAL {
+  double *u_nm1;           /// displacement at n-1
+  double *u_n;             /// displacement at n
+  int element_variable_no; /// number of element variables
+  State_variables *var;    /// object to store element variables
+} FIELD_VARIABLES_TEMPORAL;  
 
 /// struct for field variables
 typedef struct FIELD_VARIABLES FIELD_VARIABLES;
@@ -90,6 +100,7 @@ typedef struct FIELD_VARIABLES {
                                 ///                        fv.coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
                                 ///                               :                         :
   struct FIELD_VARIABLES **fvs; /// array of FIELD_VARIABLES pointers for multiphysics coupling
+  FIELD_VARIABLES_TEMPORAL *temporal;
 } FIELD_VARIABLES;
 
 /// struct for field variables
@@ -248,6 +259,29 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \return non-zero on internal error
 int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv);
+
+/// prepare temporal varialbes for staggering Newton Raphson iterations
+/// 
+/// Before call this function, physics coupling should be defined in 
+/// fv->n_coupled and fv->coupled_physics_ids
+///
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \param[in] grid an object containing all mesh data
+/// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \return non-zero on internal error
+int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
+                                    GRID *grid,
+                                    int is_for_Mechanical);
+                            
+/// destory temporal varialbes for staggering Newton Raphson iterations
+/// 
+/// should be called before destroying fv
+///
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \return non-zero on internal error
+int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
+                                     int is_for_Mechanical);
 
 /// initialize material properties
 ///

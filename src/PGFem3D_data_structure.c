@@ -13,6 +13,8 @@
 #include "comm_hints.h"
 #include "utils.h"
 #include "vtk_output.h"
+#include "constitutive_model.h"
+#include "femlib.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -135,6 +137,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->n_coupled = 0;
   fv->coupled_physics_ids = NULL;
   fv->fvs    = NULL;
+  fv->temporal = NULL;
   return err;
 }
 
@@ -250,6 +253,93 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
   return err;
 }
 
+/// prepare temporal varialbes for staggering Newton Raphson iterations
+/// 
+/// Before call this function, physics coupling should be defined in 
+/// fv->n_coupled and fv->coupled_physics_ids
+///
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \param[in] grid an object containing all mesh data
+/// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \return non-zero on internal error
+int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
+                                    GRID *grid,
+                                    int is_for_Mechanical)
+{
+  int err =0;
+  if(fv->n_coupled>0)
+  {
+    fv->temporal = (FIELD_VARIABLES_TEMPORAL *) malloc(sizeof(FIELD_VARIABLES_TEMPORAL));
+    fv->temporal->u_n   = aloc1(grid->nn*fv->ndofn);
+    fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
+    if(is_for_Mechanical)
+    {
+      int intg_order = 0;
+      const ELEMENT *elem = grid->element;
+
+      int n_state_varialbles = 0;
+      for(int eid=0; eid<grid->ne; eid++)
+      {
+        int nne = elem[eid].toe;
+        long nint = FEMLIB_determine_integration_type(nne, intg_order);
+        n_state_varialbles += nint;
+      }      
+      fv->temporal->element_variable_no = n_state_varialbles;
+      fv->temporal->var = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+      
+      n_state_varialbles = 0;      
+      for(int eid=0; eid<grid->ne; eid++)
+      {
+        int nne = elem[eid].toe;
+        long nint = FEMLIB_determine_integration_type(nne, intg_order);
+        
+        for(int ip=0; ip<nint; ip++)
+        {
+          Constitutive_model *m = &(fv->eps[eid].model[ip]);
+          Model_var_info *info = NULL;
+          m->param->get_var_info(&info);
+          err += state_variables_initialize(fv->temporal->var + n_state_varialbles, info->n_Fs,
+                                            info->n_vars, info->n_flags);
+          n_state_varialbles++;
+        }
+      }
+    }    
+  }      
+  return err;
+}
+
+/// destory temporal varialbes for staggering Newton Raphson iterations
+/// 
+/// should be called before destroying fv
+///
+/// \param[in, out] fv an object containing all field variables for thermal
+/// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \return non-zero on internal error
+int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
+                                     int is_for_Mechanical)
+{
+  int err =0;
+  if(fv->n_coupled>0)
+  {
+    free(fv->temporal->u_n);    
+    free(fv->temporal->u_nm1);
+    fv->temporal->u_n = NULL;
+    fv->temporal->u_nm1 = NULL;
+    
+    if(is_for_Mechanical)
+    {
+      for(int ia=0; ia<fv->temporal->element_variable_no; ia++)
+        err += state_variables_destroy(fv->temporal->var + ia);
+      
+      free(fv->temporal->var);
+      fv->temporal->var = NULL;
+      fv->temporal->element_variable_no = 0;                
+    }
+    free(fv->temporal);
+    fv->temporal = NULL;
+  }      
+  return err;
+}
 
 /// initialize material properties
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
