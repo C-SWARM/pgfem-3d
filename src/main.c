@@ -1021,7 +1021,10 @@ int single_scale_main(int argc,char *argv[])
               fv[ia].eps[e].T[a] = 1.0;
           }
         }
+        err += prepare_temporal_field_varialbes(fv+ia,&grid,1);
       }
+      else
+        err += prepare_temporal_field_varialbes(fv+ia,&grid,0);      
     }
     /* /\ initialized element varialbes */
 
@@ -1307,8 +1310,14 @@ int single_scale_main(int argc,char *argv[])
   err += destruct_time_stepping(&time_steps);  
   
   for(int ia=0; ia<mp.physicsno; ia++)
+  {
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      err += destory_temporal_field_varialbes(fv+ia,1);
+    else
+      err += destory_temporal_field_varialbes(fv+ia,0);
+
     err += destruct_field_varialbe(fv+ia, &grid, &options, mp.physics_ids[ia]);
-  
+  }
   free(fv);
 
   err += destruct_loading_steps(&load, &mp);
