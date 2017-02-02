@@ -518,9 +518,12 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   char load_fn[1024];
   sprintf(load_path,"%s/load",opts->ipath);
 
+  ts->tns = aloc1(mp->physicsno);
   int is_load_exist = 0;
   for(int ia=0; ia<mp->physicsno; ia++)
   {
+    ts->tns[ia] = ts->times[0]; // set t(n) for individual physics 
+    
     sprintf(load_fn,"%s/%s.load",load_path,mp->physicsname[ia]);
     load->solver_file[ia] = NULL;
     load->solver_file[ia] = fopen(load_fn, "r"); // Load increments are needed to be read
