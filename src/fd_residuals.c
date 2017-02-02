@@ -617,6 +617,7 @@ static int fd_res_elem_MP(double *be,
     }
   }
   
+  FEMLIB_destruct(&fe);
   
   dealoc1 (r_e);
   dealoc1l (cn);

@@ -491,7 +491,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     dealoc1(floc);
     dealoc1(rloc);
     dealoc1 (r_e);
-    
+    FEMLIB_destruct(&fe);
     if(err != 0) return err;
   }/* end i (each volume element) */
   
