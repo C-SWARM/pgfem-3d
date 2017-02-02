@@ -100,7 +100,7 @@ int read_time_step_info(FIELD_VARIABLES *fv,
     
     for(int ia=0; ia<mp->physicsno; ia++)
     {
-      fscanf(fp, "%lf", &(fv[ia].NORM), time_steps->tns+ia);    
+      fscanf(fp, "%lf %lf", &(fv[ia].NORM), time_steps->tns+ia);    
       if(myrank==0)
         printf("\t\t%s: NORM = %e, t(n) = %e\n",mp->physicsname[ia], fv[ia].NORM, time_steps->tns[ia]); 
     }
