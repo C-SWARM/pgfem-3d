@@ -1671,7 +1671,6 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
                                                  const Matrix(double) *pFn,                                                
                                                  const Matrix(double) *Fnp1,
                                                  const Matrix(double) *Fn,
-                                                 const Matrix(double) *hFnp1,
                                                  const Matrix(double) *hFn,
                                                  const int is_it_couple_w_thermal,                                                 
                                                  const double alpha,
@@ -1696,16 +1695,13 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
 
   if(is_it_couple_w_thermal>0)
   {
-    Matrix(double) hFnpa, hFnpa_I;
-    Matrix_construct_redim(double,hFnpa, DIM_3,DIM_3);
-    Matrix_construct_redim(double,hFnpa_I,DIM_3,DIM_3);
+    Matrix(double) hFnI;
+    Matrix_construct_redim(double,hFnI,DIM_3,DIM_3);
         
-    mid_point_rule( hFnpa.m_pdata,  hFn->m_pdata,  hFnp1->m_pdata, alpha, nsd*nsd);
-    err += inv3x3(hFnpa.m_pdata, hFnpa_I.m_pdata);
+    err += inv3x3(hFn->m_pdata, hFnI.m_pdata);
     err += inv3x3(F2[pFnpa].m_pdata, F2[pFnpa_I].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,hFnpa_I,0,F2[pFnpa_I],0);
-    Matrix_cleanup(hFnpa);
-    Matrix_cleanup(hFnpa_I);    
+    Matrix_AxB(F2[M],1.0,0.0,hFnI,0,F2[pFnpa_I],0);
+    Matrix_cleanup(hFnI);    
   }
   else
     err += inv3x3(F2[pFnpa].m_pdata, F2[M].m_pdata);
@@ -1802,13 +1798,13 @@ int residuals_el_crystal_plasticity_w_inertia(double *f,
     
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,
-                                                        F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,NULL,NULL,-1,
+                                                        F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,NULL,-1,
                                                         alpha, dt_1_minus_alpha,&fe);
                                 
     double dt_alpha = -dts[DT_N]*alpha;
 
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,
-                                                        F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,NULL,NULL,-1,
+                                                        F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,NULL,-1,
                                                         alpha, dt_alpha,&fe);
   }
   
@@ -1900,7 +1896,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   enum {Fn,Fr,Fnp1,pFn,pFnp1,S,
         eFnpa,pFnpa,pFnpa_I,
         eFn,M,eFnM,eFnMT,FrTFr,
-        hFn,hFnp1,hFnpa,hFnpa_I,Fend};
+        hFn,hFnm1,hFnI,Fend};
   
   Matrix(double) L;  
   Matrix_construct_redim(double,L ,DIM_3x3x3x3,1);  
@@ -1938,20 +1934,18 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
     // get a shortened pointer for simplified CM function calls 
     const Model_parameters *func = m->param;
     
-    Matrix_eye(F2[hFnpa_I],DIM_3);
+    Matrix_eye(F2[hFnI],DIM_3);
     if(is_it_couple_w_thermal >= 0)
     {
       double T0 = fv_h->u0;
-      double hFnm1[9];
+      double hFnp1[9];
       err += compute_temperature_at_ip(fe,grid,mat,T0,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
-                                       F2[hFnp1].m_pdata,F2[hFn].m_pdata,hFnm1);
+                                       hFnp1,F2[hFn].m_pdata,F2[hFnm1].m_pdata);
                                        
-      mid_point_rule(F2[hFnpa].m_pdata, F2[hFn].m_pdata, F2[hFnp1].m_pdata, alpha, DIM_3x3);
-      err += inv3x3(F2[hFnpa].m_pdata, F2[hFnpa_I].m_pdata);                                       
+      Matrix_inv(F2[hFn],F2[hFnI]);                                       
     }
         
-
     err += func->get_pF(m,&F2[pFnp1]);
     err += func->get_pFn(m,&F2[pFn]);
     err += func->get_Fn(m,&F2[Fn]);
@@ -1960,7 +1954,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
     mid_point_rule(   F2[Fr].m_pdata,  F2[Fn].m_pdata,  F2[Fnp1].m_pdata, alpha, DIM_3x3);
 
     err += inv3x3(F2[pFnpa].m_pdata, F2[pFnpa_I].m_pdata);
-    Matrix_AxB(F2[M],1.0,0.0,F2[hFnpa_I],0,F2[pFnpa_I],0);
+    Matrix_AxB(F2[M],1.0,0.0,F2[hFnI],0,F2[pFnpa_I],0);
     Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fr],0,F2[M],0);
     
     Matrix_AxB(F2[FrTFr],1.0,0.0,F2[Fr],1,F2[Fr],0);  
@@ -1968,7 +1962,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, F2[eFnpa].m_pdata,
-                                                  F2[hFn].m_pdata,F2[hFnp1].m_pdata);      
+                                                  F2[hFnm1].m_pdata,F2[hFn].m_pdata);      
     else
       err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, F2[eFnpa].m_pdata);
         
@@ -2351,7 +2345,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL,
-                                                  F2[hFn].m_pdata,F2[hFnp1].m_pdata);      
+                                                  F2[hFnm1].m_pdata,F2[hFn].m_pdata);      
     else
       err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL);
 
@@ -2371,7 +2365,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,eid,ndofn,
                                                         F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,
-                                                        F2+hFnp1,F2+hFn,
+                                                        F2+hFn,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_1_minus_alpha,fe);
                                 
@@ -2379,7 +2373,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,eid,ndofn,
                                                         F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,
-                                                        F2+hFn,F2+hFnm1,
+                                                        F2+hFn,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_alpha,fe);
   }
