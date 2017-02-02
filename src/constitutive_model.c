@@ -912,7 +912,8 @@ int compute_stiffness_matrix(double *lk,
   
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);   
+  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); // if not initialized some compiler sets non-numbers and causes
+                                                        // problems when do Matrix_Tns2_AxBxC  
   
   for(int a=0; a<nne; a++)
   {
@@ -1386,7 +1387,7 @@ int constitutive_model_update_output_variables(GRID *grid,
   /* deformation gradient */
   Matrix_double F, eF, pF, S, hFn, hFnp1;
   Matrix_construct_redim(double, F,     DIM_3, DIM_3);
-  Matrix_construct_redim(double, eF,    DIM_3, DIM_3);
+  Matrix_construct_init(double, eF,    DIM_3, DIM_3,0.0);
   Matrix_construct_redim(double, pF,    DIM_3, DIM_3);
   Matrix_construct_redim(double, S,     DIM_3, DIM_3);
   Matrix_construct_redim(double, hFn,   DIM_3, DIM_3);
