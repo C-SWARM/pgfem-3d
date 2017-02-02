@@ -646,7 +646,7 @@ int read_initial_values_lagcy(GRID *grid,
   
   // check restart and read values
   if(opts->restart >= 0)
-    err += read_restart(grid,fv,load,opts,mp,tnm1,myrank);
+    err += read_restart(grid,fv,ts,load,opts,mp,tnm1,myrank);
   
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
@@ -931,7 +931,7 @@ int read_initial_values_IC(GRID *grid,
   
   // check restart and read restart values
  if(opts->restart >= 0)
-    err += read_restart(grid,FV,load,opts,mp,tnm1,myrank);  
+    err += read_restart(grid,FV,ts,load,opts,mp,tnm1,myrank);  
   
   char IC[1024];
   sprintf(IC,"%s/IC",opts->ipath);
