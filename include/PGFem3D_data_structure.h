@@ -32,7 +32,8 @@ typedef struct {
   double *times;    /// list of time
   double dt_n;      /// dt at n
   double dt_np1;    /// dt at n+1
-  long *print;      /// step numbers to be printed  
+  long *print;      /// step numbers to be printed
+  double *tns;      /// time at n for multiple physics
 } PGFem3D_TIME_STEPPING;
 
 /// Mesh  

@@ -30,6 +30,7 @@ int time_stepping_initialization(PGFem3D_TIME_STEPPING *ts)
   ts->dt_n   = 0.0;
   ts->dt_np1 = 0.0;
   ts->print  = NULL;
+  ts->tns    = NULL;
   return err;
 }
 
@@ -44,6 +45,7 @@ int destruct_time_stepping(PGFem3D_TIME_STEPPING *ts)
   int err = 0;
   if(NULL != ts->times) free(ts->times);
   if(NULL != ts->print) free(ts->print);
+  if(NULL != ts->tns)   free(ts->tns);
   err += time_stepping_initialization(ts);  
   return err;
 }
@@ -654,6 +656,7 @@ int destruct_multiphysics(MULTIPHYSICS *mp)
 /// 2
 /// # [data id] = 0: temperature
 /// #             1: heat flux
+/// #             2: heat generation
 /// # curretly temperature and heat flux are supported
 /// 0 1
 /// # end of thermal
