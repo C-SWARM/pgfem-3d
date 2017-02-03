@@ -1521,8 +1521,8 @@ int constitutive_model_update_output_variables(GRID *grid,
                   0.0, temp, DIM_3);
       err += inv3x3(temp, temp_I);
       /* e <-- temp is the Euler strain */
-      for(int i = 0; i < DIM_3x3; i++)
-        temp[i] = 0.5*(eye[i]-temp_I[i]);
+      for(int ia = 0; ia < DIM_3x3; ia++)
+        temp[ia] = 0.5*(eye[ia]-temp_I[ia]);
 
       /* store symmetric part (also Eng. strain) */
       eps[i].el.o[0] += fe.detJxW*temp[idx_2(0,0)];
