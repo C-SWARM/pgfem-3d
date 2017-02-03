@@ -6,9 +6,9 @@ $t3d_options = "-d 0.3 -p 8 -k 1"; #'-\$ -X';
 $decomposition_options = '-sp';
 $convert_options = '-v';#-pr 1.0 1.0 1.0';
 
-$t3d_path = '/afs/crc.nd.edu/group/cswarm/bin/t3d';
-$split_path = '/afs/crc.nd.edu/group/cswarm/bin/t3d2psifel';
-$convert_path ='/afs/crc.nd.edu/group/cswarm/bin/con3d++';
+$t3d_path = '/cswarm/tools/bin/t3d';
+$split_path = '/cswarm/tools/bin/t3d2psifel';
+$convert_path ='/cswarm/tools/bin/con3d++';
 
 sub do_error {
   my $string = shift;
