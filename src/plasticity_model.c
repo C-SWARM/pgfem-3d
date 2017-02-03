@@ -271,8 +271,8 @@ static int plasticity_reset_using_temporal(const Constitutive_model *m, State_va
   int err = 0;
   Matrix(double) *Fs    = (m->vars).Fs;
   Matrix(double) *Fs_in = var->Fs;
-  double *state_var    = (m->vars).state_vars[0].m_pdata;
-  double *state_var_in = var->state_vars[0].m_pdata;
+  double *state_var     = (m->vars).state_vars[0].m_pdata;
+  double *state_var_in  = var->state_vars[0].m_pdata;
   Matrix_AeqB(Fs[TENSOR_Fn],   1.0,Fs_in[TENSOR_Fn]);
   Matrix_AeqB(Fs[TENSOR_pFn],  1.0,Fs_in[TENSOR_pFn]);
   Matrix_AeqB(Fs[TENSOR_Fnm1], 1.0,Fs_in[TENSOR_Fnm1]);
@@ -290,8 +290,8 @@ static int plasticity_save_to_temporal(const Constitutive_model *m, State_variab
   int err = 0;
   Matrix(double) *Fs_in = (m->vars).Fs;
   Matrix(double) *Fs    = var->Fs;
-  double *state_var    = (m->vars).state_vars[0].m_pdata;
-  double *state_var_in = var->state_vars[0].m_pdata;
+  double *state_var_in  = (m->vars).state_vars[0].m_pdata;
+  double *state_var     = var->state_vars[0].m_pdata;
   Matrix_AeqB(Fs[TENSOR_Fn],   1.0,Fs_in[TENSOR_Fn]);
   Matrix_AeqB(Fs[TENSOR_pFn],  1.0,Fs_in[TENSOR_pFn]);
   Matrix_AeqB(Fs[TENSOR_Fnm1], 1.0,Fs_in[TENSOR_Fnm1]);
