@@ -645,6 +645,17 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   int eid = fe->curt_elem_id;  
   const int mat_id = (grid->element[eid]).mat[0];  
   double rho_0 = mat->density[mat_id];
+
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+  
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;    
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }   
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
   Matrix(double) k;
@@ -712,24 +723,15 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       dT   += Vec_v(fe->N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
     }
     
-    if(fv->n_coupled > 0)
+    if(is_it_couple_w_mechanical>=0)
     {  
-      FIELD_VARIABLES *fv_m = fv->fvs[0];
-      switch(fv->coupled_physics_ids[0])
-      {
-        case MULTIPHYSICS_MECHANICAL:
-        {  
-          int compute_tangent = 0;
-          double DQ = 0.0;
-          double Qe = 0.0;
-          double Qp = 0.0;
-          err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
-          Q += Qe + Qp;
-          break;
-        }          
-        default:
-          Q += 0.0;
-      }    
+      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+      int compute_tangent = 0;
+      double DQ = 0.0;
+      double Qe = 0.0;
+      double Qp = 0.0;
+      err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+      Q += Qe + Qp;
     }
 
     // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
@@ -852,6 +854,17 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   const int mat_id = (grid->element[eid]).mat[0];  
   double rho_0 = mat->density[mat_id];
   
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+  
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;    
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }  
+  
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
   Matrix(double) k;
   k.m_pdata = thermal->k;
@@ -905,22 +918,13 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     
     double DQ = 0.0;
     
-    if(fv->n_coupled > 0)
+    if(is_it_couple_w_mechanical>=0)
     {  
       FIELD_VARIABLES *fv_m = fv->fvs[0];
-      switch(fv->coupled_physics_ids[0])
-      {
-        case MULTIPHYSICS_MECHANICAL:
-        {  
-          int compute_tangent = 0;
-          double Qe = 0.0;
-          double Qp = 0.0;
-          err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
-          break;
-        }          
-        default:
-          DQ = 0.0;
-      }    
+      int compute_tangent = 0;
+      double Qe = 0.0;
+      double Qp = 0.0;
+      err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
     }    
     
     // R = rho_0*cp*(Tnp1-Tn) + dt*grad.q - dt*Q = 0;
@@ -1212,7 +1216,18 @@ int update_thermal_flux4print(GRID *grid,
     // get material constants (parameters)
     const int mat_id = (grid->element[eid]).mat[0];  
     double rho_0 = mat->density[mat_id];
-  
+    
+    int is_it_couple_w_mechanical  = -1;
+    int is_it_couple_w_chemical    = -1;
+    
+    for(int ia=0; ia<fv->n_coupled; ia++)
+    { 
+      if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+        is_it_couple_w_mechanical = ia;    
+      if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+        is_it_couple_w_chemical = ia;
+    } 
+    
     MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
     Matrix(double) k;
     k.m_pdata = thermal->k;
@@ -1264,22 +1279,11 @@ int update_thermal_flux4print(GRID *grid,
       double Qe = 0.0;
       double Qp = 0.0;
       double DQ = 0.0;      
-      if(fv->n_coupled > 0)
+      if(is_it_couple_w_mechanical>=0)
       {
         FIELD_VARIABLES *fv_m = fv->fvs[0];
-        switch(fv->coupled_physics_ids[0])
-        {
-          case MULTIPHYSICS_MECHANICAL:
-          {  
-            int compute_tangent = 0;
-            err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
-            break;
-          }          
-          default:
-          Qe = 0.0;
-          Qp = 0.0;
-          DQ = 0.0;
-        }    
+        int compute_tangent = 0;
+        err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
       }
       
       // save the values

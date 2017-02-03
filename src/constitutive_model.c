@@ -1417,8 +1417,7 @@ int constitutive_model_update_output_variables(GRID *grid,
       Matrix_construct_init(double, Tn,  fe.nne,1,0.0);
     
       // compute temperature for this element for each nodal point
-      err += get_nodal_temperatures(&fe, fv_h, load, 
-                                    mp->coupled_ids[mp_id][is_it_couple_w_thermal+1],
+      err += get_nodal_temperatures(&fe, fv_h, load, fv->coupled_physics_ids[is_it_couple_w_thermal],
                                     Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
     } 
     
@@ -1913,8 +1912,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
     Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
     
     // compute temperature for this element for each nodal point
-    err += get_nodal_temperatures(fe, fv_h, load, 
-                                  mp->coupled_ids[mp_id][is_it_couple_w_thermal+1],
+    err += get_nodal_temperatures(fe, fv_h, load, fv->coupled_physics_ids[is_it_couple_w_thermal],
                                   Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
   }
 
@@ -2069,8 +2067,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
     
     // compute temperature for this element for each nodal point
-    err += get_nodal_temperatures(fe, fv_h, load, 
-                                  mp->coupled_ids[mp_id][is_it_couple_w_thermal+1],
+    err += get_nodal_temperatures(fe, fv_h, load, fv->coupled_physics_ids[is_it_couple_w_thermal], 
                                   Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
   }  
 
@@ -2314,8 +2311,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
     
     // compute temperature for this element for each nodal point
-    err += get_nodal_temperatures(fe, fv_h, load, 
-                                  mp->coupled_ids[mp_id][is_it_couple_w_thermal+1],
+    err += get_nodal_temperatures(fe, fv_h, load, fv->coupled_physics_ids[is_it_couple_w_thermal],
                                   Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
   }  
 
@@ -2457,8 +2453,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
     Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
 
     // compute temperature for this element for each nodal point
-    err += get_nodal_temperatures(fe, fv_h, load, 
-                                  mp->coupled_ids[mp_id][is_it_couple_w_thermal+1],
+    err += get_nodal_temperatures(fe, fv_h, load, fv->coupled_physics_ids[is_it_couple_w_thermal], 
                                   Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
   }
   
