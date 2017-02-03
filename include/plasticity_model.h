@@ -27,6 +27,10 @@ struct Matrix_double;
 typedef struct Matrix_double Matrix_double;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -131,4 +135,10 @@ typedef struct HOMMAT HOMMAT;
 
 int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
 void test_crystal_plasticity_single_crystal(void); 
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
+
 #endif

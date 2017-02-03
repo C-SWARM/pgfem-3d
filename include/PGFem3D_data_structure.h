@@ -24,6 +24,10 @@
 #include "comm_hints.h"
 #include "state_variables.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /// Time stepping struct
 /// Has time stepping information
 typedef struct {
@@ -177,10 +181,10 @@ typedef struct {
 } COMMUNICATION_STRUCTURE;
 
 /// for setting physics ids
-enum {MULTIPHYSICS_MECHANICAL, 
-      MULTIPHYSICS_THERMAL,
-      MULTIPHYSICS_CHEMICAL, 
-      MULTIPHYSICS_NO} MULTIPHYSICS_ANALYSIS;
+typedef enum {MULTIPHYSICS_MECHANICAL, 
+              MULTIPHYSICS_THERMAL,
+              MULTIPHYSICS_CHEMICAL, 
+              MULTIPHYSICS_NO} MULTIPHYSICS_ANALYSIS;
 
 /// struct for setting multiphysics
 typedef struct {
@@ -383,5 +387,9 @@ int destruct_multiphysics(MULTIPHYSICS *mp);
 int read_multiphysics_settings(MULTIPHYSICS *mp,
                                const PGFem3D_opt *opts,
                                int myrank);                           
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

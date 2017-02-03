@@ -3,12 +3,12 @@
 #ifndef MS_COHE_JOB_INFO_H
 #define MS_COHE_JOB_INFO_H
 
+#include <stdlib.h> /* for size_t */
+#include "PGFEM_io.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-#include <stdlib.h> /* for size_t */
-#include "PGFEM_io.h"
 
   /* Job types */
   enum{JOB_NO_COMPUTE_EQUILIBRIUM, /**< do not compute micro equilibrium */
@@ -94,6 +94,7 @@ extern "C" {
   /** print the job information to an output stream  */
   int print_MS_COHE_JOB_INFO(FILE *out,
 			     const MS_COHE_JOB_INFO *info);
+
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

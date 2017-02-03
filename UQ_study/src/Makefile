@@ -53,12 +53,12 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	     	  -Wl,--end-group -lpthread
 
 
-CC = mpicc
+CXX = mpicxx
 LINK = mpicxx
 
 RM = rm -rf
 
-CFLAGS = -Wall -std=c99 -O3 -g
+CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g 
 
 INCLUDES = -I$(pfem_incl_dir) \
             $(HYPRE_inc) \
@@ -76,11 +76,11 @@ LIBS	= $(VTK_IO_lib) \
 	  $(MKL_lib) \
           $(energy_equation_lib)
 
-OBJ = $(SRC:.c=.o)
+OBJ = $(SRC:.cc=.o)
 
 all:
-	$(CC) -c $(INCLUDES) $(CFLAGS) get_max_disp.c 		
-	$(LINK) -o get_max_disp $(CFLAGS) get_max_disp.o  $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) get_max_disp.cc 		
+	$(LINK) -o get_max_disp $(CXXFLAGS) get_max_disp.o  $(OBJ_TEST) $(LIBS)
 
 clean:  
 	rm -f *.out *.o *.mod core* get_max_disp

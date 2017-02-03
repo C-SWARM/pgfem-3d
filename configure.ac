@@ -5,7 +5,7 @@ AC_PREREQ([2.63])
 AC_INIT([PGFem3D], [X.X], [bugs@cswarm.nd.edu])
 AM_INIT_AUTOMAKE([-Wall foreign])
 
-AC_CONFIG_SRCDIR([src/super_main.c])
+AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
 
 # Checks for programs.
@@ -43,6 +43,10 @@ AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
 		  AC_MSG_WARN([Will not use MPI.])
 		fi
 ])
+
+AC_LANG_PUSH([C++])
+AC_C_RESTRICT
+AC_LANG_POP([C++])
 
 AC_PROG_CC_STDC
 AC_PROG_RANLIB

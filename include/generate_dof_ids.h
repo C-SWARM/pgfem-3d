@@ -10,9 +10,6 @@
 #ifndef GENERATE_DOF_IDS_H
 #define GENERATE_DOF_IDS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 #include "PGFEM_mpi.h"
 #include "node.h"
@@ -20,6 +17,12 @@ extern "C" {
 #include "cohesive_element.h"
 #include "bounding_element.h"
 #include "comm_hints.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+
 
   /** Generate the local dof id numbers and return the number of local
       dofs */

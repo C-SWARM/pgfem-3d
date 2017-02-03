@@ -24,6 +24,10 @@
 
 #include "PGFem3D_data_structure.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -759,4 +763,9 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
                                     double dt);                                    
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

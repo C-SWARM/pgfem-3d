@@ -14,6 +14,7 @@
 
 #include <stdlib.h> /* for size_t */
 
+
 /* pre-declare MICROSCALE and MACROSCALE */
 struct MICROSCALE;
 #ifndef TYPEDEF_MICROSCALE
@@ -25,6 +26,10 @@ typedef struct MICROSCALE MICROSCALE;
 #define TYPEDEF_MACROSCALE
 typedef MICROSCALE MACROSCALE;
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
 /**
  * Print a restart file for the macroscale domain.
@@ -62,5 +67,9 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
 int pgf_FE2_restart_read_micro(MICROSCALE *micro,
 			       const size_t step,
 			       const size_t cell_id);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */

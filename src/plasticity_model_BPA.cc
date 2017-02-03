@@ -1033,7 +1033,7 @@ int BPA_int_alg(Constitutive_model *m,
                 const void *ctx)
 {
   int err = 0;
-  const BPA_ctx *CTX = ctx;
+  auto CTX = (BPA_ctx *) ctx;
   const HOMMAT *p_hmat = m->param->p_hmat;
   const double kappa = bpa_compute_bulk_mod(p_hmat);
   const double *Fn = m->vars.Fs[_F_n].m_pdata;
@@ -1320,7 +1320,7 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
                              double *dM_du) /* _ab */
 {
   int err = 0;
-  const BPA_ctx *CTX = ctx;
+  auto CTX = (BPA_ctx *) ctx;
   const double *F = CTX->F;
   const double dt = CTX->dt;
   const double *Fe = m->vars.Fs[_Fe].m_pdata;

@@ -11,6 +11,11 @@
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Structure for maintaining communication information related to a
  * particular job.
@@ -181,5 +186,9 @@ int pgf_FE2_job_reply(pgf_FE2_job *job,
  * exit.
  */
 int pgf_FE2_job_complete(pgf_FE2_job *job);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

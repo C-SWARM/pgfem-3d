@@ -14,6 +14,10 @@
 #include "ensight.h"
 #include "PGFem3D_options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 void logo (FILE *out);
 
 void coordinates (FILE *out,
@@ -127,4 +131,9 @@ void ASCII_output(const PGFem3D_opt *opts,
 		  SIG *sig_e,
 		  SIG *sig_n,
 		  COEL *coel);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

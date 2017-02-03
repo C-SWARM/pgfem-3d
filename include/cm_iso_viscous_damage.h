@@ -30,6 +30,10 @@ typedef struct Constitutive_model Constitutive_model;
 typedef struct Model_parameters Model_parameters;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -85,5 +89,10 @@ int ivd_public_int_alg(double *var_w,
 int ivd_public_subdiv_param(const double var_wn,
                             const double var_w,
                             double *subdiv_param);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

@@ -7,7 +7,7 @@ pfem_incl_dir = $(TEST_DIR)/include
 
 # SUITESPARSE
 SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
-		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
+            		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
 
 # HYPRE
 HYPRE_inc	= -I$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/include
@@ -49,15 +49,13 @@ MKL_lib		= $(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_sequential.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_core.a \
 	     	  $(MKLROOT)/lib/intel64/libmkl_blas95_lp64.a \
-	     	  -Wl,--end-group -lpthread
+	     	  -Wl,--end-group -lpthread -lm -ldl
 
 
-CC = mpicc
+CXX = mpicxx
 LINK = mpicxx
 
-RM = rm -rf
-
-CFLAGS = -Wall -std=c99 -O3 -g
+CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g
 
 INCLUDES = -I$(pfem_incl_dir) \
 	    $(HYPRE_inc) \
@@ -76,21 +74,21 @@ LIBS	= $(VTK_IO_lib) \
 	  $(MKL_lib) \
 	  $(energy_equation_lib)
 
-OBJ = $(SRC:.c=.o)
+OBJ = $(SRC:.cc=.o)
 
 all:
-#	$(CC) -c $(INCLUDES) $(CFLAGS) post_processing.c 	
-	$(CC) -c $(INCLUDES) $(CFLAGS) shear.c 		
-	$(LINK) -o shear $(CFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) tension_disp.c 		
-	$(LINK) -o tension_disp $(CFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) tension_pressure.c 		
-	$(LINK) -o tension_pressure $(CFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
-	$(CC) -c $(INCLUDES) $(CFLAGS) UQ_study.c 		
-	$(LINK) -o UQ_study $(CFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
-	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity.c
-	$(LINK) -o crystal_plasticity $(CFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
-	$(CC) -c $(INCLUDES) $(CFLAGS) crystal_plasticity_verification_test.c
-	$(LINK) -o crystal_plasticity_verification_test $(CFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
+#	$(CXX) -c $(INCLUDES) $(CXXFLAGS) post_processing.cc 	
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) shear.cc 		
+	$(LINK) -o shear $(CXXFLAGS) shear.o  $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) tension_disp.cc 		
+	$(LINK) -o tension_disp $(CXXFLAGS) tension_disp.o  $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) tension_pressure.cc 		
+	$(LINK) -o tension_pressure $(CXXFLAGS) tension_pressure.o $(OBJ_TEST) $(LIBS)		
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) UQ_study.cc 		
+	$(LINK) -o UQ_study $(CXXFLAGS) UQ_study.o $(OBJ_TEST) $(LIBS)	
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) crystal_plasticity.cc
+	$(LINK) -o crystal_plasticity $(CXXFLAGS) crystal_plasticity.o $(OBJ_TEST) $(LIBS)
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) crystal_plasticity_verification_test.cc
+	$(LINK) -o crystal_plasticity_verification_test $(CXXFLAGS) crystal_plasticity_verification_test.o $(OBJ_TEST) $(LIBS) 							
 clean:  
 	rm -f *.out *.o *.mod core* shear tension_disp tension_pressure UQ_study crystal_plasticity  crystal_plasticity_verification_test

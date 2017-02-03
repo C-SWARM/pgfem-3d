@@ -2,15 +2,17 @@
 #ifndef BOUNDING_ELEMENT_H
 #define BOUNDING_ELEMENT_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 #include "PGFEM_mpi.h"
 
 #ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
 #endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** Define the bounding element type */
   typedef struct BOUNDING_ELEMENT{

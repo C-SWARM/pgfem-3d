@@ -1,10 +1,6 @@
 #ifndef COMPUTE_MACROS_H
 #define COMPUTE_MACROS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
 #endif
@@ -24,6 +20,10 @@ extern "C" {
 #ifndef EPS_H
 #include "eps.h"
 #endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** Compute volume average 2PK stress.  Contains global
       communication. */

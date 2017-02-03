@@ -21,6 +21,10 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /* Function reads parameters of supports */
 SUPP read_supports (FILE *in,
 		    long nn,
@@ -86,4 +90,9 @@ void read_elem_surface_load (FILE *in,
     reading the file. */
 int override_prescribed_displacements(SUPP sup,
 				      const PGFem3D_opt *opt);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

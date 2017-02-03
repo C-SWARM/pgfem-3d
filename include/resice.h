@@ -14,6 +14,10 @@
 #include "node.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 void reseni_rovnic(double *a,
 		   double *x,
 		   double *y,
@@ -112,5 +116,9 @@ void sky_scr (double *sky,
 	      long *ci,
 	      double limit,
 	      long n);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

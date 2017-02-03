@@ -11,7 +11,8 @@
 
 static const int ndim = 3;
 
-inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
+//inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
+size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
   size_t result = (7*sizeof(int)
 		   + sizeof(double)

@@ -12,6 +12,10 @@
 #include "microscale_information.h"
 #include "pgf_fe2_rebalancer.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
 typedef struct pgf_FE2_macro_client pgf_FE2_macro_client;
@@ -79,4 +83,8 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
  */
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
 				    const PGFEM_mpi_comm *mpi_comm);
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

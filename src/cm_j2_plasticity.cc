@@ -39,7 +39,8 @@
 
 static const double DAMAGE_THRESH = 0.9999;
 static const double j2d_int_alg_tol = 1.0e-10;
-static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+//static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
 Define_Matrix(double);
 
@@ -368,7 +369,7 @@ static int j2d_int_alg(Constitutive_model *m,
                        const void *CTX)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  auto ctx = (j2d_ctx *) CTX;
 
   /* store the current (n + 1) deformation gradient in the CM object. */
   memcpy(cm_Fs_data(m, FNP1), ctx->F, tensor * sizeof(*(ctx->F)));
@@ -441,7 +442,8 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   int err = 0;
   memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
 
-  const j2d_ctx *ctx = CTX;
+  //const j2d_ctx *ctx = CTX;
+  const auto ctx = (j2d_ctx *) CTX;
   const double *F = cm_Fs_data(m,FNP1);
   const double *Fn = cm_Fs_data(m, FN);
   const double *spn = cm_Fs_data(m, SPN);
@@ -522,7 +524,7 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
                                double * restrict Aep_dev)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  const auto ctx = (j2d_ctx *) CTX;
   const double *param = cm_param(m);
   const double *Fn = cm_Fs_data(m, FN);
   const double *spn = cm_Fs_data(m, SPN);
@@ -611,7 +613,7 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
                             double * restrict Lbar)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  const auto ctx = (j2d_ctx *) CTX;
   const double kappa = hommat_get_kappa(cm_hmat(m));
   const double J = det3x3(ctx->F);
   double C[tensor] = {0};
@@ -667,7 +669,7 @@ static int j2d_compute_S0_Sbar(const Constitutive_model *m,
                                double *Sbar)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  auto ctx = (j2d_ctx *) CTX;
 
   /* compute the current configuration deviatoric stresses */
   double s0[tensor] = {0};
@@ -704,7 +706,7 @@ static int j2d_modify_AST(const Constitutive_model *m,
                           double *L)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  auto ctx = (j2d_ctx *) CTX;
   const double dmu = ctx->dt * cm_param(m)[mu];
   const double evo = dmu * cm_vars(m)[H] / (1.0 + dmu);
   double S0[tensor] = {0};
@@ -767,7 +769,7 @@ static int j2d_Sdev(const Constitutive_model *m,
                     Matrix_double *Sdev)
 {
   int err = 0;
-  const j2d_ctx *ctx = CTX;
+  auto ctx = (j2d_ctx *) CTX;
   double sbar[tensor] = {0};
   err += j2d_compute_sbar(ctx->F,
                           cm_Fs_data(m, SP),
@@ -787,7 +789,7 @@ static int j2d_dudj(const Constitutive_model *m,
                     double *dudj)
 {
   int err = 0;
-  const j2d_ctx *CTX = ctx;
+  auto CTX = (j2d_ctx *) ctx;
   double J = det3x3(CTX->F);
   new_pot_compute_dudj(J, cm_hmat(m), dudj);
 
@@ -999,6 +1001,7 @@ int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double dt)
 {
   j2d_ctx *CTX = malloc(sizeof(*CTX));
+  //CTX = (j2d_ctx *) malloc(sizeof(*CTX));
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;
   *ctx = CTX;

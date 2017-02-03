@@ -20,6 +20,11 @@ Define_Matrix(long);
 #define _Matrix_long 1
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 typedef struct {
   Matrix(double) N_x, N_y, N_z, x, y, z;
   double ksi_ip, eta_ip, zet_ip, w_ip;
@@ -91,4 +96,9 @@ void FEMLIB_update_shape_tensor(FEMLIB *fe);
 void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) *F);
 double FEMLIB_elem_volume(FEMLIB *fe);
 void FEMLIB_destruct(FEMLIB *fe);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

@@ -2,9 +2,6 @@
 #ifndef GET_NDOF_ON_ELEM_H
 #define GET_NDOF_ON_ELEM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 #ifndef ELEMENT_H
 #include "element.h"
@@ -17,6 +14,12 @@ extern "C" {
 #ifndef BOUNDING_ELEMENT_H
 #include "bounding_element.h"
 #endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 
   /** Get the total number of degrees of freedom on an element. This
       includes degrees of freedom from each of the element nodes and

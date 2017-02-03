@@ -13,6 +13,10 @@
 #include "MMS.h"
 #include "femlib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 void compute_L2_error(double *GL2_err, ELEMENT *elem, long ne, NODE *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
 {
   int myrank = 0;
@@ -77,5 +81,9 @@ void compute_L2_error(double *GL2_err, ELEMENT *elem, long ne, NODE *node, doubl
   
   MPI_Allreduce(L2_err,GL2_err,3,MPI_DOUBLE,MPI_SUM,mpi_comm);
 };  
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

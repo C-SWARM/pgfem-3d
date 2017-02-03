@@ -7,10 +7,6 @@
 #ifndef COMPUTE_REACTIONS_H
 #define COMPUTE_REACTIONS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"
@@ -20,6 +16,10 @@ extern "C" {
 #include "sig.h"
 #include "eps.h"
 #include "crpl.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
 
   /** After convergence, compute the reaction forces at nodes with
       prescribed deflections. This is achieved by computing the

@@ -18,6 +18,11 @@
 #include "eps.h"
 #include "supp.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * Compute the material potential at an integration point
  */
@@ -103,5 +108,10 @@ int st_increment (long ne,
 		  MPI_Comm mpi_comm,
 		  const int coh,
 		  const int mp_id);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

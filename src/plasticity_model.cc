@@ -473,7 +473,7 @@ static int plasticity_dev_stress(const Constitutive_model *m,
                                  Matrix(double) *stress)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   double eC[DIM_3x3] = {};
       
   err += cp_compute_eC(CTX->F,eC);
@@ -487,7 +487,7 @@ static int plasticity_dudj(const Constitutive_model *m,
                            double *dudj)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
   double J = det3x3(CTX->F);
   Pressure(J,m->param->p_hmat,dudj);
@@ -499,7 +499,7 @@ static int plasticity_dev_tangent(const Constitutive_model *m,
                                   Matrix(double) *tangent)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   double eC[DIM_3x3] = {};
   
   err += cp_compute_eC(CTX->F,eC);
@@ -512,7 +512,7 @@ static int plasticity_d2udj2(const Constitutive_model *m,
                              double *d2udj2)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   double J = det3x3(CTX->F);
 
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
@@ -532,8 +532,8 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
      alpha,beta pair and computes the corresponding dMdu. We will
      generate the required inputs for this function and call it
      alpha*beta times. This should be improved */
-  const plasticity_ctx *CTX = ctx;
  
+  auto CTX = (plasticity_ctx *) ctx;
   // shorthand of deformation gradients
   Matrix(double) *Fs = m->vars.Fs;
   
@@ -654,7 +654,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha,beta pair and computes the corresponding dMdu. We will
      generate the required inputs for this function and call it
      alpha*beta times. This should be improved */
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   
   enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnI,Fend}; 
   
@@ -765,7 +765,7 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
                                    double *dM_du)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   if(CTX->alpha<0)
     err += plasticity_compute_dMdu_np1(m,ctx,Grad_op,nne,ndofn,dM_du);
   else
@@ -977,7 +977,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
                                        const int compute_stiffness)
 {
   int err = 0;
-  const plasticity_ctx *ctx = ctx_in;
+  auto ctx = (plasticity_ctx *) ctx_in;
   
   // if transient cases, 
   // get_eF is not working because eF needs to be updated using mid-point alpha
@@ -1366,7 +1366,7 @@ static int plasticity_int_alg(Constitutive_model *m,
                               const void *ctx)
 {
   int err = 0;
-  const plasticity_ctx *CTX = ctx;
+  auto CTX = (plasticity_ctx *) ctx;
   memcpy((m->vars).Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
   
   const double dt = CTX->dt;

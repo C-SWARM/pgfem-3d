@@ -11,6 +11,10 @@
 
 #include "PGFem3D_data_structure.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /// compute residuals for heat conduction problem
 ///
 /// \param[in] grid an object containing all mesh info
@@ -90,4 +94,7 @@ int update_thermal_flux4print(GRID *grid,
                               MATERIAL_PROPERTY *mat,
                               FIELD_VARIABLES *fv,
                               double dt);
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 #endif

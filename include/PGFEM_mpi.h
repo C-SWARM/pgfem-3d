@@ -5,6 +5,8 @@
 #ifndef PGFEM_MPI_H
 #define PGFEM_MPI_H
 
+#include <config.h>
+
 #include "mpi.h"
 
 /** Future, write #define wrappers for MPI functions and

@@ -10,6 +10,10 @@
 
 #include "PGFEM_mpi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 struct VAL_W_KEY {
   int val;
   int key;
@@ -171,5 +175,9 @@ void tqli (double *d,
 	   double *e,
 	   int n,
 	   double **z);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

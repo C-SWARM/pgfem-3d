@@ -92,34 +92,34 @@ typedef struct PRINT_MULTIPHYSICS_RESULT PRINT_MULTIPHYSICS_RESULT;
 
 /// Mechanical part of index of output vailabes
 /// for writing simulation resuls 
-enum{MECHANICAL_Var_Displacement,
-     MECHANICAL_Var_MacroDisplacement,
-     MECHANICAL_Var_NodalPressure,
-     MECHANICAL_Var_CauchyStress,
-     MECHANICAL_Var_EulerStrain,
-     MECHANICAL_Var_EffectiveStrain,
-     MECHANICAL_Var_EffectiveStress,
-     MECHANICAL_Var_CellProperty,
-     MECHANICAL_Var_Damage,
-     MECHANICAL_Var_Chi,
-     MECHANICAL_Var_F,
-     MECHANICAL_Var_P,
-     MECHANICAL_Var_W,
-     MECHANICAL_Var_ElementPressure,
-     MECHANICAL_Var_ElementVolume,
-     MECHANICAL_Var_NO} MECHANICAL_Var;
+typedef enum{MECHANICAL_Var_Displacement,
+             MECHANICAL_Var_MacroDisplacement,
+             MECHANICAL_Var_NodalPressure,
+             MECHANICAL_Var_CauchyStress,
+             MECHANICAL_Var_EulerStrain,
+             MECHANICAL_Var_EffectiveStrain,
+             MECHANICAL_Var_EffectiveStress,
+             MECHANICAL_Var_CellProperty,
+             MECHANICAL_Var_Damage,
+             MECHANICAL_Var_Chi,
+             MECHANICAL_Var_F,
+             MECHANICAL_Var_P,
+             MECHANICAL_Var_W,
+             MECHANICAL_Var_ElementPressure,
+             MECHANICAL_Var_ElementVolume,
+             MECHANICAL_Var_NO} MECHANICAL_Var;
 
 /// Thermal part of index of output vailabes
 /// for writing simulation resuls       
-enum{THERMAL_Var_Temperature,
-     THERMAL_Var_HeatFlux,
-     THERMAL_Var_HeatGenerations,     
-     Thermal_Var_NO} THERMAL_Var;
+typedef enum{THERMAL_Var_Temperature,
+             THERMAL_Var_HeatFlux,
+             THERMAL_Var_HeatGenerations,     
+             Thermal_Var_NO} THERMAL_Var;
 
 /// Chemical part of index of output vailabes
 /// for writing simulation resuls       
-enum{CHEMICAL_VAR_SPECIES,
-     CHEMICAL_Var_NO} CHEMICAL_Var;     
+typedef enum{CHEMICAL_VAR_SPECIES,
+             CHEMICAL_Var_NO} CHEMICAL_Var;     
 
 /// function pointer for generalizing writing simulation results
 /// Using this function pointer, different variables can be written

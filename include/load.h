@@ -22,6 +22,10 @@
 #include "crpl.h"
 #include "PGFem3D_options.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /**
  * \brief Get the list of times to increment the load from the file.
  */
@@ -99,4 +103,10 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                           MULTIPHYSICS *mp,
                                           int mp_id,
                                           int myrank);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
+
 #endif

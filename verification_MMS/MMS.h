@@ -14,6 +14,11 @@
 #include "elem3d.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+
 void MMS_displacement(double *u, double t, double X, double Y, double Z);
 void MMS_velocity(double *v, double t, double X, double Y, double Z);
 void MMS_initial_velocity(double *v, double X, double Y, double Z);
@@ -48,5 +53,10 @@ double MMS_dSdDC3_2(double m10, double m01, double kappa, double mu, double X, d
 double MMS_dSdDC3_3(double m10, double m01, double kappa, double mu, double X, double Y, double Z, double u_t, double DC);
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z);
+
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif

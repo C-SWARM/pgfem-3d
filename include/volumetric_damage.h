@@ -3,11 +3,11 @@
 #ifndef VOLUMETRIC_DAMAGE_H
 #define VOLUMETRIC_DAMAGE_H
 
+#include <stdlib.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-#include <stdlib.h>
 
   /** Define volumetric damage variables */
   typedef struct DAMAGE_PARAMS{

@@ -49,4 +49,22 @@ int write_restart(GRID *grid,
                   MULTIPHYSICS *mp,
                   int stepno,
                   int myrank);
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1);
+
+int read_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
+                 ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
+                 int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1, double *NORM);
+                 
+int write_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
+                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,                  
+                  int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times, double NORM);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 #endif

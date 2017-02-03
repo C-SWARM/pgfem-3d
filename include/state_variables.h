@@ -27,6 +27,11 @@ typedef struct Matrix_double Vector_double;
 /**
  * Object for storing state variables at an integration point.
  */
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 struct State_variables {
   /** Array of handles to deformation gradients, e.g., Fp, Ft, Fe,... */
   Matrix_double *Fs;
@@ -57,5 +62,10 @@ int state_variables_pack(const State_variables *s,
 int state_variables_unpack(State_variables *s,
                            const char *buffer,
                            size_t *pos);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
+
 
 #endif

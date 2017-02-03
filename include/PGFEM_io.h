@@ -12,11 +12,13 @@
 #ifndef PGFEM_IO_H
 #define PGFEM_IO_H
 
+#include <stdio.h>
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-#include <stdio.h>
 
   /* FILE pointers that get switched about */
   extern FILE *PGFEM_stdout;
@@ -56,14 +58,14 @@ extern "C" {
 		    const char *file,
 		    const long line);
 
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #define PGFEM_fopen(filename,mode)			\
   PGFEM_FOPEN(filename,mode,__func__,__FILE__,__LINE__)
 #define PGFEM_fclose(a) fclose(a)
 
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 #endif /* #ifndef  */
 
 /* include block

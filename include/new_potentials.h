@@ -2,11 +2,11 @@
 #ifndef NEW_POTENTIALS_H
 #define NEW_POTENTIALS_H
 
+#include "hommat.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-#include "hommat.h"
 
   /* This file contains functions to return stress, pressure and their
      tangents.  The tangents are the derivatives with respect to their

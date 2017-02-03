@@ -3,6 +3,10 @@
 #ifndef HOMMAT_H
 #define HOMMAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* #ifdef __cplusplus */
+
 /** Structure of material matrices */
 struct HOMMAT{
   /* Elastic stiffness matrix */
@@ -32,5 +36,9 @@ void destroy_hommat(HOMMAT* hm, long nm);
  * properties.
  */
 double hommat_get_kappa(const HOMMAT *mat);
+
+#ifdef __cplusplus
+}
+#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */
