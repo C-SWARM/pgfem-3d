@@ -84,8 +84,6 @@ int read_time_step_info(FIELD_VARIABLES *fv,
 
   double t[3];
   t[0] = t[1] = t[2] = -1.0;
-  for(int ia=0; ia<mp->physicsno; ia++)
-    fv[ia].NORM = 0.0;
   
   FILE *fp = fopen(fn, "r");    
   

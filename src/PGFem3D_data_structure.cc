@@ -180,7 +180,6 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   fv->BS_f   = aloc1(DomDof_myrank);
   fv->BS_f_u = aloc1(DomDof_myrank);
   fv->BS_RR  = aloc1(DomDof_myrank);
-  fv->NORM   = 0.0;
 //  if(mp_id == MULTIPHYSICS_MECHANICAL)
   {
     fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
