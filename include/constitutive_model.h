@@ -77,7 +77,8 @@ typedef struct Model_parameters Model_parameters;
  */
 struct Constitutive_model {
   const Model_parameters *param;
-  State_variables vars;
+  int model_id;  
+  State_variables **vars_list;
 };
 
 #ifndef TYPE_CONSTITUTIVE_MODEL
@@ -121,19 +122,21 @@ int init_all_constitutive_model(EPS *eps,
                                 const Model_parameters *param_list);
 /// save state variables 
 ///
-/// temporary save state variables to use when solution step is failed and requires go to initial step
-/// 
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
 int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
                                                    GRID *grid);
-
-/// reset state variables using priori store values
+/// update state variables 
 ///
-/// temporary save state variables update state variables 
-/// when solution step is failed and requires go to initial step
-/// 
+/// \param[in, out] fv an object containing all field variables
+/// \param[in] grid an object containing all mesh data
+/// \return non-zero on internal error
+int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
+                                                         GRID *grid);
+
+/// reset state variables using priori stored values
+///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
@@ -498,8 +501,10 @@ struct Model_parameters {
   usr_increment update_state_vars;
   usr_increment reset_state_vars;
   usr_temporal_updates reset_state_vars_using_temporal;
+  usr_temporal_updates update_np1_state_vars_to_temporal;
   usr_temporal_updates save_state_vars_to_temporal;
   usr_info get_var_info;
+  usr_get_F get_F;
   usr_get_F get_Fn;
   usr_get_F get_Fnm1;  
   usr_get_F get_pF;

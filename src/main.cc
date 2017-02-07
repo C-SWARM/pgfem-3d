@@ -425,6 +425,7 @@ int single_scale_main(int argc,char *argv[])
   struct rusage usage;
 
   Model_parameters *param_list = NULL;
+  
   char filename[500],in_dat[500];
   
   /* CRYSTAL PLASTICITY */
@@ -936,7 +937,7 @@ int single_scale_main(int argc,char *argv[])
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, myrank, mp.physics_ids[ia]);
+      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, mp.physics_ids[ia]);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       { 
         // set extra variables for arc lengh
@@ -960,7 +961,10 @@ int single_scale_main(int argc,char *argv[])
           free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
+          err += prepare_temporal_field_varialbes(fv+ia,&grid,1);          
         }
+        else
+          err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
     
         /* alocation of pressure variables */
         switch(options.analysis_type){
@@ -1021,7 +1025,6 @@ int single_scale_main(int argc,char *argv[])
               fv[ia].eps[e].T[a] = 1.0;
           }
         }
-        err += prepare_temporal_field_varialbes(fv+ia,&grid,1);
       }
       else
         err += prepare_temporal_field_varialbes(fv+ia,&grid,0);      
@@ -1311,12 +1314,12 @@ int single_scale_main(int argc,char *argv[])
   
   for(int ia=0; ia<mp.physicsno; ia++)
   {
-    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
       err += destory_temporal_field_varialbes(fv+ia,1);
     else
       err += destory_temporal_field_varialbes(fv+ia,0);
 
-    err += destruct_field_varialbe(fv+ia, &grid, &options, mp.physics_ids[ia]);
+    err += destruct_field_varialbe(fv+ia, &grid, &options, &mp, ia);
   }
   free(fv);
 

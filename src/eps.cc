@@ -19,7 +19,8 @@ static const size_t TENSOR_2 = 9; /* NDN*NDN */
 
 EPS* build_eps_il(const long ne,
                   const ELEMENT *elem,
-                  const int analysis)
+                  const int analysis,
+                  State_variables **statv_list)
 /* INELASTIC */
 {
   int err = 0;
@@ -27,6 +28,8 @@ EPS* build_eps_il(const long ne,
   long i,j,k,M,N,P,II,JJ,nne;
   
   pom = (EPS*) PGFEM_calloc (ne, sizeof(EPS));
+  
+  int n_state_varialbles = 0; // count number of element variables
   
   for (i=0;i<ne;i++){
     /* initialize ALL variables */
@@ -114,7 +117,10 @@ EPS* build_eps_il(const long ne,
         
         for (j=0;j<II;j++){
           if (analysis == CM) {
+            pom[i].model[j].vars_list = statv_list;
+            pom[i].model[j].model_id = n_state_varialbles;
             err += constitutive_model_construct(pom[i].model + j);
+            n_state_varialbles++;
           }
           pom[i].il[j].o = (double *) PGFEM_calloc (SYM_TENSOR,sizeof(double));
           pom[i].il[j].F = (double *) PGFEM_calloc (TENSOR_2,sizeof(double));

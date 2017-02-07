@@ -42,7 +42,7 @@ static int he_pack(const Constitutive_model *m,
                    size_t *pos)
 {
   /* pack/unpack Fs */
-  const Matrix_double *Fs = m->vars.Fs;
+  const Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
   pack_data(Fs[Fn].m_pdata, buffer, pos, tensor, sizeof(double));
   pack_data(Fs[Fnp1].m_pdata, buffer, pos, tensor, sizeof(double));
   return 0;
@@ -52,7 +52,7 @@ static int he_unpack(Constitutive_model *m,
                      const char *buffer,
                      size_t *pos)
 {
-  Matrix_double *Fs = m->vars.Fs;
+  Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
   unpack_data(buffer, Fs[Fn].m_pdata, pos, tensor, sizeof(double));
   unpack_data(buffer, Fs[Fnp1].m_pdata, pos, tensor, sizeof(double));
   return 0;
@@ -81,7 +81,7 @@ static int plasticity_none_int_alg(Constitutive_model *m,
 {
   int err = 0;
   auto CTX = (none_ctx *) ctx;
-  memcpy(m->vars.Fs[Fnp1].m_pdata, CTX->F, tensor * sizeof(*CTX->F));
+  memcpy(m->vars_list[0][m->model_id].Fs[Fnp1].m_pdata, CTX->F, tensor * sizeof(*CTX->F));
   return err;
 }
 
@@ -138,15 +138,15 @@ static int plasticity_none_d2udj2(const Constitutive_model *m,
 static int plasticity_none_update(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_AeqB(m->vars.Fs[Fnm1], 1.0, m->vars.Fs[Fn]);
-  Matrix_AeqB(m->vars.Fs[Fn],   1.0, m->vars.Fs[Fnp1]);
+  Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fnm1], 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
+  Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fn],   1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
   return err;
 }
 
 static int plasticity_none_reset(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_AeqB(m->vars.Fs[Fnp1], 1.0, m->vars.Fs[Fn]);
+  Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fnp1], 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
   return err;
 }
 
@@ -154,7 +154,7 @@ static int plasticity_none_reset(Constitutive_model *m)
 static int plasticity_none_reset_using_temporal(const Constitutive_model *m, State_variables *var)
 {
   int err = 0;
-  Matrix(double) *Fs    = (m->vars).Fs;
+  Matrix(double) *Fs    = (m->vars_list[0][m->model_id]).Fs;
   Matrix(double) *Fs_in = var->Fs;
   Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
   Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
@@ -162,10 +162,20 @@ static int plasticity_none_reset_using_temporal(const Constitutive_model *m, Sta
   return err;
 }
 
+static int plasticity_none_update_np1_to_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs    = var->Fs;
+  Matrix(double) *Fs_in = (m->vars_list[0][m->model_id]).Fs;
+  Matrix_AeqB(Fs[Fnp1], 1.0,Fs_in[Fnp1]);
+
+  return err;
+}
+
 static int plasticity_none_save_to_temporal(const Constitutive_model *m, State_variables *var)
 {
   int err = 0;
-  Matrix(double) *Fs_in = (m->vars).Fs;
+  Matrix(double) *Fs_in = (m->vars_list[0][m->model_id]).Fs;
   Matrix(double) *Fs    = var->Fs;
   Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
   Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
@@ -207,13 +217,13 @@ static int he_get_eF_with_thermal(const Constitutive_model *m,
   switch(stepno)
   {
     case 0: // n-1
-      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fnm1],0,*hFI,0);
+      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnm1],0,*hFI,0);
       break;
     case 1: // n
-      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fn],0,*hFI,0);
+      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fn],0,*hFI,0);
       break;
     case 2: // n+1
-      Matrix_AxB(*eF,1.0,0.0,m->vars.Fs[Fnp1],0,*hFI,0);
+      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnp1],0,*hFI,0);
       break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
@@ -224,11 +234,19 @@ static int he_get_eF_with_thermal(const Constitutive_model *m,
   return err;      
 }
 
+static int he_get_F(const Constitutive_model *m,
+                    Matrix_double *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
+  return err;
+}
+
 static int he_get_Fn(const Constitutive_model *m,
                      Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F, 1.0, m->vars.Fs[Fn]);
+  Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
   return err;
 }
 
@@ -236,7 +254,7 @@ static int he_get_Fnm1(const Constitutive_model *m,
                      Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F, 1.0, m->vars.Fs[Fnm1]);
+  Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnm1]);
   return err;
 }
 
@@ -252,7 +270,7 @@ static int he_get_eF(const Constitutive_model *m,
                      Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F, 1.0, m->vars.Fs[Fnp1]);
+  Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
   return err;
 }
 
@@ -304,7 +322,7 @@ static int he_write_restart(FILE *out,
 {
   /* write Fn to file */
   int err = 0;
-  const double *F = m->vars.Fs[Fn].m_pdata;
+  const double *F = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
   if (fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
               F[0], F[1], F[2],
               F[3], F[4], F[5],
@@ -317,8 +335,8 @@ static int he_read_restart(FILE *in,
 {
   /* read Fn from file and set Fnp1 = Fn */
   int err = 0;
-  double *FN = m->vars.Fs[Fn].m_pdata;
-  double *FNP1 = m->vars.Fs[Fnp1].m_pdata;
+  double *FN = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
+  double *FNP1 = m->vars_list[0][m->model_id].Fs[Fnp1].m_pdata;
   if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             FN, FN + 1, FN + 2,
             FN + 3, FN + 4, FN + 5,
@@ -348,7 +366,7 @@ int plasticity_model_none_elasticity(const Constitutive_model *m,
   }
   else
   {
-  	Matrix(double) *Fs = m->vars.Fs; 
+  	Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs; 
 
     if(ctx->is_coulpled_with_thermal)
     {
@@ -385,8 +403,10 @@ int plasticity_model_none_initialize(Model_parameters *p)
   p->update_state_vars = plasticity_none_update;
   p->reset_state_vars = plasticity_none_reset;
   p->reset_state_vars_using_temporal = plasticity_none_reset_using_temporal;
+  p->update_np1_state_vars_to_temporal = plasticity_none_update_np1_to_temporal;
   p->save_state_vars_to_temporal = plasticity_none_save_to_temporal;  
   p->get_var_info = plasticity_none_info;
+  p->get_F     = he_get_F;  
   p->get_Fn    = he_get_Fn;
   p->get_Fnm1  = he_get_Fnm1;  
   p->get_pF    = he_get_eye;

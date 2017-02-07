@@ -233,7 +233,7 @@ static int ivd_modify_AST(const Constitutive_model *m,
   int err = 0;
   auto CTX = (ivd_ctx *) ctx;
   const double dmu = CTX->dt * m->param->model_param[mu];
-  const double evo = dmu * m->vars.state_vars->m_pdata[H] / (1.0 + dmu);
+  const double evo = dmu * m->vars_list[0][m->model_id].state_vars->m_pdata[H] / (1.0 + dmu);
   double Sbar[tensor] = {0};
   err += ivd_compute_Sbar(m, ctx, Sbar);
 
@@ -261,13 +261,13 @@ static int ivd_compute_AST(const Constitutive_model *m,
   err += ivd_compute_Lbar(m, ctx, L->m_pdata);
 
   /* scale by damage parameter */
-  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  const double dam = 1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w];
   for (int i = 0; i < tensor4; i++) {
     L->m_pdata[i] *= dam;
   }
 
   /* if evolving damage, modify tangent */
-  if (m->vars.flags[damaged]) {
+  if (m->vars_list[0][m->model_id].flags[damaged]) {
     err += ivd_modify_AST(m, ctx, L->m_pdata);
   }
 
@@ -280,8 +280,8 @@ static int ivd_int_alg(Constitutive_model *m,
   int err = 0;
   auto CTX = (ivd_ctx *) ctx;
   const double *params = m->param->model_param;
-  double *vars = m->vars.state_vars->m_pdata;
-  int *flags = m->vars.flags;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  int *flags = m->vars_list[0][m->model_id].flags;
 
   double Wdev = 0.0;
   double U = 0.0;
@@ -296,7 +296,7 @@ static int ivd_int_alg(Constitutive_model *m,
   err += ivd_private_damage_int_alg(vars, flags, params, Ybar, CTX->dt);
 
   /* store the deformation gradient */
-  memcpy(m->vars.Fs[F].m_pdata, CTX->F, tensor * sizeof(double));
+  memcpy(m->vars_list[0][m->model_id].Fs[F].m_pdata, CTX->F, tensor * sizeof(double));
 
   return err;
 }
@@ -312,7 +312,7 @@ static int ivd_dev_stress(const Constitutive_model *m,
   new_pot_compute_Sdev(C, m->param->p_hmat, devS->m_pdata);
 
   /* scale by damage variable */
-  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  const double dam = 1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w];
   for(int i = 0; i < tensor; i++) devS->m_pdata[i] *= dam;
   return err;
 }
@@ -327,7 +327,7 @@ static int ivd_dudj(const Constitutive_model *m,
   new_pot_compute_dudj(J, m->param->p_hmat, dudj);
 
   /* scale by damage variable */
-  *dudj *= (1.0 - m->vars.state_vars->m_pdata[w]);
+  *dudj *= (1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w]);
   return err;
 }
 
@@ -342,7 +342,7 @@ static int ivd_dev_tangent(const Constitutive_model *m,
   new_pot_compute_Ldev(C, m->param->p_hmat, devL->m_pdata);
 
   /* scale by damage variable */
-  const double dam = 1.0 - m->vars.state_vars->m_pdata[w];
+  const double dam = 1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w];
   for(int i = 0; i < tensor4; i++) devL->m_pdata[i] *= dam;
 
   return err;
@@ -358,18 +358,18 @@ static int ivd_d2udj2(const Constitutive_model *m,
   new_pot_compute_d2udj2(J, m->param->p_hmat, d2udj2);
 
   /* scale by damage variable */
-  *d2udj2 *= (1.0 - m->vars.state_vars->m_pdata[w]);
+  *d2udj2 *= (1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w]);
   return err;
 }
 
 static int ivd_update(Constitutive_model *m)
 {
   int err = 0;
-  double *vars = m->vars.state_vars->m_pdata;
-  int *flags = m->vars.flags;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  int *flags = m->vars_list[0][m->model_id].flags;
 
   /* deformation gradients */
-  Matrix_copy(m->vars.Fs[Fn], m->vars.Fs[F]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[Fn], m->vars_list[0][m->model_id].Fs[F]);
 
   /* state variables */
   vars[wn] = vars[w];
@@ -385,11 +385,11 @@ static int ivd_update(Constitutive_model *m)
 static int ivd_reset(Constitutive_model *m)
 {
   int err = 0;
-  double *vars = m->vars.state_vars->m_pdata;
-  int *flags = m->vars.flags;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  int *flags = m->vars_list[0][m->model_id].flags;
 
   /* deformation gradients */
-  Matrix_copy(m->vars.Fs[F], m->vars.Fs[Fn]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[F], m->vars_list[0][m->model_id].Fs[Fn]);
 
   /* state variables */
   vars[w] = vars[wn];
@@ -438,7 +438,7 @@ static int ivd_get_Fn(const Constitutive_model *m,
                       Matrix_double *FF)
 {
   int err = 0;
-  Matrix_copy(*FF, m->vars.Fs[Fn]);
+  Matrix_copy(*FF, m->vars_list[0][m->model_id].Fs[Fn]);
   return err;
 }
 
@@ -446,7 +446,7 @@ static int ivd_get_F(const Constitutive_model *m,
                      Matrix_double *FF)
 {
   int err = 0;
-  Matrix_copy(*FF, m->vars.Fs[F]);
+  Matrix_copy(*FF, m->vars_list[0][m->model_id].Fs[F]);
   return err;
 }
 
@@ -465,14 +465,14 @@ static int ivd_get_F_I(const Constitutive_model *m,
 static int ivd_get_damage(const Constitutive_model *m,
                           double *w)
 {
-  *w = m->vars.state_vars->m_pdata[wn];
+  *w = m->vars_list[0][m->model_id].state_vars->m_pdata[wn];
   return 0;
 }
 
 static int ivd_get_chi(const Constitutive_model *m,
                        double *chi)
 {
-  *chi = m->vars.state_vars->m_pdata[Xn];
+  *chi = m->vars_list[0][m->model_id].state_vars->m_pdata[Xn];
   return 0;
 }
 
@@ -480,9 +480,9 @@ static int ivd_write_restart(FILE *out,
                              const Constitutive_model *m)
 {
   int err = 0;
-  const double *FF = m->vars.Fs[Fn].m_pdata;
-  const double *vars = m->vars.state_vars->m_pdata;
-  const int *flags = m->vars.flags;
+  const double *FF = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
+  const double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  const int *flags = m->vars_list[0][m->model_id].flags;
   if(fprintf(out, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0) err++;
   if(fprintf(out, "%.17e %.17e %.17e %d\n", vars[wn], vars[Xn], vars[Hn], flags[damaged_n]) < 0) err++;
@@ -493,9 +493,9 @@ static int ivd_read_restart(FILE *in,
                             Constitutive_model *m)
 {
   int err = 0;
-  double *FF = m->vars.Fs[Fn].m_pdata;
-  double *vars = m->vars.state_vars->m_pdata;
-  int *flags = m->vars.flags;
+  double *FF = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  int *flags = m->vars_list[0][m->model_id].flags;
   if(fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             &FF[0], &FF[1], &FF[2], &FF[3],
             &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor) err++;
@@ -518,10 +518,10 @@ static int ivd_compute_dMdu(const Constitutive_model *m,
 static int ivd_set_init_vals(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_eye(m->vars.Fs[Fn], dim);
-  double *vars = m->vars.state_vars->m_pdata;
+  Matrix_eye(m->vars_list[0][m->model_id].Fs[Fn], dim);
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   vars[wn] = vars[Xn] = vars[Hn] = 0.0;
-  m->vars.flags[damaged_n] = 0;
+  m->vars_list[0][m->model_id].flags[damaged_n] = 0;
   err += ivd_reset(m);
   return err;
 }
@@ -559,29 +559,29 @@ static int ivd_read_param(Model_parameters *p,
 
 static size_t ivd_get_size(const Constitutive_model *m)
 {
-  return state_variables_get_packed_size(&(m->vars));
+  return state_variables_get_packed_size(&(m->vars_list[0][m->model_id]));
 }
 
 static int ivd_pack(const Constitutive_model *m,
                     char *buffer,
                     size_t *pos)
 {
-  return state_variables_pack(&(m->vars), buffer, pos);
+  return state_variables_pack(&(m->vars_list[0][m->model_id]), buffer, pos);
 }
 
 static int ivd_unpack(Constitutive_model *m,
                       const char *buffer,
                       size_t *pos)
 {
-  return state_variables_unpack(&(m->vars), buffer, pos);
+  return state_variables_unpack(&(m->vars_list[0][m->model_id]), buffer, pos);
 }
 
 static int ivd_get_subdiv_param(const Constitutive_model *m,
                                 double *subdiv_param,
                                 double dt)
 {
-  return ivd_public_subdiv_param(m->vars.state_vars->m_pdata[wn],
-                                 m->vars.state_vars->m_pdata[w],
+  return ivd_public_subdiv_param(m->vars_list[0][m->model_id].state_vars->m_pdata[wn],
+                                 m->vars_list[0][m->model_id].state_vars->m_pdata[w],
                                  subdiv_param);
 }
 
@@ -594,7 +594,7 @@ int ivd_update_elasticity(const Constitutive_model *m,
   int err = 0;
 
   err += ivd_compute_Sbar(m,ctx,S->m_pdata);
-  double dam = (1.0 - m->vars.state_vars->m_pdata[w]);  
+  double dam = (1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w]);  
   for(int a=0; a<tensor; a++)
     S->m_pdata[a] *= dam;
   

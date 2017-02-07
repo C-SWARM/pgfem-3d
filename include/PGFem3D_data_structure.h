@@ -105,7 +105,8 @@ typedef struct FIELD_VARIABLES {
                                 ///                        fv.coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
                                 ///                               :                         :
   struct FIELD_VARIABLES **fvs; /// array of FIELD_VARIABLES pointers for multiphysics coupling
-  FIELD_VARIABLES_TEMPORAL *temporal;
+  FIELD_VARIABLES_TEMPORAL *temporal; /// temporal space for transient time stepping
+  State_variables *statv_list;
 } FIELD_VARIABLES;
 
 /// struct for field variables
@@ -238,6 +239,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv);
 /// \param[in] grid an object containing all mesh data
 /// \param[in] com an object for communication
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
@@ -245,6 +247,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
+                             MULTIPHYSICS *mp,
                              int myrank,
                              int mp_id);
 
@@ -253,11 +256,13 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int destruct_field_varialbe(FIELD_VARIABLES *fv, 
                             GRID *grid,
                             const PGFem3D_opt *opts,
+                            MULTIPHYSICS *mp,
                             int mp_id); 
 
 /// initialize field variables thermal part

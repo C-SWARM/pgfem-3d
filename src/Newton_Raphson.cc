@@ -458,16 +458,16 @@ double Newton_Raphson_test(const int print_level,
 
   // set time variables
   double dts[2];
-  dts[0] = dts_in[0];
-  dts[1] = dts_in[1];
   
   long tim = 1;
+  dts[DT_N]   = dts_in[DT_N];
+  dts[DT_NP1] = dts_in[DT_NP1];
+  
   if(time_steps->tim == 0)
     tim = 0;
-    
+
   double dt = dts[DT_NP1];  
   double t = times[tim+1];
-
   
   long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
   double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
@@ -1135,7 +1135,7 @@ double Newton_Raphson_test(const int print_level,
       // update converged values and apply increments 
       // for next Newton Raphson step while subdividing
       dts_in[0] = dts[0];
-      dts_in[1] = dts[1];      
+      dts_in[1] = dts[1];
       update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp,mp_id,t,dts);
 
       /* finish microscale update */
@@ -1230,31 +1230,29 @@ double Newton_Raphson_test(const int print_level,
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in] times time info for this interation
+/// \param[in] t time at t(n+1)
 /// \param[in] dts time step sizes a n, and n+1
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_residual_norm(double *nor,
-                          GRID *grid,
-                          MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *FV,
-                          SOLVER_OPTIONS *SOL,
-                          LOADING_STEPS *load,
-                          COMMUNICATION_STRUCTURE *COM,
-                          PGFem3D_TIME_STEPPING *time_steps,
-                          CRPL *crpl,
-                          MPI_Comm mpi_comm,
-                          const double VVolume,
-                          const PGFem3D_opt *opts,
-                          MULTIPHYSICS *mp,
-                          double *times,
-                          double *dts,
-                          int mp_id,
-                          int myrank)
+int compute_coupled_physics_residual_norm(double *nor,
+                                          GRID *grid,
+                                          MATERIAL_PROPERTY *mat,
+                                          FIELD_VARIABLES *FV,
+                                          SOLVER_OPTIONS *SOL,
+                                          LOADING_STEPS *load,
+                                          COMMUNICATION_STRUCTURE *COM,
+                                          PGFem3D_TIME_STEPPING *time_steps,
+                                          CRPL *crpl,
+                                          MPI_Comm mpi_comm,
+                                          const PGFem3D_opt *opts,
+                                          MULTIPHYSICS *mp,
+                                          double t,
+                                          double *dts,
+                                          int mp_id,
+                                          int myrank)
 {
   int err = 0;
   // use pointers for physics[mp_id]
@@ -1262,20 +1260,23 @@ int compute_residual_norm(double *nor,
   FIELD_VARIABLES         *fv =  FV  + mp_id;
   COMMUNICATION_STRUCTURE *com = COM + mp_id;
   
-  // set time variables
-  long tim = 1;
-  if(time_steps->tim == 0)
-    tim = 0;
-    
+  // temporal  
+  double *u_n   = fv->u_n;
+  double *u_nm1 = fv->u_nm1;
+  State_variables *statv_list = fv->statv_list;
+  
+  fv->u_n   = fv->temporal->u_n;
+  fv->u_nm1 = fv->temporal->u_nm1;
+  fv->statv_list = fv->temporal->var;
+  
   double dt = dts[DT_NP1];  
-  double t = times[tim+1];
   
   for(int ia=0; ia<fv->ndofd; ia++)
     fv->f_u[ia] = fv->d_u[0] = 0.0;      
   
   sol->run_integration_algorithm = 0; // turn off running integration algorithm
   long INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                                       mp_id,t,dts, 0);
+                                       mp_id,t,dts, 1);
   sol->run_integration_algorithm = 1; // reset integration algorithm to be active
 
   // Transform LOCAL load vector to GLOBAL
@@ -1291,53 +1292,80 @@ int compute_residual_norm(double *nor,
   LNOR = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
   MPI_Allreduce(&LNOR,&GNOR,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
   *nor = sqrt(GNOR);
+  
+  fv->u_n   = u_n;
+  fv->u_nm1 = u_nm1;
+  fv->statv_list = statv_list;
+  
   return err;
 }
 
-/// update variables t(n) - t(n+1) 
+/// save variables(t(n) and t(n-1)) to temporal_variables(t(n) and t(n-1)) 
 ///
 /// \param[in] grid a mesh object
 /// \param[in,out] FV array of field variable object
+/// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 int save_field_variables_to_temporal(GRID *grid,
                                      FIELD_VARIABLES *FV,
+                                     const PGFem3D_opt *opts,
                                      MULTIPHYSICS *mp,
                                      int mp_id)
 {
   FIELD_VARIABLES *fv = FV + mp_id;
-  if(fv->n_coupled==0)
-    return 0;
   
   int err = 0;  
   for(int ia=0; ia<(grid->nn)*(fv->ndofn); ia++)
   {
     fv->temporal->u_nm1[ia] = fv->u_nm1[ia];
-    fv->temporal->u_n[ia]   = fv->u_n[ia];    
+    fv->temporal->u_n[ia]   = fv->u_n[ia];
   }
   
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
     err += constitutive_model_save_state_vars_to_temporal(FV + mp_id, grid);
     
   return err;
 }
 
-/// update variables t(n) - t(n+1) 
+/// update variables(t(n+1)) to temporal_variables(t(n+1)) 
+///
+/// \param[in] grid a mesh object
+/// \param[in,out] FV array of field variable object
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \return time spent for this routine
+int update_temporal_field_variables_np1(GRID *grid,
+                                        FIELD_VARIABLES *FV,
+                                        const PGFem3D_opt *opts,
+                                        MULTIPHYSICS *mp,
+                                        int mp_id)
+{
+  FIELD_VARIABLES *fv = FV + mp_id;
+  int err = 0;
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+    err += constitutive_model_update_np1_state_vars_to_temporal(FV + mp_id, grid);
+    
+  return err;
+}
+
+/// reset variables(t(n) and t(n-1)) from temporal_variables(t(n) and t(n-1))  
 ///
 /// \param[in] grid a mesh object
 /// \param[in,out] FV array of field variable object
 /// \param[in] mp mutiphysics object
+/// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 int reset_field_variables_using_temporal(GRID *grid,
                                          FIELD_VARIABLES *FV,
+                                         const PGFem3D_opt *opts,
                                          MULTIPHYSICS *mp,
                                          int mp_id)
 {                                         
   FIELD_VARIABLES *fv = FV + mp_id;
-  if(fv->n_coupled==0)
-    return 0;
   
   int err = 0;  
   for(int ia=0; ia<(grid->nn)*(fv->ndofn); ia++)
@@ -1346,7 +1374,7 @@ int reset_field_variables_using_temporal(GRID *grid,
     fv->u_n[ia]   = fv->temporal->u_n[ia];    
   }
   
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
     err += constitutive_model_reset_state_using_temporal(FV + mp_id, grid);
     
   return err;
@@ -1385,6 +1413,82 @@ int set_time_step_info_for_NR(PGFem3D_TIME_STEPPING *ts,
   dts[DT_N]   = t[1] - t[0];  
   dts[DT_NP1] = t[2] - t[1];  
       
+  return err;
+}
+
+/// After complete Newton Raphson for physics X, check residuals of physics Y, and Z 
+/// that are dependent on physics X.
+///
+/// \param[out] is_cnvged if any residuls of the dependent physics is greater than tolerance,
+///                       it is updated to zero 
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] COM object array for communications
+/// \param[in] time_steps object for time stepping
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] dtn_save time step size at t(n) from the previous run
+/// \param[in] mp_id mutiphysics id
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int check_convergence_of_NR_staggering(int *is_cnvged,
+                                       GRID *grid,
+                                       MATERIAL_PROPERTY *mat,
+                                       FIELD_VARIABLES *FV,
+                                       SOLVER_OPTIONS *SOL,
+                                       LOADING_STEPS *load,
+                                       COMMUNICATION_STRUCTURE *COM,
+                                       PGFem3D_TIME_STEPPING *time_steps,
+                                       CRPL *crpl,
+                                       MPI_Comm mpi_comm,
+                                       const PGFem3D_opt *opts,
+                                       MULTIPHYSICS *mp,
+                                       double *dtn_save,
+                                       int mp_id,
+                                       int myrank)
+{
+  int err = 0;
+  for(int ib = 0; ib<FV[mp_id].n_coupled; ib++)
+  {
+    int cpled_mp_id = mp->coupled_ids[mp_id][ib+1];
+    int is_it_dependent_on_physics_mp_id = 0;
+    for(int ic=0; ic<FV[cpled_mp_id].n_coupled; ic++)
+    {
+      if(mp->coupled_ids[cpled_mp_id][ic+1]==mp_id)
+      { 
+        // phsics[cpled_mp_id] is dependent on phsics[mp_id] 
+        is_it_dependent_on_physics_mp_id = 1;
+        break; 
+      }
+    }
+    
+    if(is_it_dependent_on_physics_mp_id==0)
+      continue;
+      
+    double nor = 0.0;           
+    double cpled_t[3];
+    double cpled_dt[3];            
+    
+    set_time_step_info_for_NR(time_steps,cpled_t,cpled_dt,cpled_mp_id);            
+    cpled_dt[DT_N]   = dtn_save[mp_id];
+    cpled_dt[DT_NP1] = cpled_t[2] - time_steps->tns[cpled_mp_id];            
+    
+    compute_coupled_physics_residual_norm(&nor, grid,mat,FV,SOL,load,COM,time_steps,
+                                          crpl,mpi_comm,opts,mp,cpled_t[2],cpled_dt,cpled_mp_id,myrank);
+    if(myrank==0)
+    {
+      printf("Check residuals for %s (tol = %e)\n", mp->physicsname[cpled_mp_id],SOL[cpled_mp_id].nor_min);
+      printf("||Residual|| = %e, ||Residual(t=0)|| = %e, ||Residual||/||Residual(t=0)|| = %e\n", 
+             nor, FV[cpled_mp_id].NORM, nor/FV[cpled_mp_id].NORM);
+    }
+    if(nor/FV[cpled_mp_id].NORM>SOL[cpled_mp_id].nor_min)
+      *is_cnvged = 0;
+  }  
   return err;
 }
 /// Staggered Newton Raphson iterative solver for multiphysics problems
@@ -1434,16 +1538,28 @@ double Multiphysics_Newton_Raphson(const int print_level,
     printf("======================================================================\n");
     printf(":: Do Newton Raphson for independent physics first\n");
     printf("======================================================================\n");    
-  }  
+  }
+  
+  // in Newton_Raphson iteration tim = 1 is the current time step id 
+  // where times[0] = t(n-1)
+  //       times[1] = t(n)
+  //       times[2] = t(n+1)
+  // s.t dt(n)   = times[1] - times[0]
+  //     dt(n+1) = times[2] - times[1]
+  // HOWEVER when actual time step is at 0 (time_steps->tim == 0)
+  // then tim = 0, because there is no t(n-1) values  
+  int tim = 1;
+  if( time_steps->tim==0)
+    tim = 0;  
   
   int coupled_physics_no = 0;
   for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
   {
-     tn_save[mp_id] = time_steps->tns[mp_id];
+    tn_save[mp_id] = time_steps->tns[mp_id];
+    save_field_variables_to_temporal(grid,FV,opts,mp,mp_id);       
 
     if(FV[mp_id].n_coupled>0)
     {
-      save_field_variables_to_temporal(grid,FV,mp,mp_id);       
       coupled_physics_no++; 
       continue;
     } 
@@ -1455,16 +1571,18 @@ double Multiphysics_Newton_Raphson(const int print_level,
       printf("----------------------------------------------------------------------\n");    
     }
     
-    // obtain time steps for current iteration
+    // obtain time steps for the current physics
     double times[3], dts[2];
     set_time_step_info_for_NR(time_steps,times,dts,mp_id);
-
+    
     solve_time += Newton_Raphson_test(print_level,
                                       grid,mat,FV,SOL,load,COM,time_steps,
                                       crpl,mpi_comm,VVolume,opts,mp,times,dts,mp_id,myrank);
-        
-    time_steps->tns[mp_id] = times[2] - dts[DT_NP1];
-    dtn_save[mp_id] = dts[DT_N];
+
+    update_temporal_field_variables_np1(grid,FV,opts,mp,mp_id);                                      
+
+    dtn_save[mp_id] = dts[DT_N];    
+    time_steps->tns[mp_id] = times[tim+1] - dts[DT_NP1];
   }
 
   // if there is no physics coupled with others, Newton_Raphson is done here.
@@ -1493,55 +1611,24 @@ double Multiphysics_Newton_Raphson(const int print_level,
             printf("----------------------------------------------------------------------\n");    
           }
           if(ia>0)
-          {  
-            reset_field_variables_using_temporal(grid,FV,mp,mp_id);
             time_steps->tns[mp_id] = tn_save[mp_id];
-          }
           
+          // obtain time steps for the current physics
           double times[3], dts[2];
           set_time_step_info_for_NR(time_steps,times,dts,mp_id);
+
           solve_time += Newton_Raphson_test(print_level,
                                             grid,mat,FV,SOL,load,COM,time_steps,
                                             crpl,mpi_comm,VVolume,opts,mp,times,dts,mp_id,myrank);
 
-          time_steps->tns[mp_id] = times[2] - dts[DT_NP1];                                  
-          dtn_save[mp_id] = dts[DT_N];
-          
-          for(int ib = 0; ib<FV[mp_id].n_coupled; ib++)
-          {
-            int cpled_mp_id = FV[mp_id].coupled_physics_ids[ib];             
-            int is_it_dependent_on_physics_mp_id = 0;
-            for(int ic=0; ic<FV[cpled_mp_id].n_coupled; ic++)
-            {
-              if(FV[cpled_mp_id].coupled_physics_ids[ic]==mp_id)
-                is_it_dependent_on_physics_mp_id = 1;
-            }
-            
-            if(is_it_dependent_on_physics_mp_id==0)
-              continue;
-              
-            double nor = 0.0;           
-            double cpled_t[3];
-            double cpled_dt[3];            
-              
-            
-            set_time_step_info_for_NR(time_steps,cpled_t,cpled_dt,mp_id);            
-            cpled_dt[DT_N]   = dtn_save[mp_id];
-            cpled_dt[DT_NP1] = cpled_t[2] - time_steps->tns[cpled_mp_id];            
-            
-            compute_residual_norm(&nor,
-                                  grid,mat,FV,SOL,load,COM,time_steps,
-                                  crpl,mpi_comm,VVolume,opts,mp,times,dts,cpled_mp_id,myrank);
-            if(myrank==0)
-            {
-              printf("Check residuals for %s\n", mp->physicsname[cpled_mp_id]);                              
-              printf("||Residual|| = %e, ||Residual(t=0)|| = %e, ||Residual||/||Residual(t=0)|| = %e\n", 
-                     nor, FV[cpled_mp_id].NORM, nor/FV[cpled_mp_id].NORM);
-            }
-            if(nor/FV[cpled_mp_id].NORM>SOL[cpled_mp_id].nor_min)
-              is_cnvged = 0;
-          }                                          
-        }
+          update_temporal_field_variables_np1(grid,FV,opts,mp,mp_id);                                            
+                          
+          dtn_save[mp_id] = dts[DT_N];    
+          time_steps->tns[mp_id] = times[tim] - dts[DT_NP1]; 
+
+          check_convergence_of_NR_staggering(&is_cnvged,grid,mat,FV,SOL,load,COM,time_steps,
+                                             crpl,mpi_comm,opts,mp,dtn_save,mp_id,myrank);                                                    
+        }        
       }
       if(is_cnvged)
       {
@@ -1554,7 +1641,8 @@ double Multiphysics_Newton_Raphson(const int print_level,
         break;
       } 
     }
-  }
+  }  
+
   free(tn_save);
   free(dtn_save);
   return solve_time;  

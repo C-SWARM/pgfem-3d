@@ -10,6 +10,7 @@ extern "C" {
 #include "element.h"
 #include "volumetric_damage.h"
 #include <stdio.h>
+#include "state_variables.h"
 
 #ifndef TYPE_CONSTITUTIVE_MODEL
 #define TYPE_CONSTITUTIVE_MODEL
@@ -107,7 +108,8 @@ typedef struct Constitutive_model Constitutive_model;
 
   EPS* build_eps_il (const long ne,
 		     const ELEMENT *elem,
-		     const int analysis);
+		     const int analysis,
+		     State_variables **statv_list);
 
   /**
    * Copy EPS for all elements. Additionally copies the rate of

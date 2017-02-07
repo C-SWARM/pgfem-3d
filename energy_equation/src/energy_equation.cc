@@ -401,14 +401,21 @@ int compute_mechanical_heat_gen(double *Qe,
                   // 1 = time step = n
                   // 2 = time step = n+1
   err += m->param->get_eF_of_hF(m,F2+eF,F2+hFI,stepno);
-
   
   elast->update_elasticity(elast,F2[eF].m_pdata,compute_stiffness);
   Matrix_AxB(F2[eP],1.0,0.0,F2[eF],0,F2[eS],0);
-    
-  err += func->get_Fn(   m, F2+F);
-  err += func->get_pFn(  m, F2+pF);
-  err += func->get_pFnm1(m, F2+pFn);
+  
+  // When compute deformation gradients using m->param->get_xF functions
+  // all xF(t(n)) are updated from xF(t(n+1)) such that if xFn is needed
+  // temporal field variable should be used for coupled problem.
+  err += func->get_F(  m, F2+F);        // this brings  F(t(n+1))       
+  err += func->get_pF( m, F2+pF);    //             pF(t(n+1))
+  err += func->get_pFn(m, F2+pFn);     //             pF(t(n))  
+  
+  int myrank = 0;
+  MPI_Comm mpi_comm = MPI_COMM_WORLD;
+  MPI_Comm_rank (mpi_comm,&myrank);     
+
   for(int ia=0; ia<9; ia++)
     F2[pFdot].m_pdata[ia] = (F2[pF].m_pdata[ia] - F2[pFn].m_pdata[ia])/dt;   
 

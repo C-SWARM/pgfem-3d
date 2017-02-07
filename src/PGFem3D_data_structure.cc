@@ -140,6 +140,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->coupled_physics_ids = NULL;
   fv->fvs    = NULL;
   fv->temporal = NULL;
+  fv->statv_list = NULL;
   return err;
 }
 
@@ -152,6 +153,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
 /// \param[in] grid an object containing all mesh data
 /// \param[in] com an object for communication
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
@@ -159,6 +161,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
+                             MULTIPHYSICS *mp,
                              int myrank,
                              int mp_id)
 {
@@ -180,13 +183,31 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   fv->BS_f   = aloc1(DomDof_myrank);
   fv->BS_f_u = aloc1(DomDof_myrank);
   fv->BS_RR  = aloc1(DomDof_myrank);
-//  if(mp_id == MULTIPHYSICS_MECHANICAL)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
+    if(opts->analysis_type == CM)
+    {
+      int intg_order = 0;
+      const ELEMENT *elem = grid->element;
+      int n_state_varialbles = 0;
+      for(int eid=0; eid<grid->ne; eid++)
+      {
+        int nne = elem[eid].toe;
+        long nint = FEMLIB_determine_integration_type(nne, intg_order);
+        n_state_varialbles += nint;
+      }
+        
+      fv->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    }
+    
     fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
-    fv->eps = build_eps_il(grid->ne,grid->element,opts->analysis_type);
+    fv->eps = build_eps_il(grid->ne,grid->element,opts->analysis_type,&(fv->statv_list));
     if (opts->smoothing == 0)
       fv->sig_n = build_sig_el(grid->nn);
   }
+  else
+    fv->eps = build_eps_il(grid->ne,grid->element,-1,NULL);
+
   return err;
 }
 
@@ -197,11 +218,13 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
 int destruct_field_varialbe(FIELD_VARIABLES *fv, 
                             GRID *grid,
                             const PGFem3D_opt *opts,
+                            MULTIPHYSICS *mp,
                             int mp_id)
 {
   int err = 0;
@@ -222,14 +245,16 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
   if(NULL != fv->BS_RR)  free(fv->BS_RR);  
   if(NULL != fv->coupled_physics_ids) free(fv->coupled_physics_ids);  
   if(NULL != fv->fvs)    free(fv->fvs);
-//  if(mp_id==MULTIPHYSICS_MECHANICAL)
+
+  destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {  
-    destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
     destroy_sig_il(fv->sig,grid->element,grid->ne,opts->analysis_type);
     if(opts->smoothing == 0)
       destroy_sig_el(fv->sig_n, grid->nn);
   }
-    
+  
+  if(NULL != fv->statv_list) free(fv->statv_list);  
   err += field_varialbe_initialization(fv);  
   return err;
 }
@@ -264,47 +289,42 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
 /// \return non-zero on internal error
 int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
-                                    GRID *grid,
-                                    int is_for_Mechanical)
+                                     GRID *grid,
+                                     int is_for_Mechanical)
 {
   int err =0;
-  if(fv->n_coupled>0)
+  fv->temporal = (FIELD_VARIABLES_TEMPORAL *) malloc(sizeof(FIELD_VARIABLES_TEMPORAL));
+  fv->temporal->u_n   = aloc1(grid->nn*fv->ndofn);
+  fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
+  if(is_for_Mechanical)
   {
-    fv->temporal = (FIELD_VARIABLES_TEMPORAL *) malloc(sizeof(FIELD_VARIABLES_TEMPORAL));
-    fv->temporal->u_n   = aloc1(grid->nn*fv->ndofn);
-    fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
-    if(is_for_Mechanical)
-    {
-      int intg_order = 0;
-      const ELEMENT *elem = grid->element;
+    int intg_order = 0;
+    const ELEMENT *elem = grid->element;
 
-      int n_state_varialbles = 0;
-      for(int eid=0; eid<grid->ne; eid++)
-      {
-        int nne = elem[eid].toe;
-        long nint = FEMLIB_determine_integration_type(nne, intg_order);
-        n_state_varialbles += nint;
-      }      
-      fv->temporal->element_variable_no = n_state_varialbles;
-      fv->temporal->var = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    int n_state_varialbles = 0;
+    for(int eid=0; eid<grid->ne; eid++)
+    {
+      int nne = elem[eid].toe;
+      long nint = FEMLIB_determine_integration_type(nne, intg_order);
+      n_state_varialbles += nint;
+    }      
+    fv->temporal->element_variable_no = n_state_varialbles;
+    fv->temporal->var     = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    
+    for(int eid=0; eid<grid->ne; eid++)
+    {
+      int nne = elem[eid].toe;
+      long nint = FEMLIB_determine_integration_type(nne, intg_order);
       
-      n_state_varialbles = 0;      
-      for(int eid=0; eid<grid->ne; eid++)
+      for(int ip=0; ip<nint; ip++)
       {
-        int nne = elem[eid].toe;
-        long nint = FEMLIB_determine_integration_type(nne, intg_order);
-        
-        for(int ip=0; ip<nint; ip++)
-        {
-          Constitutive_model *m = &(fv->eps[eid].model[ip]);
-          Model_var_info *info = NULL;
-          m->param->get_var_info(&info);
-          err += state_variables_initialize(fv->temporal->var + n_state_varialbles, info->n_Fs,
-                                            info->n_vars, info->n_flags);
-          n_state_varialbles++;
-        }
+        Constitutive_model *m = &(fv->eps[eid].model[ip]);
+        Model_var_info *info = NULL;
+        m->param->get_var_info(&info);
+        err += state_variables_initialize(fv->temporal->var + m->model_id, info->n_Fs,
+                                          info->n_vars, info->n_flags);                                          
       }
-    }    
+    }
   }      
   return err;
 }
@@ -320,25 +340,22 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
                                      int is_for_Mechanical)
 {
   int err =0;
-  if(fv->n_coupled>0)
-  {
-    free(fv->temporal->u_n);    
-    free(fv->temporal->u_nm1);
-    fv->temporal->u_n = NULL;
-    fv->temporal->u_nm1 = NULL;
+  free(fv->temporal->u_n);    
+  free(fv->temporal->u_nm1);
+  fv->temporal->u_n = NULL;
+  fv->temporal->u_nm1 = NULL;
     
-    if(is_for_Mechanical)
-    {
-      for(int ia=0; ia<fv->temporal->element_variable_no; ia++)
-        err += state_variables_destroy(fv->temporal->var + ia);
+  if(is_for_Mechanical)
+  {
+    for(int ia=0; ia<fv->temporal->element_variable_no; ia++)
+      err += state_variables_destroy(fv->temporal->var + ia);
       
-      free(fv->temporal->var);
-      fv->temporal->var = NULL;
-      fv->temporal->element_variable_no = 0;                
-    }
-    free(fv->temporal);
-    fv->temporal = NULL;
-  }      
+    free(fv->temporal->var);
+    fv->temporal->var = NULL;
+    fv->temporal->element_variable_no = 0;                
+  }
+  free(fv->temporal);
+  fv->temporal = NULL;
   return err;
 }
 
