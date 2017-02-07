@@ -1,0 +1,42 @@
+rm -rf pgfem3d_run
+
+module purge
+module load opt_local/1.0
+module load mpich/3.2-intel-15.0
+module load gcc           # to get support for c++14
+module load octave        # similar to matlab
+
+BRANCH_NAME=master
+PGFEM_UTILS=/cswarm/pgfem3d_test/pgfem3d_util
+PGFEM_EXT_LIB=/cswarm/pgfem3d_test/lib/external
+export TEST_DIR=$PWD
+CONFIG_DIR=${PGFEM_UTILS}/${BRANCH_NAME}/share
+
+
+cd $TEST_DIR
+cp $PGFEM_UTILS/reconf_git_branch.sh_$BRANCH_NAME reconf_git_branch.sh
+mkdir pgfem3d_run
+cd pgfem3d_run
+mkdir ${BRANCH_NAME}
+cd ${BRANCH_NAME}
+cp -r ${CONFIG_DIR} .
+
+export PGFEM3D_INSTALL=${TEST_DIR}/pgfem3d_run
+export PGFEM3D_EXT_LIB=${PGFEM_EXT_LIB}
+echo $PGFEM3D_INSTALL
+cd $TEST_DIR
+
+./reconf_git_branch.sh
+make -j 12
+make install
+
+PGFem3D=${PGFEM3D_INSTALL}/${BRANCH_NAME}/bin/PGFem3D
+OPTs="-SS -disp -V"
+name=box
+NP=4
+ 
+cd verification_tests/doubly_connected_string
+./create_input.sh
+mpirun -np ${NP} ${PGFem3D} ${OPTs} ${name}_${NP}CPU/${name}_  out/${name}_${NP}CPU/${name} 
+
+./postprocess_and_verify.sh
