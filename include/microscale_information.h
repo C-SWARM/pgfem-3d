@@ -85,6 +85,7 @@ extern "C" {
     SIG *sig_e;
     SIG *sig_n;
     EPS *eps;
+    State_variables *statv_list;    /// object to store element variables
     CRPL *crpl;
     long npres;
 

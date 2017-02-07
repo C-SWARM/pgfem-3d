@@ -16,6 +16,7 @@
 #include "initialize_damage.h"
 #include "in.h"
 #include "PGFEM_par_matvec.h"
+#include "elem3d.h"
 
 #include <stdlib.h>
 #include <search.h>
@@ -732,6 +733,7 @@ static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
   sol->sig_e = NULL;
   sol->sig_n = NULL;
   sol->eps = NULL;
+  sol->statv_list = NULL;
   sol->crpl = NULL;
   sol->npres = 0;
 
@@ -788,8 +790,21 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   const size_t len_double = sizeof(double);
 
   sol->sig_e = build_sig_il(common->ne,analysis,common->elem);
-
-  sol->eps = build_eps_il(common->ne,common->elem,analysis);
+    
+  if(analysis == CM)
+  {
+    int n_state_varialbles = 0;
+    for(int eid=0; eid<common->ne; eid++)
+    {
+      int nne = common->elem[eid].toe;
+      long nint = 0;
+      int_point(nne,&nint);
+      n_state_varialbles += nint;    
+    }      
+    sol->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+  }  
+  
+  sol->eps = build_eps_il(common->ne,common->elem,analysis,&(sol->statv_list));
   initialize_damage(common->ne,common->elem,common->hommat,
 		    sol->eps,analysis);
 
@@ -907,6 +922,8 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* destroy sig_n */
 
   destroy_eps_il(sol->eps,common->elem,common->ne,analysis);
+  if(sol->statv_list != NULL)
+    free(sol->statv_list);
 
   //destroy_crpl
 }
