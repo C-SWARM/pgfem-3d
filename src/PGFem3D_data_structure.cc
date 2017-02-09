@@ -15,6 +15,7 @@
 #include "vtk_output.h"
 #include "constitutive_model.h"
 #include "femlib.h"
+#include "elem3d.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -186,14 +187,14 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     if(opts->analysis_type == CM)
-    {
-      int intg_order = 0;
+    {      
       const ELEMENT *elem = grid->element;
       int n_state_varialbles = 0;
       for(int eid=0; eid<grid->ne; eid++)
       {
         int nne = elem[eid].toe;
-        long nint = FEMLIB_determine_integration_type(nne, intg_order);
+        long nint = 0;
+        int_point(nne,&nint);
         n_state_varialbles += nint;
       }
         
@@ -298,14 +299,14 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
   fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
   if(is_for_Mechanical)
   {
-    int intg_order = 0;
     const ELEMENT *elem = grid->element;
 
     int n_state_varialbles = 0;
     for(int eid=0; eid<grid->ne; eid++)
     {
       int nne = elem[eid].toe;
-      long nint = FEMLIB_determine_integration_type(nne, intg_order);
+      long nint = 0;
+      int_point(nne,&nint);
       n_state_varialbles += nint;
     }      
     fv->temporal->element_variable_no = n_state_varialbles;
@@ -314,7 +315,8 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
     for(int eid=0; eid<grid->ne; eid++)
     {
       int nne = elem[eid].toe;
-      long nint = FEMLIB_determine_integration_type(nne, intg_order);
+      long nint = 0;
+      int_point(nne,&nint);
       
       for(int ip=0; ip<nint; ip++)
       {
