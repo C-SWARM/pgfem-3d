@@ -84,7 +84,9 @@ int read_material_for_Thermal(FILE *fp,
     int read_no = fscanf(fp, "%lf", &FHS_MW);
     
     if(read_no == 1)
-      thermal[ia].FHS_MW = FHS_MW; 
+      thermal[ia].FHS_MW = FHS_MW;
+    else
+      thermal[ia].FHS_MW = 1.0; 
   }
   
   mat->thermal = thermal; 
