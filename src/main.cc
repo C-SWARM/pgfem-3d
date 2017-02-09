@@ -937,7 +937,7 @@ int single_scale_main(int argc,char *argv[])
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, mp.physics_ids[ia]);
+      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       { 
         // set extra variables for arc lengh
