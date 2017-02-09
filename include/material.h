@@ -23,6 +23,7 @@ typedef struct MATERIAL MATERIAL;
 typedef struct {
   double k[9]; /// heat conductivity
   double cp;   /// heat capacity
+  double FHS_MW; /// fraction_of_heat_sorce_due_to_mechanical_work   
 } MATERIAL_THERMAL;
 
 #endif /* #ifndef  */

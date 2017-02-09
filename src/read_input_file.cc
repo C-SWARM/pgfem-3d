@@ -61,6 +61,7 @@ int read_material_for_Thermal(FILE *fp,
   {
     double cp;
     double k[9];
+    double FHS_MW = 1.0;
 
     int match = 0;
     scan_for_valid_line(fp);
@@ -70,12 +71,20 @@ int read_material_for_Thermal(FILE *fp,
     match += fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", k+0, k+1, k+2
                                                              , k+3, k+4, k+5
                                                              , k+6, k+7, k+8);
+
     if(match != param_in)                                                         
       PGFEM_Abort();
-      
+
     thermal[ia].cp = cp;
     for(int ib=0; ib<9; ib++)
-      thermal[ia].k[ib] = k[ib];  
+      thermal[ia].k[ib] = k[ib]; 
+
+    // read optional value (fraction of heat source from mechanical work)
+    scan_for_valid_line(fp);
+    int read_no = fscanf(fp, "%lf", &FHS_MW);
+    
+    if(read_no == 1)
+      thermal[ia].FHS_MW = FHS_MW; 
   }
   
   mat->thermal = thermal; 
