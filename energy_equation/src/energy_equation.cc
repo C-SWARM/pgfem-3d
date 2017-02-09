@@ -21,6 +21,8 @@
 #define DIM_3x3x3   27
 #define DIM_3x3x3x3 81
 
+#define TOL_FHS 1.0e-6
+
 #define Tns6_v(p, I,J,K,L,M,N) (p).m_pdata[DIM_3x3x3x3*3*(I-1)+DIM_3x3x3x3*(J-1)+DIM_3x3x3*(K-1)+DIM_3x3*(L-1)+DIM_3*(M-1)+(N-1)]
 
 /// compute derivative of PK1 w.r.t F
@@ -536,6 +538,8 @@ int compute_mechanical_heat_gen(double *Qe,
     Matrix_cleanup(d2PdF2);
     Matrix_cleanup(df3dhF3);
   }
+      
+  *DQ = rho_0*(DQe + DQp);
 
   elast->S = tempS;
   elast->L = tempL;
@@ -737,8 +741,11 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       double DQ = 0.0;
       double Qe = 0.0;
       double Qp = 0.0;
-      err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
-      Q += Qe + Qp;
+      if(thermal->FHS_MW>TOL_FHS)
+      {   
+        err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+        Q += thermal->FHS_MW*(Qe + Qp);
+      }
     }
 
     // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
@@ -931,8 +938,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       int compute_tangent = 0;
       double Qe = 0.0;
       double Qp = 0.0;
-      err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
-    }    
+      if(thermal->FHS_MW>TOL_FHS)
+      {   
+        err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+        DQ = thermal->FHS_MW*DQ;
+      }
+    }
     
     // R = rho_0*cp*(Tnp1-Tn) + dt*grad.q - dt*Q = 0;
     // DR = rho_0*cp*dT + dt*D[grad.q]dT - dt*D[Q]dT = 0;    
@@ -1230,7 +1241,7 @@ int update_thermal_flux4print(GRID *grid,
     for(int ia=0; ia<fv->n_coupled; ia++)
     { 
       if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
-        is_it_couple_w_mechanical = ia;    
+        is_it_couple_w_mechanical = ia;
       if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
         is_it_couple_w_chemical = ia;
     } 
@@ -1290,7 +1301,12 @@ int update_thermal_flux4print(GRID *grid,
       {
         FIELD_VARIABLES *fv_m = fv->fvs[0];
         int compute_tangent = 0;
-        err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+        if(thermal->FHS_MW>TOL_FHS)
+        { 
+          err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
+          Qe = thermal->FHS_MW*Qe;
+          Qp = thermal->FHS_MW*Qp;
+        }
       }
       
       // save the values
