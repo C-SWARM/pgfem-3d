@@ -41,6 +41,7 @@
 #include "dynamics.h"
 #include "energy_equation.h"
 #include "PGFem3D_data_structure.h"
+#include "get_dof_ids_on_elem.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -96,6 +97,180 @@ static void set_time_macro(const int tim,
 {
   times[tim + 1] = time_np1;
 }
+
+/// check velocity increment 
+/// Compute residuals for Newton Raphson iteration
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dts time step sizes a n, and n+1
+/// \return non-zero on internal error
+int is_displacement_acceptable(double *alpha,
+                               GRID *grid,
+                               FIELD_VARIABLES *fv,
+                               LOADING_STEPS *load,
+                               const PGFem3D_opt *opts,
+                               int mp_id)
+{
+  int err = 0;
+  *alpha = 0.0;
+  return err;
+
+  SUPP sup = load->sups[mp_id];
+  int is_total_lagrangian = 0;
+
+  if(sup->multi_scale)
+    is_total_lagrangian = 1;
+  else
+  {
+    switch(opts->analysis_type)
+    {
+      case DISP:
+      case TF:
+        is_total_lagrangian = 1;
+        break;
+      case CM:
+        if(opts->cm != UPDATED_LAGRANGIAN)
+          is_total_lagrangian = 1;
+        break;
+    }
+  }
+
+  double alpha_V = 0.0;
+  
+  for(int e=0; e<grid->ne; e++)
+  {
+    int nne   = grid->element[e].toe;
+    int ndofn = fv->ndofn;
+    int ndofe = nne*ndofn;
+
+    long *nod = (long *) malloc(sizeof(long)*nne);
+    long *cn = aloc1l (ndofe);
+    double *u_e = aloc1(ndofe);
+
+    elemnodes(e,nne,nod,grid->element);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cn,mp_id);    
+    def_elem_total(cn,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,load->sups[mp_id],u_e);
+
+    double *X = aloc1(nne);
+    double *Y = aloc1(nne);
+    double *Z = aloc1(nne);
+
+    double *x_n = aloc1(nne);
+    double *y_n = aloc1(nne);
+    double *z_n = aloc1(nne);
+
+    double *x_np1 = aloc1(nne);
+    double *y_np1 = aloc1(nne);
+    double *z_np1 = aloc1(nne);
+  
+    double max_disp[3];
+    max_disp[0]  = max_disp[1] = max_disp[2] == 0.0;
+ 
+    for(int n=0; n<nne; n++)
+    {
+      long nid = nod[n];
+ 
+      X[n]   = grid->node[nid].x1_fd;
+      Y[n]   = grid->node[nid].x2_fd;
+      Z[n]   = grid->node[nid].x3_fd;     
+
+      x_n[n]   = grid->node[nid].x1;
+      y_n[n]   = grid->node[nid].x2;
+      z_n[n]   = grid->node[nid].x3;
+
+      x_np1[n] = grid->node[nid].x1_fd + u_e[n*ndofn + 0];
+      y_np1[n] = grid->node[nid].x2_fd + u_e[n*ndofn + 1];
+      z_np1[n] = grid->node[nid].x3_fd + u_e[n*ndofn + 2];
+      
+      max_disp[0] = (fabs(max_disp[0]) > fabs(x_np1[n] - x_n[n]))? max_disp[0] : x_np1[n] - x_n[n];
+      max_disp[1] = (fabs(max_disp[1]) > fabs(y_np1[n] - y_n[n]))? max_disp[1] : y_np1[n] - y_n[n];
+      max_disp[2] = (fabs(max_disp[2]) > fabs(z_np1[n] - z_n[n]))? max_disp[2] : z_np1[n] - z_n[n];
+    }
+    double max_x[3], min_x[3], dx[3];
+    max_x[0] = max_x[1] = max_x[2] = -1.0e+15;
+    min_x[0] = min_x[1] = min_x[2] =  1.0e+15;
+   
+    for(int n = 0; n<nne; n++)
+    {
+       max_x[0] = (max_x[0] > x_n[n])? max_x[0]: x_n[n];
+       max_x[1] = (max_x[1] > y_n[n])? max_x[1]: y_n[n];
+       max_x[2] = (max_x[2] > z_n[n])? max_x[2]: z_n[n];
+
+       min_x[0] = (min_x[0] < x_n[n])? min_x[0]: x_n[n];
+       min_x[1] = (min_x[1] < y_n[n])? min_x[1]: y_n[n];
+       min_x[2] = (min_x[2] < z_n[n])? min_x[2]: z_n[n];
+    }
+
+    dx[0] = max_x[0] - min_x[0];
+    dx[1] = max_x[1] - min_x[1];
+    dx[2] = max_x[2] - min_x[2];
+    
+    double ratio = 0.0;
+    for(int ia=0; ia<3; ia++)
+    {
+      double ratio_ia = fabs(max_disp[ia])/dx[ia]/0.07;
+      ratio = (ratio > ratio_ia) ? ratio : ratio_ia;
+    }
+
+    double V_0   = compute_volumes_from_coordinates(X,  Y,  Z,nne);
+    double V_n   = compute_volumes_from_coordinates(x_n,  y_n,  z_n,nne);
+    double V_np1 = compute_volumes_from_coordinates(x_np1,y_np1,z_np1,nne);
+   
+    int myrank = 0;
+    MPI_Comm mpi_comm = MPI_COMM_WORLD;
+    MPI_Comm_rank (mpi_comm,&myrank);
+    if(0)
+    {
+      printf("%d %d: %e -> %e: %e\n", myrank,e,V_n, V_np1, fabs((V_np1-V_n)/V_n));
+      printf("dx = (%e %e %e), disp = (%e %e %e)\n", dx[0],dx[1],dx[2], max_disp[0],max_disp[1],max_disp[2]);
+    }
+    
+    double dV_max = 0.2;
+    ratio = fabs(V_np1-V_n)/V_n/dV_max;
+    alpha_V = (alpha_V > ratio)? alpha_V : ratio;   
+
+    if(0)
+    {
+      printf("%d: %e -> %e: %e\n", e,V_n, V_np1, fabs((V_np1-V_n)/V_n));
+      printf("dx = (%e %e %e), disp = (%e %e %e)\n", dx[0],dx[1],dx[2], max_disp[0],max_disp[1],max_disp[2]);
+    }
+
+    free(nod);
+    free(cn);
+    free(u_e);
+
+    free(X);
+    free(Y);
+    free(Z); 
+   
+    free(x_n);
+    free(y_n);
+    free(z_n);
+
+    free(x_np1);
+    free(y_np1);
+    free(z_np1);    
+
+//    if(V_np1<0)
+//    {  
+//      err = 1; 
+//      break;
+//    }    
+  }
+  
+  *alpha = alpha_V;
+  return err;
+}                               
+
 
 /// reset variables for Newton Raphson iteration
 /// If Newton Raphson is restarted, reset variables to inital
@@ -554,6 +729,8 @@ double Newton_Raphson_test(const int print_level,
                    load->sups[mp_id],load->sup_defl[mp_id],fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
                    &DT,&OME,opts->stab,iter,sol->iter_max,alpha,mpi_comm,
                    opts->analysis_type);
+      if(STEP>1)
+        sol->is_subdivided = 1;             
     
       dts[DT_NP1] = dt; // update dt_np1
                         // dt_n is updated when Newton Raphson is completed without error
@@ -846,6 +1023,14 @@ double Newton_Raphson_test(const int print_level,
                                   opts->analysis_type,mp_id);
         
         bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
+/*        
+        if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+        {        
+          double element_volume_evolution = 0.0;
+        
+          INFO += is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
+          alpha = 10.0;
+        }*/
         // if INFO value greater than 0, the previous computation has an error
         MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
         if (GInfo > 0) { // if not 0, an error is detected
@@ -1068,12 +1253,17 @@ double Newton_Raphson_test(const int print_level,
       
       /* before increment after convergence, check max damage */
       if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
-      {  
+      {
+        // check from constitutive mode  
         if (opts->analysis_type == CM) {
           cm_get_subdivision_parameter(&alpha, grid->ne, grid->element, fv->eps, dt);
         } else {
           alpha = max_damage/max_damage_per_step;
         }
+        // check displacement increment
+        double element_volume_evolution = 0.0;
+        is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
+        alpha = (alpha > element_volume_evolution)? alpha : element_volume_evolution;
       }
       MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
       if(myrank == 0){
@@ -1380,6 +1570,65 @@ int reset_field_variables_using_temporal(GRID *grid,
   return err;
 }
 
+/// reset mesh coordinate (t(n)) from using saved displacement (t(n))
+///
+/// \param[in] grid a mesh object
+/// \param[in,out] FV array of field variable object
+/// \param[in] mp mutiphysics object
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \return time spent for this routine
+int reset_mesh_coordinates(GRID *grid,
+                           FIELD_VARIABLES *FV,
+                           const PGFem3D_opt *opts,
+                           MULTIPHYSICS *mp,
+                           int mp_id)
+{                                         
+  FIELD_VARIABLES *fv = FV + mp_id;
+  
+  
+  int err = 0;
+  for(int ia=0; ia<grid->nn; ia++)
+  {
+    int id = ia*(fv->ndofn);
+    grid->node[ia].x1 = grid->node[ia].x1_fd + fv->temporal->u_n[id+0];
+    grid->node[ia].x2 = grid->node[ia].x2_fd + fv->temporal->u_n[id+1];
+    grid->node[ia].x3 = grid->node[ia].x3_fd + fv->temporal->u_n[id+2];
+  }
+  return err;
+}
+
+/// reset variables(t(n) and t(n-1)) from temporal_variables(t(n) and t(n-1))  
+///
+/// \param[in] grid a mesh object
+/// \param[in,out] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
+/// \param[in] mp mutiphysics object
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \return time spent for this routine
+int reset_state_field_variables(GRID *grid,
+                                FIELD_VARIABLES *FV,
+                                SOLVER_OPTIONS *SOL,
+                                const PGFem3D_opt *opts,
+                                MULTIPHYSICS *mp)
+{
+  int err = 0;
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    if(FV[ia].n_coupled==0)
+      continue;
+      
+    if(mp->physics_ids[ia]==MULTIPHYSICS_MECHANICAL)   
+      err += reset_mesh_coordinates(grid,FV,opts,mp,ia);
+    
+    if(SOL[ia].is_subdivided)
+      err += reset_field_variables_using_temporal(grid,FV,opts,mp,ia);
+  }
+  
+  return err;
+}                                
+
 /// set times for Netwon Raphson iterations
 ///
 /// \param[in] ts object for time stepping
@@ -1453,6 +1702,11 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
                                        int myrank)
 {
   int err = 0;
+
+  int tim = 1;
+  if( time_steps->tim==0)
+    tim = 0;    
+  
   for(int ib = 0; ib<FV[mp_id].n_coupled; ib++)
   {
     int cpled_mp_id = mp->coupled_ids[mp_id][ib+1];
@@ -1474,9 +1728,10 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
     double cpled_t[3];
     double cpled_dt[3];            
     
-    set_time_step_info_for_NR(time_steps,cpled_t,cpled_dt,cpled_mp_id);            
-    cpled_dt[DT_N]   = dtn_save[mp_id];
-    cpled_dt[DT_NP1] = cpled_t[2] - time_steps->tns[cpled_mp_id];            
+    set_time_step_info_for_NR(time_steps,cpled_t,cpled_dt,cpled_mp_id); 
+    
+    if(myrank==0)
+      printf("t = %e %e %e, dt = %e %e\n", cpled_t[0], cpled_t[1], cpled_t[2], cpled_dt[0], cpled_dt[1]);          
     
     compute_coupled_physics_residual_norm(&nor, grid,mat,FV,SOL,load,COM,time_steps,
                                           crpl,mpi_comm,opts,mp,cpled_t[2],cpled_dt,cpled_mp_id,myrank);
@@ -1547,7 +1802,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
   // s.t dt(n)   = times[1] - times[0]
   //     dt(n+1) = times[2] - times[1]
   // HOWEVER when actual time step is at 0 (time_steps->tim == 0)
-  // then tim = 0, because there is no t(n-1) values  
+  // tim = 0, because there is no t(n-1) values  
   int tim = 1;
   if( time_steps->tim==0)
     tim = 0;  
@@ -1581,8 +1836,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
 
     update_temporal_field_variables_np1(grid,FV,opts,mp,mp_id);                                      
 
-    dtn_save[mp_id] = dts[DT_N];    
-    time_steps->tns[mp_id] = times[tim+1] - dts[DT_NP1];
+    dtn_save[mp_id] = dts[DT_N];
   }
 
   // if there is no physics coupled with others, Newton_Raphson is done here.
@@ -1599,6 +1853,10 @@ double Multiphysics_Newton_Raphson(const int print_level,
     for(int ia=0; ia<max_itr; ia++)
     {
       int is_cnvged = 1;
+      
+      if(ia>0)
+        reset_state_field_variables(grid,FV,SOL,opts,mp);
+        
       for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
       {
         if(FV[mp_id].n_coupled >0)
@@ -1617,15 +1875,14 @@ double Multiphysics_Newton_Raphson(const int print_level,
           double times[3], dts[2];
           set_time_step_info_for_NR(time_steps,times,dts,mp_id);
 
+          SOL[mp_id].is_subdivided = 0;
           solve_time += Newton_Raphson_test(print_level,
                                             grid,mat,FV,SOL,load,COM,time_steps,
                                             crpl,mpi_comm,VVolume,opts,mp,times,dts,mp_id,myrank);
 
           update_temporal_field_variables_np1(grid,FV,opts,mp,mp_id);                                            
                           
-          dtn_save[mp_id] = dts[DT_N];    
-          time_steps->tns[mp_id] = times[tim] - dts[DT_NP1]; 
-
+          dtn_save[mp_id] = dts[DT_N];          
           check_convergence_of_NR_staggering(&is_cnvged,grid,mat,FV,SOL,load,COM,time_steps,
                                              crpl,mpi_comm,opts,mp,dtn_save,mp_id,myrank);                                                    
         }        
@@ -1641,7 +1898,9 @@ double Multiphysics_Newton_Raphson(const int print_level,
         break;
       } 
     }
-  }  
+  }
+  for(int ia=0; ia<mp->physicsno; ia++)
+    time_steps->tns[ia] = time_steps->times[time_steps->tim+1] - dtn_save[ia];  
 
   free(tn_save);
   free(dtn_save);

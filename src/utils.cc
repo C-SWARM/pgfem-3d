@@ -3398,3 +3398,69 @@ int is_element_interior(int eid, int *idx, int *skip, long nbndel, long *bndel, 
 } 
 
 
+double compute_volumes_from_coordinates(double *x,
+                                        double *y,
+                                        double *z,
+                                        long nne)
+{
+  int nsd = 3;
+    
+  double *gk  = aloc1(5);  
+  double *ge  = aloc1(5);  
+  double *gz  = aloc1(5);  
+  double *w   = aloc1(5); 
+  double **B_T = aloc2(nne*nsd,6);
+  
+  double *N_ksi = aloc1(nne); 
+  double *N_eta = aloc1(nne);
+  double *N_zet = aloc1(nne);
+  
+  double dx[3], dy[3], dz[3];
+  
+  // Integration
+  long II,JJ,KK;
+  integrate (nne,&II,&JJ,&KK,gk,ge,gz,w);
+  
+  double V = 0.0;
+  for(int i=0; i<II; i++)
+  {
+    for(int j=0; j<JJ; j++)
+    {
+      for(int k=0; k<KK; k++)
+      {
+        double ksi = 0;
+        double eta = 0;
+        double zet = 0;
+        double ai = 0;
+        double aj = 0;
+        double ak = 0;
+       	if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+       	if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+       	if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
+
+        dN_kez(ksi,eta,zet,nne,N_ksi,N_eta,N_zet);
+        dxyz_kez (ksi,eta,zet,nne,x,y,z,N_ksi,N_eta,N_zet,dx,dy,dz);
+        
+        double J = ((dx[0]*dy[1]*dz[2]) +
+                    (dy[0]*dz[1]*dx[2]) + 
+                    (dz[0]*dx[1]*dy[2]) - 
+                    (dz[0]*dy[1]*dx[2]) - 
+                    (dx[0]*dz[1]*dy[2]) - 
+                    (dy[0]*dx[1]*dz[2]));
+        
+        V += ai*aj*ak*J;
+      }
+    }
+  }  
+  free(gk); 
+  free(ge); 
+  free(gz);
+  free(w);
+  free(N_ksi);
+  free(N_eta);
+  free(N_zet);
+  dealoc2(B_T,nne*nsd);
+  
+  return V;
+}
+

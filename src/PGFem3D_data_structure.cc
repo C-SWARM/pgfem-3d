@@ -426,6 +426,8 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol)
   sol->iter_max_sol  = 0;
   sol->computer_zero = 0.0;
   sol->run_integration_algorithm = 1;
+  sol->is_subdivision_allowed = 1;
+  sol->is_subdivided = 0; 
   return err;
 }
 

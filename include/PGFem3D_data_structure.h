@@ -87,7 +87,7 @@ typedef struct FIELD_VARIABLES {
   double *f;      /// workspace for local residual 
   double *R;      /// [in] vector of Neumann loads (Incramental forces) 
   double *f_defl; /// workspace for the load vector due to derichlet conditions 
-  double *RR;     /// [out] total Neumann load (Total forces for sudivided increment)
+  double *RR;     /// [out] total Neumann load (Total forces for subdivided increment)
   double *f_u;    /// workspace for load due to body force 
   double *RRn;    /// [in] Neumann load to time n (Total force after equiblirium)
   double pores;   /// [out] opening volume of failed cohesive interfaces 
@@ -150,7 +150,10 @@ typedef struct {
   double err;       /// linear solve tolerance 
   long iter_max_sol;/// maximum number of iterations for linear solver 
   double computer_zero; /// computer zero 
-  int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals  
+  int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals
+  int is_subdivision_allowed;    /// if yes, time step will be subdivided during Newton-Raphson step
+                                 /// when solution is not converged, default = 1 (yes)
+  int is_subdivided;             /// if yes, has been subdivided
 } SOLVER_OPTIONS;
 
 /// struct for the boundary conditions
