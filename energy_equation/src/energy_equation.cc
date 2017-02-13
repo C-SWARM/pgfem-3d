@@ -336,7 +336,7 @@ int compute_deF_over_dpF(Matrix(double) *dF,
   return err;
 }
 
-/// compute heat generation due to mechanical
+/// compute heat generation due to mechanical (reference configureation)
 ///
 /// \param[out] Qe thermal source due to mechanical work (elastic part)
 /// \param[out] Qp thermal source due to mechanical work (plastic part)
@@ -647,7 +647,8 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            FIELD_VARIABLES *fv,
                                            LOADING_STEPS *load,
                                            int mp_id,
-                                           double dt_in)
+                                           double dt_in,
+                                           int total_Lagrangian)
                                            
 {
   int err = 0;
@@ -669,9 +670,12 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   }   
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  Matrix(double) k;
-  k.m_pdata = thermal->k;
-  k.m_row = k.m_col = DIM_3;
+  Matrix(double) k0,k;
+  k0.m_pdata = thermal->k;
+  k0.m_row = k0.m_col = DIM_3;
+  
+  Matrix_construct_init(double, k,DIM_3,DIM_3,0.0);
+  Matrix_AeqB(k,1.0,k0);
   
   double cp = thermal->cp;
   double Q = 0.0;
@@ -701,19 +705,15 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   //compute nodal value
   get_temperature_elem(cnL,ndofe,fv->u_np1,du,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
   
-  int myrank = 0;
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  MPI_Comm_rank (mpi_comm,&myrank);
-
   for(int ia=0; ia<fe->nne; ia++)
-    Vec_v(Tn,   ia+1) = fv->u_n[nod[ia]];
-  
+    Vec_v(Tn,   ia+1) = fv->u_n[nod[ia]];    
+
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     // Udate basis functions at the integration points.
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);
-    
+        
     double Temp = 0.0;
     double dT   = 0.0;
     Matrix_init( q,0.0);
@@ -721,15 +721,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     // compute varialbes at the integration point
     for(int ia=1; ia<=fe->nne; ia++)
     { 
-      // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
-      // q = [nsd, 1] = k*dN'*T
-     
-      for(int ib=1; ib<=grid->nsd; ib++)
-      {
-        for(int ic=1; ic<=grid->nsd; ic++)        
-          Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe->dN,ia,ic)*Vec_v(Tnp1, ia);
-      }
-        
       Temp += Vec_v(fe->N,ia)*Vec_v(Tnp1, ia);
       dT   += Vec_v(fe->N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
     }
@@ -741,6 +732,35 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       double DQ = 0.0;
       double Qe = 0.0;
       double Qp = 0.0;
+
+      Matrix(double) F;      
+      Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
+                  
+      Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+      const Model_parameters *func = m->param;
+      err += func->get_F(m, &F);        // this brings  F(t(n+1))
+      
+      if(total_Lagrangian)
+      {
+        double detF = 1.0;
+        Matrix_det(F, detF);
+        
+        Matrix(double) FI, FIT;
+        Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
+        Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
+          
+        Matrix_inv(F,FI);
+        Matrix_AeqBT(FIT,1.0,FI);
+        Matrix_Tns2_AxBxC(k,detF,0.0,FI,k0,FIT); // k = J*FI*k0*FIT
+        
+        Matrix_cleanup(FI);
+        Matrix_cleanup(FIT);        
+      }
+      else
+        Matrix_det(F, Jn); // updated Lagrangian
+          
+      Matrix_cleanup(F);
+      
       if(thermal->FHS_MW>TOL_FHS)
       {   
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
@@ -748,16 +768,33 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       }
     }
 
-    // R = rho_0*cp*dT + dt*grad.q - dt*Q = 0;
+    Matrix_init( q,0.0);
+            
+    // compute heat flux
+    for(int ia=1; ia<=fe->nne; ia++)
+    { 
+      // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
+      // q = [nsd, 1] = k*dN'*T     
+      for(int ib=1; ib<=grid->nsd; ib++)
+      {
+        for(int ic=1; ic<=grid->nsd; ic++)        
+          Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe->dN,ia,ic)*Vec_v(Tnp1, ia);
+      }        
+    }    
+
+    // R = rho*cp*dT + dt*grad.q - dt*Q = 0;
+    // rho = rho_0/Jn
+    // Q = Q_0/Jn;
     for(int ia=1; ia<=fe->nne; ia++)
     {      
-      Vec_v(fi,ia) += Vec_v(fe->N,ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW);
+      Vec_v(fi,ia) += Vec_v(fe->N,ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW)/Jn;
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(fi,ia) += 1.0/Jn*dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
+        Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
     }  
   }
   
   free(cnL);
+  Matrix_cleanup(k);
   Matrix_cleanup(q);
   Matrix_cleanup(Tnp1);
   Matrix_cleanup(Tn);
@@ -789,7 +826,7 @@ int energy_equation_compute_residuals(GRID *grid,
                                       double dt)
 {
   int err = 0;
-  int total_Lagrangian = 0;
+  int total_Lagrangian = 1;
   int intg_order = 0;
   
   double *du;
@@ -810,7 +847,7 @@ int energy_equation_compute_residuals(GRID *grid,
     // fe needs to be updated by integration points 
     Matrix(double) fi;
     Matrix_construct_init(double, fi, fe.nne, 1, 0.0);
-    err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id,dt);
+    err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id,dt,total_Lagrangian);
     err += energy_equation_residuals_assemble(&fe,fi.m_pdata,grid,fv,mp_id);
     
     Matrix_cleanup(fi);
@@ -859,11 +896,13 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            int mp_id,
                                            int do_assemble,
                                            int compute_load4pBCs,
-                                           double dt_in)
+                                           double dt_in,
+                                           int total_Lagrangian)
                                            
 {
   int err = 0;
-  int eid = fe->curt_elem_id;  
+  int eid = fe->curt_elem_id;
+  double Jn = 1.0; // Total Lagrangian = 1.0; // it is updated if mechanical is coupled.  
 
   const int mat_id = (grid->element[eid]).mat[0];  
   double rho_0 = mat->density[mat_id];
@@ -880,9 +919,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   }  
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  Matrix(double) k;
-  k.m_pdata = thermal->k;
-  k.m_row = k.m_col = DIM_3;
+  Matrix(double) k0,k;
+  k0.m_pdata = thermal->k;
+  k0.m_row = k0.m_col = DIM_3;
+  
+  Matrix_construct_init(double, k,DIM_3,DIM_3,0.0);
+  Matrix_AeqB(k,1.0,k0);
   
   double cp = thermal->cp;
   
@@ -938,6 +980,34 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       int compute_tangent = 0;
       double Qe = 0.0;
       double Qp = 0.0;
+
+      Matrix(double) F;
+      Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
+      Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+      const Model_parameters *func = m->param;
+      err += func->get_F(m, &F);        // this brings  F(t(n+1))
+
+      if(total_Lagrangian)
+      {
+        double detF = 1.0;
+        Matrix_det(F, detF);
+        
+        Matrix(double) FI, FIT;
+        Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
+        Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
+          
+        Matrix_inv(F,FI);
+        Matrix_AeqBT(FIT,1.0,FI);
+        Matrix_Tns2_AxBxC(k,detF,0.0,FI,k0,FIT); // k = J*FI*k0*FIT
+        
+        Matrix_cleanup(FI);
+        Matrix_cleanup(FIT);        
+      }
+      else
+        Matrix_det(F, Jn); // updated Lagrangian
+        
+      Matrix_cleanup(F);
+            
       if(thermal->FHS_MW>TOL_FHS)
       {   
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
@@ -951,7 +1021,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     {
       for(int ib=1; ib<=fe->nne; ib++)
       {
-        Mat_v(lk,ia,ib) += (rho_0*cp - dt*DQ)*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW);
+        Mat_v(lk,ia,ib) += (rho_0*cp - dt*DQ)*Vec_v(fe->N,ia)*Vec_v(fe->N,ib)*(fe->detJxW)/Jn;
         for(int im = 1; im<=grid->nsd; im++)
         {
           for(int in = 1; in<=grid->nsd; in++)
@@ -1020,6 +1090,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     
   free(cnL);
   free(cnG);
+  Matrix_cleanup(k);
   Matrix_cleanup(Tnp1);
   Matrix_cleanup(Tn);  
   return err;
@@ -1057,7 +1128,7 @@ int energy_equation_compute_stiffness(GRID *grid,
                                       double dt)
 {
   int err = 0;
-  int total_Lagrangian  = 0;
+  int total_Lagrangian  = 1;
   int intg_order        = 0;
   int do_assemble       = 1; // udate stiffness matrix
   int compute_load4pBCs = 0; // if 1, compute load due to Dirichlet BCs. 
@@ -1089,7 +1160,7 @@ int energy_equation_compute_stiffness(GRID *grid,
     int interior = 0;
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs,dt);
+                                                  do_assemble,compute_load4pBCs,dt,total_Lagrangian);
     
     FEMLIB_destruct(&fe);
     if(err != 0)
@@ -1121,7 +1192,7 @@ int energy_equation_compute_stiffness(GRID *grid,
     
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs,dt);
+                                                  do_assemble,compute_load4pBCs,dt,total_Lagrangian);
       
     FEMLIB_destruct(&fe);
     if(err != 0)
@@ -1180,7 +1251,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
                                       double dt)
 {
   int err = 0;
-  int total_Lagrangian = 0;
+  int total_Lagrangian = 1;
   int intg_order       = 0;
   int interior         = 1;
   int do_assemble      = 0;
@@ -1195,7 +1266,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
     // do volume integration at an element
     err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,NULL,NULL,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs,dt);    
+                                                  do_assemble,compute_load4pBCs,dt,total_Lagrangian);    
     FEMLIB_destruct(&fe);
     if(err != 0)
       break;      
@@ -1219,10 +1290,21 @@ int update_thermal_flux4print(GRID *grid,
                               double dt)
 {
   int err = 0;
-  int total_Lagrangian = 0;
+  int total_Lagrangian = 1;
   int intg_order = 0;
 
   EPS *eps = fv->eps;
+  
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+    
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }
   
   for(int eid=0; eid<grid->ne; eid++)
   {    
@@ -1235,21 +1317,13 @@ int update_thermal_flux4print(GRID *grid,
     const int mat_id = (grid->element[eid]).mat[0];  
     double rho_0 = mat->density[mat_id];
     
-    int is_it_couple_w_mechanical  = -1;
-    int is_it_couple_w_chemical    = -1;
-    
-    for(int ia=0; ia<fv->n_coupled; ia++)
-    { 
-      if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
-        is_it_couple_w_mechanical = ia;
-      if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
-        is_it_couple_w_chemical = ia;
-    } 
-    
     MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-    Matrix(double) k;
-    k.m_pdata = thermal->k;
-    k.m_row = k.m_col = DIM_3;
+    Matrix(double) k0,k;
+    k0.m_pdata = thermal->k;
+    k0.m_row = k0.m_col = DIM_3;
+  
+    Matrix_construct_init(double, k,DIM_3,DIM_3,0.0);
+    Matrix_AeqB(k,1.0,k0);
 
     double cp = thermal->cp;
       
@@ -1275,20 +1349,10 @@ int update_thermal_flux4print(GRID *grid,
     
       double Temp = 0.0;
       double dT   = 0.0;
-      Matrix_init( q,0.0);
       
       // compute values at the integration point 
       for(int ia=1; ia<=fe.nne; ia++)
-      { 
-        // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
-        // q = [nsd, 1] = k*dN'*T
-     
-        for(int ib=1; ib<=grid->nsd; ib++)
-        {
-          for(int ic=1; ic<=grid->nsd; ic++)        
-            Vec_v(q,ib) += Mat_v(k, ib, ic)*Mat_v(fe.dN,ia,ic)*Vec_v(Tnp1, ia);
-        }
-        
+      {         
         Temp += Vec_v(fe.N,ia)*Vec_v(Tnp1, ia);
         dT   += Vec_v(fe.N,ia)*(Vec_v(Tnp1, ia)-Vec_v(Tn, ia));
       }
@@ -1296,11 +1360,40 @@ int update_thermal_flux4print(GRID *grid,
       // compute heat sources 
       double Qe = 0.0;
       double Qp = 0.0;
-      double DQ = 0.0;      
+      double DQ = 0.0;
+      double Jn = 1.0;      
       if(is_it_couple_w_mechanical>=0)
       {
         FIELD_VARIABLES *fv_m = fv->fvs[0];
         int compute_tangent = 0;
+
+        Matrix(double) F;
+        Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
+        Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+        const Model_parameters *func = m->param;
+        err += func->get_F(m, &F);        // this brings  F(t(n+1))
+  
+        if(total_Lagrangian)
+        {
+          double detF = 1.0;
+          Matrix_det(F, detF);
+          
+          Matrix(double) FI, FIT;
+          Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
+          Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
+            
+          Matrix_inv(F,FI);
+          Matrix_AeqBT(FIT,1.0,FI);
+          Matrix_Tns2_AxBxC(k,detF,0.0,FI,k0,FIT); // k = J*FI*k0*FIT
+          
+          Matrix_cleanup(FI);
+          Matrix_cleanup(FIT);        
+        }
+        else
+          Matrix_det(F, Jn); // updated Lagrangian
+
+        Matrix_cleanup(F);
+        
         if(thermal->FHS_MW>TOL_FHS)
         { 
           err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
@@ -1309,17 +1402,32 @@ int update_thermal_flux4print(GRID *grid,
         }
       }
       
+      Matrix_init( q,0.0);
+              
+      // compute heat flux
+      for(int ia=1; ia<=fe.nne; ia++)
+      { 
+        // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
+        // q = [nsd, 1] = k*dN'*T     
+        for(int ib=1; ib<=grid->nsd; ib++)
+        {
+          for(int ic=1; ic<=grid->nsd; ic++)        
+            Vec_v(q,ib) -= Mat_v(k, ib, ic)*Mat_v(fe.dN,ia,ic)*Vec_v(Tnp1, ia);
+        }        
+      }       
+      
       // save the values
       fv->eps[eid].el.o[0] += fe.detJxW*Vec_v(q,1);
       fv->eps[eid].el.o[1] += fe.detJxW*Vec_v(q,2);
       fv->eps[eid].el.o[2] += fe.detJxW*Vec_v(q,3);
-      fv->eps[eid].el.o[3] += fe.detJxW*Qe;
-      fv->eps[eid].el.o[4] += fe.detJxW*Qp;
+      fv->eps[eid].el.o[3] += fe.detJxW*Qe/Jn;
+      fv->eps[eid].el.o[4] += fe.detJxW*Qp/Jn;
       volume += fe.detJxW;
     }
     for(int ia=0; ia<6; ia++)
       eps[eid].el.o[ia] = eps[eid].el.o[ia]/volume;
     
+    Matrix_cleanup(k);
     Matrix_cleanup(q);
     Matrix_cleanup(Tnp1);
     Matrix_cleanup(Tn);
