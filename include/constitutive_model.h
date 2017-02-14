@@ -754,6 +754,22 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
                                     double dt);
+                                    
+
+int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
+                                              double *f,
+                                              double *r_e,
+                                              GRID *grid,
+                                              MATERIAL_PROPERTY *mat,
+                                              FIELD_VARIABLES *fv,
+                                              SOLVER_OPTIONS *sol,
+                                              LOADING_STEPS *load,
+                                              CRPL *crpl,
+                                              const PGFem3D_opt *opts,
+                                              MULTIPHYSICS *mp,
+                                              const double *dts,
+                                              int mp_id,
+                                              double dt);
 
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,

@@ -28,6 +28,34 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
+/// Compute residuals for Newton Raphson iteration
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] variables object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] t time
+/// \param[in] dts time step sizes a n, and n+1
+/// \return non-zero on internal error
+long compute_residuals_for_NR(GRID *grid,
+                              MATERIAL_PROPERTY *mat,
+                              FIELD_VARIABLES *fv,
+                              SOLVER_OPTIONS *sol,
+                              LOADING_STEPS *load,
+                              CRPL *crpl,
+                              MPI_Comm mpi_comm,
+                              const PGFem3D_opt *opts,
+                              MULTIPHYSICS *mp,
+                              int mp_id,
+                              double t,
+                              double *dts,
+                              int updated_deformation);
+
 /// Perform Newton Staggered Newton Raphson
 ///
 /// \param[in] print_level print level for a summary of the entire function call

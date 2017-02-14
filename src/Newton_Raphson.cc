@@ -1142,13 +1142,9 @@ double Newton_Raphson_test(const int print_level,
         
         /* My Line search */
         if (ART == 0) {
-          INFO = LINE_S3 (&nor,&nor2,&(sol->gama),nor1,NOR,LS1,iter,fv->f_u,
-                          grid->ne,grid->n_be,fv->ndofd,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,grid->node,grid->element,grid->b_elems,
-                          mat->matgeom,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,sol->nor_min,crpl,dts,t,
-                          opts->stab,grid->nce,grid->coel,fv->f,fv->dd_u,fv->RR,tim,
-                          /*GNOD *gnod,GEEL *geel,*/
-                          fv->BS_f,fv->BS_RR,fv->BS_f_u,com->DomDof,com->comm,com->GDof,STEP,mpi_comm,
-                          &max_damage, &dissipation, opts,sol->alpha,fv->u_n,fv->u_nm1,mp_id);
+          INFO = LINE_S3_MP(grid,mat,FV,SOL,load,COM,time_steps,crpl,mpi_comm,opts,mp,
+                            dts,t,mp_id,&nor,&nor2,nor1,NOR,LS1,iter,&max_damage,&dissipation,
+                            tim,STEP);
           
           /* Gather infos */
           // if INFO value greater than 0, the previous computation has an error
