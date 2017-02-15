@@ -768,9 +768,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       {   
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
         Q += thermal->FHS_MW*(Qe + Qp);
-        
-        if(myrank==0 && eid<10)
-            printf("%e %e\n", Qe, Qp);
       }
     }
 
