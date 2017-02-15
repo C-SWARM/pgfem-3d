@@ -154,6 +154,7 @@ typedef struct {
   int is_subdivision_allowed;    /// if yes, time step will be subdivided during Newton-Raphson step
                                  /// when solution is not converged, default = 1 (yes)
   int is_subdivided;             /// if yes, has been subdivided
+  double last_residual; /// last residual achieved during Newton-Raphson iterations
 } SOLVER_OPTIONS;
 
 /// struct for the boundary conditions
