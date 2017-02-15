@@ -556,7 +556,7 @@ static int fd_res_elem_MP(double *be,
   double *z = (fe.temp_v).z.m_pdata;
   
   if(include_inertia) {
-    err + residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
+    err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
                           
 /*    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
                                   ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,

@@ -2095,6 +2095,15 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                     F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
                                     &L,dMdu_all,Jn);
   }
+  
+  // free memory for thermal part
+  if(is_it_couple_w_thermal>=0)
+  {
+    Matrix_cleanup(Tnm1);    
+    Matrix_cleanup(Tnp1);
+    Matrix_cleanup(Tn);
+  } 
+    
   free(u);
   
   Matrix_cleanup(L);
@@ -2454,10 +2463,10 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     if(sol->run_integration_algorithm)
       err += m->param->integration_algorithm(m,ctx); // perform integration algorithm
 
-    if(err>0)
-    	return err;    
-
     err += m->param->destroy_ctx(&ctx);
+
+    if(err!=0)
+      break;    
     
     err += m->param->get_pF(m,    F2+pFnp1);
     err += m->param->get_pFn(m,   F2+pFn);
@@ -2481,9 +2490,19 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                                         alpha, dt_alpha,fe);
   }
   
-  for(int a=0; a<nne*nsd; a++)
-    f[a] += f_npa[a] + f_nm1pa[a];
+  if(err==0)
+  {
+    for(int a=0; a<nne*nsd; a++)
+      f[a] += f_npa[a] + f_nm1pa[a];
+  }
   
+  // free memory for thermal part
+  if(is_it_couple_w_thermal>=0)
+  {
+    Matrix_cleanup(Tnm1);    
+    Matrix_cleanup(Tnp1);
+    Matrix_cleanup(Tn);
+  }   
   
   free(u);
   free(f_npa);
