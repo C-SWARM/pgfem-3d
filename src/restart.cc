@@ -94,7 +94,7 @@ int read_time_step_info(FIELD_VARIABLES *fv,
     tnm1[1] = t[1];
 
     if(myrank==0)
-      printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e", t[0], t[1], t[2]); 
+      printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e\n", t[0], t[1], t[2]); 
     
     for(int ia=0; ia<mp->physicsno; ia++)
     {
