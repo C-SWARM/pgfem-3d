@@ -677,6 +677,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   Matrix_construct_init(double, k,DIM_3,DIM_3,0.0);
   Matrix_AeqB(k,1.0,k0);
   
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+  
   double cp = thermal->cp;
   double Q = 0.0;
   
@@ -765,6 +768,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       {   
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
         Q += thermal->FHS_MW*(Qe + Qp);
+        
+        if(myrank==0 && eid<10)
+            printf("%e %e\n", Qe, Qp);
       }
     }
 
@@ -828,6 +834,34 @@ int energy_equation_compute_residuals(GRID *grid,
   int err = 0;
   int total_Lagrangian = 1;
   int intg_order = 0;
+
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+  
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;    
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }
+  
+  // save original pointer to access mechanical part
+  double *u_n;
+  double *u_nm1;
+  State_variables *statv_list = NULL;
+
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    u_n   = fv_m->u_n;
+    u_nm1 = fv_m->u_nm1;     
+    statv_list = fv_m->statv_list;
+  
+    fv_m->u_n   = fv_m->temporal->u_n;
+    fv_m->u_nm1 = fv_m->temporal->u_nm1;
+    fv_m->statv_list = fv_m->temporal->var;
+  }
   
   double *du;
   if(use_updated)
@@ -853,6 +887,14 @@ int energy_equation_compute_residuals(GRID *grid,
     Matrix_cleanup(fi);
     FEMLIB_destruct(&fe);
   }
+  
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    fv_m->u_n   = u_n;
+    fv_m->u_nm1 = u_nm1;
+    fv_m->statv_list = statv_list;
+  }  
   return err;
 }
 
@@ -976,7 +1018,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     
     if(is_it_couple_w_mechanical>=0)
     {  
-      FIELD_VARIABLES *fv_m = fv->fvs[0];
+      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
       int compute_tangent = 0;
       double Qe = 0.0;
       double Qp = 0.0;
@@ -1133,6 +1175,34 @@ int energy_equation_compute_stiffness(GRID *grid,
   int do_assemble       = 1; // udate stiffness matrix
   int compute_load4pBCs = 0; // if 1, compute load due to Dirichlet BCs. 
                              // if 0, update only stiffness
+                             
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+  
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;    
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }
+  
+  // save original pointer to access mechanical part
+  double *u_n;
+  double *u_nm1;
+  State_variables *statv_list = NULL;
+
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    u_n   = fv_m->u_n;
+    u_nm1 = fv_m->u_nm1;     
+    statv_list = fv_m->statv_list;
+  
+    fv_m->u_n   = fv_m->temporal->u_n;
+    fv_m->u_nm1 = fv_m->temporal->u_nm1;
+    fv_m->statv_list = fv_m->temporal->var;
+  }                             
 
   double **Lk,**recieve;
   MPI_Status *sta_s,*sta_r;
@@ -1201,7 +1271,15 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->PGFEM_hypre,recieve);
   err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
-    
+
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    fv_m->u_n   = u_n;
+    fv_m->u_nm1 = u_nm1;
+    fv_m->statv_list = statv_list;
+  }  
+      
   // stiffnes build is completed
   // deallocate memory
   for(int ia=0; ia<com->nproc; ia++)
@@ -1256,6 +1334,34 @@ int energy_equation_compute_load4pBCs(GRID *grid,
   int interior         = 1;
   int do_assemble      = 0;
   int compute_load4pBCs= 1;  
+  
+  int is_it_couple_w_mechanical  = -1;
+  int is_it_couple_w_chemical    = -1;
+  
+  for(int ia=0; ia<fv->n_coupled; ia++)
+  { 
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+      is_it_couple_w_mechanical = ia;    
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
+      is_it_couple_w_chemical = ia;
+  }
+  
+  // save original pointer to access mechanical part
+  double *u_n;
+  double *u_nm1;
+  State_variables *statv_list = NULL;
+
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    u_n   = fv_m->u_n;
+    u_nm1 = fv_m->u_nm1;     
+    statv_list = fv_m->statv_list;
+  
+    fv_m->u_n   = fv_m->temporal->u_n;
+    fv_m->u_nm1 = fv_m->temporal->u_nm1;
+    fv_m->statv_list = fv_m->temporal->var;
+  }  
 
   for(int ia=0; ia<load->sups[mp_id]->nde; ia++)
   {
@@ -1271,7 +1377,14 @@ int energy_equation_compute_load4pBCs(GRID *grid,
     if(err != 0)
       break;      
   }
-    
+  
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    fv_m->u_n   = u_n;
+    fv_m->u_nm1 = u_nm1;
+    fv_m->statv_list = statv_list;
+  }    
   return err;
 }
 
@@ -1305,6 +1418,26 @@ int update_thermal_flux4print(GRID *grid,
     if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
       is_it_couple_w_chemical = ia;
   }
+    
+  // save original pointer to access mechanical part
+  double *u_n;
+  double *u_nm1;
+  State_variables *statv_list = NULL;
+
+  if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    u_n   = fv_m->u_n;
+    u_nm1 = fv_m->u_nm1;     
+    statv_list = fv_m->statv_list;
+  
+    fv_m->u_n   = fv_m->temporal->u_n;
+    fv_m->u_nm1 = fv_m->temporal->u_nm1;
+    fv_m->statv_list = fv_m->temporal->var;
+  }  
+  
+  int myrank = 0;
+  MPI_Comm_rank (MPI_COMM_WORLD,&myrank);
   
   for(int eid=0; eid<grid->ne; eid++)
   {    
@@ -1364,7 +1497,7 @@ int update_thermal_flux4print(GRID *grid,
       double Jn = 1.0;      
       if(is_it_couple_w_mechanical>=0)
       {
-        FIELD_VARIABLES *fv_m = fv->fvs[0];
+        FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
         int compute_tangent = 0;
 
         Matrix(double) F;
@@ -1434,5 +1567,14 @@ int update_thermal_flux4print(GRID *grid,
   
     FEMLIB_destruct(&fe);    
   }
+  
+   if(is_it_couple_w_mechanical>=0)
+  {
+    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
+    fv_m->u_n   = u_n;
+    fv_m->u_nm1 = u_nm1;
+    fv_m->statv_list = statv_list;
+  }
+   
   return err;
 }
