@@ -716,7 +716,8 @@ double Newton_Raphson_test(const int print_level,
     if (INFO == 1 && ART == 0)
     {
       // reset variables
-      reset_variables_for_NR(grid, fv, crpl, opts);
+      if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
+        reset_variables_for_NR(grid, fv, crpl, opts);
       
       for (i=0;i<fv->ndofd;i++) {
         fv->dd_u[i] = fv->d_u[i] = fv->f_defl[i] = fv->f[i] = 0.0;
@@ -725,13 +726,26 @@ double Newton_Raphson_test(const int print_level,
       if (myrank == 0 ) PGFEM_printf("\n** Try without LINE SEARCH **\n\n");
       
       ART = 1;
-    } else {
-      
-      subdivision (INFO,&dt,&STEP,&DIV,tim,times,&ST,grid->ne,
-                   fv->ndofn,fv->ndofd,fv->npres,grid->element,crpl,fv->eps,fv->sig,
-                   load->sups[mp_id],load->sup_defl[mp_id],fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
-                   &DT,&OME,opts->stab,iter,sol->iter_max,alpha,mpi_comm,
-                   opts->analysis_type);
+    } 
+    else 
+    {      
+      if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
+      {  
+        subdivision(INFO,&dt,&STEP,&DIV,tim,times,&ST,grid->ne,
+                    fv->ndofn,fv->ndofd,fv->npres,grid->element,crpl,fv->eps,fv->sig,
+                    load->sups[mp_id],load->sup_defl[mp_id],fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
+                    &DT,&OME,opts->stab,iter,sol->iter_max,alpha,mpi_comm,
+                    opts->analysis_type);
+      }
+      else
+      {
+        subdivision(INFO,&dt,&STEP,&DIV,tim,times,&ST,grid->ne,
+                    fv->ndofn,fv->ndofd,fv->npres,grid->element,crpl,fv->eps,fv->sig,
+                    load->sups[mp_id],load->sup_defl[mp_id],fv->dd_u,fv->d_u,fv->f_defl,fv->f,fv->RRn,fv->R,&GAMA,
+                    &DT,&OME,opts->stab,iter,sol->iter_max,alpha,mpi_comm,
+                    -1);
+      } 
+                   
       if(STEP>1)
         sol->is_subdivided = 1;             
     
