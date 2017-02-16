@@ -334,21 +334,8 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   double *sup_defl = PGFEM_calloc(c->supports->npd,sizeof(double));
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson(print_level,n_step,c->ne,0,c->nn, c->ndofn,
-			 c->ndofd,c->npres,s->tim,s->times,
-			 nl_err,s->dt,c->elem,NULL,
-			 c->node,c->supports,sup_defl,c->hommat,
-			 c->matgeom,s->sig_e,s->eps,c->Ap,
-			 c->Ai,s->r,s->f,s->d_r,
-			 s->rr,s->R,s->f_defl,s->RR,
-			 s->f_u,s->RRn,s->crpl,opts->stab,
-			 c->nce,c->coel,full_NR,&pores,
-			 c->SOLVER,s->BS_x,s->BS_f,s->BS_RR,
-			 0.0,0.0,0.0,c->lin_err,
-			 s->BS_f_u,c->DomDof,c->pgfem_comm,c->GDof,
-			 1,c->maxit_nl,&s->NORM,c->nbndel,
-			 c->bndel,c->mpi_comm,c->VVolume,opts,NULL, 0, NULL, NULL,mp_id);
-	
+  time += Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step);  
+  
   free(sup_defl);
   return err;
 }/* ms_cohe_job_nr() */

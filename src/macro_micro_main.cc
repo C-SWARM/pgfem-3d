@@ -436,26 +436,9 @@ int multi_scale_main(int argc, char **argv)
 	}
 
 	int n_step = 0;
-	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
-				       c->ndofn,c->ndofd,c->npres,s->tim,
-				       s->times,
-				       solver_file->nonlin_tol,s->dt,c->elem,
-				       NULL,c->node,c->supports,sup_defl,
-				       c->hommat,c->matgeom,s->sig_e,s->eps,
-				       c->Ap,c->Ai,s->r,s->f,
-				       s->d_r,s->rr,s->R,s->f_defl,
-				       s->RR,s->f_u,s->RRn,s->crpl,
-				       macro->opts->stab,c->nce,c->coel,
-				       solver_file->nonlin_method,
-				       &pores,c->SOLVER,s->BS_x,s->BS_f,
-				       s->BS_RR,gama,GNOR,nor1,
-				       c->lin_err,s->BS_f_u,c->DomDof,
-				       c->pgfem_comm,c->GDof,
-				       solver_file->n_step,
-				       solver_file->max_nonlin_iter,
-				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,
-				       NULL,NULL,mp_id);
+
+  // perform Newton Raphson iteration
+  hypre_time += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);  
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
