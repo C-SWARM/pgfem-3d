@@ -1824,7 +1824,7 @@ int set_0th_residual(GRID *grid,
     if(myrank==0)
     {  
       printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp->physicsname[mp_id], nor);
-      printf("by pertubing the disp. with %e\n", SOL[mp_id].du);
+      printf("by perturbing the disp. with %e\n", SOL[mp_id].du);
     }
   }
   return err;    
