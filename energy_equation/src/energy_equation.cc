@@ -364,10 +364,14 @@ int compute_mechanical_heat_gen(double *Qe,
 {  
   int err = 0;
   int compute_stiffness = 1;
-  double rho_0 = mat->density[mat_id];
+  
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   
   double Tdot = dT/dt;
-
+  double hJ = 0.0;
+  double pJ = 0.0;
+    
   // construct 4th order tensors
   enum {dWdE,dPdF,d2fdhF2,deFdhF,d2eFdhF2,deFdpF,hB,F4_temp,F4end};
   Matrix(double) *F4 = malloc(F4end*sizeof(Matrix(double)));
@@ -389,6 +393,7 @@ int compute_mechanical_heat_gen(double *Qe,
   err += compute_hF(F2+hFpp, dT, mat, mat_id, 2);
   
   Matrix_inv(F2[hF],F2[hFI]);
+  Matrix_det(F2[hF],hJ);
   
   // 2. obtain deformation gradient from mechanical part 
   Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
@@ -410,13 +415,11 @@ int compute_mechanical_heat_gen(double *Qe,
   // When compute deformation gradients using m->param->get_xF functions
   // all xF(t(n)) are updated from xF(t(n+1)) such that if xFn is needed
   // temporal field variable should be used for coupled problem.
-  err += func->get_F(  m, F2+F);        // this brings  F(t(n+1))       
-  err += func->get_pF( m, F2+pF);    //             pF(t(n+1))
-  err += func->get_pFn(m, F2+pFn);     //             pF(t(n))  
+  err += func->get_F(  m, F2+F);   // this brings  F(t(n+1))       
+  err += func->get_pF( m, F2+pF);  //             pF(t(n+1))
+  err += func->get_pFn(m, F2+pFn); //             pF(t(n))  
   
-  int myrank = 0;
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  MPI_Comm_rank (mpi_comm,&myrank);     
+  Matrix_det(F2[pF],pJ);
 
   for(int ia=0; ia<9; ia++)
     F2[pFdot].m_pdata[ia] = (F2[pF].m_pdata[ia] - F2[pFn].m_pdata[ia])/dt;   
@@ -455,9 +458,13 @@ int compute_mechanical_heat_gen(double *Qe,
     }
   } 
   
-  *Qe = rho_0*xi*T*Tdot;  
-  *Qp = rho_0*Q_p;
-    
+  *Qe = hJ*pJ*xi*T*Tdot;  
+  *Qp = hJ*pJ*Q_p;
+
+  if(myrank==-1 && eid<10)
+    printf("Tdot = %e, Qe = %e T = %e\n", Tdot, *Qe, T);
+
+        
   // compute tangent of Qe
   double DQe =0.0;
   double DQp = 0.0;
@@ -539,7 +546,7 @@ int compute_mechanical_heat_gen(double *Qe,
     Matrix_cleanup(df3dhF3);
   }
       
-  *DQ = rho_0*(DQe + DQp);
+  *DQ = hJ*pJ*(DQe + DQp);
 
   elast->S = tempS;
   elast->L = tempL;
@@ -768,9 +775,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       {   
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,dT,dt,eid,ip,mat_id,compute_tangent);
         Q += thermal->FHS_MW*(Qe + Qp);
+        
       }
     }
-
     Matrix_init( q,0.0);
             
     // compute heat flux
