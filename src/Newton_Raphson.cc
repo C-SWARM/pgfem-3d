@@ -637,6 +637,7 @@ double Newton_Raphson_test(const int print_level,
   
   double GNOR; // global norm of residual
   double nor1; //
+  sol->gama = 0.0; 
 
   long tim = 1;  
   if(time_steps->tim == 0)
@@ -1423,7 +1424,7 @@ double Newton_Raphson_test(const int print_level,
 /// compute residuals 
 ///
 /// After converge, check residuals
-/// This will perform any integration algorithm.
+/// This will not perform any integration algorithm.
 ///
 /// \param[in] nor norm of residuals
 /// \param[in] grid a mesh object
@@ -1755,6 +1756,80 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
   }
   return err;
 }
+
+/// set first residual for very stiff problem if needed
+///
+/// Pre-computing residual helps to converge the solution when 
+/// iteration step is very stiff. This function computes residual and set
+/// as first NORM at the very first time of the non-linear iteration step by 
+/// perturbing field variables. (delta u is read from solver file and used to 
+/// perturbate the initial values (fv->u0)) such that fv->u0 + sol->du is used to
+/// compute the residual. 
+///
+/// This will not perform any integration algorithm.
+///
+/// \param[in] nor norm of residuals
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object. FV.NORM is updateed.
+/// \param[in] SOL object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] COM object array for communications
+/// \param[in] time_steps object for time stepping
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int set_0th_residual(GRID *grid,
+                     MATERIAL_PROPERTY *mat,
+                     FIELD_VARIABLES *FV,
+                     SOLVER_OPTIONS *SOL,
+                     LOADING_STEPS *load,
+                     COMMUNICATION_STRUCTURE *COM,
+                     PGFem3D_TIME_STEPPING *time_steps,
+                     CRPL *crpl,
+                     MPI_Comm mpi_comm,
+                     const PGFem3D_opt *opts,
+                     MULTIPHYSICS *mp,
+                     int myrank)
+{
+  int err = 0;
+  
+  if(time_steps->tim>0)
+    return err;
+    
+  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  {
+    if(SOL[mp_id].set_initial_residual==0)
+      continue;
+          
+    for(int ia=0; ia<FV[mp_id].ndofd; ia++)
+      FV[mp_id].u_np1[ia] = FV[mp_id].u0 + SOL[mp_id].du;
+
+    double nor = 0.0;
+    double times[3];
+    double dts[2];
+    set_time_step_info_for_NR(time_steps,times,dts,mp_id);
+    compute_coupled_physics_residual_norm(&nor, grid,mat,FV,SOL,load,COM,time_steps,
+                                          crpl,mpi_comm,opts,mp,times[2],dts,
+                                          mp_id,myrank);
+
+    FV[mp_id].NORM = nor; // set first residual
+    
+    for(int ia=0; ia<FV[mp_id].ndofd; ia++)
+      FV[mp_id].u_np1[ia] = FV[mp_id].u0;
+
+    if(myrank==0)
+    {  
+      printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp->physicsname[mp_id], nor);
+      printf("by pertubing the disp. with %e\n", SOL[mp_id].du);
+    }
+  }
+  return err;    
+}
+      
 /// Staggered Newton Raphson iterative solver for multiphysics problems
 ///
 /// \param[in] print_level print level for a summary of the entire function call
@@ -1791,6 +1866,10 @@ double Multiphysics_Newton_Raphson(const int print_level,
   //MPI rank
   int myrank;
   MPI_Comm_rank(mpi_comm,&myrank);
+
+  // if too siff to converge, try pre compute resiudal by perturbing displacement 
+  // slightly
+  set_0th_residual(grid,mat,FV,SOL,load,COM,time_steps,crpl,mpi_comm,opts,mp,myrank);
   
   NR_time_steps *NR_time = (NR_time_steps *) malloc(sizeof(NR_time_steps)*mp->physicsno);
 
@@ -1813,7 +1892,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
   int tim = 1;
   if( time_steps->tim==0)
     tim = 0;  
-  
+
   int coupled_physics_no = 0;
   for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
   {

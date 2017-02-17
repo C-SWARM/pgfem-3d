@@ -28,10 +28,15 @@ extern "C" {
    */
 
 
+#ifndef TYPE_ARC_LENGTH_VARIABLES
+#define TYPE_ARC_LENGTH_VARIABLES
+typedef struct ARC_LENGTH_VARIABLES ARC_LENGTH_VARIABLES;
+#endif
+
 /// Arc length struct. It has additional variables for the Arc length scheme.
 /// Member variables are taken from lagcy code and not yet been fully
 /// identified how the member variables are used in arc length analysis.
-typedef struct
+struct ARC_LENGTH_VARIABLES
 {
   double dt0;
   double *D_R;
@@ -55,7 +60,7 @@ typedef struct
   double dALMAX;
   long ITT;
   double DAL;  
-} ARC_LENGTH_VARIABLES;
+};
 
 /// initialize arc length variable object
 /// 
@@ -88,7 +93,6 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] time_steps object for time stepping
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in, out] arc an object for Arc length scheme, cotains variables related to Arc length
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
@@ -102,7 +106,6 @@ double Arc_length_test(GRID *grid,
                        COMMUNICATION_STRUCTURE *com,
                        PGFem3D_TIME_STEPPING *time_steps, 
                        CRPL *crpl,
-                       ARC_LENGTH_VARIABLES *arc,                		   
                        MPI_Comm mpi_comm,
                        const double VVolume,
                        const PGFem3D_opt *opts,

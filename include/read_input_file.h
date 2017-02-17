@@ -74,7 +74,6 @@ int read_mesh_file(GRID *grid,
 /// \param[out] FV array of field variable object
 /// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
-/// \param[out] arc an object for Arc length scheme
 /// \param[out] crpl object for lagcy crystal plasticity
 /// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
@@ -86,7 +85,6 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      FIELD_VARIABLES *FV,
                      SOLVER_OPTIONS *SOL,
                      LOADING_STEPS *load,
-                     ARC_LENGTH_VARIABLES *arc,                    
                      CRPL *crpl,
                      MULTIPHYSICS *mp,
                      const PGFem3D_opt *opts,

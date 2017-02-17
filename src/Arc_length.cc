@@ -1088,12 +1088,12 @@ double Arc_length_test(GRID *grid,
                        COMMUNICATION_STRUCTURE *com,
                        PGFem3D_TIME_STEPPING *time_steps, 
                        CRPL *crpl,
-                       ARC_LENGTH_VARIABLES *arc,                		   
                        MPI_Comm mpi_comm,
                        const double VVolume,
                        const PGFem3D_opt *opts,
                        const int mp_id)
 {
+  ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dALMAX = (time_steps->dt_np1)/(arc->dt0)*(arc->dALMAX);
   char out_dat[500];
   sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);

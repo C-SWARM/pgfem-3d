@@ -428,7 +428,10 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol)
   sol->run_integration_algorithm = 1;
   sol->is_subdivision_allowed = 1;
   sol->is_subdivided = 0;
-  sol->last_residual = 0.0; 
+  sol->last_residual = 0.0;
+  sol->set_initial_residual = 0;
+  sol->du            = 0.0;
+  sol->arc           = NULL; 
   return err;
 }
 

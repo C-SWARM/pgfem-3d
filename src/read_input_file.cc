@@ -467,7 +467,6 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
 /// \param[out] FV array of field variable object
 /// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
-/// \param[out] arc an object for Arc length scheme
 /// \param[out] crpl object for lagcy crystal plasticity
 /// \param[in] mp multiphysics object
 /// \param[in] comm MPI_COMM_WORLD
@@ -478,8 +477,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
                      MATERIAL_PROPERTY *mat,
                      FIELD_VARIABLES *FV,
                      SOLVER_OPTIONS *SOL,
-                     LOADING_STEPS *load,
-                     ARC_LENGTH_VARIABLES *arc,                    
+                     LOADING_STEPS *load,                  
                      CRPL *crpl,
                      MULTIPHYSICS *mp,
                      const PGFem3D_opt *opts,
@@ -514,9 +512,22 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   
   long npres = 0;
   
-  fscanf (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&npres,&(SOL[0].FNR));
-  if (SOL[0].FNR == 2 || SOL[0].FNR == 3)
-    fscanf (fp,"%lf %lf",&(arc->dAL0),&(arc->dALMAX));
+  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  {
+    fscanf (fp,"%lf %ld %ld %ld",&(SOL[mp_id].nor_min),&(SOL[mp_id].iter_max),&(FV[mp_id].npres),&(SOL[mp_id].FNR));
+    if(SOL[mp_id].FNR == 2 || SOL[mp_id].FNR == 3)
+    {
+      SOL[mp_id].arc = (ARC_LENGTH_VARIABLES *) malloc(sizeof(ARC_LENGTH_VARIABLES));
+      err += arc_length_variable_initialization(SOL[mp_id].arc);   
+      fscanf (fp,"%lf %lf",&(SOL[mp_id].arc->dAL0),&(SOL[mp_id].arc->dALMAX));
+    }
+    if(SOL[mp_id].FNR == 4)
+    {  
+      fscanf (fp,"%lf",&(SOL[mp_id].du));
+      SOL[mp_id].FNR = 1;
+      SOL[mp_id].set_initial_residual = 1;
+    }
+  }
 
   // CRYSTAL PLASTICITY
   if(opts->analysis_type == FS_CRPL) {
@@ -581,23 +592,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
       else
         load->tim_load[ia] = aloc1l(ts->nt);
     }      
-  }
-  
-  // update numerical solution scheme parameters and field variables
-  for(int iA=1; iA<mp->physicsno; iA++)
-  {
-    // apply only mechanical part
-    if(mp->physics_ids[iA] == MULTIPHYSICS_MECHANICAL)
-      FV[iA].npres = npres;
-          
-    if(iA==0)
-      continue;
-      
-    SOL[iA].nor_min  = SOL[0].nor_min;
-    SOL[iA].iter_max = SOL[0].iter_max; 
-    SOL[iA].FNR      = SOL[0].FNR;
-  }
-                            
+  }                            
   return 0;
 }
 

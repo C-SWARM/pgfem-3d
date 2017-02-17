@@ -250,7 +250,6 @@ int print_PGFem3D_final(double total_time,
 /// \param[in] load object for loading
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
-/// \param[in] arc extra variables for Arc length
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
@@ -266,7 +265,6 @@ int print_results(GRID *grid,
                   LOADING_STEPS *load,
                   COMMUNICATION_STRUCTURE *COM,
                   PGFem3D_TIME_STEPPING *time_steps,
-                  ARC_LENGTH_VARIABLES *arc,
                   CRPL *crpl,
                   ENSIGHT ensight,
                   PRINT_MULTIPHYSICS_RESULT *pmr,
@@ -356,7 +354,7 @@ int print_results(GRID *grid,
     if(opts->ascii && mp_id_M >= 0)
     {
       ASCII_output(opts,mpi_comm,tim,time_steps->times,grid->Gnn,grid->nn,grid->ne,grid->nce,fv->ndofd,
-              com->DomDof,com->Ap,sol->FNR,arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
+              com->DomDof,com->Ap,sol->FNR,sol->arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
               fv->u_np1,fv->eps,fv->sig,fv->sig_n,grid->coel);
     } /* End ASCII output */
     
@@ -393,7 +391,7 @@ int print_results(GRID *grid,
             sprintf (filename,"%s",out_dat);
             EnSight (filename,tim,time_steps->nt,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,
                     fv->u_np1,fv->sig,fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,
-                    /*nge,geel,ngn,gnod,*/sol->FNR,arc->lm,ensight,mpi_comm,
+                    /*nge,geel,ngn,gnod,*/sol->FNR,sol->arc->lm,ensight,mpi_comm,
                     opts);
             break;
           case VIS_VTK:/* Print to VTK files */
@@ -543,14 +541,12 @@ int single_scale_main(int argc,char *argv[])
   MATERIAL_PROPERTY     mat;
   PGFem3D_TIME_STEPPING time_steps;
   LOADING_STEPS         load;  
-  ARC_LENGTH_VARIABLES  arc;  
 
   err += time_stepping_initialization(&time_steps);
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
   err += material_initialization(&mat);
   err += loading_steps_initialization(&load);
   err += construct_loading_steps(&load, &mp);
-  err += arc_length_variable_initialization(&arc);
 
   //<---------------------------------------------------------------------  
   
@@ -902,21 +898,37 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps,&mat,fv, sol,&load,&arc,crpl,&mp,&options,myrank);
-    //<---------------------------------------------------------------------    
-                         
+    err += read_solver_file(&time_steps,&mat,fv, sol,&load,crpl,&mp,&options,myrank);
+    //<---------------------------------------------------------------------                            
     
-    // Nonlinear solver
-    if (myrank == 0) {
-      if (sol[0].FNR == 0 || sol[0].FNR == 1) {
-        PGFEM_printf ("\nNONLINEAR SOLVER : NEWTON-RAPHSON METHOD\n");
+    if(myrank == 0) 
+    {
+      PGFEM_printf ("\n");
+      // Nonlinear solver
+      for(int ia=0; ia<mp.physicsno; ia++)
+      {      
+        PGFEM_printf ("NONLINEAR SOLVER (%s): ", mp.physicsname[ia]);
+        switch(sol[ia].FNR)
+        {
+          case 0:
+          case 1:
+            PGFEM_printf ("NEWTON-RAPHSON METHOD");
+            if(sol[ia].set_initial_residual)
+              PGFEM_printf (" with computing 1st residual by perturbing disp. with %e", sol[ia].du);
+
+            PGFEM_printf ("\n");
+            break;
+          case 2:
+          case 3:
+            if(sol[ia].arc->ARC == 0)
+              PGFEM_printf ("ARC-LENGTH METHOD - Crisfield\n");
+
+            if(sol[ia].arc->ARC == 1)
+              PGFEM_printf ("ARC-LENGTH METHOD - Simo\n");
+            break;
+        }
       }
-      if ((sol[0].FNR == 2 || sol[0].FNR == 3) && arc.ARC == 0){
-        PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Crisfield\n");
-      }
-      if ((sol[0].FNR == 2 || sol[0].FNR == 3) && arc.ARC == 1) {
-        PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
-      }
+      PGFEM_printf ("\n");
     }
     
     /* HYPRE INITIALIZATION ROUTINES */
@@ -940,10 +952,6 @@ int single_scale_main(int argc,char *argv[])
       err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       { 
-        // set extra variables for arc lengh
-        if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
-          err += construct_arc_length_variable(&arc, fv+ia, com+ia, myrank);
-
         /* push nodal_forces to s->R */
         vvplus(fv[ia].R,nodal_forces,fv[ia].ndofd);
     
@@ -1052,7 +1060,7 @@ int single_scale_main(int argc,char *argv[])
     //<---------------------------------------------------------------------                               
 
     // set the first time step size
-    time_steps.dt_np1 = arc.dt0 = time_steps.times[1] - time_steps.times[0];
+    time_steps.dt_np1 = time_steps.times[1] - time_steps.times[0];
     if (time_steps.dt_np1 == 0.0)
     {
       if (myrank == 0){
@@ -1064,7 +1072,7 @@ int single_scale_main(int argc,char *argv[])
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
-      {  
+      {
         /* set finite deformations variables */
         set_fini_def(grid.ne,fv[ia].npres,grid.element,fv[ia].eps,fv[ia].sig,options.analysis_type);
         if (options.analysis_type == FS_CRPL)
@@ -1095,21 +1103,22 @@ int single_scale_main(int argc,char *argv[])
       vvplus  (fv[ia].RR,fv[ia].f,     fv[ia].ndofd);
       vvminus (fv[ia].f, fv[ia].f_defl,fv[ia].ndofd);    
     
-      /* Transform LOCAL load vector to GLOBAL */
+      // set extra variables for arc lengh
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
-        LToG (fv[ia].R,arc.BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
+      {
+        err += construct_arc_length_variable(sol[ia].arc, fv+ia, com+ia, myrank);
+        // Transform LOCAL load vector to GLOBAL
+        LToG (fv[ia].R,sol[ia].arc->BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
+        sol[ia].arc->dt0 = time_steps.dt_np1;
+        sol[ia].arc->DAL = sol[ia].arc->DLM0 = sol[ia].arc->dAL0;
+      }
     
       for (long ib=0;ib<(load.sups[ia])->npd;ib++)
         load.sup_defl[ia][ib] = (load.sups[ia])->defl_d[ib];
     }
     
     /*=== NO PERIODIC ===*/
-    
-    arc.lm = arc.DLM = arc.DET0 = 0.0;
-    /*PD = 1;*/
-    arc.DAL = arc.DLM0 = arc.dAL0;
-    long tim;
-    tim = arc.AT = arc.ITT = 0;
+    long tim = 0;
     
     /* compute un-deformed volume */
     oVolume = 0;
@@ -1228,14 +1237,14 @@ int single_scale_main(int argc,char *argv[])
         if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
         {
           double dlm = Arc_length_test(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
-                                     crpl,&arc,mpi_comm,VVolume,&options, 0);
+                                     crpl,mpi_comm,VVolume,&options, 0);
         
           /* Load multiplier */
-          arc.lm += dlm;
+          sol[mp_id_M].arc->lm += dlm;
         
           /* Total force vector */
           for (long i=0;i<fv[mp_id_M].ndofd;i++){
-            fv[mp_id_M].RR[i] = arc.lm*fv[mp_id_M].R[i];
+            fv[mp_id_M].RR[i] = sol[mp_id_M].arc->lm*fv[mp_id_M].R[i];
           }
         }/* end AL */
       
@@ -1279,7 +1288,7 @@ int single_scale_main(int argc,char *argv[])
       }
       
       // print simulation results
-      err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,&arc,
+      err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,
                            crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
                            &options,&mp,tim,myrank);
                               
@@ -1339,7 +1348,10 @@ int single_scale_main(int argc,char *argv[])
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
-        err += destruct_arc_length_variable(&arc);      
+      {  
+        err += destruct_arc_length_variable(sol[ia].arc);
+        free(sol[ia].arc);
+      }
     }
   }
     

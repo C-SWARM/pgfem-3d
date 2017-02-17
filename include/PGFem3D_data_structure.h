@@ -137,6 +137,8 @@ typedef struct {
   cohesive_props *co_props; /// list of cohesive material properites
 } MATERIAL_PROPERTY;
 
+struct ARC_LENGTH_VARIABLES;
+
 /// struct for solution scheme
 typedef struct {
   int n_step;      /// the number of nonlinear steps taken to solve the given increment
@@ -155,6 +157,9 @@ typedef struct {
                                  /// when solution is not converged, default = 1 (yes)
   int is_subdivided;             /// if yes, has been subdivided
   double last_residual; /// last residual achieved during Newton-Raphson iterations
+  int set_initial_residual; /// if yes, compute residual before the first NR iteration
+  double du;                /// perturbation value for computing the first residual
+  ARC_LENGTH_VARIABLES *arc;/// Container of Arc length related varialbes 
 } SOLVER_OPTIONS;
 
 /// struct for the boundary conditions
