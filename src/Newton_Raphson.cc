@@ -74,6 +74,12 @@ enum{MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT} PRINT_LEVEL;
 
 static const int periodic = 0;
 
+// max micro substep criteria
+static const int    max_n_micro_substep = 2;
+static const double alpha_restart_ms    = 2.0;
+static const double max_damage_per_step = 0.05;
+static const double alpha_restart       = 1.25;
+  
 typedef struct NR_summary{
   int total_iter;
   double final_rel_res;
@@ -362,6 +368,7 @@ long compute_residuals_for_NR(GRID *grid,
 
 /// Compute stiffnes
 ///
+/// \param[in] max_substep microscale maximum subdivision number
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] variables object for field variables
@@ -378,7 +385,8 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-long compute_stiffness_for_NR(GRID *grid,
+long compute_stiffness_for_NR(int *max_substep,
+                              GRID *grid,
                               MATERIAL_PROPERTY *mat,
                               FIELD_VARIABLES *fv,
                               SOLVER_OPTIONS *sol,
@@ -394,6 +402,11 @@ long compute_stiffness_for_NR(GRID *grid,
                               int myrank)
 { 
   long INFO = 0;
+  long GInfo;
+
+  if(sol->microscale == NULL) // Null the matrix (if not doing multiscale)
+    ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
+          
   switch(mp->physics_ids[mp_id])
   {
     case MULTIPHYSICS_MECHANICAL:
@@ -406,9 +419,35 @@ long compute_stiffness_for_NR(GRID *grid,
     default: 
       printf("%s is not defined (compute_stiffness_for_NR)\n", mp->physicsname[mp_id]);
   }
-
-  return INFO;  
+  
+  // if INFO value greater than 0, the previous computation has an error
+  MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+  
+  if(GInfo > 0)
+  {
+    if(myrank == 0)
+    {
+      PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
+              "Subdividing load.\n", __func__, __FILE__, __LINE__);
+    }
+    return 1;
+  }
+  
+  // turn off line search for server-style multiscale
+  if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL)
+  {
+    // complete any jobs before assembly
+    MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
+    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep);
+  }
+  
+  // Matrix assmbly
+  HYPRE_IJMatrixAssemble((sol->PGFEM_hypre)->hypre_k);
+  
+  
+  return INFO;
 }
+
 int update_values_for_next_NR(GRID *grid,
                                MATERIAL_PROPERTY *mat,
                                FIELD_VARIABLES *fv,
@@ -591,7 +630,527 @@ int update_values_for_next_NR(GRID *grid,
   return err;
 }
 
-/// Newton Raphson iterative solver
+/// print system matrix and vector (LHS and RHS) for debugging
+///
+/// \param[in] PGFEM_hypre container of HYPRE solver info
+/// \param[in] f double array of RHS
+/// \param[in] ndofd # of degree freedom of domain
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int print_HYPRE_K_matrix_and_RHS(PGFEM_HYPRE_solve_info *PGFEM_hypre, double *f, int ndofd, int myrank)
+{
+  int err = 0;
+  HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_k.txt");
+  char fn_f[1024];
+  sprintf(fn_f, "test_f.txt.%.5d", myrank);
+  
+  FILE *fp_f = fopen(fn_f, "w");
+  fprintf(fp_f, "%d %d\n", PGFEM_hypre->ilower,
+                            PGFEM_hypre->iupper);
+  for(int ia=0; ia<ndofd; ia++)
+    fprintf(fp_f, "%d %e\n", PGFEM_hypre->ilower +ia, f[ia]);
+    
+  fclose(fp_f);
+  return err;
+}
+
+int check_energy_norm(double *ENORM,
+                      double nor,
+                      FIELD_VARIABLES *fv,
+                      SOLVER_OPTIONS *sol,
+                      COMMUNICATION_STRUCTURE *com,
+                      MPI_Comm mpi_comm,
+                      const PGFem3D_opt *opts,
+                      int tim,
+                      int iter,
+                      int myrank)                     
+{
+  int is_converged = 0;
+  
+  double enorm, Genorm;
+  // Compute the energy norm E_norm = abs(R ddu/(R0 ddu0))
+  LToG(fv->dd_u,fv->BS_x,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  enorm = ss(fv->BS_f,fv->BS_x,com->DomDof[myrank]);
+  MPI_Allreduce(&enorm,&Genorm,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+
+  if((tim == 0 && iter == 0)) 
+    *ENORM = Genorm;
+
+  if(*ENORM <= sol->computer_zero) 
+    *ENORM = 1.0;
+
+  enorm = fabs(Genorm/(*ENORM));
+  
+  if (myrank == 0)
+  {
+    PGFEM_printf("INFO: Energy norm = |R'du|/|R0'du0| = [%1.12e] || [%1.12e]\n",enorm,fabs(Genorm));
+    fflush(PGFEM_stdout);
+  }
+    
+  // Check energy norm for convergence
+  if(opts->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
+  {
+    double err_err = (sol->nor_min)*(sol->nor_min);
+    if((enorm < err_err) && (nor < 50*err_err) && iter > 0)
+    {
+      if(myrank == 0)
+        PGFEM_printf("Converged on energy norm\n");
+      is_converged = 1;
+    }
+  }
+  
+  return is_converged;
+}
+
+long Newton_Raphson_with_LS(double *solve_time,
+                            double *alpha,
+                            double *NOR,
+                            long *gam,
+                            int *ART,
+                            int *NR_itr_no,
+                            GRID *grid,
+                            MATERIAL_PROPERTY *mat,
+                            FIELD_VARIABLES *fv,
+                            SOLVER_OPTIONS *sol,
+                            LOADING_STEPS *load,
+                            COMMUNICATION_STRUCTURE *com,
+                            CRPL *crpl,
+                            MPI_Comm mpi_comm,
+                            const PGFem3D_opt *opts,
+                            MULTIPHYSICS *mp,
+                            int mp_id,
+                            double *times,
+                            double *dts,
+                            int myrank,
+                            int tim,
+                            long STEP,
+                            long DIV,
+                            rusage *usage)
+{
+  long INFO = 0;
+
+  double dt = dts[DT_NP1];
+  double t = times[tim+1];
+  
+  int iter = 0;
+  
+  double nor, nor2, GNOR;
+  nor = nor2 = GNOR = 10.0;
+  
+  long GInfo;
+  const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
+
+  if(sol->FNR == 1 || sol->FNR == 0)
+    assert(opts->solverpackage == HYPRE);
+    
+  double alpha_ms = 0.0;
+  double ENORM = 1.0;
+  
+  double max_damage = 0.0;
+  double dissipation = 0.0;   
+
+  while(1) // do until converge 
+  {
+    int max_substep = 0;
+    if(sol->FNR == 1 || (sol->FNR == 0 && iter == 0))
+    {
+      //compute stiffness matrix
+      INFO =  compute_stiffness_for_NR(&max_substep,grid,mat,fv,sol,load,com,crpl,mpi_comm,
+                                       opts,mp,mp_id,dt,iter,myrank);
+      
+      if(INFO > 0)
+      {
+        *ART = 1;  
+        break; // goto rest
+      }
+      
+      // turn off line search for server-style multiscale
+      if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL)
+        *ART = 1;      
+    }
+    
+    /*=== Solve the system of equations ===*/
+    SOLVER_INFO s_info;
+    
+    *solve_time += solve_system(opts,fv->BS_f,fv->BS_x,tim,iter,com->DomDof,&s_info,
+                                sol->PGFEM_hypre,mpi_comm);
+    
+    // print_HYPRE_K_matrix_and_RHS(sol->PGFEM_hypre, fv->BS_f, com->DomDof[myrank], myrank); exit(0);
+    
+    if(myrank == 0)
+      solve_system_check_error(PGFEM_stdout,s_info);
+    
+    double BS_nor = s_info.res_norm;
+    int BS_iter   = s_info.n_iter;
+
+    // Check for correct solution
+    if (!isfinite(BS_nor))
+    {
+      INFO = 1;
+      *ART = 1;
+      if (myrank == 0)
+        PGFEM_printf("ERROR in the solver: nor = %f\n",BS_nor);
+      break; // goto rest
+    }
+    
+    if (BS_nor > 500.*(sol->err) || BS_iter < 0)
+    {
+      INFO = 1;
+      *ART = 1;
+      if(myrank == 0)
+        PGFEM_printf("ERROR in the solver: nor = %8.8e || iter = %d\n",BS_nor,BS_iter);
+      break; // goto rest
+    }
+    // Clear hypre errors
+    hypre__global_error = 0;
+    
+    /* Transform GLOBAL displacement vector to LOCAL */
+    GToL (fv->BS_x,fv->dd_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    
+    /* LINE SEARCH */
+    double Gss_temp = 0.0;
+    double tmp  = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
+    MPI_Allreduce(&tmp,&Gss_temp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    double LS1 = 1./2.*Gss_temp;
+    
+    /* Pressure and volume change THETA */
+    
+    switch(opts->analysis_type){
+      case FS_CRPL:
+      case FINITE_STRAIN:
+        press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
+                mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
+        break;
+      case MINI:
+        MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+        break;
+      case MINI_3F:
+        MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+        break;
+      case TF:
+        update_3f(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,fv->dd_u,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
+                dt,t,mpi_comm,opts,sol->alpha,fv->u_n,fv->u_nm1,mp_id);
+        
+        break;
+      default:
+        break;
+    }
+    
+    /*************************/
+    /* INTEGRATION ALGORITHM */
+    /*************************/
+    if (opts->analysis_type == FS_CRPL)
+    {
+      INFO = integration_alg (grid->ne,fv->ndofn,fv->ndofd,fv->npres,crpl,grid->element,
+              grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,mat->hommat,
+              fv->eps,fv->sig,tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id);
+      
+      /* Gather INFO from all domains */
+      // if INFO value greater than 0, the previous computation has an error
+      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+      if (GInfo > 0) // if not 0, an error is detected
+      {
+        INFO = 1;
+        *ART = 1;  
+        break; // goto rest
+      }
+    }
+    
+    /* Update deformations */
+    for (int i=0;i<fv->ndofd;i++) {
+      fv->f[i] = fv->d_u[i] + fv->dd_u[i];
+      fv->f_u[i] = 0.0;
+    }
+    
+    INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
+            mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
+            fv->eps,fv->sig,&max_damage,&dissipation,
+            opts->analysis_type,mp_id);
+    
+    bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
+    /*
+        if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+        {
+          double element_volume_evolution = 0.0;
+ 
+          INFO += is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
+          alpha = 10.0;
+        }*/
+    // if INFO value greater than 0, the previous computation has an error
+    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+    if(GInfo > 0) // if not 0, an error is detected 
+    { 
+      INFO = 1;
+      *ART = 1;
+      if(myrank == 0)
+        PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n");
+      break; // goto rest
+    }
+    
+    /* server-style multiscale */
+    if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL)
+    {
+      /* zero the macroscale tangent */
+      ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
+      
+      /* start the microscale jobs */
+      MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
+      if ( iter == 0 ) {
+        /* == Do not rebalance if this is the first iteration. ==
+         * This is because most often it will be after an update or
+         * print operation from the previous step. These operations
+         * are approx. equal for all cells and thus the timing
+         * information is not valid for rebalancing purposes. */
+        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+                FE2_REBALANCE_NONE);
+      } else {
+        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+                NR_REBALANCE);
+      }
+      double tnp1 = 0;
+      set_time_micro(tim,times,dt,DIV,&tnp1);
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+              JOB_COMPUTE_EQUILIBRIUM);
+      set_time_macro(tim,times,tnp1);
+    }
+    
+    /* Residuals */
+    INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
+            mp_id,t,dts, 1);
+    
+    // if INFO value greater than 0, the previous computation has an error
+    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+    if (GInfo > 0)// if not 0, an error is detected
+    {  
+      INFO = 1;
+      *ART = 1;
+      if(myrank == 0)
+        PGFEM_printf("Error detected (fd_residuals)\n");
+        
+      break; // goto rest
+    }
+    
+    if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
+      /* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
+      MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+      
+      /* determine substep factor */
+      alpha_ms = ((double) max_substep) / max_n_micro_substep;
+      if(alpha_ms > alpha_restart_ms)
+      {
+        INFO = 1;
+        *ART = 1;
+        *alpha = alpha_ms;
+        if(myrank == 0)
+          PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n",alpha_ms);
+
+        break; // goto rest
+      }
+    }
+    
+    /* Transform LOCAL load vector to GLOBAL */
+    LToG (fv->f_u,fv->BS_f_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    
+    /* Compute Euclidian norm */
+    for (int i=0; i<com->DomDof[myrank]; i++)
+      fv->BS_f[i] = fv->BS_RR[i] - fv->BS_f_u[i];
+    
+    nor  = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
+    MPI_Allreduce(&nor,&GNOR,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    nor2 = nor = sqrt(GNOR);
+    
+    // Reset *NORM if less than convergence tolerance MM 6/27/2012*/
+    // take maximum
+    if ((tim == 0 && iter == 0) || (iter == 0 && fv->NORM < sol->nor_min))
+    {
+      if(nor > fv->NORM)	
+        fv->NORM = nor;
+      if(fv->NORM<sol->computer_zero)
+        fv->NORM = sol->computer_zero;
+    }
+    
+    nor /= fv->NORM; // Normalize norm
+    
+    if (!isfinite(nor))
+    {
+      INFO = 1;
+      *ART = 1;
+      if (myrank == 0)
+        PGFEM_printf("ERROR in the algorithm : nor = %f\n",nor);
+      break; // goto rest
+    }
+    
+    // My Line search
+    if (*ART == 0)
+    {
+      INFO = LINE_S3_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
+                        dts,t,mp_id,&nor,&nor2,fv->NORM,LS1,iter,&max_damage,&dissipation,
+                        tim,STEP);
+      
+      // Gather infos
+      // if INFO value greater than 0, the previous computation has an error
+      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+      // ERROR in line search
+      if (GInfo > 0)
+      {
+        if (myrank == 0)
+          PGFEM_printf("Error in the line search algorithm\n");
+          
+        if(*NOR < 5.0*(sol->nor_min)) //MM 10/2/2012 soft convergence criteria
+        {  
+          if(myrank == 0)
+            PGFEM_printf("I will take last solution.\n");
+
+          nor = *NOR;
+          sol->gama = 0.0;
+          INFO = 0;
+          break; // take previous as converged value
+          
+        } 
+        else 
+        { 
+          INFO = 1; // MM 10/2/2012 not converged, subdivide 
+          break; //goto rest
+        }
+      }
+      
+      if (sol->gama != 1.0) *gam = 1;
+      
+    } 
+    else // no line search
+      sol->gama = 1.0;
+    
+    // Total deformation increment
+    *NOR = nor;
+    for (int i=0;i<fv->ndofd;i++)
+    {
+      fv->d_u[i] += (sol->gama)*fv->dd_u[i];
+      fv->dd_u[i] *= sol->gama;
+    }
+    
+    if (myrank == 0){
+      getrusage (RUSAGE_SELF,usage);
+      PGFEM_printf("(%ld) IT = %d : R = %8.8e :: ||f||/||f0||",
+              iter,BS_iter,BS_nor);
+      PGFEM_printf(" = [%8.8e] || [%8.8e] :: S %ld.%ld, U %ld.%ld\n",
+              nor, nor2, usage->ru_stime.tv_sec,usage->ru_stime.tv_usec,
+              usage->ru_utime.tv_sec, usage->ru_utime.tv_usec);
+      fflush(PGFEM_stdout);
+    }
+    
+    if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){
+      if(opts->analysis_type == MINI){
+        MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
+                fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
+                com->GDof,com->comm,mpi_comm,mp_id);
+      }
+      if(opts->analysis_type == MINI_3F){
+        MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
+                fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
+                com->GDof,com->comm,mpi_comm,mp_id);
+      }
+    }
+    
+    if(check_energy_norm(&ENORM,nor2,fv,sol,com,mpi_comm,opts,tim,iter,myrank))
+    {  
+      INFO = 0;
+      break;
+    }
+    
+    /* Max number of iterations restart */
+    if (iter > (sol->iter_max-1) && nor > sol->nor_min)
+    {
+      if (nor > 20.0*(sol->nor_min) || iter > (sol->iter_max + 2))
+      {
+        if (nor < 5.0*(sol->nor_min))
+        {
+          if (myrank == 0)
+            PGFEM_printf ("I will take it\n");
+          nor = 0.0;
+        }
+        else
+        {
+          if (myrank == 0)
+            PGFEM_printf ("Error in the iteration : iter > iter_max (%d, %d)\n", sol->iter_max, iter);
+          INFO = 1;
+          if(*gam == 0)
+            *ART = 1;
+          break; //goto rest
+        }
+      }
+    } /* end iter > iter_max */
+    
+    if(nor <= sol->nor_min || nor2 <= sol->computer_zero)
+      break;
+      
+    iter++;
+    *NR_itr_no = iter; 
+    
+  }/* end while nor > nor_min */
+  
+  if(INFO==0)
+  {  
+    // before increment after convergence, check max damage */
+    if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+    {
+      // check from constitutive mode  
+      if(opts->analysis_type == CM)
+        cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
+      else
+        *alpha = max_damage/max_damage_per_step;
+      // check displacement increment
+      double element_volume_evolution = 0.0;
+      is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
+      *alpha = (*alpha > element_volume_evolution)? *alpha : element_volume_evolution;
+    }
+    
+    MPI_Allreduce(MPI_IN_PLACE,alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
+    if(myrank == 0)
+    {
+      PGFEM_printf("Physics based evolution thresh (e.g. damage): %f (wmax: %f)\n"
+                   "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
+                    *alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
+    }
+    
+    if(*alpha > alpha_restart || alpha_ms > alpha_restart_ms)
+    {
+      if(myrank == 0)
+        PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
+      
+      *alpha = (*alpha > alpha_ms)? *alpha : alpha_ms;
+      INFO = 1;
+      *ART = 1;
+    }
+  }
+ 
+  // increment converged, output the volume weighted dissipation */
+  if(INFO==0)
+  {
+    // always adapt time step based on largest adaption parameter  
+    *alpha = (*alpha > alpha_ms)? *alpha : alpha_ms;
+
+    if(myrank == 0)
+    {
+      MPI_Reduce(MPI_IN_PLACE,&dissipation,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+      PGFEM_printf("Dissipation (vol weighted) [current] ||"
+                   " [integrated] || (dt): %2.8e %2.8e %2.8e\n",
+                   dissipation/dt, dissipation,dt);
+    } 
+    else
+    {
+      double tmp = 0;
+      MPI_Reduce(&dissipation,&tmp,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+    }
+    sol->last_residual = nor2;
+  }    
+          
+  return INFO;
+}
+
+/// Perform Newton Raphson iteration. If not converge, do subdivision
 ///
 /// \param[in] print_level print level for a summary of the entire function call
 /// \param[in] grid a mesh object
@@ -612,31 +1171,29 @@ int update_values_for_next_NR(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return time spent for this routine
-double Newton_Raphson_test(const int print_level,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *FV,
-                           SOLVER_OPTIONS *SOL,
-                           LOADING_STEPS *load,
-                           COMMUNICATION_STRUCTURE *COM,
-                           PGFem3D_TIME_STEPPING *time_steps,
-                           CRPL *crpl,
-                           MPI_Comm mpi_comm,
-                           const double VVolume,
-                           const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
-                           double *times,
-                           double *dts,
-                           int mp_id,
-                           int myrank)                                        
+double perform_Newton_Raphson_with_subdivision(const int print_level,
+                                               GRID *grid,
+                                               MATERIAL_PROPERTY *mat,
+                                               FIELD_VARIABLES *FV,
+                                               SOLVER_OPTIONS *SOL,
+                                               LOADING_STEPS *load,
+                                               COMMUNICATION_STRUCTURE *COM,
+                                               PGFem3D_TIME_STEPPING *time_steps,
+                                               CRPL *crpl,
+                                               MPI_Comm mpi_comm,
+                                               const double VVolume,
+                                               const PGFem3D_opt *opts,
+                                               MULTIPHYSICS *mp,
+                                               double *times,
+                                               double *dts,
+                                               int mp_id,
+                                               int myrank)                                        
 {
   // use pointers for physics[mp_id]
   SOLVER_OPTIONS          *sol = SOL + mp_id;
   FIELD_VARIABLES         *fv =  FV  + mp_id;
   COMMUNICATION_STRUCTURE *com = COM + mp_id;
   
-  double GNOR; // global norm of residual
-  double nor1; //
   sol->gama = 0.0; 
 
   long tim = 1;  
@@ -649,17 +1206,15 @@ double Newton_Raphson_test(const int print_level,
   double dt = dts[DT_NP1];  
   double t = times[tim+1];
   
-  long DIV, ST, GAMA, OME, i, j, N, M, INFO, iter, STEP, ART, GInfo, gam;
-  double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp, nor2, nor;
+  long DIV, ST, GAMA, OME, i, j, N, M, INFO, STEP, ART, GInfo, gam;
+  double DT, NOR=10.0, ERROR, LS1, tmp, Gss_temp;
   char str1[500];
   struct rusage usage;
   
-  double enorm, Genorm;
   static double ENORM = 1.0;
   
   double solve_time = 0.0;
-  double zero_tol = 1e-15;
-  nor2 = 1.0;
+  double zero_tol = sol->computer_zero;
   
   /* interface multiscale_modeling */
   double *macro_jump_u = aloc1(3);
@@ -670,9 +1225,6 @@ double Newton_Raphson_test(const int print_level,
   double max_damage = 0.0;
   double alpha = 0.0;
   
-  /* max micro substep criteria */
-  const int max_n_micro_substep = 2;
-  const double alpha_restart_ms = 2.0;
   int max_substep = 0;
   double alpha_ms = 0.0;
   
@@ -702,12 +1254,17 @@ double Newton_Raphson_test(const int print_level,
   STEP = 1;
   DT = 0.0;
   ERROR = sol->nor_min;
-  iter = 0;
+  long iter = 0;
   
-  /* GOTO REST */
-  rest:
-    fflush(PGFEM_stdout);
-    
+  if(sol->is_subdivided>0)
+    STEP = sol->is_subdivided;
+  
+  fflush(PGFEM_stdout);
+  int is_NR_successful = 0;
+  
+  while(is_NR_successful==0)
+  {
+    rest:
     if(INFO==1 && opts->solution_scheme_opt[LINE_SEARCH]==0)
     {
       ART = 1;
@@ -778,13 +1335,16 @@ double Newton_Raphson_test(const int print_level,
     
     /* reset the error flag */
     INFO = 0;
-    while (STEP > DIV){
-      if ((STEP > 1 || ST == 1) && myrank == 0 ){
+    while (STEP > DIV)
+    {
+      if ((STEP > 1 || ST == 1) && myrank == 0 )
+      {
         PGFEM_printf ("\nSTEP = %ld :: NS =  %ld || Time %e | dt = %e\n",
                 DIV,STEP,times[tim+1],dt);
       }
       bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
-      if (periodic == 1){
+      if (periodic == 1)
+      {
         long nt = time_steps->nt;
         double factor = (times[tim] + (DIV+1)*dt)/times[nt] * fv->eps[0].load;
         /* Plane strain deviatoric tension */
@@ -829,13 +1389,15 @@ double Newton_Raphson_test(const int print_level,
         }
         
       }/* end periodic */
-      else{
+      else
+      {
         
         for (i=0;i<(load->sups[mp_id])->npd;i++)
           (load->sups[mp_id])->defl_d[i] = load->sup_defl[mp_id][i]/STEP;
         
         /* Compute macro interface deformation gradient */
-        if((load->sups[mp_id])->multi_scale){
+        if((load->sups[mp_id])->multi_scale)
+        {
           /* INFO = compute_interface_macro_jump_u(macro_jump_u,sup); */
           /* compute_interface_macro_grad_u(sup->F0,sup->lc,macro_jump_u, */
           /* 			       sup->N0); */
@@ -883,437 +1445,20 @@ double Newton_Raphson_test(const int print_level,
       LToG (fv->RR,fv->BS_RR,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
       
       iter = 0;
-      nor = nor2 = GNOR = 10.0;
+      double nor, nor2;
+      double GNOR = 10.0; // global norm of residual
+      nor = nor2 = 10.0;
 
-      while (nor > ERROR
-              && nor2 > zero_tol
-              /* && nor2 > ERROR*ERROR */ /* norm of the residual < error^2
-               * MM 9/26/2012*/
-              ){
-        
-        if (sol->FNR == 1 || (sol->FNR == 0 && iter == 0)){
-          
-          assert(opts->solverpackage == HYPRE);
-          
-          /* Null the matrix (if not doing multiscale)*/
-          if(sol->microscale == NULL){
-            ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
-          }
-          
-          //compute stiffness matrix
-          INFO =  compute_stiffness_for_NR(grid,mat,fv,sol,load,com,crpl,mpi_comm,
-                                           opts,mp,mp_id,dt,iter,myrank);          
-          
-          // if INFO value greater than 0, the previous computation has an error
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
-          if (GInfo > 0) {
-            if(myrank == 0){
-              PGFEM_printf("Error detected (stiffmat_fd) %s:%s:%ld.\n"
-                      "Subdividing load.\n", __func__, __FILE__, __LINE__);
-            }
-            INFO = 1;
-            ART = 1;
-            goto rest;
-          }
-          
-          /* turn off line search for server-style multiscale */
-          if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
-            ART = 1;
-            /* complete any jobs before assembly */
-            MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-            pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
-          }
-          
-          /* Matrix assmbly */
-          INFO = HYPRE_IJMatrixAssemble((sol->PGFEM_hypre)->hypre_k);
-          
-        }
-        
-        /*=== Solve the system of equations ===*/
-        SOLVER_INFO s_info;
+      // do until converge
+      // nor2 > ERROR*ERROR 
+      // norm of the residual < error^2
 
-        solve_time += solve_system(opts,fv->BS_f,fv->BS_x,tim,iter,com->DomDof,&s_info,
-                                   sol->PGFEM_hypre,mpi_comm);
-
-        if(mp_id==-1)
-        { 
-          PGFEM_HYPRE_solve_info *PGFEM_hypre = sol->PGFEM_hypre;
-          HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_k.txt");
-          char fn_f[1024];
-          sprintf(fn_f, "test_f.txt.%.5d", myrank);
-          
-          FILE *fp_f = fopen(fn_f, "w");
-          fprintf(fp_f, "%d %d\n", PGFEM_hypre->ilower,
-                                    PGFEM_hypre->iupper);
-          for(int ia=0; ia<com->DomDof[myrank]; ia++)
-            fprintf(fp_f, "%d %e\n", PGFEM_hypre->ilower +ia, fv->BS_f[ia]);
-            
-          fclose(fp_f);  
-          
-          exit(0);
-        }
-       
-        if(myrank == 0){
-          solve_system_check_error(PGFEM_stdout,s_info);
-        }
-        BS_nor = s_info.res_norm;
-        BS_iter = s_info.n_iter;
-        
-        /* Check for correct solution */
-        if (BS_nor > 500.*(sol->err) || BS_iter < 0) {
-          INFO = 1;
-          ART = 1;
-          if (myrank == 0)
-            PGFEM_printf("ERROR in the solver: nor = %8.8e || iter = %d\n",
-                    BS_nor,BS_iter);
-          goto rest;
-        }
-        /* Clear hypre errors */
-        hypre__global_error = 0;
-        
-        if (!isfinite(BS_nor)) {
-          if (myrank == 0)
-            PGFEM_printf("ERROR in the solver: nor = %f\n",BS_nor);
-          INFO = 1;
-          ART = 1;
-          goto rest;
-        }
-        
-        /* Transform GLOBAL displacement vector to LOCAL */
-        GToL (fv->BS_x,fv->dd_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
-        
-        /* LINE SEARCH */
-        tmp  = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-        MPI_Allreduce(&tmp,&Gss_temp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-        LS1 = 1./2.*Gss_temp;
-        
-        /* Pressure and volume change THETA */
-        
-        switch(opts->analysis_type){
-          case FS_CRPL:
-          case FINITE_STRAIN:
-            press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
-                         mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
-            break;
-          case MINI:
-            MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                               fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-            break;
-          case MINI_3F:
-            MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                                  fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-            break;
-          case TF:
-            update_3f(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,fv->dd_u,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
-                      dt,t,mpi_comm,opts,sol->alpha,fv->u_n,fv->u_nm1,mp_id);
-            
-            break;
-          default:
-            break;
-        }
-        
-        /*************************/
-        /* INTEGRATION ALGORITHM */
-        /*************************/
-        if (opts->analysis_type == FS_CRPL) {
-          INFO = integration_alg (grid->ne,fv->ndofn,fv->ndofd,fv->npres,crpl,grid->element,
-                                  grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,mat->hommat,
-                                  fv->eps,fv->sig,tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id);
-          
-          /* Gather INFO from all domains */
-          // if INFO value greater than 0, the previous computation has an error
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm); 
-          if (GInfo > 0) { // if not 0, an error is detected
-            ART = 1;
-            INFO = 1;
-            goto rest;
-          }
-        }
-        
-        /* Update deformations */
-        for (i=0;i<fv->ndofd;i++) {
-          fv->f[i] = fv->d_u[i] + fv->dd_u[i];
-          fv->f_u[i] = 0.0;
-        }
-        
-        INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-                                  mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
-                                  fv->eps,fv->sig,&max_damage,&dissipation,
-                                  opts->analysis_type,mp_id);
-        
-        bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
-/*        
-        if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
-        {        
-          double element_volume_evolution = 0.0;
-        
-          INFO += is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
-          alpha = 10.0;
-        }*/
-        // if INFO value greater than 0, the previous computation has an error
-        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
-        if (GInfo > 0) { // if not 0, an error is detected
-          if(myrank == 0){
-            PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
-                    "Subdividing load.\n");
-          }
-          INFO = 1;
-          ART = 1;
-          goto rest;
-        }
-        
-        /* server-style multiscale */
-        if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
-          /* zero the macroscale tangent */
-          ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
-          
-          /* start the microscale jobs */
-          MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-          if ( iter == 0 ) {
-            /* == Do not rebalance if this is the first iteration. ==
-             * This is because most often it will be after an update or
-             * print operation from the previous step. These operations
-             * are approx. equal for all cells and thus the timing
-             * information is not valid for rebalancing purposes. */
-            pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-                                                   FE2_REBALANCE_NONE);
-          } else {
-            pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
-                                                   NR_REBALANCE);
-          }
-          double tnp1 = 0;
-          set_time_micro(tim,times,dt,DIV,&tnp1);
-          pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
-                                         JOB_COMPUTE_EQUILIBRIUM);
-          set_time_macro(tim,times,tnp1);
-        }
-        
-        /* Residuals */
-        INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                                        mp_id,t,dts, 1);
-        
-        // if INFO value greater than 0, the previous computation has an error
-        MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
-        if (GInfo > 0) { // if not 0, an error is detected
-          if(myrank == 0){
-            PGFEM_printf("Error detected (fd_residuals) %s:%s:%ld.\n"
-                    "Subdividing load.\n", __func__, __FILE__, __LINE__);
-          }
-          INFO = 1;
-          ART = 1;
-          goto rest;
-        }
-        
-        if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
-          /* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
-          MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-          pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
-          
-          /* determine substep factor */
-          alpha_ms = ((double) max_substep) / max_n_micro_substep;
-          if(alpha_ms > alpha_restart_ms){
-            if(myrank == 0){
-              PGFEM_printf("Too many subdvisions at microscale (alpha_ms = %f).\n"
-                      "Subdividing load.\n",alpha_ms);
-            }
-            alpha = alpha_ms;
-            INFO = 1;
-            ART = 1;
-            goto rest;
-          }
-        }
-        
-        /* Transform LOCAL load vector to GLOBAL */
-        LToG (fv->f_u,fv->BS_f_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
-        
-        /* Compute Euclidian norm */
-        for (i=0;i<com->DomDof[myrank];i++)
-          fv->BS_f[i] = fv->BS_RR[i] - fv->BS_f_u[i];
-        
-        nor  = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-        MPI_Allreduce(&nor,&GNOR,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-        nor2 = nor = sqrt(GNOR);
-        
-        if ((tim == 0 && iter == 0)
-        || (iter == 0 && fv->NORM < ERROR)){ /* Reset *NORM if
-         * less than convergence tolerance
-         * MM 6/27/2012*/
-          /* take maximum */
-          if(nor > fv->NORM)	fv->NORM = nor;
-          if(fv->NORM<sol->computer_zero)
-            fv->NORM = sol->computer_zero;
-        }
-        
-        
-        /* THIS IS GLOBAL-LOCAL TOLERANCE */
-        nor1 = fv->NORM;
-        
-        /* Normalize norm */
-        nor /= nor1;
-        
-        if (!isfinite(nor)) {
-          if (myrank == 0)
-            PGFEM_printf("ERROR in the algorithm : nor = %f\n",nor);
-          INFO = 1;
-          ART = 1;
-          goto rest;
-        }
-        
-        /* My Line search */
-        if (ART == 0) {
-          INFO = LINE_S3_MP(grid,mat,FV,SOL,load,COM,time_steps,crpl,mpi_comm,opts,mp,
-                            dts,t,mp_id,&nor,&nor2,nor1,NOR,LS1,iter,&max_damage,&dissipation,
-                            tim,STEP);
-          
-          /* Gather infos */
-          // if INFO value greater than 0, the previous computation has an error
-          MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
-          if (GInfo > 0) { /* ERROR in line search */
-            if (myrank == 0){
-              PGFEM_printf("Error in the line search algorithm\n");
-            }
-            if(NOR < 5. * ERROR){ /* MM 10/2/2012 soft convergence criteria */
-              if(myrank == 0){
-                PGFEM_printf("I will take last solution.\n");
-              }
-              nor = NOR;
-              sol->gama = 0.0;
-              INFO = 0;
-              break; /* take previous as converged value */
-              
-            } else { /* MM 10/2/2012 not converged, subdivide */
-              INFO = 1;
-              goto rest;
-            }
-          } /* end ERROR */
-          
-          if (sol->gama != 1.0) gam = 1;
-          
-        } else {       /* no line search */
-          sol->gama = 1.0;
-        }
-        
-        /* Total deformation increment */
-        NOR = nor;
-        for (i=0;i<fv->ndofd;i++){
-          fv->d_u[i] += (sol->gama)*fv->dd_u[i];
-          fv->dd_u[i] *= sol->gama;
-        }
-        
-        
-        /* Compute the energy norm E_norm = abs(R ddu/(R0 ddu0)) */
-        LToG(fv->dd_u,fv->BS_x,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
-        enorm = ss(fv->BS_f,fv->BS_x,com->DomDof[myrank]);
-        MPI_Allreduce(&enorm,&Genorm,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-        if((tim == 0 && iter == 0)) ENORM = Genorm;
-        if(ENORM <= zero_tol) ENORM = 1.0;
-        enorm = fabs(Genorm/ENORM);
-        
-        if (myrank == 0){
-          getrusage (RUSAGE_SELF,&usage);
-          PGFEM_printf("(%ld) IT = %d : R = %8.8e :: ||f||/||f0||",
-                       iter,BS_iter,BS_nor);
-          PGFEM_printf(" = [%8.8e] || [%8.8e] :: S %ld.%ld, U %ld.%ld\n",
-                       nor, nor2, usage.ru_stime.tv_sec,usage.ru_stime.tv_usec,
-                       usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
-          PGFEM_printf("|R'u|/|R0'u0| = [%1.12e] || [%1.12e]\n",enorm,fabs(Genorm));
-          fflush(PGFEM_stdout);
-        }
-        
-        if(NR_UPDATE || PFEM_DEBUG || PFEM_DEBUG_ALL){
-          if(opts->analysis_type == MINI){
-            MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
-                             fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                             com->GDof,com->comm,mpi_comm,mp_id);
-          }
-          if(opts->analysis_type == MINI_3F){
-            MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
-                                fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                                com->GDof,com->comm,mpi_comm,mp_id);
-          }
-        }
-
-        /* Check energy norm for convergence */
-        if(opts->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
-        {  
-          if((enorm < ERROR*ERROR) && (nor2 < 50*ERROR*ERROR) && iter > 0){
-            if(myrank == 0){
-              PGFEM_printf("Converged on energy norm\n");
-            }
-            INFO = 0;
-            break;
-          }
-        }
-        
-        /* Max number of iterations restart */
-        if (iter > (sol->iter_max-1) && nor > ERROR) {
-          if (nor > 20.*ERROR || iter > (sol->iter_max + 2)) {
-            if (nor < 5.*ERROR) {
-              if (myrank == 0)
-                PGFEM_printf ("I will take it\n");
-              nor = 0.0;
-            } else {
-              if (myrank == 0)
-                PGFEM_printf ("Error in the iteration : iter > iter_max (%d, %d)\n", sol->iter_max, iter);
-              INFO = 1;
-              if (gam == 0)
-                ART = 1;
-              goto rest;
-            }
-          }
-        } /* end iter > iter_max */
-        iter++; BS_nor = 0.0;
-        
-      }/* end while nor > nor_min */
-      
-      /* before increment after convergence, check max damage */
-      if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
-      {
-        // check from constitutive mode  
-        if (opts->analysis_type == CM) {
-          cm_get_subdivision_parameter(&alpha, grid->ne, grid->element, fv->eps, dt);
-        } else {
-          alpha = max_damage/max_damage_per_step;
-        }
-        // check displacement increment
-        double element_volume_evolution = 0.0;
-        is_displacement_acceptable(&element_volume_evolution,grid,fv,load,opts,mp_id);
-        alpha = (alpha > element_volume_evolution)? alpha : element_volume_evolution;
-      }
-      MPI_Allreduce(MPI_IN_PLACE,&alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
-      if(myrank == 0){
-        PGFEM_printf("Physics based evolution thresh (e.g. damage): %f (wmax: %f)\n"
-                     "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
-                      alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
-      }
-      if(alpha > alpha_restart || alpha_ms > alpha_restart_ms){
-        if(myrank == 0){
-          PGFEM_printf("Subdividing to maintain accuracy of the material response.\n");
-        }
-        
-        /* adapt time step based on largest adaption parameter */
-        alpha = (alpha > alpha_ms)? alpha : alpha_ms;
-        
-        INFO = 1;
-        ART = 1;
-        goto rest;
-      }
-      
-      /* always adapt time step based on largest adaption parameter */
-      alpha = (alpha > alpha_ms)? alpha : alpha_ms;
-      
-      /* increment converged, output the volume weighted dissipation */
-      if(myrank == 0){
-        MPI_Reduce(MPI_IN_PLACE,&dissipation,1,
-                   MPI_DOUBLE,MPI_SUM,0,mpi_comm);
-        PGFEM_printf("Dissipation (vol weighted) [current] ||"
-                     " [integrated] || (dt): %2.8e %2.8e %2.8e\n",
-                     dissipation/dt, dissipation,dt);
-      } else {
-        double tmp = 0;
-        MPI_Reduce(&dissipation,&tmp,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
-      }
-      
+      INFO = Newton_Raphson_with_LS(&solve_time,&alpha,&NOR,&gam,&ART,&iter,
+                                    grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
+                                    mp_id,times,dts,myrank,tim,STEP,DIV,&usage);
+      if(INFO!=0)
+        goto rest;                                    
+    
       ST = GAMA = gam = ART = 0;
       
       /* increment the step counter */
@@ -1340,7 +1485,6 @@ double Newton_Raphson_test(const int print_level,
       // update converged values and apply increments 
       // for next Newton Raphson step while subdividing
 
-      sol->last_residual = nor2;
       if(STEP>DIV+1)
         update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp,mp_id,t,dts);
 
@@ -1418,7 +1562,9 @@ double Newton_Raphson_test(const int print_level,
                         dt,opts->stab,mpi_comm,opts->analysis_type,mp_id);
     }
     
-    return (solve_time);    
+    is_NR_successful = 1;
+  }
+  return (solve_time);    
 }
 
 /// compute residuals 
@@ -1847,19 +1993,19 @@ int set_0th_residual(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
-double Multiphysics_Newton_Raphson(const int print_level,
-                                   GRID *grid,
-                                   MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   SOLVER_OPTIONS *SOL,
-                                   LOADING_STEPS *load,
-                                   COMMUNICATION_STRUCTURE *COM,
-                                   PGFem3D_TIME_STEPPING *time_steps,
-                                   CRPL *crpl,
-                                   MPI_Comm mpi_comm,
-                                   const double VVolume,
-                                   const PGFem3D_opt *opts,
-                                   MULTIPHYSICS *mp)
+double Multiphysics_Newton_Raphson_sub(const int print_level,
+                                       GRID *grid,
+                                       MATERIAL_PROPERTY *mat,
+                                       FIELD_VARIABLES *FV,
+                                       SOLVER_OPTIONS *SOL,
+                                       LOADING_STEPS *load,
+                                       COMMUNICATION_STRUCTURE *COM,
+                                       PGFem3D_TIME_STEPPING *time_steps,
+                                       CRPL *crpl,
+                                       MPI_Comm mpi_comm,
+                                       const double VVolume,
+                                       const PGFem3D_opt *opts,
+                                       MULTIPHYSICS *mp)
 {
   double solve_time = 0.0;
   int max_itr = 10; // temporal setup for max. iteration
@@ -1914,7 +2060,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
       printf("----------------------------------------------------------------------\n");    
     }
     
-    solve_time += Newton_Raphson_test(print_level,
+    solve_time += perform_Newton_Raphson_with_subdivision(print_level,
                                       grid,mat,FV,SOL,load,COM,time_steps,
                                       crpl,mpi_comm,VVolume,opts,mp,NR_time[mp_id].times,NR_time[mp_id].dt,mp_id,myrank);
     
@@ -1952,7 +2098,7 @@ double Multiphysics_Newton_Raphson(const int print_level,
           set_time_step_info_for_NR(time_steps,NR_time[mp_id].times,NR_time[mp_id].dt,mp_id);
 
           SOL[mp_id].is_subdivided = 0;
-          solve_time += Newton_Raphson_test(print_level,
+          solve_time += perform_Newton_Raphson_with_subdivision(print_level,
                                             grid,mat,FV,SOL,load,COM,time_steps,
                                             crpl,mpi_comm,VVolume,opts,mp,NR_time[mp_id].times,NR_time[mp_id].dt,mp_id,myrank);
 
@@ -1994,6 +2140,48 @@ double Multiphysics_Newton_Raphson(const int print_level,
   return solve_time;  
 }
 
+double Multiphysics_Newton_Raphson(const int print_level,
+                                   GRID *grid,
+                                   MATERIAL_PROPERTY *mat,
+                                   FIELD_VARIABLES *FV,
+                                   SOLVER_OPTIONS *SOL,
+                                   LOADING_STEPS *load,
+                                   COMMUNICATION_STRUCTURE *COM,
+                                   PGFem3D_TIME_STEPPING *time_steps,
+                                   CRPL *crpl,
+                                   MPI_Comm mpi_comm,
+                                   const double VVolume,
+                                   const PGFem3D_opt *opts,
+                                   MULTIPHYSICS *mp)
+{
+  double solve_time = 0.0;
+  int myrank;
+  MPI_Comm_rank(mpi_comm,&myrank);
+  if(mp->physicsno==1)
+  {  
+    int tim = 1;
+    if(time_steps->tim==0)
+      tim = 0; 
+      
+    double times[3];
+    double dts[2];
+  
+    set_time_step_info_for_NR(time_steps,times,dts,0);  
+  	  
+    solve_time = perform_Newton_Raphson_with_subdivision(print_level,grid,mat,FV,SOL,load,COM,time_steps,
+                                                         crpl,mpi_comm,VVolume,
+                                                         opts,mp,times,dts,0,myrank);
+
+    update_values_for_next_NR(grid,mat,FV,SOL,load,crpl,mpi_comm,VVolume,
+                              opts,mp,0,times[tim+1],dts);
+    time_steps->times[time_steps->tim] = times[tim+1] - dts[DT_NP1];
+    return solve_time;
+  }
+  
+  return Multiphysics_Newton_Raphson_sub(print_level,grid,mat,FV,SOL,load,COM,time_steps,crpl,
+                                         mpi_comm,VVolume,opts,mp);  
+}
+                                   
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///
 /// data structures have defined for multiscale simulation differently. 
@@ -2169,7 +2357,7 @@ double Newton_Raphson_multiscale(const int print_level,
   
   set_time_step_info_for_NR(&ts,times,dts,0);  
   	  
-  double solve_time = Newton_Raphson_test(print_level,&grid,&mat,&fv,&sol,&load,&com,&ts,
+  double solve_time = perform_Newton_Raphson_with_subdivision(print_level,&grid,&mat,&fv,&sol,&load,&com,&ts,
                                           s->crpl,c->mpi_comm,c->VVolume,
                                           opts,&mp,times,dts,mp_id,myrank);
 
