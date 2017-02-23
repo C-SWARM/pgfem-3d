@@ -510,24 +510,50 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     }      
   }
   
-  long npres = 0;
+  scan_for_valid_line(fp);
   
-  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  long npres = 0;
+  fscanf (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&(FV[0].npres),&(SOL[0].FNR));
+  if(SOL[0].FNR == 2 || SOL[0].FNR == 3)
   {
-    fscanf (fp,"%lf %ld %ld %ld",&(SOL[mp_id].nor_min),&(SOL[mp_id].iter_max),&(FV[mp_id].npres),&(SOL[mp_id].FNR));
-    if(SOL[mp_id].FNR == 2 || SOL[mp_id].FNR == 3)
-    {
-      SOL[mp_id].arc = (ARC_LENGTH_VARIABLES *) malloc(sizeof(ARC_LENGTH_VARIABLES));
-      err += arc_length_variable_initialization(SOL[mp_id].arc);   
-      fscanf (fp,"%lf %lf",&(SOL[mp_id].arc->dAL0),&(SOL[mp_id].arc->dALMAX));
-    }
-    if(SOL[mp_id].FNR == 4)
-    {  
-      fscanf (fp,"%lf",&(SOL[mp_id].du));
-      SOL[mp_id].FNR = 1;
-      SOL[mp_id].set_initial_residual = 1;
-    }
+    SOL[0].arc = (ARC_LENGTH_VARIABLES *) malloc(sizeof(ARC_LENGTH_VARIABLES));
+    err += arc_length_variable_initialization(SOL[0].arc);   
+    fscanf (fp,"%lf %lf",&(SOL[0].arc->dAL0),&(SOL[0].arc->dALMAX));
   }
+  
+  if(SOL[0].FNR == 4)
+  {
+    int physicsno = 0;
+    fscanf(fp, "%d %d", &physicsno, &(SOL[0].max_NR_staggering));
+    
+    if(physicsno != mp->physicsno)
+    {
+      if(myrank==0)
+        printf("ERROR: Number of physics for setting parameters for the solver is not correct. Abort\n");
+      
+      PGFEM_Abort();
+    }
+
+    scan_for_valid_line(fp);
+
+    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    {
+      SOL[mp_id].FNR = 1;
+      if(mp_id>0)
+      { 
+        SOL[mp_id].max_NR_staggering = SOL[0].max_NR_staggering; 
+        SOL[mp_id].nor_min           = SOL[0].nor_min; 
+        SOL[mp_id].iter_max          = SOL[0].iter_max;    
+        FV[mp_id].npres              = FV[0].npres;
+      }
+         
+      fscanf (fp,"%d %d",&(SOL[mp_id].max_subdivision), &(SOL[mp_id].set_initial_residual));
+      if(SOL[mp_id].set_initial_residual)
+        fscanf (fp,"%lf",&(SOL[mp_id].du));
+    }
+  }  
+  
+  scan_for_valid_line(fp);
 
   // CRYSTAL PLASTICITY
   if(opts->analysis_type == FS_CRPL) {

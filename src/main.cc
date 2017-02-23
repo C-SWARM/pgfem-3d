@@ -1137,21 +1137,23 @@ int single_scale_main(int argc,char *argv[])
     ///////////////////////////////////////////////////////////////////
     while (time_steps.nt > tim)
     {
-      time_steps.tim    = tim;
-      time_steps.dt_n   = time_steps.dt_np1;
-      time_steps.dt_np1 = time_steps.times[tim+1] - time_steps.times[tim];
-      if (time_steps.dt_np1 <= 0.0){
-        if (myrank == 0) {
-          PGFEM_printf("Incorrect dt\n");
+      if(tim>options.restart)
+      {  
+        time_steps.tim    = tim;
+        time_steps.dt_n   = time_steps.dt_np1;
+        time_steps.dt_np1 = time_steps.times[tim+1] - time_steps.times[tim];
+        if(time_steps.dt_np1 <= 0.0)
+        {
+          if(myrank == 0)
+            PGFEM_printf("Incorrect dt\n");
+          PGFEM_Comm_code_abort(mpi_comm,0);
         }
-        PGFEM_Comm_code_abort(mpi_comm,0);
-      }
       
-      if((myrank==0) && (tim>options.restart))
-      {
-        PGFEM_printf("\nFinite deformations time step %ld) "
-                " Time %e | dt = %e\n",
-                tim,time_steps.times[tim+1],time_steps.dt_np1);
+        if(myrank==0)
+        {
+          PGFEM_printf("\nFinite deformations time step %ld)  Time %e | dt = %e\n",
+                        tim,time_steps.times[tim+1],time_steps.dt_np1);
+        }
       }
       
       /*=== NEWTON RAPHSON ===*/
@@ -1165,11 +1167,8 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R        
         //----------------------------------------------------------------------
         //---->
-          err += read_and_apply_load_increments(&grid, fv, &load, &mp, tim, mpi_comm, myrank);
+        err += read_and_apply_load_increments(&grid, fv, &load, &mp, tim, mpi_comm, myrank);
 
-        for(int ia=0; ia<mp.physicsno; ia++)
-          sol[ia].n_step = 0;  
-                
         if(mp_id_M>=0)
         {
           if(load.tim_load[mp_id_M][tim] == 1 && tim != 0)  
@@ -1195,6 +1194,9 @@ int single_scale_main(int argc,char *argv[])
         }
         //<---------------------------------------------------------------------
         
+        for(int ia=0; ia<mp.physicsno; ia++)
+          sol[ia].n_step = 0; 
+        
         if(tim==options.restart+1 && tnm1[1]>0)
         {
           time_steps.times[tim-1] = tnm1[1]; // tnm1[0] = times[tim-2]
@@ -1213,7 +1215,7 @@ int single_scale_main(int argc,char *argv[])
         //---->        
         fflush(PGFEM_stdout);
         
-        hypre_time += Multiphysics_Newton_Raphson(1,&grid,&mat,fv,sol,&load,com,&time_steps,
+        hypre_time += Multiphysics_Newton_Raphson(&grid,&mat,fv,sol,&load,com,&time_steps,
                                                   crpl,mpi_comm,VVolume,&options,&mp);
         
         for(int ia = 0; ia<mp.physicsno; ia++)

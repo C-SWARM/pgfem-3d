@@ -153,10 +153,10 @@ typedef struct {
   long iter_max_sol;/// maximum number of iterations for linear solver 
   double computer_zero; /// computer zero 
   int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals
-  int is_subdivision_allowed;    /// if yes, time step will be subdivided during Newton-Raphson step
-                                 /// when solution is not converged, default = 1 (yes)
-  int is_subdivided;             /// if yes, has been subdivided
-  double last_residual; /// last residual achieved during Newton-Raphson iterations
+  int max_NR_staggering;    /// maximum number of Newton Raphson staggering when physic is coulpled, default = 5
+  int max_subdivision;      /// maximum number of subdivision, if -1 (default): take maximum
+  int is_subdivided;        /// if yes, has been subdivided
+  double last_residual;     /// last residual achieved during Newton-Raphson iterations
   int set_initial_residual; /// if yes, compute residual before the first NR iteration
   double du;                /// perturbation value for computing the first residual
   ARC_LENGTH_VARIABLES *arc;/// Container of Arc length related varialbes 

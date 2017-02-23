@@ -77,7 +77,6 @@ long compute_residuals_for_NR(GRID *grid,
 
 /// Perform Newton Staggered Newton Raphson
 ///
-/// \param[in] print_level print level for a summary of the entire function call
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] FV array of field variable object
@@ -93,8 +92,7 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
-double Multiphysics_Newton_Raphson(const int print_level,
-                                   GRID *grid,
+double Multiphysics_Newton_Raphson(GRID *grid,
                                    MATERIAL_PROPERTY *mat,
                                    FIELD_VARIABLES *FV,
                                    SOLVER_OPTIONS *SOL,

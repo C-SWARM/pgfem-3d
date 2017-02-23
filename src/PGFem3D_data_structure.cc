@@ -426,7 +426,8 @@ int solution_scheme_initialization(SOLVER_OPTIONS *sol)
   sol->iter_max_sol  = 0;
   sol->computer_zero = 0.0;
   sol->run_integration_algorithm = 1;
-  sol->is_subdivision_allowed = 1;
+  sol->max_NR_staggering = 5;
+  sol->max_subdivision = -1;
   sol->is_subdivided = 0;
   sol->last_residual = 0.0;
   sol->set_initial_residual = 0;
