@@ -1057,6 +1057,14 @@ int single_scale_main(int argc,char *argv[])
     //---->
     double tnm1[2] = {-1.0,-1.0};
     err += read_initial_values(&grid,&mat,fv,sol,&load,&time_steps,&options,&mp,tnm1,myrank);
+    for(int ia=0; ia<mp.physicsno; ia++)
+    {
+      for(int ib=0; ib<grid.nn*fv[ia].ndofn; ib++)
+      {
+        fv[ia].temporal->u_n[ib]   = fv[ia].u_n[ib];
+        fv[ia].temporal->u_nm1[ib] = fv[ia].u_nm1[ib];
+      }
+    }
     //<---------------------------------------------------------------------                               
 
     // set the first time step size
