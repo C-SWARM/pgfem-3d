@@ -107,6 +107,10 @@ typedef struct FIELD_VARIABLES {
   struct FIELD_VARIABLES **fvs; /// array of FIELD_VARIABLES pointers for multiphysics coupling
   FIELD_VARIABLES_TEMPORAL *temporal; /// temporal space for transient time stepping
   State_variables *statv_list;        /// list of state variables for constitutive model interface
+  double subdivision_factor_n;        /// use for linearly map subdivided parameters at t(n)   
+                                      ///   v = v_n + (v_np1 - v_n)*subdivision_factor_n
+  double subdivision_factor_np1;      /// use for linearly map subdivided parameters at t(n+1) 
+                                      ///   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
 } FIELD_VARIABLES;
 
 /// struct for field variables

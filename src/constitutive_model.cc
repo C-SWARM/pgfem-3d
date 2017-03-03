@@ -45,14 +45,25 @@ Define_Matrix(double);
 
 /// compute nodal temperature in an element
 ///
+/// if time step is subdivided, temperature needs to be subdivided
+/// dT   = T(t(n+1)) - T(t(n))
+/// Tn_e = T(t(n)) + dT*factor_n
+/// Tn_e = T(t(n)) + dT*factor_n
+///
+/// T(t=n)---------Tn_e----Tnp1_e-----T(t=np1)
+/// |<--factor_n-->|       |
+/// |<-------factor_np1--->| 
+///
 /// \param[in] fe container of finite element resources for an element
 /// \param[in] grid an object containing all mesh info
 /// \param[in] fv_h field variable object for thermal 
 /// \param[in] load object for loading
 /// \param[in] mp_id mutiphysics id
-/// \param[in] Tnp1_e computed nodal temperature for current element at t(n+1)
-/// \param[in] Tn_e computed nodal temperature for current element at t(n+1)
-/// \param[in] Tnm1_e computed nodal temperature for current element at t(n+1)
+/// \param[out] Tnp1_e computed nodal temperature for current element at t(n+1)
+/// \param[out] Tn_e computed nodal temperature for current element at t(n+1)
+/// \param[out] Tnm1_e computed nodal temperature for current element at t(n+1)
+/// \param[in] factor_np1 factor of computing temperature for t(n+1) 
+/// \param[in] factor_n factor of computing temperature for t(n)
 /// \return non-zero on internal error
 int get_nodal_temperatures(FEMLIB *fe,
                            GRID *grid,
@@ -61,7 +72,9 @@ int get_nodal_temperatures(FEMLIB *fe,
                            int mp_id,
                            double *Tnp1_e,
                            double *Tn_e,
-                           double *Tnm1_e)
+                           double *Tnm1_e,
+                           double factor_np1,
+                           double factor_n)
 {
   int err = 0;
 
@@ -81,23 +94,41 @@ int get_nodal_temperatures(FEMLIB *fe,
 
   for(int ia=0; ia<nne; ia++)
   {
-      Tn_e[ia] = Tn[nod[ia]];
     Tnm1_e[ia] = Tnm1[nod[ia]];
     const int id = cn[ia];
     const int aid = abs(id) - 1;
+    
+    double T_n = Tn[nod[ia]];
+    double T_np1 = 0.0;
 
     if (id == 0)
-      Tnp1_e[ia] = T0;
+      T_np1 = T0;
     else if(id > 0)
-      Tnp1_e[ia] = T[aid] + dT[aid];
+      T_np1 = T[aid] + dT[aid];
     else
-      Tnp1_e[ia] = T0 + sup->defl[aid] + sup->defl_d[aid];
+      T_np1 = T0 + sup->defl[aid] + sup->defl_d[aid];
+   
+      Tn_e[ia] = T_n + (T_np1 - T_n)*factor_n;
+    Tnp1_e[ia] = T_n + (T_np1 - T_n)*factor_np1;  
   }
   
   free(cn);
   return err;
 }
 
+/// compute temperature dependent variables at the integration point
+/// 
+/// \param[in] fe container of finite element resources for an element
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in] T0 initial temperature
+/// \param[in] Tnp1 nodal temperature array at t(n+1)
+/// \param[in] Tn nodal temperature array at t(n)
+/// \param[in] Tnm1 nodal temperature array at t(n-1)
+/// \param[out] hFnp1 computed deformation gradient at t(n+1)
+/// \param[out] hFn computed deformation gradient at t(n)
+/// \param[out] hFnm1 computed deformation gradient at t(n-1)
+/// \return non-zero on internal error 
 int compute_temperature_at_ip(FEMLIB *fe,
                               const GRID *grid,
                               const MATERIAL_PROPERTY *mat,
@@ -1518,7 +1549,7 @@ int constitutive_model_update_output_variables(GRID *grid,
       // compute temperature for this element for each nodal point
       int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
       err += get_nodal_temperatures(&fe, grid, fv_h, load, mp_cp_id,
-                                    Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
+                                    Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,fv->subdivision_factor_np1,fv->subdivision_factor_n);
     } 
     
     for(int ip=0; ip<fe.nint; ip++)
@@ -1790,7 +1821,8 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
   int compute_stiffness = 0;
    
   mid_point_rule(F2[pFnpa].m_pdata, pFn->m_pdata, pFnp1->m_pdata, alpha, nsd*nsd);
-  mid_point_rule(F2[hFnpa].m_pdata, hFn->m_pdata, hFnp1->m_pdata, alpha, nsd*nsd);
+  Matrix_AeqB(F2[hFnpa], 1.0,*hFnp1);
+//  mid_point_rule(F2[hFnpa].m_pdata, hFn->m_pdata, hFnp1->m_pdata, alpha, nsd*nsd);
   mid_point_rule( F2[Fnpa].m_pdata,  Fn->m_pdata,  Fnp1->m_pdata, alpha, nsd*nsd);
 
   if(is_it_couple_w_thermal>0)
@@ -1960,6 +1992,9 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               int mp_id,
                                               double dt)
 {
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+
   int err = 0;
   double alpha = sol->alpha;
   int total_Lagrangian = 1;  
@@ -2015,7 +2050,8 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 
     int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
     err += get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id,
-                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
+                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
+                                  fv->subdivision_factor_np1,fv->subdivision_factor_n);
   }
 
   // list of second-order tensors
@@ -2043,9 +2079,10 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T0,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                        F2[hFnp1].m_pdata,F2[hFn].m_pdata,hFnm1);
-                                       
-      mid_point_rule(F2[hFnpa].m_pdata, F2[hFn].m_pdata, F2[hFnp1].m_pdata, alpha, DIM_3x3);                                  
-      Matrix_inv(F2[hFnpa],F2[hFnpa_I]);                                       
+      
+      Matrix_AeqB(F2[hFnpa], 1.0, F2[hFnp1]);                                 
+      //mid_point_rule(F2[hFnpa].m_pdata, F2[hFn].m_pdata, F2[hFnp1].m_pdata, alpha, DIM_3x3);                                  
+      Matrix_inv(F2[hFnpa],F2[hFnpa_I]);                                        
     }
         
     err += func->get_pF(m,&F2[pFnp1]);
@@ -2182,7 +2219,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
     // compute temperature for this element for each nodal point
     int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
     err += get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id, 
-                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
+                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
+                                  fv->subdivision_factor_np1,fv->subdivision_factor_n);
   }  
 
   // list of second-order tensors
@@ -2426,7 +2464,8 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     // compute temperature for this element for each nodal point
     int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
     err += get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id,
-                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
+                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
+                                  fv->subdivision_factor_np1,fv->subdivision_factor_n);
   }  
 
   int compute_stiffness = 0;
@@ -2485,7 +2524,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 
     err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,eid,ndofn,
                                                         F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,
-                                                        F2+hFn,F2+hFnm1,
+                                                        F2+hFnp1,F2+hFn,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_alpha,fe);
   }
@@ -2579,7 +2618,8 @@ int residuals_el_constitutive_model(FEMLIB *fe,
     // compute temperature for this element for each nodal point
     int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
     err += get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id, 
-                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata);
+                                  Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
+                                  fv->subdivision_factor_np1,fv->subdivision_factor_n);
   }
   
   // list of second-order tensors

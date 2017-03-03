@@ -142,6 +142,8 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
   fv->fvs    = NULL;
   fv->temporal = NULL;
   fv->statv_list = NULL;
+  fv->subdivision_factor_n   = 0.0;
+  fv->subdivision_factor_np1 = 1.0;
   return err;
 }
 

@@ -519,11 +519,11 @@ static int plasticity_get_eFnm1(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_get_hardening_n(const Constitutive_model *m,
+static int plasticity_get_hardening(const Constitutive_model *m,
                                     double *var)
 {
   int err = 0;
-  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_n];
+  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_np1];
   return err;
 }
 static int plasticity_get_hardening_nm1(const Constitutive_model *m,
@@ -747,8 +747,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   if(CTX->is_coulpled_with_thermal)
   {
     double hFnpa[9];
-    mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);  
-    err += inv3x3(hFnpa, F2[hFnpaI].m_pdata);
+    //mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);  
+    err += inv3x3(CTX->hFnp1, F2[hFnpaI].m_pdata);
   }
 
   Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnpaI],0,F2[pFnpa_I],0);  
@@ -1134,7 +1134,7 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_eFnm1 = plasticity_get_eFnm1;
   p->get_eF_of_hF = plasticity_get_eF_with_thermal;
     
-  p->get_hardening     = plasticity_get_hardening_n;
+  p->get_hardening     = plasticity_get_hardening;
   p->get_hardening_nm1 = plasticity_get_hardening_nm1;  
   p->get_plast_strain_var = cm_get_lam_p;
   p->write_restart = plasticity_write_restart;
@@ -1478,7 +1478,7 @@ static int plasticity_int_alg(Constitutive_model *m,
  
   // perform integration algorithm for the crystal plasticity 
   if(CTX->is_coulpled_with_thermal)
-  {  
+  {    
     err += staggered_Newton_Rapson_generalized(Fs[TENSOR_pFnp1].m_pdata,
                                                F2[M].m_pdata, 
                                                &g_np1, &L_np1, 
@@ -1511,7 +1511,7 @@ static int plasticity_int_alg(Constitutive_model *m,
     Matrix_construct_redim(double,hFnp1_I,DIM_3,DIM_3);
     
     Matrix_inv(hFnp1,hFnp1_I);
-    err += compute_eF(F2+eFnp1, F2+pFnp1_I, Fs+TENSOR_Fnp1, &hFnp1, CTX); 
+    err += compute_eF(F2+eFnp1, Fs+TENSOR_Fnp1, &hFnp1_I, F2+pFnp1_I, CTX); 
     Matrix_cleanup(hFnp1_I);
   }
   else

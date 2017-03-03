@@ -798,6 +798,7 @@ long Newton_Raphson_with_LS(double *solve_time,
                             rusage *usage)
 {
   long INFO = 0;
+  *alpha = 0.0;
 
   double dt = dts[DT_NP1];
   double t = times[tim+1];
@@ -1275,11 +1276,27 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
   SUBDIVISION_PARAM sp;
     
   if(myrank==0)
-    PGFEM_printf(":: t(n) = %e, dts = (%e %e)\n", NR_t->times[tim], NR_t->dt[DT_N], NR_t->dt[DT_NP1]);  
-
+  {  
+    PGFEM_printf(":: t(n) = %e, dts = (%e %e)\n", NR_t->times[tim], NR_t->dt[DT_N], NR_t->dt[DT_NP1]);
+    
+      for(int ia=0; ia<mp->physicsno; ia++)
+      {
+        int npd = (load->sups[ia])->npd;
+        if(npd>0)
+        {
+      
+          for(int ib=0;ib<npd;ib++)
+            printf("load->sup_defl = %e\n", load->sup_defl[ia][ib]);
+        }
+      }
+  }
   double *dts = NR_t->dt; // short hand of dts
   double dt   = NR_t->dt[DT_NP1];  
   double t    = NR_t->times[tim+1];
+  double tn_0 = NR_t->times[tim];
+  double dt0  = dt;
+  fv->subdivision_factor_n   = 0.0;
+  fv->subdivision_factor_np1 = 1.0;
   
   long i, j, INFO, ART, gam;
   double NOR=10.0;
@@ -1339,11 +1356,11 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
         
       update_load_increments_for_subdivision(&sp,load->sup_defl[mp_id],(load->sups[mp_id])->npd,
                                              fv->RRn,fv->R,fv->ndofd);
-                  
+
       if(sp.is_subdivided)
         sol->is_subdivided = sp.step_size;
       
-      if(sp.step_size>sol->max_subdivision)
+      if(sp.step_size>sol->max_subdivision && sol->max_subdivision > 0)
       { 
         if(myrank==0)
           printf("maximum subdivision no = %d, requested = %d\n", sol->max_subdivision, sp.step_size);
@@ -1383,6 +1400,10 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
     
     while (sp.step_size > sp.step_id)
     {
+      fv->subdivision_factor_np1 = (NR_t->times[tim] + dt*(sp.step_id+1) - tn_0)/dt0;
+      if(myrank==-1)
+        printf(":: subdivision fators : t(n) = %e , t(n+1) = %e\n", fv->subdivision_factor_n, fv->subdivision_factor_np1);
+
       if (sp.is_subdivided && myrank == 0 )
       {
         PGFEM_printf("\nSTEP = %ld :: NS =  %ld || Time %e | dt = %e\n",
@@ -1528,7 +1549,10 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
       // for next Newton Raphson step while subdividing
 
       if(sp.step_size>sp.step_id+1)
+      {  
         update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp,NR_t,mp_id);
+        fv->subdivision_factor_n   = fv->subdivision_factor_np1;
+      }
 
       /* finish microscale update */
       if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL)
@@ -1707,6 +1731,12 @@ int save_field_variables_to_temporal(GRID *grid,
                                      MULTIPHYSICS *mp,
                                      int mp_id)
 {
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  
+  if(myrank==0)
+    printf("save_field_variables_to_temporal: %s\n", mp->physicsname[mp_id]);
+      
   FIELD_VARIABLES *fv = FV + mp_id;
   
   int err = 0;  
@@ -2136,7 +2166,50 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
     {
       printf("%s\n", line_level_1);
       printf(":: Staggered Newton Raphson iteration starts for dependent physics \n");
+      for(int ia=0; ia<mp->physicsno; ia++)
+      {
+        int npd = (load->sups[ia])->npd;
+        if(npd>0)
+        {
+      
+          for(int ib=0;ib<npd;ib++)
+            printf("load->sup_defl = %e\n", load->sup_defl[ia][ib]);
+        }
+      }
     }
+    
+/////////////////////////////////    
+  // Prepare memory for saving load data if subdivided
+  // Load will be divided, and applied subsequently while subdivision is stepping. 
+  double **sup_defl = (double **) malloc(sizeof(double *)*mp->physicsno);
+  double **defl     = (double **) malloc(sizeof(double *)*mp->physicsno);
+  double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
+  double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
+  
+  // start save data
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    int npd = (load->sups[ia])->npd;
+    if(npd>0)
+    {  
+      sup_defl[ia] = (double *) malloc(sizeof(double)*npd);
+          defl[ia] = (double *) malloc(sizeof(double)*npd);
+      
+      for(int ib=0;ib<npd;ib++)
+      {
+        sup_defl[ia][ib] = load->sup_defl[ia][ib];
+            defl[ia][ib] = (load->sups[ia])->defl[ib];
+      }
+    }
+
+      R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+    RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+    for(int ib=0; ib<FV[ia].ndofd; ib++)
+    {
+        R[ia][ib] = FV[ia].R[ib];
+      RRn[ia][ib] = FV[ia].RRn[ib];
+    }
+  }      
 
     while(*iterno<max_itr)
     {
@@ -2153,14 +2226,40 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
             printf(":: (%d/%d) Newton Raphson iteration for : %s\n", *iterno, max_itr, mp->physicsname[mp_id]);             
           }
           
-          // reset time step size          
-          NR_time[mp_id].times[0] = NR_t_in->times[0];
-          NR_time[mp_id].times[1] = NR_t_in->times[1];
-          NR_time[mp_id].times[2] = NR_t_in->times[2];
+          if(*iterno>0)
+          {  
+            // reset time step size          
+            NR_time[mp_id].times[0] = NR_t_in->times[0];
+            NR_time[mp_id].times[1] = NR_t_in->times[1];
+            NR_time[mp_id].times[2] = NR_t_in->times[2];
           
-          NR_time[mp_id].dt[DT_N]   = NR_t_in->dt[DT_N];
-          NR_time[mp_id].dt[DT_NP1] = NR_t_in->dt[DT_NP1];
-          NR_time[mp_id].tim        = NR_t_in->tim;
+            NR_time[mp_id].dt[DT_N]   = NR_t_in->dt[DT_N];
+            NR_time[mp_id].dt[DT_NP1] = NR_t_in->dt[DT_NP1];
+            NR_time[mp_id].tim        = NR_t_in->tim;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+    int npd = (load->sups[mp_id])->npd;
+    if(npd>0)
+    {  
+      for(int ib=0;ib<npd;ib++)
+      {
+        load->sup_defl[mp_id][ib] = load->sups[mp_id]->defl_d[ib] = sup_defl[mp_id][ib];
+        (load->sups[mp_id])->defl[ib] = defl[mp_id][ib];
+      }        
+    }
+
+    for(int ib=0; ib<FV[mp_id].ndofd; ib++)
+    {
+      FV[mp_id].R[ib]   =   R[mp_id][ib];
+      FV[mp_id].RRn[ib] = RRn[mp_id][ib];
+
+      FV[mp_id].d_u[ib]    = 0.0;
+      FV[mp_id].dd_u[ib]   = 0.0;
+      FV[mp_id].f_defl[ib] = 0.0;
+      FV[mp_id].f[ib]      = 0.0;      
+    }
+/////////////////////////////////////////////////////////////////////////////////////////            
+          }
 
           SOL[mp_id].is_subdivided = 0;
 
@@ -2188,7 +2287,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
         {    
           reset_state_field_variables(grid,FV,SOL,opts,mp,mp_id);
           if(myrank==0)
-            printf("NR is subdivied, reset t(n)\n");
+            printf("NR for %s is subdivied, reset t(n)\n", mp->physicsname[mp_id]);
         }
       }
       
@@ -2215,6 +2314,22 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
         
      (*iterno)++;
     }
+  // free allocated memory
+  for(int ia=0; ia<mp->physicsno; ia++)
+  {
+    if((load->sups[ia])->npd>0)
+    {  
+      free(sup_defl[ia]);
+      free(defl[ia]);      
+    }
+
+    free(R[ia]);
+    free(RRn[ia]);    
+  }
+  free(sup_defl);
+  free(defl);
+  free(R);
+  free(RRn);    
   }
   
   if(*is_SNR_converged)
