@@ -22,8 +22,69 @@
 #define DIM_3x3x3x3 81
 
 #define TOL_FHS 1.0e-6
+#define PLASTIC_HEAT_FACTOR 0.8
 
 #define Tns6_v(p, I,J,K,L,M,N) (p).m_pdata[DIM_3x3x3x3*3*(I-1)+DIM_3x3x3x3*(J-1)+DIM_3x3x3*(K-1)+DIM_3x3*(L-1)+DIM_3*(M-1)+(N-1)]
+
+/// compute effective rate strain (Von Mises strain)
+///
+/// I = delta_ij; ed = e-tr(e)/3*I; eff = sqrt(2/3*ed:ed)
+///
+/// \param[out] eff computed effective strain
+/// \param[in] F_in deformation gradient at t(n+1)
+/// \param[in] Fn_in deformation gradient at t(n)
+/// \param[in] dt time step size  
+/// \return non-zero on internal error 
+int compute_effective_dot_strain(double *eff, 
+                                 double *F_in, 
+                                 double *Fn_in, 
+                                 double dt)
+{
+  int err = 0;
+  
+  Matrix(double) b, b_I, bn_I, dot_e, F;
+  Matrix_construct_init(double, b,    DIM_3,DIM_3,0.0);
+  Matrix_construct_init(double, bn_I, DIM_3,DIM_3,0.0);
+  Matrix_construct_init(double, b_I,  DIM_3,DIM_3,0.0);
+    
+  Matrix_construct_init(double, dot_e,  DIM_3,DIM_3,0.0);
+    
+  F.m_row = F.m_col = DIM_3;
+  F.m_pdata = F_in;
+    
+  Matrix_AxB(b,1.0,0.0,F,0,F,1);
+  Matrix_inv(b,b_I);
+
+
+  F.m_pdata = Fn_in;
+  Matrix_AxB(b,1.0,0.0,F,0,F,1);
+  Matrix_inv(b,bn_I);
+    
+  for(int ia=1; ia<=DIM_3; ia++)
+  {
+    for(int ib=1; ib<=DIM_3; ib++)
+      Mat_v(dot_e,ia,ib) = -0.5*(Mat_v(b_I,ia,ib) - Mat_v(bn_I,ia,ib))/dt;
+  }
+  
+  double tr = (Mat_v(dot_e,1,1) + Mat_v(dot_e,2,2) + Mat_v(dot_e,3,3))/3.0;
+
+  Mat_v(dot_e,1,1) -= tr;
+  Mat_v(dot_e,2,2) -= tr;
+  Mat_v(dot_e,3,3) -= tr;
+  
+  double e_dd_e = 0.0;
+  for(int ia=0; ia<DIM_3x3; ia++)
+    e_dd_e += dot_e.m_pdata[ia]*dot_e.m_pdata[ia];
+  
+  *eff = sqrt(2.0/3.0*e_dd_e);
+  
+  Matrix_cleanup(b);
+  Matrix_cleanup(b_I);
+  Matrix_cleanup(bn_I);
+  Matrix_cleanup(dot_e);
+  
+  return err;
+}
 
 /// compute derivative of PK1 w.r.t F
 ///
@@ -160,6 +221,48 @@ int compute_d2PdF2(Matrix(double) *d2PdF2,
   Matrix_cleanup(dEdF);
   return err;
 }
+
+/// compute 2nd derivative of deF/dpF w.r.t hF
+///
+/// d2eFdhFdpF(I,J,K,L,O,P) = F(I,M)*hFI(M,O)*hFI(P,N)*pFI(N,K)*pFI(L,J)
+///
+/// \param[out] dF computed 6th order tensor 
+/// \param[in] F total deformation tensor
+/// \param[in] pFI inverse of the plastic part deformation gradient
+/// \param[in] hFI inverse of the thermal part deformation gradient
+/// \return non-zero on interal error
+int compute_d2eFdhFdpF(Matrix(double) *dF,
+                       Matrix(double) *F,
+                       Matrix(double) *pFI, 
+                       Matrix(double) *hFI)
+{
+  int err = 0;  
+  for(int I=1; I<=DIM_3; I++)
+  {
+    for(int J=1; J<=DIM_3; J++)
+    {
+      for(int K=1; K<=DIM_3; K++)
+      {
+        for(int L=1; L<=DIM_3; L++)
+        {
+          for(int O=1; O<=DIM_3; O++)
+          {
+            for(int P=1; P<=DIM_3; P++)
+            {
+              Tns6_v(*dF,I,J,K,L,O,P) = 0.0;
+              for(int M=1; M<=DIM_3; M++)
+              {
+                for(int N=1; N<=DIM_3; N++)
+                  Tns6_v(*dF,I,J,K,L,O,P) += Mat_v(*F,I,M)*Mat_v(*hFI,M,O)*Mat_v(*hFI,P,N)*Mat_v(*pFI,N,K)*Mat_v(*pFI,L,J);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return err;
+}                       
  
 /// compute ABC = A:B:C, A,B,C are all 4th order tensors
 ///
@@ -439,7 +542,16 @@ int compute_mechanical_heat_gen(double *Qe,
   err += compute_deF_over_dpF(F4+deFdpF,F2+F,F2+pFI,F2+hFI);
   // compute heat generations
   // xi = dhFdT:d2fdhF2:dhFdT + dfdhF:hFpp
-
+  
+  // Heat gen by plastic field variabls is not used (commented out). Instead, 
+  // lumped into overall heat gen by plasticity and take 80%(PLASTIC_HEAT_FACTOR)from it
+  // 
+  // double eff   = 0.0;
+  // double g   = 0.0;
+  // err += compute_effective_dot_strain(&eff, F2[pF].m_pdata, F2[pFn].m_pdata, dt);
+  // err += func->get_hardening(m,&g);
+  // Q_p = hJ*g*eff; 
+  
   double xi = 0.0;
   double Q_p = 0.0;
   for(int I = 1; I<=DIM_3; I++)
@@ -459,25 +571,22 @@ int compute_mechanical_heat_gen(double *Qe,
   } 
   
   *Qe = hJ*pJ*xi*T*Tdot;  
-  *Qp = hJ*pJ*Q_p;
-
-  if(myrank==-1 && eid<10)
-    printf("Tdot = %e, Qe = %e T = %e\n", Tdot, *Qe, T);
-
-        
+  *Qp = PLASTIC_HEAT_FACTOR*hJ*pJ*Q_p;
+    
   // compute tangent of Qe
   double DQe =0.0;
   double DQp = 0.0;
-  if(compute_tangent)
+  if(0)
   {
-    double Dxi = 0.0;
-    Matrix(double) d3WdC3, d2PdF2, df3dhF3;
-    Matrix_construct_redim(double,d3WdC3,DIM_3x3x3x3*DIM_3x3,1);
-    Matrix_construct_redim(double,d2PdF2, DIM_3x3x3x3*DIM_3x3,1);
-    Matrix_construct_redim(double,df3dhF3,DIM_3x3x3x3*DIM_3x3,1);
+    Matrix(double) d3WdC3, d2PdF2, df3dhF3, d2eFdhFdpF;
+    Matrix_construct_redim(double,d3WdC3,    DIM_3x3x3x3*DIM_3x3,1);
+    Matrix_construct_redim(double,d2PdF2,    DIM_3x3x3x3*DIM_3x3,1);
+    Matrix_construct_redim(double,df3dhF3,   DIM_3x3x3x3*DIM_3x3,1);
+    Matrix_construct_redim(double,d2eFdhFdpF,DIM_3x3x3x3*DIM_3x3,1);
         
     err += elast->compute_d3W_dC3(elast,F2[eF].m_pdata,d3WdC3.m_pdata);
     err += compute_d2PdF2(&d2PdF2,F2+eS,F4+dWdE,&d3WdC3,F2+eF);
+    err += compute_d2eFdhFdpF(&d2eFdhFdpF,F2+F,F2+pFI,F2+hFI);
     
     for(int I=1; I<=DIM_3; I++)
     {
@@ -492,10 +601,12 @@ int compute_mechanical_heat_gen(double *Qe,
               for(int N=1; N<=DIM_3; N++)
               {
                 Tns6_v(df3dhF3,I,J,K,L,M,N) = 0.0;
+                DQp -= Mat_v(F2[eP],I,J)*Tns6_v(d2eFdhFdpF,I,J,K,L,M,N)*Mat_v(F2[hFp],M,N)*Mat_v(F2[pFdot],K,L); 
                 for(int O=1; O<=DIM_3; O++)
                 {
                   for(int P=1; P<=DIM_3; P++)
                   {
+                    DQp -= Tns4_v(d2PdF2,I,J,K,L)*Tns4_v(F4[deFdhF],K,L,M,N)*Mat_v(F2[hFp],M,N)*Tns4_v(F4[deFdpF],I,J,O,P)*Mat_v(F2[pFdot],O,P);                    
                     for(int A=1; A<=DIM_3; A++)
                     {
                       for(int B=1; B<=DIM_3; B++)
@@ -503,7 +614,7 @@ int compute_mechanical_heat_gen(double *Qe,
                         for(int C=1; C<=DIM_3; C++)
                         {
                           for(int D=1; D<=DIM_3; D++)
-                            Tns6_v(df3dhF3,I,J,K,L,M,N) += Tns6_v(d2PdF2,I,J,K,L,O,P)*Tns4_v(F2[deFdhF],O,P,A,B)*Tns4_v(F2[deFdhF],A,B,C,D)*Tns4_v(F2[deFdhF],C,D,M,N);
+                            Tns6_v(df3dhF3,I,J,K,L,M,N) += Tns6_v(d2PdF2,I,J,K,L,O,P)*Tns4_v(F4[deFdhF],O,P,A,B)*Tns4_v(F4[deFdhF],A,B,C,D)*Tns4_v(F4[deFdhF],C,D,M,N);                          
                         }
                       }
                     }
@@ -516,16 +627,18 @@ int compute_mechanical_heat_gen(double *Qe,
       }
     }
 
+    double Dxi = 0.0;
+    
     for(int I=1; I<=DIM_3; I++)
     {
       for(int J=1; J<=DIM_3; J++)
       {
-        DQe += Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
+        Dxi += Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
         for(int K=1; K<=DIM_3; K++)
         {
           for(int L=1; L<=DIM_3; L++)
           {
-            DQe += Mat_v(F2[hFpp],I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp], K,L); 
+            Dxi += Mat_v(F2[hFpp],I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp], K,L); 
                 +  Mat_v(F2[hFp], I,J)*Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFpp],K,L);
                 +  Tns4_v(F4[d2fdhF2],I,J,K,L)*Mat_v(F2[hFp],K,L)*Mat_v(F2[hFpp], I,J);
                 +  Mat_v(F2[dfdhF],I,J)*Mat_v(F2[hFpp],I,J);
@@ -533,20 +646,21 @@ int compute_mechanical_heat_gen(double *Qe,
             for(int M=1; M<=DIM_3; M++)
             {
               for(int N=1; N<=DIM_3; N++)
-                DQe += Mat_v(F2[hFp],I,J)*Tns6_v(df3dhF3,I,J,K,L,M,N)*Mat_v(F2[hFp],M,N)*Mat_v(F2[hFp],K,L);
-            }
+                Dxi += Mat_v(F2[hFp],I,J)*Tns6_v(df3dhF3,I,J,K,L,M,N)*Mat_v(F2[hFp],M,N)*Mat_v(F2[hFp],K,L);
+            } 
           }
         }
       }
     }
-
-    DQe += xi*(dT/dt + T/dt) + Dxi*dT/dt*T;
+ 
+    DQe = xi*(dT/dt + T/dt) + Dxi*dT/dt*T;
     Matrix_cleanup(d3WdC3);
     Matrix_cleanup(d2PdF2);
     Matrix_cleanup(df3dhF3);
+    Matrix_cleanup(d2eFdhFdpF);
   }
       
-  *DQ = hJ*pJ*(DQe + DQp);
+  *DQ = hJ*pJ*(DQe + PLASTIC_HEAT_FACTOR*DQp);
 
   elast->S = tempS;
   elast->L = tempL;
@@ -1023,7 +1137,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     if(is_it_couple_w_mechanical>=0)
     {  
       FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
-      int compute_tangent = 0;
+      int compute_tangent = 1;
       double Qe = 0.0;
       double Qp = 0.0;
 
