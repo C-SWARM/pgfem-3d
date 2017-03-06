@@ -645,7 +645,7 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
   switch(mp->physics_ids[mp_id])
   {
     case MULTIPHYSICS_MECHANICAL:
-      err + momentum_equation_load4pBCs(grid,
+      err += momentum_equation_load4pBCs(grid,
                                         mat,
                                         fv,
                                         sol,
