@@ -576,7 +576,7 @@ int compute_mechanical_heat_gen(double *Qe,
   // compute tangent of Qe
   double DQe =0.0;
   double DQp = 0.0;
-  if(0)
+  if(compute_tangent)
   {
     Matrix(double) d3WdC3, d2PdF2, df3dhF3, d2eFdhFdpF;
     Matrix_construct_redim(double,d3WdC3,    DIM_3x3x3x3*DIM_3x3,1);
