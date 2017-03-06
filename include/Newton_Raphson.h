@@ -84,13 +84,11 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] load object for loading
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
-/// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[in] mp_id mutiphysics id
 /// \return time spent for this routine
 double Multiphysics_Newton_Raphson(GRID *grid,
                                    MATERIAL_PROPERTY *mat,
@@ -115,7 +113,7 @@ double Multiphysics_Newton_Raphson(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] sup_defl Prescribed deflection
 /// \param[out] pores opening volume of failed cohesive interfaces
-/// \param[out] the number of nonlinear steps taken to solve the given increment
+/// \param[out] n_step the number of nonlinear steps taken to solve the given increment
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
                                  COMMON_MACROSCALE *c,

@@ -64,9 +64,9 @@ int energy_equation_compute_stiffness(GRID *grid,
 ///
 /// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
-/// \param[in] fv field variable object 
+/// \param[in,out] fv field variable object 
 /// \param[in] sol object for solution scheme
-/// \param[in] com object for communications
+/// \param[in] load object for loading
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option

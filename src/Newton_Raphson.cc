@@ -116,9 +116,14 @@ static void set_time_macro(const int tim,
   times[tim + 1] = time_np1;
 }
 
-/// check velocity increment 
-/// Compute residuals for Newton Raphson iteration
+/// check element evolutions
 ///
+/// compute element volumes at t(n) and t(n+1) and apply limit of
+/// element volume changes. If this function is used in checking
+/// physics based evolution alpha, additional subdivision might be 
+/// activated to evolve displacements within the range of volume 
+/// evolution is allowed.
+/// 
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] variables object for field variables
@@ -190,9 +195,6 @@ int is_displacement_acceptable(double *alpha,
     double *y_np1 = aloc1(nne);
     double *z_np1 = aloc1(nne);
   
-    double max_disp[3];
-    max_disp[0]  = max_disp[1] = max_disp[2] == 0.0;
- 
     for(int n=0; n<nne; n++)
     {
       long nid = nod[n];
@@ -208,59 +210,19 @@ int is_displacement_acceptable(double *alpha,
       x_np1[n] = grid->node[nid].x1_fd + u_e[n*ndofn + 0];
       y_np1[n] = grid->node[nid].x2_fd + u_e[n*ndofn + 1];
       z_np1[n] = grid->node[nid].x3_fd + u_e[n*ndofn + 2];
-      
-      max_disp[0] = (fabs(max_disp[0]) > fabs(x_np1[n] - x_n[n]))? max_disp[0] : x_np1[n] - x_n[n];
-      max_disp[1] = (fabs(max_disp[1]) > fabs(y_np1[n] - y_n[n]))? max_disp[1] : y_np1[n] - y_n[n];
-      max_disp[2] = (fabs(max_disp[2]) > fabs(z_np1[n] - z_n[n]))? max_disp[2] : z_np1[n] - z_n[n];
     }
-    double max_x[3], min_x[3], dx[3];
-    max_x[0] = max_x[1] = max_x[2] = -1.0e+15;
-    min_x[0] = min_x[1] = min_x[2] =  1.0e+15;
-   
-    for(int n = 0; n<nne; n++)
-    {
-       max_x[0] = (max_x[0] > x_n[n])? max_x[0]: x_n[n];
-       max_x[1] = (max_x[1] > y_n[n])? max_x[1]: y_n[n];
-       max_x[2] = (max_x[2] > z_n[n])? max_x[2]: z_n[n];
-
-       min_x[0] = (min_x[0] < x_n[n])? min_x[0]: x_n[n];
-       min_x[1] = (min_x[1] < y_n[n])? min_x[1]: y_n[n];
-       min_x[2] = (min_x[2] < z_n[n])? min_x[2]: z_n[n];
-    }
-
-    dx[0] = max_x[0] - min_x[0];
-    dx[1] = max_x[1] - min_x[1];
-    dx[2] = max_x[2] - min_x[2];
     
     double ratio = 0.0;
-    for(int ia=0; ia<3; ia++)
-    {
-      double ratio_ia = fabs(max_disp[ia])/dx[ia]/0.07;
-      ratio = (ratio > ratio_ia) ? ratio : ratio_ia;
-    }
-
+    // reference configuration volume 
     double V_0   = compute_volumes_from_coordinates(X,  Y,  Z,nne);
+    // current configuration volume at t(n) 
     double V_n   = compute_volumes_from_coordinates(x_n,  y_n,  z_n,nne);
+    // current configuration volume at t(n+1)
     double V_np1 = compute_volumes_from_coordinates(x_np1,y_np1,z_np1,nne);
    
-    int myrank = 0;
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-    MPI_Comm_rank (mpi_comm,&myrank);
-    if(0)
-    {
-      printf("%d %d: %e -> %e: %e\n", myrank,e,V_n, V_np1, fabs((V_np1-V_n)/V_n));
-      printf("dx = (%e %e %e), disp = (%e %e %e)\n", dx[0],dx[1],dx[2], max_disp[0],max_disp[1],max_disp[2]);
-    }
-    
-    double dV_max = 0.2;
+    double dV_max = 0.2; // limit volume changes within 20%
     ratio = fabs(V_np1-V_n)/V_n/dV_max;
     alpha_V = (alpha_V > ratio)? alpha_V : ratio;   
-
-    if(0)
-    {
-      printf("%d: %e -> %e: %e\n", e,V_n, V_np1, fabs((V_np1-V_n)/V_n));
-      printf("dx = (%e %e %e), disp = (%e %e %e)\n", dx[0],dx[1],dx[2], max_disp[0],max_disp[1],max_disp[2]);
-    }
 
     free(nod);
     free(cn);
@@ -277,12 +239,6 @@ int is_displacement_acceptable(double *alpha,
     free(x_np1);
     free(y_np1);
     free(z_np1);    
-
-//    if(V_np1<0)
-//    {  
-//      err = 1; 
-//      break;
-//    }    
   }
   
   *alpha = alpha_V;
@@ -294,10 +250,10 @@ int is_displacement_acceptable(double *alpha,
 /// If Newton Raphson is restarted, reset variables to inital
 ///
 /// \param[in] grid a mesh object
-/// \param[in,out] variables object for field variables
+/// \param[in,out] fv object for field variables
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] opts structure PGFem3D option
 /// \param[in] physics_id, MULTIPHYSICS_MECHANICAL, MULTIPHYSICS_THERMAR, ...
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int reset_variables_for_NR(GRID *grid,
                            FIELD_VARIABLES *fv,
@@ -395,15 +351,17 @@ int update_load_increments_for_subdivision(SUBDIVISION_PARAM *sp,
 ///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
+/// \param[in,out] fv object for field variables
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[in] updated_deformation if 1, compute resiual on updated deformation
 /// \return non-zero on internal error
 long compute_residuals_for_NR(GRID *grid,
                               MATERIAL_PROPERTY *mat,
@@ -441,7 +399,7 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] max_substep microscale maximum subdivision number
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
+/// \param[in,out] fv object for field variables
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] com communication object
@@ -450,7 +408,6 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[in] t time
 /// \param[in] dt time step
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
@@ -514,10 +471,24 @@ long compute_stiffness_for_NR(int *max_substep,
   // Matrix assmbly
   HYPRE_IJMatrixAssemble((sol->PGFEM_hypre)->hypre_k);
   
-  
   return INFO;
 }
 
+/// During subdivided Newton iteration, shift solutions from t(n+1) -> t(n) -> t(n-1)
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] NR_t container of time stepping info
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int update_values_for_next_NR(GRID *grid,
                                MATERIAL_PROPERTY *mat,
                                FIELD_VARIABLES *fv,
@@ -702,6 +673,8 @@ int update_values_for_next_NR(GRID *grid,
 
 /// print system matrix and vector (LHS and RHS) for debugging
 ///
+/// this function will generate files as many as number of processes
+///
 /// \param[in] PGFEM_hypre container of HYPRE solver info
 /// \param[in] f double array of RHS
 /// \param[in] ndofd # of degree freedom of domain
@@ -724,6 +697,23 @@ int print_HYPRE_K_matrix_and_RHS(PGFEM_HYPRE_solve_info *PGFEM_hypre, double *f,
   return err;
 }
 
+/// check convergence on energy norm
+///
+/// Very small loading cases, residuals are very small, too, and difficult to converge to the tolarance with
+/// a relative norm of the residual. Instead, PGFem3D checks convergence on energy norm which is computed as:
+/// ||E|| = ||R*du||
+/// 
+/// \param[out] ENORM computed energy norm
+/// \param[in] nor absolute residual 
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] com container of communications info
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] tim time step id
+/// \param[in] iter NR iteration id
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
 int check_energy_norm(double *ENORM,
                       double nor,
                       FIELD_VARIABLES *fv,
@@ -772,6 +762,35 @@ int check_energy_norm(double *ENORM,
   return is_converged;
 }
 
+/// Actual Newton Raphson scheme with line search
+///
+/// \parma[out] solve_time time measure of spent for linear solver (Hypre)
+/// \parma[out] alpha physics based evolution parameter (maximum value from each physics)
+/// \param[out] NOR Normalize norm of the residuals
+/// \param[out] gam flag for denoting Line search that decreases increment of displacements
+///                 in order to make solultion to converge
+/// \param[out] ART if 1 Line search was activated
+/// \param[out] NR_itr_no number of NR iterations taken in this NR step
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com container of communications info
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] times array of times 
+///                  t(n-1) = times[tim-1], t(n) = times[tim], t(n+1) = times[tim+1]
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1), dts[DT_NP1] = t(n+1) - t(n), 
+/// \param[in] myrank current process rank
+/// \param[in] tim time step id
+/// \param[in] STEP number of subdivided steps
+/// \param[in] DIV subdivision step id
+/// \param[in, out] usage struct to get resource usage
+/// \return non-zero on internal error
 long Newton_Raphson_with_LS(double *solve_time,
                             double *alpha,
                             double *NOR,
@@ -941,7 +960,7 @@ long Newton_Raphson_with_LS(double *solve_time,
             opts->analysis_type,mp_id);
     
     bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
-    /*
+    /* this is not verified and currently active, but fully implemented.
         if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
         {
           double element_volume_evolution = 0.0;
@@ -1640,9 +1659,10 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
 }
 
 
-/// compute residuals 
+/// Computing residuals for dependent physics when multiphysics is staggered
+/// needs to use temporal field variables. This function serves to compute
+/// residulas with temporal field variables.
 ///
-/// After converge, check residuals
 /// This will not perform any integration algorithm.
 ///
 /// \param[in] nor norm of residuals
@@ -1724,7 +1744,7 @@ int compute_coupled_physics_residual_norm(double *nor,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \return time spent for this routine
+/// \return non-zero on internal error
 int save_field_variables_to_temporal(GRID *grid,
                                      FIELD_VARIABLES *FV,
                                      const PGFem3D_opt *opts,
@@ -1759,7 +1779,7 @@ int save_field_variables_to_temporal(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \return time spent for this routine
+/// \return non-zero on internal error
 int update_temporal_field_variables_np1(GRID *grid,
                                         FIELD_VARIABLES *FV,
                                         const PGFem3D_opt *opts,
@@ -1779,10 +1799,10 @@ int update_temporal_field_variables_np1(GRID *grid,
 ///
 /// \param[in] grid a mesh object
 /// \param[in,out] FV array of field variable object
+/// \param[in] opts structure of PGFem3D options
 /// \param[in] mp mutiphysics object
-/// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
-/// \return time spent for this routine
+/// \return non-zero on internal error
 int reset_field_variables_using_temporal(GRID *grid,
                                          FIELD_VARIABLES *FV,
                                          const PGFem3D_opt *opts,
@@ -1808,10 +1828,10 @@ int reset_field_variables_using_temporal(GRID *grid,
 ///
 /// \param[in] grid a mesh object
 /// \param[in,out] FV array of field variable object
+/// \param[in] opts structure of PGFem3D options
 /// \param[in] mp mutiphysics object
-/// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
-/// \return time spent for this routine
+/// \return non-zero on internal error
 int reset_mesh_coordinates(GRID *grid,
                            FIELD_VARIABLES *FV,
                            const PGFem3D_opt *opts,
@@ -1837,11 +1857,10 @@ int reset_mesh_coordinates(GRID *grid,
 /// \param[in] grid a mesh object
 /// \param[in,out] FV array of field variable object
 /// \param[in] SOL object array for solution scheme
+/// \param[in] opts structure of PGFem3D options
 /// \param[in] mp mutiphysics object
-/// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
-/// \param[in] mp_id mutiphysics id
-/// \return time spent for this routine
+/// \return non-zero on internal error
 int reset_state_field_variables(GRID *grid,
                                 FIELD_VARIABLES *FV,
                                 SOLVER_OPTIONS *SOL,
@@ -1997,7 +2016,6 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
 ///
 /// This will not perform any integration algorithm.
 ///
-/// \param[in] nor norm of residuals
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] FV array of field variable object. FV.NORM is updateed.
@@ -2057,9 +2075,12 @@ int set_0th_residual(GRID *grid,
   }
   return err;    
 }
-      
+
 /// Staggered Newton Raphson iterative solver for multiphysics problems
 ///
+/// \param[out] iterno number of staggered iterations taken in this routine
+/// \param[out] is_SNR_converged if 1, the SNR converged
+/// \param[out] NR_t_in container of time stepping info
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] FV array of field variable object
@@ -2178,38 +2199,37 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
       }
     }
     
-/////////////////////////////////    
-  // Prepare memory for saving load data if subdivided
-  // Load will be divided, and applied subsequently while subdivision is stepping. 
-  double **sup_defl = (double **) malloc(sizeof(double *)*mp->physicsno);
-  double **defl     = (double **) malloc(sizeof(double *)*mp->physicsno);
-  double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
-  double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
+    // Prepare memory for saving load data if subdivided
+    // Load will be divided, and applied subsequently while subdivision is stepping. 
+    double **sup_defl = (double **) malloc(sizeof(double *)*mp->physicsno);
+    double **defl     = (double **) malloc(sizeof(double *)*mp->physicsno);
+    double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
+    double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
   
-  // start save data
-  for(int ia=0; ia<mp->physicsno; ia++)
-  {
-    int npd = (load->sups[ia])->npd;
-    if(npd>0)
-    {  
-      sup_defl[ia] = (double *) malloc(sizeof(double)*npd);
-          defl[ia] = (double *) malloc(sizeof(double)*npd);
-      
-      for(int ib=0;ib<npd;ib++)
-      {
-        sup_defl[ia][ib] = load->sup_defl[ia][ib];
-            defl[ia][ib] = (load->sups[ia])->defl[ib];
-      }
-    }
-
-      R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
-    RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
-    for(int ib=0; ib<FV[ia].ndofd; ib++)
+    // start save data
+    for(int ia=0; ia<mp->physicsno; ia++)
     {
-        R[ia][ib] = FV[ia].R[ib];
-      RRn[ia][ib] = FV[ia].RRn[ib];
-    }
-  }      
+      int npd = (load->sups[ia])->npd;
+      if(npd>0)
+      {  
+        sup_defl[ia] = (double *) malloc(sizeof(double)*npd);
+            defl[ia] = (double *) malloc(sizeof(double)*npd);
+        
+        for(int ib=0;ib<npd;ib++)
+        {
+          sup_defl[ia][ib] = load->sup_defl[ia][ib];
+              defl[ia][ib] = (load->sups[ia])->defl[ib];
+        }
+      }
+  
+        R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+      RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+      for(int ib=0; ib<FV[ia].ndofd; ib++)
+      {
+          R[ia][ib] = FV[ia].R[ib];
+        RRn[ia][ib] = FV[ia].RRn[ib];
+      }
+    }      
 
     while(*iterno<max_itr)
     {
@@ -2237,28 +2257,26 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
             NR_time[mp_id].dt[DT_NP1] = NR_t_in->dt[DT_NP1];
             NR_time[mp_id].tim        = NR_t_in->tim;
 
-/////////////////////////////////////////////////////////////////////////////////////////
-    int npd = (load->sups[mp_id])->npd;
-    if(npd>0)
-    {  
-      for(int ib=0;ib<npd;ib++)
-      {
-        load->sup_defl[mp_id][ib] = load->sups[mp_id]->defl_d[ib] = sup_defl[mp_id][ib];
-        (load->sups[mp_id])->defl[ib] = defl[mp_id][ib];
-      }        
-    }
+            int npd = (load->sups[mp_id])->npd;
+            if(npd>0)
+            {
+              for(int ib=0;ib<npd;ib++)
+              { 
+                load->sup_defl[mp_id][ib] = load->sups[mp_id]->defl_d[ib] = sup_defl[mp_id][ib];
+                (load->sups[mp_id])->defl[ib] = defl[mp_id][ib];
+              }        
+            }
 
-    for(int ib=0; ib<FV[mp_id].ndofd; ib++)
-    {
-      FV[mp_id].R[ib]   =   R[mp_id][ib];
-      FV[mp_id].RRn[ib] = RRn[mp_id][ib];
+            for(int ib=0; ib<FV[mp_id].ndofd; ib++)
+            {
+              FV[mp_id].R[ib]   =   R[mp_id][ib];
+              FV[mp_id].RRn[ib] = RRn[mp_id][ib];
 
-      FV[mp_id].d_u[ib]    = 0.0;
-      FV[mp_id].dd_u[ib]   = 0.0;
-      FV[mp_id].f_defl[ib] = 0.0;
-      FV[mp_id].f[ib]      = 0.0;      
-    }
-/////////////////////////////////////////////////////////////////////////////////////////            
+              FV[mp_id].d_u[ib]    = 0.0;
+              FV[mp_id].dd_u[ib]   = 0.0;
+              FV[mp_id].f_defl[ib] = 0.0;
+              FV[mp_id].f[ib]      = 0.0;      
+            }
           }
 
           SOL[mp_id].is_subdivided = 0;
@@ -2312,24 +2330,24 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
       else
         break;
         
-     (*iterno)++;
+      (*iterno)++;
     }
-  // free allocated memory
-  for(int ia=0; ia<mp->physicsno; ia++)
-  {
-    if((load->sups[ia])->npd>0)
-    {  
-      free(sup_defl[ia]);
-      free(defl[ia]);      
+    // free allocated memory
+    for(int ia=0; ia<mp->physicsno; ia++)
+    {
+      if((load->sups[ia])->npd>0)
+      {  
+        free(sup_defl[ia]);
+        free(defl[ia]);      
+      }
+  
+      free(R[ia]);
+      free(RRn[ia]);    
     }
-
-    free(R[ia]);
-    free(RRn[ia]);    
-  }
-  free(sup_defl);
-  free(defl);
-  free(R);
-  free(RRn);    
+    free(sup_defl);
+    free(defl);
+    free(R);
+    free(RRn);    
   }
   
   if(*is_SNR_converged)
@@ -2348,6 +2366,23 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
   return solve_time;  
 }
 
+/// Staggered Newton Raphson iterative solver for multiphysics problems
+///
+/// If staggered NR step diverges, time step will be subdivided.
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object
+/// \param[in] SOL object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] COM object array for communications
+/// \param[in] time_steps object for time stepping
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] VVolume original volume of the domain
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \return time spent for this routine
 double Multiphysics_Newton_Raphson(GRID *grid,
                                    MATERIAL_PROPERTY *mat,
                                    FIELD_VARIABLES *FV,
@@ -2561,7 +2596,7 @@ double Multiphysics_Newton_Raphson(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] sup_defl Prescribed deflection
 /// \param[out] pores opening volume of failed cohesive interfaces
-/// \param[out] the number of nonlinear steps taken to solve the given increment
+/// \param[out] n_step the number of nonlinear steps taken to solve the given increment
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
                                  COMMON_MACROSCALE *c,

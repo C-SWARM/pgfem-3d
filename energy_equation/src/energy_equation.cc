@@ -271,7 +271,7 @@ int compute_d2eFdhFdpF(Matrix(double) *dF,
 /// \param[out] ABC computed 4th order tensor
 /// \param[in] A 1st 4th order tensor
 /// \param[in] B 2nd 4th order tensor
-/// \param[in] B 2nd 4th order tensor
+/// \param[in] C 2nd 4th order tensor
 /// \return non-zero on internal error
 int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
                              Matrix(double) *A,
@@ -446,7 +446,8 @@ int compute_deF_over_dpF(Matrix(double) *dF,
 /// \param[out] DQ tangent of heat generation w.r.t temperature (computed only if compute_tangent = 1)
 /// \param[in] mat MATERIAL_PROPERTY object
 /// \param[in] fv_m mechanical FIELD_VARIABLES object
-/// \param[in] dT temperature change
+/// \param[in] T temperature
+/// \param[in] dT temperature changes
 /// \param[in] dt time step size
 /// \param[in] eid element id
 /// \param[in] ip integration point id
@@ -685,7 +686,7 @@ int compute_mechanical_heat_gen(double *Qe,
 /// \param[in] elem ELEMENT object
 /// \param[in] node NODE object
 /// \param[in] sup struct for BC's
-/// \param[in] T_e computed nodal temperature for current element
+/// \param[out] T_e computed nodal temperature for current element
 /// \param[in] T0 reference temperature
 /// \return non-zero on internal error
 int get_temperature_elem(const long *cn,
@@ -759,6 +760,8 @@ int energy_equation_residuals_assemble(FEMLIB *fe,
 /// \param[in] load object for loading
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt_in time step size
+/// \param[in] total_Lagrangian flag denotes total_Lagrangian= 1: Total Lagrangian formulation
+///                                          total_Lagrangian= 0: Updated Lagrangian formulation 
 /// \return non-zero on internal error
 int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            double *fi_in,
@@ -1023,7 +1026,7 @@ int energy_equation_compute_residuals(GRID *grid,
 /// merged into memory for assembling and communications.
 ///
 /// \param[in] fe container of finite element resources
-/// \param[out] LK local stiffness matrix for assmebling and communication 
+/// \param[out] Lk local stiffness matrix for assmebling and communication 
 /// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
 /// \param[in] fv field variable object 
@@ -1033,13 +1036,16 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \param[in] Ddof number of degree of freedoms accumulated through processes
 /// \param[in] myrank current process rank
 /// \param[in] interior indentifier to distinguish element in interior or
-///             communication boundary.
+///             communication boundary
+/// \param[in] opts structure of PGFem3D options
 /// \param[in] mp_id mutiphysics id
 /// \param[in] do_assemble if yes, assmeble computed element stiffness matrix into 
 ///            sparce solver matrix or compute element stiffness only
 /// \param[in] compute_load4pBCs, if yes, compute external flux due to Dirichlet BCs
 ///                               if no, no compute external flux due to Dirichlet BCs
 /// \param[in] dt_in time step size
+/// \param[in] total_Lagrangian flag denotes total_Lagrangian= 1: Total Lagrangian formulation
+///                                          total_Lagrangian= 0: Updated Lagrangian formulation 
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            double **Lk,                                           
@@ -1265,7 +1271,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 ///
 /// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
-/// \param[in] fv field variable object 
+/// \param[in,out] fv field variable object 
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] com object for communications
@@ -1427,9 +1433,9 @@ int energy_equation_compute_stiffness(GRID *grid,
 ///
 /// \param[in] grid an object containing all mesh info
 /// \param[in] mat a material object
-/// \param[in] fv field variable object 
+/// \param[in,out] fv field variable object 
 /// \param[in] sol object for solution scheme
-/// \param[in] com object for communications
+/// \param[in] load object for loading
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
@@ -1686,7 +1692,7 @@ int update_thermal_flux4print(GRID *grid,
     FEMLIB_destruct(&fe);    
   }
   
-   if(is_it_couple_w_mechanical>=0)
+  if(is_it_couple_w_mechanical>=0)
   {
     FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];    
     fv_m->u_n   = u_n;
