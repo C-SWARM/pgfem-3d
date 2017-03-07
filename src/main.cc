@@ -1246,8 +1246,8 @@ int single_scale_main(int argc,char *argv[])
       {
         if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
         {
-          double dlm = Arc_length_test(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
-                                     crpl,mpi_comm,VVolume,&options,&mp,0);
+          double dlm = Multiphysics_Arc_length(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
+                                               crpl,mpi_comm,VVolume,&options,&mp,0);
         
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
