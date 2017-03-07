@@ -299,11 +299,8 @@ double Multiphysics_Arc_length(GRID *grid,
     assert(opts->solverpackage == HYPRE);
     /* Null the matrix */
     ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
-    stiffmat_fd (com->Ap,com->Ai,grid->ne,grid->n_be,fv->ndofn,grid->element,grid->b_elems,com->nbndel,com->bndel,
-		 grid->node,mat->hommat,mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,
-		 sol->nor_min,time_steps->dt_np1,crpl,opts->stab,grid->nce,grid->coel,sol->FNR,arc->lm+dlm0,fv->R,myrank,
-		 nproc,com->DomDof,com->GDof,com->comm,mpi_comm,sol->PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1,
-		 mp_id);
+    
+    stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,time_steps->dt_np1,iter,myrank);
 
     /* Assemble the matrix */
     HYPRE_IJMatrixAssemble(sol->PGFEM_hypre->hypre_k);
@@ -521,11 +518,8 @@ double Multiphysics_Arc_length(GRID *grid,
       assert(opts->solverpackage == HYPRE);
       /* Null the matrix */
       ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
-      stiffmat_fd (com->Ap,com->Ai,grid->ne,grid->n_be,fv->ndofn,grid->element,grid->b_elems,com->nbndel,com->bndel,
-		   grid->node,mat->hommat,mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,
-		   sol->nor_min,time_steps->dt_np1,crpl,opts->stab,grid->nce,grid->coel,sol->FNR,arc->lm+dlm,fv->f_u,myrank,
-		   nproc,com->DomDof,com->GDof,com->comm,mpi_comm,sol->PGFEM_hypre,opts,alpha_alpha,r_n,r_n_1,
-		   mp_id);
+      
+      stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,time_steps->dt_np1,iter,myrank);
 	
       /* Assemble the matrix */
       HYPRE_IJMatrixAssemble(sol->PGFEM_hypre->hypre_k);
