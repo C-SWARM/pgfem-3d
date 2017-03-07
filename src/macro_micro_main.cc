@@ -465,31 +465,10 @@ int multi_scale_main(int argc, char **argv)
 	char out_dat[500];
 	double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
 			  /dt0*solver_file->nonlin_method_opts[1]);
-	dlm = Arc_length ( c->ne,0,c->nn,c->ndofn,
-			   c->ndofd,c->npres,
-			   solver_file->n_step,s->tim,
-			   s->times,solver_file->nonlin_tol,
-			   solver_file->max_nonlin_iter,s->dt,
-			   dt0,c->elem,NULL,c->nbndel,
-			   c->bndel,c->node,c->supports,sup_defl,
-			   c->hommat,c->matgeom,s->sig_e,s->eps,
-			   c->Ap,c->Ai,c->SOLVER,
-			   s->RRn,s->f_defl,s->crpl,macro->opts->stab,
-			   c->nce,c->coel,s->r,s->f,
-			   s->d_r,s->D_R,s->rr,s->R,
-			   s->RR,s->f_u,s->U,s->DK,
-			   s->dR,s->BS_f,s->BS_d_r,s->BS_D_R,
-			   s->BS_rr,s->BS_R,s->BS_RR,s->BS_f_u,
-			   s->BS_U,s->BS_DK,s->BS_dR,solver_file->nonlin_method,
-			   lm,solver_file->nonlin_method_opts[0],&DET,&dlm0,
-			   &DLM,macro->opts->vis_format,
-			   macro->opts->smoothing,
-			   s->sig_n,out_dat,
-			   (long*) (solver_file->print_steps),&AT,
-			   ARC,tmp_val,&ITT,&dAL,
-			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
-			   c->lim_zero,&s->NORM,c->mpi_comm,
-			   c->VVolume,macro->opts,mp_id);
+
+	dlm = Arc_length_multiscale(c,s,solver_file,macro->opts,
+                             &pores,dt0,lm,&DET,&dlm0,&DLM,&AT,      
+                             ARC,&ITT,&dAL,sup_defl);		  
 
 	/* Load multiplier */
 	lm += dlm;

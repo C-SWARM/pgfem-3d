@@ -1753,9 +1753,6 @@ int save_field_variables_to_temporal(GRID *grid,
 {
   int myrank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  
-  if(myrank==0)
-    printf("save_field_variables_to_temporal: %s\n", mp->physicsname[mp_id]);
       
   FIELD_VARIABLES *fv = FV + mp_id;
   
