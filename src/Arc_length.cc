@@ -733,14 +733,11 @@ double Multiphysics_Arc_length(GRID *grid,
       }
       
       /* LINE SEARCH */
-      if (ART == 0) {
-	INFO = ALINE_S3 (arc->ARC,&DLM,&nor,&nor2,&gama,nor1,LS1,iter,grid->ne,grid->n_be,
-			 fv->ndofd,fv->ndofn,fv->npres,time_steps->tim,sol->nor_min,dts,opts->stab,grid->nce,
-			 dlm,arc->lm,dAL,fv->d_u,fv->u_np1,arc->D_R,grid->node,grid->element,grid->b_elems,mat->matgeom,
-			 mat->hommat,load->sups[mp_id],fv->eps,fv->sig,crpl,grid->coel,fv->f_u,fv->f,fv->R,fv->BS_f,
-			 arc->BS_R,arc->BS_D_R,arc->BS_d_r,arc->BS_DK,arc->BS_U,arc->BS_rr,
-			 com->DomDof,com->GDof,com->comm,STEP,mpi_comm,&max_damage,
-			 &dissipation,opts,mp_id);
+      if(ART == 0)
+      {
+        INFO = ALINE_S3_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
+                         dts,mp_id,&nor,&nor2,nor1,LS1,iter,&max_damage,&dissipation,
+                         time_steps->tim,STEP,&DLM,&gama,dlm,dAL);
 
 	/* Gather INFO from all domains */
 	MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);

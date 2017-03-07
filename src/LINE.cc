@@ -52,10 +52,11 @@
 
 #include "dynamics.h"
 #include "Newton_Raphson.h"
+#include "Arc_length.h"
 
 static const int periodic = 0;
 
-/// Line search algorith for multiphysics mode
+/// Line search algorithm for multiphysics mode
 ///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
@@ -252,62 +253,61 @@ long LINE_S3_MP(GRID *grid,
   return (INFO);
 }
 
-long ALINE_S3 (long ARC,
-	       double *DLM,
-	       double *nor,
-	       double *nor2,
-	       double *gama,
-	       double nor1,
-	       double LS1,
-	       long iter,
-	       long ne,
-	       int n_be,
-	       long ndofd,
-	       long ndofn,
-	       long npres,
-	       long tim,
-	       double nor_min,
-	       double *dts,
-	       double stab,
-	       long nce,
-	       double dlm,
-	       double lm,
-	       double dAL,
-	       double *d_r,
-	       double *r,
-	       double *D_R,
-	       NODE *node,
-	       ELEMENT *elem,
-	       BOUNDING_ELEMENT *b_elems,
-	       MATGEOM matgeom,
-	       HOMMAT *hommat,
-	       SUPP sup,
-	       EPS *eps,
-	       SIG *sig_e,
-	       CRPL *crpl,
-	       COEL *coel,
-	       double *f_u,
-	       double *f,
-	       double *R/*,
-			  GNOD *gnod,
-			  GEEL *geel*/,
- 	       double *BS_f,
-	       double *BS_R,
-	       double *BS_D_R,
-	       double *BS_d_r,
-	       double *BS_DK,
-	       double *BS_U,
-	       double *BS_rr,
-	       long *DomDof,
- 	       int GDof,
-	       COMMUN comm,
-	       long STEP,
-	       MPI_Comm mpi_comm,
-	      double *max_damage,
-		double *dissipation,
-		const PGFem3D_opt *opts,
-		const int mp_id)
+/// Line search algorithm for Arc Length
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in,out] fv array of field variable object
+/// \param[in] sol object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com object array for communications
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] dts time step sizes from t(n-1) to t(n), and t(n) to t(n+1)
+/// \param[in] mp_id mutiphysics id
+/// \param[in,out] nor Normalize norm
+/// \param[in,out] nor2 Normalize norm
+/// \param[in] nor1 norm
+/// \param[in] LS1 1/2*f'*f (f=residual)
+/// \param[in] iter Newton Raphson iteration number 
+/// \param[in] max_damage physics based evolution
+/// \param[in] dissipation volume weighted dissipation
+/// \param[in] STEP subdivision number
+/// \param[in] tim current time step number 
+/// \param[in,out] DLM Arc Length parameter
+/// \param[out] gama line search parameter
+/// \param[in] dlm Arc Length parameter
+/// \param[in] dAL Arc Length parameter
+/// \return info id about convergence
+long ALINE_S3_MP(GRID *grid,
+                 MATERIAL_PROPERTY *mat,
+                 FIELD_VARIABLES *fv,
+                 SOLVER_OPTIONS *sol,
+                 LOADING_STEPS *load,
+                 COMMUNICATION_STRUCTURE *com,
+                 CRPL *crpl,
+                 MPI_Comm mpi_comm,
+                 const PGFem3D_opt *opts,
+                 MULTIPHYSICS *mp,
+                 double *dts,
+                 int mp_id,                
+                 double *nor,
+                 double *nor2,
+                 double nor1,
+                 double LS1,
+                 long iter,
+                 double *max_damage,
+                 double *dissipation,
+                 long tim,             
+                 long STEP,
+                 double *DLM,
+                 double *gama,
+                 double dlm,
+                 double dAL)                
 {
+  ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dt = dts[DT_NP1];
   double t = 0.0;
   double alpha = 0.0;
@@ -325,7 +325,7 @@ long ALINE_S3 (long ARC,
   scale = LS1;
   LS1 /= scale;
   slope = -2.*LS1; 
-  tmp = ss(BS_f,BS_f,DomDof[myrank]);
+  tmp = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
   MPI_Allreduce(&tmp,&LS2,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
   LS2 *= 1./(2.*scale);
 
@@ -366,27 +366,23 @@ long ALINE_S3 (long ARC,
       *gama = tmplam;
     else
       *gama *= 0.1;
-    if (*gama < 1.e-1*nor_min)
+    if (*gama < 1.e-1*(sol->nor_min))
       return (1);
     
     /* Decrease increment of displacements */
-    for (i=0;i<DomDof[myrank];i++) {
-      BS_D_R[i] = *gama*BS_U[i];
-      BS_f[i] = *gama*BS_rr[i];
+    for (i=0;i<com->DomDof[myrank];i++) {
+      arc->BS_D_R[i] = *gama*(arc->BS_U[i]);
+      fv->BS_f[i] = *gama*(arc->BS_rr[i]);
     }
     
     /* dlam */
-    if (ARC == 0){
-      *DLM = D_lam_ALM (ndofd,BS_f,BS_d_r,BS_D_R,BS_R,BS_DK,
-			dlm,dAL,DomDof,mpi_comm); 
-      /* *DLM = D_lam_ALM2 (f,D_R,R,DK,dlm,lm,dAL,ne,ndofd,
-	                    ndofn,npres,d_r,r,node,elem,matgeom,
-			    hommat,sup,eps,sig_e,nor_min,crpl,dt,
-			    stab,nce,coel); */
+    if (arc->ARC == 0){
+      *DLM = D_lam_ALM (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_R,arc->BS_DK,
+			dlm,dAL,com->DomDof,mpi_comm); 
     }
-    if (ARC == 1)
-      *DLM = D_lam_ALM4 (ndofd,BS_f,BS_d_r,BS_D_R,BS_DK,dlm,
-			 dAL,DomDof,mpi_comm);
+    if (arc->ARC == 1)
+      *DLM = D_lam_ALM4 (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_DK,dlm,
+			 dAL,com->DomDof,mpi_comm);
     
     sprintf (str1,"%f",*DLM);
     for (N=0;N<3;N++){
@@ -400,22 +396,22 @@ long ALINE_S3 (long ARC,
     }
     
     /* Displacement update */
-    for (i=0;i<DomDof[myrank];i++)
-      BS_D_R[i] = *gama * (BS_U[i] + *DLM*BS_rr[i]);
+    for (i=0;i<com->DomDof[myrank];i++)
+      arc->BS_D_R[i] = *gama * (arc->BS_U[i] + *DLM*(arc->BS_rr[i]));
     
     /* macroscopic load */
-    if (periodic == 1) macroscopic_load_AL (eps[0].type,lm+dlm+*DLM,eps);
+    if (periodic == 1) macroscopic_load_AL (fv->eps[0].type,arc->lm  +dlm+*DLM,fv->eps);
 
     /* Global to local transformation */
-    GToL(BS_D_R,D_R,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+    GToL(arc->BS_D_R,arc->D_R,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
 
     /*************************/
     /* INTEGRATION ALGORITHM */
     /*************************/
     if (opts->analysis_type == FS_CRPL) {
-      INFO=integration_alg (ne,ndofn,ndofd,npres,crpl,elem,node,
-			    d_r,D_R,sup,matgeom,hommat,eps,sig_e,
-			    tim,iter,dt,nor_min,STEP,0,opts,mp_id); 
+      INFO=integration_alg (grid->ne,fv->ndofn,fv->ndofd,fv->npres,crpl,grid->element,grid->node,
+			    fv->d_u,arc->D_R,load->sups[mp_id] ,mat->matgeom ,mat->hommat,fv->eps,fv->sig ,
+			    tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id); 
       
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -426,14 +422,14 @@ long ALINE_S3 (long ARC,
     }
     
     /* Update deformations */
-    for (i=0;i<ndofd;i++) {
-      f[i] = d_r[i] + D_R[i];
-      f_u[i] = 0.0;
+    for (i=0;i<fv->ndofd;i++) {
+      fv->f[i] = fv->d_u[i] + arc->D_R[i];
+      fv->f_u[i] = 0.0;
     } 
 
-    INFO = vol_damage_int_alg(ne,ndofn,f,r,elem,node,
-			      hommat,sup,dt,iter,mpi_comm,
-			      eps,sig_e,max_damage,dissipation,
+    INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
+			      mat->hommat,load->sups[mp_id] ,dt,iter,mpi_comm,
+			      fv->eps,fv->sig ,max_damage,dissipation,
 			      opts->analysis_type,mp_id);
       
     MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -447,18 +443,17 @@ long ALINE_S3 (long ARC,
     }
     
     /* Residuals */
-    fd_residuals (f_u,ne,n_be,ndofn,npres,f,r,node,elem,b_elems,matgeom,
-		  hommat,sup,eps,sig_e,nor_min,crpl,dts,t,stab,
-		  nce,coel/*,gnod,geel*/,mpi_comm,opts,alpha,r_n,r_n_1,mp_id);
+    fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,1);
+
     
     /* Compute Euclidean norm */
-    for (i=0;i<ndofd;i++)
-      f[i] = (lm + dlm + *DLM)*R[i] - f_u[i];
+    for (i=0;i<fv->ndofd;i++)
+      fv->f[i] = (arc->lm   + dlm + *DLM)*(fv->R[i]) - fv->f_u[i];
 
     /* L -> G : f */
-    LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+    LToG(fv->f,fv->BS_f,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
 
-    *nor = ss(BS_f,BS_f,DomDof[myrank]);
+    *nor = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
     MPI_Allreduce(nor,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
     
     *nor = *nor2 = sqrt (tmp);
