@@ -20,38 +20,12 @@
 #include "bounding_element.h"
 #include "PGFem3D_options.h"
 #include "PGFem3D_data_structure.h"
+#include "solver_file.h"
+#include "macro_micro_functions.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-  /** */
-  int fd_residuals (double *f_u,
-		    long ne,
-		    int n_be,
-		    long ndofn,
-		    long npres,
-		    double *d_r,
-		    double *r,
-		    NODE *node,
-		    ELEMENT *elem,
-		    BOUNDING_ELEMENT *b_elems,
-		    MATGEOM matgeom,
-		    HOMMAT *hommat,
-		    SUPP sup,
-		    EPS *eps,
-		    SIG *sig,
-		    double nor_min,
-		    CRPL *crpl,
-		    double *dts,
-		    double t,
-		    double stab,
-		    long nce,
-		    COEL *coel,
-		    MPI_Comm mpi_comm,
-		    const PGFem3D_opt *opts,
-		    double alpha, double *r_n, double *r_n_1,
-		    const int mp_id);
 
 /// Compute residuals
 ///
@@ -132,8 +106,22 @@ int fd_res_compute_reactions_MP(GRID *grid,
                                 MULTIPHYSICS *mp,
                                 int mp_id,
                                 double t,
-                                double *dts);                               
-
+                                double *dts);
+                                                               
+/// Multiscale simulation interface computing reaction forces
+///
+/// \param[in] c structure of macroscale information
+/// \param[in] s contains the information for the history-dependent solution
+/// \param[in] solver_file structure for storing/updating the data
+/// \param[in] opts structure PGFem3D option
+/// \param[in] dts time step sizes at n, and n+1
+/// \return non-zero on internal error
+int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
+                                        MACROSCALE_SOLUTION *s,
+                                        SOLVER_FILE *solver_file,
+                                        const PGFem3D_opt *opts,
+                                        double *dts);
+                                           
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

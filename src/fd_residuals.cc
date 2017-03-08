@@ -27,6 +27,9 @@
 #include "constitutive_model.h"
 #include "PGFem3D_data_structure.h"
 
+#include "solver_file.h"
+#include "macro_micro_functions.h"
+
 #define ndn 3
 
 /* assemble the element residual to the local portion of the global
@@ -285,179 +288,6 @@ static int fd_res_coel(double *fe,
 
   return err;
 }
-
-int fd_residuals (double *f_u,
-                  long ne,
-                  int n_be,
-                  long ndofn,
-                  long npres,
-                  double *d_r,
-                  double *r,
-                  NODE *node,
-                  ELEMENT *elem,
-                  BOUNDING_ELEMENT *b_elems,
-                  MATGEOM matgeom,
-                  HOMMAT *hommat,
-                  SUPP sup,
-                  EPS *eps,
-                  SIG *sig,
-                  double nor_min,
-                  CRPL *crpl,
-                  double *dts,
-                  double t,
-                  double stab,
-                  long nce,
-                  COEL *coel,
-                  MPI_Comm mpi_comm,
-                  const PGFem3D_opt *opts,
-                  double alpha,
-                  double *r_n,
-                  double *r_n_1,
-                  const int mp_id)
-{
-  /* make decision to include ineria*/
-  const int mat = elem[0].mat[2];
-  double rho = hommat[mat].density;
-  long include_inertia = 1;
-
-  if(fabs(rho)<MIN_DENSITY)
-    include_inertia = 0;
-
-  /* decision end*/
-  int err = 0;
-
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
-
-  for (int i=0;i<ne;i++) {
-    const int nne = elem[i].toe;
-    long *nod = aloc1l (nne);
-    elemnodes (i,nne,nod,elem);
-    /* Element Dof */
-    const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
-    double *fe = aloc1 (ndofe);
-
-    err += fd_res_elem(fe, i, elem, ndofn, npres, d_r, r, node,
-                       matgeom, hommat, sup, eps, sig, nor_min,
-                       crpl, dts, t, stab, mpi_comm, opts, alpha,
-                       r_n, r_n_1, include_inertia,mp_id);
-
-    fd_res_assemble(f_u, fe, node, nne, ndofn, nod, mp_id);
-
-    dealoc1l (nod);
-    dealoc1 (fe);
-
-    /*** RETURN on error ***/
-    if(err != 0) return err;
-
-  }/* end i < ne*/
-
-  /**** COHESIVE ELEMENT RESIDUALS ****/
-  if (opts->cohesive == 1){
-    const int ndofc = 3;
-
-    for (int i=0;i<nce;i++){
-
-      int ndofe = coel[i].toe*ndofc;
-      long *nod = aloc1l (coel[i].toe);
-      double *fe = aloc1 (ndofe);
-      for (int j=0;j<coel[i].toe;j++)
-        nod[j] = coel[i].nod[j];
-
-      err += fd_res_coel(fe, i, node, coel, sup, ndofc, d_r, nor_min, myrank,mp_id);
-      fd_res_assemble(f_u, fe, node, coel[i].toe, ndofc, nod, mp_id);
-
-      dealoc1l (nod);
-      dealoc1 (fe);
-
-    }/* end i < nce */
-  }/* end coh == 1 */
-
-  /*===============================================
-    |             BOUNDARY ELEMENTS               |
-    ===============================================*/
-
-  for (int i=0; i<n_be; i++){
-
-    /* get the coordinates and dof id's on the element nodes */
-    const long *ptr_vnodes = elem[b_elems[i].vol_elem_id].nod; /* --"-- */
-    const ELEMENT *ptr_elem = &elem[b_elems[i].vol_elem_id]; /* --"-- */
-    const BOUNDING_ELEMENT *ptr_be = &b_elems[i];
-    const int nne = ptr_elem->toe;
-
-    double *x = aloc1(nne);
-    double *y = aloc1(nne);
-    double *z = aloc1(nne);
-
-    switch(opts->analysis_type){
-    case DISP:
-      nodecoord_total(nne,ptr_vnodes,node,x,y,z);
-      break;
-    default:
-      nodecoord_updated(nne,ptr_vnodes,node,x,y,z);
-      break;
-    }
-
-    int ndofe = get_ndof_on_bnd_elem(node,ptr_be,elem,ndofn);
-    double *r_e = aloc1(ndofe);
-    double *fe = aloc1(ndofe);
-    long *cn = aloc1l(ndofe);
-    long *Gcn = aloc1l(ndofe);
-
-    get_dof_ids_on_bnd_elem(0,ndofn,node,ptr_be,elem,cn ,mp_id);
-    get_dof_ids_on_bnd_elem(1,ndofn,node,ptr_be,elem,Gcn,mp_id);
-
-    /* compute the deformation on the element */
-    def_elem(cn,ndofe,d_r,NULL,NULL,r_e,sup,0);
-
-    /* TOTAL LAGRANGIAN formulation */
-    if(opts->analysis_type == DISP){
-      double *r_en = aloc1(ndofe);
-      def_elem(cn,ndofe,r,NULL,NULL,r_en,sup,1);
-      vvplus(r_e,r_en,ndofe);
-      free(r_en);
-    }
-
-    /* for debugging */
-    double *RR = aloc1(ndofe);
-    def_elem(cn,ndofe,f_u,NULL,NULL,RR,sup,2);
-
-    if(opts->analysis_type == DISP){
-      err += DISP_resid_bnd_el(fe,i,ndofn,ndofe,x,y,z,b_elems,elem,
-			       hommat,node,eps,sig,sup,r_e);
-    } else {
-      /* not implemented/needed so do nothing */
-    }
-
-    /* Assembly to local part of the residual vector */
-    {
-      for(int j=0; j<ndofe; j++){
-	int II = cn[j] - 1;
-	if(II >= 0){
-	  f_u[II] += fe[j];
-	}
-      }
-    }
-
-    def_elem(cn,ndofe,f_u,NULL,NULL,RR,sup,2);
-
-    free(x);
-    free(y);
-    free(z);
-
-    free(r_e);
-    free(fe);
-    free(cn);
-    free(Gcn);
-    free(RR);
-
-    /*** RETURN on error ***/
-    if(err != 0) return err;
-  } /* for each bounding element */
-  return err;
-}
-
 
 /// Compute residuals on a single element
 ///
@@ -909,7 +739,7 @@ int fd_res_compute_reactions(const long ndofn,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
-/// \param[in] dts time step sizes a n, and n+1
+/// \param[in] dts time step sizes at n, and n+1
 /// \return non-zero on internal error
 int fd_res_compute_reactions_MP(GRID *grid,
                                 MATERIAL_PROPERTY *mat,
@@ -982,5 +812,113 @@ int fd_res_compute_reactions_MP(GRID *grid,
 
   free(rxn);
   free(RXN);
+  return err;
+}
+
+/// Multiscale simulation interface computing reaction forces
+///
+/// \param[in] c structure of macroscale information
+/// \param[in] s contains the information for the history-dependent solution
+/// \param[in] solver_file structure for storing/updating the data
+/// \param[in] opts structure PGFem3D option
+/// \param[in] dts time step sizes at n, and n+1
+/// \return non-zero on internal error
+int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
+                                        MACROSCALE_SOLUTION *s,
+                                        SOLVER_FILE *solver_file,
+                                        const PGFem3D_opt *opts,
+                                        double *dts)
+{
+  int err = 0;
+  int mp_id = 0;
+  
+  // initialize and define multiphysics
+  MULTIPHYSICS mp;  
+  int id = MULTIPHYSICS_MECHANICAL;
+  int ndim = c->ndofn;
+
+  int *coupled_ids = (int *) malloc(sizeof(int));
+  char *physicsname = (char *) malloc(sizeof(char)*1024);
+  {
+    coupled_ids[0] = 0;
+    sprintf(physicsname, "Mechanical");
+ 
+    mp.physicsno      = 1;
+    mp.physicsname    = &physicsname;
+    mp.physics_ids    = &id;
+    mp.ndim           = &ndim;
+    mp.write_no       = 0;
+    mp.write_ids      = NULL;
+    mp.coupled_ids    = &coupled_ids;
+    mp.total_write_no = 0;
+  }
+  
+  GRID grid;
+  grid_initialization(&grid);
+  {
+    grid.ne          = c->ne;
+    grid.nn          = c->nn;
+    grid.element     = c->elem;
+    grid.b_elems     = NULL;
+    grid.node        = c->node;
+    grid.nce         = c->nce;
+    grid.coel        = c->coel;
+    grid.n_be        = 0;
+  }
+  
+  // initialize and define field variables
+  FIELD_VARIABLES fv;
+  {
+    field_varialbe_initialization(&fv);
+    fv.ndofn  = c->ndofn;
+    fv.ndofd  = c->ndofd;
+    fv.npres  = c->npres;
+    fv.sig    = s->sig_e;
+    fv.eps    = s->eps;
+    fv.u_np1  = s->r;
+    fv.f      = s->f;
+    fv.d_u    = s->d_r;
+    fv.dd_u   = s->rr;
+    fv.R      = s->R;
+    fv.f_defl = s->f_defl;
+    fv.RR     = s->RR;
+    fv.f_u    = s->f_u;
+    fv.RRn    = s->RRn;
+    fv.BS_f   = s->BS_f;
+    fv.BS_RR  = s->BS_RR;
+    fv.BS_f_u = s->BS_f_u;
+    fv.sig_n  = s->sig_n;
+    fv.NORM   = s->NORM;
+  }    
+
+  /// initialize and define iterative solver object
+  SOLVER_OPTIONS sol;
+  {
+    solution_scheme_initialization(&sol);
+    sol.nor_min  = solver_file->nonlin_tol;
+    sol.alpha   = 0.0;
+  }
+  
+  // initialize and define loading steps object
+  LOADING_STEPS load;    
+  {
+    loading_steps_initialization(&load);
+    load.sups     = &(c->supports);
+  }
+  
+  // initialize and define material properties
+  MATERIAL_PROPERTY mat;
+  {
+    material_initialization(&mat);
+    mat.hommat  = c->hommat;
+    mat.matgeom = c->matgeom;
+  }
+  
+  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,&mp,
+                                     0,s->times[s->tim+1],dts);
+                                 
+  free(coupled_ids);
+  free(physicsname);
+  
   return err;
 }

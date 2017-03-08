@@ -1295,20 +1295,8 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
   SUBDIVISION_PARAM sp;
     
   if(myrank==0)
-  {  
     PGFEM_printf(":: t(n) = %e, dts = (%e %e)\n", NR_t->times[tim], NR_t->dt[DT_N], NR_t->dt[DT_NP1]);
     
-      for(int ia=0; ia<mp->physicsno; ia++)
-      {
-        int npd = (load->sups[ia])->npd;
-        if(npd>0)
-        {
-      
-          for(int ib=0;ib<npd;ib++)
-            printf("load->sup_defl = %e\n", load->sup_defl[ia][ib]);
-        }
-      }
-  }
   double *dts = NR_t->dt; // short hand of dts
   double dt   = NR_t->dt[DT_NP1];  
   double t    = NR_t->times[tim+1];

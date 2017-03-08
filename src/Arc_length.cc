@@ -623,10 +623,8 @@ double Multiphysics_Arc_length(GRID *grid,
 	  DLM = D_lam_ALM (fv->ndofd,arc->BS_rr,arc->BS_d_r,arc->BS_U,arc->BS_R,arc->BS_DK,dlm,
 			   dAL,com->DomDof,mpi_comm);
 	} else {
-	  DLM = D_lam_ALM2 (arc->BS_rr,arc->BS_U,arc->BS_R,arc->BS_DK,dlm,arc->lm,dAL,grid->ne,grid->n_be,fv->ndofd,
-			    fv->npres,arc->BS_d_r,fv->u_np1,grid->node,grid->element,grid->b_elems,mat->matgeom,mat->hommat,
-			    load->sups[mp_id],fv->eps,fv->sig,sol->nor_min,crpl,time_steps->dt_np1,opts->stab,grid->nce,grid->coel,
-			    com->DomDof,com->GDof,com->comm,mpi_comm,opts,mp_id);
+	  DLM = D_lam_ALM2_MP(grid,mat,fv,sol,load,com,crpl,
+                        mpi_comm,opts,mp,mp_id,dlm,dAL,time_steps->dt_np1); 
 	}
       }
       if (arc->ARC == 1)

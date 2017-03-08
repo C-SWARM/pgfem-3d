@@ -511,12 +511,8 @@ int multi_scale_main(int argc, char **argv)
         dts[DT_N] = s->times[s->tim] - s->times[s->tim-1];
     
       dts[DT_NP1] = s->times[s->tim+1] - s->times[s->tim]; 
-                                
-      fd_res_compute_reactions(c->ndofn, c->npres, s->d_r, s->r, c->elem, c->node,
-                               c->matgeom, c->hommat, c->supports, s->eps,
-                               s->sig_e, solver_file->nonlin_tol,
-                               s->crpl, dts, s->times[s->tim+1], macro->opts->stab,
-                               c->mpi_comm, macro->opts, 0, NULL, NULL,mp_id);
+                               
+      fd_res_compute_reactions_multiscale(c,s,solver_file,macro->opts,dts);                               
 
       if (solver_file->print_steps[s->tim] == 1){
 
