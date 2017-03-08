@@ -25,44 +25,24 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-  /**
-   * Computes an element stiffness matrices Each type of analysis will
-   * be excuted in this function Contribution to the residual
-   * calculated using this function when prescribed displacement is
-   * applied.
-  */
-  int el_compute_stiffmat(int i,
-                          double *lk,
-                          long ndofn,
-                          long nne,
-                          long npres,
-                          int nVol,
-                          int nsd,
-                          ELEMENT *elem,
-                          NODE *node,
-                          HOMMAT *hommat,
-                          MATGEOM matgeom,
-                          SIG *sig,
-                          EPS *eps,
-                          SUPP sup,
-                          double dt,
-                          double nor_min,
-                          double stab,
-                          CRPL *crpl,
-                          long FNR,
-                          double lm,
-                          double *x,
-                          double *y,
-                          double *z,
-                          double *fe,
-                          long *nod,
-                          double *r_n,
-                          double *r_e,
-                          double alpha,
-                          int include_inertia,
-                          const int analysis,
-                          const int cm);
-	                      
+/// compute element stiffness matrix
+///
+/// \param[in] fe finite element object
+/// \param[out] lk computed local(element level) stiffness matrix
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step
+/// \param[in] lm Load multiplier level in Arc Length scheme
+/// \param[in] be tangential load vector when periodic and solution scheme is Arc Length
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \return non-zero on internal error 
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
                            GRID *grid,

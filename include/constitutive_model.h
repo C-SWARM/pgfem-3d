@@ -7,7 +7,6 @@
  * Authors:
  *  Matt Mosby, [1], <mmosby1@nd.edu>
  *  Sangmin Lee, [1], <slee43@nd.edu>
- *  Adetokunbo Adedoyin, [1], <aadedoyi@nd.edu>
  *  Alberto Salvadori, [1], <asalvad2@nd.edu>
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
@@ -609,20 +608,6 @@ int constitutive_model_test(const HOMMAT *hmat,
                             Matrix_double *L_in,
                             int Print_results);
 
-int stiffness_el_crystal_plasticity(double *lk,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const int total_Lagrangian);
-        
 int constitutive_model_update_output_variables(GRID *grid,
                                                MATERIAL_PROPERTY *mat,
                                                FIELD_VARIABLES *FV,
@@ -632,20 +617,7 @@ int constitutive_model_update_output_variables(GRID *grid,
                                                int mp_id,
                                                const double dt,
                                                double alpha);
-                                               
-int stiffness_el_crystal_plasticity_w_inertia(double *lk,
-                                              const int ii,
-                                              const int ndofn,
-                                              const int nne,
-                                              const int nsd,
-                                              const ELEMENT *elem,
-                                              const long *nod,
-                                              const NODE *node,
-                                              const double dt,
-                                              EPS *eps,
-                                              const SUPP sup,
-                                              const double *r_e,
-                                              double alpha);
+
 /**
  * Compute the physics-based subdivision paramter for all integration
  * points on the domain.

@@ -45,31 +45,6 @@ void load_vec_node (double *f,
 		    const int mp_id);
 
 /**
- * \brief Compute the load vector from the prescribed boundary
- * conditions.
- */
-int load_vec_node_defl (double *f,
-			long ne,
-			long ndofn,
-			ELEMENT *elem,
-			BOUNDING_ELEMENT *b_elems,
-			NODE *node,
-			HOMMAT *hommat,
-			MATGEOM matgeom,
-			SUPP sup,
-			long npres,
-			double nor_min,
-			SIG *sig,
-			EPS *eps,
-			double dt,
-			CRPL *crpl,
-			double stab,
-			double *r,
-			double *r_n,
-			const PGFem3D_opt *opts,double alpha,
-			const int mp_id);
-
-/**
  * \brief Compute the load vector from the elements with surface load
  * [NOT IMPLEMENTED].
  */

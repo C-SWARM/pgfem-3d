@@ -17,18 +17,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
-
-  /**
-   * Computes element stiffness matrices for transient terms
-   */
-void stiffmat_disp_w_inertia_el(double *Ks,
-         const int ii,
-         const int ndofn,
-         const int nne, const int npres, const int nVol, const int nsd,
-         const double *x, const double *y, const double *z,		     
-         const ELEMENT *elem, const HOMMAT *hommat, const long *nod, const NODE *node, double dt,
-         SIG *sig, EPS *eps, const SUPP sup, const int analysis, int cm,		     
-		     double alpha, double *r_n, double *r_e);
 		     
 void DISP_resid_body_force_el(double *f,
          const int ii,
@@ -40,18 +28,6 @@ void DISP_resid_body_force_el(double *f,
          const ELEMENT *elem,
          const HOMMAT *hommat,
 		     const NODE *node, double dt, double t);		     
-		     
-void DISP_resid_w_inertia_el(double *f,
-         const int ii,
-         const int ndofn,
-         const int nne,
-         const double *x,
-         const double *y,
-         const double *z,		     
-         const ELEMENT *elem,
-         const HOMMAT *hommat,
-		     const NODE *node, const double *dts, double t,
-		     double *r_2, double* r_1, double *r_0, double alpha);	     
 		     
 struct FEMLIB;
 #ifndef TYPE_FEMLIB

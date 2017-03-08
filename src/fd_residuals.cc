@@ -113,7 +113,6 @@ static int fd_res_coel(double *fe,
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-
 static int fd_res_elem_MP(double *be,
         const int eid,
         GRID *grid,
