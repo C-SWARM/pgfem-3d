@@ -53,12 +53,6 @@ void DISP_resid_w_inertia_el(double *f,
 		     const NODE *node, const double *dts, double t,
 		     double *r_2, double* r_1, double *r_0, double alpha);	     
 		     
-int residuals_w_inertia_el(double *fe, int i, 
-			int nne, long ndofn, long npres, long nVol,long ndofe, double *r_e,                               
-		  NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig,
-		  long* nod, long *cn, double *x, double *y, double *z,                                
-		  const double *dts, double t, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1);
-
 struct FEMLIB;
 #ifndef TYPE_FEMLIB
 #define TYPE_FEMLIB

@@ -1333,154 +1333,6 @@ int stiffness_el_crystal_plasticity(double *lk,
   return err;
 }
 
-int residuals_el_crystal_plasticity(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const int total_Lagrangian)
-{
-  int err = 0;
-  double alpha = -1.0; // if alpha < 0, no inertia
-    
-  double *u = (double *) malloc(sizeof(double)*nne*nsd);
-  
-  for(int a=0;a<nne;a++)
-  {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  enum {Fr,Fnp1,pFnp1,
-        L,S,M,eFnM,eFnMT,
-        temp_F_1,
-        temp_F_2,Fend};
-  
-  // list of second-order tensors
-  Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
-
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
-  int compute_stiffness = 0;
-
-  MATERIAL_ELASTICITY mat_e_new;
-  MATERIAL_ELASTICITY *mat_e_in;
-     
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fr);
-
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-
-    // --> update plasticity part
-    double Jn = 1.0;
-    if(total_Lagrangian)
-    {
-      if (sup->multi_scale) {
-        cm_add_macro_F(sup,F2[Fr].m_pdata);
-      }
-
-      // TOTAL LAGRANGIAN FORMULATION Fn = 1, Fnp1 = Fr
-      Matrix_copy(F2[Fnp1], F2[Fr]);      
-    }
-    else
-    {
-      if (sup->multi_scale) {
-        PGFEM_printerr("Multi-scale formulation does not support UL!\n");
-        PGFEM_Abort();
-      }
- 
-      int Fn = temp_F_1;
-      err += m->param->get_Fn(m, F2+Fn);      
-      Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0);  // compute F2[Fnp1] = Fr*Fn
-      Matrix_det(F2[Fn], Jn);   
-    }      
-
-    {
-      /* check that deformation is invertible -> J > 0 */
-      int terr = 0;
-      double tJ = 0.0;
-      tJ = getJacobian(F2[Fnp1].m_pdata, ii, &terr);
-      err += terr;
-    }
-
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL);
-    err += m->param->integration_algorithm(m,ctx);
-    if(err>0)
-    	return err;
-    err += m->param->get_pF(m,F2+pFnp1);
-
-    if(total_Lagrangian)
-      err += inv3x3(F2[pFnp1].m_pdata, F2[M].m_pdata);
-    else
-    {
-      int pFn     = temp_F_1;
-      int pFnp1_I = temp_F_2;
-      err += m->param->get_pFn(m,F2+pFn);
-      err += inv3x3(F2[pFnp1].m_pdata, F2[pFnp1_I].m_pdata);
-      Matrix_AxB(F2[M],1.0,0.0,F2[pFn],0,F2[pFnp1_I],0);
-    }
-      
-    // <-- update plasticity part
-      
-    // --> update elasticity part
-    Matrix_init(F2[S],0.0);    
-      
-    if((m->param)->uqcm)
-    { 
-      double *x_ip = (fe.x_ip).m_pdata;      
-      ELASTICITY *elast = (m->param)->cm_elast;
-      mat_e_in = elast->mat;
-      err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
-      elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,NULL,F2+S,compute_stiffness);
-      elast->mat = mat_e_in;
-    }
-    else
-      err += (m->param)->update_elasticity(m,ctx,NULL,F2+S,compute_stiffness);
-    // <-- update elasticity part
-      
-    err += m->param->destroy_ctx(&ctx);
-
-    if(err!=0)
-      break;     
-    
-    if(total_Lagrangian)
-    {
-      Matrix_AeqB(F2[eFnM],1.0,F2[M]);
-      Matrix_AeqBT(F2[eFnMT],1.0,F2[M]);      
-    }
-    else
-    {
-      int eFn = temp_F_1;
-      err += m->param->get_eFn(m,F2+eFn);
-      Matrix_AxB(F2[eFnM],1.0,0.0,F2[eFn],0,F2[M],0);
-      Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
-    }
-      
-    err += compute_residual_vector(f,&fe,F2+Fr,F2+eFnMT,F2+eFnM,F2+S,Jn);
-  }       
-  
-  free(u);
-  
-  // destroy second-order tensors
-  err += cleanup_matrix_array(&F2, Fend);
-
-  FEMLIB_destruct(&fe);
-  return err;
-}
-
 int constitutive_model_update_output_variables(GRID *grid,
                                                MATERIAL_PROPERTY *mat,
                                                FIELD_VARIABLES *FV,
@@ -1792,7 +1644,7 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
 }
 
 
-int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
+int residuals_el_constitutive_model_n_plus_alpha(double *f,
                                                  const Constitutive_model *m,
                                                  const int ii,
                                                  const int ndofn,
@@ -1865,93 +1717,6 @@ int residuals_el_crystal_plasticity_n_plus_alpha(double *f,
   
   // destroy second-order tensors
   err += cleanup_matrix_array(&F2, Fend);
-  return err;
-}
-
-int residuals_el_crystal_plasticity_w_inertia(double *f,
-                                              const int ii,
-                                              const int ndofn,
-                                              const int nne,
-                                              const int nsd,
-                                              const ELEMENT *elem,
-                                              const long *nod,
-                                              const NODE *node,
-                                              const double *dts,
-                                              EPS *eps,
-                                              const SUPP sup,
-                                              const double *r_e,
-                                              const double alpha)
-{
-  int err = 0;
-  int total_Lagrangian = 1;
-    
-  double *u       = (double *) malloc(sizeof(double)*nne*nsd);
-  double *f_npa   = (double *) malloc(sizeof(double)*nne*nsd);
-  double *f_nm1pa = (double *) malloc(sizeof(double)*nne*nsd);    
-    
-  for(int a=0;a<nne;a++)
-  {
-    for(int b=0; b<nsd;b++)
-      u[a*nsd+b] = r_e[a*ndofn+b];  
-  }
-  
-  enum {Fnp1,Fn,Fnm1,pFnp1,pFn,pFnm1,Fend}; 
-  
-  // list of second-order tensors
-  Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
-
-  FEMLIB fe;
-  FEMLIB_initialization_by_elem(&fe, ii, elem, node, 0,total_Lagrangian);      
-  int compute_stiffness = 0;
-  
-  memset(f_npa, 0, sizeof(double)*nne*ndofn);   
-  memset(f_nm1pa, 0, sizeof(double)*nne*ndofn);   
-    
-  for(int ip = 1; ip<=fe.nint; ip++)
-  {
-    FEMLIB_elem_basis_V(&fe, ip);
-    FEMLIB_update_shape_tensor(&fe);  
-    FEMLIB_update_deformation_gradient(&fe,ndofn,u,F2+Fnp1);
-
-    Constitutive_model *m = &(eps[ii].model[ip-1]);
-
-    void *ctx = NULL;
-    err += construct_model_context(&ctx, m->param->type, F2[Fnp1].m_pdata,dts[DT_NP1],alpha, NULL);
-    err += m->param->integration_algorithm(m,ctx);
-    if(err>0)
-    	return err;    
-    err += m->param->destroy_ctx(&ctx);
-    err += m->param->get_pF(m,    F2+pFnp1);
-    err += m->param->get_pFn(m,   F2+pFn);
-    err += m->param->get_pFnm1(m, F2+pFnm1); 
-    err += m->param->get_Fn(m,    F2+Fn);
-    err += m->param->get_Fnm1(m,  F2+Fnm1);
-    
-    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,ii,ndofn,
-                                                        F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,NULL,NULL,-1,
-                                                        alpha, dt_1_minus_alpha,&fe);
-                                
-    double dt_alpha = -dts[DT_N]*alpha;
-
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,ii,ndofn,
-                                                        F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,NULL,NULL,-1,
-                                                        alpha, dt_alpha,&fe);
-  }
-  
-  for(int a=0; a<nne*nsd; a++)
-    f[a] += f_npa[a] + f_nm1pa[a];
-  
-  
-  free(u);
-  free(f_npa);
-  free(f_nm1pa);
-  
-  // destroy second-order tensors
-  err += cleanup_matrix_array(&F2, Fend);
-
-  FEMLIB_destruct(&fe);
   return err;
 }
 
@@ -2514,7 +2279,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     err += m->param->get_Fnm1(m,  F2+Fnm1);
     
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_npa,m,eid,ndofn,
+    err += residuals_el_constitutive_model_n_plus_alpha(f_npa,m,eid,ndofn,
                                                         F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,
                                                         F2+hFnp1,F2+hFn,
                                                         is_it_couple_w_thermal,
@@ -2522,7 +2287,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                 
     double dt_alpha = -dts[DT_N]*alpha;
 
-    err += residuals_el_crystal_plasticity_n_plus_alpha(f_nm1pa,m,eid,ndofn,
+    err += residuals_el_constitutive_model_n_plus_alpha(f_nm1pa,m,eid,ndofn,
                                                         F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,
                                                         F2+hFnp1,F2+hFn,
                                                         is_it_couple_w_thermal,

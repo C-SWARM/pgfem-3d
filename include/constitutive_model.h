@@ -609,32 +609,6 @@ int constitutive_model_test(const HOMMAT *hmat,
                             Matrix_double *L_in,
                             int Print_results);
 
-int stiffness_el_hyper_elasticity(double *lk,
-                                  const int ii,
-                                  const int ndofn,
-                                  const int nne,
-                                  const int nsd,
-                                  const ELEMENT *elem,
-                                  const long *nod,
-                                  const NODE *node,
-                                  const double dt,
-                                  EPS *eps,
-                                  const SUPP sup,
-                                  const double *r_e);
-        
-int residuals_el_hyper_elasticity(double *f,
-                                  const int ii,
-                                  const int ndofn,
-                                  const int nne,
-                                  const int nsd,
-                                  const ELEMENT *elem,
-                                  const long *nod,
-                                  const NODE *node,
-                                  const double dt,
-                                  EPS *eps,
-                                  const SUPP sup,
-                                  const double *r_e);
-
 int stiffness_el_crystal_plasticity(double *lk,
                                     const int ii,
                                     const int ndofn,
@@ -649,20 +623,6 @@ int stiffness_el_crystal_plasticity(double *lk,
                                     const double *r_e,
                                     const int total_Lagrangian);
         
-int residuals_el_crystal_plasticity(double *f,
-                                    const int ii,
-                                    const int ndofn,
-                                    const int nne,
-                                    const int nsd,
-                                    const ELEMENT *elem,
-                                    const long *nod,
-                                    const NODE *node,
-                                    const double dt,
-                                    EPS *eps,
-                                    const SUPP sup,
-                                    const double *r_e,
-                                    const int total_Lagrangian);
-
 int constitutive_model_update_output_variables(GRID *grid,
                                                MATERIAL_PROPERTY *mat,
                                                FIELD_VARIABLES *FV,
@@ -686,21 +646,6 @@ int stiffness_el_crystal_plasticity_w_inertia(double *lk,
                                               const SUPP sup,
                                               const double *r_e,
                                               double alpha);
-                                    
-int residuals_el_crystal_plasticity_w_inertia(double *f,
-                                              const int ii,
-                                              const int ndofn,
-                                              const int nne,
-                                              const int nsd,
-                                              const ELEMENT *elem,
-                                              const long *nod,
-                                              const NODE *node,
-                                              const double *dts,
-                                              EPS *eps,
-                                              const SUPP sup,
-                                              const double *r_e,
-                                              const double alpha);
-
 /**
  * Compute the physics-based subdivision paramter for all integration
  * points on the domain.

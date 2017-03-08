@@ -55,32 +55,6 @@ long fd_residuals_MP(GRID *grid,
                      double *dts,
                      int updated_deformation);
 
-  /* compute the reaction force for each magnitude of prescribed
-     deflection. CAVEATS: Does not include contributions from cohesive
-     or boundary elements. */
-  int fd_res_compute_reactions(const long ndofn,
-                               const long npres,
-                               const double *d_r,
-                               const double *r,
-                               ELEMENT *elem,
-                               NODE *node,
-                               MATGEOM matgeom,
-                               HOMMAT *hommat,
-                               SUPP sup,
-                               EPS *eps,
-                               SIG *sig,
-                               const double nor_min,
-                               CRPL *crpl,
-                               const double *dts,
-                               const double t,
-                               const double stab,
-                               MPI_Comm mpi_comm,
-                               const PGFem3D_opt *opts,
-                               const double alpha,
-                               double *r_n,
-                               double *r_n_1,
-                               const int mp_id);
-
 /// compute the reaction force for multiphysics mode
 /// 
 /// \param[in] grid a mesh object
