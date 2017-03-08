@@ -1057,7 +1057,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
   {
     Matrix(double) eF;
     eF.m_row = eF.m_col = DIM_3; eF.m_pdata = ctx->eFnpa;
-    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
   }    
   else
   {
@@ -1081,7 +1081,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
     else
       Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
       
-    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
 
     Matrix_cleanup(eF);
     Matrix_cleanup(pFnp1_I);

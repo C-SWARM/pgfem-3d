@@ -623,12 +623,12 @@ int update_values_for_next_NR(GRID *grid,
       switch(opts->cm){
         case UPDATED_LAGRANGIAN:
         case TOTAL_LAGRANGIAN:
-          constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
-                                                    fv->ndofn,fv->u_n,dt,opts->cm,mp_id);
+          constitutive_model_update_time_steps(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
+                                               fv->ndofn,fv->u_n,dt,opts->cm,mp_id);
           break;
         case MIXED_ANALYSIS_MODE:
-          constitutive_model_update_time_steps_test(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
-                                                    fv->ndofn,fv->u_n,dt,1 /* TL */,mp_id);
+          constitutive_model_update_time_steps(grid->element,grid->node,fv->eps,grid->ne,grid->nn,
+                                               fv->ndofn,fv->u_n,dt,1 /* TL */,mp_id);
           break;
         default: break;
       }

@@ -1505,7 +1505,7 @@ int plasticity_model_BPA_update_elasticity(const Constitutive_model *m,
   Matrix_construct_redim(double,eF,dim,dim);
   (m->param)->get_eF(m,&eF);
   
-  err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+  err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
  
   Matrix_cleanup(eF);  
   return err;

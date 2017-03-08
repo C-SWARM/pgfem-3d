@@ -317,7 +317,7 @@ static int disp_cm_material_response(double *S,
   Matrix_construct_init(double, MS, ndn, ndn, 0.0);
   Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
 
-  err += constitutive_model_defaut_update_elasticity(m, &MF, &ML, &MS, get_L);
+  err += constitutive_model_default_update_elasticity(m, &MF, &ML, &MS, get_L);
   memcpy(S, MS.m_pdata, 9 * sizeof(*S));
   if(get_L) memcpy(L, ML.m_pdata, 81 * sizeof(*L));
 

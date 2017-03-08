@@ -287,6 +287,22 @@ int construct_model_context(void **ctx,
   return err;
 }
 
+/// constructor of constitutive model context
+///
+/// this is a wrapper function for the switch that was copy/pasted
+/// everywhere for the coupled problem. Keep add function's argument list to this private.
+/// In adding more constitutive model, just put everything any
+/// and the switch will handle what is actually used.
+/// 
+/// \param[out] ctx constructed context based on the model type
+/// \param[in] type constitutive model type
+/// \param[in] F total deformation gradient
+/// \param[in] dt time step size
+/// \param[in] alpha mid point alpha
+/// \param[in] eFnpa mid point elastic part of deformation gradient
+/// \param[in] hFn thermal part of deformation gradient at t(n)
+/// \param[in] hFnp1 thermal part of deformation gradient at t(n+1)
+/// \return non-zeoro on internal error
 int construct_model_context_with_thermal(void **ctx,
                                          const int type,
                                          double *F,
@@ -335,27 +351,6 @@ int constitutive_model_initialize(Constitutive_model *m,
     err += state_variables_initialize(m->vars_list[0] + m->model_id, info->n_Fs,
                                       info->n_vars, info->n_flags);
     m->param->set_init_vals(m);
-    err += model_var_info_destroy(&info);
-  }
-  return err;
-}
-
-
-int constitutive_model_initialize_MP(Constitutive_model *m,
-                                     const Model_parameters *p,
-                                     State_variables *v_list)
-{
-  int err = 0;
-  if (p == NULL){
-    err++;
-  } else {
-    m->param = p;
-    Model_var_info *info = NULL;
-    m->param->get_var_info(&info);
-    err += state_variables_initialize(v_list+m->model_id, info->n_Fs,
-                                      info->n_vars, info->n_flags);
-    m->param->set_init_vals(m);
-    m->vars_list[0] = v_list;
     err += model_var_info_destroy(&info);
   }
   return err;
@@ -618,11 +613,11 @@ int model_parameters_destroy(Model_parameters *p)
 }
 
 // compute stiffness tensor
-int constitutive_model_defaut_update_elasticity(const Constitutive_model *m,
-                                                Matrix_double *eF,
-                                                Matrix_double *L,
-                                                Matrix_double *S,
-                                                const int compute_stiffness)
+int constitutive_model_default_update_elasticity(const Constitutive_model *m,
+                                                 Matrix_double *eF,
+                                                 Matrix_double *L,
+                                                 Matrix_double *S,
+                                                 const int compute_stiffness)
 {
   int err = 0;
  
@@ -794,38 +789,6 @@ int init_all_constitutive_model(EPS *eps,
   return err;
 }
 
-int init_all_constitutive_model_MP(FIELD_VARIABLES *fv,
-                                   GRID *grid,
-                                   const int n_mat,
-                                   const Model_parameters *param_list)
-{
-  int err = 0;
-  if (grid->ne <= 0) return 1;
-  if(param_list==NULL)
-    return err;
-
-  int cntv_model_no = 0;
-  for(int ia = 0; ia < grid->ne; ia++)
-  {
-    // aliases
-    EPS *p_eps = fv->eps + ia;
-    const ELEMENT *p_el = grid->element + ia;
-    const Model_parameters *p_param = param_list + (p_el->mat[2]);
-
-    long n_ip = 0;
-    int_point(p_el->toe,&n_ip);
-    for (int ja = 0; ja < n_ip; ja++) 
-    {
-      p_eps->model[ja].model_id = cntv_model_no;
-      err += constitutive_model_initialize((p_eps->model) + ja, p_param);
-      cntv_model_no++;
-    }
-  }
-  
-  plasticity_model_set_orientations(fv->eps, grid->ne, grid->element, n_mat, param_list); // nothing will happen if there is no use of the crystal plasticity model
-  return err;
-}
-
 int constitutive_model_reset_state(EPS *eps,
                                    const int ne,
                                    const ELEMENT *elem)
@@ -936,13 +899,21 @@ int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
   return err;
 }
 
-static int constitutive_model_update_time_steps(EPS *eps,
-                                                const int ne,
-                                                const ELEMENT *elem)
+int constitutive_model_update_time_steps(const ELEMENT *elem,
+                                         NODE *node,
+                                         EPS *eps,
+                                         const int ne,
+                                         const int nn,
+                                         const int ndofn,
+                                         const double* r,
+                                         const double dt,
+                                         const int total_Lagrangian,
+                                         const int mp_id)
 {
+  int nsd = 3;
   int err = 0;
   if (ne <= 0) return 1;
-
+    
   for (int i = 0; i < ne; i++) 
   {
     const ELEMENT *p_el = elem + i;
@@ -953,26 +924,7 @@ static int constitutive_model_update_time_steps(EPS *eps,
       Constitutive_model *m = &(eps[i].model[j]);
       m->param->update_state_vars(m);
     }
-  }
-  return err;  
-}
-
-int constitutive_model_update_time_steps_test(const ELEMENT *elem,
-                                              NODE *node,
-                                              EPS *eps,
-                                              const int ne,
-                                              const int nn,
-                                              const int ndofn,
-                                              const double* r,
-                                              const double dt,
-                                              const int total_Lagrangian,
-                                              const int mp_id)
-{
-  int nsd = 3;
-  int err = 0;
-  if (ne <= 0) return 1;
-
-  err += constitutive_model_update_time_steps(eps,ne,elem);
+  }    
   
   /*********************/
   /* Coordinate update */
@@ -1011,6 +963,21 @@ int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_r
   return err;
 }
 
+/// Common part of computing stiffness Matrix
+///
+/// \param[out] lk computed element stiffness matrix
+/// \param[in] fe finite element helper object
+/// \param[in] Fr 2nd order tensor Fr  
+/// \param[in] eFnMT 2nd order tensor (eFn*M)'
+/// \param[in] eFn 2nd order tensor eFn
+/// \param[in] M 2nd order tensor M
+/// \param[in] FrTFr 2nd order tensor Fr'*Fr
+/// \param[in] eFnM 2nd order tensor eFn*M
+/// \param[in] S 2nd order tensor S
+/// \param[in] L 4th order elasticity tensor L
+/// \param[in] dMdu_all list of 2nd order dMdu tensors
+/// \param[in] Jn det(Fn)
+/// \return non-zero on internal error 
 int compute_stiffness_matrix(double *lk,
                                     const FEMLIB *fe,
                                     const Matrix(double) *Fr,
@@ -1125,6 +1092,16 @@ int compute_stiffness_matrix(double *lk,
   return err;
 }
 
+/// Common part of computing residual vector
+///
+/// \param[out] f computed residual vector
+/// \param[in] fe finite element helper object
+/// \param[in] Fr 2nd order tensor Fr  
+/// \param[in] eFnMT 2nd order tensor (eFn*M)'
+/// \param[in] eFnM 2nd order tensor eFn*M
+/// \param[in] S 2nd order tensor S
+/// \param[in] Jn det(Fn)
+/// \return non-zero on internal error 
 int compute_residual_vector(double *f,
                             const FEMLIB *fe,
                             const Matrix(double) *Fr,
@@ -1175,6 +1152,19 @@ int compute_residual_vector(double *f,
   return err;
 }
 
+/// compute ouput variables e.g. effective stress and strain
+///
+/// Visit each element and compute output variables according to the element model type.
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] FV array of field variable object
+/// \param[in] load object for loading
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \param[in] alpha mid point rule alpha
+/// \return non-zero on internal error
 int constitutive_model_update_output_variables(GRID *grid,
                                                MATERIAL_PROPERTY *mat,
                                                FIELD_VARIABLES *FV,
@@ -1383,6 +1373,26 @@ int constitutive_model_update_output_variables(GRID *grid,
   return err;
 }
 
+/// compute element residual for mid point rule
+///
+/// compute residual(n+alpha)
+///
+/// \param[out] f computed element residual
+/// \param[in] m constitutive model object
+/// \param[in] ii element id
+/// \param[in] ndofn number of degree freedom on node
+/// \param[in] pFnp1 2nd order tenosr pF(n+1)
+/// \param[in] pFn   2nd order tenosr pF(n)                                     
+/// \param[in] Fnp1  2nd order tenosr F(n+1)
+/// \param[in] Fn    2nd order tenosr F(n)
+/// \param[in] hFnp1 2nd order tenosr hF(n+1)
+/// \param[in] hFn   2nd order tenosr hF(n)
+/// \param[in] is_it_couple_w_chemical flag for coupling with thermal
+/// \param[in] alpha mid point rule alpha
+/// \param[in] dt_alpha_1_minus_alpha -dt*(1-alpha) for mid point btw t(n) t(n+1) 
+///                                   -dt*alpha     for mid point btw t(n-1) t(n)
+/// \param[in] fe finite element helper object
+/// \return non-zero on internal error
 int residuals_el_constitutive_model_n_plus_alpha(double *f,
                                                  const Constitutive_model *m,
                                                  const int ii,
@@ -1482,6 +1492,27 @@ int cm_get_subdivision_parameter(double *subdiv_param,
   return err;
 }
 
+/// compute element stiffness matrix in transient
+///
+/// Compute element stiffness matrix based on the mid point rule. When thermal
+/// is couled, temperature is assumed constant. Currenlty total Lagrangian is 
+/// active (Updated lagrangian is implemented, but accelleration term is not 
+/// fully implemented for updated lagrangian)
+///
+/// \param[in] fe finite element helper object
+/// \param[out] lk computed element stiffness matrix
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
                                               double *r_e,
@@ -1657,6 +1688,25 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   return err;
 }
 
+/// compute element stiffness matrix in quasi steady state
+///
+/// Updated Lagrangian and total Lagrangian based. When thermal
+/// is couled, temperature is assumed constant.
+///
+/// \param[in] fe finite element helper object
+/// \param[out] lk computed element stiffness matrix
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double *lk,
                                     double *r_e,
@@ -1899,6 +1949,30 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   return err;
 }
 
+/// compute element residual vector in transient
+///
+/// redual = residual(n+alpha) + residual(n-1+alpha)
+/// If residual is computed during the iterative solution scheme (Newton iteration),
+/// integration algorithm is performed. However, in the case of just checking residual,
+/// no integration algorithm will be executed. The switch of running integration algorithm
+/// is sol->run_integration_algorithm. 
+///
+/// \param[in] fe finite element helper object
+/// \param[out] f computed element residual vector
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *r_e,
@@ -2057,6 +2131,27 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   return err;
 }
 
+/// compute element residual vector in quasi steady state
+///
+/// If residual is computed during the iterative solution scheme (Newton iteration),
+/// integration algorithm is performed. However, in the case of just checking residual,
+/// no integration algorithm will be executed. The switch of running integration algorithm
+/// is sol->run_integration_algorithm. 
+///
+/// \param[in] fe finite element helper object
+/// \param[out] f computed element residual vector
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
                                     double *r_e,

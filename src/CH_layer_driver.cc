@@ -318,7 +318,7 @@ int ch_output_ts(const Constitutive_model *m,
   Matrix_init_w_array(F, dim, dim, F0);
 
   /* compute the total SPK stress tensor */
-  err += constitutive_model_defaut_update_elasticity(m, &F,  NULL, &S, 0);
+  err += constitutive_model_default_update_elasticity(m, &F,  NULL, &S, 0);
 
   /* compute the FPK stress tensor */
   Matrix_AxB(P, 1.0, 0.0, F, 0, S, 0);

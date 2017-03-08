@@ -362,7 +362,7 @@ int plasticity_model_none_elasticity(const Constitutive_model *m,
   {
     Matrix(double) eF;
     eF.m_row = eF.m_col = dim; eF.m_pdata = ctx->eFnpa;
-    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);
   }
   else
   {
@@ -378,12 +378,12 @@ int plasticity_model_none_elasticity(const Constitutive_model *m,
 
       err += inv3x3(ctx->hFnp1,hFnp1_I.m_pdata);
       Matrix_AxB(eF, 1.0,0.0,Fs[Fnp1],0,hFnp1_I,0);
-      err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);
+      err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);
       Matrix_cleanup(hFnp1_I);
       Matrix_cleanup(eF);      
     }
     else
-    	err += constitutive_model_defaut_update_elasticity(m, Fs+Fnp1, L, S, compute_stiffness);
+    	err += constitutive_model_default_update_elasticity(m, Fs+Fnp1, L, S, compute_stiffness);
   }
       
   return err;

@@ -172,6 +172,29 @@ void DISP_resid_w_inertia_el(double *f,
   FEMLIB_destruct(&fe);
 }
 
+/// compute element residual vector in transient
+///
+/// Displacement based function is used to compute acceleration term and each type of analysis will
+/// be excuted and added their constribution to the residual. 
+/// CAVEAT Acceleration term is based on the total Lagrangian, but other part support
+/// total and updated Lagrangian. 
+///
+/// \param[in] fe finite element helper object
+/// \param[out] be computed element residual vector
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] t current time
+/// \return non-zero on internal error
 int residual_with_inertia(FEMLIB *fe,
                           double *be,
                           double *r_e,
@@ -299,6 +322,27 @@ int residual_with_inertia(FEMLIB *fe,
 	return err;
 } 
 
+/// compute element stiffness matrix in transient
+///
+/// Displacement based function is used to compute acceleration term and each type of analysis will
+/// be excuted and added their constribution to the residual. 
+/// CAVEAT Acceleration term is based on the total Lagrangian, but other part support
+/// total and updated Lagrangian. 
+///
+/// \param[in] fe finite element helper object
+/// \param[out] Ke computed computed element stiffness matrix
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int stiffness_with_inertia(FEMLIB *fe,
                            double *Ks,
                            double *r_e,

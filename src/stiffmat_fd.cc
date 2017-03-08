@@ -464,7 +464,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step
+/// \param[in] dt time step size
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -644,7 +644,7 @@ static int el_stiffmat_MP(int eid,
 ///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
+/// \param[in,out] fv object for field variables
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] com communication object
