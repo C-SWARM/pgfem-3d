@@ -63,51 +63,6 @@ extern "C" {
                           const int analysis,
                           const int cm);
 	                      
-  /**
-   * Computes element stiffness matrices and assembles local
-   * part. Off-process portions of the matrix are communicated via
-   * non-blocking point-to-point send/receives using information in
-   * COMMUN. Elements with global DOFs are computed first to overlap
-   * communication with computation of fully local elements.
-   */
-  int stiffmat_fd (int *Ap,
-		   int *Ai,
-		   long ne,
-		   int n_be,
-		   long ndofn,
-		   ELEMENT *elem,
-		   BOUNDING_ELEMENT *b_elems,
-		   long nbndel,
-		   long *bndel,
-		   NODE *node,
-		   HOMMAT *hommat,
-		   MATGEOM matgeom,
-		   SIG *sig,
-		   EPS *eps,
-		   double *d_r,
-		   double *r,
-		   long npres,
-		   SUPP sup,
-		   long iter,
-		   double nor_min,
-		   double dt,
-		   CRPL *crpl,
-		   double stab,
-		   long nce,
-		   COEL *coel,
-		   long FNR,
-		   double lm,
-		   double *f_u,
-		   int myrank,
-		   int nproc,
-		   long *DomDof,
-		   long GDof,
-		   COMMUN comm,
-		   MPI_Comm mpi_comm,
-		   PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		   const PGFem3D_opt *opts,double alpha, double *r_n, double *r_n_1,
-		   const int mp_id);
-
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
                            GRID *grid,

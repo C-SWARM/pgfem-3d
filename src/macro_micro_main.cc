@@ -353,12 +353,8 @@ int multi_scale_main(int argc, char **argv)
 	PGFEM_Abort();
       }
 
-      load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
-			  NULL,c->node,c->hommat,
-			  c->matgeom,c->supports,c->npres,
-			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
-			  s->crpl,macro->opts->stab,
-			  s->r,NULL,macro->opts,0.0,mp_id);
+			compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,solver_file->nonlin_tol,
+                                                       mpi_comm->rank_macro);  
     
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */

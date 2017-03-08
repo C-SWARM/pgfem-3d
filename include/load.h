@@ -21,6 +21,7 @@
 #include "eps.h"
 #include "crpl.h"
 #include "PGFem3D_options.h"
+#include "macro_micro_functions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,7 +104,23 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                           MULTIPHYSICS *mp,
                                           int mp_id,
                                           int myrank);
-
+                                          
+/// Multiscale simulation interface to compute load vector due to BCs(Dirichlet)
+///
+/// s->f_defl will be updated
+///
+/// \param[in] c structure of macroscale information
+/// \param[in,out] s contains the information for the history-dependent solution
+/// \param[in] opts structure PGFem3D option
+/// \param[in] nor_min nonlinear convergence tolerance
+/// \param[in] myrank current process rank
+/// \return non-zero on internal error
+int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
+                                                     MACROSCALE_SOLUTION *s,
+                                                     const PGFem3D_opt *opts,
+                                                     double nor_min,
+                                                     int myrank);
+                                                     
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */
