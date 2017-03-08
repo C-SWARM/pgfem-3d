@@ -34,6 +34,7 @@
 
 #include "constitutive_model.h"
 #include "PGFem3D_data_structure.h"
+#include "macro_micro_functions.h"
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -1394,3 +1395,137 @@ int stiffmat_fd_MP(GRID *grid,
   Matrix_cleanup(Ddof);
   return err;
 }
+
+/// Multiscale simulation interface to compute stiffness matrix
+///
+/// In computing stiffness matrix, first perform data mapping from multiscale to multiphysics,
+/// and call function computing stiffness matrix using mulphysics data structures. 
+/// 
+/// \param[in] c structure of macroscale information
+/// \param[in,out] s contains the information for the history-dependent solution
+/// \param[in] opts structure PGFem3D option
+/// \param[in] iter number of Newton Raphson interataions
+/// \param[in] nor_min nonlinear convergence tolerance
+/// \param[in] FNR if 1: Full Newton-Raphson
+///                   0: only compute stiffnes at the 1st iteration
+/// \param[in] myrank current process rank
+/// \param[in] nproc   number of total process
+/// \return non-zero on internal error
+int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
+                           MACROSCALE_SOLUTION *s,
+                           const PGFem3D_opt *opts,
+                           long iter,
+                           double nor_min,
+                           long FNR,
+                           int myrank,
+                           int nproc)
+{
+  int err = 0;
+  int mp_id = 0;
+  
+  // initialize and define multiphysics
+  MULTIPHYSICS mp;  
+  int id = MULTIPHYSICS_MECHANICAL;
+  int ndim = c->ndofn;
+  int write_no = 0;
+
+  int *coupled_ids = (int *) malloc(sizeof(int));
+  char *physicsname = (char *) malloc(sizeof(char)*1024);
+  {
+    coupled_ids[0] = 0;
+    sprintf(physicsname, "Mechanical");
+ 
+    mp.physicsno      = 1;
+    mp.physicsname    = &physicsname;
+    mp.physics_ids    = &id;
+    mp.ndim           = &ndim;
+    mp.write_no       = &write_no;
+    mp.write_ids      = NULL;
+    mp.coupled_ids    = &coupled_ids;
+    mp.total_write_no = 0;
+  }
+  
+  // initialize and define mesh object  
+  GRID grid;
+  grid_initialization(&grid);
+  {
+    grid.ne          = c->ne;
+    grid.nn          = c->nn;
+    grid.element     = c->elem;
+    grid.node        = c->node;
+    grid.nce         = c->nce;
+    grid.coel        = c->coel;
+  }
+  
+  // initialize and define field variables
+  FIELD_VARIABLES fv;
+  {
+    field_varialbe_initialization(&fv);
+    fv.ndofn  = c->ndofn;
+    fv.ndofd  = c->ndofd;
+    fv.npres  = c->npres;
+    fv.sig    = s->sig_e;
+    fv.eps    = s->eps;
+    fv.u_np1  = s->r;
+    fv.f      = s->f;
+    fv.d_u    = s->d_r;
+    fv.dd_u   = s->rr;
+    fv.R      = s->R;
+    fv.f_defl = s->f_defl;
+    fv.RR     = s->RR;
+    fv.f_u    = s->f_u;
+    fv.RRn    = s->RRn;
+    fv.BS_x   = s->BS_x;
+    fv.BS_f   = s->BS_f;
+    fv.BS_RR  = s->BS_RR;
+    fv.BS_f_u = s->BS_f_u;
+  }                  
+
+  /// initialize and define iterative solver object
+  SOLVER_OPTIONS sol;
+  {
+    solution_scheme_initialization(&sol);
+    sol.FNR          = FNR;
+    sol.PGFEM_hypre  = c->SOLVER;
+    sol.err          = c->lin_err;
+    sol.alpha        = 0.0;
+    sol.nor_min      = nor_min;              
+  }
+  
+  // initialize and define loading steps object
+  LOADING_STEPS load;    
+  {
+    loading_steps_initialization(&load);
+    load.sups     = &(c->supports);
+  }
+  
+  // initialize and define material properties
+  MATERIAL_PROPERTY mat;
+  {
+    material_initialization(&mat);
+    mat.hommat  = c->hommat;
+    mat.matgeom = c->matgeom;
+  }
+  
+  /// initialize and define communication structures
+  COMMUNICATION_STRUCTURE com;
+  {
+    communication_structure_initialization(&com); 
+    com.nproc  = nproc;
+    com.Ap     = c->Ap;
+    com.Ai     = c->Ai;
+    com.DomDof = c->DomDof;
+    com.comm   = c->pgfem_comm;
+    com.GDof   = c->GDof;
+    com.nbndel = c->nbndel;
+    com.bndel  = c->bndel;
+  }
+  
+  err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
+                        c->mpi_comm,opts,&mp,mp_id,s->dt,iter,myrank); 
+  
+  free(coupled_ids);
+  free(physicsname);
+  
+  return err;
+}                                        

@@ -2681,6 +2681,7 @@ double Newton_Raphson_multiscale(const int print_level,
       sol.FNR      = solver_file->nonlin_method;
       sol.iter_max = solver_file->max_nonlin_iter;
     }
+    sol.n_step = *n_step;
     sol.PGFEM_hypre  = c->SOLVER;
     sol.err          = c->lin_err;
     sol.microscale   = ctx;                     

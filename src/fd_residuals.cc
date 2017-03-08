@@ -565,7 +565,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   MULTIPHYSICS mp;  
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
-
+  int write_no = 0;
   int *coupled_ids = (int *) malloc(sizeof(int));
   char *physicsname = (char *) malloc(sizeof(char)*1024);
   {
@@ -576,7 +576,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mp.physicsname    = &physicsname;
     mp.physics_ids    = &id;
     mp.ndim           = &ndim;
-    mp.write_no       = 0;
+    mp.write_no       = &write_no;
     mp.write_ids      = NULL;
     mp.coupled_ids    = &coupled_ids;
     mp.total_write_no = 0;

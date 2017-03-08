@@ -19,6 +19,7 @@
 #include "hypre_global.h"
 #include "PGFem3D_data_structure.h"
 #include "femlib.h"
+#include "macro_micro_functions.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -155,6 +156,27 @@ int stiffmat_fd_MP(GRID *grid,
                    double dt,
                    long iter,
                    int myrank);
+                   
+/// Multiscale simulation interface to compute stiffness matrix
+///
+/// \param[in] c structure of macroscale information
+/// \param[in,out] s contains the information for the history-dependent solution
+/// \param[in] opts structure PGFem3D option
+/// \param[in] iter number of Newton Raphson interataions
+/// \param[in] nor_min nonlinear convergence tolerance
+/// \param[in] FNR if 1: Full Newton-Raphson
+///                   0: only compute stiffnes at the 1st iteration
+/// \param[in] myrank current process rank
+/// \param[in] nproc   number of total process
+/// \return non-zero on internal error
+int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
+                           MACROSCALE_SOLUTION *s,
+                           const PGFem3D_opt *opts,
+                           long iter,
+                           double nor_min,
+                           long FNR,
+                           int myrank,
+                           int nproc);                   
                    
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

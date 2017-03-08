@@ -432,17 +432,9 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
 
   /* reset the microscale tangent to zeros */
   ZeroHypreK(c->SOLVER,c->Ai,c->DomDof[myrank]);
-
-  /* assemble to the microscale tangent matrix */
-  err += stiffmat_fd(c->Ap,c->Ai,c->ne,0,c->ndofn,
-		     c->elem,NULL,c->nbndel,c->bndel,
-		     c->node,c->hommat,c->matgeom,s->sig_e,
-		     s->eps,s->d_r,s->r,c->npres,c->supports,
-		     /*iter*/0,nor_min,s->dt,s->crpl,o->stab,
-		     c->nce,c->coel,0,0.0,s->f_u,myrank,nproc,
-		     c->DomDof,c->GDof,c->pgfem_comm,c->mpi_comm,
-		     c->SOLVER,o,0,NULL,NULL,mp_id);
-
+		     
+  err += stiffmat_fd_multiscale(c,s,o,0,nor_min,0,myrank,nproc);
+                              
   /* finalize the microscale tangent matrix assembly */
   err += HYPRE_IJMatrixAssemble(c->SOLVER->hypre_k);
 

@@ -146,7 +146,7 @@ struct ARC_LENGTH_VARIABLES;
 /// struct for solution scheme
 typedef struct {
   int n_step;      /// the number of nonlinear steps taken to solve the given increment
-  double nor_min;   /// nonlinearr convergence tolerance for Newton Raphson
+  double nor_min;   /// nonlinear convergence tolerance for Newton Raphson
   long iter_max;    /// maximum number of iterations for Newton Raphson
   double alpha;     /// midpoint rule alpha
   void *microscale; /// Container of microscale information

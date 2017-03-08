@@ -29,7 +29,6 @@
 #include "PGFem3D_data_structure.h"
 #include "macro_micro_functions.h"
 #include "solver_file.h"
-#include "vtk_output.h"
 
 
 #ifndef ARC_DEBUG
@@ -1037,15 +1036,11 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   MULTIPHYSICS mp;  
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
-  int write_no = MECHANICAL_Var_NO;
+  int write_no = 0;
 
-  int *write_ids = (int *) malloc(sizeof(int)*MECHANICAL_Var_NO);
   int *coupled_ids = (int *) malloc(sizeof(int));
   char *physicsname = (char *) malloc(sizeof(char)*1024);
   {
-    for(int ia=0; ia<MECHANICAL_Var_NO; ia++)
-      write_ids[ia] = ia;
-    
     coupled_ids[0] = 0;
     sprintf(physicsname, "Mechanical");
  
@@ -1054,9 +1049,9 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
     mp.physics_ids    = &id;
     mp.ndim           = &ndim;
     mp.write_no       = &write_no;
-    mp.write_ids      = &write_ids;
+    mp.write_ids      = NULL;
     mp.coupled_ids    = &coupled_ids;
-    mp.total_write_no = MECHANICAL_Var_NO;
+    mp.total_write_no = 0;
   }
   
   // initialize and define mesh object  
@@ -1195,7 +1190,6 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   *ITT  = arc.ITT; 
   *DAL  = arc.DAL;
   
-  free(write_ids);
   free(coupled_ids);
   free(physicsname);
   
