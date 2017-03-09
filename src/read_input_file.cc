@@ -787,7 +787,29 @@ int read_initial_values_lagcy(GRID *grid,
   return err;
 }
 
-
+/// Read initial conditions for mechanical problem
+///
+/// # can be used to add comments. The initial condition file should
+/// provide Material density as many as number of materials.
+/// and disp. in x, y, z velocity x, y, z at t(n=0) followed by node id. 
+/// e.g
+/// # reference temperature
+/// 1000.0
+/// # initial temperature
+/// 0 1.0 1.0 1.0 100.0 0.0 0.0
+/// 2 1.0 1.0 1.0 100.0 0.0 0.0
+/// :  :
+///
+/// \param[in] fp file pointer for reading IC for thermal
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in, out] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int read_initial_for_Mechanical(FILE *fp,
                                 GRID *grid,
                                 MATERIAL_PROPERTY *mat, 
@@ -821,7 +843,7 @@ int read_initial_for_Mechanical(FILE *fp,
     break;
   }
   
-  // read material density density
+  // read material density
   double *rho = (double *) malloc(sizeof(double)*mat->nmat);  
   while(fgets(line, 1024, fp)!=NULL)
   {
@@ -879,6 +901,29 @@ int read_initial_for_Mechanical(FILE *fp,
 }
 
 
+/// Read initial conditions for thermal problem
+///
+/// Initial condition includes reference temperature(T0, default = 300)
+/// and temperature at t(n=0) followed by node id. # can be used to add comments.
+/// e.g
+/// # reference temperature
+/// 300
+/// # initial temperature
+/// 0 310
+/// 1 310
+/// :  :
+///
+///
+/// \param[in] fp file pointer for reading IC for thermal
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in, out] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[out] ts object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] myrank current process rank
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
 int read_initial_for_Thermal(FILE *fp,
                              GRID *grid,
                              MATERIAL_PROPERTY *mat, 
