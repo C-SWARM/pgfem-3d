@@ -523,7 +523,7 @@ static int plasticity_get_hardening(const Constitutive_model *m,
                                     double *var)
 {
   int err = 0;
-  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_np1];
+  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_n];
   return err;
 }
 static int plasticity_get_hardening_nm1(const Constitutive_model *m,
