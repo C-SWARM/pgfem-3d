@@ -326,7 +326,8 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
         Model_var_info *info = NULL;
         m->param->get_var_info(&info);
         err += state_variables_initialize(fv->temporal->var + m->model_id, info->n_Fs,
-                                          info->n_vars, info->n_flags);                                          
+                                          info->n_vars, info->n_flags);
+        err += model_var_info_destroy(&info);                                                                            
       }
     }
   }      
