@@ -2065,6 +2065,7 @@ int set_0th_residual(GRID *grid,
 ///
 /// \param[out] iterno number of staggered iterations taken in this routine
 /// \param[out] is_SNR_converged if 1, the SNR converged
+/// \param[out] alpha_out physics based evolution rate
 /// \param[out] NR_t_in container of time stepping info
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
@@ -2082,6 +2083,7 @@ int set_0th_residual(GRID *grid,
 /// \return time spent for this routine
 double Multiphysics_Newton_Raphson_sub(int *iterno,
                                        int *is_SNR_converged,
+                                       double *alpha_out,
                                        NR_time_steps *NR_t_in,
                                        GRID *grid,
                                        MATERIAL_PROPERTY *mat,
@@ -2100,6 +2102,8 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
   double solve_time = 0.0;
   *iterno = 0;
   *is_SNR_converged = 1;
+  *alpha_out = 0.0;
+  double alpha_single = 0.0; // measure of physics based evolution rate for non-coupled physics
   
   int max_itr = SOL[0].max_NR_staggering; // max. number staggering
   //MPI rank
@@ -2150,7 +2154,9 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
     solve_time += perform_Newton_Raphson_with_subdivision(print_level,is_SNR_converged,&alpha,
                                       grid,mat,FV,SOL,load,COM,time_steps,
                                       crpl,mpi_comm,VVolume,opts,mp,NR_time+mp_id,mp_id,myrank);
-                                          
+
+    alpha_single = (alpha_single > alpha)? alpha_single: alpha;    
+                                       
     if(SOL[mp_id].is_subdivided)
     {  
       reset_state_field_variables(grid,FV,SOL,opts,mp,mp_id);  
@@ -2172,16 +2178,6 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
     {
       printf("%s\n", line_level_1);
       printf(":: Staggered Newton Raphson iteration starts for dependent physics \n");
-      for(int ia=0; ia<mp->physicsno; ia++)
-      {
-        int npd = (load->sups[ia])->npd;
-        if(npd>0)
-        {
-      
-          for(int ib=0;ib<npd;ib++)
-            printf("load->sup_defl = %e\n", load->sup_defl[ia][ib]);
-        }
-      }
     }
     
     // Prepare memory for saving load data if subdivided
@@ -2220,6 +2216,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
     {
       int is_cnvged = 1;
       
+      double alpha_cpled = 0.0; // measure of physics based evolution rate for non-coupled physics
       for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
       {
         if(FV[mp_id].n_coupled >0)
@@ -2270,7 +2267,9 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
           solve_time += perform_Newton_Raphson_with_subdivision(print_level,is_SNR_converged,&alpha,
                                             grid,mat,FV,SOL,load,COM,time_steps,
                                             crpl,mpi_comm,VVolume,opts,mp,NR_time+mp_id,mp_id,myrank);
-
+                                            
+          alpha_cpled = (alpha_cpled>alpha)? alpha_cpled: alpha;
+            
           if(*is_SNR_converged==0)
             break;
             
@@ -2280,6 +2279,8 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
         }        
       }
       
+      *alpha_out = (alpha_cpled>alpha_single)? alpha_cpled: alpha_single;
+
       // allways go back to t(n) for next NR
       for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
       {
@@ -2488,7 +2489,9 @@ double Multiphysics_Newton_Raphson(GRID *grid,
       }
       
       int is_sub_converged = 0;
-
+      
+      // 1st level of the subdivision has own time stepping
+      // and 2nd level can have its subdivision to. So, prepare time stepping for sub level (2nd level) 
       if(NR_t_sub.tim==0)
       {  
         NR_t_sub.times[1] = tn + NR_t.dt[DT_NP1];
@@ -2504,6 +2507,7 @@ double Multiphysics_Newton_Raphson(GRID *grid,
       NR_t_sub.dt[DT_N]   = NR_t.dt[DT_N];
       NR_t_sub.dt[DT_NP1] = NR_t.dt[DT_NP1];
       
+      // print status
       if(sp.is_subdivided && myrank == 0)
       {
         if(myrank==0)
@@ -2514,9 +2518,15 @@ double Multiphysics_Newton_Raphson(GRID *grid,
         }
       }      
       
-      solve_time += Multiphysics_Newton_Raphson_sub(&iterno,&is_sub_converged,&NR_t_sub,
+      // perform sub level (Staggered Newton iteration)
+      alpha = 0.0; // always reset evolution threshold
+      solve_time += Multiphysics_Newton_Raphson_sub(&iterno,&is_sub_converged,&alpha,&NR_t_sub,
                                                     grid,mat,FV,SOL,load,COM,time_steps,crpl,
                                                     mpi_comm,VVolume,opts,mp);
+      if(myrank==0)
+        printf(":: Maximum physics based evolution threshold = %f\n", alpha);
+
+      // check convergence
       if(!is_sub_converged)
       {
         INFO = 1;
@@ -2547,6 +2557,7 @@ double Multiphysics_Newton_Raphson(GRID *grid,
 
   }
 
+  // update final times achieved overall sudivision
   time_steps->times[time_steps->tim]   = NR_t.times[NR_t.tim+1] - NR_t.dt[DT_NP1];
   time_steps->times[time_steps->tim+1] = NR_t.times[NR_t.tim+1];  
   
