@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
     init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
   }
   char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
   
   
   double *u = aloc1(nn*ndofn);

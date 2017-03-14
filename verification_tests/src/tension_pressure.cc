@@ -108,7 +108,7 @@ int main(int argc,char *argv[])
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs
   char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
   
   
   double *u = aloc1(nn*ndofn);

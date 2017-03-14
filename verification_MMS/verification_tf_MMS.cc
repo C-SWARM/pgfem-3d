@@ -130,7 +130,7 @@ int main(int argc,char *argv[])
   double *Ph = aloc1(ne);
   double *Vh = aloc1(ne);
 
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
 
   read_VTK_file4TF(filename, u,Ph,Vh);
 
