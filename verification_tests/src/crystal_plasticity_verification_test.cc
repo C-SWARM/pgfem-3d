@@ -10,6 +10,7 @@
 #include "restart.h"
 #include "math.h"
 #include "PGFem3D_data_structure.h"
+#include "elem3d.h"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -93,8 +94,20 @@ int main(int argc,char *argv[])
   dealoc3l(a,nmat,nmat);
   free(mater);  
   
-  EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
+  EPS *eps = NULL;
+  
+  int n_state_varialbles = 0;
+  for(int eid=0; eid<ne; eid++)
+  {
+    int nne = elem[eid].toe;
+    long nint = 0;
+    int_point(nne,&nint);
+    n_state_varialbles += nint;
+  }
+        
+  State_variables *statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+            
+  eps = build_eps_il(ne,elem,options.analysis_type,&statv_list);
 
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.
@@ -177,6 +190,7 @@ int main(int argc,char *argv[])
     fv.u_nm1  = u0;
     fv.u_n    = u1;
     fv.NORM   = NORM;
+    fv.statv_list = statv_list;
   }
   
   double tns[2];
@@ -283,14 +297,16 @@ int main(int argc,char *argv[])
   free(coupled_ids);
   free(physicsname);  
 
-  /*=== FINALIZE AND EXIT ===*/
-  PGFEM_finalize_io();
-  MPI_Finalize(); 
   if(myrank==0)
   { 
     FILE *fp_err = fopen("order_of_error.txt", "w");
     fprintf(fp_err,"%d\n", (int) log10(Err_of_stress/10.0));
     fclose(fp_err);
   }
+
+  /*=== FINALIZE AND EXIT ===*/
+  PGFEM_finalize_io();
+  MPI_Finalize(); 
+
   return(0);
 }
