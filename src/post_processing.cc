@@ -95,8 +95,8 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix(double)
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
   Matrix(double) Fnp1, eFnp1;
-  Matrix_construct_redim(double,eFnp1,3,3);
-  Matrix_construct_redim(double,Fnp1,3,3);
+  Matrix_construct_init(double,eFnp1,3,3,0.0);
+  Matrix_construct_init(double,Fnp1,3,3,0.0);
   /* after update (i.e., converged step) the *Fn = *Fnp1 */
   m->param->get_Fn(m,&Fnp1);
   m->param->get_eFn(m,&eFnp1);
@@ -349,8 +349,8 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
         Matrix(double) Fnp1, eFnp1;
-        Matrix_construct_redim(double,Fnp1,3,3);
-        Matrix_construct_redim(double,eFnp1,3,3);        
+        Matrix_construct_init(double,Fnp1,3,3,0.0);
+        Matrix_construct_init(double,eFnp1,3,3,0.0);        
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);
         m->param->get_eFn(m,&eFnp1);
@@ -500,7 +500,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
         double Jnp1 = 1.0;
         Matrix(double) Fnp1, eFnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
-        Matrix_construct_redim(double,eFnp1,3,3);
+        Matrix_construct_init(double,eFnp1,3,3,0.0);
                
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);

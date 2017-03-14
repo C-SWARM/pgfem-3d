@@ -129,7 +129,7 @@ typedef struct Matrix_##T                                               \
   (p).m_row = m;                                                        \
   (p).m_col = n;                                                        \
   (p).sizeof_T = sizeof(T);                                             \
-  (p).m_pdata = (T *) malloc((p).sizeof_T*(m)*(n));                     \
+  (p).m_pdata = (T *) malloc((p).sizeof_T*(m)*(n));                     \ 
 } while(0)
 
 #define Matrix_redim(p, m, n) do {                                      \
@@ -158,7 +158,6 @@ typedef struct Matrix_##T                                               \
   (p).m_col = n;                                                        \
   (p).sizeof_T = sizeof(T);                                             \
   (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
-/*  memset(p.m_pdata,value,p.sizeof_T*m*n);   */                        \
   Matrix_init(p, value);                                                \
 } while(0)
                                                 
@@ -170,11 +169,11 @@ typedef struct Matrix_##T                                               \
 
 /* A = delta_ij */
 #define Matrix_eye(A, m) do {                                           \
-  long MaTtEmPVar_a;                                                             \
+  long MaTtEmPVar_a;                                                    \
   Matrix_check_null_and_redim(A, m, m);                                 \
   Matrix_init(A, 0.0);                                                  \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m; MaTtEmPVar_a++)                                         \
-    Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a) = 1.0;                                           \
+  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m; MaTtEmPVar_a++)              \
+    Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a) = 1.0;                         \
                                                                         \
 } while(0)
 
@@ -186,12 +185,12 @@ typedef struct Matrix_##T                                               \
   
 /* trA = tr_(A), trA = A_ii */
 #define Matrix_trace(A,trA) do {                                        \
-  long MaTtEmPVar_a;                                                             \
+  long MaTtEmPVar_a;                                                    \
   trA = 0.0;                                                            \
   if(A.m_row != A.m_col || A.m_row ==0 || A.m_col ==0)                  \
     break;                                                              \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= A.m_row; MaTtEmPVar_a++)                                   \
-    trA += Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a);                                          \
+  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= A.m_row; MaTtEmPVar_a++)        \
+    trA += Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a);                        \
 } while(0)
 
 #define Matrix_det(A, ddet) do {                                        \
@@ -300,13 +299,25 @@ typedef struct Matrix_##T                                               \
 } while(0)
 
 #define Matrix_print(A) do {                                            \
-  long MaTtEmPVar_a, MaTtEmPVar_b;                                                        \
   printf("[%ldx%ld] = \n", (A).m_row, (A).m_col);                       \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= (A).m_row; MaTtEmPVar_a++){                                \
-    for(MaTtEmPVar_b = 1; MaTtEmPVar_b <= (A).m_col; MaTtEmPVar_b++){                              \
-      printf("%e ", (double)Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b));                        \
+  for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= (A).m_row; MaTtEmPVar_a++){ \
+    for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= (A).m_col; MaTtEmPVar_b++){\
+      printf("%e ", (double)Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b));      \
     }                                                                   \
     printf("\n");                                                       \
+  }                                                                     \
+} while(0)
+
+#define Matrix_print_name(A, name) do {                                 \
+  printf("%s = [\n", name);                                             \
+  for(int a__A = 1; a__A <= (A).m_row; a__A++){                         \
+    for(int b__B = 1; b__B <= (A).m_col; b__B++){                       \
+      printf("%e ", (double)Mat_v(A, a__A, b__B));                      \
+    }                                                                   \
+    if(a__A==(A).m_row)                                                 \
+      printf("];\n");                                                   \
+    else                                                                \
+      printf("\n");                                                     \
   }                                                                     \
 } while(0)
 
@@ -324,25 +335,25 @@ typedef struct Matrix_##T                                               \
 
 /* A = bB */
 #define Matrix_AeqB(A, b, B) do {                                       \
-  long MaTtEmPVar_a;                                                             \
+  long MaTtEmPVar_a;                                                    \
   long m_row = (B).m_row;                                               \
   long m_col = (B).m_col;                                               \
   Matrix_check_null_and_redim(A, (B).m_row, (B).m_col);                 \
                                                                         \
-  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < m_row*m_col; MaTtEmPVar_a++)                                \
-    (A).m_pdata[MaTtEmPVar_a] = (B).m_pdata[MaTtEmPVar_a]*(b);                            \
+  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < m_row*m_col; MaTtEmPVar_a++)     \
+    (A).m_pdata[MaTtEmPVar_a] = (B).m_pdata[MaTtEmPVar_a]*(b);          \
 } while(0)
   
 /* A = transpose(A) */
 #define Matrix_trans(A) do {                                            \
-  long MaTtEmPVar_a, MaTtEmPVar_b;                                                        \
+  long MaTtEmPVar_a, MaTtEmPVar_b;                                      \
   long m_row = (A).m_row;                                               \
   long m_col = (A).m_col;                                               \
   (A).temp =  malloc((A).sizeof_T*m_row*m_col);                         \
                                                                         \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){                                    \
-    for(MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){                                  \
-      (A).temp[(MaTtEmPVar_b-1)*(A).m_col+(MaTtEmPVar_a-1)] = Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b);         \
+  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){         \
+    for(MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){       \
+      (A).temp[(MaTtEmPVar_b-1)*(A).m_col+(MaTtEmPVar_a-1)] = Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b); \
     }                                                                   \
   }                                                                     \
   (A).m_row = m_col;                                                    \
@@ -358,17 +369,16 @@ typedef struct Matrix_##T                                               \
   long m_row = (B).m_row;                                               \
   long m_col = (B).m_col;                                               \
   Matrix_check_null_and_redim(A, m_col, m_row);                         \
-                                                                        \
-  for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){                                \
-    for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){                              \
-      Mat_v(A, MaTtEmPVar_b, MaTtEmPVar_a) = Mat_v(B,MaTtEmPVar_a, MaTtEmPVar_b)*(b);                       \
+  for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){     \
+    for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){   \
+      Mat_v(A, MaTtEmPVar_b, MaTtEmPVar_a) = Mat_v(B,MaTtEmPVar_a, MaTtEmPVar_b)*(b);\
     }                                                                   \
   }                                                                     \
 } while(0)
 
 /* C = aA + bB */
 #define Matrix_AplusB(C, a, A, b, B) do {                               \
-  long MaTtEmPVar_I;                                                             \
+  long MaTtEmPVar_I;                                                    \
   long m_row = (A).m_row;                                               \
   long m_col = (A).m_col;                                               \
   if((A).m_row != (B).m_row)                                            \
@@ -398,15 +408,15 @@ typedef struct Matrix_##T                                               \
 // C = A:B
 #define Matrix_Tns4_dd_Tns2(C, A, B) do {                               \
   Matrix_init(C,0.0);                                                   \
-  for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)                                         \
+  for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)              \
   {                                                                     \
-    for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)                                       \
+    for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)            \
     {                                                                   \
-      if(fabs(Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L))<1.0e-15)                                \
+      if(fabs(Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L))<1.0e-15)              \
         continue;                                                       \
-      for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)                                     \
+      for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)          \
       {                                                                 \
-        for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)                                   \
+        for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)        \
          Mat_v(C,MaTtEmPVar_I,MaTtEmPVar_J) += Tns4_v(A,MaTtEmPVar_I,MaTtEmPVar_J,MaTtEmPVar_K,MaTtEmPVar_L)*Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L);\
       }                                                                 \
     }                                                                   \
@@ -416,15 +426,15 @@ typedef struct Matrix_##T                                               \
 // C = A:B
 #define Matrix_Tns2_dd_Tns4(C, A, B) do {                               \
   Matrix_init(C,0.0);                                                   \
-  for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)                                         \
+  for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)              \
   {                                                                     \
-    for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)                                       \
+    for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)            \
     {                                                                   \
-      if(Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)==0.0)                                         \
+      if(Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)==0.0)                       \
         continue;                                                       \
-      for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)                                     \
+      for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)          \
       {                                                                 \
-        for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)                                   \
+        for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)        \
          Mat_v(C,MaTtEmPVar_K,MaTtEmPVar_L) += Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)*Tns4_v(B,MaTtEmPVar_I,MaTtEmPVar_J,MaTtEmPVar_K,MaTtEmPVar_L);\
       }                                                                 \
     }                                                                   \
@@ -437,26 +447,26 @@ typedef struct Matrix_##T                                               \
 
 #define Matrix_ddot_no_use(A,B,A_dd_B) do {                             \
   A_dd_B = 0.0;                                                         \
-  for(int MaTtEmPVar_I = 0; MaTtEmPVar_I<(A).m_row*(A).m_col; MaTtEmPVar_I++)                      \
-    A_dd_B += (A).m_pdata[MaTtEmPVar_I]*(B).m_pdata[MaTtEmPVar_I];                        \
+  for(int MaTtEmPVar_I = 0; MaTtEmPVar_I<(A).m_row*(A).m_col; MaTtEmPVar_I++) \
+    A_dd_B += (A).m_pdata[MaTtEmPVar_I]*(B).m_pdata[MaTtEmPVar_I];      \
 } while(0)          			      
 /*C = aAxB + bC*/
 // C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
 // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,a,A,k,B,n,b,C,n);
-#define Matrix_AxB(C, a, b, A, MaTtEmPVar_AT, B, MaTtEmPVar_BT) do {                                                                                                               \
-  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==0){                                                                                                                                        \
-    Matrix_check_null_and_redim(C, (A).m_row, (B).m_col);                                                                                                    \
+#define Matrix_AxB(C, a, b, A, MaTtEmPVar_AT, B, MaTtEmPVar_BT) do {    \
+  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==0){                             \
+    Matrix_check_null_and_redim(C, (A).m_row, (B).m_col);               \
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,(A).m_row,(B).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
   }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==0){                                                                                                                                        \
+  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==0){                                                                                                                  \
     Matrix_check_null_and_redim(C, (A).m_col, (B).m_col);                                                                                                    \
     cblas_dgemm(CblasRowMajor,CblasTrans,  CblasNoTrans,(C).m_row,(C).m_col,(B).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
   }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==1){                                                                                                                                        \
+  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==1){                                                                                                                  \
     Matrix_check_null_and_redim(C, (A).m_row, (B).m_row);                                                                                                    \
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,  (C).m_row,(C).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
   }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==1){                                                                                                                                        \
+  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==1){                                                                                                                  \
     Matrix_check_null_and_redim(C, (A).m_col, (B).m_row);                                                                                                    \
     cblas_dgemm(CblasRowMajor,CblasTrans,  CblasTrans,  (C).m_row,(C).m_col,(A).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
   }                                                                                                                                                          \
@@ -464,7 +474,7 @@ typedef struct Matrix_##T                                               \
 
 // D = a*A*B*C + b*D, a and b are scalar
 #define Matrix_Tns2_AxBxC(D,a,b,A,B,C) do {                             \
-                                                                        \
+  Matrix_print_name(C, "Matrix_AxB");                                   \
   Matrix_check_null_and_redim(D,3,3);                                   \
   Mat_v(D,1,1) = Mat_v(D,1,1)*(b) + (a)*(                                                                          \
                + Mat_v(C,1,1)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \

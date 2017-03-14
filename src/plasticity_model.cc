@@ -611,6 +611,13 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     Matrix_construct_redim(double, M,       DIM_3, DIM_3);
     Matrix_construct_redim(double, eFn,     DIM_3, DIM_3);
     Matrix_construct_redim(double, eFnp1,   DIM_3, DIM_3);
+    
+    for(int ia=0; ia<DIM_3x3; ia++)
+    {
+          M.m_pdata[ia] = 0.0;
+        eFn.m_pdata[ia] = 0.0;
+      eFnp1.m_pdata[ia] = 0.0;
+    }
 
     err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);
 
@@ -629,6 +636,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
       err += inv3x3(CTX->hFn,     hFn_I.m_pdata);
       err += inv3x3(CTX->hFnp1, hFnp1_I.m_pdata);    
     
+      Matrix_init(N,0.0);
       Matrix_AxB(N,1.0,0.0,hFn,0,hFnp1_I,0);
         
       err += compute_M(&M, Fs+TENSOR_Fn, &N, &pFnp1_I, CTX);
@@ -714,7 +722,6 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
                                    double alpha)
 {
   // Total Lagrangian based
-  
   int err = 0;
   /* The existing function compute_dMdu takes Grad_op for a given
      alpha,beta pair and computes the corresponding dMdu. We will
@@ -731,7 +738,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   }  
   
   Matrix_init_w_array(F2[Fnp1], DIM_3, DIM_3, CTX->F);  
-  err += m->param->get_Fn(m,&F2[Fn]);  
+  err += m->param->get_Fn(m,&F2[Fn]); 
+  Matrix_init(F2[eFn],0.0); 
   err += m->param->get_eFn(m,&F2[eFn]);
   Matrix_eye(F2[eFn],DIM_3); // <== recompute F2[eFn] to make Total Lagrangian
     
@@ -750,7 +758,9 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
     //mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);  
     err += inv3x3(CTX->hFnp1, F2[hFnpaI].m_pdata);
   }
-
+  
+  Matrix_init(F2[Mnpa], 0.0);
+  Matrix_init(F2[eFnpa], 0.0);
   Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnpaI],0,F2[pFnpa_I],0);  
   Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);
     
@@ -1064,7 +1074,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
     // shorthand of deformation gradients
     Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;  
     Matrix(double) eF, pFnp1_I;  
-    Matrix_construct_redim(double,eF,      DIM_3,DIM_3); 
+    Matrix_construct_init( double,eF,      DIM_3,DIM_3, 0.0); 
     Matrix_construct_redim(double,pFnp1_I, DIM_3, DIM_3);  
   
     err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);    
@@ -1239,16 +1249,24 @@ static int compute_C_D_alpha(const Constitutive_model *m,
                              const Matrix(double) *L,
                              const Matrix(double) *C)
 {
-  Matrix_init(*aC, 0.0);  
-  Matrix_init(*aD, 0.0);
   
   Matrix(double) LC, AA, CAA, eFnp1AA, eFnp1AAMT, MI;
   Matrix_construct_redim(double,LC,       DIM_3,DIM_3);
-  Matrix_construct_redim(double,AA,       DIM_3,DIM_3);
-  Matrix_construct_redim(double,CAA,      DIM_3,DIM_3);
-  Matrix_construct_redim(double,eFnp1AA,  DIM_3,DIM_3);
-  Matrix_construct_redim(double,eFnp1AAMT,DIM_3,DIM_3);    
-  Matrix_construct_redim(double,MI,       DIM_3,DIM_3);      
+  Matrix_construct_redim( double,AA,       DIM_3,DIM_3);
+  Matrix_construct_redim( double,CAA,      DIM_3,DIM_3);
+  Matrix_construct_redim( double,eFnp1AA,  DIM_3,DIM_3);
+  Matrix_construct_redim( double,eFnp1AAMT,DIM_3,DIM_3);    
+  Matrix_construct_redim(double,MI,       DIM_3,DIM_3);
+
+  for(int ia=0; ia<DIM_3x3; ia++)
+  {
+          aC->m_pdata[ia] = 0.0;
+          aD->m_pdata[ia] = 0.0;
+           AA.m_pdata[ia] = 0.0;
+          CAA.m_pdata[ia] = 0.0;
+      eFnp1AA.m_pdata[ia] = 0.0;
+    eFnp1AAMT.m_pdata[ia] = 0.0;
+  }   
 
   Matrix_AxB(AA,1.0,0.0,*Pa,0,*S,0);   // AA = Pa*S
   Matrix_AxB(AA,1.0,1.0,*S,0,*Pa,1);   // AA = AA + S*Pa' 
@@ -1305,7 +1323,7 @@ int compute_dMdu(const Constitutive_model *m,
   
   // --------------> define variables
   Matrix(double) C;
-  Matrix_construct_redim(double, C, DIM_3,DIM_3);
+  Matrix_construct_init(double, C, DIM_3,DIM_3,0.0);
   Matrix_AxB(C,1.0,0.0,*eFnp1,1,*eFnp1,0);
   
   Matrix(double) U,UI,II,B,aCxPa,CxP,aDxPa,DxP;
@@ -1870,10 +1888,13 @@ int plasticity_model_set_orientations(EPS *eps,
       Matrix_redim(Fs[TENSOR_gamma_dot_n],N_SYS, 1);
       
       /* intitialize to zeros */
-      Matrix_init(Fs[TENSOR_tau], 0.0);
-      Matrix_init(Fs[TENSOR_tau_n], 0.0);
-      Matrix_init(Fs[TENSOR_gamma_dot], 0.0);           
-      Matrix_init(Fs[TENSOR_gamma_dot_n], 0.0);           
+      for(int ia=0; ia<N_SYS; ia++)
+      {
+                Fs[TENSOR_tau].m_pdata[ia] = 0.0;
+              Fs[TENSOR_tau_n].m_pdata[ia] = 0.0;
+          Fs[TENSOR_gamma_dot].m_pdata[ia] = 0.0;
+        Fs[TENSOR_gamma_dot_n].m_pdata[ia] = 0.0;
+      }  
     }
   }
 
@@ -1973,7 +1994,6 @@ void test_crystal_plasticity_single_crystal(void)
     // compute total deformation gradient using velocity gradient
     // Fnp1_Implicit(F2[Fnp1].m_pdata, F2[Fn].m_pdata, F2[L].m_pdata, dt); 
     //define Fnp1    
-    Matrix_init(F2[Fnp1], 0.0);
     Mat_v(F2[Fnp1],1,1) = 1.0 - t*1.0e-3;
     Mat_v(F2[Fnp1],2,2) = Mat_v(F2[Fnp1],3,3) = 1.0 + t*0.5*1.0e-3;
     

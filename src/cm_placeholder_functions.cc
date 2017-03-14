@@ -27,7 +27,7 @@ int cm_get_lam_p(const Constitutive_model *m,
   int err = 0;
   Matrix_double Fp, Cp;
   Matrix_construct_redim(double, Fp, dim, dim);
-  Matrix_construct_redim(double, Cp, dim, dim);
+  Matrix_construct_init( double, Cp, dim, dim, 0.0);
 
   /* get the plastic deformation gradient at (n + 1) */
   m->param->get_pFn(m, &Fp);
