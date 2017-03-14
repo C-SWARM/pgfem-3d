@@ -1016,7 +1016,8 @@ int compute_stiffness_matrix(double *lk,
   {
      F2[temp_F_1].m_pdata[ia] = 0.0;
      F2[temp_F_2].m_pdata[ia] = 0.0;
-     F2[MTeFnT_sAA_eFnM].m_pdata[ia] = 0.0;
+     F2[MTeFnT_sAA_eFn].m_pdata[ia] = 0.0;
+     F2[MTeFnT_sAA_eFnM].m_pdata[ia] = 0.0;     
   }                                                          
   
   for(int a=0; a<nne; a++)
