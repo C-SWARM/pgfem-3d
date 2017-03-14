@@ -474,7 +474,6 @@ typedef struct Matrix_##T                                               \
 
 // D = a*A*B*C + b*D, a and b are scalar
 #define Matrix_Tns2_AxBxC(D,a,b,A,B,C) do {                             \
-  Matrix_print_name(C, "Matrix_AxB");                                   \
   Matrix_check_null_and_redim(D,3,3);                                   \
   Mat_v(D,1,1) = Mat_v(D,1,1)*(b) + (a)*(                                                                          \
                + Mat_v(C,1,1)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
