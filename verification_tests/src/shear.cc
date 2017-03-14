@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
   free(mater);  
   
   EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
+  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.

@@ -9,6 +9,7 @@
 #include "PGFem3D_to_VTK.hpp"
 #include "restart.h"
 #include "math.h"
+#include "PGFem3D_data_structure.h"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -93,7 +94,7 @@ int main(int argc,char *argv[])
   free(mater);  
   
   EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
+  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.
@@ -135,10 +136,67 @@ int main(int argc,char *argv[])
 
   double tnm1[2] = {-1.0,-1.0};
   double NORM = 0.0;
+  
+  // initialize and define multiphysics
+  MULTIPHYSICS mp;  
+  int id = MULTIPHYSICS_MECHANICAL;
+  int write_no = 0;
+  int *coupled_ids = (int *) malloc(sizeof(int));
+  char *physicsname = (char *) malloc(sizeof(char)*1024);
+  {
+    coupled_ids[0] = 0;
+    sprintf(physicsname, "Mechanical");
+ 
+    mp.physicsno      = 1;
+    mp.physicsname    = &physicsname;
+    mp.physics_ids    = &id;
+    mp.ndim           = &ndim;
+    mp.write_no       = &write_no;
+    mp.write_ids      = NULL;
+    mp.coupled_ids    = &coupled_ids;
+    mp.total_write_no = 0;
+  } 
+
+  GRID grid;
+  grid_initialization(&grid);
+  {
+    grid.ne          = ne;
+    grid.nn          = nn;
+    grid.nsd         = nsd;
+    grid.element     = elem;
+    grid.node        = node;
+  }  
+  
+  // initialize and define field variables
+  FIELD_VARIABLES fv;
+  {
+    field_varialbe_initialization(&fv);
+    fv.ndofn  = ndofn;
+    fv.npres  = npres;
+    fv.eps    = eps;
+    fv.u_nm1  = u0;
+    fv.u_n    = u1;
+    fv.NORM   = NORM;
+  }
+  
+  double tns[2];
+  PGFem3D_TIME_STEPPING ts;
+  {
+    time_stepping_initialization(&ts);
+    ts.tns    = tns;  
+  }
+    
+  // initialize and define loading steps object
+  LOADING_STEPS load;    
+  {
+    loading_steps_initialization(&load);
+    load.sups = &sup;
+  }
+  
   for(int istep=0; istep<1000; istep++)
   {
-    read_restart(u0,u1,&options,elem,node,NULL,eps,sup,
-                 myrank,ne,nn,nsd,&istep,tnm1,&NORM); 
+    options.restart = istep;
+    read_restart(&grid,&fv,&ts,&load,&options,&mp,tnm1,myrank);
 
     Matrix_construct_init(double, PK2, 3,3,0.0);
     Matrix_construct_init(double, sigma, 3,3,0.0);
@@ -221,6 +279,9 @@ int main(int argc,char *argv[])
   destroy_supp(sup);
   destroy_elem(elem,ne);
   destroy_node_multi_physics(nn,node,physicsno);
+  
+  free(coupled_ids);
+  free(physicsname);  
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
