@@ -501,7 +501,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 			  &common->n_orient,&common->node,
 			  &common->elem,&mater,&common->matgeom,
 			  &common->supports,&nln,&znod,&nle_s,&zele_s,
-			  &nle_v,&zele_v, physicsno, &ndim);
+			  &nle_v,&zele_v, physicsno, &ndim, NULL);
 
     /* error reading file(s) */
     if(err){

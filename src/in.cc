@@ -12,11 +12,149 @@
 #define PFEM_DEBUG 0
 #endif
 
-SUPP read_supports (FILE *in,
-		    long nn,
-		    long ndofn,
-		    NODE *node,
-		    const int mp_id)
+/// read Dirichlet boundary conditions on nodes
+///
+/// This function will generate and return SUPP object.
+/// if in==NULL, assumed no boundary conditions. Code will proceed to next
+/// step in reading boundary condition values.
+///
+/// \param[in]  in    Input file
+/// \param[in]  ndofn Number of degrees of freedom in one node
+/// \param[in]  node  Structure type of NODE
+/// \param[in]  mp_id multiphysics id
+/// \return     sup   created boundary condition structure 
+SUPP read_Dirichlet_BCs(FILE *in,
+                        long nn,
+		        long ndofn,
+		        NODE *node,
+		        const int mp_id)
+{
+  int err_rank = 0;
+  PGFEM_Error_rank(&err_rank);
+  if (PFEM_DEBUG) PGFEM_printf("[%d] reading supports.\n",err_rank);
+  long n,pom;
+  SUPP sup;
+  
+  // read supported nodes
+  
+  sup = (SUPP) PGFEM_calloc (1,sizeof(SUPP_1));
+  
+  if(in==NULL)
+    sup->nsn = 0;
+  else
+    fscanf (in,"%ld",&sup->nsn);
+  
+  if(sup->nsn == 0)  sup->supp = (long *) PGFEM_calloc (1,sizeof(long));
+  else               sup->supp = (long *) PGFEM_calloc (sup->nsn,sizeof(long));
+  
+  for(int i=0; i<sup->nsn; i++)
+  {
+    fscanf (in,"%ld",&n);
+    sup->supp[i] = n;
+    
+    pom = 0;
+    for(int k=0; k<ndofn; k++)
+    {
+      fscanf (in,"%ld",&node[n].id_map[mp_id].id[k]);
+      if((node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) && pom == 0) {
+        sup->ndn++; pom = 1;
+      }
+    }
+    if(ferror(in))
+    {
+      PGFEM_printerr("[%d]ERROR:fscanf returned error"
+              " reading support %ld!\n",err_rank,i);
+      PGFEM_Abort();
+    } 
+    else if(feof(in))
+    {
+      PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
+              err_rank);
+      PGFEM_Abort();
+    }
+  }
+  
+  /***************************************************/
+  /* create list of nodes with prescribed deflection */
+  /***************************************************/
+  
+  if (sup->ndn == 0)  sup->lnpd = (long *) PGFEM_calloc (1,sizeof(long));
+  else                sup->lnpd = (long *) PGFEM_calloc (sup->ndn,sizeof(long));
+  
+  int ii = 0;
+  for(int i=0; i<sup->nsn; i++)
+  {
+    for(int k=0; k<ndofn; k++)
+    {
+      if(node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) {
+        sup->lnpd[ii] = sup->supp[i];
+        ii++;  break;
+      }
+    }
+  }
+  
+  // allocate the prescribed macro deformation gradient
+  sup->F0 = (double *) PGFEM_calloc(9,sizeof(double));
+  sup->N0 = (double *) PGFEM_calloc(3,sizeof(double));
+  
+  return (sup);
+}
+
+/// read Dirichlet boundary condition values
+///
+/// Before read BC values, SUPP object should be created.
+/// Prior to call this function, read_Dirichlet_BCs function should be called first.
+///
+/// \param[in]  in    Input file
+/// \param[in]  ndofn Number of degrees of freedom in one node
+/// \param[in]  node  Structure type of NODE
+/// \param[in]  mp_id multiphysics id
+/// \return non-zero on internal ERROR
+int read_Dirichlet_BCs_values(FILE *in,
+                              long nn,
+                              long ndofn,
+                              NODE *node,
+                              SUPP sup,
+                              const int mp_id)
+{
+  int err_rank = 0;
+  PGFEM_Error_rank(&err_rank);
+  if (PFEM_DEBUG) PGFEM_printf("[%d] reading BCs_values.\n",err_rank);
+  
+  // read nodes with prescribed deflection  
+  fscanf (in,"%ld",&sup->npd);
+  
+  if (sup->npd == 0)
+  {
+    sup->defl   = (double *) PGFEM_calloc (1,sizeof(double));
+    sup->defl_d = (double *) PGFEM_calloc (1,sizeof(double));
+  }
+  else
+  {
+    sup->defl   = (double *) PGFEM_calloc (sup->npd,sizeof(double));
+    sup->defl_d = (double *) PGFEM_calloc (sup->npd,sizeof(double));
+  }
+  
+  for (int i=0; i<sup->npd; i++) fscanf (in,"%lf",&sup->defl_d[i]);
+  
+  if(ferror(in)){
+    PGFEM_printerr("[%d]ERROR:fscanf returned error"
+            " reading prescribed deflections!\n",err_rank);
+    PGFEM_Abort();
+  } else if(feof(in)){
+    PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
+            err_rank);
+    PGFEM_Abort();
+  }
+
+  return 0;
+}
+
+SUPP read_supports(FILE *in,
+                   long nn,
+                   long ndofn,
+                   NODE *node,
+                   const int mp_id)
 /*
   in    - Input file
   nl    - Number of layers
@@ -27,95 +165,13 @@ SUPP read_supports (FILE *in,
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
 */
 {
-  int err_rank = 0;
-  PGFEM_Error_rank(&err_rank);
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading supports.\n",err_rank);
-  long i,k,ii,n,pom;
-  SUPP sup;
+  SUPP sup = read_Dirichlet_BCs(in,nn,ndofn,node,mp_id);
+  read_Dirichlet_BCs_values(in,nn,ndofn,node,sup,mp_id);
   
-  /************************/
-  /* read supported nodes */
-  /************************/
-  
-  sup = (SUPP) PGFEM_calloc (1,sizeof(SUPP_1));
-  
-  fscanf (in,"%ld",&sup->nsn);
-  
-  if (sup->nsn == 0)  sup->supp = (long *) PGFEM_calloc (1,sizeof(long));
-  else                sup->supp = (long *) PGFEM_calloc (sup->nsn,sizeof(long));
-  
-  for (i=0;i<sup->nsn;i++){
-    fscanf (in,"%ld",&n);
-    sup->supp[i] = n;
-    
-    pom = 0;
-    for (k=0;k<ndofn;k++){
-      fscanf (in,"%ld",&node[n].id_map[mp_id].id[k]);
-      if ((node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) && pom == 0) {
-	sup->ndn++; pom = 1;
-      }
-    }/* end k */
-    if(ferror(in)){
-      PGFEM_printerr("[%d]ERROR:fscanf returned error"
-	      " reading support %ld!\n",err_rank,i);
-      PGFEM_Abort();
-    } else if(feof(in)){
-      PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
-	      err_rank);
-      PGFEM_Abort();
-    }
-  }/* end i */
-  
-  /***************************************************/
-  /* create list of nodes with prescribed deflection */
-  /***************************************************/
-  
-  if (sup->ndn == 0)  sup->lnpd = (long *) PGFEM_calloc (1,sizeof(long));
-  else                sup->lnpd = (long *) PGFEM_calloc (sup->ndn,sizeof(long));
-  
-  ii = 0;
-  for (i=0;i<sup->nsn;i++){
-    for (k=0;k<ndofn;k++){
-      if (node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) {
-	sup->lnpd[ii] = sup->supp[i];
-	ii++;  break;
-      }
-    }/* end k */
-  }/* end i */
-  
-  /*****************************************/
-  /* read nodes with prescribed deflection */
-  /*****************************************/
-  
-  fscanf (in,"%ld",&sup->npd);
-  
-  if (sup->npd == 0){
-    sup->defl   = (double *) PGFEM_calloc (1,sizeof(double));
-    sup->defl_d = (double *) PGFEM_calloc (1,sizeof(double));
-  }
-  else{
-    sup->defl   = (double *) PGFEM_calloc (sup->npd,sizeof(double));
-    sup->defl_d = (double *) PGFEM_calloc (sup->npd,sizeof(double));
-  }
-  
-  for (i=0;i<sup->npd;i++) fscanf (in,"%lf",&sup->defl_d[i]);
-
-  if(ferror(in)){
-    PGFEM_printerr("[%d]ERROR:fscanf returned error"
-	    " reading prescribed deflections!\n",err_rank);
-    PGFEM_Abort();
-  } else if(feof(in)){
-    PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
-	    err_rank);
-    PGFEM_Abort();
-  }
-
-  /* allocate the prescribed macro deformation gradient */
-  sup->F0 = (double *) PGFEM_calloc(9,sizeof(double));
-  sup->N0 = (double *) PGFEM_calloc(3,sizeof(double));
-
-  return (sup);
+  return sup;
 }
+
+
 
 int read_material (FILE *in,
                    const size_t mat_id,

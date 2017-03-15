@@ -1010,7 +1010,7 @@ int compute_stiffness_matrix(double *lk,
   
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); // if not initialized some compiler sets non-numbers and causes
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); // if not initialized some compiler sets non-numbers and causes
                                                         // problems when do Matrix_Tns2_AxBxC
   for(int ia=0; ia<DIM_3x3; ia++)
   {
@@ -1128,7 +1128,7 @@ int compute_residual_vector(double *f,
   
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,1); 
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,1); 
 
   for(int a=0; a<nne; a++)
   {
@@ -1605,7 +1605,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
   
   for(int ia=0; ia<DIM_3x3; ia++)
   {
@@ -1801,7 +1801,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   for(int ia=0; ia<DIM_3x3; ia++)
   {
@@ -2058,7 +2058,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); 
   
   Matrix(double) Tnp1, Tn, Tnm1;    
   FIELD_VARIABLES *fv_h = NULL;
@@ -2254,7 +2254,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   
   // list of second-order tensors
   Matrix(double) *F2;
-  err + construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
+  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
   
   for(int ia=0; ia<DIM_3x3; ia++)
   {

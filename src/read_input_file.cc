@@ -264,7 +264,8 @@ int read_input_file(const PGFem3D_opt *opts,
 		    long *nel_v,
 		    ZATELEM **zelem_v,
 		    const int physicsno,
-		    const int *ndim)
+		    const int *ndim,
+                    char **physicsnames)
 {
   int err = 0;
   int myrank = 0;
@@ -294,11 +295,59 @@ int read_input_file(const PGFem3D_opt *opts,
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
   /* NOTE: Supports assume only ndim supported dofs per node! */
   
-  for(int ia=0; ia<physicsno; ia++)
-    sup[ia] = read_supports(in,*nn,ndim[ia],*node, ia);    
- 
-  read_elem(in,*ne,*elem,*sup,opts->legacy);
+  char BC[1024];
+  sprintf(BC,"%s/BC",opts->ipath);
+  
+  if(is_directory_exist(BC))
+  {
+    if(myrank==0)
+      printf("BC exists skip BC from filebase_*.in instead read boundary conditions from BC\n");
 
+    // skip reading support from lagacy inputs
+    int nbc; // temporal, don't need here
+    int n[4];
+    fscanf(in, "%d", &nbc);
+    for(int ia=0; ia<nbc; ia++)
+      fscanf(in, "%d %d %d %d", n+0,n+1,n+2,n+3);
+
+    fscanf(in, "%d", &nbc);
+    double v;
+    
+    for(int ia=0; ia<nbc; ia++)
+      fscanf(in, "%lf", &v);
+
+    // read boundary conditions if BC diretory exists
+    char fn_bc[1024];
+    char fn_bcv[1024];
+
+    for(int ia=0; ia<physicsno; ia++)
+    {
+      sprintf(fn_bc,"%s/%s_%d.bc",BC,physicsnames[ia],myrank);
+      sprintf(fn_bcv,"%s/%s.bcv",BC,physicsnames[ia]);
+
+      FILE *fp = NULL;
+      fp = fopen(fn_bc, "r");
+      sup[ia] = read_Dirichlet_BCs(fp,*nn,ndim[ia],*node,ia);
+      if(fp!=NULL) fclose(fp);
+    
+      fp = NULL;
+      fp = fopen(fn_bcv, "r");
+      if(fp==NULL)
+      {
+        printf("ERROR: Cannot open %s file. Exit.\n", fn_bcv);
+        PGFEM_Abort();
+      }
+      err += read_Dirichlet_BCs_values(fp,*nn,ndim[ia],*node,sup[ia],ia);
+      fclose(fp);
+    }
+  }
+  else
+  {    
+    for(int ia=0; ia<physicsno; ia++)
+      sup[ia] = read_supports(in,*nn,ndim[ia],*node, ia);    
+  }
+
+  read_elem(in,*ne,*elem,*sup,opts->legacy);
   for(int i=0, e=*nmat; i<e; i++){
     if ( read_material(in,i,*material,opts->legacy) ){
       PGFEM_Abort();
@@ -365,6 +414,9 @@ int read_mesh_file(GRID *grid,
                    const PGFem3D_opt *opts)
 {
   long ndofn;
+  int myrank = 0;
+  MPI_Comm_rank(mpi_comm,&myrank);
+    
   int err = read_input_file(opts,
                             mpi_comm,
                             &(grid->nn),
@@ -389,10 +441,11 @@ int read_mesh_file(GRID *grid,
                             &(load->nle_v),
                             &(load->zele_v),
                             mp->physicsno,
-                            mp->ndim);
+                            mp->ndim,
+                            mp->physicsname);
   // read multiphysics material properties
   err += read_multiphysics_material_properties(mat,opts,mp);
-
+  
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
   for(int iA=1; iA<mp->physicsno; iA++)
