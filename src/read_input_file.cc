@@ -741,11 +741,12 @@ int read_initial_values_lagcy(GRID *grid,
   sprintf(filename,"%s/%s%d.initial",opts->ipath,opts->ifname,myrank);
   FILE *fp = fopen(filename,"r");
   
+  int read_initial_file = 1;
   if(fp == NULL)
   {
+    read_initial_file = 0;
     if(myrank==0)
       printf("Fail to open file [%s]. Quasi steady state\n", filename);
-    return 0;
   }
   else
   {
@@ -760,70 +761,74 @@ int read_initial_values_lagcy(GRID *grid,
     }
   }
   
-  if(myrank==0)
-  {
+  if(read_initial_file)
+  {  
+    if(myrank==0)
+    {
+      while(fgets(line, 1024, fp)!=NULL)
+      {
+        if(line[0]=='#')
+          continue;
+        
+        double temp;
+        sscanf(line, "%lf", &temp);
+        break;
+      }
+    }
+    
     while(fgets(line, 1024, fp)!=NULL)
     {
       if(line[0]=='#')
         continue;
       
-      double temp;
-      sscanf(line, "%lf", &temp);
+      sscanf(line, "%lf", &(sol[mp_id].alpha));
       break;
     }
-  }
-  
-  while(fgets(line, 1024, fp)!=NULL)
-  {
-    if(line[0]=='#')
-      continue;
     
-    sscanf(line, "%lf", &(sol[mp_id].alpha));
-    break;
-  }
-  
-  // read material density
-  double *rho = (double *) malloc(sizeof(double)*mat->nmat);  
-  while(fgets(line, 1024, fp)!=NULL)
-  {
-    if(line[0]=='#')
-      continue;
-    for(int a=0; a<mat->nmat; a++)
-    {
-      sscanf(line, "%lf", rho+a);
-      if(a<mat->nmat-1)
-        fgets(line, 1024, fp);
-    }
-    break;
-  }
-
-  for(int ia = 0; ia<mat->nhommat; ia++)
-  {
-    (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
-    if(myrank==0)
-      printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
-  }  
-  
-  free(rho);
-  
-  if(opts->restart<0)
-  {  
+    // read material density
+    double *rho = (double *) malloc(sizeof(double)*mat->nmat);  
     while(fgets(line, 1024, fp)!=NULL)
     {
       if(line[0]=='#')
         continue;
-    
-      long nid;
-      double u[3], v[3];
-      sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
-    
-      fv[mp_id].u_n[nid*3+0] = u[0];
-      fv[mp_id].u_n[nid*3+1] = u[1];
-      fv[mp_id].u_n[nid*3+2] = u[2];
-      fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
-      fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
-      fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
+      for(int a=0; a<mat->nmat; a++)
+      {
+        sscanf(line, "%lf", rho+a);
+        if(a<mat->nmat-1)
+          fgets(line, 1024, fp);
+      }
+      break;
     }
+    
+    for(int ia = 0; ia<mat->nhommat; ia++)
+    {
+      (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
+      if(myrank==0)
+        printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
+    }  
+    
+    free(rho);
+    
+    if(opts->restart<0)
+    {  
+      while(fgets(line, 1024, fp)!=NULL)
+      {
+        if(line[0]=='#')
+          continue;
+      
+        long nid;
+        double u[3], v[3];
+        sscanf(line, "%ld %lf %lf %lf %lf %lf %lf", &nid, u+0, u+1, u+2, v+0, v+1, v+2);
+      
+        fv[mp_id].u_n[nid*3+0] = u[0];
+        fv[mp_id].u_n[nid*3+1] = u[1];
+        fv[mp_id].u_n[nid*3+2] = u[2];
+        fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
+        fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
+        fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
+      }
+    }
+    fclose(fp);
   }
   
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)
@@ -836,7 +841,7 @@ int read_initial_values_lagcy(GRID *grid,
     }
   }  
   
-  fclose(fp);
+
   return err;
 }
 
@@ -1065,7 +1070,7 @@ int read_initial_values_IC(GRID *grid,
   int mp_id = 0;
   
   // check restart and read restart values
- if(opts->restart >= 0)
+  if(opts->restart >= 0)
     err += read_restart(grid,FV,ts,load,opts,mp,tnm1,myrank);  
   
   char IC[1024];
