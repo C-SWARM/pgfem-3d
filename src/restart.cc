@@ -43,7 +43,7 @@ int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, double *u0, doubl
 
 #else
 // in case VTK library is not used.
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
+int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
 {
   if(myrank==0)
   {
