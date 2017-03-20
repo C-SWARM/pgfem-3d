@@ -1205,10 +1205,12 @@ int constitutive_model_update_output_variables(GRID *grid,
       is_it_couple_w_chemical = ia;
   }     
     
-  static const double eye[DIM_3x3] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
+  static const double eye[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+//  eye[0] = eye[4] = eye[8] = 1.0;
+//  eye[1] = eye[2] = eye[3] = eye[5] = eye[6] = eye[7] = 0.0;
 
   /* deformation gradient */
-  Matrix_double F, eF, pF, S;
+  Matrix(double) F, eF, pF, S;
   Matrix_construct_redim(double, F,  DIM_3, DIM_3);
   Matrix_construct_init( double, eF,  DIM_3, DIM_3,0.0);
   Matrix_construct_redim(double, pF, DIM_3, DIM_3);

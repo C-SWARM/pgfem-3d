@@ -130,6 +130,7 @@ cm_iso_viscous_damage.cc \
 cm_j2_plasticity.cc \
 cm_placeholder_functions.cc \
 cm_uqcm.cc \
+cm_poro_viscoplasticity.cc \
 state_variables.cc \
 constitutive_model.cc \
 post_processing.cc \
@@ -174,9 +175,10 @@ AM_INCLUDES = $(VTK_IO_include) \
 	      $(hypre_include) \
 	      $(suitesparse_include) \
 	      $(cnstvm_include) \
+	      $(ttl_include) \
 	      $(mkl_include)
 
-all_libs = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
+all_libs = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(ttl_lib) $(mkl_lib)
 
 PGFem3D_LDADD = $(all_libs)
 BPA_driver_LDADD = $(all_libs)
