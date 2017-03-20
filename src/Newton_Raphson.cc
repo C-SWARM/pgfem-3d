@@ -2318,17 +2318,26 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
         
       (*iterno)++;
     }
+
+    // if not converged, reset accumulated prescribed boundary values which have been updated during the NR iterations.
     // free allocated memory
-    for(int ia=0; ia<mp->physicsno; ia++)
+    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
     {
-      if((load->sups[ia])->npd>0)
+      int npd = (load->sups[mp_id])->npd;
+      if(npd>0)
       {  
-        free(sup_defl[ia]);
-        free(defl[ia]);      
+        if(*is_SNR_converged == 0)
+        {  
+          for(int ib=0;ib<npd;ib++)
+            (load->sups[mp_id])->defl[ib] = defl[mp_id][ib];
+        }
+
+        free(sup_defl[mp_id]);
+        free(defl[mp_id]);      
       }
   
-      free(R[ia]);
-      free(RRn[ia]);    
+      free(R[mp_id]);
+      free(RRn[mp_id]);    
     }
     free(sup_defl);
     free(defl);
