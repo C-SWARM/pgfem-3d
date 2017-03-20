@@ -1520,9 +1520,11 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
       nor = nor2 = 10.0;
 
       // Newton Raphson iteration with Line search
-      INFO = Newton_Raphson_with_LS(&solve_time,alpha,&NOR,&gam,&ART,&iter,
+      int ART_temp = ART;
+      INFO = Newton_Raphson_with_LS(&solve_time,alpha,&NOR,&gam,&ART_temp,&iter,
                                     grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
                                     mp_id,NR_t->times,dts,myrank,tim,sp.step_size,sp.step_id,&usage);
+      ART = ART_temp;
       if(INFO!=0)
       {
         is_sub_cvg = 0;  
