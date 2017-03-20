@@ -16,8 +16,10 @@
 ./run_test.sh compression 1
 ./run_test.sh tension 1
 
-for (( i=0; i<8; i++ )) do
+NP=8
+
+for (( i=0; i<$NP; i++ )) do
   fn=box_${i}_49.res
-  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 compression/box_8CPU/restart/STEP_00049/${fn} ref_out_compression/${fn}
-  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 tension/box_8CPU/restart/STEP_00049/${fn} ref_out_tension/${fn}
+  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 compression/box_${NP}CPU/restart/STEP_00049/${fn} ref_out_compression/${fn}
+  /cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 tension/box_${NP}CPU/restart/STEP_00049/${fn} ref_out_tension/${fn}
 done
