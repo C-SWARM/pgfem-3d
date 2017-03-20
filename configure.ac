@@ -86,10 +86,24 @@ AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
                               AC_MSG_FAILURE([Constitutive Model: must provide package location!])
                               ])
 AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include \
-														-I$with_cnstvm_dir/material/include \
-														-I$with_cnstvm_dir/elasticity/include \
-														-I$with_cnstvm_dir/crystal_plasticity/include"])
+-I$with_cnstvm_dir/material/include \
+-I$with_cnstvm_dir/elasticity/include \
+-I$with_cnstvm_dir/crystal_plasticity/include"])
+
 AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
+
+# TTL
+AC_ARG_WITH(ttl-dir, [AS_HELP_STRING([--with-ttl-dir=<path>],
+                              [Provide location of root directory for TTL installation.])
+                              ],
+                              [AC_MSG_CHECKING([location of TTL])
+                              AC_MSG_RESULT(["$with_ttl_dir"])],
+                              [AC_MSG_CHECKING([location of TTL])
+                              AC_MSG_FAILURE([TTL: must provide package location!])
+                              ])
+AC_SUBST([ttl_include],["-I$with_ttl_dir/include"])
+
+AC_SUBST([ttl_lib],["-L$with_ttl_dir/lib"])
 
 # MKL
 AC_ARG_WITH(mkl, [AS_HELP_STRING([--without-mkl],
