@@ -778,7 +778,12 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
-                                    double dt);                                    
+                                    double dt); 
+                                    
+
+int cm_write_tensor_restart(FILE *fp, const double *tensor);
+
+int cm_read_tensor_restart(FILE *fp, double *tensor);
 
 #ifdef __cplusplus
 }

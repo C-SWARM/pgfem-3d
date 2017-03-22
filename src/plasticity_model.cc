@@ -853,26 +853,6 @@ static int plasticity_compute_dMdu(const Constitutive_model *m,
   return err;
 }            
 
-static int cp_write_tensor_restart(FILE *fp, const double *tensor)
-{
-  int err = 0;
-  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
-          tensor[0], tensor[1], tensor[2],
-          tensor[3], tensor[4], tensor[5],
-          tensor[6], tensor[7], tensor[8]);
-  return err;
-}
-
-static int cp_read_tensor_restart(FILE *fp, double *tensor)
-{
-  int err = 0;
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-         &tensor[0], &tensor[1], &tensor[2],
-         &tensor[3], &tensor[4], &tensor[5],
-         &tensor[6], &tensor[7], &tensor[8]);
-  return err;
-}
-
 static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
 {
 
@@ -880,10 +860,10 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
   Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
-  err += cp_write_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
-  err += cp_write_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
-  err += cp_write_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
-  err += cp_write_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
+  err += cm_write_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  err += cm_write_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  err += cm_write_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  err += cm_write_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
 
   const int N_SYS = ((((m->param)->cm_mat)->mat_p)->slip)->N_SYS;                                                 
   for(int a=0; a<N_SYS; a++)
@@ -908,10 +888,10 @@ static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
   Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
-  err += cp_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
-  err += cp_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
-  err += cp_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
-  err += cp_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
+  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
 
   const int N_SYS = ((((m->param)->cm_mat)->mat_p)->slip)->N_SYS;                                                 
   for(int a=0; a<N_SYS; a++)

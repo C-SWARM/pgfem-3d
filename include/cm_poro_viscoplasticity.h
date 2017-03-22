@@ -29,7 +29,7 @@ extern "C" {
 /// 
 /// \param[in,out] p - pointer to a Model_parameters object
 /// \return non-zero on internal error
-int poro_visco_plasticity_model_initialize(Model_parameters *p);
+int poro_viscoplasticity_model_initialize(Model_parameters *p);
  
 /// Construct and initialize the poro-viscoplasticity model context 
 /// for calling functions through the constitutive modeling interface
@@ -43,14 +43,14 @@ int poro_visco_plasticity_model_initialize(Model_parameters *p);
 /// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
 /// \param[in] is_coulpled_with_thermal flag for coupling with thermal
 /// \return non-zero on internal error.
-int poro_visco_plasticity_model_ctx_build(void **ctx,
-                                          double *F,
-                                          const double dt,
-                                          const double alpha,
-                                          double *eFnpa,
-                                          double *hFn,
-                                          double *hFnp1,
-                                          const int is_coulpled_with_thermal);
+int poro_viscoplasticity_model_ctx_build(void **ctx,
+                                         double *F,
+                                         const double dt,
+                                         const double alpha,
+                                         double *eFnpa,
+                                         double *hFn,
+                                         double *hFnp1,
+                                         const int is_coulpled_with_thermal);
 
 #ifdef __cplusplus
 }

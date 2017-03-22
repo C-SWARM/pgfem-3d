@@ -14,6 +14,7 @@
 #include "cm_iso_viscous_damage.h"
 #include "cm_j2_plasticity.h"
 #include "cm_uqcm.h"
+#include "cm_poro_viscoplasticity.h"
 
 #include "hommat.h"
 #include "PGFEM_io.h"
@@ -278,6 +279,9 @@ int construct_model_context(void **ctx,
   case J2_PLASTICITY_DAMAGE:
     err += j2d_plasticity_model_ctx_build(ctx, F, dt);
     break;
+  case POROVISCO_PLASTICITY:
+    err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0);
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -518,6 +522,9 @@ int model_parameters_initialize(Model_parameters *p,
   case J2_PLASTICITY_DAMAGE:
     err += j2d_plasticity_model_initialize(p);
     break;
+  case POROVISCO_PLASTICITY:
+    err += poro_viscoplasticity_model_initialize(p);
+    break;    
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
     err++;
@@ -544,6 +551,8 @@ int model_parameters_destroy(Model_parameters *p)
     break;
   case J2_PLASTICITY_DAMAGE:
     break;
+  case POROVISCO_PLASTICITY:
+    break;    
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",p->type);
     err++;
@@ -2433,3 +2442,24 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   err += cleanup_matrix_array(&F2, Fend);
   return err;
 }                                   
+
+
+int cm_write_tensor_restart(FILE *fp, const double *tensor)
+{
+  int err = 0;
+  fprintf(fp, "%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
+          tensor[0], tensor[1], tensor[2],
+          tensor[3], tensor[4], tensor[5],
+          tensor[6], tensor[7], tensor[8]);
+  return err;
+}
+
+int cm_read_tensor_restart(FILE *fp, double *tensor)
+{
+  int err = 0;
+  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+         &tensor[0], &tensor[1], &tensor[2],
+         &tensor[3], &tensor[4], &tensor[5],
+         &tensor[6], &tensor[7], &tensor[8]);
+  return err;
+}
