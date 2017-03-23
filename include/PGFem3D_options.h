@@ -61,6 +61,7 @@ extern "C" {
     char *opath;
     char *ifname;
     char *ofname;
+    double walltime;
   } PGFem3D_opt;
 
   /** Set the default option flags. */

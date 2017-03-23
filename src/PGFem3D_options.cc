@@ -106,8 +106,9 @@ static const long_opt_descr other_opts[] = {
   {{"debug",no_argument,NULL,9999},"\tSend into infinite loop to attach debugger",0},
   {{"help",no_argument,NULL,'h'},"Print this message and exit",1},
   {{"no-compute-reactions",no_argument,NULL,'R'},"\n\t\tNo compute and print reaction forces",0},
-  {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0}
-
+  {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0},
+  {{"walltime",required_argument,NULL,'w'},("\n\t\tSet Walltime[s] and write restart files nearby this walltime.\n"
+                                           "\t\tDefault is -1.0 (no actions)"),0},
 };
 
 /* these options may no longer be supported/functional. They are kept
@@ -234,6 +235,7 @@ void set_default_options(PGFem3D_opt *options)
   options->opath = NULL;
   options->ifname = NULL;
   options->ofname = NULL;
+  options->walltime = -1.0;
 }
 
 void print_options(FILE *out,
@@ -278,6 +280,7 @@ void print_options(FILE *out,
   PGFEM_fprintf(out,"Legacy format:  %d\n",options->legacy);
   PGFEM_fprintf(out,"Debug:          %d\n",options->debug);
   PGFEM_fprintf(out,"Restart:        %d\n",options->restart);
+  PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
 
   PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
   PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
@@ -605,7 +608,9 @@ void re_parse_command_line(const int myrank,
     case 'M':
       options->comp_print_macro = 0;
       break;  
-
+    case 'w':
+      options->walltime = atoi(optarg);
+      break;
     default:
       PGFEM_printf("How did I get here???\n");
       break;
