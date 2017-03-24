@@ -138,7 +138,7 @@ int compute_dPdF(Matrix(double) *dPdF,
 
 /// compute derivative of PK1 w.r.t F
 ///
-/// d2PdF2(I,J,K,L,AB) = delta(I,K)*dWdE(L,J,M,X) + dEdF(M,N,A,X)
+/// d2PdF2(I,J,K,L,AB) = delta(I,K)*dWdE(L,J,M,X) + dEdF(M,X,A,B)
 ///                    + delta(I,A)*dWdE(B,J,P,Q) + dEdF(P,Q,K,L)
 ///                    + F(I,M)*dCdE(M,J,P,Q,X,Y)*dEdF(X,Y,A,B)*dEdF(P,Q,K,L)
 ///                    + F(I,M)*dWdE(M,J,P,Q)*d2EdF2(P,Q,K,L,A,B)
@@ -195,7 +195,7 @@ int compute_d2PdF2(Matrix(double) *d2PdF2,
                 for(int Q=1; Q<=DIM_3; Q++)
                 {
                   double d2EdF2_PQKLAB = Mat_v(delta,P,L)*Mat_v(delta,K,A)*Mat_v(delta,Q,B)
-                                       + Mat_v(delta,K,A)*Mat_v(delta,P,A)*Mat_v(delta,Q,L);
+                                       + Mat_v(delta,K,A)*Mat_v(delta,P,B)*Mat_v(delta,Q,L);
                                        
                   Tns6_v(*d2PdF2,I,J,K,L,A,B) += Mat_v(delta,I,A)*Tns4_v(*dWdE,B,J,P,Q)*Tns4_v(dEdF,P,Q,K,L);
                   for(int M=1; M<=DIM_3; M++)
