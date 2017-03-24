@@ -103,7 +103,7 @@ int compute_dPdF(Matrix(double) *dPdF,
 {
   int err = 0;
   Matrix(double) delta;
-  Matrix_construct_redim(double, delta,DIM_3,DIM_3x3);
+  Matrix_construct_redim(double, delta,DIM_3,DIM_3);
   Matrix_eye(delta,DIM_3);
   
   for(int I=1; I<=DIM_3; I++)
@@ -158,7 +158,7 @@ int compute_d2PdF2(Matrix(double) *d2PdF2,
 {
   int err = 0;
   Matrix(double) delta, dEdF;
-  Matrix_construct_redim(double, delta,DIM_3,DIM_3x3);
+  Matrix_construct_redim(double, delta,DIM_3,DIM_3);
   Matrix_construct_redim(double, dEdF,DIM_3x3x3x3,1);  
   Matrix_eye(delta,DIM_3);
   
