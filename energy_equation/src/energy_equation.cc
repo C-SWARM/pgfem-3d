@@ -316,7 +316,7 @@ int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
           for(int M=1; M<=DIM_3; M++)
           {
             for(int N=1; N<=DIM_3; N++)
-              Tns4_v(*ABC,I,J,K,L) += Tns4_v(T,I,J,M,N)*Tns4_v(*C,N,N,K,L);
+              Tns4_v(*ABC,I,J,K,L) += Tns4_v(T,I,J,M,N)*Tns4_v(*C,M,N,K,L);
           }                  
         }
       }
@@ -607,7 +607,7 @@ int compute_mechanical_heat_gen(double *Qe,
                 {
                   for(int P=1; P<=DIM_3; P++)
                   {
-                    DQp -= Tns4_v(d2PdF2,I,J,K,L)*Tns4_v(F4[deFdhF],K,L,M,N)*Mat_v(F2[hFp],M,N)*Tns4_v(F4[deFdpF],I,J,O,P)*Mat_v(F2[pFdot],O,P);                    
+                    DQp -= Tns4_v(dPdF,I,J,K,L)*Tns4_v(F4[deFdhF],K,L,M,N)*Mat_v(F2[hFp],M,N)*Tns4_v(F4[deFdpF],I,J,O,P)*Mat_v(F2[pFdot],O,P);                    
                     for(int A=1; A<=DIM_3; A++)
                     {
                       for(int B=1; B<=DIM_3; B++)
