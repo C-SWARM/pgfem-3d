@@ -297,7 +297,7 @@ int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
           for(int M=1; M<=DIM_3; M++)
           {
             for(int N=1; N<=DIM_3; N++)
-              Tns4_v(T,I,J,K,L) += Tns4_v(*A,I,J,M,N)*Tns4_v(*B,N,N,K,L);
+              Tns4_v(T,I,J,K,L) += Tns4_v(*A,I,J,M,N)*Tns4_v(*B,M,N,K,L);
           }                  
         }
       }
