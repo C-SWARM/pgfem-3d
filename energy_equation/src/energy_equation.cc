@@ -117,7 +117,7 @@ int compute_dPdF(Matrix(double) *dPdF,
           Tns4_v(*dPdF,I,J,K,L) = 0.0;
           for(int M=1; M<=DIM_3; M++)
           {
-            Tns4_v(*dPdF,I,J,K,L) += Mat_v(delta,I,K)*Mat_v(*S,M,J);
+            Tns4_v(*dPdF,I,J,K,L) += Mat_v(delta,I,K)*Mat_v(*S,L,J);
             for(int P=1; P<=DIM_3; P++)
             {
               for(int Q=1; Q<=DIM_3; Q++)
