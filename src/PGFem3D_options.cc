@@ -446,12 +446,12 @@ void re_parse_command_line(const int myrank,
       /* HELP OPTIONS */
     case '?':
       if(myrank == 0){
-	PGFEM_printf("Skipping unrecognized option :%s\n",argv[optind-1]);
+	      PGFEM_printf("Skipping unrecognized option :%s\n",argv[optind-1]);
       }
       break;
     case 'h':
       if(myrank == 0){
-  	print_usage(stdout);
+  	    print_usage(stdout);
       }
       exit(0);
 
@@ -465,30 +465,30 @@ void re_parse_command_line(const int myrank,
 
     case 1: /* Stabilized */
       if(strcmp("st",opts[opts_idx].name) == 0){
-	options->analysis_type = STABILIZED;
-	options->stab = atof(optarg);
+	      options->analysis_type = STABILIZED;
+	      options->stab = atof(optarg);
       } 
       /* Cohesive */
       else if(strcmp("coh",opts[opts_idx].name) == 0){
-	options->cohesive = 1;
+	      options->cohesive = 1;
       }
       break;
 
     case 2: /* New finite strain formulations */
       if(strcmp("he",opts[opts_idx].name) == 0){
-	options->analysis_type = MINI;
+	      options->analysis_type = MINI;
       } else if(strcmp("he3",opts[opts_idx].name) == 0){
-	options->analysis_type = MINI_3F;
+	      options->analysis_type = MINI_3F;
       } else if(strcmp("disp",opts[opts_idx].name) == 0){
-	options->analysis_type = DISP;
+	      options->analysis_type = DISP;
       } else if(strcmp("tf",opts[opts_idx].name) == 0){
-	options->analysis_type = TF;	
+	      options->analysis_type = TF;	
       } else if(strcmp("cm",opts[opts_idx].name) == 0){
-	options->analysis_type = CM;
-	options->cm = atof(optarg);	
+	      options->analysis_type = CM;
+	      options->cm = atof(optarg);	
       } else if(strcmp("disp-cm",opts[opts_idx].name) == 0){
-	options->analysis_type = CM;
-	options->cm = DISP;	
+	      options->analysis_type = CM;
+	      options->cm = DISP;	
       }
       
       break;
@@ -496,56 +496,56 @@ void re_parse_command_line(const int myrank,
       /* SOLVER OPTIONS */
     case 3:
       if(strcmp("gmres",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->solver = HYPRE_GMRES;
+	      options->solverpackage = HYPRE;
+	      options->solver = HYPRE_GMRES;
       } else if(strcmp("bcgstab",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->solver = HYPRE_BCG_STAB;
+	      options->solverpackage = HYPRE;
+	      options->solver = HYPRE_BCG_STAB;
       } else if(strcmp("boomer",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->solver = HYPRE_AMG;
+	      options->solverpackage = HYPRE;
+	      options->solver = HYPRE_AMG;
       } else if(strcmp("flex-gmres",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->solver = HYPRE_FLEX;
+	      options->solverpackage = HYPRE;
+	      options->solver = HYPRE_FLEX;
       } else if(strcmp("hybrid",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->solver = HYPRE_HYBRID;
+	      options->solverpackage = HYPRE;
+	      options->solver = HYPRE_HYBRID;
       } else if(strcmp("kdim",opts[opts_idx].name) == 0){
-	options->kdim = (int) atof(optarg);
+	      options->kdim = (int) atof(optarg);
       } else if(strcmp("maxit",opts[opts_idx].name) == 0){
-	options->maxit = (int) atof(optarg);
+	      options->maxit = (int) atof(optarg);
       } else if(strcmp("noLS",opts[opts_idx].name) == 0){
-	options->solution_scheme_opt[LINE_SEARCH] = 0;
+	      options->solution_scheme_opt[LINE_SEARCH] = 0;
       } else if(strcmp("at",opts[opts_idx].name) == 0){
-	options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
+	      options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
       } else if(strcmp("noCCE",opts[opts_idx].name) == 0){
-	options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
+	      options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
       }
       break;
 
       /* PRECOND OPTIONS */
     case 4:
       if(strcmp("pre-pilut",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = PILUT;
+	      options->solverpackage = HYPRE;
+	      options->precond = PILUT;
       } else if(strcmp("pre-euclid",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = EUCLID;
+	      options->solverpackage = HYPRE;
+	      options->precond = EUCLID;
       } else if(strcmp("pre-boomer",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = BOOMER;
+	      options->solverpackage = HYPRE;
+	      options->precond = BOOMER;
       } else if(strcmp("pre-sails",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = PARA_SAILS;
+	      options->solverpackage = HYPRE;
+	      options->precond = PARA_SAILS;
       } else if(strcmp("pre-diag",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = DIAG_SCALE;
+	      options->solverpackage = HYPRE;
+	      options->precond = DIAG_SCALE;
       } else if(strcmp("pre-jacobi",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = JACOBI;
+	      options->solverpackage = HYPRE;
+	      options->precond = JACOBI;
       }else if(strcmp("pre-none",opts[opts_idx].name) == 0){
-	options->solverpackage = HYPRE;
-	options->precond = NONE;
+	      options->solverpackage = HYPRE;
+	      options->precond = NONE;
       }
 
       break;
@@ -567,11 +567,11 @@ void re_parse_command_line(const int myrank,
 
     case 'O':
       if(strcmp("override-pre-disp",opts[opts_idx].name) == 0){
-	options->override_pre_disp = 1;
-	options->pre_disp_file = optarg;
+	      options->override_pre_disp = 1;
+	      options->pre_disp_file = optarg;
       } else  if(strcmp("override-solver-file",opts[opts_idx].name) == 0){
-	options->override_solver_file = 1;
-	options->solver_file = optarg;
+	      options->override_solver_file = 1;
+	      options->solver_file = optarg;
       } else  if(strcmp("override-material-props",opts[opts_idx].name) == 0){
         options->override_material_props = optarg;
       }
@@ -579,7 +579,7 @@ void re_parse_command_line(const int myrank,
 
     case 'm':
       if(strcmp("ms",opts[opts_idx].name) == 0){
-	options->multi_scale = 1;
+	      options->multi_scale = 1;
       }
       break;
 
@@ -602,15 +602,19 @@ void re_parse_command_line(const int myrank,
     case 9999: /* debug mode */
       options->debug = 1;
       break;
+
     case 'R':
       options->comp_print_reaction = 0;
       break;
+
     case 'M':
       options->comp_print_macro = 0;
       break;  
+
     case 'w':
       options->walltime = atoi(optarg);
       break;
+
     default:
       PGFEM_printf("How did I get here???\n");
       break;
@@ -627,12 +631,12 @@ void re_parse_command_line(const int myrank,
       char *sp;
       sp = strrchr(argv[argc-2],'/');
       if(sp != NULL){ /* input files not in current directory */
-   	*sp = '\0';
-   	options->ipath = argv[argc-2];
-   	options->ifname = sp + 1;
+   	    *sp = '\0';
+   	    options->ipath = argv[argc-2];
+   	    options->ifname = sp + 1;
       } else {
-   	options->ifname = argv[argc-2];
-   	options->ipath = &cur_dir;
+   	    options->ifname = argv[argc-2];
+   	    options->ipath = &cur_dir;
       }
     }
 
@@ -640,12 +644,12 @@ void re_parse_command_line(const int myrank,
       char *sp;
       sp = strrchr(argv[argc-1],'/');
       if(sp != NULL){ /* input files not in current directory */
-   	*sp = '\0';
-   	options->opath = argv[argc-1];
-   	options->ofname = sp + 1;
+   	    *sp = '\0';
+   	    options->opath = argv[argc-1];
+   	    options->ofname = sp + 1;
       } else {
-   	options->ofname = argv[argc-1];
-   	options->opath = &cur_dir;
+   	    options->ofname = argv[argc-1];
+   	    options->opath = &cur_dir;
       }
     }
    

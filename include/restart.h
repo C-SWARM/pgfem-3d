@@ -53,7 +53,7 @@ int write_restart(GRID *grid,
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
-int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1);
+int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1);
 
 int read_restart(double *u0, double *u1, const PGFem3D_opt *opts, 
                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
