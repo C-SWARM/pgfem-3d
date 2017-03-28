@@ -114,10 +114,9 @@ int compute_dPdF(Matrix(double) *dPdF,
       {
         for(int L=1; L<=DIM_3; L++)
         {
-          Tns4_v(*dPdF,I,J,K,L) = 0.0;
+          Tns4_v(*dPdF,I,J,K,L) = Mat_v(delta,I,K)*Mat_v(*S,L,J);
           for(int M=1; M<=DIM_3; M++)
           {
-            Tns4_v(*dPdF,I,J,K,L) += Mat_v(delta,I,K)*Mat_v(*S,L,J);
             for(int P=1; P<=DIM_3; P++)
             {
               for(int Q=1; Q<=DIM_3; Q++)
@@ -584,7 +583,7 @@ int compute_mechanical_heat_gen(double *Qe,
     Matrix_construct_redim(double,d2PdF2,    DIM_3x3x3x3*DIM_3x3,1);
     Matrix_construct_redim(double,df3dhF3,   DIM_3x3x3x3*DIM_3x3,1);
     Matrix_construct_redim(double,d2eFdhFdpF,DIM_3x3x3x3*DIM_3x3,1);
-        
+
     err += elast->compute_d3W_dC3(elast,F2[eF].m_pdata,d3WdC3.m_pdata);
     err += compute_d2PdF2(&d2PdF2,F2+eS,F4+dWdE,&d3WdC3,F2+eF);
     err += compute_d2eFdhFdpF(&d2eFdhFdpF,F2+F,F2+pFI,F2+hFI);
@@ -607,7 +606,7 @@ int compute_mechanical_heat_gen(double *Qe,
                 {
                   for(int P=1; P<=DIM_3; P++)
                   {
-                    DQp -= Tns4_v(dPdF,I,J,K,L)*Tns4_v(F4[deFdhF],K,L,M,N)*Mat_v(F2[hFp],M,N)*Tns4_v(F4[deFdpF],I,J,O,P)*Mat_v(F2[pFdot],O,P);                    
+                    DQp -= Tns4_v(F4[dPdF],I,J,K,L)*Tns4_v(F4[deFdhF],K,L,M,N)*Mat_v(F2[hFp],M,N)*Tns4_v(F4[deFdpF],I,J,O,P)*Mat_v(F2[pFdot],O,P);                    
                     for(int A=1; A<=DIM_3; A++)
                     {
                       for(int B=1; B<=DIM_3; B++)
