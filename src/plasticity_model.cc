@@ -2,6 +2,7 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
  *  Sangmin Lee, University of Notre Dame, Notre Dame, IN, <slee43@nd.edu>
+ *  Aaron Howell, University of Notre Dame, Notre Dame, IN, <ahowell3@nd.edu>
  */
 
 #include "plasticity_model.h"

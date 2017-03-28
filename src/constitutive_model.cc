@@ -3,6 +3,7 @@
  *  Matt Mosby, [1], <mmosby1@nd.edu>
  *  Sangmin Lee, [1], <slee43@nd.edu>
  *  Alberto Salvadori, [1], <asalvad2@nd.edu>
+ *  Aaron Howell, [1], <ahowell3@nd.edu>
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 
