@@ -446,7 +446,7 @@ void re_parse_command_line(const int myrank,
       /* HELP OPTIONS */
     case '?':
       if(myrank == 0){
-	      PGFEM_printf("Skipping unrecognized option :%s\n",argv[optind-1]);
+        PGFEM_printf("Skipping unrecognized option :%s\n",argv[optind-1]);
       }
       break;
     case 'h':
