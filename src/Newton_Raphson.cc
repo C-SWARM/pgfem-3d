@@ -2547,6 +2547,7 @@ double Multiphysics_Newton_Raphson(GRID *grid,
       sp.step_id++; 
 
       tn += NR_t.dt[DT_NP1];
+      NR_t.dt[DT_N] = NR_t.dt[DT_NP1];
 
       if(NR_t_sub.tim==0)
         NR_t_sub.tim=1;
