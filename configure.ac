@@ -88,7 +88,8 @@ AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
 AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include \
 -I$with_cnstvm_dir/material/include \
 -I$with_cnstvm_dir/elasticity/include \
--I$with_cnstvm_dir/crystal_plasticity/include"])
+-I$with_cnstvm_dir/crystal_plasticity/include \
+-I$with_cnstvm_dir/poro_viscoplasticity/include"])
 
 AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
 

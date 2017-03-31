@@ -22,6 +22,7 @@
 #include "PGFem3D_options.h"
 
 #include "PGFem3D_data_structure.h"
+#include "material_properties.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -485,6 +486,7 @@ struct Model_parameters {
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
   int uqcm;   // UQ study through constitutive model 0: no, or yes
   
+  MATERIAL_CONSTITUTIVE_MODEL_ALL *cm_mat_2;
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat; 
   ELASTICITY *cm_elast;
 

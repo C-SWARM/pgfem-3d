@@ -23,8 +23,14 @@
 
 #include "material_properties.h"
 #include "hyperelasticity.h"
-#include "crystal_plasticity_integration.h"
-#include "flowlaw.h"
+
+#include <iostream>
+#include <iomanip>
+#include <time.h>
+#include <ttl/ttl.h>
+
+#include "KMS-IJSS2017.h"
+#include "ttl-tools.h"
 
 #define DIM_3        3
 #define DIM_3x3      9
@@ -36,9 +42,9 @@
 static const int FLAG_end = 0;
 
 enum variable_names {
-  VAR_L_n,
-  VAR_L_np1,
-  VAR_L_nm1,
+  VAR_pc_n,
+  VAR_pc_np1,
+  VAR_pc_nm1,
   VAR_end
 };
 
@@ -136,9 +142,62 @@ int poro_viscoplasticity_model_ctx_build(void **ctx,
 static int cm_pvp_int_alg(Constitutive_model *m,
                               const void *ctx)
 {
+  printf("This is running-------\n");
   int err = 0;
+  return err;
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
+  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
   
+  const double dt = CTX->dt;
+  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  double *param     = (m->param)->model_param;
+  int    *param_idx = (m->param)->model_param_index;  
+
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;
+  
+  // data for KMS_IJSS2017 definition
+
+  unsigned PrintEveryNSteps= 100;
+
+  std::string pathstr = "./out/KMS_IJSS2017";
+  std::string logstr = pathstr + ".implicit.cst.smb.log";
+  std::string Fstr = pathstr + ".implicit.cst.smb.F.txt";
+  std::string pFstr = pathstr + ".implicit.cst.smb.Fp.txt";
+  std::string Sstr = pathstr + ".implicit.cst.smb.S.txt";
+  std::string KSstr = pathstr + ".implicit.cst.smb.KS.txt";
+  std::string sigmastr = pathstr + ".implicit.cst.smb.sigma.txt";
+  std::string pcstr = pathstr + ".implicit.cst.smb.pc.txt";
+  std::string matstr = pathstr + ".implicit.cst.smb.mat.txt";
+    
+  KMS_IJSS2017_IO IO(logstr, Fstr, pFstr, Sstr, KSstr, sigmastr, pcstr, matstr, PrintEveryNSteps);
+    
+  
+  // Time integrator
+  double InitialTime = 0.0; 
+  double FinalTime   = dt; 
+  double CurrentTime = 0.0;
+  size_t TimeStep = 0;
+  
+  TimeIntegrationDataManager Time_intg( InitialTime, FinalTime, dt, CurrentTime, TimeStep);
+  
+  
+
+  // Parameters and Model definition
+  bool usingSmoothMacauleyBrackets = true;
+  bool Verbose = false;
+     
+  KMS_IJSS2017_Implicit_BE_Staggered<DIM_3> ImplicitModelInstance(mat_pvp, &IO, &Time_intg );
+
+  ttl::Tensor<2, DIM_3, double*>  Fn(  Fs[TENSOR_Fn   ].m_pdata);
+  ttl::Tensor<2, DIM_3, double*>  Fnp1(Fs[TENSOR_Fnp1 ].m_pdata);
+  ttl::Tensor<2, DIM_3, double*> pFn(  Fs[TENSOR_pFn  ].m_pdata);
+  ttl::Tensor<2, DIM_3, double*> pFnp1(Fs[TENSOR_pFnp1].m_pdata);
+    
+  ImplicitModelInstance.Set_Fs_and_state_variables(&Fnp1,&Fn,&pFnp1,&pFn,vars[VAR_pc_np1],vars[VAR_pc_n]);
+  ImplicitModelInstance.StepUpdate(Fnp1,dt, Verbose );            
+  
+  Matrix_print(Fs[TENSOR_pFnp1]);
   return err;
 }
 
@@ -189,7 +248,41 @@ int cm_pvp_update_elasticity(const Constitutive_model *m,
                                        const int compute_stiffness)
 {
   int err = 0;
+  auto ctx = (poro_viscoplasticity_ctx *) ctx_in;
   
+  if(ctx->eFnpa)
+  {
+    Matrix(double) eF;
+    eF.m_row = eF.m_col = DIM_3; eF.m_pdata = ctx->eFnpa;
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
+  }    
+  else
+  {
+    // shorthand of deformation gradients
+    Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;  
+    Matrix(double) eF, pFnp1_I;  
+    Matrix_construct_init( double,eF,      DIM_3,DIM_3, 0.0); 
+    Matrix_construct_redim(double,pFnp1_I, DIM_3, DIM_3);  
+  
+    err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);    
+    if(ctx->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFnp1, hFnp1_I;
+      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = ctx->hFnp1;
+      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+
+      err += inv3x3(ctx->hFnp1,   hFnp1_I.m_pdata);
+      Matrix_Tns2_AxBxC(eF,1.0,0.0,Fs[TENSOR_Fnp1],hFnp1_I,pFnp1_I);
+      Matrix_cleanup(hFnp1_I);
+    }
+    else      
+      Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
+      
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
+
+    Matrix_cleanup(eF);
+    Matrix_cleanup(pFnp1_I);
+  }
   return err;
 }
 
@@ -218,7 +311,7 @@ static int cm_pvp_update(Constitutive_model *m)
     Fs[TENSOR_pFnm1].m_pdata[ia] = Fs[TENSOR_pFn].m_pdata[ia];
     Fs[TENSOR_pFn].m_pdata[ia]   = Fs[TENSOR_pFnp1].m_pdata[ia];    
   }
-  state_var[VAR_L_n] = state_var[VAR_L_np1];  
+  state_var[VAR_pc_n] = state_var[VAR_pc_np1];  
   return err;
 }
 
@@ -232,7 +325,7 @@ static int cm_pvp_reset(Constitutive_model *m)
     Fs[TENSOR_Fnp1].m_pdata[ia]  = Fs[TENSOR_Fn].m_pdata[ia];
     Fs[TENSOR_pFnp1].m_pdata[ia] = Fs[TENSOR_pFn].m_pdata[ia];
   }  
-  state_var[VAR_L_np1] = state_var[VAR_L_n];
+  state_var[VAR_pc_np1] = state_var[VAR_pc_n];
   return err;
 }
 
@@ -271,9 +364,9 @@ static int cm_pvp_info(Model_var_info **info)
   for(int a=0; a<varno; a++)
     (*info)->var_names[a] = (char *)malloc(sizeof(char)*1024);
   
-  sprintf((*info)->var_names[VAR_L_n],   "L_n");
-  sprintf((*info)->var_names[VAR_L_np1], "L_np1");
-  sprintf((*info)->var_names[VAR_L_nm1], "L_nm1");
+  sprintf((*info)->var_names[VAR_pc_n],   "L_n");
+  sprintf((*info)->var_names[VAR_pc_np1], "L_np1");
+  sprintf((*info)->var_names[VAR_pc_nm1], "L_nm1");
 
   (*info)->n_flags = FLAG_end;
   (*info)->flag_names = malloc(FLAG_end * sizeof( ((*info)->flag_names) ));
@@ -415,8 +508,8 @@ static int cm_pvp_reset_using_temporal(const Constitutive_model *m, State_variab
     Fs[TENSOR_pFnm1].m_pdata[ia] = Fs_in[TENSOR_pFnm1].m_pdata[ia];
   }
   
-  state_var[VAR_L_n]   = state_var_in[VAR_L_n];
-  state_var[VAR_L_nm1] = state_var_in[VAR_L_nm1];  
+  state_var[VAR_pc_n]   = state_var_in[VAR_pc_n];
+  state_var[VAR_pc_nm1] = state_var_in[VAR_pc_nm1];  
     
   return err;
 }
@@ -435,7 +528,7 @@ static int cm_pvp_update_np1_to_temporal(const Constitutive_model *m, State_vari
     Fs[TENSOR_pFnp1].m_pdata[ia] = Fs_in[TENSOR_pFnp1].m_pdata[ia];
   }
   
-  state_var[VAR_L_np1]   = state_var_in[VAR_L_np1];
+  state_var[VAR_pc_np1]   = state_var_in[VAR_pc_np1];
   
 
   return err;
@@ -490,7 +583,7 @@ static int cm_pvp_write_restart(FILE *fp, const Constitutive_model *m)
   err += cm_write_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
   err += cm_write_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
                                                    
-  fprintf(fp, "%.17e %.17e\n", state_var[VAR_L_n], state_var[VAR_L_nm1]);
+  fprintf(fp, "%.17e %.17e\n", state_var[VAR_pc_n], state_var[VAR_pc_nm1]);
   
   return err;
 }
@@ -506,7 +599,7 @@ static int cm_pvp_read_restart(FILE *fp, Constitutive_model *m)
   err += cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
   err += cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
                                                         
-  fscanf(fp, "%lf %lf\n", state_var+VAR_L_n, state_var+VAR_L_nm1);
+  fscanf(fp, "%lf %lf\n", state_var+VAR_pc_n, state_var+VAR_pc_nm1);
 
   err += cm_pvp_reset(m);
   return 0;  
@@ -557,7 +650,7 @@ static int cm_pvp_set_init_vals(Constitutive_model *m)
 
 /* THIS IS A FUNCTION STUB. */
 static int cm_pvp_read(Model_parameters *p,
-                   FILE *in)
+                       FILE *in)
 {
   int err = 0;
 
@@ -592,15 +685,30 @@ static int cm_pvp_read(Model_parameters *p,
   /* not expecting EOF, check and return error if encountered */
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
-/*    
-  MATERIAL_CRYSTAL_PLASTICITY  *mat_p = malloc(sizeof(MATERIAL_CRYSTAL_PLASTICITY));  
-  set_properties_crystal_plasticity(mat_p,slip,param[PARAM_gamma_dot_0],param[PARAM_gamma_dot_s], 
-                                               param[PARAM_m],          param[PARAM_g0],
-                                               param[PARAM_G0],         param[PARAM_gs_0],
-                                               param[PARAM_w]);
+
+  bool usingSmoothMacauleyBrackets = true;  
+  p->cm_mat_2->mat_pvp = new KMS_IJSS2017_Parameters;
+  (p->cm_mat_2->mat_pvp)->set_parameters(param[PARAM_yf_M],
+                                         param[PARAM_yf_alpha],
+                                         param[PARAM_flr_m],
+                                         param[PARAM_flr_gamma0],
+                                         param[PARAM_hr_a1],
+                                         param[PARAM_hr_a2],
+                                         param[PARAM_hr_Lambda1],
+                                         param[PARAM_hr_Lambda2],
+                                         param[PARAM_c_inf],
+                                         param[PARAM_c_Gamma],
+                                         param[PARAM_d_B],
+                                         param[PARAM_d_pcb],
+                                         param[PARAM_mu_0],
+                                         param[PARAM_mu_1],
+                                         param[PARAM_K_p0],
+                                         param[PARAM_K_kappa],
+                                         param[PARAM_pl_n],
+                                         param[PARAM_cf_g0],
+                                         param[PARAM_cf_pcinf],
+                                         usingSmoothMacauleyBrackets);
   
-  (p->cm_mat)->mat_p = mat_p;
-*/
   return err;
 }
 
@@ -668,8 +776,15 @@ int poro_viscoplasticity_model_initialize(Model_parameters *p)
   p->type                  = POROVISCO_PLASTICITY;
 
   p->n_param           = PARAM_NO;
-  p->model_param       = calloc(PARAM_NO, sizeof(*(p->model_param)));
+  p->model_param       = (double *) calloc(PARAM_NO, sizeof(*(p->model_param)));
   p->n_param_index     = PARAM_INX_NO;
-  p->model_param_index = calloc(PARAM_INX_NO, sizeof(*(p->model_param_index)));
+  p->model_param_index = (int *) calloc(PARAM_INX_NO, sizeof(*(p->model_param_index)));
+  return err;
+}
+
+int poro_viscoplasticity_model_destroy(Model_parameters *p)
+{
+  int err = 0;
+  delete (p->cm_mat_2)->mat_pvp;  
   return err;
 }

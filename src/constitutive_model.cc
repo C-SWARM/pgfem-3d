@@ -152,7 +152,7 @@ int compute_temperature_at_ip(FEMLIB *fe,
     T     += N[ia]*Tnp1[ia];
     dTnp1 += N[ia]*(Tnp1[ia] - T0);
     dTn   += N[ia]*(Tn[ia]   - T0);
-    dTnm1 += N[ia]*(Tn[ia]   - T0);    
+    dTnm1 += N[ia]*(Tnm1[ia] - T0);    
   }
   
   const int eid = fe->curt_elem_id;
@@ -488,6 +488,8 @@ int model_parameters_initialize(Model_parameters *p,
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = malloc(sizeof(MATERIAL_CONSTITUTIVE_MODEL));
   MATERIAL_ELASTICITY          *mat_e = malloc(sizeof(MATERIAL_ELASTICITY));
   ELASTICITY *elast = malloc(sizeof(ELASTICITY));
+
+  p->cm_mat_2 = new MATERIAL_CONSTITUTIVE_MODEL_ALL;
     
   set_properties_using_E_and_nu(mat_e,p_hmat->E,p_hmat->nu);
   mat_e->m01 = p_hmat->m01;
@@ -552,6 +554,7 @@ int model_parameters_destroy(Model_parameters *p)
   case J2_PLASTICITY_DAMAGE:
     break;
   case POROVISCO_PLASTICITY:
+    err += poro_viscoplasticity_model_destroy(p);
     break;    
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",p->type);
@@ -562,6 +565,8 @@ int model_parameters_destroy(Model_parameters *p)
   /* drop pointer to material (material free'd elsewhere) */
   p->p_hmat = NULL;    
   free((p->cm_mat)->mat_e);
+  delete p->cm_mat_2;
+  
   free(p->cm_mat);  
   destruct_elasticity(p->cm_elast);
   free(p->cm_elast);
