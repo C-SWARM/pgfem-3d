@@ -141,7 +141,6 @@ int compute_dPdF(Matrix(double) *_dPdF,
   return err;
 }                 
 
-
 /// compute derivative of PK1 w.r.t F
 ///
 /// d2PdF2(I,J,K,L,A,B) = delta(I,K)*dWdE(L,J,M,X) + dEdF(M,X,A,B)
@@ -170,17 +169,20 @@ int compute_d2PdF2(Matrix(double) *_d2PdF2,
   Tensor<6, 3, double*> dCdE(_dCdE->m_pdata);
   Tensor<2, 3, double*> F(_F->m_pdata);
 
-  Tensor<4, 3, double> dEdF = {};
-  Tensor<2, 3, double> delta;
-  delta(I,J) = ttl::identity(I,J);
+  Tensor<2, 3, double> delta = ttl::identity(I,J);
 
-  dEdF(P,Q,K,L) = delta(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
-  
-  d2PdF2(I,J,K,L,A,B) = delta(I,K)*dWdE(L,J,M,X)*dEdF(M,X,A,B) 
-                      + delta(I,A)*dWdE(B,J,P,Q)*dEdF(P,Q,K,L) 
-                      + F(I,M)*dCdE(M,J,P,Q,X,Y)*dEdF(X,Y,A,B)*dEdF(P,Q,K,L)
-                      + F(I,M)*dWdE(M,J,P,Q)*(delta(P,L)*delta(K,A)*delta(Q,B) + delta(K,A)*delta(P,B)*delta(Q,L));
-  
+  Tensor<4, 3, double> dEdF = delta(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
+
+  Tensor<6, 3, double> temp_a = delta(I,K)*dWdE(L,J,M,X)*dEdF(M,X,A,B) 
+                 + delta(I,A)*dWdE(B,J,P,Q)*dEdF(P,Q,K,L) 
+                 + F(I,M)*dWdE(M,J,P,Q)*(delta(P,L)*delta(K,A)*delta(Q,B) + delta(K,A)*delta(P,B)*delta(Q,L));
+
+  Tensor<6,3,double> temp_b = dCdE(M,J,P,Q,X,Y)*dEdF(X,Y,A,B);
+  Tensor<6,3,double> temp_c = temp_b(M,J,P,Q,A,B)*dEdF(P,Q,K,L);
+  Tensor<6,3,double> temp_d = F(I,M)*temp_c(M,J,A,B,K,L);
+
+  d2PdF2(I,J,K,L,A,B) = temp_a(I,J,K,L,A,B) + temp_d(I,J,K,L,A,B);
+
   return err;
 }
 
