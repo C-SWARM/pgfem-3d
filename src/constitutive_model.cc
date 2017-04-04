@@ -3,6 +3,7 @@
  *  Matt Mosby, [1], <mmosby1@nd.edu>
  *  Sangmin Lee, [1], <slee43@nd.edu>
  *  Alberto Salvadori, [1], <asalvad2@nd.edu>
+ *  Aaron Howell, [1], <ahowell3@nd.edu>
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 
@@ -29,6 +30,18 @@
 #include "dynamics.h"
 #include "PGFem3D_data_structure.h"
 #include "get_dof_ids_on_elem.h"
+#include <ttl/ttl.h>
+
+//ttl declarations
+namespace {
+  template<int R, int D = 3, class S = double>
+  using Tensor = ttl::Tensor<R, D, S>;
+
+  static constexpr ttl::Index<'i'> i;
+  static constexpr ttl::Index<'j'> j;
+  static constexpr ttl::Index<'k'> k;
+  static constexpr ttl::Index<'l'> l;
+}
 
 #ifndef _Matrix_double
 Define_Matrix(double);
@@ -980,25 +993,29 @@ int constitutive_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Print_r
 /// \return non-zero on internal error 
 int compute_stiffness_matrix(double *lk,
                                     const FEMLIB *fe,
-                                    const Matrix(double) *Fr,
-                                    const Matrix(double) *eFnMT,
-                                    const Matrix(double) *eFn,
-                                    const Matrix(double) *M,
-                                    const Matrix(double) *FrTFr,
-                                    const Matrix(double) *eFnM,
-                                    const Matrix(double) *S,
-                                    const Matrix(double) *L,
+                                    const Matrix(double) *_Fr,
+                                    const Matrix(double) *_eFnMT,
+                                    const Matrix(double) *_eFn,
+                                    const Matrix(double) *_M,
+                                    const Matrix(double) *_FrTFr,
+                                    const Matrix(double) *_eFnM,
+                                    const Matrix(double) *_S,
+                                    const Matrix(double) *_L,
                                     double *dMdu_all,
                                     const double Jn)
 {
   int err = 0;
   const int nne = fe->nne;
   const int nsd = fe->nsd;
-  
-  Matrix(double) ST_ab, ST_wg, dMdu; // no memory is created
-  ST_ab.m_row = ST_ab.m_col = DIM_3;
-  ST_wg.m_row = ST_wg.m_col = DIM_3;
-   dMdu.m_row =  dMdu.m_col = DIM_3;
+
+  Tensor<2, 3, double*> Fr(_Fr->m_pdata);
+  Tensor<2, 3, double*> eFnMT(_eFnMT->m_pdata);
+  Tensor<2, 3, double*> eFn(_eFn->m_pdata);
+  Tensor<2, 3, double*> M(_M->m_pdata);
+  Tensor<2, 3, double*> FrTFr(_FrTFr->m_pdata);
+  Tensor<2, 3, double*> eFnM(_eFnM->m_pdata);   
+  Tensor<2, 3, double*> S(_S->m_pdata);
+  Tensor<4, 3, double*> L(_L->m_pdata);  
     
   enum {MTeFnT_sAA_eFn,
         MTeFnT_sAA_eFnM,
@@ -1009,92 +1026,82 @@ int compute_stiffness_matrix(double *lk,
         Fend};
   
   // list of second-order tensors
-  Matrix(double) *F2;
-  err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0); // if not initialized some compiler sets non-numbers and causes
-                                                        // problems when do Matrix_Tns2_AxBxC
-  for(int ia=0; ia<DIM_3x3; ia++)
-  {
-     F2[temp_F_1].m_pdata[ia] = 0.0;
-     F2[temp_F_2].m_pdata[ia] = 0.0;
-     F2[MTeFnT_sAA_eFn].m_pdata[ia] = 0.0;
-     F2[MTeFnT_sAA_eFnM].m_pdata[ia] = 0.0;     
-  }                                                          
+  Tensor<2> F2[Fend];   // declare an array of tensors and initialize them to 0
+  for (int a = 0; a < Fend; a++) {
+    F2[a] = {};
+  }                  
   
   for(int a=0; a<nne; a++)
   {
     for(int b=0; b<nsd; b++)
     {
       const int id_ab = idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd);
-      ST_ab.m_pdata = (fe->ST)+id_ab;
+      Tensor<2, 3, double*> ST_ab((fe->ST)+id_ab);
 
       int AA  = temp_F_1; 
       int sAA = temp_F_2;
-      Matrix_AxB(F2[AA],1.0,0.0,*Fr,1,ST_ab,0);
-      Matrix_symmetric(F2[AA],F2[sAA]);
+      F2[AA](i,j) =  Fr(k,i).to(i,k) * ST_ab(k,j);
+      F2[sAA](i,j) = .5 * (F2[AA](i,j) + F2[AA](j,i).to(i,j));
       
-      Matrix_Tns2_AxBxC(F2[MTeFnT_sAA_eFn],1.0,0.0,*eFnMT,F2[sAA],*eFn);        
-      Matrix_AxB(F2[MTeFnT_sAA_eFnM],1.0,0.0,F2[MTeFnT_sAA_eFn],0,*M,0);
+      F2[MTeFnT_sAA_eFn](i,j) = eFnMT(i,k) * F2[sAA](k,l) * eFn(l,j);      
+      F2[MTeFnT_sAA_eFnM](i,j) = F2[MTeFnT_sAA_eFn](i,k) * M(k,j);
 
       for(int w=0; w<nne; w++)
       {
         for(int g=0; g<nsd; g++)
         { 
           const int id_wg = idx_4_gen(w,g,0,0,nne,nsd,nsd,nsd);
-          ST_wg.m_pdata = (fe->ST)+id_wg;
+          Tensor<2, 3, double*> ST_wg((fe->ST)+id_wg);
 
-          dMdu.m_pdata = dMdu_all + id_wg;
+          Tensor<2, 3, double*> dMdu(dMdu_all + id_wg);
 
           int BB = temp_F_1;
-          Matrix_AxB(F2[BB],1.0,0.0,*Fr,1,ST_wg,0); 
-          Matrix_symmetric(F2[BB],F2[sBB]);
+	  F2[BB](i,j) =  Fr(k,i).to(i,k) * ST_wg(k,j);
+	  F2[sBB](i,j) = .5 * (F2[BB](i,j) + F2[BB](j,i).to(i,j));
 
           int CC = temp_F_1;
-          Matrix_AxB(F2[CC], 1.0,0.0,ST_ab,1,ST_wg,0);
-          Matrix_symmetric(F2[CC],F2[sCC]);
+	  F2[CC](i,j) =  ST_ab(k,i).to(i,k) * ST_wg(k,j);
+	  F2[sCC](i,j) = .5 * (F2[CC](i,j) + F2[CC](j,i).to(i,j));
 
           // compute F2[dCdu]
           int MTeFnT_FrTFreFn     = temp_F_1;
           int MTeFnT_FrTFreFndMdu = temp_F_2;
-          Matrix_Tns2_AxBxC(F2[MTeFnT_FrTFreFn],1.0,0.0,*eFnMT,*FrTFr,*eFn);            
-          Matrix_AxB(F2[MTeFnT_FrTFreFndMdu],1.0,0.0,F2[MTeFnT_FrTFreFn],0,dMdu,0);                                    
-          Matrix_symmetric(F2[MTeFnT_FrTFreFndMdu],F2[dCdu]);
+          F2[MTeFnT_FrTFreFn](i,j) = eFnMT(i,k) * FrTFr(k,l) * eFn(l,j);     
+          F2[MTeFnT_FrTFreFndMdu](i,j) = F2[MTeFnT_FrTFreFn](i,k) * dMdu(k,j);                                   
+          F2[dCdu](i,j) = .5 * (F2[MTeFnT_FrTFreFndMdu](i,j) 
+				+ F2[MTeFnT_FrTFreFndMdu](j,i).to(i,j));
                       
-          Matrix_Tns2_AxBxC(F2[dCdu],1.0,1.0,*eFnMT,F2[sBB],*eFnM);            
+          F2[dCdu](i,j) += eFnMT(i,k) * F2[sBB](k,l) * eFnM(l,j);           
           
           // compute F2[MTeFnT_sAA_eFnM]:L:F2[dCdu]
           int L_dCdu = temp_F_1;
-          Matrix_Tns4_dd_Tns2(F2[L_dCdu],*L,F2[dCdu]);
-          double MTeFnT_sAA_eFnM_L_dCdu = 0.0;
-          Matrix_ddot(F2[MTeFnT_sAA_eFnM],F2[L_dCdu],MTeFnT_sAA_eFnM_L_dCdu);
+          F2[L_dCdu](i,j) = L(i,j,k,l) * F2[dCdu](k,l);
+          double MTeFnT_sAA_eFnM_L_dCdu = F2[MTeFnT_sAA_eFnM](i,j) * F2[L_dCdu](i,j);
           
           // compute F2[MTeFnT_sCC_eFnM]
           int MTeFnT_sCC_eFnM = temp_F_1;
-          Matrix_Tns2_AxBxC(F2[MTeFnT_sCC_eFnM],1.0,0.0,*eFnMT,F2[sCC],*eFnM);
+          F2[MTeFnT_sCC_eFnM](i,j) = eFnMT(i,k) * F2[sCC](k,l) * eFnM(l,j);
                       
           // compute F2[MTeFnT_sCC_eFnM]:F2[S]
-          double MTeFnT_sCC_eFnM_S = 0.0;
-          Matrix_ddot(F2[MTeFnT_sCC_eFnM],*S,MTeFnT_sCC_eFnM_S);
+          double MTeFnT_sCC_eFnM_S = F2[MTeFnT_sCC_eFnM](i,j) * S(i,j);
           
           // compute F2[MTeFnT_sAA_eFndMdu]
           int MTeFnT_sAA_eFndMdu  = temp_F_1;
           int sMTeFnT_sAA_eFndMdu = temp_F_2;
-          Matrix_AxB(F2[MTeFnT_sAA_eFndMdu],1.0,0.0,F2[MTeFnT_sAA_eFn],0,dMdu,0);    
-          Matrix_symmetric(F2[MTeFnT_sAA_eFndMdu], F2[sMTeFnT_sAA_eFndMdu]);        
+          F2[MTeFnT_sAA_eFndMdu](i,j) = F2[MTeFnT_sAA_eFn](i,k) * dMdu(k,j);
+          F2[sMTeFnT_sAA_eFndMdu](i,j) = .5 * (F2[MTeFnT_sAA_eFndMdu](i,j) 
+					       + F2[MTeFnT_sAA_eFndMdu](j,i).to(i,j));
 
           // compute F2[MTeFnT_sAA_eFndMdu]:F2[S]
-          double sMTeFnT_sAA_eFndMdu_S = 0.0;            
-          Matrix_ddot(F2[sMTeFnT_sAA_eFndMdu],*S,sMTeFnT_sAA_eFndMdu_S);
+	  double sMTeFnT_sAA_eFndMdu_S = F2[sMTeFnT_sAA_eFndMdu](i,j) * S(i,j);
           
           const int lk_idx = idx_K(a,b,w,g,nne,nsd);  
                     
-          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);            
+          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);
         }
       }
     }
   }
-  
-  // destroy second-order tensors
-  err += cleanup_matrix_array(&F2, Fend);
   
   return err;
 }
@@ -1307,8 +1314,8 @@ int constitutive_model_update_output_variables(GRID *grid,
       sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
       sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
 
-      /* store elastic deformation */
-      memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
+      /* store total deformation */
+      memcpy(eps[i].il[ip].F, F.m_pdata, DIM_3x3 * sizeof(double));
 
       /* store the hardening parameter */
       err += func->get_hardening(m, &eps[i].dam[ip].wn);
