@@ -1,0 +1,13 @@
+How to compile pgfem3d code?
+
+Copy an approprite script compile_xxx.sh to the pgfem_3d parent direcotry 
+and then execute "./compile_xxx.sh"
+
+
+Please do not forget to revise compile_xxx.sh as:
+1. set the correct path to GCM directory
+2. set the correct path to pgfem_3d directroy
+3. make sure to revise the library paths inside of config.site_xxx used in compile_xxx.sh 
+
+
+After the successful compilation, pgfem3d executable may be found at build_pgfem3d/$branch_name/bin
