@@ -558,13 +558,14 @@ int compute_mechanical_heat_gen(double *Qe,
     Tensor<4, 3, double*> ttl_deFdhF(F4[deFdhF].m_pdata); 
     Tensor<4, 3, double*> ttl_deFdpF(F4[deFdpF].m_pdata); 
     Tensor<4, 3, double*> ttl_dPdF(F4[dPdF].m_pdata); 
-
     
     DQp -= ttl_eP(I,J)*ttl_d2eFdhFdpF(I,J,K,L,M,N)*ttl_hFp(M,N)*ttl_pFdot(K,L)
         - ttl_dPdF(I,J,K,L)*ttl_deFdhF(K,L,M,N)*ttl_hFp(M,N)*ttl_deFdpF(I,J,O,P)*ttl_pFdot(O,P);
-    ttl_df3dhF3(I,J,K,L,M,N) = ttl_d2PdF2(I,J,K,L,O,P)*ttl_deFdhF(O,P,A,B)*ttl_deFdhF(A,B,C,D)*ttl_deFdhF(C,D,M,N);
+
+    Tensor<6,3,double> temp_a = ttl_d2PdF2(I,J,K,L,O,P)*ttl_deFdhF(O,P,A,B);
+    Tensor<6,3,double> temp_b = temp_a(I,J,K,L,A,B)*ttl_deFdhF(A,B,C,D);
+    ttl_df3dhF3(I,J,K,L,M,N) = temp_b(I,J,K,L,C,D)*ttl_deFdhF(C,D,M,N);
     
- 
     double Dxi = 0.0;
     
     Tensor<2, 3, double*> ttl_dfdhF(F2[dfdhF].m_pdata); 
