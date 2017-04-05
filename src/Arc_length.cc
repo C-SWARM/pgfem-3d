@@ -183,8 +183,7 @@ double Multiphysics_Arc_length(GRID *grid,
   
   double nor,nor1,nor2,dlm,dlm0,DLM,DET=0.0,dAL;
   double DT,DDLM,ddlm,ERROR,LS1,gama,pdt,tmp,nor3;
-  long iter,INFO,i,j,STEP,N,M,DIV,ST,GAMA,OME,FI,gam,TYPE,GInfo;
-  int ART;
+  long iter,INFO,i,j,STEP,N,M,DIV,ST,GAMA,OME,FI,ART,gam,TYPE,GInfo;
   char *error[]={"inf","-inf","nan"},str1[500],jmeno[50];
   FILE *out;
   struct rusage usage;

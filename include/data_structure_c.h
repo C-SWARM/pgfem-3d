@@ -129,7 +129,7 @@ typedef struct Matrix_##T                                               \
   (p).m_row = m;                                                        \
   (p).m_col = n;                                                        \
   (p).sizeof_T = sizeof(T);                                             \
-  (p).m_pdata = (T *) malloc((p).sizeof_T*(m)*(n));                     \
+  (p).m_pdata = (T *) malloc((p).sizeof_T*(m)*(n));                     \ 
 } while(0)
 
 #define Matrix_redim(p, m, n) do {                                      \

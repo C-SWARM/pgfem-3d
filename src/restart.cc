@@ -27,7 +27,7 @@ Define_Matrix(double);
 /// \param[out] u1 displacement at t(n)
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error 
-int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
+int read_initial_from_VTK(const PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
 {
   int err = 0;
   char filename[1024];
@@ -327,7 +327,7 @@ int read_restart_constitutive_model(GRID *grid,
 int read_restart_mechanical(GRID *grid,
                             FIELD_VARIABLES *fv,
                             LOADING_STEPS *load,
-                            PGFem3D_opt *opts,
+                            const PGFem3D_opt *opts,
                             MULTIPHYSICS *mp,                            
                             double *tnm1,
                             int myrank,

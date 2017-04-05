@@ -1343,7 +1343,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
     {
       ART = 1;
       if(myrank==0)
-        printf("Imposed to use NO Line search [INFO = %ld, ART = %d]\n", INFO, ART);        
+        printf("Imposed to use NO Line search [INFO = %ld, ART = %ld]\n", INFO, ART);        
     }
     
     if (INFO == 1 && ART == 0)
@@ -2547,7 +2547,6 @@ double Multiphysics_Newton_Raphson(GRID *grid,
       sp.step_id++; 
 
       tn += NR_t.dt[DT_NP1];
-      NR_t.dt[DT_N] = NR_t.dt[DT_NP1];
 
       if(NR_t_sub.tim==0)
         NR_t_sub.tim=1;

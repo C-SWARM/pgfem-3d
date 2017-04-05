@@ -1314,8 +1314,8 @@ int constitutive_model_update_output_variables(GRID *grid,
       sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
       sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
 
-      /* store total deformation */
-      memcpy(eps[i].il[ip].F, F.m_pdata, DIM_3x3 * sizeof(double));
+      /* store elastic deformation */
+      memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
 
       /* store the hardening parameter */
       err += func->get_hardening(m, &eps[i].dam[ip].wn);
