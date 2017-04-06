@@ -1619,6 +1619,11 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
+    
+    double Jn = 1.0; // Matrix_det(F2[Fn], Jn);
+    double hJ = 1.0;
+    double pJ = 1.0;
+  
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);  
     FEMLIB_update_deformation_gradient(fe,ndofn,u,F2+Fnp1);
@@ -1637,12 +1642,15 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                        F2[hFnp1].m_pdata,F2[hFn].m_pdata,hFnm1);
       
-      Matrix_AeqB(F2[hFnpa], 1.0, F2[hFnp1]);                                 
+      Matrix_AeqB(F2[hFnpa], 1.0, F2[hFnp1]);
+      Matrix_det(F2[hFnp1], hJ);
       //mid_point_rule(F2[hFnpa].m_pdata, F2[hFn].m_pdata, F2[hFnp1].m_pdata, alpha, DIM_3x3);                                  
       Matrix_inv(F2[hFnpa],F2[hFnpa_I]);                                        
     }
         
     err += func->get_pF(m,&F2[pFnp1]);
+    Matrix_det(F2[pFnp1], pJ);
+
     err += func->get_pFn(m,&F2[pFn]);
     err += func->get_Fn(m,&F2[Fn]);
 
@@ -1681,10 +1689,8 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
     Matrix_eye(F2[eFn],DIM_3);
     Matrix_AeqB(F2[eFnM],1.0,F2[M]); // eFn = 1 for total_Lagrangian
     Matrix_AeqBT(F2[eFnMT],1.0,F2[eFnM]);
-        
-    double Jn; // Matrix_det(F2[Fn], Jn);
-    Jn = 1.0;
-
+    
+    Jn = Jn/pJ/hJ;
     err += compute_stiffness_matrix(lk,fe,
                                     F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
                                     &L,dMdu_all,Jn);
@@ -1819,8 +1825,10 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
-    double Jn    = 1.0;
-        
+    double Jn = 1.0;
+    double hJ = 1.0;
+    double pJ = 1.0;
+          
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);  
     FEMLIB_update_deformation_gradient(fe,ndofn,u,F2+Fr);
@@ -1840,6 +1848,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T0,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                        F2[hFnp1].m_pdata,F2[hFn].m_pdata,F2[hFnm1].m_pdata);
+      Matrix_det(F2[hFnp1], hJ);
       Matrix_inv(F2[hFnp1],F2[hFnp1_I]);
     }
     
@@ -1867,7 +1876,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
       Matrix_AxB(F2[Fnp1],1.0,0.0,F2[Fr],0,F2[Fn],0); // F2[Fn+1] = Fr*Fn
       Matrix_det(F2[Fn], Jn);
     }
-        
+            
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, F2[Fnp1].m_pdata,dt,alpha, NULL,
@@ -1877,6 +1886,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
     err += func->get_pF(m,F2+pFnp1);
+    
+    Matrix_det(F2[pFnp1], pJ);
+
         
     if(total_Lagrangian) // Total Lagrangian formulation, all xFn = 1
     { 
@@ -1949,6 +1961,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
       break;    
 
     // start computing tagent
+    Jn = Jn/hJ/pJ;
     err += compute_stiffness_matrix(lk,fe,
                                     F2+Fr,F2+eFnMT,F2+eFn,F2+M,F2+FrTFr,F2+eFnM,F2+S,
                                     &L,dMdu_all,Jn);
@@ -2084,6 +2097,10 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     
   for(int ip = 1; ip<=fe->nint; ip++)
   {
+    double Jn = 1.0;
+    double hJ = 1.0;
+    double pJ = 1.0;
+    
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);  
     FEMLIB_update_deformation_gradient(fe,ndofn,u,F2+Fnp1);
@@ -2099,6 +2116,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T0,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                        F2[hFnp1].m_pdata,F2[hFn].m_pdata,F2[hFnm1].m_pdata);                                      
+      Matrix_det(F2[hFnp1], hJ);
     }
     
     void *ctx = NULL;
@@ -2122,14 +2140,16 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     err += m->param->get_Fn(m,    F2+Fn);
     err += m->param->get_Fnm1(m,  F2+Fnm1);
     
-    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
+    Matrix_det(F2[pFnp1], pJ);
+    
+    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha)*pJ*hJ;
     err += residuals_el_constitutive_model_n_plus_alpha(f_npa,m,eid,ndofn,
                                                         F2+pFnp1,F2+pFn,F2+Fnp1,F2+Fn,
                                                         F2+hFnp1,F2+hFn,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_1_minus_alpha,fe);
                                 
-    double dt_alpha = -dts[DT_N]*alpha;
+    double dt_alpha = -dts[DT_N]*alpha*pJ*hJ;
 
     err += residuals_el_constitutive_model_n_plus_alpha(f_nm1pa,m,eid,ndofn,
                                                         F2+pFn,F2+pFnm1,F2+Fn,F2+Fnm1,
@@ -2273,7 +2293,9 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     double Jn = 1.0; // if upated Lagrangian, Jn = det(Fn), later updated
-
+    double hJ = 1.0;
+    double pJ = 1.0;
+    
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);  
     FEMLIB_update_deformation_gradient(fe,ndofn,u,F2+Fr);
@@ -2292,6 +2314,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T0,
                                        Tnp1.m_pdata,Tn.m_pdata,Tnm1.m_pdata,
                                        F2[hFnp1].m_pdata,F2[hFn].m_pdata,hFnm1);
+      Matrix_det(F2[hFnp1], hJ);
       Matrix_inv(F2[hFnp1], F2[hFnp1_I]);                                       
       if(total_Lagrangian)
         Matrix_eye(F2[hFn], DIM_3);
@@ -2342,6 +2365,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
     	return err;
 
     err += func->get_pF(m,F2+pFnp1);
+    Matrix_det(F2[pFnp1], pJ);
 
     if(total_Lagrangian)
     {
@@ -2414,6 +2438,8 @@ int residuals_el_constitutive_model(FEMLIB *fe,
     if(err!=0)
       break;     
 
+    
+    Jn = Jn/pJ/hJ;
     err += compute_residual_vector(f,fe,F2+Fr,F2+eFnMT,F2+eFnM,F2+S,Jn);
   }       
   
