@@ -861,7 +861,7 @@ int single_scale_main(int argc,char *argv[])
 
     com[ia].Ai = Psparse_ApAi(com[ia].nproc,myrank,grid.ne,grid.n_be,grid.nn,fv[ia].ndofn,fv[ia].ndofd,
                               grid.element,grid.b_elems,grid.node,com[ia].Ap,grid.nce,grid.coel,com[ia].DomDof,
-                              &(com[ia].GDof),com[ia].comm ,mpi_comm,options.cohesive,ia);
+                              &(com[ia].GDof),com[ia].comm ,mpi_comm,options.cohesive,com[ia].hints,ia);
     pgfem_comm_build_fast_maps(com[ia].comm ,fv[ia].ndofd,com[ia].DomDof[myrank],com[ia].GDof);
 
     // Total number of nonzeros and skyline

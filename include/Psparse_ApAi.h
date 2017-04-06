@@ -41,6 +41,7 @@ extern "C" {
 		     COMMUN comm,
 		     MPI_Comm Comm_Orig,
 		     const int cohesive,
+         const Comm_hints *hints,
 		     const int mp_id);
 
 #ifdef __cplusplus
