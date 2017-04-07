@@ -10,13 +10,14 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
 			     const NODE *nodes,
 			     const BOUNDING_ELEMENT *b_elems,
 			     const ELEMENT *ptr_cur_elem,
-			     long *dof_ids)
+			     long *dof_ids,
+			     const int mp_id)
 {
   const int ndof_on_elem_nodes = n_nodes_on_elem*ndof_per_node;
   
   /* node dof ids go in the first part of the dof_ids vector */
   get_dof_ids_on_elem_nodes(global,n_nodes_on_elem,ndof_per_node,
-			    node_ids_on_elem,nodes,dof_ids);
+			    node_ids_on_elem,nodes,dof_ids, mp_id);
 
   /* element dofs are appended to the list in dof_ids */
   long *ptr_elem_dof_ids = dof_ids + ndof_on_elem_nodes;
@@ -32,18 +33,19 @@ void get_dof_ids_on_elem_nodes(const int global,
 			       const int n_dof_per_node,
 			       const long *node_ids_on_elem,
 			       const NODE *nodes,
-			       long *dof_ids)
+			       long *dof_ids,
+			       const int mp_id)
 {
   const size_t n_copy = n_dof_per_node * sizeof(long);
   if(global){
     for(int i=0; i<n_nodes_on_elem; i++){
       long *ptr_cur = dof_ids + i*n_dof_per_node;
-      memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].Gid,n_copy);
+      memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id_map[mp_id].Gid,n_copy);
     }
   } else {
     for(int i=0; i<n_nodes_on_elem; i++){
       long *ptr_cur = dof_ids + i*n_dof_per_node;
-      memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id,n_copy);
+      memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id_map[mp_id].id,n_copy);
     }
   }
 }
@@ -89,7 +91,8 @@ void get_dof_ids_on_bnd_elem(const int global,
 			     const NODE *nodes,
 			     const BOUNDING_ELEMENT *ptr_cur_be,
 			     const ELEMENT *elems,
-			     long *dof_ids)
+			     long *dof_ids,
+			     const int mp_id)
 {
   const int elem_id = ptr_cur_be->vol_elem_id;
   const ELEMENT *ptr_elem = &elems[elem_id];
@@ -97,7 +100,7 @@ void get_dof_ids_on_bnd_elem(const int global,
   const long *elem_nodes = ptr_elem->nod;
 
   /* get dof ids on elemnodes */
-  get_dof_ids_on_elem_nodes(global,nnodes,n_dof_per_node,elem_nodes,nodes,dof_ids);
+  get_dof_ids_on_elem_nodes(global,nnodes,n_dof_per_node,elem_nodes,nodes,dof_ids,mp_id);
 
   long *ptr_dof_ids = dof_ids + nnodes*n_dof_per_node;
   const size_t n_copy = ptr_cur_be->n_dofs * sizeof(long);

@@ -358,7 +358,8 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 					  const int n_jobs_max,
 					  const MACROSCALE *macro,
-					  const PGFEM_mpi_comm *mpi_comm)
+					  const PGFEM_mpi_comm *mpi_comm,
+					  const int mp_id)
 {
   /* compute and store number of servers */
   {
@@ -382,7 +383,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   create_group_ms_cohe_job_list(c->nce,c->coel,c->node,
 				mpi_comm->macro,MPI_COMM_SELF,
 				0,&Gn_jobs,&n_job_dom,
-				&(client->jobs));
+				&(client->jobs),mp_id);
   /* error check */
   assert(Gn_jobs == n_jobs);
 

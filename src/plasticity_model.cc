@@ -87,25 +87,23 @@ typedef struct {
   Matrix(int) ip_ids;
 } IP_ID_LIST;
 
-int plasticity_model_integration_ip(Constitutive_model *m, const double dt);
-
 static size_t cp_get_size(const Constitutive_model *m)
 {
-  return state_variables_get_packed_size(&(m->vars));
+  return state_variables_get_packed_size(m->vars_list[0]+m->model_id);
 }
 
 static int cp_pack(const Constitutive_model *m,
                     char *buffer,
                     size_t *pos)
 {
-  return state_variables_pack(&(m->vars), buffer, pos);
+  return state_variables_pack(m->vars_list[0]+m->model_id, buffer, pos);
 }
 
 static int cp_unpack(Constitutive_model *m,
                      const char *buffer,
                      size_t *pos)
 {
-  return state_variables_unpack(&(m->vars), buffer, pos);
+  return state_variables_unpack(m->vars_list[0]+m->model_id, buffer, pos);
 }
 
 int compute_dMdu(const Constitutive_model *m,
@@ -157,26 +155,51 @@ int plasticity_model_cleanup_elem_ip_map(IP_ID_LIST *elm_ip_map, int ne)
  * associated functions.
  */
 typedef struct plasticity_ctx {
-  double F[DIM_3x3];
-  double dt; /* time increment */
+  double *F;
+  double dt;    // time increment
   double alpha; // mid point alpha
-  Matrix(double) *eFnpa;
+  double *eFnpa;
+  int is_coulpled_with_thermal;
+  double *hFn;
+  double *hFnp1;  
 } plasticity_ctx;
 
+ int compute_M(Matrix(double) *M, 
+                      const Matrix(double) *pFn, 
+                      const Matrix(double) *N,
+                      const Matrix(double) *pFnp1_I,                      
+                      const plasticity_ctx *ctx)
+{
+  int err = 0;
+  if(ctx->is_coulpled_with_thermal)
+    Matrix_Tns2_AxBxC(*M,1.0,0.0,*pFn,*N,*pFnp1_I);
+  else
+    Matrix_AxB(*M,1.0,0.0,*pFn,0,*pFnp1_I,0);  
+  return err;
+}
+
+ int compute_eF(Matrix(double) *eF, 
+                      const Matrix(double) *F,
+                      const Matrix(double) *hF_I,
+                      const Matrix(double) *pF_I,
+                      const plasticity_ctx *ctx)
+{
+  int err = 0;
+  if(ctx->is_coulpled_with_thermal)
+    Matrix_Tns2_AxBxC(*eF,1.0,0.0,*F,*hF_I,*pF_I);
+  else
+    Matrix_AxB(*eF,1.0,0.0,*F,0,*pF_I,0);
+    
+  return err;  
+}               
+               
 static double compute_bulk_mod(const HOMMAT *mat)
 {
   return hommat_get_kappa(mat);
 }
 
 static int plasticity_int_alg(Constitutive_model *m,
-                              const void *ctx)
-{
-  int err = 0;
-  auto CTX = (plasticity_ctx *) ctx;
-  memcpy((m->vars).Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
-  err += plasticity_model_integration_ip(m,CTX->dt);
-  return err;
-}
+                              const void *ctx);
 
 static int cp_compute_eC(const double * restrict eF,
                          double * restrict eC)
@@ -216,8 +239,8 @@ static int cp_dev_tangent(const double *eC,
 static int plasticity_update(Constitutive_model *m)
 {
   int err = 0;
-  Matrix(double) *Fs = (m->vars).Fs;
-  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Matrix_AeqB(Fs[TENSOR_Fnm1], 1.0,Fs[TENSOR_Fn]);    
   Matrix_AeqB(Fs[TENSOR_Fn], 1.0,Fs[TENSOR_Fnp1]);
   Matrix_AeqB(Fs[TENSOR_pFnm1],1.0,Fs[TENSOR_pFn]);
@@ -234,12 +257,108 @@ static int plasticity_update(Constitutive_model *m)
 static int plasticity_reset(Constitutive_model *m)
 {
   int err = 0;
-  Matrix(double) *Fs = (m->vars).Fs;
-  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Matrix_AeqB(Fs[TENSOR_Fnp1], 1.0,Fs[TENSOR_Fn]);
   Matrix_AeqB(Fs[TENSOR_pFnp1],1.0,Fs[TENSOR_pFn]);
   state_var[VAR_g_np1] = state_var[VAR_g_n];
   state_var[VAR_L_np1] = state_var[VAR_L_n];
+  return err;
+}
+
+static int plasticity_reset_using_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs    = m->vars_list[0][m->model_id].Fs;
+  Matrix(double) *Fs_in = var->Fs;
+  double *state_var     = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  double *state_var_in  = var->state_vars[0].m_pdata;
+
+  for(int ia=0; ia<DIM_3x3; ia++)
+  {
+    Fs[TENSOR_Fn   ].m_pdata[ia] = Fs_in[TENSOR_Fn   ].m_pdata[ia];
+    Fs[TENSOR_pFn  ].m_pdata[ia] = Fs_in[TENSOR_pFn  ].m_pdata[ia];
+    Fs[TENSOR_Fnm1 ].m_pdata[ia] = Fs_in[TENSOR_Fnm1 ].m_pdata[ia];
+    Fs[TENSOR_pFnm1].m_pdata[ia] = Fs_in[TENSOR_pFnm1].m_pdata[ia];
+  }
+
+  SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;  
+  
+  int N_SYS = slip->N_SYS;
+    
+  for(int ia=0; ia<N_SYS; ia++)
+  {
+    Fs[TENSOR_tau_n      ].m_pdata[ia] = Fs_in[TENSOR_tau_n      ].m_pdata[ia];
+    Fs[TENSOR_gamma_dot_n].m_pdata[ia] = Fs_in[TENSOR_gamma_dot_n].m_pdata[ia];
+  }
+  
+  state_var[VAR_g_n]   = state_var_in[VAR_g_n];
+  state_var[VAR_L_n]   = state_var_in[VAR_L_n];
+  state_var[VAR_g_nm1] = state_var_in[VAR_g_nm1];
+  state_var[VAR_L_nm1] = state_var_in[VAR_L_nm1];  
+    
+  return err;
+}
+
+static int plasticity_update_np1_to_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs    = var->Fs;
+  Matrix(double) *Fs_in = m->vars_list[0][m->model_id].Fs;
+  double *state_var     = var->state_vars[0].m_pdata;
+  double *state_var_in  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+    
+  for(int ia=0; ia<DIM_3x3; ia++)
+  {
+    Fs[TENSOR_Fnp1 ].m_pdata[ia] = Fs_in[TENSOR_Fnp1 ].m_pdata[ia];
+    Fs[TENSOR_pFnp1].m_pdata[ia] = Fs_in[TENSOR_pFnp1].m_pdata[ia];
+  }
+
+  SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;  
+  
+  int N_SYS = slip->N_SYS;
+
+  for(int ia=0; ia<N_SYS; ia++)
+  {
+    Fs[TENSOR_tau      ].m_pdata[ia] = Fs_in[TENSOR_tau      ].m_pdata[ia];    
+    Fs[TENSOR_gamma_dot].m_pdata[ia] = Fs_in[TENSOR_gamma_dot].m_pdata[ia];
+  }  
+  
+  state_var[VAR_g_np1]   = state_var_in[VAR_g_np1];
+  state_var[VAR_L_np1]   = state_var_in[VAR_L_np1];
+  
+
+  return err;
+}
+
+static int plasticity_save_to_temporal(const Constitutive_model *m, State_variables *var)
+{
+  int err = 0;
+  Matrix(double) *Fs_in = m->vars_list[0][m->model_id].Fs;
+  Matrix(double) *Fs    = var->Fs;
+  double *state_var     = var->state_vars[0].m_pdata;
+  double *state_var_in  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
+  
+  for(int ia=0; ia<DIM_3x3; ia++)
+  {
+    Fs[TENSOR_Fn   ].m_pdata[ia] = Fs_in[TENSOR_Fn   ].m_pdata[ia];
+    Fs[TENSOR_pFn  ].m_pdata[ia] = Fs_in[TENSOR_pFn  ].m_pdata[ia];
+    Fs[TENSOR_Fnp1 ].m_pdata[ia] = Fs_in[TENSOR_Fnp1 ].m_pdata[ia];
+    Fs[TENSOR_pFnp1].m_pdata[ia] = Fs_in[TENSOR_pFnp1].m_pdata[ia];
+    Fs[TENSOR_R    ].m_pdata[ia] = Fs_in[TENSOR_R    ].m_pdata[ia];
+    Fs[TENSOR_Fnm1 ].m_pdata[ia] = Fs_in[TENSOR_Fnm1 ].m_pdata[ia];
+    Fs[TENSOR_pFnm1].m_pdata[ia] = Fs_in[TENSOR_pFnm1].m_pdata[ia];
+  }
+  
+  // if size is not same redim size
+  Matrix_AeqB(Fs[TENSOR_tau        ], 1.0, Fs_in[TENSOR_tau     ]);
+  Matrix_AeqB(Fs[TENSOR_gamma_dot  ], 1.0, Fs_in[TENSOR_gamma_dot  ]);
+  Matrix_AeqB(Fs[TENSOR_tau_n      ], 1.0, Fs_in[TENSOR_tau_n      ]);
+  Matrix_AeqB(Fs[TENSOR_gamma_dot_n], 1.0, Fs_in[TENSOR_gamma_dot_n]);
+  
+  for(int ia=0; ia<VAR_end; ia++)
+    state_var[ia] = state_var_in[ia];
+    
   return err;
 }
 
@@ -283,11 +402,52 @@ static int plasticity_info(Model_var_info **info)
   return 0;
 }
 
+static int plasticity_get_eF_with_thermal(const Constitutive_model *m,
+                                          Matrix(double) *eF,
+                                          const Matrix(double) *hFI,
+                                          const int stepno)
+{
+  int err = 0;
+  double temp[DIM_3x3];
+  Matrix(double) pFI;
+  pFI.m_pdata = temp; pFI.m_row = pFI.m_col = DIM_3;
+  
+  switch(stepno)
+  {
+    case 0: // n-1
+      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1],*hFI,pFI);
+      break;
+    case 1: // n
+      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFn], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn],*hFI,pFI);      
+      break;
+    case 2: // n+1
+      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1], pFI);
+      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1],*hFI,pFI);      
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+
+  return err;      
+}                          
+                                  
 static int plasticity_get_pF(const Constitutive_model *m,
                              Matrix(double) *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_pFnp1]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1]);
+  return err;
+}
+
+static int plasticity_get_F(const Constitutive_model *m,
+                            Matrix(double) *F)
+{
+  int err = 0;
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1]);
   return err;
 }
 
@@ -295,7 +455,7 @@ static int plasticity_get_Fn(const Constitutive_model *m,
                              Matrix(double) *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_Fn]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn]);
   return err;
 }
 
@@ -303,7 +463,7 @@ static int plasticity_get_pFn(const Constitutive_model *m,
                               Matrix(double) *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_pFn]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFn]);
   return err;
 }
 
@@ -313,8 +473,8 @@ static int plasticity_get_eF(const Constitutive_model *m,
   int err = 0;
   Matrix(double) invFp;
   Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  err += inv3x3(m->vars.Fs[TENSOR_pFnp1].m_pdata,invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnp1], 0, invFp, 0);
+  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1].m_pdata,invFp.m_pdata);
+  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
 }
@@ -325,8 +485,8 @@ static int plasticity_get_eFn(const Constitutive_model *m,
   int err = 0;
   Matrix(double) invFp;
   Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  err += inv3x3(m->vars.Fs[TENSOR_pFn].m_pdata, invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fn], 0, invFp, 0);
+  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFn].m_pdata, invFp.m_pdata);
+  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fn], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
 }
@@ -335,7 +495,7 @@ static int plasticity_get_pFnm1(const Constitutive_model *m,
                               Matrix(double) *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_pFnm1]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1]);
   return err;
 }
 
@@ -343,7 +503,7 @@ static int plasticity_get_Fnm1(const Constitutive_model *m,
                              Matrix(double) *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[TENSOR_Fnm1]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1]);
   return err;
 }
 
@@ -353,24 +513,24 @@ static int plasticity_get_eFnm1(const Constitutive_model *m,
   int err = 0;
   Matrix(double) invFp;
   Matrix_construct_redim(double,invFp,DIM_3,DIM_3);  
-  err += inv3x3(m->vars.Fs[TENSOR_pFnm1].m_pdata,invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars.Fs[TENSOR_Fnm1], 0, invFp, 0);
+  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1].m_pdata,invFp.m_pdata);
+  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1], 0, invFp, 0);
   Matrix_cleanup(invFp);
   return err;
 }
 
-static int plasticity_get_hardening_n(const Constitutive_model *m,
+static int plasticity_get_hardening(const Constitutive_model *m,
                                     double *var)
 {
   int err = 0;
-  *var = m->vars.state_vars->m_pdata[VAR_g_n];
+  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_n];
   return err;
 }
 static int plasticity_get_hardening_nm1(const Constitutive_model *m,
                                     double *var)
 {
   int err = 0;
-  *var = m->vars.state_vars->m_pdata[VAR_g_nm1];
+  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_nm1];
   return err;
 }
 
@@ -438,23 +598,63 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
      alpha,beta pair and computes the corresponding dMdu. We will
      generate the required inputs for this function and call it
      alpha*beta times. This should be improved */
+ 
   auto CTX = (plasticity_ctx *) ctx;
-  Matrix(double) eFn, eFnp1;
-
-  /* extract the elastic deformations at (n) and (n + 1) */
-  Matrix_construct_redim(double, eFn, DIM_3, DIM_3);
-  Matrix_construct_redim(double, eFnp1, DIM_3, DIM_3);
-  err += m->param->get_eFn(m,&eFn);
-  err += m->param->get_eF(m,&eFnp1);
-
+  // shorthand of deformation gradients
+  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  
   /* compute M at n+1, again, this information is in CM */
-  Matrix(double) M;
+  Matrix(double) M, eFn, eFnp1;
   {
     Matrix(double) pFnp1_I;
-    Matrix_construct_redim(double, pFnp1_I, DIM_3, DIM_3);
-    Matrix_construct_redim(double, M, DIM_3, DIM_3);
-    err += inv3x3(m->vars.Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);
-    Matrix_AxB(M, 1.0, 0.0, m->vars.Fs[TENSOR_pFn], 0, pFnp1_I, 0);
+    Matrix_construct_redim(double, pFnp1_I, DIM_3, DIM_3);   
+    Matrix_construct_redim(double, M,       DIM_3, DIM_3);
+    Matrix_construct_redim(double, eFn,     DIM_3, DIM_3);
+    Matrix_construct_redim(double, eFnp1,   DIM_3, DIM_3);
+    
+    for(int ia=0; ia<DIM_3x3; ia++)
+    {
+          M.m_pdata[ia] = 0.0;
+        eFn.m_pdata[ia] = 0.0;
+      eFnp1.m_pdata[ia] = 0.0;
+    }
+
+    err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);
+
+    if(CTX->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFn, hFnp1, hFn_I, hFnp1_I, N, pFn_I;
+        hFn.m_row =   hFn.m_col = DIM_3;   hFn.m_pdata = CTX->hFn;
+      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = CTX->hFnp1;
+
+      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+      Matrix_construct_redim(double, hFn_I,   DIM_3, DIM_3);
+      Matrix_construct_redim(double, N,       DIM_3, DIM_3);
+      Matrix_construct_redim(double, pFn_I,   DIM_3, DIM_3);     
+        
+      err += inv3x3(Fs[TENSOR_pFn].m_pdata,   pFn_I.m_pdata);
+      err += inv3x3(CTX->hFn,     hFn_I.m_pdata);
+      err += inv3x3(CTX->hFnp1, hFnp1_I.m_pdata);    
+    
+      Matrix_init(N,0.0);
+      Matrix_AxB(N,1.0,0.0,hFn,0,hFnp1_I,0);
+        
+      err += compute_M(&M, Fs+TENSOR_Fn, &N, &pFnp1_I, CTX);
+
+      err += compute_eF(&eFn,   Fs+TENSOR_Fn,  &hFn_I,   &pFn_I,   CTX);
+      err += compute_eF(&eFnp1, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, CTX);
+    
+      Matrix_cleanup(pFn_I);
+      Matrix_cleanup(hFn_I);
+      Matrix_cleanup(hFnp1_I);
+      Matrix_cleanup(N);
+    }
+    else
+    {
+      Matrix_AxB(M, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_pFn], 0, pFnp1_I, 0);
+      err += m->param->get_eFn(m,&eFn);
+      err += m->param->get_eF(m,&eFnp1);      
+    }
     Matrix_cleanup(pFnp1_I);
   }
 
@@ -471,14 +671,14 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
   SLIP_SYSTEM slip;
   construct_slip_system(&slip,slip_in->unit_cell);
   
-  rotate_crystal_orientation(&slip, m->vars.Fs[TENSOR_R].m_pdata, slip_in);
+  rotate_crystal_orientation(&slip, m->vars_list[0][m->model_id].Fs[TENSOR_R].m_pdata, slip_in);
      
-  const double *state_var = (m->vars).state_vars[0].m_pdata;  
+  const double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;  
   const double g_n         = state_var[VAR_g_n];
   const double g_np1       = state_var[VAR_g_np1];
   
-  const double *tau        = (m->vars).Fs[TENSOR_tau].m_pdata;
-  const double *gamma_dots = (m->vars).Fs[TENSOR_gamma_dot].m_pdata;
+  const double *tau        = (m->vars_list[0][m->model_id]).Fs[TENSOR_tau].m_pdata;
+  const double *gamma_dots = (m->vars_list[0][m->model_id]).Fs[TENSOR_gamma_dot].m_pdata;
 
   /* make successive calls to compute_dMdu for each node/dof. To avoid
      copying, I am abusing access to the internal data structure of
@@ -522,7 +722,6 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
                                    double alpha)
 {
   // Total Lagrangian based
-  
   int err = 0;
   /* The existing function compute_dMdu takes Grad_op for a given
      alpha,beta pair and computes the corresponding dMdu. We will
@@ -530,7 +729,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
      alpha*beta times. This should be improved */
   auto CTX = (plasticity_ctx *) ctx;
   
-  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnp1,pFn,Mnpa,Fend}; 
+  enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnpaI,Fend}; 
   
   // second-order tensors
   Matrix(double) *F2 = malloc(Fend*sizeof(Matrix(double)));
@@ -539,7 +738,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   }  
   
   Matrix_init_w_array(F2[Fnp1], DIM_3, DIM_3, CTX->F);  
-  err += m->param->get_Fn(m,&F2[Fn]);  
+  err += m->param->get_Fn(m,&F2[Fn]); 
+  Matrix_init(F2[eFn],0.0); 
   err += m->param->get_eFn(m,&F2[eFn]);
   Matrix_eye(F2[eFn],DIM_3); // <== recompute F2[eFn] to make Total Lagrangian
     
@@ -549,8 +749,20 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   mid_point_rule(F2[Fnpa].m_pdata, F2[Fn].m_pdata, F2[Fnp1].m_pdata, alpha, DIM_3x3);  
   mid_point_rule(F2[pFnpa].m_pdata, F2[pFn].m_pdata, F2[pFnp1].m_pdata, alpha, DIM_3x3);  
 
-  err += inv3x3(F2[pFnpa].m_pdata, F2[Mnpa].m_pdata);
-  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);  
+  err += inv3x3(F2[pFnpa].m_pdata, F2[pFnpa_I].m_pdata); // Total Lagrangian
+
+  Matrix_eye(F2[hFnpaI],DIM_3);
+  if(CTX->is_coulpled_with_thermal)
+  {
+    double hFnpa[9];
+    //mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);  
+    err += inv3x3(CTX->hFnp1, F2[hFnpaI].m_pdata);
+  }
+  
+  Matrix_init(F2[Mnpa], 0.0);
+  Matrix_init(F2[eFnpa], 0.0);
+  Matrix_AxB(F2[Mnpa],1.0,0.0,F2[hFnpaI],0,F2[pFnpa_I],0);  
+  Matrix_AxB(F2[eFnpa], 1.0,0.0,F2[Fnpa],0,F2[Mnpa],0);
     
   ELASTICITY *elast = (m->param)->cm_elast;
   elast->update_elasticity(elast,F2[eFnpa].m_pdata, 1);
@@ -565,18 +777,18 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   SLIP_SYSTEM slip;
   construct_slip_system(&slip,slip_in->unit_cell);
   
-  rotate_crystal_orientation(&slip, m->vars.Fs[TENSOR_R].m_pdata, slip_in);    
+  rotate_crystal_orientation(&slip, m->vars_list[0][m->model_id].Fs[TENSOR_R].m_pdata, slip_in);    
   
   // update plasticty variables
   int N_SYS = slip.N_SYS;
      
-  const double *state_var = (m->vars).state_vars[0].m_pdata;  
+  const double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;  
   double g_n         = state_var[VAR_g_n];
   double g_np1       = state_var[VAR_g_np1];  
-  double *tau_np1        = (m->vars).Fs[TENSOR_tau].m_pdata;
-  double *tau_n          = (m->vars).Fs[TENSOR_tau_n].m_pdata;  
-  double *gamma_dots_np1 = (m->vars).Fs[TENSOR_gamma_dot].m_pdata;
-  double *gamma_dots_n   = (m->vars).Fs[TENSOR_gamma_dot_n].m_pdata;  
+  double *tau_np1        = (m->vars_list[0][m->model_id]).Fs[TENSOR_tau].m_pdata;
+  double *tau_n          = (m->vars_list[0][m->model_id]).Fs[TENSOR_tau_n].m_pdata;  
+  double *gamma_dots_np1 = (m->vars_list[0][m->model_id]).Fs[TENSOR_gamma_dot].m_pdata;
+  double *gamma_dots_n   = (m->vars_list[0][m->model_id]).Fs[TENSOR_gamma_dot_n].m_pdata;  
   
   double *tau        = (double *) malloc(sizeof(double)*N_SYS);
   double *gamma_dots = (double *) malloc(sizeof(double)*N_SYS);
@@ -665,8 +877,8 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
 {
 
   int err = 0;
-  Matrix(double) *Fs = (m->vars).Fs;
-  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
+  double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
   err += cp_write_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
   err += cp_write_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
@@ -693,8 +905,8 @@ static int plasticity_write_restart(FILE *fp, const Constitutive_model *m)
 static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
 {
   int err = 0;
-  Matrix(double) *Fs = (m->vars).Fs;
-  double *state_var = (m->vars).state_vars[0].m_pdata;
+  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
+  double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
   err += cp_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
   err += cp_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
@@ -852,14 +1064,37 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
   // below checks whether to use get_eF or give eFnpa in ctx
 
   if(ctx->eFnpa)
-    err += constitutive_model_defaut_update_elasticity(m, (ctx->eFnpa), L, S, compute_stiffness);  
+  {
+    Matrix(double) eF;
+    eF.m_row = eF.m_col = DIM_3; eF.m_pdata = ctx->eFnpa;
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
+  }    
   else
   {
-    Matrix(double) eF;    
-    Matrix_construct_redim(double,eF,DIM_3,DIM_3);
-    plasticity_get_eF(m,&eF);      
-    err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
-    Matrix_cleanup(eF);   
+    // shorthand of deformation gradients
+    Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;  
+    Matrix(double) eF, pFnp1_I;  
+    Matrix_construct_init( double,eF,      DIM_3,DIM_3, 0.0); 
+    Matrix_construct_redim(double,pFnp1_I, DIM_3, DIM_3);  
+  
+    err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);    
+    if(ctx->is_coulpled_with_thermal)
+    {
+      Matrix(double) hFnp1, hFnp1_I;
+      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = ctx->hFnp1;
+      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+
+      err += inv3x3(ctx->hFnp1,   hFnp1_I.m_pdata);    
+      err += compute_eF(&eF, Fs+TENSOR_Fnp1,&hFnp1_I, &pFnp1_I, ctx);
+      Matrix_cleanup(hFnp1_I);
+    }
+    else
+      Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
+      
+    err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
+
+    Matrix_cleanup(eF);
+    Matrix_cleanup(pFnp1_I);
   }
       
   return err;
@@ -870,7 +1105,7 @@ int plasticity_model_get_subdiv_param(const Constitutive_model *m,
 {
   int err = 0;
   SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;  
-  Matrix(double) *Fs = (m->vars).Fs;
+  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
   
   double gamma_np1 = 0.0;
   for(int a=0; a<slip->N_SYS; a++)
@@ -893,8 +1128,12 @@ int plasticity_model_initialize(Model_parameters *p)
   p->compute_d2udj2 = plasticity_d2udj2;
   p->update_state_vars = plasticity_update;
   p->reset_state_vars = plasticity_reset;
+  p->reset_state_vars_using_temporal = plasticity_reset_using_temporal;
+  p->update_np1_state_vars_to_temporal = plasticity_update_np1_to_temporal;
+  p->save_state_vars_to_temporal = plasticity_save_to_temporal;
   p->get_subdiv_param = plasticity_model_get_subdiv_param;
   p->get_var_info = plasticity_info;
+  p->get_F     = plasticity_get_F;
   p->get_Fn    = plasticity_get_Fn;
   p->get_Fnm1  = plasticity_get_Fnm1;  
   p->get_pF    = plasticity_get_pF;
@@ -903,8 +1142,9 @@ int plasticity_model_initialize(Model_parameters *p)
   p->get_eF    = plasticity_get_eF;
   p->get_eFn   = plasticity_get_eFn;
   p->get_eFnm1 = plasticity_get_eFnm1;
+  p->get_eF_of_hF = plasticity_get_eF_with_thermal;
     
-  p->get_hardening     = plasticity_get_hardening_n;
+  p->get_hardening     = plasticity_get_hardening;
   p->get_hardening_nm1 = plasticity_get_hardening_nm1;  
   p->get_plast_strain_var = cm_get_lam_p;
   p->write_restart = plasticity_write_restart;
@@ -938,28 +1178,32 @@ int plasticity_model_destory(Model_parameters *p)
   return err;
 }
 int plasticity_model_ctx_build(void **ctx,
-                               const double *F,
+                               double *F,
                                const double dt,
                                const double alpha,
-                               const double *eFnpa)
+                               double *eFnpa,
+                               double *hFn,
+                               double *hFnp1,
+                               const int is_coulpled_with_thermal)
 {
   int err = 0;
   plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
 
-  /* copy data into context */
-  memcpy(t_ctx->F, F, DIM_3x3 * sizeof(*F));
-
+  t_ctx->F     = NULL;
   t_ctx->eFnpa = NULL;
-  if(eFnpa)
-  {
-    t_ctx->eFnpa = malloc(sizeof(Matrix(double)));
-    Matrix_construct_redim(double, *(t_ctx->eFnpa), DIM_3, DIM_3);
-    for(int a=0; a<DIM_3x3; a++)
-      (t_ctx->eFnpa)->m_pdata[a] = eFnpa[a];
-  }
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;  
+
+  t_ctx->F = F;
+  t_ctx->eFnpa = eFnpa;  
+  
   
   t_ctx->dt = dt;
   t_ctx->alpha = alpha;
+  
+  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
+  t_ctx->hFn  = hFn;
+  t_ctx->hFnp1= hFnp1;  
 
   /* assign handle */
   *ctx = t_ctx;
@@ -973,15 +1217,11 @@ int plasticity_model_ctx_destroy(void **ctx)
   /* invalidate handle */
   *ctx = NULL;
 
-  /* there are no internal pointers */
-
-  /* free object memory */
-  if(t_ctx->eFnpa)
-  {  
-    Matrix_cleanup(*(t_ctx->eFnpa));
-    free(t_ctx->eFnpa);
-  }
-    
+  // no memory was created
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL; 
 
   free(t_ctx);
   return err;
@@ -1009,16 +1249,24 @@ static int compute_C_D_alpha(const Constitutive_model *m,
                              const Matrix(double) *L,
                              const Matrix(double) *C)
 {
-  Matrix_init(*aC, 0.0);  
-  Matrix_init(*aD, 0.0);
   
   Matrix(double) LC, AA, CAA, eFnp1AA, eFnp1AAMT, MI;
   Matrix_construct_redim(double,LC,       DIM_3,DIM_3);
-  Matrix_construct_redim(double,AA,       DIM_3,DIM_3);
-  Matrix_construct_redim(double,CAA,      DIM_3,DIM_3);
-  Matrix_construct_redim(double,eFnp1AA,  DIM_3,DIM_3);
-  Matrix_construct_redim(double,eFnp1AAMT,DIM_3,DIM_3);    
-  Matrix_construct_redim(double,MI,       DIM_3,DIM_3);      
+  Matrix_construct_redim( double,AA,       DIM_3,DIM_3);
+  Matrix_construct_redim( double,CAA,      DIM_3,DIM_3);
+  Matrix_construct_redim( double,eFnp1AA,  DIM_3,DIM_3);
+  Matrix_construct_redim( double,eFnp1AAMT,DIM_3,DIM_3);    
+  Matrix_construct_redim(double,MI,       DIM_3,DIM_3);
+
+  for(int ia=0; ia<DIM_3x3; ia++)
+  {
+          aC->m_pdata[ia] = 0.0;
+          aD->m_pdata[ia] = 0.0;
+           AA.m_pdata[ia] = 0.0;
+          CAA.m_pdata[ia] = 0.0;
+      eFnp1AA.m_pdata[ia] = 0.0;
+    eFnp1AAMT.m_pdata[ia] = 0.0;
+  }   
 
   Matrix_AxB(AA,1.0,0.0,*Pa,0,*S,0);   // AA = Pa*S
   Matrix_AxB(AA,1.0,1.0,*S,0,*Pa,1);   // AA = AA + S*Pa' 
@@ -1062,7 +1310,7 @@ int compute_dMdu(const Constitutive_model *m,
   // Grad_du = Grad(du)
 
   MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((m->param)->cm_mat)->mat_p;
-  const double *state_var = (m->vars).state_vars[0].m_pdata;
+  const double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   
   const int N_SYS          = (mat_p->slip)->N_SYS;
   const double gamma_dot_0 = mat_p->gamma_dot_0;
@@ -1075,7 +1323,7 @@ int compute_dMdu(const Constitutive_model *m,
   
   // --------------> define variables
   Matrix(double) C;
-  Matrix_construct_redim(double, C, DIM_3,DIM_3);
+  Matrix_construct_init(double, C, DIM_3,DIM_3,0.0);
   Matrix_AxB(C,1.0,0.0,*eFnp1,1,*eFnp1,0);
   
   Matrix(double) U,UI,II,B,aCxPa,CxP,aDxPa,DxP;
@@ -1203,10 +1451,15 @@ int compute_dMdu(const Constitutive_model *m,
   return 0;
 }
 
-int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
+
+static int plasticity_int_alg(Constitutive_model *m,
+                              const void *ctx)
 {
   int err = 0;
+  auto CTX = (plasticity_ctx *) ctx;
+  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
   
+  const double dt = CTX->dt;
   double *param     = (m->param)->model_param;
   int    *param_idx = (m->param)->model_param_index;
     
@@ -1225,33 +1478,63 @@ int plasticity_model_integration_ip(Constitutive_model *m, const double dt)
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3 ,0.0);
   }
     
-  double *state_var = (m->vars).state_vars[0].m_pdata;
-  Matrix(double) *Fs = (m->vars).Fs;
+  double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
   double g_n   = state_var[VAR_g_n];
   double g_np1 = state_var[VAR_g_np1];
   double L_np1 = state_var[VAR_L_np1];
   
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
   ELASTICITY *elasticity = (m->param)->cm_elast;
-  
+
   // compute slip system and rotate orientation
-  SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;  
+  SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;
   SLIP_SYSTEM slip;
-  construct_slip_system(&slip,slip_in->unit_cell);  
+  construct_slip_system(&slip,slip_in->unit_cell);
   rotate_crystal_orientation(&slip, Fs[TENSOR_R].m_pdata, slip_in);
-  (cm_mat->mat_p)->slip = &slip;  
-  
-  // perform integration algorithm for the crystal plasticity
-  err += staggered_Newton_Rapson(Fs[TENSOR_pFnp1].m_pdata,F2[M].m_pdata, &g_np1, &L_np1, 
-                          Fs[TENSOR_pFn].m_pdata, Fs[TENSOR_Fn].m_pdata, Fs[TENSOR_Fnp1].m_pdata,
-                          g_n, dt, cm_mat, elasticity, &solver_info);  
-  
+  (cm_mat->mat_p)->slip = &slip;
+ 
+  // perform integration algorithm for the crystal plasticity 
+  if(CTX->is_coulpled_with_thermal)
+  {    
+    err += staggered_Newton_Rapson_generalized(Fs[TENSOR_pFnp1].m_pdata,
+                                               F2[M].m_pdata, 
+                                               &g_np1, &L_np1, 
+                                               Fs[TENSOR_pFn].m_pdata, 
+                                               Fs[TENSOR_Fn].m_pdata, 
+                                               Fs[TENSOR_Fnp1].m_pdata,
+                                               CTX->hFn, CTX->hFnp1,
+                                               g_n, dt, cm_mat, elasticity, &solver_info);  
+  }
+  else
+  {
+    err += staggered_Newton_Rapson(Fs[TENSOR_pFnp1].m_pdata,
+                                   F2[M].m_pdata, &g_np1, &L_np1, 
+                                   Fs[TENSOR_pFn].m_pdata, 
+                                   Fs[TENSOR_Fn].m_pdata, 
+                                   Fs[TENSOR_Fnp1].m_pdata,
+                                   g_n, dt, cm_mat, elasticity, &solver_info);     
+  }    
+ 
   // update compute values from integration algorithm  
   state_var[VAR_g_np1] =  g_np1;
   state_var[VAR_L_np1] =  L_np1;
   
   err += inv3x3(Fs[TENSOR_pFnp1].m_pdata,F2[pFnp1_I].m_pdata);
-  Matrix_AxB(F2[eFnp1],1.0,0.0,Fs[TENSOR_Fnp1],0,F2[pFnp1_I],0);  
+
+  if(CTX->is_coulpled_with_thermal)
+  {
+    Matrix(double) hFnp1,hFnp1_I;
+    hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = CTX->hFnp1;        
+    Matrix_construct_redim(double,hFnp1_I,DIM_3,DIM_3);
+    
+    Matrix_inv(hFnp1,hFnp1_I);
+    err += compute_eF(F2+eFnp1, Fs+TENSOR_Fnp1, &hFnp1_I, F2+pFnp1_I, CTX); 
+    Matrix_cleanup(hFnp1_I);
+  }
+  else
+    Matrix_AxB(F2[eFnp1],1.0,0.0,Fs[TENSOR_Fnp1],0,F2[pFnp1_I],0);  
+  
   Matrix_AxB(F2[C], 1.0, 0.0, F2[eFnp1],1,F2[eFnp1],0);
   
   elasticity->update_elasticity(elasticity,F2[eFnp1].m_pdata, 0);
@@ -1281,7 +1564,7 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix(int) *e_ids, Matrix(dou
     
     int ip = Mat_v(*e_ids, a+1, 2);
     Constitutive_model *m = &(eps[id].model[ip]);
-    Matrix(double) *Fs = (m->vars).Fs;    
+    Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;    
     double phi   = angles->m_pdata[a*DIM_3+0]; // NOTE: phi = Mat_v(*angles, a+1, 1) is not working, do not know why.
     double theta = angles->m_pdata[a*DIM_3+1];
     double psi   = angles->m_pdata[a*DIM_3+2];
@@ -1585,7 +1868,7 @@ int plasticity_model_set_orientations(EPS *eps,
       if(m->param->type != CRYSTAL_PLASTICITY)
         continue;
 
-      double *state_var = (m->vars).state_vars[0].m_pdata;
+      double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
       MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((m->param)->cm_mat)->mat_p;
             
       /* set state variables to initial values */
@@ -1597,7 +1880,7 @@ int plasticity_model_set_orientations(EPS *eps,
       state_var[VAR_L_np1] = 0.0;
       
       /* set the dimensions for the tau and gamma_dot varables */
-      Matrix(double) *Fs = (m->vars).Fs;
+      Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
       const int N_SYS = (mat_p->slip)->N_SYS;
       Matrix_redim(Fs[TENSOR_tau],N_SYS, 1);
       Matrix_redim(Fs[TENSOR_tau_n],N_SYS, 1);
@@ -1605,10 +1888,13 @@ int plasticity_model_set_orientations(EPS *eps,
       Matrix_redim(Fs[TENSOR_gamma_dot_n],N_SYS, 1);
       
       /* intitialize to zeros */
-      Matrix_init(Fs[TENSOR_tau], 0.0);
-      Matrix_init(Fs[TENSOR_tau_n], 0.0);
-      Matrix_init(Fs[TENSOR_gamma_dot], 0.0);           
-      Matrix_init(Fs[TENSOR_gamma_dot_n], 0.0);           
+      for(int ia=0; ia<N_SYS; ia++)
+      {
+                Fs[TENSOR_tau].m_pdata[ia] = 0.0;
+              Fs[TENSOR_tau_n].m_pdata[ia] = 0.0;
+          Fs[TENSOR_gamma_dot].m_pdata[ia] = 0.0;
+        Fs[TENSOR_gamma_dot_n].m_pdata[ia] = 0.0;
+      }  
     }
   }
 
@@ -1708,7 +1994,6 @@ void test_crystal_plasticity_single_crystal(void)
     // compute total deformation gradient using velocity gradient
     // Fnp1_Implicit(F2[Fnp1].m_pdata, F2[Fn].m_pdata, F2[L].m_pdata, dt); 
     //define Fnp1    
-    Matrix_init(F2[Fnp1], 0.0);
     Mat_v(F2[Fnp1],1,1) = 1.0 - t*1.0e-3;
     Mat_v(F2[Fnp1],2,2) = Mat_v(F2[Fnp1],3,3) = 1.0 + t*0.5*1.0e-3;
     

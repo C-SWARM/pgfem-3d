@@ -34,7 +34,8 @@ extern "C" {
 			     ELEMENT *elems,
 			     COEL *coel,
 			     BOUNDING_ELEMENT *b_elems,
-			     MPI_Comm mpi_comm);
+			     MPI_Comm mpi_comm,
+			     const int mp_id);
 
   /** Generate the global dof id numbers and return the number of dofs
       owned by the domain */
@@ -46,7 +47,8 @@ extern "C" {
 			      ELEMENT *elems,
 			      COEL *coel,
 			      BOUNDING_ELEMENT *b_elems,
-			      MPI_Comm mpi_comm);
+			      MPI_Comm mpi_comm,
+			      const int mp_id);
 
   /** Increment the global dof id numbers based on the number of dofs
       on the other domains. */
@@ -60,7 +62,8 @@ extern "C" {
 			       ELEMENT *elems,
 			       COEL *coel,
 			       BOUNDING_ELEMENT *b_elems,
-			       MPI_Comm mpi_comm);
+			       MPI_Comm mpi_comm,
+			       const int mp_id);
 
   /** Redistributes the degrees of freedom on the boundary and returns
       the number of boundary nodes on the domain. */
@@ -74,8 +77,9 @@ extern "C" {
 				ELEMENT *elems,
 				COEL *coel,
 				BOUNDING_ELEMENT *b_elems,
-                                const Comm_hints *hints,
-				MPI_Comm mpi_comm);
+        const Comm_hints *hints,
+				MPI_Comm mpi_comm,
+				const int mp_id);
 
 #ifdef __cplusplus
 }

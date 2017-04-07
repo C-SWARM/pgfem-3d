@@ -62,10 +62,12 @@ int main(int argc,char *argv[])
   Model_parameters *param_list = NULL;  
   
   int in_err = 0;
+  int physicsno = 1;
+  int ndim = 3;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
          &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
          &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v);
+         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
       myrank);
@@ -89,7 +91,7 @@ int main(int argc,char *argv[])
   free(mater);  
   
   EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
+  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.
@@ -106,7 +108,7 @@ int main(int argc,char *argv[])
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs
   char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
   
   
   double *u = aloc1(nn*ndofn);
@@ -162,7 +164,7 @@ int main(int argc,char *argv[])
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
-  destroy_node(nn,node);
+  destroy_node_multi_physics(nn,node,physicsno);
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();

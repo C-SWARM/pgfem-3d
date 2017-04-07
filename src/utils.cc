@@ -1356,6 +1356,46 @@ void def_elem_total (const long *cn,
   }
 }
 
+/// compute value of nodal variables 
+///
+/// On an element, nodal values (displacement, temperature, ...) from
+/// the reference value instead of zero are computed. 
+///
+/// \param[in] cn id of nodal values
+/// \param[in] ndofe number of degree of freedom on an element
+/// \param[in] r nodal variables at n+1
+/// \param[in] d_r nodal variable increments at n+1 
+/// \param[in] elem ELEMENT object
+/// \param[in] node NODE object
+/// \param[out] r_e computed nodal variables for an element
+/// \param[in] reference nodal value
+/// \return non-zero on interal error  
+int def_elem_with_reference(const long *cn,
+                             const long ndofe,
+                             const double *r,
+                             const double *d_r,
+                             const ELEMENT *elem,
+                             const NODE *node,
+                             const SUPP sup,
+                             double *r_e,
+                             double r0)
+{
+  int err = 0;
+  for(int i=0; i< ndofe; i++)
+  {
+    const int id = cn[i];
+    const int aid = abs(id) - 1;
+
+    if (id == 0)
+      r_e[i] = r0;
+    else if (id > 0)
+      r_e[i] = r[aid] + d_r[aid];
+    else 
+      r_e[i] = sup->defl[aid] + sup->defl_d[aid];
+  }
+  return err;
+}
+
 void elemnodes (const long ii,
 		const long nne,
 		long *nod,
@@ -1709,7 +1749,8 @@ void stress (long ne,
 	     SIG *sig,
 	     EPS *eps,
 	     SUPP sup,
-	     const int analysis)
+	     const int analysis,
+	     const int mp_id)
 /*
        
  */
@@ -1744,7 +1785,7 @@ void stress (long ne,
       break;
     }
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     /* vector of nodal deformation on the element */
     def_elem (cn,ndofe,r,elem,node,r_e,sup,0);
     
@@ -2022,7 +2063,8 @@ void str_solve (double *r,
 		SIG *sig_e,
 		SIG *sig_n,
 		SUPP sup,
-		const int analysis)
+		const int analysis,
+		const int mp_id)
 /*
        
  */
@@ -2061,7 +2103,7 @@ void str_solve (double *r,
       }
 
       /* Id numbers */
-      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
       
       if (analysis == ELASTIC || analysis == TP_ELASTO_PLASTIC) {
 	/* material stiffnes matrix of the element */
@@ -2431,7 +2473,8 @@ void check_equi (double *fu,
 		 NODE *node,
 		 MATGEOM matgeom,
 		 SIG *sig,
-		 const int analysis)
+		 const int analysis,
+		 const int mp_id)
 /*
        
  */
@@ -2470,7 +2513,7 @@ void check_equi (double *fu,
     /* Localization */
     for (j=0;j<nne;j++){
       for (i=0;i<ndofn;i++){
-	JJ = node[nod[j]].id[i]-1;
+	JJ = node[nod[j]].id_map[mp_id].id[i]-1;
 	if (JJ < 0)  continue;
 	fu[JJ] += fe[j*ndofn+i];
       }/* end j */
@@ -3200,7 +3243,8 @@ long* sparse_ApAi (long ne,
 		   long ndofn,
 		   ELEMENT *elem,
 		   NODE *node,
-		   long *Ap)
+		   long *Ap,
+		   const int mp_id)
 /*
   Sparse nonsymmetric column storage format Ap
 */
@@ -3216,7 +3260,7 @@ long* sparse_ApAi (long ne,
     nne = elem[i].toe;  
     ndofe = ndofn*nne;
     elemnodes (i,nne,nod,elem);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     for (j=0;j<ndofe;j++){
       II = cn[j]-1;
@@ -3242,7 +3286,7 @@ long* sparse_ApAi (long ne,
     nne = elem[i].toe;  
     ndofe = ndofn*nne;
     elemnodes (i,nne,nod,elem);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     for (j=0;j<ndofe;j++){
       II = cn[j]-1;
@@ -3303,5 +3347,120 @@ void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
   {
     v[a] = (1-alpha)*w[a] + alpha*x[a];
   }
+}
+
+/// determine whether the element is on communication boundary or in interior
+/// 
+/// If the element is interior, return 1 or return 0 (on communication boundary)
+///
+/// \parma[in] eid element id
+/// \param[in,out] idx id of bndel (communication boundary element)
+/// \param[in,out] skip count element on communication boundary
+/// \param[in] nbndel number of elements on communication boundary
+/// \param[in] bndel list of elements on communcation boundary
+/// \param[in] myrank current process rank
+/// \return return 1 if the element is interior or 0 if the element on the communication boundary
+int is_element_interior(int eid, int *idx, int *skip, long nbndel, long *bndel, int myrank)
+{ 
+  int is_it_in = 1;
+  if(nbndel > 0) // most of time it is ture
+  {
+    if(*idx < nbndel-1)
+    {
+      if(eid == 0 && *idx == 0 && bndel[*idx] == 0)
+      {
+        (*idx)++;
+        (*skip)++;
+        is_it_in = 0;
+      } 
+      else if(eid == bndel[*idx])
+      {
+        (*idx)++;
+        (*skip)++;
+        is_it_in = 0;
+      } 
+      else if (*idx == 0 && eid < bndel[*idx])
+        is_it_in = 1;
+      else if (*idx > 0 &&bndel[*idx-1] < eid && eid < bndel[*idx])
+        is_it_in = 1;
+      else 
+      {
+        is_it_in = -1;
+        PGFEM_printf("[%d]ERROR: problem in determining if element %ld"
+                     " is on interior.\n", myrank, eid);
+      }
+    } 
+    else if(eid == bndel[nbndel-1])
+      is_it_in = 0;
+  }
+  
+  return is_it_in;    
+} 
+
+
+double compute_volumes_from_coordinates(double *x,
+                                        double *y,
+                                        double *z,
+                                        long nne)
+{
+  int nsd = 3;
+    
+  double *gk  = aloc1(5);  
+  double *ge  = aloc1(5);  
+  double *gz  = aloc1(5);  
+  double *w   = aloc1(5); 
+  double **B_T = aloc2(nne*nsd,6);
+  
+  double *N_ksi = aloc1(nne); 
+  double *N_eta = aloc1(nne);
+  double *N_zet = aloc1(nne);
+  
+  double dx[3], dy[3], dz[3];
+  
+  // Integration
+  long II,JJ,KK;
+  integrate (nne,&II,&JJ,&KK,gk,ge,gz,w);
+  
+  double V = 0.0;
+  for(int i=0; i<II; i++)
+  {
+    for(int j=0; j<JJ; j++)
+    {
+      for(int k=0; k<KK; k++)
+      {
+        double ksi = 0;
+        double eta = 0;
+        double zet = 0;
+        double ai = 0;
+        double aj = 0;
+        double ak = 0;
+       	if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+       	if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+       	if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
+
+        dN_kez(ksi,eta,zet,nne,N_ksi,N_eta,N_zet);
+        dxyz_kez (ksi,eta,zet,nne,x,y,z,N_ksi,N_eta,N_zet,dx,dy,dz);
+        
+        double J = ((dx[0]*dy[1]*dz[2]) +
+                    (dy[0]*dz[1]*dx[2]) + 
+                    (dz[0]*dx[1]*dy[2]) - 
+                    (dz[0]*dy[1]*dx[2]) - 
+                    (dx[0]*dz[1]*dy[2]) - 
+                    (dy[0]*dx[1]*dz[2]));
+        
+        V += ai*aj*ak*J;
+      }
+    }
+  }  
+  free(gk); 
+  free(ge); 
+  free(gz);
+  free(w);
+  free(N_ksi);
+  free(N_eta);
+  free(N_zet);
+  dealoc2(B_T,nne*nsd);
+  
+  return V;
 }
 

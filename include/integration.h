@@ -94,7 +94,8 @@ extern "C" {
 			double nor_min,
 			long STEP,
 			long GAMA,
-			const PGFem3D_opt *opts);
+			const PGFem3D_opt *opts,
+			const int mp_id);
 
 #ifdef __cplusplus
 }

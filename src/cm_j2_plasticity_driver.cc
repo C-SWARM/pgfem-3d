@@ -77,7 +77,7 @@ static int compute_stress(double * restrict sig,
   err += m->param->compute_dev_stress(m,ctx,&S);
 
   /* push stress forward */
-  const double *Fe = m->vars.Fs[0].m_pdata;
+  const double *Fe = m->vars_list[0][m->model_id].Fs[0].m_pdata;
   const double J = det3x3(Fe);
   memset(sig,0,9*sizeof(*sig));
   for (int i = 0; i < 3; i++) {
@@ -116,7 +116,7 @@ static int write_data_point(FILE *f,
   int err = 0;
   double sig[9] = {};
   err += compute_stress(sig,m,ctx);
-  double J = det3x3(m->vars.Fs[0].m_pdata);
+  double J = det3x3(m->vars_list[0][m->model_id].Fs[0].m_pdata);
   fprintf(f,"%e\t%e\t%e\n", t, sig[8], J);
   return err;
 }

@@ -21,4 +21,10 @@ int make_path(const char *path, mode_t mode);
 }
 #endif /* #ifdef __cplusplus */
 
+/// check directory exist
+///
+/// \param[in] dir_name directory path
+/// \return 1 if input dir_name exists, or 0
+int is_directory_exist(char *dir_name);
+
 #endif

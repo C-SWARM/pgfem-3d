@@ -636,7 +636,8 @@ int increment_cohesive_elements(const int nce,
 				double *pores,
 				const NODE *node,
 				const SUPP sup,
-				const double *d_r)
+				const double *d_r,
+				const int mp_id)
 {
   int err = 0;
   const int ndofc = 3;
@@ -658,7 +659,7 @@ int increment_cohesive_elements(const int nce,
     nodecoord_updated (nne_t,nod,node,x,y,z);
 
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne_t,ndofc,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne_t,ndofc,nod,node,cn,mp_id);
 
     /* deformation on element */
     def_elem (cn,ndofe,d_r,NULL,node,r_e,sup,0);

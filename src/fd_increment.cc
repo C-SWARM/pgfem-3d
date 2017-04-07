@@ -38,7 +38,8 @@ void fd_increment (long ne,
 		     double *pores,
 		     MPI_Comm mpi_comm,
 		     const double VVolume,
-		     const PGFem3D_opt *opts)
+		     const PGFem3D_opt *opts,
+		     const int mp_id)
 {
   long ii,i,j,k,ip,II,JJ,KK,nne,*nod;
   long M,N,P,Q,R,ndn,mat,nss,U,W,ndofe,*cn;
@@ -119,7 +120,7 @@ void fd_increment (long ne,
     nod = aloc1l (nne);
     elemnodes (ii,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     
     x = aloc1 (nne);
     y = aloc1 (nne);
@@ -144,7 +145,7 @@ void fd_increment (long ne,
     }
     
     /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     /* deformation on element */
     def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
@@ -1017,7 +1018,7 @@ void fd_increment (long ne,
       }
       
       for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
+	II = node[ii].id_map[mp_id].id[i];
 	
 	if (i == 0) node[ii].x1 = Y[i];
 	if (i == 1) node[ii].x2 = Y[i];
@@ -1034,7 +1035,7 @@ void fd_increment (long ne,
   else{
     for (ii=0;ii<nn;ii++){
       for (i=0;i<ndn;i++){
-	II = node[ii].id[i];
+	II = node[ii].id_map[mp_id].id[i];
 	if (II > 0){
 	  if (i == 0) node[ii].x1 += d_r[II-1];
 	  if (i == 1) node[ii].x2 += d_r[II-1];

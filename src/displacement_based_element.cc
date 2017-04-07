@@ -317,7 +317,7 @@ static int disp_cm_material_response(double *S,
   Matrix_construct_init(double, MS, ndn, ndn, 0.0);
   Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
 
-  err += constitutive_model_defaut_update_elasticity(m, &MF, &ML, &MS, get_L);
+  err += constitutive_model_default_update_elasticity(m, &MF, &ML, &MS, get_L);
   memcpy(S, MS.m_pdata, 9 * sizeof(*S));
   if(get_L) memcpy(L, ML.m_pdata, 81 * sizeof(*L));
 
@@ -375,7 +375,7 @@ int DISP_stiffmat_el(double *Ks,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   /* make sure the stiffenss matrix contains all zeros */
@@ -484,7 +484,7 @@ int DISP_resid_el(double *R,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   } 
 
   /* Make sure that the residual vector contains zeros */
@@ -905,7 +905,7 @@ void DISP_increment_el(const ELEMENT *elem,
 
   int ndofe = 0;
   for(int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   double *F, *C, *C_I, *Sbar, J;
@@ -1051,7 +1051,8 @@ void DISP_increment(const ELEMENT *elem,
 		    const HOMMAT *hommat,
 		    const double *sol_incr,
 		    const double *sol,
-		    MPI_Comm mpi_comm)
+		    MPI_Comm mpi_comm,
+		    const int mp_id)
 {
   /* for each element */
   for (int i=0; i<nelem; i++){
@@ -1071,7 +1072,7 @@ void DISP_increment(const ELEMENT *elem,
     long *nod = ptr_elem->nod;
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_total(nne,nod,node,x,y,z);
@@ -1095,7 +1096,7 @@ void DISP_increment(const ELEMENT *elem,
   /* Total Lagrangian formaulation takes gradients w.r.t. xi_fd */
   for (int ii=0;ii<nnodes;ii++){
     for (int i=0;i<ndn;i++){
-      int II = node[ii].id[i];
+      int II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + sol[II-1] + sol_incr[II-1];
 	else if (i == 1) node[ii].x2 = node[ii].x2_fd + sol[II-1] + sol_incr[II-1];
@@ -1179,7 +1180,7 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
   const ELEMENT *p_elem = elem + elem_id;
   const HOMMAT *p_hommat = &hommat[p_elem->mat[2]];
   const double kappa = hommat_get_kappa(p_hommat);
-  const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+  const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
   const int macro_ndof = macro_nnode*macro_ndofn;
 
   /* ensure null values of matrices */

@@ -21,6 +21,8 @@
 #include "utils.h"
 #endif
 
+#include "Arc_length.h"
+
 #ifndef ALM_DEBUG
 #define ALM_DEBUG 0
 #endif
@@ -245,48 +247,42 @@ double d_lam_ALM2 (long ndofd,
   return (DLM);
 }
 
-double D_lam_ALM2 (double *BS_rr,
-		   double *BS_D_R,
-		   double *BS_R,
-		   double *BS_DK,
-		   double dlm,
-		   double lm,
-		   double dAL,
-		   long ne,
-		   int n_be,
-		   long ndofd,
-		   long npres,
-		   double *BS_d_r,
-		   double *r,
-		   NODE *node,
-		   ELEMENT *elem,
-		   BOUNDING_ELEMENT *b_elems,
-		   MATGEOM matgeom,
-		   HOMMAT *hommat,
-		   SUPP sup,
-		   EPS *eps,
-		   SIG *sig,
-		   double nor_min,
-		   CRPL *crpl,
-		   double dt,
-		   double stab,
-		   long nce,
-		   COEL *coel,
-		   long *DomDof,
-		   int GDof,
-		   COMMUN comm 
-		   /*,
-		     GNOD *gnod,
-		     GEEL *geel*/  ,
-		   MPI_Comm mpi_comm,
-		   const PGFem3D_opt *opts)
+/// D_lam_ALM2_MP
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv array of field variable object
+/// \param[in] sol object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com object array for communications
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dlm Arc_length parameter
+/// \param[in] dAL Arc_length parameter
+/// \param[in] dt times step size
+/// \return computed DLM
+double D_lam_ALM2_MP(GRID *grid,
+                     MATERIAL_PROPERTY *mat,
+                     FIELD_VARIABLES *fv,
+                     SOLVER_OPTIONS *sol,
+                     LOADING_STEPS *load,
+                     COMMUNICATION_STRUCTURE *com,
+                     CRPL *crpl,
+                     MPI_Comm mpi_comm,
+                     const PGFem3D_opt *opts,
+                     MULTIPHYSICS *mp,
+                     int mp_id,
+                     double dlm,
+                     double dAL,
+                     double dt)                                        
 {
+  ARC_LENGTH_VARIABLES *arc = sol->arc;
   double t = 0.0;
   double dts[2];
   dts[0] = dts[1] = dt;
-  double alpha_alpha = 0.0;
-  double *r_n = NULL;
-  double *r_n_1 = NULL;
   
   long i;
   double /* s1,s2, */b,a1,a2,a3,DLM,x1,x2,*p1,*p2,
@@ -299,17 +295,17 @@ double D_lam_ALM2 (double *BS_rr,
   DLM = 0.0;
   b = 0.0;
   
-  p1 = (double *)aloc1 (DomDof[myrank]);
-  p2 = (double *)aloc1 (DomDof[myrank]);
-  p3 = (double *)aloc1 (DomDof[myrank]); 
-  f_u = (double *)aloc1 (ndofd);
-  BS_f_u = (double *)aloc1 (DomDof[myrank]);
-  p12 = (double*)aloc1(ndofd);
+  p1 = (double *)aloc1 (com->DomDof[myrank]);
+  p2 = (double *)aloc1 (com->DomDof[myrank]);
+  p3 = (double *)aloc1 (com->DomDof[myrank]); 
+  f_u = (double *)aloc1 (fv->ndofd);
+  BS_f_u = (double *)aloc1 (com->DomDof[myrank]);
+  p12 = (double*)aloc1(fv->ndofd);
   
-  for (i=0;i<DomDof[myrank];i++) {
-    p1[i] = BS_rr[i]/BS_DK[i];
-    p2[i] = (BS_d_r[i] + BS_D_R[i])/BS_DK[i];
-    p3[i] = BS_d_r[i]/BS_DK[i];
+  for (i=0;i<com->DomDof[myrank];i++) {
+    p1[i] = arc->BS_rr[i]/arc->BS_DK[i];
+    p2[i] = (arc->BS_U[i] + arc->BS_U[i])/arc->BS_DK[i];
+    p3[i] = arc->BS_U[i]/arc->BS_DK[i];
   }
 
   double send[4], rec[4];
@@ -319,10 +315,10 @@ double D_lam_ALM2 (double *BS_rr,
        using the appropriate components of the reslting matrix ***/
 
   /* Compute dot products  and pack */
-  send[0] = p1p1 = ss (p1,p1,DomDof[myrank]);
-  send[1] = RR	 = ss (BS_R,BS_R,DomDof[myrank]);
-  send[2] = p1p2 = ss (p1,p2,DomDof[myrank]);
-  send[3] = p2p2 = ss (p2,p2,DomDof[myrank]);
+  send[0] = p1p1 = ss (p1,p1,com->DomDof[myrank]);
+  send[1] = RR	 = ss (arc->BS_R,arc->BS_R,com->DomDof[myrank]);
+  send[2] = p1p2 = ss (p1,p2,com->DomDof[myrank]);
+  send[3] = p2p2 = ss (p2,p2,com->DomDof[myrank]);
 
   /* MPI_Allreduce */
   MPI_Allreduce(send,rec,4,MPI_DOUBLE,MPI_SUM,mpi_comm);
@@ -387,9 +383,9 @@ double D_lam_ALM2 (double *BS_rr,
   x2 = (-1.*a2 - sqrt (a2*a2 - 4.*a1*a3))/(2.*a1);
   
   p1p1 = p2p2 = p3p3 = 0.0;
-  for (i=0;i<DomDof[myrank];i++){
-    p1[i] = BS_d_r[i] + BS_D_R[i] + x1*BS_rr[i];
-    p2[i] = BS_d_r[i] + BS_D_R[i] + x2*BS_rr[i];
+  for (i=0;i<com->DomDof[myrank];i++){
+    p1[i] = arc->BS_U[i] + arc->BS_U[i] + x1*(arc->BS_rr[i]);
+    p2[i] = arc->BS_U[i] + arc->BS_U[i] + x2*(arc->BS_rr[i]);
 
     /* added to reduce # MPI_Allreduce */
     p1p1 += p1[i]*p1[i];
@@ -412,7 +408,7 @@ double D_lam_ALM2 (double *BS_rr,
 
   p1p3 = 0.0;
   p2p3 = 0.0;
-  for(i=0; i<DomDof[myrank]; i++){
+  for(i=0; i<com->DomDof[myrank]; i++){
     p1p3 += p1[i]*p3[i];
     p2p3 += p2[i]*p3[i];
   }
@@ -447,48 +443,48 @@ double D_lam_ALM2 (double *BS_rr,
   /* an2 *= 180.0/PII; */
   
   /* Residuals */
-  for (i=0;i<DomDof[myrank];i++){
-    p1[i] = BS_d_r[i] + BS_D_R[i] + x1*BS_rr[i];
-    p2[i] = BS_d_r[i] + BS_D_R[i] + x2*BS_rr[i];
+  for (i=0;i<com->DomDof[myrank];i++){
+    p1[i] = arc->BS_U[i] + arc->BS_U[i] + x1*(arc->BS_rr[i]);
+    p2[i] = arc->BS_U[i] + arc->BS_U[i] + x2*(arc->BS_rr[i]);
   }
 
-  for (i=0;i<ndofd;i++ ) f_u[i] = 0.0;
-  GToL(p1,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
-  fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dts,t,stab,nce,
-		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+  for (i=0;i<fv->ndofd;i++ ) f_u[i] = 0.0;
+  GToL(p1,p12,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  
+  double *temp_d_u = fv->d_u;
+  fv->d_u = p12;
+  fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,0);
 
-  LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
-  for (i=0;i<DomDof[myrank];i++) {
-    p1[i] = (lm + dlm + x1)*BS_R[i] - BS_f_u[i];
+  LToG(f_u,BS_f_u,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  for (i=0;i<com->DomDof[myrank];i++) {
+    p1[i] = (arc->lm   + dlm + x1)*arc->BS_R[i] - BS_f_u[i];
   }
   
   /* nor1 = ss (p1,p1,DomDof[myrank]); */
   /* MPI_Allreduce(&nor1,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm); */
   /* nor1 = sqrt(tmp); */
 
-  for (i=0;i<ndofd;i++){
+  for (i=0;i<fv->ndofd;i++){
     f_u[i] = 0.0;
   }
 
-  GToL(p2,p12,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+  GToL(p2,p12,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
 
-  fd_residuals (f_u,ne,n_be,ndofd,npres,p12,r,node,elem,b_elems,matgeom,
-		hommat,sup,eps,sig,nor_min,crpl,dts,t,stab,nce,
-		coel /*,gnod,geel*/,mpi_comm,opts,alpha_alpha,r_n,r_n_1);
+  fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,0);
+  fv->d_u = temp_d_u;
 
-  LToG(f_u,BS_f_u,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+  LToG(f_u,BS_f_u,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
 
-  for (i=0;i<DomDof[myrank];i++){
-    p2[i] = (lm + dlm + x2)*BS_R[i] - BS_f_u[i]; 
+  for (i=0;i<com->DomDof[myrank];i++){
+    p2[i] = (arc->lm   + dlm + x2)*arc->BS_R[i] - BS_f_u[i]; 
   }
 
   /* nor2 = ss (p2,p2,DomDof[myrank]); */
   /* MPI_Allreduce(&nor2,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm); */
   /* nor2 = sqrt(tmp); */
 
-  send[0] = ss (p1,p1,DomDof[myrank]);
-  send[1] = ss (p2,p2,DomDof[myrank]);
+  send[0] = ss (p1,p1,com->DomDof[myrank]);
+  send[1] = ss (p2,p2,com->DomDof[myrank]);
   MPI_Allreduce(send,rec,2,MPI_DOUBLE,MPI_SUM,mpi_comm); 
   nor1 = sqrt(rec[0]);
   nor2 = sqrt(rec[1]);
@@ -519,6 +515,7 @@ double D_lam_ALM2 (double *BS_rr,
   
   return (DLM);
 }
+
 
 /*********************************************************************/
 /*********************************************************************/

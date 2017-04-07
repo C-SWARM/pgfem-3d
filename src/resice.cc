@@ -366,7 +366,7 @@ void lokalizace_scr (double *a,double *b,long *lcn,long *adr,long *ci,long n)
 }
 
 
-void strci_scr (long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node)
+void strci_scr (long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node, const int mp_id)
      /*
        funkce zjistuje prispevek k velikosti pomocneho pole
        sloupcovych indexu v ukladani symmetric compressed rows
@@ -394,9 +394,9 @@ void strci_scr (long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node)
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     for (j=0;j<ndofe;j++){
       lcnj=cn[j]-1;
@@ -412,7 +412,7 @@ void strci_scr (long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node)
   dealoc1l (cn);  dealoc1l (nod);
 }
 
-void aci_scr (long *ci,long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node)
+void aci_scr (long *ci,long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node, const int mp_id)
      /*
        funkce sestavuje prispevky do pomocneho pole sloupcovych
        indexu v ukladani symmetric compressed rows od jednoho typu prvku
@@ -443,9 +443,9 @@ void aci_scr (long *ci,long *adr,long ne,long ndofn,ELEMENT *elem,NODE *node)
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     for (j=0;j<ndofe;j++){
       lcnj=cn[j]-1;

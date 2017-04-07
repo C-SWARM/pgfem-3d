@@ -106,7 +106,8 @@ int st_increment (long ne,
 		  COEL *coel,
 		  double *pores,
 		  MPI_Comm mpi_comm,
-		  const int coh);
+		  const int coh,
+		  const int mp_id);
 
 
 #ifdef __cplusplus

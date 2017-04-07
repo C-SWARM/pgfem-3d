@@ -60,10 +60,12 @@ int main(int argc,char *argv[])
   
   
   int in_err = 0;
+  int physicsno = 1;
+  int ndim = 3;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-		     &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-		     &elem,&mater,&matgeom,&sup,&nln,&znod,
-		     &nle_s,&zele_s,&nle_v,&zele_v);
+         &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+         &elem,&mater,&matgeom,&sup,&nln,&znod,
+         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
 	    myrank);
@@ -87,7 +89,7 @@ int main(int argc,char *argv[])
   free(mater);  
   
   EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
+  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   // read time steps
   char filename[1024];
@@ -128,7 +130,7 @@ int main(int argc,char *argv[])
   double *Ph = aloc1(ne);
   double *Vh = aloc1(ne);
 
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
 
   read_VTK_file4TF(filename, u,Ph,Vh);
 
@@ -155,7 +157,7 @@ int main(int argc,char *argv[])
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
-  destroy_node(nn,node);
+  destroy_node_multi_physics(nn,node,physicsno);
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();

@@ -39,7 +39,8 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 					  const int n_jobs_max,
 					  const MACROSCALE *macro,
-					  const PGFEM_mpi_comm *mpi_comm);
+					  const PGFEM_mpi_comm *mpi_comm,
+					  const int mp_id);
 
 /**
  * Generate initial partitioning of jobs to compute on servers.

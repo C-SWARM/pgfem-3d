@@ -22,7 +22,7 @@ extern "C" {
       mapping (which starts at 0) to work, we must subtract 1 from the
       previous value, then add it back after the new value is
       determined. */
-  void renumber_ID (int ndofn,int nn,NODE *node,int *g_order,MPI_Comm comm);
+  void renumber_ID (int ndofn,int nn,NODE *node,int *g_order,MPI_Comm comm, const int mp_id);
 
 #ifdef __cplusplus
 }

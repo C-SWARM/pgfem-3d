@@ -43,7 +43,8 @@ int compute_n_job_and_job_sizes(const COMMON_MACROSCALE *c,
 
 int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
 			    const PGFEM_ms_job_intercomm *ic,
-			    MICROSCALE *microscale)
+			    MICROSCALE *microscale,
+			    const int mp_id)
 {
   int err = 0;
   /* error check */
@@ -78,7 +79,7 @@ int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
       /* got job, compute job */
       err += micro_job_master(mpi_comm,idx,recv->sizes[idx],
 			      recv->buffer[idx],send->buffer[idx],
-			      microscale,&exit_server);
+			      microscale,&exit_server,mp_id);
 
       /* wait for any previous send of this process to complete. May
 	 need to do some status checking here to avoid blocking in the
@@ -115,7 +116,7 @@ int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
     free(recv);
 
   } else {
-   err += micro_job_slave(mpi_comm,microscale);
+   err += micro_job_slave(mpi_comm,microscale,mp_id);
   }
 
   return err;
@@ -127,7 +128,8 @@ int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
 		     char *in_buffer,
 		     char *out_buffer,
 		     MICROSCALE *micro,
-		     int *exit_server)
+		     int *exit_server,
+		     const int mp_id)
 {
   int err = 0;
   /* exit if not master on microscale */
@@ -146,12 +148,12 @@ int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
   /* compute the job */
   err += microscale_compute_job(idx,buff_size,
 				out_buffer,micro,
-				exit_server);
+				exit_server,mp_id);
   return err;
 }
 
 int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
-		    MICROSCALE *micro)
+		    MICROSCALE *micro,const int mp_id)
 {
   int err = 0;
   int exit_server = 0;
@@ -169,7 +171,7 @@ int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
     /* compute the job */
     err += microscale_compute_job(job_init_info[0],
 				  job_init_info[1],
-				  buffer,micro,&exit_server);
+				  buffer,micro,&exit_server,mp_id);
 
     /* cleanup */
     free(buffer);
@@ -181,7 +183,8 @@ int microscale_compute_job(const int idx,
 			   const int buff_len,
 			   char *buffer,
 			   MICROSCALE *micro,
-			   int *exit_server)
+			   int *exit_server,
+			   const int mp_id)
 {
   int err = 0;
 
@@ -197,7 +200,7 @@ int microscale_compute_job(const int idx,
   }
 
   /* compute the job */
-  err += compute_ms_cohe_job(idx,job,micro);
+  err += compute_ms_cohe_job(idx,job,micro,mp_id);
 
   /* pack the job back into buffer */
   err += pack_MS_COHE_JOB_INFO(job,buff_len,buffer);

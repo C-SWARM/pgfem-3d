@@ -44,14 +44,16 @@ void strci_scr (long *adr,
 		long ne,
 		long ndofn,
 		ELEMENT *elem,
-		NODE *node);
+		NODE *node,
+		const int mp_id);
 
 void aci_scr (long *ci,
 	      long *adr,
 	      long ne,
 	      long ndofn,
 	      ELEMENT *elem,
-	      NODE *node);
+	      NODE *node,
+	      const int mp_id);
 
 void sort_cr (long *ci,
 	      long *adrb,

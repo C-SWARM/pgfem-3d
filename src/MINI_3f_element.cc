@@ -154,7 +154,7 @@ int MINI_3f_stiffmat_el(double *Ks,            /**< Element stiffmat */
   /* Element Dof */
   int ndofe = 0; /* ndofs on element without bubble */
   for (int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
   
   const int n_bub = elem[ii].n_bub;
@@ -167,7 +167,7 @@ int MINI_3f_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
   count = 0;
   for (int i=0; i<nne; i++){
-    for (int j=0; j<node[nod[i]].ndofn; j++){
+    for (int j=0; j<ndofn; j++){
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
@@ -179,7 +179,7 @@ int MINI_3f_stiffmat_el(double *Ks,            /**< Element stiffmat */
 	PGFEM_Abort();
       }
     } /* ndofn */
-    count += node[nod[i]].ndofn;
+    count += ndofn;
   } /* nne */
 
   /* displacements from bubble */
@@ -547,7 +547,7 @@ int MINI_3f_resid_el(double *Res,         /**< Element residual */
   /* Element Dof */
   int ndofe = 0; /* ndofs on element without bubble */
   for (int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
   
   int n_bub = elem[ii].n_bub;
@@ -560,7 +560,7 @@ int MINI_3f_resid_el(double *Res,         /**< Element residual */
 
   count = 0;
   for (int i=0; i<nne; i++){
-    for (int j=0; j<node[nod[i]].ndofn; j++){
+    for (int j=0; j<ndofn; j++){
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
@@ -572,7 +572,7 @@ int MINI_3f_resid_el(double *Res,         /**< Element residual */
 	PGFEM_Abort();
       }
     } /* ndofn */
-    count += node[nod[i]].ndofn;
+    count += ndofn;
   } /* nne */
 
   /* displacements from bubble */
@@ -950,7 +950,7 @@ int MINI_3f_update_bubble_el(ELEMENT *elem,
   /* Element Dof */
   int ndofe = 0; /* ndofs on element without bubble */
   for (int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   const int n_bub = elem[ii].n_bub;
@@ -982,7 +982,7 @@ int MINI_3f_update_bubble_el(ELEMENT *elem,
 
   count = 0;
   for (int i=0; i<nne; i++){
-    for (int j=0; j<node[nod[i]].ndofn; j++){
+    for (int j=0; j<ndofn; j++){
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
@@ -996,7 +996,7 @@ int MINI_3f_update_bubble_el(ELEMENT *elem,
 	PGFEM_Abort();
       }
     } /* ndofn */
-    count += node[nod[i]].ndofn;
+    count += ndofn;
   } /* nne */
 
   /* displacements from bubble */
@@ -1295,7 +1295,8 @@ int MINI_3f_update_bubble(ELEMENT *elem,
 			  const HOMMAT *hommat,
 			  const double *sol, /* accum. solution  on incr */
 			  const double *dsol, /* sol from current iter */
-			  const int iter)
+			  const int iter,
+			  const int mp_id)
 {
   int err = 0;
 
@@ -1326,7 +1327,7 @@ int MINI_3f_update_bubble(ELEMENT *elem,
     elemnodes(i,nne,nod,elem);
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_updated(nne,nod,node,x,y,z);
@@ -1403,7 +1404,7 @@ void MINI_3f_increment_el(ELEMENT *elem,
   /* Element Dof */
   int ndofe = 0; /* ndofs on element without bubble */
   for (int i=0; i<nne; i++){
-    ndofe += node[nod[i]].ndofn;
+    ndofe += ndofn;
   }
 
   const int n_bub = elem[ii].n_bub;
@@ -1416,7 +1417,7 @@ void MINI_3f_increment_el(ELEMENT *elem,
 
   count = 0;
   for (int i=0; i<nne; i++){
-    for (int j=0; j<node[nod[i]].ndofn; j++){
+    for (int j=0; j<ndofn; j++){
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
@@ -1428,7 +1429,7 @@ void MINI_3f_increment_el(ELEMENT *elem,
 	PGFEM_Abort();
       }
     } /* ndofn */
-    count += node[nod[i]].ndofn;
+    count += ndofn;
   } /* nne */
 
   /* displacements from bubble */
@@ -1643,7 +1644,8 @@ void MINI_3f_increment(ELEMENT *elem,
 		       SIG *sig,
 		       const HOMMAT *hommat,
 		       const double *sol,
-		       const MPI_Comm mpi_comm)
+		       const MPI_Comm mpi_comm,
+		       const int mp_id)
 {
   const int ndn = 3;
   int nne, mat, nne_t, II;
@@ -1670,7 +1672,7 @@ void MINI_3f_increment(ELEMENT *elem,
     elemnodes(i,nne,nod,elem);
 
     /* get local dof ids on elemnt */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Get the node and bubble coordinates */
     nodecoord_updated(nne,nod,node,x,y,z);
@@ -1693,7 +1695,7 @@ void MINI_3f_increment(ELEMENT *elem,
   /*** Update Coordinates ***/
   for (int ii=0;ii<nnodes;ii++){
     for (int i=0;i<ndn;i++){
-      II = node[ii].id[i];
+      II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
   	if (i == 0) node[ii].x1 += sol[II-1];
   	if (i == 1) node[ii].x2 += sol[II-1];
@@ -1732,7 +1734,8 @@ void MINI_3f_check_resid(const int ndofn,
 			 const int ndofd,
 			 const int GDof,
 			 const COMMUN comm,
-			 const MPI_Comm mpi_comm)
+			 const MPI_Comm mpi_comm,
+			 const int mp_id)
 {
   /* compute the norm of the residauls for each variable */
   int myrank,nproc;
@@ -1768,7 +1771,7 @@ void MINI_3f_check_resid(const int ndofn,
     nod = aloc1l (nne);
     elemnodes (ii,nne,nod,elem);
     /* Element Dof */
-    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
     const int n_bub = elem[ii].n_bub;
     const int n_bub_dofs = elem[ii].n_bub_dofs;
@@ -1790,7 +1793,7 @@ void MINI_3f_check_resid(const int ndofn,
     element_center(nne,x,y,z);
 
     /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);    
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);    
     
     /* deformation on element */
     def_elem (cn,ndofe,d_r,elem,node,r_e,sup,0);
@@ -1802,7 +1805,7 @@ void MINI_3f_check_resid(const int ndofn,
 
     count = 0;
     for (int i=0; i<nne; i++){
-      for (int j=0; j<node[nod[i]].ndofn; j++){
+      for (int j=0; j<ndofn; j++){
 
 	/* filter displacement and pressure from element unknowns */
 	if (j<ndn){                           /* displacement dof */
@@ -1814,7 +1817,7 @@ void MINI_3f_check_resid(const int ndofn,
 	  PGFEM_Abort();
 	}
       } /* ndofn */
-      count += node[nod[i]].ndofn;
+      count += ndofn;
     } /* nne */
 
     /* displacements from bubble */
@@ -2049,10 +2052,10 @@ void MINI_3f_check_resid(const int ndofn,
        separate arrays */
     int j = 0;
     for (int k=0;k<nne;k++){
-      for (int kk=0;kk<node[nod[k]].ndofn;kk++){
-	int II = node[nod[k]].id[kk]-1;
+      for (int kk=0;kk<ndofn;kk++){
+	int II = node[nod[k]].id_map[mp_id].id[kk]-1;
 	if (II < 0) continue;
-	if (kk<node[nod[k]].ndofn-1){
+	if (kk<ndofn-1){
 	  f_u[II] += fe[j+kk];
 	  f_u1[II] += rue1[j+kk];
 	  f_u2[II] += rue2[j+kk];
@@ -2060,7 +2063,7 @@ void MINI_3f_check_resid(const int ndofn,
 	  f_p[II] += fe[j+kk];
 	}
       }/*end kk*/
-      j += node[nod[k]].ndofn;
+      j += ndofn;
     }/*end k*/
 
     free(r_e);

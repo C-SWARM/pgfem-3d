@@ -33,7 +33,8 @@ int compute_reactions(long ne,
 		      double dt,
 		      double stab,
 		      MPI_Comm mpi_comm,
-		      const int analysis)
+		      const int analysis,
+		      const int mp_id)
 {
   int err = 0;
 
@@ -55,7 +56,7 @@ int compute_reactions(long ne,
       long *nod = ptr_elem->nod;
 
       /* Element Dof */
-      const int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+      const int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
       /* allocation */
       double *r_e = aloc1 (ndofe);
@@ -88,7 +89,7 @@ int compute_reactions(long ne,
 	element_center(nne,x,y,z);
       }
 
-      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+      get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
       /* After convergence, no increment of deformation, r_e = 0 */    
 
@@ -129,13 +130,13 @@ int compute_reactions(long ne,
       /* fe contains the local residual vector on the element. */
       int j = 0;
       for (int k=0; k<nne; k++){
-	for(int kk=0; kk<node[nod[k]].ndofn; kk++){
-	  long II = node[nod[k]].id[kk];
+	for(int kk=0; kk<ndofn; kk++){
+	  long II = node[nod[k]].id_map[mp_id].id[kk];
 	  if (II <= -1){ /* dof is prescribed displacement */
 	    rxn[abs(II + 1)] -= fe[j+kk]; /* add value to appropriate pre. disp. */
 	  }
 	}
-	j += node[nod[k]].ndofn;
+	j += ndofn;
       }
 
       /* deallocate */

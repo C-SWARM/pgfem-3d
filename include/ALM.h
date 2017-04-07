@@ -51,6 +51,8 @@
 #include "PGFem3D_options.h"
 #endif
 
+#include "PGFem3D_data_structure.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */
@@ -86,41 +88,37 @@ extern "C" {
 		     double nor_min,
 		     double *dR);
 
-  double D_lam_ALM2 (double *BS_rr,
-		     double *BS_D_R,
-		     double *BS_R,
-		     double *BS_DK,
-		     double dlm,
-		     double lm,
-		     double dAL,
-		     long ne,
-		     int n_be,
-		     long ndofd,
-		     long npres,
-		     double *BS_d_r,
-		     double *r,
-		     NODE *node,
-		     ELEMENT *elem,
-		     BOUNDING_ELEMENT *b_elems,
-		     MATGEOM matgeom,
-		     HOMMAT *hommat,
-		     SUPP sup,
-		     EPS *eps,
-		     SIG *sig,
-		     double nor_min,
-		     CRPL *crpl,
-		     double dt,
-		     double stab,
-		     long nce,
-		     COEL *coel,
-		     long *DomDof,
-		     int GDof,
-		     COMMUN comm 
-		     /*,
-		       GNOD *gnod,
-		       GEEL *geel*/  ,
-		     MPI_Comm mpi_comm,
-		     const PGFem3D_opt *opts);
+/// D_lam_ALM2_MP
+///
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv array of field variable object
+/// \param[in] sol object array for solution scheme
+/// \param[in] load object for loading
+/// \param[in] com object array for communications
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dlm Arc_length parameter
+/// \param[in] dAL Arc_length parameter
+/// \param[in] dt times step size
+/// \return computed DLM
+double D_lam_ALM2_MP(GRID *grid,
+                     MATERIAL_PROPERTY *mat,
+                     FIELD_VARIABLES *fv,
+                     SOLVER_OPTIONS *sol,
+                     LOADING_STEPS *load,
+                     COMMUNICATION_STRUCTURE *com,
+                     CRPL *crpl,
+                     MPI_Comm mpi_comm,
+                     const PGFem3D_opt *opts,
+                     MULTIPHYSICS *mp,
+                     int mp_id,
+                     double dlm,
+                     double dAL,
+                     double dt);		     
 
   double d_ALM4 (long ndofd,
 		 double *BS_rr,

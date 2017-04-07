@@ -438,7 +438,8 @@ long integration_alg (long ne,
 		      double nor_min,
 		      long STEP,
 		      long GAMA,
-		      const PGFem3D_opt *opts)
+		      const PGFem3D_opt *opts,
+		      const int mp_id)
 {
   
   long INFO = 0, ii,i,j,k,II,JJ,KK,ip,nne,ndofe,*nod,M,N,P,R,U,W,Q,mat,ndn,
@@ -516,7 +517,7 @@ long integration_alg (long ne,
     }
     
     /* code numbers on element */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* displacement on element */
     def_elem (cn,ndofe,d_r,elem,node,r_r,sup,0);

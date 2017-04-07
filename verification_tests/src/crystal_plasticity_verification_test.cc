@@ -9,6 +9,8 @@
 #include "PGFem3D_to_VTK.hpp"
 #include "restart.h"
 #include "math.h"
+#include "PGFem3D_data_structure.h"
+#include "elem3d.h"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -64,10 +66,12 @@ int main(int argc,char *argv[])
   Model_parameters *param_list = NULL;
   
   int in_err = 0;
+  int physicsno = 1;
+  int ndim = 3;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
          &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
          &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v);
+         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
       myrank);
@@ -90,8 +94,20 @@ int main(int argc,char *argv[])
   dealoc3l(a,nmat,nmat);
   free(mater);  
   
-  EPS *eps = NULL;    
-  eps = build_eps_il(ne,elem,options.analysis_type);
+  EPS *eps = NULL;
+  
+  int n_state_varialbles = 0;
+  for(int eid=0; eid<ne; eid++)
+  {
+    int nne = elem[eid].toe;
+    long nint = 0;
+    int_point(nne,&nint);
+    n_state_varialbles += nint;
+  }
+        
+  State_variables *statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+            
+  eps = build_eps_il(ne,elem,options.analysis_type,&statv_list);
 
   if (options.analysis_type == CM) {
     /* parameter list and initialize const. model at int points.
@@ -133,10 +149,68 @@ int main(int argc,char *argv[])
 
   double tnm1[2] = {-1.0,-1.0};
   double NORM = 0.0;
+  
+  // initialize and define multiphysics
+  MULTIPHYSICS mp;  
+  int id = MULTIPHYSICS_MECHANICAL;
+  int write_no = 0;
+  int *coupled_ids = (int *) malloc(sizeof(int));
+  char *physicsname = (char *) malloc(sizeof(char)*1024);
+  {
+    coupled_ids[0] = 0;
+    sprintf(physicsname, "Mechanical");
+ 
+    mp.physicsno      = 1;
+    mp.physicsname    = &physicsname;
+    mp.physics_ids    = &id;
+    mp.ndim           = &ndim;
+    mp.write_no       = &write_no;
+    mp.write_ids      = NULL;
+    mp.coupled_ids    = &coupled_ids;
+    mp.total_write_no = 0;
+  } 
+
+  GRID grid;
+  grid_initialization(&grid);
+  {
+    grid.ne          = ne;
+    grid.nn          = nn;
+    grid.nsd         = nsd;
+    grid.element     = elem;
+    grid.node        = node;
+  }  
+  
+  // initialize and define field variables
+  FIELD_VARIABLES fv;
+  {
+    field_varialbe_initialization(&fv);
+    fv.ndofn  = ndofn;
+    fv.npres  = npres;
+    fv.eps    = eps;
+    fv.u_nm1  = u0;
+    fv.u_n    = u1;
+    fv.NORM   = NORM;
+    fv.statv_list = statv_list;
+  }
+  
+  double tns[2];
+  PGFem3D_TIME_STEPPING ts;
+  {
+    time_stepping_initialization(&ts);
+    ts.tns    = tns;  
+  }
+    
+  // initialize and define loading steps object
+  LOADING_STEPS load;    
+  {
+    loading_steps_initialization(&load);
+    load.sups = &sup;
+  }
+  
   for(int istep=0; istep<1000; istep++)
   {
-    read_restart(u0,u1,&options,elem,node,NULL,eps,sup,
-                 myrank,ne,nn,nsd,&istep,tnm1,&NORM); 
+    options.restart = istep;
+    read_restart(&grid,&fv,&ts,&load,&options,&mp,tnm1,myrank);
 
     Matrix_construct_init(double, PK2, 3,3,0.0);
     Matrix_construct_init(double, sigma, 3,3,0.0);
@@ -218,16 +292,21 @@ int main(int argc,char *argv[])
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
-  destroy_node(nn,node);
+  destroy_node_multi_physics(nn,node,physicsno);
+  
+  free(coupled_ids);
+  free(physicsname);  
 
-  /*=== FINALIZE AND EXIT ===*/
-  PGFEM_finalize_io();
-  MPI_Finalize(); 
   if(myrank==0)
   { 
     FILE *fp_err = fopen("order_of_error.txt", "w");
     fprintf(fp_err,"%d\n", (int) log10(Err_of_stress/10.0));
     fclose(fp_err);
   }
+
+  /*=== FINALIZE AND EXIT ===*/
+  PGFEM_finalize_io();
+  MPI_Finalize(); 
+
   return(0);
 }

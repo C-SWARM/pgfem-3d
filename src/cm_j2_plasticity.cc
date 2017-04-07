@@ -45,10 +45,10 @@ static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 Define_Matrix(double);
 
 /* macros for easy access to Constitutive_model structure */
-#define cm_Fs(m) ((m)->vars.Fs)
-#define cm_Fs_data(m, idx) ((m)->vars.Fs[(idx)].m_pdata)
-#define cm_vars(m) ((m)->vars.state_vars->m_pdata)
-#define cm_flags(m) ((m)->vars.flags)
+#define cm_Fs(m) ((m)->vars_list[0][m->model_id].Fs)
+#define cm_Fs_data(m, idx) ((m)->vars_list[0][m->model_id].Fs[(idx)].m_pdata)
+#define cm_vars(m) ((m)->vars_list[0][m->model_id].state_vars->m_pdata)
+#define cm_flags(m) ((m)->vars_list[0][m->model_id].flags)
 #define cm_func(m) ((m)->param)
 #define cm_hmat(m) ((m)->param->p_hmat)
 #define cm_param(m) ((m)->param->model_param)
@@ -886,21 +886,21 @@ static int j2d_write_restart(FILE *out,
 
 static size_t j2d_get_size(const Constitutive_model *m)
 {
-  return state_variables_get_packed_size(&(m->vars));
+  return state_variables_get_packed_size(m->vars_list[0]+m->model_id);
 }
 
 static int j2d_pack(const Constitutive_model *m,
                     char *buffer,
                     size_t *pos)
 {
-  return state_variables_pack(&(m->vars), buffer, pos);
+  return state_variables_pack(m->vars_list[0]+m->model_id, buffer, pos);
 }
 
 static int j2d_unpack(Constitutive_model *m,
                       const char *buffer,
                       size_t *pos)
 {
-  return state_variables_unpack(&(m->vars), buffer, pos);
+  return state_variables_unpack(m->vars_list[0]+m->model_id, buffer, pos);
 }
 
 static int j2d_get_subdiv_param(const Constitutive_model *m,

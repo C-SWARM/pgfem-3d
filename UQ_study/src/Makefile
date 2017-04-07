@@ -11,6 +11,7 @@ SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
 		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
 
 # HYPRE
+HYPRE_inc       = -I$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/include
 HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/lib -lHYPRE
 
 # CNSTVM
@@ -25,6 +26,9 @@ CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
 VTK_IO_dir	= $(PGFem3D_dir)/lib/VTK_IO
 VTK_IO_incl	= -I$(VTK_IO_dir)/include
 VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
+
+energy_equation_include = -I$(TEST_DIR)/energy_equation/include
+energy_equation_lib     = -L$(TEST_DIR)/energy_equation/src -lPGFem3D_Energy_equation
 
 # VTK
 VTK_dir		= /opt/crc/vtk/5.10.1/gcc
@@ -57,17 +61,20 @@ RM = rm -rf
 CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g 
 
 INCLUDES = -I$(pfem_incl_dir) \
-                  $(CNSTVM_incl) \
-		  $(VTK_IO_incl) \
-		  $(MKL_incl) \
-		  -I$(UQ_stdy_inc)
+            $(HYPRE_inc) \
+	    $(CNSTVM_incl) \
+	    $(VTK_IO_incl) \
+	    $(MKL_incl) \
+	    -I$(UQ_stdy_inc) \
+            $(energy_equation_include)
 
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
           $(CNSTVM_lib) \
 	  $(VTK_lib) \
-	  $(MKL_lib)
+	  $(MKL_lib) \
+          $(energy_equation_lib)
 
 OBJ = $(SRC:.cc=.o)
 

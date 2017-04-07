@@ -113,7 +113,8 @@ int vol_damage_int_alg(const int ne,
 		       SIG *sig,
 		       double *max_omega,
 		       double *dissipation,
-		       const int analysis)
+		       const int analysis,
+		       const int mp_id)
 {
   const int ndn = 3;
   int err = 0;
@@ -153,7 +154,7 @@ int vol_damage_int_alg(const int ne,
     elemnodes(elem_id,nne,nod,elem);
 
     /* get ndofs on element */
-    int ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    int ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
 
     /* allocate space */
     long *cn = (long*) PGFEM_calloc(ndofe,sizeof(double));
@@ -166,7 +167,7 @@ int vol_damage_int_alg(const int ne,
     double *z = (double*) PGFEM_calloc(nne,sizeof(double));
 
     /* get dof id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* get nodal coordinates */
     switch(analysis){
@@ -195,14 +196,14 @@ int vol_damage_int_alg(const int ne,
     {
       int k=0;
       for(int n=0; n<nne; n++){
-	for(int d=0; d<node[nod[n]].ndofn; d++){
+	for(int d=0; d<ndofn; d++){
 	  if(d < ndn){
 	    disp[n*ndn+d] = r_e[k+d];
 	  } else if(d == ndn){
 	    dp[n] = r_e[k+d];
 	  }
 	}
-	k += node[nod[n]].ndofn;
+	k += ndofn;
       }
     }
 

@@ -426,6 +426,27 @@ void def_elem_total (const long *cn,
 		     const SUPP sup,
 		     double *r_e);
 
+/// compute value of nodal variables 
+///
+/// \param[in] cn id of nodal values
+/// \param[in] ndofe number of degree of freedom on an element
+/// \param[in] r nodal variables at n+1
+/// \param[in] d_r nodal variable increments at n+1 
+/// \param[in] elem ELEMENT object
+/// \param[in] node NODE object
+/// \param[out] r_e computed nodal variables for an element
+/// \param[in] reference nodal value
+/// \return non-zero on interal error  
+int def_elem_with_reference(const long *cn,
+                             const long ndofe,
+                             const double *r,
+                             const double *d_r,
+                             const ELEMENT *elem,
+                             const NODE *node,
+                             const SUPP sup,
+                             double *r_e,
+                             double r0);
+
 /** Returns the local node numbers in a given element in nod[]. */
 void elemnodes (const long ii,
 		const long nne,
@@ -484,7 +505,8 @@ void stress (long ne,
 	     SIG *sig,
 	     EPS *eps,
 	     SUPP sup,
-	     const int analysis);
+	     const int analysis,
+	     const int mp_id);
 
 void Mises_sig (long ne,
 		SIG *sig,
@@ -534,7 +556,8 @@ void str_solve (double *r,
 		SIG *sig_e,
 		SIG *sig_n,
 		SUPP sup,
-		const int analysis);
+		const int analysis,
+		const int mp_id);
 
 void str_prj_load (long ii,
 		   long kk,
@@ -617,7 +640,8 @@ void check_equi (double *fu,
 		 NODE *node,
 		 MATGEOM matgeom,
 		 SIG *sig,
-		 const int analysis);
+		 const int analysis,
+		 const int mp_id);
 
 double* Energy_functional (long ne,
 			   long ndofn,
@@ -638,7 +662,8 @@ long* sparse_ApAi (long ne,
 		   long ndofn,
 		   ELEMENT *elem,
 		   NODE *node,
-		   long *Ap);
+		   long *Ap,
+		   const int mp_id);
 
 /****************************************************************/
 
@@ -674,6 +699,21 @@ void Logarithmic_strain (double **F,
 			 double **EL);
 void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
 
+/// determine whether the element is on communication boundary or in interior
+/// 
+/// \parma[in] eid element id
+/// \param[in,out] idx id of bndel (communication boundary element)
+/// \param[in,out] skip count element on communication boundary
+/// \param[in] nbndel number of elements on communication boundary
+/// \param[in] bndel list of elements on communcation boundary
+/// \param[in] myrank current process rank
+/// \return return 1 if the element is interior or 0 if the element on the communication boundary
+int is_element_interior(int eid, int *idx, int *skip, long nbndel, long *bndel, int myrank);
+
+double compute_volumes_from_coordinates(double *x,
+                                        double *y,
+                                        double *z,
+                                        long nne);
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

@@ -22,7 +22,8 @@ static long fallback_GRedist_node(const int nproc,
                                   const long nn,
                                   const long ndofn,
                                   NODE *node,
-                                  const MPI_Comm Comm)
+                                  const MPI_Comm Comm,
+                                  const long mp_id)
 {
   long NBN = 0; /* return value */
 
@@ -59,7 +60,7 @@ static long fallback_GRedist_node(const int nproc,
 	/* global node owned by THIS domain */
 	if (node[i].Dom == myrank && node[i].Pr == -1){
 	  own_buf[own_idx++] = node[i].Gnn;
-	  memcpy(own_buf + own_idx,node[i].Gid,ndofn*sizeof(long));
+	  memcpy(own_buf + own_idx,node[i].id_map[mp_id].Gid,ndofn*sizeof(long));
 	  own_idx += ndofn;
 	}
 	/* global node owned by OTHER domain */
@@ -117,11 +118,11 @@ static long fallback_GRedist_node(const int nproc,
     const size_t nod = need_buf[i*2+1];
     const size_t Gnn_Gid_idx = Gnn*(ndofn+1) + 1;
     for (size_t j=0;j<ndofn;j++){
-      if(node[nod].id[j] <= 0){
+      if(node[nod].id_map[mp_id].id[j] <= 0){
 	/* BC overrides periodicity */
-      	node[nod].Gid[j] = node[nod].id[j];
+      	node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
       } else {
-	node[nod].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
+	node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
       }
     }
   }
@@ -129,11 +130,11 @@ static long fallback_GRedist_node(const int nproc,
   for (size_t i=0;i<nn;i++){
     if (node[i].Pr == -1) continue;
     for (size_t j=0;j<ndofn;j++){
-      if(node[i].id[j] <= 0){
+      if(node[i].id_map[mp_id].id[j] <= 0){
 	/* BC overrides periodicity */
-	node[i].Gid[j] = node[i].id[j];
+	node[i].id_map[mp_id].Gid[j] = node[i].id_map[mp_id].id[j];
       } else {
-	node[i].Gid[j] = node[node[i].Pr].Gid[j];
+	node[i].id_map[mp_id].Gid[j] = node[node[i].Pr].id_map[mp_id].Gid[j];
       }
     }
   }
@@ -159,7 +160,8 @@ static long comm_hints_GRedist_node(const int nproc,
                                     const long ndofn,
                                     NODE *nodes,
                                     const Comm_hints *hints,
-                                    const MPI_Comm comm)
+                                    const MPI_Comm comm,
+                                    const long mp_id)
 {
   int err = 0;
   long owned_gnn = 0;
@@ -194,12 +196,12 @@ static long comm_hints_GRedist_node(const int nproc,
     int i, e;
     for (i = owned_range[0], e = owned_range[1] - 1; i < e; i++) {
       owned_Gnn_Gid[idx++] = shared[i].Gnn;
-      memcpy(owned_Gnn_Gid + idx, shared[i].Gid, ndofn * sizeof(*owned_Gnn_Gid));
+      memcpy(owned_Gnn_Gid + idx, shared[i].id_map[mp_id].Gid, ndofn * sizeof(*owned_Gnn_Gid));
       idx += ndofn;
       if (shared[i].Gnn == shared[i+1].Gnn) owned_gnn--;
     }
     owned_Gnn_Gid[idx++] = shared[i].Gnn;
-    memcpy(owned_Gnn_Gid + idx, shared[i].Gid, ndofn * sizeof(*owned_Gnn_Gid));
+    memcpy(owned_Gnn_Gid + idx, shared[i].id_map[mp_id].Gid, ndofn * sizeof(*owned_Gnn_Gid));
   }
 
   /* initialize communication of the owned node information based on
@@ -285,11 +287,11 @@ static long comm_hints_GRedist_node(const int nproc,
 
       /* set Gid */
       for (int j = 0; j < ndofn; j++) {
-        if (shared[i].id[j] <= 0) {
+        if (shared[i].id_map[mp_id].id[j] <= 0) {
           /* BC overrides periodicity */
-          shared[i].Gid[j] = shared[i].id[j];
+          shared[i].id_map[mp_id].Gid[j] = shared[i].id_map[mp_id].id[j];
         } else {
-          shared[i].Gid[j] = match[j + 1];
+          shared[i].id_map[mp_id].Gid[j] = match[j + 1];
         }
       }
     }
@@ -320,9 +322,10 @@ long GRedist_node (const int nproc,
 		   const long nn,
 		   const long ndofn,
 		   NODE *node,
-                   const Comm_hints *hints,
-		   const MPI_Comm Comm)
+       const Comm_hints *hints,
+		   const MPI_Comm Comm,
+		   const int mp_id)
 {
-  if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm);
-  else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm);
+  if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm, mp_id);
+  else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm, mp_id);
 }

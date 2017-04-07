@@ -443,14 +443,14 @@ int resid_st_elem (long ii,
   {
     int k = 0;
     for(int i=0; i<nne; i++){
-      for(int j=0; j<node[nod[i]].ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	if(j<ndn){
 	  disp[i*ndn+j] = r_e[k+j];
 	} else if(j==ndn){
 	  p[i] = r_e[k+j];
 	}
       }
-      k += node[nod[i]].ndofn;
+      k += ndofn;
     }
   }
 
@@ -581,7 +581,7 @@ int resid_st_elem (long ii,
   {
     int k = 0;
     for (int i=0;i<nne;i++){
-      for (int j=0;j<node[nod[i]].ndofn;j++){
+      for (int j=0;j<ndofn;j++){
 	if (j  < ndn){
 	  fe[k+j] = Ru[i*ndn+j];
 	} else if (j == ndn){
@@ -590,7 +590,7 @@ int resid_st_elem (long ii,
 	  fe[k+j] = 0.0;
 	}
       }
-      k += node[nod[i]].ndofn;
+      k += ndofn;
     }
   }
 
@@ -717,14 +717,14 @@ int stiffmatel_st (long ii,
   {
     int k = 0;
     for(int i=0; i<nne; i++){
-      for(int j=0; j<node[nod[i]].ndofn; j++){
+      for(int j=0; j<ndofn; j++){
 	if(j<ndn){
 	  disp[i*ndn+j] = r_e[k+j];
 	} else if(j==ndn){
 	  p[i] = r_e[k+j];
 	}
       }
-      k += node[nod[i]].ndofn;
+      k += ndofn;
     }
   }
 
@@ -998,7 +998,8 @@ int st_increment (long ne,
 		  COEL *coel,
 		  double *pores,
 		  MPI_Comm mpi_comm,
-		  const int coh)
+		  const int coh,
+		  const int mp_id)
 {
   static const int ndn = 3;
   int err = 0;
@@ -1037,7 +1038,7 @@ int st_increment (long ne,
     nod = aloc1l (nne);
     elemnodes (ii,nne,nod,elem);
     /* Element Dof */
-    ndofe = get_ndof_on_elem_nodes(nne,nod,node);
+    ndofe = get_ndof_on_elem_nodes(nne,nod,node,ndofn);
     
     /* allocation */
     x = aloc1 (nne);
@@ -1052,7 +1053,7 @@ int st_increment (long ne,
     a = aloc1 (ndofe);
     
     /* Id numbers */
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
     /* Coordinates/deformation on element */
     if(sup->multi_scale){
@@ -1072,7 +1073,7 @@ int st_increment (long ne,
     /* Displacement and pressure unknowns */
     k=0;
     for (i=0;i<nne;i++){
-      for (j=0;j<node[nod[i]].ndofn;j++){
+      for (j=0;j<ndofn;j++){
 	if (j  < ndn){
 	  r_u[i*ndn+j] = r_e[k+j];
 	}
@@ -1219,7 +1220,7 @@ int st_increment (long ne,
   /*********************/
    for (ii=0;ii<nn;ii++){
     for (i=0;i<ndn;i++){
-      II = node[ii].id[i];
+      II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
 	if (i == 0) node[ii].x1 = node[ii].x1_fd + r[II-1] + d_r[II-1];
 	else if (i == 1) node[ii].x2 = node[ii].x2_fd + r[II-1] + d_r[II-1];

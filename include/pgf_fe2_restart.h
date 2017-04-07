@@ -55,7 +55,8 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
  * \return non-zero on error.
  */
 int pgf_FE2_restart_read_macro(MACROSCALE *macro,
-			       const size_t step);
+			       const size_t step,
+			       const int mp_id);
 
 /**
  * Read a restart file for a microscale domain and reset the

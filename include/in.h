@@ -25,11 +25,39 @@
 extern "C" {
 #endif /* #ifdef __cplusplus */
 
+/// read Dirichlet boundary conditions on nodes
+///
+/// \param[in]  in    Input file
+/// \param[in]  ndofn Number of degrees of freedom in one node
+/// \param[in]  node  Structure type of NODE
+/// \param[in]  mp_id multiphysics id
+/// \return     sup   created boundary condition structure 
+SUPP read_Dirichlet_BCs(FILE *in,
+		                    long nn,
+		                    long ndofn,
+		                    NODE *node,
+		                    const int mp_id);
+
+/// read Dirichlet boundary condition values
+///
+/// \param[in]  in    Input file
+/// \param[in]  ndofn Number of degrees of freedom in one node
+/// \param[in]  node  Structure type of NODE
+/// \param[in]  mp_id multiphysics id
+/// \return non-zero on internal ERROR
+int read_Dirichlet_BCs_values(FILE *in,
+		                          long nn,
+		                          long ndofn,
+		                          NODE *node,
+		                          SUPP sup,
+		                          const int mp_id);		                          
+
 /* Function reads parameters of supports */
 SUPP read_supports (FILE *in,
 		    long nn,
 		    long ndofn,
-		    NODE *node);
+		    NODE *node,
+		    const int mp_id);
 
 /**
  * Read material property listing for material mat_id [0,nmat).

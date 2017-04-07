@@ -86,11 +86,11 @@ long FEMLIB_determine_integration_type(int e_type, int i_order)
   return 4;
 }
 
-void FEMLIB_set_variable_size(TEMP_VARIABLES *v, int nne)
+void FEMLIB_set_variable_size(TEMP_VARIABLES *v, int nne_t, int nne)
 {
-  Matrix_construct_redim(double,v->x  ,nne,1);
-  Matrix_construct_redim(double,v->y  ,nne,1);
-  Matrix_construct_redim(double,v->z  ,nne,1);
+  Matrix_construct_redim(double,v->x  ,nne_t,1);
+  Matrix_construct_redim(double,v->y  ,nne_t,1);
+  Matrix_construct_redim(double,v->z  ,nne_t,1);
   Matrix_construct_redim(double,v->N_x,nne,1);
   Matrix_construct_redim(double,v->N_y,nne,1);
   Matrix_construct_redim(double,v->N_z,nne,1);         
@@ -137,8 +137,6 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   Matrix_construct_redim(double,fe->node_coord,nne ,nsd);
   Matrix_construct_redim(long,fe->node_id,nne,1);
       
-  FEMLIB_set_variable_size(&(fe->temp_v), nne);      
-    
   long npt_x, npt_y, npt_z;
   
   //currently supports for TETRAHEDRON
@@ -240,6 +238,20 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   fe->ST = aloc1(3*3*nsd*nne);  
 }
 
+/// set FEM libray by element
+///
+/// Set the FEM libray: shape function, deriviative of the shape functions, weight, 
+/// Gaussian points, node ids, element id, and node coordinates
+/// number of node on an element and integration order determine size of member varialbes (Memory will be allocated)
+/// FEMLIB_destruct should be called to cleanup this structure.
+///
+/// \param[out] fe self of FEMLIB
+/// \param[in] e element id
+/// \param[in] elem list of ELEMENT
+/// \param[in] node list of NODE
+/// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
+/// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
+/// \return void
 void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const NODE *node, int i_order, int is_total)
 {
   int nne = elem[e].toe;
@@ -249,6 +261,8 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const
   long *nod = (fe->node_id).m_pdata;  // no memory is allocated
   elemnodes(e,nne,nod,elem);
   
+  FEMLIB_set_variable_size(&(fe->temp_v), nne,nne);
+  
   double *x = (fe->temp_v).x.m_pdata; // no memory is allocated
   double *y = (fe->temp_v).y.m_pdata;
   double *z = (fe->temp_v).z.m_pdata; 
@@ -257,6 +271,56 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const
     nodecoord_total(nne,nod,node,x,y,z);
   else
     nodecoord_updated(nne,nod,node,x,y,z);
+  
+  for(int a=0; a<nne; a++)
+  {
+    Mat_v(fe->node_coord, a+1, 1) = x[a];  
+    Mat_v(fe->node_coord, a+1, 2) = y[a];  
+    Mat_v(fe->node_coord, a+1, 3) = z[a];    
+  }
+  
+  fe->curt_elem_id = e;
+}
+
+/// set FEM libray by element with bubble
+///
+/// Set the FEM library same as FEMLIB_initialization_by_elem, but if bubble is added, it computes
+/// center node in the element (MINI and MINI_3F)
+///
+/// \param[out] fe self of FEMLIB
+/// \param[in] e element id
+/// \param[in] elem list of ELEMENT
+/// \param[in] node list of NODE
+/// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
+/// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
+/// \return void
+void FEMLIB_initialization_by_elem_w_bubble(FEMLIB *fe, 
+                                            int e, 
+                                            const ELEMENT *elem, 
+                                            const NODE *node, 
+                                            int i_order, 
+                                            int is_total)
+{
+  int nne = elem[e].toe;
+  int nne_t = nne + elem[e].n_bub;
+    
+  FEMLIB_initialization(fe, nne, i_order, nne);
+  
+  long *nod = (fe->node_id).m_pdata;  // no memory is allocated
+  elemnodes(e,nne,nod,elem);
+  
+  FEMLIB_set_variable_size(&(fe->temp_v), nne_t, nne);
+  
+  double *x = (fe->temp_v).x.m_pdata; // no memory is allocated
+  double *y = (fe->temp_v).y.m_pdata;
+  double *z = (fe->temp_v).z.m_pdata; 
+  
+  if(is_total)
+    nodecoord_total(nne,nod,node,x,y,z);
+  else
+    nodecoord_updated(nne,nod,node,x,y,z);
+    
+  element_center(nne,x,y,z);
   
   for(int a=0; a<nne; a++)
   {

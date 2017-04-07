@@ -1,0 +1,11 @@
+This library defines energy euqations used in PGFem3D. The function defintions include
+building stiffness matrices and residual vectors.
+
+Residuals and stiffness are computed based on assumption that mechanical part is stationary as
+staggered Newton Raphson iteration is implemented in PGFem3D.
+ 
+The dependency is applied to both PGFem3D and energy euation, because
+the energy equation takes Fnite element structures from PGFem3D and PGFem3D uses energy euations
+for solving heat conduction problems.
+
+This libray will be built when PGFem3D is compiled at the top level.

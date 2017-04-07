@@ -185,7 +185,8 @@ void stiffmat (long *adr,
 	       long *ci,
 	       long typsolveru,
 	       double *k,
-	       const PGFem3D_opt *opts);
+	       const PGFem3D_opt *opts,
+	       const int mp_id);
 
 void stiffmatel (long ii,
 		 double *x,

@@ -62,6 +62,7 @@ static const long ARC = 1;
 int multi_scale_main(int argc, char **argv)
 {
   int err = 0;
+  int mp_id = 0;
   /* intitialize MPI */
   err += MPI_Init(&argc,&argv);
   /* initialize PGFEM_io */
@@ -112,7 +113,7 @@ int multi_scale_main(int argc, char **argv)
   MICROSCALE *micro = NULL;
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
     initialize_MACROSCALE(&macro);
-    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv);
+    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id);
     build_MACROSCALE_solution(macro);
   } else if(mpi_comm->valid_micro){/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
@@ -148,7 +149,7 @@ int multi_scale_main(int argc, char **argv)
     }
 
     /*=== BUILD MICROSCALE ===*/
-    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv);
+    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id);
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
 		   mpi_comm->rank_world,__func__,__FILE__,__LINE__);
@@ -169,7 +170,7 @@ int multi_scale_main(int argc, char **argv)
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */
-    err += pgf_FE2_micro_server_START(mpi_comm,micro);
+    err += pgf_FE2_micro_server_START(mpi_comm,micro,mp_id);
 
     /* destroy the microscale */
     destroy_MICROSCALE(micro);
@@ -179,7 +180,7 @@ int multi_scale_main(int argc, char **argv)
     pgf_FE2_macro_client_init(&client);
 
     /* create the list of jobs */
-    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm);
+    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm,mp_id);
 
     /* determine the initial job assignment*/
     pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
@@ -219,7 +220,7 @@ int multi_scale_main(int argc, char **argv)
       compute_applied_traction_res(c->ndofn,c->node,c->elem,
 				   n_sur_trac_elem,ste,
 				   n_feats,loads,
-				   nodal_forces);
+				   nodal_forces,mp_id);
 
       double tmp_sum = 0.0;
       for(int i=0; i<c->ndofd; i++){
@@ -303,7 +304,7 @@ int multi_scale_main(int argc, char **argv)
 			       c->supports->npd,c->supports->defl_d);
 
       /* read restart files and set current equilibrium state */
-      pgf_FE2_restart_read_macro(macro,macro->opts->restart);
+      pgf_FE2_restart_read_macro(macro,macro->opts->restart,mp_id);
       s->tim = macro->opts->restart;
 
       /* send a job to compute the first tangent */
@@ -352,12 +353,8 @@ int multi_scale_main(int argc, char **argv)
 	PGFEM_Abort();
       }
 
-      load_vec_node_defl (s->f_defl,c->ne,c->ndofn,c->elem,
-			  NULL,c->node,c->hommat,
-			  c->matgeom,c->supports,c->npres,
-			  solver_file->nonlin_tol,s->sig_e,s->eps,s->dt,
-			  s->crpl,macro->opts->stab,
-			  s->r,NULL,macro->opts,0.0);
+			compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,solver_file->nonlin_tol,
+                                                       mpi_comm->rank_macro);  
     
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -435,26 +432,9 @@ int multi_scale_main(int argc, char **argv)
 	}
 
 	int n_step = 0;
-	hypre_time += Newton_Raphson ( 1,&n_step,c->ne,0,c->nn,
-				       c->ndofn,c->ndofd,c->npres,s->tim,
-				       s->times,
-				       solver_file->nonlin_tol,s->dt,c->elem,
-				       NULL,c->node,c->supports,sup_defl,
-				       c->hommat,c->matgeom,s->sig_e,s->eps,
-				       c->Ap,c->Ai,s->r,s->f,
-				       s->d_r,s->rr,s->R,s->f_defl,
-				       s->RR,s->f_u,s->RRn,s->crpl,
-				       macro->opts->stab,c->nce,c->coel,
-				       solver_file->nonlin_method,
-				       &pores,c->SOLVER,s->BS_x,s->BS_f,
-				       s->BS_RR,gama,GNOR,nor1,
-				       c->lin_err,s->BS_f_u,c->DomDof,
-				       c->pgfem_comm,c->GDof,
-				       solver_file->n_step,
-				       solver_file->max_nonlin_iter,
-				       &(s->NORM),c->nbndel,c->bndel,
-				       c->mpi_comm,c->VVolume,macro->opts,ctx,0,
-				       NULL,NULL);
+
+  // perform Newton Raphson iteration
+  hypre_time += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);  
 
 	/* Null global vectors */
 	for (int i=0;i<c->ndofd;i++){
@@ -481,31 +461,10 @@ int multi_scale_main(int argc, char **argv)
 	char out_dat[500];
 	double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
 			  /dt0*solver_file->nonlin_method_opts[1]);
-	dlm = Arc_length ( c->ne,0,c->nn,c->ndofn,
-			   c->ndofd,c->npres,
-			   solver_file->n_step,s->tim,
-			   s->times,solver_file->nonlin_tol,
-			   solver_file->max_nonlin_iter,s->dt,
-			   dt0,c->elem,NULL,c->nbndel,
-			   c->bndel,c->node,c->supports,sup_defl,
-			   c->hommat,c->matgeom,s->sig_e,s->eps,
-			   c->Ap,c->Ai,c->SOLVER,
-			   s->RRn,s->f_defl,s->crpl,macro->opts->stab,
-			   c->nce,c->coel,s->r,s->f,
-			   s->d_r,s->D_R,s->rr,s->R,
-			   s->RR,s->f_u,s->U,s->DK,
-			   s->dR,s->BS_f,s->BS_d_r,s->BS_D_R,
-			   s->BS_rr,s->BS_R,s->BS_RR,s->BS_f_u,
-			   s->BS_U,s->BS_DK,s->BS_dR,solver_file->nonlin_method,
-			   lm,solver_file->nonlin_method_opts[0],&DET,&dlm0,
-			   &DLM,macro->opts->vis_format,
-			   macro->opts->smoothing,
-			   s->sig_n,out_dat,
-			   (long*) (solver_file->print_steps),&AT,
-			   ARC,tmp_val,&ITT,&dAL,
-			   &pores,c->DomDof,c->GDof,c->pgfem_comm,
-			   c->lim_zero,&s->NORM,c->mpi_comm,
-			   c->VVolume,macro->opts);
+
+	dlm = Arc_length_multiscale(c,s,solver_file,macro->opts,
+                             &pores,dt0,lm,&DET,&dlm0,&DLM,&AT,      
+                             ARC,&ITT,&dAL,sup_defl);		  
 
 	/* Load multiplier */
 	lm += dlm;
@@ -548,12 +507,8 @@ int multi_scale_main(int argc, char **argv)
         dts[DT_N] = s->times[s->tim] - s->times[s->tim-1];
     
       dts[DT_NP1] = s->times[s->tim+1] - s->times[s->tim]; 
-                                
-      fd_res_compute_reactions(c->ndofn, c->npres, s->d_r, s->r, c->elem, c->node,
-                               c->matgeom, c->hommat, c->supports, s->eps,
-                               s->sig_e, solver_file->nonlin_tol,
-                               s->crpl, dts, s->times[s->tim+1], macro->opts->stab,
-                               c->mpi_comm, macro->opts, 0, NULL, NULL);
+                               
+      fd_res_compute_reactions_multiscale(c,s,solver_file,macro->opts,dts);                               
 
       if (solver_file->print_steps[s->tim] == 1){
 
@@ -604,7 +559,7 @@ int multi_scale_main(int argc, char **argv)
 	    VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
 			  mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
 			  c->supports,s->r,s->sig_e,s->eps,
-			  macro->opts);
+			  macro->opts,mp_id);
 
 	    if (macro->opts->cohesive == 1){
 	      if(mpi_comm->rank_macro == 0){
@@ -616,7 +571,7 @@ int multi_scale_main(int argc, char **argv)
 	      VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
 				     s->tim,mpi_comm->rank_macro,c->nce,c->node,
 				     c->coel,c->supports,s->r,c->ensight,
-				     macro->opts);
+				     macro->opts,mp_id);
 	    }
 	    break;
 	  default: /* no output */ break;

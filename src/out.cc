@@ -11,6 +11,7 @@
 #include "gen_path.h"
 #include "cast_macros.h"
 
+#define MP_ID 0
 static const int periodic = 0;
 static const int ndim = 3;
 
@@ -78,10 +79,10 @@ void deform (FILE *out,NODE *node,ELEMENT *elem,long nn,long ne,long ndofn,SUPP 
     
     for (j=0;j<ndofn;j++){
       
-      if (node[i].id[j] > 0)  
-	rl[j] = r[node[i].id[j]-1];
-      if (node[i].id[j] < 0) 
-	rl[j] = sup->defl[abs(node[i].id[j])-1];
+      if (node[i].id_map[MP_ID].id[j] > 0)  
+	rl[j] = r[node[i].id_map[MP_ID].id[j]-1];
+      if (node[i].id_map[MP_ID].id[j] < 0) 
+	rl[j] = sup->defl[abs(node[i].id_map[MP_ID].id[j])-1];
       
       PGFEM_fprintf (out,"%12.12f  ",rl[j]);
     }
@@ -438,10 +439,10 @@ void elixir (char jmeno[50],
     
     for (j=0;j<ndofn;j++){
       
-      if (node[i].id[j] > 0)  
-	rl[j] = r[node[i].id[j]-1];
-      if (node[i].id[j] < 0) 
-	rl[j] = sup->defl[abs(node[i].id[j])-1];
+      if (node[i].id_map[MP_ID].id[j] > 0)  
+	rl[j] = r[node[i].id_map[MP_ID].id[j]-1];
+      if (node[i].id_map[MP_ID].id[j] < 0) 
+	rl[j] = sup->defl[abs(node[i].id_map[MP_ID].id[j])-1];
       
       PGFEM_fprintf (out,"%12.12f  ",rl[j]);
     }
@@ -1087,21 +1088,21 @@ void EnSight (char jmeno[500],
   PGFEM_fprintf(out,"coordinates\n");
   /* X */
   for (i=0;i<nn;i++){
-    if (node[i].id[0] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
-    if (node[i].id[0] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id[0]-1]);
-    if (node[i].id[0] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id[0])-1]);
+    if (node[i].id_map[MP_ID].id[0] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
+    if (node[i].id_map[MP_ID].id[0] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id_map[MP_ID].id[0]-1]);
+    if (node[i].id_map[MP_ID].id[0] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id_map[MP_ID].id[0])-1]);
   }/* end X */
   /* Y */
   for (i=0;i<nn;i++){
-    if (node[i].id[1] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
-    if (node[i].id[1] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id[1]-1]);
-    if (node[i].id[1] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id[1])-1]);
+    if (node[i].id_map[MP_ID].id[1] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
+    if (node[i].id_map[MP_ID].id[1] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id_map[MP_ID].id[1]-1]);
+    if (node[i].id_map[MP_ID].id[1] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id_map[MP_ID].id[1])-1]);
   }/* end Y */
   /* Z */
   for (i=0;i<nn;i++){
-    if (node[i].id[2] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
-    if (node[i].id[2] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id[2]-1]);
-    if (node[i].id[2] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id[2])-1]);
+    if (node[i].id_map[MP_ID].id[2] == 0) PGFEM_fprintf(out,"%12.5e\n",0.0);
+    if (node[i].id_map[MP_ID].id[2] >  0) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id_map[MP_ID].id[2]-1]);
+    if (node[i].id_map[MP_ID].id[2] <  0) PGFEM_fprintf(out,"%12.5e\n",sup->defl[abs(node[i].id_map[MP_ID].id[2])-1]);
   }/* end Z */
   if (opts->cohesive == 1){
     PGFEM_fprintf(out,"part\n");
@@ -1109,66 +1110,66 @@ void EnSight (char jmeno[500],
     PGFEM_fprintf(out,"coordinates\n");
     /* X */
     for (i=0;i<ensight->ncn;i++){
-      if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] == 0)
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0)
 	PGFEM_fprintf(out,"%12.5e\n",0.0);
-      if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id[0]-1]));
-      if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] < 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id[0])-1]));
-      if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[0]-1] + 0.0));
-      if (node[ensight->Sm[i]].id[0] <  0 && node[ensight->Sp[i]].id[0] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[0])-1] + 0.0));
-      if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[0]-1] + sup->defl[abs(node[ensight->Sp[i]].id[0])-1]));
-      if (node[ensight->Sm[i]].id[0] <  0 && node[ensight->Sp[i]].id[0] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[0])-1] + r[node[ensight->Sp[i]].id[0]-1]));
-      if (node[ensight->Sm[i]].id[0] <  0 && node[ensight->Sp[i]].id[0] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[0])-1] + sup->defl[abs(node[ensight->Sp[i]].id[0])-1]));
-      if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[0]-1]+ r[node[ensight->Sp[i]].id[0]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] < 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[0])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[0])-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[0])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[0])-1] + r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[0])-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[0])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]));
     }/* end X */
     /* Y */
     for (i=0;i<ensight->ncn;i++){
-      if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] == 0)
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0)
 	PGFEM_fprintf(out,"%12.5e\n",0.0);
-      if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id[1]-1]));
-      if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] < 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id[1])-1]));
-      if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[1]-1] + 0.0));
-      if (node[ensight->Sm[i]].id[1] <  0 && node[ensight->Sp[i]].id[1] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[1])-1] + 0.0));
-      if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[1]-1] + sup->defl[abs(node[ensight->Sp[i]].id[1])-1]));
-      if (node[ensight->Sm[i]].id[1] <  0 && node[ensight->Sp[i]].id[1] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[1])-1] + r[node[ensight->Sp[i]].id[1]-1]));
-      if (node[ensight->Sm[i]].id[1] <  0 && node[ensight->Sp[i]].id[1] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[1])-1] + sup->defl[abs(node[ensight->Sp[i]].id[1])-1]));
-      if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[1]-1]+ r[node[ensight->Sp[i]].id[1]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] < 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[1])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[1])-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[1])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[1])-1] + r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[1])-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[1])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]));
     }/* end Y */
     /* Z */
     for (i=0;i<ensight->ncn;i++){
-      if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] == 0)
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0)
 	PGFEM_fprintf(out,"%12.5e\n",0.0);
-      if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id[2]-1]));
-      if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] < 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id[2])-1]));
-      if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[2]-1] + 0.0));
-      if (node[ensight->Sm[i]].id[2] <  0 && node[ensight->Sp[i]].id[2] == 0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[2])-1] + 0.0));
-      if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[2]-1] + sup->defl[abs(node[ensight->Sp[i]].id[2])-1]));
-      if (node[ensight->Sm[i]].id[2] <  0 && node[ensight->Sp[i]].id[2] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[2])-1] + r[node[ensight->Sp[i]].id[2]-1]));
-      if (node[ensight->Sm[i]].id[2] <  0 && node[ensight->Sp[i]].id[2] <  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id[2])-1] + sup->defl[abs(node[ensight->Sp[i]].id[2])-1]));
-      if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] >  0)
-	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id[2]-1]+ r[node[ensight->Sp[i]].id[2]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] < 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(0.0 + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[2])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[2])-1] + 0.0));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[2])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[2])-1] + r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] <  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] <  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(sup->defl[abs(node[ensight->Sm[i]].id_map[MP_ID].id[2])-1] + sup->defl[abs(node[ensight->Sp[i]].id_map[MP_ID].id[2])-1]));
+      if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0)
+	PGFEM_fprintf(out,"%12.5e\n",1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]));
     }/* end Z */
   }
   
@@ -1203,9 +1204,9 @@ void EnSight (char jmeno[500],
 	}
       }
       /* Fluctuating displacement */
-      if (node[i].id[0] >  0) u[0] = r[node[i].id[0]-1]; 
-      if (node[i].id[1] >  0) u[1] = r[node[i].id[1]-1]; 
-      if (node[i].id[2] >  0) u[2] = r[node[i].id[2]-1]; 
+      if (node[i].id_map[MP_ID].id[0] >  0) u[0] = r[node[i].id_map[MP_ID].id[0]-1]; 
+      if (node[i].id_map[MP_ID].id[1] >  0) u[1] = r[node[i].id_map[MP_ID].id[1]-1]; 
+      if (node[i].id_map[MP_ID].id[2] >  0) u[2] = r[node[i].id_map[MP_ID].id[2]-1]; 
       
       u[0] += xx[0] - X[0];
       u[1] += xx[1] - X[1];
@@ -1226,9 +1227,9 @@ void EnSight (char jmeno[500],
       }
       
       /* Fluctuating displacement */
-      if (node[i].id[0] >  0) u[0] = r[node[i].id[0]-1]; 
-      if (node[i].id[1] >  0) u[1] = r[node[i].id[1]-1]; 
-      if (node[i].id[2] >  0) u[2] = r[node[i].id[2]-1]; 
+      if (node[i].id_map[MP_ID].id[0] >  0) u[0] = r[node[i].id_map[MP_ID].id[0]-1]; 
+      if (node[i].id_map[MP_ID].id[1] >  0) u[1] = r[node[i].id_map[MP_ID].id[1]-1]; 
+      if (node[i].id_map[MP_ID].id[2] >  0) u[2] = r[node[i].id_map[MP_ID].id[2]-1]; 
       
       u[0] += xx[0] - X[0];
       u[1] += xx[1] - X[1];
@@ -1249,9 +1250,9 @@ void EnSight (char jmeno[500],
       }
 
       /* Fluctuating displacement */
-      if (node[i].id[0] >  0) u[0] = r[node[i].id[0]-1]; 
-      if (node[i].id[1] >  0) u[1] = r[node[i].id[1]-1]; 
-      if (node[i].id[2] >  0) u[2] = r[node[i].id[2]-1]; 
+      if (node[i].id_map[MP_ID].id[0] >  0) u[0] = r[node[i].id_map[MP_ID].id[0]-1]; 
+      if (node[i].id_map[MP_ID].id[1] >  0) u[1] = r[node[i].id_map[MP_ID].id[1]-1]; 
+      if (node[i].id_map[MP_ID].id[2] >  0) u[2] = r[node[i].id_map[MP_ID].id[2]-1]; 
       
       u[0] += xx[0] - X[0];
       u[1] += xx[1] - X[1];
@@ -1278,17 +1279,17 @@ void EnSight (char jmeno[500],
 	}
 	
 	/* Fluctuating displacement */
-	if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[0]-1]);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1]+ r[node[ensight->Sp[i]].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
 	
-	if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[1]-1]);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1]+ r[node[ensight->Sp[i]].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
 	
-	if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[2]-1]);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1]+ r[node[ensight->Sp[i]].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
 	
 	u[0] += xx[0] - X[0];
 	u[1] += xx[1] - X[1];
@@ -1311,17 +1312,17 @@ void EnSight (char jmeno[500],
 	}
 
 	/* Fluctuating displacement */
-	if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[0]-1]);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1]+ r[node[ensight->Sp[i]].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
 	
-	if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[1]-1]);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1]+ r[node[ensight->Sp[i]].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
 	
-	if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[2]-1]);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1]+ r[node[ensight->Sp[i]].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
 	
 	u[0] += xx[0] - X[0];
 	u[1] += xx[1] - X[1];
@@ -1344,17 +1345,17 @@ void EnSight (char jmeno[500],
 	}
 	
 	/* Fluctuating displacement */
-	if (node[ensight->Sm[i]].id[0] == 0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[0]-1]);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[0] >  0 && node[ensight->Sp[i]].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id[0]-1]+ r[node[ensight->Sp[i]].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] == 0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[0] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[0] >  0) u[0] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[0]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[0]-1]);
 	
-	if (node[ensight->Sm[i]].id[1] == 0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[1]-1]);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[1] >  0 && node[ensight->Sp[i]].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id[1]-1]+ r[node[ensight->Sp[i]].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] == 0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[1] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[1] >  0) u[1] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[1]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[1]-1]);
 	
-	if (node[ensight->Sm[i]].id[2] == 0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id[2]-1]);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1] + 0.0);
-	if (node[ensight->Sm[i]].id[2] >  0 && node[ensight->Sp[i]].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id[2]-1]+ r[node[ensight->Sp[i]].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] == 0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(0.0 + r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] == 0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1] + 0.0);
+	if (node[ensight->Sm[i]].id_map[MP_ID].id[2] >  0 && node[ensight->Sp[i]].id_map[MP_ID].id[2] >  0) u[2] = 1./2.*(r[node[ensight->Sm[i]].id_map[MP_ID].id[2]-1]+ r[node[ensight->Sp[i]].id_map[MP_ID].id[2]-1]);
 	
 	u[0] += xx[0] - X[0];
 	u[1] += xx[1] - X[1];
@@ -1383,7 +1384,7 @@ void EnSight (char jmeno[500],
     PGFEM_fprintf(out,"part\n");
     PGFEM_fprintf(out,"%10d\n",part1);
     PGFEM_fprintf(out,"coordinates\n");
-    for (i=0;i<nn;i++) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id[3]-1]);
+    for (i=0;i<nn;i++) PGFEM_fprintf(out,"%12.5e\n",r[node[i].id_map[MP_ID].id[3]-1]);
   
     if (opts->cohesive == 1){
       PGFEM_fprintf(out,"part\n");

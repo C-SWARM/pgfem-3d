@@ -32,7 +32,8 @@ void press_theta (long ne,
 		  double nor_min,
 		  double dt,
 		  CRPL *crpl,
-		  const PGFem3D_opt *opts)
+		  const PGFem3D_opt *opts,
+		  const int mp_id)
 {
   
   long ii,i,j,k,II,JJ,KK,ip,M,N,X,P,Q,R,U,W,*nod,nne,ndn,mat,*cn;
@@ -86,7 +87,7 @@ void press_theta (long ne,
     mat = elem[ii].mat[2];
     elemnodes (ii,nne,nod,elem);
     cn = aloc1l (nne*ndofn);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
     
     if (opts->analysis_type == FS_CRPL){
       pFFp = aloc4 (3,3,ndn,nne);

@@ -214,7 +214,8 @@ int compute_applied_traction_res(const int ndofn,
 				 const SUR_TRAC_ELEM *ste,
 				 const int n_feats,
 				 const double *loads,
-				 double *res)
+				 double *res,
+				 const int mp_id)
 {
   int err = 0;
   int int_order = 1;
@@ -232,10 +233,10 @@ int compute_applied_traction_res(const int ndofn,
     if(nne_3D==10)
       int_order = 2;
 
-    const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes);
+    const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes,ndofn);
     long *cn = PGFEM_calloc(ndofe,sizeof(long));
     double *res_el = PGFEM_calloc(ndofe,sizeof(double));
-    get_dof_ids_on_elem_nodes(0,nne_3D,ndofn,nod_3D,nodes,cn);
+    get_dof_ids_on_elem_nodes(0,nne_3D,ndofn,nod_3D,nodes,cn,mp_id);
 
     double *N_3D = PGFEM_calloc(nne_3D,sizeof(double));
 

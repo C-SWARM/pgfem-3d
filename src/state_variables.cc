@@ -2,7 +2,6 @@
  * Authors:
  *  Matt Mosby, [1], <mmosby1@nd.edu>
  *  Sangmin Lee, [1], <slee43@nd.edu>
- *  Adetokunbo Adedoyin, [1], <aadedoyi@nd.edu>
  *  Alberto Salvadori, [1], <asalvad2@nd.edu>
  *  [1] - University of Notre Dame, Notre Dame, IN
  */

@@ -69,7 +69,8 @@ extern "C" {
 				   const SUR_TRAC_ELEM *ste,
 				   const int n_feats,
 				   const double *loads,
-				   double *res);
+				   double *res,
+				   const int mp_id);
 
   /** integrate the force on the marked boundaries of the LOCAL DOMAIN
       in the LAGRANGIAN FRAME. forces vector is [n_feats x ndim]

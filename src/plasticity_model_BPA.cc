@@ -67,8 +67,8 @@ static int bpa_pack(const Constitutive_model *m,
                     size_t *pos)
 {
   /* pack/unpack Fs */
-  const Matrix_double *Fs = m->vars.Fs;
-  const double *vars = m->vars.state_vars->m_pdata;
+  const Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
+  const double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   for (int i = 0; i < _n_Fs; i++) {
     pack_data(Fs[i].m_pdata, buffer, pos, tensor, sizeof(double));
   }
@@ -80,8 +80,8 @@ static int bpa_unpack(Constitutive_model *m,
                       const char *buffer,
                       size_t *pos)
 {
-  Matrix_double *Fs = m->vars.Fs;
-  double *vars = m->vars.state_vars->m_pdata;
+  Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   for (int i = 0; i < _n_Fs; i++) {
     unpack_data(buffer, Fs[i].m_pdata, pos, tensor, sizeof(double));
   }
@@ -791,14 +791,14 @@ static int bpa_int_alg_initial_guess(const double *F,
   int err = 0;
 
   /* copy tensors */
-  memcpy(Fe, m->vars.Fs[_Fe].m_pdata, tensor * sizeof(*Fe));
+  memcpy(Fe, m->vars_list[0][m->model_id].Fs[_Fe].m_pdata, tensor * sizeof(*Fe));
 
   /* copy s */
-  *s = m->vars.state_vars->m_pdata[_s];
-  *lam = m->vars.state_vars->m_pdata[_lam];
+  *s = m->vars_list[0][m->model_id].state_vars->m_pdata[_s];
+  *lam = m->vars_list[0][m->model_id].state_vars->m_pdata[_lam];
 
   /* store the imposed deformation gradient */
-  memcpy(m->vars.Fs[_F].m_pdata, F, tensor * sizeof(*F));
+  memcpy(m->vars_list[0][m->model_id].Fs[_F].m_pdata, F, tensor * sizeof(*F));
 
   return err;
 }
@@ -812,11 +812,11 @@ static int bpa_update_state_variables(const double *F,
                                       Constitutive_model *m)
 {
   int err = 0;
-  memcpy(m->vars.Fs[_Fe].m_pdata, Fe, tensor * sizeof(*Fe));
-  memcpy(m->vars.Fs[_Fp].m_pdata, Fp, tensor * sizeof(*Fp));
-  memcpy(m->vars.Fs[_F].m_pdata, F, tensor * sizeof(*F));
-  m->vars.state_vars->m_pdata[_s] = s;
-  m->vars.state_vars->m_pdata[_lam] = lam;
+  memcpy(m->vars_list[0][m->model_id].Fs[_Fe].m_pdata, Fe, tensor * sizeof(*Fe));
+  memcpy(m->vars_list[0][m->model_id].Fs[_Fp].m_pdata, Fp, tensor * sizeof(*Fp));
+  memcpy(m->vars_list[0][m->model_id].Fs[_F].m_pdata, F, tensor * sizeof(*F));
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_s] = s;
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_lam] = lam;
   return err;
 }
 
@@ -900,8 +900,8 @@ static int bpa_get_state_at_n(const Constitutive_model *m,
                               double *s_n)
 {
   int err = 0;
-  err += inv3x3(m->vars.Fs[_Fp_n].m_pdata,Mn);
-  *s_n = m->vars.state_vars->m_pdata[_s_n];
+  err += inv3x3(m->vars_list[0][m->model_id].Fs[_Fp_n].m_pdata,Mn);
+  *s_n = m->vars_list[0][m->model_id].state_vars->m_pdata[_s_n];
   return err;
 }
 
@@ -1036,7 +1036,7 @@ int BPA_int_alg(Constitutive_model *m,
   auto CTX = (BPA_ctx *) ctx;
   const HOMMAT *p_hmat = m->param->p_hmat;
   const double kappa = bpa_compute_bulk_mod(p_hmat);
-  const double *Fn = m->vars.Fs[_F_n].m_pdata;
+  const double *Fn = m->vars_list[0][m->model_id].Fs[_F_n].m_pdata;
   const double *params = m->param->model_param;
 
   double s_n = 0;
@@ -1170,7 +1170,7 @@ int BPA_dev_stress(const Constitutive_model *m,
 {
   int err = 0;
   double Ce[tensor] = {};
-  bpa_compute_Ce(Ce,m->vars.Fs[_Fe].m_pdata);
+  bpa_compute_Ce(Ce,m->vars_list[0][m->model_id].Fs[_Fe].m_pdata);
   bpa_compute_Sdev(Ce,m->param->p_hmat,dev_stress->m_pdata);
   return err;
 }
@@ -1180,7 +1180,7 @@ int BPA_dudj(const Constitutive_model *m,
              double *dudj)
 {
   int err = 0;
-  const double Je = det3x3(m->vars.Fs[_Fe].m_pdata);
+  const double Je = det3x3(m->vars_list[0][m->model_id].Fs[_Fe].m_pdata);
   bpa_compute_dudj(Je,m->param->p_hmat,dudj);
   return err;
 }
@@ -1191,7 +1191,7 @@ int BPA_dev_tangent(const Constitutive_model *m,
 {
   int err = 0;
   double Ce[tensor] = {};
-  bpa_compute_Ce(Ce,m->vars.Fs[_Fe].m_pdata);
+  bpa_compute_Ce(Ce,m->vars_list[0][m->model_id].Fs[_Fe].m_pdata);
   bpa_compute_Ldev(Ce,m->param->p_hmat,dev_tangent->m_pdata);
   return err;
 }
@@ -1201,7 +1201,7 @@ int BPA_d2udj2(const Constitutive_model *m,
                double *d2udj2)
 {
   int err = 0;
-  const double Je = det3x3(m->vars.Fs[_Fe].m_pdata);
+  const double Je = det3x3(m->vars_list[0][m->model_id].Fs[_Fe].m_pdata);
   bpa_compute_d2udj2(Je,m->param->p_hmat,d2udj2);
   return err;
 }
@@ -1209,12 +1209,12 @@ int BPA_d2udj2(const Constitutive_model *m,
 int BPA_update_vars(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_copy(m->vars.Fs[_Fe_n],m->vars.Fs[_Fe]);
-  Matrix_copy(m->vars.Fs[_Fp_n],m->vars.Fs[_Fp]);
-  Matrix_copy(m->vars.Fs[_F_n],m->vars.Fs[_F]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_Fe_n],m->vars_list[0][m->model_id].Fs[_Fe]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_Fp_n],m->vars_list[0][m->model_id].Fs[_Fp]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_F_n],m->vars_list[0][m->model_id].Fs[_F]);
 
   /* alias */
-  Vector_double *vars = m->vars.state_vars;
+  Vector_double *vars = m->vars_list[0][m->model_id].state_vars;
   Vec_v(*vars,_s_n + 1) = Vec_v(*vars,_s + 1);
   Vec_v(*vars,_lam_n + 1) = Vec_v(*vars,_lam + 1);
   return err;
@@ -1223,12 +1223,12 @@ int BPA_update_vars(Constitutive_model *m)
 int BPA_reset_vars(Constitutive_model *m)
 {
   int err = 0;
-  Matrix_copy(m->vars.Fs[_Fe],m->vars.Fs[_Fe_n]);
-  Matrix_copy(m->vars.Fs[_Fp],m->vars.Fs[_Fp_n]);
-  Matrix_copy(m->vars.Fs[_F],m->vars.Fs[_F_n]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_Fe],m->vars_list[0][m->model_id].Fs[_Fe_n]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_Fp],m->vars_list[0][m->model_id].Fs[_Fp_n]);
+  Matrix_copy(m->vars_list[0][m->model_id].Fs[_F],m->vars_list[0][m->model_id].Fs[_F_n]);
 
   /* alias */
-  Vector_double *vars = m->vars.state_vars;
+  Vector_double *vars = m->vars_list[0][m->model_id].state_vars;
   Vec_v(*vars,_s + 1) = Vec_v(*vars,_s_n + 1);
   Vec_v(*vars,_lam + 1) = Vec_v(*vars,_lam_n + 1);
   return err;
@@ -1268,7 +1268,7 @@ static int bpa_get_Fp(const Constitutive_model *m,
                       Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fp]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fp]);
   return err;
 }
 
@@ -1276,7 +1276,7 @@ static int bpa_get_Fpn(const Constitutive_model *m,
                        Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fp_n]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fp_n]);
   return err;
 }
 
@@ -1284,7 +1284,7 @@ static int bpa_get_Fn(const Constitutive_model *m,
                       Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[_F_n]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_F_n]);
   return err;
 }
 
@@ -1292,7 +1292,7 @@ static int bpa_get_Fe(const Constitutive_model *m,
                       Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fe]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fe]);
   return err;
 }
 
@@ -1300,7 +1300,7 @@ static int bpa_get_Fen(const Constitutive_model *m,
                        Matrix_double *F)
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars.Fs[_Fe_n]);
+  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fe_n]);
   return err;
 }
 
@@ -1308,7 +1308,7 @@ static int bpa_get_hardening(const Constitutive_model *m,
                              double *var)
 {
   int err = 0;
-  *var = m->vars.state_vars->m_pdata[_s_n];
+  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[_s_n];
   return err;
 }
 
@@ -1323,11 +1323,11 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   auto CTX = (BPA_ctx *) ctx;
   const double *F = CTX->F;
   const double dt = CTX->dt;
-  const double *Fe = m->vars.Fs[_Fe].m_pdata;
-  const double *Fp = m->vars.Fs[_Fp].m_pdata;
-  const double *Fp_n = m->vars.Fs[_Fp_n].m_pdata;
-  const double s = m->vars.state_vars->m_pdata[_s];
-  const double s_n = m->vars.state_vars->m_pdata[_s_n];
+  const double *Fe = m->vars_list[0][m->model_id].Fs[_Fe].m_pdata;
+  const double *Fp = m->vars_list[0][m->model_id].Fs[_Fp].m_pdata;
+  const double *Fp_n = m->vars_list[0][m->model_id].Fs[_Fp_n].m_pdata;
+  const double s = m->vars_list[0][m->model_id].state_vars->m_pdata[_s];
+  const double s_n = m->vars_list[0][m->model_id].state_vars->m_pdata[_s_n];
   const double *p = m->param->model_param;
 
 
@@ -1439,11 +1439,11 @@ static int bpa_set_initial_values(Constitutive_model *m)
   int err = 0;
 
   /* s is s0 at start */
-  m->vars.state_vars->m_pdata[_s] = m->param->model_param[mcS0];
-  m->vars.state_vars->m_pdata[_s_n] = m->param->model_param[mcS0];
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_s] = m->param->model_param[mcS0];
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_s_n] = m->param->model_param[mcS0];
 
-  m->vars.state_vars->m_pdata[_lam] = 0;
-  m->vars.state_vars->m_pdata[_lam_n] = 0;
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_lam] = 0;
+  m->vars_list[0][m->model_id].state_vars->m_pdata[_lam_n] = 0;
 
   return err;
 }
@@ -1453,10 +1453,10 @@ static int bpa_write_restart(FILE *out,
 {
   /* write all state variables at n */
   int err = 0;
-  const double *Fen = m->vars.Fs[_Fe_n].m_pdata;
-  const double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
-  const double *Fn = m->vars.Fs[_F_n].m_pdata;
-  const double *vars = m->vars.state_vars->m_pdata;
+  const double *Fen = m->vars_list[0][m->model_id].Fs[_Fe_n].m_pdata;
+  const double *Fpn = m->vars_list[0][m->model_id].Fs[_Fp_n].m_pdata;
+  const double *Fn = m->vars_list[0][m->model_id].Fs[_F_n].m_pdata;
+  const double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   if(fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
              Fen[0], Fen[1], Fen[2], Fen[3], Fen[4],
              Fen[5], Fen[6], Fen[7], Fen[8]) < 0) err ++;
@@ -1475,10 +1475,10 @@ static int bpa_read_restart(FILE *in,
 {
   /* read all state variables at n and set all vars at n+1 = n */
   int err = 0;
-  double *Fen = m->vars.Fs[_Fe_n].m_pdata;
-  double *Fpn = m->vars.Fs[_Fp_n].m_pdata;
-  double *Fn = m->vars.Fs[_F_n].m_pdata;
-  double *vars = m->vars.state_vars->m_pdata;
+  double *Fen = m->vars_list[0][m->model_id].Fs[_Fe_n].m_pdata;
+  double *Fpn = m->vars_list[0][m->model_id].Fs[_Fp_n].m_pdata;
+  double *Fn = m->vars_list[0][m->model_id].Fs[_F_n].m_pdata;
+  double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
 
   if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             Fen, Fen + 1, Fen + 2, Fen + 3, Fen + 4,
@@ -1505,7 +1505,7 @@ int plasticity_model_BPA_update_elasticity(const Constitutive_model *m,
   Matrix_construct_redim(double,eF,dim,dim);
   (m->param)->get_eF(m,&eF);
   
-  err += constitutive_model_defaut_update_elasticity(m, &eF, L, S, compute_stiffness);  
+  err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
  
   Matrix_cleanup(eF);  
   return err;
