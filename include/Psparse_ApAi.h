@@ -15,6 +15,8 @@
 #include "cohesive_element.h"
 #include "bounding_element.h"
 #include "pgfem_comm.h"
+#include "comm_hints.h"
+
 
 #ifdef __cplusplus
 extern "C" {

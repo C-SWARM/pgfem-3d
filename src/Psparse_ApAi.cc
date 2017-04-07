@@ -157,7 +157,7 @@ int* Psparse_ApAi (int nproc,
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);                                               //returns the nodes of this element (array of nodes stored in nod)
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);            //get total degrees of freedom on element, put it into ndofe
+    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);            //get total degrees of freedom on element, put it into ndofe
     /* Id numbers */
     get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get dof ids for element nodes, elements, and boundary elements 
     
@@ -222,7 +222,7 @@ int* Psparse_ApAi (int nproc,
     /* Nodes on element */
     elemnodes (i,nne,nod,elem);                                               //fills nod, an array which contains the ids of the nodes here
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i]);
+    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
     /* Id numbers */
     get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get local ids for degrees of freedom
     get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id); //get global ids for degrees of freedom
@@ -564,7 +564,7 @@ printf("\n");
     for (i=0;i<nn;i++){
       PGFEM_fprintf (out,"[%ld] || LID : %ld %ld %ld %ld ||"
 		     " GID : %ld %ld %ld %ld\n", i,node[i].id_map[mp_id].id[0],
-		     node[i].id_map[mp_id].id[1],node[i].id_map[mp_id].id[2],.id_map[mp_id]node[i].id[3],
+		     node[i].id_map[mp_id].id[1],node[i].id_map[mp_id].id[2],node[i].id_map[mp_id].id[3],
 		     node[i].id_map[mp_id].Gid[0],
 		     node[i].id_map[mp_id].Gid[1],node[i].id_map[mp_id].Gid[2],node[i].id_map[mp_id].Gid[3]);
     }

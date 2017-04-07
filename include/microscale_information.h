@@ -22,6 +22,8 @@
 #include "PGFem3D_options.h"
 #include "hypre_global.h"
 #include "constitutive_model.h"
+#include "comm_hints.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -202,7 +204,7 @@ extern "C" {
 			MPI_Comm mpi_comm,
 			const int argc,
 			char **argv,
-			const int mp_id);
+			const int mp_id, const Comm_hints *hints);
 
   /** build n solutions to compute on the scale */
   void build_MICROSCALE_solutions(const int n_solutions,
@@ -240,8 +242,8 @@ extern "C" {
   typedef MICROSCALE MACROSCALE;
 #endif
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
-#define build_MACROSCALE(macro,comm,argc,argv,mp_id)	\
-  build_MICROSCALE(macro,comm,argc,argv,mp_id)
+#define build_MACROSCALE(macro,comm,argc,argv,mp_id,hints)	\
+  build_MICROSCALE(macro,comm,argc,argv,mp_id,hints)
 #define build_MACROSCALE_solution(macro) \
   build_MICROSCALE_solutions(1,macro)
 #define destroy_MACROSCALE(macro) destroy_MICROSCALE(macro)

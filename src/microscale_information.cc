@@ -17,6 +17,8 @@
 #include "in.h"
 #include "PGFEM_par_matvec.h"
 #include "elem3d.h"
+#include "comm_hints.h"
+
 
 #include <stdlib.h>
 #include <search.h>
@@ -30,7 +32,8 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
 				    COMMON_MICROSCALE *common,
-				    const int mp_id);
+				    const int mp_id,
+            const Comm_hints *hints);
 static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 
 static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol);
@@ -181,7 +184,7 @@ void build_MICROSCALE(MICROSCALE *microscale,
 		      MPI_Comm mpi_comm,
 		      const int argc,
 		      char **argv,
-		      const int mp_id)
+		      const int mp_id, const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;
@@ -222,7 +225,7 @@ void build_MICROSCALE(MICROSCALE *microscale,
   }
 
   /*=== BUILD COMMON ===*/
-  build_COMMON_MICROSCALE(microscale->opts,mpi_comm,microscale->common,mp_id);
+  build_COMMON_MICROSCALE(microscale->opts,mpi_comm,microscale->common,mp_id,hints);
   microscale->common->supports->multi_scale = microscale->opts->multi_scale;
 
 }/* build_MICROSCALE */
@@ -451,7 +454,7 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
 
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
-				    COMMON_MICROSCALE *common, const int mp_id)
+				    COMMON_MICROSCALE *common, const int mp_id,const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;
@@ -641,7 +644,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 			    common->ndofn,common->ndofd,common->elem,
 			    NULL,common->node,common->Ap,common->nce,
 			    common->coel,common->DomDof,&common->GDof,
-			    common->pgfem_comm,mpi_comm,opts->cohesive,mp_id);
+			    common->pgfem_comm,mpi_comm,opts->cohesive,hints,mp_id);
   pgfem_comm_build_fast_maps(common->pgfem_comm,common->ndofd,
 			     common->DomDof[myrank],common->GDof);
 
