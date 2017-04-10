@@ -799,11 +799,12 @@ if(myrank == 0 ) printf("a message was sent to %d\n", i);
 */
   comm->Ns = nrecv;
   for (int i = 0; i < nrecv; i++){                                              //send size to all 
+/*
         if(myrank==0){
           printf("==============================================\n");
           printf("I am sending %ld to %ld\n", comm->S[ preRecv[i]],  preRecv[i]);
         }
-
+*/
         int sendTo = preRecv[i];
         err += MPI_Isend(&comm->S[sendTo],1,MPI_LONG,sendTo,myrank,
              mpi_comm,&t_req_s[i]);                                         //t_req_s is required for each non-blocking call
@@ -862,11 +863,13 @@ printf("\n");
     err +=  MPI_Waitany(nsend,t_req_r,&idx,&t_sta_r);                         //listen for messages
 
     int source = t_sta_r.MPI_SOURCE;
+/*
     if(myrank==2)
     {
       printf("recieved from %d values = %ld\n", source, comm->R[source]);
       printf(" I recieved %d/%d t_count\n ",t_count,nsend);   
     } 
+*/
     if(comm->R[source]==0)  
       comm->Nr--;                                                               //write down how many non-empty letters I received 
 
