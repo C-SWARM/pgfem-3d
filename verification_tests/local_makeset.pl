@@ -7,13 +7,13 @@ sub do_error {
   exit(0);
 }
 
-#$t3d_path = '/cswarm/tools/bin/t3d';
-#$split_path = '/cswarm/tools/bin/t3d2psifel';
-#$convert_path = '/cswarm/tools/bin/con3d++';
+$t3d_path = '/cswarm/tools/bin/t3d';
+$split_path = '/cswarm/tools/bin/t3d2psifel';
+$convert_path = '/cswarm/tools/bin/con3d++';
 
-$t3d_path = '$CSWARM_GROUP/t3d';
-$split_path = '$CSWARM_GROUP/t3d2psifel';
-$convert_path = '$CSWARM_GROUP/con3d++';
+#$t3d_path = '$CSWARM_GROUP/t3d';
+#$split_path = '$CSWARM_GROUP/t3d2psifel';
+#$convert_path = '$CSWARM_GROUP/con3d++';
 
 $var_clean = 0;
 $nproc = 0;
