@@ -122,7 +122,7 @@ int compute_dPdF(Matrix(double) *dPdF,
               for(int Q=1; Q<=DIM_3; Q++)
               {
                 Tns4_v(*dPdF,I,J,K,L) += Mat_v(*F,I,M)*Tns4_v(*dWdE,M,J,P,Q)*
-                                         (Mat_v(delta,P,L)*Mat_v(*F,K,Q)+Mat_v(*F,K,P)*Mat_v(*F,Q,L));
+                                         (Mat_v(delta,P,L)*Mat_v(*F,K,Q)+Mat_v(*F,K,P)*Mat_v(delta,Q,L));
               }
             }
           }                  
