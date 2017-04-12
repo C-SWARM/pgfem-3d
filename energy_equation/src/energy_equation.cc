@@ -915,7 +915,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     {      
       Vec_v(fi,ia) += Vec_v(fe->N,ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW)/Jn;
       for(int ib=1; ib<=grid->nsd; ib++)
-        Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW);
+        Vec_v(fi,ia) += dt*Mat_v(fe->dN,ia,ib)*Vec_v(q,ib)*(fe->detJxW)/Jn;
     }  
   }
   
@@ -1190,7 +1190,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
         for(int im = 1; im<=grid->nsd; im++)
         {
           for(int in = 1; in<=grid->nsd; in++)
-            Mat_v(lk,ia,ib) += dt*Mat_v(fe->dN,ia,in)*Mat_v(k, in, im)*Mat_v(fe->dN,ib,im)*(fe->detJxW);
+            Mat_v(lk,ia,ib) += dt*Mat_v(fe->dN,ia,in)*Mat_v(k, in, im)*Mat_v(fe->dN,ib,im)*(fe->detJxW)/Jn;
         }    
       }
     }  

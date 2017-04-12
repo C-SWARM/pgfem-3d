@@ -828,7 +828,8 @@ int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
   for(int eid=0; eid<grid->ne; eid++)
   {
     int nne = elem[eid].toe;
-    long nint = FEMLIB_determine_integration_type(nne, intg_order);
+    long nint = 1;
+    int_point(elem[eid].toe,&nint);
     for (int ip = 0; ip < nint; ip++) 
     {
       Constitutive_model *m = &(fv->eps[eid].model[ip]);
@@ -858,8 +859,8 @@ int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
   
   for(int eid=0; eid<grid->ne; eid++)
   {
-    int nne = elem[eid].toe;
-    long nint = FEMLIB_determine_integration_type(nne, intg_order);
+    long nint = 1;
+    int_point(elem[eid].toe,&nint);
     for (int ip = 0; ip < nint; ip++) 
     {
       Constitutive_model *m = &(fv->eps[eid].model[ip]);
@@ -889,7 +890,8 @@ int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
   for(int eid=0; eid<grid->ne; eid++)
   {
     int nne = elem[eid].toe;
-    long nint = FEMLIB_determine_integration_type(nne, intg_order);
+    long nint = 1;
+    int_point(elem[eid].toe,&nint);
     for (int ip = 0; ip < nint; ip++) 
     {
       Constitutive_model *m = &(fv->eps[eid].model[ip]);
@@ -1540,9 +1542,6 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               int mp_id,
                                               double dt)
 {
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-
   int err = 0;
   double alpha = sol->alpha;
   int total_Lagrangian = 1;  
