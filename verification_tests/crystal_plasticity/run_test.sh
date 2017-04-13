@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # number of precesses is fixed to 8 for this example
-NP=8
+#NP=8
 filebase=box
 
 if [ $# -lt 1 ]; then
@@ -27,17 +27,17 @@ fi
 # if gen_mesh = 1, generate new inputs
 ##########################################
 if [ $gen_mesh = 1 ]; then
-  rm -rf box_${NP}CPU_${test_name}
+  rm -rf ${filebase}_${NP}CPU_${test_name}
   cp ${filebase}.out.header_${test_name} ${filebase}.out.header
-  ../local_makeset.pl -np $NP -f $filebase clean -d 0.36
-  mv box_${NP}CPU box_${NP}CPU_${test_name}
+  ../local_makeset.pl -np $NP -f ${filebase} clean -d 0.36
+  mv ${filebase}_${NP}CPU ${filebase}_${NP}CPU_${test_name}
 fi
 
 ##########################################
 # run simulations
 ##########################################
 
-branch=master
+#branch=master
 
 TEST_DIR=$PWD
 exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
