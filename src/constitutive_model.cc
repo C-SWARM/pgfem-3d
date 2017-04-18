@@ -1448,7 +1448,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
 //  mid_point_rule(F2[hFnpa].m_pdata, hFn->m_pdata, hFnp1->m_pdata, alpha, nsd*nsd);
   mid_point_rule( F2[Fnpa].m_pdata,  Fn->m_pdata,  Fnp1->m_pdata, alpha, nsd*nsd);
 
-  if(is_it_couple_w_thermal>0)
+  if(is_it_couple_w_thermal>=0)
   {
     Matrix(double) hFnpa_I;
     Matrix_construct_redim(double,hFnpa_I,DIM_3,DIM_3);

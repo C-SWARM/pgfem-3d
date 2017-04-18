@@ -314,8 +314,10 @@ int print_results(GRID *grid,
       
       dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
 
+      sol->run_integration_algorithm = 0;
       err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                          mp_id_M,time_steps->times[tim+1],dts);
+      sol->run_integration_algorithm = 1;                                         
     }
   
     if(opts->comp_print_macro)
