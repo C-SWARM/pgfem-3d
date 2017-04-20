@@ -366,7 +366,7 @@ int print_results(GRID *grid,
       if(myrank == 0)
         err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,COM[0].nproc);
       
-      err += VTK_write_multiphysics_vtu(grid,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
+      err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
 
       // print cohesive element results
       if((mp_id_M >= 0) && (opts->cohesive == 1))
