@@ -108,6 +108,7 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_ElementPressure,
              MECHANICAL_Var_ElementVolume,
              MECHANICAL_Var_Density,
+             MECHANICAL_Var_HydrostaticStress,
              MECHANICAL_Var_NO} MECHANICAL_Var;
 
 /// Thermal part of index of output vailabes

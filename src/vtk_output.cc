@@ -1609,12 +1609,7 @@ int VTK_write_data_ElementVolume(FILE *out,
   return err;
 }
 
-/// write Element Pressure
-///
-/// For incompressible material, solution scheme is stabilized using three-field mixed method.
-/// Additional variables : pressure and volume.
-/// This function prints volume.
-/// This function is used indirectly through function pointer in pmr->write_vtk
+/// write material density (current)
 ///
 /// \param[in] out file pointer for writing vtk file
 /// \param[in] grid an object containing all mesh data
@@ -1663,6 +1658,38 @@ int VTK_write_data_Density(FILE *out,
   }
   
   err += VTK_write_multiphysics_DataArray_footer(out);
+  return err;
+}
+
+/// write write hydrostatic stress sigma_h = tr(sigma)/3
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+VTK_write_data_HydrostaticStress(FILE *out,
+                                 GRID *grid,
+                                 const MATERIAL_PROPERTY *mat,
+                                 FIELD_VARIABLES *FV,                          
+                                 LOADING_STEPS *load,
+                                 PRINT_MULTIPHYSICS_RESULT *pmr,
+                                 const PGFem3D_opt *opts)
+{
+  int err = 0;
+  
+  SIG *sig = FV[pmr->mp_id].sig;
+  
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
+    
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double sigma_h = (sig[ia].el.o[0] + sig[ia].el.o[1] + sig[ia].el.o[2])/3.0;
+    PGFEM_fprintf(out,"%12.12e\n", sigma_h);
+  }
+  err += VTK_write_multiphysics_DataArray_footer(out);    
   return err;
 }
                                   
@@ -1847,6 +1874,10 @@ int VTK_construct_PMR(GRID *grid,
               pmr[cnt_pmr].write_vtk = VTK_write_data_Density;
               sprintf(pmr[cnt_pmr].variable_name, "Density");
               break;
+            case MECHANICAL_Var_HydrostaticStress:
+              pmr[cnt_pmr].write_vtk = VTK_write_data_HydrostaticStress;
+              sprintf(pmr[cnt_pmr].variable_name, "HydrostaticStress");
+              break;              
             default:
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;
