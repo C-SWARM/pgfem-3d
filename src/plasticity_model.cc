@@ -1363,8 +1363,15 @@ int compute_dMdu(const Constitutive_model *con,
 
   // cast _dmdu as a ttl tensor and compute its value
   // -1 * (inverse(U) * B:Grad_du)
-  Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) * 
+
+  try {
+    Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) * 
 					     B(k,l,m,n) * Grad_du(m,n));  
+  }
+  catch (const int inverseException){
+    PGFEM_printf("4th order matrix is singular\n");
+    err++;
+  }
 
   return err;
 }
