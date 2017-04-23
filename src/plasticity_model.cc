@@ -1312,7 +1312,9 @@ int compute_dMdu(const Constitutive_model *con,
   const Tensor<4, const double*> L(_L->m_pdata);
 
   const Tensor<2> C = eFnp1(k,i).to(i,k) * eFnp1(k,j);             // eFnp1' * eFnp1
-  const Tensor<2> MI_x_C = ttl::inverse(M)(j,i).to(i,j) * C(j,k);  // inverse(M') * C
+  Tensor<2> MI = {};
+  int err = inv3x3(_M->m_pdata, MI.data);
+  const Tensor<2> MI_x_C = MI(j,i) * C(j,k);                       // M^{-T} * C
   const Tensor<2> M_x_eFn = M(j,i).to(i,j) * eFn(k,j).to(j,k);     // M' * eFn'
 
   // tensors are initialized to 0
@@ -1323,7 +1325,7 @@ int compute_dMdu(const Constitutive_model *con,
   Tensor<4> B = {};
 
   // set U to the 9x9 identity scaled by 1.0/dt
-  U(i,j,k,l) = (1/dt) * ttl::identity(i,j,k,l);                    
+  U(i,j,k,l) = (1.0/dt) * ttl::identity(i,j,k,l);                    
 
   for(int a = 0; a<N_SYS; a++)
   {
@@ -1361,10 +1363,17 @@ int compute_dMdu(const Constitutive_model *con,
 
   // cast _dmdu as a ttl tensor and compute its value
   // -1 * (inverse(U) * B:Grad_du)
-  Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) * 
-					     B(k,l,m,n) * Grad_du(m,n));  
 
-  return 0;
+  try {
+    Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) * 
+					     B(k,l,m,n) * Grad_du(m,n));  
+  }
+  catch (const int inverseException){
+    PGFEM_printf("4th order matrix is singular\n");
+    err++;
+  }
+
+  return err;
 }
 
 

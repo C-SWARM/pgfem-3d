@@ -1316,8 +1316,8 @@ int constitutive_model_update_output_variables(GRID *grid,
       sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
       sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
 
-      /* store elastic deformation */
-      memcpy(eps[i].il[ip].F, eFd, DIM_3x3 * sizeof(*eFd));
+      /* store total deformation */
+      memcpy(eps[i].il[ip].F, F.m_pdata, DIM_3x3 * sizeof(double));
 
       /* store the hardening parameter */
       err += func->get_hardening(m, &eps[i].dam[ip].wn);
@@ -1448,7 +1448,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
 //  mid_point_rule(F2[hFnpa].m_pdata, hFn->m_pdata, hFnp1->m_pdata, alpha, nsd*nsd);
   mid_point_rule( F2[Fnpa].m_pdata,  Fn->m_pdata,  Fnp1->m_pdata, alpha, nsd*nsd);
 
-  if(is_it_couple_w_thermal>0)
+  if(is_it_couple_w_thermal>=0)
   {
     Matrix(double) hFnpa_I;
     Matrix_construct_redim(double,hFnpa_I,DIM_3,DIM_3);
