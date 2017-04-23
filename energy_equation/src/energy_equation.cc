@@ -735,7 +735,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
   
   double cp = thermal->cp;
-  double Q = 0.0;
   
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
@@ -767,6 +766,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
+    double Q = 0.0;
     // Udate basis functions at the integration points.
     FEMLIB_elem_basis_V(fe, ip);
     FEMLIB_update_shape_tensor(fe);
