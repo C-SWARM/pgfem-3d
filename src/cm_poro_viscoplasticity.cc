@@ -142,12 +142,11 @@ int poro_viscoplasticity_model_ctx_build(void **ctx,
 static int cm_pvp_int_alg(Constitutive_model *m,
                               const void *ctx)
 {
-  printf("This is running-------\n");
   int err = 0;
-  return err;
+
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
   memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
-  
+
   const double dt = CTX->dt;
   Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
@@ -333,7 +332,6 @@ int cm_pvp_get_subdiv_param(const Constitutive_model *m,
                                 double *subdiv_param, double dt)
 {
   int err = 0;
-  SLIP_SYSTEM *slip  = (((m->param)->cm_mat)->mat_p)->slip;  
   Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
   
   double alpha = 0.0;
@@ -631,6 +629,8 @@ static int cm_pvp_compute_dMdu(const Constitutive_model *m,
 {
   int err = 0;
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
+  for(int ia=0; ia<nne*ndofn*DIM_3x3; ia++)
+    dM_du[ia] = 0.0;
 /*  if(CTX->alpha<0)
     err += plasticity_compute_dMdu_np1(m,ctx,Grad_op,nne,ndofn,dM_du);
   else
