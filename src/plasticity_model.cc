@@ -1325,7 +1325,7 @@ int compute_dMdu(const Constitutive_model *con,
   Tensor<4> B = {};
 
   // set U to the 9x9 identity scaled by 1.0/dt
-  U(i,j,k,l) = (1.0/dt) * ttl::identity(i,j,k,l);                    
+  U(i,j,k,l) =  ttl::identity(i,j,k,l);                    
 
   for(int a = 0; a<N_SYS; a++)
   {
@@ -1351,15 +1351,15 @@ int compute_dMdu(const Constitutive_model *con,
     sum_aD(i,j) += R2_a * aD(i,j);
 
     // perform the Kronecker product using ttl and scales it by drdtau
-    U(i,j,k,l) += drdtau * aC(i,j) * Pa(k,l);
-    B(i,j,k,l) += drdtau * aD(i,j) * Pa(k,l);
+    U(i,j,k,l) += dt*drdtau * aC(i,j) * Pa(k,l);
+    B(i,j,k,l) += dt*drdtau * aD(i,j) * Pa(k,l);
   }
 
   double R1 = R4/(1.0-R4*sum_1gm1gm);
 
   // perform the Kronecker product using ttl and scales it by R1
-  U(i,j,k,l) += R1 * sum_aC(i,j) * sum_Pa(k,l);
-  B(i,j,k,l) += R1 * sum_aD(i,j) * sum_Pa(k,l);
+  U(i,j,k,l) += dt*R1*sum_aC(i,j)*sum_Pa(k,l);
+  B(i,j,k,l) += dt*R1*sum_aD(i,j)*sum_Pa(k,l);
 
   // cast _dmdu as a ttl tensor and compute its value
   // -1 * (inverse(U) * B:Grad_du)
@@ -1369,7 +1369,7 @@ int compute_dMdu(const Constitutive_model *con,
 					     B(k,l,m,n) * Grad_du(m,n));  
   }
   catch (const int inverseException){
-    PGFEM_printf("4th order matrix is singular\n");
+    Tensor<2,double*>(_dMdu->m_pdata)(i,j) = 0.0*ttl::identity(i,j);
     err++;
   }
 
