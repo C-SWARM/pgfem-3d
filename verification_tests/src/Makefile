@@ -3,7 +3,6 @@
 EXC = main_test
 OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v '[a-z]*'_driver.o)
 
-POST_PROCESSING=../include
 pgfem_root_dir=../../
 
 pgfem_incl_dir = $(pgfem_root_dir)/include
@@ -67,7 +66,6 @@ INCLUDES = -I$(pgfem_incl_dir) \
 	    $(CNSTVM_incl) \
 	    $(VTK_IO_incl) \
 	    $(MKL_incl) \
-	   -I$(POST_PROCESSING) \
 	    $(energy_equation_include)
 
 
