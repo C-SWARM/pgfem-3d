@@ -1,20 +1,24 @@
+#!/bin/bash
+
 EXC = main_test
 OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v '[a-z]*'_driver.o)
 
 POST_PROCESSING=../include
 
-pfem_incl_dir = $(TEST_DIR)/include
+pgfem_incl_dir = $(pgfem_root_dir)/include
 
 # SUITESPARSE
-SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
-            		  -L${PGFEM3D_EXT_LIB}/UMFPACK/AMD/Lib -lamd
+suitesparse_dir := $(shell grep -o 'with-suitesparse-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
+SUITESPARSE_lib	= -L${suitesparse_dir}/UMFPACK/Lib -lumfpack \
+            		  -L${suitesparse_dir}/AMD/Lib -lamd
 
 # HYPRE
-HYPRE_inc	= -I$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/include
-HYPRE_lib	= -L$(PGFEM3D_EXT_LIB)/hypre-2.4.0b/src/hypre/lib -lHYPRE
+hypre_dir := $(shell grep -o 'with-hypre-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
+HYPRE_inc	= -I$(hypre_dir)/include
+HYPRE_lib	= -L$(hypre_dir)/lib -lHYPRE
 
 # CNSTVM
-CNSTVM_dir = $(shell grep 'cnstvm_lib' ../../Makefile* | grep -v '../Makefile.in:cnstvm_lib = ' | grep -o '[^-L]*' | grep 'Generalizsed_constitutive_model' | sed 's/\/lib //')
+CNSTVM_dir := $(shell grep -o 'with-cnstvm-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
 CNSTVM_lib = -L$(CNSTVM_dir)/lib -lConstitutiveModel
 CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
               -I$(CNSTVM_dir)/material/include \
@@ -22,12 +26,12 @@ CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
               -I$(CNSTVM_dir)/crystal_plasticity/include
 
 # Compressed VTK I/O
-VTK_IO_dir	= $(TEST_DIR)/lib/VTK_IO
+VTK_IO_dir	= $(pgfem_root_dir)/lib/VTK_IO
 VTK_IO_incl	= -I$(VTK_IO_dir)/include
 VTK_IO_lib	= -L$(VTK_IO_dir)/src -lPGFem3D_to_VTK
 
-energy_equation_include = -I$(TEST_DIR)/energy_equation/include
-energy_equation_lib     = -L$(TEST_DIR)/energy_equation/src -lPGFem3D_Energy_equation
+energy_equation_include = -I$(pgfem_root_dir)/energy_equation/include
+energy_equation_lib     = -L$(pgfem_root_dir)/energy_equation/src -lPGFem3D_Energy_equation
 
 # VTK
 VTK_dir		= /opt/crc/vtk/5.10.1/gcc
@@ -57,7 +61,7 @@ LINK = mpicxx
 
 CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g
 
-INCLUDES = -I$(pfem_incl_dir) \
+INCLUDES = -I$(pgfem_incl_dir) \
 	    $(HYPRE_inc) \
 	    $(CNSTVM_incl) \
 	    $(VTK_IO_incl) \
@@ -69,7 +73,7 @@ INCLUDES = -I$(pfem_incl_dir) \
 LIBS	= $(VTK_IO_lib) \
 	  $(SUITESPARSE_lib) \
 	  $(HYPRE_lib) \
-          $(CNSTVM_lib) \
+	  $(CNSTVM_lib) \
 	  $(VTK_lib) \
 	  $(MKL_lib) \
 	  $(energy_equation_lib)
