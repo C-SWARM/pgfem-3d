@@ -1,20 +1,20 @@
 OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v '[a-z]*'_driver.o)
 
-pgfem_root_dir=../../
+pgfem_root_dir=../
 pgfem_incl_dir = $(pgfem_root_dir)/include
 
 # SUITESPARSE
-suitesparse_dir := $(shell grep -o 'with-suitesparse-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
+suitesparse_dir := $(shell grep -o 'with-suitesparse-dir=[^ ]*' ../config.log | sed -e 's/^.*=//' )
 SUITESPARSE_lib = -L${suitesparse_dir}/UMFPACK/Lib -lumfpack \
                   -L${suitesparse_dir}/AMD/Lib -lamd
 
 # HYPRE
-hypre_dir := $(shell grep -o 'with-hypre-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
+hypre_dir := $(shell grep -o 'with-hypre-dir=[^ ]*' ../config.log | sed -e 's/^.*=//' )
 HYPRE_inc = -I$(hypre_dir)/include
 HYPRE_lib = -L$(hypre_dir)/lib -lHYPRE
 
 # CNSTVM
-CNSTVM_dir := $(shell grep -o 'with-cnstvm-dir=[^ ]*' ../../config.log | sed -e 's/^.*=//' )
+CNSTVM_dir := $(shell grep -o 'with-cnstvm-dir=[^ ]*' ../config.log | sed -e 's/^.*=//' )
 CNSTVM_lib = -L$(CNSTVM_dir)/lib -lConstitutiveModel
 CNSTVM_incl = -I$(CNSTVM_dir)/utils/include \
               -I$(CNSTVM_dir)/material/include \
