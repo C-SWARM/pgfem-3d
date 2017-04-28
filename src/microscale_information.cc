@@ -496,6 +496,17 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     long nmat = 0;
     long n_con = 0;
     MATERIAL *mater = NULL;
+    
+    int fv_ndofn = ndim;
+    
+    switch(opts->analysis_type)
+    {
+      case STABILIZED: //intented to over flow. 
+      case MINI:
+      case MINI_3F:
+        fv_ndofn = 4;
+        break;
+    }
 
     int physicsno = 1; // currently support only mechanical part
     err = read_input_file(opts,mpi_comm,&common->nn, &Gnn,&common->ndofn,
@@ -504,7 +515,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 			  &common->n_orient,&common->node,
 			  &common->elem,&mater,&common->matgeom,
 			  &common->supports,&nln,&znod,&nle_s,&zele_s,
-			  &nle_v,&zele_v, physicsno, &ndim, NULL);
+			  &nle_v,&zele_v, &fv_ndofn,physicsno,&ndim, NULL);
 
     /* error reading file(s) */
     if(err){

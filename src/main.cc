@@ -573,12 +573,23 @@ int single_scale_main(int argc,char *argv[])
   COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(mp.physicsno*sizeof(COMMUNICATION_STRUCTURE));
 
   for(int ia = 0; ia<mp.physicsno; ia++)
-  {
-    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
-      mp_id_M = ia;
-      
+  {      
     err += field_varialbe_initialization(fv+ia);
     fv[ia].ndofn = mp.ndim[ia];
+
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+    {
+      mp_id_M = ia;
+      switch(options.analysis_type)
+      {
+        case STABILIZED: //intented to over flow. 
+        case MINI: 
+        case MINI_3F: 
+          fv[ia].ndofn = 4; 
+          break;
+      }
+    }
+
     fv[ia].n_coupled = mp.coupled_ids[ia][0];
     // create memories for saving coupling info
     if(mp.coupled_ids[ia][0]>0)

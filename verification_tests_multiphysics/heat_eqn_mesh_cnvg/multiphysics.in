@@ -1,0 +1,20 @@
+# <= comments
+# Number of physic
+1
+######################################################
+# Physics setting for heat transfer
+# [Physics id] = 0: Mechanical
+#                1: Thermal
+#                2: Chemistry (Not available)
+#
+######################################################
+# Physics setting for mechanical part
+1 heat_transfer 1
+# coupling
+0
+# Print result
+2
+# curretly temperature and heat flux are supported
+# [data id] = 0: temperature
+#             1: heat flux
+0 1

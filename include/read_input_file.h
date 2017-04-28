@@ -43,6 +43,7 @@ extern "C" {
 		      ZATELEM **zelem_s,
 		      long *nel_v,
 		      ZATELEM **zelem_v,
+                      const int *fv_ndofn,
 		      const int phyicsno,
 		      const int *ndim,
                       char **physicsnames);

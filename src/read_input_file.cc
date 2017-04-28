@@ -263,8 +263,9 @@ int read_input_file(const PGFem3D_opt *opts,
 		    ZATELEM **zelem_s,
 		    long *nel_v,
 		    ZATELEM **zelem_v,
+                    const int *fv_ndofn,
 		    const int physicsno,
-		    const int *ndim,
+                    const int *ndim,
                     char **physicsnames)
 {
   int err = 0;
@@ -281,13 +282,7 @@ int read_input_file(const PGFem3D_opt *opts,
   fscanf (in,"%ld %lf %lf",lin_maxit,lin_err,lim_zero);
   fscanf (in,"%ld %ld %ld",nmat,n_concentrations,n_orient);
 
-  /* Set ndofn according to analysis type */
-  switch(opts->analysis_type){
-  case STABILIZED: case MINI: case MINI_3F: *ndofn = 4; break;
-  default: *ndofn = 3; break;
-  }
-
-  (*node) = build_node_multi_physics(*nn,ndim,physicsno);
+  (*node) = build_node_multi_physics(*nn,fv_ndofn,physicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
   (*material) = PGFEM_calloc(*nmat,sizeof(MATERIAL));
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
@@ -416,6 +411,11 @@ int read_mesh_file(GRID *grid,
   long ndofn;
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
+
+  int *fv_ndofn = (int *) malloc(mp->physicsno*sizeof(int));
+
+  for(int iA=0; iA<mp->physicsno; iA++)
+    fv_ndofn[iA] = FV[iA].ndofn;
     
   int err = read_input_file(opts,
                             mpi_comm,
@@ -440,9 +440,12 @@ int read_mesh_file(GRID *grid,
                             &(load->zele_s),
                             &(load->nle_v),
                             &(load->zele_v),
+                            fv_ndofn,
                             mp->physicsno,
                             mp->ndim,
                             mp->physicsname);
+  free(fv_ndofn);
+
   // read multiphysics material properties
   err += read_multiphysics_material_properties(mat,opts,mp);
   
@@ -450,11 +453,6 @@ int read_mesh_file(GRID *grid,
   FV[0].NORM = SOL[0].computer_zero;
   for(int iA=0; iA<mp->physicsno; iA++)
   {
-    if(mp->physics_ids[iA]==MULTIPHYSICS_MECHANICAL)
-    {    
-      FV[iA].ndofn = ndofn;
-      continue;
-    }
     SOL[iA].iter_max_sol  = SOL[0].iter_max_sol;
     SOL[iA].err           = SOL[0].err; 
     SOL[iA].computer_zero = SOL[0].computer_zero;
