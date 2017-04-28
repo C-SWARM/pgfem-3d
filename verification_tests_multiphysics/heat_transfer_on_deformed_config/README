@@ -1,0 +1,13 @@
+# test heat transfer on updated Lagrangian
+
+# 0. module load
+module load mvapich2/2.1-intel-15.0-mlx
+ 
+# 1. run simulations
+./run_PGFem3D.sh box 2
+
+# 2. justify verification
+head out/box_2CPU/restart/heat_transfer/STEP_000009/box_1_9.res -n 2 | tail -n 1 > temp_2.txt
+head out/box_2CPU/restart/heat_transfer/STEP_000009/box_1_9.res -n 11 | tail -n 1 > temp_11.txt
+/cswarm/tools/bin/numdiff temp_2.txt temp_11.txt -a 1.0e-2 -r 1.0e-2
+rm temp_*.txt

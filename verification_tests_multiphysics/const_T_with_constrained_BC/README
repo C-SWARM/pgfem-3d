@@ -1,0 +1,13 @@
+# How to perform convergence study
+
+# 0. module load
+module load mvapich2/2.1-intel-15.0-mlx
+module load matlab
+ 
+# 1. run simulations
+./run_PGFem3D.sh box 1
+
+# 2. justify verification
+head out/box_1CPU/restart/solid_mechanics/STEP_000009/box_0_9.res -n 7 | grep -o '[0-9].[0-9]*e[+-]?*[0-9]*' | tail -n 1 > disp.txt
+/cswarm/tools/bin/numdiff -a 1.0e-5 -r 1.0e-5 disp.ref disp.txt
+

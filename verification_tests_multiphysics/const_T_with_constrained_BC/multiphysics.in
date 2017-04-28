@@ -1,0 +1,34 @@
+# <= comments
+# Number of physic
+2
+######################################################
+# Physics setting for heat transfer
+# [Physics id] = 0: Mechanical
+#                1: Thermal
+#                2: Chemistry (Not available)
+#
+######################################################
+# Physics setting for mechanical part
+1 heat_transfer 1
+# coupling
+0
+#
+# Print result
+2
+# curretly temperature and heat flux are supported
+# [data id] = 0: temperature
+#             1: heat flux
+0 1
+######################################################
+# Physics setting for solid mechanics
+# [Physics id] [Physics name] [degree of freedom]
+0 solid_mechanics 3
+# coupling
+# [number of coupled physics] [physics ids] ...
+1 0
+#
+#
+# Print result
+# [number of varialbs to be printed]
+4
+0 3 6 11

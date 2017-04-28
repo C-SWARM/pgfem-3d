@@ -1,0 +1,38 @@
+# This is a comment
+vertex 1 xyz 0.0 0.0 0.0
+vertex 2 xyz 1.0 0.0 0.0
+vertex 3 xyz 1.0 1.0 0.0
+vertex 4 xyz 0.0 1.0 0.0
+
+vertex 5 xyz 0.0 0.0 1.0
+vertex 6 xyz 1.0 0.0 1.0
+vertex 7 xyz 1.0 1.0 1.0
+vertex 8 xyz 0.0 1.0 1.0
+
+# curves
+curve 1 vertex 1 2
+curve 2 vertex 2 3
+curve 3 vertex 3 4
+curve 4 vertex 4 1
+
+curve 5 vertex 5 6
+curve 6 vertex 6 7
+curve 7 vertex 7 8
+curve 8 vertex 8 5
+
+curve 9 vertex 1 5
+curve 10 vertex 2 6
+curve 11 vertex 3 7
+curve 12 vertex 4 8
+
+patch 1 normal 0 0 1 boundary curve 1 2 3 4
+patch 2 normal 0 0 1 boundary curve 5 6 7 8
+patch 3 normal 1 0 0 boundary curve 12 8 -9 -4
+patch 4 normal 1 0 0 boundary curve 11 -6 -10 2
+patch 5 normal 0 1 0 boundary curve 9 5 -10 -1
+patch 6 normal 0 1 0 boundary curve 12 -7 -11 3
+
+region 1 boundary patch -1 2 -3 4 -5 6 size def
+
+
+

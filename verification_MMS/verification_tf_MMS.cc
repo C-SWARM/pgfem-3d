@@ -116,7 +116,6 @@ int main(int argc,char *argv[])
   fclose(in_st);  
             
   double GL2_err[3];
-  double t = 0.0;
   
   int tim = nt+1;
   while(print[tim]!=1)
