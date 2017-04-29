@@ -40,7 +40,7 @@ fi
 #branch=master
 
 TEST_DIR=$PWD
-exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
+#exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
 
 # inputs
 IN_DIR=${TEST_DIR}/${filebase}_${NP}CPU_${test_name}
