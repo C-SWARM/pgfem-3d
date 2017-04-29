@@ -1,0 +1,16 @@
+# How to perform convergence study
+
+# 0. module load
+module load mvapich2/2.1-intel-15.0-mlx
+module load matlab
+ 
+# 1. run simulations
+./run_PGFem3D.sh box 16 050
+./run_PGFem3D.sh box 16 075
+./run_PGFem3D.sh box 16 100
+./run_PGFem3D.sh box 16 125
+./run_PGFem3D.sh box 16 150
+
+# 2. justify convergence
+matlab < test_cnvg.m
+
