@@ -1,6 +1,6 @@
 OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v '[a-z]*'_driver.o)
 
-pgfem_root_dir=../
+pgfem_root_dir=..
 pgfem_incl_dir = $(pgfem_root_dir)/include
 
 # SUITESPARSE
@@ -81,7 +81,7 @@ LIBS	= $(VTK_IO_lib) \
 OBJ = $(SRC:.cc=.o)
 
 all:	
-#	$(CXX) -c $(INCLUDES) $(CXXFLAGS) MMS.cc 		
+	$(CXX) -c $(INCLUDES) $(CXXFLAGS) MMS.cc 		
 	$(CXX) -c $(INCLUDES) $(CXXFLAGS) ../src/dynamics.cc
 	$(LINK) -o PGFem3D $(CXXFLAGS) $(OBJS) $(LIBS) ../src/super_main.o MMS.o dynamics.o $(OBJ_TEST) $(LIBS)
 	$(CXX) -c $(INCLUDES) $(CXXFLAGS) verification_tf_MMS.cc 		
