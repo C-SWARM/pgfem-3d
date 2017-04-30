@@ -62,10 +62,12 @@ int main(int argc,char *argv[])
   int in_err = 0;
   int physicsno = 1;
   int ndim = 3;
+  int fv_ndofn = ndim;
+
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
          &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
          &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim,NULL);
+         &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
 	    myrank);
