@@ -8,19 +8,19 @@ do
 
 	if [ $i -lt 10 ]
 	then 
-		thisFolder=$folderbase\_0000$i	
+		thisFolder=$folderbase\_00000$i	
 	else
 		if [ $i -lt 100 ]
         	then 
-                	thisFolder=$folderbase\_000$i
+                	thisFolder=$folderbase\_0000$i
 		else
 			if [ $i -lt 1000 ]
         		then
-				thisFolder=$folderbase\_00$i
+				thisFolder=$folderbase\_000$i
 			else
 				if [ $i -lt 10000 ]
 				then
-					thisFolder=$folderbase\_0$i	
+					thisFolder=$folderbase\_00$i	
 				fi
 			fi
 		fi
