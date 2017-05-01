@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # read working directory path
-work_dir=out
+output_dir=out
 
 # define constant for running PGFem3D
 
@@ -19,16 +19,15 @@ NP=$2
 task=$3
 
 # run simulations
-branch=master
+#branch=master
 
-name=${filebase}
 TEST_DIR=$PWD
-IN_DIR=${TEST_DIR}/${name}_${NP}CPU_${task}
-exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
+IN_DIR=${TEST_DIR}/${filebase}_${NP}CPU_${task}
+#exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
 
-input=${IN_DIR}/${name}_
-OUTDIR=$work_dir/mesh_cnvg/${task}/${name}_${NP}CPU
-output=${OUTDIR}/${name}
+input=${IN_DIR}/${filebase}_
+OUTDIR=$output_dir/mesh_cnvg/${task}/${filebase}_${NP}CPU
+output=${OUTDIR}/${filebase}
 
 opts="-SS -cm 1 -noLS -no-compute-macro -noCCE -maxit 3000 -kdim 1000 -V ${override}"
 
@@ -48,4 +47,3 @@ time_end='date'
 echo "============================================================="
 echo "End time: ${time_end}"
 echo "============================================================="
-

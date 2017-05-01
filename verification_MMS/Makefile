@@ -1,6 +1,6 @@
 OBJ_TEST = $(shell ls ../src/*.o | grep -v 'super_main.o' | grep -v 'dynamics.o' | grep -v '[a-z]*'_driver.o)
 
-pgfem_root_dir=../
+pgfem_root_dir=..
 pgfem_incl_dir = $(pgfem_root_dir)/include
 
 # SUITESPARSE
