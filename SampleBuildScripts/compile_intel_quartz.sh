@@ -1,35 +1,54 @@
 #!/bin/csh
 
 ### Load the modules
-module load intel/16.0.3   
-module load mvapich2/2.2   
+module load intel/16.0.3
+module load mvapich2/2.2
 module load mkl/11.3.3
+setenv CPLUS_INCLUDE_PATH /usr/gapps/notredame/external_lib_quartz/ttl/install_ttl_02162017/include  #Path the ttl header files
 
 
-### Build GCM library
-cd /g/g90/saha4/Generalizsed_constitutive_model_cab                  #PATH_to_GCM_direcotry
+### User needs to set any dependent libraries' path and a directory where the pgfem3d to be built
+### You may already have hypre, suitespare and vtk built in your systerm, if so just set the path in
+setenv path_to_hypre /usr/gapps/notredame/external_lib_quartz/hypre/2.4.0b/intel/16.0.3/mvapich2/2.2 
+setenv path_to_suitesparse /usr/gapps/notredame/external_lib_quartz/suitesparse/src/SuiteSparse-2.1.1 
+setenv path_to_gcm /g/g90/saha4/Generalizsed_constitutive_model_cab
+setenv path_to_pgfem3d /g/g90/saha4/pgfem_3d
+setenv path_to_pgfem3d_build /usr/gapps/notredame/pgfem_3d_install_quartz_intel
+#setenv path_to_vtk /opt/crc/vtk/5.10.1/gcc
+
+
+### This takes to the GCM directory, pull the latest code and compile it
+cd $path_to_gcm    
 git pull
 make clean
-make CXX=mpicxx CXXFLAGS="-std=c++14 -Ofast -g -fpermissive -xCORE-AVX2" 
-echo "... Finished compiling GCM ... " 
-echo ""
+make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2"
+echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
-### Compile pgfem_3d 
-cd /g/g90/saha4/pgfem_3d                                             #PATH_to_pgfem_3d_directory
+### This takes to the pgfem3d directory and pull the latest version
+cd $path_to_pgfem3d
 git pull
 
-setenv PGFEM3D_INSTALL $PWD/build_pgfem3d                            #Give the name of the build directory 
-setenv confg_file_name SampleBuildScripts/config.site_intel_quartz   #Give the name of the config.site file
-
+### Add the branch name to the pgfem3d build and compile
 setenv branch_name `git branch | grep '*' | awk '{ print $2; }'`     #To get the name of the current branch
-mkdir -pv $PGFEM3D_INSTALL/$branch_name/share
-cp $confg_file_name $PGFEM3D_INSTALL/$branch_name/share/config.site
+setenv PGFEM3D_INSTALL $path_to_pgfem3d_build/$branch_name           #Give the name of the build directory 
 
-#make clean
 make distclean
-sh reconf_git_branch.sh
-make -j 12
+autoreconf -if                                                       #To generate configure file
+
+
+./configure --prefix=$PGFEM3D_INSTALL                               \
+--with-mpi=yes                                                      \
+CXX=mpicxx                                                          \
+CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2" \
+--with-hypre-dir=$path_to_hypre                                     \
+--with-suitesparse-dir=$path_to_suitesparse                         \
+--with-cnstvm-dir=$path_to_gcm                                      \
+--enable-vtk=no 
+#--with-vtk-include="-I$path_to_vtk/include/vtk-6.0"  \
+#--with-vtk-libs="-Wl,-rpath=$path_to_vtk/lib -L$path_to_vtk/lib -lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 -lvtkIOCore-6.0 -lvtkzlib-6.0 -lvtkCommonExecutionModel-6.0 -lvtkCommonDataModel-6.0 -lvtkCommonMisc-6.0 -lvtkCommonSystem-6.0 -lvtkCommonTransforms-6.0 -lvtkCommonMath-6.0 -lvtkIOGeometry-6.0 -lvtkCommonCore-6.0 -lvtksys-6.0 -lvtkexpat-6.0"
+
+make -j 8
 make install
- 
-echo "... Finished compiling pgfem_3d ... " 
+
+echo "++++++++++++ Finished Compiling pgfem3d +++++++++++"
