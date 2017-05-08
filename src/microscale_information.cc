@@ -184,7 +184,8 @@ void build_MICROSCALE(MICROSCALE *microscale,
 		      MPI_Comm mpi_comm,
 		      const int argc,
 		      char **argv,
-		      const int mp_id, const Comm_hints *hints)
+		      const int mp_id, 
+		      const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;
