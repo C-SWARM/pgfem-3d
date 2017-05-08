@@ -33,7 +33,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
 				    COMMON_MICROSCALE *common,
 				    const int mp_id,
-            const Comm_hints *hints);
+				    const Comm_hints *hints);
 static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 
 static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol);
