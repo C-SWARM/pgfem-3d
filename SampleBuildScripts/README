@@ -1,14 +1,19 @@
-How to compile pgfem3d code?
+How to compile pgfem3d code? A quick compilation guide as follow:
 
 1. Download and compile pre-requisite libraries like: 
-- hypre (v2.4.0b or above)
-- suitesparse (v2.1.1 or above)
-- vtk (v5.10.1 or above) - this is optional
+
+- hypre (v2.40b or above)            : http://computation.llnl.gov/casc/hypre/software.html
+- suitesparse (v2.1.1 or above)      : http://faculty.cse.tamu.edu/davis/suitesparse.html
+                                     (only the AMD and UMFPACK routines are utilized)
+- VTK (v5.10.1 or above) - optional  : http://www.vtk.org/
+- Intel MKL                          : included w/ the Intel compiler suite, or can downloaded
+- Tensor Template Library (TTL)      : included with the code
 
 2. Download Generalizsed_constitutive_model (GCM) - anywhere you want
 
 3. Copy an approprite script "compile_xxx_xxx.sh" from this directory to the 
 pgfem_3d root directory, then
+
 - make sure to load the appropriate modules inside the script
 - set the pre-requisite library paths inside of this script 
 - and finally execute "sh compile_xxx_xxx.sh" to build pgfem_3d with GCM
