@@ -1,13 +1,21 @@
 How to compile pgfem3d code?
 
-Copy an approprite script compile_xxx.sh to the pgfem_3d parent direcotry 
-and then execute "./compile_xxx.sh"
+1. Download and compile pre-requisite libraries like: 
+- hypre (v2.4.0b or above)
+- suitesparse (v2.1.1 or above)
+- vtk (v5.10.1 or above) - this is optional
+
+2. Download Generalizsed_constitutive_model (GCM) - anywhere you want
+
+3. Copy an approprite script "compile_xxx_xxx.sh" from this directory to the 
+pgfem_3d root directory, then
+- make sure to load the appropriate modules inside the script
+- set the pre-requisite library paths inside of this script 
+- and finally execute "sh compile_xxx_xxx.sh" to build pgfem_3d with GCM
+
+After the successful compilation, pgfem3d executable "PGFem3D" should be 
+found at $PGFEM3D_INSTALL/bin
 
 
-Please do not forget to revise compile_xxx.sh as:
-1. set the correct path to GCM directory
-2. set the correct path to pgfem_3d directroy
-3. make sure to revise the library paths inside of config.site_xxx used in compile_xxx.sh 
-
-
-After the successful compilation, pgfem3d executable may be found at build_pgfem3d/$branch_name/bin
+Note: With TTL presently the code compiles wth gcc compiler (and they may 
+compile with Intel but it will run very slow)

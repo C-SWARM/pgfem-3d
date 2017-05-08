@@ -1,9 +1,0 @@
-with_mpi=yes
-CXX=mpicxx
-CXXFLAGS="-std=c++14 -Ofast -fpermissive -g -xCORE-AVX2"
-
-with_hypre_dir=/usr/gapps/notredame/external_lib_quartz/hypre/2.4.0b/intel/16.0.3/mvapich2/2.2
-with_suitesparse_dir=/usr/gapps/notredame/external_lib_quartz/suitesparse/src/SuiteSparse-2.1.1
-with_cnstvm_dir=/g/g90/saha4/Generalizsed_constitutive_model_cab
-enable_vtk=no
-

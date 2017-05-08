@@ -1,19 +1,20 @@
 #!/bin/csh
 
 ### Load the modules
-module switch intel/16.0.3 gcc/6.1.0
-module load mvapich2/2.2
-module load mkl/11.3.3
-setenv CPLUS_INCLUDE_PATH /usr/gapps/notredame/external_lib_quartz/ttl/install_ttl_02162017/include  #Path the ttl header files
+use mvapich2-gnu-2.2
+setenv PATH /usr/gapps/notredame/external_lib_cab/gcc/6.3.0/4.4.7/bin:$PATH                          #setting a new version of gcc
+setenv LD_LIBRARY_PATH /usr/gapps/notredame/external_lib_cab/gcc/6.3.0/4.4.7/lib64:$LD_LIBRARY_PATH
+setenv MKLROOT /usr/local/tools/mkl-11.3.2/compilers_and_libraries/linux/mkl                         
+setenv CPLUS_INCLUDE_PATH /usr/gapps/notredame/external_lib_cab/ttl/install_ttl_02162017/include     #Path the ttl header files
 
 
 ### User needs to set any dependent libraries' path and a directory where the pgfem3d to be built
 ### You may already have hypre, suitespare and vtk built in your systerm, if so just set the path in
-setenv path_to_hypre /usr/gapps/notredame/external_lib_quartz/hypre/2.4.0b/gcc/6.1.0/mvapich2/2.2
-setenv path_to_suitesparse /usr/gapps/notredame/external_lib_quartz/suitesparse/src/SuiteSparse-2.1.1_gcc6.1.0
+setenv path_to_hypre /usr/gapps/notredame/external_lib_cab/hypre/2.4.0b/gcc/6.3.0/mvapich2/2.2
+setenv path_to_suitesparse /usr/gapps/notredame/external_lib_cab/suitesparse/src/SuiteSparse-2.1.1_gcc6.3.0
 setenv path_to_gcm /g/g90/saha4/Generalizsed_constitutive_model_cab
 setenv path_to_pgfem3d /g/g90/saha4/pgfem_3d
-setenv path_to_pgfem3d_build /usr/gapps/notredame/pgfem_3d_install_quartz_gcc
+setenv path_to_pgfem3d_build /usr/gapps/notredame/pgfem_3d_install_cab_gcc
 #setenv path_to_vtk /opt/crc/vtk/5.10.1/gcc
 
 
@@ -21,7 +22,7 @@ setenv path_to_pgfem3d_build /usr/gapps/notredame/pgfem_3d_install_quartz_gcc
 cd $path_to_gcm    
 git pull
 make clean
-make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2" 
+make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g" 
 echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
@@ -40,7 +41,7 @@ autoreconf -if                                                       #To generat
 ./configure --prefix=$PGFEM3D_INSTALL                               \
 --with-mpi=yes                                                      \
 CXX=mpicxx                                                          \
-CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2" \
+CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g"                  \
 --with-hypre-dir=$path_to_hypre                                     \
 --with-suitesparse-dir=$path_to_suitesparse                         \
 --with-cnstvm-dir=$path_to_gcm                                      \
