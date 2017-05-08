@@ -454,7 +454,9 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
 
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 				    MPI_Comm mpi_comm,
-				    COMMON_MICROSCALE *common, const int mp_id,const Comm_hints *hints)
+				    COMMON_MICROSCALE *common, 
+            const int mp_id,
+            const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;

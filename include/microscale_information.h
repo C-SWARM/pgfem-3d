@@ -204,7 +204,8 @@ extern "C" {
 			MPI_Comm mpi_comm,
 			const int argc,
 			char **argv,
-			const int mp_id, const Comm_hints *hints);
+			const int mp_id, 
+      const Comm_hints *hints);
 
   /** build n solutions to compute on the scale */
   void build_MICROSCALE_solutions(const int n_solutions,
