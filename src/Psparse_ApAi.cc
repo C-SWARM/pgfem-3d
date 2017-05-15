@@ -248,36 +248,6 @@ int* Psparse_ApAi (int nproc,
     }
   }/* end i < ne */
  
-/* 
-  if(myrank == 2) {
-    for (j=0;j<ndofe;j++){
-      II = cnL[j]-1;
-      for (k=0;k<ap1[II];k++){
-          PGFEM_printf("%d ",AA[II][k]);
-      }
-      PGFEM_printf("\n");
-  
-//    PGFEM_printf("%d \n",ap1[j]);
-    }
-  }
-
-  if(myrank == 2) {
-    for (j=0;j<ndofd;j++){
-      for (k=0;k<ap1[j];k++){
-        PGFEM_printf("%d ",AA[j][k]);
-      }
-      PGFEM_printf("\n");
-    }
-  }
-          
-
-  if(myrank == 2) {
-    for (j=0;j<ndofe;j++){
-      PGFEM_printf("%d ",cnL[j]-1);
-    }
-  }
-*/
-
 
   /* COHESIVE ELEMENTS */
   if (cohesive == 1){
@@ -427,27 +397,6 @@ int* Psparse_ApAi (int nproc,
       }
     }
   }
-//Might want to fix this preceding part first
-/*
-if (1 == myrank) {
-printf("\n in psparse, the send array is \n");
-for(j = 0; j < nproc; j++) {
-printf("%d ",comm->S[j]);
-}
-}
-printf("\n");
-*/
-
-//New version
-
-
-
-
-
-
-
-
-
 
   AA = (long**) PGFEM_calloc (nproc,sizeof(long*));
   for (i=0;i<nproc;i++) {                                                     //loop over procs
@@ -686,18 +635,6 @@ printf("\n");
   return (Ai);
 }
 
-/* few things happen here:
- * 1. everyone shakes hands with everyone else for fun
- * 2. 
- *
- *
- *
- *
- *
- *
- *
- */
-
 static int determine_comm_pattern(COMMUN comm,
 				    const MPI_Comm mpi_comm,
             const int *preSend,
@@ -726,22 +663,6 @@ static int determine_comm_pattern(COMMUN comm,
 //    read_req= PGFEM_calloc(nsend,sizeof(MPI_Status));
   }
   int flag,req_num;
-//can be changed to smaller comm
-  /* Post receives from all other processes */
-/*
-  int t_count = 0;
-  for (int i = 0; i < nproc; i++){                                               //prepares mailboxes to receive from all nodes
-    if (preSend[countProc] == i) {                                               //if this proc is in the approved list
-      countProc++;                                                               //go to next proc in list
-      if (i == myrank)                                                           //dont prepare mailbox for own rank
-        continue;                                                                 
-      err += MPI_Irecv(&comm->R[i],1,MPI_LONG,i,MPI_ANY_TAG,                     //put received info in comm->R
-	                     mpi_comm,&t_req_r[t_count]);                              //save info of proc from which things came
-      t_count++;
-      }                                                                  
-  
-  }
-*/
 
   int recvFrom;
     int t_count = 0;
@@ -752,86 +673,21 @@ static int determine_comm_pattern(COMMUN comm,
       
       }
 
-
-
-
-
-
-
-
-/*
-if(myrank == 4) {
-printf("the preRecv array looks like :");
-for ( q = 0; q < nrecv; q++) {
-printf("%d ",preRecv[q]);
-}
-printf("\n the number of mailboxes set up in rank %d is %d \n",myrank, t_count );
-
-PGFEM_printf("\nthe  recv array  in rank %dis:",myrank);
-for(q =0; q < nproc; q++) {
-PGFEM_printf("%d ",comm->R[q]);
-}
-printf("\n");
-}
-*/
-
-//if(myrank == 0) preRecv[1] = 0;
-
   countProc = 0;                                                                //restart count
 //can be changed to smaller comm
   /* Send size to all other processors */
   t_count = 0;
-/*
-  for (int i = 0; i < nproc; i++){                                              //send size to all 
-    if (preRecv[countProc] == i) {                                               //if this proc is in the approved list
 
-        countProc++;
-      if (i != myrank){                                                           //except myself
-        err += MPI_Isend(&comm->S[i],1,MPI_LONG,i,myrank,                         
-		         mpi_comm,&t_req_s[t_count]);                                         //t_req_s is required for each non-blocking call
-        t_count++;                                                                //cant end communication without it
-if(myrank == 0 ) printf("a message was sent to %d\n", i);
-
-        if(comm->S[i] > 0) comm->Ns++;                                            //calculate number of procs that I sent to  
-      }
-    }
-  }
-*/
   comm->Ns = nrecv;
   for (int i = 0; i < nrecv; i++){                                              //send size to all 
-/*
-        if(myrank==0){
-          printf("==============================================\n");
-          printf("I am sending %ld to %ld\n", comm->S[ preRecv[i]],  preRecv[i]);
-        }
-*/
+
         int sendTo = preRecv[i];
         err += MPI_Isend(&comm->S[sendTo],1,MPI_LONG,sendTo,myrank,
              mpi_comm,&t_req_s[i]);                                         //t_req_s is required for each non-blocking call
 //        t_count++;                                                                //cant end communication without it
-//if(myrank == 1 ) printf("a message was sent to %d\n", sendTo);
 
         if(comm->S[sendTo] == 0) comm->Ns--;                                            //calculate number of procs that I sent to  
       }
-
-
-/*
-if(myrank == 1) {
-printf("the preSend array looks like :");
-for ( q = 0; q < nrecv; q++) {
-printf("%d ",preRecv[q]);
-}
-printf("\n the number of messages sent in rank %d is %d \n",myrank, t_count );
-
-PGFEM_printf("\nthe send array in rank %d is: ",myrank);
-for(q =0; q < nproc; q++) {
-PGFEM_printf("%d ",comm->S[q]);
-}
-printf("\n");
-}
-*/
-
-
 
   /* Allocate send space and determine the reduced list of procs to
      send to. */
@@ -845,15 +701,7 @@ printf("\n");
   for (int i = 0; i < nproc; i++){
     if (i != myrank && comm->S[i] > 0) comm->Nss[t_count++] = i;                //not sure why comm->S > 0 check is there since line 407 
   }                                                                             //guarantees that
-/*
-if (myrank == 0) { 
-PGFEM_printf("\nthe  send array  in rank %dis:",myrank);
-for(q =0; q < nproc; q++) {
-PGFEM_printf("%d ",comm->S[q]);
-}
-printf("\n");
-}
-*/
+
   /* Process received messages as they arrive */
   t_count = 0;
   comm->Nr = nsend;
@@ -863,13 +711,7 @@ printf("\n");
     err +=  MPI_Waitany(nsend,t_req_r,&idx,&t_sta_r);                         //listen for messages
 
     int source = t_sta_r.MPI_SOURCE;
-/*
-    if(myrank==2)
-    {
-      printf("recieved from %d values = %ld\n", source, comm->R[source]);
-      printf(" I recieved %d/%d t_count\n ",t_count,nsend);   
-    } 
-*/
+
     if(comm->R[source]==0)  
       comm->Nr--;                                                               //write down how many non-empty letters I received 
 
