@@ -103,8 +103,8 @@ int* Psparse_ApAi (int nproc,
 		   COMMUN comm,
 		   MPI_Comm Comm_Orig,
 		   const int cohesive,
-       const Comm_hints *hints,
-        const int mp_id)
+		   const Comm_hints *hints,
+		   const int mp_id)
 {
   char jmeno[200];
   FILE *out=NULL;
