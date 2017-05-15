@@ -39,11 +39,11 @@
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern(COMMUN comm,
-				  const MPI_Comm mpi_comm,
-            const int *preSend,  
-            const int *preRecv,
-            const int nsend,
-            const int nrecv);
+				                  const MPI_Comm mpi_comm,
+                                  const int *preSend,  
+                                  const int *preRecv,
+                                  const int nsend,
+                                  const int nrecv);
 
 
 /**
