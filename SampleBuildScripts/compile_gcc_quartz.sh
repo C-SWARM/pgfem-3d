@@ -21,7 +21,7 @@ setenv path_to_pgfem3d_build /usr/gapps/notredame/pgfem_3d_install_quartz_gcc
 cd $path_to_gcm    
 git pull
 make clean
-make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2" 
+make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -march=core-avx2" 
 echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
@@ -40,7 +40,7 @@ autoreconf -if                                                       #To generat
 ./configure --prefix=$PGFEM3D_INSTALL                               \
 --with-mpi=yes                                                      \
 CXX=mpicxx                                                          \
-CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -g -march=core-avx2" \
+CXXFLAGS="-Wall -std=c++14 -Ofast -fpermissive -march=core-avx2"    \
 --with-hypre-dir=$path_to_hypre                                     \
 --with-suitesparse-dir=$path_to_suitesparse                         \
 --with-cnstvm-dir=$path_to_gcm                                      \

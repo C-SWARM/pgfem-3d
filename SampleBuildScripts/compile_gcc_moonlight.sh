@@ -23,7 +23,7 @@ setenv path_to_pgfem3d_build /turquoise/usr/projects/notredame/pgfem_3d_install_
 cd $path_to_gcm
 #git pull
 make clean
-make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast -g"                  
+make CXX=mpicxx CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast"                  
 echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
@@ -42,7 +42,7 @@ autoreconf -if                                                       #To generat
 ./configure --prefix=$PGFEM3D_INSTALL                               \
 --with-mpi=yes                                                      \
 CXX=mpicxx                                                          \
-CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast -g"                  \
+CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast"                     \
 --with-hypre-dir=$path_to_hypre                                     \
 --with-suitesparse-dir=$path_to_suitesparse                         \
 --with-cnstvm-dir=$path_to_gcm                                      \
