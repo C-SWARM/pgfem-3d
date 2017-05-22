@@ -145,10 +145,10 @@ int* Psparse_ApAi (int nproc,
 
   comm->S = (long*) PGFEM_calloc (nproc,sizeof(long));                        //amount of rows to send to each processor
   comm->R = (long*) PGFEM_calloc (nproc,sizeof(long));                        //amount of rows to receive from each processsor
-  comm->AS = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to send? 
-  comm->AR = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to recieve?
+  comm->AS = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to send
+  comm->AR = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to recieve
   comm->LG = (long*) PGFEM_calloc (ndofd,sizeof(long));                       //local to global (ndofd)
-  comm->GL = (long*) PGFEM_calloc (DomDof[myrank],sizeof(long));              //global to local?
+  comm->GL = (long*) PGFEM_calloc (DomDof[myrank],sizeof(long));              //global to local
 
   for (i=0;i<ne;i++){/* Number of contributions from elements to Aij */       //loop over elements
     
@@ -213,7 +213,7 @@ int* Psparse_ApAi (int nproc,
 
   AA = (long**) PGFEM_calloc (ndofd,sizeof(long*));
   for (i=0;i<ndofd;i++)
-    AA[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));                         //AA seems to be ndofd*ap large
+    AA[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));                         //AA is ndofd*ap large
   null_quit((void*) AA,0);
   
   for (i=0;i<ne;i++){/* List of ID number for Aij */                          // loop over elements in one domain
@@ -301,7 +301,7 @@ int* Psparse_ApAi (int nproc,
   ID = (long**) PGFEM_calloc (ndofd,sizeof(long*));                           //create an ID matrix, approximately the size of AA
   for (i=0;i<ndofd;i++) {                                                     //loop over domain degrees of freedom
     ID[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));                         //allocate an ID array for each dof (huge)
-    ap[i] = 0; /* null */                                                     //ID is around ndofd*ndofd?
+    ap[i] = 0; /* null */                                                     //ID is around ndofd*ndofd
   }
 
   null_quit((void*) ID,0);
@@ -323,7 +323,7 @@ int* Psparse_ApAi (int nproc,
   free (AA);
   dealoc1l (ap1); ap1 = NULL;
   
-  Ddof = aloc1i (nproc);                                                      //a total (global?) count of the degrees of freedom
+  Ddof = aloc1i (nproc);                                                      //a total (global) count of the degrees of freedom
   Ddof[0] = DomDof[0];
 
   for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
@@ -438,11 +438,11 @@ int* Psparse_ApAi (int nproc,
 
   /* Communicate who I am communicating with
    *============================================= */
-  determine_comm_pattern(comm,Comm_Orig, preSend, preRecv, nsend, nrecv);                                     //bad stuff happens here
+  determine_comm_pattern(comm,Comm_Orig, preSend, preRecv, nsend, nrecv);                                     
   
   /* Communicate how many rows/columns I am sending
    *============================================= */
-  communicate_number_row_col(comm,&NRr,&GNRr,&ApRr,                           //seems to be fixed by the time you get here
+  communicate_number_row_col(comm,&NRr,&GNRr,&ApRr,                          
 			     LG,ap,AA,Comm_Orig);
 
   /* Communicate the row/column information
@@ -647,7 +647,7 @@ static int determine_comm_pattern(COMMUN comm,
   int nproc = 0;
   int countProc = 0;
   int q;
-  MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed?)
+  MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed)
   MPI_Comm_size(mpi_comm,&nproc);                                               //get total number of processes (could also be passed)
   //mpi_status contains 3 things: the rank of the sender, tag of the message, and the length of the message
   MPI_Status t_sta_r;
@@ -656,8 +656,8 @@ static int determine_comm_pattern(COMMUN comm,
   MPI_Request *t_req_r = NULL;
   MPI_Status read_req;
 
-  if(nproc > 1){                                                                //if theres more than one process
-    t_sta_s = PGFEM_calloc(nproc-1,sizeof(MPI_Status));                         //
+  if(nproc > 1){                                                                
+    t_sta_s = PGFEM_calloc(nproc-1,sizeof(MPI_Status));                         
     t_req_s = PGFEM_calloc(nrecv,sizeof(MPI_Status));
     t_req_r = PGFEM_calloc(nsend,sizeof(MPI_Status));
 //    read_req= PGFEM_calloc(nsend,sizeof(MPI_Status));
