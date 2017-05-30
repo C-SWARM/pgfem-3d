@@ -23,7 +23,7 @@ setenv path_to_pgfem3d_build /ccs/proj/csc188/nd/pgfem3d_build/gcc_6.2.0_cray-mp
 cd $path_to_gcm    
 git pull
 make clean
-make CXX=CC CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast" 
+make CXX=CC CXXFLAGS="-Wall -std=c++14 -fpermissive -O3" 
 echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
@@ -42,7 +42,7 @@ autoreconf -if                                                       #To generat
 ./configure --prefix=$PGFEM3D_INSTALL              \
 --with-mpi=yes                                     \
 CXX=CC                                             \
-CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast"    \
+CXXFLAGS="-Wall -std=c++14 -fpermissive -O3"       \
 --with-hypre-dir=$path_to_hypre                    \
 --with-suitesparse-dir=$path_to_suitesparse        \
 --with-cnstvm-dir=$path_to_gcm                     \

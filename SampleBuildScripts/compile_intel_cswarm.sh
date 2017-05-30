@@ -20,7 +20,7 @@ setenv path_to_pgfem3d_build /afs/crc.nd.edu/group/cswarm/pgfem_3d/build_pgfem3d
 cd $path_to_gcm    
 git pull
 make clean
-make CC=mpicxx CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast"
+make CC=mpicxx CXXFLAGS="-Wall -std=c++14 -fpermissive -O3"
 echo "++++++++++++ Finished Compiling GCM +++++++++++"
 
 
@@ -39,7 +39,7 @@ autoreconf -if                                                       #To generat
 ./configure --prefix=$PGFEM3D_INSTALL              \
 --with-mpi=yes                                     \
 CXX=mpicxx                                         \
-CXXFLAGS="-Wall -std=c++14 -fpermissive -Ofast"    \
+CXXFLAGS="-Wall -std=c++14 -fpermissive -O3"       \
 --with-hypre-dir=$path_to_hypre                    \
 --with-suitesparse-dir=$path_to_suitesparse        \
 --with-cnstvm-dir=$path_to_gcm                     \
