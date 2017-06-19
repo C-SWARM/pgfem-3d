@@ -1,0 +1,2 @@
+This library defines finite element stencil in PGFem3D. FEMLIB is designed to be used any finite element.
+This libray will be built when PGFem3D is compiled at the top level.
