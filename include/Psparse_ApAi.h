@@ -16,6 +16,8 @@
 #include "cohesive_element.h"
 #include "bounding_element.h"
 #include "pgfem_comm.h"
+#include "comm_hints.h"
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +44,7 @@ extern "C" {
 		     COMMUN comm,
 		     MPI_Comm Comm_Orig,
 		     const int cohesive,
+		     const Comm_hints *hints,
 		     const int mp_id);
 
 #ifdef __cplusplus

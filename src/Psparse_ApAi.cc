@@ -21,6 +21,13 @@
 #define PFEM_PRINT 0
 #endif
 
+
+/*
+ * dof = degrees of freedom
+ * # procs and # domains is the same
+ */
+
+
 /**
  * Determine what processors talk to each other and allocate
  * appropriate receive space in comm.
@@ -32,7 +39,15 @@
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern(COMMUN comm,
+                                  const MPI_Comm mpi_comm,
+                                  const int *preSend,  
+                                  const int *preRecv,
+                                  const int nsend,
+                                  const int nrecv);
+
+static int determine_comm_pattern(COMMUN comm,
 				  const MPI_Comm mpi_comm);
+
 
 /**
  * Communicate the number of rows/columns.
@@ -91,6 +106,7 @@ int* Psparse_ApAi (int nproc,
 		   COMMUN comm,
 		   MPI_Comm Comm_Orig,
 		   const int cohesive,
+		   const Comm_hints *hints,
 		   const int mp_id)
 {
   char jmeno[200];
@@ -116,43 +132,60 @@ int* Psparse_ApAi (int nproc,
   
   /* Alocation has to be changed for elements with more than 10 nodes
      and 30 degreess of freedom */
-  cnL = aloc1l (30);
+  cnL = aloc1l (30);                                                          //dof_ids
   cnG = aloc1l (30);
-  nod = aloc1l (10);
+  nod = aloc1l (10);                                                          //node_ids_on_elem
   cncL = aloc1l (30);
   cncG = aloc1l (30);
   nodc = aloc1l (10);
-  ap = aloc1l (ndofd);
-  ap1 = aloc1l (ndofd);
-  LG = aloc1l (ndofd); 
+  ap = aloc1l (ndofd);                                                        //used in multiple places
+  ap1 = aloc1l (ndofd);                                                       //used in multiple places
+  LG = aloc1l (ndofd);                                                        //local to global 
 
-  comm->S = (long*) PGFEM_calloc (nproc,sizeof(long));
-  comm->R = (long*) PGFEM_calloc (nproc,sizeof(long));
-  comm->AS = (long*) PGFEM_calloc (nproc,sizeof(long));
-  comm->AR = (long*) PGFEM_calloc (nproc,sizeof(long));
-  comm->LG = (long*) PGFEM_calloc (ndofd,sizeof(long));
-  comm->GL = (long*) PGFEM_calloc (DomDof[myrank],sizeof(long));
+  int nsend = 0;
+  int nrecv = 0;
+  int *preSend = NULL; 
+  int *preRecv = NULL;
 
-  for (i=0;i<ne;i++){/* Number of contributions from elements to Aij */
+  if (hints != NULL){                                                         //check if comm hints were provided
+    nsend = Comm_hints_nrecv(hints);
+    nrecv = Comm_hints_nsend(hints);
+    preSend = Comm_hints_recv_list(hints);                                    //returns hints->recv
+    preRecv = Comm_hints_send_list(hints);
+  }
+
+  comm->S = (long*) PGFEM_calloc (nproc,sizeof(long));                        //amount of rows to send to each processor
+  comm->R = (long*) PGFEM_calloc (nproc,sizeof(long));                        //amount of rows to receive from each processsor
+  comm->AS = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to send
+  comm->AR = (long*) PGFEM_calloc (nproc,sizeof(long));                       //amount to recieve
+  comm->LG = (long*) PGFEM_calloc (ndofd,sizeof(long));                       //local to global (ndofd)
+  comm->GL = (long*) PGFEM_calloc (DomDof[myrank],sizeof(long));              //global to local
+
+  for (i=0;i<ne;i++){/* Number of contributions from elements to Aij */       //loop over elements
     
     /* Number of element nodes */
-    nne = elem[i].toe;
+    nne = elem[i].toe;                                                        //find out how many nodes are associated with this element
     /* Nodes on element */
-    elemnodes (i,nne,nod,elem);
+    elemnodes (i,nne,nod,elem);                                               //returns the nodes of this element (array of nodes stored in nod)
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
+    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);            //get total degrees of freedom on element, put it into ndofe
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get dof ids for element nodes, elements, and boundary elements 
     
+
+/*
+ * This section seems to count the number of non-prescribed neighbors for each element.
+ * The sum continues across elements. Prescribed elements dont get a number (0).
+ */
     for (j=0;j<ndofe;j++){/* row */
-      II = cnL[j]-1;
-      if (II < 0)
-	continue;
-      for (k=0;k<ndofe;k++){/* column */
-	JJ = cnL[k]-1;
-	if (JJ < 0)  
-	  continue;
-	ap[II]++;
+      II = cnL[j]-1;                                                          
+      if (II < 0)                                                             //if this node is part of another domain (prescribed), 
+      	continue;                                                             //ignore it
+      for (k=0;k<ndofe;k++){/* column */                                      //else, for this degree of freedom, loop through again
+        JJ = cnL[k]-1;
+       	if (JJ < 0)                                                           //and count the number of non-prescribed degrees of freedom which are in this element 
+       	  continue;
+       	ap[II]++;                                                             //add them to the domain-wide total for this node
       }
     }
   }/* end i < ne */
@@ -170,52 +203,62 @@ int* Psparse_ApAi (int nproc,
       nne = coel[i].toe/2;
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
-	nodc[j] = coel[i].nod[j];
+	      nodc[j] = coel[i].nod[j];
       get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL,mp_id);
-      
       for (j=0;j<ndofe;j++){/* row */
-	II = cncL[j]-1;
-	if (II < 0)
-	  continue;
-	for (k=0;k<ndofe;k++){/* column */
-	  JJ = cncL[k]-1;
-	  if (JJ < 0)
-	    continue;
-	  ap[II]++;
-	}
+        II = cncL[j]-1;
+       	if (II < 0)
+       	  continue;
+       	for (k=0;k<ndofe;k++){/* column */
+       	  JJ = cncL[k]-1;
+       	  if (JJ < 0)
+       	    continue;
+       	  ap[II]++;
+       	}
       }
     }/* end i < nce */
   }/* end coh == 1 */
 
+
+//CREATE AA (Aij) matrix
+
   AA = (long**) PGFEM_calloc (ndofd,sizeof(long*));
   for (i=0;i<ndofd;i++)
-    AA[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));
+    AA[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));                         //AA is ndofd*ap large
   null_quit((void*) AA,0);
   
-  for (i=0;i<ne;i++){/* List of ID number for Aij */
-  
+  for (i=0;i<ne;i++){/* List of ID number for Aij */                          // loop over elements in one domain
     /* Number of element nodes */  
-    nne = elem[i].toe;  
+    nne = elem[i].toe;                                                        //How many nodes each element is associated with
     /* Nodes on element */
-    elemnodes (i,nne,nod,elem);
+    elemnodes (i,nne,nod,elem);                                               //fills nod, an array which contains the ids of the nodes here
     /* Element Dof */
     ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id);
-    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id);
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get local ids for degrees of freedom
+    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id); //get global ids for degrees of freedom
     
+
+/*
+ * This loop starts the main Aij matrix. It creates a matrix which is 
+ * (degrees of freedom for element n)*(degrees of freedom for element n)*(number of elements?) large.
+ * Also where ap1 (addresses for the columns) is created. 
+ * This matrix is filled densely thanks to ap1. Once a row has a value in it, ap1, makes AA 
+ * go to the next row. 
+ */
     for (j=0;j<ndofe;j++){/* row */
-      II = cnL[j]-1;
-      if (II < 0)  continue;
-      LG[II] = cnG[j]-1;
-      for (k=0;k<ndofe;k++){/* column */
-	JJ = cnG[k]-1;
-	if (JJ < 0)  continue;
-	AA[II][ap1[II]] = JJ;
-	ap1[II]++;
+      II = cnL[j]-1;                                                          //II is the address  (dof ID) for this row (-1). 2 purposes:
+      if (II < 0)  continue;                                                  //1.by using the ID, we only have 1 entry per column for this element
+      LG[II] = cnG[j]-1;                                                      //2.if it is negative (prescribed), skip it.
+      for (k=0;k<ndofe;k++){/* column */                                      //else for each element-friend that also belongs here
+      	JJ = cnG[k]-1;                                                        //set JJ to the global dof id - 1
+      	if (JJ < 0)  continue;
+      	AA[II][ap1[II]] = JJ;                                                 //fills the AA matrix with id's
+    	  ap1[II]++;                                                            //count how many things have been put in this row
       }
     }
   }/* end i < ne */
+ 
 
   /* COHESIVE ELEMENTS */
   if (cohesive == 1){
@@ -243,22 +286,22 @@ int* Psparse_ApAi (int nproc,
   }/* end coh == 1 */
   
   for (k=0;k<ndofd;k++){/* Sort list of IDs for Aij */
-    ap[k] = 0; /* null ap */
-    qsort (AA[k], ap1[k], sizeof(long*), compare_long);
+    ap[k] = 0; /* null ap */                                                  //also reset ap (optimization combined for-loops)
+    qsort (AA[k], ap1[k], sizeof(long*), compare_long);                       // sort each row(column?) of (Aij?) with respect to the global dof_ids 
   }
   
   ap[0] = 0;
-  for (k=0;k<ndofd;k++){ /* Number of non-zeros in rows */
-    comm->LG[k] = LG[k];
-    for (j=0;j<ap1[k]-1;j++)
-      if (AA[k][j] < AA[k][j+1])
-	ap[k]++;
-    ap[k]++;
+  for (k=0;k<ndofd;k++){ /* Number of non-zeros in rows */                    //loop over max degrees of freedom 
+    comm->LG[k] = LG[k];                                                      //move degree of freedom id's to comm
+    for (j=0;j<ap1[k]-1;j++)                                                  //loop over number of dofs 
+      if (AA[k][j] < AA[k][j+1])                                              //if the number less than the following number,
+      	ap[k]++;                                                              //(as they should be since we just sorted) then add 2 to that ap
+    ap[k]++;                                                                  //else (if they are equal) then just add 1
   }
 
   {
     int n_dup = number_of_duplicates(comm->LG,ndofd,sizeof(long),compare_long);
-    if(n_dup){
+    if(n_dup){                                                                
       PGFEM_printerr("[%d]:ERROR comm->LG contains %d duplicate values!\n",
 		     myrank,n_dup);
     }
@@ -266,18 +309,18 @@ int* Psparse_ApAi (int nproc,
     /* if(n_dup) PGFEM_Abort(); */
   }
   
-  ID = (long**) PGFEM_calloc (ndofd,sizeof(long*));
-  for (i=0;i<ndofd;i++) {
-    ID[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));
-    ap[i] = 0; /* null */
+  ID = (long**) PGFEM_calloc (ndofd,sizeof(long*));                           //create an ID matrix, approximately the size of AA
+  for (i=0;i<ndofd;i++) {                                                     //loop over domain degrees of freedom
+    ID[i]= (long*) PGFEM_calloc (ap[i],sizeof(long));                         //allocate an ID array for each dof (huge)
+    ap[i] = 0; /* null */                                                     //ID is around ndofd*ndofd
   }
 
   null_quit((void*) ID,0);
 
-  for (k=0;k<ndofd;k++){ /* Global row indexes */
+  for (k=0;k<ndofd;k++){ /* Global row indexes */                             //loop over all dofs in this domain
     for (j=0;j<ap1[k]-1;j++) {
       if (AA[k][j] < AA[k][j+1]){
-	ID[k][ap[k]] = AA[k][j];
+	ID[k][ap[k]] = AA[k][j];                                                    //fill ID using AA
 	ap[k]++;
       }
     }
@@ -291,10 +334,10 @@ int* Psparse_ApAi (int nproc,
   free (AA);
   dealoc1l (ap1); ap1 = NULL;
   
-  Ddof = aloc1i (nproc);
+  Ddof = aloc1i (nproc);                                                      //a total (global) count of the degrees of freedom
   Ddof[0] = DomDof[0];
 
-  for (i=1;i<nproc;i++)
+  for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
     Ddof[i] = Ddof[i-1] + DomDof[i];
 
   if (myrank == 0)
@@ -307,8 +350,8 @@ int* Psparse_ApAi (int nproc,
   for (i=0;i<DomDof[myrank];i++){
     for (j=0;j<ndofd;j++){
       if (i == LG[j] - *GDof) {
-	Ap[i] = ap[j];
-	GL[i] = comm->GL[i] = j;
+	Ap[i] = ap[j];                                                              //manually sort ap into Ap
+	GL[i] = comm->GL[i] = j;                                                    //also global to local
 	break;
       }
       if (i != LG[j] - *GDof && j == ndofd - 1 && GL[i] == 0){
@@ -328,63 +371,66 @@ int* Psparse_ApAi (int nproc,
     LI1 = Ddof[myrank-1];
   LI2 = Ddof[myrank] - 1;
 
-  for (i=0;i<ndofd;i++){/* Number of rows per domain to be sent */
-    if (LI1 <= LG[i] && LG[i] <= LI2)
-      continue;
-    else Nrs++;
+  for (i=0;i<ndofd;i++){/* Number of rows per domain to be sent (Nrs)*/     //loop over domain dof
+    if (LI1 <= LG[i] && LG[i] <= LI2)                                       //if this dof belongs here,
+      continue;                                                             //ignore it
+    else Nrs++;                                                             //else add it to the counter
   }
   
   if(Nrs > 0){
-    ap1 = aloc1l (Nrs);
-
+    ap1 = aloc1l (Nrs);                                                     //allocate an array the size of all the dofs which
+                                                                            //were not part of this domain
     Nrs = 0;
-    for (i=0;i<ndofd;i++){/* Local row indexes on domain to be sent */
-      if (LI1 <= LG[i] && LG[i] <= LI2)
-	continue;
-      else {ap1[Nrs] = i; Nrs++;}
+    for (i=0;i<ndofd;i++){/* Local row indexes on domain to be sent */      //same as before, but this time 
+      if (LI1 <= LG[i] && LG[i] <= LI2)                                     //write down which nodes are not
+	continue;                                                                 //in this domain
+      else {ap1[Nrs] = i; Nrs++;}                                           
     }
   }
   
+
+//This is it 
+
   /* Determine where to send */
-  for (j=0;j<nproc;j++){
+  for (j=0;j<nproc;j++){                                                      //loop over processes
     k = 1;
-    if (j == myrank)
+    if (j == myrank)                                                          //if this is the current process, theres nothing to be sent
       continue;
-    if (j == 0)
-      LI1 = 0;
+    if (j == 0)                                                               //(first) process is special
+      LI1 = 0;                                                                
     else
-      LI1 = Ddof[j-1];
-    LI2 = Ddof[j] - 1;
-    for (i=0;i<Nrs;i++){
-      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {
-	comm->S[j] = k;
-	k++;
+      LI1 = Ddof[j-1];                                                        //using the prefix sum, we can categorize which
+    LI2 = Ddof[j] - 1;                                                        //nproc a particular dof is in.
+    for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
+      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {                           //if this dof belongs to proc j,
+	      comm->S[j] = k;                                                       //write down how many things will be sent there
+      	k++;
       }
     }
   }
 
   AA = (long**) PGFEM_calloc (nproc,sizeof(long*));
-  for (i=0;i<nproc;i++) {
-    if (myrank == i || comm->S[i] == 0) 
-      k = 1;
+  for (i=0;i<nproc;i++) {                                                     //loop over procs
+    if (myrank == i || comm->S[i] == 0)                                       //if this is my rank, or if there I dont share with this proc,
+      k = 1;                                                                  //just allocate 1 space 
     else
-      k = comm->S[i];
+      k = comm->S[i];                                                         // allocate enough memory to send the appropriate amount of info
     AA[i] = (long*) PGFEM_calloc (k,sizeof(long));
   }
 
   null_quit((void*) AA,0);  
 
-  comm->SLID = (long**) PGFEM_calloc (nproc,sizeof(long*));
-  for (i=0;i<nproc;i++) {
+  comm->SLID = (long**) PGFEM_calloc (nproc,sizeof(long*));     
+  for (i=0;i<nproc;i++) {                                                     //loop over nproc
     if (myrank == i || comm->S[i] == 0)
       continue;
-    else comm->SLID[i] = (long*) PGFEM_calloc (comm->S[i],sizeof(long));
-  }
+    else comm->SLID[i] = (long*) PGFEM_calloc (comm->S[i],sizeof(long));      //allocate more memory for
+  }                                                                           //"local ID of communicated rows"
 
   null_quit((void*) comm->SLID,0);  
 
   /* Determine what GID/LID to send */
-  for (j=0;j<nproc;j++){
+  for (j=0;j<nproc;j++){                                                      //loop over nproc
     k = 0;
     if (j == myrank)
       continue;
@@ -395,19 +441,22 @@ int* Psparse_ApAi (int nproc,
     LI2 = Ddof[j] - 1;
     for (i=0;i<Nrs;i++){
       if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {
-	AA[j][k] = comm->SLID[j][k] = ap1[i];
-	k++;
+	AA[j][k] = comm->SLID[j][k] = ap1[i];                                       //same as before, but this time fill in
+	k++;                                                                        //the local ID of communicated nodes
       } 
     }
   }
 
   /* Communicate who I am communicating with
    *============================================= */
-  determine_comm_pattern(comm,Comm_Orig);
+  if (hints == NULL)                                          //checks if comm hints weren't provided
+    determine_comm_pattern(comm,Comm_Orig);
+  else
+    determine_comm_pattern(comm,Comm_Orig, preSend, preRecv, nsend, nrecv);                                     
   
   /* Communicate how many rows/columns I am sending
    *============================================= */
-  communicate_number_row_col(comm,&NRr,&GNRr,&ApRr,
+  communicate_number_row_col(comm,&NRr,&GNRr,&ApRr,                          
 			     LG,ap,AA,Comm_Orig);
 
   /* Communicate the row/column information
@@ -600,6 +649,119 @@ int* Psparse_ApAi (int nproc,
   return (Ai);
 }
 
+
+//If comm hints were provided
+static int determine_comm_pattern(COMMUN comm,
+				    const MPI_Comm mpi_comm,
+            const int *preSend,
+            const int *preRecv,
+            const int nsend,
+            const int nrecv)
+{
+  int err = 0;
+  int myrank = 0;
+  int nproc = 0;
+  int countProc = 0;
+  int q;
+  MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed)
+  MPI_Comm_size(mpi_comm,&nproc);                                               //get total number of processes (could also be passed)
+  //mpi_status contains 3 things: the rank of the sender, tag of the message, and the length of the message
+  MPI_Status t_sta_r;
+  MPI_Status *t_sta_s = NULL;
+  MPI_Request *t_req_s = NULL;
+  MPI_Request *t_req_r = NULL;
+  MPI_Status read_req;
+
+  if(nproc > 1){                                                                
+    t_sta_s = PGFEM_calloc(nproc-1,sizeof(MPI_Status));                         
+    t_req_s = PGFEM_calloc(nrecv,sizeof(MPI_Status));
+    t_req_r = PGFEM_calloc(nsend,sizeof(MPI_Status));
+//    read_req= PGFEM_calloc(nsend,sizeof(MPI_Status));
+  }
+  int flag,req_num;
+
+  int recvFrom;
+    int t_count = 0;
+  for (int i = 0; i < nsend; i++){                                               //prepares mailboxes to receive from all nodes
+      recvFrom = preSend[i];
+      err += MPI_Irecv(&comm->R[recvFrom],1,MPI_LONG,recvFrom,MPI_ANY_TAG,                     //put received info in comm->R
+                       mpi_comm,t_req_r+i);                              //save info of proc from which things came
+      
+      }
+
+  countProc = 0;                                                                //restart count
+//can be changed to smaller comm
+  /* Send size to all other processors */
+  t_count = 0;
+
+  comm->Ns = nrecv;
+  for (int i = 0; i < nrecv; i++){                                              //send size to all 
+
+        int sendTo = preRecv[i];
+        err += MPI_Isend(&comm->S[sendTo],1,MPI_LONG,sendTo,myrank,
+             mpi_comm,&t_req_s[i]);                                         //t_req_s is required for each non-blocking call
+//        t_count++;                                                                //cant end communication without it
+
+        if(comm->S[sendTo] == 0) comm->Ns--;                                            //calculate number of procs that I sent to  
+      }
+
+  /* Allocate send space and determine the reduced list of procs to
+     send to. */
+  {
+    long KK = 0;
+    if (comm->Ns == 0) KK = 1; else  KK = comm->Ns;                             //if theres neighbors, set KK equal to the number of procs I sent to
+    comm->Nss = (long*) PGFEM_calloc (KK,sizeof(long));
+  }
+
+  t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->S[i] > 0) comm->Nss[t_count++] = i;                //not sure why comm->S > 0 check is there since line 407 
+  }                                                                             //guarantees that
+
+  /* Process received messages as they arrive */
+  t_count = 0;
+  comm->Nr = nsend;
+  while (t_count < nsend) //wait until ive heard back from everyone
+  {
+    int idx = 0;
+    err +=  MPI_Waitany(nsend,t_req_r,&idx,&t_sta_r);                         //listen for messages
+
+    int source = t_sta_r.MPI_SOURCE;
+
+    if(comm->R[source]==0)  
+      comm->Nr--;                                                               //write down how many non-empty letters I received 
+
+    t_count++;
+  }
+  free(t_req_r);
+
+
+  /* Allocate receive space and determine the reduced list of
+     processors to receive from */
+  {
+    long KK = 0;
+    if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
+    comm->Nrr = (long*) PGFEM_calloc (KK,sizeof(long));                         //allocate memory for number of responses
+  }
+
+  t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->R[i] > 0) comm->Nrr[t_count++] = i;                //write down number of responses for each domain
+  }                                                                             //that I talked to 
+
+  /* Wait for send communications to finish */
+  err += MPI_Waitall(nrecv,t_req_s,t_sta_s);                                  //wait until all expected messages arrive
+
+
+  /* deallocate */
+  free(t_req_s);
+  free(t_sta_s);
+
+  return err;
+}
+
+
+//If comm hints were not provided
 static int determine_comm_pattern(COMMUN comm,
 				  const MPI_Comm mpi_comm)
 {
@@ -703,69 +865,69 @@ static int communicate_number_row_col(COMMUN comm,
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);
-  err += MPI_Comm_size(mpi_comm,&nproc);
+  err += MPI_Comm_rank(mpi_comm,&myrank);                                       //get myrank
+  err += MPI_Comm_size(mpi_comm,&nproc);                                        //get total nprocs (both of these could be passed)
 
   /* How many numbers I will send */
-  for (int i = 0; i < comm->Ns; i++){
-    comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];
+  for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to 
+    comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
   }
 
   /* How many numbers I will receive */
-  for(int i = 0; i < comm->Nr; i++){
-    comm->AR[comm->Nrr[i]] = 2*comm->R[comm->Nrr[i]];
+  for(int i = 0; i < comm->Nr; i++){                                            //loop over number to receive
+    comm->AR[comm->Nrr[i]] = 2*comm->R[comm->Nrr[i]];                           //number to receive was in comm->R
   }
 
  
-  MPI_Status *sta_s = NULL;
-  MPI_Status *sta_r = NULL;
-  MPI_Request *req_s = NULL;
-  MPI_Request *req_r = NULL;
+  MPI_Status *sta_s = NULL;                                                     //storing send message info
+  MPI_Status *sta_r = NULL;                                                     //storing receive message info
+  MPI_Request *req_s = NULL;                                                    //required for 
+  MPI_Request *req_r = NULL;                                                    //nonblocking comms
   long **SEND = NULL;
   long **RECI = NULL;
  
   /* Allocate status and request fields */
   {
     long KK = 0;
-    if (comm->Ns == 0) KK = 1; else KK = comm->Ns;
+    if (comm->Ns == 0) KK = 1; else KK = comm->Ns;                              //if number to send is 0 then allocate 1 space
     sta_s = (MPI_Status*) PGFEM_calloc (KK,sizeof(MPI_Status));
     req_s = (MPI_Request*) PGFEM_calloc (KK,sizeof(MPI_Request));
 
-    if (comm->Nr == 0) KK = 1; else KK = comm->Nr; 
+    if (comm->Nr == 0) KK = 1; else KK = comm->Nr;                              //if number to receive is 0 then allocate 1 space
     sta_r = (MPI_Status*) PGFEM_calloc (KK,sizeof(MPI_Status));
     req_r = (MPI_Request*) PGFEM_calloc (KK,sizeof(MPI_Request));
   }
 
-  if(comm->Ns > 0) SEND = PGFEM_calloc (comm->Ns,sizeof(long*));
-  if(comm->Nr > 0) RECI = PGFEM_calloc (comm->Nr,sizeof(long*));
+  if(comm->Ns > 0) SEND = PGFEM_calloc (comm->Ns,sizeof(long*));                //similar with SEND
+  if(comm->Nr > 0) RECI = PGFEM_calloc (comm->Nr,sizeof(long*));                //and RECI
   
   /* =======================================================*/
 
   /* Post receive */
-  for (int i = 0; i < comm->Nr; i++){
-    int r_idx = comm->Nrr[i];
-    int n_rec = comm->AR[r_idx];
+  for (int i = 0; i < comm->Nr; i++){                                           //loop over number to receive
+    int r_idx = comm->Nrr[i];                                                   //idx is # being received at i
+    int n_rec = comm->AR[r_idx];                                                //rec is the amount to receive for idx things
 
-    RECI[i] = PGFEM_calloc(n_rec,sizeof(long));
+    RECI[i] = PGFEM_calloc(n_rec,sizeof(long));                                 //create a mailbox big enough for AR
 
-    err += MPI_Irecv (RECI[i],n_rec,MPI_LONG,r_idx,
+    err += MPI_Irecv (RECI[i],n_rec,MPI_LONG,r_idx,                             //post mailboxes
 		      MPI_ANY_TAG,mpi_comm,&req_r[i]);
   }
 
   /* Post sends */
   for (int i = 0; i < comm->Ns; i++){
-    int s_idx = comm->Nss[i];
-    int n_send = comm->AS[s_idx];
+    int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
+    int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
 
-    SEND[i] = PGFEM_calloc(n_send,sizeof(long));
+    SEND[i] = PGFEM_calloc(n_send,sizeof(long));                                //create envelopes
 
     /* populate send buffer */
     for (int j = 0; j < comm->S[s_idx]; j++){
-      SEND[i][j] = LG[AA[s_idx][j]]; /* global? row id */
-      SEND[i][comm->S[s_idx] + j] = ap[AA[s_idx][j]]; /* # columns */
+      SEND[i][j] = LG[AA[s_idx][j]]; /* global? row id */                       //write letters
+      SEND[i][comm->S[s_idx] + j] = ap[AA[s_idx][j]]; /* # columns */           //
     }
 
-    err += MPI_Isend (SEND[i],n_send,MPI_LONG,s_idx,
+    err += MPI_Isend (SEND[i],n_send,MPI_LONG,s_idx,                            //send letters
 		      myrank,mpi_comm,&req_s[i]);
   }
   
