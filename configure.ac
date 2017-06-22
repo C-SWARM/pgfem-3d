@@ -86,11 +86,11 @@ AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
                               AC_MSG_FAILURE([Constitutive Model: must provide package location!])
                               ])
 AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include \
-														-I$with_cnstvm_dir/material/include \
-														-I$with_cnstvm_dir/elasticity/include \
-														-I$with_cnstvm_dir/crystal_plasticity/include"])
+ -I$with_cnstvm_dir/material/include \
+ -I$with_cnstvm_dir/elasticity/include \
+ -I$with_cnstvm_dir/crystal_plasticity/include\
+ -I$with_cnstvm_dir/data_structure/include"])
 AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
-
 # MKL
 AC_ARG_WITH(mkl, [AS_HELP_STRING([--without-mkl],
 			      [Do not use Intel MKL libraries])
