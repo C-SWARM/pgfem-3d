@@ -137,19 +137,6 @@ int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, EPS *eps, con
   return cnt;
 }
 
-int plasticity_model_cleanup_elem_ip_map(IP_ID_LIST *elm_ip_map, int ne)
-{
-  int err = 0;
-  for(int a=0; a<ne; a++)
-  {
-    delete elm_ip_map[a].ip_ids.m_pdata;
-    elm_ip_map[a].ip_ids.m_pdata = NULL;
-    elm_ip_map[a].ip_ids.m_col = 0;
-    elm_ip_map[a].ip_ids.m_row = 0;
-  }
-  return err;
-} 
-
 /// Private structure for use exclusively with this model and
 /// associated functions.
 typedef struct plasticity_ctx {
@@ -704,15 +691,15 @@ int plasticity_compute_dMdu(const Constitutive_model *con,
 
   // cast _dmdu as a ttl tensor and compute its value
   // -1 * (inverse(U) * B:Grad_du)
-/*
+  TensorA<2> dMdu(dMdu_in);
   try {
-    TensorA<2>(dMdu_in)(i,j) = -(ttl::inverse(U)(i,j,k,l)*B(k,l,m,n)*Grad_du(m,n));  
+    dMdu(i,j) = -(ttl::inverse(U)(i,j,k,l)*B(k,l,m,n)*Grad_du(m,n));  
   }
   catch (const int inverseException){
-    TensorA<2>(dMdu_in)(i,j) = 0.0*ttl::identity(i,j);
+    dMdu(i,j) = 0.0*ttl::identity(i,j);
     err++;
   }
-*/
+
   return err;
 }
 
@@ -1154,9 +1141,9 @@ int CP_PARAM::model_dependent_initialization(void)
 {
   this->type              = CRYSTAL_PLASTICITY;
   this->n_param           = PARAM_NO;
-  this->model_param       = new double[PARAM_NO]{};
+  this->model_param       = new double[PARAM_NO]();
   this->n_param_index     = PARAM_INX_NO;
-  this->model_param_index = new int [PARAM_INX_NO]{};
+  this->model_param_index = new int [PARAM_INX_NO]();
   return 0;
 }
 
@@ -1649,6 +1636,6 @@ int plasticity_model_set_orientations(EPS *eps,
     }
   }
 
-  err += plasticity_model_cleanup_elem_ip_map(elm_ip_map, ne);
+  delete[] elm_ip_map;
   return err;      
 }

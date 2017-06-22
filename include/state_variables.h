@@ -48,16 +48,26 @@ class State_variables
 
   ~State_variables()
   {
-    delete this->Fs;
-    this->Fs = NULL;
-    this->n_Fs = 0;  
-
-    delete this->state_vars;
-    this->state_vars = NULL;
-
-    delete this->flags;
-    this->flags = NULL;
-    this->n_flags = 0;
+    if(Fs)
+    {
+      delete[] Fs;  
+      Fs = NULL;
+    }
+    
+    n_Fs = 0;  
+  
+    if(state_vars)
+    {  
+      delete[] state_vars;
+      state_vars = NULL;
+    }
+  
+    if(flags)
+    {
+      delete[] flags;
+      flags = NULL;
+    }  
+    n_flags = 0;    
   }  
 
   int initialization(const size_t n_Fs,

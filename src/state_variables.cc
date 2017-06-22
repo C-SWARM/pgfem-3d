@@ -30,7 +30,7 @@ int State_variables::initialization(const size_t n_Fs,
   this->state_vars[0].initialization(n_vars,1);
 
   this->n_flags = n_flags;
-  this->flags = calloc(n_flags, sizeof(*(this->flags)));
+  this->flags = new int[n_flags]();
 
   return err;
 }

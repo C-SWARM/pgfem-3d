@@ -258,7 +258,8 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
   }
   
   if(NULL != fv->statv_list) 
-    free(fv->statv_list);  
+    delete[] fv->statv_list;
+  
   err += field_varialbe_initialization(fv);  
   return err;
 }
@@ -353,9 +354,8 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
     
   if(is_for_Mechanical)
   {
-    delete fv->temporal->var;
+    delete[] fv->temporal->var;
       
-    free(fv->temporal->var);
     fv->temporal->var = NULL;
     fv->temporal->element_variable_no = 0;                
   }
