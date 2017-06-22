@@ -136,7 +136,7 @@ class Model_parameters
   };
   
   /// Destroy a Model_parameters object.
-  ~Model_parameters()
+  virtual ~Model_parameters()
   {
     switch(type)
     {
