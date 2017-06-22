@@ -20,6 +20,8 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#define xxxx_TEST_xxxx_J2P 1
+#ifndef xxxx_TEST_xxxx_J2P
 
 #include "cm_j2_plasticity.h"
 #include "cm_iso_viscous_damage.h"
@@ -1007,3 +1009,5 @@ int j2d_plasticity_model_ctx_build(void **ctx,
   *ctx = CTX;
   return 0;
 }
+
+#endif

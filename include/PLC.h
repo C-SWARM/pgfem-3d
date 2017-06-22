@@ -1,6 +1,7 @@
 #ifndef PLC_H
 #define PLC_H
 
+#include "data_structure.h"
 #ifndef CRPL_H
 #include "crpl.h"
 #endif

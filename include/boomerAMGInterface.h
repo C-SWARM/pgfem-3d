@@ -1,6 +1,7 @@
 #ifndef BOOMER_AMG_INTERFACE_H
 #define BOOMER_AMG_INTERFACE_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 
 #ifndef HYPRE_GLOBAL_H

@@ -1,6 +1,7 @@
 #ifndef RES_FINI_DEF_H
 #define RES_FINI_DEF_H
 
+#include "data_structure.h"
 #ifndef ELEMENT_H
 #include "element.h"
 #endif

@@ -3,6 +3,7 @@
 #ifndef SET_FINI_DEF
 #define SET_FINI_DEF
 
+#include "data_structure.h"
 #include "element.h"
 #include "sig.h"
 #include "eps.h"

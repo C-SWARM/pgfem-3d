@@ -10,6 +10,10 @@
 #include "mkl_cblas.h"
 #include "utils.h"
 
+#define xxx____xxx_xxxx 1
+
+#ifndef xxx____xxx_xxxx
+
 /**
  * Define a Matrix structure of type T.
  */
@@ -513,4 +517,5 @@ typedef struct Matrix_##T                                               \
                + Mat_v(C,3,3)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
 } while(0)
 
+#endif
 #endif

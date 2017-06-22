@@ -3,6 +3,8 @@
 #ifndef EPS_H
 #define EPS_H
 
+#include "data_structure.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */

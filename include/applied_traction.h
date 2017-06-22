@@ -2,6 +2,7 @@
 #ifndef APPLIED_TRACTION_H
 #define APPLIED_TRACTION_H
 
+#include "data_structure.h"
 #ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
 #endif

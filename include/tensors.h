@@ -1,6 +1,7 @@
 #ifndef TENSORS_H
 #define TENSORS_H
 
+#include "data_structure.h"
 #ifndef HOMMAT_H
 #include "hommat.h"
 #endif

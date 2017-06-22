@@ -8,6 +8,7 @@
 #ifndef MATICE_H
 #define MATICE_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 
 #ifdef __cplusplus

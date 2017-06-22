@@ -16,6 +16,8 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#define xxxx_TEST_xxxx_IVD 1
+#ifndef xxxx_TEST_xxxx_IVD
 
 #include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
@@ -684,3 +686,5 @@ int ivd_public_subdiv_param(const double var_wn,
   *subdiv_param = (var_w - var_wn) / DELTA_W_MAX;
   return 0;
 }
+
+#endif

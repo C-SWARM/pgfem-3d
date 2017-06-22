@@ -3,7 +3,7 @@
 #pragma once
 #ifndef ARC_LENGTH_H
 #define ARC_LENGTH_H
-
+#include "data_structure.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFEM_mpi.h"
 #include "hypre_global.h"

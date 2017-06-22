@@ -10,22 +10,80 @@
 #ifndef PLASTICITY_MODEL_H
 #define PLASTICITY_MODEL_H
 
-struct Model_parameters;
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
+#include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
+class CP_PARAM: public Model_parameters
+{
+  public:
 
-struct Matrix_double;
-#ifndef TYPE_MATRIX_DOUBLE
-#define TYPE_MATRIX_DOUBLE
-typedef struct Matrix_double Matrix_double;
-#endif
+  virtual int model_dependent_initialization(void);
+  virtual int model_dependent_finalization(void);
+
+  virtual int integration_algorithm(Constitutive_model *m,
+                                    const void *usr_ctx) const;
+  virtual int compute_dev_stress(const Constitutive_model *m,
+                                 const void *ctx,
+                                 double *S) const;
+  virtual int compute_dudj(const Constitutive_model *m,
+                           const void *ctx,
+                           double *value) const;
+  virtual int compute_dev_tangent(const Constitutive_model *m,
+                                  const void *ctx,
+                                  double *L) const;
+  virtual int compute_d2udj2(const Constitutive_model *m,
+                             const void *ctx,
+                             double *value) const;
+  virtual int update_elasticity(const Constitutive_model *m,
+                                const void *ctx,
+                                double *L,
+                                double *S,
+                                const int compute_stiffness) const;
+  virtual int update_state_vars(Constitutive_model *m) const;  
+  virtual int reset_state_vars(Constitutive_model *m) const;
+  virtual int reset_state_vars_using_temporal(const Constitutive_model *m,
+                                              State_variables *var) const;
+  virtual int update_np1_state_vars_to_temporal(const Constitutive_model *m,
+                                                State_variables *var) const;
+  virtual int save_state_vars_to_temporal(const Constitutive_model *m,
+                                          State_variables *var) const;
+  virtual int get_var_info(Model_var_info &info) const;
+  virtual int get_F(const Constitutive_model *m, 
+                    double *F,
+                    const int stepno) const;
+  virtual int get_pF(const Constitutive_model *m, 
+                     double *F, 
+                     const int stepno) const;
+  virtual int get_eF(const Constitutive_model *m, 
+                     double *F, 
+                     const int stepno) const;
+  virtual int get_eF_of_hF(const Constitutive_model *m, 
+                           double *F, 
+                           double *hFI, 
+                           const int stepno) const;
+  virtual int get_hardening(const Constitutive_model *m,
+                            double *var,
+                            const int stepno) const;
+  virtual int get_plast_strain_var(const Constitutive_model *m,
+                                   double *lam_p)
+  const { return cm_get_lam_p(m, lam_p);};
+                              
+  virtual int get_subdiv_param(const Constitutive_model *m,
+                               double *var,
+                               const double t) const;
+  virtual int write_restart(FILE *fp,
+                            const Constitutive_model *m) const;
+  virtual int read_restart(FILE *fp,
+                           Constitutive_model *m) const;
+  virtual int destroy_ctx(void **ctx) const;
+  virtual int compute_dMdu(const Constitutive_model *m,
+                           const void *ctx,
+                           const double *Grad_op,
+                           const int nne,
+                           const int ndofn,
+                           double *dM_du) const;
+  virtual int read_param(FILE *in) const;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,9 +95,9 @@ extern "C" {
  * \param[in,out] p - pointer to a Constitutive_model object
  * \return non-zero on internal error
  */
-int plasticity_model_initialize(Model_parameters *p);
+//int plasticity_model_initialize(Model_parameters *p);
 
-int plasticity_model_destory(Model_parameters *p);
+//int plasticity_model_destory(Model_parameters *p);
 
 /// Construct and initialize the model context for calling functions
 /// through the constitutive model interface.
@@ -63,14 +121,6 @@ int plasticity_model_ctx_build(void **ctx,
                                const int is_coulpled_with_thermal);
 
 /**
- * Destroy the model context and invalidate the handle.
- *
- * \param[in,out] ctx - handle to context object. ctx = NULL on exit.
- * \return non-zero on internal error.
- */
-int plasticity_model_ctx_destroy(void **ctx);
-
-/**
  * compute tangent of the plasticity part of deformation gradient with respect to the deformation
  *
  * \param[in,out] dMdu - computed tangent of plasticity part of deformation gradient
@@ -79,7 +129,7 @@ int plasticity_model_ctx_destroy(void **ctx);
  * \param[in] dt - time step size
  * \return non-zero on internal error.
  */
-int plasticity_model_slip_system(Matrix_double *P);
+int plasticity_model_slip_system(double *P);
 
 #ifndef ELEMENT_H
 typedef struct EPS EPS;
@@ -130,12 +180,6 @@ int plasticity_model_set_orientations(EPS *eps,
  * #    e.g) 0 3 0.1 0.1 0.1
  * 0 2 CRYSTAL_ORIENTATION/orientation
  */
-
-typedef struct HOMMAT HOMMAT;
-
-int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
-void test_crystal_plasticity_single_crystal(void); 
-
 #ifdef __cplusplus
 }
 #endif /* #ifdef __cplusplus */

@@ -200,7 +200,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
         n_state_varialbles += nint;
       }
         
-      fv->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+      fv->statv_list = new State_variables[n_state_varialbles];
     }
     
     fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
@@ -257,7 +257,8 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
       destroy_sig_el(fv->sig_n, grid->nn);
   }
   
-  if(NULL != fv->statv_list) free(fv->statv_list);  
+  if(NULL != fv->statv_list) 
+    free(fv->statv_list);  
   err += field_varialbe_initialization(fv);  
   return err;
 }
@@ -312,7 +313,7 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
       n_state_varialbles += nint;
     }      
     fv->temporal->element_variable_no = n_state_varialbles;
-    fv->temporal->var     = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    fv->temporal->var = new State_variables[n_state_varialbles];
     
     for(int eid=0; eid<grid->ne; eid++)
     {
@@ -323,11 +324,11 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
       for(int ip=0; ip<nint; ip++)
       {
         Constitutive_model *m = &(fv->eps[eid].model[ip]);
-        Model_var_info *info = NULL;
-        m->param->get_var_info(&info);
-        err += state_variables_initialize(fv->temporal->var + m->model_id, info->n_Fs,
-                                          info->n_vars, info->n_flags);
-        err += model_var_info_destroy(&info);                                                                            
+        Model_var_info info;
+        m->param->get_var_info(info);
+        err += fv->temporal->var[m->model_id].initialization(info.n_Fs,
+                                                             info.n_vars, 
+                                                             info.n_flags);                                                                            
       }
     }
   }      
@@ -352,8 +353,7 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
     
   if(is_for_Mechanical)
   {
-    for(int ia=0; ia<fv->temporal->element_variable_no; ia++)
-      err += state_variables_destroy(fv->temporal->var + ia);
+    delete fv->temporal->var;
       
     free(fv->temporal->var);
     fv->temporal->var = NULL;

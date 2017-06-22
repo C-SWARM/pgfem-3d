@@ -141,9 +141,9 @@ int momentum_equation_load4pBCs(GRID *grid,
     // set FEMLIB
     FEMLIB fe;
     if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-      FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+      fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
     else
-      FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+      fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
     
     long *nod = (fe.node_id).m_pdata; // list of node ids in this element
     
@@ -164,9 +164,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     
     int nVol = N_VOL_TREE_FIELD;
     double lm = 0.0;
-    Matrix(double) lk;
-    Matrix_construct_redim(double,lk,ndofe,ndofe);
-    Matrix_init(lk, 0.0);
+    Matrix<double> lk(ndofe,ndofe,0.0);
 
     err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
                                   crpl,opts,mp,mp_id,dt,lm,be,r_e);    
@@ -207,11 +205,10 @@ int momentum_equation_load4pBCs(GRID *grid,
     
     /*  dealocation  */
     dealoc1l (cn);
-    Matrix_cleanup(lk);
     dealoc1(floc);
     dealoc1(rloc);
     dealoc1 (r_e);
-    FEMLIB_destruct(&fe);
+    
     if(err != 0) return err;
   }/* end i (each volume element) */
   

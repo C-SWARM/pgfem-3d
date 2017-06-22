@@ -25,13 +25,13 @@ int cm_get_var_zero(const Constitutive_model *m,
  * Function to return 2nd order tensor filled with zeros.
  */
 int cm_get_F_zero(const Constitutive_model *m,
-                  Matrix_double *F);
+                  double *F);
 
 /**
  * Funtion to return 2nd order identity tensor.
  */
 int cm_get_F_eye(const Constitutive_model *m,
-                 Matrix_double *F);
+                 double *F);
 
 /**
  * Function to compute the plastic stretch \lambda^p used by several

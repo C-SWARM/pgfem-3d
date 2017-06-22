@@ -2,6 +2,7 @@
 #ifndef HYPRE_GLOBAL_H
 #define HYPRE_GLOBAL_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "HYPRE.h"
 #include "HYPRE_parcsr_mv.h"

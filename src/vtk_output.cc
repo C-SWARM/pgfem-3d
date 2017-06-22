@@ -1635,8 +1635,7 @@ int VTK_write_data_Density(FILE *out,
   err += VTK_write_multiphysics_DataArray_header(out, pmr);  
   for (int i=0; i<grid->ne; i++)
   {
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe,i,elem,node,0,total_Lagrangian);
+    FEMLIB fe(i,elem,node,0,total_Lagrangian);
 
     const int mat_id = (grid->element[i]).mat[0];
     double rho_0 = mat->density[mat_id];
@@ -1646,7 +1645,7 @@ int VTK_write_data_Density(FILE *out,
 
     for(int ip=0; ip<fe.nint; ip++)
     {
-      FEMLIB_elem_basis_V(&fe, ip+1);
+      fe.elem_basis_V(ip+1);
       
       const double *F = eps[i].il[ip].F;
       double J = det3x3(F);
@@ -1654,7 +1653,6 @@ int VTK_write_data_Density(FILE *out,
       volume += fe.detJxW;
     }
     PGFEM_fprintf(out,"%12.12e\n", rho/volume);
-    FEMLIB_destruct(&fe);
   }
   
   err += VTK_write_multiphysics_DataArray_footer(out);

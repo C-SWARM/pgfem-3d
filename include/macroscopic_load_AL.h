@@ -1,6 +1,7 @@
 #ifndef MACROSCOPIC_LOAD_AL
 #define MACROSCOPIC_LOAD_AL
 
+#include "data_structure.h"
 #ifndef EPS_H
 #include "eps.h"
 #endif

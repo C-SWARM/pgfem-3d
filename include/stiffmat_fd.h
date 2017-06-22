@@ -3,6 +3,7 @@
 #ifndef STIFFMAT_FD_H
 #define STIFFMAT_FD_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"

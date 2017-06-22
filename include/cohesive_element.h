@@ -8,6 +8,7 @@
  * functions regarding its use.
  */
 
+#include "data_structure.h"
 #include "PGFEM_io.h"
 #include "node.h"
 #include "cohesive_potentials.h"

@@ -6,6 +6,7 @@
 #ifndef RESICE_H
 #define RESICE_H
 
+#include "data_structure.h"
 #ifndef ELEMENT_H
 #include "element.h"
 #endif

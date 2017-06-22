@@ -1,3 +1,7 @@
+#define xxx____xxx_xxxx1 1
+
+#ifndef xxx____xxx_xxxx1
+
 #include "femlib.h"
 #include "elem3d.h"
 
@@ -456,3 +460,5 @@ void FEMLIB_destruct(FEMLIB *fe)
   dealoc4(fe->ST_tensor,3,3,fe->nsd);
   free(fe->ST);
 }
+
+#endif

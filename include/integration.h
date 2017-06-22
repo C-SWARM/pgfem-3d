@@ -4,6 +4,7 @@
 #ifndef INTEGRATION_H
 #define INTEGRATION_H
 
+#include "data_structure.h"
 #include "element.h"
 #include "node.h"
 #include "sig.h"

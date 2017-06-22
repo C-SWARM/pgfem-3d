@@ -1,6 +1,8 @@
 #ifndef ALM_H
 #define ALM_H
 
+#include "data_structure.h"
+
 #include "PGFEM_mpi.h"
 
 #ifndef MATGEOM_H

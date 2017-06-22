@@ -1,6 +1,7 @@
 #ifndef COMPUTE_MACROS_H
 #define COMPUTE_MACROS_H
 
+#include "data_structure.h"
 #ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
 #endif

@@ -7,6 +7,7 @@
 #ifndef COMPUTE_REACTIONS_H
 #define COMPUTE_REACTIONS_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"

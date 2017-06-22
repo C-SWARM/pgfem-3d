@@ -14,6 +14,8 @@
  * AUTHORS:
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#define xxxx_TEST_xxxx_BPA 1
+#ifndef xxxx_TEST_xxxx_BPA
 
 #include "plasticity_model_BPA.h"
 #include "_plasticity_model_BPA.h"
@@ -1577,3 +1579,5 @@ int plasticity_model_BPA_ctx_destroy(void **ctx)
   *ctx = NULL;
   return err;
 }
+
+#endif

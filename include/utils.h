@@ -8,6 +8,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "data_structure.h"
 #include <stdio.h>
 #include "PGFEM_mpi.h"
 #include "element.h"

@@ -60,7 +60,7 @@ class State_variables
     this->n_flags = 0;
   }  
 
-  void initialization(const size_t n_Fs,
+  int initialization(const size_t n_Fs,
                       const size_t n_vars,
                       const size_t n_flags);
                       

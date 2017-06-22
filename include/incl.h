@@ -3,6 +3,7 @@
 #ifndef INCL_H
 #define INCL_H
 
+#include "data_structure.h"
 #include "element.h"
 #include "sig.h"
 #include "eps.h"

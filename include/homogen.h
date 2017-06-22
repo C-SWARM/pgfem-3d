@@ -7,6 +7,8 @@
 #ifndef HOMOGEN_H
 #define HOMOGEN_H
 
+#include "data_structure.h"
+
 #ifndef ELEMENT_H
 #include "element.h"
 #endif

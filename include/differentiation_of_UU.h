@@ -3,6 +3,7 @@
 #ifndef DIFFERENTIATION_OF_UU_H
 #define DIFFERENTIATION_OF_UU_H
 
+#include "data_structure.h"
 #include "sig.h"
 #include "eps.h"
 #include "crpl.h"

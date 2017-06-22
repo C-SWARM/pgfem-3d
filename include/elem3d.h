@@ -9,6 +9,7 @@
 #ifndef ELEM3D_H
 #define ELEM3D_H
 
+#include "data_structure.h"
 #include "element.h"
 #include "node.h"
 #include "hommat.h"

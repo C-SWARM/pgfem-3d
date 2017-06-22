@@ -4,6 +4,7 @@
 #ifndef FD_INCREMENT_H
 #define FD_INCREMENT_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "cohesive_element.h"

@@ -4,6 +4,7 @@
 #ifndef INITIAL_GUESS_H
 #define INITIAL_GUESS_H
 
+#include "data_structure.h"
 #include "sig.h"
 #include "eps.h"
 #include "crpl.h"

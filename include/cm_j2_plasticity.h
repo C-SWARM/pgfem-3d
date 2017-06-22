@@ -36,7 +36,7 @@ extern "C" {
  * \param[in,out] p - pointer to a Model_parameters object
  * \return non-zero on internal error
  */
-int j2d_plasticity_model_initialize(Model_parameters *p);
+int j2d_plasticity_model_initialize(Model_parameters *p){return 0;};
 
 /**
  * Construct and initialize the model context for calling functions
@@ -49,7 +49,7 @@ int j2d_plasticity_model_initialize(Model_parameters *p);
  */
 int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double *F,
-                                   const double dt);
+                                   const double dt) {return 0;};
 
 
 #ifdef __cplusplus

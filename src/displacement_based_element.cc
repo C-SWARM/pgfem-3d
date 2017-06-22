@@ -38,8 +38,6 @@
 #define DISP_DEBUG_NO_LM 1
 #endif
 
-Define_Matrix(double);
-
 //ttl declarations
 namespace {
   template<int R, int D = 3, class S = double>
@@ -323,19 +321,9 @@ static int disp_cm_material_response(double *S,
                                      const int get_L)
 {
   int err = 0;
-  Matrix_double MF, ML, MS;
-  Matrix_construct(double, MF);
-  Matrix_init_w_array(MF, ndn, ndn, F);
-  Matrix_construct_init(double, MS, ndn, ndn, 0.0);
-  Matrix_construct_init(double, ML, ndn*ndn, ndn*ndn, 0.0);
 
-  err += constitutive_model_default_update_elasticity(m, &MF, &ML, &MS, get_L);
-  memcpy(S, MS.m_pdata, 9 * sizeof(*S));
-  if(get_L) memcpy(L, ML.m_pdata, 81 * sizeof(*L));
+  err += constitutive_model_default_update_elasticity(m, F, L, S, get_L);
 
-  Matrix_cleanup(MF);
-  Matrix_cleanup(MS);
-  Matrix_cleanup(ML);
   return err;
 }
 

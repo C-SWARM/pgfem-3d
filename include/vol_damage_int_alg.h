@@ -2,6 +2,7 @@
 #ifndef VOL_DAMAGE_INT_ALG_H
 #define VOL_DAMAGE_INT_ALG_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 
 #ifndef ELEMENT_H

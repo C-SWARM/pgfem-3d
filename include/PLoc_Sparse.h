@@ -3,6 +3,7 @@
 #ifndef PLOC_SPARSE_H
 #define PLOC_SPARSE_H
 
+#include "data_structure.h"
 #include "pgfem_comm.h"
 #include "hypre_global.h"
 

@@ -163,9 +163,9 @@ static int fd_res_elem_MP(double *be,
   // set FEMLIB
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-    FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
   else
-    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
   
   long *nod = (fe.node_id).m_pdata; // list of node ids in this element
   
@@ -255,8 +255,6 @@ static int fd_res_elem_MP(double *be,
         break;
     }
   }
-  
-  FEMLIB_destruct(&fe);
   
   dealoc1 (r_e);
   dealoc1l (cn);

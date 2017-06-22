@@ -12,6 +12,7 @@
 #ifndef DISP_BASED_ELEM_H
 #define DISP_BASED_ELEM_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"

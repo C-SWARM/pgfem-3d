@@ -25,6 +25,7 @@
 #ifndef NEWTON_RAPHSON_H
 #define NEWTON_RAPHSON_H
 
+#include "data_structure.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"

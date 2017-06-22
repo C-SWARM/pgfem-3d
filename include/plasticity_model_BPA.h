@@ -40,7 +40,7 @@ extern "C" {
  * \param[in,out] p - pointer to a Model_parameters object
  * \return non-zero on internal error
  */
-int plasticity_model_BPA_initialize(Model_parameters *p);
+int plasticity_model_BPA_initialize(Model_parameters *p) {return 0;};
 
 /**
  * Construct and initialize the model context for calling functions
@@ -53,7 +53,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p);
  */
 int plasticity_model_BPA_ctx_build(void **ctx,
                                    const double *F,
-                                   const double dt);
+                                   const double dt) {return 0;};
 
 /**
  * Destroy the model context and invalidate the handle.

@@ -10,10 +10,6 @@
 #include "elem3d.h"
 #include "PGFem3D_data_structure.h"
 
-#ifndef _Matrix_double
-Define_Matrix(double);
-#define _Matrix_double 1
-#endif
 
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"

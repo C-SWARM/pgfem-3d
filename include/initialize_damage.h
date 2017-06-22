@@ -8,6 +8,8 @@
 #ifndef INITIALIZE_DAMAGE_H
 #define INITIALIZE_DAMAGE_H
 
+#include "data_structure.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /* #ifdef __cplusplus */

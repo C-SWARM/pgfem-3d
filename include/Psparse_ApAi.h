@@ -10,6 +10,7 @@
 #ifndef PSPARSE_APAI_H
 #define PSPARSE_APAI_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "cohesive_element.h"

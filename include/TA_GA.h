@@ -1,6 +1,8 @@
 #ifndef TA_GA_H
 #define TA_GA_H
 
+#include "data_structure.h"
+
 #ifndef CRPL_H
 #include "crpl.h"
 #endif

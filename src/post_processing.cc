@@ -5,6 +5,27 @@
 #include "PGFem3D_to_VTK.hpp"
 
 #include "constitutive_model.h"
+#include <ttl/ttl.h>
+
+//ttl declarations
+namespace {
+  template<int R, int D = 3, class S = double>
+  using Tensor = ttl::Tensor<R, D, S>;
+    
+  template<int R, int D = 3, class S = double *>
+  using TensorA = ttl::Tensor<R, D, S>;
+    
+  static constexpr ttl::Index<'I'> I;
+  static constexpr ttl::Index<'J'> J;
+  static constexpr ttl::Index<'K'> K;
+  static constexpr ttl::Index<'L'> L;
+    
+  template<class T1, class T2> int inv(T1 &A, T2 &AI)
+  {
+    int err = inv3x3(A.data, AI.data);
+    return err;
+  }       
+}
 
 int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
 {
@@ -15,97 +36,70 @@ int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
   return err;
 }
 
-void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
-                          Matrix(double) F, double Pn)
+void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, double *S_in, HOMMAT *hommat, ELEMENT *elem, 
+                          double *F_in, double Pn)
 {
-  Matrix(double) C,CI,devS;
-  Matrix_construct_init(double,C,3,3,0.0);
-  Matrix_construct_init(double,CI,3,3,0.0);
-  Matrix_construct_init(double,devS,3,3,0.0);
+  TensorA<2> F(F_in), S(S_in);
+  Tensor<2> C,CI,devS;
 
-  Matrix_AxB(C,1.0,0.0,F,1,F,0);
-  double J;
-  Matrix_det(F, J);
-  Matrix_inv(C, CI);
+  C = F(K,I)*F(K,J);
+  double detF = ttl::det(F);
+  inv(C,CI);
   
   int mat = elem[e].mat[2];
   double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 
 
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-  Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
+  Stress(C.data,&hommat[mat],devS.data);
 
   dUdJFuncPtr DUDJ = getDUdJFunc(1,&hommat[mat]);
   double dUdJ = 0.0;
-  DUDJ(J,&hommat[mat],&dUdJ);
-  double kappaJdUdJ = kappa*J*dUdJ;
+  DUDJ(detF,&hommat[mat],&dUdJ); 
   
 //  for(int a = 0; a<9; a++)
 //    S.m_pdata[a] = devS.m_pdata[a] + kappaJdUdJ*CI.m_pdata[a];
-  Matrix_AplusB(S,1.0,devS,kappaJdUdJ,CI);
-            
-  Matrix_cleanup(C);
-  Matrix_cleanup(CI);
-  Matrix_cleanup(devS);        
+  S(I,J) = devS(I,J) + kappa*detF*dUdJ*CI(I,J);
 }
 
-void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
-                          Matrix(double) F, double Pn)
+void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMAT *hommat, ELEMENT *elem, 
+                          double *F_in, double Pn)
 {
-  Matrix(double) C,CI,devS;
-  Matrix_construct_init(double,C,3,3,0.0);
-  Matrix_construct_init(double,CI,3,3,0.0);
-  Matrix_construct_init(double,devS,3,3,0.0);
+  TensorA<2> F(F_in), S(S_in);
+  Tensor<2> C,CI,devS;
+
+  C = F(K,I)*F(K,J);
+  double detF = ttl::det(F);
+  inv(C,CI);
   
-/*  for(int a=0; a<9; a++)
-  {
-    if(F.m_pdata[a]<1.0e-6)
-      F.m_pdata[a] = 0.0;
-  }*/    
-  
-  Matrix_AxB(C,1.0,0.0,F,1,F,0);
-  double J;
-  Matrix_det(F, J);
-  Matrix_inv(C, CI);
   int mat = elem[e].mat[2];
   double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));                  
   
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
-  Stress(C.m_pdata,&hommat[mat],devS.m_pdata);
+  Stress(C.data,&hommat[mat],devS.data);
   
   double Up = 0.0;
-  UP(J,&hommat[mat],&Up);
+  UP(detF,&hommat[mat],&Up);
 //  printf("%e, %e\n", Pn, kappa*Up);
-  double JPn = J*Pn;
+  double JPn = detF*Pn;
   
 //  for(int a = 0; a<9; a++)
 //    S.m_pdata[a] = devS.m_pdata[a] + JPn*CI.m_pdata[a]; 
-  Matrix_AplusB(S,1.0,devS,JPn,CI);
-          
-  Matrix_cleanup(C);
-  Matrix_cleanup(CI);
-  Matrix_cleanup(devS);        
+  S(I,J) = devS(I,J) + kappa*JPn*CI(I,J);       
 }
 
-void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix(double) *S, double *Jnp1, 
+void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, double *Jnp1, 
                                                   HOMMAT *hommat, ELEMENT *elem, EPS *eps)
 {
-  int total_Lagrangian = 0;
   int compute_stiffness = 0;
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
-  Matrix(double) Fnp1, eFnp1;
-  Matrix_construct_init(double,eFnp1,3,3,0.0);
-  Matrix_construct_init(double,Fnp1,3,3,0.0);
-  /* after update (i.e., converged step) the *Fn = *Fnp1 */
-  m->param->get_Fn(m,&Fnp1);
-  m->param->get_eFn(m,&eFnp1);
+  Tensor<2> Fnp1, eFnp1;
+  m->param->get_F(m,Fnp1.data,1);
+  m->param->get_eF(m,eFnp1.data,1);
 
-  constitutive_model_default_update_elasticity(m,&eFnp1,NULL,S,compute_stiffness);  
-  Matrix_det(Fnp1, *Jnp1);
-  
-  Matrix_cleanup(Fnp1);
-  Matrix_cleanup(eFnp1);   
+  constitutive_model_default_update_elasticity(m,eFnp1.data,NULL,S,compute_stiffness);  
+  *Jnp1 = ttl::det(Fnp1);  
 }                          
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
@@ -121,73 +115,69 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     total_Lagrangian = 0;
   
   int nsd = 3;
-  Matrix(double) F,S,LS;
-  Matrix_construct_init(double,F,3,3,0.0);
-  Matrix_construct_init(double,S,3,3,0.0);
-  Matrix_construct_init(double,LS,3,3,0.0);  
+  Tensor<2> F,S,LS;
 
   double LV = 0.0;
   double GV = 0.0;
   
   for(int e = 0; e<ne; e++)
   {        
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) Np, u, P;  
-    Matrix_construct_init(double,Np,npres,1,0.0);
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
-    Matrix_construct_init(double,P,npres,1,0.0);        
+    Matrix<double> Np, u, P;  
+    Np.initialization(npres,1,0.0);
+     u.initialization(nne*nsd,1,0.0);
+     P.initialization(npres,1,0.0);        
                         
     for(int a = 0; a<nne; a++)
     {      
-      int nid = Vec_v(fe.node_id, a+1);
+      int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
 
     if(opts->analysis_type==TF)
     {       
       if(npres==1)
-        Vec_v(P, 1) = eps[e].d_T[0];
+        P(1) = eps[e].d_T[0];
       else
       {
         for(int a = 0; a<nne; a++)
         {
-          int nid = Vec_v(fe.node_id, a+1);
-          Vec_v(P, a+1) = r[nid*ndofn + 3];
+          int nid = fe.node_id(a+1);
+          P(a+1) = r[nid*ndofn + 3];
         }
       }          
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
     {     
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       double Pn = 0.0;  
       double Jnp1 = 1.0;
       switch(opts->analysis_type)
       {
         case DISP:
-          post_processing_compute_stress_disp_ip(&fe,e,S,hommat,elem,F,Pn);
+          post_processing_compute_stress_disp_ip(&fe,e,S.data,hommat,elem,F.data,Pn);
           break;
         case TF:
         {
-          FEMLIB_elem_shape_function(&fe,ip,npres, &Np);
+          fe.elem_shape_function(ip,npres, Np.m_pdata);
   
           for(int a=1; a<=npres; a++)
-            Pn += Vec_v(Np,a)*Vec_v(P,a);
+            Pn += Np(a)*P(a);
   
-          post_processing_compute_stress_3f_ip(&fe,e,S,hommat,elem,F,Pn);
+          post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,Pn);
           break;
         }           
         case CM:
         {
-          post_processing_compute_stress4CM(&fe,e,ip,&S,&Jnp1,hommat,elem,eps);
+          post_processing_compute_stress4CM(&fe,e,ip,S.data,&Jnp1,hommat,elem,eps);
           break;
         }      
         default:
@@ -197,21 +187,11 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
       LV += fe.detJxW/Jnp1;
 
       for(int a=0; a<9; a++)
-        LS.m_pdata[a] += S.m_pdata[a]*fe.detJxW/Jnp1;
+        LS.data[a] += S.data[a]*fe.detJxW/Jnp1;
     }
-    FEMLIB_destruct(&fe);
-    Matrix_cleanup(Np);
-    Matrix_cleanup(u);
-    Matrix_cleanup(P);    
-
   }
-  
-  Matrix_cleanup(F);
-  Matrix_cleanup(S);
-    
-  MPI_Allreduce(LS.m_pdata,GS,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(LS.data,GS,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);  
-  Matrix_cleanup(LS);
   
   for(int a=0; a<9; a++)
     GS[a] = GS[a]/GV;    
@@ -231,69 +211,58 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     total_Lagrangian = 0;    
   
   int nsd = 3;
-  Matrix(double) F,LF;
-  Matrix_construct_init(double,F,3,3,0.0);
-  Matrix_construct_init(double,LF,3,3,0.0);  
+  Tensor<2> F,LF;
 
   double LV = 0.0;
   double GV = 0.0;
   
   for(int e = 0; e<ne; e++)
   {        
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+    Matrix<double> u(nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
     {      
-      int nid = Vec_v(fe.node_id, a+1);
+      int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
       if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1;
-        Matrix_construct_redim(double,Fnp1,3,3);
+        Tensor<2> Fnp1;
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
-        m->param->get_Fn(m,&Fnp1);
+        m->param->get_F(m,Fnp1.data,1);
         if(!total_Lagrangian)
-          Matrix_det(Fnp1, Jnp1);
+          Jnp1 = ttl::det(Fnp1);
         
         LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += Fnp1.m_pdata[a]*fe.detJxW/Jnp1;
-
-        Matrix_cleanup(Fnp1);
+          LF.data[a] += Fnp1.data[a]*fe.detJxW/Jnp1;
       }
       else
       {        
         LV += fe.detJxW;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += F.m_pdata[a]*fe.detJxW;
+          LF.data[a] += F.data[a]*fe.detJxW;
       }
     }
-    FEMLIB_destruct(&fe);
-    Matrix_cleanup(u);
   }
       
-  MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(LF.data,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
-  Matrix_cleanup(F);
-  Matrix_cleanup(LF);
   
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
@@ -313,72 +282,60 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
     total_Lagrangian = 0;    
   
   int nsd = 3;
-  Matrix(double) F,LF;
-  Matrix_construct_init(double,F,3,3,0.0);
-  Matrix_construct_init(double,LF,3,3,0.0);  
+  Tensor<2> F,LF;
 
   double LV = 0.0;
   double GV = 0.0;
   
   for(int e = 0; e<ne; e++)
   {        
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+    Matrix<double> u(nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
     {      
-      int nid = Vec_v(fe.node_id, a+1);
+      int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
       if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1, eFnp1;
-        Matrix_construct_init(double,Fnp1,3,3,0.0);
-        Matrix_construct_init(double,eFnp1,3,3,0.0);        
+        Tensor<2> Fnp1, eFnp1;
+
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
-        m->param->get_Fn(m,&Fnp1);
-        m->param->get_eFn(m,&eFnp1);
+        m->param->get_F(m,Fnp1.data,1);
+        m->param->get_eF(m,eFnp1.data,1);
         if(!total_Lagrangian)        
-          Matrix_det(Fnp1, Jnp1);
+          Jnp1 = ttl::det(Fnp1);
         
         LV += fe.detJxW/Jnp1;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += eFnp1.m_pdata[a]*fe.detJxW/Jnp1;
-
-        Matrix_cleanup(Fnp1);
-        Matrix_cleanup(eFnp1);        
+          LF.data[a] += eFnp1.data[a]*fe.detJxW/Jnp1;
       }
       else
       {        
         LV += fe.detJxW;
         for(int a=0; a<9; a++)
-          LF.m_pdata[a] += F.m_pdata[a]*fe.detJxW;
+          LF.data[a] += F.data[a]*fe.detJxW;
       }
     }
-    FEMLIB_destruct(&fe);
-    Matrix_cleanup(u);
   }
       
-  MPI_Allreduce(LF.m_pdata,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(LF.data,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
-  Matrix_cleanup(F);
-  Matrix_cleanup(LF);
   
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
@@ -398,7 +355,6 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
   if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;    
   
-  int nsd = 3;
   double L_gn = 0.0;
 
   double LV = 0.0;
@@ -406,33 +362,25 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
   
   for(int e = 0; e<ne; e++)
   {        
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
-    int nne = fe.nne;
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
         
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
       
       Constitutive_model *m = &(eps[e].model[ip-1]);        
       double g_n = 0.0;      
-      m->param->get_hardening(m,&g_n);      
+      m->param->get_hardening(m,&g_n,2);      
       
-      
-      double Jnp1 = 0.0;
-      Matrix(double) Fnp1;
-      Matrix_construct_redim(double,Fnp1,3,3);
+      Tensor<2> Fnp1;
       /* after update (i.e., converged step) the *Fn = *Fnp1 */
-      m->param->get_Fn(m,&Fnp1);
-      Matrix_det(Fnp1, Jnp1);
+      m->param->get_F(m,Fnp1.data,1);
+      double Jnp1 = ttl::det(Fnp1);
       
       LV += fe.detJxW/Jnp1;
       L_gn += g_n*fe.detJxW/Jnp1;
-
-      Matrix_cleanup(Fnp1);
     }
-    FEMLIB_destruct(&fe);
   }
       
   MPI_Allreduce(&L_gn,G_gn,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
@@ -455,14 +403,9 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
     total_Lagrangian = 0; 
   
   int nsd = 3;
-  Matrix(double) F,C;
-  Matrix_construct_init(double,F,3,3,0.0);
-  Matrix_construct_init(double,C,3,3,0.0);  
+  Tensor<2> F,C;
 
   double LE = 0.0;
-
-  double LV = 0.0;
-  double GV = 0.0;
    
   for(int e = 0; e<ne; e++)
   { 
@@ -472,76 +415,62 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
     devPotentialFuncPtr dev_func = getDevPotentialFunc(1,&hommat[mat]);
     UFuncPtr              U_func =            getUFunc(1,&hommat[mat]);
 
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+    Matrix<double> u(nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
     {      
-      int nid = Vec_v(fe.node_id, a+1);
+      int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
-      FEMLIB_update_deformation_gradient(&fe,nsd,u.m_pdata,&F);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
       if(opts->analysis_type==CM)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1, eFnp1;
-        Matrix_construct_redim(double,Fnp1,3,3);
-        Matrix_construct_init(double,eFnp1,3,3,0.0);
+        Tensor<2> Fnp1, eFnp1;
                
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
-        m->param->get_Fn(m,&Fnp1);
-        m->param->get_eFn(m,&eFnp1);
-        if(!total_Lagrangian)        
-          Matrix_det(Fnp1, Jnp1);
+        m->param->get_F(m,Fnp1.data,1);
+        m->param->get_eF(m,eFnp1.data,1);
+        if(!total_Lagrangian)
+          Jnp1 = ttl::det(Fnp1);
         
-        Matrix_AxB(C,1.0,0.0,eFnp1,1,eFnp1,0);        
+        C = eFnp1(K,I)*eFnp1(K,L);
         double W = 0.0;
-        dev_func(C.m_pdata,&hommat[mat],&W);          
+        dev_func(C.data,&hommat[mat],&W);          
         double U = 0.0;
-        double J = 0.0;
-        Matrix_det(eFnp1, J);
-        U_func(J,&hommat[mat],&U);
+        double detF = ttl::det(eFnp1);
+        U_func(detF,&hommat[mat],&U);
 
         LE += (W+kappa*U)*fe.detJxW/Jnp1;
-        
-        Matrix_cleanup(Fnp1);
-        Matrix_cleanup(eFnp1);
-                
       }
       else
-      {        
-        Matrix_AxB(C,1.0,0.0,F,1,F,0);        
+      {
+        C = F(K,I)*F(K,J);        
         double W = 0.0;
-        dev_func(C.m_pdata,&hommat[mat],&W);          
+        dev_func(C.data,&hommat[mat],&W);          
         double U = 0.0;
-        double J = 0.0;
-        Matrix_det(F, J);
-        U_func(J,&hommat[mat],&U);
+        double detF = ttl::det(F);
+        U_func(detF,&hommat[mat],&U);
 
         LE += (W+kappa*U)*fe.detJxW;
       }
     }
-    FEMLIB_destruct(&fe);
-    Matrix_cleanup(u);    
   }
       
   MPI_Allreduce(&LE,GE,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  Matrix_cleanup(F);
-  Matrix_cleanup(C);
 }
 
 void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *node, EPS *eps,
@@ -564,48 +493,43 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
   
   for(int e = 0; e<ne; e++)
   {        
-    FEMLIB fe;
-    FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
+    FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
-    Matrix_construct_init(double,u,nne*nsd,1,0.0);
+    Matrix<double> u(nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
     {      
-      int nid = Vec_v(fe.node_id, a+1);
+      int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        Vec_v(u, a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
     
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
-      FEMLIB_elem_basis_V(&fe, ip);  
-      FEMLIB_update_shape_tensor(&fe);
+      fe.elem_basis_V(ip);  
+      fe.update_shape_tensor();
       
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1;
-        Matrix_construct_redim(double,Fnp1,3,3);
+        Tensor<2> Fnp1;
+        
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
-        m->param->get_Fn(m,&Fnp1);
+        m->param->get_F(m,Fnp1.data,1);
         if(!total_Lagrangian)
-          Matrix_det(Fnp1, Jnp1);
+          Jnp1 = ttl::det(Fnp1);
         
         LV += fe.detJxW/Jnp1;
-        Matrix_cleanup(Fnp1);
       }
       else
       {        
         LV += fe.detJxW;
       }
     }
-    FEMLIB_destruct(&fe);
-    Matrix_cleanup(u);
   }
       
   MPI_Allreduce(&LV,GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    

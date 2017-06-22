@@ -11,9 +11,11 @@
 #include "node.h"
 #include "supp.h"
 #include "sig.h"
-#include "eps.h"
+//#include "eps.h"
 #include "enumerations.h"
 #include "interface_macro.h"
+
+typedef struct EPS EPS;
 
 #ifdef __cplusplus
 extern "C" {

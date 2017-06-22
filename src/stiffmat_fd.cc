@@ -515,9 +515,9 @@ static int el_stiffmat_MP(int eid,
   // set FEMLIB  
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-    FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);    
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);    
   else
-    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);  
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);  
   
   long *nod = (fe.node_id).m_pdata; // list of node ids in this element  
   
@@ -569,14 +569,10 @@ static int el_stiffmat_MP(int eid,
   }
   
   int nVol = N_VOL_TREE_FIELD;
-  Matrix(double) lk;
-  Matrix_construct_redim(double,lk,ndofe,ndofe);
-  Matrix_init(lk, 0.0);
+  Matrix<double> lk(ndofe,ndofe,0.0);
   
   err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
-                                crpl,opts,mp,mp_id,dt,lm,be,r_e);
-
-  FEMLIB_destruct(&fe);          
+                                crpl,opts,mp,mp_id,dt,lm,be,r_e);         
   
   if (PFEM_DEBUG){
     char filename[50];
@@ -624,7 +620,6 @@ static int el_stiffmat_MP(int eid,
   //  dealocation
   free (cnL);
   free (cnG);
-  Matrix_cleanup(lk);
   free (be);
   free (r_e);
   free (sup_def);
@@ -688,8 +683,7 @@ int stiffmat_fd_MP(GRID *grid,
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
           mpi_comm,com->comm);
   
-  Matrix(int) Ddof;
-  Matrix_construct_redim(int, Ddof,com->nproc,1);
+  Matrix<int> Ddof(com->nproc,1);
   
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)
@@ -832,7 +826,6 @@ int stiffmat_fd_MP(GRID *grid,
   free (req_s);
   free (req_r);
   
-  Matrix_cleanup(Ddof);
   return err;
 }
 

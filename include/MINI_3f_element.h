@@ -11,6 +11,7 @@
 #ifndef MINI_3F_ELEMENT_H
 #define MINI_3F_ELEMENT_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"

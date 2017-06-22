@@ -7,6 +7,7 @@
 #ifndef FD_RESIDUALS_H
 #define FD_RESIDUALS_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 #include "element.h"
 #include "node.h"

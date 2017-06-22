@@ -1,6 +1,7 @@
 #ifndef LINE_H
 #define LINE_H
 
+#include "data_structure.h"
 #include "PGFEM_mpi.h"
 
 #ifndef ELEMENT_H

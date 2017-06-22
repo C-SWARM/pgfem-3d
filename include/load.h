@@ -9,6 +9,7 @@
 #ifndef LOAD_H
 #define LOAD_H
 
+#include "data_structure.h"
 #include "element.h"
 #include "node.h"
 #include "supp.h"

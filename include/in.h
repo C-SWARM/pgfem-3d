@@ -10,6 +10,8 @@
 #pragma once
 #ifndef IN_H
 #define IN_H
+
+#include "data_structure.h"
 #include "PGFEM_io.h"
 #include "element.h"
 #include "node.h"
