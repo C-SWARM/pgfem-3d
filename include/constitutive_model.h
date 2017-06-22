@@ -186,7 +186,7 @@ class Model_parameters
   ///                     general function interface.
   /// \return non-zero on internal error that should be handled by the calling function.
   virtual int integration_algorithm(Constitutive_model *m,
-                                    const void *usr_ctx) const {};
+                                    const void *usr_ctx) const { return 0; };
   
   /// User defined function to compute deviatroic stress tenosr.
   ///
@@ -200,7 +200,7 @@ class Model_parameters
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dev_stress(const Constitutive_model *m,
                                  const void *ctx,
-                                 double *S) const {};
+                                 double *S) const { return 0; };
   
   /// User defined function to compute volumetric stress contributions
   /// 
@@ -213,7 +213,7 @@ class Model_parameters
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dudj(const Constitutive_model *m,
                            const void *ctx,
-                           double *value) const {};
+                           double *value) const { return 0; };
   
 
   ///User defined function to compute deviatroic stiffness tenosr.
@@ -228,7 +228,7 @@ class Model_parameters
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dev_tangent(const Constitutive_model *m,
                                   const void *ctx,
-                                  double *L) const {};
+                                  double *L) const { return 0; };
   
   /// User defined function to compute volumetric elasticity contributions
   /// 
@@ -241,7 +241,7 @@ class Model_parameters
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_d2udj2(const Constitutive_model *m,
                              const void *ctx,
-                             double *value) const {};
+                             double *value) const { return 0; };
 
   /// User defined function to compute the elastic algorithmic stiffness tangent
   ///
@@ -256,7 +256,7 @@ class Model_parameters
                                 const void *ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const {};
+                                const int compute_stiffness) const { return 0; };
 
   /// User defined function that to update the internally
   /// advance: (n + 1) -> (n) the internal state variables.
@@ -264,7 +264,7 @@ class Model_parameters
   /// \param[in,out] m, pointer to Constitutive_model object.
   /// \return non-zero on internal error that should be handled by the
   /// calling function.
-  virtual int update_state_vars(Constitutive_model *m) const {};  
+  virtual int update_state_vars(Constitutive_model *m) const { return 0; };  
   
   /// User defined function that to reset the internally
   /// reset: (n + 1) <- (n) the internal state variables.
@@ -272,7 +272,7 @@ class Model_parameters
   /// \param[in,out] m, pointer to Constitutive_model object.
   /// \return non-zero on internal error that should be handled by the
   /// calling function.
-  virtual int reset_state_vars(Constitutive_model *m) const {};
+  virtual int reset_state_vars(Constitutive_model *m) const { return 0; };
 
   /// User defined function to reset state variable from temporal space
   /// 
@@ -280,7 +280,7 @@ class Model_parameters
   /// \param[in,out] var, contains state variables to store or get
   /// \return non-zero on internal error
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,
-                                              State_variables *var) const {};
+                                              State_variables *var) const { return 0; };
 
   /// User defined function to upated state variable at n+1 to temporal space
   /// 
@@ -288,7 +288,7 @@ class Model_parameters
   /// \param[in,out] var, contains state variables to store or get
   /// \return non-zero on internal error
   virtual int update_np1_state_vars_to_temporal(const Constitutive_model *m,
-                                                State_variables *var) const {};
+                                                State_variables *var) const { return 0; };
 
   /// User defined function to store state variable to temporal space
   /// 
@@ -296,7 +296,7 @@ class Model_parameters
   /// \param[in,out] var, contains state variables to store or get
   /// \return non-zero on internal error
   virtual int save_state_vars_to_temporal(const Constitutive_model *m,
-                                          State_variables *var) const {};
+                                          State_variables *var) const { return 0; };
   
   /// A user described function that allocates a Model_var_info object
   /// and populates the internal structure. This function should fully
@@ -304,7 +304,7 @@ class Model_parameters
   /// than hold references.
   /// \param[in, out] info, reference to object containing model variable info
   /// \return non-zero on error.
-  virtual int get_var_info(Model_var_info &info) const {};
+  virtual int get_var_info(Model_var_info &info) const { return 0; };
 
   /// User defined function to return the total deformation.
   /// 
@@ -317,7 +317,7 @@ class Model_parameters
   /// \return non-zero on internal error
   virtual int get_F(const Constitutive_model *m, 
                     double *F,
-                    const int stepno) const {};
+                    const int stepno) const { return 0; };
 
   /// User defined function to return the plastic part deformation.
   /// 
@@ -330,7 +330,7 @@ class Model_parameters
   /// \return non-zero on internal error
   virtual int get_pF(const Constitutive_model *m, 
                      double *F, 
-                     const int stepno) const {};
+                     const int stepno) const { return 0; };
 
   /// User defined function to return the elastic deformation.
   /// 
@@ -343,7 +343,7 @@ class Model_parameters
   /// \return non-zero on internal error
   virtual int get_eF(const Constitutive_model *m, 
                      double *F, 
-                     const int stepno) const {};
+                     const int stepno) const { return 0; };
 
 
   /// User defined function to return the elastic deformation gradient with thermal
@@ -360,7 +360,7 @@ class Model_parameters
   virtual int get_eF_of_hF(const Constitutive_model *m, 
                            double *F, 
                            double *hFI, 
-                           const int stepno) const {};
+                           const int stepno) const { return 0; };
 
 
   /// User defined function to return a hardening variables.
@@ -411,7 +411,7 @@ class Model_parameters
   /// \param[in] m,  Constitutive model object
   /// \return non-zero on error.  
   virtual int write_restart(FILE *fp,
-                            const Constitutive_model *m) const {};
+                            const Constitutive_model *m) const { return 0; };
 
   /// A user described function that reads restart file at
   /// integration point
@@ -420,7 +420,7 @@ class Model_parameters
   /// \param[in] m,  Constitutive model object
   /// \return non-zero on error.  
   virtual int read_restart(FILE *fp,
-                           Constitutive_model *m) const {};
+                           Constitutive_model *m) const { return 0; };
 
   /// User defined function to destroy a context for the model. This
   /// function shall destroy any internally allocated data and
@@ -428,7 +428,7 @@ class Model_parameters
   /// 
   /// \param[in] ctx a context for the model
   /// \return non-zero on error.
-  virtual int destroy_ctx(void **ctx) const {};
+  virtual int destroy_ctx(void **ctx) const { return 0; };
 
   /// User defined function to compute the linearization of the plastic
   /// deformation w.r.t. the displacement variable. In the current
@@ -471,7 +471,7 @@ class Model_parameters
   ///
   /// \param[in] in, file pointer for reading material parameters 
   /// \return non-zero on error.
-  virtual int read_param(FILE *in) const {};
+  virtual int read_param(FILE *in) const { return 0; };
 
   /// User defined function that returns the size of the data to be
   /// packed/unpacked.

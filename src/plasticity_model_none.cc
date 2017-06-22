@@ -266,10 +266,13 @@ int get_F(const Constitutive_model *m,
   {
     case 0: // n-1
       memcpy(F,Fs[TENSOR_Fnm1].m_pdata,DIM_3x3*sizeof(double));
+      break;
     case 1: // n
       memcpy(F,Fs[TENSOR_Fn].m_pdata,  DIM_3x3*sizeof(double));
+      break;
     case 2: // n+1
       memcpy(F,Fs[TENSOR_Fnp1].m_pdata,DIM_3x3*sizeof(double));
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;

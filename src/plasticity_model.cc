@@ -137,6 +137,19 @@ int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, EPS *eps, con
   return cnt;
 }
 
+int plasticity_model_cleanup_elem_ip_map(IP_ID_LIST *elm_ip_map, int ne)
+{
+  int err = 0;
+  for(int a=0; a<ne; a++)
+  {
+    delete elm_ip_map[a].ip_ids.m_pdata;
+    elm_ip_map[a].ip_ids.m_pdata = NULL;
+    elm_ip_map[a].ip_ids.m_col = 0;
+    elm_ip_map[a].ip_ids.m_row = 0;
+  }
+  return err;
+} 
+
 /// Private structure for use exclusively with this model and
 /// associated functions.
 typedef struct plasticity_ctx {
@@ -411,10 +424,13 @@ const
   {
     case 0: // n-1
       memcpy(F,Fs[TENSOR_pFnm1].m_pdata,DIM_3x3*sizeof(double));
+      break;
     case 1: // n
       memcpy(F,Fs[TENSOR_pFn].m_pdata,  DIM_3x3*sizeof(double));
+      break;      
     case 2: // n+1
       memcpy(F,Fs[TENSOR_pFnp1].m_pdata,DIM_3x3*sizeof(double));
+      break;      
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -434,10 +450,13 @@ const
   {
     case 0: // n-1
       memcpy(F,Fs[TENSOR_Fnm1].m_pdata,DIM_3x3*sizeof(double));
+      break;
     case 1: // n
       memcpy(F,Fs[TENSOR_Fn].m_pdata,  DIM_3x3*sizeof(double));
+      break;
     case 2: // n+1
       memcpy(F,Fs[TENSOR_Fnp1].m_pdata,DIM_3x3*sizeof(double));
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -499,10 +518,13 @@ const
   {
     case 0: // n-1
       *var = s_var[VAR_g_nm1];
+      break;
     case 1: // n
       *var = s_var[VAR_g_n];
+      break;
     case 2: // n+1
       *var = s_var[VAR_g_np1];
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -1627,6 +1649,6 @@ int plasticity_model_set_orientations(EPS *eps,
     }
   }
 
-  delete elm_ip_map;  
+  err += plasticity_model_cleanup_elem_ip_map(elm_ip_map, ne);
   return err;      
 }
