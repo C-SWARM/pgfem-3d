@@ -116,7 +116,7 @@ AC_ARG_WITH(lapack-lib, [AS_HELP_STRING([--with-lapack-lib=<link line>],
 AS_IF([test "x$with_mkl" = xyes],
 	    [
 	    AC_MSG_NOTICE([Using Intel MKL libraries])
-	    AC_SUBST([mkl_include],['-I$(MKLROOT)/include'])
+	    AC_SUBST([mkl_include],['-m64 -I$(MKLROOT)/include'])
 	    AC_SUBST([mkl_lib],['-Wl,--start-group \
 	    $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a \
 	    $(MKLROOT)/lib/intel64/libmkl_sequential.a \
