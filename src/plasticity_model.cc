@@ -146,7 +146,8 @@ typedef struct plasticity_ctx {
   double *eFnpa;
   int is_coulpled_with_thermal;
   double *hFn;
-  double *hFnp1;  
+  double *hFnp1;
+  Three_field_var tf;  
 } plasticity_ctx;
 
 int compute_M(double *M_in, 
@@ -1638,4 +1639,186 @@ int plasticity_model_set_orientations(EPS *eps,
 
   delete[] elm_ip_map;
   return err;      
+}
+
+int cm3f_plasticity_compute_dM(const Constitutive_model *con,
+                               double *dMdu_in,
+                               double *dMdt_in,
+                               double *Grad_du_in,
+                               double d_theta_r,
+                               double *eFn_in,
+                               double *eFnp1_in,
+                               double *M_in,
+                               double *S_in,
+                               double *L_in,
+                               const double g_n,
+                               const double g_np1,
+                               const double *tau,
+                               const double *gamma_dots,
+                               double *Psys,
+                               double *tFr_in,
+                               double theta_r_in,
+                               const double dt)
+{
+  int err = 0;
+  // compute dMdu:U = -grad(du):B
+  // Grad_du = Grad(du)
+
+  MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((con->param)->cm_mat)->mat_p;
+  
+  const int N_SYS          = (mat_p->slip)->N_SYS;
+  const double gamma_dot_0 = mat_p->gamma_dot_0;
+  const double gamma_dot_s = mat_p->gamma_dot_s;
+  const double mm          = mat_p->m;
+  const double g0          = mat_p->g0;
+  const double G0          = mat_p->G0;
+  const double gs_0        = mat_p->gs_0;
+  const double w           = mat_p->w;
+  
+  double Jtheta  = 1.0;
+  double theta_r = 1.0;
+  Tensor<2> tFrI = {};
+  
+  if(con->param->cm3f)
+  {  
+    TensorA<2> tFr(tFr_in);
+
+    double tJr     = ttl::det(tFr);
+    theta_r = theta_r_in;
+    Jtheta = pow(theta_r/tJr, 1.0/3.0);      
+    err += inv(tFr, tFrI);
+  }
+  
+  double gamma_dot = 0.0;
+  for(int a = 0; a<N_SYS; a++)
+    gamma_dot += fabs(gamma_dots[a]);
+
+  double gm_gms   = gamma_dot/gamma_dot_s;
+  double sign_gm_gms = (gm_gms < 0) ? -1.0 : 1.0;
+
+  double R3 = 0.0;
+  double gs_np1 = 0.0;
+  if(fabs(gm_gms)>1.0e-15)
+  {
+    R3 = gs_0*w/gamma_dot_s*sign_gm_gms*pow(fabs(gm_gms), w-1.0);
+    gs_np1 = gs_0*pow(fabs(gm_gms),w);
+  }
+
+  double AA = R3*gamma_dot*(g_n - g0 + dt*G0*gamma_dot) + 
+    gs_np1 * (gs_np1 - g0 - g_n) + g0*g_n;
+  double BB = gs_np1 - g0  - dt*G0*gamma_dot;
+  double R4 = dt*G0*AA/BB/BB;
+
+  double sum_1gm1gm = 0.0;
+
+  // convert C struct matrices into ttl tensors
+  const TensorA<2> Grad_du(Grad_du_in);
+  const TensorA<2> eFn(eFn_in);
+  const TensorA<2> eFnp1(eFnp1_in);
+  const TensorA<2> M(M_in);
+  const TensorA<2> S(S_in);
+  const TensorA<4> L(L_in);
+
+  const Tensor<2> C = eFnp1(k,i).to(i,k) * eFnp1(k,j);             // eFnp1' * eFnp1
+  Tensor<2> MI = {};
+  err += inv(M, MI);
+  const Tensor<2> MI_x_C = MI(j,i) * C(j,k);                       // M^{-T} * C
+  const Tensor<2> M_x_eFn = M(j,i).to(i,j) * eFn(k,j).to(j,k);     // M' * eFn'
+
+  // tensors are initialized to 0
+  Tensor<2> sum_aC = {};
+  Tensor<2> sum_Pa = {};
+  Tensor<2> sum_aD = {};
+  Tensor<2> sum_CP = {};  
+  Tensor<4> U = {};
+  Tensor<4> B = {};
+  double sum_CY = 0.0;
+
+  // set U to the 9x9 identity scaled by 1.0/dt
+  U(i,j,k,l) =  ttl::identity(i,j,k,l);                    
+
+  for(int a = 0; a<N_SYS; a++)
+  {
+    double drdtau = gamma_dot_0/mm/g_np1*pow(fabs(tau[a]/g_np1), 1.0/mm - 1.0);
+    double drdg   = -drdtau*tau[a]/g_np1;
+
+    double R2_a = ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdtau;
+    sum_1gm1gm += ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdg;
+
+    // compute P alpha of Psys
+    const Tensor<2, const double*> Pa(Psys + DIM_3x3 * a);        
+
+    // compute C alpha and D alpha using ttl operations
+    auto t0 = Pa(i,k) * S(k,j);                                    // Pa * S
+    auto t1 = S(i,k) * Pa(j,k).to(k,j);                            // S * Pa'
+    auto t2 = L(i,k,n,l) * C(n,l) * Pa(k,j);                       // L:C * Pa
+    const Tensor<2> AA = t0 + t1 + t2;
+    const Tensor<2> aC = MI_x_C(i,j) * AA(j,k);
+    const Tensor<2> aD = Jtheta*eFnp1(i,j)*AA(j,k)*M_x_eFn(k,l) - 1.0/3.0*C(m,n)*AA(m,n)*tFrI(l,i).to(i,l);
+    
+    sum_Pa(i,j) += drdg * Pa(i,j);
+    sum_aC(i,j) += R2_a * aC(i,j);
+    sum_aD(i,j) += R2_a * aD(i,j);
+    if(con->param->cm3f)
+    {
+      double CY = C(i,j)*AA(i,j);
+      sum_CP(i,j) += CY*Pa(i,j);
+      sum_CY      += R2_a * C(i,j)*AA(i,j);
+    }
+
+    // perform the Kronecker product using ttl and scales it by drdtau
+    U(i,j,k,l) += dt*drdtau * aC(i,j) * Pa(k,l);
+    B(i,j,k,l) += dt*drdtau * aD(i,j) * Pa(k,l);
+  }
+
+  double R1 = R4/(1.0-R4*sum_1gm1gm);
+
+  // perform the Kronecker product using ttl and scales it by R1
+  U(i,j,k,l) += dt*R1*sum_aC(i,j)*sum_Pa(k,l);
+  B(i,j,k,l) += dt*R1*sum_aD(i,j)*sum_Pa(k,l);
+
+  Tensor<4> UI = {};
+  
+  try {
+    UI = ttl::inverse(U);
+  }
+  catch (const int inverseException){
+    err++;
+  }
+
+  // cast _dmdu as a ttl tensor and compute its value
+  // -1 * (inverse(U) * B:Grad_du)    
+  TensorA<2> dMdu(dMdu_in);
+  
+  if(err==0)
+    dMdu(i,j) = -(UI(i,j,k,l)*B(k,l,m,n)*Grad_du(m,n));  
+  else
+    dMdu(i,j) = 0.0*ttl::identity(i,j);
+
+  if(con->param->cm3f)
+  {
+    TensorA<2> dMdt(dMdt_in);
+    if(err==0)
+    { 
+      Tensor<2> Z = 1.0/3.0/theta_r*(sum_CP(i,j) + R1*sum_CY*sum_Pa(i,j));       
+      dMdt(i,j) = -(UI(i,j,k,l)*Z(k,l)*d_theta_r);
+    }
+    else
+      dMdt(i,j) = 0.0*ttl::identity(i,j);
+  }
+  
+  
+  
+  
+  
+  if(con->param->cm3f)
+  { 
+
+
+    
+  } 
+
+
+
+  return err;
 }

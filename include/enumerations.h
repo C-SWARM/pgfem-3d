@@ -18,6 +18,7 @@ typedef  enum {ELASTIC=0,
 	DISP=7,
   TF=8,
   CM=9,
+  CM3F=10,
 	ANALYSIS_MAX} ANALYSIS_TYPE;
 
 typedef  enum {PARA_SAILS=0,

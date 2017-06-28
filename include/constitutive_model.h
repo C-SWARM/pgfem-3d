@@ -79,6 +79,26 @@ enum integration_frame {
   MIXED_ANALYSIS_MODE
 };
 
+class Three_field_var
+{
+  public:
+  Matrix<double> tFr;
+  double theta_r;
+  double pressure;
+  Three_field_var()
+  {
+    theta_r = 0.0;
+    pressure = 0.0;
+  }
+  
+  int set_values(double *tFr_in, double theta_r_in, double P)
+  {
+    tFr.use_reference(3,3,tFr_in);
+    theta_r  = theta_r_in;
+    pressure = P;
+    return 0;
+  };
+};
 
 /// Object for querying/describing the state variables.
 class Model_var_info
@@ -119,6 +139,7 @@ class Model_parameters
   const HOMMAT *p_hmat;
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
   int uqcm;   // UQ study through constitutive model 0: no, or yes
+  bool cm3f;
   
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat; 
   ELASTICITY *cm_elast;
@@ -133,6 +154,7 @@ class Model_parameters
     model_param       = NULL;
     n_param_index     = -1;
     model_param_index = NULL;
+    cm3f              = false;
   };
   
   /// Destroy a Model_parameters object.

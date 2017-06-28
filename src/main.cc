@@ -145,6 +145,7 @@ int print_PGFem3D_run_info(int argc,char *argv[],
               "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n");
       break;
     case CM:
+    case CM3F:
     {
       PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
       switch(opts->cm)
@@ -1034,7 +1035,7 @@ int single_scale_main(int argc,char *argv[])
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
-        if (options.analysis_type == CM) {
+        if (options.analysis_type == CM && options.analysis_type == CM3F) {
         /* parameter list and initialize const. model at int points.
          * NOTE: should catch/handle returned error flag...
          */
@@ -1052,7 +1053,8 @@ int single_scale_main(int argc,char *argv[])
     
         /* alocation of pressure variables */
         switch(options.analysis_type){
-          case TF:
+          case TF: // intented not to have break
+          case CM3F:
             if(grid.element[0].toe==10 && fv[ia].ndofn==3)
             {
               fv[ia].npres = 1;
@@ -1093,7 +1095,7 @@ int single_scale_main(int argc,char *argv[])
                 options.analysis_type,options.plc);
         
         /* \/ initialized element varialbes */
-        if(options.analysis_type==TF)
+        if(options.analysis_type==TF || options.analysis_type==CM3F)
         {
           for (int e=0;e<grid.ne;e++)
           {
@@ -1338,7 +1340,7 @@ int single_scale_main(int argc,char *argv[])
       
         /*=== OUTPUT ===*/
         /* update output stuff for CM interface */
-        if(options.analysis_type == CM && options.cm!=0)
+        if((options.analysis_type == CM || options.analysis_type == CM3F) && options.cm!=0)
         {  
           constitutive_model_update_output_variables(&grid,
                                                      &mat,
@@ -1414,7 +1416,8 @@ int single_scale_main(int argc,char *argv[])
   
   for(int ia=0; ia<mp.physicsno; ia++)
   {
-    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && 
+      (options.analysis_type == CM || options.analysis_type == CM3F))
       err += destory_temporal_field_varialbes(fv+ia,1);
     else
       err += destory_temporal_field_varialbes(fv+ia,0);

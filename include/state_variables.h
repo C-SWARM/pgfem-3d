@@ -33,7 +33,10 @@ class State_variables
   /** Handle to vector of state variables */
   Matrix<double> *state_vars;
   int *flags;
-
+  
+  Matrix<double> pressure;
+  Matrix<double> tFr;
+  
   size_t n_Fs;
   size_t n_flags;
   
