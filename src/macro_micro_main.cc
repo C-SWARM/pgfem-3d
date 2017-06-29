@@ -111,6 +111,7 @@ int multi_scale_main(int argc, char **argv)
 
   /*=== READ COMM HINTS ===*/
     COMMUNICATION_STRUCTURE *com = NULL;
+//    COMMUNICATION_STRUCTURE *com = 0;
 
   {
 
@@ -124,6 +125,7 @@ int multi_scale_main(int argc, char **argv)
     com[0].hints = Comm_hints_construct();
     int ch_err = Comm_hints_read_filename(com[0].hints, fn);
     MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+
     if (ch_err) {
       Comm_hints_destroy(com[0].hints);
       com[0].hints = NULL;
@@ -134,6 +136,8 @@ int multi_scale_main(int argc, char **argv)
     }
     free(fn);
   }
+
+
 
   /*=== INITIALIZE SCALES ===*/
   MACROSCALE *macro = NULL;
