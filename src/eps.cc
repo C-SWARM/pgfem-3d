@@ -93,8 +93,8 @@ EPS* build_eps_il(const long ne,
         pom[i].dam = (damage*) PGFEM_calloc (II,sizeof(damage));
         
         /* Generalized constitutive modeling interface */
-        if (analysis == CM) {
-          pom[i].model = new Constitutive_model;
+        if (analysis == CM || analysis == CM3F) {
+          pom[i].model = new Constitutive_model[II];
         }
         
         /* Pressure integration part */
@@ -116,7 +116,7 @@ EPS* build_eps_il(const long ne,
         }
         
         for (j=0;j<II;j++){
-          if (analysis == CM) {
+          if (analysis == CM || analysis == CM3F) {
             pom[i].model[j].vars_list = statv_list;
             pom[i].model[j].model_id = n_state_varialbles;
             n_state_varialbles++;
@@ -912,7 +912,7 @@ void destroy_eps_il(EPS* eps,
     free(p_eps->dam);
     free(p_eps->T);
     free(p_eps->d_T);
-    delete p_eps->model;
+    delete[] p_eps->model;
     if(p_eps->F != NULL) dealoc2(p_eps->F,NDN);
     if(p_eps->Fn != NULL) dealoc2(p_eps->Fn,NDN);
     if(p_eps->P != NULL) dealoc2(p_eps->P,NDN);

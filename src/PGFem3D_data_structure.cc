@@ -188,7 +188,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   fv->BS_RR  = aloc1(DomDof_myrank);
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
-    if(opts->analysis_type == CM)
+    if(opts->analysis_type == CM || opts->analysis_type == CM3F)
     {      
       const ELEMENT *elem = grid->element;
       int n_state_varialbles = 0;

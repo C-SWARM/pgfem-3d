@@ -419,7 +419,8 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
         stiffmat_3f_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,
                 x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
         break;
-      case CM:
+      case CM:  // intened to flow
+      case CM3F:
         err += stiffness_el_constitutive_model(fe,lk,r_e,grid,mat,fv,sol,load,crpl,
                                                opts,mp,mp_id,dt);
             
@@ -498,11 +499,12 @@ static int el_stiffmat_MP(int eid,
   int total_Lagrangian = 0;  
   switch(opts->analysis_type)
   {
-    case DISP: // intented to flow
+    case DISP: // intended to flow
     case TF:
       total_Lagrangian = 1;
       break;
-    case CM:
+    case CM:   // intended to flow 
+    case CM3F:
       if(opts->cm != UPDATED_LAGRANGIAN)
         total_Lagrangian = 1;
       

@@ -108,10 +108,10 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F)&& opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
   
   int nsd = 3;
@@ -174,8 +174,9 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   
           post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,Pn);
           break;
-        }           
-        case CM:
+        }
+        case CM:   // intended to flow      
+        case CM3F:
         {
           post_processing_compute_stress4CM(&fe,e,ip,S.data,&Jnp1,hommat,elem,eps);
           break;
@@ -204,10 +205,10 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F) && opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;    
   
   int nsd = 3;
@@ -238,7 +239,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
       fe.update_shape_tensor();
       fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
-      if(opts->analysis_type==CM)
+      if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
@@ -275,10 +276,10 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F)&& opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;    
   
   int nsd = 3;
@@ -309,7 +310,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
       fe.update_shape_tensor();
       fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
-      if(opts->analysis_type==CM)
+      if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
@@ -349,10 +350,10 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F) && opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;    
   
   double L_gn = 0.0;
@@ -396,10 +397,10 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F)&& opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0; 
   
   int nsd = 3;
@@ -435,7 +436,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
       fe.update_shape_tensor();
       fe.update_deformation_gradient(nsd,u.m_pdata,F.data);
       
-      if(opts->analysis_type==CM)
+      if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
@@ -480,10 +481,10 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
   int total_Lagrangian = 1;
   int intg_order = 1;
 
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     intg_order = 0;
     
-  if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+  if((opts->analysis_type==CM || opts->analysis_type==CM3F)&& opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;      
   
   int nsd = 3;

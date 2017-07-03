@@ -751,7 +751,7 @@ int read_initial_values_lagcy(GRID *grid,
   }
   else
   {
-    if(opts->analysis_type == CM && opts->cm == UPDATED_LAGRANGIAN)
+    if((opts->analysis_type == CM || opts->analysis_type == CM3F) && opts->cm == UPDATED_LAGRANGIAN)
     {
       opts->cm = TOTAL_LAGRANGIAN;
       if(myrank==0)
@@ -883,7 +883,7 @@ int read_initial_for_Mechanical(FILE *fp,
   char line[1024];
   double dt = ts->times[1] - ts->times[0];;
     
-  if(opts->analysis_type == CM && opts->cm == UPDATED_LAGRANGIAN)
+  if((opts->analysis_type == CM || opts->analysis_type == CM3F) && opts->cm == UPDATED_LAGRANGIAN)
   {
     opts->cm = TOTAL_LAGRANGIAN;
     if(myrank==0)

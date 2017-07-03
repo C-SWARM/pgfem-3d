@@ -45,6 +45,7 @@ void Mat_3D_orthotropic (const long nmat,
     case DISP:
     case TF:
     case CM:
+    case CM3F:  
       M[0][0] = 1./mater[i].Ex;            M[0][1] = -mater[i].nyz/mater[i].Ex;  M[0][2] = -mater[i].nyz/mater[i].Ex;
       M[1][0] = -mater[i].nyz/mater[i].Ex; M[1][1] = 1./mater[i].Ex;             M[1][2] = -mater[i].nyz/mater[i].Ex;
       M[2][0] = -mater[i].nyz/mater[i].Ex; M[2][1] = -mater[i].nyz/mater[i].Ex;  M[2][2] = 1./mater[i].Ex;
@@ -182,6 +183,7 @@ void hom_matrices (long ***a,
 	  case MINI_3F:
 	  case TF:
 	  case CM:
+	  case CM3F:
 	    
 	    /* Mooney - Rivlin */
 	    /* This is a material input from file LOOK OUT */

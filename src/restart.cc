@@ -219,7 +219,7 @@ int write_restart_constitutive_model(GRID *grid,
     fprintf(fp, "\n");    
   }
   
-  if(opts->analysis_type==CM)
+  if(opts->analysis_type==CM || opts->analysis_type==CM3F)
   {  
     for (int e = 0; e < grid->ne; e++)
     {

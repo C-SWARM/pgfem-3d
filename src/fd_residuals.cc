@@ -150,7 +150,8 @@ static int fd_res_elem_MP(double *be,
     case TF:
       total_Lagrangian = 1;
       break;
-    case CM:
+    case CM:   // intented to flow
+    case CM3F:      
       if(opts->cm != UPDATED_LAGRANGIAN)
         total_Lagrangian = 1;
       
@@ -243,10 +244,11 @@ static int fd_res_elem_MP(double *be,
         dealoc1(bf);
         break;
       }
-      case CM:
+      case CM:  // intented to flow
+      case CM3F:  
         err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
-                                               opts,mp,mp_id,dt);                                            
-        break;      
+                                               opts,mp,mp_id,dt);
+        break;
       default:
         err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
                              mat->hommat,x,y,z,fv->eps,fv->sig,r_e,fv->npres,
@@ -510,7 +512,7 @@ int fd_res_compute_reactions_MP(GRID *grid,
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we
     // didn't play with any rate sensitive behavior
-    if (opts->analysis_type == CM) 
+    if (opts->analysis_type == CM || opts->analysis_type == CM3F) 
       constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
 
     long *cn = aloc1l (ndofe);

@@ -121,11 +121,12 @@ int momentum_equation_load4pBCs(GRID *grid,
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
-    case DISP: // intented to flow
+    case DISP: // intended to flow
     case TF:
       total_Lagrangian = 1;
       break;
-    case CM:
+    case CM:   // intended to flow
+    case CM3F: 
       if(opts->cm != UPDATED_LAGRANGIAN)
         total_Lagrangian = 1;
       
@@ -238,6 +239,7 @@ int momentum_equation_load4pBCs(GRID *grid,
         nodecoord_total (nne_ve,ve_nod,node,x,y,z);
         break;
       case CM:
+      case CM3F:
       {
         switch(opts->cm)
         {

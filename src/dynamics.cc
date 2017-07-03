@@ -204,7 +204,10 @@ int residual_with_inertia(FEMLIB *fe,
 {
   int err = 0;
   	
-  if(!(opts->analysis_type == DISP || opts->analysis_type == TF || opts->analysis_type == CM))
+  if(!(opts->analysis_type == DISP 
+    || opts->analysis_type == TF 
+    || opts->analysis_type == CM
+    || opts->analysis_type == CM3F))
   {
     int myrank = 0;  
     MPI_Comm_rank (MPI_COMM_WORLD,&myrank);     
@@ -289,7 +292,8 @@ int residual_with_inertia(FEMLIB *fe,
 	    break;
 	    
 	  }
-	  case CM:
+	  case CM:   //intended to flow
+	  case CM3F:
 	  {
   	  double *f_n   = aloc1(ndofe);    
     	memset(f_n, 0, sizeof(double)*ndofe);
@@ -380,7 +384,8 @@ int stiffness_with_inertia(FEMLIB *fe,
   
   if(opts->analysis_type == DISP || 
      opts->analysis_type == TF   || 
-     opts->analysis_type == CM)      
+     opts->analysis_type == CM   ||
+     opts->analysis_type == CM3F)      
   {    
     for(int ip = 1; ip<=fe->nint; ip++)
     {
@@ -425,7 +430,8 @@ int stiffness_with_inertia(FEMLIB *fe,
         Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
 
       break;
-    case CM:
+    case CM:  // intended to flow
+    case CM3F:
     {
       err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
                                                        grid,mat,fv,sol,load,crpl,

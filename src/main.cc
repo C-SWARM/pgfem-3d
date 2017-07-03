@@ -1035,7 +1035,7 @@ int single_scale_main(int argc,char *argv[])
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
-        if (options.analysis_type == CM && options.analysis_type == CM3F) {
+        if (options.analysis_type == CM || options.analysis_type == CM3F) {
         /* parameter list and initialize const. model at int points.
          * NOTE: should catch/handle returned error flag...
          */
@@ -1053,7 +1053,7 @@ int single_scale_main(int argc,char *argv[])
     
         /* alocation of pressure variables */
         switch(options.analysis_type){
-          case TF: // intented not to have break
+          case TF: // intended not to have break
           case CM3F:
             if(grid.element[0].toe==10 && fv[ia].ndofn==3)
             {
@@ -1070,7 +1070,7 @@ int single_scale_main(int argc,char *argv[])
               }
             }
             break;
-          case DISP: // intented not to have break
+          case DISP: // intended not to have break
           case CM:
             if(fv[ia].npres != 0){
               fv[ia].npres = 0;
