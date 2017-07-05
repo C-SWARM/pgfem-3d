@@ -79,7 +79,6 @@ int multi_scale_main(int argc, char **argv)
   int debug = 0;
 
   /* get macro and micro parts of the command line */
-  {
     int rank_world = 0;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank_world);
     get_macro_micro_option_blocks(rank_world,argc,argv,
@@ -95,7 +94,6 @@ int multi_scale_main(int argc, char **argv)
     micro_argv = argv + micro_start - 1;
     micro_argc++;
     sprintf(micro_argv[1],"-ms");
-  }
 
   while(debug);
 
@@ -110,38 +108,78 @@ int multi_scale_main(int argc, char **argv)
 
 
   /*=== READ COMM HINTS ===*/
-    COMMUNICATION_STRUCTURE *com = NULL;
-//    COMMUNICATION_STRUCTURE *com = 0;
+//could be smoothed out (being done twice)
+//    COMMUNICATION_STRUCTURE *com = NULL;
+//    com[0].hints = NULL;
 
-  {
+    COMMUNICATION_STRUCTURE *com = malloc(sizeof(COMMUNICATION_STRUCTURE));
 
     int myrank = 0;
-    err += MPI_Comm_rank(mpi_comm,&myrank);
+//    err += MPI_Comm_rank(mpi_comm,&myrank);
+    MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+//    myrank = &rank_world;
 
     PGFem3D_opt options;
-    re_parse_command_line(myrank,2,argc,argv,&options);
+//    re_parse_command_line(myrank,2,argc,argv,&options);
 
-    char *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
-    com[0].hints = Comm_hints_construct();
-    int ch_err = Comm_hints_read_filename(com[0].hints, fn);
-    MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+//    char *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
 
-    if (ch_err) {
-      Comm_hints_destroy(com[0].hints);
-      com[0].hints = NULL;
-      if (myrank == 0) {
-        PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
-                "Proceeding using fallback functions.\n");
-      }
-    }
-    free(fn);
-  }
-
-
-
-  /*=== INITIALIZE SCALES ===*/
   MACROSCALE *macro = NULL;
   MICROSCALE *micro = NULL;
+  char *fn = malloc(256*sizeof(char));
+
+  if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
+
+//      parse_command_line(argc,argv,myrank,&options);
+      re_parse_command_line(myrank,2,macro_argc,macro_argv,&options);
+
+
+      *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
+      com[0].hints = Comm_hints_construct();
+      int ch_err = Comm_hints_read_filename(com[0].hints, fn);
+
+      initialize_MACROSCALE(&macro);
+      build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
+//      MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+      if (ch_err) {
+        Comm_hints_destroy(com[0].hints);
+        com[0].hints = NULL;
+        if (myrank == 0) {
+          PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
+                  "Proceeding using fallback functions.\n");
+        }
+      }
+
+  } else {/*====== MICROSCALE =======*/
+//      parse_command_line(argc,argv,myrank,&options);
+      re_parse_command_line(myrank,2,micro_argc,micro_argv,&options);
+
+     *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
+      com[0].hints = Comm_hints_construct();
+      int ch_err = Comm_hints_read_filename(com[0].hints, fn);
+  
+      initialize_MICROSCALE(&micro);
+      build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id,com[mp_id].hints);
+
+//      MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+      if (ch_err) {
+        Comm_hints_destroy(com[0].hints);
+        com[0].hints = NULL;
+        if (myrank == 0) {
+          PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
+                  "Proceeding using fallback functions.\n");
+        }
+      }
+
+    }
+
+
+//      free(fn);
+  
+
+  /*=== INITIALIZE SCALES ===*/
+//  MACROSCALE *macro = NULL;
+//  MICROSCALE *micro = NULL;
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
     initialize_MACROSCALE(&macro);
     build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
