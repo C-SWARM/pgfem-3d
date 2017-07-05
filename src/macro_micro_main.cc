@@ -108,29 +108,17 @@ int multi_scale_main(int argc, char **argv)
 
 
   /*=== READ COMM HINTS ===*/
-//could be smoothed out (being done twice)
-//    COMMUNICATION_STRUCTURE *com = NULL;
-//    com[0].hints = NULL;
-
-    COMMUNICATION_STRUCTURE *com = malloc(sizeof(COMMUNICATION_STRUCTURE));
-
-    int myrank = 0;
-//    err += MPI_Comm_rank(mpi_comm,&myrank);
-    MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-//    myrank = &rank_world;
-
-    PGFem3D_opt options;
-//    re_parse_command_line(myrank,2,argc,argv,&options);
-
-//    char *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
-
+//allocate memory
+  COMMUNICATION_STRUCTURE *com = malloc(sizeof(COMMUNICATION_STRUCTURE));
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
+  PGFem3D_opt options;
   MACROSCALE *macro = NULL;
   MICROSCALE *micro = NULL;
   char *fn = malloc(256*sizeof(char));
-
+//load comm hints, macro/micro class, macro/micro filenames
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
 
-//      parse_command_line(argc,argv,myrank,&options);
       re_parse_command_line(myrank,2,macro_argc,macro_argv,&options);
 
 
@@ -140,7 +128,6 @@ int multi_scale_main(int argc, char **argv)
 
       initialize_MACROSCALE(&macro);
       build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
-//      MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
       if (ch_err) {
         Comm_hints_destroy(com[0].hints);
         com[0].hints = NULL;
@@ -151,7 +138,6 @@ int multi_scale_main(int argc, char **argv)
       }
 
   } else {/*====== MICROSCALE =======*/
-//      parse_command_line(argc,argv,myrank,&options);
       re_parse_command_line(myrank,2,micro_argc,micro_argv,&options);
 
      *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
@@ -161,7 +147,6 @@ int multi_scale_main(int argc, char **argv)
       initialize_MICROSCALE(&micro);
       build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id,com[mp_id].hints);
 
-//      MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
       if (ch_err) {
         Comm_hints_destroy(com[0].hints);
         com[0].hints = NULL;
@@ -174,12 +159,9 @@ int multi_scale_main(int argc, char **argv)
     }
 
 
-//      free(fn);
   
 
   /*=== INITIALIZE SCALES ===*/
-//  MACROSCALE *macro = NULL;
-//  MICROSCALE *micro = NULL;
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
     initialize_MACROSCALE(&macro);
     build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
