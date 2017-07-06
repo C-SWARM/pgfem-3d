@@ -159,7 +159,7 @@ int multi_scale_main(int argc, char **argv)
     }
 
 
-  
+ free(fn); 
 
   /*=== INITIALIZE SCALES ===*/
   if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
@@ -678,7 +678,7 @@ int multi_scale_main(int argc, char **argv)
   /* destroy the PGFEM communicator */
   err += destroy_PGFEM_mpi_comm(mpi_comm);
   free(mpi_comm);
-
+  free(com);
   /* finalize and exit */
   err += PGFEM_finalize_io();
   err += MPI_Finalize();
