@@ -544,11 +544,11 @@ void stiffmat_3f_el(double *Ks,
     TF_Kup_ip(Kup,&fe,F,npres,Np,dt_alpha_1_minus_alpha);     
     TF_Kpt_ip(Kpt,&fe,F,npres,nVol,Np,Nt,dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt,&fe,F,nVol,Nt,Upp,dt_alpha_1_minus_alpha);
-
-    Kpu.trans(Kup);
-    Ktp.trans(Kpt);
   } 
-            
+
+  Kpu.trans(Kup);
+  Ktp.trans(Kpt);
+                
   condense_K_out(Ks,nne,nsd,npres,nVol,
                  Kuu.m_pdata,Kut.m_pdata,Kup.m_pdata,
                  Ktu.m_pdata,Ktt.m_pdata,Ktp.m_pdata,
@@ -665,12 +665,12 @@ void residuals_3f_el(double *f,
 		if(npres==1)
       TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);
       
-    Ktp.trans(Kpt);
-    
     TF_Ru_ip(fu,&fe,F,S,Pn);
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
   }
+
+  Ktp.trans(Kpt);
 
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
                     Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
@@ -841,7 +841,7 @@ void residuals_3f_w_inertia_el(double *f,
 		if(npres==1)
       TF_Kup_ip(Kup,&fe,F2,npres,Np,dt_alpha_1_minus_alpha);     
 
-    Ktp.trans(Kpt);
+    
     TF_Ru_ip(fu1,&fe,F1,S1,Pn1);
     TF_Rp_ip(fp1,&fe,F1,npres,Np,Tn1);
     TF_Rt_ip(ft1,&fe,F1,nVol,Nt,Pn1,Up1);
@@ -850,6 +850,7 @@ void residuals_3f_w_inertia_el(double *f,
     TF_Rp_ip(fp2,&fe,F2,npres,Np,Tn2);
     TF_Rt_ip(ft2,&fe,F2,nVol,Nt,Pn2,Up2);    
   }
+  Ktp.trans(Kpt);
 
   for(int a=0; a<nne*nsd; a++)
   	fu.m_pdata[a] = dt_alpha_1*fu2.m_pdata[a] + dt_alpha_2*fu1.m_pdata[a];  	
@@ -1100,18 +1101,19 @@ void evaluate_PT_el(const int ii,
     Up = Up*kappa;
                   
     TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);     
-    Kpu.trans(Kup);
     
     TF_Kpt_ip(Kpt,&fe,F,npres,nVol,Np,Nt,-1.0);
     TF_Ktt_ip(Ktt,&fe,F,nVol,Nt,Upp,-1.0);        
-    Ktp.trans(Kpt);
 
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);				
   }
 
   free(u);
-  free(P);  
+  free(P);
+  
+  Kpu.trans(Kup);
+  Ktp.trans(Kpt);
   
   Matrix<double> theta(nVol,1,0.0),KptI(nVol,nVol,0.0);  
   KptI.inv(Kpt);
@@ -1283,12 +1285,9 @@ void evaluate_PT_w_inertia_el(const int ii,
     Up2 = Up2*kappa;        
     
     TF_Kup_ip(Kup,&fe,F2,npres,Np,dt_alpha_1_minus_alpha);
-    Kpu.trans(Kup);
     
     TF_Kpt_ip(Kpt,&fe,F2,npres,nVol,Np,Nt,dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt,&fe,F2,nVol,Nt,Upp2,dt_alpha_1_minus_alpha); 
-    
-    Ktp.trans(Kpt);       
     
     TF_Rt_ip(ft1,&fe,F1,nVol,Nt,Pn1,Up1);
     TF_Rt_ip(ft2,&fe,F2,nVol,Nt,Pn2,Up2);
@@ -1296,6 +1295,9 @@ void evaluate_PT_w_inertia_el(const int ii,
     TF_Rp_ip(fp1,&fe,F1,npres,Np,Tn1);	
     TF_Rp_ip(fp2,&fe,F2,npres,Np,Tn2);	
   }
+  
+  Kpu.trans(Kup);
+  Ktp.trans(Kpt); 
 
   for(int a=0; a<nVol; a++)
   	ft.m_pdata[a] = dt_alpha_1*ft2.m_pdata[a] + dt_alpha_2*ft1.m_pdata[a];
