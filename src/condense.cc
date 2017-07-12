@@ -58,29 +58,21 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
                    Matrix<double> &fu, Matrix<double> &ft, Matrix<double> &fp, 
                    Matrix<double> &Kup, Matrix<double> &Ktp, Matrix<double> &Ktt, Matrix<double> &Kpt)                               
 {  
-	Matrix<double> KptI, KtpI, _fu;
-  KptI.initialization(npres,nVol); 
-	KtpI.initialization(npres,nVol);
-	 _fu.initialization(nne*nsd,1,0.0);
+	Matrix<double> KptI, KtpI, fu_add;
 
   KtpI.inv(Ktp);
   KptI.inv(Kpt);
 
-  Matrix<double> KupKtpI, KupKtpIKtt, KptIFp;
-     KupKtpI.initialization(nne*nsd,nVol); 
-  KupKtpIKtt.initialization(nne*nsd,nVol); 
-      KptIFp.initialization(nVol,   1   );     
+  Matrix<double> KttKptIFp, ft_KttKptIFp;
   
-     KupKtpI.prod(Kup,        KtpI  );
-  KupKtpIKtt.prod(KupKtpI,    Ktt   );
-      KptIFp.prod(KptI,       fp    );
-         _fu.prod(KupKtpI,    ft    );
-         _fu.prod(KupKtpIKtt, KptIFp);
+  fu_add.prod(Kup, KtpI);
+  KttKptIFp.prod(Ktt,KptI,fp);
+  ft_KttKptIFp.sub(ft,KttKptIFp);
+
+  fu_add.prod(ft_KttKptIFp);
   
-  
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
   int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);	
+  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);	
   
   if(myrank==-1)
   { 
@@ -91,13 +83,14 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
 	  Ktt.print("Ktt"); 
 	  Kpt.print("Kpt"); 
 	   fp.print("fp"); 
-	  _fu.print("fu");	  	  
+	  fu_add.print("fu");	  	  
 	  printf("-------------------------------------\n");	 
 	   	  	  
 	}  
               
   for(int a=0; a<nne*nsd; a++)
-    fe[a] =  fu.m_pdata[a] - _fu.m_pdata[a];
+    fe[a] =  fu.m_pdata[a] - fu_add.m_pdata[a];
+    
 }
 
 void condense_K2_to_K1(double *K11, int nne, int nsd, int npres,
