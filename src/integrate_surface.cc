@@ -141,10 +141,67 @@ int integrate_surface(const int nne,
       (*nod_2D)[5] = 6;
       break;
     }/* end switch face */
-    break;          
-    /*case 8: *//* Hex --> quad *//*
-
-      break;*/
+    break;
+  case 8: // Hex --> quad
+    err = get_quad_quadrature_rule(int_order,n_ip,ksi_2D,eta_2D,wt_2D);
+    *nne_2D = 4;
+    *ksi_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *eta_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *zet_3D = PGFEM_calloc(*n_ip,sizeof(double));
+    *nod_2D = PGFEM_calloc(*nne_2D,sizeof(int));    
+    switch(face_id)
+    {
+      case 0:
+        memcpy(*eta_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*ksi_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 3; // 4
+        (*nod_2D)[1] = 2; // 3
+        (*nod_2D)[2] = 1; // 2
+        (*nod_2D)[3] = 0; // 1
+        break;
+      case 1:
+        memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 7; // 8
+        (*nod_2D)[1] = 4; // 5
+        (*nod_2D)[2] = 5; // 6
+        (*nod_2D)[3] = 6; // 7
+        break;
+      case 2:
+        memcpy(*eta_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*zet_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 0; // 1
+        (*nod_2D)[1] = 1; // 2
+        (*nod_2D)[2] = 5; // 6
+        (*nod_2D)[3] = 4; // 5
+        break;
+      case 3:
+        memcpy(*zet_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*ksi_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 2; // 3
+        (*nod_2D)[1] = 6; // 7
+        (*nod_2D)[2] = 5; // 6
+        (*nod_2D)[3] = 1; // 2
+        break;
+       case 4:
+        memcpy(*zet_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 3; // 4
+        (*nod_2D)[1] = 7; // 8
+        (*nod_2D)[2] = 6; // 7
+        (*nod_2D)[3] = 2; // 3
+        break;
+       case 5:
+        memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
+        memcpy(*zet_3D,*eta_2D,(*n_ip)*sizeof(double));
+        (*nod_2D)[0] = 3; // 4
+        (*nod_2D)[1] = 0; // 1
+        (*nod_2D)[2] = 4; // 5
+        (*nod_2D)[3] = 7; // 8
+        break;
+      }
+      break; 
+    break;
   default:
     {
       int myrank = 0;
