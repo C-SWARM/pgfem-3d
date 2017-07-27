@@ -132,6 +132,7 @@ cm_placeholder_functions.cc \
 cm_uqcm.cc \
 state_variables.cc \
 constitutive_model.cc \
+constitutive_model_3f.cc \
 post_processing.cc \
 comm_hints.cc \
 restart.cc \
