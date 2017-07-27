@@ -453,10 +453,7 @@ class Model_parameters
   virtual int destroy_ctx(void **ctx) const { return 0; };
 
   /// User defined function to compute the linearization of the plastic
-  /// deformation w.r.t. the displacement variable. In the current
-  /// formulations, the formulation for the PDE is in terms of M =
-  /// inv(pFr). Thus the linearization is dM_du. ***This may be changed
-  /// in the future, deprecating this function***
+  /// deformation w.r.t. the displacement variable. 
   /// 
   /// \param[in]  m,       Constitutive model object
   /// \param[in]  ctx,     model specific user context
@@ -475,9 +472,33 @@ class Model_parameters
   {
     // there is no plastic deformation in this formulation, return zeros
     // in dM_du 
-    memset(dM_du, 0, nne * ndofn * 9 * sizeof(*dM_du));
+    memset(dM_du, 0, nne*ndofn*9*sizeof(double));
     return 0;
   };
+  
+
+  /// User defined function to compute the linearization of the plastic
+  /// deformation w.r.t. the volume variable. 
+  /// 
+  /// \param[in]  m,       Constitutive model object
+  /// \param[in]  ctx,     model specific user context
+  /// \param[in]  Grad_op, 4-index FE gradient operator where the 1st two indices are the node followed by the DOF.
+  /// \param[in]  nne,     number of nodes on the element (length of idx 1 in Grad_op)
+  /// \param[in]  ndofn,   number of dofs on each node (length of idx 2 in Grad_op)
+  /// \param[out] dM_du,   4-index FE linearization of M, same dimensions as Grad_op
+  /// \return non-zero on internal error
+  virtual int compute_dMdt(const Constitutive_model *m,
+                           const void *ctx,
+                           const double *Grad_op,
+                           const int Vno,
+                           double *dM_dt)
+  const
+  {
+    // there is no plastic deformation in this formulation, return zeros
+    // in dM_du 
+    memset(dM_dt, 0, Vno*9*sizeof(double));
+    return 0;
+  };  
 
   /// User defined function to set the initial values of the state
   /// variables for the particular model.
@@ -827,7 +848,17 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
-                                    double dt);                                    
+                                    double dt); 
+                                    
+int constitutive_model_update_NR(GRID *grid,
+                                 MATERIAL_PROPERTY *mat,
+                                 FIELD_VARIABLES *fv,
+                                 LOADING_STEPS *load,
+                                 PGFem3D_opt *opts,
+                                 MULTIPHYSICS *mp,
+                                 int mp_id,
+                                 const double dt,
+                                 double alpha);                                                                       
 
 #ifdef __cplusplus
 }
