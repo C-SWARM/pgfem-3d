@@ -569,7 +569,7 @@ int single_scale_main(int argc,char *argv[])
   MULTIPHYSICS mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
   
-  FIELD_VARIABLES         *fv  =         (FIELD_VARIABLES *) malloc(mp.physicsno*sizeof(FIELD_VARIABLES));
+  FIELD_VARIABLES         *fv  = new FIELD_VARIABLES[mp.physicsno];
   SOLVER_OPTIONS          *sol =          (SOLVER_OPTIONS *) malloc(mp.physicsno*sizeof(SOLVER_OPTIONS));
   COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(mp.physicsno*sizeof(COMMUNICATION_STRUCTURE));
 
@@ -1055,11 +1055,43 @@ int single_scale_main(int argc,char *argv[])
         switch(options.analysis_type){
           case TF: // intended not to have break
           case CM3F:
-            if(grid.element[0].toe==10 && fv[ia].ndofn==3)
+            fv[ia].npres = 1;
+            fv[ia].nVol = 1;
+            /*
+            if(fv[ia].ndofn==3) // discontinuous pressure
             {
-              fv[ia].npres = 1;
-              fv[ia].nVol = 1;
+              switch(grid.element[0].toe)
+              {
+                case 8: // P2/P0/V0
+                  fv[ia].npres = 8;
+                  fv[ia].nVol = 8;
+                  break;
+                case 10: // Q1/P0/V0
+                  fv[ia].npres = 4;
+                  fv[ia].nVol = 4;
+                  break;
+                default:
+                  fv[ia].npres = 1;
+                  fv[ia].nVol = 1;
+              }
             }
+            else // continuous pressure
+            {
+              switch(grid.element[0].toe)
+              {
+                case 8: // P2/P1/V0
+                  fv[ia].npres = 0;
+                  fv[ia].nVol = 8;
+                  break;
+                case 10: // Q1/P0/V0
+                  fv[ia].npres = 0;
+                  fv[ia].nVol = 4;
+                  break;
+                default:
+                  fv[ia].npres = 0;
+                  fv[ia].nVol = 1;
+              }
+            }*/
             break;
           case STABILIZED: case MINI: case MINI_3F:
             if(fv[ia].npres != 4){
@@ -1095,7 +1127,7 @@ int single_scale_main(int argc,char *argv[])
                 options.analysis_type,options.plc);
         
         /* \/ initialized element varialbes */
-        if(options.analysis_type==TF || options.analysis_type==CM3F)
+        if(options.analysis_type==TF)
         {
           for (int e=0;e<grid.ne;e++)
           {
@@ -1110,6 +1142,18 @@ int single_scale_main(int argc,char *argv[])
             for(int a=0; a<(fv[ia].nVol)*3; a++)
               fv[ia].eps[e].T[a] = 1.0;
           }
+        }
+        
+        if(options.analysis_type==CM3F)
+        {
+          fv[ia].Pnp1.initialization(grid.ne,fv[ia].npres,0.0);
+          fv[ia].Pnm1.initialization(grid.ne,fv[ia].npres,0.0);
+          fv[ia].Pn.initialization(  grid.ne,fv[ia].npres,0.0);
+
+          fv[ia].Vnp1.initialization(grid.ne,fv[ia].nVol,1.0);
+          fv[ia].Vnm1.initialization(grid.ne,fv[ia].nVol,1.0);
+          fv[ia].Vn.initialization(  grid.ne,fv[ia].nVol,1.0);
+
         }
       }
       else
@@ -1424,7 +1468,7 @@ int single_scale_main(int argc,char *argv[])
 
     err += destruct_field_varialbe(fv+ia, &grid, &options, &mp, ia);
   }
-  free(fv);
+  delete[] fv;
 
   err += destruct_loading_steps(&load, &mp);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
