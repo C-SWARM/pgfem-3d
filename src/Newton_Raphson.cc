@@ -922,8 +922,9 @@ long Newton_Raphson_with_LS(double *solve_time,
       case TF:
         update_3f(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,fv->dd_u,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
                 dt,t,mpi_comm,opts,sol->alpha,fv->u_n,fv->u_nm1,mp_id);
-        
         break;
+      case CM3F:
+        constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dt, sol->alpha);  
       default:
         break;
     }
