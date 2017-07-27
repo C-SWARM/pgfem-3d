@@ -111,6 +111,16 @@ typedef struct FIELD_VARIABLES {
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_n
   double subdivision_factor_np1;      /// use for linearly map subdivided parameters at t(n+1) 
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
+  /// pressure
+  Matrix<double> Pnp1;
+  Matrix<double> Pnm1;
+  Matrix<double> Pn;
+  
+  /// volume
+  Matrix<double> Vnp1;
+  Matrix<double> Vnm1;
+  Matrix<double> Vn;
+    
 } FIELD_VARIABLES;
 
 /// struct for field variables
