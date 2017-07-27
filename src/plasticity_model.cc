@@ -1806,19 +1806,6 @@ int cm3f_plasticity_compute_dM(const Constitutive_model *con,
     else
       dMdt(i,j) = 0.0*ttl::identity(i,j);
   }
-  
-  
-  
-  
-  
-  if(con->param->cm3f)
-  { 
-
-
-    
-  } 
-
-
 
   return err;
 }
