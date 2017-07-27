@@ -256,9 +256,9 @@ const
   return err;      
 }
 
-int get_F(const Constitutive_model *m,
-          double *F,
-          const int stepno)
+int HE_get_F(const Constitutive_model *m,
+             double *F,
+             const int stepno)
 {
   int err = 0;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
@@ -286,7 +286,7 @@ int HE_PARAM::get_F(const Constitutive_model *m,
                     const int stepno)
 const
 {
-  return get_F(m,F,stepno);
+  return HE_get_F(m,F,stepno);
 }
 
 int HE_PARAM::get_eF(const Constitutive_model *m,
@@ -294,7 +294,7 @@ int HE_PARAM::get_eF(const Constitutive_model *m,
                      const int stepno)
 const
 {
-  return get_F(m,F,stepno);
+  return HE_get_F(m,F,stepno);
 }
 
 int HE_PARAM::get_pF(const Constitutive_model *m,
