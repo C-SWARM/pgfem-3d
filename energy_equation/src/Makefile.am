@@ -6,4 +6,4 @@ AM_INCLUDES = -I../../include \
               $(cnstvm_include) \
               $(mkl_include)
 
-AM_CXXFLAGS = -I../include $(AM_INCLUDES)
+AM_CPPFLAGS = -I../include $(AM_INCLUDES)
