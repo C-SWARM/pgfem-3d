@@ -12,6 +12,7 @@ src/*driver
 install/
 
 # autotools stuff
+ar-lib
 Makefile.in
 Makefile
 /autom4te.cache
