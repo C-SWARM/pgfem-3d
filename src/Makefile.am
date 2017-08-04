@@ -186,6 +186,7 @@ CH_layer_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
 
 AM_CPPFLAGS = $(AM_INCLUDES)
+AM_CXXFLAGS = -fpermissive
 
 PGFem3D_LINK = $(PGFem3D_linker) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 BPA_driver_LINK = $(PGFem3D_linker) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@

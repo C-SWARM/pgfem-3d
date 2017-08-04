@@ -7,3 +7,4 @@ AM_INCLUDES = -I../../include \
               $(mkl_include)
 
 AM_CPPFLAGS = -I../include $(AM_INCLUDES)
+AM_CXXFLAGS = -fpermissive
