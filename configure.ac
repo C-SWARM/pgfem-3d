@@ -4,7 +4,7 @@
 AC_PREREQ([2.63])
 AC_INIT([PGFem3D], [X.X], [bugs@cswarm.nd.edu])
 AM_INIT_AUTOMAKE([-Wall foreign])
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
 AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
@@ -17,40 +17,29 @@ AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],
 		 [compile with MPI (parallelization) support. If none is found,
 		 MPI is not used. Default: yes])
 		 ],,[with_mpi=yes])
-#
-AX_PROG_CXX_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
-		use_mpi=no
- 		if test x"$with_mpi" = xyes; then
-		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
- 		else
-		  AC_MSG_WARN([Will not use MPI.])
- 		fi
-])
 
-AX_PROG_CC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
-		use_mpi=no
- 		if test x"$with_mpi" = xyes; then
-		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
- 		else
-		  AC_MSG_WARN([Will not use MPI.])
- 		fi
-])
+# Check our language requirements, looking for MPI if requested.
+AX_PROG_CXX_MPI([test "x$with_mpi" != xno],[have_mpicxx=yes])
+AX_PROG_CC_MPI([test "x$with_mpi" != xno],[have_mpicc=yes])
+AX_PROG_FC_MPI([test "x$with_mpi" != xno],[have_mpifc=yes])
 
-AX_PROG_FC_MPI([test x"$with_mpi" != xno],[use_mpi=yes],[
-		use_mpi=no
-		if test x"$with_mpi" = xyes; then
-		  AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
-		else
-		  AC_MSG_WARN([Will not use MPI.])
-		fi
-])
+# Consolidate have_mpi.
+AS_IF([test "x$have_mpicxx" == xyes -a "x$have_mpicc" == xyes -a "x$have_mpifc" == xyes],
+      [AC_DEFINE([HAVE_MPI], [1], [configure found a working MPI])
+       have_mpi=yes])
 
-AC_LANG_PUSH([C++])
-AC_C_RESTRICT
-AC_LANG_POP([C++])
+# Verify we have mpi if it was requested.
+AS_IF([test "x$with_mpi" == xyes -a "x$have_mpi" != xyes],
+      [AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])])
 
 AC_PROG_CC_STDC
 AC_PROG_RANLIB
+
+# Set up some language control.
+AC_LANG_PUSH([C++])
+AC_C_RESTRICT
+AC_LANG_POP([C++])
+AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
 
 AC_ARG_WITH(special-link, [AS_HELP_STRING([--with-special-link=<linker>],
 		 [Link the executable with the specified linking tool. Default: "$(CXX)"])
