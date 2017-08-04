@@ -164,17 +164,20 @@ $(all_sources) \
 super_main.cc
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
-VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
+VTK_IO_lib = -L$(top_builddir)/lib/VTK_IO/src -lPGFem3D_to_VTK
 
 energy_equation_include=-I$(top_srcdir)/energy_equation/include
-energy_equation_lib=-L$(top_srcdir)/energy_equation/src -lPGFem3D_Energy_equation
+energy_equation_lib=-L$(top_builddir)/energy_equation/src/ -lPGFem3D_Energy_equation
 
-AM_INCLUDES = $(VTK_IO_include) \
+AM_CPPFLAGS = -I$(top_srcdir)/include \
+              $(VTK_IO_include) \
               $(energy_equation_include) \
-	      $(hypre_include) \
-	      $(suitesparse_include) \
-	      $(cnstvm_include) \
-	      $(mkl_include)
+	          $(hypre_include) \
+	          $(suitesparse_include) \
+	          $(cnstvm_include) \
+	          $(mkl_include)
+
+AM_CXXFLAGS = -fpermissive
 
 all_libs = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 
@@ -184,9 +187,6 @@ IVD_driver_LDADD = $(all_libs)
 J2D_driver_LDADD = $(all_libs)
 CH_layer_driver_LDADD = $(all_libs)
 unit_test_43_driver_LDADD = $(all_libs)
-
-AM_CPPFLAGS = $(AM_INCLUDES)
-AM_CXXFLAGS = -fpermissive
 
 PGFem3D_LINK = $(PGFem3D_linker) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 BPA_driver_LINK = $(PGFem3D_linker) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
