@@ -10,57 +10,59 @@ AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
 
 # Checks for programs.
+AC_PROG_RANLIB
+
 # If --with-mpi=auto is used, try to find MPI, but use standard C compiler if it is not found.
 # If --with-mpi=yes is used, try to find MPI and fail if it isn't found.
 # If --with-mpi=no is used, use a standard C compiler instead.
-AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],
-		 [compile with MPI (parallelization) support. If none is found,
-		 MPI is not used. Default: yes])
-		 ],,[with_mpi=yes])
+AC_ARG_WITH(mpi,
+  [AS_HELP_STRING([--with-mpi{=yes,no,auto}],
+                  [Compile with MPI (parallelization) support @<:@default=yes@:>@])],
+  [], [with_mpi=yes])
 
 # Check our language requirements, looking for MPI if requested.
-AX_PROG_CXX_MPI([test "x$with_mpi" != xno],[have_mpicxx=yes])
-AX_PROG_CC_MPI([test "x$with_mpi" != xno],[have_mpicc=yes])
-AX_PROG_FC_MPI([test "x$with_mpi" != xno],[have_mpifc=yes])
+# - uncomment C and FC if required.
+# AX_PROG_CC_MPI([test "x$with_mpi" != xno], [have_mpicc=yes])
+# AC_PROG_CC_STDC
+# AX_PROG_FC_MPI([test "x$with_mpi" != xno], [have_mpifc=yes])
+AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 
-# Consolidate have_mpi.
-AS_IF([test "x$have_mpicxx" == xyes -a "x$have_mpicc" == xyes -a "x$have_mpifc" == xyes],
-      [AC_DEFINE([HAVE_MPI], [1], [configure found a working MPI])
-       have_mpi=yes])
-
-# Verify we have mpi if it was requested.
-AS_IF([test "x$with_mpi" == xyes -a "x$have_mpi" != xyes],
-      [AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])])
-
-AC_PROG_CC_STDC
-AC_PROG_RANLIB
+# Consolidate MPI checks
+# - uncoment as needed
+# AS_IF([test "x$have_mpicxx" != xyes -o "x$have_mpicc" != xyes],
+# AS_IF([test "x$have_mpicxx" != xyes -o "x$have_mpicc" != xyes -o "x$have_mpifc" != xyes],
+AS_IF([test "x$have_mpicxx" != xyes],
+  [AS_CASE($with_mpi,
+   [yes], [AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])],
+   [auto], [AC_MSG_WARN([No MPI compiler, disabling MPI])],
+   [])])
 
 # Set up some language control.
-AC_LANG_PUSH([C++])
+# - uncomment if we're configuring C as well
+# AC_LANG_PUSH([C++])
 AC_C_RESTRICT
-AC_LANG_POP([C++])
+# AC_LANG_POP([C++])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
 
-AC_ARG_WITH(special-link, [AS_HELP_STRING([--with-special-link=<linker>],
-		 [Link the executable with the specified linking tool. Default: "$(CXX)"])
-		 ],[special_link=yes],[special_link=no])
+AC_ARG_WITH(special-link,
+  [AS_HELP_STRING([--with-special-link=<linker>],
+		         [Link the executable with the specified linking tool @<:@default=$(CXX)@:>@])],
+  [special_link=yes],
+  [special_link=no])
 
 AS_IF([test "x$special_link" = xyes],
-	    [
-	    AC_MSG_NOTICE([Linking PGFem3D with "$with_special_link"])
-	    AC_SUBST([PGFem3D_linker],["$with_special_link"])
-	    ],[
-	    AC_SUBST([PGFem3D_linker],['$(CXX)'])
-	    ])
+  [AC_MSG_NOTICE([Linking PGFem3D with "$with_special_link"])
+   AC_SUBST([PGFem3D_linker],["$with_special_link"])],
+  [AC_SUBST([PGFem3D_linker],['$(CXX)'])])
 
 # Checks for libraries.
 # HYPRE
-AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],
-			      [Provide location of root directory for standard HYPREinstallation.])
-                  ],
-			      [AC_MSG_CHECKING([location of HYPRE])
-			      AC_MSG_RESULT(["$with_hypre_dir"])],
-                  [with_hypre_dir=no])
+AC_ARG_WITH(hypre-dir,
+  [AS_HELP_STRING([--with-hypre-dir=<path>],
+			      [Provide location of root directory for standard HYPRE installation.])],
+  [AC_MSG_CHECKING([location of HYPRE])
+   AC_MSG_RESULT(["$with_hypre_dir"])],
+  [with_hypre_dir=no])
 
 AS_IF([test "x$with_hypre_dir" != xno],
       [AC_SUBST([hypre_include],["-I$with_hypre_dir/include"])
@@ -68,21 +70,22 @@ AS_IF([test "x$with_hypre_dir" != xno],
       [AC_SUBST([hypre_lib],["-lHYPRE"])])
 
 # Constitutive_model
-AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
-                              [Provide location of root directory for standard Constitutive Model installation.])
-                              ],
-                              [AC_MSG_CHECKING([location of Constitutive Model])
-                              AC_MSG_RESULT(["$with_cnstvm_dir"])],
-                              [AC_MSG_CHECKING([location of Constitutive Model])
-                              AC_MSG_FAILURE([Constitutive Model: must provide package location!])
-                              ])
-AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include -I$with_cnstvm_dir/material/include -I$with_cnstvm_dir/elasticity/include -I$with_cnstvm_dir/crystal_plasticity/include"]) 
+AC_ARG_WITH(cnstvm-dir,
+  [AS_HELP_STRING([--with-cnstvm-dir=<path>],
+                  [Provide location of root directory for standard Constitutive Model installation.])],
+  [],
+  [AC_MSG_FAILURE([--with-cnstvm-dir required!])])
+
+AC_MSG_CHECKING([location of Constitutive Model])
+AC_MSG_RESULT(["$with_cnstvm_dir"])
+AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include -I$with_cnstvm_dir/material/include -I$with_cnstvm_dir/elasticity/include -I$with_cnstvm_dir/crystal_plasticity/include"])
 AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
 
 # MKL
-AC_ARG_WITH(mkl, [AS_HELP_STRING([--without-mkl],
-			      [Do not use Intel MKL libraries])
-			      ],,[with_mkl=yes])
+AC_ARG_WITH(mkl,
+  [AS_HELP_STRING([--without-mkl],
+			      [Do not use Intel MKL libraries])],
+  [],[with_mkl=yes])
 
 # CBLAS / LAPACK
 AC_ARG_WITH(mkl-override, [AS_HELP_STRING([--with-mkl-override=<include line>],
