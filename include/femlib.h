@@ -20,11 +20,6 @@ Define_Matrix(long);
 #define _Matrix_long 1
 #endif
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 typedef struct {
   Matrix(double) N_x, N_y, N_z, x, y, z;
   double ksi_ip, eta_ip, zet_ip, w_ip;
@@ -36,26 +31,26 @@ struct FEMLIB;
 #define TYPE_FEMLIB
 typedef struct FEMLIB FEMLIB;
 #endif
- 
+
 struct FEMLIB {
   Matrix(double) N;
   Matrix(double) dN;
-  
-	Matrix(double) ksi, eta, zet, weights;
-	Matrix(int) itg_ids;
-	Matrix(long) node_id;
 
-	long intg_order;
-		  
+    Matrix(double) ksi, eta, zet, weights;
+    Matrix(int) itg_ids;
+    Matrix(long) node_id;
+
+    long intg_order;
+
   Matrix(double) node_coord;
-  
+
   double detJ, detJxW, normal;
   Matrix(double) x_ip;
-  long elem_type, nint, nne, nsd, curt_elem_id, curt_itg_id;  
+  long elem_type, nint, nne, nsd, curt_elem_id, curt_itg_id;
   TEMP_VARIABLES temp_v;
   double ****ST_tensor;
   double *ST;
-         
+
  };
 
 long FEMLIB_determine_integration_type(int e_type, int i_order);
@@ -83,22 +78,18 @@ void FEMLIB_initialization_by_elem(FEMLIB *fe, int e, const ELEMENT *elem, const
 /// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
 /// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
 /// \return void
-void FEMLIB_initialization_by_elem_w_bubble(FEMLIB *fe, 
-                                            int e, 
-                                            const ELEMENT *elem, 
-                                            const NODE *node, 
-                                            int i_order, 
+void FEMLIB_initialization_by_elem_w_bubble(FEMLIB *fe,
+                                            int e,
+                                            const ELEMENT *elem,
+                                            const NODE *node,
+                                            int i_order,
                                             int is_total);
-                                            
+
 void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix(double) *N);
 void FEMLIB_elem_basis_V(FEMLIB *fe, long ip);
 void FEMLIB_update_shape_tensor(FEMLIB *fe);
 void FEMLIB_update_deformation_gradient(FEMLIB *fe, const int ndofn, double *u, Matrix(double) *F);
 double FEMLIB_elem_volume(FEMLIB *fe);
 void FEMLIB_destruct(FEMLIB *fe);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

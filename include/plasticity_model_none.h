@@ -16,10 +16,6 @@ struct Model_parameters;
 typedef struct Model_parameters Model_parameters;
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -30,14 +26,14 @@ int plasticity_model_none_initialize(Model_parameters *p);
 
 /// Construct and initialize the model context for calling functions
 /// through the constitutive model interface.
-/// 
+///
 /// \param[in,out] ctx - handle to an opaque model context object.
 /// \param[in] F The total deformation gradient.
 /// \param[in] eFnpa elastic deformation gradient at t = n + alpha
 /// \param[in] hFn thermal part deformation gradient at t = n
 /// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
 /// \param[in] is_coulpled_with_thermal flag for coupling with thermal
-/// \return non-zero on internal error. 
+/// \return non-zero on internal error.
 int plasticity_model_none_ctx_build(void **ctx,
                                     double *F,
                                     double *eFnpa,
@@ -52,10 +48,5 @@ int plasticity_model_none_ctx_build(void **ctx,
  * \return non-zero on internal error.
  */
 int plasticity_model_none_ctx_destroy(void **ctx);
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

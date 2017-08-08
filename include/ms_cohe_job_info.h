@@ -6,10 +6,6 @@
 #include <stdlib.h> /* for size_t */
 #include "PGFEM_io.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /* Job types */
   enum{JOB_NO_COMPUTE_EQUILIBRIUM, /**< do not compute micro equilibrium */
        JOB_COMPUTE_EQUILIBRIUM, /**< compute micro equilibrium */
@@ -25,23 +21,23 @@ extern "C" {
     int ndofe; /**< # dofs on associated macro element (nnode*ndim) */
     int elem_id; /**< macro element id */
     int proc_id; /**< processor ID (in macro communicator) that owns
-		    the macro element */
+            the macro element */
     int int_pt;
     int job_type; /**< flag to guide microscale computation */
     int print_flag; /**< flag to print during update */
 
     double int_wt; /**< macro integration weight including the
-		      transformation */
+              transformation */
 
     double *jump; /**< macro jump across interface [ndim]*/
     double *jump_n; /**< macro jump across interface at time (n)
-		       [ndim]. Modified by microscale only */
+               [ndim]. Modified by microscale only */
     double *normal; /**< macro normal to interface [ndim]*/
     double *traction; /**< current traction computed at the microscale
-			 [ndim]. Modified by microscale only */
+             [ndim]. Modified by microscale only */
 
     double *traction_n; /**< traction computed at time n. Modified by
-			   microscale only. */
+               microscale only. */
 
     double max_traction; /**< state variable. Maintained by microscale. */
     double max_jump;  /**< state variable. Maintained by microscale. */
@@ -52,7 +48,7 @@ extern "C" {
 
     double *K_00_contrib; /* element matrix [ndofe*ndofe]*/
 
-    long *loc_dof_ids; /**< macro local dof ids [ndofe] */  
+    long *loc_dof_ids; /**< macro local dof ids [ndofe] */
     long *g_dof_ids; /**< macro global dof ids [ndofe] */
 
     /* solution procedure */
@@ -62,41 +58,37 @@ extern "C" {
 
   }MS_COHE_JOB_INFO;
 
-  size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info);   
+  size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info);
 
   int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			     const int nnode);
+                 const int nnode);
 
   int build_MS_COHE_JOB_INFO_buffer(const size_t buff_len,
-				    const char *buffer,
-				    MS_COHE_JOB_INFO *info);
+                    const char *buffer,
+                    MS_COHE_JOB_INFO *info);
 
   int set_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			   const double *normal,
-			   const double *jump,
-			   const double *shape,
-			   const long *loc_dof_ids,
-			   const long *g_dof_ids);
+               const double *normal,
+               const double *jump,
+               const double *shape,
+               const long *loc_dof_ids,
+               const long *g_dof_ids);
 
   void destroy_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info);
 
   /** pack the job info into a contiguous buffer */
   int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
-			    const size_t buffer_len,
-			    char *buffer);
+                const size_t buffer_len,
+                char *buffer);
 
   /** unpack the buffer into a job. NOTE: the job must be the same
       size (nnodes) */
   int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			      const size_t buffer_len,
-			      const char *buffer);
+                  const size_t buffer_len,
+                  const char *buffer);
 
   /** print the job information to an output stream  */
   int print_MS_COHE_JOB_INFO(FILE *out,
-			     const MS_COHE_JOB_INFO *info);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                 const MS_COHE_JOB_INFO *info);
 
 #endif /* #ifndef  */

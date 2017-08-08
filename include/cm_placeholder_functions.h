@@ -11,10 +11,6 @@
 
 #include "constitutive_model.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Function to return 0 for a particular variable.
  */
@@ -58,9 +54,5 @@ int cm_compute_null_dMdu(const Constitutive_model *m,
 int cm_no_subdiv(const Constitutive_model *m,
                  double *subdiv_param,
                  const double dt);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

@@ -6,22 +6,18 @@
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Diagonal scale preconditioner */
   int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc);
 
   int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
-				 HYPRE_ParCSRMatrix vA,
-				 HYPRE_ParVector vb,
-				 HYPRE_ParVector vx);
+                 HYPRE_ParCSRMatrix vA,
+                 HYPRE_ParVector vb,
+                 HYPRE_ParVector vx);
 
   int PGFEM_HYPRE_ScaleDiagSolve(HYPRE_Solver vdiag_pc,
-				 HYPRE_ParCSRMatrix vA,
-				 HYPRE_ParVector vb,
-				 HYPRE_ParVector vx);
+                 HYPRE_ParCSRMatrix vA,
+                 HYPRE_ParVector vb,
+                 HYPRE_ParVector vx);
 
   int PGFEM_HYPRE_ScaleDiagDestroy(HYPRE_Solver vdiag_pc);
 
@@ -29,19 +25,15 @@ extern "C" {
   int PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc);
 
   int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
-			      HYPRE_ParCSRMatrix vA,
-			      HYPRE_ParVector vb,
-			      HYPRE_ParVector vx);
+                  HYPRE_ParCSRMatrix vA,
+                  HYPRE_ParVector vb,
+                  HYPRE_ParVector vx);
 
   int PGFEM_HYPRE_JacobiSolve(HYPRE_Solver vjacobi_pc,
-			      HYPRE_ParCSRMatrix vA,
-			      HYPRE_ParVector vb,
-			      HYPRE_ParVector vx);
+                  HYPRE_ParCSRMatrix vA,
+                  HYPRE_ParVector vb,
+                  HYPRE_ParVector vx);
 
   int PGFEM_HYPRE_JacobiDestroy(HYPRE_Solver vjacobi_pc);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef PGFEM_HYPRE_PRECOND_H */

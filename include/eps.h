@@ -3,10 +3,6 @@
 #ifndef EPS_H
 #define EPS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 #include "element.h"
 #include "volumetric_damage.h"
 #include <stdio.h>
@@ -67,31 +63,31 @@ typedef struct Constitutive_model Constitutive_model;
   */
   struct EPS{
     /** Elastic strain */
-    struct { 
+    struct {
       double *o,*f,*m,*i,
-	*d,eq,eq_m,eq_i;
+    *d,eq,eq_m,eq_i;
     }el;
 
     /** Plastic strain */
-    struct { 
+    struct {
       double *o,eq[2];
     }pl;
-  
+
     IL0_eps *il;
     IL1_eps *d_il;
-  
+
     /** Stabilized */
     IL2_eps *st;
 
     /** Volumetric Damage */
     damage *dam;
-  
+
     /** Generalized constitutive modeling interface */
     Constitutive_model *model;
 
     /** Crystal plasticity */
     double *T,*d_T,GD;
-  
+
     /** HOMOGENIZATION */
     double **F,
       **Fn,
@@ -107,9 +103,9 @@ typedef struct Constitutive_model Constitutive_model;
   typedef struct EPS EPS;
 
   EPS* build_eps_il (const long ne,
-		     const ELEMENT *elem,
-		     const int analysis,
-		     State_variables **statv_list);
+             const ELEMENT *elem,
+             const int analysis,
+             State_variables **statv_list);
 
   /**
    * Copy EPS for all elements. Additionally copies the rate of
@@ -118,47 +114,43 @@ typedef struct Constitutive_model Constitutive_model;
    * build_eps_il.
    */
   void copy_eps_list(EPS *dest,
-		     const EPS *src,
-		     const int ne,
-		     const ELEMENT *elem,
-		     const int analysis);
+             const EPS *src,
+             const int ne,
+             const ELEMENT *elem,
+             const int analysis);
 
   /**
    * return size of EPS for all elements in bytes
    */
   size_t sizeof_eps_list(const EPS *src,
-			 const int ne,
-			 const ELEMENT *elem,
-			 const int analysis);
+             const int ne,
+             const ELEMENT *elem,
+             const int analysis);
 
   /**
    * Pack EPS for all elements into a buffer.
    */
   void pack_eps_list(const EPS *src,
-		     const int ne,
-		     const ELEMENT *elem,
-		     const int analysis,
-		     char *buffer,
-		     size_t *pos);
+             const int ne,
+             const ELEMENT *elem,
+             const int analysis,
+             char *buffer,
+             size_t *pos);
 
   /**
    * Unpack EPS for all elements from a buffer.
    */
   void unpack_eps_list(EPS *dest,
-		       const int ne,
-		       const ELEMENT *elem,
-		       const int analysis,
-		       const char *buffer,
-		       size_t *pos);
+               const int ne,
+               const ELEMENT *elem,
+               const int analysis,
+               const char *buffer,
+               size_t *pos);
 
   /*** MUST be called before destroy_elem */
   void destroy_eps_il(EPS* eps,
-		      const ELEMENT *elem,
-		      const long ne,
-		      const int analysis);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+              const ELEMENT *elem,
+              const long ne,
+              const int analysis);
 
 #endif /* #ifndef  */

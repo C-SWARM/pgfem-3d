@@ -30,10 +30,6 @@ typedef struct Constitutive_model Constitutive_model;
 typedef struct Model_parameters Model_parameters;
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -62,11 +58,5 @@ int plasticity_model_BPA_ctx_build(void **ctx,
  * \return non-zero on internal error.
  */
 int plasticity_model_BPA_ctx_destroy(void **ctx);
-
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

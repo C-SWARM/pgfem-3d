@@ -9,11 +9,6 @@
 #include "PGFEM_mpi.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
-
   /** This function is used after creating the reorder mapping to
       re-assign the global ID numbers. The variable ndofd is the
       number of dofs on each node, nn is the number of nodes on the
@@ -23,9 +18,5 @@ extern "C" {
       previous value, then add it back after the new value is
       determined. */
   void renumber_ID (int ndofn,int nn,NODE *node,int *g_order,MPI_Comm comm, const int mp_id);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef RENUMBER_ID_H */

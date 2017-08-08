@@ -23,10 +23,6 @@
 
 #include "PGFem3D_data_structure.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
 typedef struct NODE NODE;
@@ -76,7 +72,7 @@ typedef struct Model_parameters Model_parameters;
  */
 struct Constitutive_model {
   const Model_parameters *param;
-  int model_id;  
+  int model_id;
   State_variables **vars_list;
 };
 
@@ -119,14 +115,14 @@ int init_all_constitutive_model(EPS *eps,
                                 const ELEMENT *elem,
                                 const int n_mat,
                                 const Model_parameters *param_list);
-/// save state variables 
+/// save state variables
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
 int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
                                                    GRID *grid);
-/// update state variables 
+/// update state variables
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
@@ -140,7 +136,7 @@ int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
 int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
-                                                  GRID *grid);                                
+                                                  GRID *grid);
 
 /**
  * Reset the cinstitutive model at each integration point in the
@@ -161,7 +157,7 @@ int constitutive_model_reset_state(EPS *eps,
  * (L) if non-zero. Otherwise L is unchanged.
  *
  * \return non-zero on internal error.
- */ 
+ */
 int constitutive_model_default_update_elasticity(const Constitutive_model *m,
                                                  Matrix_double *eF,
                                                  Matrix_double *L,
@@ -187,7 +183,7 @@ typedef int (*usr_update_elasticity) (const Constitutive_model *m,
  *   controls execution of the user-defined integration algorithm. This
  *   is the mechanism for passing model-specific information into the
  *   general function interface.
- * 
+ *
  * \return non-zero on internal error that should be handled by the
  * calling function.
  */
@@ -257,7 +253,7 @@ typedef int (*usr_get_var)(const Constitutive_model *m,
 
 /**
  * User defined function to store or get a state variable. This
- * function can be used to *MODIFY* the internal state variables. 
+ * function can be used to *MODIFY* the internal state variables.
  *
  * \param[in] m - constant reference to a Constitiutive_model object.
  * \param[in,out] var - contains state variables to store or get
@@ -265,9 +261,9 @@ typedef int (*usr_get_var)(const Constitutive_model *m,
  */
 typedef int (*usr_temporal_updates)(const Constitutive_model *m,
                                     State_variables *var);
-                           
+
 /**
- * User defined function to return a time dependent state variable. 
+ * User defined function to return a time dependent state variable.
  * Note that this
  * function *DOES NOT* modify the internal state variables. This
  * function shall be implemented such that destroying the returned
@@ -275,7 +271,7 @@ typedef int (*usr_temporal_updates)(const Constitutive_model *m,
  * Constitutive_model object.
  *
  * \param[in] m - constant reference to a Constitiutive_model object.
- * \param[in] t - constant t (time). 
+ * \param[in] t - constant t (time).
  * \param[out] var - contains the value of the state variable upon
  *                   exit.
  * \return non-zero on internal error
@@ -283,7 +279,7 @@ typedef int (*usr_temporal_updates)(const Constitutive_model *m,
 typedef int (*usr_get_var_of_t)(const Constitutive_model *m,
                            double *var,
                            const double t);
-                           
+
 /**
  * User defined function to return the deformation gradient. Note that
  * this function *DOES NOT* modify the internal state variables. This
@@ -298,7 +294,7 @@ typedef int (*usr_get_var_of_t)(const Constitutive_model *m,
  */
 typedef int (*usr_get_F)(const Constitutive_model *m,
                          Matrix_double *F);
-                         
+
 /**
  * User defined function to return the deformation gradient. Note that
  * this function *DOES NOT* modify the internal state variables. This
@@ -316,7 +312,7 @@ typedef int (*usr_get_F)(const Constitutive_model *m,
 typedef int (*usr_get_F_with_thermal)(const Constitutive_model *m,
                                       Matrix_double *F,
                                       const Matrix_double *hFI,
-                                      const int stepno);                         
+                                      const int stepno);
 
 /**
  * User defined function to destroy a context for the model. This
@@ -463,7 +459,7 @@ typedef int (*usr_unpack)(Constitutive_model *m,
  * Interface for accessing model parameters and modifying/updating the
  * associated state variable(s) at integration points.
  */
- 
+
 struct MATERIAL_CONSTITUTIVE_MODEL;
 #ifndef TYPE_MATERIAL_CONSTITUTIVE_MODEL
 #define TYPE_MATERIAL_CONSTITUTIVE_MODEL
@@ -475,14 +471,14 @@ struct ELASTICITY;
 #define TYPE_ELASTICITY
 typedef struct ELASTICITY ELASTICITY;
 #endif
- 
+
 struct Model_parameters {
   /** Pointer to isotropic material props */
   const HOMMAT *p_hmat;
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
   int uqcm;   // UQ study through constitutive model 0: no, or yes
-  
-  MATERIAL_CONSTITUTIVE_MODEL *cm_mat; 
+
+  MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
   ELASTICITY *cm_elast;
 
   /** access to user-defined functions */
@@ -504,7 +500,7 @@ struct Model_parameters {
   usr_info get_var_info;
   usr_get_F get_F;
   usr_get_F get_Fn;
-  usr_get_F get_Fnm1;  
+  usr_get_F get_Fnm1;
   usr_get_F get_pF;
   usr_get_F get_pFn;
   usr_get_F get_pFnm1;
@@ -512,13 +508,13 @@ struct Model_parameters {
   usr_get_F get_eFn;
   usr_get_F get_eFnm1;
   usr_get_F_with_thermal get_eF_of_hF;
-  
-    
+
+
   usr_get_var get_hardening;
   usr_get_var get_hardening_nm1;
   usr_get_var get_plast_strain_var;
   usr_get_var_of_t get_subdiv_param;
-  
+
   usr_w_restart write_restart;
   usr_r_restart read_restart;
 
@@ -713,7 +709,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
                                     double dt);
-                                    
+
 /// compute element residual vector in transient
 ///
 /// \param[in] fe finite element helper object
@@ -775,10 +771,6 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
-                                    double dt);                                    
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                                    double dt);
 
 #endif

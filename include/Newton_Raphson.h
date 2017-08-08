@@ -43,10 +43,6 @@
 #include "macro_micro_functions.h"
 #include "solver_file.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /// Compute residuals for Newton Raphson iteration
 ///
 /// \param[in] grid a mesh object
@@ -124,9 +120,5 @@ double Newton_Raphson_multiscale(const int print_level,
                                  double *sup_defl,
                                  double *pores,
                                  int *n_step);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef NEWTON_RAPHSON_H */

@@ -6,22 +6,18 @@
 #include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   typedef int (*cohesive_fptr)(double *val,
-			       const double *jump,
-			       const double *normal,
-			       const double *props,
-			       const double *vars);
+                   const double *jump,
+                   const double *normal,
+                   const double *props,
+                   const double *vars);
 
   typedef int (*cohesive_fptr2)(double *val,
-				double *val2,
-				const double *jump,
-				const double *normal,
-				const double *props,
-				const double *vars);
+                double *val2,
+                const double *jump,
+                const double *normal,
+                const double *props,
+                const double *vars);
 
 
   typedef struct COHESIVE_PROPS {
@@ -63,40 +59,40 @@ extern "C" {
 
   /* enumeration for cohesive model types */
   enum {CO_MOD_MS=-1,
-	CO_MOD_NEEDLEMAN,
-	CO_MOD_MATOUS_ARCINIEGA,
-	CO_MOD_PPR,
-	CO_MOD_VDW,
-	CO_MOD_LJ};
+    CO_MOD_NEEDLEMAN,
+    CO_MOD_MATOUS_ARCINIEGA,
+    CO_MOD_PPR,
+    CO_MOD_VDW,
+    CO_MOD_LJ};
 
   /** Reads/allocates the list of coheisive properties */
   int read_cohesive_properties(FILE *in,
-			       int *n_mat,
-			       cohesive_props **props,
-			       MPI_Comm mpi_comm);
+                   int *n_mat,
+                   cohesive_props **props,
+                   MPI_Comm mpi_comm);
 
-  /** Properly frees up memory from a list of coheive properties */ 
+  /** Properly frees up memory from a list of coheive properties */
   void destroy_cohesive_props(const int n_mat,
-			      cohesive_props *props);
+                  cohesive_props *props);
 
   int Needleman_potential(double *p_pot,
-			  const double *jump,
-			  const double *normal,
-			  const double *props,
-			  const double *vars);
+              const double *jump,
+              const double *normal,
+              const double *props,
+              const double *vars);
 
   int Needleman_traction(double *traction,
-			 const double *jump,
-			 const double *normal,
-			 const double *props,
-			 const double *vars);
+             const double *jump,
+             const double *normal,
+             const double *props,
+             const double *vars);
 
   int Needleman_tangents(double *mat_tan,
-			 double *geo_tan,
-			 const double *jump,
-			 const double *normal,
-			 const double *props,
-			 const double *vars);
+             double *geo_tan,
+             const double *jump,
+             const double *normal,
+             const double *props,
+             const double *vars);
 
   /*=== NOTE: The atomistic potentials are one dimensional and do not
     depend on the normal to the surface, but rather the direction of
@@ -107,65 +103,62 @@ extern "C" {
     on the deformation and therefore ther is no geometric tangent. */
 
   int vdWaals_potential(double *p_pot,
-			const double *jump,
-			const double *normal,
-			const double *props,
-			const double *vars);
+            const double *jump,
+            const double *normal,
+            const double *props,
+            const double *vars);
 
   int vdWaals_traction(double *traction,
-		       const double *jump,
-		       const double *normal,
-		       const double *props,
-		       const double *vars);
+               const double *jump,
+               const double *normal,
+               const double *props,
+               const double *vars);
 
   int vdWaals_tangents(double *mat_tan,
-		       double *geo_tan,
-		       const double *jump,
-		       const double *normal,
-		       const double *props,
-		       const double *vars);
+               double *geo_tan,
+               const double *jump,
+               const double *normal,
+               const double *props,
+               const double *vars);
 
   int LJ_potential(double *p_pot,
-		   const double *jump,
-		   const double *normal,
-		   const double *props,
-		   const double *vars);
+           const double *jump,
+           const double *normal,
+           const double *props,
+           const double *vars);
 
   int LJ_traction(double *traction,
-		  const double *jump,
-		  const double *normal,
-		  const double *props,
-		  const double *vars);
+          const double *jump,
+          const double *normal,
+          const double *props,
+          const double *vars);
 
   int LJ_tangents(double *mat_tan,
-		  double *geo_tan,
-		  const double *jump,
-		  const double *normal,
-		  const double *props,
-		  const double *vars);
+          double *geo_tan,
+          const double *jump,
+          const double *normal,
+          const double *props,
+          const double *vars);
 
   /** The multiscale functions return 0 for everything. The tangents
       and traction must be computed/assembled by other routines */
   int Multiscale_potential(double *p_pot,
-			   const double *jump,
-			   const double *normal,
-			   const double *props,
-			   const double *vars);
+               const double *jump,
+               const double *normal,
+               const double *props,
+               const double *vars);
 
   int Multiscale_traction(double *traction,
-			  const double *jump,
-			  const double *normal,
-			  const double *props,
-			  const double *vars);
+              const double *jump,
+              const double *normal,
+              const double *props,
+              const double *vars);
 
   int Multiscale_tangents(double *mat_tan,
-			  double *geo_tan,
-			  const double *jump,
-			  const double *normal,
-			  const double *props,
-			  const double *vars);
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+              double *geo_tan,
+              const double *jump,
+              const double *normal,
+              const double *props,
+              const double *vars);
 
 #endif

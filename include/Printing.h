@@ -1,10 +1,6 @@
 #ifndef PRINTING_H
 #define PRINTING_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /** Prints Title V1. */
 void PrintTitleV1();
 
@@ -22,11 +18,5 @@ void NoFileOutProc(char* filename, int proc);
 
 /** Prints output file missing error. */
 void NoFileOut(char* filename);
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
 
 #endif
