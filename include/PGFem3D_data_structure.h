@@ -372,20 +372,6 @@ int multiphysics_initialization(MULTIPHYSICS *mp);
 int construct_multiphysics(MULTIPHYSICS *mp,
                            int physicsno);
 
-/// set a physics
-///
-/// \param[in, out] mp an object for multiphysics stepping
-/// \param[in] obj_id id to access each physics
-/// \param[in] mp_id multiphysics id
-/// \param[in] n_dof number of degree freedom of the physics
-/// \param[in] name physics name
-/// \return non-zero on internal error
-int set_a_physics(MULTIPHYSICS *mp,
-                  int obj_id,
-                  int mp_id,
-                  int n_dof,
-                  char *name);
-
 /// destruct multiphysics object
 ///
 /// \param[in, out] mp an object for multiphysics stepping
