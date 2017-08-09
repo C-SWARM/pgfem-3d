@@ -15,10 +15,10 @@ int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
   return err;
 }
 
-void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
-                          Matrix(double) F, double Pn)
+void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix<double> S, HOMMAT *hommat, ELEMENT *elem, 
+                          Matrix<double> F, double Pn)
 {
-  Matrix(double) C,CI,devS;
+  Matrix<double> C,CI,devS;
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,CI,3,3,0.0);
   Matrix_construct_init(double,devS,3,3,0.0);
@@ -48,10 +48,10 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, Matrix(double) S,
   Matrix_cleanup(devS);        
 }
 
-void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, HOMMAT *hommat, ELEMENT *elem, 
-                          Matrix(double) F, double Pn)
+void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix<double> S, HOMMAT *hommat, ELEMENT *elem, 
+                          Matrix<double> F, double Pn)
 {
-  Matrix(double) C,CI,devS;
+  Matrix<double> C,CI,devS;
   Matrix_construct_init(double,C,3,3,0.0);
   Matrix_construct_init(double,CI,3,3,0.0);
   Matrix_construct_init(double,devS,3,3,0.0);
@@ -87,14 +87,14 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, Matrix(double) S, H
   Matrix_cleanup(devS);        
 }
 
-void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix(double) *S, double *Jnp1, 
+void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, Matrix<double> *S, double *Jnp1, 
                                                   HOMMAT *hommat, ELEMENT *elem, EPS *eps)
 {
   int total_Lagrangian = 0;
   int compute_stiffness = 0;
   
   Constitutive_model *m = &(eps[e].model[ip-1]);
-  Matrix(double) Fnp1, eFnp1;
+  Matrix<double> Fnp1, eFnp1;
   Matrix_construct_init(double,eFnp1,3,3,0.0);
   Matrix_construct_init(double,Fnp1,3,3,0.0);
   /* after update (i.e., converged step) the *Fn = *Fnp1 */
@@ -121,7 +121,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     total_Lagrangian = 0;
   
   int nsd = 3;
-  Matrix(double) F,S,LS;
+  Matrix<double> F,S,LS;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,S,3,3,0.0);
   Matrix_construct_init(double,LS,3,3,0.0);  
@@ -135,7 +135,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) Np, u, P;  
+    Matrix<double> Np, u, P;  
     Matrix_construct_init(double,Np,npres,1,0.0);
     Matrix_construct_init(double,u,nne*nsd,1,0.0);
     Matrix_construct_init(double,P,npres,1,0.0);        
@@ -231,7 +231,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     total_Lagrangian = 0;    
   
   int nsd = 3;
-  Matrix(double) F,LF;
+  Matrix<double> F,LF;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,LF,3,3,0.0);  
 
@@ -244,7 +244,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
+    Matrix<double> u;  
     Matrix_construct_init(double,u,nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
@@ -266,7 +266,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1;
+        Matrix<double> Fnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);
@@ -313,7 +313,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
     total_Lagrangian = 0;    
   
   int nsd = 3;
-  Matrix(double) F,LF;
+  Matrix<double> F,LF;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,LF,3,3,0.0);  
 
@@ -326,7 +326,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
+    Matrix<double> u;  
     Matrix_construct_init(double,u,nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
@@ -348,7 +348,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1, eFnp1;
+        Matrix<double> Fnp1, eFnp1;
         Matrix_construct_init(double,Fnp1,3,3,0.0);
         Matrix_construct_init(double,eFnp1,3,3,0.0);        
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
@@ -421,7 +421,7 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
       
       
       double Jnp1 = 0.0;
-      Matrix(double) Fnp1;
+      Matrix<double> Fnp1;
       Matrix_construct_redim(double,Fnp1,3,3);
       /* after update (i.e., converged step) the *Fn = *Fnp1 */
       m->param->get_Fn(m,&Fnp1);
@@ -455,7 +455,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
     total_Lagrangian = 0; 
   
   int nsd = 3;
-  Matrix(double) F,C;
+  Matrix<double> F,C;
   Matrix_construct_init(double,F,3,3,0.0);
   Matrix_construct_init(double,C,3,3,0.0);  
 
@@ -476,7 +476,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
+    Matrix<double> u;  
     Matrix_construct_init(double,u,nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
@@ -498,7 +498,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1, eFnp1;
+        Matrix<double> Fnp1, eFnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
         Matrix_construct_init(double,eFnp1,3,3,0.0);
                
@@ -568,7 +568,7 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
     FEMLIB_initialization_by_elem(&fe, e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
     
-    Matrix(double) u;  
+    Matrix<double> u;  
     Matrix_construct_init(double,u,nne*nsd,1,0.0);
                         
     for(int a = 0; a<nne; a++)
@@ -589,7 +589,7 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
       { 
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Matrix(double) Fnp1;
+        Matrix<double> Fnp1;
         Matrix_construct_redim(double,Fnp1,3,3);
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_Fn(m,&Fnp1);

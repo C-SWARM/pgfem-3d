@@ -569,7 +569,7 @@ static int el_stiffmat_MP(int eid,
   }
   
   int nVol = N_VOL_TREE_FIELD;
-  Matrix(double) lk;
+  Matrix<double> lk;
   Matrix_construct_redim(double,lk,ndofe,ndofe);
   Matrix_init(lk, 0.0);
   
@@ -688,7 +688,7 @@ int stiffmat_fd_MP(GRID *grid,
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
           mpi_comm,com->comm);
   
-  Matrix(int) Ddof;
+  Matrix<int> Ddof;
   Matrix_construct_redim(int, Ddof,com->nproc,1);
   
   Ddof.m_pdata[0] = com->DomDof[0];

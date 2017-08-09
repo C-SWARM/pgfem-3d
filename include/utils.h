@@ -18,7 +18,8 @@
 #include "bounding_element.h"
 #include "pgfem_comm.h"
 #include "sig.h"
-#include "eps.h"
+
+struct EPS;                                     // defined in eps.h
 
 /**
  * Scan the file for a valid line (non-blank and does not start with a

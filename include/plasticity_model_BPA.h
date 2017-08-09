@@ -20,15 +20,8 @@
 
 #include <stdio.h>
 
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
-
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
+struct Constitutive_model;
+struct Model_parameters;
 
 /**
  * Initialize the Model_parameters object for this particular model.

@@ -99,7 +99,7 @@ void DISP_resid_w_inertia_el(double *f,
   
   FEMLIB fe;
   FEMLIB_initialization_by_elem(&fe, ii, elem, node, INTG_ORDER,1);
-  Matrix(double) du;
+  Matrix<double> du;
   
   Matrix_construct_redim(double,du,3,1);
       
@@ -368,7 +368,7 @@ int stiffness_with_inertia(FEMLIB *fe,
   int ndofn = fv->ndofn;
   int ndofe = nne*ndofn;
 
-  Matrix(double) Kuu_K,Kuu_I, u, u_n;
+  Matrix<double> Kuu_K,Kuu_I, u, u_n;
   Matrix_construct_init(double,Kuu_I,ndofe,ndofe,0.0);
   Matrix_construct_init(double,Kuu_K,ndofe,ndofe,0.0);  
   Matrix_construct_init(double,u,ndofe,1,0.0);

@@ -20,8 +20,6 @@
 #include "data_structure_c.h"
 #include "index_macros.h"
 
-Define_Matrix(double);
-
 static void hommat_assign_values(HOMMAT *p_hmat)
 {
   /* parameter values from Mosby and Matous, MSMSE (2015) */
@@ -72,7 +70,7 @@ static int compute_stress(double * restrict sig,
   const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += m->param->compute_dudj(m,ctx,&p);
   p *= kappa;
-  Matrix_double S;
+  Matrix<double> S;
   Matrix_construct_redim(double,S,3,3);
   err += m->param->compute_dev_stress(m,ctx,&S);
 
@@ -95,7 +93,7 @@ static int compute_stress(double * restrict sig,
   sig[8] += p;
 
   return err;
-}                          
+}
 
 static void get_F(const double t,
                   const double nu,

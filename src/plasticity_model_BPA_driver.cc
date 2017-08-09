@@ -15,8 +15,6 @@
 #include "data_structure_c.h"
 #include "index_macros.h"
 
-Define_Matrix(double);
-
 void set_mat_values(HOMMAT *m)
 {
   /* parameter values from S. Holopanien, Mech. of Mat. (2013) */
@@ -59,7 +57,7 @@ int compute_stress(double * restrict sig,
   double p = 0;
   m->param->compute_dudj(m,ctx,&p);
   p *= kappa;
-  Matrix_double S;
+  Matrix<double> S;
   Matrix_construct_redim(double,S,3,3);
   m->param->compute_dev_stress(m,ctx,&S);
 

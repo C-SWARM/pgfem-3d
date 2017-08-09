@@ -42,8 +42,6 @@ static const double j2d_int_alg_tol = 1.0e-10;
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
 static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
-Define_Matrix(double);
-
 /* macros for easy access to Constitutive_model structure */
 #define cm_Fs(m) ((m)->vars_list[0][m->model_id].Fs)
 #define cm_Fs_data(m, idx) ((m)->vars_list[0][m->model_id].Fs[(idx)].m_pdata)
@@ -636,15 +634,15 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   for (int i=0; i < dim; i++) {
     for (int j=0; j < dim; j++) {
       for (int k=0; k < dim; k++) {
-	for (int l=0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  /* Deviatoric + Volumetric stiffness */
-	  Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
+    for (int l=0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      /* Deviatoric + Volumetric stiffness */
+      Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
                           * C_I[idx_2(i,j)] * C_I[idx_2(k,l)])
-			 - (2. * kappa * J * dudj
+             - (2. * kappa * J * dudj
                             * C_I[idx_2(i,k)] * C_I[idx_2(l,j)])
                          );
-	}
+    }
       }
     }
   }
@@ -716,9 +714,9 @@ static int j2d_modify_AST(const Constitutive_model *m,
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-	for (int l = 0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  L[idx4] -= evo * 0.5 * (Sbar[idx_2(i,j)] * S0[idx_2(k,l)]
+    for (int l = 0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      L[idx4] -= evo * 0.5 * (Sbar[idx_2(i,j)] * S0[idx_2(k,l)]
                                   + S0[idx_2(i,j)] * Sbar[idx_2(k,l)]);
         }
       }
@@ -730,7 +728,7 @@ static int j2d_modify_AST(const Constitutive_model *m,
 
 static int j2d_compute_AST(const Constitutive_model *m,
                            const void *ctx,
-                           Matrix_double *L)
+                           Matrix<double> *L)
 {
   int err = 0;
   err += j2d_compute_Lbar(m, ctx, L->m_pdata);
@@ -766,7 +764,7 @@ static int j2d_compute_sbar(const double *F,
 /* compute the deviatoric PK2 stress */
 static int j2d_Sdev(const Constitutive_model *m,
                     const void *CTX,
-                    Matrix_double *Sdev)
+                    Matrix<double> *Sdev)
 {
   int err = 0;
   auto ctx = (j2d_ctx *) CTX;
@@ -815,7 +813,7 @@ static int j2d_get_ep(const Constitutive_model *m,
 }
 
 static int j2d_identity_tensor(const Constitutive_model *m,
-                               Matrix_double *F)
+                               Matrix<double> *F)
 {
   int err = 0;
   Matrix_eye(*F, dim);
@@ -823,7 +821,7 @@ static int j2d_identity_tensor(const Constitutive_model *m,
 }
 
 static int j2d_get_Fn(const Constitutive_model *m,
-                      Matrix_double *Fn)
+                      Matrix<double> *Fn)
 {
   int err = 0;
   Matrix_copy(*Fn, cm_Fs(m)[FN]);
@@ -831,7 +829,7 @@ static int j2d_get_Fn(const Constitutive_model *m,
 }
 
 static int j2d_get_Fnp1(const Constitutive_model *m,
-                        Matrix_double *Fnp1)
+                        Matrix<double> *Fnp1)
 {
   int err = 0;
   Matrix_copy(*Fnp1, cm_Fs(m)[FNP1]);
@@ -925,8 +923,8 @@ static int j2d_get_subdiv_param(const Constitutive_model *m,
 
 int j2d_update_elasticity(const Constitutive_model *m,
                           const void *ctx,
-                          Matrix_double *L,
-                          Matrix_double *S,
+                          Matrix<double> *L,
+                          Matrix<double> *S,
                           const int compute_stiffness)
 {
   int err = 0;
@@ -934,10 +932,10 @@ int j2d_update_elasticity(const Constitutive_model *m,
   double S0[tensor] = {0};
   err += j2d_compute_S0_Sbar(m,ctx,S0,S->m_pdata);
 
-  double dam = (1.0 - cm_vars(m)[w]);  
+  double dam = (1.0 - cm_vars(m)[w]);
   for(int a=0; a<tensor; a++)
     S->m_pdata[a] *= dam;
-  
+
   if(compute_stiffness)
     err += j2d_compute_AST(m, ctx, L); //compute stiffness
 

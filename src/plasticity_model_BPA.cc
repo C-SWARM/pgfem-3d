@@ -36,8 +36,6 @@
 #define tan_row 10
 #define tan_col 10
 
-Define_Matrix(double);
-
 /* Set to value > 0 for extra diagnostics/printing */
 static const int BPA_PRINT_LEVEL = 0;
 
@@ -67,7 +65,7 @@ static int bpa_pack(const Constitutive_model *m,
                     size_t *pos)
 {
   /* pack/unpack Fs */
-  const Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
+  const Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   const double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   for (int i = 0; i < _n_Fs; i++) {
     pack_data(Fs[i].m_pdata, buffer, pos, tensor, sizeof(double));
@@ -80,7 +78,7 @@ static int bpa_unpack(Constitutive_model *m,
                       const char *buffer,
                       size_t *pos)
 {
-  Matrix_double *Fs = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   for (int i = 0; i < _n_Fs; i++) {
     unpack_data(buffer, Fs[i].m_pdata, pos, tensor, sizeof(double));
@@ -683,7 +681,7 @@ static int bpa_compute_tan_Fe_lam(double *tan,
 
   return err;
 }
-    
+
 static int bpa_compute_tan(double * restrict tan,
                            const double param_gdot0,
                            const double param_A,
@@ -1166,7 +1164,7 @@ int BPA_int_alg(Constitutive_model *m,
 
 int BPA_dev_stress(const Constitutive_model *m,
                    const void *ctx,
-                   Matrix_double *dev_stress)
+                   Matrix<double> *dev_stress)
 {
   int err = 0;
   double Ce[tensor] = {};
@@ -1187,7 +1185,7 @@ int BPA_dudj(const Constitutive_model *m,
 
 int BPA_dev_tangent(const Constitutive_model *m,
                     const void *ctx,
-                    Matrix_double *dev_tangent)
+                    Matrix<double> *dev_tangent)
 {
   int err = 0;
   double Ce[tensor] = {};
@@ -1214,7 +1212,7 @@ int BPA_update_vars(Constitutive_model *m)
   Matrix_copy(m->vars_list[0][m->model_id].Fs[_F_n],m->vars_list[0][m->model_id].Fs[_F]);
 
   /* alias */
-  Vector_double *vars = m->vars_list[0][m->model_id].state_vars;
+  Vector<double> *vars = m->vars_list[0][m->model_id].state_vars;
   Vec_v(*vars,_s_n + 1) = Vec_v(*vars,_s + 1);
   Vec_v(*vars,_lam_n + 1) = Vec_v(*vars,_lam + 1);
   return err;
@@ -1228,7 +1226,7 @@ int BPA_reset_vars(Constitutive_model *m)
   Matrix_copy(m->vars_list[0][m->model_id].Fs[_F],m->vars_list[0][m->model_id].Fs[_F_n]);
 
   /* alias */
-  Vector_double *vars = m->vars_list[0][m->model_id].state_vars;
+  Vector<double> *vars = m->vars_list[0][m->model_id].state_vars;
   Vec_v(*vars,_s + 1) = Vec_v(*vars,_s_n + 1);
   Vec_v(*vars,_lam + 1) = Vec_v(*vars,_lam_n + 1);
   return err;
@@ -1265,7 +1263,7 @@ int BPA_model_info(Model_var_info **info)
 }
 
 static int bpa_get_Fp(const Constitutive_model *m,
-                      Matrix_double *F)
+                      Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fp]);
@@ -1273,7 +1271,7 @@ static int bpa_get_Fp(const Constitutive_model *m,
 }
 
 static int bpa_get_Fpn(const Constitutive_model *m,
-                       Matrix_double *F)
+                       Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fp_n]);
@@ -1281,7 +1279,7 @@ static int bpa_get_Fpn(const Constitutive_model *m,
 }
 
 static int bpa_get_Fn(const Constitutive_model *m,
-                      Matrix_double *F)
+                      Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_F_n]);
@@ -1289,7 +1287,7 @@ static int bpa_get_Fn(const Constitutive_model *m,
 }
 
 static int bpa_get_Fe(const Constitutive_model *m,
-                      Matrix_double *F)
+                      Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fe]);
@@ -1297,7 +1295,7 @@ static int bpa_get_Fe(const Constitutive_model *m,
 }
 
 static int bpa_get_Fen(const Constitutive_model *m,
-                       Matrix_double *F)
+                       Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[_Fe_n]);
@@ -1496,18 +1494,18 @@ static int bpa_read_restart(FILE *in,
 
 int plasticity_model_BPA_update_elasticity(const Constitutive_model *m,
                                        const void *ctx,
-                                       Matrix_double *L,
-                                       Matrix_double *S,
+                                       Matrix<double> *L,
+                                       Matrix<double> *S,
                                        const int compute_stiffness)
 {
   int err = 0;
-  Matrix(double) eF;
+  Matrix<double> eF;
   Matrix_construct_redim(double,eF,dim,dim);
   (m->param)->get_eF(m,&eF);
-  
-  err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);  
- 
-  Matrix_cleanup(eF);  
+
+  err += constitutive_model_default_update_elasticity(m, &eF, L, S, compute_stiffness);
+
+  Matrix_cleanup(eF);
   return err;
 }
 

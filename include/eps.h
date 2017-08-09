@@ -100,7 +100,6 @@ typedef struct Constitutive_model Constitutive_model;
       **Dp,eff;
     long type;
   };
-  typedef struct EPS EPS;
 
   EPS* build_eps_il (const long ne,
              const ELEMENT *elem,

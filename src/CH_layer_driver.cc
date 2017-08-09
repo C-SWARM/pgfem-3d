@@ -20,8 +20,6 @@
 #include <assert.h>
 #include <getopt.h>
 
-Define_Matrix(double);
-
 #define dim 3
 #define tensor 9
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
@@ -311,7 +309,7 @@ int ch_output_ts(const Constitutive_model *m,
 {
   int err = 0;
 
-  Matrix_double F, S, P;
+  Matrix<double> F, S, P;
   Matrix_construct_init(double, S, dim, dim, 0.0);
   Matrix_construct(double, P);
   Matrix_construct(double, F);

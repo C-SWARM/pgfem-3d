@@ -164,7 +164,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     
     int nVol = N_VOL_TREE_FIELD;
     double lm = 0.0;
-    Matrix(double) lk;
+    Matrix<double> lk;
     Matrix_construct_redim(double,lk,ndofe,ndofe);
     Matrix_init(lk, 0.0);
 

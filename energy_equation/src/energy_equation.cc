@@ -69,7 +69,7 @@ int compute_effective_dot_strain(double *eff,
 {
   int err = 0;
   
-  Matrix(double) b, b_I, bn_I, dot_e, F;
+  Matrix<double> b, b_I, bn_I, dot_e, F;
   Matrix_construct_init(double, b,    DIM_3,DIM_3,0.0);
   Matrix_construct_init(double, bn_I, DIM_3,DIM_3,0.0);
   Matrix_construct_init(double, b_I,  DIM_3,DIM_3,0.0);
@@ -123,10 +123,10 @@ int compute_effective_dot_strain(double *eff,
 /// \param[in] dWdE elasticity tensor
 /// \param[in] F deformation gradient tensor
 /// \return non-zero on internal error
-int compute_dePdeF(Matrix(double) *_dePdeF,
-                   Matrix(double) *_S,
-                   Matrix(double) *_dWdE,
-                   Matrix(double) *_F)
+int compute_dePdeF(Matrix<double> *_dePdeF,
+                   Matrix<double> *_S,
+                   Matrix<double> *_dWdE,
+                   Matrix<double> *_F)
 {
   int err = 0;
   
@@ -158,11 +158,11 @@ int compute_dePdeF(Matrix(double) *_dePdeF,
 /// \param[in] dCdE 6th order dCdE tensor
 /// \param[in] F deformation gradient tensor
 /// \return non-zero on internal error
-int compute_d2ePdeF2(Matrix(double) *_d2PdF2,
-                     Matrix(double) *_S,
-                     Matrix(double) *_dWdE,
-                     Matrix(double) *_dCdE,
-                     Matrix(double) *_F)
+int compute_d2ePdeF2(Matrix<double> *_d2PdF2,
+                     Matrix<double> *_S,
+                     Matrix<double> *_dWdE,
+                     Matrix<double> *_dCdE,
+                     Matrix<double> *_F)
 {
   int err = 0;
   
@@ -198,10 +198,10 @@ int compute_d2ePdeF2(Matrix(double) *_d2PdF2,
 /// \param[in] pFI inverse of the plastic part deformation gradient
 /// \param[in] hFI inverse of the thermal part deformation gradient
 /// \return non-zero on interal error
-int compute_d2eFdhFdpF(Matrix(double) *dF,
-                       Matrix(double) *F,
-                       Matrix(double) *pFI, 
-                       Matrix(double) *hFI)
+int compute_d2eFdhFdpF(Matrix<double> *dF,
+                       Matrix<double> *F,
+                       Matrix<double> *pFI, 
+                       Matrix<double> *hFI)
 {
   int err = 0;  
   for(int I=1; I<=DIM_3; I++)
@@ -240,14 +240,14 @@ int compute_d2eFdhFdpF(Matrix(double) *dF,
 /// \param[in] B 2nd 4th order tensor
 /// \param[in] C 2nd 4th order tensor
 /// \return non-zero on internal error
-int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
-                             Matrix(double) *A,
-                             Matrix(double) *B,
-                             Matrix(double) *C)
+int compute_Ten4_A_dd_B_dd_C(Matrix<double> *ABC,
+                             Matrix<double> *A,
+                             Matrix<double> *B,
+                             Matrix<double> *C)
 {
   int err = 0;
   double temp[DIM_3x3x3x3];
-  Matrix(double) T;
+  Matrix<double> T;
   T.m_pdata = temp;
   T.m_row = DIM_3x3x3x3;
   T.m_col = 1;
@@ -303,7 +303,7 @@ int compute_Ten4_A_dd_B_dd_C(Matrix(double) *ABC,
 ///                        if 1 1st order of differentiation of hF w.r.t temperature
 ///                        if 2 2nd order of differentiation of hF w.r.t temperature
 /// \return non-zero with interal error
-int compute_hF(Matrix(double) *hF, 
+int compute_hF(Matrix<double> *hF, 
                double dT,
                const MATERIAL_PROPERTY *mat,
                const int mat_id,
@@ -381,10 +381,10 @@ int compute_hF_ttl(ttl::Tensor<2, DIM_3, double> &hF,
 /// \param[in] pFI inverse of the plastic part deformation gradient
 /// \param[in] hFI inverse of the thermal part deformation gradient
 /// \return non-zero on interal error
-int compute_deF_over_dhF(Matrix(double) *dF,
-                         Matrix(double) *F,
-                         Matrix(double) *pFI, 
-                         Matrix(double) *hFI)
+int compute_deF_over_dhF(Matrix<double> *dF,
+                         Matrix<double> *F,
+                         Matrix<double> *pFI, 
+                         Matrix<double> *hFI)
 {
   int err = 0;  
   for(int I=1; I<=DIM_3; I++)
@@ -415,10 +415,10 @@ int compute_deF_over_dhF(Matrix(double) *dF,
 /// \param[in] pFI inverse of the plastic part deformation gradient
 /// \param[in] hFI inverse of the thermal part deformation gradient
 /// \return non-zero on interal error
-int compute_deF_over_dpF(Matrix(double) *dF,
-                         Matrix(double) *F,
-                         Matrix(double) *pFI, 
-                         Matrix(double) *hFI)
+int compute_deF_over_dpF(Matrix<double> *dF,
+                         Matrix<double> *F,
+                         Matrix<double> *pFI, 
+                         Matrix<double> *hFI)
 {
   int err = 0;  
   for(int I=1; I<=DIM_3; I++)
@@ -457,13 +457,13 @@ int compute_deF_over_dpF(Matrix(double) *dF,
 /// \param[in] dCdE 6th order dCdE tensor
 /// \param[in] F deformation gradient tensor
 /// \return non-zero on internal error
-int compute_dPdhF(Matrix(double) *dPdhF_in,
-                  Matrix(double) *deFdhF_in,
-                  Matrix(double) *dePdeF_in,
-                  Matrix(double) *eF_in,
-                  Matrix(double) *eP_in,
-                  Matrix(double) *pFI_in,
-                  Matrix(double) *hFI_in)
+int compute_dPdhF(Matrix<double> *dPdhF_in,
+                  Matrix<double> *deFdhF_in,
+                  Matrix<double> *dePdeF_in,
+                  Matrix<double> *eF_in,
+                  Matrix<double> *eP_in,
+                  Matrix<double> *pFI_in,
+                  Matrix<double> *hFI_in)
 {
   int err = 0;
   
@@ -537,7 +537,7 @@ int compute_mechanical_heat_gen(double *Qe,
   ELASTICITY *elast = (m->param)->cm_elast;
   
   Tensor<2,DIM_3,double> F,Fn,pF,pFn;
-  Matrix(double) xF;
+  Matrix<double> xF;
   xF.m_row = xF.m_col = DIM_3;
   
   xF.m_pdata =   F.data; err += func->get_F(  m,&xF); // this brings  F(t(n+1))       
@@ -724,7 +724,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   }   
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  Matrix(double) k0,k;
+  Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
   k0.m_row = k0.m_col = DIM_3;
   
@@ -747,13 +747,13 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   long ndofe = (fe->nne)*ndofn;
   long *cnL = aloc1l(ndofe);
   
-  Matrix(double) fi;
+  Matrix<double> fi;
   fi.m_pdata = fi_in;
   fi.m_row = ndofe;  
   
   get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL,mp_id); 
   
-  Matrix(double) q, Tnp1, Tn;  
+  Matrix<double> q, Tnp1, Tn;  
   Matrix_construct_redim(double, q,grid->nsd,1);
   Matrix_construct_init(double, Tnp1,fe->nne,1,0.0); 
   Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
@@ -795,7 +795,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       double Qe = 0.0;
       double Qp = 0.0;
 
-      Matrix(double) F;      
+      Matrix<double> F;      
       Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
                   
       Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
@@ -807,7 +807,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
         double detF = 1.0;
         Matrix_det(F, detF);
         
-        Matrix(double) FI, FIT;
+        Matrix<double> FI, FIT;
         Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
         Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
           
@@ -935,7 +935,7 @@ int energy_equation_compute_residuals(GRID *grid,
     
     // do volume integration at an element, 
     // fe needs to be updated by integration points 
-    Matrix(double) fi;
+    Matrix<double> fi;
     Matrix_construct_init(double, fi, fe.nne, 1, 0.0);
     err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id,dt,total_Lagrangian);
     err += energy_equation_residuals_assemble(&fe,fi.m_pdata,grid,fv,mp_id);
@@ -1020,7 +1020,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   }  
   
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  Matrix(double) k0,k;
+  Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
   k0.m_row = k0.m_col = DIM_3;
   
@@ -1044,10 +1044,10 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL,mp_id);
   get_dof_ids_on_elem_nodes(1,fe->nne,ndofn,nod,grid->node,cnG,mp_id);
   
-  Matrix(double) lk;
+  Matrix<double> lk;
   Matrix_construct_init(double,lk,ndofe,ndofe,0.0);
   
-  Matrix(double) Tnp1, Tn;  
+  Matrix<double> Tnp1, Tn;  
   Matrix_construct_init(double, Tnp1,fe->nne,1,0.0); 
   Matrix_construct_init(double, Tn,  fe->nne,1,0.0);
     
@@ -1086,7 +1086,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       double Qe = 0.0;
       double Qp = 0.0;
 
-      Matrix(double) F;
+      Matrix<double> F;
       Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
       Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
       const Model_parameters *func = m->param;
@@ -1097,7 +1097,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
         double detF = 1.0;
         Matrix_det(F, detF);
         
-        Matrix(double) FI, FIT;
+        Matrix<double> FI, FIT;
         Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
         Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
           
@@ -1157,7 +1157,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     int ndofn = 1;
     int k = 0;
     int jj = 0;
-    Matrix(double) u, f_loc;    
+    Matrix<double> u, f_loc;    
     Matrix_construct_init(double,u    ,(fe->nne)*ndofn,1,0.0);
     Matrix_construct_init(double,f_loc,(fe->nne)*ndofn,1,0.0);
     
@@ -1274,7 +1274,7 @@ int energy_equation_compute_stiffness(GRID *grid,
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
                                      mpi_comm,com->comm);  
 
-  Matrix(int) Ddof;
+  Matrix<int> Ddof;
   Matrix_construct_redim(int, Ddof,com->nproc,1);
   
   Ddof.m_pdata[0] = com->DomDof[0];
@@ -1514,7 +1514,7 @@ int update_thermal_flux4print(GRID *grid,
     double rho_0 = mat->density[mat_id];
     
     MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-    Matrix(double) k0,k;
+    Matrix<double> k0,k;
     k0.m_pdata = thermal->k;
     k0.m_row = k0.m_col = DIM_3;
   
@@ -1524,7 +1524,7 @@ int update_thermal_flux4print(GRID *grid,
     double cp = thermal->cp;
       
     // compute noda values
-    Matrix(double) q, Tnp1, Tn;  
+    Matrix<double> q, Tnp1, Tn;  
     Matrix_construct_redim(double, q,grid->nsd,1);    
     Matrix_construct_init(double, Tnp1,fe.nne,1,0.0); 
     Matrix_construct_init(double, Tn,  fe.nne,1,0.0);
@@ -1567,7 +1567,7 @@ int update_thermal_flux4print(GRID *grid,
         FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
         int compute_tangent = 0;
 
-        Matrix(double) F;
+        Matrix<double> F;
         Matrix_construct_init(double, F, DIM_3,DIM_3,0.0);
         Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
         const Model_parameters *func = m->param;
@@ -1578,7 +1578,7 @@ int update_thermal_flux4print(GRID *grid,
           double detF = 1.0;
           Matrix_det(F, detF);
           
-          Matrix(double) FI, FIT;
+          Matrix<double> FI, FIT;
           Matrix_construct_init(double, FI,  DIM_3,DIM_3,0.0);
           Matrix_construct_init(double, FIT, DIM_3,DIM_3,0.0);
             
