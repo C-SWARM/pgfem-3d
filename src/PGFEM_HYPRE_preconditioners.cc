@@ -27,7 +27,7 @@ int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc)
   /*   fprintf(stderr,"WARNING: Preconditioner already exists!\n"); */
   /*   /\* PGFEM_Abort(); *\/ */
   /* } */
-  (*diag_pc) = PGFEM_calloc(1,sizeof(PGFEM_diag_pc));
+  (*diag_pc) = PGFEM_calloc(PGFEM_diag_pc, 1);
   (*diag_pc)->data = NULL;
   (*diag_pc)->thresh = 1.0e-5;
   (*diag_pc)->replacement = 1.1;
@@ -36,9 +36,9 @@ int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc)
 }
 
 int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
-			       HYPRE_ParCSRMatrix vA,
-			       HYPRE_ParVector vb,
-			       HYPRE_ParVector vx)
+                   HYPRE_ParCSRMatrix vA,
+                   HYPRE_ParVector vb,
+                   HYPRE_ParVector vx)
 {
   /* setup scale vector accounting for zeros on the diagonal */
   PGFEM_diag_pc *diag_pc = (PGFEM_diag_pc*) vdiag_pc;
@@ -52,7 +52,7 @@ int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
     free(diag_pc->data);
     diag_pc->setup = 0;
   }
-  diag_pc->data = PGFEM_calloc(local_size,sizeof(double));
+  diag_pc->data = PGFEM_calloc(double, local_size);
   diag_pc->size = local_size;
 
   double val;
@@ -70,9 +70,9 @@ int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
 }
 
 int PGFEM_HYPRE_ScaleDiagSolve(HYPRE_Solver vdiag_pc,
-			       HYPRE_ParCSRMatrix vA,
-			       HYPRE_ParVector vb,
-			       HYPRE_ParVector vx)
+                   HYPRE_ParCSRMatrix vA,
+                   HYPRE_ParVector vb,
+                   HYPRE_ParVector vx)
 {
   PGFEM_diag_pc *diag_pc = (PGFEM_diag_pc*) vdiag_pc;
   hypre_ParVector    *x = (hypre_ParVector *) vx;
@@ -110,7 +110,7 @@ typedef struct{
 int PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc)
 {
   PGFEM_jacobi_pc **jacobi_pc = (PGFEM_jacobi_pc **) vjacobi_pc;
-  (*jacobi_pc) = PGFEM_calloc(1,sizeof(PGFEM_jacobi_pc));
+  (*jacobi_pc) = PGFEM_calloc(PGFEM_jacobi_pc, 1);
   (*jacobi_pc)->thresh = 1.e-5;
   (*jacobi_pc)->replace = 1.0;
   (*jacobi_pc)->scale = 1.0;
@@ -119,9 +119,9 @@ int PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc)
 }
 
 int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
-			    HYPRE_ParCSRMatrix vA,
-			    HYPRE_ParVector vb,
-			    HYPRE_ParVector vx)
+                HYPRE_ParCSRMatrix vA,
+                HYPRE_ParVector vb,
+                HYPRE_ParVector vx)
 {
   PGFEM_jacobi_pc *jacobi_pc = (PGFEM_jacobi_pc *) vjacobi_pc;
   hypre_ParCSRMatrix *A = (hypre_ParCSRMatrix *) vA;
@@ -140,7 +140,7 @@ int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
 
   if(jacobi_pc->global){
     MPI_Allreduce(MPI_IN_PLACE,&(jacobi_pc->scale),1,
-		  MPI_DOUBLE,MPI_SUM,jacobi_pc->comm);
+          MPI_DOUBLE,MPI_SUM,jacobi_pc->comm);
   }
 
   if(fabs(jacobi_pc->scale) < jacobi_pc->thresh){
@@ -153,9 +153,9 @@ int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
 }
 
 int PGFEM_HYPRE_JacobiSolve(HYPRE_Solver vjacobi_pc,
-			    HYPRE_ParCSRMatrix vA,
-			    HYPRE_ParVector vb,
-			    HYPRE_ParVector vx)
+                HYPRE_ParCSRMatrix vA,
+                HYPRE_ParVector vb,
+                HYPRE_ParVector vx)
 {
   PGFEM_jacobi_pc *jacobi_pc = (PGFEM_jacobi_pc *) vjacobi_pc;
   hypre_ParVector    *x = (hypre_ParVector *) vx;

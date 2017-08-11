@@ -23,50 +23,50 @@
 #include "energy_equation.h"
 
 long* compute_times_load (FILE *in1,
-			  const long nt,
-			  const long nlod_tim)
+              const long nt,
+              const long nlod_tim)
 {
   long i,j,*tim_load;
   long *help;
-  
+
   if(nt == 0){
     tim_load = aloc1l (1);
   } else {
     tim_load = aloc1l (nt);
   }
-  
+
   if(nlod_tim == 0){
     help = aloc1l (1);
   } else {
     help = aloc1l (nlod_tim);
   }
-  
+
   for (i=0;i<nlod_tim;i++)
     fscanf (in1,"%ld",&help[i]);
-  
+
   for (i=0;i<nlod_tim;i++){
     for (j=0;j<nt;j++){
       if (j == help[i]){
-	tim_load[j] = 1;
-	continue;
+    tim_load[j] = 1;
+    continue;
       }
     }
   }
-  
+
   dealoc1l (help);
-  
+
   return (tim_load);
 }
 
 void load_vec_node (double *f,
-		    const long nln,
-		    const long ndofn,
-		    const ZATNODE *znode,
-		    const NODE *node,
-		    const int mp_id)
+            const long nln,
+            const long ndofn,
+            const ZATNODE *znode,
+            const NODE *node,
+            const int mp_id)
 {
   long i,j,ii;
-  
+
   for (i=0;i<nln;i++){
     for (j=0;j<ndofn;j++){
       ii = node[znode[i].nod].id_map[mp_id].id[j]-1;
@@ -110,12 +110,12 @@ int momentum_equation_load4pBCs(GRID *grid,
   int err = 0;
   double *be = NULL;
   int intg_order = 0;
-  
+
   ELEMENT *elem = grid->element;
   NODE *node = grid->node;
   SUPP sup = load->sups[mp_id];
-  
-  
+
+
   // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
   // are total Lagrangian based
   int total_Lagrangian = 0;
@@ -128,13 +128,13 @@ int momentum_equation_load4pBCs(GRID *grid,
     case CM:
       if(opts->cm != UPDATED_LAGRANGIAN)
         total_Lagrangian = 1;
-      
+
       break;
   }
-  
+
   if(sup->multi_scale)
     total_Lagrangian = 1;
-  
+
   for (int i=0;i<sup->nde;i++)
   {
     int eid = sup->lepd[i];
@@ -144,24 +144,24 @@ int momentum_equation_load4pBCs(GRID *grid,
       FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
     else
       FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
-    
+
     long *nod = (fe.node_id).m_pdata; // list of node ids in this element
-    
+
     /* Element Dof */
     long ndofe = get_ndof_on_elem_nodes(fe.nne,nod,grid->node,fv->ndofn);
-    
+
     long *cn = aloc1l (ndofe);
     get_dof_ids_on_elem_nodes(0,fe.nne,fv->ndofn,nod,node,cn,mp_id);
-    
+
     // element tangent
     double *floc = aloc1 (ndofe);
     double *rloc = aloc1 (ndofe);
     double *r_e = aloc1 (ndofe);
-    
+
     /* Coordinates of nodes */
     if(total_Lagrangian)
       def_elem (cn,ndofe,fv->u_np1,elem,node,r_e,sup,1);
-    
+
     int nVol = N_VOL_TREE_FIELD;
     double lm = 0.0;
     Matrix<double> lk;
@@ -169,8 +169,8 @@ int momentum_equation_load4pBCs(GRID *grid,
     Matrix_init(lk, 0.0);
 
     err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
-                                  crpl,opts,mp,mp_id,dt,lm,be,r_e);    
-    
+                                  crpl,opts,mp,mp_id,dt,lm,be,r_e);
+
     /* get the disp increment from BC */
     {
       int k = 0;
@@ -186,10 +186,10 @@ int momentum_equation_load4pBCs(GRID *grid,
         k += jj;
       }
     }
-            
+
     /* Matrix vector multiplication */
     mv(lk.m_pdata,rloc,floc,ndofe,ndofe);
-            
+
     /* Localization */
     {
       int k = 0;
@@ -204,7 +204,7 @@ int momentum_equation_load4pBCs(GRID *grid,
         k += fv->ndofn;
       }/*end jj*/
     }
-    
+
     /*  dealocation  */
     dealoc1l (cn);
     Matrix_cleanup(lk);
@@ -214,7 +214,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     FEMLIB_destruct(&fe);
     if(err != 0) return err;
   }/* end i (each volume element) */
-  
+
   int ndn = 3;
   /* ADDED 1/7/2013 MM */
   for(int i=0; i<sup->nd_be; i++)
@@ -227,7 +227,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     const ELEMENT *ptr_ve = &elem[ve_id];
     const long *ve_nod = ptr_ve->nod;
     const int nne_ve = ptr_ve->toe;
-    
+
     /* get ndofs on element */
     int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem,fv->ndofn);
 
@@ -235,7 +235,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     double *x = aloc1(nne_ve);
     double *y = aloc1(nne_ve);
     double *z = aloc1(nne_ve);
-    
+
     switch(opts->analysis_type){
       case DISP: case TF:
         nodecoord_total (nne_ve,ve_nod,node,x,y,z);
@@ -261,7 +261,7 @@ int momentum_equation_load4pBCs(GRID *grid,
         nodecoord_updated (nne_ve,ve_nod,node,x,y,z);
         break;
     }
-    
+
     /* allocate space for stiffness and localization. */
     double *lk = aloc1(ndof_ve*ndof_ve);
     double *floc = aloc1(ndof_ve);
@@ -273,7 +273,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     if(opts->analysis_type == DISP){ /* TOTAL LAGRANGIAN formulation */
       def_elem(cn_ve,ndof_ve,fv->u_np1,NULL,NULL,ve_disp,sup,1);
     }
-    
+
     /* compute element stiffness */
     if(opts->analysis_type == DISP){
       err += DISP_stiffmat_bnd_el(lk,be_id,fv->ndofn,ndof_ve,x,y,z,grid->b_elems,
@@ -281,7 +281,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     } else {
       /* not implemented, do nothing */
     }
-    
+
     /* get the local disp increment from BC */
     {
       int k = 0;
@@ -296,10 +296,10 @@ int momentum_equation_load4pBCs(GRID *grid,
         k += jj;
       }
     }
-    
+
     /* matvec mult */
     mv(lk,rloc,floc,ndof_ve,ndof_ve);
-    
+
     /* Localization */
     {
       int j = 0;
@@ -313,18 +313,18 @@ int momentum_equation_load4pBCs(GRID *grid,
         j += fv->ndofn;
       }/*end jj*/
     }
-    
+
     free(x);
     free(y);
     free(z);
-    
+
     free(lk);
     free(floc);
     free(rloc);
     free(cn_ve);
-    
+
     free(ve_disp);
-    
+
     if(err != 0) return err;
   }/* end for each bounding element (i) in the list */
   return err;
@@ -370,13 +370,13 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                         fv,
                                         sol,
                                         load,
-                                        dt,                                          
+                                        dt,
                                         crpl,
                                         opts,
                                         mp,
                                         mp_id,
                                         myrank);
-      break;                                  
+      break;
     case MULTIPHYSICS_THERMAL:
       err += energy_equation_compute_load4pBCs(grid,
                                                mat,
@@ -387,10 +387,10 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                                opts,
                                                mp_id,
                                                dt);
-      break;                                         
+      break;
     default:
-      printf("%s is not supported\n", mp->physicsname[mp_id]);                                               
-  
+      printf("%s is not supported\n", mp->physicsname[mp_id]);
+
   }
   return err;
 }
@@ -413,9 +413,9 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
 {
   int err = 0;
   int mp_id = 0;
-  
+
   // initialize and define multiphysics
-  MULTIPHYSICS mp;  
+  MULTIPHYSICS mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -425,7 +425,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   {
     coupled_ids[0] = 0;
     sprintf(physicsname, "Mechanical");
- 
+
     mp.physicsno      = 1;
     mp.physicsname    = &physicsname;
     mp.physics_ids    = &id;
@@ -435,8 +435,8 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     mp.coupled_ids    = &coupled_ids;
     mp.total_write_no = 0;
   }
-  
-  // initialize and define mesh object  
+
+  // initialize and define mesh object
   GRID grid;
   grid_initialization(&grid);
   {
@@ -447,7 +447,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     grid.nce         = c->nce;
     grid.coel        = c->coel;
   }
-  
+
   // initialize and define field variables
   FIELD_VARIABLES fv;
   {
@@ -470,7 +470,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     fv.BS_f   = s->BS_f;
     fv.BS_RR  = s->BS_RR;
     fv.BS_f_u = s->BS_f_u;
-  }                  
+  }
 
   /// initialize and define iterative solver object
   SOLVER_OPTIONS sol;
@@ -479,16 +479,16 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     sol.PGFEM_hypre  = c->SOLVER;
     sol.err          = c->lin_err;
     sol.alpha        = 0.0;
-    sol.nor_min      = nor_min;              
+    sol.nor_min      = nor_min;
   }
-  
+
   // initialize and define loading steps object
-  LOADING_STEPS load;    
+  LOADING_STEPS load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
-  
+
   // initialize and define material properties
   MATERIAL_PROPERTY mat;
   {
@@ -496,11 +496,11 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     mat.hommat  = c->hommat;
     mat.matgeom = c->matgeom;
   }
-  
+
   /// initialize and define communication structures
   COMMUNICATION_STRUCTURE com;
   {
-    communication_structure_initialization(&com); 
+    communication_structure_initialization(&com);
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
@@ -509,21 +509,21 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
   }
-  
+
   err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv,&sol,&load,
-                                               s->dt,s->crpl,opts,&mp,mp_id,myrank); 
-  
+                                               s->dt,s->crpl,opts,&mp,mp_id,myrank);
+
   free(coupled_ids);
   free(physicsname);
-  
+
   return err;
-}                                        
+}
 
 
 void load_vec_elem_sur (double *f,
-			const long nle_s,
-			const long ndofn,
-			const ELEMENT *elem,
-			const ZATELEM *zele_s)
+            const long nle_s,
+            const long ndofn,
+            const ELEMENT *elem,
+            const ZATELEM *zele_s)
 {
 }

@@ -10,10 +10,10 @@
 typedef long idx_type;
 
 int read_bounding_elements(FILE *ifile,
-			   const int ndof_be,
-			   int *nbe,
-			   BOUNDING_ELEMENT **b_elems,
-			   MPI_Comm mpi_comm)
+               const int ndof_be,
+               int *nbe,
+               BOUNDING_ELEMENT **b_elems,
+               MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank =0;
@@ -33,7 +33,7 @@ int read_bounding_elements(FILE *ifile,
     (*b_elems) = NULL;
     return err;
   } else {
-    nn_per_elem = PGFEM_calloc (*nbe,sizeof(idx_type));
+    nn_per_elem = PGFEM_calloc (int, *nbe);
     for(int i=0; i< (*nbe); i++){
       fscanf(ifile,"%d",&nn_per_elem[i]);
     }
@@ -48,42 +48,42 @@ int read_bounding_elements(FILE *ifile,
 
     /* read element id and associated vol_element id */
     fscanf(ifile,"%d %d",&(*b_elems)[i].id,
-	   &(*b_elems)[i].vol_elem_id);
+       &(*b_elems)[i].vol_elem_id);
 
     /* read connectivity */
     switch ((*b_elems)[i].nnodes){
     case 3: /* triangles */
       fscanf(ifile,"%ld %ld %ld",&(*b_elems)[i].nodes[0],
-	     &(*b_elems)[i].nodes[1],&(*b_elems)[i].nodes[2]);
+         &(*b_elems)[i].nodes[1],&(*b_elems)[i].nodes[2]);
       break;
 
     default: /* all others */
       for(int j=0; j<(*b_elems)[i].nnodes; j++){
-	fscanf(ifile,"%ld",&(*b_elems)[i].nodes[j]);
+    fscanf(ifile,"%ld",&(*b_elems)[i].nodes[j]);
       }
       break;
     } /* end switch on nnodes */
 
     /* read normal */
     /* fscanf(ifile,"%lf %lf %lf",&(*b_elems)[i].normal[0], */
-    /* 	   &(*b_elems)[i].normal[1],&(*b_elems)[i].normal[2]); */
+    /*     &(*b_elems)[i].normal[1],&(*b_elems)[i].normal[2]); */
 
     /* read periodic */
     fscanf(ifile,"%d",&(*b_elems)[i].periodic);
     if((*b_elems)[i].periodic){
       fscanf(ifile,"%d %d %d %d",
-	     &(*b_elems)[i].master_dom,&(*b_elems)[i].master_be_id,
-	     &(*b_elems)[i].slave_dom,&(*b_elems)[i].slave_be_id);
+         &(*b_elems)[i].master_dom,&(*b_elems)[i].master_be_id,
+         &(*b_elems)[i].slave_dom,&(*b_elems)[i].slave_be_id);
       if((*b_elems)[i].master_dom == myrank
-	 && (*b_elems)[i].master_be_id == i){
-	(*b_elems)[i].master = 1;
+     && (*b_elems)[i].master_be_id == i){
+    (*b_elems)[i].master = 1;
       } else {
-	(*b_elems)[i].master = 0;
+    (*b_elems)[i].master = 0;
       }
       (*b_elems)[i].n_dofs = ndof_be;
       (*b_elems)[i].other_val = 0;
-      (*b_elems)[i].G_dof_ids = PGFEM_calloc((*b_elems)[i].n_dofs,sizeof(long));
-      (*b_elems)[i].L_dof_ids = PGFEM_calloc((*b_elems)[i].n_dofs,sizeof(long));
+      (*b_elems)[i].G_dof_ids = PGFEM_calloc(long, (*b_elems)[i].n_dofs);
+      (*b_elems)[i].L_dof_ids = PGFEM_calloc(long, (*b_elems)[i].n_dofs);
     } else {
       (*b_elems)[i].master = 0;
       (*b_elems)[i].n_dofs = 0;
@@ -102,10 +102,10 @@ int read_bounding_elements(FILE *ifile,
 }
 
 int read_bounding_elements_fname(char *filename,
-				 const int ndof_be,
-				 int *nbe,
-				 BOUNDING_ELEMENT **b_elems,
-				 MPI_Comm mpi_comm)
+                 const int ndof_be,
+                 int *nbe,
+                 BOUNDING_ELEMENT **b_elems,
+                 MPI_Comm mpi_comm)
 {
   int err = 0;
 
@@ -136,8 +136,8 @@ int read_bounding_elements_fname(char *filename,
 }/* read_bounding_elements */
 
 int write_bounding_elements(FILE *ofile,
-			    int nbe,
-			    BOUNDING_ELEMENT *b_elems)
+                int nbe,
+                BOUNDING_ELEMENT *b_elems)
 {
   int err = 0;
   PGFEM_fprintf(ofile,"%d\n\n",nbe);
@@ -149,8 +149,8 @@ int write_bounding_elements(FILE *ofile,
   for(int i=0; i<nbe; i++){
     /* print id numbers */
     PGFEM_fprintf(ofile,"%5d %5d\t",
-	    b_elems[i].id,
-	    b_elems[i].vol_elem_id);
+        b_elems[i].id,
+        b_elems[i].vol_elem_id);
 
     /* print connectivity */
     for(int j=0; j<b_elems[i].nnodes-1; j++){
@@ -160,16 +160,16 @@ int write_bounding_elements(FILE *ofile,
 
     /* print normal */
     /* PGFEM_fprintf(ofile,"%19.12e %19.12e %19.12e\n",b_elems[i].normal[0], */
-    /* 	    b_elems[i].normal[1],b_elems[i].normal[2]); */
+    /*      b_elems[i].normal[1],b_elems[i].normal[2]); */
 
     /* print periodicity */
     PGFEM_fprintf(ofile,"%d %d %d\t",b_elems[i].periodic,
-	    b_elems[i].master_dom,b_elems[i].master_be_id);
+        b_elems[i].master_dom,b_elems[i].master_be_id);
 
     if(b_elems[i].periodic){
       for(int j=0; j<b_elems[i].n_dofs; j++){
-	PGFEM_fprintf(ofile,"%5ld::%-5ld ",b_elems[i].L_dof_ids[j],
-		b_elems[i].G_dof_ids[j]);
+    PGFEM_fprintf(ofile,"%5ld::%-5ld ",b_elems[i].L_dof_ids[j],
+        b_elems[i].G_dof_ids[j]);
       }
     }
     PGFEM_fprintf(ofile,"\n");
@@ -180,8 +180,8 @@ int write_bounding_elements(FILE *ofile,
 
 
 int write_bounding_elements_fname(char *filename,
-				  int nbe,
-				  BOUNDING_ELEMENT *b_elems)
+                  int nbe,
+                  BOUNDING_ELEMENT *b_elems)
 {
   int err = 0;
   FILE *ofile = NULL;
@@ -200,39 +200,39 @@ int write_bounding_elements_fname(char *filename,
 }/* write_bounding_elements_fname */
 
 int construct_bounding_elements(int nbe,
-				int *nn_per_elem,
-				BOUNDING_ELEMENT **b_elems)
+                int *nn_per_elem,
+                BOUNDING_ELEMENT **b_elems)
 {
   int err = 0;
 
   /* allocate the overall structure */
-  (*b_elems) = PGFEM_calloc (nbe,sizeof(BOUNDING_ELEMENT));
+  (*b_elems) = PGFEM_calloc (BOUNDING_ELEMENT, nbe);
 
   for(int i=0; i<nbe; i++){
     (*b_elems)[i].nnodes = nn_per_elem[i];
-    /* (*b_elems)[i].normal = PGFEM_calloc(3,sizeof(double)); */
-    (*b_elems)[i].nodes = PGFEM_calloc ((*b_elems)[i].nnodes,sizeof(idx_type));
-    (*b_elems)[i].loc_nodes = PGFEM_calloc ((*b_elems)[i].nnodes,sizeof(idx_type));
+    /* (*b_elems)[i].normal = PGFEM_calloc(double, 3); */
+    (*b_elems)[i].nodes = PGFEM_calloc (idx_type, (*b_elems)[i].nnodes);
+    (*b_elems)[i].loc_nodes = PGFEM_calloc (idx_type, (*b_elems)[i].nnodes);
   }
 
   return err;
 }/* construct_bounding_elements */
 
 int destroy_bounding_elements(int nbe,
-			      BOUNDING_ELEMENT *b_elems)
+                  BOUNDING_ELEMENT *b_elems)
 {
   int err = 0;
 
   if(b_elems != NULL){
     for(int i=0; i<nbe; i++){
-      if(b_elems[i].nodes != NULL){   
-	free(b_elems[i].nodes);
+      if(b_elems[i].nodes != NULL){
+    free(b_elems[i].nodes);
       }
-      if(b_elems[i].loc_nodes != NULL){   
-	free(b_elems[i].loc_nodes);
+      if(b_elems[i].loc_nodes != NULL){
+    free(b_elems[i].loc_nodes);
       }
       /* if(b_elems[i].normal != NULL){ */
-      /* 	free(b_elems[i].normal); */
+      /*    free(b_elems[i].normal); */
       /* } */
       free(b_elems[i].G_dof_ids);
       free(b_elems[i].L_dof_ids);

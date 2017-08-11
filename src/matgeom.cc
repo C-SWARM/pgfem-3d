@@ -14,14 +14,16 @@ MATGEOM build_matgeom (long nc,long np)
   MATGEOM pom;
   long i;
 
-  pom = (MATGEOM) PGFEM_calloc (1, sizeof(MATGEOM_1));
-  
-  pom->cf = (double *) PGFEM_calloc (nc,sizeof(double));
-  pom->cd = (double *) PGFEM_calloc (nc,sizeof(double));
-  pom->cm = (double *) PGFEM_calloc (nc,sizeof(double));
-  pom->ee = (double **) PGFEM_calloc (np,sizeof(double*));
-  
-  for (i=0;i<np;i++) pom->ee[i] = (double *) PGFEM_calloc (9,sizeof(double));
+  pom = PGFEM_calloc (MATGEOM_1, 1);
+
+  pom->cf = PGFEM_calloc (double, nc);
+  pom->cd = PGFEM_calloc (double, nc);
+  pom->cm = PGFEM_calloc (double, nc);
+  pom->ee = PGFEM_calloc (double*, np);
+
+  for (i=0;i<np;i++) {
+    pom->ee[i] = PGFEM_calloc (double, 9);
+  }
 
   return (pom);
 }

@@ -15,19 +15,19 @@ ZATNODE* build_zatnode (long ndofn,long nln)
 {
   ZATNODE *pom;
   long i;
-  
-  if (nln == 0) pom = (ZATNODE*) PGFEM_calloc (1, sizeof(ZATNODE));
-  else          pom = (ZATNODE*) PGFEM_calloc (nln, sizeof(ZATNODE)); 
-  
-  for (i=0;i<nln;i++){  
-    pom[i].load = (double *) PGFEM_calloc (ndofn,sizeof(double));
+
+  if (nln == 0) pom = PGFEM_calloc (ZATNODE, 1);
+  else          pom = PGFEM_calloc (ZATNODE, nln);
+
+  for (i=0;i<nln;i++){
+    pom[i].load = PGFEM_calloc (double, ndofn);
   }
-  
+
   if (pom==NULL){
     PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__);
     abort ();
   }
-  
+
   return (pom);
 }
 
@@ -46,14 +46,14 @@ ZATELEM* build_zatelem (long ndofn,long nle)
 {
   ZATELEM *pom;
   long i;
-  
-  if (nle == 0) pom = (ZATELEM*) PGFEM_calloc (1, sizeof(ZATELEM));
-  else          pom = (ZATELEM*) PGFEM_calloc (nle, sizeof(ZATELEM)); 
-  
-  for (i=0;i<nle;i++){  
-    pom[i].load = (double *) PGFEM_calloc (ndofn,sizeof(double));
+
+  if (nle == 0) pom = PGFEM_calloc (ZATELEM, 1);
+  else          pom = PGFEM_calloc (ZATELEM, nle);
+
+  for (i=0;i<nle;i++){
+    pom[i].load = PGFEM_calloc (double, ndofn);
   }
-  
+
   if (pom==NULL){
     PGFEM_printf ("\n Memory is full. %s:%s:%d\n",__func__,__FILE__,__LINE__);
     abort ();

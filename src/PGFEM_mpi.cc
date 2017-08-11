@@ -12,7 +12,7 @@
 /** Initialize PGFEM_mpi_comm to MPI_COMM_WORLD, or whatever is passed
     as comm_world */
 int initialize_PGFEM_mpi_comm(const MPI_Comm comm_world,
-			      PGFEM_mpi_comm *pgfem_mpi_comm)
+                  PGFEM_mpi_comm *pgfem_mpi_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -67,8 +67,8 @@ int destroy_PGFEM_mpi_comm(PGFEM_mpi_comm *pgfem_mpi_comm)
 }
 
 int PGFEM_mpi_comm_MM_split(const int macro_nproc,
-			    const int micro_group_size,
-			    PGFEM_mpi_comm *pgfem_mpi_comm)
+                const int micro_group_size,
+                PGFEM_mpi_comm *pgfem_mpi_comm)
 {
   int err = 0;
   int nproc_world = 0;
@@ -81,7 +81,7 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
     if(pgfem_mpi_comm->rank_world == 0){
       PGFEM_printerr("ERROR: incorrect group sizes in %s!\n",__func__);
       PGFEM_printerr("WORLD = %d || MACRO = %d || GROUP = %d\n",
-		     nproc_world,macro_nproc,micro_group_size);
+             nproc_world,macro_nproc,micro_group_size);
       PGFEM_Abort();
     }
   }
@@ -91,11 +91,11 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
     int rank_world = pgfem_mpi_comm->rank_world;
     const int macro_color = (rank_world < macro_nproc) ? 1 : MPI_UNDEFINED;
     err += MPI_Comm_split(pgfem_mpi_comm->world,macro_color,
-			  rank_world,&(pgfem_mpi_comm->macro));
+              rank_world,&(pgfem_mpi_comm->macro));
 
     const int micro_color = (rank_world < macro_nproc) ? MPI_UNDEFINED : 1;
     err += MPI_Comm_split(pgfem_mpi_comm->world,micro_color,
-			  rank_world,&(pgfem_mpi_comm->micro_all));
+              rank_world,&(pgfem_mpi_comm->micro_all));
   }
 
   /* get ranks on new communicators */
@@ -104,7 +104,7 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
     pgfem_mpi_comm->rank_macro = MPI_UNDEFINED;
   } else {
     err += MPI_Comm_rank(pgfem_mpi_comm->macro,
-		       &(pgfem_mpi_comm->rank_macro));
+               &(pgfem_mpi_comm->rank_macro));
   }
 
   if(pgfem_mpi_comm->micro_all == MPI_COMM_NULL){
@@ -112,7 +112,7 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
     pgfem_mpi_comm->rank_micro_all = MPI_UNDEFINED;
   } else {
     err += MPI_Comm_rank(pgfem_mpi_comm->micro_all,
-			 &(pgfem_mpi_comm->rank_micro_all));
+             &(pgfem_mpi_comm->rank_micro_all));
   }
 
   /* split micro communicator into work groups */
@@ -124,9 +124,9 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
       color = rank_micro_all / micro_group_size;
     }
     err += MPI_Comm_split(pgfem_mpi_comm->micro_all,color,
-			  rank_micro_all,&(pgfem_mpi_comm->micro));
+              rank_micro_all,&(pgfem_mpi_comm->micro));
     err += MPI_Comm_rank(pgfem_mpi_comm->micro,
-			 &(pgfem_mpi_comm->rank_micro));
+             &(pgfem_mpi_comm->rank_micro));
 
     /*Create inter-micro communicators between equivalent procs on
        different microstructures. This allows direct communication
@@ -134,10 +134,10 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
        micro_all communicator by rank in micro using rank_micro as the
        color and rank_micro_all as the key. */
     err += MPI_Comm_split(pgfem_mpi_comm->micro_all,pgfem_mpi_comm->rank_micro,
-			  pgfem_mpi_comm->rank_micro_all,
-			  &(pgfem_mpi_comm->worker_inter));
+              pgfem_mpi_comm->rank_micro_all,
+              &(pgfem_mpi_comm->worker_inter));
     err += MPI_Comm_rank(pgfem_mpi_comm->worker_inter,
-			 &(pgfem_mpi_comm->server_id));
+             &(pgfem_mpi_comm->server_id));
   } else {
     pgfem_mpi_comm->micro = MPI_COMM_NULL;
     pgfem_mpi_comm->valid_micro = 0;
@@ -153,7 +153,7 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
       color = 1;
     }
     err += MPI_Comm_split(pgfem_mpi_comm->world,color,
-			  rank_world,&(pgfem_mpi_comm->mm_inter));
+              rank_world,&(pgfem_mpi_comm->mm_inter));
   }
 
   /* get rank on new communicator */
@@ -162,21 +162,21 @@ int PGFEM_mpi_comm_MM_split(const int macro_nproc,
     pgfem_mpi_comm->rank_mm_inter = MPI_UNDEFINED;
   } else {
     err += MPI_Comm_rank(pgfem_mpi_comm->mm_inter,
-			 &(pgfem_mpi_comm->rank_mm_inter));
+             &(pgfem_mpi_comm->rank_mm_inter));
   }
 
   /* Reduce error on mpi_comm_world */
   MPI_Allreduce(MPI_IN_PLACE,&err,1,MPI_INT,MPI_BOR,
-		pgfem_mpi_comm->world);
+        pgfem_mpi_comm->world);
   return err;
 }
 
 int build_PGFEM_comm_info(const int nproc,
-			  const int *n_buff_proc,
-			  PGFEM_comm_info **info)
+              const int *n_buff_proc,
+              PGFEM_comm_info **info)
 {
   int err = 0;
-  *info = PGFEM_calloc(1,sizeof(PGFEM_comm_info));
+  *info = PGFEM_calloc(PGFEM_comm_info, 1);
   PGFEM_comm_info *I = *info; /* alias */
 
   /* initialize values */
@@ -195,12 +195,12 @@ int build_PGFEM_comm_info(const int nproc,
 
   /* allocate space */
   if(I->n_proc > 0){
-    I->proc = PGFEM_calloc(I->n_proc,sizeof(int));
-    I->idx = PGFEM_calloc(I->n_proc + 1,sizeof(int));
-    I->n_buff = PGFEM_calloc(I->n_proc,sizeof(int));
+    I->proc = PGFEM_calloc(int, I->n_proc);
+    I->idx = PGFEM_calloc(int, I->n_proc + 1);
+    I->n_buff = PGFEM_calloc(int, I->n_proc);
   }
   if(n_buff > 0){
-    I->buff_sizes = PGFEM_calloc(n_buff,sizeof(int));
+    I->buff_sizes = PGFEM_calloc(int, n_buff);
   }
 
   /* populate */
@@ -229,9 +229,9 @@ int destroy_PGFEM_comm_info(PGFEM_comm_info *info)
 }
 
 int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
-				int *n_comms,
-				int **procs,
-				int **sizes)
+                int *n_comms,
+                int **procs,
+                int **sizes)
 {
   int err = 0;
   /* compute the number of communications */
@@ -239,8 +239,8 @@ int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
   *procs = NULL;
   *sizes = NULL;
   if(*n_comms > 0){
-    *procs = PGFEM_calloc(*n_comms,sizeof(int));
-    *sizes = PGFEM_calloc(*n_comms,sizeof(int));
+    *procs = PGFEM_calloc(int, *n_comms);
+    *sizes = PGFEM_calloc(int, *n_comms);
   }
 
   /* aliases */
@@ -265,7 +265,7 @@ int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
 
 //inline int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
 int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
-				       int *n_comms)
+                       int *n_comms)
 {
   int err = 0;
   if(info->n_proc == 0) *n_comms = 0;
@@ -290,16 +290,16 @@ int initialize_PGFEM_server_ctx(PGFEM_server_ctx *ctx)
 }
 
 void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
-			    const int n_comm,
-			    const int *buf_sizes)
+                const int n_comm,
+                const int *buf_sizes)
 {
   ctx->n_comms = n_comm;
-  ctx->procs = PGFEM_calloc(n_comm,sizeof(*(ctx->procs)));
-  ctx->sizes = malloc(n_comm*sizeof(*(ctx->sizes)));
-  ctx->tags = malloc(n_comm*sizeof(*(ctx->tags)));
-  ctx->buffer = malloc(n_comm*sizeof(*(ctx->buffer)));
-  ctx->req = PGFEM_calloc(n_comm,sizeof(*(ctx->req)));
-  ctx->stat = PGFEM_calloc(n_comm,sizeof(*(ctx->stat)));
+  ctx->procs = PGFEM_calloc(int, n_comm);
+  ctx->sizes = PGFEM_calloc(int, n_comm);
+  ctx->tags = PGFEM_calloc(int, n_comm);
+  ctx->buffer = PGFEM_calloc(char*, n_comm);
+  ctx->req = PGFEM_calloc(MPI_Request, n_comm);
+  ctx->stat = PGFEM_calloc(MPI_Status, n_comm);
 
   /* set tags to MPI_ANY_TAG, allocate individual buffers, and copy
      buffer sizes */
@@ -311,11 +311,11 @@ void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
 }
 
 int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
-						PGFEM_server_ctx *ctx)
+                        PGFEM_server_ctx *ctx)
 {
   int err = 0;
   err += PGFEM_comm_info_to_idx_list(info,&(ctx->n_comms),
-				     &(ctx->procs),&(ctx->sizes));
+                     &(ctx->procs),&(ctx->sizes));
 
   /* initialize pointers */
   ctx->req = NULL;
@@ -324,14 +324,14 @@ int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
 
   /* allocate if necessary */
   if(ctx->n_comms > 0){
-    ctx->tags = malloc(ctx->n_comms*sizeof(*(ctx->tags)));
-    ctx->req = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Request));
-    ctx->stat = PGFEM_calloc(ctx->n_comms,sizeof(MPI_Status));
+    ctx->tags = PGFEM_calloc(int, ctx->n_comms);
+    ctx->req = PGFEM_calloc(MPI_Request, ctx->n_comms);
+    ctx->stat = PGFEM_calloc(MPI_Status, ctx->n_comms);
 
-    ctx->buffer = PGFEM_calloc(ctx->n_comms,sizeof(char*));
+    ctx->buffer = PGFEM_calloc(char*, ctx->n_comms);
     for(int i=0; i<ctx->n_comms; i++){
       ctx->tags[i] = MPI_ANY_TAG;
-      ctx->buffer[i] = PGFEM_calloc(ctx->sizes[i],sizeof(char));
+      ctx->buffer[i] = PGFEM_calloc(char, ctx->sizes[i]);
       ctx->req[i] = MPI_REQUEST_NULL;
     }
   }
@@ -339,9 +339,9 @@ int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info *info,
 }
 
 int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
-				      const int tag,
-				      int *count,
-				      int *indices)
+                      const int tag,
+                      int *count,
+                      int *indices)
 {
   int err = 0;
   int c = 0;
@@ -356,8 +356,8 @@ int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
 }
 
 int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
-				     const int proc,
-				     const int idx)
+                     const int proc,
+                     const int idx)
 {
   int err = 0;
   if(idx >= ctx->n_comms) return ++err;
@@ -368,8 +368,8 @@ int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
 }
 
 int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
-				    const int tag,
-				    const int idx)
+                    const int tag,
+                    const int idx)
 {
   int err = 0;
   if(idx >= ctx->n_comms) return ++err;
@@ -380,12 +380,12 @@ int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
 }
 
 int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
-				 const int idx,
-				 void *buf,
-				 int *n_bytes,
-				 int *proc,
-				 int *tag,
-				 MPI_Request *req)
+                 const int idx,
+                 void *buf,
+                 int *n_bytes,
+                 int *proc,
+                 int *tag,
+                 MPI_Request *req)
 {
   int err = 0;
   if(idx >= ctx->n_comms) return ++err;

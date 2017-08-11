@@ -44,8 +44,7 @@ void VTK_print_master(char *path,
   }
 
   /* Build filename and open file */
-  char *filename;
-  filename = (char*) PGFEM_calloc(500, sizeof(char));
+  char *filename = PGFEM_calloc(char, 500);
   sprintf(filename,"%s/%s_%d.pvtu",dir_name,base_name,time);
   FILE *out;
   if((out = fopen(filename,"w")) == NULL){
@@ -140,8 +139,7 @@ void VTK_print_cohesive_master(char *path,
   }
 
   /* Build filename and open file */
-  char *filename;
-  filename = (char*) PGFEM_calloc(500, sizeof(char));
+  char *filename = PGFEM_calloc(char, 500);
   sprintf(filename,"%s/%s_cohesive_%d.pvtu",dir_name,base_name,time);
   FILE *out;
   if((out = fopen(filename,"w")) == NULL){
@@ -232,8 +230,7 @@ void VTK_print_vtu(char *path,
   }
 
   /* Build filename and open file */
-  char *filename;
-  filename = (char*) PGFEM_calloc(500, sizeof(char));
+  char *filename = PGFEM_calloc(char, 500);
   sprintf(filename,"%s/%s_%d_%d.vtu",dir_name,base_name,myrank,time);
 
 #ifndef NO_VTK_LIB
@@ -384,8 +381,8 @@ void VTK_print_vtu(char *path,
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"P\""
     " NumberOfComponents=\"9\" format=\"ascii\">\n");
   {
-    double *S = PGFEM_calloc(9,sizeof(double));
-    double *P = PGFEM_calloc(9,sizeof(double));
+    double *S = PGFEM_calloc(double, 9);
+    double *P = PGFEM_calloc(double, 9);
     for(int i = 0; i < ne; i++){
       const double *F = eps[i].il[0].F;
       S[0] = sig[i].il[0].o[0];
@@ -528,8 +525,7 @@ void VTK_print_cohesive_vtu(char *path,
   }
 
   /* Build filename and open file */
-  char *filename;
-  filename = (char*) PGFEM_calloc(500, sizeof(char));
+  char *filename = PGFEM_calloc(char, 500);
   sprintf(filename,"%s/%s_cohesive_%d_%d.vtu",dir_name,base_name,myrank,time);
   FILE *out;
   if((out = fopen(filename,"w")) == NULL){

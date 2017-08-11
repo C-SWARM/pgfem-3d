@@ -123,7 +123,7 @@
               NODE *node,
               const int nnodes,
               const int ndofn,
-              SUPP sup,
+              const SUPP sup,
               EPS *eps,
               SIG *sig,
               const HOMMAT *hommat,

@@ -15,21 +15,21 @@ static const int ndim = 3;
 size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
   size_t result = (7*sizeof(int)
-		   + sizeof(double)
-		   + 5*ndim*sizeof(double)
-		   + 2*sizeof(double)
-		   + info->nnode*sizeof(double)
-		   + info->ndofe*sizeof(double)
-		   + (info->ndofe*info->ndofe)*sizeof(double)
-		   + 2*info->ndofe*sizeof(long)
-		   + sizeof(int)
-		   + 3*sizeof(double)
-		   + sizeof(int));
+           + sizeof(double)
+           + 5*ndim*sizeof(double)
+           + 2*sizeof(double)
+           + info->nnode*sizeof(double)
+           + info->ndofe*sizeof(double)
+           + (info->ndofe*info->ndofe)*sizeof(double)
+           + 2*info->ndofe*sizeof(long)
+           + sizeof(int)
+           + 3*sizeof(double)
+           + sizeof(int));
   return result;
-}	 
+}
 
 int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			   const int nnode)
+               const int nnode)
 {
   int err = 0;
   /* set variables */
@@ -46,33 +46,33 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->max_traction = info->max_jump = -1.0; /* poisoned value */
 
   /* allocate len = ndim */
-  info->jump = PGFEM_calloc(ndim,sizeof(double));
-  info->jump_n = PGFEM_calloc(ndim,sizeof(double));
-  info->normal = PGFEM_calloc(ndim,sizeof(double));
-  info->traction = PGFEM_calloc(ndim,sizeof(double));
-  info->traction_n = PGFEM_calloc(ndim,sizeof(double));
+  info->jump = PGFEM_calloc(double, ndim);
+  info->jump_n = PGFEM_calloc(double, ndim);
+  info->normal = PGFEM_calloc(double, ndim);
+  info->traction = PGFEM_calloc(double, ndim);
+  info->traction_n = PGFEM_calloc(double, ndim);
 
   /* allocate len = nnode */
-  info->shape = PGFEM_calloc(info->nnode,sizeof(double));
+  info->shape = PGFEM_calloc(double, info->nnode);
 
   /* allocate len = ndofe */
-  info->traction_res = PGFEM_calloc(info->ndofe,sizeof(double));
-  info->loc_dof_ids = PGFEM_calloc(info->ndofe,sizeof(double));
-  info->g_dof_ids = PGFEM_calloc(info->ndofe,sizeof(double));
+  info->traction_res = PGFEM_calloc(double, info->ndofe);
+  info->loc_dof_ids = PGFEM_calloc(long, info->ndofe);
+  info->g_dof_ids = PGFEM_calloc(long, info->ndofe);
 
   /* allocate len = ndofe*ndofe */
-  info->K_00_contrib = PGFEM_calloc(info->ndofe*info->ndofe,sizeof(double));
+  info->K_00_contrib = PGFEM_calloc(double, info->ndofe*info->ndofe);
 
   /* allocate other */
-  info->times = PGFEM_calloc(3,sizeof(double));
+  info->times = PGFEM_calloc(double, 3);
   info->n_step = 1;
 
   return err;
 }
 
 int build_MS_COHE_JOB_INFO_buffer(const size_t buff_len,
-				  const char *buffer,
-				  MS_COHE_JOB_INFO *info)
+                  const char *buffer,
+                  MS_COHE_JOB_INFO *info)
 {
   int err = 0;
 
@@ -90,11 +90,11 @@ int build_MS_COHE_JOB_INFO_buffer(const size_t buff_len,
 }
 
 int set_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			 const double *normal,
-			 const double *jump,
-			 const double *shape,
-			 const long *loc_dof_ids,
-			 const long *g_dof_ids)
+             const double *normal,
+             const double *jump,
+             const double *shape,
+             const long *loc_dof_ids,
+             const long *g_dof_ids)
 {
   int err = 0;
   memcpy(info->jump,jump,ndim*sizeof(double));
@@ -121,10 +121,10 @@ void destroy_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info)
     free(info->times);
   }
 }
-			     
+
 int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
-			  const size_t buffer_len,
-			  char *buffer)
+              const size_t buffer_len,
+              char *buffer)
 {
   int err = 0;
   size_t pos = 0;
@@ -152,7 +152,7 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(info->shape,buffer,&pos,info->nnode,sizeof(double));
   pack_data(info->traction_res,buffer,&pos,info->ndofe,sizeof(double));
   pack_data(info->K_00_contrib,buffer,&pos,
-	    info->ndofe*info->ndofe,sizeof(double));
+        info->ndofe*info->ndofe,sizeof(double));
   pack_data(info->loc_dof_ids,buffer,&pos,info->ndofe,sizeof(long));
   pack_data(info->g_dof_ids,buffer,&pos,info->ndofe,sizeof(long));
   pack_data(info->times,buffer,&pos,3,sizeof(double));
@@ -163,8 +163,8 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
 }
 
 int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
-			    const size_t buffer_len,
-			    const char *buffer)
+                const size_t buffer_len,
+                const char *buffer)
 {
   int err = 0;
 
@@ -204,7 +204,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,info->shape,&pos,info->nnode,sizeof(double));
   unpack_data(buffer,info->traction_res,&pos,info->ndofe,sizeof(double));
   unpack_data(buffer,info->K_00_contrib,&pos,
-	      info->ndofe*info->ndofe,sizeof(double));
+          info->ndofe*info->ndofe,sizeof(double));
   unpack_data(buffer,info->loc_dof_ids,&pos,info->ndofe,sizeof(long));
   unpack_data(buffer,info->g_dof_ids,&pos,info->ndofe,sizeof(long));
   unpack_data(buffer,info->times,&pos,3,sizeof(double));
@@ -215,7 +215,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
 }
 
 static void job_type_str(const int job_type,
-			 char **str)
+             char **str)
 {
   switch(job_type){
   case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -240,12 +240,12 @@ static void job_type_str(const int job_type,
 }
 
 int print_MS_COHE_JOB_INFO(FILE *out,
-			   const MS_COHE_JOB_INFO *info)
+               const MS_COHE_JOB_INFO *info)
 {
   int err = 0;
   const int cell_id = pgf_FE2_job_compute_encoded_id(info->proc_id,
-						     info->elem_id,
-						     info->int_pt);
+                             info->elem_id,
+                             info->int_pt);
   char *job_str = NULL;
   PGFEM_fprintf(out,"===== START JOB INFO =====\n");
   PGFEM_fprintf(out,"NNODE:   %d\n",info->nnode);
@@ -262,14 +262,14 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"PRINT:   %d\n",info->print_flag);
   PGFEM_fprintf(out,"TIM:     %d\n",info->tim);
   PGFEM_fprintf(out,"TIMES:   %3.5e %3.5e %3.5e\n",
-		info->times[0],info->times[1],info->times[2]);
+        info->times[0],info->times[1],info->times[2]);
   PGFEM_fprintf(out,"N_STEP:  %d\n",info->n_step);
   PGFEM_fprintf(out,"JUMP(n): %3.5e %3.5e %3.5e\n",
-		info->jump_n[0],info->jump_n[1],info->jump_n[2]);
+        info->jump_n[0],info->jump_n[1],info->jump_n[2]);
   PGFEM_fprintf(out,"JUMP:    %3.5e %3.5e %3.5e\n",
-		info->jump[0],info->jump[1],info->jump[2]);
+        info->jump[0],info->jump[1],info->jump[2]);
   PGFEM_fprintf(out,"NORMAL:  %3.5e %3.5e %3.5e\n",
-		info->normal[0],info->normal[1],info->normal[2]);
+        info->normal[0],info->normal[1],info->normal[2]);
   PGFEM_fprintf(out,"INT_WT:  %3.5e\n",info->int_wt);
 
   PGFEM_fprintf(out,"SHAPE:   ");
@@ -279,9 +279,9 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"\n");
 
   PGFEM_fprintf(out,"TRAC(n): %3.5e %3.5e %3.5e\n",
-		info->traction_n[0],info->traction_n[1],info->traction_n[2]);
+        info->traction_n[0],info->traction_n[1],info->traction_n[2]);
   PGFEM_fprintf(out,"TRAC:    %3.5e %3.5e %3.5e\n",
-		info->traction[0],info->traction[1],info->traction[2]);
+        info->traction[0],info->traction[1],info->traction[2]);
   PGFEM_fprintf(out,"LID: ");
   print_array_l(out,info->loc_dof_ids,info->ndofe,1,info->ndofe);
   PGFEM_fprintf(out,"GID: ");
@@ -293,7 +293,7 @@ int print_MS_COHE_JOB_INFO(FILE *out,
     print_array_d(out,info->traction_res,info->ndofe,1,info->ndofe);
     PGFEM_fprintf(out,"TANGENT:\n");
     print_array_d(out,info->K_00_contrib,info->ndofe*info->ndofe,
-		  info->ndofe,info->ndofe);
+          info->ndofe,info->ndofe);
   }
 
   PGFEM_fprintf(out,"====== END JOB INFO ======\n");

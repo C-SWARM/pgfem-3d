@@ -9,13 +9,13 @@ HOMMAT* build_hommat (long i)
 {
   HOMMAT *pom;
   long ii;
-  
-  pom = (HOMMAT*) PGFEM_calloc (i, sizeof(HOMMAT));
-  
-  for (ii=0;ii<i;ii++){	 
+
+  pom = PGFEM_calloc (HOMMAT, i);
+
+  for (ii=0;ii<i;ii++){
     /* internal allocation */
-    pom[ii].M = (double*) PGFEM_calloc (9,sizeof(double));
-    pom[ii].L = (double*) PGFEM_calloc (9,sizeof(double));
+    pom[ii].M = PGFEM_calloc (double, 9);
+    pom[ii].L = PGFEM_calloc (double, 9);
 
     /* initialize variables */
     pom[ii].m10 = 0.0;

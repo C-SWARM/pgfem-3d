@@ -15,12 +15,12 @@ long rn_skyline(int ncol, int *Ap, int *Ai, int *order, int start)
 
   int *ap, **AA;
 
-  ap = (int*) PGFEM_calloc (ncol, sizeof(int));
-  AA = (int**) PGFEM_calloc (ncol, sizeof(int*));
+  ap = PGFEM_calloc (int, ncol);
+  AA = PGFEM_calloc (int*, ncol);
   for(i=0;i<ncol;i++)
     {
       ap[i] = Ap[i+1] - Ap[i];
-      AA[i] = (int*) PGFEM_calloc (ap[i], sizeof(int));
+      AA[i] = PGFEM_calloc (int, ap[i]);
     }
 
   /* Copy re-numbered values of Ai into AA */

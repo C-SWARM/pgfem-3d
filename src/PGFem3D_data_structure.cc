@@ -470,7 +470,7 @@ int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
   int err = 0;
 
-  load->sups        = (SUPP *)    malloc(sizeof(SUPP)*mp->physicsno);
+  load->sups        = (SUPP *)   malloc(sizeof(SUPP)*mp->physicsno);
   load->sup_defl    = (double **) malloc(sizeof(double *)*mp->physicsno);
   load->tim_load    = (long **)   malloc(sizeof(long *)*mp->physicsno);
   load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp->physicsno);

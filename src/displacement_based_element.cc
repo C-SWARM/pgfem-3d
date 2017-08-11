@@ -1055,7 +1055,7 @@ void DISP_increment(const ELEMENT *elem,
             NODE *node,
             const int nnodes,
             const int ndofn,
-            SUPP sup,
+            const SUPP sup,
             EPS *eps,
             SIG *sig,
             const HOMMAT *hommat,
@@ -1207,28 +1207,28 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
   int_point(nne,&int_pt_x);
 
   /* allocate information for integration */
-  double *int_pt_ksi = PGFEM_calloc(int_pt_x,sizeof(double));
-  double *int_pt_eta = PGFEM_calloc(int_pt_x,sizeof(double));
-  double *int_pt_zet = PGFEM_calloc(int_pt_x,sizeof(double));
-  double *weights = PGFEM_calloc(int_pt_x,sizeof(double));
-  double *Na = PGFEM_calloc(nne,sizeof(double));
-  double *N_x = PGFEM_calloc(nne,sizeof(double));
-  double *N_y = PGFEM_calloc(nne,sizeof(double));
-  double *N_z = PGFEM_calloc(nne,sizeof(double));
+  double *int_pt_ksi = PGFEM_calloc(double, int_pt_x);
+  double *int_pt_eta = PGFEM_calloc(double, int_pt_x);
+  double *int_pt_zet = PGFEM_calloc(double, int_pt_x);
+  double *weights = PGFEM_calloc(double, int_pt_x);
+  double *Na = PGFEM_calloc(double, nne);
+  double *N_x = PGFEM_calloc(double, nne);
+  double *N_y = PGFEM_calloc(double, nne);
+  double *N_z = PGFEM_calloc(double, nne);
 
   /* allocate variables */
-  double *ST = PGFEM_calloc(nne*ndn*ndn*ndn,sizeof(double));
-  double *F = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *C = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *C_I = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *Sbar = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *L = PGFEM_calloc(ndn*ndn*ndn*ndn,sizeof(double));
+  double *ST = PGFEM_calloc(double, nne*ndn*ndn*ndn);
+  double *F = PGFEM_calloc(double, ndn*ndn);
+  double *C = PGFEM_calloc(double, ndn*ndn);
+  double *C_I = PGFEM_calloc(double, ndn*ndn);
+  double *Sbar = PGFEM_calloc(double, ndn*ndn);
+  double *L = PGFEM_calloc(double, ndn*ndn*ndn*ndn);
 
   /* compute constant terms */
   /*== Indexing of gNoxN ==
     idx_4_gen(a,b,i,j,macro_nnode,macro_ndofn,ndn,ndn)
     ==*/
-  double *gNoxN = PGFEM_calloc(macro_ndof*ndn*ndn,sizeof(double));
+  double *gNoxN = PGFEM_calloc(double, macro_ndof*ndn*ndn);
   {
     for(int a=0; a<macro_nnode; a++){
       for(int b=0; b<macro_ndofn; b++){
@@ -1310,7 +1310,7 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
 
       /* compute traction_res_e */
       {
-        double *P = PGFEM_calloc(ndn*ndn,sizeof(double));
+        double *P = PGFEM_calloc(double, ndn*ndn);
         /* compute 1st PK stress */
         cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
             3,3,3,(1-p_dam->w),F,3,Sbar,3,0.0,P,3);
@@ -1400,10 +1400,9 @@ static void get_material_stiffness(const double kappa,
                    const double *Sbar,
                    double *L)
 {
-  double *CIoxCI, *CICI, *SoxS;
-  CIoxCI = (double*) PGFEM_calloc (81,sizeof(double));
-  CICI = (double*) PGFEM_calloc (81,sizeof(double));
-  SoxS = (double*) PGFEM_calloc (81,sizeof(double));
+  double *CIoxCI = PGFEM_calloc (double, 81);
+  double *CICI = PGFEM_calloc (double, 81);
+  double *SoxS = PGFEM_calloc (double, 81);
 
   /* Get the potential stuff */
   double H = 0.0;
@@ -2176,8 +2175,8 @@ static int compute_K_00_e_at_ip_2(double *K_00_e,
     }
   }
 
-  double *term_I = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *term_II = PGFEM_calloc(ndn*ndn,sizeof(double));
+  double *term_I = PGFEM_calloc(double, ndn*ndn);
+  double *term_II = PGFEM_calloc(double, ndn*ndn);
   for(int i=0; i<ndn; i++){
     for(int r=0; r<ndn; r++){
       /* get constant pointer to term computing */
@@ -2244,7 +2243,7 @@ static int compute_K_01_micro_term(double *result,
 
   /* compute symmetric F' ST_wg (3 index) */
   /* compute ST_wg S (3 index) normal */
-  double *FSTs = PGFEM_calloc(ndn*ndn,sizeof(double));
+  double *FSTs = PGFEM_calloc(double, ndn*ndn);
   for(int i=0; i<ndn; i++){
    for(int k=0; k<ndn; k++){
      const int ik = idx_2(i,k);
@@ -2305,7 +2304,7 @@ static int compute_K_01_e_at_ip(double *K_01_e,
   for(int w=0; w<nne; w++){
     for(int g=0; g<ndn; g++){
       const int wg = idx_4_gen(w,g,0,0,nne,ndn,ndn,ndn);
-      double *dt_d1u_wg = PGFEM_calloc(ndn,sizeof(double));
+      double *dt_d1u_wg = PGFEM_calloc(double, ndn);
       err += compute_K_01_micro_term(dt_d1u_wg,F,ST+wg,macro_normal,Sbar,L,
                      p_dam->w,micro_volume0,wt,jj);
 
@@ -2338,9 +2337,9 @@ static int compute_K_10_micro_term(double *result,
 {
   int err = 0;
   /* compute symmetric F' ST_ab (3 index) */
-  double *FSTs = PGFEM_calloc(ndn*ndn,sizeof(double));
-  double *FN = PGFEM_calloc(ndn*ndn*ndn,sizeof(double));
-  double *NST = PGFEM_calloc(ndn*ndn*ndn,sizeof(double));
+  double *FSTs = PGFEM_calloc(double, ndn*ndn);
+  double *FN = PGFEM_calloc(double, ndn*ndn*ndn);
+  double *NST = PGFEM_calloc(double, ndn*ndn*ndn);
   for(int i=0; i<ndn; i++){
     for(int k=0; k<ndn; k++){
       const int ik = idx_2(i,k);
@@ -2401,7 +2400,7 @@ static int compute_K_10_e_at_ip(double *K_10_e,
   for(int a=0; a<nne; a++){
     for(int b=0; b<ndn; b++){
       const int ab = idx_4_gen(a,b,0,0,nne,ndn,ndn,ndn);
-      double *micro_term_ab = PGFEM_calloc(ndn,sizeof(double));
+      double *micro_term_ab = PGFEM_calloc(double, ndn);
       err += compute_K_10_micro_term(micro_term_ab,F,ST+ab,macro_normal,
                      Sbar,L,p_dam->w,micro_volume0,wt,jj);
 

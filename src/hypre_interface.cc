@@ -25,7 +25,7 @@ static int create_precond_BOOMER(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 /*===== API FUNCTION DEFINITIONS ====*/
 void initialize_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info **info)
 {
-  (*info) = PGFEM_calloc(1,sizeof(PGFEM_HYPRE_solve_info));
+  (*info) = PGFEM_calloc(PGFEM_HYPRE_solve_info, 1);
   (*info)->hypre_k = NULL;
   (*info)->hypre_pk = NULL;
   (*info)->hypre_solver = NULL;
@@ -107,10 +107,10 @@ void hypre_initialize(int *Ap,
 
 
   /* Allocations */
-  PGFEM_hypre->ncol       = (int *)PGFEM_calloc(size,sizeof(int));
-  diag_sizes = (int *)PGFEM_calloc(size,sizeof(int));
-  offd_sizes = (int *)PGFEM_calloc(size,sizeof(int));
-  PGFEM_hypre->grows = (int *)PGFEM_calloc(size,sizeof(int));
+  PGFEM_hypre->ncol  = PGFEM_calloc(int, size);
+  diag_sizes         = PGFEM_calloc(int, size);
+  offd_sizes         = PGFEM_calloc(int, size);
+  PGFEM_hypre->grows = PGFEM_calloc(int, size);
 
   i = 0;
   while(i < size){
@@ -296,16 +296,15 @@ double* hypreGetDiagonal(HYPRE_IJMatrix A,
   int nrows = upper - lower + 1;
   int *ncols, *rows;
   int i;
-  ncols = (int*) PGFEM_calloc(nrows, sizeof(int));
-  rows = (int*) PGFEM_calloc(nrows, sizeof(int));
+  ncols = PGFEM_calloc(int, nrows);
+  rows = PGFEM_calloc(int, nrows);
 
   for(i=0; i<nrows;i++){
     ncols[i] = 1;
     rows[i] = i+lower;
   }
 
-  double *values;
-  values = (double*) PGFEM_calloc(nrows, sizeof(double));
+  double *values = PGFEM_calloc(double, nrows);
 
   HYPRE_IJMatrixGetValues(A,nrows,ncols,rows,rows,values);
 
