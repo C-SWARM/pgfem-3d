@@ -100,7 +100,7 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
          nodeMappingPtr,MPI_INT,comm);
 
   /* Loop through the boundary nodes and update global numbers */
-  int domain, oldGnn, newGnn;
+  int domain, oldGnn, newGnn{};
   for(i=0; i<nGlobalNeed; i++){
     /* determine domain which owns the node and what the old number was */
     domain = node[boundaryLookup[i]].Dom;
