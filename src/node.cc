@@ -266,8 +266,11 @@ int nodes_get_shared_idx_range(const int nnode,
   comp_node.Dom = dom;
 
   /* search for a node with matching ownership */
-  const NODE *ptr_lb = bsearch(&comp_node, nodes, nnode,
-                               sizeof(*nodes), node_comp_own);
+  const NODE *ptr_lb = static_cast<const NODE*>(bsearch(&comp_node,
+                                                        nodes,
+                                                        nnode,
+                                                        sizeof(*nodes),
+                                                        node_comp_own));
 
   /* exit early if no match found */
   if (!ptr_lb) return 1;
