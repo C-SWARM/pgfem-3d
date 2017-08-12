@@ -133,9 +133,9 @@ int ivd_public_int_alg(double *var_w,
                        const double param_Yin)
 {
   int err = 0;
-  double *params = calloc(NUM_param, sizeof(*params));
-  double *vars = calloc(NUM_vars, sizeof(*vars));
-  int *flags = calloc(NUM_flags, sizeof(*flags));
+  double *params = PGFEM_calloc(double, NUM_param);
+  double *vars = PGFEM_calloc(double, NUM_vars);
+  int *flags = PGFEM_calloc(int, NUM_flags);
 
   /* pack state at n */
   params[mu] = param_mu;
@@ -407,13 +407,13 @@ static int ivd_get_info(Model_var_info **info)
   if( *info != NULL) err += model_var_info_destroy(info);
 
   /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
+  (*info) = PGFEM_malloc<Model_var_info>();
   (*info)->n_Fs = NUM_Fs;
   (*info)->n_vars = NUM_vars;
   (*info)->n_flags = NUM_flags;
-  (*info)->F_names = malloc(NUM_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( NUM_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( NUM_flags * sizeof( ((*info)->flag_names) ));
+  (*info)->F_names = PGFEM_malloc<char*>(NUM_Fs);
+  (*info)->var_names = PGFEM_malloc<char*>(NUM_vars);
+  (*info)->flag_names = PGFEM_malloc<char*>(NUM_flags);
 
   /* allocate/copy strings */
   (*info)->F_names[F] = strdup("F");
@@ -651,7 +651,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   /* allocate room for parameters */
   p->n_param = NUM_param;
-  p->model_param = calloc(NUM_param, sizeof(*(p->model_param)));
+  p->model_param = PGFEM_calloc(double, NUM_param);
 
   return err;
 }
@@ -660,7 +660,7 @@ int iso_viscous_damage_model_ctx_build(void **ctx,
                                        const double *F,
                                        const double dt)
 {
-  ivd_ctx *CTX = malloc(sizeof(*CTX));
+  ivd_ctx *CTX = PGFEM_malloc<ivd_ctx>();
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;
   *ctx = CTX;
