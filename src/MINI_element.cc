@@ -1109,7 +1109,7 @@ int MINI_update_bubble(ELEMENT *elem,
 {
   int err = 0;
 
-  int nne, mat, nne_t;
+  int nne, nne_t;
 
   long *nod, *cn;
   double *x, *y, *z, *sup_def;
@@ -1121,7 +1121,8 @@ int MINI_update_bubble(ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     nne = elem[i].toe;
     nne_t = nne + elem[i].n_bub;
-    mat = elem[i].mat[2];
+    // @todo Commented as dead code. @cp please review. LD
+    // int mat = elem[i].mat[2];
 
     /* allocate */
     nod = aloc1l(nne);
@@ -1454,7 +1455,7 @@ void MINI_increment(ELEMENT *elem,
 {
   const int ndn = 3;
 
-  int nne, mat, nne_t, II;
+  int nne, nne_t, II;
 
   long *nod, *cn;
   double *x, *y, *z;
@@ -1464,7 +1465,8 @@ void MINI_increment(ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     nne = elem[i].toe;
     nne_t = nne + elem[i].n_bub;
-    mat = elem[i].mat[2];
+    // @todo Commented as dead code. @cp please review. LD
+    // int mat = elem[i].mat[2];
 
     /* allocate */
     nod = aloc1l(nne);
@@ -1554,8 +1556,10 @@ void MINI_check_resid(const int ndofn,
   int err = 0;
   long *nod, *cn;
   double *r_e, *x, *y, *z, *fe;
-  double nrT, nrB;
-  nrT = nrB = 0.0;
+  double nrB = 0.0;
+
+  // @todo Commented as dead code. @cp please review. LD
+  // double nrT = 0.0;
 
   double *f, *f_u, *f_p;
   f = aloc1(ndofd);
