@@ -59,10 +59,6 @@ enum integration_frame {
  * Pre-declare the Model_parameters structure
  */
 struct Model_parameters;
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
 
 /**
  * General interface to a constitutive model.
@@ -75,11 +71,6 @@ struct Constitutive_model {
   int model_id;
   State_variables **vars_list;
 };
-
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
 
 /**
  * Construct a Constitutive_model object. The object is left in an
@@ -456,16 +447,7 @@ typedef int (*usr_unpack)(Constitutive_model *m,
  */
 
 struct MATERIAL_CONSTITUTIVE_MODEL;
-#ifndef TYPE_MATERIAL_CONSTITUTIVE_MODEL
-#define TYPE_MATERIAL_CONSTITUTIVE_MODEL
-typedef struct MATERIAL_CONSTITUTIVE_MODEL MATERIAL_CONSTITUTIVE_MODEL;
-#endif
-
 struct ELASTICITY;
-#ifndef TYPE_ELASTICITY
-#define TYPE_ELASTICITY
-typedef struct ELASTICITY ELASTICITY;
-#endif
 
 struct Model_parameters {
   /** Pointer to isotropic material props */

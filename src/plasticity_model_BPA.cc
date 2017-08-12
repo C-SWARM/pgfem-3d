@@ -1240,13 +1240,13 @@ int BPA_model_info(Model_var_info **info)
   if (*info != NULL) err += model_var_info_destroy(info);
 
   /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
+  (*info) = PGFEM_malloc<Model_var_info>();
   (*info)->n_Fs = _n_Fs;
   (*info)->n_vars = _n_vars;
   (*info)->n_flags = _n_flags;
-  (*info)->F_names = malloc(_n_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( _n_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( _n_flags * sizeof( ((*info)->flag_names) ));
+  (*info)->F_names = PGFEM_malloc<char*>(_n_Fs);
+  (*info)->var_names = PGFEM_malloc<char*>(_n_vars);
+  (*info)->flag_names = PGFEM_malloc<char*>(_n_flags);
 
   /* allocate/copy strings */
   (*info)->F_names[_Fe] = strdup("Fe");
@@ -1386,7 +1386,7 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
     int l_err = 0;
     double Ut[tensor4] = {};
     transpose(Ut,U,tensor,tensor);
-    int *IPIV = malloc(tensor * sizeof(*IPIV));
+    int *IPIV = PGFEM_malloc<int>(tensor);
     int NRHS = nne * ndofn;
     int DIM = tensor;
 #ifdef ARCH_BGQ
@@ -1549,7 +1549,7 @@ int plasticity_model_BPA_initialize(Model_parameters *p)
   p->type = BPA_PLASTICITY;
 
   p->n_param = N_PARAM;
-  p->model_param = calloc(N_PARAM, sizeof(*(p->model_param)));
+  p->model_param = PGFEM_calloc(double, N_PARAM);
 
   // bpa_debug_set_default_param(p->model_param);
 
@@ -1561,7 +1561,7 @@ int plasticity_model_BPA_ctx_build(void **ctx,
                                    const double dt)
 {
   int err = 0;
-  BPA_ctx *t_ctx = malloc(sizeof(*t_ctx));
+  BPA_ctx *t_ctx = PGFEM_malloc<BPA_ctx>();
   *ctx = t_ctx;
   t_ctx->dt = dt;
   memcpy(t_ctx->F, F, tensor * sizeof(*F));
