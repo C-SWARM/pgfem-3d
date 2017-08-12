@@ -247,11 +247,14 @@ void funkce_Wf (long jj,MATERIAL *mater,double **Lf,double **Mf,double **Lm,doub
  */
 {
   long i,j;
-  double  k,l,m,**P,**A,**C,**I;
+  double  k,**P,**A,**C,**I;
 
   k=-1/(1/(mater[jj].Gyz)-4/(mater[jj].Ey)+4*mater[jj].nxy*mater[jj].nxy/(mater[jj].Ex));
-  l=2*k*mater[jj].nxy;
-  m=mater[jj].Ex+l*l/k;
+
+  // @todo Commented out dead code. Should be reviewed by @cp. LD
+  // double l, m;
+  // l=2*k*mater[jj].nxy;
+  // m=mater[jj].Ex+l*l/k;
 
   P = aloc2 (6,6);
   A = aloc2 (6,6);
