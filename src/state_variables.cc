@@ -7,6 +7,7 @@
  */
 
 #include "state_variables.h"
+#include "allocation.h"
 #include "data_structure_c.h"
 #include "utils.h"
 
@@ -51,7 +52,7 @@ int state_variables_initialize(State_variables *s,
 {
   int err = 0;
   s->n_Fs = n_Fs;
-  s->Fs = malloc(n_Fs*sizeof(*(s->Fs)));
+  s->Fs = PGFEM_malloc<Matrix<double>>(n_Fs);
   for(size_t i = 0; i < n_Fs; i++)
   {
     Matrix_construct(double,s->Fs[i]);
@@ -59,12 +60,12 @@ int state_variables_initialize(State_variables *s,
   }
 
   /* state variables is column vector */
-  s->state_vars = malloc(sizeof(*(s->state_vars)));
+  s->state_vars = PGFEM_malloc<Vector<double>>();
 
   Matrix_construct_init(double, s->state_vars[0], n_vars, 1, 0);
 
   s->n_flags = n_flags;
-  s->flags = calloc(n_flags, sizeof(*(s->flags)));
+  s->flags = PGFEM_calloc(int, n_flags);
 
   return err;
 }
