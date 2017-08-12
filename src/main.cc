@@ -510,11 +510,10 @@ int single_scale_main(int argc,char *argv[])
   int myrank = 0;
 
   /* ***** Set up debug log ***** */
-  FILE *debug_log = NULL;
+  // FILE *debug_log = NULL;
   /* debug_log = fopen("debug.log","w"); */
-  debug_log = stdout;
+  // debug_log = stdout;
   /* debug_log = stderr; */
-
 
   /*=== END INITIALIZATION === */
 
@@ -538,7 +537,11 @@ int single_scale_main(int argc,char *argv[])
   /* MPI_Barrier(mpi_comm); */
   total_time -= MPI_Wtime();
 
+#if (MPI_VERSION < 2)
   MPI_Errhandler_set(mpi_comm,MPI_ERRORS_ARE_FATAL);
+#else
+  MPI_Comm_set_errhandler(mpi_comm,MPI_ERRORS_ARE_FATAL);
+#endif
 
   if(myrank == 0) {
     PGFEM_printf("\n\nInitializing PFEM3d\n\n");
