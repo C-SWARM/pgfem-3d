@@ -45,7 +45,7 @@ void reseni_rovnic (double *a,double *x,double *y,long n,long m,long as)
        **** otestovano ****
        */
 {
-  long    i,j,k,ac,acr,acc,aca,aca1,acx,acy,acy1,aci,acj;
+  long    i,j,k,ac,acr,acc{},aca,aca1,acx,acy,acy1,aci,acj;
   long    *av;
   double  s,g;
 
@@ -475,7 +475,7 @@ void sort_cr (long *ci,long *adrb,long *adre,long ndof)
        29.5.1998
      */
 {
-  long i,j,k,ii,jj,lj,uj,min,prev;
+  long i,j,k,ii{},jj,lj,uj,min,prev;
 
   for (i=0;i<ndof;i++){
     lj=adrb[i];  uj=adre[i];  prev=-1;
@@ -729,7 +729,7 @@ void cg_scr (double *a,double *x,double *y,long *adr,long *ci,long n,long ni,dou
      */
 {
   long i,j;
-  double nom,denom,nory,alpha,beta,ener,res;
+  double nom,denom,nory,alpha,beta,ener,res{};
   double *d,*r,*p;
 
   /* double  en; */
