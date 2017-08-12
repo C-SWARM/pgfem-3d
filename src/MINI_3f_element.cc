@@ -1291,7 +1291,7 @@ int MINI_3f_update_bubble(ELEMENT *elem,
 {
   int err = 0;
 
-  int nne, mat, nne_t;
+  int nne, nne_t;
 
   long *nod, *cn;
   double *x, *y, *z, *sup_def;
@@ -1303,7 +1303,9 @@ int MINI_3f_update_bubble(ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     nne = elem[i].toe;
     nne_t = nne + elem[i].n_bub;
-    mat = elem[i].mat[2];
+
+    // @todo Commented as dead code. @cp please review. LD
+    // int mat = elem[i].mat[2];
 
     /* allocate */
     nod = aloc1l(nne);
@@ -1639,7 +1641,7 @@ void MINI_3f_increment(ELEMENT *elem,
                const int mp_id)
 {
   const int ndn = 3;
-  int nne, mat, nne_t, II;
+  int nne, nne_t, II;
 
   long *nod, *cn;
   double *x, *y, *z;
@@ -1649,7 +1651,9 @@ void MINI_3f_increment(ELEMENT *elem,
   for (int i=0; i<nelem; i++){
     nne = elem[i].toe;
     nne_t = nne + elem[i].n_bub;
-    mat = elem[i].mat[2];
+
+    // @todo Commented as dead code. @cp please review. LD
+    // int mat = elem[i].mat[2];
 
     /* allocate */
     nod = aloc1l(nne);
