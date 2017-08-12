@@ -16,15 +16,11 @@
  * particular job.
  */
 struct pgf_FE2_job_comm_buf{
-  size_t buffer_len; /**< length of the buffer in bytes */
+  size_t buffer_len;                       /**< length of the buffer in bytes */
   char *buffer;
   MPI_Request request;
   MPI_Status status;
 };
-#ifndef TYPEDEF_pgf_FE2_job_comm_buf
-#define TYPEDEF_pgf_FE2_job_comm_buf
-typedef struct pgf_FE2_job_comm_buf pgf_FE2_job_comm_buf;
-#endif
 
 /**
  * Set a valid initial state for a pgf_FE2_job_comm_buf object.
@@ -78,10 +74,6 @@ struct pgf_FE2_job{
   pgf_FE2_job_comm_buf *comm_buf;
   int state;
 };
-#ifndef TYPEDEF_pgf_FE2_job
-#define TYPEDEF_pgf_FE2_job
-typedef struct pgf_FE2_job pgf_FE2_job;
-#endif
 
 /**
  * Sets/allocates an initial valid state for a pgf_FE2_job object.

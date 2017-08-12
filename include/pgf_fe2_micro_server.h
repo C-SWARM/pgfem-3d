@@ -45,7 +45,6 @@ struct pgf_FE2_micro_server_stats{
   double min;
   double max;
 };
-typedef struct pgf_FE2_micro_server_stats pgf_FE2_micro_server_stats;
 
 /**
  * Sturucture to organize a server's work.
@@ -55,7 +54,6 @@ struct pgf_FE2_micro_server{
   pgf_FE2_job *jobs;
   pgf_FE2_micro_server_stats *stats;
 };
-typedef struct pgf_FE2_micro_server pgf_FE2_micro_server;
 
 /**
  * Initialize a handle to a pgf_FE2_micro_server object. (allow for

@@ -6,6 +6,12 @@
 
 #include <stdlib.h>
 
+// Help with legacy malloc.
+template <class T>
+static inline T* PGFEM_malloc(size_t n = 1) {
+  return static_cast<T*>(malloc(n * sizeof(T)));
+}
+
 /** Note this function is called typically called through the macro
     PGFEM_calloc so that __func__ __FILE__ and __LINE__ can be passed
     from the point of invocation without as much code */

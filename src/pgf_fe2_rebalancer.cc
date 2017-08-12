@@ -27,7 +27,7 @@ enum new_partition_idx{
 
 static const size_t NEW_PART_JOB_SIZE = NEW_PART_NUMEL*sizeof(size_t);
 
-typedef struct new_partition{
+struct new_partition {
   size_t max_size;
   size_t n_job;
   size_t n_keep;
@@ -37,7 +37,7 @@ typedef struct new_partition{
   size_t *keep;
   size_t *send;
   size_t *recv;
-} new_partition;
+};
 
 /*** static function declarations ***/
 /**
@@ -45,13 +45,13 @@ typedef struct new_partition{
  * time. (decreasing order)
  */
 static int new_partition_buf_compare_time(const void *a,
-					  const void *b);
+                      const void *b);
 
 /**
  * Build a new_partition object with space for max_n_jobs.
  */
 static void new_partition_build(new_partition *np,
-				const size_t max_n_jobs);
+                const size_t max_n_jobs);
 
 /**
  * Destroy a new_partition object.
@@ -91,23 +91,23 @@ static size_t new_partition_get_offset_recv(const new_partition *np);
  * new_partition object.
  */
 static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
-						 const size_t idx);
+                         const size_t idx);
 
 /**
  * Format conversion from the helper struct to one more communication
  * friendly.
  */
 static void new_partition_to_pgf_FE2_server_rebalance(const new_partition *np,
-						      pgf_FE2_server_rebalance **rb);
+                              pgf_FE2_server_rebalance **rb);
 
 /**
  * Assign a job to a given partition. Updates send buffers on other
  * partitions as needed.
  */
 static void rebalance_partitions_assign_job(const size_t *job,
-					    const size_t part_id,
-					    const size_t n_parts,
-					    new_partition *parts);
+                        const size_t part_id,
+                        const size_t n_parts,
+                        new_partition *parts);
 
 /**
  * Get the index to the partition with the smallest total time that is
@@ -118,15 +118,15 @@ static void rebalance_partitions_assign_job(const size_t *job,
  * jobs/partitions.
  */
 static size_t get_smallest_part_idx(const size_t n_parts,
-				    const new_partition *parts);
+                    const new_partition *parts);
 
 
 /**
  * Keeps the same partitioning as the previous step.
  */
 static void rebalance_partitions_none(const size_t n_parts,
-				      new_partition *all_parts,
-				      new_partition *parts);
+                      new_partition *all_parts,
+                      new_partition *parts);
 
 /**
  * Chooses between rebalancing via greedy algorithm and original
@@ -134,30 +134,29 @@ static void rebalance_partitions_none(const size_t n_parts,
  * it to migrate data.
  */
 static void rebalance_partitions_adaptive(const size_t n_parts,
-					  const double *orig_totals,
-					  new_partition *all_parts,
-					  new_partition *parts);
+                      const double *orig_totals,
+                      new_partition *all_parts,
+                      new_partition *parts);
 
 /**
  * Format conversion server->new_partition (reduces footprint).
  */
 static void new_partition_extract_server_as_keep(new_partition *all_parts,
-						 const size_t server_id,
-						 const pgf_FE2_micro_server *server);
+                         const size_t server_id,
+                         const pgf_FE2_micro_server *server);
 
 /*** API ***/
 /**
  * Very ugly initialization of data structure I don't want to keep around...
  */
 void new_partition_build_set_keep(void **np,
-				  const size_t max_n_job,
-				  const size_t n_job,
-				  const int *job_id,
-				  const int *job_time,
-				  const int *proc_id)
+                  const size_t max_n_job,
+                  const size_t n_job,
+                  const int *job_id,
+                  const int *job_time,
+                  const int *proc_id)
 {
-  *np = malloc(sizeof(new_partition));
-  new_partition *NP = *np;
+  new_partition *NP = PGFEM_malloc<new_partition>();
   new_partition_build(NP,max_n_job);
 
   NP->n_keep = n_job;
@@ -167,33 +166,37 @@ void new_partition_build_set_keep(void **np,
     ptr[NEW_PART_TIME] = job_time[i];
     ptr[NEW_PART_SR] = proc_id[i];
   }
+
+  *np = NP;
 }
 
 /**
  * destroy via opaque handle
  */
-void new_partition_destroy_void(void *np)
+void new_partition_destroy_void(void *obj)
 {
+  auto np = static_cast<new_partition*>(obj);
   new_partition_destroy(np);
   free(np);
   np = NULL;
 }
 
 void new_partitions_void(void **parts,
-			 const size_t n_parts,
-			 const size_t n_max_job)
+             const size_t n_parts,
+             const size_t n_max_job)
 {
-  *parts = malloc(n_parts*sizeof(new_partition));
-  new_partition *NP = *parts; /* alias */
+  new_partition *NP = PGFEM_malloc<new_partition>(n_parts);
   for(size_t i=0; i<n_parts; i++){
     new_partition_build(NP + i,n_max_job);
   }
+
+  *parts = NP;
 }
 
 void new_partitions_destroy_void(void *np,
-				 const size_t n_parts)
+                 const size_t n_parts)
 {
-  new_partition *NP = np;
+  new_partition *NP = static_cast<new_partition*>(np);
   for(size_t i=0; i<n_parts; i++){
     new_partition_destroy(NP+i);
   }
@@ -202,8 +205,8 @@ void new_partitions_destroy_void(void *np,
 }
 
 void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
-						     const void *np,
-						     pgf_FE2_server_rebalance **rb)
+                             const void *np,
+                             pgf_FE2_server_rebalance **rb)
 {
   auto NP = (new_partition *) np;
   for(int i=0; i<n_parts; i++){
@@ -212,12 +215,12 @@ void new_partitions_void_to_pgf_FE2_server_rebalance(const int n_parts,
 }
 
 void rebalance_partitions_greedy(const size_t n_parts,
-				 void *All_parts,
-				 void *Parts)
+                 void *All_parts,
+                 void *Parts)
 {
   /* cast pointers */
-  new_partition *all_parts = All_parts;
-  new_partition *parts = Parts;
+  new_partition *all_parts = static_cast<new_partition*>(All_parts);
+  new_partition *parts = static_cast<new_partition*>(Parts);
   /* sort the full job list by time */
   new_partition_sort_keep_time(all_parts);
 
@@ -245,9 +248,9 @@ void rebalance_partitions_greedy(const size_t n_parts,
 }
 
 pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
-					     const size_t total_n_jobs,
-					     const size_t max_n_jobs,
-					     const int heuristic)
+                         const size_t total_n_jobs,
+                         const size_t max_n_jobs,
+                         const int heuristic)
 {
   /* get rank and number of macro and micro porcs. */
   int n_macro_proc = 0;
@@ -256,28 +259,28 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   MPI_Comm_size(mpi_comm->macro,&n_macro_proc);
   n_micro_proc -= n_macro_proc;
 
-  char **buf = malloc(n_micro_proc*sizeof(*buf));
+  char **buf = PGFEM_malloc<char*>(n_micro_proc);
   MPI_Status stat;
-  MPI_Request *req = malloc(n_micro_proc*sizeof(*req));
+  MPI_Request *req = PGFEM_malloc<MPI_Request>(n_micro_proc);
   /* probe for communication, allocate and post matching receives. */
   /* Can improve asynchrony here with some work. */
   for(int i=0; i<n_micro_proc; i++){
     int src = i + n_macro_proc;
     MPI_Probe(src,FE2_MICRO_SERVER_REBALANCE,
-	      mpi_comm->mm_inter,&stat);
+          mpi_comm->mm_inter,&stat);
     int count = 0;
     MPI_Get_count(&stat,MPI_CHAR,&count);
-    buf[i] = malloc(count);
+    buf[i] = PGFEM_malloc<char>(count);
     MPI_Irecv(buf[i],count,MPI_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
-	      mpi_comm->mm_inter,req + i);
+          mpi_comm->mm_inter,req + i);
   }
 
   /* build some helper data structures */
   pgf_FE2_micro_server *server = NULL;
-  pgf_FE2_micro_server_stats *all_stats = malloc(n_micro_proc*sizeof(*all_stats));
-  new_partition *all_parts = malloc(sizeof(*all_parts));
+  auto *all_stats = PGFEM_malloc<pgf_FE2_micro_server_stats>(n_micro_proc);
+  auto *all_parts = PGFEM_malloc<new_partition>();
   new_partition_build(all_parts,total_n_jobs);
-  new_partition *parts = malloc(n_micro_proc*sizeof(*parts));
+  auto *parts = PGFEM_malloc<new_partition>(n_micro_proc);
   for(int i=0; i<n_micro_proc; i++){
     new_partition_build(parts + i,max_n_jobs);
   }
@@ -311,9 +314,9 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   case FE2_REBALANCE_ADAPTIVE:
     {
       /* push unbalanced server totals into array */
-      double *orig_totals = malloc(n_micro_proc*sizeof(*orig_totals));
+      double *orig_totals = PGFEM_malloc<double>(n_micro_proc);
       for(int i=0; i<n_micro_proc; i++){
-	orig_totals[i] = all_stats[i].total;
+    orig_totals[i] = all_stats[i].total;
       }
 
       /* adaptively rebalance */
@@ -328,7 +331,7 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   }
 
   /* push new_partitions to rebalance data structure for communication */
-  pgf_FE2_server_rebalance **rb = calloc(n_micro_proc,sizeof(rb));
+  pgf_FE2_server_rebalance **rb = PGFEM_calloc(pgf_FE2_server_rebalance*, n_micro_proc);
   for(int i=0; i<n_micro_proc; i++){
     new_partition_to_pgf_FE2_server_rebalance(parts + i,rb + i);
   }
@@ -351,16 +354,16 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
 
 /*** STATIC FUNCTIONS ****/
 static int new_partition_buf_compare_time(const void *a,
-					  const void *b)
+                      const void *b)
 {
   auto A = (size_t *) a;
   auto B = (size_t *) b;
   return ((A[NEW_PART_TIME] < B[NEW_PART_TIME])
-	  - (A[NEW_PART_TIME] > B[NEW_PART_TIME]));
+      - (A[NEW_PART_TIME] > B[NEW_PART_TIME]));
 }
 
 static void new_partition_build(new_partition *np,
-				const size_t max_n_jobs)
+                const size_t max_n_jobs)
 {
   np->max_size = max_n_jobs;
   np->n_job = 0;
@@ -369,9 +372,9 @@ static void new_partition_build(new_partition *np,
   np->n_recv = 0;
   np->total_time = 0;
   const size_t len = max_n_jobs*NEW_PART_JOB_SIZE;
-  np->keep = malloc(len);
-  np->send = malloc(len);
-  np->recv = malloc(len);
+  np->keep = PGFEM_malloc<size_t>(len);
+  np->send = PGFEM_malloc<size_t>(len);
+  np->recv = PGFEM_malloc<size_t>(len);
 }
 
 static void new_partition_destroy(new_partition *np)
@@ -385,7 +388,7 @@ static void new_partition_destroy(new_partition *np)
 static void new_partition_sort_keep_time(new_partition *np)
 {
   qsort(np->keep,np->n_keep,NEW_PART_JOB_SIZE,
-	new_partition_buf_compare_time);
+    new_partition_buf_compare_time);
 }
 
 static void new_partition_set_empty(new_partition *np)
@@ -410,7 +413,7 @@ static size_t new_partition_get_offset_recv(const new_partition *np)
 
 
 static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
-						 const size_t idx)
+                         const size_t idx)
 {
   const size_t i = idx * NEW_PART_NUMEL;
   return (np->keep + i);
@@ -418,7 +421,7 @@ static size_t* new_partition_get_ptr_to_job_keep(const new_partition *np,
 
 
 static void new_partition_to_pgf_FE2_server_rebalance(const new_partition *np,
-						      pgf_FE2_server_rebalance **rb)
+                              pgf_FE2_server_rebalance **rb)
 {
   pgf_FE2_server_rebalance_build(rb,np->n_keep,np->n_send,np->n_recv);
   int *keep = pgf_FE2_server_rebalance_keep_buf(*rb);
@@ -444,9 +447,9 @@ static void new_partition_to_pgf_FE2_server_rebalance(const new_partition *np,
 
 
 static void rebalance_partitions_assign_job(const size_t *job,
-					    const size_t part_id,
-					    const size_t n_parts,
-					    new_partition *parts)
+                        const size_t part_id,
+                        const size_t n_parts,
+                        new_partition *parts)
 {
   /* job is a pointer to some job information to copy */
   const size_t job_sr = job[NEW_PART_SR];
@@ -479,7 +482,7 @@ static void rebalance_partitions_assign_job(const size_t *job,
 
 
 static size_t get_smallest_part_idx(const size_t n_parts,
-				    const new_partition *parts)
+                    const new_partition *parts)
 {
   size_t idx = -1; /* poisoned */
   size_t min = -1; /* overflow --> max */
@@ -494,12 +497,12 @@ static size_t get_smallest_part_idx(const size_t n_parts,
 }
 
 static void rebalance_partitions_none(const size_t n_parts,
-				      new_partition *all_parts,
-				      new_partition *parts)
+                      new_partition *all_parts,
+                      new_partition *parts)
 {
 
   /* reset the partitions */
-  for(int i=0; i<n_parts; i++){
+  for(size_t i=0; i<n_parts; i++){
     new_partition_set_empty(parts + i);
   }
 
@@ -515,8 +518,8 @@ static void rebalance_partitions_none(const size_t n_parts,
 }
 
 static void new_partition_extract_server_as_keep(new_partition *all_parts,
-						 const size_t server_id,
-						 const pgf_FE2_micro_server *server)
+                         const size_t server_id,
+                         const pgf_FE2_micro_server *server)
 {
   const pgf_FE2_job *j = server->jobs;
   size_t *restrict keep = all_parts->keep;
@@ -531,9 +534,9 @@ static void new_partition_extract_server_as_keep(new_partition *all_parts,
 
 
 static void rebalance_partitions_adaptive(const size_t n_parts,
-					  const double *orig_totals,
-					  new_partition *all_parts,
-					  new_partition *parts)
+                      const double *orig_totals,
+                      new_partition *all_parts,
+                      new_partition *parts)
 {
   int rank = -1;
   PGFEM_Error_rank(&rank);
@@ -574,15 +577,15 @@ static void rebalance_partitions_adaptive(const size_t n_parts,
   if ( new_max < max_factor * orig_max ){ /* reduced total time */
     if ( rank == 0 && LOGGING){
       PGFEM_printerr("REBALANCING:\n"
-		     "       max       min       wait\n"
-		     "OLD: %8.3e %8.3e %8.3e\n"
-		     "NEW: %8.3e %8.3e %8.3e\n"
-		     "N_JOB:\n",
-		     orig_max,orig_min,orig_wait,
-		     new_max,new_min,new_wait);
+             "       max       min       wait\n"
+             "OLD: %8.3e %8.3e %8.3e\n"
+             "NEW: %8.3e %8.3e %8.3e\n"
+             "N_JOB:\n",
+             orig_max,orig_min,orig_wait,
+             new_max,new_min,new_wait);
       for(size_t i = 0; i < n_parts; i++){
-	PGFEM_printerr("%ld ",parts[i].n_job);
-	if( !((i + 1) % 20) ) PGFEM_printerr("\n");
+    PGFEM_printerr("%ld ",parts[i].n_job);
+    if( !((i + 1) % 20) ) PGFEM_printerr("\n");
       }
       PGFEM_printerr("\n");
     }
