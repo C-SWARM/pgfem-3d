@@ -428,7 +428,7 @@ static int create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 
   err += HYPRE_EuclidCreate(mpi_comm, &PGFEM_hypre->hypre_pc);
   err += HYPRE_EuclidSetParams (PGFEM_hypre->hypre_pc,
-                euclid_argc,euclid_argv);
+      euclid_argc,const_cast<char**>(euclid_argv));
 
   return err;
 }
