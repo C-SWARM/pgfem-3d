@@ -12,10 +12,10 @@
 #define cast_V2 (void**)
 #define cast_const_V2 (const void**)
 
-static const int periodic = 0;
-static const size_t SYM_TENSOR = 6;
-static const size_t NDN = 3;
-static const size_t TENSOR_2 = 9; /* NDN*NDN */
+static constexpr int periodic = 0;
+static constexpr size_t SYM_TENSOR = 6;
+static constexpr size_t NDN = 3;
+static constexpr size_t TENSOR_2 = 9; /* NDN*NDN */
 
 EPS* build_eps_il(const long ne,
                   const ELEMENT *elem,
@@ -25,10 +25,10 @@ EPS* build_eps_il(const long ne,
 {
   int err = 0;
   EPS *pom = PGFEM_calloc (EPS, ne);
-  long i,j,k,M,N,P,II,JJ,nne;
+  long II,JJ,nne;
   int n_state_varialbles = 0; // count number of element variables
 
-  for (i=0;i<ne;i++){
+  for (long i=0;i<ne;i++){
     /* initialize ALL variables */
     EPS *p_pom = &pom[i];
 
@@ -97,7 +97,7 @@ EPS* build_eps_il(const long ne,
         /* Pressure integration part */
         if (analysis == STABILIZED
                 || analysis == MINI){
-          for (j=0;j<JJ;j++)
+          for (long j=0;j<JJ;j++)
             pom[i].st[j].Fpp = PGFEM_calloc (double, TENSOR_2);
         }
 
@@ -108,11 +108,11 @@ EPS* build_eps_il(const long ne,
          * allocate the first element anyhow... MM 2/20/2013 */
         if(i == 0){
           pom[0].Dp = PGFEM_calloc (double*, NDN);
-          for (j=0;j<NDN;j++)
+          for (unsigned j=0;j<NDN;j++)
             pom[0].Dp[j] = PGFEM_calloc (double, NDN);
         }
 
-        for (j=0;j<II;j++){
+        for (long j=0;j<II;j++){
           if (analysis == CM) {
             pom[i].model[j].vars_list = statv_list;
             pom[i].model[j].model_id = n_state_varialbles;
@@ -136,18 +136,18 @@ EPS* build_eps_il(const long ne,
             pom[i].il[j].dUU_Fr   = PGFEM_calloc (double***, NDN);
             pom[i].il[j].dUU_Fr_n = PGFEM_calloc (double***, NDN);
 
-            for (M=0;M<NDN;M++){
+            for (unsigned M=0;M<NDN;M++){
 
               pom[i].il[j].dUU_Tr[M]   = PGFEM_calloc (double, NDN);
               pom[i].il[j].dUU_Tr_n[M] = PGFEM_calloc (double, NDN);
               pom[i].il[j].dUU_Fr[M]   = PGFEM_calloc (double**, NDN);
               pom[i].il[j].dUU_Fr_n[M] = PGFEM_calloc (double**, NDN);
 
-              for (N=0;N<NDN;N++){
+              for (unsigned N=0;N<NDN;N++){
                 pom[i].il[j].dUU_Fr[M][N]= PGFEM_calloc (double*, NDN);
                 pom[i].il[j].dUU_Fr_n[M][N] = PGFEM_calloc (double*, NDN);
 
-                for (P=0;P<NDN;P++){
+                for (unsigned P=0;P<NDN;P++){
                   pom[i].il[j].dUU_Fr[M][N][P] = PGFEM_calloc (double, NDN);
                   pom[i].il[j].dUU_Fr_n[M][N][P] = PGFEM_calloc (double, NDN);
                 }
@@ -167,7 +167,7 @@ EPS* build_eps_il(const long ne,
           pom[0].Fe  = PGFEM_calloc (double*, NDN);
           pom[0].Fp  = PGFEM_calloc (double*, NDN);
 
-          for (k=0;k<NDN;k++){
+          for (size_t k=0;k<NDN;k++){
             pom[0].F[k]  = PGFEM_calloc (double, NDN);
             pom[0].Fn[k] = PGFEM_calloc (double, NDN);
             pom[0].FB[k] = PGFEM_calloc (double, NDN);
@@ -193,7 +193,7 @@ EPS* build_eps_il(const long ne,
           pom[i].el.i  = PGFEM_calloc (double, SYM_TENSOR);
         }
 
-        for (j=0;j<II;j++){
+        for (long j=0;j<II;j++){
           pom[i].il[j].o    = PGFEM_calloc (double, SYM_TENSOR);
           if (analysis == TP_ELASTO_PLASTIC){
             pom[i].d_il[j].o  = PGFEM_calloc (double, SYM_TENSOR);
