@@ -305,7 +305,7 @@ void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
      buffer sizes */
   for(int i=0; i<n_comm; i++){
     ctx->sizes[i] = buf_sizes[i];
-    ctx->buffer[i] = malloc(buf_sizes[i]);
+    ctx->buffer[i] = static_cast<char*>(malloc(buf_sizes[i]));
     ctx->tags[i] = MPI_ANY_TAG;
   }
 }
