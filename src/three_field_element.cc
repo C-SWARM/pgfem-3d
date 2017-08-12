@@ -2037,10 +2037,12 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
 {
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
-  long include_inertia = 1;
 
-  if(fabs(rho)<MIN_DENSITY)
-    include_inertia = 0;
+  // @todo Commented out as dead code. @cp shoud review. LD
+  // long include_inertia = 1;
+  //
+  // if(fabs(rho)<MIN_DENSITY)
+  //   include_inertia = 0;
 
   double err = 0.0;
 
