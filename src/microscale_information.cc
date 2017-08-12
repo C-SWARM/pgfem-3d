@@ -87,22 +87,24 @@ typedef struct MICROSCALE_SOLUTION_BUFFERS{
 
 
 /*==== API FUNCTIONS ====*/
-static int sort_first(const void *a, const void *b)
+static inline int
+sort_first(const void *a, const void *b)
 {
   return *((const int*)a) - *((const int*) b);
 }
 
-static int sort_second(const void *a, const void *b)
+static inline int
+sort_second(const void *a, const void *b)
 {
   return *((const int*)a+1) - *((const int*)b+1);
 }
 
-void sol_idx_map_build(sol_idx_map *map,
-               const size_t size)
+void
+sol_idx_map_build(sol_idx_map *map, const size_t size)
 {
   /* map stores id : idx pairs */
   map->size = size;
-  map->map = malloc(2*size*sizeof(*(map->map)));
+  map->map = new int[2*size];
   for(size_t i=0; i<2*size; i += 2){
     map->map[i] = -1;
     map->map[i+1] = i/2;
@@ -111,9 +113,9 @@ void sol_idx_map_build(sol_idx_map *map,
 
 void sol_idx_map_destroy(sol_idx_map *map)
 {
-  map->size = 0;
-  free(map->map);
+  delete [] map->map;
   map->map = NULL;
+  map->size = 0;
 }
 
 void sol_idx_map_sort_id(sol_idx_map *map)
@@ -152,7 +154,8 @@ int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
   size_t len = map->size;
 
   /* get pointer to matching pair */
-  int *ptr = lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_first);
+  int *ptr = static_cast<int*>(lfind(val, map->map, &len, sizeof(val),
+                                     sort_first));
   assert(ptr != NULL);
   ptr[0] = new_id;
   return ptr[1];
@@ -164,7 +167,8 @@ void sol_idx_map_idx_set_id(sol_idx_map *map,
 {
   int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
-  int *ptr = ((int *) lfind(val,map->map,&len,2*sizeof(*(map->map)),sort_second));
+  int *ptr = static_cast<int*>(lfind(val, map->map, &len, sizeof(val),
+                                     sort_second));
   assert(ptr != NULL);
   *ptr = id;
 }
