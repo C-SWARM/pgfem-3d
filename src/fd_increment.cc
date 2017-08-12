@@ -43,13 +43,18 @@ void fd_increment (long ne,
 {
   long ii,i,j,k,ip,II,JJ,KK,nne,*nod;
   long M,N,P,Q,R,ndn,mat,nss,U,W,ndofe,*cn;
-  double *x,*y,*z,*gk,*ge,*gz,*w,ksi,eta,zet,ai,aj,ak;
+  double *x,*y,*z,*gk,*ge,*gz,*w;
   double **Fn,**Fr,*N_x,*N_y,*N_z,Jn,Jr,Tr,Tn,****ST,**E;
   double J,L[3][3][3][3],*r_e,*Psi,**S,**UU,**UU_I,**Fp,*TA;
   double *GA,dij,**Fn1,**FnB,PL,**AA,**Fn1B,**BB,*X,*Y;
-  double pom,volume,EL_e,**CC,**FoN,**FlN,**DD,**Fee,**Fpp;
+  double pom,EL_e,**CC,**FoN,**FlN,**DD,**Fee,**Fpp;
   double GEL_e,GVol,*GPf,LPf[63],*GDp,LDp[9];
   double Gpores;
+
+  // @todo Make sure these are initialize along all paths. Someone from @cp
+  //       should verify that either they actually are initialized along all
+  //       feasible paths, or that the default initializer is adequate. LD
+  double volume{}, ai{}, aj{}, ak{}, zet{}, eta{}, ksi{};
 
   int myrank,nproc;
   MPI_Comm_size(mpi_comm,&nproc);
