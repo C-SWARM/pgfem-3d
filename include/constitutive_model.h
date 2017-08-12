@@ -367,11 +367,6 @@ struct Model_var_info {
   size_t n_flags;
 };
 
-#ifndef TYPE_MODEL_VAR_INFO
-#define TYPE_MODEL_VAR_INFO
-typedef struct Model_var_info Model_var_info;
-#endif
-
 /**
  * Print the object to the specified file.
  */

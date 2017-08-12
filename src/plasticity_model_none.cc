@@ -69,10 +69,12 @@ static void he_compute_C(double * restrict C,
   }
 }
 
-static double compute_bulk_mod(const HOMMAT *mat)
-{
-  return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
-}
+// @todo Deleted as dead code. @cp should review. LD
+//
+// static double compute_bulk_mod(const HOMMAT *mat)
+// {
+//   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
+// }
 
 static int plasticity_none_int_alg(Constitutive_model *m,
                                    const void *ctx)
@@ -189,13 +191,13 @@ static int plasticity_none_info(Model_var_info **info)
   if( *info != NULL) err += model_var_info_destroy(info);
 
   /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
+  (*info) = PGFEM_malloc<Model_var_info>();
   (*info)->n_Fs = g_n_Fs;
   (*info)->n_vars = g_n_vars;
   (*info)->n_flags = g_n_flags;
-  (*info)->F_names = malloc(g_n_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( g_n_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( g_n_flags * sizeof( ((*info)->flag_names) ));
+  (*info)->F_names = PGFEM_malloc<char*>(g_n_Fs);
+  (*info)->var_names = PGFEM_malloc<char*>(g_n_vars);
+  (*info)->flag_names = PGFEM_malloc<char*>(g_n_flags);
 
   /* allocate/copy strings */
   (*info)->F_names[Fnm1] = strdup("Fnm1");
@@ -447,7 +449,7 @@ int plasticity_model_none_ctx_build(void **ctx,
                                     const int is_coulpled_with_thermal)
 {
   int err = 0;
-  none_ctx *t_ctx = malloc(sizeof(none_ctx));
+  none_ctx *t_ctx = PGFEM_malloc<none_ctx>();
 
   /* assign internal pointers. NOTE: We are copying the pointer NOT
      the value. No additional memory is allocated. */
@@ -472,7 +474,7 @@ int plasticity_model_none_ctx_build(void **ctx,
 int plasticity_model_none_ctx_destroy(void **ctx)
 {
   int err = 0;
-  none_ctx *t_ctx = *ctx;
+  none_ctx *t_ctx = static_cast<none_ctx*>(*ctx);
   /* invalidate handle */
   *ctx = NULL;
 

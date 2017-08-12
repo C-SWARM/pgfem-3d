@@ -11,10 +11,6 @@
 #define PLASTICITY_MODEL_NONE_H
 
 struct Model_parameters;
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
 
 /**
  * Initialize the Model_parameters object for this particular model.
