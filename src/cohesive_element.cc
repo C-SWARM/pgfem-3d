@@ -282,18 +282,18 @@ void stiff_mat_coh (long ii,
 */
 {
   long ip,i,j,II,JJ,M,N,P,R,U,ndofe;
-  double ****Kt,****Kn,*gk,*ge,*w,
-    ksi,eta,ai,aj,*Nf,*N_x,*N_y,
+  double ****Kt,****Kn,*gk,*ge,*w,ksi{},eta{},ai{},aj{},*Nf,*N_x,*N_y,
     *xl,*yl,*zl,**TX,***AA,**TN,
     ***Nxb,*xb,*yb,*zb,*Xi,*e1,
     *e2,*e2h,*n;
-  double **STIFF,bet,J=0.0,Jjn;
+  double **STIFF,J=0.0,Jjn;
 
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
   const cohesive_props *props = cel->props;
   ndofe = ndofn*coel[ii].toe;
-  bet = coel[ii].b;
+  // @todo Commented as dead code. @cp should review. LD
+  // double bet = coel[ii].b;
   Jjn = coel[ii].Jjn;
 
   Kt = aloc4 (ndn,ndn,nne,nne);
@@ -495,16 +495,17 @@ void resid_co_elem (long ii,
 *** formulation!
 */
 {
-  long ip,i,j,II,JJ,ndofe,M,N;
-  double *gk,*ge,*w,ksi,eta,ai,aj,*T,**Rc,*Nf,*N_x,*N_y,
+  long ip,i,j,II,JJ,M,N;
+  double *gk,*ge,*w,ksi{},eta{},ai{},aj{},*T,**Rc,*Nf,*N_x,*N_y,
     *xl,*yl,*zl,*xb,*yb,*zb,*Xi,*e1,*e2,*e2h,
-    *n,bet,J,Jjn;
+    *n,J,Jjn;
 
   static const int ndn = 3;
   COEL *const cel = &coel[ii];
   const cohesive_props *props = cel->props;
-  ndofe = ndofn*coel[ii].toe;
-  bet = coel[ii].b;
+  // @todo Commented as dead code. @cp should review. LD
+  // long ndofe = ndofn*coel[ii].toe;
+  // double bet = coel[ii].b;
   Jjn = coel[ii].Jjn;
 
   T = aloc1 (ndn);
