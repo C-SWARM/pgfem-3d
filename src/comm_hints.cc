@@ -7,7 +7,7 @@
  */
 
 #include "comm_hints.h"
-#include <stdlib.h>
+#include "allocation.h"
 
 struct COMM_HINTS {
   int *send;
@@ -18,7 +18,7 @@ struct COMM_HINTS {
 
 Comm_hints* Comm_hints_construct()
 {
-  Comm_hints *hints = malloc(sizeof(*hints));
+  Comm_hints *hints = PGFEM_malloc<Comm_hints>();
   hints->send = hints->recv = NULL;
   hints->nsend = hints->nrecv = 0;
   return hints;
@@ -41,14 +41,14 @@ int Comm_hints_read(Comm_hints *hints,
 
   /* read hints for whom to send information */
   fscanf(in, "%d", &hints->nsend);
-  hints->send = calloc(hints->nsend, sizeof((*hints->send)));
+  hints->send = PGFEM_calloc(int, hints->nsend);
   for (int i = 0, e = hints->nsend; i < e; i++) {
     fscanf(in, "%d", hints->send + i);
   }
 
   /* read hints from whom to receive information */
   fscanf(in, "%d", &hints->nrecv);
-  hints->recv = calloc(hints->nrecv, sizeof((*hints->recv)));
+  hints->recv = PGFEM_calloc(int, hints->nrecv);
   for (int i = 0, e = hints->nrecv; i < e; i++) {
     fscanf(in, "%d", hints->recv + i);
   }
@@ -114,7 +114,7 @@ char* Comm_hints_filename(const char *ipath,
   char *str = NULL;
   const char format[] = "%s/%scomm_hints_%d.in";
   int nchar = snprintf(str, 0, format, ipath, base_filename, rank);
-  str = malloc(nchar + 1);
+  str = PGFEM_malloc<char>(nchar + 1);
   sprintf(str, format, ipath, base_filename, rank);
   return str;
 }
