@@ -144,8 +144,8 @@ int* Psparse_ApAi (int nproc,
 
   int nsend = 0;
   int nrecv = 0;
-  int *preSend = NULL;
-  int *preRecv = NULL;
+  const int *preSend = NULL;
+  const int *preRecv = NULL;
 
   if (hints != NULL){                                                         //check if comm hints were provided
     nsend = Comm_hints_nrecv(hints);
@@ -661,7 +661,6 @@ static int determine_comm_pattern(COMMUN comm,
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  int countProc = 0;
   int q;
   MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed)
   MPI_Comm_size(mpi_comm,&nproc);                                               //get total number of processes (could also be passed)
@@ -688,8 +687,6 @@ static int determine_comm_pattern(COMMUN comm,
                        mpi_comm,t_req_r+i);                              //save info of proc from which things came
 
       }
-
-  countProc = 0;                                                                //restart count
 //can be changed to smaller comm
   /* Send size to all other processors */
   t_count = 0;
