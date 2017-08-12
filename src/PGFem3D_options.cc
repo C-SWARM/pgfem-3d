@@ -683,7 +683,7 @@ void get_macro_micro_option_blocks(const int myrank,
        MACRO_NPROC,
        MICRO_SIZE,
        N_OPT};
-  int *got_opt = calloc(N_OPT,sizeof(int));
+  int *got_opt = static_cast<int*>(calloc(N_OPT,sizeof(int)));
   for(int i=0; i<argc; i++){
     const char *arg_str = argv[i];
 
