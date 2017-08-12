@@ -213,10 +213,11 @@ typedef struct plasticity_ctx {
   return err;
 }
 
-static double compute_bulk_mod(const HOMMAT *mat)
-{
-  return hommat_get_kappa(mat);
-}
+// @todo Eliminated as dead code. @cp should review. LD
+// static double compute_bulk_mod(const HOMMAT *mat)
+// {
+//   return hommat_get_kappa(mat);
+// }
 
 static int plasticity_int_alg(Constitutive_model *m,
                               const void *ctx);
@@ -384,7 +385,7 @@ static int plasticity_save_to_temporal(const Constitutive_model *m, State_variab
 
 static int plasticity_info(Model_var_info **info)
 {
-  *info = malloc(sizeof(**info));
+  *info = PGFEM_malloc<Model_var_info>();
   int Fno = TENSOR_end;
 
   (*info)->n_Fs = Fno;
@@ -417,7 +418,7 @@ static int plasticity_info(Model_var_info **info)
   sprintf((*info)->var_names[VAR_g_nm1],      "g_nm1");
 
   (*info)->n_flags = FLAG_end;
-  (*info)->flag_names = malloc(FLAG_end * sizeof( ((*info)->flag_names) ));
+  (*info)->flag_names = PGFEM_malloc<char*>(FLAG_end);
 
   return 0;
 }
@@ -752,7 +753,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnpaI,Fend};
 
   // second-order tensors
-  Matrix<double> *F2 = malloc(Fend*sizeof(Matrix<double>));
+  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(Fend);
   for (int a = 0; a < Fend; a++) {
     Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
@@ -846,6 +847,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   for(int a = 0; a < Fend; a++) {
     Matrix_cleanup(F2[a]);
   }
+
   free(F2);
 
   /* clean up */
@@ -986,7 +988,7 @@ static int cp_read(Model_parameters *p,
 
   err += scan_for_valid_line(in);
 
-  SLIP_SYSTEM *slip = malloc(sizeof(SLIP_SYSTEM));
+  SLIP_SYSTEM *slip = PGFEM_malloc<SLIP_SYSTEM>();
 
   int unit_cell = -1;
   match += fscanf(in, "%d", &unit_cell);
@@ -1059,7 +1061,7 @@ static int cp_read(Model_parameters *p,
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
 
-  MATERIAL_CRYSTAL_PLASTICITY  *mat_p = malloc(sizeof(MATERIAL_CRYSTAL_PLASTICITY));
+  MATERIAL_CRYSTAL_PLASTICITY  *mat_p = PGFEM_malloc<MATERIAL_CRYSTAL_PLASTICITY>();
   set_properties_crystal_plasticity(mat_p,slip,param[PARAM_gamma_dot_0],param[PARAM_gamma_dot_s],
                                                param[PARAM_m],          param[PARAM_g0],
                                                param[PARAM_G0],         param[PARAM_gs_0],
@@ -1183,9 +1185,9 @@ int plasticity_model_initialize(Model_parameters *p)
   p->type = CRYSTAL_PLASTICITY;
 
   p->n_param = PARAM_NO;
-  p->model_param = calloc(PARAM_NO, sizeof(*(p->model_param)));
+  p->model_param = PGFEM_calloc(double, PARAM_NO);
   p->n_param_index = PARAM_INX_NO;
-  p->model_param_index = calloc(PARAM_INX_NO, sizeof(*(p->model_param_index)));
+  p->model_param_index = PGFEM_calloc(int, PARAM_INX_NO);
   return err;
 }
 
@@ -1207,7 +1209,7 @@ int plasticity_model_ctx_build(void **ctx,
                                const int is_coulpled_with_thermal)
 {
   int err = 0;
-  plasticity_ctx *t_ctx = malloc(sizeof(plasticity_ctx));
+  plasticity_ctx *t_ctx = PGFEM_malloc<plasticity_ctx>();
 
   t_ctx->F     = NULL;
   t_ctx->eFnpa = NULL;
@@ -1233,7 +1235,7 @@ int plasticity_model_ctx_build(void **ctx,
 int plasticity_model_ctx_destroy(void **ctx)
 {
   int err = 0;
-  plasticity_ctx *t_ctx = *ctx;
+  plasticity_ctx *t_ctx = static_cast<plasticity_ctx*>(*ctx);
   /* invalidate handle */
   *ctx = NULL;
 
@@ -1395,7 +1397,7 @@ static int plasticity_int_alg(Constitutive_model *m,
   solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
 
   enum {M,eFnp1,C,pFnp1_I,F2end};
-  Matrix<double> *F2 = malloc(F2end*sizeof(Matrix<double>));
+  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(F2end);
   for (int a = 0; a < F2end; a++) {
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3 ,0.0);
   }
@@ -1465,6 +1467,7 @@ static int plasticity_int_alg(Constitutive_model *m,
 
   for(int a = 0; a < F2end; a++)
     Matrix_cleanup(F2[a]);
+
   free(F2);
 
   (cm_mat->mat_p)->slip = slip_in;
@@ -1478,7 +1481,7 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix<int> *e_ids, Matrix<dou
   int err = 0;
   double Ax[DIM_3x3], Az[DIM_3x3], Ay[DIM_3x3];
 
-  for(int a=0; a<e_ids->m_row; a++)
+  for(unsigned a=0; a<e_ids->m_row; a++)
   {
     int id = Mat_v(*e_ids, a+1, 1);
     if(id<0)
@@ -1695,7 +1698,7 @@ int plasticity_model_set_orientations(EPS *eps,
   MPI_Comm_rank (mpi_comm,&myrank);
 
   // build element ip ids that will be used to assign element orientation
-  IP_ID_LIST *elm_ip_map = malloc(sizeof(IP_ID_LIST)*ne);
+  IP_ID_LIST *elm_ip_map = PGFEM_malloc<IP_ID_LIST>(ne);
   int cnt_of_ips = plasticity_model_construct_elem_ip_map(elm_ip_map, eps, elem, ne);
 
   Matrix<int> e_ids;
@@ -1769,7 +1772,7 @@ int plasticity_model_set_orientations(EPS *eps,
     FILE *fp_ort = fopen(fn_orientation, "w");
     fprintf(fp_ort, "# Element (crystal) orientations are generated randomly\n");
     fprintf(fp_ort, "# element_ID, Integration_point_ID, phi [radian], theta [radian], psi [radian]\n");
-    for(int a=1; a<=e_ids.m_row; a++)
+    for(unsigned a=1; a<=e_ids.m_row; a++)
     {
       if(Mat_v(e_ids, a, 1)<0)
         continue;
@@ -1891,7 +1894,7 @@ void test_crystal_plasticity_single_crystal(void)
 
   // set variables for integration
   enum {M,MI,pFn,pFnp1,Fn,Fnp1,eFnp1,eFPK2,pFnp1_I,sigma,PK2dev,sigma_dev,F2end};
-  Matrix<double> *F2 = malloc(F2end*sizeof(Matrix<double>));
+  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(F2end);
   for (int a = 0; a < F2end; a++) {
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3,0.0);
     Matrix_eye(F2[a],DIM_3);
