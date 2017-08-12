@@ -323,11 +323,14 @@ void FEMLIB_initialization_by_elem_w_bubble(FEMLIB *fe,
 
 void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix<double> *N)
 {
-  double ksi_, eta_, zet_, wt;
+  double ksi_, eta_, zet_;
 
   int itg_id_ip_1 = Mat_v(fe->itg_ids, ip, 1);
   int itg_id_ip_2 = Mat_v(fe->itg_ids, ip, 2);
   int itg_id_ip_3 = Mat_v(fe->itg_ids, ip, 3);
+
+  // @todo Removed as dead code. @cp should review (see also comments below). LD
+  // double wt;
 
   if(fe->elem_type == HEXAHEDRAL)
   {/* hexahedron */
@@ -335,14 +338,14 @@ void FEMLIB_elem_shape_function(FEMLIB *fe, long ip, int nne, Matrix<double> *N)
     eta_ = Mat_v(fe->eta, itg_id_ip_2, 1);
     zet_ = Mat_v(fe->zet, itg_id_ip_3, 1);
 
-    wt = Mat_v(fe->weights, itg_id_ip_1, 1)*Mat_v(fe->weights, itg_id_ip_2, 1)*Mat_v(fe->weights, itg_id_ip_3, 1);
+    // wt = Mat_v(fe->weights, itg_id_ip_1, 1)*Mat_v(fe->weights, itg_id_ip_2, 1)*Mat_v(fe->weights, itg_id_ip_3, 1);
   }
   else
   { /* tetrahedron type */
     ksi_ = Mat_v(fe->ksi, itg_id_ip_3, 1);
     eta_ = Mat_v(fe->eta, itg_id_ip_3, 1);
     zet_ = Mat_v(fe->zet, itg_id_ip_3, 1);
-    wt = Mat_v(fe->weights, itg_id_ip_3, 1);
+    // wt = Mat_v(fe->weights, itg_id_ip_3, 1);
   }
 
   shape_func(ksi_, eta_, zet_, nne, N->m_pdata);
