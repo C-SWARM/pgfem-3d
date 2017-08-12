@@ -17,12 +17,13 @@
  * elements. Example: the i-th map is INDEX maps[i*2] maps to INDEX
  * maps[i*2+1].
  */
-typedef struct pgfem_comm_fast_map{
-  int n_maps; /**< number of maps */
-  size_t *maps; /**< mapping stored in two consecutive elements */
-} fast_map;
+struct fast_map {
+  int n_maps = 0;             /**< number of maps */
+  size_t *maps = nullptr;     /**< mapping stored in two consecutive elements */
+};
 
-static void destroy_fast_map(fast_map *map)
+static void
+destroy_fast_map(fast_map *map)
 {
   free(map->maps);
 }
@@ -85,11 +86,11 @@ void destroy_commun(COMMUN comm,long nproc)
 /** builds the off-process buffer for assembling the gloabal stiffness
     matrix. Posts non-blocking recieve */
 int init_and_post_stiffmat_comm(double ***Lk,
-                double ***receive,
-                MPI_Request **req_r,
-                MPI_Status **sta_r,
-                const MPI_Comm mpi_comm,
-                const COMMUN pgfem_comm)
+                                double ***receive,
+                                MPI_Request **req_r,
+                                MPI_Status **sta_r,
+                                const MPI_Comm mpi_comm,
+                                const COMMUN pgfem_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -137,7 +138,7 @@ int init_and_post_stiffmat_comm(double ***Lk,
   for(int i=0; i<pgfem_comm->Nr; i++){
     size_t idx = pgfem_comm->Nrr[i];
     err += MPI_Irecv((*receive)[idx],pgfem_comm->AR[idx],MPI_DOUBLE,idx,
-             MPI_ANY_TAG,mpi_comm,*req_r + i);
+                     MPI_ANY_TAG,mpi_comm,*req_r + i);
   }
 
   return err;
@@ -146,10 +147,10 @@ int init_and_post_stiffmat_comm(double ***Lk,
 
 /** Send the off-process data for stiffness assembly */
 int send_stiffmat_comm(MPI_Status **sta_s,
-               MPI_Request **req_s,
-               double **Lk,
-               const MPI_Comm mpi_comm,
-               const COMMUN pgfem_comm)
+                       MPI_Request **req_s,
+                       double **Lk,
+                       const MPI_Comm mpi_comm,
+                       const COMMUN pgfem_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -169,7 +170,7 @@ int send_stiffmat_comm(MPI_Status **sta_s,
   for(int i=0; i<pgfem_comm->Ns; i++){
     size_t idx = pgfem_comm->Nss[i];
     err += MPI_Isend(Lk[idx],pgfem_comm->AS[idx],MPI_DOUBLE,idx,
-             myrank,mpi_comm,*req_s + i);
+                     myrank,mpi_comm,*req_s + i);
   }
 
   return err;
@@ -178,10 +179,10 @@ int send_stiffmat_comm(MPI_Status **sta_s,
 /** Finalize the stiffmat communication. Simple wrapper for the
     waitall commands. */
 int finalize_stiffmat_comm(MPI_Status *sta_s,
-               MPI_Status *sta_r,
-               MPI_Request *req_s,
-               MPI_Request *req_r,
-               const COMMUN pgfem_comm)
+                           MPI_Status *sta_r,
+                           MPI_Request *req_s,
+                           MPI_Request *req_r,
+                           const COMMUN pgfem_comm)
 {
   int err = 0;
   err += MPI_Waitall(pgfem_comm->Nr,req_r,sta_r);
@@ -191,11 +192,12 @@ int finalize_stiffmat_comm(MPI_Status *sta_s,
 
 
 /** Assemble non-local parts as they arrive */
-int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
-                   MPI_Status *sta_r,
-                   MPI_Request *req_r,
-                   PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                   double **recv)
+int
+assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
+                           MPI_Status *sta_r,
+                           MPI_Request *req_r,
+                           PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                           double **recv)
 {
   int err = 0;
   int comm_idx = 0;
@@ -221,15 +223,15 @@ int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
       row_idx[j] = pgfem_comm->RGID[proc][j];
       ncols[j] = pgfem_comm->RAp[proc][j];
       for(int k=0; k<ncols[j]; k++){
-    col_idx[idx] = pgfem_comm->RGRId[proc][idx];
-    ++idx;
+        col_idx[idx] = pgfem_comm->RGRId[proc][idx];
+        ++idx;
       }
     }
 
     /* assemble to local part of global stiffness */
     err += HYPRE_IJMatrixAddToValues(PGFEM_hypre->hypre_k,
-                     nrows,ncols,row_idx,col_idx,
-                     recv[proc]);
+                                     nrows,ncols,row_idx,col_idx,
+                                     recv[proc]);
 
     /* free memory */
     free(row_idx);
@@ -242,17 +244,18 @@ int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
   return err;
 }
 
-static int build_fast_LG_map(COMMUN pgfem_comm,
-                 const long ndofd,
-                 const long ngdof_owned,
-                 const long start_gdof_id)
+static int
+build_fast_LG_map(COMMUN pgfem_comm,
+                  const long ndofd,
+                  const long ngdof_owned,
+                  const long start_gdof_id)
 {
   int err = 0;
   pgfem_comm->fast_LG_map = PGFEM_calloc(fast_map, 1);
   fast_map *LG = pgfem_comm->fast_LG_map;
   LG->n_maps = 0;
 
- /* deterimine the local indices that map to global indices on the
+  /* deterimine the local indices that map to global indices on the
      local domain and the corresponding number of maps */
   long *local_idx = PGFEM_calloc(long, ndofd);
   long *global_idx = PGFEM_calloc(long, ndofd);
@@ -271,7 +274,7 @@ static int build_fast_LG_map(COMMUN pgfem_comm,
     int myrank = 0;
     PGFEM_Error_rank(&myrank);
     PGFEM_printerr("[%d] ERROR: too many mappings! %s:%s:%d\n",
-           myrank,__func__,__FILE__,__LINE__);
+                   myrank,__func__,__FILE__,__LINE__);
     PGFEM_Abort();
   }
 
@@ -287,9 +290,10 @@ static int build_fast_LG_map(COMMUN pgfem_comm,
   return err;
 }
 
-static int build_fast_GL_map(COMMUN pgfem_comm,
-                 const long ndofd,
-                 const long ngdof_owned)
+static int
+build_fast_GL_map(COMMUN pgfem_comm,
+                  const long ndofd,
+                  const long ngdof_owned)
 {
   int err = 0;
   pgfem_comm->fast_GL_map = PGFEM_calloc(fast_map, 1);
@@ -320,56 +324,38 @@ static int build_fast_GL_map(COMMUN pgfem_comm,
   return err;
 }
 
-int pgfem_comm_build_fast_maps(COMMUN pgfem_comm,
-                   const long ndofd,
-                   const long ngdof_owned,
-                   const long start_gdof_id)
+int
+pgfem_comm_build_fast_maps(COMMUN pgfem_comm,
+                           const long ndofd,
+                           const long ngdof_owned,
+                           const long start_gdof_id)
 {
-  int err = 0;
-
-  err += build_fast_LG_map(pgfem_comm,ndofd,ngdof_owned,
-               start_gdof_id);
-  err += build_fast_GL_map(pgfem_comm,ndofd,ngdof_owned);
-
-  return err;
+  return (build_fast_LG_map(pgfem_comm, ndofd, ngdof_owned, start_gdof_id) +
+          build_fast_GL_map(pgfem_comm,ndofd,ngdof_owned));
 }
 
 /* maps A to B */
-static int get_mapped_values(const fast_map *map,
-                 const double *A,
-                 double *B)
+static int
+get_mapped_values(const fast_map *map, const double *A, double *B)
 {
-  int err = 0;
-
   for(int i=0; i<map->n_maps; i++){
     B[map->maps[2*i+1]] = A[map->maps[2*i]];
   }
-
-  return err;
+  return 0;
 }
 
-int pgfem_comm_get_owned_global_dof_values(const COMMUN pgfem_comm,
-                       const double *local_dofs,
-                       double *global_dofs)
+int
+pgfem_comm_get_owned_global_dof_values(const COMMUN pgfem_comm,
+                                       const double *local_dofs,
+                                       double *global_dofs)
 {
-  int err = 0;
-
-  err += get_mapped_values(pgfem_comm->fast_LG_map,
-               local_dofs,
-               global_dofs);
-
-  return err;
+  return get_mapped_values(pgfem_comm->fast_LG_map, local_dofs, global_dofs);
 }
 
-int pgfem_comm_get_local_dof_values_from_global(const COMMUN pgfem_comm,
-                        const double *global_dofs,
-                        double *local_dofs)
+int
+pgfem_comm_get_local_dof_values_from_global(const COMMUN pgfem_comm,
+                                            const double *global_dofs,
+                                            double *local_dofs)
 {
-  int err = 0;
-
-  err += get_mapped_values(pgfem_comm->fast_GL_map,
-               global_dofs,
-               local_dofs);
-
-  return err;
+  return get_mapped_values(pgfem_comm->fast_GL_map, global_dofs, local_dofs);
 }
