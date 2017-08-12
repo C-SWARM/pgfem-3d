@@ -256,7 +256,7 @@ void read_elem_surface_load (FILE *in,
 
      */
 {
-  long i,j,ii,jj;
+  long i,j,ii,jj{};
 
   for (i=0;i<nle_s;i++){
     fscanf (in,"%ld",&zele_s[i].elem);
@@ -313,7 +313,8 @@ int override_material_properties(const size_t nmat,
 
   /* number of materials to override */
   fscanf(in,"%d",&n_override);
-  assert( n_override <= nmat );
+  assert( n_override >= 0 );
+  assert( (size_t)n_override <= nmat );
 
   for (int i=0; i<n_override; i++){
     /* scan for override data */
@@ -323,7 +324,8 @@ int override_material_properties(const size_t nmat,
     /* read override data */
     idx = -1; /* poisoned value */
     fscanf(in,"%d",&idx);
-    assert( idx < nmat );
+    assert(idx >= 0);
+    assert( (size_t)idx < nmat );
     err += read_material(in,idx,mater,opt->legacy);
   }
 
