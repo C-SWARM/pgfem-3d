@@ -76,7 +76,7 @@ struct COMMON_MICROSCALE {
 
 /** This structure contains the information for the
     history-dependent solution. */
-typedef struct MICROSCALE_SOLUTION{
+struct MICROSCALE_SOLUTION{
   /* stress/strain/state information */
   SIG *sig_e;
   SIG *sig_n;
@@ -134,7 +134,7 @@ typedef struct MICROSCALE_SOLUTION{
    */
   int failed;
 
-} MICROSCALE_SOLUTION;
+};
 
 struct SolutionIndexMap {
   size_t size = 0;
@@ -234,12 +234,10 @@ int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
                                    FILE *in);
 
 /**=== Aliases for MACROSCALE ===*/
-typedef COMMON_MICROSCALE COMMON_MACROSCALE;
-typedef MICROSCALE_SOLUTION MACROSCALE_SOLUTION;
-#ifndef TYPEDEF_MACROSCALE
-#define TYPEDEF_MACROSCALE
-typedef MICROSCALE MACROSCALE;
-#endif
+using COMMON_MACROSCALE = COMMON_MICROSCALE;
+using MACROSCALE_SOLUTION = MICROSCALE_SOLUTION ;
+using MACROSCALE = MICROSCALE;
+
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
 #define build_MACROSCALE(macro,comm,argc,argv,mp_id,hints)  \
   build_MICROSCALE(macro,comm,argc,argv,mp_id,hints)
