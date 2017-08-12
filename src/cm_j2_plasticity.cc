@@ -69,13 +69,13 @@ static int j2d_get_info(Model_var_info **info)
   if( *info != NULL) err += model_var_info_destroy(info);
 
   /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
+  (*info) = PGFEM_malloc<Model_var_info>();
   (*info)->n_Fs = NUM_Fs;
   (*info)->n_vars = NUM_vars;
   (*info)->n_flags = NUM_flags;
-  (*info)->F_names = malloc(NUM_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( NUM_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( NUM_flags * sizeof( ((*info)->flag_names) ));
+  (*info)->F_names = PGFEM_malloc<char*>(NUM_Fs);
+  (*info)->var_names = PGFEM_malloc<char*>(NUM_vars);
+  (*info)->flag_names = PGFEM_malloc<char*>(NUM_flags);
 
   /* allocate/copy strings */
   (*info)->F_names[FNP1] = strdup("F");
@@ -989,7 +989,7 @@ int j2d_plasticity_model_initialize(Model_parameters *p)
 
   /* allocate room for parameters */
   p->n_param = NUM_param;
-  p->model_param = calloc(NUM_param, sizeof(*(p->model_param)));
+  p->model_param = PGFEM_calloc(double, NUM_param);
 
   return err;
 }
@@ -998,7 +998,7 @@ int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double *F,
                                    const double dt)
 {
-  j2d_ctx *CTX = malloc(sizeof(*CTX));
+  j2d_ctx *CTX = PGFEM_malloc<j2d_ctx>();
   //CTX = (j2d_ctx *) malloc(sizeof(*CTX));
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;
