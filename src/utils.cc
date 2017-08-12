@@ -31,7 +31,7 @@ int scan_for_valid_line(FILE *in)
   static const char delim[] = " \t\n";
 
   int err = 0;
-  char *line = malloc(line_length);
+  char *line = static_cast<char*>(malloc(line_length));
   char *tok = NULL;
   fpos_t pos;
 
@@ -187,7 +187,7 @@ int number_of_duplicates(const void *arr,
              int (*compare)(const void *a, const void *b))
 {
   int count = 0;
-  char *copy = malloc(n_elem*size);
+  char *copy = static_cast<char*>(malloc(n_elem*size));
   memcpy(copy,arr,n_elem*size);
   qsort(copy,n_elem,size,compare);
   for(size_t i=1; i<n_elem; i++){
@@ -244,7 +244,7 @@ void mat2array(double *array,
            const unsigned int nrows,
            const unsigned int ncols)
 {
-  for (int i=0; i<nrows; i++){
+  for (unsigned i=0; i<nrows; i++){
     memcpy(&array[idx_2_gen(i,0,nrows,ncols)],
        mat[i],
        ncols*sizeof(double));
@@ -257,15 +257,15 @@ void array2mat(const double *array,
            const unsigned int I,
            const unsigned int J)
 {
-  for (int i=0; i<I; i++){
+  for (unsigned i=0; i<I; i++){
     memcpy(tensor[i],
        &array[idx_2_gen(i,0,I,J)],
        J*sizeof(double));
   }
 
   if (UTILS_DEBUG){
-    for (int i=0; i<I; i++){
-      for(int j=0; j<J; j++){
+    for (unsigned i=0; i<I; i++){
+      for(unsigned j=0; j<J; j++){
     PGFEM_printf("%f ",tensor[i][j]);
       }
       PGFEM_printf("\n");
@@ -281,8 +281,8 @@ void tensor3_2array(double *array,
             const unsigned int J,
             const unsigned int K)
 {
-  for (int i=0; i<I; i++){
-    for(int j=0; j<J; j++){
+  for (unsigned i=0; i<I; i++){
+    for(unsigned j=0; j<J; j++){
       memcpy(&array[idx_3_gen(i,j,0,I,J,K)],
          tensor[i][j],
          K*sizeof(double));
@@ -290,7 +290,7 @@ void tensor3_2array(double *array,
   }
 
  if(UTILS_DEBUG){
-    for(int i=0; i<I*J*K; i++){
+    for(unsigned i=0; i<I*J*K; i++){
       PGFEM_printf("%f ",array[i]);
     }
     PGFEM_printf("\n\n");
@@ -304,8 +304,8 @@ void array2tensor3(const double *array,
            const unsigned int J,
            const unsigned int K)
 {
-  for (int i=0; i<I; i++){
-    for(int j=0; j<J; j++){
+  for (unsigned i=0; i<I; i++){
+    for(unsigned j=0; j<J; j++){
       memcpy(tensor[i][j],
          &array[idx_3_gen(i,j,0,I,J,K)],
          K*sizeof(double));
@@ -313,9 +313,9 @@ void array2tensor3(const double *array,
   }
 
   if (UTILS_DEBUG){
-    for (int i=0; i<I; i++){
-      for(int j=0; j<J; j++){
-    for(int k=0; k<K; k++){
+    for (unsigned i=0; i<I; i++){
+      for(unsigned j=0; j<J; j++){
+    for(unsigned k=0; k<K; k++){
       PGFEM_printf("%f ",tensor[i][j][k]);
     }
     PGFEM_printf("\n");
@@ -333,9 +333,9 @@ void tensor4_2array(double *array,
             const unsigned int K,
             const unsigned int L)
 {
-  for (int i=0; i<I; i++){
-    for(int j=0; j<J; j++){
-      for(int k=0; k<K; k++){
+  for (unsigned i=0; i<I; i++){
+    for(unsigned j=0; j<J; j++){
+      for(unsigned k=0; k<K; k++){
     memcpy(&array[idx_4_gen(i,j,k,0,I,J,K,L)],
            tensor[i][j][k],
            L*sizeof(double));
@@ -344,7 +344,7 @@ void tensor4_2array(double *array,
   }
 
  if(UTILS_DEBUG){
-    for(int i=0; i<I*J*K*L; i++){
+    for(unsigned i=0; i<I*J*K*L; i++){
       PGFEM_printf("%f ",array[i]);
     }
     PGFEM_printf("\n\n");
@@ -359,9 +359,9 @@ void array2tensor4(const double *array,
            const unsigned int K,
            const unsigned int L)
 {
-  for (int i=0; i<I; i++){
-    for(int j=0; j<J; j++){
-      for(int k=0; k<K; k++){
+  for (unsigned i=0; i<I; i++){
+    for(unsigned j=0; j<J; j++){
+      for(unsigned k=0; k<K; k++){
     memcpy(tensor[i][j][k],
            &array[idx_4_gen(i,j,k,0,I,J,K,L)],
            L*sizeof(double));
@@ -370,10 +370,10 @@ void array2tensor4(const double *array,
   }
 
   if (UTILS_DEBUG){
-    for (int i=0; i<I; i++){
-      for(int j=0; j<J; j++){
-    for(int k=0; k<K; k++){
-      for(int l=0; l<L; l++){
+    for (unsigned i=0; i<I; i++){
+      for(unsigned j=0; j<J; j++){
+    for(unsigned k=0; k<K; k++){
+      for(unsigned l=0; l<L; l++){
         PGFEM_printf("%f ",tensor[i][j][k][l]);
       }
       PGFEM_printf("\n");
@@ -389,7 +389,7 @@ void shapeTensor2array(double *array,
                const double ****ST,
                const unsigned int nne)
 {
-  for (int a=0; a<nne; a++){
+  for (unsigned a=0; a<nne; a++){
     for (int b=0; b<3; b++){
       for (int i=0; i<3; i++){
     for (int j=0; j<3; j++){
@@ -404,7 +404,7 @@ void array2shapeTensor(const double *array,
                double ****ST,
                const unsigned int nne)
 {
- for (int a=0; a<nne; a++){
+ for (unsigned a=0; a<nne; a++){
     for (int b=0; b<3; b++){
       for (int i=0; i<3; i++){
     for (int j=0; j<3; j++){
@@ -719,11 +719,11 @@ int solve_Ax_b(const int n_eq,
 
   /* since we are calling a FORTRAN routine, we need to transpose the
      matrix */
-  double *At = malloc(mat_dim*mat_dim*sizeof(*At));
+  double *At = static_cast<double*>(malloc(mat_dim*mat_dim*sizeof(*At)));
   transpose(At,A,mat_dim,mat_dim);
 
   /* allocate workspace for LAPACK */
-  int *IPIV = malloc(mat_dim*sizeof(*IPIV));
+  int *IPIV = static_cast<int*>(malloc(mat_dim*sizeof(*IPIV)));
   int NRHS = 1;
 
   /* call LAPACK for the solve */
@@ -1104,7 +1104,7 @@ double Tetra_qv_V (const long nne,
  */
 {
   long i,j,k,II,JJ,KK,ndofe;
-  double *gk,*ge,*gz,*w,J,ksi,eta,zet,ai,aj,ak,**B_T,V;
+  double *gk,*ge,*gz,*w,J,ksi{},eta{},zet{},ai{},aj{},ak{},**B_T,V;
 
   ndofe = nne*ndofn;
 
@@ -1262,7 +1262,7 @@ double T_VOLUME (const long ne,
          const NODE *node)
 {
   long ii,nne,*nod;
-  double PL=0.0,*x,*y,*z,volume;
+  double PL=0.0,*x,*y,*z,volume{};
 
   for (ii=0;ii<ne;ii++){
 
@@ -1583,7 +1583,7 @@ void eps_element (long nne,
 {
 
   long i,j,k,II,JJ,KK,jj,ndofe;
-  double *gk,*ge,*gz,*w,*eps,J,ksi,eta,zet,ai,aj,ak,**B_T;
+  double *gk,*ge,*gz,*w,*eps,J,ksi{},eta{},zet{},ai{},aj{},ak{},**B_T;
 
   ndofe = nne*ndofn;
 
@@ -1662,7 +1662,11 @@ void eps_e_in (long nne,
 {
 
   long i,j,k,II,JJ,KK,jj,ndofe,ip;
-  double *gk,*ge,*gz,*w,*eps,J,ksi,eta,zet,ai,aj,ak,**B_T;
+  double *gk,*ge,*gz,*w,*eps,**B_T;
+
+  // @todo Commented out as dead code. @cp should review (note commented out
+  //       lines in `if`s below). LD
+  // double J,ai{},aj{},ak{},ksi{},eta{},zet{};
 
   ndofe = nne*ndofn;
 
@@ -1682,32 +1686,32 @@ void eps_e_in (long nne,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4)  {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
+    // if (nne == 4)  {
+    //   ksi = *(gk+k);
+    //   eta = *(ge+k);
+    //   zet = *(gz+k);
+    //   ai = *(w+k);
+    //   aj = 1.0;
+    //   ak = 1.0;
+    // }
+    // if (nne == 10) {
+    //   ksi = *(gk+k);
+    //   eta = *(ge+k);
+    //   zet = *(gz+k);
+    //   ai = *(w+k);
+    //   aj = 1.0;
+    //   ak = 1.0;
+    // }
+    // if (nne == 8)  {
+    //   ksi = *(gk+i);
+    //   eta = *(gk+j);
+    //   zet = *(gk+k);
+    //   ai = *(w+i);
+    //   aj = *(w+j);
+    //   ak = *(w+k);
+    // }
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+    // J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
     /*  Matice B_BAR */
     B_BAR (B_T,nne,x,y,z);
@@ -1746,7 +1750,7 @@ void stress (long ne,
  */
 {
   long ii,i,j,*nod,nne,ndofe,*cn;
-  double *r_e,*x,*y,*z,*EPSi,**D,V;
+  double *r_e,*x,*y,*z,*EPSi,**D,V{};
 
   EPSi = aloc1(6); D = aloc2 (6,6);
 
@@ -1932,7 +1936,7 @@ void str_prj_load (long ii,
  */
 {
   long i,j,jj,k,II,JJ,KK,ndofe,ip;
-  double ksi,eta,zet,ai,aj,ak,J,**B_T,*gk,*ge,*gz,*w,*N,*eps,**EPSi,**sig,*P,*N_x,*N_y,*N_z;
+  double ksi{},eta{},zet{},ai{},aj{},ak{},J,**B_T,*gk,*ge,*gz,*w,*N,*eps,**EPSi,**sig,*P,*N_x,*N_y,*N_z;
 
   ndofe = ndofn*nne;
 
@@ -2140,7 +2144,7 @@ void str_elem_matrix (long kk,
 */
 {
   long i,ii,j,jj,k,II,JJ,KK,ndofe;
-  double ksi,eta,zet,ai,aj,ak,J,**B_T,*gk,*ge,*gz,*w,*N,*P;
+  double ksi{},eta{},zet{},ai{},aj{},ak{},J,**B_T,*gk,*ge,*gz,*w,*N,*P;
 
   ndofe = ndofn*nne;
 
@@ -2216,7 +2220,7 @@ void str_proj_matrix (long *adr,
  */
 {
   long i,j,nne,*cn,*nod;
-  double *lk,*x,*y,*z,*s,*f;
+  double *lk,*x,*y,*z;
 
   /***********************************************************************/
   /*  pro prvky s vice nez 10 uzly je treba pre delat nasledujici alokaci */
@@ -2232,8 +2236,9 @@ void str_proj_matrix (long *adr,
   y = aloc1 (10);
   z = aloc1 (10);
 
-  s = aloc1 (10);
-  f = aloc1 (10);
+  // @todo Commented out as dead code. @cp should review. LD
+  // double *s = aloc1 (10);
+  // double *f = aloc1 (10);
 
   for (i=0;i<ne;i++){
 
@@ -2346,7 +2351,7 @@ void unequal_forces (long ii,
 */
 {
   long i,j,k,jj,kk,II,JJ,KK,ndofe,ip;
-  double ksi,eta,zet,ai,aj,ak,J,**B_T;
+  double ksi{},eta{},zet{},ai{},aj{},ak{},J,**B_T;
   double *gk,*ge,*gz,*w;
 
   ndofe = ndofn*nne; nulld (fe,ndofe);
@@ -2396,7 +2401,7 @@ void aver_stress (long ii,
  */
 {
   long i,j,k,II,JJ,KK,jj,ndofe,ip;
-  double *gk,*ge,*gz,*w,J,ksi,eta,zet,ai,aj,ak,**B_T,V;
+  double *gk,*ge,*gz,*w,J,ksi{},eta{},zet{},ai{},aj{},ak{},**B_T,V{};
 
   ndofe = nne*ndofn;
 
@@ -2469,14 +2474,16 @@ void check_equi (double *fu,
 
  */
 {
-  long i,j,ii,II,JJ,*nod,nne,ndofe;
+  long i,j,ii,II,JJ,*nod,nne;
   double *x,*y,*z,**dsig,*fe;
 
   fe = aloc1 (30); nulld (fu,ndofd);
 
   for (ii=0;ii<ne;ii++){
 
-    nne = elem[ii].toe; ndofe = nne*ndofn;
+    nne = elem[ii].toe;
+    // @todo Commented out as dead code. @cp should review. LD
+    // double ndofe = nne*ndofn;
 
     /* Integration */
     int_point (nne,&II);
@@ -2530,7 +2537,7 @@ double* Energy_functional (long ne,
  */
 {
   long ii,i,j,k,jj,ip,nne,ndofe,II,JJ,KK,*nod;
-  double *Sig,*Eps,*ENF,*gk,*ge,*gz,*w,J,ksi,eta,zet,ai,aj,ak,**B_T,*x,*y,*z,SE;
+  double *Sig,*Eps,*ENF,*gk,*ge,*gz,*w,J,ksi{},eta{},zet{},ai{},aj{},ak{},**B_T,*x,*y,*z,SE;
 
 
   ENF  = aloc1 (3);
@@ -2651,7 +2658,7 @@ void tensor_9x9 (double **K,
 
  */
 {
-  long i,j,k,l,I,J;
+  long i,j,k,l,I{},J;
 
   for (i=0;i<3;i++){
     for (j=0;j<3;j++){
@@ -3069,7 +3076,7 @@ MPI_Comm* CreateGraph (int nproc,
  */
 {
   int *BN,*displ;
-  long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom,II,*CDom;
+  long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom{},II,*CDom;
   MPI_Comm *GrComm = NULL;
 
   for (i=0;i<nn;i++) if (node[i].Gnn >= 0) NBn++;
