@@ -340,11 +340,13 @@ void res_stab_def (long ne,
            SIG *sig,
            double stab)
 {
-  long ii,ip,i,nne,II,mat;
+  long ii,ip,i,nne,II;
   for (ii=0;ii<ne;ii++){
 
     nne = elem[ii].toe;
-    mat = elem[ii].mat[2];
+    // @todo Eliminated as dead code. @cp please confirm. LD
+    // long mat;
+    // mat = elem[ii].mat[2];
 
     /* Integration */
     int_point (nne,&II);
