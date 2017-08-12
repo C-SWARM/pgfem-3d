@@ -68,11 +68,11 @@ int scan_for_valid_line(FILE *in)
 }
 
 void pack_2mat(const void **src,
-           const int nrow,
-           const int ncol,
-           const size_t elem_size,
-           char *buffer,
-           size_t *pos)
+               const int nrow,
+               const int ncol,
+               const size_t elem_size,
+               char *buffer,
+               size_t *pos)
 {
   for(int i=0; i<nrow; i++){
     pack_data(src[i],buffer,pos,ncol,elem_size);
@@ -80,11 +80,11 @@ void pack_2mat(const void **src,
 }
 
 void unpack_2mat(void **dest,
-         const int nrow,
-         const int ncol,
-         const size_t elem_size,
-         const char *buffer,
-         size_t *pos)
+                 const int nrow,
+                 const int ncol,
+                 const size_t elem_size,
+                 const char *buffer,
+                 size_t *pos)
 {
   for(int i=0; i<nrow; i++){
     unpack_data(buffer,dest[i],pos,ncol,elem_size);
@@ -92,12 +92,12 @@ void unpack_2mat(void **dest,
 }
 
 void pack_3mat(const void ***src,
-           const int n_1,
-           const int n_2,
-           const int n_3,
-           const size_t elem_size,
-           char *buffer,
-           size_t *pos)
+               const int n_1,
+               const int n_2,
+               const int n_3,
+               const size_t elem_size,
+               char *buffer,
+               size_t *pos)
 {
   for(int i=0; i<n_1; i++){
     pack_2mat(src[i],n_2,n_3,elem_size,buffer,pos);
@@ -105,12 +105,12 @@ void pack_3mat(const void ***src,
 }
 
 void unpack_3mat(void ***dest,
-         const int n_1,
-         const int n_2,
-         const int n_3,
-         const size_t elem_size,
-         const char *buffer,
-         size_t *pos)
+                 const int n_1,
+                 const int n_2,
+                 const int n_3,
+                 const size_t elem_size,
+                 const char *buffer,
+                 size_t *pos)
 {
   for(int i=0; i<n_1; i++){
     unpack_2mat(dest[i],n_2,n_3,elem_size,buffer,pos);
@@ -118,13 +118,13 @@ void unpack_3mat(void ***dest,
 }
 
 void pack_4mat(const void ****src,
-           const int n_1,
-           const int n_2,
-           const int n_3,
-           const int n_4,
-           const size_t elem_size,
-           char *buffer,
-           size_t *pos)
+               const int n_1,
+               const int n_2,
+               const int n_3,
+               const int n_4,
+               const size_t elem_size,
+               char *buffer,
+               size_t *pos)
 {
   for(int i=0; i<n_1; i++){
     pack_3mat(src[i],n_2,n_3,n_4,elem_size,buffer,pos);
@@ -132,13 +132,13 @@ void pack_4mat(const void ****src,
 }
 
 void unpack_4mat(void ****dest,
-         const int n_1,
-         const int n_2,
-         const int n_3,
-         const int n_4,
-         const size_t elem_size,
-         const char *buffer,
-         size_t *pos)
+                 const int n_1,
+                 const int n_2,
+                 const int n_3,
+                 const int n_4,
+                 const size_t elem_size,
+                 const char *buffer,
+                 size_t *pos)
 {
   for(int i=0; i<n_1; i++){
     unpack_3mat(dest[i],n_2,n_3,n_4,elem_size,buffer,pos);
@@ -146,10 +146,10 @@ void unpack_4mat(void ****dest,
 }
 
 void copy_2mat(void **dest,
-           const void **src,
-           const int nrow,
-           const int ncol,
-           const size_t elem_size)
+               const void **src,
+               const int nrow,
+               const int ncol,
+               const size_t elem_size)
 {
   for(int i=0; i<nrow; i++){
     memcpy(dest[i],src[i],ncol*elem_size);
@@ -157,11 +157,11 @@ void copy_2mat(void **dest,
 }
 
 void copy_3mat(void ***dest,
-           const void ***src,
-           const int n_1,
-           const int n_2,
-           const int n_3,
-           const size_t elem_size)
+               const void ***src,
+               const int n_1,
+               const int n_2,
+               const int n_3,
+               const size_t elem_size)
 {
   for(int i=0; i<n_1; i++){
     copy_2mat(dest[i],src[i],n_2,n_3,elem_size);
@@ -169,12 +169,12 @@ void copy_3mat(void ***dest,
 }
 
 void copy_4mat(void ****dest,
-           const void ****src,
-           const int n_1,
-           const int n_2,
-           const int n_3,
-           const int n_4,
-           const size_t elem_size)
+               const void ****src,
+               const int n_1,
+               const int n_2,
+               const int n_3,
+               const int n_4,
+               const size_t elem_size)
 {
   for(int i=0; i<n_1; i++){
     copy_3mat(dest[i],src[i],n_2,n_3,n_4,elem_size);
@@ -182,9 +182,9 @@ void copy_4mat(void ****dest,
 }
 
 int number_of_duplicates(const void *arr,
-             const size_t n_elem,
-             const size_t size,
-             int (*compare)(const void *a, const void *b))
+                         const size_t n_elem,
+                         const size_t size,
+                         int (*compare)(const void *a, const void *b))
 {
   int count = 0;
   char *copy = static_cast<char*>(malloc(n_elem*size));
@@ -198,8 +198,8 @@ int number_of_duplicates(const void *arr,
 }
 
 int alloc_sprintf(char **str,
-          const char *format,
-          ...)
+                  const char *format,
+                  ...)
 {
   int str_len = 0;
   va_list args;
@@ -220,53 +220,53 @@ int alloc_sprintf(char **str,
 }
 
 void pack_data(const void *src,
-           char *buffer,
-           size_t *pos,
-           const size_t n_el,
-           const size_t size)
+               char *buffer,
+               size_t *pos,
+               const size_t n_el,
+               const size_t size)
 {
   memcpy(buffer + *pos,src,n_el*size);
   *pos += n_el*size;
 }
 
 void unpack_data(const char *buffer,
-         void *dest,
-         size_t *pos,
-         const size_t n_el,
-         const size_t size)
+                 void *dest,
+                 size_t *pos,
+                 const size_t n_el,
+                 const size_t size)
 {
   memcpy(dest,buffer + *pos,n_el*size);
   *pos += n_el*size;
 }
 
 void mat2array(double *array,
-           const double **mat,
-           const unsigned int nrows,
-           const unsigned int ncols)
+               const double **mat,
+               const unsigned int nrows,
+               const unsigned int ncols)
 {
   for (unsigned i=0; i<nrows; i++){
     memcpy(&array[idx_2_gen(i,0,nrows,ncols)],
-       mat[i],
-       ncols*sizeof(double));
+           mat[i],
+           ncols*sizeof(double));
   }
 }
 
 
 void array2mat(const double *array,
-           double **tensor,
-           const unsigned int I,
-           const unsigned int J)
+               double **tensor,
+               const unsigned int I,
+               const unsigned int J)
 {
   for (unsigned i=0; i<I; i++){
     memcpy(tensor[i],
-       &array[idx_2_gen(i,0,I,J)],
-       J*sizeof(double));
+           &array[idx_2_gen(i,0,I,J)],
+           J*sizeof(double));
   }
 
   if (UTILS_DEBUG){
     for (unsigned i=0; i<I; i++){
       for(unsigned j=0; j<J; j++){
-    PGFEM_printf("%f ",tensor[i][j]);
+        PGFEM_printf("%f ",tensor[i][j]);
       }
       PGFEM_printf("\n");
     }
@@ -276,20 +276,20 @@ void array2mat(const double *array,
 }
 
 void tensor3_2array(double *array,
-            const double ***tensor,
-            const unsigned int I,
-            const unsigned int J,
-            const unsigned int K)
+                    const double ***tensor,
+                    const unsigned int I,
+                    const unsigned int J,
+                    const unsigned int K)
 {
   for (unsigned i=0; i<I; i++){
     for(unsigned j=0; j<J; j++){
       memcpy(&array[idx_3_gen(i,j,0,I,J,K)],
-         tensor[i][j],
-         K*sizeof(double));
+             tensor[i][j],
+             K*sizeof(double));
     }
   }
 
- if(UTILS_DEBUG){
+  if(UTILS_DEBUG){
     for(unsigned i=0; i<I*J*K; i++){
       PGFEM_printf("%f ",array[i]);
     }
@@ -299,26 +299,26 @@ void tensor3_2array(double *array,
 }
 
 void array2tensor3(const double *array,
-           double ***tensor,
-           const unsigned int I,
-           const unsigned int J,
-           const unsigned int K)
+                   double ***tensor,
+                   const unsigned int I,
+                   const unsigned int J,
+                   const unsigned int K)
 {
   for (unsigned i=0; i<I; i++){
     for(unsigned j=0; j<J; j++){
       memcpy(tensor[i][j],
-         &array[idx_3_gen(i,j,0,I,J,K)],
-         K*sizeof(double));
+             &array[idx_3_gen(i,j,0,I,J,K)],
+             K*sizeof(double));
     }
   }
 
   if (UTILS_DEBUG){
     for (unsigned i=0; i<I; i++){
       for(unsigned j=0; j<J; j++){
-    for(unsigned k=0; k<K; k++){
-      PGFEM_printf("%f ",tensor[i][j][k]);
-    }
-    PGFEM_printf("\n");
+        for(unsigned k=0; k<K; k++){
+          PGFEM_printf("%f ",tensor[i][j][k]);
+        }
+        PGFEM_printf("\n");
       }
       PGFEM_printf("\n\n");
     }
@@ -327,23 +327,23 @@ void array2tensor3(const double *array,
 }
 
 void tensor4_2array(double *array,
-            const double ****tensor,
-            const unsigned int I,
-            const unsigned int J,
-            const unsigned int K,
-            const unsigned int L)
+                    const double ****tensor,
+                    const unsigned int I,
+                    const unsigned int J,
+                    const unsigned int K,
+                    const unsigned int L)
 {
   for (unsigned i=0; i<I; i++){
     for(unsigned j=0; j<J; j++){
       for(unsigned k=0; k<K; k++){
-    memcpy(&array[idx_4_gen(i,j,k,0,I,J,K,L)],
-           tensor[i][j][k],
-           L*sizeof(double));
+        memcpy(&array[idx_4_gen(i,j,k,0,I,J,K,L)],
+               tensor[i][j][k],
+               L*sizeof(double));
       }
     }
   }
 
- if(UTILS_DEBUG){
+  if(UTILS_DEBUG){
     for(unsigned i=0; i<I*J*K*L; i++){
       PGFEM_printf("%f ",array[i]);
     }
@@ -353,18 +353,18 @@ void tensor4_2array(double *array,
 }
 
 void array2tensor4(const double *array,
-           double ****tensor,
-           const unsigned int I,
-           const unsigned int J,
-           const unsigned int K,
-           const unsigned int L)
+                   double ****tensor,
+                   const unsigned int I,
+                   const unsigned int J,
+                   const unsigned int K,
+                   const unsigned int L)
 {
   for (unsigned i=0; i<I; i++){
     for(unsigned j=0; j<J; j++){
       for(unsigned k=0; k<K; k++){
-    memcpy(tensor[i][j][k],
-           &array[idx_4_gen(i,j,k,0,I,J,K,L)],
-           L*sizeof(double));
+        memcpy(tensor[i][j][k],
+               &array[idx_4_gen(i,j,k,0,I,J,K,L)],
+               L*sizeof(double));
       }
     }
   }
@@ -372,13 +372,13 @@ void array2tensor4(const double *array,
   if (UTILS_DEBUG){
     for (unsigned i=0; i<I; i++){
       for(unsigned j=0; j<J; j++){
-    for(unsigned k=0; k<K; k++){
-      for(unsigned l=0; l<L; l++){
-        PGFEM_printf("%f ",tensor[i][j][k][l]);
-      }
-      PGFEM_printf("\n");
-    }
-    PGFEM_printf("\n\n");
+        for(unsigned k=0; k<K; k++){
+          for(unsigned l=0; l<L; l++){
+            PGFEM_printf("%f ",tensor[i][j][k][l]);
+          }
+          PGFEM_printf("\n");
+        }
+        PGFEM_printf("\n\n");
       }
     }
   }/* DEBUG */
@@ -386,30 +386,30 @@ void array2tensor4(const double *array,
 }
 
 void shapeTensor2array(double *array,
-               const double ****ST,
-               const unsigned int nne)
+                       const double ****ST,
+                       const unsigned int nne)
 {
   for (unsigned a=0; a<nne; a++){
     for (int b=0; b<3; b++){
       for (int i=0; i<3; i++){
-    for (int j=0; j<3; j++){
-      array[idx_4_gen(a,b,i,j,nne,3,3,3)] = ST[i][j][b][a];
-    }
+        for (int j=0; j<3; j++){
+          array[idx_4_gen(a,b,i,j,nne,3,3,3)] = ST[i][j][b][a];
+        }
       }
     }
   }
 }
 
 void array2shapeTensor(const double *array,
-               double ****ST,
-               const unsigned int nne)
+                       double ****ST,
+                       const unsigned int nne)
 {
- for (unsigned a=0; a<nne; a++){
+  for (unsigned a=0; a<nne; a++){
     for (int b=0; b<3; b++){
       for (int i=0; i<3; i++){
-    for (int j=0; j<3; j++){
-      ST[i][j][b][a] =  array[idx_4_gen(a,b,i,j,nne,3,3,3)];
-    }
+        for (int j=0; j<3; j++){
+          ST[i][j][b][a] =  array[idx_4_gen(a,b,i,j,nne,3,3,3)];
+        }
       }
     }
   }
@@ -423,41 +423,41 @@ double det2x2(const double *mat)
 double det3x3(const double *mat)
 {
   return ( ( mat[0]*(mat[4]*mat[8] - mat[5]*mat[7]) )
-       + mat[1]*(mat[5]*mat[6] - mat[3]*mat[8])
-       + mat[2]*(mat[3]*mat[7] - mat[4]*mat[6]) );
+           + mat[1]*(mat[5]*mat[6] - mat[3]*mat[8])
+           + mat[2]*(mat[3]*mat[7] - mat[4]*mat[6]) );
 }
 
 double det4x4(const double *mat)
 {
   return (mat[1]*mat[11]*mat[14]*mat[4]
-      - mat[1]*mat[10]*mat[15]*mat[4]
-      - mat[11]*mat[13]*mat[2]*mat[4]
-      + mat[10]*mat[13]*mat[3]*mat[4]
-      - mat[0]*mat[11]*mat[14]*mat[5]
-      + mat[0]*mat[10]*mat[15]*mat[5]
-      + mat[11]*mat[12]*mat[2]*mat[5]
-      - mat[10]*mat[12]*mat[3]*mat[5]
-      - mat[1]*mat[11]*mat[12]*mat[6]
-      + mat[0]*mat[11]*mat[13]*mat[6]
-      + mat[1]*mat[10]*mat[12]*mat[7]
-      - mat[0]*mat[10]*mat[13]*mat[7]
-      - mat[15]*mat[2]*mat[5]*mat[8]
-      + mat[14]*mat[3]*mat[5]*mat[8]
-      + mat[1]*mat[15]*mat[6]*mat[8]
-      - mat[13]*mat[3]*mat[6]*mat[8]
-      - mat[1]*mat[14]*mat[7]*mat[8]
-      + mat[13]*mat[2]*mat[7]*mat[8]
-      + mat[15]*mat[2]*mat[4]*mat[9]
-      - mat[14]*mat[3]*mat[4]*mat[9]
-      - mat[0]*mat[15]*mat[6]*mat[9]
-      + mat[12]*mat[3]*mat[6]*mat[9]
-      + mat[0]*mat[14]*mat[7]*mat[9]
-      - mat[12]*mat[2]*mat[7]*mat[9]);
+          - mat[1]*mat[10]*mat[15]*mat[4]
+          - mat[11]*mat[13]*mat[2]*mat[4]
+          + mat[10]*mat[13]*mat[3]*mat[4]
+          - mat[0]*mat[11]*mat[14]*mat[5]
+          + mat[0]*mat[10]*mat[15]*mat[5]
+          + mat[11]*mat[12]*mat[2]*mat[5]
+          - mat[10]*mat[12]*mat[3]*mat[5]
+          - mat[1]*mat[11]*mat[12]*mat[6]
+          + mat[0]*mat[11]*mat[13]*mat[6]
+          + mat[1]*mat[10]*mat[12]*mat[7]
+          - mat[0]*mat[10]*mat[13]*mat[7]
+          - mat[15]*mat[2]*mat[5]*mat[8]
+          + mat[14]*mat[3]*mat[5]*mat[8]
+          + mat[1]*mat[15]*mat[6]*mat[8]
+          - mat[13]*mat[3]*mat[6]*mat[8]
+          - mat[1]*mat[14]*mat[7]*mat[8]
+          + mat[13]*mat[2]*mat[7]*mat[8]
+          + mat[15]*mat[2]*mat[4]*mat[9]
+          - mat[14]*mat[3]*mat[4]*mat[9]
+          - mat[0]*mat[15]*mat[6]*mat[9]
+          + mat[12]*mat[3]*mat[6]*mat[9]
+          + mat[0]*mat[14]*mat[7]*mat[9]
+          - mat[12]*mat[2]*mat[7]*mat[9]);
 }
 
 double getJacobian(const double *mat,
-           const int elem_id,
-           int *err)
+                   const int elem_id,
+                   int *err)
 {
   double J = det3x3(mat);
   *err  = 0;
@@ -465,14 +465,14 @@ double getJacobian(const double *mat,
     int err_rank = 0;
     PGFEM_Error_rank(&err_rank);
     PGFEM_printerr("[%d] ERROR: Negative Jacobian!"
-        " J = %.5e (element %d)\n",err_rank,J,elem_id);
+                   " J = %.5e (element %d)\n",err_rank,J,elem_id);
     *err = 1;
   }
   return J;
 }
 
 int inv2x2(const double * restrict mat,
-       double * restrict mat_inv)
+           double * restrict mat_inv)
 {
   double A = det2x2(mat);
   if(A != 0.0){
@@ -485,7 +485,7 @@ int inv2x2(const double * restrict mat,
 }
 
 int inv3x3(const double * restrict  mat,
-       double * restrict mat_inv)
+           double * restrict mat_inv)
 {
   double A = det3x3(mat);
 
@@ -507,130 +507,130 @@ int inv3x3(const double * restrict  mat,
 }
 
 int inv4x4(const double *mat,
-       double *mat_inv)
+           double *mat_inv)
 {
   double A = det4x4(mat);
 
   if(A != 0.0){
-  mat_inv[0] = (-mat[11]*mat[14]*mat[5]
-        + mat[10]*mat[15]*mat[5]
-        + mat[11]*mat[13]*mat[6]
-        - mat[10]*mat[13]*mat[7]
-        - mat[15]*mat[6]*mat[9]
-        + mat[14]*mat[7]*mat[9]);
+    mat_inv[0] = (-mat[11]*mat[14]*mat[5]
+                  + mat[10]*mat[15]*mat[5]
+                  + mat[11]*mat[13]*mat[6]
+                  - mat[10]*mat[13]*mat[7]
+                  - mat[15]*mat[6]*mat[9]
+                  + mat[14]*mat[7]*mat[9]);
 
-  mat_inv[1] = (mat[1]*mat[11]*mat[14]
-        - mat[1]*mat[10]*mat[15]
-        - mat[11]*mat[13]*mat[2]
-        + mat[10]*mat[13]*mat[3]
-        + mat[15]*mat[2]*mat[9]
-        - mat[14]*mat[3]*mat[9]);
+    mat_inv[1] = (mat[1]*mat[11]*mat[14]
+                  - mat[1]*mat[10]*mat[15]
+                  - mat[11]*mat[13]*mat[2]
+                  + mat[10]*mat[13]*mat[3]
+                  + mat[15]*mat[2]*mat[9]
+                  - mat[14]*mat[3]*mat[9]);
 
-  mat_inv[2] = (-mat[15]*mat[2]*mat[5]
-        + mat[14]*mat[3]*mat[5]
-        + mat[1]*mat[15]*mat[6]
-        - mat[13]*mat[3]*mat[6]
-        - mat[1]*mat[14]*mat[7]
-        + mat[13]*mat[2]*mat[7]);
+    mat_inv[2] = (-mat[15]*mat[2]*mat[5]
+                  + mat[14]*mat[3]*mat[5]
+                  + mat[1]*mat[15]*mat[6]
+                  - mat[13]*mat[3]*mat[6]
+                  - mat[1]*mat[14]*mat[7]
+                  + mat[13]*mat[2]*mat[7]);
 
-  mat_inv[3] = (mat[11]*mat[2]*mat[5]
-        - mat[10]*mat[3]*mat[5]
-        - mat[1]*mat[11]*mat[6]
-        + mat[1]*mat[10]*mat[7]
-        + mat[3]*mat[6]*mat[9]
-        - mat[2]*mat[7]*mat[9]);
+    mat_inv[3] = (mat[11]*mat[2]*mat[5]
+                  - mat[10]*mat[3]*mat[5]
+                  - mat[1]*mat[11]*mat[6]
+                  + mat[1]*mat[10]*mat[7]
+                  + mat[3]*mat[6]*mat[9]
+                  - mat[2]*mat[7]*mat[9]);
 
-  mat_inv[4] = (mat[11]*mat[14]*mat[4]
-        - mat[10]*mat[15]*mat[4]
-        - mat[11]*mat[12]*mat[6]
-        + mat[10]*mat[12]*mat[7]
-        + mat[15]*mat[6]*mat[8]
-        - mat[14]*mat[7]*mat[8]);
+    mat_inv[4] = (mat[11]*mat[14]*mat[4]
+                  - mat[10]*mat[15]*mat[4]
+                  - mat[11]*mat[12]*mat[6]
+                  + mat[10]*mat[12]*mat[7]
+                  + mat[15]*mat[6]*mat[8]
+                  - mat[14]*mat[7]*mat[8]);
 
-  mat_inv[5] = (-mat[0]*mat[11]*mat[14]
-        + mat[0]*mat[10]*mat[15]
-        + mat[11]*mat[12]*mat[2]
-        - mat[10]*mat[12]*mat[3]
-        - mat[15]*mat[2]*mat[8]
-        + mat[14]*mat[3]*mat[8]);
+    mat_inv[5] = (-mat[0]*mat[11]*mat[14]
+                  + mat[0]*mat[10]*mat[15]
+                  + mat[11]*mat[12]*mat[2]
+                  - mat[10]*mat[12]*mat[3]
+                  - mat[15]*mat[2]*mat[8]
+                  + mat[14]*mat[3]*mat[8]);
 
-  mat_inv[6] = (mat[15]*mat[2]*mat[4]
-        - mat[14]*mat[3]*mat[4]
-        - mat[0]*mat[15]*mat[6]
-        + mat[12]*mat[3]*mat[6]
-        + mat[0]*mat[14]*mat[7]
-        - mat[12]*mat[2]*mat[7]);
+    mat_inv[6] = (mat[15]*mat[2]*mat[4]
+                  - mat[14]*mat[3]*mat[4]
+                  - mat[0]*mat[15]*mat[6]
+                  + mat[12]*mat[3]*mat[6]
+                  + mat[0]*mat[14]*mat[7]
+                  - mat[12]*mat[2]*mat[7]);
 
-  mat_inv[7] = (-mat[11]*mat[2]*mat[4]
-        + mat[10]*mat[3]*mat[4]
-        + mat[0]*mat[11]*mat[6]
-        - mat[0]*mat[10]*mat[7]
-        - mat[3]*mat[6]*mat[8]
-        + mat[2]*mat[7]*mat[8]);
+    mat_inv[7] = (-mat[11]*mat[2]*mat[4]
+                  + mat[10]*mat[3]*mat[4]
+                  + mat[0]*mat[11]*mat[6]
+                  - mat[0]*mat[10]*mat[7]
+                  - mat[3]*mat[6]*mat[8]
+                  + mat[2]*mat[7]*mat[8]);
 
-  mat_inv[8] = (-mat[11]*mat[13]*mat[4]
-        + mat[11]*mat[12]*mat[5]
-        - mat[15]*mat[5]*mat[8]
-        + mat[13]*mat[7]*mat[8]
-        + mat[15]*mat[4]*mat[9]
-        - mat[12]*mat[7]*mat[9]);
+    mat_inv[8] = (-mat[11]*mat[13]*mat[4]
+                  + mat[11]*mat[12]*mat[5]
+                  - mat[15]*mat[5]*mat[8]
+                  + mat[13]*mat[7]*mat[8]
+                  + mat[15]*mat[4]*mat[9]
+                  - mat[12]*mat[7]*mat[9]);
 
-  mat_inv[9] = (-mat[1]*mat[11]*mat[12]
-        + mat[0]*mat[11]*mat[13]
-        + mat[1]*mat[15]*mat[8]
-        - mat[13]*mat[3]*mat[8]
-        - mat[0]*mat[15]*mat[9]
-        + mat[12]*mat[3]*mat[9]);
+    mat_inv[9] = (-mat[1]*mat[11]*mat[12]
+                  + mat[0]*mat[11]*mat[13]
+                  + mat[1]*mat[15]*mat[8]
+                  - mat[13]*mat[3]*mat[8]
+                  - mat[0]*mat[15]*mat[9]
+                  + mat[12]*mat[3]*mat[9]);
 
-  mat_inv[10] = (-mat[1]*mat[15]*mat[4]
-         + mat[13]*mat[3]*mat[4]
-         + mat[0]*mat[15]*mat[5]
-         - mat[12]*mat[3]*mat[5]
-         + mat[1]*mat[12]*mat[7]
-         - mat[0]*mat[13]*mat[7]);
+    mat_inv[10] = (-mat[1]*mat[15]*mat[4]
+                   + mat[13]*mat[3]*mat[4]
+                   + mat[0]*mat[15]*mat[5]
+                   - mat[12]*mat[3]*mat[5]
+                   + mat[1]*mat[12]*mat[7]
+                   - mat[0]*mat[13]*mat[7]);
 
-  mat_inv[11] = (mat[1]*mat[11]*mat[4]
-         - mat[0]*mat[11]*mat[5]
-         + mat[3]*mat[5]*mat[8]
-         - mat[1]*mat[7]*mat[8]
-         - mat[3]*mat[4]*mat[9]
-         + mat[0]*mat[7]*mat[9]);
+    mat_inv[11] = (mat[1]*mat[11]*mat[4]
+                   - mat[0]*mat[11]*mat[5]
+                   + mat[3]*mat[5]*mat[8]
+                   - mat[1]*mat[7]*mat[8]
+                   - mat[3]*mat[4]*mat[9]
+                   + mat[0]*mat[7]*mat[9]);
 
-  mat_inv[12] = (mat[10]*mat[13]*mat[4]
-         - mat[10]*mat[12]*mat[5]
-         + mat[14]*mat[5]*mat[8]
-         - mat[13]*mat[6]*mat[8]
-         - mat[14]*mat[4]*mat[9]
-         + mat[12]*mat[6]*mat[9]);
+    mat_inv[12] = (mat[10]*mat[13]*mat[4]
+                   - mat[10]*mat[12]*mat[5]
+                   + mat[14]*mat[5]*mat[8]
+                   - mat[13]*mat[6]*mat[8]
+                   - mat[14]*mat[4]*mat[9]
+                   + mat[12]*mat[6]*mat[9]);
 
-  mat_inv[13] = (mat[1]*mat[10]*mat[12]
-         - mat[0]*mat[10]*mat[13]
-         - mat[1]*mat[14]*mat[8]
-         + mat[13]*mat[2]*mat[8]
-         + mat[0]*mat[14]*mat[9]
-         - mat[12]*mat[2]*mat[9]);
+    mat_inv[13] = (mat[1]*mat[10]*mat[12]
+                   - mat[0]*mat[10]*mat[13]
+                   - mat[1]*mat[14]*mat[8]
+                   + mat[13]*mat[2]*mat[8]
+                   + mat[0]*mat[14]*mat[9]
+                   - mat[12]*mat[2]*mat[9]);
 
-  mat_inv[14] = (mat[1]*mat[14]*mat[4]
-         - mat[13]*mat[2]*mat[4]
-         - mat[0]*mat[14]*mat[5]
-         + mat[12]*mat[2]*mat[5]
-         - mat[1]*mat[12]*mat[6]
-         + mat[0]*mat[13]*mat[6]);
+    mat_inv[14] = (mat[1]*mat[14]*mat[4]
+                   - mat[13]*mat[2]*mat[4]
+                   - mat[0]*mat[14]*mat[5]
+                   + mat[12]*mat[2]*mat[5]
+                   - mat[1]*mat[12]*mat[6]
+                   + mat[0]*mat[13]*mat[6]);
 
-  mat_inv[15] = (-mat[1]*mat[10]*mat[4]
-         + mat[0]*mat[10]*mat[5]
-         - mat[2]*mat[5]*mat[8]
-         + mat[1]*mat[6]*mat[8]
-         + mat[2]*mat[4]*mat[9]
-         - mat[0]*mat[6]*mat[9]);
-  for(int i=0; i<16; i++) mat_inv[i] /= A;
-  return 0;
+    mat_inv[15] = (-mat[1]*mat[10]*mat[4]
+                   + mat[0]*mat[10]*mat[5]
+                   - mat[2]*mat[5]*mat[8]
+                   + mat[1]*mat[6]*mat[8]
+                   + mat[2]*mat[4]*mat[9]
+                   - mat[0]*mat[6]*mat[9]);
+    for(int i=0; i<16; i++) mat_inv[i] /= A;
+    return 0;
   } else return 1;
 }
 
 int inverse(double const* A,
-        const int M,
-        double *A_I)
+            const int M,
+            double *A_I)
 {
   if (M <= 0){return 1;}
   int info;
@@ -640,7 +640,7 @@ int inverse(double const* A,
 
   info = 0;
   switch(M){
-  case 1:
+   case 1:
     if(A[0] == 0.0){
       info = 1;
       break;
@@ -649,10 +649,10 @@ int inverse(double const* A,
       break;
     }
 
-  case 2: info = inv2x2(A,A_I); break;
-  case 3: info = inv3x3(A,A_I); break;
-  case 4: info = inv4x4(A,A_I); break;
-  default:
+   case 2: info = inv2x2(A,A_I); break;
+   case 3: info = inv3x3(A,A_I); break;
+   case 4: info = inv4x4(A,A_I); break;
+   default:
     iPerm = aloc1i(M);
     work = aloc1(lwork);
 
@@ -668,7 +668,7 @@ int inverse(double const* A,
     {
       if(info<0){
         PGFEM_printerr("WARNING: illegal parameter given"
-            " to dgetrf at position %d.\n",info);
+                       " to dgetrf at position %d.\n",info);
       } else if(info>0){
         PGFEM_printerr("WARNING: factor U is singular.\n");
       }
@@ -684,7 +684,7 @@ int inverse(double const* A,
     {
       if(info<0){
         PGFEM_printerr("WARNING: illegal parameter given"
-            " to dgetri at position %d.\n",info);
+                       " to dgetri at position %d.\n",info);
       }
     }
 
@@ -700,8 +700,8 @@ int inverse(double const* A,
       } else {
         PGFEM_printerr("ERROR: Error (%d) in inverse routine.\n",info);
       }
-    /* PGFEM_Abort(); */
-    /* abort(); */
+      /* PGFEM_Abort(); */
+      /* abort(); */
     }
   }
 
@@ -743,35 +743,35 @@ int solve_Ax_b(const int n_eq,
 }
 
 void transpose(double * restrict mat_t,
-           const double * restrict mat,
-           const int mat_row,
-           const int mat_col)
+               const double * restrict mat,
+               const int mat_row,
+               const int mat_col)
 {
   for(int i=0; i<mat_row; i++){
     for(int j=0; j<mat_col; j++){
       mat_t[idx_2_gen(j,i,mat_col,mat_row)] =
-    mat[idx_2_gen(i,j,mat_row,mat_col)];
+      mat[idx_2_gen(i,j,mat_row,mat_col)];
     }
   }
 }
 
 void symmetric_part(double *sym,
-            const double *mat,
-            const int dim)
+                    const double *mat,
+                    const int dim)
 {
   for(int i=0; i<dim; i++){
     for(int j=0; j<dim; j++){
       sym[idx_2_gen(i,j,dim,dim)] = 0.5*(mat[idx_2_gen(i,j,dim,dim)]
-                     + mat[idx_2_gen(j,i,dim,dim)]);
+                                         + mat[idx_2_gen(j,i,dim,dim)]);
     }
   }
 }
 
 void print_coords(FILE *out,
-          const int nne,
-          const double *x,
-          const double *y,
-          const double *z)
+                  const int nne,
+                  const double *x,
+                  const double *y,
+                  const double *z)
 {
   for(int i=0; i<nne; i++){
     PGFEM_fprintf(out,"%d: %22.15e %22.15e %22.15e\n",i,x[i],y[i],z[i]);
@@ -780,10 +780,10 @@ void print_coords(FILE *out,
 }
 
 void print_array_d(FILE *out,
-           const double *array,
-           const int length,
-           const int nrow,
-           const int ncol)
+                   const double *array,
+                   const int length,
+                   const int nrow,
+                   const int ncol)
 {
   int n_block = length/(nrow*ncol);
   int count = 0;
@@ -791,8 +791,8 @@ void print_array_d(FILE *out,
   for (int i=0; i<n_block; i++){
     for (int j=0; j<nrow; j++){
       for (int k=0; k<ncol; k++){
-    PGFEM_fprintf(out,"%12.5e ",array[count]);
-    count++;
+        PGFEM_fprintf(out,"%12.5e ",array[count]);
+        count++;
       }
       PGFEM_fprintf(out,"\n");
     }
@@ -801,10 +801,10 @@ void print_array_d(FILE *out,
 }
 
 void print_array_i(FILE *out,
-           const int *array,
-           const int length,
-           const int nrow,
-           const int ncol)
+                   const int *array,
+                   const int length,
+                   const int nrow,
+                   const int ncol)
 {
   int n_block = length/(nrow*ncol);
   int count = 0;
@@ -812,8 +812,8 @@ void print_array_i(FILE *out,
   for (int i=0; i<n_block; i++){
     for (int j=0; j<nrow; j++){
       for (int k=0; k<ncol; k++){
-    PGFEM_fprintf(out,"%5d ",array[count]);
-    count++;
+        PGFEM_fprintf(out,"%5d ",array[count]);
+        count++;
       }
       PGFEM_fprintf(out,"\n");
     }
@@ -822,10 +822,10 @@ void print_array_i(FILE *out,
 }
 
 void print_array_l(FILE *out,
-           const long *array,
-           const int length,
-           const int nrow,
-           const int ncol)
+                   const long *array,
+                   const int length,
+                   const int nrow,
+                   const int ncol)
 {
   int n_block = length/(nrow*ncol);
   int count = 0;
@@ -833,8 +833,8 @@ void print_array_l(FILE *out,
   for (int i=0; i<n_block; i++){
     for (int j=0; j<nrow; j++){
       for (int k=0; k<ncol; k++){
-    PGFEM_fprintf(out,"%5ld ",array[count]);
-    count++;
+        PGFEM_fprintf(out,"%5ld ",array[count]);
+        count++;
       }
       PGFEM_fprintf(out,"\n");
     }
@@ -843,37 +843,37 @@ void print_array_l(FILE *out,
 }
 
 void print_material(FILE *out,
-            const MATERIAL *mat)
+                    const MATERIAL *mat)
 {
   PGFEM_fprintf(out,
-      "E_x,y,z:    %12.5e %12.5e %12.5e\n"
-      "G_yz,xz,xy: %12.5e %12.5e %12.5e\n"
-      "n_yz,xz,xy: %12.5e %12.5e %12.5e\n"
-      "a_x,y,z:    %12.5e %12.5e %12.5e\n"
-      "sig: %12.5e dev: %d vol: %d\n",
-      mat->Ex,mat->Ey,mat->Ez,
-      mat->Gyz,mat->Gxz,mat->Gxy,
-      mat->nyz,mat->nxz,mat->nxy,
-      mat->ax,mat->ay,mat->az,
-      mat->sig,mat->devPotFlag,mat->volPotFlag);
+                "E_x,y,z:    %12.5e %12.5e %12.5e\n"
+                "G_yz,xz,xy: %12.5e %12.5e %12.5e\n"
+                "n_yz,xz,xy: %12.5e %12.5e %12.5e\n"
+                "a_x,y,z:    %12.5e %12.5e %12.5e\n"
+                "sig: %12.5e dev: %d vol: %d\n",
+                mat->Ex,mat->Ey,mat->Ez,
+                mat->Gyz,mat->Gxz,mat->Gxy,
+                mat->nyz,mat->nxz,mat->nxy,
+                mat->ax,mat->ay,mat->az,
+                mat->sig,mat->devPotFlag,mat->volPotFlag);
 }
 
 void update_elem_bub_dofs(const long ne,
-              ELEMENT *const elem)
+                          ELEMENT *const elem)
 {
   for(long i=0; i<ne; i++){
     cblas_daxpy(elem[i].n_bub*elem[i].n_bub_dofs,1.0,
-        elem[i].d_bub_dofs,1,elem[i].bub_dofs,1);
+                elem[i].d_bub_dofs,1,elem[i].bub_dofs,1);
     memset(elem[i].d_bub_dofs,0,
-       elem[i].n_bub*elem[i].n_bub_dofs*sizeof(double));
+           elem[i].n_bub*elem[i].n_bub_dofs*sizeof(double));
   }
 }
 
 void compute_disp_grad(const int nne,
-               const double *ST,
-               const double *disp,
-               double *grad,
-               const int node)
+                       const double *ST,
+                       const double *disp,
+                       double *grad,
+                       const int node)
 {
   /* Compute the gradient of a displacement field with the option to
      use a only a single node */
@@ -881,32 +881,32 @@ void compute_disp_grad(const int nne,
   if(node >= 0 && node < nne){
     for(int b=0; b<3; b++){
       for(int i=0; i<3; i++){
-    for(int j=0; j<3; j++){
-      grad[idx_2(i,j)] += (ST[idx_4_gen(node,b,i,j,nne,3,3,3)]
-                   *disp[idx_2_gen(node,b,nne,3)]);
-    }
+        for(int j=0; j<3; j++){
+          grad[idx_2(i,j)] += (ST[idx_4_gen(node,b,i,j,nne,3,3,3)]
+                               *disp[idx_2_gen(node,b,nne,3)]);
+        }
       }
     }
   } else {
     for(int a=0; a<nne; a++){
       for(int b=0; b<3; b++){
-    for(int i=0; i<3; i++){
-      for(int j=0; j<3; j++){
-        grad[idx_2(i,j)] += (ST[idx_4_gen(a,b,i,j,nne,3,3,3)]
-                 *disp[idx_2_gen(a,b,nne,3)]);
-      }
-    }
+        for(int i=0; i<3; i++){
+          for(int j=0; j<3; j++){
+            grad[idx_2(i,j)] += (ST[idx_4_gen(a,b,i,j,nne,3,3,3)]
+                                 *disp[idx_2_gen(a,b,nne,3)]);
+          }
+        }
       }
     }
   }
 }
 
 long* list_boundary_el(const long ne,
-               const ELEMENT *elem,
-               const long nn,
-               const NODE *node,
-               const long myrank,
-               long *nbndel)
+                       const ELEMENT *elem,
+                       const long nn,
+                       const NODE *node,
+                       const long myrank,
+                       long *nbndel)
 {
   long *nod;
   long *bnd;
@@ -923,9 +923,9 @@ long* list_boundary_el(const long ne,
     for(int j=0; j<elem[i].toe; j++){
       /*if(node[nod[j]].Gnn >= 0){*/
       if(node[nod[j]].Dom != myrank){
-    bnd[i] = 1;
-    (*nbndel)++;
-    break;
+        bnd[i] = 1;
+        (*nbndel)++;
+        break;
       }
     }
     free(nod);
@@ -958,7 +958,7 @@ long* list_boundary_el(const long ne,
 
   if(count != *nbndel){
     PGFEM_printf("WARNING: number stored boundary elements != "
-       "number counted boundary elements!\n");
+                 "number counted boundary elements!\n");
     PGFEM_printf("[%ld](%ld:%ld)\n", myrank,*nbndel,count);
   }
 
@@ -966,8 +966,8 @@ long* list_boundary_el(const long ne,
 }
 
 long* times_print (FILE *in1,
-           const long nt,
-           const long n_p)
+                   const long nt,
+                   const long n_p)
 {
   long i,j,*print;
   double *help;
@@ -991,8 +991,8 @@ long* times_print (FILE *in1,
   for (i=0;i<n_p;i++){
     for (j=0;j<nt;j++){
       if (j == help[i]){
-    print[j] = 1;
-    continue;
+        print[j] = 1;
+        continue;
       }
     }
   }
@@ -1003,8 +1003,8 @@ long* times_print (FILE *in1,
 }
 
 long num_fib (long nmat,
-          long ne,
-          ELEMENT *elem)
+              long ne,
+              ELEMENT *elem)
 /*
   funkce vraci pocet fiberu
 */
@@ -1025,8 +1025,8 @@ long num_fib (long nmat,
 }
 
 long num_matr (long nmat,
-           long ne,
-           ELEMENT *elem)
+               long ne,
+               ELEMENT *elem)
 /*
   funkce vraci pocet matric
 */
@@ -1047,10 +1047,10 @@ long num_matr (long nmat,
 }
 
 long list (long ***a,
-       long ne,
-       long nmat,
-       long nc,
-       ELEMENT *elem)
+           long ne,
+           long nmat,
+           long nc,
+           ELEMENT *elem)
 /*
   function creates list of combinations fiber - matrix - volume fraction
 */
@@ -1065,7 +1065,7 @@ long list (long ***a,
   for (i=0;i<nmat;i++){
     for (j=0;j<nmat;j++){
       for (k=0;k<nc;k++){
-    if (a[i][j][k] == 1) n++;
+        if (a[i][j][k] == 1) n++;
       }
     }
   }
@@ -1074,8 +1074,8 @@ long list (long ***a,
 }
 
 double Tetra_V (const double *x,
-        const double *y,
-        const double *z)
+                const double *y,
+                const double *z)
 /*
 
  */
@@ -1083,11 +1083,11 @@ double Tetra_V (const double *x,
   double V;
 
   V = 1./6.*(((x[1]-x[0])*(y[2]-y[0])*(z[3]-z[0]) +
-          (y[1]-y[0])*(z[2]-z[0])*(x[3]-x[0]) +
-          (z[1]-z[0])*(x[2]-x[0])*(y[3]-y[0]))-
-         ((z[1]-z[0])*(y[2]-y[0])*(x[3]-x[0]) +
-          (x[1]-x[0])*(z[2]-z[0])*(y[3]-y[0]) +
-          (y[1]-y[0])*(x[2]-x[0])*(z[3]-z[0])));
+              (y[1]-y[0])*(z[2]-z[0])*(x[3]-x[0]) +
+              (z[1]-z[0])*(x[2]-x[0])*(y[3]-y[0]))-
+             ((z[1]-z[0])*(y[2]-y[0])*(x[3]-x[0]) +
+              (x[1]-x[0])*(z[2]-z[0])*(y[3]-y[0]) +
+              (y[1]-y[0])*(x[2]-x[0])*(z[3]-z[0])));
 
   if (V < 0.0) V = -1.0*V;
 
@@ -1095,10 +1095,10 @@ double Tetra_V (const double *x,
 }
 
 double Tetra_qv_V (const long nne,
-           const long ndofn,
-           const double *x,
-           const double *y,
-           const double *z)
+                   const long ndofn,
+                   const double *x,
+                   const double *y,
+                   const double *z)
 /*
 
  */
@@ -1122,18 +1122,18 @@ double Tetra_qv_V (const long nne,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    V += ai*aj*ak*J;
+        V += ai*aj*ak*J;
 
       }/*end of k*/
     }/*end of j*/
@@ -1148,8 +1148,8 @@ double Tetra_qv_V (const long nne,
 }
 
 double Hexa_V (const double *x,
-           const double *y,
-           const double *z)
+               const double *y,
+               const double *z)
 {
   double *gk,*ge,*gz,*w;
   double J,ksi,eta,zet,ai,aj,ak,**B_T,V2;
@@ -1227,18 +1227,18 @@ double Hexa_V (const double *x,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
+        }
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    V2 += ai*aj*ak*J;
+        V2 += ai*aj*ak*J;
 
       }/*end of k*/
     }/*end of j*/
@@ -1257,9 +1257,9 @@ double Hexa_V (const double *x,
 }
 
 double T_VOLUME (const long ne,
-         const long ndofn,
-         const ELEMENT *elem,
-         const NODE *node)
+                 const long ndofn,
+                 const ELEMENT *elem,
+                 const NODE *node)
 {
   long ii,nne,*nod;
   double PL=0.0,*x,*y,*z,volume{};
@@ -1285,8 +1285,8 @@ double T_VOLUME (const long ne,
 }
 
 double area (long nne,
-         double *x,
-         double *y)
+             double *x,
+             double *y)
 /*
   Function returns area of element
 */
@@ -1300,21 +1300,21 @@ double area (long nne,
   }
   if (nne == 4){
     a = 0.5*(x[0]*y[1] - x[1]*y[0] +
-         x[1]*y[2] - x[2]*y[1] +
-         x[2]*y[3] - x[3]*y[2] +
-         x[3]*y[0] - x[0]*y[3]);
+             x[1]*y[2] - x[2]*y[1] +
+             x[2]*y[3] - x[3]*y[2] +
+             x[3]*y[0] - x[0]*y[3]);
   }
   return (a);
 }
 
 void def_elem (const long *cn,
-           const long ndofe,
-           const double *r,
-           const ELEMENT *elem,
-           const NODE *node,
-           double *r_e,
-           const SUPP sup,
-           const long TYPE)
+               const long ndofe,
+               const double *r,
+               const ELEMENT *elem,
+               const NODE *node,
+               double *r_e,
+               const SUPP sup,
+               const long TYPE)
 {
   enum{UPDATED=0,TOTAL=1,OTHER=2};
   long i,j;
@@ -1334,13 +1334,13 @@ void def_elem (const long *cn,
 }
 
 void def_elem_total (const long *cn,
-             const long ndofe,
-             const double *r,
-             const double *d_r,
-             const ELEMENT *elem,
-             const NODE *node,
-             const SUPP sup,
-             double *r_e)
+                     const long ndofe,
+                     const double *r,
+                     const double *d_r,
+                     const ELEMENT *elem,
+                     const NODE *node,
+                     const SUPP sup,
+                     double *r_e)
 {
   for(int i=0; i< ndofe; i++){
     const int id = cn[i];
@@ -1371,14 +1371,14 @@ void def_elem_total (const long *cn,
 /// \param[in] reference nodal value
 /// \return non-zero on interal error
 int def_elem_with_reference(const long *cn,
-                             const long ndofe,
-                             const double *r,
-                             const double *d_r,
-                             const ELEMENT *elem,
-                             const NODE *node,
-                             const SUPP sup,
-                             double *r_e,
-                             double r0)
+                            const long ndofe,
+                            const double *r,
+                            const double *d_r,
+                            const ELEMENT *elem,
+                            const NODE *node,
+                            const SUPP sup,
+                            double *r_e,
+                            double r0)
 {
   int err = 0;
   for(int i=0; i< ndofe; i++)
@@ -1397,9 +1397,9 @@ int def_elem_with_reference(const long *cn,
 }
 
 void elemnodes (const long ii,
-        const long nne,
-        long *nod,
-        const ELEMENT *elem)
+                const long nne,
+                long *nod,
+                const ELEMENT *elem)
 /*
   returns nodes of actual element
 
@@ -1433,11 +1433,11 @@ void elemnodes (const long ii,
 /* } */
 
 void nodecoord_total (const long nne,
-              const long *nod,
-              const NODE *node,
-              double *x,
-              double *y,
-              double *z)
+                      const long *nod,
+                      const NODE *node,
+                      double *x,
+                      double *y,
+                      double *z)
 {
   for (int i=0;i<nne;i++){
     x[i] = node[nod[i]].x1_fd;
@@ -1447,11 +1447,11 @@ void nodecoord_total (const long nne,
 }
 
 void nodecoord_updated (const long nne,
-            const long *nod,
-            const NODE *node,
-            double *x,
-            double *y,
-            double *z)
+                        const long *nod,
+                        const NODE *node,
+                        double *x,
+                        double *y,
+                        double *z)
 {
   for (int i=0;i<nne;i++){
     x[i] = node[nod[i]].x1;
@@ -1462,12 +1462,12 @@ void nodecoord_updated (const long nne,
 
 
 void list_el_prescribed_def (SUPP sup,
-                 const NODE *node,
-                 const ELEMENT *elem,
-                 const BOUNDING_ELEMENT *b_elems,
-                 const long ne,
-                 const int n_be,
-                 const long nn)
+                             const NODE *node,
+                             const ELEMENT *elem,
+                             const BOUNDING_ELEMENT *b_elems,
+                             const long ne,
+                             const int n_be,
+                             const long nn)
 /*
 
  */
@@ -1489,9 +1489,9 @@ void list_el_prescribed_def (SUPP sup,
     pom = 1;
     for (j=0;j<sup->ndn;j++){
       for (k=0;k<nne;k++){
-    if (sup->lnpd[j] == nod[k]){
-      pom = 0; break;
-    }
+        if (sup->lnpd[j] == nod[k]){
+          pom = 0; break;
+        }
       }
       if (pom == 0) break;
     }
@@ -1522,14 +1522,14 @@ void list_el_prescribed_def (SUPP sup,
   for(i=0; i<n_be; i++){
     for(j=ii; j<sup->nde; j++){
       /* found match. NOTE: ii is not incremented on match because
-     multiple bounding elements can bound the same volume
-     element */
+         multiple bounding elements can bound the same volume
+         element */
       if(sup->lepd[j] == lbnd_el[i].val){
-    key[i] = lbnd_el[i].key;
-    sup->nd_be ++;
-    break;
+        key[i] = lbnd_el[i].key;
+        sup->nd_be ++;
+        break;
       } else if (sup->lepd[j] < lbnd_el[i].val){
-    ii++;
+        ii++;
       }
     }
   }
@@ -1550,9 +1550,9 @@ void list_el_prescribed_def (SUPP sup,
 }
 
 void fun_eps (double *r_e,
-          long ndofe,
-          double **B_T,
-          double *eps)
+              long ndofe,
+              double **B_T,
+              double *eps)
 /*
 
  */
@@ -1570,13 +1570,13 @@ void fun_eps (double *r_e,
 }
 
 void eps_element (long nne,
-          long ndofn,
-          double V,
-          double *r_e,
-          double *x,
-          double *y,
-          double *z,
-          double *EPSi)
+                  long ndofn,
+                  double V,
+                  double *r_e,
+                  double *x,
+                  double *y,
+                  double *z,
+                  double *EPSi)
 /*
 
  */
@@ -1603,39 +1603,39 @@ void eps_element (long nne,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4)  {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
+        if (nne == 4)  {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
+        }
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    /*  Matice B_BAR */
-    B_BAR (B_T,nne,x,y,z);
+        /*  Matice B_BAR */
+        B_BAR (B_T,nne,x,y,z);
 
-    fun_eps (r_e,ndofe,B_T,eps);
+        fun_eps (r_e,ndofe,B_T,eps);
 
-    for (jj=0;jj<6;jj++)  EPSi[jj] += ai*aj*ak*eps[jj]*J/V;
+        for (jj=0;jj<6;jj++)  EPSi[jj] += ai*aj*ak*eps[jj]*J/V;
 
       }/*end of k*/
     }/*end of j*/
@@ -1650,23 +1650,23 @@ void eps_element (long nne,
 }
 
 void eps_e_in (long nne,
-           long ndofn,
-           double *r_e,
-           double *x,
-           double *y,
-           double *z,
-           double **EPSi)
+               long ndofn,
+               double *r_e,
+               double *x,
+               double *y,
+               double *z,
+               double **EPSi)
 /*
 
  */
 {
 
   long i,j,k,II,JJ,KK,jj,ndofe,ip;
-  double *gk,*ge,*gz,*w,*eps,**B_T;
+  double *gk,*ge,*gz,*w,*eps,**B_T,ksi{},eta{},zet{};
 
   // @todo Commented out as dead code. @cp should review (note commented out
   //       lines in `if`s below). LD
-  // double J,ai{},aj{},ak{},ksi{},eta{},zet{};
+  // double J,ai{},aj{},ak{};
 
   ndofe = nne*ndofn;
 
@@ -1677,7 +1677,6 @@ void eps_e_in (long nne,
   eps = aloc1(6);
   B_T = aloc2(ndofe,6);
 
-
   /* Integration */
   integrate (nne,&II,&JJ,&KK,gk,ge,gz,w);
 
@@ -1686,41 +1685,42 @@ void eps_e_in (long nne,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    // if (nne == 4)  {
-    //   ksi = *(gk+k);
-    //   eta = *(ge+k);
-    //   zet = *(gz+k);
-    //   ai = *(w+k);
-    //   aj = 1.0;
-    //   ak = 1.0;
-    // }
-    // if (nne == 10) {
-    //   ksi = *(gk+k);
-    //   eta = *(ge+k);
-    //   zet = *(gz+k);
-    //   ai = *(w+k);
-    //   aj = 1.0;
-    //   ak = 1.0;
-    // }
-    // if (nne == 8)  {
-    //   ksi = *(gk+i);
-    //   eta = *(gk+j);
-    //   zet = *(gk+k);
-    //   ai = *(w+i);
-    //   aj = *(w+j);
-    //   ak = *(w+k);
-    // }
+        if (nne == 4)  {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          //   ai = *(w+k);
+          //   aj = 1.0;
+          //   ak = 1.0;
+        }
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          //   ai = *(w+k);
+          //   aj = 1.0;
+          //   ak = 1.0;
+        }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          //   ai = *(w+i);
+          //   aj = *(w+j);
+          //   ak = *(w+k);
+        }
 
-    // J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        // J =
+        Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    /*  Matice B_BAR */
-    B_BAR (B_T,nne,x,y,z);
+        /*  Matice B_BAR */
+        B_BAR (B_T,nne,x,y,z);
 
-    fun_eps (r_e,ndofe,B_T,eps);
+        fun_eps (r_e,ndofe,B_T,eps);
 
-    for (jj=0;jj<6;jj++)  EPSi[ip][jj] = eps[jj];
+        for (jj=0;jj<6;jj++)  EPSi[ip][jj] = eps[jj];
 
-    ip++;
+        ip++;
       }/*end of k*/
     }/*end of j*/
   }/*end of i*/
@@ -1734,17 +1734,17 @@ void eps_e_in (long nne,
 }
 
 void stress (long ne,
-         long ndofn,
-         NODE *node,
-         ELEMENT *elem,
-         MATGEOM matgeom,
-         HOMMAT *hommat,
-         double *r,
-         SIG *sig,
-         EPS *eps,
-         SUPP sup,
-         const int analysis,
-         const int mp_id)
+             long ndofn,
+             NODE *node,
+             ELEMENT *elem,
+             MATGEOM matgeom,
+             HOMMAT *hommat,
+             double *r,
+             SIG *sig,
+             EPS *eps,
+             SUPP sup,
+             const int analysis,
+             const int mp_id)
 /*
 
  */
@@ -1771,10 +1771,10 @@ void stress (long ne,
     elemnodes (ii,nne,nod,elem);
     /* nodal coordinates of the element */
     switch(analysis){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
@@ -1797,7 +1797,7 @@ void stress (long ne,
     for (i=0;i<6;i++){
       eps[ii].el.o[i] = EPSi[i];
       for (j=0;j<6;j++){
-    sig[ii].el.o[i] += D[i][j]*EPSi[j];
+        sig[ii].el.o[i] += D[i][j]*EPSi[j];
       }
     }
     dealoc1 (r_e);
@@ -1812,8 +1812,8 @@ void stress (long ne,
 }
 
 void Mises_sig (long ne,
-        SIG *sig,
-        long TYPE)
+                SIG *sig,
+                long TYPE)
 /*
   Calculating of equvivalent Mises stresses vectors
 */
@@ -1850,8 +1850,8 @@ void Mises_sig (long ne,
 }
 
 void Mises_eps (long ne,
-        EPS *eps,
-        long TYPE)
+                EPS *eps,
+                long TYPE)
 /*
 
  */
@@ -1901,8 +1901,8 @@ void Mises_eps (long ne,
 /********************************************/
 
 void stress_projector (long nne,
-               double *N,
-               double *P)
+                       double *N,
+                       double *P)
 /*
 
  */
@@ -1920,17 +1920,17 @@ void stress_projector (long nne,
 }
 
 void str_prj_load (long ii,
-           long kk,
-           long nne,
-           long ndofn,
-           double *r_e,
-           double **D,
-           double *x,
-           double *y,
-           double *z,
-           SIG *sig_e,
-           double *f_e,
-           const int analysis)
+                   long kk,
+                   long nne,
+                   long ndofn,
+                   double *r_e,
+                   double **D,
+                   double *x,
+                   double *y,
+                   double *z,
+                   SIG *sig_e,
+                   double *f_e,
+                   const int analysis)
 /*
 
  */
@@ -1964,64 +1964,64 @@ void str_prj_load (long ii,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4)  {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
+        if (nne == 4)  {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
+        }
 
-    shape_func (ksi,eta,zet,nne,N);
+        shape_func (ksi,eta,zet,nne,N);
 
-    switch(analysis){
-    default:
-      J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
-      break;
-    case ELASTIC:
-    case TP_ELASTO_PLASTIC:
-      J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
-      B_BAR (B_T,nne,x,y,z);
-      fun_eps (r_e,ndofe,B_T,eps);
-      for (jj=0;jj<6;jj++) EPSi[jj][0] = eps[jj];
-      nas_AB (D,EPSi,sig,6,6,1);
-      break;
-    }
+        switch(analysis){
+         default:
+          J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+          break;
+         case ELASTIC:
+         case TP_ELASTO_PLASTIC:
+          J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+          B_BAR (B_T,nne,x,y,z);
+          fun_eps (r_e,ndofe,B_T,eps);
+          for (jj=0;jj<6;jj++) EPSi[jj][0] = eps[jj];
+          nas_AB (D,EPSi,sig,6,6,1);
+          break;
+        }
 
-    stress_projector (nne,N,P);
+        stress_projector (nne,N,P);
 
-    switch(analysis){
-    default:
-      for (jj=0;jj<nne;jj++){
-        f_e[jj] += sig_e[ii].il[ip].o[kk]*ai*aj*ak*J*P[jj];
-      }
-      break;
-    case ELASTIC:
-    case TP_ELASTO_PLASTIC:
-      for (jj=0;jj<nne;jj++){
-        f_e[jj] += sig[kk][0]*ai*aj*ak*J*P[jj];
-      }
-      break;
-    }
+        switch(analysis){
+         default:
+          for (jj=0;jj<nne;jj++){
+            f_e[jj] += sig_e[ii].il[ip].o[kk]*ai*aj*ak*J*P[jj];
+          }
+          break;
+         case ELASTIC:
+         case TP_ELASTO_PLASTIC:
+          for (jj=0;jj<nne;jj++){
+            f_e[jj] += sig[kk][0]*ai*aj*ak*J*P[jj];
+          }
+          break;
+        }
 
-    ip++;
+        ip++;
       }/*end of k*/
     }/*end of j*/
   }/*end of i*/
@@ -2043,22 +2043,22 @@ void str_prj_load (long ii,
 }
 
 void str_solve (double *r,
-        double *k,
-        double *s,
-        double *f,
-        long *adr,
-        long smo,
-        long ne,
-        long nn,
-        long ndofn,
-        NODE *node,
-        ELEMENT *elem,
-        HOMMAT *hommat,
-        SIG *sig_e,
-        SIG *sig_n,
-        SUPP sup,
-        const int analysis,
-        const int mp_id)
+                double *k,
+                double *s,
+                double *f,
+                long *adr,
+                long smo,
+                long ne,
+                long nn,
+                long ndofn,
+                NODE *node,
+                ELEMENT *elem,
+                HOMMAT *hommat,
+                SIG *sig_e,
+                SIG *sig_n,
+                SUPP sup,
+                const int analysis,
+                const int mp_id)
 /*
 
  */
@@ -2088,28 +2088,28 @@ void str_solve (double *r,
       elemnodes (ii,nne,nod,elem);
       /* nodal coordinates of the element */
       switch(analysis){
-      case DISP:
-    nodecoord_total (nne,nod,node,x,y,z);
-    break;
-      default:
-    nodecoord_updated (nne,nod,node,x,y,z);
-    break;
+       case DISP:
+        nodecoord_total (nne,nod,node,x,y,z);
+        break;
+       default:
+        nodecoord_updated (nne,nod,node,x,y,z);
+        break;
       }
 
       /* Id numbers */
       get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
 
       if (analysis == ELASTIC || analysis == TP_ELASTO_PLASTIC) {
-    /* material stiffnes matrix of the element */
-    Stiffness_Matrix_3D (ii,0,elem,hommat,D,0);
-    /* vector of nodal deformation on the element */
-    def_elem (cn,ndofe,r,elem,node,r_e,sup,0);
+        /* material stiffnes matrix of the element */
+        Stiffness_Matrix_3D (ii,0,elem,hommat,D,0);
+        /* vector of nodal deformation on the element */
+        def_elem (cn,ndofe,r,elem,node,r_e,sup,0);
       }
 
       str_prj_load (ii,i,nne,ndofn,r_e,D,x,y,z,sig_e,f_e,analysis);
 
       for (j=0;j<nne;j++){
-    f[nod[j]] += f_e[j];
+        f[nod[j]] += f_e[j];
       }
 
       dealoc1l (nod);
@@ -2133,12 +2133,12 @@ void str_solve (double *r,
 }
 
 void str_elem_matrix (long kk,
-              long nne,
-              long ndofn,
-              double *x,
-              double *y,
-              double *z,
-              double *K)
+                      long nne,
+                      long ndofn,
+                      double *x,
+                      double *y,
+                      double *z,
+                      double *K)
 /*
   For quadratic elements I need 11 points integration N*N
 */
@@ -2165,34 +2165,34 @@ void str_elem_matrix (long kk,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4 || nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
+        if (nne == 4 || nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
+        }
 
-    shape_func (ksi,eta,zet,nne,N);
+        shape_func (ksi,eta,zet,nne,N);
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    stress_projector (nne,N,P);
+        stress_projector (nne,N,P);
 
-    for (ii=0;ii<nne;ii++){
-      for (jj=0;jj<nne;jj++){
-        K[ii*nne+jj] += ai*aj*ak*J*P[ii]*N[jj];
-      }
-    }
+        for (ii=0;ii<nne;ii++){
+          for (jj=0;jj<nne;jj++){
+            K[ii*nne+jj] += ai*aj*ak*J*P[ii]*N[jj];
+          }
+        }
 
       }/*end of k*/
     }/*end of j*/
@@ -2208,13 +2208,13 @@ void str_elem_matrix (long kk,
 }
 
 void str_proj_matrix (long *adr,
-              long ne,
-              long ndofn,
-              ELEMENT *elem,
-              NODE *node,
-              HOMMAT *hommat,
-              double *k,
-              const int analysis)
+                      long ne,
+                      long ndofn,
+                      ELEMENT *elem,
+                      NODE *node,
+                      HOMMAT *hommat,
+                      double *k,
+                      const int analysis)
 /*
 
  */
@@ -2245,10 +2245,10 @@ void str_proj_matrix (long *adr,
     nne = elem[i].toe;
     elemnodes (i,nne,nod,elem);
     switch(analysis){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
@@ -2271,9 +2271,9 @@ void str_proj_matrix (long *adr,
 /********************************************************************************************/
 
 double eq_M_sig (long i,
-         long ip,
-         SIG *sig,
-         long TYPE)
+                 long ip,
+                 SIG *sig,
+                 long TYPE)
 /*
 
  */
@@ -2304,10 +2304,10 @@ double eq_M_sig (long i,
 }
 
 double eq_M_eps (long i,
-         long ip,
-         EPS *eps,
-         double **deps_i,
-         long TYPE)
+                 long ip,
+                 EPS *eps,
+                 double **deps_i,
+                 long TYPE)
 /*
 
  */
@@ -2338,14 +2338,14 @@ double eq_M_eps (long i,
 }
 
 void unequal_forces (long ii,
-             double *x,
-             double *y,
-             double *z,
-             long nne,
-             long ndofn,
-             ELEMENT *elem,
-             double **dsig,
-             double *fe)
+                     double *x,
+                     double *y,
+                     double *z,
+                     long nne,
+                     long ndofn,
+                     ELEMENT *elem,
+                     double **dsig,
+                     double *fe)
 /*
   f_int = BT*sig
 */
@@ -2366,21 +2366,21 @@ void unequal_forces (long ii,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
-    if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
-    if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
+        if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+        if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+        if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    /*  Matice B_BAR */
-    B_BAR (B_T,nne,x,y,z);
+        /*  Matice B_BAR */
+        B_BAR (B_T,nne,x,y,z);
 
-    for (jj=0;jj<ndofe;jj++){
-      for (kk=0;kk<6;kk++){
-        fe[jj] += ai*aj*ak*J*B_T[jj][kk]*dsig[ip][kk];
-      }
-    }
-    ip++;
+        for (jj=0;jj<ndofe;jj++){
+          for (kk=0;kk<6;kk++){
+            fe[jj] += ai*aj*ak*J*B_T[jj][kk]*dsig[ip][kk];
+          }
+        }
+        ip++;
       }/*end of k*/
     }/*end of j*/
   }/*end of i*/
@@ -2389,13 +2389,13 @@ void unequal_forces (long ii,
 }
 
 void aver_stress (long ii,
-          long nne,
-          long ndofn,
-          double *x,
-          double *y,
-          double *z,
-          SIG *sig,
-          EPS *eps)
+                  long nne,
+                  long ndofn,
+                  double *x,
+                  double *y,
+                  double *z,
+                  SIG *sig,
+                  EPS *eps)
 /*
 
  */
@@ -2432,28 +2432,28 @@ void aver_stress (long ii,
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
 
-    if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
-    if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
-    if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
+        if (nne == 4)  {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+        if (nne == 10) {ksi = *(gk+k); eta = *(ge+k); zet = *(gz+k);  ai = *(w+k); aj = 1.0;    ak = 1.0;}
+        if (nne == 8)  {ksi = *(gk+i); eta = *(gk+j); zet = *(gk+k);  ai = *(w+i); aj = *(w+j); ak = *(w+k);}
 
-    J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-    /*  Matice B_BAR */
-    B_BAR (B_T,nne,x,y,z);
+        /*  Matice B_BAR */
+        B_BAR (B_T,nne,x,y,z);
 
-    for (jj=0;jj<6;jj++){
-      /* Stress */
-      sig[ii].el.o[jj] += ai*aj*ak*J/V*sig[ii].il[ip].o[jj];
-      sig[ii].el.m[jj] += ai*aj*ak*J/V*sig[ii].il[ip].m[jj];
-      sig[ii].el.f[jj] += ai*aj*ak*J/V*sig[ii].il[ip].f[jj];
-      /* Strain */
-      eps[ii].el.o[jj] += ai*aj*ak*J/V*eps[ii].il[ip].o[jj];
-      eps[ii].el.m[jj] += ai*aj*ak*J/V*eps[ii].il[ip].m[jj];
-      eps[ii].el.f[jj] += ai*aj*ak*J/V*eps[ii].il[ip].f[jj];
-      eps[ii].el.i[jj] += ai*aj*ak*J/V*eps[ii].il[ip].i[jj];
-    }
+        for (jj=0;jj<6;jj++){
+          /* Stress */
+          sig[ii].el.o[jj] += ai*aj*ak*J/V*sig[ii].il[ip].o[jj];
+          sig[ii].el.m[jj] += ai*aj*ak*J/V*sig[ii].il[ip].m[jj];
+          sig[ii].el.f[jj] += ai*aj*ak*J/V*sig[ii].il[ip].f[jj];
+          /* Strain */
+          eps[ii].el.o[jj] += ai*aj*ak*J/V*eps[ii].il[ip].o[jj];
+          eps[ii].el.m[jj] += ai*aj*ak*J/V*eps[ii].il[ip].m[jj];
+          eps[ii].el.f[jj] += ai*aj*ak*J/V*eps[ii].il[ip].f[jj];
+          eps[ii].el.i[jj] += ai*aj*ak*J/V*eps[ii].il[ip].i[jj];
+        }
 
-    ip++;
+        ip++;
       }/*end of k*/
     }/*end of j*/
   }/*end of i*/
@@ -2461,15 +2461,15 @@ void aver_stress (long ii,
 }
 
 void check_equi (double *fu,
-         long ne,
-         long ndofd,
-         long ndofn,
-         ELEMENT *elem,
-         NODE *node,
-         MATGEOM matgeom,
-         SIG *sig,
-         const int analysis,
-         const int mp_id)
+                 long ne,
+                 long ndofd,
+                 long ndofn,
+                 ELEMENT *elem,
+                 NODE *node,
+                 MATGEOM matgeom,
+                 SIG *sig,
+                 const int analysis,
+                 const int mp_id)
 /*
 
  */
@@ -2494,10 +2494,10 @@ void check_equi (double *fu,
     elemnodes (ii,nne,nod,elem);
     /* nodal coordinates of the element */
     switch(analysis){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
@@ -2510,9 +2510,9 @@ void check_equi (double *fu,
     /* Localization */
     for (j=0;j<nne;j++){
       for (i=0;i<ndofn;i++){
-    JJ = node[nod[j]].id_map[mp_id].id[i]-1;
-    if (JJ < 0)  continue;
-    fu[JJ] += fe[j*ndofn+i];
+        JJ = node[nod[j]].id_map[mp_id].id[i]-1;
+        if (JJ < 0)  continue;
+        fu[JJ] += fe[j*ndofn+i];
       }/* end j */
     }/* end i */
 
@@ -2522,16 +2522,16 @@ void check_equi (double *fu,
 }
 
 double* Energy_functional (long ne,
-               long ndofn,
-               long ndofd,
-               ELEMENT *elem,
-               NODE *node,
-               SIG *sig,
-               EPS *eps,
-               MATGEOM matgeom,
-               double *f,
-               double *r,
-               const int analysis)
+                           long ndofn,
+                           long ndofd,
+                           ELEMENT *elem,
+                           NODE *node,
+                           SIG *sig,
+                           EPS *eps,
+                           MATGEOM matgeom,
+                           double *f,
+                           double *r,
+                           const int analysis)
 /*
 
  */
@@ -2565,10 +2565,10 @@ double* Energy_functional (long ne,
     elemnodes (ii,nne,nod,elem);
     /* nodal coordinates of the element */
     switch(analysis){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
@@ -2576,58 +2576,58 @@ double* Energy_functional (long ne,
     ip = 0;
     for (i=0;i<II;i++){
       for (j=0;j<JJ;j++){
-    for (k=0;k<KK;k++){
+        for (k=0;k<KK;k++){
 
-      if (nne == 4)  {
-        ksi = *(gk+k);
-        eta = *(ge+k);
-        zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
-      }
-      if (nne == 10) {
-        ksi = *(gk+k);
-        eta = *(ge+k);
-        zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
-      }
-      if (nne == 8)  {
-        ksi = *(gk+i);
-        eta = *(gk+j);
-        zet = *(gk+k);
-        ai = *(w+i);
-        aj = *(w+j);
-        ak = *(w+k);
-      }
+          if (nne == 4)  {
+            ksi = *(gk+k);
+            eta = *(ge+k);
+            zet = *(gz+k);
+            ai = *(w+k);
+            aj = 1.0;
+            ak = 1.0;
+          }
+          if (nne == 10) {
+            ksi = *(gk+k);
+            eta = *(ge+k);
+            zet = *(gz+k);
+            ai = *(w+k);
+            aj = 1.0;
+            ak = 1.0;
+          }
+          if (nne == 8)  {
+            ksi = *(gk+i);
+            eta = *(gk+j);
+            zet = *(gk+k);
+            ai = *(w+i);
+            aj = *(w+j);
+            ak = *(w+k);
+          }
 
-      J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+          J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
 
-      switch(analysis){
-      case FS_CRPL:
-      case FINITE_STRAIN:
-      case STABILIZED:
-        for (jj=0;jj<6;jj++){
-          Sig[jj] = sig[ii].il[ip].o[jj];
-          Eps[jj] = eps[ii].il[ip].o[jj];
+          switch(analysis){
+           case FS_CRPL:
+           case FINITE_STRAIN:
+           case STABILIZED:
+            for (jj=0;jj<6;jj++){
+              Sig[jj] = sig[ii].il[ip].o[jj];
+              Eps[jj] = eps[ii].il[ip].o[jj];
+            }
+            break;
+           default:
+            for (jj=0;jj<6;jj++){
+              Sig[jj] = sig[ii].il[ip].o[jj] + sig[ii].d_il[ip].o[jj];
+              Eps[jj] = eps[ii].il[ip].o[jj] + eps[ii].d_il[ip].o[jj];
+            }
+            break;
+          }
+
+          SE = ss (Sig,Eps,6);
+
+          ENF[0] += ai*aj*ak*J*SE;
+
+          ip++;
         }
-        break;
-      default:
-        for (jj=0;jj<6;jj++){
-          Sig[jj] = sig[ii].il[ip].o[jj] + sig[ii].d_il[ip].o[jj];
-          Eps[jj] = eps[ii].il[ip].o[jj] + eps[ii].d_il[ip].o[jj];
-        }
-        break;
-      }
-
-      SE = ss (Sig,Eps,6);
-
-      ENF[0] += ai*aj*ak*J*SE;
-
-      ip++;
-    }
       }
     }
     dealoc2 (B_T,ndofe);
@@ -2652,8 +2652,8 @@ double* Energy_functional (long ne,
 }
 
 void tensor_9x9 (double **K,
-         double A[3][3][3][3],
-         long pom)
+                 double A[3][3][3][3],
+                 long pom)
 /*
 
  */
@@ -2675,29 +2675,29 @@ void tensor_9x9 (double **K,
       if (i == 1 && j == 0) I = 8;
 
       for (k=0;k<3;k++){
-    for (l=0;l<3;l++){
-      if (k == 0 && l == 0) J = 0;
-      if (k == 1 && l == 1) J = 1;
-      if (k == 2 && l == 2) J = 2;
+        for (l=0;l<3;l++){
+          if (k == 0 && l == 0) J = 0;
+          if (k == 1 && l == 1) J = 1;
+          if (k == 2 && l == 2) J = 2;
 
-      if (k == 1 && l == 2) J = 3;
-      if (k == 0 && l == 2) J = 4;
-      if (k == 0 && l == 1) J = 5;
+          if (k == 1 && l == 2) J = 3;
+          if (k == 0 && l == 2) J = 4;
+          if (k == 0 && l == 1) J = 5;
 
-      if (k == 2 && l == 1) J = 6;
-      if (k == 2 && l == 0) J = 7;
-      if (k == 1 && l == 0) J = 8;
+          if (k == 2 && l == 1) J = 6;
+          if (k == 2 && l == 0) J = 7;
+          if (k == 1 && l == 0) J = 8;
 
-      if (pom == 0)  K[I][J] = A[i][j][k][l];
-      if (pom == 1)  A[i][j][k][l] = K[I][J];
-    }
+          if (pom == 0)  K[I][J] = A[i][j][k][l];
+          if (pom == 1)  A[i][j][k][l] = K[I][J];
+        }
       }
     }
   }
 }
 
 double equivalent_Mises (long i,
-             SIG *sig)
+                         SIG *sig)
 /*
 
  */
@@ -2708,20 +2708,20 @@ double equivalent_Mises (long i,
   Sij = aloc1(6);
 
   Sij[0] = (sig[i].el.o[0] - (sig[i].el.o[0] + sig[i].el.o[1]
-                  + sig[i].el.o[2])/3.);
+                              + sig[i].el.o[2])/3.);
 
   Sij[1] = (sig[i].el.o[1] - (sig[i].el.o[0] + sig[i].el.o[1]
-                  + sig[i].el.o[2])/3.);
+                              + sig[i].el.o[2])/3.);
 
   Sij[2] = (sig[i].el.o[2] - (sig[i].el.o[0] + sig[i].el.o[1]
-                  + sig[i].el.o[2])/3.);
+                              + sig[i].el.o[2])/3.);
 
   Sij[3] = sig[i].el.o[3];
   Sij[4] = sig[i].el.o[4];
   Sij[5] = sig[i].el.o[5];
 
   S_eq = sqrt (3./2.*(Sij[0]*Sij[0] + Sij[1]*Sij[1] + Sij[2]*Sij[2]
-              + 2.*(Sij[3]*Sij[3] + Sij[4]*Sij[4]+ Sij[5]*Sij[5])));
+                      + 2.*(Sij[3]*Sij[3] + Sij[4]*Sij[4]+ Sij[5]*Sij[5])));
 
   dealoc1 (Sij);
 
@@ -2729,7 +2729,7 @@ double equivalent_Mises (long i,
 }
 
 double equivalent_M_eps (long i,
-             EPS *eps)
+                         EPS *eps)
 /*
 
  */
@@ -2740,20 +2740,20 @@ double equivalent_M_eps (long i,
   Eij = aloc1(6);
 
   Eij[0] = (eps[i].el.o[0] - (eps[i].el.o[0] + eps[i].el.o[1]
-                  + eps[i].el.o[2])/3.);
+                              + eps[i].el.o[2])/3.);
 
   Eij[1] = (eps[i].el.o[1] - (eps[i].el.o[0] + eps[i].el.o[1]
-                  + eps[i].el.o[2])/3.);
+                              + eps[i].el.o[2])/3.);
 
   Eij[2] = (eps[i].el.o[2] - (eps[i].el.o[0] + eps[i].el.o[1]
-                  + eps[i].el.o[2])/3.);
+                              + eps[i].el.o[2])/3.);
 
   Eij[3] = eps[i].el.o[3]/2.;
   Eij[4] = eps[i].el.o[4]/2.;
   Eij[5] = eps[i].el.o[5]/2.;
 
   E_eq = sqrt (2./3.*(Eij[0]*Eij[0] + Eij[1]*Eij[1] + Eij[2]*Eij[2]
-              + 2.*(Eij[3]*Eij[3] + Eij[4]*Eij[4]+ Eij[5]*Eij[5])));
+                      + 2.*(Eij[3]*Eij[3] + Eij[4]*Eij[4]+ Eij[5]*Eij[5])));
 
   dealoc1 (Eij);
 
@@ -2761,7 +2761,7 @@ double equivalent_M_eps (long i,
 }
 
 double equivalent_M_eps_pl (long i,
-                EPS *eps)
+                            EPS *eps)
 /*
 
  */
@@ -2772,20 +2772,20 @@ double equivalent_M_eps_pl (long i,
   Eij = aloc1(6);
 
   Eij[0] = (eps[i].pl.o[0] - (eps[i].pl.o[0] + eps[i].pl.o[1]
-                  + eps[i].pl.o[2])/3.);
+                              + eps[i].pl.o[2])/3.);
 
   Eij[1] = (eps[i].pl.o[1] - (eps[i].pl.o[0] + eps[i].pl.o[1]
-                  + eps[i].pl.o[2])/3.);
+                              + eps[i].pl.o[2])/3.);
 
   Eij[2] = (eps[i].pl.o[2] - (eps[i].pl.o[0] + eps[i].pl.o[1]
-                  + eps[i].pl.o[2])/3.);
+                              + eps[i].pl.o[2])/3.);
 
   Eij[3] = eps[i].pl.o[3]/2.;
   Eij[4] = eps[i].pl.o[4]/2.;
   Eij[5] = eps[i].pl.o[5]/2.;
 
   E_eq = sqrt (2./3.*(Eij[0]*Eij[0] + Eij[1]*Eij[1] + Eij[2]*Eij[2]
-              + 2.*(Eij[3]*Eij[3] + Eij[4]*Eij[4]+ Eij[5]*Eij[5])));
+                      + 2.*(Eij[3]*Eij[3] + Eij[4]*Eij[4]+ Eij[5]*Eij[5])));
 
   dealoc1 (Eij);
 
@@ -2793,9 +2793,9 @@ double equivalent_M_eps_pl (long i,
 }
 
 void Mises (long ne,
-        SIG *sig,
-        EPS *eps,
-        const int analysis)
+            SIG *sig,
+            EPS *eps,
+            const int analysis)
 /*
   Calculating of equvivalent Mises stresses vectors
 */
@@ -2811,7 +2811,7 @@ void Mises (long ne,
 }
 
 void Logarithmic_strain (double **F,
-             double **EL)
+                         double **EL)
 /*
   v - eigen vectors
   eig - eigen values :: eig = lam^2
@@ -2830,15 +2830,15 @@ void Logarithmic_strain (double **F,
   for(i=0;i<3;i++)
     for(j=0;j<3;j++)
       for(k=0;k<3;k++)
-    C[i][j] += F[k][i]*F[k][j];
+        C[i][j] += F[k][i]*F[k][j];
 
   for(i=1;i<=3;i++)
     for(j=1;j<=3;j++){
       EL[i-1][j-1] = 0.0;
       if (fabs(C[i-1][j-1]) < 1.e-15)
-    v[i][j] = 0.0;
+        v[i][j] = 0.0;
       else
-    v[i][j] = C[i-1][j-1];
+        v[i][j] = C[i-1][j-1];
     }
 
   /* Numerical recepises subroutines */
@@ -2854,7 +2854,7 @@ void Logarithmic_strain (double **F,
   for(i=1;i<=3;i++){
     for(j=1;j<=3;j++){
       for(k=1;k<=3;k++){
-    EL[j-1][k-1] += log(lam[i-1])*v[j][i]*v[k][i];
+        EL[j-1][k-1] += log(lam[i-1])*v[j][i]*v[k][i];
       }
     }
   }
@@ -2871,14 +2871,14 @@ void Logarithmic_strain (double **F,
  *************************************************************************/
 
 void LToG (const double *f,
-       double *Gf,
-       const int myrank,
-       const int nproc,
-       const long ndofd,
-       const long *DomDof,
-       const long GDof,
-       const COMMUN comm,
-       const MPI_Comm mpi_comm)
+           double *Gf,
+           const int myrank,
+           const int nproc,
+           const long ndofd,
+           const long *DomDof,
+           const long GDof,
+           const COMMUN comm,
+           const MPI_Comm mpi_comm)
 /*
 
  */
@@ -2914,10 +2914,10 @@ void LToG (const double *f,
   if(UTILS_DEBUG){/* debug the send-recieve */
     for(int i=0; i<nproc; i++){
       if(myrank == i){
-    for(int j=0; j<nproc; j++){
-      PGFEM_printf("[%d]: sending %ld to %d\n",myrank,comm->S[j],j);
-      PGFEM_printf("[%d]: recieving %ld from %d\n",myrank,comm->R[j],j);
-    }
+        for(int j=0; j<nproc; j++){
+          PGFEM_printf("[%d]: sending %ld to %d\n",myrank,comm->S[j],j);
+          PGFEM_printf("[%d]: recieving %ld from %d\n",myrank,comm->R[j],j);
+        }
       }
       MPI_Barrier(mpi_comm);
     }
@@ -2931,7 +2931,7 @@ void LToG (const double *f,
   for (i=0;i<comm->Nr;i++){
     KK = comm->Nrr[i];
     MPI_Irecv (recieve[KK],comm->R[KK],MPI_DOUBLE,KK,
-           MPI_ANY_TAG,mpi_comm,&req_r[i]);
+               MPI_ANY_TAG,mpi_comm,&req_r[i]);
   }
 
   /*************/
@@ -2943,7 +2943,7 @@ void LToG (const double *f,
       send[KK][j] = f[comm->SLID[KK][j]];
 
     MPI_Isend (send[KK],comm->S[KK],MPI_DOUBLE,KK,
-        myrank,mpi_comm,&req_s[i]);
+               myrank,mpi_comm,&req_s[i]);
   }
 
   pgfem_comm_get_owned_global_dof_values(comm,f,Gf);
@@ -2973,14 +2973,14 @@ void LToG (const double *f,
 }
 
 void GToL (const double *Gr,
-       double *r,
-       const int myrank,
-       const int nproc,
-       const long ndofd,
-       const long *DomDof,
-       const long GDof,
-       const COMMUN comm,
-       const MPI_Comm mpi_comm)
+           double *r,
+           const int myrank,
+           const int nproc,
+           const long ndofd,
+           const long *DomDof,
+           const long GDof,
+           const COMMUN comm,
+           const MPI_Comm mpi_comm)
 /*
 
  */
@@ -3023,7 +3023,7 @@ void GToL (const double *Gr,
   for (i=0;i<comm->Ns;i++){
     KK = comm->Nss[i];
     MPI_Irecv (recieve[KK],comm->S[KK],MPI_DOUBLE,KK,
-           MPI_ANY_TAG,mpi_comm,&req_r[i]);
+               MPI_ANY_TAG,mpi_comm,&req_r[i]);
   }
 
   /*************/
@@ -3035,7 +3035,7 @@ void GToL (const double *Gr,
       send[KK][j] = Gr[comm->RGID[KK][j] - GDof];
 
     MPI_Isend (send[KK],comm->R[KK],MPI_DOUBLE,KK,
-           myrank,mpi_comm,&req_s[i]);
+               myrank,mpi_comm,&req_s[i]);
   }
 
   pgfem_comm_get_local_dof_values_from_global(comm,Gr,r);
@@ -3056,21 +3056,21 @@ void GToL (const double *Gr,
     free (recieve[i]);
   }
 
- free(send);
- free (recieve);
+  free(send);
+  free (recieve);
 
- free(sta_s);
- free(sta_r);
- free(req_s);
- free(req_r);
+  free(sta_s);
+  free(sta_r);
+  free(req_s);
+  free(req_r);
 
 }
 
 MPI_Comm* CreateGraph (int nproc,
-               int myrank,
-               long nn,
-               NODE *node,
-               MPI_Comm mpi_comm)
+                       int myrank,
+                       long nn,
+                       NODE *node,
+                       MPI_Comm mpi_comm)
 /*
 
  */
@@ -3090,7 +3090,7 @@ MPI_Comm* CreateGraph (int nproc,
   for (j=0;j<NBn;j++){
     for (i=0;i<NBn-1;i++){
       while (hu1[i] > hu1[i+1]){
-    pom = hu1[i]; hu1[i] = hu1[i+1]; hu1[i+1] = pom;
+        pom = hu1[i]; hu1[i] = hu1[i+1]; hu1[i+1] = pom;
       }
     }
   }
@@ -3112,7 +3112,7 @@ MPI_Comm* CreateGraph (int nproc,
     if (i == myrank) continue;
     for (j=0;j<NBn;j++){
       for (k=0;k<BN[i];k++){
-    if (hu1[j] == GNn[displ[i]+k]) {Dom++; II = 1; break;}
+        if (hu1[j] == GNn[displ[i]+k]) {Dom++; II = 1; break;}
       }/* k < BN[i] */
       if (II == 1) break;
     }/* j < NBn */
@@ -3126,7 +3126,7 @@ MPI_Comm* CreateGraph (int nproc,
     if (i == myrank) continue;
     for (j=0;j<NBn;j++){
       for (k=0;k<BN[i];k++){
-    if (hu1[j] == GNn[displ[i]+k]) {CDom[Dom] = i; Dom++; II = 1; break;}
+        if (hu1[j] == GNn[displ[i]+k]) {CDom[Dom] = i; Dom++; II = 1; break;}
       }/* k < BN[i] */
       if (II == 1) break;
     }/* j < NBn */
@@ -3150,8 +3150,8 @@ void pause_time(int t)
 }
 
 long* change_length(long *orig,
-            const long old_len,
-            const long new_len)
+                    const long old_len,
+                    const long new_len)
 {
   long *pom,i;
   pom = aloc1l(new_len);
@@ -3162,7 +3162,7 @@ long* change_length(long *orig,
 }
 
 void null_quit(void *array,
-           int error)
+               int error)
 {
   if(array == NULL){
     PGFEM_printf("\nMemory full.\n");
@@ -3177,8 +3177,8 @@ void null_quit(void *array,
 /*******************************************************************************************/
 
 long diag_K (double *k,
-         long *adr,
-         long ndofd)
+             long *adr,
+             long ndofd)
 /*
   P_D = +1 : Positive definite Matrix
   P_D = -1 : Negative definite Matrix
@@ -3195,8 +3195,8 @@ long diag_K (double *k,
 }
 
 double det_K (double *k,
-          long *adr,
-          long ndofd)
+              long *adr,
+              long ndofd)
 /*
 
  */
@@ -3212,9 +3212,9 @@ double det_K (double *k,
 }
 
 double new_arc_length (long iter,
-               long iter_des,
-               double dAL,
-               double dAL0)
+                       long iter_des,
+                       double dAL,
+                       double dAL0)
 /*
 
  */
@@ -3236,12 +3236,12 @@ double new_arc_length (long iter,
 /***********************************************************/
 
 long* sparse_ApAi (long ne,
-           long ndofd,
-           long ndofn,
-           ELEMENT *elem,
-           NODE *node,
-           long *Ap,
-           const int mp_id)
+                   long ndofd,
+                   long ndofn,
+                   ELEMENT *elem,
+                   NODE *node,
+                   long *Ap,
+                   const int mp_id)
 /*
   Sparse nonsymmetric column storage format Ap
 */
@@ -3263,9 +3263,9 @@ long* sparse_ApAi (long ne,
       II = cn[j]-1;
       if (II < 0)  continue;
       for (k=0;k<ndofe;k++){
-    JJ = cn[k]-1;
-    if (JJ < 0)  continue;
-    Ap[II]++;
+        JJ = cn[k]-1;
+        if (JJ < 0)  continue;
+        Ap[II]++;
       }
     }
   }/* end i < ne */
@@ -3292,10 +3292,10 @@ long* sparse_ApAi (long ne,
       II = cn[j]-1;
       if (II < 0)  continue;
       for (k=0;k<ndofe;k++){
-    JJ = cn[k]-1;
-    if (JJ < 0)  continue;
-    AA[II][ap[II]] = JJ;
-    ap[II]++;
+        JJ = cn[k]-1;
+        if (JJ < 0)  continue;
+        AA[II][ap[II]] = JJ;
+        ap[II]++;
       }
     }
   }/* end i < ne */
@@ -3304,11 +3304,11 @@ long* sparse_ApAi (long ne,
     Ap[k] = 0;
     for (j=0;j<ap[k];j++){
       for (i=0;i<ap[k]-1;i++){
-    while (AA[k][i] > AA[k][i+1]){
-      II = AA[k][i];
-      AA[k][i] = AA[k][i+1];
-      AA[k][i+1] = II;
-    }
+        while (AA[k][i] > AA[k][i+1]){
+          II = AA[k][i];
+          AA[k][i] = AA[k][i+1];
+          AA[k][i+1] = II;
+        }
       }
     }
   }
@@ -3339,10 +3339,10 @@ long* sparse_ApAi (long ne,
 
 void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row)
 {
-/* input: w, x, alpha
-          n_row: size of array
-   output: v = (1-alpha)*w + alpha*x
-*/
+  /* input: w, x, alpha
+     n_row: size of array
+     output: v = (1-alpha)*w + alpha*x
+  */
   for(long a = 0; a<n_row; a++)
   {
     v[a] = (1-alpha)*w[a] + alpha*x[a];

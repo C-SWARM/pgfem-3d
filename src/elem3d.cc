@@ -978,15 +978,15 @@ void B_BAR (double **B,
 
   N_x = aloc1(nne);  N_y = aloc1(nne);  N_z = aloc1(nne);
 
+  double ksi,eta,zet;
+  if (nne == 4)  {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
+  if (nne == 8)  {ksi = 0.0;   eta = 0.0;   zet = 0.0;}
+  if (nne == 10) {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
+
   // @todo Eliminated as dead code. Someone from @cp should review this
   //       change. LD
-  // double ksi,eta,zet;
-  // if (nne == 4)  {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
-  // if (nne == 8)  {ksi = 0.0;   eta = 0.0;   zet = 0.0;}
-  // if (nne == 10) {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
-  //
-  // double J;
-  // J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+  // double J =
+  deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
   for (i=0;i<nne;i++){
     B1 = B[i*3+0][0];

@@ -568,7 +568,8 @@ long integration_alg (long ne,
       }
 
       /* Derivatives of shape functions and Jacobian of integration */
-      // J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+      // J =
+      deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
       /* Material stiffness matrix */
       matrix_tensor_3D (elem[ii].mat[2],hommat,L);
