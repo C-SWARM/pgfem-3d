@@ -147,102 +147,111 @@ int is_displacement_acceptable(double *alpha,
   *alpha = 0.0;
   return err;
 
-  SUPP sup = load->sups[mp_id];
-  int is_total_lagrangian = 0;
+  // @todo This function returns. I'm not sure what all the dead code below is
+  //       for. This needs to be reviewed by @cp and eliminated if
+  //       appropriate. LD
+  //
+  // SUPP sup = load->sups[mp_id];
 
-  if(sup->multi_scale)
-    is_total_lagrangian = 1;
-  else
-  {
-    switch(opts->analysis_type)
-    {
-      case DISP:
-      case TF:
-        is_total_lagrangian = 1;
-        break;
-      case CM:
-        if(opts->cm != UPDATED_LAGRANGIAN)
-          is_total_lagrangian = 1;
-        break;
-    }
-  }
+  // // @todo This variable is never used, so I commented out this code. It
+  // //       should be reviewed by an @cp person and eliminated if
+  // //       appropriate. LD
+  // //
+  // // int is_total_lagrangian = 0;
 
-  double alpha_V = 0.0;
+  // // if(!sup->multi_scale)
+  // //   is_total_lagrangian = 1;
+  // // else
+  // // {
+  // //   switch(opts->analysis_type)
+  // //   {
+  // //     case DISP:
+  // //     case TF:
+  // //       is_total_lagrangian = 1;
+  // //       break;
+  // //     case CM:
+  // //       if(opts->cm != UPDATED_LAGRANGIAN)
+  // //         is_total_lagrangian = 1;
+  // //       break;
+  // //   }
+  // // }
 
-  for(int e=0; e<grid->ne; e++)
-  {
-    int nne   = grid->element[e].toe;
-    int ndofn = fv->ndofn;
-    int ndofe = nne*ndofn;
+  // double alpha_V = 0.0;
 
-    long *nod = (long *) malloc(sizeof(long)*nne);
-    long *cn = aloc1l (ndofe);
-    double *u_e = aloc1(ndofe);
+  // for(int e=0; e<grid->ne; e++)
+  // {
+  //   int nne   = grid->element[e].toe;
+  //   int ndofn = fv->ndofn;
+  //   int ndofe = nne*ndofn;
 
-    elemnodes(e,nne,nod,grid->element);
-    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cn,mp_id);
-    def_elem_total(cn,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,load->sups[mp_id],u_e);
+  //   long *nod = (long *) malloc(sizeof(long)*nne);
+  //   long *cn = aloc1l (ndofe);
+  //   double *u_e = aloc1(ndofe);
 
-    double *X = aloc1(nne);
-    double *Y = aloc1(nne);
-    double *Z = aloc1(nne);
+  //   elemnodes(e,nne,nod,grid->element);
+  //   get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cn,mp_id);
+  //   def_elem_total(cn,ndofe,fv->u_np1,fv->d_u,grid->element,grid->node,load->sups[mp_id],u_e);
 
-    double *x_n = aloc1(nne);
-    double *y_n = aloc1(nne);
-    double *z_n = aloc1(nne);
+  //   double *X = aloc1(nne);
+  //   double *Y = aloc1(nne);
+  //   double *Z = aloc1(nne);
 
-    double *x_np1 = aloc1(nne);
-    double *y_np1 = aloc1(nne);
-    double *z_np1 = aloc1(nne);
+  //   double *x_n = aloc1(nne);
+  //   double *y_n = aloc1(nne);
+  //   double *z_n = aloc1(nne);
 
-    for(int n=0; n<nne; n++)
-    {
-      long nid = nod[n];
+  //   double *x_np1 = aloc1(nne);
+  //   double *y_np1 = aloc1(nne);
+  //   double *z_np1 = aloc1(nne);
 
-      X[n]   = grid->node[nid].x1_fd;
-      Y[n]   = grid->node[nid].x2_fd;
-      Z[n]   = grid->node[nid].x3_fd;
+  //   for(int n=0; n<nne; n++)
+  //   {
+  //     long nid = nod[n];
 
-      x_n[n]   = grid->node[nid].x1;
-      y_n[n]   = grid->node[nid].x2;
-      z_n[n]   = grid->node[nid].x3;
+  //     X[n]   = grid->node[nid].x1_fd;
+  //     Y[n]   = grid->node[nid].x2_fd;
+  //     Z[n]   = grid->node[nid].x3_fd;
 
-      x_np1[n] = grid->node[nid].x1_fd + u_e[n*ndofn + 0];
-      y_np1[n] = grid->node[nid].x2_fd + u_e[n*ndofn + 1];
-      z_np1[n] = grid->node[nid].x3_fd + u_e[n*ndofn + 2];
-    }
+  //     x_n[n]   = grid->node[nid].x1;
+  //     y_n[n]   = grid->node[nid].x2;
+  //     z_n[n]   = grid->node[nid].x3;
 
-    double ratio = 0.0;
-    // reference configuration volume
-    double V_0   = compute_volumes_from_coordinates(X,  Y,  Z,nne);
-    // current configuration volume at t(n)
-    double V_n   = compute_volumes_from_coordinates(x_n,  y_n,  z_n,nne);
-    // current configuration volume at t(n+1)
-    double V_np1 = compute_volumes_from_coordinates(x_np1,y_np1,z_np1,nne);
+  //     x_np1[n] = grid->node[nid].x1_fd + u_e[n*ndofn + 0];
+  //     y_np1[n] = grid->node[nid].x2_fd + u_e[n*ndofn + 1];
+  //     z_np1[n] = grid->node[nid].x3_fd + u_e[n*ndofn + 2];
+  //   }
 
-    double dV_max = 0.2; // limit volume changes within 20%
-    ratio = fabs(V_np1-V_n)/V_n/dV_max;
-    alpha_V = (alpha_V > ratio)? alpha_V : ratio;
+  //   double ratio = 0.0;
+  //   // reference configuration volume
+  //   double V_0   = compute_volumes_from_coordinates(X,  Y,  Z,nne);
+  //   // current configuration volume at t(n)
+  //   double V_n   = compute_volumes_from_coordinates(x_n,  y_n,  z_n,nne);
+  //   // current configuration volume at t(n+1)
+  //   double V_np1 = compute_volumes_from_coordinates(x_np1,y_np1,z_np1,nne);
 
-    free(nod);
-    free(cn);
-    free(u_e);
+  //   double dV_max = 0.2; // limit volume changes within 20%
+  //   ratio = fabs(V_np1-V_n)/V_n/dV_max;
+  //   alpha_V = (alpha_V > ratio)? alpha_V : ratio;
 
-    free(X);
-    free(Y);
-    free(Z);
+  //   free(nod);
+  //   free(cn);
+  //   free(u_e);
 
-    free(x_n);
-    free(y_n);
-    free(z_n);
+  //   free(X);
+  //   free(Y);
+  //   free(Z);
 
-    free(x_np1);
-    free(y_np1);
-    free(z_np1);
-  }
+  //   free(x_n);
+  //   free(y_n);
+  //   free(z_n);
 
-  *alpha = alpha_V;
-  return err;
+  //   free(x_np1);
+  //   free(y_np1);
+  //   free(z_np1);
+  // }
+
+  // *alpha = alpha_V;
+  // return err;
 }
 
 
@@ -378,6 +387,7 @@ long compute_residuals_for_NR(GRID *grid,
                               int updated_deformation)
 {
   long INFO;
+
   switch(mp->physics_ids[mp_id])
   {
     case MULTIPHYSICS_MECHANICAL:
@@ -389,6 +399,11 @@ long compute_residuals_for_NR(GRID *grid,
     case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
     default:
       printf("%s is not defined (compute_residuals_for_NR)\n", mp->physicsname[mp_id]);
+
+      // @todo This abort() was added because otherwise we're returning an
+      //       uninitialized value. If this branch is a valid path then @cp
+      //       should add a useful value for INFO here. LD
+      abort();
   }
 
   return INFO;
@@ -1948,9 +1963,13 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
 {
   int err = 0;
 
-  int tim = 1;
-  if( time_steps->tim==0)
-    tim = 0;
+  // @todo This variable is set but not used ever. I commented it out as dead
+  //       code. This should be reviewed by @cp and eliminated if
+  //       appropriate. LD
+  //
+  // int tim = 1;
+  // if( time_steps->tim==0)
+  //   tim = 0;
 
   for(int ib = 0; ib<FV[mp_id].n_coupled; ib++)
   {
