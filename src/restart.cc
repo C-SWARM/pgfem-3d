@@ -22,7 +22,11 @@
 /// \param[out] u1 displacement at t(n)
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
+static int read_initial_from_VTK(const PGFem3D_opt *opts,
+                                 int myrank,
+                                 double *u0,
+                                 double *u1,
+                                 const char *rs_path)
 {
   int err = 0;
   char filename[1024];
@@ -38,7 +42,11 @@ int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1,
 
 #else
 // in case VTK library is not used.
-int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1, char *rs_path)
+static int read_initial_from_VTK(const PGFem3D_opt *opts,
+                                 int myrank,
+                                 double *u0,
+                                 double *u1,
+                                 const char *rs_path)
 {
   if(myrank==0)
   {
@@ -46,7 +54,10 @@ int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, double *u0, double *u1,
     PGFEM_printerr("Enforce to turn off restart!\n");
   }
 
-  opts->restart = -1;
+  // It isn't correct to write to opts in this context. The opts should be
+  // constant based on the calling context. I've changed it to an assert.
+  // opts->restart = -1;
+  assert(opts->restart == -1);
   return 0;
 }
 #endif
@@ -251,13 +262,13 @@ int write_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int read_restart_constitutive_model(GRID *grid,
-                                    FIELD_VARIABLES *fv,
-                                    const PGFem3D_opt *opts,
-                                    MULTIPHYSICS *mp,
-                                    int myrank,
-                                    int mp_id,
-                                    char rs_path[1024])
+static int read_restart_constitutive_model(GRID *grid,
+                                           FIELD_VARIABLES *fv,
+                                           const PGFem3D_opt *opts,
+                                           MULTIPHYSICS *mp,
+                                           int myrank,
+                                           int mp_id,
+                                           char rs_path[1024])
 {
   int err = 0;
   int stepno = opts->restart;
@@ -319,15 +330,15 @@ int read_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int read_restart_mechanical(GRID *grid,
-                            FIELD_VARIABLES *fv,
-                            LOADING_STEPS *load,
-                            PGFem3D_opt *opts,
-                            MULTIPHYSICS *mp,
-                            double *tnm1,
-                            int myrank,
-                            int mp_id,
-                            char rs_path[1024])
+static int read_restart_mechanical(GRID *grid,
+                                   FIELD_VARIABLES *fv,
+                                   LOADING_STEPS *load,
+                                   const PGFem3D_opt *opts,
+                                   MULTIPHYSICS *mp,
+                                   double *tnm1,
+                                   int myrank,
+                                   int mp_id,
+                                   char rs_path[1024])
 {
   int err = 0;
 
