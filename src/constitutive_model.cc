@@ -214,8 +214,7 @@ int construct_matrix_array(Matrix<double> **F_out,
 {
   int err = 0;
 
-  Matrix<double> *F = NULL;
-  F = malloc(num*sizeof(Matrix<double>));
+  auto *F = PGFEM_malloc<Matrix<double>>(num);
 
   if(F==NULL)
   {
@@ -489,9 +488,9 @@ int model_parameters_initialize(Model_parameters *p,
   p->p_hmat = p_hmat;
   p->type = type;
 
-  MATERIAL_CONSTITUTIVE_MODEL *cm_mat = malloc(sizeof(MATERIAL_CONSTITUTIVE_MODEL));
-  MATERIAL_ELASTICITY          *mat_e = malloc(sizeof(MATERIAL_ELASTICITY));
-  ELASTICITY *elast = malloc(sizeof(ELASTICITY));
+  auto* cm_mat = PGFEM_malloc<MATERIAL_CONSTITUTIVE_MODEL>();
+  auto* mat_e = PGFEM_malloc<MATERIAL_ELASTICITY>();
+  auto* elast = PGFEM_malloc<ELASTICITY>();
 
   set_properties_using_E_and_nu(mat_e,p_hmat->E,p_hmat->nu);
   mat_e->m01 = p_hmat->m01;
@@ -675,11 +674,11 @@ int read_model_parameters_list(Model_parameters **param_list,
    */
   int err = 0;
   if (n_mat <= 0) return 1;
-  (*param_list) = malloc(n_mat*sizeof(**param_list));
-  int *is_set = calloc(n_mat, sizeof(*is_set));
+  (*param_list) = PGFEM_malloc<Model_parameters>(n_mat);
+  int *is_set = PGFEM_calloc(int, n_mat);
 
   int num_entries = -1;
-  HOMMAT *key = calloc(1, sizeof(*key));
+  HOMMAT *key = PGFEM_calloc(HOMMAT, 1);
   err += scan_for_valid_line(in);
   fscanf(in, "%d", &num_entries);
 
@@ -707,7 +706,8 @@ int read_model_parameters_list(Model_parameters **param_list,
      */
 
     /* search for matching pointer in hmat_list (assume unique) */
-    p_hmat = bsearch(key,hmat_list,n_mat,sizeof(*hmat_list),compare_mat_id);
+    p_hmat = static_cast<HOMMAT*>(bsearch(key, hmat_list, n_mat,
+                                          sizeof(*hmat_list), compare_mat_id));
 
     /* check for match */
     if (p_hmat != NULL) {
@@ -1131,7 +1131,7 @@ int compute_residual_vector(double *f,
   enum {temp_F_1, temp_F_2, Fend};
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,1);
 
   for(int a=0; a<nne; a++)
@@ -1200,6 +1200,8 @@ int constitutive_model_update_output_variables(GRID *grid,
 
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
+  // @todo prevent warnings about unused variables, remove once it becomes used.
+  (void)is_it_couple_w_chemical;
 
   for(int ia=0; ia<fv->n_coupled; ia++)
   {
@@ -1427,7 +1429,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
   enum {M,eFnpa,pFnpa,pFnpa_I,hFnpa,Fnpa,S,MT,Fend};
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   for(int ia=0; ia<DIM_3x3; ia++)
@@ -1464,8 +1466,9 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
   {
     // check that deformation is invertible -> J > 0
     int terr = 0;
-    double tJ = 0.0;
-    tJ = getJacobian(F2[Fnpa].m_pdata, ii, &terr);
+    // @todo Deleted as unused, @cp should review. LD
+    // double tJ = tJ =
+    getJacobian(F2[Fnpa].m_pdata, ii, &terr);
     err += terr;
   }
 
@@ -1549,6 +1552,8 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   int total_Lagrangian = 1;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
+  // @todo prevent warnings about unused variables, remove once it becomes used.
+  (void)is_it_couple_w_chemical;
 
   for(int ia=0; ia<fv->n_coupled; ia++)
   {
@@ -1568,8 +1573,8 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   int ndofn = fv->ndofn;
   SUPP sup = load->sups[mp_id];
 
-  double *u = malloc(sizeof(*u)*nne*nsd);
-  double *dMdu_all = malloc(sizeof(*dMdu_all)*DIM_3x3*nne*nsd);
+  double *u = PGFEM_malloc<double>(nne*nsd);
+  double *dMdu_all = PGFEM_malloc<double>(DIM_3x3*nne*nsd);
   memset(dMdu_all,0,DIM_3x3*nne*nsd*sizeof(double));
 
   for(int a=0;a<nne;a++)
@@ -1605,7 +1610,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   }
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   for(int ia=0; ia<DIM_3x3; ia++)
@@ -1755,6 +1760,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   int total_Lagrangian = 0;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
+  // @todo prevent warnings about unused variables, remove once it becomes used.
+  (void)is_it_couple_w_chemical;
 
   for(int ia=0; ia<fv->n_coupled; ia++)
   {
@@ -1773,8 +1780,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   int ndofn = fv->ndofn;
   SUPP sup = load->sups[mp_id];
 
-  double *u = malloc(sizeof(*u)*nne*nsd);
-  double *dMdu_all = malloc(sizeof(*dMdu_all)*DIM_3x3*nne*nsd);
+  double *u = PGFEM_malloc<double>(nne*nsd);
+  double *dMdu_all = PGFEM_malloc<double>(DIM_3x3*nne*nsd);
 
   for(int a=0;a<nne;a++)
   {
@@ -1807,7 +1814,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
   }
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   for(int ia=0; ia<DIM_3x3; ia++)
@@ -2038,6 +2045,8 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   int total_Lagrangian = 1;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
+  // @todo prevent warnings about unused variables, remove once it becomes used.
+  (void)is_it_couple_w_chemical;
 
   for(int ia=0; ia<fv->n_coupled; ia++)
   {
@@ -2057,9 +2066,9 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   int ndofn = fv->ndofn;
   SUPP sup = load->sups[mp_id];
 
-  double *u       = (double *) malloc(sizeof(double)*nne*nsd);
-  double *f_npa   = (double *) malloc(sizeof(double)*nne*nsd);
-  double *f_nm1pa = (double *) malloc(sizeof(double)*nne*nsd);
+  double *u       = PGFEM_malloc<double>(nne*nsd);
+  double *f_npa   = PGFEM_malloc<double>(nne*nsd);
+  double *f_nm1pa = PGFEM_malloc<double>(nne*nsd);
 
   for(int a=0;a<nne;a++)
   {
@@ -2071,7 +2080,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
         hFnp1,hFn,hFnm1,Fend};
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   Matrix<double> Tnp1, Tn, Tnm1;
@@ -2223,6 +2232,8 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   int total_Lagrangian = 0;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
+  // @todo prevent warnings about unused variables, remove once it becomes used.
+  (void)is_it_couple_w_chemical;
 
   for(int ia=0; ia<fv->n_coupled; ia++)
   {
@@ -2241,7 +2252,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   int ndofn = fv->ndofn;
   SUPP sup = load->sups[mp_id];
 
-  double *u = (double *) malloc(sizeof(double)*nne*nsd);
+  double *u = PGFEM_malloc<double>(nne*nsd);
 
   for(int a=0;a<nne;a++)
   {
@@ -2274,7 +2285,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
   }
 
   // list of second-order tensors
-  Matrix<double> *F2;
+  Matrix<double> *F2 = nullptr;
   err += construct_matrix_array(&F2,DIM_3,DIM_3,Fend,0);
 
   for(int ia=0; ia<DIM_3x3; ia++)
@@ -2347,8 +2358,9 @@ int residuals_el_constitutive_model(FEMLIB *fe,
     {
       /* check that deformation is invertible -> J > 0 */
       int terr = 0;
-      double tJ = 0.0;
-      tJ = getJacobian(F2[Fnp1].m_pdata, eid, &terr);
+      // @todo Deleted as unused, @cp should review. LD
+      // double tJ = tJ =
+      getJacobian(F2[Fnp1].m_pdata, eid, &terr);
       err += terr;
     }
 
