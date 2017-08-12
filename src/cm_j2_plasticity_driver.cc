@@ -125,11 +125,11 @@ int main(int argc, char **argv)
   FILE *in = fopen("j2d.props","r");
   FILE *out = fopen("j2d.dat","w");
 
-  HOMMAT *p_hmat = calloc(1, sizeof(*p_hmat));
+  HOMMAT *p_hmat = PGFEM_calloc(HOMMAT, 1);
   hommat_assign_values(p_hmat);
   const double kappa = hommat_get_kappa(p_hmat);
 
-  Model_parameters *p = malloc(sizeof(*p));
+  Model_parameters *p = PGFEM_malloc<Model_parameters>();
   err += model_parameters_construct(p);
   err += model_parameters_initialize(p, p_hmat, J2_PLASTICITY_DAMAGE);
   if (in == NULL) {
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
   }
   assert(err == 0 && "ERROR in initializing the Model_parameters object");
 
-  Constitutive_model *m = malloc(sizeof(*m));
+  Constitutive_model *m = PGFEM_malloc<Constitutive_model>();
   err += constitutive_model_construct(m);
   err += constitutive_model_initialize(m, p);
   assert(err == 0 && "ERROR in initializing the Constitutive_model object");

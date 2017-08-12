@@ -97,9 +97,9 @@ int main(int argc, char **argv)
   int err = 0;
   FILE *in = fopen("bpa.props","r");
   FILE *out = fopen("bpa.dat","w");
-  HOMMAT *mat = malloc(sizeof(*mat));
-  Model_parameters *p = malloc(sizeof(*p));
-  Constitutive_model *m = malloc(sizeof(*m));
+  HOMMAT *mat = PGFEM_malloc<HOMMAT>();
+  Model_parameters *p = PGFEM_malloc<Model_parameters>();
+  Constitutive_model *m = PGFEM_malloc<Constitutive_model>();
 
   /* initialize values */
   set_mat_values(mat);
@@ -120,13 +120,13 @@ int main(int argc, char **argv)
   double t = dt;
   double F[9] = {};
   void *ctx = NULL;
-  int conv = 0;
+  // int conv = 0;
 
   for (int i = 0; i < nstep; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat->nu,F);
     err += plasticity_model_BPA_ctx_build(&ctx,F,dt);
-    conv = m->param->integration_algorithm(m,ctx);
+    // conv = m->param->integration_algorithm(m,ctx);
     /* assert(conv >= 0); */
     /* if(conv < 0) { */
     /*   printf("\t DID NOT CONVERGE, RESTARTING\n\n"); */
