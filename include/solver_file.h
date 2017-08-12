@@ -28,11 +28,6 @@ struct SOLVER_FILE {
   size_t *print_steps; /**< T/F print on step */
   size_t *load_steps; /**< T/F increment load on step */
 };
-#ifndef TYPE_SOLVER_FILE
-#define TYPE_SOLVER_FILE
-typedef struct SOLVER_FILE SOLVER_FILE;
-#endif
-
 
 enum {UNDEFINED_METHOD = -1, /**< gives overflow on assignment to nonlin_method */
       NEWTON_METHOD = 1,
