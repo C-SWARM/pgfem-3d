@@ -730,8 +730,8 @@ static int set_off_proc_value(const int row_start,
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
-  int *row = bsearch(&loc_row_id,row_ids,n_row,sizeof(int),
-             PGFEM_par_matvec_compare_int);
+  int *row = static_cast<int*>(bsearch(&loc_row_id, row_ids, n_row, sizeof(int),
+                                       PGFEM_par_matvec_compare_int));
   my_assert(row != NULL);
   int row_id = (row-row_ids);///sizeof(int);
   int idx = idx_2_gen(row_id,e->col,
@@ -762,8 +762,8 @@ static int add_to_off_proc_value(const int row_start,
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
-  int *row = bsearch(&loc_row_id,row_ids,n_row,sizeof(int),
-             PGFEM_par_matvec_compare_int);
+  int *row = static_cast<int*>(bsearch(&loc_row_id, row_ids, n_row, sizeof(int),
+                                       PGFEM_par_matvec_compare_int));
   my_assert(row != NULL);
   int row_id = (row-row_ids);///sizeof(int);
   int idx = idx_2_gen(row_id,e->col,
@@ -961,12 +961,12 @@ static void print_comm_info_graph(const int myrank,
   for(int i=0; i<2; i++){
     switch(i){
     case 0: /* send */
-      sprintf(fname,"send_info_%0.3d.log",myrank);
+      sprintf(fname,"send_info_%.3d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = send;
       break;
     case 1: /* recv */
-      sprintf(fname,"recv_info_%0.3d.log",myrank);
+      sprintf(fname,"recv_info_%.3d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = recv;
       break;
