@@ -717,8 +717,11 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
       const int n_elem = NG_bel[master_dom];
       const size_t size = (ndof_be+1)*sizeof(long);
       const long *ptr_base = Gdof_on_all_dom + allgatherv_disp[master_dom];
-      const long *ptr_match = bsearch((const void*) &master_be_id,
-                      ptr_base,n_elem,size,compare_long);
+      const long *ptr_match = static_cast<const long*>(bsearch(&master_be_id,
+                                                               ptr_base,
+                                                               n_elem,
+                                                               size,
+                                                               compare_long));
 
       if(ptr_match == NULL){
     PGFEM_printerr("[%d]ERROR: did not find matching"
