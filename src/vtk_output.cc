@@ -1666,13 +1666,13 @@ int VTK_write_data_Density(FILE *out,
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
-VTK_write_data_HydrostaticStress(FILE *out,
-                                 GRID *grid,
-                                 const MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *FV,
-                                 LOADING_STEPS *load,
-                                 PRINT_MULTIPHYSICS_RESULT *pmr,
-                                 const PGFem3D_opt *opts)
+int VTK_write_data_HydrostaticStress(FILE *out,
+                                     GRID *grid,
+                                     const MATERIAL_PROPERTY *mat,
+                                     FIELD_VARIABLES *FV,
+                                     LOADING_STEPS *load,
+                                     PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const PGFem3D_opt *opts)
 {
   int err = 0;
 
