@@ -36,14 +36,17 @@ void press_theta (long ne,
           const int mp_id)
 {
 
-  long ii,i,j,k,II,JJ,KK,ip,M,N,X,P,Q,R,U,W,*nod,nne,ndn,mat,*cn;
-  double *Psi,*gk,*ge,*gz,*w,*N_x,*N_y,*N_z,*x,*y,*z,*r_e,ksi;
-  double eta,zet,ai,aj,ak,J,**Fn,**Fr,**Fr_I,Jr,Jn,Tr,Tn;
+  long ii,i,j,k,II,JJ,KK,ip,M,N,X,P,Q,R,U,W,*nod,nne,ndn,*cn;
+  double *Psi,*gk,*ge,*gz,*w,*N_x,*N_y,*N_z,*x,*y,*z,*r_e,ksi{};
+  double eta{},zet{},ai{},aj{},ak{},J,**Fn,**Fr,**Fr_I,Jr,Jn,Tr,Tn;
   double L[3][3][3][3],****FF,**f,***AA,***aa,***BB;
   double ***bb,**DD,**dd,**MM,**mm,****ST,**u,*r_r,pp,**Re1;
-  double **re1,*Re2,*re2,*Re3,*re3,**E,*D_T,*D_P,*sup_def,**UU;
-  double ****pFFp,**pfp,***BB1,***bb1,***BB2,***bb2;
-  double **MMp,**mmp,**S,**FnB,****pGp,dij;
+  double **re1,*Re2,*re2,*Re3,*re3,**E,*D_T,*D_P,*sup_def,**UU{};
+  double ****pFFp{},**pfp{},***BB1{},***bb1{},***BB2{},***bb2{};
+  double **MMp{},**mmp{},**S,**FnB,****pGp{},dij;
+
+  // @todo Removed as dead code. @cp please review. LD
+  // double mat;
 
   /* 3D */ ndn = 3;
 
@@ -84,7 +87,7 @@ void press_theta (long ne,
   for (ii=0;ii<ne;ii++){
 
     nne = elem[ii].toe;
-    mat = elem[ii].mat[2];
+    // mat = elem[ii].mat[2];
     elemnodes (ii,nne,nod,elem);
     cn = aloc1l (nne*ndofn);
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
