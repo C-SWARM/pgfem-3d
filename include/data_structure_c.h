@@ -85,8 +85,8 @@ class Matrix {
 
   void trans() {
     T* temp = new T[m_col * m_row];
-    for (auto i = 0; i < m_row; ++i) {
-      for (auto j = 0; j < m_col; ++j) {
+    for (unsigned i = 0; i < m_row; ++i) {
+      for (unsigned j = 0; j < m_col; ++j) {
         // temp[j][i] = m_pdata[i][j];
         temp[j*m_row + i] = m_pdata[i*m_col +j];
       }
@@ -170,7 +170,7 @@ class Matrix {
   void eye() {
     assert(m_row == m_col);
     init();
-    for (int i = 1; i <= m_row; ++i) {
+    for (unsigned i = 1; i <= m_row; ++i) {
       Mat_v(i,i) = T{1};
     }
   }
@@ -180,7 +180,7 @@ class Matrix {
     if(m_row != m_col || m_row ==0 || m_col ==0) {
       return out;
     }
-    for (int i = 1; i <= m_row; ++i) {
+    for (unsigned i = 1; i <= m_row; ++i) {
       out += Mat_v(i,i);
     }
     return out;
@@ -261,9 +261,9 @@ class Matrix {
 
   void print() const {
     printf("[%ldx%ld] = \n", m_row, m_col);
-    for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){
-      for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){
-        printf("%e ", (double)Mat_v(MaTtEmPVar_a, MaTtEmPVar_b));
+    for(unsigned i = 1; i <= m_row; ++i){
+      for(unsigned j = 1; j <= m_col; ++j){
+        printf("%e ", Mat_v(i, j));
       }
       printf("\n");
     }
@@ -271,9 +271,9 @@ class Matrix {
 
   void print_name(const char name[]) const {
     printf("%s = [\n", name);
-    for(int a__A = 1; a__A <= m_row; a__A++){
-      for(int b__B = 1; b__B <= m_col; b__B++){
-        printf("%e ", (double)Mat_v(a__A, b__B));
+    for(unsigned a__A = 1; a__A <= m_row; a__A++){
+      for(unsigned b__B = 1; b__B <= m_col; b__B++){
+        printf("%e ", Mat_v(a__A, b__B));
       }
       if(a__A==m_row)
         printf("];\n");
@@ -286,7 +286,7 @@ class Matrix {
   template <class U, class V>
   void eqB(U&& b, const Matrix<V>& rhs) {
     check_null_and_redim(rhs.m_row, rhs.m_col);
-    for (int i = 0, e = m_row * m_col; i < e; ++i) {
+    for (unsigned i = 0, e = m_row * m_col; i < e; ++i) {
       m_pdata[i] = b * rhs.m_pdata[i];
     }
   }
@@ -295,8 +295,8 @@ class Matrix {
   template <class U, class V>
   void eqBT(U&& b, const Matrix<V>& rhs) {
     check_null_and_redim(rhs.m_row, rhs.m_col);
-    for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++)
-      for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++)
+    for(unsigned MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++)
+      for(unsigned MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++)
         Mat_v(MaTtEmPVar_b, MaTtEmPVar_a) = rhs.Mat_v(MaTtEmPVar_a, MaTtEmPVar_b)*b;
   }
 
@@ -306,7 +306,7 @@ class Matrix {
     if(A.m_row != B.m_row || A.m_col != B.m_col)
       return;
     check_null_and_redim(A.m_row, A.m_col);
-    for(int i = 0, e = m_row * m_col; i < e; ++i)
+    for(unsigned i = 0, e = m_row * m_col; i < e; ++i)
       m_pdata[i] = A.m_pdata[i]*a + B.m_pdata[i]*b;
   }
 
