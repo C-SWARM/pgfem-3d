@@ -558,7 +558,6 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         double *dts)
 {
   int err = 0;
-  int mp_id = 0;
 
   // initialize and define multiphysics
   MULTIPHYSICS mp;

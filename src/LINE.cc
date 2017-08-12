@@ -310,9 +310,6 @@ long ALINE_S3_MP(GRID *grid,
   ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dt = dts[DT_NP1];
   double t = 0.0;
-  double alpha = 0.0;
-  double *r_n = NULL;
-  double *r_n_1 = NULL;
 
   long i,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL{},a,b,f2{},disc,scale,tmp;

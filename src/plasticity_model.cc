@@ -113,8 +113,8 @@ static size_t cp_get_size(const Constitutive_model *m)
 }
 
 static int cp_pack(const Constitutive_model *m,
-                    char *buffer,
-                    size_t *pos)
+                   char *buffer,
+                   size_t *pos)
 {
   return state_variables_pack(m->vars_list[0]+m->model_id, buffer, pos);
 }
@@ -184,11 +184,11 @@ typedef struct plasticity_ctx {
   double *hFnp1;
 } plasticity_ctx;
 
- int compute_M(Matrix<double> *M,
-                      const Matrix<double> *pFn,
-                      const Matrix<double> *N,
-                      const Matrix<double> *pFnp1_I,
-                      const plasticity_ctx *ctx)
+int compute_M(Matrix<double> *M,
+              const Matrix<double> *pFn,
+              const Matrix<double> *N,
+              const Matrix<double> *pFnp1_I,
+              const plasticity_ctx *ctx)
 {
   int err = 0;
   if(ctx->is_coulpled_with_thermal)
@@ -198,11 +198,11 @@ typedef struct plasticity_ctx {
   return err;
 }
 
- int compute_eF(Matrix<double> *eF,
-                      const Matrix<double> *F,
-                      const Matrix<double> *hF_I,
-                      const Matrix<double> *pF_I,
-                      const plasticity_ctx *ctx)
+int compute_eF(Matrix<double> *eF,
+               const Matrix<double> *F,
+               const Matrix<double> *hF_I,
+               const Matrix<double> *pF_I,
+               const plasticity_ctx *ctx)
 {
   int err = 0;
   if(ctx->is_coulpled_with_thermal)
@@ -435,21 +435,21 @@ static int plasticity_get_eF_with_thermal(const Constitutive_model *m,
 
   switch(stepno)
   {
-    case 0: // n-1
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1],*hFI,pFI);
-      break;
-    case 1: // n
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFn], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn],*hFI,pFI);
-      break;
-    case 2: // n+1
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1],*hFI,pFI);
-      break;
-    default:
-      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
-      err++;
+   case 0: // n-1
+    Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1], pFI);
+    Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1],*hFI,pFI);
+    break;
+   case 1: // n
+    Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFn], pFI);
+    Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn],*hFI,pFI);
+    break;
+   case 2: // n+1
+    Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1], pFI);
+    Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1],*hFI,pFI);
+    break;
+   default:
+    PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+    err++;
   }
   assert(err == 0);
 
@@ -513,7 +513,7 @@ static int plasticity_get_eFn(const Constitutive_model *m,
 }
 
 static int plasticity_get_pFnm1(const Constitutive_model *m,
-                              Matrix<double> *F)
+                                Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1]);
@@ -521,7 +521,7 @@ static int plasticity_get_pFnm1(const Constitutive_model *m,
 }
 
 static int plasticity_get_Fnm1(const Constitutive_model *m,
-                             Matrix<double> *F)
+                               Matrix<double> *F)
 {
   int err = 0;
   Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1]);
@@ -529,7 +529,7 @@ static int plasticity_get_Fnm1(const Constitutive_model *m,
 }
 
 static int plasticity_get_eFnm1(const Constitutive_model *m,
-                              Matrix<double> *F)
+                                Matrix<double> *F)
 {
   int err = 0;
   Matrix<double> invFp;
@@ -548,7 +548,7 @@ static int plasticity_get_hardening(const Constitutive_model *m,
   return err;
 }
 static int plasticity_get_hardening_nm1(const Constitutive_model *m,
-                                    double *var)
+                                        double *var)
 {
   int err = 0;
   *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_g_nm1];
@@ -608,11 +608,11 @@ static int plasticity_d2udj2(const Constitutive_model *m,
 }
 
 static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
-                                   const void *ctx,
-                                   const double *Grad_op,
-                                   const int nne,
-                                   const int ndofn,
-                                   double *dM_du)
+                                       const void *ctx,
+                                       const double *Grad_op,
+                                       const int nne,
+                                       const int ndofn,
+                                       double *dM_du)
 {
   int err = 0;
   /* The existing function compute_dMdu takes Grad_op for a given
@@ -635,8 +635,8 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
 
     for(int ia=0; ia<DIM_3x3; ia++)
     {
-          M.m_pdata[ia] = 0.0;
-        eFn.m_pdata[ia] = 0.0;
+      M.m_pdata[ia] = 0.0;
+      eFn.m_pdata[ia] = 0.0;
       eFnp1.m_pdata[ia] = 0.0;
     }
 
@@ -645,7 +645,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     if(CTX->is_coulpled_with_thermal)
     {
       Matrix<double> hFn, hFnp1, hFn_I, hFnp1_I, N, pFn_I;
-        hFn.m_row =   hFn.m_col = DIM_3;   hFn.m_pdata = CTX->hFn;
+      hFn.m_row =   hFn.m_col = DIM_3;   hFn.m_pdata = CTX->hFn;
       hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = CTX->hFnp1;
 
       Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
@@ -735,12 +735,12 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
 }
 
 static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
-                                   const void *ctx,
-                                   const double *Grad_op,
-                                   const int nne,
-                                   const int ndofn,
-                                   double *dM_du,
-                                   double alpha)
+                                       const void *ctx,
+                                       const double *Grad_op,
+                                       const int nne,
+                                       const int ndofn,
+                                       double *dM_du,
+                                       double alpha)
 {
   // Total Lagrangian based
   int err = 0;
@@ -775,8 +775,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   Matrix_eye(F2[hFnpaI],DIM_3);
   if(CTX->is_coulpled_with_thermal)
   {
-    double hFnpa[9];
-    //mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);
+    // double hFnpa[9];
+    // mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);
     err += inv3x3(CTX->hFnp1, F2[hFnpaI].m_pdata);
   }
 
@@ -1035,12 +1035,12 @@ static int cp_read(Model_parameters *p,
   if(read_solver_info)
   {
     match = fscanf(in, "%d %d %d %d %lf %lf %lf", param_idx + PARAM_max_itr_stag,
-                                                  param_idx + PARAM_max_itr_hardening,
-                                                  param_idx + PARAM_max_itr_M,
-                                                  param_idx + PARAM_max_subdivision,
-                                                  param     + PARAM_tol_hardening,
-                                                  param     + PARAM_tol_M,
-                                                  param     + PARAM_computer_zero);
+                   param_idx + PARAM_max_itr_hardening,
+                   param_idx + PARAM_max_itr_M,
+                   param_idx + PARAM_max_subdivision,
+                   param     + PARAM_tol_hardening,
+                   param     + PARAM_tol_M,
+                   param     + PARAM_computer_zero);
     if (match != 7) err++;
     assert(match == 7 && "Did not read expected number of parameters");
   }
@@ -1050,9 +1050,9 @@ static int cp_read(Model_parameters *p,
     param_idx[PARAM_max_itr_hardening] = 1;
     param_idx[PARAM_max_itr_M]         = 50;
     param_idx[PARAM_max_subdivision]   = -1;
-        param[PARAM_tol_hardening]     = 1.0e-6;
-        param[PARAM_tol_M]             = 1.0e-6;
-        param[PARAM_computer_zero]     = 1.0e-15;
+    param[PARAM_tol_hardening]     = 1.0e-6;
+    param[PARAM_tol_M]             = 1.0e-6;
+    param[PARAM_computer_zero]     = 1.0e-15;
   }
 
   err += scan_for_valid_line(in);
@@ -1063,9 +1063,9 @@ static int cp_read(Model_parameters *p,
 
   MATERIAL_CRYSTAL_PLASTICITY  *mat_p = PGFEM_malloc<MATERIAL_CRYSTAL_PLASTICITY>();
   set_properties_crystal_plasticity(mat_p,slip,param[PARAM_gamma_dot_0],param[PARAM_gamma_dot_s],
-                                               param[PARAM_m],          param[PARAM_g0],
-                                               param[PARAM_G0],         param[PARAM_gs_0],
-                                               param[PARAM_w]);
+                                    param[PARAM_m],          param[PARAM_g0],
+                                    param[PARAM_G0],         param[PARAM_gs_0],
+                                    param[PARAM_w]);
 
   (p->cm_mat)->mat_p = mat_p;
 
@@ -1123,7 +1123,7 @@ int plasticity_model_update_elasticity(const Constitutive_model *m,
 }
 
 int plasticity_model_get_subdiv_param(const Constitutive_model *m,
-                                double *subdiv_param, double dt)
+                                      double *subdiv_param, double dt)
 {
   int err = 0;
   SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;
@@ -1269,7 +1269,7 @@ int compute_dMdu(const Constitutive_model *con,
   // Grad_du = Grad(du)
 
   MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((con->param)->cm_mat)->mat_p;
-  const double *state_var = con->vars_list[0][con->model_id].state_vars[0].m_pdata;
+  // const double *state_var = con->vars_list[0][con->model_id].state_vars[0].m_pdata;
 
   const int N_SYS          = (mat_p->slip)->N_SYS;
   const double gamma_dot_0 = mat_p->gamma_dot_0;
@@ -1280,7 +1280,7 @@ int compute_dMdu(const Constitutive_model *con,
   const double gs_0        = mat_p->gs_0;
   const double w           = mat_p->w;
 
- double gamma_dot = 0.0;
+  double gamma_dot = 0.0;
   for(int a = 0; a<N_SYS; a++)
     gamma_dot += fabs(gamma_dots[a]);
 
@@ -1296,7 +1296,7 @@ int compute_dMdu(const Constitutive_model *con,
   }
 
   double AA = R3*gamma_dot*(g_n - g0 + dt*G0*gamma_dot) +
-    gs_np1 * (gs_np1 - g0 - g_n) + g0*g_n;
+              gs_np1 * (gs_np1 - g0 - g_n) + g0*g_n;
   double BB = gs_np1 - g0  - dt*G0*gamma_dot;
   double R4 = dt*G0*AA/BB/BB;
 
@@ -1365,7 +1365,7 @@ int compute_dMdu(const Constitutive_model *con,
 
   try {
     Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) *
-                         B(k,l,m,n) * Grad_du(m,n));
+                                               B(k,l,m,n) * Grad_du(m,n));
   }
   catch (const int inverseException){
     Tensor<2,double*>(_dMdu->m_pdata)(i,j) = 0.0*ttl::identity(i,j);
@@ -1389,11 +1389,11 @@ static int plasticity_int_alg(Constitutive_model *m,
 
   CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
   set_crystal_plasticity_solver_info(&solver_info,param_idx[PARAM_max_itr_stag],
-                                                  param_idx[PARAM_max_itr_hardening],
-                                                  param_idx[PARAM_max_itr_M],
-                                                  param[PARAM_tol_hardening],
-                                                  param[PARAM_tol_M],
-                                                  param[PARAM_computer_zero]);
+                                     param_idx[PARAM_max_itr_hardening],
+                                     param_idx[PARAM_max_itr_M],
+                                     param[PARAM_tol_hardening],
+                                     param[PARAM_tol_M],
+                                     param[PARAM_computer_zero]);
   solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
 
   enum {M,eFnp1,C,pFnp1_I,F2end};
@@ -1518,7 +1518,7 @@ int plasticity_model_read_orientations(Matrix<int> *e_ids, Matrix<double> *angle
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
-        continue;
+      continue;
 
     int e, ip;
     double x1, x2, x3;
@@ -1535,12 +1535,12 @@ int plasticity_model_read_orientations(Matrix<int> *e_ids, Matrix<double> *angle
 
         for(int b=0; b<n_ip; b++)
         {
-           int ip_id = elm_ip_map[a].ip_ids.m_pdata[b];
-           Mat_v(*e_ids,  ip_id+1, 1) = a;  // +1 is needed because ip_id starts from 0
-           Mat_v(*e_ids,  ip_id+1, 2) = b;
-           Mat_v(*angles, ip_id+1, 1) = x1;
-           Mat_v(*angles, ip_id+1, 2) = x2;
-           Mat_v(*angles, ip_id+1, 3) = x3;
+          int ip_id = elm_ip_map[a].ip_ids.m_pdata[b];
+          Mat_v(*e_ids,  ip_id+1, 1) = a;  // +1 is needed because ip_id starts from 0
+          Mat_v(*e_ids,  ip_id+1, 2) = b;
+          Mat_v(*angles, ip_id+1, 1) = x1;
+          Mat_v(*angles, ip_id+1, 2) = x2;
+          Mat_v(*angles, ip_id+1, 3) = x3;
         }
       }
     }
@@ -1584,9 +1584,9 @@ int plasticity_model_generate_random_orientation_element(const int ne, const IP_
       {
         double temp[3];
         err += generate_random_crystal_orientation(temp, 1);
-          phi = temp[0];
+        phi = temp[0];
         theta = temp[1];
-          psi = temp[2];
+        psi = temp[2];
       }
       Mat_v(*angles,ip_id+1,1) = phi;
       Mat_v(*angles,ip_id+1,2) = theta;
@@ -1606,7 +1606,6 @@ int plasticity_model_generate_random_orientation_crystal(const int ne, const IP_
   double temp[3];
   err += generate_random_crystal_orientation(temp, 1);
 
-  int cnt = 0;
   for(int a=0; a<ne; a++)
   {
     int n_ip = elm_ip_map[a].n_ip;
@@ -1677,10 +1676,10 @@ int plasticity_model_set_zero_angles(const int ne, const IP_ID_LIST *elm_ip_map,
 }
 
 int plasticity_model_set_orientations(EPS *eps,
-                                const int ne,
-                                const ELEMENT *elem,
-                                const int n_mat,
-                                const Model_parameters *param_list)
+                                      const int ne,
+                                      const ELEMENT *elem,
+                                      const int n_mat,
+                                      const Model_parameters *param_list)
 {
   int err = 0;
   int crystal_plasticity_included = 0;
@@ -1727,34 +1726,34 @@ int plasticity_model_set_orientations(EPS *eps,
       SLIP_SYSTEM *slip = ((param_list[i].cm_mat)->mat_p)->slip;
       switch(slip->ort_option[0])
       {
-        case -1:
-          plasticity_model_set_zero_angles(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles);
-          break;
-        case 0:
-        {
-          err += plasticity_model_generate_random_orientation_element(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles, slip->ort_option[1]);
-          save_orientations++;
-          break;
-        }
-        case 1:
-        {
-          err += plasticity_model_generate_random_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles);
-          save_orientations++;
-          break;
-        }
-        case 3:
-        {
-          err += plasticity_model_set_given_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles, slip->ort_angles);
-          break;
-        }
-        default:
-          break;
+       case -1:
+        plasticity_model_set_zero_angles(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles);
+        break;
+       case 0:
+         {
+           err += plasticity_model_generate_random_orientation_element(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles, slip->ort_option[1]);
+           save_orientations++;
+           break;
+         }
+       case 1:
+         {
+           err += plasticity_model_generate_random_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles);
+           save_orientations++;
+           break;
+         }
+       case 3:
+         {
+           err += plasticity_model_set_given_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, &e_ids, &angles, slip->ort_angles);
+           break;
+         }
+       default:
+        break;
       }
     }
   }
   plasticity_model_construct_rotation(eps, &e_ids, &angles);
 
-  char file_in_ort[1024], default_ort_dir[1024];
+  char default_ort_dir[1024];
   sprintf(default_ort_dir, "CRYSTAL_ORIENTATION");
 
   if(save_orientations)
@@ -1778,7 +1777,7 @@ int plasticity_model_set_orientations(EPS *eps,
         continue;
 
       fprintf(fp_ort, "%d %d %e %e %e\n", Mat_v(e_ids, a, 1), Mat_v(e_ids, a, 2),
-                                        Mat_v(angles, a, 1), Mat_v(angles, a, 2), Mat_v(angles, a, 3));
+              Mat_v(angles, a, 1), Mat_v(angles, a, 2), Mat_v(angles, a, 3));
     }
     fclose(fp_ort);
   }
@@ -1815,9 +1814,9 @@ int plasticity_model_set_orientations(EPS *eps,
       /* intitialize to zeros */
       for(int ia=0; ia<N_SYS; ia++)
       {
-                Fs[TENSOR_tau].m_pdata[ia] = 0.0;
-              Fs[TENSOR_tau_n].m_pdata[ia] = 0.0;
-          Fs[TENSOR_gamma_dot].m_pdata[ia] = 0.0;
+        Fs[TENSOR_tau].m_pdata[ia] = 0.0;
+        Fs[TENSOR_tau_n].m_pdata[ia] = 0.0;
+        Fs[TENSOR_gamma_dot].m_pdata[ia] = 0.0;
         Fs[TENSOR_gamma_dot_n].m_pdata[ia] = 0.0;
       }
     }
@@ -1836,8 +1835,8 @@ void test_crystal_plasticity_single_crystal(void)
   // F = [1 - t,       0,       0
   //          0, 1 + t/2,       0
   //          0,       0, 1 + t/2];
-  double lame1 = 75600.0;
-  double lame2     = 26100.0;
+  // double lame1 = 75600.0;
+  // double lame2 = 26100.0;
   double E = 70.0e+3;
   double nu = 0.25;
 
@@ -1870,7 +1869,7 @@ void test_crystal_plasticity_single_crystal(void)
   // create material properties: Plasticity
   MATERIAL_CRYSTAL_PLASTICITY mat_p;
   set_properties_crystal_plasticity(&mat_p,&slip,gamma_dot_0,gamma_dot_s,
-                                     m,g0,G0,gs_0,w);
+                                    m,g0,G0,gs_0,w);
   //print_material_property_crystal_plasticity(&mat_p);  // <= this is optional
 
   // create material plasticity: it needs material properties for elasticity and plasticity
@@ -1880,11 +1879,11 @@ void test_crystal_plasticity_single_crystal(void)
   // create solver info: criteria for numerical iterations
   CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
   set_crystal_plasticity_solver_info(&solver_info,max_itr_stag,
-                                                  max_itr_hardening,
-                                                  max_itr_M,
-                                                  tol_hardening,
-                                                  tol_M,
-                                                  computer_zero);
+                                     max_itr_hardening,
+                                     max_itr_M,
+                                     tol_hardening,
+                                     tol_M,
+                                     computer_zero);
   //print_crystal_plasticity_solver_info(&solver_info); // <= this is optional
 
   // create elasticity object for integration

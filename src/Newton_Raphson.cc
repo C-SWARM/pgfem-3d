@@ -70,7 +70,7 @@
 
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
  * any print_level > MINIMAL_OUTPUT, normal output is used. */
-enum{MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT} PRINT_LEVEL;
+enum {MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT};
 
 static const int periodic = 0;
 
@@ -1330,7 +1330,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
   double dissipation = 0.0; // damage dissipation
 
   /* option '-no-migrate' */
-  const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
+  // const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
 
   switch(opts->analysis_type)
   {
@@ -1532,7 +1532,6 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
 
       iter = 0;
       double nor, nor2;
-      double GNOR = 10.0; // global norm of residual
       nor = nor2 = 10.0;
 
       // Newton Raphson iteration with Line search
@@ -1710,18 +1709,18 @@ int compute_coupled_physics_residual_norm(double *nor,
   COMMUNICATION_STRUCTURE *com = COM + mp_id;
 
   // temporal
-  double *u_n   = fv->u_n;
-  double *u_nm1 = fv->u_nm1;
-  State_variables *statv_list = fv->statv_list;
+  // double *u_n   = fv->u_n;
+  // double *u_nm1 = fv->u_nm1;
+  // State_variables *statv_list = fv->statv_list;
 
-  double dt = dts[DT_NP1];
+  // double dt = dts[DT_NP1];
 
   for(int ia=0; ia<fv->ndofd; ia++)
     fv->f_u[ia] = 0.0;
 
   sol->run_integration_algorithm = 0; // turn off running integration algorithm
-  long INFO = compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                                       mp_id,t,dts, 1);
+
+  compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp, mp_id,t,dts, 1);
   sol->run_integration_algorithm = 1; // reset integration algorithm to be active
 
   // Transform LOCAL load vector to GLOBAL
@@ -1787,8 +1786,6 @@ int update_temporal_field_variables_np1(GRID *grid,
                                         MULTIPHYSICS *mp,
                                         int mp_id)
 {
-  FIELD_VARIABLES *fv = FV + mp_id;
-
   int err = 0;
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
     err += constitutive_model_update_np1_state_vars_to_temporal(FV + mp_id, grid);

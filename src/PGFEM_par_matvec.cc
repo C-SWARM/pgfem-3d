@@ -183,7 +183,6 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     r_req = PGFEM_calloc(MPI_Request, nproc-1);
     r_stat = PGFEM_calloc(MPI_Status, nproc-1);
     {
-      int idx = 0;
       int req_idx = 0;
       for(int i=0; i<nproc; i++){
     if(i == myrank) continue;
@@ -236,7 +235,6 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   int *s_off_proc_rows = PGFEM_calloc(int, nproc);
   {
     int idx = n_dup;
-    int total_rows = 0;
     for(int i=0; i<nproc; i++){
       while(idx < n_entries){
     /* break loop if row owned by other dom */
@@ -781,7 +779,6 @@ static int add_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */
     int n_rec_row = recv->n_info[i];
@@ -804,7 +801,6 @@ static int set_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
   int row_len = n_col*sizeof(double);
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */

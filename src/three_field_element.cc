@@ -377,7 +377,6 @@ void TF_Kuu_ip(Matrix<double> K, FEMLIB *fe,
         double Pn, double dt_alpha_1_minus_alpha)
 {
   int nne = fe->nne;
-  int nsd = fe->nsd;
 
   if(USE_HW_FUNCS){
     double Fn[9];
@@ -410,7 +409,6 @@ void TF_Kpt_ip(Matrix<double> K, FEMLIB *fe,
         Matrix<double> F, int npres, int nVol, Matrix<double> Np, Matrix<double> Nt,
         double dt_alpha_1_minus_alpha)
 {
-  int nne = fe->nne;
   if(USE_HW_FUNCS)
     HW_Kpt_at_ip(K.m_pdata,npres,Np.m_pdata,nVol,Nt.m_pdata,1.0,1.0,fe->detJ,fe->temp_v.w_ip);
   else
@@ -420,7 +418,6 @@ void TF_Ktt_ip(Matrix<double> K, FEMLIB *fe,
         Matrix<double> F, int nVol, Matrix<double> Nt, double Upp,
         double dt_alpha_1_minus_alpha)
 {
-  int nne = fe->nne;
   if(USE_HW_FUNCS)
     HW_Ktt_at_ip(K.m_pdata,nVol,Nt.m_pdata,1.0,1.0,1.0,Upp,fe->detJ,fe->temp_v.w_ip);
   else
@@ -485,14 +482,12 @@ void stiffmat_3f_el(double *Ks,
   memset(Ks,0,ndofe*ndofe*sizeof(double));
   const int mat = elem[ii].mat[2];
   const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
-  double rho = hommat[mat].density;
+  // double rho = hommat[mat].density;
 
   dUdJFuncPtr          UP   = getDUdJFunc(1, &hommat[mat]);
   d2UdJ2FuncPtr       UPP   = getD2UdJ2Func(1, &hommat[mat]);
   devStressFuncPtr Stress   = getDevStressFunc(1,&hommat[mat]);
   matStiffFuncPtr Stiffness = getMatStiffFunc(1,&hommat[mat]);
-
-  int err = 0;
 
   double *L = aloc1(81);
   Matrix<double> F,C,S;
@@ -539,7 +534,7 @@ void stiffmat_3f_el(double *Ks,
     for(int a=0; a<npres; a++)
       Pn += Vec_v(Np,a+1)*P[a];
 
-    double Jn = det3x3(F.m_pdata);
+    // double Jn = det3x3(F.m_pdata);
 
     Matrix_AxB(C,1.0,0.0,F,1,F,0);
     double Upp = 0.0;
@@ -640,8 +635,6 @@ void residuals_3f_el(double *f,
   Matrix<double> fp,Kpt;
   Matrix<double> ft,Ktt;
   Matrix<double> Kup,Ktp;
-
-  int ndofe = nne*ndofn;
 
   Matrix_construct_init(double,fu, nne*nsd,1,    0.0);
   Matrix_construct_init(double,fp, npres,  1,    0.0);
@@ -815,8 +808,6 @@ void residuals_3f_w_inertia_el(double *f,
   Matrix<double> fp,fp1,fp2,Kpt;
   Matrix<double> ft,ft1,ft2,Ktt;
   Matrix<double> Kup,Ktp;
-
-  int ndofe = nne*ndofn;
 
   Matrix_construct_init(double,fu, nne*nsd,1,    0.0);
   Matrix_construct_init(double,fu1,nne*nsd,1,    0.0);
@@ -1059,11 +1050,10 @@ void update_3f_state_variables_el(const int ii,
         EPS *eps)
 {
 
-  const int mat = elem[ii].mat[2];
-  const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
+  // const int mat = elem[ii].mat[2];
+  // const double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
   const double volume = Tetra_V(x,y,z);
 
-  const int nsd = 3;
   const int nVol = N_VOL_TREE_FIELD;
 
   Matrix<double> F;
@@ -1144,9 +1134,6 @@ void evaluate_PT_el(const int ii,
 
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
   d2UdJ2FuncPtr UPP = getD2UdJ2Func(1, &hommat[mat]);
-  devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-
-  int ndofe = nne*ndofn;
 
   Matrix<double> F;
   Matrix_construct_init(double,F,3,3,0.0);
@@ -1336,10 +1323,6 @@ void evaluate_PT_w_inertia_el(const int ii,
 
   dUdJFuncPtr          UP = getDUdJFunc(1, &hommat[mat]);
   d2UdJ2FuncPtr       UPP = getD2UdJ2Func(1, &hommat[mat]);
-  devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
-
-  int ndofe = nne*ndofn;
-
 
   Matrix<double> F1,F2;
   Matrix_construct_init(double,F1,3,3,0.0);
@@ -1526,10 +1509,6 @@ void evaluate_theta_el(const int ii,
   UP = getDUdJFunc(1, &hommat[mat]);
   UPP = getD2UdJ2Func(1, &hommat[mat]);
 
-  const double Vol = Tetra_V (x,y,z);
-  int err = 0;
-  int ndofe = nne*ndofn;
-
   double *ft  = aloc1(nVol);
   double *Ktu = aloc1(nne*nsd*nVol);
   double *Ktp = aloc1(npres*nVol);
@@ -1542,7 +1521,6 @@ void evaluate_theta_el(const int ii,
 
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
-  int itg_order = nne;
   int_point(nne,&npt_z);
 
   double *int_pt_ksi, *int_pt_eta, *int_pt_zet, *weights;
@@ -1552,7 +1530,7 @@ void evaluate_theta_el(const int ii,
   weights = aloc1(npt_z);
 
   /* allocate space for the shape functions, derivatives etc */
-  double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
+  double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST;
   double Upp, Up;
 
     Na = aloc1(nne);
@@ -1738,10 +1716,6 @@ void evaluate_theta_w_inertia_el(const int ii,
   UP = getDUdJFunc(1, &hommat[mat]);
   UPP = getD2UdJ2Func(1, &hommat[mat]);
 
-  const double Vol = Tetra_V (x,y,z);
-  int err = 0;
-  int ndofe = nne*ndofn;
-
   double *ft  = aloc1(nVol);
   double *ft1 = aloc1(nVol);
   double *ft2 = aloc1(nVol);
@@ -1767,7 +1741,7 @@ void evaluate_theta_w_inertia_el(const int ii,
   weights = aloc1(npt_z);
 
   /* allocate space for the shape functions, derivatives etc */
-  double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
+  double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST;
   double Upp2, Up1, Up2;
 
     Na = aloc1(nne);
@@ -1941,9 +1915,6 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
 //  include_inertia = 0;
 //////////////////////////////////////////////////////////////////////
 
-
-  double err = 0.0;
-
   for (int i=0;i<ne;i++)
   {
 
@@ -2035,16 +2006,11 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
                NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
                    MPI_Comm mpi_comm,const int mp_id)
 {
-  const int mat = elem[0].mat[2];
-  double rho = hommat[mat].density;
-
   // @todo Commented out as dead code. @cp shoud review. LD
   // long include_inertia = 1;
   //
   // if(fabs(rho)<MIN_DENSITY)
   //   include_inertia = 0;
-
-  double err = 0.0;
 
   for (int i=0;i<ne;i++)
   {

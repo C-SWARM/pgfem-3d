@@ -429,9 +429,6 @@ int multi_scale_main(int argc, char **argv)
     }
 
     double pores = 0.0;
-    double gama = 0.0;
-    double GNOR = 0.0;
-    double nor1 = 0.0;
     double lm = 0.0;
     double dlm = 0.0;
     double DET = 0.0;
@@ -505,9 +502,9 @@ int multi_scale_main(int argc, char **argv)
           AT = ITT = 0;
           init++;
         }
-        char out_dat[500];
-        double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
-                          /dt0*solver_file->nonlin_method_opts[1]);
+        // char out_dat[500];
+        // double tmp_val = ((s->times[s->tim+1]-s->times[s->tim])
+        //                   /dt0*solver_file->nonlin_method_opts[1]);
 
         dlm = Arc_length_multiscale(c,s,solver_file,macro->opts,
                                     &pores,dt0,lm,&DET,&dlm0,&DLM,&AT,

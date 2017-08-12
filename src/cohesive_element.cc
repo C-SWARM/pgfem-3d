@@ -62,7 +62,7 @@ COEL* read_cohe_elem (FILE *in1,
 
 */
 {
-  long i,j,k,l,nce,nne,ndofe,*nod,II,mat,*Enodes;
+  long i,j,k,l,nce,nne,ndofe,*nod,II,*Enodes;
   double *r_e,*x,*y,*z,*e2h;
   COEL *coel;
 

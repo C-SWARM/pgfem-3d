@@ -332,7 +332,7 @@ static int bpa_compute_DBdev_DFp(double * restrict DB_DFp,
   err += inv3x3(Fp,invFp);
   const double plam = bpa_compute_plam(Cp);
   const double inv_lang_arg = plam / sqrt(param_N);
-  const double Jp23 = pow(det3x3(Fp),-2.0 / 3.0);
+  // const double Jp23 = pow(det3x3(Fp),-2.0 / 3.0);
   double inv_lang = 0;
   double inv_lang_p = 0;
   err += bpa_inverse_langevin(inv_lang_arg, &inv_lang);
@@ -1333,8 +1333,8 @@ static int bpa_compute_dM_du(const Constitutive_model *m,
   double M[tensor] = {};
   double Mn[tensor] = {};
   double DM_DFe[tensor4] = {};
-  double DFe_DF[tensor4] = {};
-  double DFe_DM[tensor4] = {};
+  // double DFe_DF[tensor4] = {};
+  // double DFe_DM[tensor4] = {};
   err += inv3x3(Fp,M);
   err += inv3x3(Fp_n,Mn);
   err += bpa_compute_DM_DFe(DM_DFe, p[mcGdot0], p[mcA], p[mcT], p[mcN],

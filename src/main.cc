@@ -279,7 +279,6 @@ int print_results(GRID *grid,
 {
   int err = 0;
 
-  int is_mechanical_active = 0;
   SOLVER_OPTIONS          *sol = NULL;
   FIELD_VARIABLES         *fv  = NULL;
   COMMUNICATION_STRUCTURE *com = NULL;
@@ -489,7 +488,7 @@ int single_scale_main(int argc,char *argv[])
 
   Model_parameters *param_list = NULL;
 
-  char filename[500],in_dat[500];
+  char in_dat[500];
 
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = NULL;
@@ -1122,7 +1121,6 @@ int single_scale_main(int argc,char *argv[])
     // set writting output options for Multiphysics
     //----------------------------------------------------------------------
     //---->
-    int pmr_no = 0;
     PRINT_MULTIPHYSICS_RESULT *pmr = NULL;
 
     pmr = (PRINT_MULTIPHYSICS_RESULT *) malloc(sizeof(PRINT_MULTIPHYSICS_RESULT)*mp.total_write_no);

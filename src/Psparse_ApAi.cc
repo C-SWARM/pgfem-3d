@@ -661,7 +661,6 @@ static int determine_comm_pattern(COMMUN comm,
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  int q;
   MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed)
   MPI_Comm_size(mpi_comm,&nproc);                                               //get total number of processes (could also be passed)
   //mpi_status contains 3 things: the rank of the sender, tag of the message, and the length of the message
@@ -669,15 +668,12 @@ static int determine_comm_pattern(COMMUN comm,
   MPI_Status *t_sta_s = NULL;
   MPI_Request *t_req_s = NULL;
   MPI_Request *t_req_r = NULL;
-  MPI_Status read_req;
 
   if(nproc > 1){
     t_sta_s = PGFEM_calloc(MPI_Status, nproc-1);
     t_req_s = PGFEM_calloc(MPI_Request, nrecv);
     t_req_r = PGFEM_calloc(MPI_Request, nsend);
-//    read_req= PGFEM_calloc(nsend,sizeof(MPI_Status));
   }
-  int flag,req_num;
 
   int recvFrom;
     int t_count = 0;

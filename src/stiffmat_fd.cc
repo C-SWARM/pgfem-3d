@@ -568,7 +568,6 @@ static int el_stiffmat_MP(int eid,
       sup->defl_d[j] = sup_def[j];
   }
 
-  int nVol = N_VOL_TREE_FIELD;
   Matrix<double> lk;
   Matrix_construct_redim(double,lk,ndofe,ndofe);
   Matrix_init(lk, 0.0);
@@ -674,10 +673,6 @@ int stiffmat_fd_MP(GRID *grid,
         int myrank)
 {
   int err = 0;
-  int total_Lagrangian  = 0;
-  int intg_order        = 0;
-  int do_assemble       = 1; // udate stiffness matrix
-  int compute_load4pBCs = 0; // if 1, compute load due to Dirichlet BCs.
   // if 0, update only stiffness
   double lm = 0.0;
 
@@ -806,8 +801,6 @@ int stiffmat_fd_MP(GRID *grid,
 
 
     // do volume integration at an element
-    int interior = 1;
-
     err += el_stiffmat_MP(eid,Lk,Ddof.m_pdata,1,grid,mat,fv,sol,load,com,crpl,
             mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 

@@ -566,7 +566,6 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 
   scan_for_valid_line(fp);
 
-  long npres = 0;
   fscanf (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&(FV[0].npres),&(SOL[0].FNR));
   if(SOL[0].FNR == 2 || SOL[0].FNR == 3)
   {
@@ -1068,7 +1067,6 @@ int read_initial_values_IC(GRID *grid,
                            int myrank)
 {
   int err = 0;
-  int mp_id = 0;
 
   // check restart and read restart values
   if(opts->restart >= 0)

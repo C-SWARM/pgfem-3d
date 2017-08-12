@@ -829,13 +829,9 @@ int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
 {
   int err = 0;
   State_variables *var = fv->temporal->var;
-
-  int intg_order = 0;
   const ELEMENT *elem = grid->element;
-
   for(int eid=0; eid<grid->ne; eid++)
   {
-    int nne = elem[eid].toe;
     long nint = 1;
     int_point(elem[eid].toe,&nint);
     for (int ip = 0; ip < nint; ip++)
@@ -862,7 +858,7 @@ int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
   int err = 0;
   State_variables *var = fv->temporal->var;
 
-  int intg_order = 0;
+  // int intg_order = 0;
   const ELEMENT *elem = grid->element;
 
   for(int eid=0; eid<grid->ne; eid++)
@@ -892,12 +888,12 @@ int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
   int err = 0;
   State_variables *var = fv->temporal->var;
 
-  int intg_order = 0;
+  // int intg_order = 0;
   const ELEMENT *elem = grid->element;
 
   for(int eid=0; eid<grid->ne; eid++)
   {
-    int nne = elem[eid].toe;
+    // int nne = elem[eid].toe;
     long nint = 1;
     int_point(elem[eid].toe,&nint);
     for (int ip = 0; ip < nint; ip++)
@@ -1302,7 +1298,7 @@ int constitutive_model_update_output_variables(GRID *grid,
       /* get aliases to Matrix data for simpler access */
       const double *Sd = S.m_pdata;
       const double *eFd = eF.m_pdata;
-      const double *pFd = pF.m_pdata;
+      // const double *pFd = pF.m_pdata;
       const double eJ = det3x3(eFd);
 
       /* store symmetric part of S (PK2) */
@@ -1423,7 +1419,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
 {
   // Total Lagrangian based
   int err = 0;
-  const int nne = fe->nne;
+  // const int nne = fe->nne;
   const int nsd = fe->nsd;
 
   enum {M,eFnpa,pFnpa,pFnpa_I,hFnpa,Fnpa,S,MT,Fend};
@@ -1549,7 +1545,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 {
   int err = 0;
   double alpha = sol->alpha;
-  int total_Lagrangian = 1;
+  // int total_Lagrangian = 1;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -1571,7 +1567,6 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   int nsd = fe->nsd;
   int nne = fe->nne;
   int ndofn = fv->ndofn;
-  SUPP sup = load->sups[mp_id];
 
   double *u = PGFEM_malloc<double>(nne*nsd);
   double *dMdu_all = PGFEM_malloc<double>(DIM_3x3*nne*nsd);
@@ -2042,7 +2037,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 {
   int err = 0;
   double alpha = sol->alpha;
-  int total_Lagrangian = 1;
+  // int total_Lagrangian = 1;
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -2064,7 +2059,6 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   int nsd = fe->nsd;
   int nne = fe->nne;
   int ndofn = fv->ndofn;
-  SUPP sup = load->sups[mp_id];
 
   double *u       = PGFEM_malloc<double>(nne*nsd);
   double *f_npa   = PGFEM_malloc<double>(nne*nsd);
@@ -2100,14 +2094,12 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                   fv->subdivision_factor_np1,fv->subdivision_factor_n);
   }
 
-  int compute_stiffness = 0;
-
   memset(f_npa, 0, sizeof(double)*nne*ndofn);
   memset(f_nm1pa, 0, sizeof(double)*nne*ndofn);
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
-    double Jn = 1.0;
+    // double Jn = 1.0;
     double hJ = 1.0;
     double pJ = 1.0;
 
@@ -2116,9 +2108,6 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
     FEMLIB_update_deformation_gradient(fe,ndofn,u,F2+Fnp1);
 
     Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-
-    // get a shortened pointer for simplified CM function calls
-    const Model_parameters *func = m->param;
 
     if(is_it_couple_w_thermal >= 0)
     {

@@ -336,7 +336,7 @@ static int he_read_restart(FILE *in,
   /* read Fn from file and set Fnp1 = Fn */
   int err = 0;
   double *FN = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
-  double *FNP1 = m->vars_list[0][m->model_id].Fs[Fnp1].m_pdata;
+  // double *FNP1 = m->vars_list[0][m->model_id].Fs[Fnp1].m_pdata;
   if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
             FN, FN + 1, FN + 2,
             FN + 3, FN + 4, FN + 5,

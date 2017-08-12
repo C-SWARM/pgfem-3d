@@ -324,8 +324,6 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
 {
   int err = 0;
   double time = 0.0;
-  double nl_err = c->lin_err;
-  int full_NR = 1; /* 0 is modified NR */
   double pores = 0.0;
   const int print_level = 0;
   *n_step = 0;

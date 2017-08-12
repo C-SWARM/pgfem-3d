@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
   HOMMAT *p_hmat = PGFEM_calloc(HOMMAT, 1);
   hommat_assign_values(p_hmat);
-  const double kappa = hommat_get_kappa(p_hmat);
+  // const double kappa = hommat_get_kappa(p_hmat);
 
   Model_parameters *p = PGFEM_malloc<Model_parameters>();
   err += model_parameters_construct(p);

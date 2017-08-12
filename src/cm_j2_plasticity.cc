@@ -354,7 +354,6 @@ static int j2d_compute_Y0(const HOMMAT *p_hmat,
                           const double G,
                           double *Y0)
 {
-  int err = 0;
   const double kappa = hommat_get_kappa(p_hmat);
   double U = 0.0;
   new_pot_compute_U(J, p_hmat, &U);
@@ -441,7 +440,6 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
 
   //const j2d_ctx *ctx = CTX;
-  const auto ctx = (j2d_ctx *) CTX;
   const double *F = cm_Fs_data(m,FNP1);
   const double *Fn = cm_Fs_data(m, FN);
   const double *spn = cm_Fs_data(m, SPN);
@@ -557,7 +555,6 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   double s_tr[tensor] = {0};
   double normal[tensor] = {0};
   double normal2[tensor] = {0};
-  double zeros[tensor] = {0};
   j2d_compute_s0(param[G], bbar, s_tr);
   double norm_s_tr = 0.0;
   for (int i = 0; i < tensor; i++) {

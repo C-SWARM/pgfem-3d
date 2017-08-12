@@ -162,7 +162,6 @@ int momentum_equation_load4pBCs(GRID *grid,
     if(total_Lagrangian)
       def_elem (cn,ndofe,fv->u_np1,elem,node,r_e,sup,1);
 
-    int nVol = N_VOL_TREE_FIELD;
     double lm = 0.0;
     Matrix<double> lk;
     Matrix_construct_redim(double,lk,ndofe,ndofe);
