@@ -567,7 +567,7 @@ void EnSight (char jmeno[500],
           const PGFem3D_opt *opts)
 {
   int part1,part2,*GNVpint,*shift;
-  long *GNVp,i,j,k,tmp,*property,M,N,tetra4,tetra10,hexa8,*nod,tria3,quad4,*GVp,GNV;
+  long *GNVp,i,j,k,tmp,*property,M,N,tetra4,tetra10,hexa8,*nod,tria3{},quad4{},*GVp,GNV;
   double *X,*xx,*u;
   char name[500];
   FILE *out,*out1,*out2;
