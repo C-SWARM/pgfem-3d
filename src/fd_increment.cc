@@ -221,7 +221,7 @@ void fd_increment (long ne,
       pressu_shape (npres,ksi,eta,zet,Psi);
 
       Tr = 0.0;
-      Tn = 0,0;
+      Tn = 0.0;
       for (M=0;M<npres;M++){
         Tn += Psi[M]*eps[ii].T[M];
         Tr += Psi[M]*eps[ii].d_T[M];
