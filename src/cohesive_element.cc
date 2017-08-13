@@ -76,7 +76,7 @@ COEL* read_cohe_elem (FILE *in1,
   */
 
   for (i=0;i<ncom;i++) {
-    fscanf (in1,"%lf %lf %lf %lf\n",&comat[i][0],&comat[i][1],
+    CHECK_SCANF (in1,"%lf %lf %lf %lf\n",&comat[i][0],&comat[i][1],
         &comat[i][2],&comat[i][3]); /* Sc : Xc : b : k */
 
     if (comat[i][3] < 1.0 || comat[i][3] >= 3.00) {
@@ -87,12 +87,12 @@ COEL* read_cohe_elem (FILE *in1,
 
   }
 
-  fscanf (in1,"%ld\n",&nce);
+  CHECK_SCANF (in1,"%ld\n",&nce);
 
   if (nce == 0) coel = PGFEM_calloc (COEL, 1);
   else coel = PGFEM_calloc (COEL, nce);
 
-  for (i=0;i<nce;i++) fscanf (in1,"%ld\n",&coel[i].toe);
+  for (i=0;i<nce;i++) CHECK_SCANF (in1,"%ld\n",&coel[i].toe);
 
   for (i=0;i<nce;i++){
     nne = coel[i].toe/2;
@@ -125,11 +125,11 @@ COEL* read_cohe_elem (FILE *in1,
   */
 
   for (i=0;i<nce;i++){
-    fscanf (in1,"%ld",&j);
+    CHECK_SCANF (in1,"%ld",&j);
     for (l=0;l<coel[j].toe;l++){
-      fscanf (in1,"%ld",&coel[j].nod[l]);
+      CHECK_SCANF (in1,"%ld",&coel[j].nod[l]);
     }
-    fscanf (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
+    CHECK_SCANF (in1,"%ld %ld %ld",&coel[j].typ,&coel[j].mat,&coel[j].pr);
 
     /* Cohesive elements are always integrated in reference configuration */
     coel[j].Jjn = 1.0;

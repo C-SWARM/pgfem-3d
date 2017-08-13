@@ -29,7 +29,9 @@ int read_cohesive_properties(FILE *in,
   /* get number of materials allowing for blank line(s) */
   int match = 0;
   do{
-    fgets(line,len,in);
+    if (fgets(line,len,in) == nullptr) {
+      abort();
+    }
     match = sscanf(line,"%d",n_mat);
   }while(match != 1 && !feof(in));
   if(feof(in)){ err ++; goto exit_function;}
@@ -42,7 +44,9 @@ int read_cohesive_properties(FILE *in,
   for(int i=0; i<*n_mat; i++){
     match = 0;
     do{
-      fgets(line,len,in);
+      if (fgets(line,len,in) == nullptr) {
+        abort();
+      }
       match = sscanf(line,"%d",&(p[i].type));
     }while(match != 1 && !ferror(in));
     if(ferror(in)){ err ++; goto exit_function;}

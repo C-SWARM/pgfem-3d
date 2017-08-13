@@ -9,10 +9,10 @@
  */
 
 #include "solver_file.h"
-
-#include <string.h>
-#include "PGFEM_io.h"
 #include "allocation.h"
+#include "PGFEM_io.h"
+#include "utils.h"
+#include <string.h>
 
 static void solver_file_init_values(SOLVER_FILE *sf)
 {
@@ -56,11 +56,11 @@ int solver_file_read_header(SOLVER_FILE *sf)
   int err = 0;
 
   /* read first line */
-  fscanf(sf->file,"%lf %ld %ld %ld",
-         &(sf->nonlin_tol),
-         &(sf->max_nonlin_iter),
-         &(sf->n_pressure_nodes),
-         &(sf->nonlin_method));
+  CHECK_SCANF(sf->file,"%lf %ld %ld %ld",
+              &(sf->nonlin_tol),
+              &(sf->max_nonlin_iter),
+              &(sf->n_pressure_nodes),
+              &(sf->nonlin_method));
 
   switch(sf->nonlin_method){
    case NEWTON_METHOD:
@@ -73,9 +73,9 @@ int solver_file_read_header(SOLVER_FILE *sf)
     /* read additional options */
     sf->n_nonlin_method_opts = 2;
     sf->nonlin_method_opts = PGFEM_malloc<double>(sf->n_nonlin_method_opts);
-    fscanf(sf->file,"%lf %lf",
-           sf->nonlin_method_opts,
-           sf->nonlin_method_opts + 1);
+    CHECK_SCANF(sf->file,"%lf %lf",
+                sf->nonlin_method_opts,
+                sf->nonlin_method_opts + 1);
     break;
 
    default:
@@ -88,14 +88,14 @@ int solver_file_read_header(SOLVER_FILE *sf)
   }
 
   /* read number of steps and allocate */
-  fscanf(sf->file,"%ld",&(sf->n_step)); /* # computed steps */
+  CHECK_SCANF(sf->file,"%ld",&(sf->n_step)); /* # computed steps */
   sf->print_steps = PGFEM_calloc(size_t, sf->n_step);
   sf->load_steps = PGFEM_calloc(size_t, sf->n_step);
 
   /* allocate/read times to read */
   sf->times = PGFEM_malloc<double>(sf->n_step + 1);
   for(size_t i = 0, e = sf->n_step + 1; i < e; i++){
-    fscanf(sf->file,"%lf",(sf->times) + i);
+    CHECK_SCANF(sf->file,"%lf",(sf->times) + i);
   }
 
   /* read print steps.
@@ -105,20 +105,20 @@ int solver_file_read_header(SOLVER_FILE *sf)
    * steps. Therefore we need to check bounds on idx
    */
   size_t n_step = 0; /* NOT sf->n_step!! */
-  fscanf(sf->file,"%ld",&n_step);
+  CHECK_SCANF(sf->file,"%ld",&n_step);
   for(size_t i = 0; i < n_step; i++){
     size_t idx = 0;
-    fscanf(sf->file,"%ld",&idx);
+    CHECK_SCANF(sf->file,"%ld",&idx);
 
     if(idx < sf->n_step)
       sf->print_steps[idx] = 1;
   }
 
   /* read load steps. See note for print steps */
-  fscanf(sf->file,"%ld",&n_step);
+  CHECK_SCANF(sf->file,"%ld",&n_step);
   for(size_t i = 0; i < n_step; i++){
     size_t idx = 0;
-    fscanf(sf->file,"%ld",&idx);
+    CHECK_SCANF(sf->file,"%ld",&idx);
 
     if(idx < sf->n_step)
       sf->load_steps[idx] = 1;
@@ -138,7 +138,7 @@ int solver_file_read_load(SOLVER_FILE *sf,
   }
   if(sf->load_steps[step]){
     for(size_t i = 0; i < len_load; i++){
-      fscanf(sf->file,"%lf",incr_load + i);
+      CHECK_SCANF(sf->file,"%lf",incr_load + i);
     }
   } else {
     memset(incr_load,0,len_load*sizeof(*incr_load));

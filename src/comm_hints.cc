@@ -8,6 +8,7 @@
 
 #include "comm_hints.h"
 #include "allocation.h"
+#include "utils.h"
 
 struct COMM_HINTS {
   int *send;
@@ -40,17 +41,17 @@ int Comm_hints_read(Comm_hints *hints,
   int err = 0;
 
   /* read hints for whom to send information */
-  fscanf(in, "%d", &hints->nsend);
+  CHECK_SCANF(in, "%d", &hints->nsend);
   hints->send = PGFEM_calloc(int, hints->nsend);
   for (int i = 0, e = hints->nsend; i < e; i++) {
-    fscanf(in, "%d", hints->send + i);
+    CHECK_SCANF(in, "%d", hints->send + i);
   }
 
   /* read hints from whom to receive information */
-  fscanf(in, "%d", &hints->nrecv);
+  CHECK_SCANF(in, "%d", &hints->nrecv);
   hints->recv = PGFEM_calloc(int, hints->nrecv);
   for (int i = 0, e = hints->nrecv; i < e; i++) {
-    fscanf(in, "%d", hints->recv + i);
+    CHECK_SCANF(in, "%d", hints->recv + i);
   }
 
   return err;

@@ -159,6 +159,6 @@ energy_equation_lib = $(top_builddir)/energy_equation/src/libenergy_equation.a
 
 # Universal flags for all binaries
 AM_CXXFLAGS = -fpermissive
-AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation -Wno-unused-result -I$(top_srcdir)/include -I$(top_builddir)/include $(VTK_IO_include) $(energy_equation_include) $(hypre_include) $(suitesparse_include) $(cnstvm_include) $(mkl_include)
+AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation -I$(top_srcdir)/include -I$(top_builddir)/include $(VTK_IO_include) $(energy_equation_include) $(hypre_include) $(suitesparse_include) $(cnstvm_include) $(mkl_include)
 LDADD       = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
 AM_LDFLAGS  = -Wl,--allow-multiple-definition

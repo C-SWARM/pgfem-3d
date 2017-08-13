@@ -6,21 +6,20 @@
  */
 
 #include "plasticity_model.h"
-#include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
-#include "new_potentials.h"
+#include "constitutive_model.h"
+#include "crystal_plasticity_integration.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
-#include "gen_path.h"
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>
-
-#include "material_properties.h"
-#include "hyperelasticity.h"
-#include "crystal_plasticity_integration.h"
 #include "flowlaw.h"
+#include "gen_path.h"
+#include "hyperelasticity.h"
+#include "material_properties.h"
+#include "new_potentials.h"
 #include <ttl/ttl.h>
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define DIM_3        3
 #define DIM_3x3      9
@@ -888,10 +887,10 @@ static int cp_write_tensor_restart(FILE *fp, const double *tensor)
 static int cp_read_tensor_restart(FILE *fp, double *tensor)
 {
   int err = 0;
-  fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-         &tensor[0], &tensor[1], &tensor[2],
-         &tensor[3], &tensor[4], &tensor[5],
-         &tensor[6], &tensor[7], &tensor[8]);
+  CHECK_SCANF(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+              &tensor[0], &tensor[1], &tensor[2],
+              &tensor[3], &tensor[4], &tensor[5],
+              &tensor[6], &tensor[7], &tensor[8]);
   return err;
 }
 
@@ -937,12 +936,12 @@ static int plasticity_read_restart(FILE *fp, Constitutive_model *m)
 
   const int N_SYS = ((((m->param)->cm_mat)->mat_p)->slip)->N_SYS;
   for(int a=0; a<N_SYS; a++)
-    fscanf(fp, "%lf ", Fs[TENSOR_tau_n].m_pdata + a);
+    CHECK_SCANF(fp, "%lf ", Fs[TENSOR_tau_n].m_pdata + a);
 
   for(int a=0; a<N_SYS; a++)
-    fscanf(fp, "%lf ", Fs[TENSOR_gamma_dot_n].m_pdata + a);
+    CHECK_SCANF(fp, "%lf ", Fs[TENSOR_gamma_dot_n].m_pdata + a);
 
-  fscanf(fp, "%lf %lf %lf %lf\n", state_var+VAR_g_n, state_var+VAR_g_nm1, state_var+VAR_L_n, state_var+VAR_L_nm1);
+  CHECK_SCANF(fp, "%lf %lf %lf %lf\n", state_var+VAR_g_n, state_var+VAR_g_nm1, state_var+VAR_L_n, state_var+VAR_L_nm1);
 
   /* set values at n+1 */
   Matrix_AeqB(Fs[TENSOR_Fnp1],     1.0,Fs[TENSOR_Fn]);
@@ -982,8 +981,12 @@ static int cp_read(Model_parameters *p,
   /* READ PROPERTIES IN ALPHABETICAL ORDER */
   int param_in = PARAM_NO-3;
   int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf",
-                     param + PARAM_gamma_dot_0, param + PARAM_m,    param + PARAM_G0,
-                     param + PARAM_g0,          param + PARAM_gs_0, param + PARAM_gamma_dot_s,
+                     param + PARAM_gamma_dot_0,
+                     param + PARAM_m,
+                     param + PARAM_G0,
+                     param + PARAM_g0,
+                     param + PARAM_gs_0,
+                     param + PARAM_gamma_dot_s,
                      param + PARAM_w);
 
   err += scan_for_valid_line(in);
@@ -1012,7 +1015,10 @@ static int cp_read(Model_parameters *p,
 
   if(slip->ort_option[0] == 3)
   {
-    match += fscanf(in, "%lf %lf %lf", (slip->ort_angles)+0, (slip->ort_angles)+1, (slip->ort_angles)+2);
+    match += fscanf(in, "%lf %lf %lf",
+                    slip->ort_angles,
+                    slip->ort_angles + 1,
+                    slip->ort_angles + 2);
     param_in += 3;
   }
 
@@ -1034,7 +1040,8 @@ static int cp_read(Model_parameters *p,
 
   if(read_solver_info)
   {
-    match = fscanf(in, "%d %d %d %d %lf %lf %lf", param_idx + PARAM_max_itr_stag,
+    match = fscanf(in, "%d %d %d %d %lf %lf %lf",
+                   param_idx + PARAM_max_itr_stag,
                    param_idx + PARAM_max_itr_hardening,
                    param_idx + PARAM_max_itr_M,
                    param_idx + PARAM_max_subdivision,

@@ -1,14 +1,15 @@
 #include "restart.h"
-#include "PGFem3D_options.h"
-#include "gen_path.h"
-#include "element.h"
-#include "node.h"
-#include "supp.h"
-#include "vtk_output.h"
 #include "constitutive_model.h"
 #include "data_structure_c.h"
 #include "elem3d.h"
+#include "element.h"
+#include "gen_path.h"
+#include "node.h"
 #include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "supp.h"
+#include "utils.h"
+#include "vtk_output.h"
 
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
@@ -95,7 +96,7 @@ int read_time_step_info(FIELD_VARIABLES *fv,
 
   if(fp != NULL)
   {
-    fscanf(fp, "%lf %lf %lf", t+0, t+1, t+2);
+    CHECK_SCANF(fp, "%lf %lf %lf", t+0, t+1, t+2);
     tnm1[0] = t[0];
     tnm1[1] = t[1];
 
@@ -104,7 +105,7 @@ int read_time_step_info(FIELD_VARIABLES *fv,
 
     for(int ia=0; ia<mp->physicsno; ia++)
     {
-      fscanf(fp, "%lf %lf", &(fv[ia].NORM), time_steps->tns+ia);
+      CHECK_SCANF(fp, "%lf %lf", &(fv[ia].NORM), time_steps->tns+ia);
       if(myrank==0)
         printf("\t\t%s: NORM = %e, t(n) = %e\n",mp->physicsname[ia], fv[ia].NORM, time_steps->tns[ia]);
     }
@@ -286,7 +287,7 @@ static int read_restart_constitutive_model(GRID *grid,
   for(int a=0; a<grid->nn; a++)
   {
     for(int b=0; b<grid->nsd; b++)
-      fscanf(fp, "%lf %lf", (fv[mp_id].u_nm1)+a*(grid->nsd) + b, (fv[mp_id].u_n)+a*(grid->nsd) + b);
+      CHECK_SCANF(fp, "%lf %lf", (fv[mp_id].u_nm1)+a*(grid->nsd) + b, (fv[mp_id].u_n)+a*(grid->nsd) + b);
   }
 
   if(opts->analysis_type==CM)
@@ -297,7 +298,7 @@ static int read_restart_constitutive_model(GRID *grid,
       long n_ip = 0;
       long n_ip_read = 0;
       int_point(p_el->toe,&n_ip);
-      fscanf(fp, "%ld", &n_ip_read);
+      CHECK_SCANF(fp, "%ld", &n_ip_read);
       if(n_ip!=n_ip_read)
       {
         printf("Error: restart file has wrong integration number (PN: %d, elem: %d)\n", myrank, e);
@@ -388,7 +389,7 @@ int read_restart_thermal(GRID *grid,
   }
 
   for(int ia=0; ia<grid->nn; ia++)
-    fscanf(fp, "%lf %lf\n", (fv[mp_id].u_nm1)+ia, (fv[mp_id].u_n)+ia);
+    CHECK_SCANF(fp, "%lf %lf\n", (fv[mp_id].u_nm1)+ia, (fv[mp_id].u_n)+ia);
 
   fclose(fp);
   return err;

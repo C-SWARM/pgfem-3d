@@ -9,28 +9,28 @@
 
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
-#include "plasticity_model_none.h"
-#include "plasticity_model.h"
-#include "plasticity_model_BPA.h"
 #include "cm_iso_viscous_damage.h"
 #include "cm_j2_plasticity.h"
 #include "cm_uqcm.h"
-
-#include "hommat.h"
-#include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 #include "data_structure_c.h"
-#include "supp.h"
+#include "dynamics.h"
 #include "elem3d.h"
 #include "femlib.h"
+#include "get_dof_ids_on_elem.h"
+#include "hommat.h"
+#include "hyperelasticity.h"     // <= constitutive model elasticity
 #include "index_macros.h"
 #include "material_properties.h" // <= constitutive model material properties
-#include "hyperelasticity.h"     // <= constitutive model elasticity
-#include <string.h>
-#include "dynamics.h"
 #include "PGFem3D_data_structure.h"
-#include "get_dof_ids_on_elem.h"
+#include "PGFEM_io.h"
+#include "PGFEM_mpi.h"
+#include "plasticity_model_none.h"
+#include "plasticity_model.h"
+#include "plasticity_model_BPA.h"
+#include "supp.h"
+#include "utils.h"
 #include <ttl/ttl.h>
+#include <string.h>
 
 //ttl declarations
 namespace {
@@ -680,7 +680,7 @@ int read_model_parameters_list(Model_parameters **param_list,
   int num_entries = -1;
   HOMMAT *key = PGFEM_calloc(HOMMAT, 1);
   err += scan_for_valid_line(in);
-  fscanf(in, "%d", &num_entries);
+  CHECK_SCANF(in, "%d", &num_entries);
 
   int i = 0;
   for (i = 0; i < num_entries; i++) {
@@ -689,7 +689,7 @@ int read_model_parameters_list(Model_parameters **param_list,
     err += scan_for_valid_line(in);
     if (feof(in)) break;
 
-    fscanf(in, "%d %d", &(key->mat_id), &model_type);
+    CHECK_SCANF(in, "%d %d", &(key->mat_id), &model_type);
     err += scan_for_valid_line(in);
 
     int brace = fgetc(in);
@@ -721,7 +721,7 @@ int read_model_parameters_list(Model_parameters **param_list,
         {
           ((*param_list) + idx)->uqcm = 1;
           err += scan_for_valid_line(in);
-          fscanf(in, "%d", &model_type);
+          CHECK_SCANF(in, "%d", &model_type);
         }
         else
           ((*param_list) + idx)->uqcm = 0;

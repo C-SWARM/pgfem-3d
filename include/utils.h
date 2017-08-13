@@ -21,6 +21,16 @@
 
 struct EPS;                                     // defined in eps.h
 
+/// Lots of system headers require that the return value from scanf be
+/// checked. This small utility simplifies this process by counting the number
+/// of arguments that are expected automatically.
+template <class... Args>
+static inline void CHECK_SCANF(FILE *stream, Args... args) {
+  if (fscanf(stream, args...) != (sizeof...(args) - 1)) {
+    throw 1;
+  }
+}
+
 /**
  * Scan the file for a valid line (non-blank and does not start with a
  * '#').  This function may be called multiple times on the same file.

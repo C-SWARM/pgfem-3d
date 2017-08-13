@@ -985,7 +985,9 @@ long* times_print (FILE *in1,
   }
 
   for (i=0;i<n_p;i++){
-    fscanf (in1,"%lf",&help[i]);
+    if (fscanf (in1,"%lf",&help[i]) != 0) {
+      PGFEM_Abort();
+    }
   }
 
   for (i=0;i<n_p;i++){

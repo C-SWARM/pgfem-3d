@@ -8,19 +8,18 @@
 
 /* HEADER */
 #include "read_input_file.h"
-
-#include "enumerations.h"
 #include "allocation.h"
-#include "in.h"
-#include <string.h>
-#include "PGFem3D_data_structure.h"
-#include "utils.h"
 #include "Arc_length.h"
-#include "read_cryst_plast.h"
-#include "load.h"
 #include "constitutive_model.h"
-#include "restart.h"
+#include "enumerations.h"
 #include "gen_path.h"
+#include "in.h"
+#include "load.h"
+#include "PGFem3D_data_structure.h"
+#include "read_cryst_plast.h"
+#include "restart.h"
+#include "utils.h"
+#include <string.h>
 
 /// read mechanical part of material properties
 ///
@@ -278,9 +277,9 @@ int read_input_file(const PGFem3D_opt *opts,
   FILE *in = PGFEM_fopen(filename,"r");
 
   /* read header lines */
-  fscanf (in,"%ld %ld %ld",nn,ndofn,ne);
-  fscanf (in,"%ld %lf %lf",lin_maxit,lin_err,lim_zero);
-  fscanf (in,"%ld %ld %ld",nmat,n_concentrations,n_orient);
+  CHECK_SCANF (in,"%ld %ld %ld",nn,ndofn,ne);
+  CHECK_SCANF (in,"%ld %lf %lf",lin_maxit,lin_err,lim_zero);
+  CHECK_SCANF (in,"%ld %ld %ld",nmat,n_concentrations,n_orient);
 
   (*node) = build_node_multi_physics(*nn,fv_ndofn,physicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
@@ -301,15 +300,15 @@ int read_input_file(const PGFem3D_opt *opts,
     // skip reading support from lagacy inputs
     int nbc; // temporal, don't need here
     int n[4];
-    fscanf(in, "%d", &nbc);
+    CHECK_SCANF(in, "%d", &nbc);
     for(int ia=0; ia<nbc; ia++)
-      fscanf(in, "%d %d %d %d", n+0,n+1,n+2,n+3);
+      CHECK_SCANF(in, "%d %d %d %d", n+0,n+1,n+2,n+3);
 
-    fscanf(in, "%d", &nbc);
+    CHECK_SCANF(in, "%d", &nbc);
     double v;
 
     for(int ia=0; ia<nbc; ia++)
-      fscanf(in, "%lf", &v);
+      CHECK_SCANF(in, "%lf", &v);
 
     // read boundary conditions if BC diretory exists
     char fn_bc[1024];
@@ -364,15 +363,15 @@ int read_input_file(const PGFem3D_opt *opts,
   /* NOTE: Node/Element loading assumes forces only in ndim
      directions */
   /* node */
-  fscanf(in,"%ld",nln);
+  CHECK_SCANF(in,"%ld",nln);
   *znod = build_zatnode (*ndofn,*nln);
   read_nodal_load (in,*nln,*ndofn,*znod);
   /* surface */
-  fscanf (in,"%ld",nel_s);
+  CHECK_SCANF (in,"%ld",nel_s);
   *zelem_s = build_zatelem (*ndofn,*nel_s);
   read_elem_surface_load (in,*nel_s,*ndofn,*elem,*zelem_s);
   /* volume */
-  fscanf (in,"%ld",nel_v);
+  CHECK_SCANF (in,"%ld",nel_v);
   *zelem_v = build_zatelem (*ndofn,*nel_v);
 
   /* check the ferror bit */
@@ -492,16 +491,16 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
   int err = 0;
 
   // read number of computational times
-  fscanf(fp,"%ld",&(ts->nt));
+  CHECK_SCANF(fp,"%ld",&(ts->nt));
 
   // read times
   ts->times = aloc1(ts->nt+1);
   for (long ia=0; ia<ts->nt+1; ia++)
-    fscanf(fp,"%lf",(ts->times)+ia);
+    CHECK_SCANF(fp,"%lf",(ts->times)+ia);
 
   long n_p = 0;
   // read times for output
-  fscanf(fp,"%ld",&n_p);
+  CHECK_SCANF(fp,"%ld",&n_p);
 
   //Times for printing
   ts->print = times_print(fp,ts->nt,n_p);
@@ -566,18 +565,18 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 
   scan_for_valid_line(fp);
 
-  fscanf (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&(FV[0].npres),&(SOL[0].FNR));
+  CHECK_SCANF (fp,"%lf %ld %ld %ld",&(SOL[0].nor_min),&(SOL[0].iter_max),&(FV[0].npres),&(SOL[0].FNR));
   if(SOL[0].FNR == 2 || SOL[0].FNR == 3)
   {
     SOL[0].arc = (ARC_LENGTH_VARIABLES *) malloc(sizeof(ARC_LENGTH_VARIABLES));
     err += arc_length_variable_initialization(SOL[0].arc);
-    fscanf (fp,"%lf %lf",&(SOL[0].arc->dAL0),&(SOL[0].arc->dALMAX));
+    CHECK_SCANF (fp,"%lf %lf",&(SOL[0].arc->dAL0),&(SOL[0].arc->dALMAX));
   }
 
   if(SOL[0].FNR == 4)
   {
     int physicsno = 0;
-    fscanf(fp, "%d %d", &physicsno, &(SOL[0].max_NR_staggering));
+    CHECK_SCANF(fp, "%d %d", &physicsno, &(SOL[0].max_NR_staggering));
 
     if(physicsno != mp->physicsno)
     {
@@ -600,9 +599,9 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
         FV[mp_id].npres              = FV[0].npres;
       }
 
-      fscanf (fp,"%d %d",&(SOL[mp_id].max_subdivision), &(SOL[mp_id].set_initial_residual));
+      CHECK_SCANF (fp,"%d %d",&(SOL[mp_id].max_subdivision), &(SOL[mp_id].set_initial_residual));
       if(SOL[mp_id].set_initial_residual)
-        fscanf (fp,"%lf",&(SOL[mp_id].du));
+        CHECK_SCANF (fp,"%lf",&(SOL[mp_id].du));
     }
   }
 
@@ -639,7 +638,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 
     is_load_exist = 1;
     long nlod_tim = 0;
-    fscanf(load->solver_file[ia],"%ld",&nlod_tim);
+    CHECK_SCANF(load->solver_file[ia],"%ld",&nlod_tim);
 
     // read times dependent load
     load->tim_load[ia] = NULL;
@@ -652,7 +651,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
   if(is_load_exist==0)
   {
     long nlod_tim = 0;
-    fscanf (fp,"%ld",&nlod_tim);
+    CHECK_SCANF (fp,"%ld",&nlod_tim);
     /* read times dependent load */
     load->tim_load[0] = compute_times_load(fp,ts->nt,nlod_tim);
     load->solver_file[0] = fp; // load increments are still need to be read
@@ -795,7 +794,9 @@ int read_initial_values_lagcy(GRID *grid,
       {
         sscanf(line, "%lf", rho+a);
         if(a<mat->nmat-1)
-          fgets(line, 1024, fp);
+          if (fgets(line, 1024, fp) == nullptr) {
+            abort();
+          }
       }
       break;
     }
@@ -910,8 +911,11 @@ int read_initial_for_Mechanical(FILE *fp,
     for(int a=0; a<mat->nmat; a++)
     {
       sscanf(line, "%lf", rho+a);
-      if(a<mat->nmat-1)
-        fgets(line, 1024, fp);
+      if(a<mat->nmat-1) {
+        if (fgets(line, 1024, fp) == nullptr) {
+          abort();
+        }
+      }
     }
     break;
   }
@@ -1204,7 +1208,7 @@ int read_and_apply_load_increments(GRID *grid,
     {
       for(long ia=0;ia<load->sups[mp_id]->npd;ia++)
       {
-        fscanf(load->solver_file[mp_id],"%lf",(load->sups[mp_id])->defl_d + ia);
+        CHECK_SCANF(load->solver_file[mp_id],"%lf",(load->sups[mp_id])->defl_d + ia);
         (load->sup_defl[mp_id])[ia] = load->sups[mp_id]->defl_d[ia];
       }
       if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
@@ -1264,7 +1268,7 @@ int read_cohesive_elements(GRID *grid,
   double **comat = NULL;
 
   /* temporary leftovers from old file format */
-  fscanf(fp,"%ld\n",&ncom);
+  CHECK_SCANF(fp,"%ld\n",&ncom);
 
   /* to silence warning message. need to pull this legacy bit of
    * code out completely. Cohesive porperties provided in separate

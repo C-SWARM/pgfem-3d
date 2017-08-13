@@ -3,39 +3,15 @@
    model features. Currently, only surface tractions are supported */
 
 #include "applied_traction.h"
-#include <string.h>
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INDEX_MACROS_H
-#include "index_macros.h"
-#endif
-
-#ifndef UTILS_H
-#include "utils.h"
-#endif
-
-#ifndef INTEGRATE_SURFACE_H
-#include "integrate_surface.h"
-#endif
-
-#ifndef ELEM3D_H
-#include "elem3d.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
-#include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
-#include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
 #include "cohesive_element_utils.h"
-#endif
+#include "elem3d.h"
+#include "get_ndof_on_elem.h"
+#include "get_dof_ids_on_elem.h"
+#include "index_macros.h"
+#include "integrate_surface.h"
+#include "utils.h"
+#include <string.h>
 
 int read_applied_surface_tractions_fname(char *fname,
     int *n_feats,
@@ -75,7 +51,7 @@ int read_applied_surface_tractions(FILE *in,
   (*loads) = NULL;
 
   /* read number of features and allocate */
-  fscanf(in,"%d",n_feats);
+  CHECK_SCANF(in,"%d",n_feats);
   if(*n_feats > 0){
     (*feat_type) = PGFEM_calloc(int, *n_feats);
     (*feat_id) = PGFEM_calloc(int, *n_feats);
@@ -86,7 +62,7 @@ int read_applied_surface_tractions(FILE *in,
     double *ld = &(*loads)[0];
     for(int i=0; i<*n_feats; i++){
       int idx = idx_2_gen(i,0,*n_feats,3);
-      fscanf(in,"%d %d %lf %lf %lf",
+      CHECK_SCANF(in,"%d %d %lf %lf %lf",
           ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
     }
   }

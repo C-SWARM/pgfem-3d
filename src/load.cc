@@ -1,30 +1,28 @@
 /* HEADER */
-
-
-#include "PGFem3D_data_structure.h"
 #include "load.h"
+#include "allocation.h"
+#include "constitutive_model.h"
+#include "displacement_based_element.h"
+#include "dynamics.h"
+#include "elem3d.h"
+#include "energy_equation.h"
 #include "enumerations.h"
-#include "incl.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
-#include "elem3d.h"
-#include "allocation.h"
+#include "incl.h"
 #include "matice.h"
-#include "stabilized.h"
-#include "stiffmatel_fd.h"
-#include "utils.h"
-#include "MINI_element.h"
 #include "MINI_3f_element.h"
-#include "displacement_based_element.h"
-#include "three_field_element.h"
+#include "MINI_element.h"
+#include "PGFem3D_data_structure.h"
+#include "stabilized.h"
 #include "stiffmat_fd.h"
-#include "dynamics.h"
-#include "constitutive_model.h"
-#include "energy_equation.h"
+#include "stiffmatel_fd.h"
+#include "three_field_element.h"
+#include "utils.h"
 
 long* compute_times_load (FILE *in1,
-              const long nt,
-              const long nlod_tim)
+                          const long nt,
+                          const long nlod_tim)
 {
   long i,j,*tim_load;
   long *help;
@@ -42,13 +40,13 @@ long* compute_times_load (FILE *in1,
   }
 
   for (i=0;i<nlod_tim;i++)
-    fscanf (in1,"%ld",&help[i]);
+    CHECK_SCANF(in1,"%ld",&help[i]);
 
   for (i=0;i<nlod_tim;i++){
     for (j=0;j<nt;j++){
       if (j == help[i]){
-    tim_load[j] = 1;
-    continue;
+        tim_load[j] = 1;
+        continue;
       }
     }
   }
@@ -59,11 +57,11 @@ long* compute_times_load (FILE *in1,
 }
 
 void load_vec_node (double *f,
-            const long nln,
-            const long ndofn,
-            const ZATNODE *znode,
-            const NODE *node,
-            const int mp_id)
+                    const long nln,
+                    const long ndofn,
+                    const ZATNODE *znode,
+                    const NODE *node,
+                    const int mp_id)
 {
   long i,j,ii;
 
@@ -121,15 +119,15 @@ int momentum_equation_load4pBCs(GRID *grid,
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
-    case DISP: // intented to flow
-    case TF:
+   case DISP: // intented to flow
+   case TF:
+    total_Lagrangian = 1;
+    break;
+   case CM:
+    if(opts->cm != UPDATED_LAGRANGIAN)
       total_Lagrangian = 1;
-      break;
-    case CM:
-      if(opts->cm != UPDATED_LAGRANGIAN)
-        total_Lagrangian = 1;
 
-      break;
+    break;
   }
 
   if(sup->multi_scale)
@@ -236,29 +234,29 @@ int momentum_equation_load4pBCs(GRID *grid,
     double *z = aloc1(nne_ve);
 
     switch(opts->analysis_type){
-      case DISP: case TF:
-        nodecoord_total (nne_ve,ve_nod,node,x,y,z);
-        break;
-      case CM:
-      {
-        switch(opts->cm)
-        {
+     case DISP: case TF:
+      nodecoord_total (nne_ve,ve_nod,node,x,y,z);
+      break;
+     case CM:
+       {
+         switch(opts->cm)
+         {
           case UPDATED_LAGRANGIAN:
-            nodecoord_updated(nne_ve,ve_nod,node,x,y,z);
-            break;
+           nodecoord_updated(nne_ve,ve_nod,node,x,y,z);
+           break;
           case TOTAL_LAGRANGIAN:
-            nodecoord_total(nne_ve,ve_nod,node,x,y,z);
-            break;
+           nodecoord_total(nne_ve,ve_nod,node,x,y,z);
+           break;
           case MIXED_ANALYSIS_MODE:
           default:
-            nodecoord_total(nne_ve,ve_nod,node,x,y,z);
-            break;
-        }
-        break;
-      }
-      default:
-        nodecoord_updated (nne_ve,ve_nod,node,x,y,z);
-        break;
+           nodecoord_total(nne_ve,ve_nod,node,x,y,z);
+           break;
+         }
+         break;
+       }
+     default:
+      nodecoord_updated (nne_ve,ve_nod,node,x,y,z);
+      break;
     }
 
     /* allocate space for stiffness and localization. */
@@ -276,7 +274,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     /* compute element stiffness */
     if(opts->analysis_type == DISP){
       err += DISP_stiffmat_bnd_el(lk,be_id,fv->ndofn,ndof_ve,x,y,z,grid->b_elems,
-              elem,mat->hommat,node,fv->eps,fv->sig,sup,ve_disp);
+                                  elem,mat->hommat,node,fv->eps,fv->sig,sup,ve_disp);
     } else {
       /* not implemented, do nothing */
     }
@@ -363,32 +361,32 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
   int err = 0;
   switch(mp->physics_ids[mp_id])
   {
-    case MULTIPHYSICS_MECHANICAL:
-      err += momentum_equation_load4pBCs(grid,
-                                        mat,
-                                        fv,
-                                        sol,
-                                        load,
-                                        dt,
-                                        crpl,
-                                        opts,
-                                        mp,
-                                        mp_id,
-                                        myrank);
-      break;
-    case MULTIPHYSICS_THERMAL:
-      err += energy_equation_compute_load4pBCs(grid,
-                                               mat,
-                                               fv,
-                                               sol,
-                                               load,
-                                               myrank,
-                                               opts,
-                                               mp_id,
-                                               dt);
-      break;
-    default:
-      printf("%s is not supported\n", mp->physicsname[mp_id]);
+   case MULTIPHYSICS_MECHANICAL:
+    err += momentum_equation_load4pBCs(grid,
+                                       mat,
+                                       fv,
+                                       sol,
+                                       load,
+                                       dt,
+                                       crpl,
+                                       opts,
+                                       mp,
+                                       mp_id,
+                                       myrank);
+    break;
+   case MULTIPHYSICS_THERMAL:
+    err += energy_equation_compute_load4pBCs(grid,
+                                             mat,
+                                             fv,
+                                             sol,
+                                             load,
+                                             myrank,
+                                             opts,
+                                             mp_id,
+                                             dt);
+    break;
+   default:
+    printf("%s is not supported\n", mp->physicsname[mp_id]);
 
   }
   return err;
@@ -520,9 +518,9 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
 
 
 void load_vec_elem_sur (double *f,
-            const long nle_s,
-            const long ndofn,
-            const ELEMENT *elem,
-            const ZATELEM *zele_s)
+                        const long nle_s,
+                        const long ndofn,
+                        const ELEMENT *elem,
+                        const ZATELEM *zele_s)
 {
 }

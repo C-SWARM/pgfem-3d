@@ -1,25 +1,22 @@
 /* HEADER */
 #include "microscale_information.h"
-
 #include "allocation.h"
+#include "comm_hints.h"
+#include "elem3d.h"
 #include "enumerations.h"
 #include "gen_path.h"
+#include "generate_dof_ids.h"
+#include "homogen.h"
+#include "in.h"
+#include "initialize_damage.h"
+#include "interface_macro.h"
 #include "mesh_load.h"
 #include "material.h"
-#include "read_input_file.h"
-#include "interface_macro.h"
-#include "utils.h"
-#include "homogen.h"
-#include "set_fini_def.h"
-#include "generate_dof_ids.h"
-#include "Psparse_ApAi.h"
-#include "initialize_damage.h"
-#include "in.h"
 #include "PGFEM_par_matvec.h"
-#include "elem3d.h"
-#include "comm_hints.h"
-
-
+#include "Psparse_ApAi.h"
+#include "read_input_file.h"
+#include "set_fini_def.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <search.h>
 #include <assert.h>
@@ -603,7 +600,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
     /* temporary leftovers from old file format */
     long ncom = 0;
-    fscanf (in1,"%ld\n",&ncom);
+    CHECK_SCANF (in1,"%ld\n",&ncom);
     double **comat = aloc2 (ncom,4);
 
     /* read the cohesive element info */
