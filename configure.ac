@@ -4,6 +4,7 @@
 AC_PREREQ([2.63])
 AC_INIT([PGFem3D], [X.X], [bugs@cswarm.nd.edu])
 AM_INIT_AUTOMAKE([-Wall foreign])
+AM_PROG_AR
 
 AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
@@ -66,15 +67,16 @@ AS_IF([test "x$special_link" = xyes],
 # Checks for libraries.
 # HYPRE
 AC_ARG_WITH(hypre-dir, [AS_HELP_STRING([--with-hypre-dir=<path>],
-			      [Provide location of root directory for standard HYPRE installation.])
-			      ],
+			      [Provide location of root directory for standard HYPREinstallation.])
+                  ],
 			      [AC_MSG_CHECKING([location of HYPRE])
 			      AC_MSG_RESULT(["$with_hypre_dir"])],
-			      [AC_MSG_CHECKING([location of HYPRE])
-			      AC_MSG_FAILURE([HYPRE: must provide package location!])
-			      ])
-AC_SUBST([hypre_include],["-I$with_hypre_dir/include"])
-AC_SUBST([hypre_lib],["-L$with_hypre_dir/lib -lHYPRE"])
+                  [with_hypre_dir=no])
+
+AS_IF([test "x$with_hypre_dir" != xno],
+      [AC_SUBST([hypre_include],["-I$with_hypre_dir/include"])
+       AC_SUBST([hypre_lib],["-L$with_hypre_dir/lib -lHYPRE"])],
+      [AC_SUBST([hypre_lib],["-lHYPRE"])])
 
 # Constitutive_model
 AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
@@ -85,10 +87,7 @@ AC_ARG_WITH(cnstvm-dir, [AS_HELP_STRING([--with-cnstvm-dir=<path>],
                               [AC_MSG_CHECKING([location of Constitutive Model])
                               AC_MSG_FAILURE([Constitutive Model: must provide package location!])
                               ])
-AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include \
-														-I$with_cnstvm_dir/material/include \
-														-I$with_cnstvm_dir/elasticity/include \
-														-I$with_cnstvm_dir/crystal_plasticity/include"])
+AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include -I$with_cnstvm_dir/material/include -I$with_cnstvm_dir/elasticity/include -I$with_cnstvm_dir/crystal_plasticity/include"]) 
 AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
 
 # MKL
@@ -134,15 +133,13 @@ AC_ARG_WITH(suitesparse-dir, [AS_HELP_STRING([--with-suitesparse-dir=<path>],
 			      [Specify path to the root directory of a standard suitesparse installation.])
 			      ],
 			      [AC_MSG_CHECKING([location of SuiteSparse])
-			      AC_MSG_RESULT(["$with_suitesparse_dir"])],
-			      [AC_MSG_CHECKING([location of SuiteSparse])
-			      AC_MSG_FAILURE([Must specify location of SuiteSparse])
-			      ])
-AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/UMFPACK/Include \
--I$with_suitesparse_dir/AMD/Include \
--I$with_suitesparse_dir/UFconfig"])
-AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/UMFPACK/Lib -lumfpack \
--L$with_suitesparse_dir/AMD/Lib -lamd"])
+			       AC_MSG_RESULT(["$with_suitesparse_dir"])],
+			      [with_suitesparse_dir=no])
+                  
+AS_IF([test "x$with_suitesparse_dir" != xno],
+      [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/UMFPACK/Include -I$with_suitesparse_dir/AMD/Include -I$with_suitesparse_dir/UFconfig"])
+       AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/UMFPACK/Lib -L$with_suitesparse_dir/AMD/Lib -lumfpack -lamd"])],
+      [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])
 
 # vtk
 AC_ARG_ENABLE(vtk, [AS_HELP_STRING([--enable-vtk],
