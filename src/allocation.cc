@@ -4,11 +4,11 @@
    descriptive debugging messages. Note that long is used in lew of
    size_t so that signs may be checked for error reporting */
 #include "allocation.h"
+#include "PGFEM_io.h"
 #include "PGFEM_mpi.h"
+#include "utils.h"
 #include <string.h>
 #include <unistd.h>
-
-#include "PGFEM_io.h"
 
 #ifdef NDEBUG
 #define DEBUG_PGFEM_ALLOC 0
@@ -57,7 +57,7 @@ static void log_mem_state_kb()
     int size = 0;
     int resident = 0;
     int shared = 0;
-    fscanf(mem_state,"%d %d %d",&size,&resident,&shared);
+    CHECK_SCANF(mem_state,"%d %d %d",&size,&resident,&shared);
     fclose(mem_state);
     PGFEM_fprintf(log,"%d %d\n",4*resident,4*size);
     PGFEM_fclose(log);
