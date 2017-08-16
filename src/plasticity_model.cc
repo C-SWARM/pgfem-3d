@@ -752,7 +752,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   enum {Fnpa,Fn,Fnp1,eFn,eFnpa,pFnpa,pFnpa_I,pFnp1,pFn,Mnpa,hFnpaI,Fend};
 
   // second-order tensors
-  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(Fend);
+  Matrix<double> *F2 = PGFEM_calloc(Matrix<double>, Fend);
   for (int a = 0; a < Fend; a++) {
     Matrix_construct_redim(double, F2[a],DIM_3,DIM_3);
   }
@@ -1404,7 +1404,7 @@ static int plasticity_int_alg(Constitutive_model *m,
   solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
 
   enum {M,eFnp1,C,pFnp1_I,F2end};
-  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(F2end);
+  Matrix<double> *F2 = PGFEM_calloc(Matrix<double>, F2end);
   for (int a = 0; a < F2end; a++) {
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3 ,0.0);
   }
@@ -1900,7 +1900,7 @@ void test_crystal_plasticity_single_crystal(void)
 
   // set variables for integration
   enum {M,MI,pFn,pFnp1,Fn,Fnp1,eFnp1,eFPK2,pFnp1_I,sigma,PK2dev,sigma_dev,F2end};
-  Matrix<double> *F2 = PGFEM_malloc<Matrix<double>>(F2end);
+  Matrix<double> *F2 = PGFEM_calloc(Matrix<double>, F2end);
   for (int a = 0; a < F2end; a++) {
     Matrix_construct_init(double, F2[a],DIM_3,DIM_3,0.0);
     Matrix_eye(F2[a],DIM_3);
