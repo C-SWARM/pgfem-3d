@@ -20,14 +20,20 @@
 template <class T>
 class Matrix {
  public:
-  static constexpr size_t sizeof_T = sizeof(T);
+  // static constexpr size_t sizeof_T = sizeof(T);
   size_t m_row = 0;
   size_t m_col = 0;
   T *m_pdata = nullptr;
 
+  Matrix& operator=(const Matrix& rhs) {
+    assert(m_row == rhs.m_row and m_col == rhs.m_col);
+    std::copy_n(rhs.m_pdata, m_row * m_col, m_pdata);
+    return *this;
+  }
+
   template <class U>
   Matrix<T>& operator=(const Matrix<U>& rhs) {
-    assert( (m_row == rhs.m_row) && (m_col == rhs.m_col) );
+    assert(m_row == rhs.m_row and m_col == rhs.m_col);
     std::copy_n(rhs.m_pdata, m_row * m_col, m_pdata);
     return *this;
   }
@@ -40,7 +46,9 @@ class Matrix {
   }
 
   void construct(size_t m, size_t n) {
-    assert(!m_pdata);
+    if (m_pdata) {
+      delete [] m_pdata;
+    }
     m_row = m;
     m_col = n;
     m_pdata = new T[m * n];
@@ -54,11 +62,13 @@ class Matrix {
 
   template <class U>
   void init(const U* array) {
+    assert(m_pdata);
     std::copy_n(array, m_row * m_col, m_pdata);
   }
 
   template <class U>
   void init(U&& val) {
+    assert(m_pdata);
     std::fill_n(m_pdata, m_row * m_col, val);
   }
 
@@ -67,20 +77,23 @@ class Matrix {
   }
 
   void cleanup() {
+    if (m_pdata) {
+      delete [] m_pdata;
+    }
     m_row = 0;
     m_col = 0;
-    delete [] m_pdata;
     m_pdata = nullptr;
   }
 
   void redim(size_t m, size_t n) {
     cleanup();
-    construct(m,n);
+    construct(m, n);
   }
 
   void check_null_and_redim(size_t m, size_t n) {
-    if (m_pdata==NULL || m_row != m || m_col != n)
+    if ((m_pdata == nullptr) || (m_row != m) || (m_col != n)) {
       redim(m, n);
+    }
   }
 
   void trans() {

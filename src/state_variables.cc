@@ -52,7 +52,7 @@ int state_variables_initialize(State_variables *s,
 {
   int err = 0;
   s->n_Fs = n_Fs;
-  s->Fs = PGFEM_malloc<Matrix<double>>(n_Fs);
+  s->Fs = PGFEM_calloc(Matrix<double>, n_Fs);
   for(size_t i = 0; i < n_Fs; i++)
   {
     Matrix_construct(double,s->Fs[i]);
@@ -60,7 +60,7 @@ int state_variables_initialize(State_variables *s,
   }
 
   /* state variables is column vector */
-  s->state_vars = PGFEM_malloc<Vector<double>>();
+  s->state_vars = PGFEM_calloc(Vector<double>, 1);
 
   Matrix_construct_init(double, s->state_vars[0], n_vars, 1, 0);
 

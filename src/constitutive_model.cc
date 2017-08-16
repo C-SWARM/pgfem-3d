@@ -214,7 +214,7 @@ int construct_matrix_array(Matrix<double> **F_out,
 {
   int err = 0;
 
-  auto *F = PGFEM_malloc<Matrix<double>>(num);
+  auto *F = PGFEM_calloc(Matrix<double>, num);
 
   if(F==NULL)
   {

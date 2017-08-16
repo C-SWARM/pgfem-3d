@@ -1704,7 +1704,7 @@ int plasticity_model_set_orientations(EPS *eps,
   MPI_Comm_rank (mpi_comm,&myrank);
 
   // build element ip ids that will be used to assign element orientation
-  IP_ID_LIST *elm_ip_map = PGFEM_malloc<IP_ID_LIST>(ne);
+  IP_ID_LIST *elm_ip_map = PGFEM_calloc(IP_ID_LIST, ne);
   int cnt_of_ips = plasticity_model_construct_elem_ip_map(elm_ip_map, eps, elem, ne);
 
   Matrix<int> e_ids;
