@@ -9,508 +9,692 @@
 #include "index_macros.h"
 #include "mkl_cblas.h"
 #include "utils.h"
+#include <algorithm>
+#include <numeric>
 
-/**
- * Define a Matrix structure of type T.
- */
-#define Define_Matrix(T)                                                \
-typedef struct Matrix_##T                                               \
-{                                                                       \
-  long m_row, m_col;                                                    \
-  long sizeof_T;                                                        \
-  T *m_pdata;                                                           \
-  T *temp;                                                              \
-} Matrix_##T                                                            \
+// Tolerate the legacy macros that are too much trouble to replace.
+#define Matrix_construct(T, p) (p).construct()
+#define Matrix_construct_redim(T, p, m, n) (p).construct(m, n)
+#define Matrix_construct_init(T, p, m, n, value) (p).construct(m, n, value)
 
-/**
- * Template-class-like declaration of a Matrix structure of type T.
- */
-#define Matrix(T) Matrix_##T
+template <class T>
+class Matrix {
+ public:
+  // static constexpr size_t sizeof_T = sizeof(T);
+  size_t m_row = 0;
+  size_t m_col = 0;
+  T *m_pdata = nullptr;
+
+  Matrix& operator=(const Matrix& rhs) {
+    assert(m_row == rhs.m_row and m_col == rhs.m_col);
+    std::copy_n(rhs.m_pdata, m_row * m_col, m_pdata);
+    return *this;
+  }
+
+  template <class U>
+  Matrix<T>& operator=(const Matrix<U>& rhs) {
+    assert(m_row == rhs.m_row and m_col == rhs.m_col);
+    std::copy_n(rhs.m_pdata, m_row * m_col, m_pdata);
+    return *this;
+  }
+
+  void construct() {
+    assert(!m_pdata);
+    m_row = 0;
+    m_col = 0;
+    m_pdata = nullptr;
+  }
+
+  void construct(size_t m, size_t n) {
+    if (m_pdata) {
+      delete [] m_pdata;
+    }
+    m_row = m;
+    m_col = n;
+    m_pdata = new T[m * n];
+  }
+
+  template <class U>
+  void construct(size_t m, size_t n, U&& val) {
+    construct(m, n);
+    std::fill_n(m_pdata, m * n, std::forward<U>(val));
+  }
+
+  template <class U>
+  void init(const U* array) {
+    assert(m_pdata);
+    std::copy_n(array, m_row * m_col, m_pdata);
+  }
+
+  template <class U>
+  void init(U&& val) {
+    assert(m_pdata);
+    std::fill_n(m_pdata, m_row * m_col, val);
+  }
+
+  void init() {
+    init(T{});
+  }
+
+  void cleanup() {
+    if (m_pdata) {
+      delete [] m_pdata;
+    }
+    m_row = 0;
+    m_col = 0;
+    m_pdata = nullptr;
+  }
+
+  void redim(size_t m, size_t n) {
+    cleanup();
+    construct(m, n);
+  }
+
+  void check_null_and_redim(size_t m, size_t n) {
+    if ((m_pdata == nullptr) || (m_row != m) || (m_col != n)) {
+      redim(m, n);
+    }
+  }
+
+  void trans() {
+    T* temp = new T[m_col * m_row];
+    for (unsigned i = 0; i < m_row; ++i) {
+      for (unsigned j = 0; j < m_col; ++j) {
+        // temp[j][i] = m_pdata[i][j];
+        temp[j*m_row + i] = m_pdata[i*m_col +j];
+      }
+    }
+    std::swap(m_col, m_row);
+    std::swap(m_pdata, temp);
+    delete [] temp;
+  }
+
+  T& Vec_v(size_t m) {
+    return m_pdata[m-1];
+  }
+
+  const T& Vec_v(size_t m) const {
+    return m_pdata[m-1];
+  }
+
+  T& Mat_v(size_t m, size_t n) {
+    return m_pdata[idx_2_gen(m - 1, n - 1, m_row, m_col)];
+  }
+
+  const T& Mat_v(size_t m, size_t n) const {
+    return m_pdata[idx_2_gen(m - 1, n - 1, m_row, m_col)];
+  }
+
+  T& Tns4_v(size_t I, size_t J, size_t K, size_t L) {
+    return m_pdata[idx_4((I) - 1, (J) - 1, (K) - 1, (L) - 1)];
+  }
+
+  const T& Tns4_v(size_t I, size_t J, size_t K, size_t L) const {
+    return m_pdata[idx_4((I) - 1, (J) - 1, (K) - 1, (L) - 1)];
+  }
+
+  void Tns4_mat_9x9() {
+    m_row = m_col = 9;
+  }
+
+  void Mat2Vec() {
+    m_row = m_row * m_col;
+    m_col = 1;
+  }
+
+  void Vec2Mat(size_t m, size_t n) {
+    m_row = m;
+    m_col = n;
+  }
+
+  void Tns4_eye() {
+    assert(m_row == 9);
+    assert(m_col == 9);
+    init();
+    for(int I=1; I<=3; I++)
+      for(int J=1; J<=3; J++)
+        for(int K=1; K<=3; K++)
+          for(int L=1; L<=3; L++)
+            Tns4_v(I,J,K,L) = 1.0*(I==K)*(J==L);
+  }
+
+  void Tns4_II() {
+    assert(m_row == 9);
+    assert(m_col == 9);
+    init();
+    for(int I=1; I<=3; I++)
+      for(int J=1; J<=3; J++)
+        for(int K=1; K<=3; K++)
+          for(int L=1; L<=3; L++)
+            Tns4_v(I,J,K,L) = 0.5*((I==K)*(J==L)+(I==L)*(J==K));
+  }
+
+  void Tns4_eye_bar() {
+    assert(m_row == 9);
+    assert(m_col == 9);
+    init();
+    for(int I=1; I<=3; I++)
+      for(int J=1; J<=3; J++)
+        for(int K=1; K<=3; K++)
+          for(int L=1; L<=3; L++)
+            Tns4_v(I,J,K,L) = 1.0*(I==L)*(J==K);
+  }
+
+  void eye() {
+    assert(m_row == m_col);
+    init();
+    for (unsigned i = 1; i <= m_row; ++i) {
+      Mat_v(i,i) = T{1};
+    }
+  }
+
+  T trace() const {
+    T out{};
+    if(m_row != m_col || m_row ==0 || m_col ==0) {
+      return out;
+    }
+    for (unsigned i = 1; i <= m_row; ++i) {
+      out += Mat_v(i,i);
+    }
+    return out;
+  }
+
+  T det() const {
+    if (m_row != m_col || m_row ==0 || m_col ==0)
+      return T{0};
+
+    if(m_row==1){
+      return Mat_v(1, 1);
+    }
+
+    if(m_row==2){
+      return Mat_v(1, 1) * Mat_v(2, 2) -
+             Mat_v(1, 2) * Mat_v(2, 1);
+    }
+
+    if(m_row==3){
+      return Mat_v(1, 1) * Mat_v(2, 2) * Mat_v(3, 3) +
+             Mat_v(1, 2) * Mat_v(2, 3) * Mat_v(3, 1) +
+             Mat_v(1, 3) * Mat_v(3, 2) * Mat_v(2, 1) -
+             Mat_v(1, 3) * Mat_v(2, 2) * Mat_v(3, 1) -
+             Mat_v(1, 2) * Mat_v(2, 1) * Mat_v(3, 3) -
+             Mat_v(1, 1) * Mat_v(3, 2) * Mat_v(2, 3);
+    }
+
+    printf("Matrix greater than [3x3] is not currently supported\n");
+    return T{0};
+  }
+
+  int inverse(Matrix<T>& out) const {
+    return ::inverse(m_pdata, m_row, out.m_pdata);
+  }
+
+  void inverse_no_use(Matrix<T>& out) const {
+    if(m_row != m_col || m_row ==0 || m_col ==0)
+      return;
+
+    out.check_null_and_redim(m_row, m_col);
+    if(m_row==1){
+      out.Mat_v(1, 1) = 1.0/Mat_v(1, 1);
+      return;
+    }
+
+    auto detA = det();
+    if(fabs(detA)<1.0e-15){
+      printf("det(Matrix) = %f is close to zero\n", fabs(detA));
+      return;
+    }
+
+    auto invD = 1/detA;
+
+    if(m_row==2){
+      out.Mat_v(1, 1) =  Mat_v(2, 2) * invD;
+      out.Mat_v(2, 2) =  Mat_v(1, 1) * invD;
+      out.Mat_v(1, 2) = -Mat_v(1, 2) * invD;
+      out.Mat_v(2, 1) = -Mat_v(2, 1) * invD;
+      return;
+    }
+
+    if(m_row==3){
+      out.Mat_v(1, 1) = (Mat_v(2, 2)*Mat_v(3, 3) - Mat_v(2, 3)*Mat_v(3, 2))*invD;
+      out.Mat_v(1, 2) = (Mat_v(1, 3)*Mat_v(3, 2) - Mat_v(1, 2)*Mat_v(3, 3))*invD;
+      out.Mat_v(1, 3) = (Mat_v(1, 2)*Mat_v(2, 3) - Mat_v(1, 3)*Mat_v(2, 2))*invD;
+      out.Mat_v(2, 1) = (Mat_v(2, 3)*Mat_v(3, 1) - Mat_v(2, 1)*Mat_v(3, 3))*invD;
+      out.Mat_v(2, 2) = (Mat_v(1, 1)*Mat_v(3, 3) - Mat_v(1, 3)*Mat_v(3, 1))*invD;
+      out.Mat_v(2, 3) = (Mat_v(1, 3)*Mat_v(2, 1) - Mat_v(1, 1)*Mat_v(2, 3))*invD;
+      out.Mat_v(3, 1) = (Mat_v(2, 1)*Mat_v(3, 2) - Mat_v(2, 2)*Mat_v(3, 1))*invD;
+      out.Mat_v(3, 2) = (Mat_v(1, 2)*Mat_v(3, 1) - Mat_v(1, 1)*Mat_v(3, 2))*invD;
+      out.Mat_v(3, 3) = (Mat_v(1, 1)*Mat_v(2, 2) - Mat_v(1, 2)*Mat_v(2, 1))*invD;
+      return;
+    }
+
+    printf("Matrix greater than [3x3] is not currently supported\n");
+    return;
+  }
+
+  void print() const {
+    printf("[%ldx%ld] = \n", m_row, m_col);
+    for(unsigned i = 1; i <= m_row; ++i){
+      for(unsigned j = 1; j <= m_col; ++j){
+        printf("%e ", Mat_v(i, j));
+      }
+      printf("\n");
+    }
+  }
+
+  void print_name(const char name[]) const {
+    printf("%s = [\n", name);
+    for(unsigned a__A = 1; a__A <= m_row; a__A++){
+      for(unsigned b__B = 1; b__B <= m_col; b__B++){
+        printf("%e ", Mat_v(a__A, b__B));
+      }
+      if(a__A==m_row)
+        printf("];\n");
+      else
+        printf("\n");
+    }
+  }
+
+  /* A = bB */
+  template <class U, class V>
+  void eqB(U&& b, const Matrix<V>& rhs) {
+    check_null_and_redim(rhs.m_row, rhs.m_col);
+    for (unsigned i = 0, e = m_row * m_col; i < e; ++i) {
+      m_pdata[i] = b * rhs.m_pdata[i];
+    }
+  }
+
+  /* A = bBT */
+  template <class U, class V>
+  void eqBT(U&& b, const Matrix<V>& rhs) {
+    check_null_and_redim(rhs.m_row, rhs.m_col);
+    for(unsigned MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++)
+      for(unsigned MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++)
+        Mat_v(MaTtEmPVar_b, MaTtEmPVar_a) = rhs.Mat_v(MaTtEmPVar_a, MaTtEmPVar_b)*b;
+  }
+
+  /* C = aA + bB */
+  template <class N, class M, class O, class P>
+  void eqAPlusB(N&& a, const Matrix<M>& A, O&& b, const Matrix<P>& B) {
+    if(A.m_row != B.m_row || A.m_col != B.m_col)
+      return;
+    check_null_and_redim(A.m_row, A.m_col);
+    for(unsigned i = 0, e = m_row * m_col; i < e; ++i)
+      m_pdata[i] = A.m_pdata[i]*a + B.m_pdata[i]*b;
+  }
+
+  template <class U, class V>
+  void eqAOxB(const Matrix<U>& A, const Matrix<V>& B) {
+    assert(m_col == 9);
+    assert(m_row == 9);
+    for(int I=1; I<=3; I++)
+      for(int J=1; J<=3; J++)
+        for(int K=1; K<=3; K++)
+          for(int L=1; L<=3; L++)
+            Tns4_v(I,J,K,L) = A.Mat_v(I,J)*B.Mat_v(K,L);
+  }
+
+  template <class U, class V>
+  void eqTns4_dd_Tns2(const Matrix<U>& A, const Matrix<V>& B) {
+    init(0.0);
+    for(int K=1; K<=3; K++)
+      for(int L=1; L<=3; L++)
+        if(fabs(B.Mat_v(K,L))>=1.0e-15)
+          for(int I=1; I<=3; I++)
+            for(int J=1; J<=3; J++)
+              Mat_v(I,J) += A.Tns4_v(I,J,K,L)*B.Mat_v(K,L);
+  }
+
+  template <class U, class V>
+  void eqTns2_dd_Tns4(const Matrix<U>& A, const Matrix<V>& B) {
+    init(0.0);
+    for(int I=1; I<=3; I++)
+      for(int J=1; J<=3; J++)
+        if(A.Mat_v(I,J)>=1.0e-15)
+          for(int K=1; K<=3; K++)
+            for(int L=1; L<=3; L++)
+              Mat_v(K,L) += A.Mat_v(I,J)*B.Tns4_v(I,J,K,L);
+  }
+
+  template <class U>
+  T ddot(const Matrix<U>& B) const {
+    return cblas_ddot(m_row * m_col, m_pdata, 1, B.m_pdata, 1);
+  }
+
+  template <class U>
+  T ddot_no_use(const Matrix<U>& B) const {
+    return std::inner_product(m_pdata, m_pdata + m_row * m_col, B.m_pdata, 0.0);
+  }
+
+  template <class U, class V, class W, class X>
+  void eqGEMM(U&& a, V&& b, const Matrix<W>& A, bool AT,
+                            const Matrix<X>& B, bool BT) {
+    if(AT==0 && BT==0){
+      check_null_and_redim(A.m_row, B.m_col);
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, A.m_row, B.m_col,
+          A.m_col, a, A.m_pdata, A.m_col, B.m_pdata, B.m_col, b, m_pdata, m_col);
+    }
+    if(AT==1 && BT==0){
+      check_null_and_redim(A.m_col, B.m_col);
+      cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, m_row, m_col,
+          B.m_row, a, A.m_pdata, A.m_col, B.m_pdata, B.m_col, b, m_pdata,
+          m_col);
+    }
+    if(AT==0 && BT==1){
+      check_null_and_redim(A.m_row, B.m_row);
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m_row, m_col,
+          A.m_col, a, A.m_pdata, A.m_col, B.m_pdata, B.m_col, b, m_pdata,
+          m_col);
+    }
+    if(AT==1 && BT==1){
+      check_null_and_redim(A.m_col, B.m_row);
+      cblas_dgemm(CblasRowMajor, CblasTrans, CblasTrans, m_row, m_col, A.m_row,
+          a, A.m_pdata, A.m_col, B.m_pdata, B.m_col, b, m_pdata, m_col);
+    }
+  }
+
+  // D = a*A*B*C + b*D, a and b are scalar
+  template <class U, class V, class W, class X, class Y>
+  void eqTns2_AxBxC(U&& a, V&& b, const Matrix<W>& A, const Matrix<X>& B,
+                             const Matrix<Y>& C)  {
+    check_null_and_redim(3,3);
+    Mat_v(1,1) = Mat_v(1,1)*b + a*(C.Mat_v(1,1)*(A.Mat_v(1,1)*B.Mat_v(1,1) + A.Mat_v(1,2)*B.Mat_v(2,1) + A.Mat_v(1,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,1)*(A.Mat_v(1,1)*B.Mat_v(1,2) + A.Mat_v(1,2)*B.Mat_v(2,2) + A.Mat_v(1,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,1)*(A.Mat_v(1,1)*B.Mat_v(1,3) + A.Mat_v(1,2)*B.Mat_v(2,3) + A.Mat_v(1,3)*B.Mat_v(3,3)));
+    Mat_v(1,2) = Mat_v(1,2)*b + a*(C.Mat_v(1,2)*(A.Mat_v(1,1)*B.Mat_v(1,1) + A.Mat_v(1,2)*B.Mat_v(2,1) + A.Mat_v(1,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,2)*(A.Mat_v(1,1)*B.Mat_v(1,2) + A.Mat_v(1,2)*B.Mat_v(2,2) + A.Mat_v(1,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,2)*(A.Mat_v(1,1)*B.Mat_v(1,3) + A.Mat_v(1,2)*B.Mat_v(2,3) + A.Mat_v(1,3)*B.Mat_v(3,3)));
+    Mat_v(1,3) = Mat_v(1,3)*b + a*(C.Mat_v(1,3)*(A.Mat_v(1,1)*B.Mat_v(1,1) + A.Mat_v(1,2)*B.Mat_v(2,1) + A.Mat_v(1,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,3)*(A.Mat_v(1,1)*B.Mat_v(1,2) + A.Mat_v(1,2)*B.Mat_v(2,2) + A.Mat_v(1,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,3)*(A.Mat_v(1,1)*B.Mat_v(1,3) + A.Mat_v(1,2)*B.Mat_v(2,3) + A.Mat_v(1,3)*B.Mat_v(3,3)));
+    Mat_v(2,1) = Mat_v(2,1)*b + a*(C.Mat_v(1,1)*(A.Mat_v(2,1)*B.Mat_v(1,1) + A.Mat_v(2,2)*B.Mat_v(2,1) + A.Mat_v(2,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,1)*(A.Mat_v(2,1)*B.Mat_v(1,2) + A.Mat_v(2,2)*B.Mat_v(2,2) + A.Mat_v(2,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,1)*(A.Mat_v(2,1)*B.Mat_v(1,3) + A.Mat_v(2,2)*B.Mat_v(2,3) + A.Mat_v(2,3)*B.Mat_v(3,3)));
+    Mat_v(2,2) = Mat_v(2,2)*b + a*(C.Mat_v(1,2)*(A.Mat_v(2,1)*B.Mat_v(1,1) + A.Mat_v(2,2)*B.Mat_v(2,1) + A.Mat_v(2,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,2)*(A.Mat_v(2,1)*B.Mat_v(1,2) + A.Mat_v(2,2)*B.Mat_v(2,2) + A.Mat_v(2,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,2)*(A.Mat_v(2,1)*B.Mat_v(1,3) + A.Mat_v(2,2)*B.Mat_v(2,3) + A.Mat_v(2,3)*B.Mat_v(3,3)));
+    Mat_v(2,3) = Mat_v(2,3)*b + a*(C.Mat_v(1,3)*(A.Mat_v(2,1)*B.Mat_v(1,1) + A.Mat_v(2,2)*B.Mat_v(2,1) + A.Mat_v(2,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,3)*(A.Mat_v(2,1)*B.Mat_v(1,2) + A.Mat_v(2,2)*B.Mat_v(2,2) + A.Mat_v(2,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,3)*(A.Mat_v(2,1)*B.Mat_v(1,3) + A.Mat_v(2,2)*B.Mat_v(2,3) + A.Mat_v(2,3)*B.Mat_v(3,3)));
+    Mat_v(3,1) = Mat_v(3,1)*b + a*(C.Mat_v(1,1)*(A.Mat_v(3,1)*B.Mat_v(1,1) + A.Mat_v(3,2)*B.Mat_v(2,1) + A.Mat_v(3,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,1)*(A.Mat_v(3,1)*B.Mat_v(1,2) + A.Mat_v(3,2)*B.Mat_v(2,2) + A.Mat_v(3,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,1)*(A.Mat_v(3,1)*B.Mat_v(1,3) + A.Mat_v(3,2)*B.Mat_v(2,3) + A.Mat_v(3,3)*B.Mat_v(3,3)));
+    Mat_v(3,2) = Mat_v(3,2)*b + a*(C.Mat_v(1,2)*(A.Mat_v(3,1)*B.Mat_v(1,1) + A.Mat_v(3,2)*B.Mat_v(2,1) + A.Mat_v(3,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,2)*(A.Mat_v(3,1)*B.Mat_v(1,2) + A.Mat_v(3,2)*B.Mat_v(2,2) + A.Mat_v(3,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,2)*(A.Mat_v(3,1)*B.Mat_v(1,3) + A.Mat_v(3,2)*B.Mat_v(2,3) + A.Mat_v(3,3)*B.Mat_v(3,3)));
+    Mat_v(3,3) = Mat_v(3,3)*b + a*(C.Mat_v(1,3)*(A.Mat_v(3,1)*B.Mat_v(1,1) + A.Mat_v(3,2)*B.Mat_v(2,1) + A.Mat_v(3,3)*B.Mat_v(3,1))
+                                   + C.Mat_v(2,3)*(A.Mat_v(3,1)*B.Mat_v(1,2) + A.Mat_v(3,2)*B.Mat_v(2,2) + A.Mat_v(3,3)*B.Mat_v(3,2))
+                                   + C.Mat_v(3,3)*(A.Mat_v(3,1)*B.Mat_v(1,3) + A.Mat_v(3,2)*B.Mat_v(2,3) + A.Mat_v(3,3)*B.Mat_v(3,3)));
+  }
+};
+
+template <class T>
+using Vector = Matrix<T>;
 
 /**
  * Indexing functions. !!NOTE!! Indexing starts from 1
  *
  * Provides direct read/write access to data.
  */
-#define Vec_v(p, m) (p).m_pdata[(m)-1]
-#define Mat_v(p, m, n) (p).m_pdata[idx_2_gen((m) - 1, (n) - 1, (p).m_row, (p).m_col)]
-#define Tns4_v(p, I,J,K,L) (p).m_pdata[idx_4((I) - 1, (J) - 1, (K) - 1, (L) - 1)]
+template <class T>
+static inline T&
+Vec_v(Matrix<T>& p, size_t m) {
+  return p.Vec_v(m);
+}
 
-/**
- * Set the row/col size of a 4th-order tensor. Does not allocate any
- * memory.
- */
-#define Matrix_Tns4_mat_9x9(p) do{                                      \
-  (p).m_row = 9;                                                        \
-  (p).m_col = 9;                                                        \
-} while(0)
+template <class T>
+static inline const T&
+Vec_v(const Matrix<T>& p, size_t m) {
+  return p.Vec_v(m);
+}
 
-/**
- * Convert a Matrix to a (row) Vector
- */
-#define Matrix_Mat2Vec(p) do{                                           \
-  (p).m_row = (p).m_row*(p).m_col;                                      \
-  (p).m_col = 1;                                                        \
-} while(0)
+template <class T>
+static inline T&
+Mat_v(Matrix<T>& p, size_t m, size_t n) {
+  return p.Mat_v(m, n);
+}
+
+template <class T>
+static inline const T&
+Mat_v(const Matrix<T>& p, size_t m, size_t n) {
+  return p.Mat_v(m, n);
+}
+
+template <class T>
+static inline const T&
+Tns4_v(const Matrix<T>& p, size_t I, size_t J, size_t K, size_t L) {
+  return p.Tns4_v(I, J, K, L);
+}
+
+template <class T>
+static inline T&
+Tns4_v(Matrix<T>& p, size_t I, size_t J, size_t K, size_t L) {
+  return p.Tns4_v(I, J, K, L);
+}
+
+template <class T>
+static inline void
+Matrix_Tns4_mat_9x9(Matrix<T>& p) {
+  p.Tns4_mat_9x9();
+}
+
+template <class T>
+static inline void
+Matrix_Mat2Vec(Matrix<T>& p) {
+  p.Mat2Vec();
+}
 
 /**
  * Convert a (row) Vector to a [m x n] Matrix
  */
-#define Matrix_Vec2Mat(p, m, n) do{                                     \
-  (p).m_row = (m);                                                      \
-  (p).m_col = (n);                                                      \
-} while(0)
+template <class T>
+static inline void
+Matrix_Vec2Mat(Matrix<T>& p, size_t m, size_t n) {
+  p.Mat2Vec();
+}
 
 /**
  * Compute the 4th order identity tensor
  */
-#define Matrix_Tns4_eye(p) do{                                          \
-  Matrix_init(p,0.0);                                                   \
-  for(int I=1; I<=3; I++)                                               \
-  {                                                                     \
-    for(int J=1; J<=3; J++)                                             \
-    {                                                                   \
-      for(int K=1; K<=3; K++)                                           \
-      {                                                                 \
-        for(int L=1; L<=3; L++)                                         \
-          Tns4_v(p, I,J,K,L) = 1.0*(I==K)*(J==L);                       \
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_Tns4_eye(Matrix<T>& p) {
+  p.Tns4_eye();
+}
 
 /**
  * Comptue the 4th order symmetric identity tensor
  */
-#define Matrix_Tns4_II(p) do{                                           \
-  Matrix_init(p,0.0);                                                   \
-  for(int I=1; I<=3; I++)                                               \
-  {                                                                     \
-    for(int J=1; J<=3; J++)                                             \
-    {                                                                   \
-      for(int K=1; K<=3; K++)                                           \
-      {                                                                 \
-        for(int L=1; L<=3; L++)                                         \
-          Tns4_v(p, I,J,K,L) = 0.5*((I==K)*(J==L)+(I==L)*(J==K));       \
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_Tns4_II(Matrix<T>& p) {
+  p.Tns4_II();
+}
 
 /**
  * See Matrix_Tns4_eye, transpose k,l
  */
-#define Matrix_Tns4_eye_bar(p) do{                                      \
-  Matrix_init(p,0.0);                                                   \
-  for(int I=1; I<=3; I++)                                               \
-  {                                                                     \
-    for(int J=1; J<=3; J++)                                             \
-    {                                                                   \
-      for(int K=1; K<=3; K++)                                           \
-      {                                                                 \
-        for(int L=1; L<=3; L++)                                         \
-          Tns4_v(p, I,J,K,L) = 1.0*(I==L)*(J==K);                       \
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_Tns4_eye_bar(Matrix<T>& p) {
+  p.Tns4_eye_bar();
+}
 
+template <class T>
+static inline void
+Matrix_redim(Matrix<T>& p, size_t m, size_t n) {
+  p.redim(m, n);
+}
 
-#define Matrix_construct(T, p) do {                                     \
-  (p).m_pdata = NULL;                                                   \
-  (p).temp    = NULL;                                                   \
-  (p).m_row = 0;                                                        \
-  (p).m_col = 0;                                                        \
-  (p).sizeof_T = sizeof(T);                                             \
-} while(0)
+template <class T>
+static inline void
+Matrix_check_null_and_redim(Matrix<T>& p, size_t m, size_t n) {
+  p.check_null_and_redim(m,n);
+}
 
-#define Matrix_construct_redim(T, p, m, n) do {                         \
-  (p).temp    = NULL;                                                   \
-  (p).m_row = m;                                                        \
-  (p).m_col = n;                                                        \
-  (p).sizeof_T = sizeof(T);                                             \
-  (p).m_pdata = (T *) malloc((p).sizeof_T*(m)*(n));                     \
-} while(0)
+template <class T, class U>
+static inline void
+Matrix_init(Matrix<T>& p, U&& value) {
+  p.init(std::forward<U>(value));
+}
 
-#define Matrix_redim(p, m, n) do {                                      \
-  Matrix_cleanup(p);                                                    \
-  (p).m_pdata =malloc((p).sizeof_T*(m)*(n));                            \
-  (p).temp    = NULL;                                                   \
-  (p).m_row = m;                                                        \
-  (p).m_col = n;                                                        \
-} while(0)
-
-#define Matrix_check_null_and_redim(p, m, n) do {                       \
-  if((p).m_pdata==NULL || (p).m_row != m || (p).m_col != n)             \
-    Matrix_redim(p, m, n);                                              \
-} while(0)
-
-#define Matrix_init(p, value) do {                                      \
-  long MaTtEmPVar_a;                                                    \
-  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < (p).m_row*(p).m_col; MaTtEmPVar_a++){ \
-      (p).m_pdata[MaTtEmPVar_a] =  value;                               \
-  }                                                                     \
-} while(0)
-
-#define Matrix_construct_init(T, p, m, n, value) do {                   \
-  (p).temp    = NULL;                                                   \
-  (p).m_row = m;                                                        \
-  (p).m_col = n;                                                        \
-  (p).sizeof_T = sizeof(T);                                             \
-  (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
-  Matrix_init(p, value);                                                \
-} while(0)
-
-
-#define Matrix_init_w_array(p, m, n, q) do {                            \
-  Matrix_check_null_and_redim(p, m, n);                                 \
-  memcpy((p).m_pdata,q,m*n*sizeof(*((p).m_pdata)));                     \
-} while(0)
+template <class T, class U>
+static inline void
+Matrix_init_w_array(Matrix<T>& p, size_t m, size_t n, const U* q) {
+  p.check_null_and_redim(m, n);
+  p.init(q);
+}
 
 /* A = delta_ij */
-#define Matrix_eye(A, m) do {                                           \
-  long MaTtEmPVar_a;                                                    \
-  Matrix_check_null_and_redim(A, m, m);                                 \
-  Matrix_init(A, 0.0);                                                  \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m; MaTtEmPVar_a++)              \
-    Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a) = 1.0;                         \
-                                                                        \
-} while(0)
+template <class T>
+static inline void
+Matrix_eye(Matrix<T>& A, size_t m) {
+  Matrix_check_null_and_redim(A, m, m);
+  A.eye();
+}
 
 // A_symm = symmetric(A)
 // Matrix_symmetric(A,A_symm)
-#define Matrix_symmetric(A,A_symm) do {                                 \
-  symmetric_part((A_symm).m_pdata,(A).m_pdata,(A).m_row);               \
-} while(0)
+template <class T>
+static inline void
+Matrix_symmetric(Matrix<T>& A, Matrix<T>& A_symm) {
+  symmetric_part(A_symm.m_pdata,A.m_pdata,A.m_row);
+}
 
 /* trA = tr_(A), trA = A_ii */
-#define Matrix_trace(A,trA) do {                                        \
-  long MaTtEmPVar_a;                                                    \
-  trA = 0.0;                                                            \
-  if(A.m_row != A.m_col || A.m_row ==0 || A.m_col ==0)                  \
-    break;                                                              \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= A.m_row; MaTtEmPVar_a++)        \
-    trA += Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_a);                        \
-} while(0)
+template <class T, class U>
+static inline void
+Matrix_trace(const Matrix<T>& A, U& trA) {
+  trA = A.trace();
+}
 
-#define Matrix_det(A, ddet) do {                                        \
-                                                                        \
-  if((A).m_row != (A).m_col || (A).m_row ==0 || (A).m_col ==0)          \
-    break;                                                              \
-                                                                        \
-  if((A).m_row==1){                                                     \
-    ddet = Mat_v(A, 1, 1);                                              \
-    break;                                                              \
-  }                                                                     \
-                                                                        \
-  if((A).m_row==2){                                                     \
-    ddet = Mat_v(A, 1, 1)*Mat_v(A, 2, 2);                               \
-    ddet -= Mat_v(A, 1, 2)*Mat_v(A, 2, 1);                              \
-    break;                                                              \
-  };                                                                    \
-                                                                        \
-  if((A).m_row==3){                                                     \
-    ddet  = Mat_v(A, 1, 1)*Mat_v(A, 2, 2)*Mat_v(A, 3, 3);               \
-    ddet += Mat_v(A, 1, 2)*Mat_v(A, 2, 3)*Mat_v(A, 3, 1);               \
-    ddet += Mat_v(A, 1, 3)*Mat_v(A, 3, 2)*Mat_v(A, 2, 1);               \
-    ddet -= Mat_v(A, 1, 3)*Mat_v(A, 2, 2)*Mat_v(A, 3, 1);               \
-    ddet -= Mat_v(A, 1, 2)*Mat_v(A, 2, 1)*Mat_v(A, 3, 3);               \
-    ddet -= Mat_v(A, 1, 1)*Mat_v(A, 3, 2)*Mat_v(A, 2, 3);               \
-    break;                                                              \
-  };                                                                    \
-  if((A).m_row > 3){                                                    \
-    printf("Matrix greater than [3x3] is not currently supported\n");   \
-    break;                                                              \
-  }                                                                     \
-} while(0)
+template <class T, class U>
+static inline void
+Matrix_det(const Matrix<T>& A, U& ddet) {
+  ddet = A.det();
+}
 
-#define Matrix_inv_check_err(A, invA, info) do {                        \
-  info = 0;                                                             \
-  info += inverse((A).m_pdata,(A).m_row,(invA).m_pdata);                \
-} while(0)
+template <class T>
+static inline void
+Matrix_inv_check_err(const Matrix<T>& A, Matrix<T>& invA, int& info) {
+  info = A.inverse(invA);
+}
 
-#define Matrix_inv(A, invA) do {                                        \
-    inverse((A).m_pdata,(A).m_row,(invA).m_pdata);                      \
-} while(0)
+template <class T>
+static inline void
+Matrix_inv(const Matrix<T>& A, Matrix<T>& invA) {
+  A.inverse(invA);
+}
 
-#define Matrix_inv_no_use(A, invA) do {                                 \
-  double detA = 0.0;                                                    \
-                                                                        \
-  if((A).m_row != (A).m_col || (A).m_row ==0 || (A).m_col ==0)          \
-    break;                                                              \
-                                                                        \
-  Matrix_check_null_and_redim(invA, (A).m_row, (A).m_col);              \
-  if(A.m_row==1){                                                       \
-    Mat_v(invA, 1, 1) = 1.0/Mat_v(A, 1, 1);                             \
-    break;                                                              \
-  }                                                                     \
-                                                                        \
-  Matrix_det(A, detA);                                                  \
-  if(fabs(detA)<1.0e-15){                                               \
-    printf("det(Matrix) = %f is close to zero\n", fabs(detA));          \
-    break;                                                              \
-  }                                                                     \
-                                                                        \
-  if((A).m_row==2){                                                     \
-    Mat_v(invA, 1, 1) =  Mat_v(A, 2, 2)/detA;                           \
-    Mat_v(invA, 2, 2) =  Mat_v(A, 1, 1)/detA;                           \
-    Mat_v(invA, 1, 2) = -Mat_v(A, 1, 2)/detA;                           \
-    Mat_v(invA, 2, 1) = -Mat_v(A, 2, 1)/detA;                           \
-    break;                                                              \
-  };                                                                    \
-                                                                        \
-  if((A).m_row==3){                                                     \
-                                                                        \
-    Mat_v(invA, 1, 1) = (Mat_v(A, 2, 2)*Mat_v(A, 3, 3)                  \
-                       - Mat_v(A, 2, 3)*Mat_v(A, 3, 2))/detA;           \
-    Mat_v(invA, 1, 2) = (Mat_v(A, 1, 3)*Mat_v(A, 3, 2)                  \
-                       - Mat_v(A, 1, 2)*Mat_v(A, 3, 3))/detA;           \
-    Mat_v(invA, 1, 3) = (Mat_v(A, 1, 2)*Mat_v(A, 2, 3)                  \
-                       - Mat_v(A, 1, 3)*Mat_v(A, 2, 2))/detA;           \
-    Mat_v(invA, 2, 1) = (Mat_v(A, 2, 3)*Mat_v(A, 3, 1)                  \
-                       - Mat_v(A, 2, 1)*Mat_v(A, 3, 3))/detA;           \
-    Mat_v(invA, 2, 2) = (Mat_v(A, 1, 1)*Mat_v(A, 3, 3)                  \
-                       - Mat_v(A, 1, 3)*Mat_v(A, 3, 1))/detA;           \
-    Mat_v(invA, 2, 3) = (Mat_v(A, 1, 3)*Mat_v(A, 2, 1)                  \
-                       - Mat_v(A, 1, 1)*Mat_v(A, 2, 3))/detA;           \
-    Mat_v(invA, 3, 1) = (Mat_v(A, 2, 1)*Mat_v(A, 3, 2)                  \
-                       - Mat_v(A, 2, 2)*Mat_v(A, 3, 1))/detA;           \
-    Mat_v(invA, 3, 2) = (Mat_v(A, 1, 2)*Mat_v(A, 3, 1)                  \
-                       - Mat_v(A, 1, 1)*Mat_v(A, 3, 2))/detA;           \
-    Mat_v(invA, 3, 3) = (Mat_v(A, 1, 1)*Mat_v(A, 2, 2)                  \
-                       - Mat_v(A, 1, 2)*Mat_v(A, 2, 1))/detA;           \
-    break;                                                              \
-  };                                                                    \
-  if((A).m_row > 3){                                                    \
-    printf("Matrix greater than [3x3] is not currently supported\n");   \
-    break;                                                              \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_inv_no_use(const Matrix<T>& A, Matrix<T>& invA) {
+  A.inverse_no_use(invA);
+}
 
-#define Matrix_cleanup(A) do {                                          \
-  (A).m_row = 0;                                                        \
-  (A).m_col = 0;                                                        \
-  if((A).m_pdata)                                                       \
-    free((A).m_pdata);                                                  \
-  (A).m_pdata = NULL;                                                   \
-  if((A).temp)                                                          \
-    free((A).temp);                                                     \
-  (A).temp = NULL;                                                      \
-} while(0)
+template <class T>
+static inline void
+Matrix_cleanup(Matrix<T>& A) {
+  A.cleanup();
+}
 
-#define Matrix_print(A) do {                                            \
-  printf("[%ldx%ld] = \n", (A).m_row, (A).m_col);                       \
-  for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= (A).m_row; MaTtEmPVar_a++){ \
-    for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= (A).m_col; MaTtEmPVar_b++){\
-      printf("%e ", (double)Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b));      \
-    }                                                                   \
-    printf("\n");                                                       \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_print(const Matrix<T>& A) {
+  A.print();
+}
 
-#define Matrix_print_name(A, name) do {                                 \
-  printf("%s = [\n", name);                                             \
-  for(int a__A = 1; a__A <= (A).m_row; a__A++){                         \
-    for(int b__B = 1; b__B <= (A).m_col; b__B++){                       \
-      printf("%e ", (double)Mat_v(A, a__A, b__B));                      \
-    }                                                                   \
-    if(a__A==(A).m_row)                                                 \
-      printf("];\n");                                                   \
-    else                                                                \
-      printf("\n");                                                     \
-  }                                                                     \
-} while(0)
+template <class T>
+static inline void
+Matrix_print_name(const Matrix<T>& A, const char name[]) {
+  A.print(name);
+}
 
 /* A <- B */
-#define Matrix_copy(A,B) do {                                           \
-    assert( ((A).m_row == (B).m_row) && ((A).m_col == (B).m_col) );     \
-    if ( sizeof(*((A).m_pdata)) == sizeof(*((B).m_pdata)) ) {           \
-      memcpy((A).m_pdata,(B).m_pdata,                                   \
-             (A).m_row * (A).m_col * sizeof(*((A).m_pdata)));           \
-    } else {                                                            \
-      for ( size_t idx = 0, e = (A).m_row * (A).m_col;                  \
-            idx < e; idx++) (A).m_pdata[idx] = (B).m_pdata[idx];        \
-    }                                                                   \
-} while (0)
+template <class T, class U>
+static inline void
+Matrix_copy(Matrix<T>& A, const Matrix<U>& B) {
+  A = B;
+}
 
 /* A = bB */
-#define Matrix_AeqB(A, b, B) do {                                       \
-  long MaTtEmPVar_a;                                                    \
-  long m_row = (B).m_row;                                               \
-  long m_col = (B).m_col;                                               \
-  Matrix_check_null_and_redim(A, (B).m_row, (B).m_col);                 \
-                                                                        \
-  for(MaTtEmPVar_a = 0; MaTtEmPVar_a < m_row*m_col; MaTtEmPVar_a++)     \
-    (A).m_pdata[MaTtEmPVar_a] = (B).m_pdata[MaTtEmPVar_a]*(b);          \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_AeqB(Matrix<T>& A, U&& b, const Matrix<V>& B) {
+  A.eqB(std::forward<U>(b), B);
+}
 
 /* A = transpose(A) */
-#define Matrix_trans(A) do {                                            \
-  long MaTtEmPVar_a, MaTtEmPVar_b;                                      \
-  long m_row = (A).m_row;                                               \
-  long m_col = (A).m_col;                                               \
-  (A).temp =  malloc((A).sizeof_T*m_row*m_col);                         \
-                                                                        \
-  for(MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){         \
-    for(MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){       \
-      (A).temp[(MaTtEmPVar_b-1)*(A).m_col+(MaTtEmPVar_a-1)] = Mat_v(A, MaTtEmPVar_a, MaTtEmPVar_b); \
-    }                                                                   \
-  }                                                                     \
-  (A).m_row = m_col;                                                    \
-  (A).m_col = m_row;                                                    \
-  if((A).m_pdata)                                                       \
-    free((A).m_pdata);                                                  \
-  (A).m_pdata = (A).temp;                                               \
-  (A).temp = NULL;                                                      \
-} while(0)
+template <class T>
+static inline void
+Matrix_trans(Matrix<T>& A) {
+  A.trans();
+}
 
 /* A = bBT */
-#define Matrix_AeqBT(A,b,B) do {                                        \
-  long m_row = (B).m_row;                                               \
-  long m_col = (B).m_col;                                               \
-  Matrix_check_null_and_redim(A, m_col, m_row);                         \
-  for(int MaTtEmPVar_a = 1; MaTtEmPVar_a <= m_row; MaTtEmPVar_a++){     \
-    for(int MaTtEmPVar_b = 1; MaTtEmPVar_b <= m_col; MaTtEmPVar_b++){   \
-      Mat_v(A, MaTtEmPVar_b, MaTtEmPVar_a) = Mat_v(B,MaTtEmPVar_a, MaTtEmPVar_b)*(b);\
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_AeqBT(Matrix<T>& A, U&& b, const Matrix<V>& B) {
+  A.eqBT(std::forward<U>(b), B);
+}
 
 /* C = aA + bB */
-#define Matrix_AplusB(C, a, A, b, B) do {                               \
-  long MaTtEmPVar_I;                                                    \
-  long m_row = (A).m_row;                                               \
-  long m_col = (A).m_col;                                               \
-  if((A).m_row != (B).m_row)                                            \
-    break;                                                              \
-  if((A).m_col != (B).m_col)                                            \
-    break;                                                              \
-                                                                        \
-  Matrix_check_null_and_redim(C, (A).m_row, (A).m_col);                 \
-  for(MaTtEmPVar_I = 0; MaTtEmPVar_I < m_row*m_col; MaTtEmPVar_I++)                                \
-    (C).m_pdata[MaTtEmPVar_I] = (A).m_pdata[MaTtEmPVar_I]*(a) + (B).m_pdata[MaTtEmPVar_I]*(b);     \
-} while(0)
+template <class T, class U, class V, class W, class X>
+static inline void
+Matrix_AplusB(Matrix<T>& C, U&& a, const Matrix<V>& A,
+                            W&& b, const Matrix<X>& B) {
+  C.eqAPlusB(std::forward<U>(a), A, std::forward<W>(b), B);
+}
 
-#define Matrix_AOxB(C, A, B) do {                                       \
-  for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)                                         \
-  {                                                                     \
-    for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)                                       \
-    {                                                                   \
-      for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)                                     \
-      {                                                                 \
-        for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)                                   \
-         Tns4_v(C, MaTtEmPVar_I,MaTtEmPVar_J,MaTtEmPVar_K,MaTtEmPVar_L) = Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)*Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L);\
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_AOxB(Matrix<T>& C, const Matrix<U>& A, const Matrix<V>& B) {
+  C.eqAOxB(A, B);
+}
 
 // C = A:B
-#define Matrix_Tns4_dd_Tns2(C, A, B) do {                               \
-  Matrix_init(C,0.0);                                                   \
-  for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)              \
-  {                                                                     \
-    for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)            \
-    {                                                                   \
-      if(fabs(Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L))<1.0e-15)              \
-        continue;                                                       \
-      for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)          \
-      {                                                                 \
-        for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)        \
-         Mat_v(C,MaTtEmPVar_I,MaTtEmPVar_J) += Tns4_v(A,MaTtEmPVar_I,MaTtEmPVar_J,MaTtEmPVar_K,MaTtEmPVar_L)*Mat_v(B,MaTtEmPVar_K,MaTtEmPVar_L);\
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_Tns4_dd_Tns2(Matrix<T>& C, const Matrix<U>& A, const Matrix<V>& B) {
+  C.eqTns4_dd_Tns2(A, B);
+}
 
 // C = A:B
-#define Matrix_Tns2_dd_Tns4(C, A, B) do {                               \
-  Matrix_init(C,0.0);                                                   \
-  for(int MaTtEmPVar_I=1; MaTtEmPVar_I<=3; MaTtEmPVar_I++)              \
-  {                                                                     \
-    for(int MaTtEmPVar_J=1; MaTtEmPVar_J<=3; MaTtEmPVar_J++)            \
-    {                                                                   \
-      if(Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)==0.0)                       \
-        continue;                                                       \
-      for(int MaTtEmPVar_K=1; MaTtEmPVar_K<=3; MaTtEmPVar_K++)          \
-      {                                                                 \
-        for(int MaTtEmPVar_L=1; MaTtEmPVar_L<=3; MaTtEmPVar_L++)        \
-         Mat_v(C,MaTtEmPVar_K,MaTtEmPVar_L) += Mat_v(A,MaTtEmPVar_I,MaTtEmPVar_J)*Tns4_v(B,MaTtEmPVar_I,MaTtEmPVar_J,MaTtEmPVar_K,MaTtEmPVar_L);\
-      }                                                                 \
-    }                                                                   \
-  }                                                                     \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_Tns2_dd_Tns4(Matrix<T>& C, const Matrix<U>& A, const Matrix<V>& B) {
+  C.eqTns2_dd_Tns4(A, B);
+}
 
-#define Matrix_ddot(A,B,A_dd_B) do {                                    \
-  A_dd_B = cblas_ddot((A).m_row*(A).m_col,(A).m_pdata,1,(B).m_pdata,1); \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_ddot(const Matrix<T>& A, const Matrix<U>& B, V& out) {
+  out = A.ddot(B);
+}
 
-#define Matrix_ddot_no_use(A,B,A_dd_B) do {                             \
-  A_dd_B = 0.0;                                                         \
-  for(int MaTtEmPVar_I = 0; MaTtEmPVar_I<(A).m_row*(A).m_col; MaTtEmPVar_I++) \
-    A_dd_B += (A).m_pdata[MaTtEmPVar_I]*(B).m_pdata[MaTtEmPVar_I];      \
-} while(0)
+template <class T, class U, class V>
+static inline void
+Matrix_ddot_no_use(const Matrix<T>& A, const Matrix<U>& B, V& out) {
+  out = A.ddot_no_use(B);
+}
+
 /*C = aAxB + bC*/
 // C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
 // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,a,A,k,B,n,b,C,n);
-#define Matrix_AxB(C, a, b, A, MaTtEmPVar_AT, B, MaTtEmPVar_BT) do {    \
-  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==0){                             \
-    Matrix_check_null_and_redim(C, (A).m_row, (B).m_col);               \
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,(A).m_row,(B).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
-  }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==0){                                                                                                                  \
-    Matrix_check_null_and_redim(C, (A).m_col, (B).m_col);                                                                                                    \
-    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasNoTrans,(C).m_row,(C).m_col,(B).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
-  }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==0 && MaTtEmPVar_BT==1){                                                                                                                  \
-    Matrix_check_null_and_redim(C, (A).m_row, (B).m_row);                                                                                                    \
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,  (C).m_row,(C).m_col,(A).m_col,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
-  }                                                                                                                                                          \
-  if(MaTtEmPVar_AT==1 && MaTtEmPVar_BT==1){                                                                                                                  \
-    Matrix_check_null_and_redim(C, (A).m_col, (B).m_row);                                                                                                    \
-    cblas_dgemm(CblasRowMajor,CblasTrans,  CblasTrans,  (C).m_row,(C).m_col,(A).m_row,a,(A).m_pdata,(A).m_col,(B).m_pdata,(B).m_col,b,(C).m_pdata,(C).m_col);\
-  }                                                                                                                                                          \
-} while(0)
+template <class T, class U, class V, class W, class X>
+static inline void
+Matrix_AxB(Matrix<T>& C, U&& a, V&& b, const Matrix<W>& A, bool AT,
+                                       const Matrix<X>& B, bool BT) {
+  C.eqGEMM(std::forward<U>(a), std::forward<V>(b), A, AT, B, BT);
+}
 
 // D = a*A*B*C + b*D, a and b are scalar
-#define Matrix_Tns2_AxBxC(D,a,b,A,B,C) do {                             \
-  Matrix_check_null_and_redim(D,3,3);                                   \
-  Mat_v(D,1,1) = Mat_v(D,1,1)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,1)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,1)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,1)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
-  Mat_v(D,1,2) = Mat_v(D,1,2)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,2)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,2)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,2)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
-  Mat_v(D,1,3) = Mat_v(D,1,3)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,3)*(Mat_v(A,1,1)*Mat_v(B,1,1) + Mat_v(A,1,2)*Mat_v(B,2,1) + Mat_v(A,1,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,3)*(Mat_v(A,1,1)*Mat_v(B,1,2) + Mat_v(A,1,2)*Mat_v(B,2,2) + Mat_v(A,1,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,3)*(Mat_v(A,1,1)*Mat_v(B,1,3) + Mat_v(A,1,2)*Mat_v(B,2,3) + Mat_v(A,1,3)*Mat_v(B,3,3)));\
-  Mat_v(D,2,1) = Mat_v(D,2,1)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,1)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,1)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,1)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
-  Mat_v(D,2,2) = Mat_v(D,2,2)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,2)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,2)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,2)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
-  Mat_v(D,2,3) = Mat_v(D,2,3)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,3)*(Mat_v(A,2,1)*Mat_v(B,1,1) + Mat_v(A,2,2)*Mat_v(B,2,1) + Mat_v(A,2,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,3)*(Mat_v(A,2,1)*Mat_v(B,1,2) + Mat_v(A,2,2)*Mat_v(B,2,2) + Mat_v(A,2,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,3)*(Mat_v(A,2,1)*Mat_v(B,1,3) + Mat_v(A,2,2)*Mat_v(B,2,3) + Mat_v(A,2,3)*Mat_v(B,3,3)));\
-  Mat_v(D,3,1) = Mat_v(D,3,1)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,1)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,1)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,1)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
-  Mat_v(D,3,2) = Mat_v(D,3,2)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,2)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,2)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,2)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
-  Mat_v(D,3,3) = Mat_v(D,3,3)*(b) + (a)*(                                                                          \
-               + Mat_v(C,1,3)*(Mat_v(A,3,1)*Mat_v(B,1,1) + Mat_v(A,3,2)*Mat_v(B,2,1) + Mat_v(A,3,3)*Mat_v(B,3,1))  \
-               + Mat_v(C,2,3)*(Mat_v(A,3,1)*Mat_v(B,1,2) + Mat_v(A,3,2)*Mat_v(B,2,2) + Mat_v(A,3,3)*Mat_v(B,3,2))  \
-               + Mat_v(C,3,3)*(Mat_v(A,3,1)*Mat_v(B,1,3) + Mat_v(A,3,2)*Mat_v(B,2,3) + Mat_v(A,3,3)*Mat_v(B,3,3)));\
-} while(0)
+template <class T, class U, class V, class W, class X, class Y>
+static inline void
+Matrix_Tns2_AxBxC(Matrix<T>& D, U&& a, V&& b, const Matrix<W>& A,
+                                              const Matrix<X>& B,
+                                              const Matrix<Y>& C)  {
+  D.eqTns2_AxBxC(std::forward<U>(a), std::forward<V>(b), A, B, C);
+}
 
 #endif

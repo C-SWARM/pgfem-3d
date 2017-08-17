@@ -8,7 +8,6 @@
 #include "cm_placeholder_functions.h"
 #include "data_structure_c.h"
 
-Define_Matrix(double);
 static const int dim = 3;
 static const int tensor = 9;
 
@@ -16,16 +15,16 @@ int cm_get_var_zero(const Constitutive_model *m,
                     double *var) { *var = 0.0; return 0; }
 
 int cm_get_F_zero(const Constitutive_model *m,
-                  Matrix_double *F) { Matrix_init(*F, 0.0); return 0; }
+                  Matrix<double> *F) { Matrix_init(*F, 0.0); return 0; }
 
 int cm_get_F_eye(const Constitutive_model *m,
-                 Matrix_double *F) { Matrix_eye(*F, 3); return 0; }
+                 Matrix<double> *F) { Matrix_eye(*F, 3); return 0; }
 
 int cm_get_lam_p(const Constitutive_model *m,
                  double *lam_p)
 {
   int err = 0;
-  Matrix_double Fp, Cp;
+  Matrix<double> Fp, Cp;
   Matrix_construct_redim(double, Fp, dim, dim);
   Matrix_construct_init( double, Cp, dim, dim, 0.0);
 

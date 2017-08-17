@@ -23,7 +23,6 @@
  * through a handle.
  */
 struct pgf_FE2_server_rebalance;
-typedef struct pgf_FE2_server_rebalance pgf_FE2_server_rebalance;
 
 /**
  * Return the size of the rebalance object in bytes.

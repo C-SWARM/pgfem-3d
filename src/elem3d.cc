@@ -16,10 +16,10 @@
 #endif
 
 void int_point (const long nne,
-		long *II)
-     /*
-       
-     */
+    long *II)
+/*
+
+ */
 {
   if (nne == 4)  *II = 1; /* *II = 1; */ /* Linear tetra */
   if (nne == 5)  *II = 4; /* P1+B/P1 */
@@ -28,18 +28,18 @@ void int_point (const long nne,
 }
 
 void integrate (const long nne,
-		long *II,
-		long *JJ,
-		long *KK,
-		double *gk,
-		double *ge,
-		double *gz,
-		double *w)
-     /*
-       Determine the integration points (gk, ge, gz)
-       Determine the integration weights (w)
-       Number of summations in each direction (II, JJ, KK)
-     */
+    long *II,
+    long *JJ,
+    long *KK,
+    double *gk,
+    double *ge,
+    double *gz,
+    double *w)
+/*
+  Determine the integration points (gk, ge, gz)
+  Determine the integration weights (w)
+  Number of summations in each direction (II, JJ, KK)
+*/
 {
   if (nne == 4)  {
     int_tetra_1 (gk,ge,gz,w);
@@ -49,14 +49,14 @@ void integrate (const long nne,
     *KK = 1;
     /* *KK = 4; */
   } /* Linear tetra */
-  
+
   if (nne == 5){
     //int_tetra_24 (gk,ge,gz,w);
     int_tetra_4 (gk,ge,gz,w);
     *II = 1;
     *JJ = 1;
     //*KK = 24;
-    *KK = 4; 
+    *KK = 4;
   } /* P1 + B/P1 || bubble function is 4th degree polynomial!!! */
 
   if (nne == 10) {
@@ -86,9 +86,9 @@ void int_tria_1 (double *gs,double *w)
 }
 
 void intpoints_2 (double *gs,double *w)
-     /*
-       Function return Gauss integration points
-     */
+/*
+  Function return Gauss integration points
+*/
 {
   *(w+0) = 1.0;
   *(w+1) = 1.0;
@@ -98,31 +98,31 @@ void intpoints_2 (double *gs,double *w)
 }
 
 void intpoints_3 (double *gs,double *w)
-     /*
-       Function return Gauss integration points
-     */
+/*
+  Function return Gauss integration points
+*/
 {
   *(w+0) = 0.555555555555555;
   *(w+1) = 0.888888888888888;
   *(w+2) = 0.555555555555555;
-  
+
   *(gs+0) = -0.774596669241483;
   *(gs+1) =  0.0;
   *(gs+2) =  0.774596669241483;
 }
 
 void int_tetra_1 (double *gk,double *ge,double *gz,double *w)
-     /*
-       Returns integration points and integration weights
-     */
+/*
+  Returns integration points and integration weights
+*/
 {
   w[0] = 1./6.;  gk[0] = 1./4.;  ge[0] = 1./4.;  gz[0] = 1./4.;
 }
 
 void int_tetra_4 (double *gk,double *ge,double *gz,double *w)
-     /*
-       
-     */
+/*
+
+ */
 {
   w[0] = (1./4.)/6.;
   gk[0] = 0.58541020;
@@ -144,13 +144,13 @@ void int_tetra_4 (double *gk,double *ge,double *gz,double *w)
   ge[3] = 0.13819660;
   gz[3] = 0.13819660;
 
-  
+
 }
 
 void int_tetra_5 (double *gk,double *ge,double *gz,double *w)
-     /*
-       
-     */
+/*
+
+ */
 {
   w[0] = (-4./5.)/6.;  gk[0] = 1./4.;  ge[0] = 1./4.;  gz[0] = 1./4.;
   w[1] = (9./20.)/6.;  gk[1] = 1./2.;  ge[1] = 1./6.;  gz[1] = 1./6.;
@@ -160,9 +160,9 @@ void int_tetra_5 (double *gk,double *ge,double *gz,double *w)
 }
 
 void int_tetra_11 (double *gk,
-		   double *ge,
-		   double *gz,
-		   double *w)
+    double *ge,
+    double *gz,
+    double *w)
 {
 
   /* 11 point formula for exact integration of 4th degree polunomial
@@ -188,9 +188,9 @@ void int_tetra_11 (double *gk,
 }
 
 void int_tetra_24(double *gk,
-		  double *ge,
-		  double *gz,
-		  double *w)
+    double *ge,
+    double *gz,
+    double *w)
 {
   /* 24 point formula for exact integration of 6th degree polunomial
      on tetrahedron */
@@ -229,11 +229,11 @@ void int_tetra_24(double *gk,
   gk[4] = a1;
   ge[4] = a2;
   gz[4] = a3;
-  
+
   gk[5] = a4;
   ge[5] = a2;
   gz[5] = a3;
-  
+
   gk[6] = a1;
   ge[6] = a4;
   gz[6] = a3;
@@ -265,8 +265,8 @@ void int_tetra_24(double *gk,
 
   /* block 4 */
   w[12] = w[13] = w[14] = w[15] = w[16]
-    = w[17] = w[18] = w[19] = w[20] = w[21]
-    = w[22] = w[23] = 0.803571428571428248e-2;
+        = w[17] = w[18] = w[19] = w[20] = w[21]
+        = w[22] = w[23] = 0.803571428571428248e-2;
   a1 = a2 = 0.636610018750175299e-1;
   a3 = 0.269672331458315867;
   a4 = 0.603005664791649076;
@@ -326,12 +326,12 @@ void int_tetra_24(double *gk,
 }
 
 void shape_tria (const double ksi,
-		 const double eta,
-		 const double zet,
-		 double *N)
+    const double eta,
+    const double zet,
+    double *N)
 /*
-       
-     */
+
+ */
 {
   N[0] = (2.*(1.-ksi-eta)-1.)*(1.-ksi-eta);
   N[1] = (2.*ksi-1.)*ksi;
@@ -342,15 +342,15 @@ void shape_tria (const double ksi,
 }
 
 void shape_func (const double ksi,
-		 const double eta,
-		 const double zet,
-		 const long nne,
-		 double *N)
-     /*
-       ksi -souradnice integracniho bodu (integration points)
-       eta -souradnice integracniho bodu
-       N - bazove funkce (basis functions)
-     */
+    const double eta,
+    const double zet,
+    const long nne,
+    double *N)
+/*
+  ksi -souradnice integracniho bodu (integration points)
+  eta -souradnice integracniho bodu
+  N - bazove funkce (basis functions)
+*/
 {
   if (nne == 1){ /* Constant */
     N[0] = 1.0;
@@ -371,7 +371,7 @@ void shape_func (const double ksi,
     } else {
       N[4] = 256.*ksi*eta*zet*(1.-ksi-eta-zet);
     }
-    
+
     /* N[0] = 1 - eta - ksi - zet - 64.0*eta*ksi*(1 - eta - ksi - zet)*zet; */
     /* N[1] = ksi - 64.0*eta*ksi*(1 - eta - ksi - zet)*zet; */
     /* N[2] = eta - 64.0*eta*ksi*(1 - eta - ksi - zet)*zet; */
@@ -414,18 +414,18 @@ void shape_func (const double ksi,
 }
 
 void shape_2D (const long nne,
-	       const double ksi,
-	       const double eta,
-	       double *N)
-     /*
-       ksi - integration poin
-       eta - integration poin
-       N - shape functions
-     */
+    const double ksi,
+    const double eta,
+    double *N)
+/*
+  ksi - integration poin
+  eta - integration poin
+  N - shape functions
+*/
 {
   if (nne == 3){/* Degenerated Triangle */
     *(N+0) = 0.25*(1.-ksi)*(1.-eta);
-    *(N+1) = 0.25*(1.+ksi)*(1.-eta);		  
+    *(N+1) = 0.25*(1.+ksi)*(1.-eta);
     *(N+2) = 0.50*(1.+eta);
   }
   if (nne == 4){/*Quadrilateral */
@@ -437,15 +437,15 @@ void shape_2D (const long nne,
 }
 
 void dN_kez (const double ksi,
-	     const double eta,
-	     const double zet,
-	     const long nne,
-	     double *N_ksi,
-	     double *N_eta,
-	     double *N_zet)
-     /*
-       
-     */
+    const double eta,
+    const double zet,
+    const long nne,
+    double *N_ksi,
+    double *N_eta,
+    double *N_zet)
+/*
+
+ */
 {
   if (nne == 4){/* Linear tetrahedron */
     N_ksi[0] = -1.;
@@ -614,26 +614,26 @@ void dN_kez (const double ksi,
 }
 
 void dxyz_kez (const double ksi,
-	       const double eta,
-	       const double zet,
-	       const long nne,
-	       const double *x,
-	       const double *y,
-	       const double *z,
-	       const double *N_ksi,
-	       const double *N_eta,
-	       const double *N_zet,
-	       double *dx,
-	       double *dy,
-	       double *dz)
-     /*
-       dx - derivace x podle ksi, eta, zet
-       dy - derivace y podle ksi, eta, zet
-       dz - derivace z podle ksi, eta, zet
-     */
+    const double eta,
+    const double zet,
+    const long nne,
+    const double *x,
+    const double *y,
+    const double *z,
+    const double *N_ksi,
+    const double *N_eta,
+    const double *N_zet,
+    double *dx,
+    double *dy,
+    double *dz)
+/*
+  dx - derivace x podle ksi, eta, zet
+  dy - derivace y podle ksi, eta, zet
+  dz - derivace z podle ksi, eta, zet
+*/
 {
   long i;
-  
+
   dx[0] = 0.0;
   dx[1] = 0.0;
   dx[2] = 0.0;
@@ -645,7 +645,7 @@ void dxyz_kez (const double ksi,
   dz[0] = 0.0;
   dz[1] = 0.0;
   dz[2] = 0.0;
-  
+
   for (i=0;i<nne;i++){
     dx[0] += N_ksi[i]*x[i];
     dx[1] += N_eta[i]*x[i];
@@ -662,64 +662,64 @@ void dxyz_kez (const double ksi,
 }
 
 double Jacobi (const double ksi,
-	       const double eta,
-	       const double zet,
-	       const double *x,
-	       const double *y,
-	       const double *z,
-	       const double *dx,
-	       const double *dy,
-	       const double *dz)
+    const double eta,
+    const double zet,
+    const double *x,
+    const double *y,
+    const double *z,
+    const double *dx,
+    const double *dy,
+    const double *dz)
 {
   double J;
-  
+
   J = ((dx[0]*dy[1]*dz[2]) +
-       (dy[0]*dz[1]*dx[2]) + 
-       (dz[0]*dx[1]*dy[2]) - 
-       (dz[0]*dy[1]*dx[2]) - 
-       (dx[0]*dz[1]*dy[2]) - 
-       (dy[0]*dx[1]*dz[2]));
-  
+      (dy[0]*dz[1]*dx[2]) +
+      (dz[0]*dx[1]*dy[2]) -
+      (dz[0]*dy[1]*dx[2]) -
+      (dx[0]*dz[1]*dy[2]) -
+      (dy[0]*dx[1]*dz[2]));
+
   if (J <= 0.0) {
     PGFEM_printf ("Negative determinant is isoparametric"
-		  " mapping : J = %12.12e || Bye Bye\n",J);
+        " mapping : J = %12.12e || Bye Bye\n",J);
     PGFEM_Abort();
   }
-  
+
   return (J);
 }
 
 double deriv (const double ksi,
-	      const double eta,
-	      const double zet,
-	      const long nne,
-	      const double *x,
-	      const double *y,
-	      const double *z,
-	      double *N_x,
-	      double *N_y,
-	      double *N_z)
-     /*
-       
-     */
+    const double eta,
+    const double zet,
+    const long nne,
+    const double *x,
+    const double *y,
+    const double *z,
+    double *N_x,
+    double *N_y,
+    double *N_z)
+/*
+
+ */
 {
   double *N_ksi,*N_eta,*N_zet,*dx,*dy,*dz,J,**Jac;
   long i;
-  
-  N_ksi = aloc1(nne); 
+
+  N_ksi = aloc1(nne);
   N_eta = aloc1(nne);
   N_zet = aloc1(nne);
   dx = aloc1(3);
   dy = aloc1(3);
   dz = aloc1(3);
   Jac = aloc2(3,3);
-  
+
   dN_kez (ksi,eta,zet,nne,N_ksi,N_eta,N_zet);
-  
+
   dxyz_kez (ksi,eta,zet,nne,x,y,z,N_ksi,N_eta,N_zet,dx,dy,dz);
-  
+
   J = Jacobi (ksi,eta,zet,x,y,z,dx,dy,dz);
-  
+
   Jac[0][0] = dy[1]*dz[2] - dz[1]*dy[2];
   Jac[0][1] = dz[0]*dy[2] - dy[0]*dz[2];
   Jac[0][2] = dy[0]*dz[1] - dz[0]*dy[1];
@@ -731,21 +731,21 @@ double deriv (const double ksi,
   Jac[2][0] = dx[1]*dy[2] - dy[1]*dx[2];
   Jac[2][1] = dy[0]*dx[2] - dx[0]*dy[2];
   Jac[2][2] = dx[0]*dy[1] - dy[0]*dx[1];
-  
+
   for (i=0;i<nne;i++){
-    N_x[i] = 1./J * (Jac[0][0]*N_ksi[i] 
-		     + Jac[0][1]*N_eta[i] 
-		     + Jac[0][2]*N_zet[i]);
+    N_x[i] = 1./J * (Jac[0][0]*N_ksi[i]
+        + Jac[0][1]*N_eta[i]
+        + Jac[0][2]*N_zet[i]);
 
-    N_y[i] = 1./J * (Jac[1][0]*N_ksi[i] 
-		     + Jac[1][1]*N_eta[i] 
-		     + Jac[1][2]*N_zet[i]);
+    N_y[i] = 1./J * (Jac[1][0]*N_ksi[i]
+        + Jac[1][1]*N_eta[i]
+        + Jac[1][2]*N_zet[i]);
 
-    N_z[i] = 1./J * (Jac[2][0]*N_ksi[i] 
-		     + Jac[2][1]*N_eta[i] 
-		     + Jac[2][2]*N_zet[i]);
+    N_z[i] = 1./J * (Jac[2][0]*N_ksi[i]
+        + Jac[2][1]*N_eta[i]
+        + Jac[2][2]*N_zet[i]);
   }
-  
+
   dealoc1 (N_ksi);
   dealoc1 (N_eta);
   dealoc1 (N_zet);
@@ -753,24 +753,24 @@ double deriv (const double ksi,
   dealoc1 (dy);
   dealoc1 (dz);
   dealoc2 (Jac,3);
-  
+
   return (J);
 }
 
 void get_element_node_parent_coords(const int nne,
-				    double *ksi,
-				    double *eta,
-				    double *zet)
+    double *ksi,
+    double *eta,
+    double *zet)
 {
   /* NOTE: When adding new elements, be sure that the coordinates are
      consistend with the shape function order!!! */
   switch(nne){
 
     /* Linear tetrahedrons */
-  case 5:
+   case 5:
     /* bubble does not change the element coordinate
        transformation. fall through to case 4 */
-  case 4:
+   case 4:
     ksi[0] = 0.0; eta[0] = 0.0; zet[0] = 0.0;
     ksi[1] = 1.0; eta[1] = 0.0; zet[1] = 0.0;
     ksi[2] = 0.0; eta[2] = 1.0; zet[2] = 0.0;
@@ -778,7 +778,7 @@ void get_element_node_parent_coords(const int nne,
     break;
 
     /* Tri-linear brick */
-  case 8:
+   case 8:
     ksi[0] = -1.0; eta[0] = -1.0; zet[0] = -1.0;
     ksi[1] =  1.0; eta[1] = -1.0; zet[1] = -1.0;
     ksi[2] =  1.0; eta[2] =  1.0; zet[2] = -1.0;
@@ -790,17 +790,17 @@ void get_element_node_parent_coords(const int nne,
     ksi[7] = -1.0; eta[7] =  1.0; zet[7] =  1.0;
     break;
 
-  default:
+   default:
     PGFEM_printerr("%s does not currently support element type %d.\n",
-	    __func__,nne);
+        __func__,nne);
     PGFEM_Abort();
   }
 }
 
 void element_center(const int nne,
-		    double *x,
-		    double *y,
-		    double *z)
+    double *x,
+    double *y,
+    double *z)
 {
   /* The centroid of an general polyhedron consisting of a finite set
      of points is simply the average of its nodal coordinates */
@@ -816,9 +816,9 @@ void element_center(const int nne,
 }
 
 int element_center_kez(const int nne,
-		       double *x,
-		       double *y,
-		       double *z)
+    double *x,
+    double *y,
+    double *z)
 {
   /*** NOTE: length(x_i) >= nne + 1 ***/
   /* compute the element center in (x,y,z) from the center in
@@ -829,11 +829,11 @@ int element_center_kez(const int nne,
 
   /* get (k,e,z) coordinates of element center */
   switch(nne){
-  case 4: /* linear tetra */
+   case 4: /* linear tetra */
     ksi = eta = zet = 0.25;
     break;
 
-  default:
+   default:
     PGFEM_printf("ERROR: element type not supported for computing center\n");
     return 1;
   }
@@ -852,19 +852,19 @@ int element_center_kez(const int nne,
 }
 
 void get_bubble_grad(const int nne_t, /* The bubble is the last node */
-		     const double ksi,
-		     const double eta,
-		     const double zet,
-		     const double *x,
-		     const double *y,
-		     const double *z,
-		     double *N_x,
-		     double *N_y,
-		     double *N_z)
+    const double ksi,
+    const double eta,
+    const double zet,
+    const double *x,
+    const double *y,
+    const double *z,
+    double *N_x,
+    double *N_y,
+    double *N_z)
 {
   double *N_ksi, *N_eta, *N_zet,*dx,*dy,*dz,**Jac;
 
-  N_ksi = aloc1(nne_t); 
+  N_ksi = aloc1(nne_t);
   N_eta = aloc1(nne_t);
   N_zet = aloc1(nne_t);
   dx = aloc1(3);
@@ -876,8 +876,8 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
 
   /* only get dx, dy, dz for linear element */
   dxyz_kez (ksi,eta,zet,nne_t-1,
-	    x,y,z,N_ksi,N_eta,N_zet,
-	    dx,dy,dz);
+      x,y,z,N_ksi,N_eta,N_zet,
+      dx,dy,dz);
 
   double J = Jacobi (ksi,eta,zet,x,y,z,dx,dy,dz);
 
@@ -894,19 +894,19 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
   Jac[2][2] = dx[0]*dy[1] - dy[0]*dx[1];
 
 
-  N_x[nne_t-1] = 1./J * (Jac[0][0]*N_ksi[nne_t-1] 
-			 + Jac[0][1]*N_eta[nne_t-1] 
-			 + Jac[0][2]*N_zet[nne_t-1]);
+  N_x[nne_t-1] = 1./J * (Jac[0][0]*N_ksi[nne_t-1]
+      + Jac[0][1]*N_eta[nne_t-1]
+      + Jac[0][2]*N_zet[nne_t-1]);
 
-  N_y[nne_t-1] = 1./J * (Jac[1][0]*N_ksi[nne_t-1] 
-			 + Jac[1][1]*N_eta[nne_t-1] 
-			 + Jac[1][2]*N_zet[nne_t-1]);
+  N_y[nne_t-1] = 1./J * (Jac[1][0]*N_ksi[nne_t-1]
+      + Jac[1][1]*N_eta[nne_t-1]
+      + Jac[1][2]*N_zet[nne_t-1]);
 
-  N_z[nne_t-1] = 1./J * (Jac[2][0]*N_ksi[nne_t-1] 
-			 + Jac[2][1]*N_eta[nne_t-1] 
-			 + Jac[2][2]*N_zet[nne_t-1]);
+  N_z[nne_t-1] = 1./J * (Jac[2][0]*N_ksi[nne_t-1]
+      + Jac[2][1]*N_eta[nne_t-1]
+      + Jac[2][2]*N_zet[nne_t-1]);
 
-  
+
   dealoc1 (N_ksi);
   dealoc1 (N_eta);
   dealoc1 (N_zet);
@@ -917,24 +917,24 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
 }
 
 double Bmat (const double ksi,
-	     const double eta,
-	     const double zet,
-	     const long nne,
-	     const double *x,
-	     const double *y,
-	     const double *z,
-	     double **B)
-     /*
-       
-     */
+    const double eta,
+    const double zet,
+    const long nne,
+    const double *x,
+    const double *y,
+    const double *z,
+    double **B)
+/*
+
+ */
 {
   long i;
   double *N_x,*N_y,*N_z,J;
-  
+
   N_x = aloc1(nne);  N_y = aloc1(nne);  N_z = aloc1(nne);
-  
+
   J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
-  
+
   for (i=0;i<nne;i++){
     B[i*3+0][0] = N_x[i];
     B[i*3+0][1] = 0.0;
@@ -942,54 +942,58 @@ double Bmat (const double ksi,
     B[i*3+0][3] = 0.0;
     B[i*3+0][4] = N_z[i];
     B[i*3+0][5] = N_y[i];
- 
+
     B[i*3+1][0] = 0.0;
     B[i*3+1][1] = N_y[i];
     B[i*3+1][2] = 0.0;
     B[i*3+1][3] = N_z[i];
     B[i*3+1][4] = 0.0;
     B[i*3+1][5] = N_x[i];
- 
+
     B[i*3+2][0] = 0.0;
     B[i*3+2][1] = 0.0;
     B[i*3+2][2] = N_z[i];
     B[i*3+2][3] = N_y[i];
     B[i*3+2][4] = N_x[i];
     B[i*3+2][5] = 0.0;
- 
+
   }
-  
+
   dealoc1 (N_x);  dealoc1 (N_y);  dealoc1 (N_z);
-  
+
   return (J);
 }
 
 void B_BAR (double **B,
-	    const long nne,
-	    const double *x,
-	    const double *y,
-	    const double *z)
-     /*
-       
-     */
+    const long nne,
+    const double *x,
+    const double *y,
+    const double *z)
+/*
+
+ */
 {
   long i;
-  double *N_x,*N_y,*N_z,J,ksi,eta,zet,B1,B2,B3;
-  
+  double *N_x,*N_y,*N_z,B1,B2,B3;
+
   N_x = aloc1(nne);  N_y = aloc1(nne);  N_z = aloc1(nne);
-  
+
+  double ksi,eta,zet;
   if (nne == 4)  {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
   if (nne == 8)  {ksi = 0.0;   eta = 0.0;   zet = 0.0;}
   if (nne == 10) {ksi = 1./4.; eta = 1./4.; zet = 1./4.;}
-  
-  J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
-  
+
+  // @todo Eliminated as dead code. Someone from @cp should review this
+  //       change. LD
+  // double J =
+  deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+
   for (i=0;i<nne;i++){
     B1 = B[i*3+0][0];
     B2 = B[i*3+1][1];
     B3 = B[i*3+2][2];
 
-    
+
     B[i*3+0][0] = B1 + (N_x[i] - B1)/3.;
     B[i*3+0][1] =      (N_x[i] - B1)/3.;
     B[i*3+0][2] =      (N_x[i] - B1)/3.;
@@ -1003,31 +1007,34 @@ void B_BAR (double **B,
     B[i*3+2][2] = B3 + (N_z[i] - B3)/3.;
 
   }
-  
+
   dealoc1 (N_x);  dealoc1 (N_y);  dealoc1 (N_z);
 }
 
 void stiffmatel (long ii,
-		 double *x,
-		 double *y,
-		 double *z,
-		 long nne,
-		 long ndofn,
-		 ELEMENT *elem,
-		 HOMMAT *hommat,
-		 NODE *node,
-		 double *K,
-		 const PGFem3D_opt *opts)
-     /*
-       
-     */
+    double *x,
+    double *y,
+    double *z,
+    long nne,
+    long ndofn,
+    ELEMENT *elem,
+    HOMMAT *hommat,
+    NODE *node,
+    double *K,
+    const PGFem3D_opt *opts)
+/*
+
+ */
 {
   long i,j,k,jj,kk,II,JJ,KK,ndofe,ip;
-  double ksi,eta,zet,ai,aj,ak,J,**A,**B_T,**BDB;
+  // @todo Make sure that these variables are initialized before use. @cp should
+  //       review that the default value is reasonable here. LD
+  double ksi{}, eta{}, zet{}, aj{}, ai{}, ak{};
+  double J,**A,**B_T,**BDB;
   double *gk,*ge,*gz,*w,**D;
-  
+
   ndofe = ndofn*nne;
-  
+
   gk = aloc1(5);
   ge = aloc1(5);
   gz = aloc1(5);
@@ -1037,64 +1044,64 @@ void stiffmatel (long ii,
   BDB = aloc2(ndofe,ndofe);
   D = aloc2 (6,6);
 
-  
+
   /* Integration */
   integrate (nne,&II,&JJ,&KK,gk,ge,gz,w);
-  
+
   nulld (K,ndofe*ndofe);  ip = 0;
   for (i=0;i<II;i++){
     for (j=0;j<JJ;j++){
       for (k=0;k<KK;k++){
-	
-	if (nne == 4)  {
-	  ksi = *(gk+k);
-	  eta = *(ge+k);
-	  zet = *(gz+k);
-	  ai = *(w+k);
-	  aj = 1.0;
-	  ak = 1.0;
-	}
-	if (nne == 10) {
-	  ksi = *(gk+k);
-	  eta = *(ge+k);
-	  zet = *(gz+k);
-	  ai = *(w+k);
-	  aj = 1.0;
-	  ak = 1.0;
-	}
-	if (nne == 8)  {
-	  ksi = *(gk+i);
-	  eta = *(gk+j);
-	  zet = *(gk+k);
-	  ai = *(w+i);
-	  aj = *(w+j);
-	  ak = *(w+k);
-}
-	
-	J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
-	
-	/*  Matice B_BAR */
-	B_BAR (B_T,nne,x,y,z);
-	
-	/**************************/
-	/* Vypocet matice tuhosti */
-	/**************************/
-	
-	Stiffness_Matrix_3D (ii,ip,elem,hommat,D,opts->analysis_type);
-	
-	nas_AB  (B_T,D,A,ndofe,6,6);
-	nas_ABT (A,B_T,BDB,ndofe,6,ndofe);
-	
-	for (jj=0;jj<ndofe;jj++){
-	  for (kk=0;kk<ndofe;kk++){
-	    K[jj*ndofe+kk] += ai*aj*ak*BDB[jj][kk]*J;
-	  }
-	}
-	ip++;
+
+        if (nne == 4)  {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
+        }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
+        }
+
+        J = Bmat (ksi,eta,zet,nne,x,y,z,B_T);
+
+        /*  Matice B_BAR */
+        B_BAR (B_T,nne,x,y,z);
+
+        /**************************/
+        /* Vypocet matice tuhosti */
+        /**************************/
+
+        Stiffness_Matrix_3D (ii,ip,elem,hommat,D,opts->analysis_type);
+
+        nas_AB  (B_T,D,A,ndofe,6,6);
+        nas_ABT (A,B_T,BDB,ndofe,6,ndofe);
+
+        for (jj=0;jj<ndofe;jj++){
+          for (kk=0;kk<ndofe;kk++){
+            K[jj*ndofe+kk] += ai*aj*ak*BDB[jj][kk]*J;
+          }
+        }
+        ip++;
       }/*end of k*/
     }/*end of j*/
   }/*end of i*/
-  
+
   dealoc2 (A,ndofe);
   dealoc2 (B_T,ndofe);
   dealoc2 (BDB,ndofe);
@@ -1103,37 +1110,37 @@ void stiffmatel (long ii,
   dealoc1 (ge);
   dealoc1 (gz);
   dealoc1 (w);
-  
+
 }
 
 void stiffmat (long *adr,
-	       long ne,
-	       long ndofn,
-	       ELEMENT *elem,
-	       NODE *node,
-	       HOMMAT *hommat,
-	       long *ci,
-	       long typsolveru,
-	       double *k,
-	       const PGFem3D_opt *opts,
-	       const int mp_id)
-     /*
-       
-     k - stiffness matrix of the subdomain
-     adr - array of diagonal addresses
-     toe - array of element types
-     ne - number of elements
-     ndofn - number of DOF of one node
-     
-     */
+    long ne,
+    long ndofn,
+    ELEMENT *elem,
+    NODE *node,
+    HOMMAT *hommat,
+    long *ci,
+    long typsolveru,
+    double *k,
+    const PGFem3D_opt *opts,
+    const int mp_id)
+/*
+
+  k - stiffness matrix of the subdomain
+  adr - array of diagonal addresses
+  toe - array of element types
+  ne - number of elements
+  ndofn - number of DOF of one node
+
+*/
 {
   long i,nne,*cn,*nod,ndofe;
   double *lk,*x,*y,*z;
-  
- 
+
+
   /*  pro prvky s vice nez 10 uzly a 30 stupni volnosti je treba
       predelat nasledujici alokaci */
-  
+
   cn = aloc1l (30);
   nod = aloc1l (10);
   lk= aloc1 (30*30);
@@ -1141,27 +1148,27 @@ void stiffmat (long *adr,
   y = aloc1 (10);
   z = aloc1 (10);
 
-  
+
   for (i=0;i<ne;i++){
-    
-    nne = elem[i].toe;  
+
+    nne = elem[i].toe;
     ndofe = ndofn*nne;
     elemnodes (i,nne,nod,elem);
     switch(opts->analysis_type){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
-    
+
     /* Stiffness matrix of one element */
     stiffmatel (i,x,y,z,nne,ndofn,elem,hommat,node,lk,opts);
-    
+
     /* ID numbers */
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn,mp_id);
-    
+
     /* Assembly */
     if (typsolveru == 0) localizat (k,lk,adr,cn,ndofe);
     if (typsolveru == 1) lokalizace_scr (k,lk,cn,adr,ci,ndofe);

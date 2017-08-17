@@ -20,8 +20,6 @@
 #include <assert.h>
 #include <getopt.h>
 
-Define_Matrix(double);
-
 #define dim 3
 #define tensor 9
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
@@ -190,7 +188,7 @@ int chd_parse_command_line(int argc,
 
   /* copy option structure from help descriptions */
   const int n_opt = sizeof(opt_help) / sizeof(opts_help);
-  struct option *OPTS = calloc(n_opt + 1, sizeof(*OPTS));
+  option *OPTS = PGFEM_calloc(option, n_opt + 1);
   for (int i = 0; i < n_opt; i++){
     OPTS[i] = opt_help[i].opt;
   }
@@ -266,7 +264,7 @@ int chd_parse_command_line(int argc,
 
 opts* opts_construct()
 {
-  opts *opt = malloc(sizeof(*opt));
+  opts *opt = PGFEM_malloc<opts>();
   /* set default options */
   opt->lc = 0.200;
   opt->du = 0.001;
@@ -311,7 +309,7 @@ int ch_output_ts(const Constitutive_model *m,
 {
   int err = 0;
 
-  Matrix_double F, S, P;
+  Matrix<double> F, S, P;
   Matrix_construct_init(double, S, dim, dim, 0.0);
   Matrix_construct(double, P);
   Matrix_construct(double, F);
@@ -356,9 +354,9 @@ int main(int argc, char **argv)
   }
 
   /* construct/initialize objects */
-  Constitutive_model *m = calloc(1, sizeof(*m));
-  Model_parameters *p = calloc(1, sizeof(*p));
-  HOMMAT *hm = calloc(1, sizeof(*hm));
+  Constitutive_model *m = PGFEM_calloc(Constitutive_model, 1);
+  Model_parameters *p = PGFEM_calloc(Model_parameters, 1);
+  HOMMAT *hm = PGFEM_calloc(HOMMAT, 1);
 
   err += constitutive_model_construct(m);
   err += model_parameters_construct(p);

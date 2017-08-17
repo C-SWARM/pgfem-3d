@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "state_variables.h" /* provides declaration of Matrix_double */
+#include "state_variables.h" /* provides declaration of Matrix<double> */
 #include "sig.h"
 #include "supp.h"
 #include "PGFem3D_options.h"
@@ -59,10 +59,6 @@ enum integration_frame {
  * Pre-declare the Model_parameters structure
  */
 struct Model_parameters;
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
 
 /**
  * General interface to a constitutive model.
@@ -75,11 +71,6 @@ struct Constitutive_model {
   int model_id;
   State_variables **vars_list;
 };
-
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
 
 /**
  * Construct a Constitutive_model object. The object is left in an
@@ -159,15 +150,15 @@ int constitutive_model_reset_state(EPS *eps,
  * \return non-zero on internal error.
  */
 int constitutive_model_default_update_elasticity(const Constitutive_model *m,
-                                                 Matrix_double *eF,
-                                                 Matrix_double *L,
-                                                 Matrix_double *S,
+                                                 Matrix<double> *eF,
+                                                 Matrix<double> *L,
+                                                 Matrix<double> *S,
                                                  const int compute_stiffness);
 
 typedef int (*usr_update_elasticity) (const Constitutive_model *m,
                                       const void *ctx,
-                                      Matrix_double *L,
-                                      Matrix_double *S,
+                                      Matrix<double> *L,
+                                      Matrix<double> *S,
                                       const int compute_stiffness);
 
 
@@ -206,7 +197,7 @@ typedef int (*usr_int_alg)(Constitutive_model *m,
  */
 typedef int (*usr_tensor)(const Constitutive_model *m,
                           const void *usr_ctx,
-                          Matrix_double *tensor);
+                          Matrix<double> *tensor);
 
 /**
  * User defined function to compute constitutive scalars.
@@ -293,7 +284,7 @@ typedef int (*usr_get_var_of_t)(const Constitutive_model *m,
  * \return non-zero on internal error
  */
 typedef int (*usr_get_F)(const Constitutive_model *m,
-                         Matrix_double *F);
+                         Matrix<double> *F);
 
 /**
  * User defined function to return the deformation gradient. Note that
@@ -310,8 +301,8 @@ typedef int (*usr_get_F)(const Constitutive_model *m,
  * \return non-zero on internal error
  */
 typedef int (*usr_get_F_with_thermal)(const Constitutive_model *m,
-                                      Matrix_double *F,
-                                      const Matrix_double *hFI,
+                                      Matrix<double> *F,
+                                      const Matrix<double> *hFI,
                                       const int stepno);
 
 /**
@@ -366,11 +357,6 @@ struct Model_var_info {
   size_t n_vars;
   size_t n_flags;
 };
-
-#ifndef TYPE_MODEL_VAR_INFO
-#define TYPE_MODEL_VAR_INFO
-typedef struct Model_var_info Model_var_info;
-#endif
 
 /**
  * Print the object to the specified file.
@@ -461,16 +447,7 @@ typedef int (*usr_unpack)(Constitutive_model *m,
  */
 
 struct MATERIAL_CONSTITUTIVE_MODEL;
-#ifndef TYPE_MATERIAL_CONSTITUTIVE_MODEL
-#define TYPE_MATERIAL_CONSTITUTIVE_MODEL
-typedef struct MATERIAL_CONSTITUTIVE_MODEL MATERIAL_CONSTITUTIVE_MODEL;
-#endif
-
 struct ELASTICITY;
-#ifndef TYPE_ELASTICITY
-#define TYPE_ELASTICITY
-typedef struct ELASTICITY ELASTICITY;
-#endif
 
 struct Model_parameters {
   /** Pointer to isotropic material props */
@@ -600,7 +577,7 @@ int constitutive_model_update_time_steps(const ELEMENT *elem,
                                           const int mp_id);
 
 int constitutive_model_test(const HOMMAT *hmat,
-                            Matrix_double *L_in,
+                            Matrix<double> *L_in,
                             int Print_results);
 
 /// compute ouput variables e.g. effective stress and strain

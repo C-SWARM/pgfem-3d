@@ -14,7 +14,6 @@
 
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
-typedef struct pgf_FE2_macro_client pgf_FE2_macro_client;
 
 /**
  * Initialize a handle to a client.

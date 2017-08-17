@@ -122,6 +122,9 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
   char *restart_fname = NULL;
   err += generate_restart_fname(micro->opts->opath,rank,cell_id,s->p_tim,
 				&restart_fname);
+
+  PGFEM_printf("name of the file is %s \n",restart_fname);
+
   FILE *out = PGFEM_fopen(restart_fname,"w");
   err += dump_MICROSCALE_SOLUTION_state(s,out);
   PGFEM_fclose(out);

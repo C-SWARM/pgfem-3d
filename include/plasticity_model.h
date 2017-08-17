@@ -10,22 +10,10 @@
 #ifndef PLASTICITY_MODEL_H
 #define PLASTICITY_MODEL_H
 
+#include "data_structure_c.h"
+
 struct Model_parameters;
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
-
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
-
-struct Matrix_double;
-#ifndef TYPE_MATRIX_DOUBLE
-#define TYPE_MATRIX_DOUBLE
-typedef struct Matrix_double Matrix_double;
-#endif
+struct Constitutive_model;
 
 /**
  * Initialize the Model_parameters object for this particular model.
@@ -75,7 +63,7 @@ int plasticity_model_ctx_destroy(void **ctx);
  * \param[in] dt - time step size
  * \return non-zero on internal error.
  */
-int plasticity_model_slip_system(Matrix_double *P);
+int plasticity_model_slip_system(Matrix<double> *P);
 
 #ifndef ELEMENT_H
 typedef struct EPS EPS;
@@ -129,7 +117,7 @@ int plasticity_model_set_orientations(EPS *eps,
 
 typedef struct HOMMAT HOMMAT;
 
-int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
+int plasticity_model_test(const HOMMAT *hmat, Matrix<double> *L_in, int Load_Type);
 void test_crystal_plasticity_single_crystal(void);
 
 #endif

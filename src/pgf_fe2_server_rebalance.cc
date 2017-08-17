@@ -11,11 +11,13 @@
 /**
  * Internal data structure
  */
-typedef struct{
+namespace {
+struct Workspace {
   size_t count;
   char **buffers;
   MPI_Request *reqs;
-} pgf_FE2_server_rebalance_workspace;
+};
+}
 
 /**
  * main encapsulated data structure
@@ -23,20 +25,19 @@ typedef struct{
 struct pgf_FE2_server_rebalance
 {
   int *t;
-  pgf_FE2_server_rebalance_workspace *send_wkspc;
-  pgf_FE2_server_rebalance_workspace *recv_wkspc;
+  Workspace *send_wkspc;
+  Workspace *recv_wkspc;
 };
 
-static void allocate_workspace(pgf_FE2_server_rebalance_workspace **wkspc,
-			       const size_t n_comm)
+static void allocate_workspace(Workspace **wkspc, const size_t n_comm)
 {
-  *wkspc = malloc(sizeof(**wkspc));
-  (*wkspc)->count = n_comm; 
-  (*wkspc)->reqs = malloc(n_comm*sizeof(*((*wkspc)->reqs)));
-  (*wkspc)->buffers = malloc(n_comm*sizeof(*((*wkspc)->buffers)));
+  *wkspc = static_cast<Workspace*>(malloc(sizeof(Workspace)));
+  (*wkspc)->count = n_comm;
+  (*wkspc)->reqs = static_cast<MPI_Request*>(malloc(n_comm*sizeof(*((*wkspc)->reqs))));
+  (*wkspc)->buffers = static_cast<char**>(malloc(n_comm*sizeof(*((*wkspc)->buffers))));
 }
 
-static void destroy_workspace(pgf_FE2_server_rebalance_workspace *wkspc)
+static void destroy_workspace(Workspace *wkspc)
 {
   if(wkspc == NULL) return;
   free(wkspc->buffers);
@@ -44,7 +45,7 @@ static void destroy_workspace(pgf_FE2_server_rebalance_workspace *wkspc)
 }
 
 static void allocate_recv_workspace(pgf_FE2_server_rebalance *t,
-				    const size_t n_recv)
+                    const size_t n_recv)
 {
   allocate_workspace(&(t->recv_wkspc),n_recv);
 }
@@ -57,12 +58,12 @@ static void destroy_recv_workspace(pgf_FE2_server_rebalance *t)
 }
 
 static void allocate_send_workspace(pgf_FE2_server_rebalance *t,
-				    const size_t n_send,
-				    const size_t buff_size)
+                    const size_t n_send,
+                    const size_t buff_size)
 {
   allocate_workspace(&(t->send_wkspc),n_send);
   for(size_t i=0; i<n_send; i++){
-    t->send_wkspc->buffers[i] = malloc(buff_size);
+    t->send_wkspc->buffers[i] = static_cast<char*>(malloc(buff_size));
   }
 }
 
@@ -86,38 +87,41 @@ enum {REBAL_N_KEEP=0,
       REBAL_N_META};
 
 static size_t get_size(const size_t n_keep,
-		       const size_t n_send,
-		       const size_t n_recv)
+               const size_t n_send,
+               const size_t n_recv)
 {
   return ((size_t) REBAL_N_META) + n_keep + 2*(n_send + n_recv);
 }
 
-size_t pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *R)
+size_t
+pgf_FE2_server_rebalance_n_bytes(const pgf_FE2_server_rebalance *R)
 {
   const int *t = R->t; /* alias */
   return get_size((t)[REBAL_N_KEEP],
-		  (t)[REBAL_N_SEND],
-		  (t)[REBAL_N_RECV])*sizeof(*t);
+          (t)[REBAL_N_SEND],
+          (t)[REBAL_N_RECV])*sizeof(*t);
 }
 
-void* pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t)
+void*
+pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return t->t;
   else return NULL;
 }
 
-void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **R,
-				    const size_t n_keep,
-				    const size_t n_send,
-				    const size_t n_recv)
+void
+pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **R,
+                               const size_t n_keep,
+                               const size_t n_send,
+                               const size_t n_recv)
 {
   /* currently, pgf_FE2_server_rebalance is simply a typedef for a
      pointer to an integer, but we will have a special layout of the
      data described in the code below. */
 
   /* allocate buffer */
-  *R = malloc(sizeof(**R));
-  (*R)->t = calloc(get_size(n_keep,n_send,n_recv),sizeof(*((*R)->t)));
+  *R = static_cast<pgf_FE2_server_rebalance*>(malloc(sizeof(**R)));
+  (*R)->t = PGFEM_calloc(int, get_size(n_keep,n_send,n_recv));
   int *t = (*R)->t; /* alias */
 
   /* encode separate buffer sizes */
@@ -136,13 +140,13 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **R,
 }
 
 
-void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
-						 void **buffer)
+void
+pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t, void **buffer)
 {
   /* avoid memory leaks */
   pgf_FE2_server_rebalance_destroy(*t);
-  *t = malloc(sizeof(**t));
-  (*t)->t = *buffer;
+  *t = static_cast<pgf_FE2_server_rebalance*>(malloc(sizeof(pgf_FE2_server_rebalance)));
+  (*t)->t = static_cast<int*>(*buffer);
 
   /* invalidate pointer to buffer */
   *buffer = NULL;
@@ -152,7 +156,8 @@ void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
   (*t)->recv_wkspc = NULL;
 }
 
-void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
+void
+pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
 {
   if(t != NULL){
     free(t->t);
@@ -162,49 +167,57 @@ void pgf_FE2_server_rebalance_destroy(pgf_FE2_server_rebalance *t)
   free(t);
 }
 
-int pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t)
+int
+pgf_FE2_server_rebalance_n_keep(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return t->t[REBAL_N_KEEP];
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t)
+int*
+pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t + (t->t)[REBAL_KEEP_OFF]);
   else return NULL;
 }
 
-int pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t)
+int
+pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t)[REBAL_N_SEND];
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_send_buf(const pgf_FE2_server_rebalance *t)
+int*
+pgf_FE2_server_rebalance_send_buf(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t + (t->t)[REBAL_SEND_OFF]);
   else return NULL;
 }
 
-int* pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t)
+int*
+pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t + (t->t)[REBAL_SEND_OFF] + (t->t)[REBAL_N_SEND]);
   else return NULL;
 }
 
-int pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t)
+int
+pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t)[REBAL_N_RECV];
   else return -1;
 }
 
-int* pgf_FE2_server_rebalance_recv_buf(const pgf_FE2_server_rebalance *t)
+int*
+pgf_FE2_server_rebalance_recv_buf(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t + (t->t)[REBAL_RECV_OFF]);
   else return NULL;
 }
 
-int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t)
+int*
+pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t + (t->t)[REBAL_RECV_OFF] + (t->t)[REBAL_N_RECV]);
   else return NULL;
@@ -218,18 +231,18 @@ static int dbg_cmp_int(const void *a, const void *b)
 
 /** Verify that the id's on the microscale servers are unique */
 static int debug_keep_id(const int n_keep,
-			 const int *keep_id,
-			 const PGFEM_mpi_comm *mpi_comm)
+                         const int *keep_id,
+                         const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
   int n_servers = -1;
   err += MPI_Comm_size(mpi_comm->worker_inter,&n_servers);
 
   /* get n_keep from each proc on worker_inter */
-  int *counts = calloc(n_servers,sizeof(*counts));
-  int *displ = calloc(n_servers + 1,sizeof(*displ));
+  int *counts = PGFEM_calloc(int, n_servers);
+  int *displ = PGFEM_calloc(int, n_servers + 1);
   err += MPI_Allgather(&n_keep,1,MPI_INT,counts,1,MPI_INT,
-		      mpi_comm->worker_inter);
+              mpi_comm->worker_inter);
 
   /* allocate buffer for all keep_id */
   int total_n_keep = counts[0];
@@ -238,11 +251,11 @@ static int debug_keep_id(const int n_keep,
     displ[i] = displ[i-1] + counts[i-1];
     total_n_keep += counts[i];
   }
-  int *all_keep_id = calloc(total_n_keep,sizeof(*all_keep_id));
+  int *all_keep_id = PGFEM_calloc(int, total_n_keep);
 
   /* Gather keep_id from all procs */
   err += MPI_Allgatherv(keep_id,n_keep,MPI_INT,all_keep_id,counts,
-			displ,MPI_INT,mpi_comm->worker_inter);
+            displ,MPI_INT,mpi_comm->worker_inter);
 
   /* sort array */
   qsort(all_keep_id,total_n_keep,sizeof(*all_keep_id),dbg_cmp_int);
@@ -251,9 +264,9 @@ static int debug_keep_id(const int n_keep,
   if(mpi_comm->server_id == 0 && mpi_comm->rank_micro == 0){
     for(int i = 0; i < n_keep - 1; i++){
       if(all_keep_id[i] == all_keep_id[i+1]){
-	PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
-	assert(0); /* Cause abort on duplicate. Requires investigation */
-	err ++;
+    PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
+    assert(0); /* Cause abort on duplicate. Requires investigation */
+    err ++;
       }
     }
   }
@@ -268,9 +281,10 @@ static int debug_keep_id(const int n_keep,
   return err;
 }
 
-int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-					   const PGFEM_mpi_comm *mpi_comm,
-					   MICROSCALE *micro)
+int
+pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
+                                       const PGFEM_mpi_comm *mpi_comm,
+                                       MICROSCALE *micro)
 {
   static int sol_id_initialized = 0;
   int err = 0;
@@ -303,7 +317,7 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     if(micro->opts->restart >= 0){
       const size_t step = micro->opts->restart;
       for(int i=0; i<n_keep; i++){
-	err += pgf_FE2_restart_read_micro(micro,step,keep_id[i]);
+    err += pgf_FE2_restart_read_micro(micro,step,keep_id[i]);
       }
       /* turn off restart at the microscale */
       micro->opts->restart = -1;
@@ -333,10 +347,10 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 
     /* post non-blocking send of the data */
     err += MPI_Isend(t->send_wkspc->buffers[i],
-		     buff_size, MPI_CHAR,
-		     send_to[i], send_id[i],
-		     mpi_comm->worker_inter,
-		     &(t->send_wkspc->reqs[i]));
+             buff_size, MPI_CHAR,
+             send_to[i], send_id[i],
+             mpi_comm->worker_inter,
+             &(t->send_wkspc->reqs[i]));
   }
 
   const int n_recv = pgf_FE2_server_rebalance_n_recv(t);
@@ -356,27 +370,28 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 
     /* post non-blocking receive of the data */
     err += MPI_Irecv(t->recv_wkspc->buffers[i],
-		     buff_size,MPI_CHAR,
-		     recv_from[i], recv_id[i],
-		     mpi_comm->worker_inter,
-		     &(t->recv_wkspc->reqs[i]));
+             buff_size,MPI_CHAR,
+             recv_from[i], recv_id[i],
+             mpi_comm->worker_inter,
+             &(t->recv_wkspc->reqs[i]));
   }
 
   return err;
 }
 
-int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-					       const PGFEM_mpi_comm *mpi_comm)
+int
+pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
+                                           const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
 
   /* complete sends. Use waitsome to aid in splitting up later */
   {
     int outcount = 0;
-    int *idx = calloc(t->send_wkspc->count,sizeof(*idx));
+    int *idx = PGFEM_calloc(int, t->send_wkspc->count);
     while(outcount != MPI_UNDEFINED){
       err += MPI_Waitsome(t->send_wkspc->count,t->send_wkspc->reqs,
-			  &outcount,idx,MPI_STATUS_IGNORE);
+              &outcount,idx,MPI_STATUS_IGNORE);
     }
     free(idx);
   }
@@ -385,10 +400,10 @@ int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
   /* complete receives. Use Waitsome to aid in splitting later. */
   {
     int outcount = 0;
-    int *idx = calloc(t->recv_wkspc->count,sizeof(*idx));
+    int *idx = PGFEM_calloc(int, t->recv_wkspc->count);
     while(outcount != MPI_UNDEFINED){
       err += MPI_Waitsome(t->recv_wkspc->count,t->recv_wkspc->reqs,
-			  &outcount,idx,MPI_STATUS_IGNORE);
+              &outcount,idx,MPI_STATUS_IGNORE);
     }
     free(idx);
   }

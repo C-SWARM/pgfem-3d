@@ -30,10 +30,10 @@ int main(int argc, char **argv)
 
   Comm_hints *hints = Comm_hints_construct();
   err += Comm_hints_read_filename(hints, filename);
-  int nsend = Comm_hints_nsend(hints);
-  int nrecv = Comm_hints_nrecv(hints);
-  const int *send = Comm_hints_send_list(hints);
-  const int *recv = Comm_hints_recv_list(hints);
+  Comm_hints_nsend(hints);
+  Comm_hints_nrecv(hints);
+  Comm_hints_send_list(hints);
+  Comm_hints_recv_list(hints);
   err += Comm_hints_write(hints, stdout);
   err += Comm_hints_destroy(hints);
   err -= remove(filename); /* returns -1 on error */

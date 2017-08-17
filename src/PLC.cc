@@ -58,7 +58,7 @@ long PLC_Inaccessible (long ii,
                double HAR)
 {
   long j,k,M,N,INFO = 0;
-  double N4,ga,GAGA,nor,dga,R,Gama,Rof,Rom,Xi,PP[3][3],*GA2;
+  double N4,ga,GAGA{},nor,dga,R,Gama,Rof,Rom,Xi,PP[3][3],*GA2;
   const char *err[]={"inf","-inf","nan"};
   char str[500];
 
@@ -73,6 +73,13 @@ long PLC_Inaccessible (long ii,
   for (k=0;k<nss;k++){
 
     if (fabs(GA[k]) < 1.e-20) continue;
+
+    // @todo The following two branches leave GAGA uninitialized when GA[k] ==
+    //       GA1[k]. I assume that this condition is not possible, and have
+    //       added this assert to verify. @cp should review and make sure that
+    //       this is correct. In order to suppress uninitialized warnings I have
+    //       added the constructor call at its definition.
+    assert(GA[k] != GA1[k]);
 
     if (GA[k] < GA1[k]) GAGA = GA2[k] = 1.e-10;
     if (GA[k] > GA1[k]) GAGA = GA2[k] = 1.0;

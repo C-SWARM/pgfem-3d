@@ -1,21 +1,20 @@
 #include "PGFem3D_data_structure.h"
-
-#include "node.h"
-#include "element.h"
-#include "cohesive_element.h"
 #include "bounding_element.h"
-#include "sig.h"
+#include "cohesive_element.h"
+#include "comm_hints.h"
+#include "constitutive_model.h"
+#include "elem3d.h"
+#include "element.h"
 #include "eps.h"
-#include "matgeom.h"
+#include "femlib.h"
 #include "hommat.h"
 #include "hypre_global.h"
+#include "matgeom.h"
+#include "node.h"
 #include "pgfem_comm.h"
-#include "comm_hints.h"
+#include "sig.h"
 #include "utils.h"
 #include "vtk_output.h"
-#include "constitutive_model.h"
-#include "femlib.h"
-#include "elem3d.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -470,7 +469,7 @@ int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
   int err = 0;
 
-  load->sups        = (SUPP *)    malloc(sizeof(SUPP)*mp->physicsno);
+  load->sups        = (SUPP *)   malloc(sizeof(SUPP)*mp->physicsno);
   load->sup_defl    = (double **) malloc(sizeof(double *)*mp->physicsno);
   load->tim_load    = (long **)   malloc(sizeof(long *)*mp->physicsno);
   load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp->physicsno);
@@ -735,7 +734,7 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
   else
   {
     err += scan_for_valid_line(in);
-    fscanf(in, "%d", &physicsno);
+    CHECK_SCANF(in, "%d", &physicsno);
     if(physicsno>0)
     {
       err += construct_multiphysics(mp, physicsno);
@@ -749,12 +748,12 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
       {
         // read physics id, physics name and number of degree of freedons on node
         err += scan_for_valid_line(in);
-        fscanf(in, "%d%s%d", &physics_id,name,&ndof);
+        CHECK_SCANF(in, "%d%s%d", &physics_id,name,&ndof);
         err += set_a_physics(mp, ia,physics_id,ndof, name);
 
         // read ids for coupling
         err += scan_for_valid_line(in);
-        fscanf(in, "%d", &n_couple);
+        CHECK_SCANF(in, "%d", &n_couple);
 
         if(n_couple<0)
           n_couple = 0;
@@ -762,11 +761,11 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
         mp->coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));
         mp->coupled_ids[ia][0] = n_couple;
         for(int ib = 0; ib<n_couple; ib++)
-          fscanf(in, "%d", (mp->coupled_ids[ia])+(ib+1));
+          CHECK_SCANF(in, "%d", (mp->coupled_ids[ia])+(ib+1));
 
         // read ids for writing results
         err += scan_for_valid_line(in);
-        fscanf(in, "%d", mp->write_no+ia);
+        CHECK_SCANF(in, "%d", mp->write_no+ia);
 
         if(mp->write_no[ia]>0)
         {
@@ -775,7 +774,7 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
           err += scan_for_valid_line(in);
           cnt_pmr += mp->write_no[ia];
           for(int ib=0; ib<mp->write_no[ia]; ib++)
-            fscanf(in, "%d", mp->write_ids[ia]+ib);
+            CHECK_SCANF(in, "%d", mp->write_ids[ia]+ib);
         }
         if(mp->write_no[ia]==-1)
         {

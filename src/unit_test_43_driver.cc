@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     test_single = atoi(argv[1]);
   }
 
-  Model_parameters *p = malloc(sizeof(*p));
+  Model_parameters *p = PGFEM_malloc<Model_parameters>();
   Model_var_info *info = NULL;
 
   if (test_all) {

@@ -18,7 +18,18 @@
 #include "bounding_element.h"
 #include "pgfem_comm.h"
 #include "sig.h"
-#include "eps.h"
+
+struct EPS;                                     // defined in eps.h
+
+/// Lots of system headers require that the return value from scanf be
+/// checked. This small utility simplifies this process by counting the number
+/// of arguments that are expected automatically.
+template <class... Args>
+static inline void CHECK_SCANF(FILE *stream, Args... args) {
+  if (fscanf(stream, args...) != (sizeof...(args) - 1)) {
+    throw 1;
+  }
+}
 
 /**
  * Scan the file for a valid line (non-blank and does not start with a

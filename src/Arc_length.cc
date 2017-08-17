@@ -47,7 +47,7 @@
 #define PFEM_DEBUG_ALL 0
 #endif
 
-static const int periodic = 0;
+static constexpr int periodic = 0;
 
 /// initialize arc length variable object
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs
@@ -177,11 +177,7 @@ double Multiphysics_Arc_length(GRID *grid,
   double dts[2];
   dts[0] = dts[1] = time_steps->dt_np1;
   double t = 0.0;
-  double *r_n = NULL;
-  double *r_n_1 = NULL;
-  double alpha_alpha = 0.0;
-
-  double nor,nor1,nor2,dlm,dlm0,DLM,DET=0.0,dAL;
+  double nor,nor1,nor2,dlm,dlm0{},DLM,DET=0.0,dAL;
   double DT,DDLM,ddlm,ERROR,LS1,gama,pdt,tmp,nor3;
   long iter,INFO,i,j,STEP,N,M,DIV,ST,GAMA,OME,FI,gam,TYPE,GInfo;
   int ART;
@@ -1032,8 +1028,6 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              double *DAL,
                              double *sup_defl)
 {
-  int mp_id = 0;
-
   // initialize and define multiphysics
   MULTIPHYSICS mp;
   int id = MULTIPHYSICS_MECHANICAL;

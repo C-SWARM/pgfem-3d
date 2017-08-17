@@ -447,8 +447,11 @@ long integration_alg (long ne,
   long INFO = 0, ii,i,j,k,II,JJ,KK,ip,nne,ndofe,*nod,M,N,P,R,U,W,Q,mat,ndn,
     nss,IT,GUESS,IT_MAX,*cn;
   double *r_e,*x,*y,*z,Har,**Fn,**Fr,Jr,Jn,Tn,Tr,*Psi,**E,**S,L[3][3][3][3],
-    ksi,eta,zet,*gk,*ge,*gz,aj,ai,ak,****ST,*N_x,*N_y,*N_z,J,*w,**UU,**Fp,*GA,*TA;
+    ksi{},eta{},zet{},*gk,*ge,*gz,****ST,*N_x,*N_y,*N_z,*w,**UU,**Fp,*GA,*TA;
   double nor,**BB,DD,nor1,**FnB,*rrr,*r_r,tol,**eFnB,**FstB,**AA,lam,HAR_n,TOLER;
+
+  // @todo Eliminated dead code (and assignments below). @cp please review. LD
+  // double aj,ai,ak,J;
 
   const char *err[]={"inf","-inf","nan"};
   char str[500];
@@ -543,29 +546,30 @@ long integration_alg (long ne,
         ksi = *(gk+k);
         eta = *(ge+k);
         zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
+        // ai = *(w+k);
+        // aj = 1.0;
+        // ak = 1.0;
       }
       if (nne == 10) {
         ksi = *(gk+k);
         eta = *(ge+k);
         zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
+        // ai = *(w+k);
+        // aj = 1.0;
+        // ak = 1.0;
       }
       if (nne == 8)  {
         ksi = *(gk+i);
         eta = *(gk+j);
         zet = *(gk+k);
-        ai = *(w+i);
-        aj = *(w+j);
-        ak = *(w+k);
+        // ai = *(w+i);
+        // aj = *(w+j);
+        // ak = *(w+k);
       }
 
       /* Derivatives of shape functions and Jacobian of integration */
-      J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+      // J =
+      deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
       /* Material stiffness matrix */
       matrix_tensor_3D (elem[ii].mat[2],hommat,L);

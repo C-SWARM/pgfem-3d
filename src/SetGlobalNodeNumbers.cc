@@ -40,16 +40,13 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
   nGlobalOwn *= 2;
   nPeriodic = nNodesDom - nOwn + nGlobalNeed;
 
-  int *distNode,*nodeMappingPtr;
-  distNode = (int*) PGFEM_calloc (nproc+1, sizeof(int));
-  nodeMappingPtr = (int*) PGFEM_calloc (nproc+1,sizeof(int));
-
-  int *nodeMappingCnt;
-  nodeMappingCnt = (int*) PGFEM_calloc (nproc,sizeof(int));
+  int *distNode = PGFEM_calloc (int, nproc+1);
+  int *nodeMappingPtr = PGFEM_calloc (int, nproc+1);
+  int *nodeMappingCnt = PGFEM_calloc (int, nproc);
 
   MPI_Allgather(&nOwn,1,MPI_INT,&distNode[1],1,MPI_INT,comm);
   MPI_Allgather(&nGlobalOwn,1,MPI_INT,&nodeMappingPtr[1],1,MPI_INT,comm);
-  
+
   for(i=1; i<=nproc; i++){
     distNode[i] += distNode[i-1];
     nodeMappingCnt[i-1] = nodeMappingPtr[i];
@@ -61,33 +58,26 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
     old = boundaryNodeMapping[nodeMappingPtr[rank]+2*i]
     new = boundaryNodeMapping[nodeMappingPtr[rank]+2*i+1]
   */
-  int *boundaryNodeMapping;
-  boundaryNodeMapping = (int*) PGFEM_calloc (nodeMappingPtr[nproc],sizeof(int));
+  int *boundaryNodeMapping = PGFEM_calloc(int, nodeMappingPtr[nproc]);
 
   /* Allocate quick lookup node container */
-  int *boundaryLookup, *periodicLookup, boundaryIdx, periodicIdx;
-  if(nGlobalNeed > 0)
-    boundaryLookup = (int*) PGFEM_calloc (nGlobalNeed,sizeof(int));
-  else
-    boundaryLookup = (int*) PGFEM_calloc (1,sizeof(int));
+  int *boundaryLookup = PGFEM_calloc(int, (nGlobalNeed > 0) ? nGlobalNeed : 1);
+  int *periodicLookup = PGFEM_calloc(int, (nPeriodic > 0) ? nPeriodic : 1);
+  int boundaryIdx = 0;
+  int periodicIdx = 0;
 
-  if(nPeriodic > 0)
-    periodicLookup = (int*) PGFEM_calloc (nPeriodic,sizeof(int));
-  else
-    periodicLookup = (int*) PGFEM_calloc (1,sizeof(int));
-
-  j = k = boundaryIdx = periodicIdx = 0;
+  j = k = 0;
   for(i=0; i<nNodesDom; i++){
 
     /* Skip periodic and unowned nodes after adding to lookup tables */
     if(node[i].Dom != myrank || node[i].Pr != -1){
       if(node[i].Dom != myrank){
-	boundaryLookup[boundaryIdx] = i;
-	boundaryIdx++;
+        boundaryLookup[boundaryIdx] = i;
+        boundaryIdx++;
       }
       if(node[i].Pr != -1){
-	periodicLookup[periodicIdx] = i;
-	periodicIdx++;
+        periodicLookup[periodicIdx] = i;
+        periodicIdx++;
       }
       continue;
     }
@@ -105,12 +95,12 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
   }
 
   MPI_Allgatherv(&boundaryNodeMapping[nodeMappingPtr[myrank]],
-		 nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
-		 MPI_INT,boundaryNodeMapping,nodeMappingCnt,
-		 nodeMappingPtr,MPI_INT,comm);
+         nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
+         MPI_INT,boundaryNodeMapping,nodeMappingCnt,
+         nodeMappingPtr,MPI_INT,comm);
 
   /* Loop through the boundary nodes and update global numbers */
-  int domain, oldGnn, newGnn;
+  int domain, oldGnn, newGnn{};
   for(i=0; i<nGlobalNeed; i++){
     /* determine domain which owns the node and what the old number was */
     domain = node[boundaryLookup[i]].Dom;
@@ -120,20 +110,20 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
     for(j=nodeMappingPtr[domain]; j<nodeMappingPtr[domain+1]; j += 2){
 
       if(boundaryNodeMapping[j] == oldGnn){
-	newGnn = boundaryNodeMapping[j+1];
-	break;
+    newGnn = boundaryNodeMapping[j+1];
+    break;
       }
 
       if(j == nodeMappingPtr[domain+1] -1){
-	PGFEM_printf("ERROR: could not find match for node %d on domain %d owned by domain %d!\n%s",
-	       boundaryLookup[i],myrank,domain,"Exiting.\n");
-	abort();
+    PGFEM_printf("ERROR: could not find match for node %d on domain %d owned by domain %d!\n%s",
+           boundaryLookup[i],myrank,domain,"Exiting.\n");
+    abort();
       }
     } /* search for newGnn */
 
     node[boundaryLookup[i]].Gnn = newGnn;
   } /* update Gnn on boundary nodes */
-  
+
   /* Loop through the periodic nodes and update global numbers */
   for(i=0; i<nPeriodic; i++){
     node[periodicLookup[i]].Gnn = node[ node[periodicLookup[i]].Pr ].Gnn;
@@ -144,7 +134,7 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
     for(i=0; i<nproc; i++){
       PGFEM_printf("Mappings for process %d:\n",i);
       for(j=nodeMappingPtr[i]; j<nodeMappingPtr[i+1]; j+=2){
-	PGFEM_printf("%d -> %d\n",boundaryNodeMapping[j],boundaryNodeMapping[j+1]);
+    PGFEM_printf("%d -> %d\n",boundaryNodeMapping[j],boundaryNodeMapping[j+1]);
       }
     }
   }

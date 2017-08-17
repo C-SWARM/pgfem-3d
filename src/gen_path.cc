@@ -22,7 +22,7 @@ int make_dir(const char *path, mode_t mode)
 
     if(mkdir(path,mode) != 0 && errno != EEXIST){
       /* The directory could not be created and the error is something
-	 other than the file already existing */
+     other than the file already existing */
       status = -1;
     }
 
@@ -39,7 +39,7 @@ int make_path(const char *path, mode_t mode)
   char *pp;
   char *sp;
   int status, full_path;
-  char *copypath = PGFEM_calloc (strlen(path)+1,sizeof(char));
+  char *copypath = PGFEM_calloc (char, strlen(path)+1);
   strcpy(copypath,path);
 
   status = 0;
@@ -62,13 +62,13 @@ int make_path(const char *path, mode_t mode)
   case 0:
     while (status == 0 && (sp = strchr(pp, '/')) != 0){
       if (sp != pp){
-	/* Neither root nor double slash in path */
+    /* Neither root nor double slash in path */
 
-	*sp = '\0'; /* replace '/' with '\0' to terminate the string */
+    *sp = '\0'; /* replace '/' with '\0' to terminate the string */
 
-	status = make_dir(copypath, mode);
+    status = make_dir(copypath, mode);
 
-	*sp = '/'; /* replace the '/' character to regain the full string */
+    *sp = '/'; /* replace the '/' character to regain the full string */
       }
       pp = sp + 1; /* advance the pointer to after the '/' */
     }
@@ -89,7 +89,7 @@ int make_path(const char *path, mode_t mode)
 /// \param[in] dir_name directory path
 /// \return 1 if input dir_name exists, or 0
 int is_directory_exist(char *dir_name)
-{  
+{
   struct stat sb;
   if(stat(dir_name, &sb) == 0 && S_ISDIR(sb.st_mode))
     return 1;
@@ -108,7 +108,7 @@ int main()
   err = make_path(out_dir,0777);
   if(err != 0){
     PGFEM_printerr("Directory not created! (%d: %s)\n",
-		   errno, strerror(errno));
+           errno, strerror(errno));
     abort();
   }
 
@@ -117,7 +117,7 @@ int main()
     err = make_path(out_dir,0777);
     if(err != 0){
       PGFEM_printerr("Directory not created! (%d: %s)\n",
-		     errno, strerror(errno));
+             errno, strerror(errno));
       abort();
     }
   }

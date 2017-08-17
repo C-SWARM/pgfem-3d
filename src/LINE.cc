@@ -82,30 +82,30 @@ static const int periodic = 0;
 /// \param[in] STEP subdivision number
 /// \return info id about convergence
 long LINE_S3_MP(GRID *grid,
-                MATERIAL_PROPERTY *mat,
-                FIELD_VARIABLES *fv,
-                SOLVER_OPTIONS *sol,
-                LOADING_STEPS *load,
-                COMMUNICATION_STRUCTURE *com,
-                CRPL *crpl,
-                MPI_Comm mpi_comm,
-                const PGFem3D_opt *opts,
-                MULTIPHYSICS *mp,
-                double *dts,
-                double t,
-                int mp_id,
-                double *nor,
-                double *nor2,
-                double nor1,
-                double LS1,
-                long iter,
-                double *max_damage,
-                double *dissipation,
-                long tim,
-                long STEP)
+    MATERIAL_PROPERTY *mat,
+    FIELD_VARIABLES *fv,
+    SOLVER_OPTIONS *sol,
+    LOADING_STEPS *load,
+    COMMUNICATION_STRUCTURE *com,
+    CRPL *crpl,
+    MPI_Comm mpi_comm,
+    const PGFem3D_opt *opts,
+    MULTIPHYSICS *mp,
+    double *dts,
+    double t,
+    int mp_id,
+    double *nor,
+    double *nor2,
+    double nor1,
+    double LS1,
+    long iter,
+    double *max_damage,
+    double *dissipation,
+    long tim,
+    long STEP)
 {
-  long i,j,N,M,INFO,GInfo;
-  double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,nor3;
+  long i,N,M,INFO,GInfo;
+  double LS2,slope,tmplam,rhs1,rhs2,AL{},a,b,f2{},disc,scale,nor3;
   const char *error[]={"inf","-inf","nan"};
   char str1[500];
   double dt = dts[DT_NP1];
@@ -125,15 +125,14 @@ long LINE_S3_MP(GRID *grid,
   LS2 *= 1./(2.*scale);
 
   sol->gama = 1.0;
-  j = 0;
   INFO = 0;
   if (iter == 0)
     return (0);
 
   if (myrank == 0)
     PGFEM_printf("nor = %12.8e :: slope = %12.8e || LS1 = %12.8e"
-            "|| LS2 = %12.8e || HU = %12.8e\n",
-            *nor,slope,LS1,LS2,LS1 + 1.e-4*(sol->gama)*slope);
+        "|| LS2 = %12.8e || HU = %12.8e\n",
+        *nor,slope,LS1,LS2,LS1 + 1.e-4*(sol->gama)*slope);
 
   while (LS2 > LS1 + 1.e-4*(sol->gama)*slope){
 
@@ -175,8 +174,8 @@ long LINE_S3_MP(GRID *grid,
     /*************************/
     if (opts->analysis_type == FS_CRPL) {
       INFO = integration_alg (grid->ne,fv->ndofn,fv->ndofd,fv->npres,crpl,grid->element,
-              grid->node,fv->d_u,fv->f,load->sups[mp_id],mat->matgeom,mat->hommat,fv->eps,
-              fv->sig,tim,iter,dt,sol->nor_min,STEP,1,opts,mp_id);
+          grid->node,fv->d_u,fv->f,load->sups[mp_id],mat->matgeom,mat->hommat,fv->eps,
+          fv->sig,tim,iter,dt,sol->nor_min,STEP,1,opts,mp_id);
 
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
@@ -193,9 +192,9 @@ long LINE_S3_MP(GRID *grid,
     }
 
     INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-            mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
-            fv->eps,fv->sig,max_damage,dissipation,
-            opts->analysis_type,mp_id);
+        mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
+        fv->eps,fv->sig,max_damage,dissipation,
+        opts->analysis_type,mp_id);
 
     bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
 
@@ -203,7 +202,7 @@ long LINE_S3_MP(GRID *grid,
     if (GInfo == 1) {
       if(myrank == 0){
         PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
-                "Subdividing load.\n");
+            "Subdividing load.\n");
       }
       INFO = 1;
       return 1;
@@ -211,7 +210,7 @@ long LINE_S3_MP(GRID *grid,
 
     /* Residuals */
     compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                             mp_id,t,dts, 1);
+        mp_id,t,dts, 1);
 
     /* Compute Euclidian norm */
     for (i=0;i<fv->ndofd;i++)
@@ -246,8 +245,8 @@ long LINE_S3_MP(GRID *grid,
 
     if (myrank ==0)
       PGFEM_printf ("gama = %12.12f || tmplam = %12.8f ||"
-              "NOR = %12.8e  || LS2 = %12.8e\n",
-              (sol->gama),tmplam,*nor,LS2);
+          "NOR = %12.8e  || LS2 = %12.8e\n",
+          (sol->gama),tmplam,*nor,LS2);
 
   }/* end LINE SEARCH */
 
@@ -283,40 +282,37 @@ long LINE_S3_MP(GRID *grid,
 /// \param[in] dAL Arc Length parameter
 /// \return info id about convergence
 long ALINE_S3_MP(GRID *grid,
-                 MATERIAL_PROPERTY *mat,
-                 FIELD_VARIABLES *fv,
-                 SOLVER_OPTIONS *sol,
-                 LOADING_STEPS *load,
-                 COMMUNICATION_STRUCTURE *com,
-                 CRPL *crpl,
-                 MPI_Comm mpi_comm,
-                 const PGFem3D_opt *opts,
-                 MULTIPHYSICS *mp,
-                 double *dts,
-                 int mp_id,
-                 double *nor,
-                 double *nor2,
-                 double nor1,
-                 double LS1,
-                 long iter,
-                 double *max_damage,
-                 double *dissipation,
-                 long tim,
-                 long STEP,
-                 double *DLM,
-                 double *gama,
-                 double dlm,
-                 double dAL)
+    MATERIAL_PROPERTY *mat,
+    FIELD_VARIABLES *fv,
+    SOLVER_OPTIONS *sol,
+    LOADING_STEPS *load,
+    COMMUNICATION_STRUCTURE *com,
+    CRPL *crpl,
+    MPI_Comm mpi_comm,
+    const PGFem3D_opt *opts,
+    MULTIPHYSICS *mp,
+    double *dts,
+    int mp_id,
+    double *nor,
+    double *nor2,
+    double nor1,
+    double LS1,
+    long iter,
+    double *max_damage,
+    double *dissipation,
+    long tim,
+    long STEP,
+    double *DLM,
+    double *gama,
+    double dlm,
+    double dAL)
 {
   ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dt = dts[DT_NP1];
   double t = 0.0;
-  double alpha = 0.0;
-  double *r_n = NULL;
-  double *r_n_1 = NULL;
 
-  long i,j,N,M,INFO,GInfo;
-  double LS2,slope,tmplam,rhs1,rhs2,AL,a,b,f2,disc,scale,tmp;
+  long i,N,M,INFO,GInfo;
+  double LS2,slope,tmplam,rhs1,rhs2,AL{},a,b,f2{},disc,scale,tmp;
   const char *error[]={"inf","-inf","nan"};
   char str1[500];
 
@@ -332,14 +328,13 @@ long ALINE_S3_MP(GRID *grid,
   LS2 *= 1./(2.*scale);
 
   *gama = 1.0;
-  j = 0;
   INFO = 0;
   if (iter == 0) return (0);
 
   if (myrank == 0)
     PGFEM_printf("nor = %12.8e :: slope = %12.8e || LS1 = %12.8e "
-       "|| LS2 = %12.8e || HU = %12.8e\n",
-       *nor,slope,LS1,LS2,LS1 + 1.e-4**gama*slope);
+        "|| LS2 = %12.8e || HU = %12.8e\n",
+        *nor,slope,LS1,LS2,LS1 + 1.e-4**gama*slope);
 
   while (LS2 > LS1 + 1.e-4**gama*slope){
 
@@ -353,11 +348,11 @@ long ALINE_S3_MP(GRID *grid,
       b = (-AL*rhs1/(*gama**gama)+*gama*rhs2/(AL*AL))/(*gama-AL);
       if (a == 0.0) tmplam = -slope/(2.*b);
       else{
-    disc = b*b - 3.*a*slope;
-    if (disc < 0.0) tmplam = 0.5**gama;
-    else
-      if (b <= 0.0) tmplam = (-b+sqrt(disc))/(3.0*a);
-      else tmplam = -slope/(b+sqrt(disc));
+        disc = b*b - 3.*a*slope;
+        if (disc < 0.0) tmplam = 0.5**gama;
+        else
+          if (b <= 0.0) tmplam = (-b+sqrt(disc))/(3.0*a);
+          else tmplam = -slope/(b+sqrt(disc));
       }/* else a == 0 */
       if (tmplam > 0.5**gama) tmplam = 0.5**gama;
     }/* end *gama == 1*/
@@ -380,11 +375,11 @@ long ALINE_S3_MP(GRID *grid,
     /* dlam */
     if (arc->ARC == 0){
       *DLM = D_lam_ALM (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_R,arc->BS_DK,
-            dlm,dAL,com->DomDof,mpi_comm);
+          dlm,dAL,com->DomDof,mpi_comm);
     }
     if (arc->ARC == 1)
       *DLM = D_lam_ALM4 (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_DK,dlm,
-             dAL,com->DomDof,mpi_comm);
+          dAL,com->DomDof,mpi_comm);
 
     sprintf (str1,"%f",*DLM);
     for (N=0;N<3;N++){
@@ -392,8 +387,8 @@ long ALINE_S3_MP(GRID *grid,
       M = strcmp(error[N],str1);
 
       if (M == 0) {
-    if (myrank == 0) PGFEM_printf("Complex root in ARC-LENGTH method\n");
-    return (1);
+        if (myrank == 0) PGFEM_printf("Complex root in ARC-LENGTH method\n");
+        return (1);
       }
     }
 
@@ -412,14 +407,14 @@ long ALINE_S3_MP(GRID *grid,
     /*************************/
     if (opts->analysis_type == FS_CRPL) {
       INFO=integration_alg (grid->ne,fv->ndofn,fv->ndofd,fv->npres,crpl,grid->element,grid->node,
-                fv->d_u,arc->D_R,load->sups[mp_id] ,mat->matgeom ,mat->hommat,fv->eps,fv->sig ,
-                tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id);
+          fv->d_u,arc->D_R,load->sups[mp_id] ,mat->matgeom ,mat->hommat,fv->eps,fv->sig ,
+          tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id);
 
       /* Gather INFO from all domains */
       MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
       if (GInfo == 1) {
-    INFO = 1;
-    return (1);
+        INFO = 1;
+        return (1);
       }
     }
 
@@ -430,15 +425,15 @@ long ALINE_S3_MP(GRID *grid,
     }
 
     INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-                  mat->hommat,load->sups[mp_id] ,dt,iter,mpi_comm,
-                  fv->eps,fv->sig ,max_damage,dissipation,
-                  opts->analysis_type,mp_id);
+        mat->hommat,load->sups[mp_id] ,dt,iter,mpi_comm,
+        fv->eps,fv->sig ,max_damage,dissipation,
+        opts->analysis_type,mp_id);
 
     MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
     if (GInfo == 1) {
       if(myrank == 0){
-    PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
-           "Subdividing load.\n");
+        PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
+            "Subdividing load.\n");
       }
       INFO = 1;
       return 1;
@@ -465,9 +460,9 @@ long ALINE_S3_MP(GRID *grid,
       M = 10;
       M = strcmp(error[N],str1);
       if (M == 0){
-      if (myrank == 0)
-    PGFEM_printf("ERROR in the algorithm LS2 : nor = %s\n",error[N]);
-      return (1);
+        if (myrank == 0)
+          PGFEM_printf("ERROR in the algorithm LS2 : nor = %s\n",error[N]);
+        return (1);
       }
     }
 

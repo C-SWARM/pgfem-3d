@@ -414,8 +414,7 @@ void re_parse_command_line(const int myrank,
                            PGFem3D_opt *options)
 {
   const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
-  struct option *opts;/* [n_options+1]; */
-  opts = (struct option*) PGFEM_calloc(n_options+1,sizeof(struct option));
+  option *opts = PGFEM_calloc(option, n_options+1);
   copy_options(opts);
   opterr = 0;
 
@@ -684,7 +683,7 @@ void get_macro_micro_option_blocks(const int myrank,
        MACRO_NPROC,
        MICRO_SIZE,
        N_OPT};
-  int *got_opt = calloc(N_OPT,sizeof(int));
+  int *got_opt = static_cast<int*>(calloc(N_OPT,sizeof(int)));
   for(int i=0; i<argc; i++){
     const char *arg_str = argv[i];
 

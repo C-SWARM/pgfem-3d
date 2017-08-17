@@ -36,8 +36,6 @@ static const double DELTA_W_MAX = 0.05;
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
-Define_Matrix(double);
-
 /* private context structure */
 typedef struct {
   double F[tensor];
@@ -70,10 +68,10 @@ static double ivd_weibull_function(const double Ybar,
 {
   if(Ybar <= params[Yin]) return 0.0;
   return (params[ome_max] - params[ome_max]
-	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]),
-		    params[p2])
-	       )
-	  );
+      * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]),
+            params[p2])
+           )
+      );
 }
 
 static double ivd_weibull_evolution(const double Ybar,
@@ -81,9 +79,9 @@ static double ivd_weibull_evolution(const double Ybar,
 {
   if(Ybar <= params[Yin]) return 0.0;
   return (params[ome_max] * params[p2] / (params[p1] * params[Yin])
-	  * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2]) )
-	  * pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2] - 1.0)
-	  );
+      * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2]) )
+      * pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2] - 1.0)
+      );
 }
 
 static int ivd_private_damage_int_alg(double *vars,
@@ -135,9 +133,9 @@ int ivd_public_int_alg(double *var_w,
                        const double param_Yin)
 {
   int err = 0;
-  double *params = calloc(NUM_param, sizeof(*params));
-  double *vars = calloc(NUM_vars, sizeof(*vars));
-  int *flags = calloc(NUM_flags, sizeof(*flags));
+  double *params = PGFEM_calloc(double, NUM_param);
+  double *vars = PGFEM_calloc(double, NUM_vars);
+  int *flags = PGFEM_calloc(int, NUM_flags);
 
   /* pack state at n */
   params[mu] = param_mu;
@@ -210,15 +208,15 @@ static int ivd_compute_Lbar(const Constitutive_model *m,
   for (int i=0; i < dim; i++) {
     for (int j=0; j < dim; j++) {
       for (int k=0; k < dim; k++) {
-	for (int l=0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  /* Deviatoric + Volumetric stiffness */
-	  Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
+    for (int l=0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      /* Deviatoric + Volumetric stiffness */
+      Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
                           * C_I[idx_2(i,j)] * C_I[idx_2(k,l)])
-			 - (2. * kappa * J * dudj
+             - (2. * kappa * J * dudj
                             * C_I[idx_2(i,k)] * C_I[idx_2(l,j)])
                          );
-	}
+    }
       }
     }
   }
@@ -240,10 +238,10 @@ static int ivd_modify_AST(const Constitutive_model *m,
   for (int i=0; i < dim; i++) {
     for (int j=0; j < dim; j++) {
       for (int k=0; k < dim; k++) {
-	for (int l=0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  /* Deviatoric + Volumetric stiffness */
-	  L[idx4] -= evo * Sbar[idx_2(i,j)] * Sbar[idx_2(k,l)];
+    for (int l=0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      /* Deviatoric + Volumetric stiffness */
+      L[idx4] -= evo * Sbar[idx_2(i,j)] * Sbar[idx_2(k,l)];
         }
       }
     }
@@ -254,7 +252,7 @@ static int ivd_modify_AST(const Constitutive_model *m,
 /* function stubs for CM interface */
 static int ivd_compute_AST(const Constitutive_model *m,
                            const void *ctx,
-                           Matrix_double *L)
+                           Matrix<double> *L)
 {
   int err = 0;
   /* compute virgin material tangent */
@@ -303,7 +301,7 @@ static int ivd_int_alg(Constitutive_model *m,
 
 static int ivd_dev_stress(const Constitutive_model *m,
                           const void *ctx,
-                          Matrix_double *devS)
+                          Matrix<double> *devS)
 {
   int err = 0;
   auto CTX = (ivd_ctx *) ctx;
@@ -333,7 +331,7 @@ static int ivd_dudj(const Constitutive_model *m,
 
 static int ivd_dev_tangent(const Constitutive_model *m,
                            const void *ctx,
-                           Matrix_double *devL)
+                           Matrix<double> *devL)
 {
   int err = 0;
   auto CTX = (ivd_ctx *) ctx;
@@ -409,13 +407,13 @@ static int ivd_get_info(Model_var_info **info)
   if( *info != NULL) err += model_var_info_destroy(info);
 
   /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
+  (*info) = PGFEM_malloc<Model_var_info>();
   (*info)->n_Fs = NUM_Fs;
   (*info)->n_vars = NUM_vars;
   (*info)->n_flags = NUM_flags;
-  (*info)->F_names = malloc(NUM_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( NUM_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( NUM_flags * sizeof( ((*info)->flag_names) ));
+  (*info)->F_names = PGFEM_malloc<char*>(NUM_Fs);
+  (*info)->var_names = PGFEM_malloc<char*>(NUM_vars);
+  (*info)->flag_names = PGFEM_malloc<char*>(NUM_flags);
 
   /* allocate/copy strings */
   (*info)->F_names[F] = strdup("F");
@@ -435,7 +433,7 @@ static int ivd_get_info(Model_var_info **info)
 }
 
 static int ivd_get_Fn(const Constitutive_model *m,
-                      Matrix_double *FF)
+                      Matrix<double> *FF)
 {
   int err = 0;
   Matrix_copy(*FF, m->vars_list[0][m->model_id].Fs[Fn]);
@@ -443,7 +441,7 @@ static int ivd_get_Fn(const Constitutive_model *m,
 }
 
 static int ivd_get_F(const Constitutive_model *m,
-                     Matrix_double *FF)
+                     Matrix<double> *FF)
 {
   int err = 0;
   Matrix_copy(*FF, m->vars_list[0][m->model_id].Fs[F]);
@@ -455,7 +453,7 @@ static int ivd_get_F(const Constitutive_model *m,
  * e.g., Fp
  */
 static int ivd_get_F_I(const Constitutive_model *m,
-                       Matrix_double *F)
+                       Matrix<double> *F)
 {
   int err = 0;
   Matrix_eye(*F, dim);
@@ -587,17 +585,17 @@ static int ivd_get_subdiv_param(const Constitutive_model *m,
 
 int ivd_update_elasticity(const Constitutive_model *m,
                           const void *ctx,
-                          Matrix_double *L,
-                          Matrix_double *S,
+                          Matrix<double> *L,
+                          Matrix<double> *S,
                           const int compute_stiffness)
 {
   int err = 0;
 
   err += ivd_compute_Sbar(m,ctx,S->m_pdata);
-  double dam = (1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w]);  
+  double dam = (1.0 - m->vars_list[0][m->model_id].state_vars->m_pdata[w]);
   for(int a=0; a<tensor; a++)
     S->m_pdata[a] *= dam;
-  
+
   if(compute_stiffness)
     err += ivd_compute_AST(m, ctx, L); //compute stiffness
 
@@ -653,7 +651,7 @@ int iso_viscous_damage_model_initialize(Model_parameters *p)
 
   /* allocate room for parameters */
   p->n_param = NUM_param;
-  p->model_param = calloc(NUM_param, sizeof(*(p->model_param)));
+  p->model_param = PGFEM_calloc(double, NUM_param);
 
   return err;
 }
@@ -662,7 +660,7 @@ int iso_viscous_damage_model_ctx_build(void **ctx,
                                        const double *F,
                                        const double dt)
 {
-  ivd_ctx *CTX = malloc(sizeof(*CTX));
+  ivd_ctx *CTX = PGFEM_malloc<ivd_ctx>();
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;
   *ctx = CTX;

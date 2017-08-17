@@ -18,12 +18,12 @@
  * Original implementation of GRedist_node
  */
 static long fallback_GRedist_node(const int nproc,
-                                  const int myrank,
-                                  const long nn,
-                                  const long ndofn,
-                                  NODE *node,
-                                  const MPI_Comm Comm,
-                                  const long mp_id)
+    const int myrank,
+    const long nn,
+    const long ndofn,
+    NODE *node,
+    const MPI_Comm Comm,
+    const long mp_id)
 {
   long NBN = 0; /* return value */
 
@@ -49,25 +49,25 @@ static long fallback_GRedist_node(const int nproc,
   long *need_buf = NULL;
   size_t own_buf_elem_size = (ndofn+1)*sizeof(long);
   size_t need_buf_elem_size = 2*sizeof(long);
-  if(GN > 0) own_buf = malloc(GN*own_buf_elem_size);
-  if(need > 0) need_buf = malloc(need*need_buf_elem_size);
+  if(GN > 0) own_buf = static_cast<long*>(malloc(GN*own_buf_elem_size));
+  if(need > 0) need_buf = static_cast<long*>(malloc(need*need_buf_elem_size));
 
   {
     size_t own_idx = 0;
     size_t need_idx = 0;
-    for (size_t i=0;i<nn;i++){
+    for (auto i=0;i<nn;i++){
       if(node[i].Gnn >= 0){
-	/* global node owned by THIS domain */
-	if (node[i].Dom == myrank && node[i].Pr == -1){
-	  own_buf[own_idx++] = node[i].Gnn;
-	  memcpy(own_buf + own_idx,node[i].id_map[mp_id].Gid,ndofn*sizeof(long));
-	  own_idx += ndofn;
-	}
-	/* global node owned by OTHER domain */
-	else if (node[i].Dom != myrank && node[i].Pr == -1){
-	  need_buf[need_idx++] = node[i].Gnn;
-	  need_buf[need_idx++] = i;
-	}
+        /* global node owned by THIS domain */
+        if (node[i].Dom == myrank && node[i].Pr == -1){
+          own_buf[own_idx++] = node[i].Gnn;
+          memcpy(own_buf + own_idx,node[i].id_map[mp_id].Gid,ndofn*sizeof(long));
+          own_idx += ndofn;
+        }
+        /* global node owned by OTHER domain */
+        else if (node[i].Dom != myrank && node[i].Pr == -1){
+          need_buf[need_idx++] = node[i].Gnn;
+          need_buf[need_idx++] = i;
+        }
       }
       /* do nothing for purely local nodes (Gnn < 0) */
     }/* end i < nn */
@@ -78,10 +78,10 @@ static long fallback_GRedist_node(const int nproc,
   MPI_Allgather (&GN,1,MPI_LONG,BN,1,MPI_LONG,Comm);
 
   /* Compute recvcount and displ arrays */
-  int *recvcount = PGFEM_calloc(nproc,sizeof(int));
-  int *displ = PGFEM_calloc(nproc,sizeof(int));
+  int *recvcount = PGFEM_calloc(int,nproc);
+  int *displ = PGFEM_calloc(int,nproc);
   displ[0] = 0;
-  for (size_t i=0;i<nproc;i++){
+  for (auto i=0;i<nproc;i++){
     recvcount[i] = BN[i]*(ndofn + 1);
     NBN += BN[i];
     if(i > 0){
@@ -91,9 +91,9 @@ static long fallback_GRedist_node(const int nproc,
 
   /* gather the global nodes and their associated global dof ids */
   long *Gnn_Gid = NULL;
-  if(NBN > 0) Gnn_Gid = malloc(NBN*own_buf_elem_size);
+  if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
   MPI_Allgatherv(own_buf,recvcount[myrank],MPI_LONG,
-		 Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
+      Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
 
   /* sort the list of Gnn and their associated Gid by Gnn */
   qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
@@ -103,38 +103,38 @@ static long fallback_GRedist_node(const int nproc,
 
   if (PFEM_DEBUG){
     /* Check global node numbers, should be ordered and contiguous */
-    size_t k = 0;
-    for (size_t i=0; i<NBN*(ndofn+1); i+=ndofn+1){
+    long k = 0;
+    for (auto i=0; i<NBN*(ndofn+1); i+=ndofn+1){
       if (Gnn_Gid[i] != k){
-	PGFEM_printf ("Error in global node numbers (%ld)\n",k);
-	//PGFEM_Comm_abort (Comm);
+        PGFEM_printf ("Error in global node numbers (%ld)\n",k);
+        //PGFEM_Comm_abort (Comm);
       } else k++;
     }
   }
 
   /* RENUMBER GLOBAL ID ON DOMAINS */
-  for (size_t i=0;i<need;i++){
+  for (int i=0;i<need;i++){
     const size_t Gnn = need_buf[i*2];
     const size_t nod = need_buf[i*2+1];
     const size_t Gnn_Gid_idx = Gnn*(ndofn+1) + 1;
-    for (size_t j=0;j<ndofn;j++){
+    for (long j=0;j<ndofn;j++){
       if(node[nod].id_map[mp_id].id[j] <= 0){
-	/* BC overrides periodicity */
-      	node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
+        /* BC overrides periodicity */
+        node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
       } else {
-	node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
+        node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
       }
     }
   }
 
-  for (size_t i=0;i<nn;i++){
+  for (auto i=0;i<nn;i++){
     if (node[i].Pr == -1) continue;
-    for (size_t j=0;j<ndofn;j++){
+    for (auto j=0;j<ndofn;j++){
       if(node[i].id_map[mp_id].id[j] <= 0){
-	/* BC overrides periodicity */
-	node[i].id_map[mp_id].Gid[j] = node[i].id_map[mp_id].id[j];
+        /* BC overrides periodicity */
+        node[i].id_map[mp_id].Gid[j] = node[i].id_map[mp_id].id[j];
       } else {
-	node[i].id_map[mp_id].Gid[j] = node[node[i].Pr].id_map[mp_id].Gid[j];
+        node[i].id_map[mp_id].Gid[j] = node[node[i].Pr].id_map[mp_id].Gid[j];
       }
     }
   }
@@ -155,13 +155,13 @@ static long fallback_GRedist_node(const int nproc,
  * \return total number of global nodes
  */
 static long comm_hints_GRedist_node(const int nproc,
-                                    const int myrank,
-                                    const long nnode,
-                                    const long ndofn,
-                                    NODE *nodes,
-                                    const Comm_hints *hints,
-                                    const MPI_Comm comm,
-                                    const long mp_id)
+    const int myrank,
+    const long nnode,
+    const long ndofn,
+    NODE *nodes,
+    const Comm_hints *hints,
+    const MPI_Comm comm,
+    const long mp_id)
 {
   int err = 0;
   long owned_gnn = 0;
@@ -181,13 +181,13 @@ static long comm_hints_GRedist_node(const int nproc,
 
      This buffer is constructed in Gnn order and does not require
      sorting.
-   */
+  */
   long *owned_Gnn_Gid = NULL;
   int len_owned_Gnn_Gid = 0;
   if (!nodes_get_shared_idx_range(n_shared, shared, myrank, owned_range)) {
     owned_gnn = owned_range[1] - owned_range[0];
     len_owned_Gnn_Gid = owned_gnn * (ndofn + 1);
-    owned_Gnn_Gid = malloc(len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid));
+    owned_Gnn_Gid = static_cast<long*>(malloc(len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid)));
 
     /* loop through list and decrement owned_gnn if duplicates are
        found (e.g., periodic nodes). Additionally construct the
@@ -210,10 +210,10 @@ static long comm_hints_GRedist_node(const int nproc,
      sends.*** */
   const int nsend = Comm_hints_nrecv(hints);
   const int *send = Comm_hints_recv_list(hints);
-  MPI_Request *req = malloc(nsend * sizeof(*req));
+  MPI_Request *req = static_cast<MPI_Request*>(malloc(nsend * sizeof(*req)));
   for (int i = 0; i < nsend; i++) {
     err += MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
-                     send[i], GREDIST_TAG, comm, req + i);
+        send[i], GREDIST_TAG, comm, req + i);
   }
 
   /* reduce the total number of boundary nodes */
@@ -224,7 +224,7 @@ static long comm_hints_GRedist_node(const int nproc,
      hints to post receives.*** */
   const int nrecv = Comm_hints_nsend(hints);
   const int *recv = Comm_hints_send_list(hints);
-  int *finished = calloc(nrecv, sizeof(*finished));
+  int *finished = static_cast<int*>(calloc(nrecv, sizeof(*finished)));
   int remaining = nrecv;
   while (remaining > 0) {
     int idx = 0;
@@ -245,13 +245,13 @@ static long comm_hints_GRedist_node(const int nproc,
        appropriately sized buffer */
     int msg_count = 0;
     err += MPI_Get_count(&stat, MPI_LONG, &msg_count);
-    long *recv_Gnn_Gid = malloc(msg_count * sizeof(*recv_Gnn_Gid));
+    long *recv_Gnn_Gid = static_cast<long*>(malloc(msg_count * sizeof(*recv_Gnn_Gid)));
 
     /* We want to ensure that we are posting the *identically
        matching* receive, so we use the tag instead of MPI_ANY_TAG */
     MPI_Request breq;
     err += MPI_Irecv(recv_Gnn_Gid, msg_count, MPI_LONG,
-                     recv[idx], stat.MPI_TAG, comm, &breq);
+        recv[idx], stat.MPI_TAG, comm, &breq);
 
     /* While waiting for communication to complete, find the range of
        nodes we need to work on that are owned by the current
@@ -259,7 +259,7 @@ static long comm_hints_GRedist_node(const int nproc,
     int range[2] = {0};
     if (nodes_get_shared_idx_range(n_shared, shared, recv[idx], range)) {
       PGFEM_printerr("ERROR: got bad hints on proc [%d] for proc [%d]! No matching nodes\n",
-                     myrank, recv[idx]);
+          myrank, recv[idx]);
       PGFEM_Abort();
     }
 
@@ -279,7 +279,7 @@ static long comm_hints_GRedist_node(const int nproc,
     for (int i = range[0], e = range[1]; i < e; i++) {
       int nmemb = (msg_count - (match - recv_Gnn_Gid)) / size;
       key[0] = shared[i].Gnn;
-      match = bsearch(key, match, nmemb, size * sizeof(*match), compare_long);
+      match = static_cast<const long*>(bsearch(key, match, nmemb, size * sizeof(*match), compare_long));
       if (!match) {
         PGFEM_printerr("[%d] ERROR: did not find match!\n", myrank);
         PGFEM_Abort();
@@ -318,13 +318,13 @@ static long comm_hints_GRedist_node(const int nproc,
 }
 
 long GRedist_node (const int nproc,
-		   const int myrank,
-		   const long nn,
-		   const long ndofn,
-		   NODE *node,
-       const Comm_hints *hints,
-		   const MPI_Comm Comm,
-		   const int mp_id)
+    const int myrank,
+    const long nn,
+    const long ndofn,
+    NODE *node,
+    const Comm_hints *hints,
+    const MPI_Comm Comm,
+    const int mp_id)
 {
   if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm, mp_id);
   else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm, mp_id);

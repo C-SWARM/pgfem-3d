@@ -4,11 +4,11 @@
    descriptive debugging messages. Note that long is used in lew of
    size_t so that signs may be checked for error reporting */
 #include "allocation.h"
+#include "PGFEM_io.h"
 #include "PGFEM_mpi.h"
+#include "utils.h"
 #include <string.h>
 #include <unistd.h>
-
-#include "PGFEM_io.h"
 
 #ifdef NDEBUG
 #define DEBUG_PGFEM_ALLOC 0
@@ -31,7 +31,7 @@ static void log_mem_state_kb()
   static char log_name[100];
   static char mem_name[100];
   if(!called){
-    int myrank = 0; 
+    int myrank = 0;
     get_err_rank(&myrank);
     const size_t pid = getpid();
     sprintf(log_name,"mem_%.5d.log",myrank);
@@ -41,13 +41,13 @@ static void log_mem_state_kb()
   FILE *log = fopen(log_name,"a"); /* append to log */
   if(log == NULL){
     PGFEM_printerr("WARNING: could not open (%s). No output written.\n",
-		   log_name);
+                   log_name);
     return;
   } else {
     FILE *mem_state = PGFEM_fopen(mem_name,"r");
     if(mem_state == NULL){
       PGFEM_printerr("WARNING: could not open (%s)."
-		     " No output written.\n",mem_name);
+                     " No output written.\n",mem_name);
       PGFEM_fclose(log);
       return;
     }
@@ -57,7 +57,7 @@ static void log_mem_state_kb()
     int size = 0;
     int resident = 0;
     int shared = 0;
-    fscanf(mem_state,"%d %d %d",&size,&resident,&shared);
+    CHECK_SCANF(mem_state,"%d %d %d",&size,&resident,&shared);
     fclose(mem_state);
     PGFEM_fprintf(log,"%d %d\n",4*resident,4*size);
     PGFEM_fclose(log);
@@ -69,10 +69,10 @@ static void log_mem_state_kb()
     PGFEM_calloc so that __func__ __FILE__ and __LINE__ can be passed
     from the point of invocation without as much code */
 void* PGFEM_CALLOC(const long nelem,
-		   const long size,
-		   const char *function,
-		   const char *file,
-		   const long line)
+                   const long size,
+                   const char *function,
+                   const char *file,
+                   const long line)
 {
   int err = 0;
   int myrank = 0;
@@ -87,22 +87,22 @@ void* PGFEM_CALLOC(const long nelem,
     }
 
     switch(err){
-    case 0: default: val = calloc(nelem,size); break;
-    case 3:
+     case 0: default: val = calloc(nelem,size); break;
+     case 3:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]Warning: attempted to allocate 0 elements. %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       val = calloc(1,size); break;
-    case 1:
+     case 1:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
-    case 2:
+     case 2:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative sized elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
     }
@@ -116,7 +116,7 @@ void* PGFEM_CALLOC(const long nelem,
   /* Check that valid pointer was returned */
   if(val == NULL){
     PGFEM_printerr("[%d]ERROR: calloc returned NULL! %s:%s:%ld\n",
-		   myrank,function,file,line);
+                   myrank,function,file,line);
     PGFEM_Abort();
   }
 
@@ -127,11 +127,11 @@ void* PGFEM_CALLOC(const long nelem,
 }
 
 void** PGFEM_CALLOC_2(const long nelem1,
-		      const long nelem2,
-		      const long size,
-		      const char *function,
-		      const char *file,
-		      const long line)
+                      const long nelem2,
+                      const long size,
+                      const char *function,
+                      const char *file,
+                      const long line)
 {
   int err = 0;
   int myrank = 0;
@@ -149,32 +149,33 @@ void** PGFEM_CALLOC_2(const long nelem1,
     } else if (nelem1 == 0 || nelem2 == 0){
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]Warning: attempted to allocate 0 elements. %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
     }
 
     switch(err){
-    case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+     case 0:
+     default:
+      val = static_cast<void**>(PGFEM_CALLOC(n,ptr_size,function,file,line));
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,size,function,__FILE__,__LINE__);
+        val[i] = PGFEM_CALLOC(m,size,function,__FILE__,__LINE__);
       }
       break;
-    case 1:
+     case 1:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
-    case 2:
+     case 2:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative sized elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+    val = static_cast<void**>(PGFEM_CALLOC(n,ptr_size,function,file,line));
     for(long i=0; i<n; i++){
       val[i] = PGFEM_CALLOC(m,size,function,__FILE__,__LINE__);
     }
@@ -183,12 +184,12 @@ void** PGFEM_CALLOC_2(const long nelem1,
 }
 
 void*** PGFEM_CALLOC_3(const long nelem1,
-		       const long nelem2,
-		       const long nelem3,
-		       const long size,
-		       const char *function,
-		       const char *file,
-		       const long line)
+                       const long nelem2,
+                       const long nelem3,
+                       const long size,
+                       const char *function,
+                       const char *file,
+                       const long line)
 {
   int err = 0;
   int myrank = 0;
@@ -208,39 +209,39 @@ void*** PGFEM_CALLOC_3(const long nelem1,
     } else if (nelem1 == 0 || nelem2 == 0 || nelem3 == 0){
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]Warning: attempted to allocate 0 elements. %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
     }
 
     switch(err){
-    case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+     case 0: default:
+      val = static_cast<void***>(PGFEM_CALLOC(n,ptr_size,function,file,line));
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
-	for(long j=0; j<m; j++){
-	  val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
-	}
+        val[i] = static_cast<void**>(PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__));
+        for(long j=0; j<m; j++){
+          val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
+        }
       }
       break;
-    case 1:
+     case 1:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
-    case 2:
+     case 2:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative sized elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+    val = static_cast<void***>(PGFEM_CALLOC(n,ptr_size,function,file,line));
     for(long i=0; i<n; i++){
-      val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
+      val[i] = static_cast<void**>(PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__));
       for(long j=0; j<m; j++){
-	val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
+        val[i][j] = PGFEM_CALLOC(p,size,function,__FILE__,__LINE__);
       }
     }
   }
@@ -249,13 +250,13 @@ void*** PGFEM_CALLOC_3(const long nelem1,
 }
 
 void**** PGFEM_CALLOC_4(const long nelem1,
-			const long nelem2,
-			const long nelem3,
-			const long nelem4,
-			const long size,
-			const char *function,
-			const char *file,
-			const long line)
+                        const long nelem2,
+                        const long nelem3,
+                        const long nelem4,
+                        const long size,
+                        const char *function,
+                        const char *file,
+                        const long line)
 {
   int err = 0;
   int myrank = 0;
@@ -275,48 +276,48 @@ void**** PGFEM_CALLOC_4(const long nelem1,
     } else if(size < 0){
       err = 2;
     } else if (nelem1 == 0 || nelem2 == 0
-	       || nelem3 == 0 || nelem4 == 0){
+               || nelem3 == 0 || nelem4 == 0){
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]Warning: attempted to allocate 0 elements. %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
     }
 
     switch(err){
-    case 0: default:
-      val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+     case 0: default:
+      val = static_cast<void****>(PGFEM_CALLOC(n,ptr_size,function,file,line));
       for(long i=0; i<n; i++){
-	val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
-	for(long j=0; j<m; j++){
-	  val[i][j] = PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__);
-	  for(long k=0; k<p; k++){
-	    val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
-	  }
-	}
+        val[i] = static_cast<void***>(PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__));
+        for(long j=0; j<m; j++){
+          val[i][j] = static_cast<void**>(PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__));
+          for(long k=0; k<p; k++){
+            val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
+          }
+        }
       }
       break;
-    case 1:
+     case 1:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
-    case 2:
+     case 2:
       get_err_rank(&myrank);
       PGFEM_printerr("[%d]ERROR: cannot allocate negative sized elements! %s:%s:%ld\n",
-		     myrank,function,file,line);
+                     myrank,function,file,line);
       PGFEM_Abort();
       break;
     }
   } /* No debugging messages */
   else {
-    val = PGFEM_CALLOC(n,ptr_size,function,file,line);
+    val = static_cast<void****>(PGFEM_CALLOC(n,ptr_size,function,file,line));
     for(long i=0; i<n; i++){
-      val[i] = PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__);
+      val[i] = static_cast<void***>(PGFEM_CALLOC(m,ptr_size,function,__FILE__,__LINE__));
       for(long j=0; j<m; j++){
-	val[i][j] = PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__);
-	for(long k=0; k<p; k++){
-	  val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
-	}
+        val[i][j] = static_cast<void**>(PGFEM_CALLOC(p,ptr_size,function,__FILE__,__LINE__));
+        for(long k=0; k<p; k++){
+          val[i][j][k] = PGFEM_CALLOC(r,size,function,__FILE__,__LINE__);
+        }
       }
     }
   }
@@ -325,7 +326,7 @@ void**** PGFEM_CALLOC_4(const long nelem1,
 }
 
 void PGFEM_free2(void **a,
-		 const long nelem)
+                 const long nelem)
 {
   for(long i=0; i<nelem; i++){
     PGFEM_free(a[i]);
@@ -334,8 +335,8 @@ void PGFEM_free2(void **a,
 }
 
 void PGFEM_free3(void ***a,
-		 const long nelem1,
-		 const long nelem2)
+                 const long nelem1,
+                 const long nelem2)
 {
   for(long i=0; i<nelem1; i++){
     for(long j=0; j<nelem2; j++){
@@ -347,14 +348,14 @@ void PGFEM_free3(void ***a,
 }
 
 void PGFEM_free4(void ****a,
-		 const long nelem1,
-		 const long nelem2,
-		 const long nelem3)
+                 const long nelem1,
+                 const long nelem2,
+                 const long nelem3)
 {
   for(long i=0; i<nelem1; i++){
     for(long j=0; j<nelem2; j++){
       for(long k=0; k<nelem3; k++){
-	PGFEM_free(a[i][j][k]);
+        PGFEM_free(a[i][j][k]);
       }
       PGFEM_free(a[i][j]);
     }
