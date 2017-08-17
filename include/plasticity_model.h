@@ -1,6 +1,6 @@
 /**
  * Declare/define functions that integrate with the plasticty model
- * interface (see constitutive_model.h). 
+ * interface (see constitutive_model.h).
  *
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
@@ -27,10 +27,6 @@ struct Matrix_double;
 typedef struct Matrix_double Matrix_double;
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Initialize the Model_parameters object for this particular model.
  *
@@ -43,7 +39,7 @@ int plasticity_model_destory(Model_parameters *p);
 
 /// Construct and initialize the model context for calling functions
 /// through the constitutive model interface.
-/// 
+///
 /// \param[in,out] ctx - handle to an opaque model context object.
 /// \param[in] F The total deformation gradient.
 /// \param[in] dt time increment
@@ -99,7 +95,7 @@ int plasticity_model_set_orientations(EPS *eps,
  *
  *------------------------------------------------------------------------------------------------
  * model_params.in
- *------------------------------------------------------------------------------------------------ 
+ *------------------------------------------------------------------------------------------------
  * # <= this denotes this line is a comment. It will be ignored.
  * # Number of material
  * 2
@@ -112,7 +108,7 @@ int plasticity_model_set_orientations(EPS *eps,
  * # num_of_properties gamma_dot_0    m    G0    g0  gs_0 gamma_dot_s     w
  *                   7         1.0 0.05 200.0 210.0 330.0     50.0e+9 0.005
  * #
- * ######################################################################## 
+ * ########################################################################
  * # unit_cell orientation
  * ########################################################################
  * # 0: FCC
@@ -134,11 +130,6 @@ int plasticity_model_set_orientations(EPS *eps,
 typedef struct HOMMAT HOMMAT;
 
 int plasticity_model_test(const HOMMAT *hmat, Matrix_double *L_in, int Load_Type);
-void test_crystal_plasticity_single_crystal(void); 
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
+void test_crystal_plasticity_single_crystal(void);
 
 #endif

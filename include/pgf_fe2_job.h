@@ -11,11 +11,6 @@
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Structure for maintaining communication information related to a
  * particular job.
@@ -47,7 +42,7 @@ void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf);
  * memory leak.
  */
 void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
-				const size_t buffer_len);
+                const size_t buffer_len);
 
 /**
  * Destroys pgf_FE2_job_comm_buf object and leaves it in a valid
@@ -67,7 +62,7 @@ enum pgf_FE2_job_state{
   FE2_STATE_REPLY_READY,          /*< job computed and ready to reply */
   FE2_STATE_REPLY,                /*< reply comm posted */
   FE2_STATE_DONE                  /*< reply completed, all done */
-};               
+};
 
 /**
  * Structure containing an FE2 microscale job metadata and
@@ -92,14 +87,14 @@ typedef struct pgf_FE2_job pgf_FE2_job;
  * Sets/allocates an initial valid state for a pgf_FE2_job object.
  */
 void pgf_FE2_job_init(pgf_FE2_job *job,
-		      const int id,
-		      const int state);
+              const int id,
+              const int state);
 
 /**
  * Set the job progression state for a pgf_FE2_job object.
  */
 void pgf_FE2_job_set_state(pgf_FE2_job *job,
-			   const int state);
+               const int state);
 
 /**
  * Destroy a pgf_FE2_job object.
@@ -114,16 +109,16 @@ void pgf_FE2_job_destroy(pgf_FE2_job *job);
  * \return encoded integer id.
  */
 int pgf_FE2_job_compute_encoded_id(const size_t proc_id,
-				   const size_t elem_id,
-				   const size_t int_pt);
+                   const size_t elem_id,
+                   const size_t int_pt);
 
 /**
  * Decode an integer id and return the macroscale information.
  */
 void pgf_FE2_job_decode_id(const int id,
-			   size_t *proc_id,
-			   size_t *elem_id,
-			   size_t *int_pt);
+               size_t *proc_id,
+               size_t *elem_id,
+               size_t *int_pt);
 
 /**
  * Extract only the macroscale proc_id from an encoded integer id.
@@ -135,60 +130,56 @@ int pgf_FE2_job_decode_id_proc(const int id);
  * objects. Suitable for use in sorting functions etc.
  */
 int pgf_FE2_job_compare_state(const void *a,
-			      const void *b);
+                  const void *b);
 
 /**
  * Comparator function for 'time' of two pgf_FE2_job objects. Suitable
  * for use in sorting functions etc.
  */
 int pgf_FE2_job_compare_time(const void *a,
-			     const void *b);
+                 const void *b);
 
 /**
  * Comparator function for 'id' of two pgf_FE2_job objects. Suitable
  * for use in sorting functions etc.
  */
 int pgf_FE2_job_compare_id(const void *a,
-			   const void *b);
+               const void *b);
 
 /**
  * Check the job state and attempt to get information from macroscale
  * if needed. Returns job state on exit.
  */
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-			 const PGFEM_mpi_comm *mpi_comm);
+             const PGFEM_mpi_comm *mpi_comm);
 
 /**
  * Check the job state and compute if possible. Returns job state on
  * exit.
  */
 int pgf_FE2_job_compute(pgf_FE2_job *job,
-			MICROSCALE *micro,
-			const PGFEM_mpi_comm *mpi_comm,
-			const int mp_id);
+            MICROSCALE *micro,
+            const PGFEM_mpi_comm *mpi_comm,
+            const int mp_id);
 
 /**
  * Initiates computing a job on a worker process (non-master).
  */
 void pgf_FE2_job_compute_worker(const size_t job_id,
-				const size_t buffer_len,
-				MICROSCALE *micro,
-				const int mp_id);
+                const size_t buffer_len,
+                MICROSCALE *micro,
+                const int mp_id);
 
 /**
  * Check the job state and reply to the macroscale if
  * possible. Returns job state on exit.*/
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-		      const PGFEM_mpi_comm *mpi_comm);
+              const PGFEM_mpi_comm *mpi_comm);
 
 /**
  * Check the job state and complete if possible. Returns job state on
  * exit.
  */
 int pgf_FE2_job_complete(pgf_FE2_job *job);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

@@ -53,10 +53,6 @@
 
 #include "PGFem3D_data_structure.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /// Line search algorith for multiphysics mode
 ///
 /// \param[in] grid a mesh object
@@ -76,11 +72,11 @@ extern "C" {
 /// \param[in] nor2 Normalize norm
 /// \param[in] nor1 norm
 /// \param[in] LS1 1/2*f'*f (f=residual)
-/// \param[in] iter Newton Raphson iteration number 
+/// \param[in] iter Newton Raphson iteration number
 /// \param[in] max_damage physics based evolution
 /// \param[in] dissipation volume weighted dissipation
 /// \param[in] tim current time step number
-/// \param[in] STEP subdivision number 
+/// \param[in] STEP subdivision number
 /// \return info id about convergence
 long LINE_S3_MP(GRID *grid,
                 MATERIAL_PROPERTY *mat,
@@ -104,7 +100,7 @@ long LINE_S3_MP(GRID *grid,
                 double *dissipation,
                 long tim,
                 long STEP);
-                
+
 /// Line search algorithm for Arc Length
 ///
 /// \param[in] grid a mesh object
@@ -123,11 +119,11 @@ long LINE_S3_MP(GRID *grid,
 /// \param[in,out] nor2 Normalize norm
 /// \param[in] nor1 norm
 /// \param[in] LS1 1/2*f'*f (f=residual)
-/// \param[in] iter Newton Raphson iteration number 
+/// \param[in] iter Newton Raphson iteration number
 /// \param[in] max_damage physics based evolution
 /// \param[in] dissipation volume weighted dissipation
 /// \param[in] STEP subdivision number
-/// \param[in] tim current time step number 
+/// \param[in] tim current time step number
 /// \param[in,out] DLM Arc Length parameter
 /// \param[out] gama line search parameter
 /// \param[in] dlm Arc Length parameter
@@ -144,7 +140,7 @@ long ALINE_S3_MP(GRID *grid,
                  const PGFem3D_opt *opts,
                  MULTIPHYSICS *mp,
                  double *dts,
-                 int mp_id,                
+                 int mp_id,
                  double *nor,
                  double *nor2,
                  double nor1,
@@ -152,15 +148,11 @@ long ALINE_S3_MP(GRID *grid,
                  long iter,
                  double *max_damage,
                  double *dissipation,
-                 long tim,             
+                 long tim,
                  long STEP,
                  double *DLM,
                  double *gama,
                  double dlm,
-                 double dAL);                
-                
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                 double dAL);
 
 #endif /* #ifndef LINE_H */

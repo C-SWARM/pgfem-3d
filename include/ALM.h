@@ -53,40 +53,36 @@
 
 #include "PGFem3D_data_structure.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** */
   double D_lam_ALM (long ndofd,
-		    double *BS_rr,
-		    double *BS_d_r,
-		    double *BS_D_R,
-		    double *BS_R,
-		    double *BS_DK,
-		    double dlm,
-		    double dAL,
-		    long *DomDof,
-		    MPI_Comm mpi_comm);
+            double *BS_rr,
+            double *BS_d_r,
+            double *BS_D_R,
+            double *BS_R,
+            double *BS_DK,
+            double dlm,
+            double dAL,
+            long *DomDof,
+            MPI_Comm mpi_comm);
 
   /** Returns 0. */
   double d_ALM2 (long ndofd,
-		 double *rr,
-		 double *R,
-		 double *DK,
-		 double d_lm);
+         double *rr,
+         double *R,
+         double *DK,
+         double d_lm);
 
   /** Returns 0. */
   double d_lam_ALM2 (long ndofd,
-		     double *rr,
-		     double *R,
-		     double *DK,
-		     double dAL,
-		     double DET,
-		     double DET0,
-		     double dlm0,
-		     double nor_min,
-		     double *dR);
+             double *rr,
+             double *R,
+             double *DK,
+             double dAL,
+             double DET,
+             double DET0,
+             double dlm0,
+             double nor_min,
+             double *dR);
 
 /// D_lam_ALM2_MP
 ///
@@ -118,35 +114,31 @@ double D_lam_ALM2_MP(GRID *grid,
                      int mp_id,
                      double dlm,
                      double dAL,
-                     double dt);		     
+                     double dt);
 
   double d_ALM4 (long ndofd,
-		 double *BS_rr,
-		 double *BS_DK,
-		 double dlm,
-		 long *DomDof,
-		 MPI_Comm mpi_comm);
+         double *BS_rr,
+         double *BS_DK,
+         double dlm,
+         long *DomDof,
+         MPI_Comm mpi_comm);
 
   double d_lam_ALM4 (long ndofd,
-		     double *BS_rr,
-		     double *BS_DK,
-		     double *BS_dR,
-		     double dAL,
-		     long *DomDof,
-		     MPI_Comm mpi_comm);
+             double *BS_rr,
+             double *BS_DK,
+             double *BS_dR,
+             double dAL,
+             long *DomDof,
+             MPI_Comm mpi_comm);
 
   double D_lam_ALM4 (long ndofd,
-		     double *BS_rr,
-		     double *BS_d_r,
-		     double *BS_D_R,
-		     double *BS_DK,
-		     double dlm,
-		     double dAL,
-		     long *DomDof,
-		     MPI_Comm mpi_comm);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+             double *BS_rr,
+             double *BS_d_r,
+             double *BS_D_R,
+             double *BS_DK,
+             double dlm,
+             double dAL,
+             long *DomDof,
+             MPI_Comm mpi_comm);
 
 #endif /* #ifndef ALM_H */

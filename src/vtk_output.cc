@@ -137,7 +137,7 @@ void VTK_print_cohesive_master(char *path,
   if(make_path(dir_name,DIR_MODE) != 0){
     PGFEM_printf("Directory (%s) not created!\n",dir_name);
     abort();
-  }    
+  }
 
   /* Build filename and open file */
   char *filename;
@@ -355,7 +355,7 @@ void VTK_print_vtu(char *path,
     PGFEM_fprintf(out,"%ld\n",elem[i].pr);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
-  
+
   /* Damage parameter(s) */
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" "
     "Name=\"Damage\" format=\"ascii\">\n");
@@ -380,7 +380,7 @@ void VTK_print_vtu(char *path,
       *(F+6),*(F+7),*(F+8));
   }
   PGFEM_fprintf(out,"</DataArray>\n");
-  
+
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"P\""
     " NumberOfComponents=\"9\" format=\"ascii\">\n");
   {
@@ -391,7 +391,7 @@ void VTK_print_vtu(char *path,
       S[0] = sig[i].il[0].o[0];
       S[1] = sig[i].il[0].o[5];
       S[2] = sig[i].il[0].o[4];
-      
+
       S[3] = sig[i].il[0].o[5];
       S[4] = sig[i].il[0].o[1];
       S[5] = sig[i].il[0].o[3];
@@ -412,33 +412,33 @@ void VTK_print_vtu(char *path,
     free(P);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
-  
+
   PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"W\" format=\"ascii\">\n");
   for(int i = 0; i < ne; i++){
     PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
-  
+
   if(opts->analysis_type==TF && elem[0].toe==10)
-  {  
+  {
     /* Pressure */
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Pressure\" format=\"ascii\">\n");
     for (int i=0; i<ne; i++){
       PGFEM_fprintf(out,"%12.12e\n",eps[i].d_T[0]);
     }
-    PGFEM_fprintf(out,"</DataArray>\n");  
-  }  
-  
+    PGFEM_fprintf(out,"</DataArray>\n");
+  }
+
   if(opts->analysis_type==TF)
-  {  
+  {
     /* Volume */
     PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Volume\" format=\"ascii\">\n");
     for (int i=0; i<ne; i++){
       PGFEM_fprintf(out,"%12.12e\n",eps[i].T[0]);
     }
-    PGFEM_fprintf(out,"</DataArray>\n");  
+    PGFEM_fprintf(out,"</DataArray>\n");
   }
-  
+
 
   /* End Cell data */
   PGFEM_fprintf(out,"</CellData>\n");
@@ -733,27 +733,27 @@ void VTK_print_cohesive_vtu(char *path,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] time time step number
 /// \param[in] myrank current process rank
-/// \param[in] is_it_master if 1 filename is set for master vtk file, 
+/// \param[in] is_it_master if 1 filename is set for master vtk file,
 ///                         if 0 filenmae is set for vtu file.
 /// \return non-zero on internal error
-int VTK_get_filename(char *filename, 
+int VTK_get_filename(char *filename,
                      const PGFem3D_opt *opts,
                      int time,
                      int myrank,
                      int is_it_master)
 {
   int err = 0;
-  
+
   char c_dir = '.';
-  char *o_dir = "VTK";
-  char *s_dir = "STEP_";  
-  
+  const char o_dir[] = "VTK";
+  const char s_dir[] = "STEP_";
+
   char *ptr_path = opts->opath;
   char *base_name = opts->ofname;
-  
+
   char dir_name[1024];
   if(ptr_path == NULL) ptr_path = &c_dir;
-  
+
   if(is_it_master)
     sprintf(dir_name,"%s/%s",ptr_path,o_dir);
   else
@@ -764,7 +764,7 @@ int VTK_get_filename(char *filename,
     PGFEM_printf("Directory (%s) not created!\n",dir_name);
     abort();
   }
-  
+
   // Build filename
   if(is_it_master)
     sprintf(filename,"%s/%s_%d.pvtu",dir_name,base_name,time);
@@ -777,14 +777,14 @@ int VTK_get_filename(char *filename,
 /// write vtk header
 ///
 /// \param[in] out file pointer for writing vtk file
-/// \param[in] is_it_master if 1 filename is set for master vtk file, 
+/// \param[in] is_it_master if 1 filename is set for master vtk file,
 ///                         if 0 filenmae is set for vtu file.
 /// \param[in] nodeno number of nodes
 /// \param[in] elemno number of elements
 /// \return non-zero on internal error
-int VTK_write_multiphysics_header(FILE *out, 
-                                  int is_it_master, 
-                                  long nodeno, 
+int VTK_write_multiphysics_header(FILE *out,
+                                  int is_it_master,
+                                  long nodeno,
                                   long elemno)
 {
   int err = 0;
@@ -793,7 +793,7 @@ int VTK_write_multiphysics_header(FILE *out,
     sprintf(vtk_file_format,"PUnstructuredGrid");
   else
     sprintf(vtk_file_format,"UnstructuredGrid");
-    
+
   /* Print header information */
   PGFEM_fprintf(out,"<?xml version=\"1.0\"?>\n");
   PGFEM_fprintf(out,"<VTKFile type=\"%s\" version=\"0.1\""
@@ -818,9 +818,9 @@ int VTK_write_multiphysics_master_footer(FILE *out,
                                          int time)
 {
   int err = 0;
-  char *s_dir = "STEP_";
+  const char s_dir[] = "STEP_";
   char *base_name = opts->ofname;
-  char dir_name[1024];  
+  char dir_name[1024];
   char filename[1024];
   /* write piece list */
   sprintf(dir_name,"%s%.6d",s_dir,time);
@@ -846,8 +846,8 @@ int VTK_write_multiphysics_DataArray_header(FILE *out,
 
   PGFEM_fprintf(out,"<DataArray type=\"%s\" Name=\"%s\""
                     " NumberOfComponents=\"%d\" format=\"ascii\">\n", pmr->data_type,
-                                                                      pmr->variable_name, 
-                                                                      pmr->m_col);    
+                                                                      pmr->variable_name,
+                                                                      pmr->m_col);
   return err;
 }
 
@@ -881,9 +881,9 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
   int err = 0;
   char filename[1024];
   int is_it_master = 1;
-  
+
   err += VTK_get_filename(filename,opts,time,myrank,is_it_master);
-                     
+
   FILE *out = fopen(filename,"w");
   if(out == NULL)
   {
@@ -908,7 +908,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
     }
   }
   PGFEM_fprintf(out,"</PPointData>\n");
-  
+
   // Cell data
   PGFEM_fprintf(out,"<PCellData>\n");
   for(int ia=0; ia<datano; ia++)
@@ -921,7 +921,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                                                           pD[ia].m_col);
     }
   }
-  PGFEM_fprintf(out,"</PCellData>\n");  
+  PGFEM_fprintf(out,"</PCellData>\n");
 
   /* Points */
   PGFEM_fprintf(out,"<PPoints>\n");
@@ -949,7 +949,7 @@ int VTK_write_mesh(GRID *grid,
   /* Nodes */
   NODE    *node = grid->node;
   ELEMENT *elem = grid->element;
-  
+
   PGFEM_fprintf(out,"<Points>\n");
   PGFEM_fprintf(out,"<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
   for(int i=0; i<grid->nn; i++){
@@ -997,16 +997,16 @@ int VTK_write_mesh(GRID *grid,
   PGFEM_fprintf(out,"</DataArray>\n");
 
   PGFEM_fprintf(out,"</Cells>\n");
-  
-  return err;  
+
+  return err;
 }
 
 /// write simulation results in vtk format based on physics
 ///
 /// By providing PRINT_MULTIPHYSICS_RESULT objects,
 /// number of variables to be witten can be determined at runtime.
-/// This function call will create output directory if the foder doesn't exist prior, and 
-/// every process will create vtu files. 
+/// This function call will create output directory if the foder doesn't exist prior, and
+/// every process will create vtu files.
 ///
 /// \param[in] grid an object containing all mesh data
 /// \param[in] mat a material object
@@ -1039,31 +1039,31 @@ int VTK_write_multiphysics_vtu(GRID *grid,
     PGFEM_printerr("ERROR: Cannot open file to write pvtu file! (%s)\n", filename);
     abort();
   }
-  
+
   err += VTK_write_multiphysics_header(out,is_it_master,grid->nn,grid->ne);
 
-  PGFEM_fprintf(out,"<PointData>\n");   
+  PGFEM_fprintf(out,"<PointData>\n");
   for(int ia=0; ia<datano; ia++)
-  {  
+  {
     if(pD[ia].is_point_data) // point data
       err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
   }
-  PGFEM_fprintf(out,"</PointData>\n"); 
-  
-  PGFEM_fprintf(out,"<CellData>\n"); 
+  PGFEM_fprintf(out,"</PointData>\n");
+
+  PGFEM_fprintf(out,"<CellData>\n");
   for(int ia=0; ia<datano; ia++)
   {
     if(pD[ia].is_point_data != 1) // Cell data
-      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts); 
+      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
   }
-  PGFEM_fprintf(out,"</CellData>\n");   
-  
+  PGFEM_fprintf(out,"</CellData>\n");
+
   err += VTK_write_mesh(grid, out);
-  
-  PGFEM_fprintf(out,"</Piece>\n");  
+
+  PGFEM_fprintf(out,"</Piece>\n");
   PGFEM_fprintf(out,"</UnstructuredGrid>\n");
   PGFEM_fprintf(out,"</VTKFile>\n");
-  
+
   fclose(out);
   return err;
 }
@@ -1085,15 +1085,15 @@ int VTK_write_multiphysics_vtu(GRID *grid,
 int VTK_write_data_double(FILE *out,
                           GRID *grid,
                           const MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *FV,                          
+                          FIELD_VARIABLES *FV,
                           LOADING_STEPS *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
                           const PGFem3D_opt *opts)
 {
   int err = 0;
   double *p_data = (double *) pmr->p_data;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int ia=0; ia<pmr->m_row; ia++)
   {
     for (int ja=0; ja<pmr->m_col; ja++)
@@ -1119,18 +1119,18 @@ int VTK_write_data_double(FILE *out,
 int VTK_write_data_MacroDisplacement(FILE *out,
                                      GRID *grid,
                                      const MATERIAL_PROPERTY *mat,
-                                     FIELD_VARIABLES *FV,                          
+                                     FIELD_VARIABLES *FV,
                                      LOADING_STEPS *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
                                      const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   NODE *node = grid->node;
-  SUPP sup = load->sups[pmr->mp_id];  
+  SUPP sup = load->sups[pmr->mp_id];
 
   if(sup->multi_scale){
-      err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+      err += VTK_write_multiphysics_DataArray_header(out, pmr);
     double *jump = aloc1(3);
     compute_macro_grad_u(sup->F0,sup,opts->analysis_type);
     for(int i=0; i<grid->nn; i++){
@@ -1140,7 +1140,7 @@ int VTK_write_data_MacroDisplacement(FILE *out,
     err += VTK_write_multiphysics_DataArray_footer(out);
     free(jump);
   }
-  
+
   return err;
 }
 
@@ -1158,7 +1158,7 @@ int VTK_write_data_MacroDisplacement(FILE *out,
 int VTK_write_data_Nodal_pressure(FILE *out,
                                   GRID *grid,
                                   const MATERIAL_PROPERTY *mat,
-                                  FIELD_VARIABLES *FV,                          
+                                  FIELD_VARIABLES *FV,
                                   LOADING_STEPS *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
                                   const PGFem3D_opt *opts)
@@ -1175,7 +1175,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
   case STABILIZED:
   case MINI:
   case MINI_3F:
-      err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+      err += VTK_write_multiphysics_DataArray_header(out, pmr);
     for (int i=0; i<grid->nn; i++){
       int id = node[i].id_map[mp_id].id[3]-1;
       PGFEM_fprintf(out,"%12.12e\n",FV[mp_id].u_np1[id]);
@@ -1190,7 +1190,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
 
 /// write Cauchy Stress for Mechanical part
 ///
-/// s(1,1), s(2,2), s(3,3), s(2,3), s(1,3),  s(1,2) components will be written 
+/// s(1,1), s(2,2), s(3,3), s(2,3), s(1,3),  s(1,2) components will be written
 /// This function is used indirectly through function pointer in pmr->write_vtk
 ///
 /// \param[in] out file pointer for writing vtk file
@@ -1203,29 +1203,29 @@ int VTK_write_data_Nodal_pressure(FILE *out,
 int VTK_write_data_CauchyStress(FILE *out,
                                 GRID *grid,
                                 const MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *FV,                          
+                                FIELD_VARIABLES *FV,
                                 LOADING_STEPS *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   SIG *sig = FV[pmr->mp_id].sig;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int ia=0; ia<grid->ne; ia++)
   {
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e %12.12e %12.12e\n",
                   sig[ia].el.o[0],sig[ia].el.o[1],sig[ia].el.o[2],
                   sig[ia].el.o[5],sig[ia].el.o[3],sig[ia].el.o[4]);
   }
-  err += VTK_write_multiphysics_DataArray_footer(out);    
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
 /// write Euler Strain for Mechanical part
 ///
-/// e(1,1), e(2,2), e(3,3), e(2,3), e(1,3),  e(1,2) components will be written 
+/// e(1,1), e(2,2), e(3,3), e(2,3), e(1,3),  e(1,2) components will be written
 /// This function is used indirectly through function pointer in pmr->write_vtk
 ///
 /// \param[in] out file pointer for writing vtk file
@@ -1238,25 +1238,25 @@ int VTK_write_data_CauchyStress(FILE *out,
 int VTK_write_data_EulerStrain(FILE *out,
                                GRID *grid,
                                const MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *FV,                          
+                               FIELD_VARIABLES *FV,
                                LOADING_STEPS *load,
                                PRINT_MULTIPHYSICS_RESULT *pmr,
                                const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   EPS *eps = FV[pmr->mp_id].eps;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
   {
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e %12.12e %12.12e\n",
                   eps[i].el.o[0],eps[i].el.o[1],eps[i].el.o[2],
                   eps[i].el.o[5]/2,eps[i].el.o[3]/2,eps[i].el.o[4]/2);
   }
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
-}  
+}
 
 /// write Effective Strain for Mechanical part
 ///
@@ -1273,19 +1273,19 @@ int VTK_write_data_EulerStrain(FILE *out,
 int VTK_write_data_EffectiveStrain(FILE *out,
                                    GRID *grid,
                                    const MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,                          
+                                   FIELD_VARIABLES *FV,
                                    LOADING_STEPS *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%12.12e\n",eps[i].el.eq);
-  
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1305,19 +1305,19 @@ int VTK_write_data_EffectiveStrain(FILE *out,
 int VTK_write_data_EffectiveStress(FILE *out,
                                GRID *grid,
                                const MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *FV,                          
+                               FIELD_VARIABLES *FV,
                                LOADING_STEPS *load,
                                PRINT_MULTIPHYSICS_RESULT *pmr,
                                const PGFem3D_opt *opts)
 {
   int err = 0;
   SIG *sig = FV[pmr->mp_id].sig;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%12.12e\n",sig[i].el.eq);
-  
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1336,26 +1336,26 @@ int VTK_write_data_EffectiveStress(FILE *out,
 int VTK_write_data_CellProperty(FILE *out,
                                 GRID *grid,
                                 const MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *FV,                          
+                                FIELD_VARIABLES *FV,
                                 LOADING_STEPS *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
   ELEMENT *elem = grid->element;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%ld\n",elem[i].pr);
 
-  err += VTK_write_multiphysics_DataArray_footer(out);     
-  
+  err += VTK_write_multiphysics_DataArray_footer(out);
+
   return err;
 }
 
 /// write damage parameters
 ///
-/// prints 0<= damage <1 
+/// prints 0<= damage <1
 /// This function is used indirectly through function pointer in pmr->write_vtk
 ///
 /// \param[in] out file pointer for writing vtk file
@@ -1367,19 +1367,19 @@ int VTK_write_data_CellProperty(FILE *out,
 int VTK_write_data_Damage(FILE *out,
                           GRID *grid,
                           const MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *FV,                          
+                          FIELD_VARIABLES *FV,
                           LOADING_STEPS *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
                           const PGFem3D_opt *opts)
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%12.12e\n",eps[i].dam[0].wn); // supported for Linear element (1 ip)
-  
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1397,19 +1397,19 @@ int VTK_write_data_Damage(FILE *out,
 int VTK_write_data_Chi(FILE *out,
                        GRID *grid,
                        const MATERIAL_PROPERTY *mat,
-                       FIELD_VARIABLES *FV,                          
+                       FIELD_VARIABLES *FV,
                        LOADING_STEPS *load,
                        PRINT_MULTIPHYSICS_RESULT *pmr,
                        const PGFem3D_opt *opts)
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%12.12e\n",eps[i].dam[0].Xn); // supported for Linear element (1 ip)
-  
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1428,23 +1428,23 @@ int VTK_write_data_Chi(FILE *out,
 int VTK_write_data_F(FILE *out,
                      GRID *grid,
                      const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,                          
+                     FIELD_VARIABLES *FV,
                      LOADING_STEPS *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
   {
     const double *F = eps[i].il[0].F;
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e "
                       "%12.12e %12.12e %12.12e %12.12e %12.12e\n",
                       F[0],F[1],F[2],F[3],F[4],F[5],F[6],F[7],F[8]);
-  }    
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+  }
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1463,7 +1463,7 @@ int VTK_write_data_F(FILE *out,
 int VTK_write_data_P(FILE *out,
                      GRID *grid,
                      const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,                          
+                     FIELD_VARIABLES *FV,
                      LOADING_STEPS *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
@@ -1472,15 +1472,15 @@ int VTK_write_data_P(FILE *out,
   SIG *sig = FV[pmr->mp_id].sig;
   EPS *eps = FV[pmr->mp_id].eps;
   double S[9], P[9];
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
   {
     const double *F = eps[i].il[0].F;
     S[0] = sig[i].il[0].o[0];
     S[1] = sig[i].il[0].o[5];
     S[2] = sig[i].il[0].o[4];
-    
+
     S[3] = sig[i].il[0].o[5];
     S[4] = sig[i].il[0].o[1];
     S[5] = sig[i].il[0].o[3];
@@ -1490,12 +1490,12 @@ int VTK_write_data_P(FILE *out,
     S[8] = sig[i].il[0].o[2];
 
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ndim,ndim,ndim,
-                1.0,F,ndim,S,ndim,0.0,P,ndim);    
-    
+                1.0,F,ndim,S,ndim,0.0,P,ndim);
+
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e "
                       "%12.12e %12.12e %12.12e %12.12e %12.12e\n",
                       P[0],P[1],P[2],P[3],P[4],P[5],P[6],P[7],P[8]);
-  }    
+  }
   err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
@@ -1516,7 +1516,7 @@ int VTK_write_data_P(FILE *out,
 int VTK_write_data_W(FILE *out,
                      GRID *grid,
                      const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,                          
+                     FIELD_VARIABLES *FV,
                      LOADING_STEPS *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
@@ -1524,14 +1524,14 @@ int VTK_write_data_W(FILE *out,
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
   double S[9], P[9];
-  
-    err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+    err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for(int i=0; i<grid->ne; i++)
     PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
-  
-  err += VTK_write_multiphysics_DataArray_footer(out); 
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
-}    
+}
 
 
 /// write Element Pressure
@@ -1551,7 +1551,7 @@ int VTK_write_data_W(FILE *out,
 int VTK_write_data_ElementPressure(FILE *out,
                                   GRID *grid,
                                   const MATERIAL_PROPERTY *mat,
-                                  FIELD_VARIABLES *FV,                          
+                                  FIELD_VARIABLES *FV,
                                   LOADING_STEPS *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
                                   const PGFem3D_opt *opts)
@@ -1560,14 +1560,14 @@ int VTK_write_data_ElementPressure(FILE *out,
   EPS *eps = FV[pmr->mp_id].eps;
   ELEMENT *elem = grid->element;
   double S[9], P[9];
-  
+
   if(opts->analysis_type==TF && elem[0].toe==10)
-  {  
-      err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  {
+      err += VTK_write_multiphysics_DataArray_header(out, pmr);
     for (int i=0; i<grid->ne; i++)
       PGFEM_fprintf(out,"%12.12e\n",eps[i].d_T[0]);
-  
-    err += VTK_write_multiphysics_DataArray_footer(out); 
+
+    err += VTK_write_multiphysics_DataArray_footer(out);
   }
   return err;
 }
@@ -1589,7 +1589,7 @@ int VTK_write_data_ElementPressure(FILE *out,
 int VTK_write_data_ElementVolume(FILE *out,
                                  GRID *grid,
                                  const MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *FV,                          
+                                 FIELD_VARIABLES *FV,
                                  LOADING_STEPS *load,
                                  PRINT_MULTIPHYSICS_RESULT *pmr,
                                  const PGFem3D_opt *opts)
@@ -1597,14 +1597,14 @@ int VTK_write_data_ElementVolume(FILE *out,
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
   double S[9], P[9];
-  
+
   if(opts->analysis_type==TF)
-  {  
-      err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+  {
+      err += VTK_write_multiphysics_DataArray_header(out, pmr);
     for (int i=0; i<grid->ne; i++)
       PGFEM_fprintf(out,"%12.12e\n",eps[i].T[0]);
-  
-    err += VTK_write_multiphysics_DataArray_footer(out); 
+
+    err += VTK_write_multiphysics_DataArray_footer(out);
   }
   return err;
 }
@@ -1621,7 +1621,7 @@ int VTK_write_data_ElementVolume(FILE *out,
 int VTK_write_data_Density(FILE *out,
                            GRID *grid,
                            const MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *FV,                          
+                           FIELD_VARIABLES *FV,
                            LOADING_STEPS *load,
                            PRINT_MULTIPHYSICS_RESULT *pmr,
                            const PGFem3D_opt *opts)
@@ -1631,8 +1631,8 @@ int VTK_write_data_Density(FILE *out,
   EPS *eps = FV[pmr->mp_id].eps;
   NODE *node = grid->node;
   ELEMENT *elem = grid->element;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
   {
     FEMLIB fe;
@@ -1640,14 +1640,14 @@ int VTK_write_data_Density(FILE *out,
 
     const int mat_id = (grid->element[i]).mat[0];
     double rho_0 = mat->density[mat_id];
-    
-    double volume = 0.0;  
+
+    double volume = 0.0;
     double rho    = 0.0;
 
     for(int ip=0; ip<fe.nint; ip++)
     {
       FEMLIB_elem_basis_V(&fe, ip+1);
-      
+
       const double *F = eps[i].il[ip].F;
       double J = det3x3(F);
       rho    += fe.detJxW*rho_0/J;
@@ -1656,7 +1656,7 @@ int VTK_write_data_Density(FILE *out,
     PGFEM_fprintf(out,"%12.12e\n", rho/volume);
     FEMLIB_destruct(&fe);
   }
-  
+
   err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
@@ -1673,26 +1673,26 @@ int VTK_write_data_Density(FILE *out,
 VTK_write_data_HydrostaticStress(FILE *out,
                                  GRID *grid,
                                  const MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *FV,                          
+                                 FIELD_VARIABLES *FV,
                                  LOADING_STEPS *load,
                                  PRINT_MULTIPHYSICS_RESULT *pmr,
                                  const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   SIG *sig = FV[pmr->mp_id].sig;
-  
+
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
-    
+
   for (int ia=0; ia<grid->ne; ia++)
   {
     double sigma_h = (sig[ia].el.o[0] + sig[ia].el.o[1] + sig[ia].el.o[2])/3.0;
     PGFEM_fprintf(out,"%12.12e\n", sigma_h);
   }
-  err += VTK_write_multiphysics_DataArray_footer(out);    
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
-                                  
+
 /// write Heat Flux
 ///
 /// q = k*grad(T)
@@ -1708,22 +1708,22 @@ VTK_write_data_HydrostaticStress(FILE *out,
 int VTK_write_data_HeatFlux(FILE *out,
                             GRID *grid,
                             const MATERIAL_PROPERTY *mat,
-                            FIELD_VARIABLES *FV,                          
+                            FIELD_VARIABLES *FV,
                             LOADING_STEPS *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
                             const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   EPS *eps = FV[pmr->mp_id].eps;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int ia=0; ia<grid->ne; ia++)
   {
     PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n",
                   eps[ia].el.o[0],eps[ia].el.o[1],eps[ia].el.o[2]);
   }
-  err += VTK_write_multiphysics_DataArray_footer(out);    
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1741,22 +1741,22 @@ int VTK_write_data_HeatFlux(FILE *out,
 int VTK_write_data_HeatGeneration(FILE *out,
                                   GRID *grid,
                                   const MATERIAL_PROPERTY *mat,
-                                  FIELD_VARIABLES *FV,                          
+                                  FIELD_VARIABLES *FV,
                                   LOADING_STEPS *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;
-  
+
   EPS *eps = FV[pmr->mp_id].eps;
-  
-  err += VTK_write_multiphysics_DataArray_header(out, pmr);  
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int ia=0; ia<grid->ne; ia++)
   {
     PGFEM_fprintf(out,"%12.12e %12.12e\n",
                   eps[ia].el.o[3],eps[ia].el.o[4]);
   }
-  err += VTK_write_multiphysics_DataArray_footer(out);    
+  err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
 
@@ -1765,7 +1765,7 @@ int VTK_write_data_HeatGeneration(FILE *out,
 /// Different physics looks different output categories (switch).
 /// If the selection of output variable is not in these categories, default outputs will be used.
 /// default: Displacement for Mechanical
-///          Temperature for Thermal 
+///          Temperature for Thermal
 /// \param[in] grid an object containing all mesh data
 /// \param[in] FV array of field variables
 /// \param[in] mp an object for multiphysics stepping
@@ -1786,12 +1786,12 @@ int VTK_construct_PMR(GRID *grid,
       {
         for(int ib=0; ib<mp->write_no[ia]; ib++)
         {
-          pmr[cnt_pmr].is_point_data = 0;          
+          pmr[cnt_pmr].is_point_data = 0;
           pmr[cnt_pmr].mp_id      = ia;
           pmr[cnt_pmr].physics_id = MULTIPHYSICS_MECHANICAL;
           pmr[cnt_pmr].m_row      = grid->ne;
           pmr[cnt_pmr].m_col      = 1;
-          pmr[cnt_pmr].p_data     = NULL; 
+          pmr[cnt_pmr].p_data     = NULL;
           sprintf(pmr[cnt_pmr].data_type, "Float64");
           switch(mp->write_ids[ia][ib])
           {
@@ -1799,7 +1799,7 @@ int VTK_construct_PMR(GRID *grid,
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;
               pmr[cnt_pmr].m_col         = 3;
-              pmr[cnt_pmr].p_data        = FV[ia].u_n;        
+              pmr[cnt_pmr].p_data        = FV[ia].u_n;
               pmr[cnt_pmr].write_vtk     = VTK_write_data_double;
               sprintf(pmr[cnt_pmr].variable_name, "Displacement");
               break;
@@ -1877,14 +1877,14 @@ int VTK_construct_PMR(GRID *grid,
             case MECHANICAL_Var_HydrostaticStress:
               pmr[cnt_pmr].write_vtk = VTK_write_data_HydrostaticStress;
               sprintf(pmr[cnt_pmr].variable_name, "HydrostaticStress");
-              break;              
+              break;
             default:
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;
               pmr[cnt_pmr].m_col         = 3;
-              pmr[cnt_pmr].p_data        = FV[ia].u_n;        
+              pmr[cnt_pmr].p_data        = FV[ia].u_n;
               pmr[cnt_pmr].write_vtk     = VTK_write_data_double;
-              sprintf(pmr[cnt_pmr].variable_name, "Displacement");              
+              sprintf(pmr[cnt_pmr].variable_name, "Displacement");
               break;
           }
           cnt_pmr++;
@@ -1895,12 +1895,12 @@ int VTK_construct_PMR(GRID *grid,
       {
         for(int ib=0; ib<mp->write_no[ia]; ib++)
         {
-          pmr[cnt_pmr].is_point_data = 0;          
+          pmr[cnt_pmr].is_point_data = 0;
           pmr[cnt_pmr].mp_id      = ia;
           pmr[cnt_pmr].physics_id = MULTIPHYSICS_THERMAL;
           pmr[cnt_pmr].m_row      = grid->ne;
           pmr[cnt_pmr].m_col      = 1;
-          pmr[cnt_pmr].p_data     = NULL; 
+          pmr[cnt_pmr].p_data     = NULL;
           sprintf(pmr[cnt_pmr].data_type, "Float64");
 
           switch(mp->write_ids[ia][ib])
@@ -1909,7 +1909,7 @@ int VTK_construct_PMR(GRID *grid,
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;
               pmr[cnt_pmr].m_col         = 1;
-              pmr[cnt_pmr].p_data        = FV[ia].u_n;        
+              pmr[cnt_pmr].p_data        = FV[ia].u_n;
               pmr[cnt_pmr].write_vtk     = VTK_write_data_double;
               sprintf(pmr[cnt_pmr].variable_name, "Temperature");
               break;
@@ -1922,20 +1922,20 @@ int VTK_construct_PMR(GRID *grid,
               pmr[cnt_pmr].m_col         = 2;
               pmr[cnt_pmr].write_vtk     = VTK_write_data_HeatGeneration;
               sprintf(pmr[cnt_pmr].variable_name, "HeatGenerations");
-              break;                
+              break;
             default:
               pmr[cnt_pmr].is_point_data = 1;
               pmr[cnt_pmr].m_row         = grid->nn;
               pmr[cnt_pmr].m_col         = 1;
-              pmr[cnt_pmr].p_data        = FV[ia].u_n;        
+              pmr[cnt_pmr].p_data        = FV[ia].u_n;
               pmr[cnt_pmr].write_vtk     = VTK_write_data_double;
               sprintf(pmr[cnt_pmr].variable_name, "Temperature");
-              break;                            
+              break;
           }
-          cnt_pmr++;           
-        }                  
+          cnt_pmr++;
+        }
         break;
-      }  
+      }
       case MULTIPHYSICS_CHEMICAL:
       {
         break;
@@ -1944,7 +1944,7 @@ int VTK_construct_PMR(GRID *grid,
       {
       }
     }
-  }  
+  }
 
   return 0;
-}                                                   
+}

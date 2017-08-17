@@ -7,11 +7,6 @@
 #ifndef H__H__UQ_THROUGH_CM_H
 #define H__H__UQ_THROUGH_CM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
-
 typedef struct MATERIAL_ELASTICITY MATERIAL_ELASTICITY;
 
 /**
@@ -23,12 +18,7 @@ typedef struct MATERIAL_ELASTICITY MATERIAL_ELASTICITY;
  * \param[in] x,y,z - coordinate at the integration point
  * \return non-zero on internal error.
  */
-int material_properties_elasticity_at_ip(MATERIAL_ELASTICITY *m_in, MATERIAL_ELASTICITY *m_out, 
+int material_properties_elasticity_at_ip(MATERIAL_ELASTICITY *m_in, MATERIAL_ELASTICITY *m_out,
                                          double x, double y, double z);
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

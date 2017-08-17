@@ -7,15 +7,11 @@
 #include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   typedef struct {
     long *id;
-    long *Gid;    
+    long *Gid;
   } NODE_ID_MAP;
-  
+
   /** Structure of node properties */
   struct NODE{
     /** Coordinates of node */
@@ -26,10 +22,10 @@ extern "C" {
 
     long Gnn; /**< Global node number. */
     long Dom; /**< Which processor the node lives on. This is how
-	                 interfacial nodes are identified. */
+                     interfacial nodes are identified. */
     long Pr;  /**< Identifies the node as a periodic node. If the node is
-	                 periodic, this variable contains the node number it is periodic
-	                 with/to. */
+                     periodic, this variable contains the node number it is periodic
+                     with/to. */
 //    long ndofn;/**< Number of DOFs on the node */
     long pr;   /**< Property of node. */
 
@@ -39,16 +35,16 @@ extern "C" {
   typedef struct NODE NODE;
 
   NODE* build_node(const long nn,
-		   const int ndofn);
+           const int ndofn);
 
   void destroy_node(const long nn,
-		    NODE* node);
+            NODE* node);
 
 /// build node array.
 /// Multiphysics needs many ids for nodal variables.
 /// To assign local and global ids according to the number physics,
 /// an array of id_map object is created as many as number of physics.
-/// In id_map, ids is also created based on the number of dofs for 
+/// In id_map, ids is also created based on the number of dofs for
 /// the individual physics.
 ///
 /// \param[in] nn number of nodes
@@ -58,12 +54,12 @@ extern "C" {
 NODE* build_node_multi_physics(const long nn,
                               const int *ndofn,
                               const int physicsno);
-		    
+
 /// destroy node array.
 ///
 /// \param[in] nn number of nodes
 /// \param[in] physicsno number of physics
-/// 
+///
 /// \return non-zero on internal error
 int destroy_node_multi_physics(const long nn,
                               NODE* node,
@@ -72,23 +68,23 @@ int destroy_node_multi_physics(const long nn,
 
   /* Function reads parameters of nodes */
   long read_nodes (FILE *in,
-		   const long nn,
-		   NODE *node,
-		   const int legacy,
-		   MPI_Comm comm);
+           const long nn,
+           NODE *node,
+           const int legacy,
+           MPI_Comm comm);
 
   /** */
   void write_node_fname(const char *filename,
-			const int nnodes,
-			const NODE *nodes,
-			const int ndofn,			
-			const int mp_id);
+            const int nnodes,
+            const NODE *nodes,
+            const int ndofn,
+            const int mp_id);
 
   void write_node(FILE *ofile,
-		  const int nnodes,
-		  const NODE *nodes,
-		  const int ndofn,		  
-		  const int mp_id);
+          const int nnodes,
+          const NODE *nodes,
+          const int ndofn,
+          const int mp_id);
 
   /**
    * Sort the nodes by their local node numbers (loc_id).
@@ -142,9 +138,5 @@ int destroy_node_multi_physics(const long nn,
                                 NODE *nodes,
                                 int *n_shared,
                                 const NODE **shared);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef NODE_H */

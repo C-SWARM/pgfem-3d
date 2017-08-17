@@ -5,10 +5,6 @@
 #include "PGFEM_io.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 typedef struct TIMER{
   double start,end,total;
 } Timer;
@@ -59,9 +55,5 @@ typedef struct PROFILER{
 
 void ProfilerInit(Profiler *times);
 void ProfilerPrint(Profiler *times, FILE *file);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef _PROFILER_H_ */

@@ -139,57 +139,26 @@ PGFem3D_data_structure.cc
 
 comm_hints_driver_SOURCES = comm_hints.cc comm_hints_driver.cc
 
-BPA_driver_SOURCES = \
-$(all_sources) \
-plasticity_model_BPA_driver.cc
+BPA_driver_SOURCES = $(all_sources) plasticity_model_BPA_driver.cc
 
-IVD_driver_SOURCES = \
-$(all_sources) \
-cm_iso_viscous_damage_driver.cc
+IVD_driver_SOURCES = $(all_sources) cm_iso_viscous_damage_driver.cc
 
-J2D_driver_SOURCES = \
-$(all_sources) \
-cm_j2_plasticity_driver.cc
+J2D_driver_SOURCES = $(all_sources) cm_j2_plasticity_driver.cc
 
-CH_layer_driver_SOURCES = \
-$(all_sources) \
-CH_layer_driver.cc
+CH_layer_driver_SOURCES = $(all_sources) CH_layer_driver.cc
 
-unit_test_43_driver_SOURCES = \
-$(all_sources) \
-unit_test_43_driver.cc
+unit_test_43_driver_SOURCES = $(all_sources) unit_test_43_driver.cc
 
-PGFem3D_SOURCES = \
-$(all_sources) \
-super_main.cc
+PGFem3D_SOURCES = $(all_sources) super_main.cc
 
 VTK_IO_include = -I$(top_srcdir)/lib/VTK_IO/include
-VTK_IO_lib = -L$(top_srcdir)/lib/VTK_IO/src -lPGFem3D_to_VTK
+VTK_IO_lib = $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.a
 
-energy_equation_include=-I$(top_srcdir)/energy_equation/include
-energy_equation_lib=-L$(top_srcdir)/energy_equation/src -lPGFem3D_Energy_equation
+energy_equation_include = -I$(top_srcdir)/energy_equation/include
+energy_equation_lib = $(top_builddir)/energy_equation/src/libenergy_equation.a
 
-AM_INCLUDES = $(VTK_IO_include) \
-              $(energy_equation_include) \
-	      $(hypre_include) \
-	      $(suitesparse_include) \
-	      $(cnstvm_include) \
-	      $(mkl_include)
-
-all_libs = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
-
-PGFem3D_LDADD = $(all_libs)
-BPA_driver_LDADD = $(all_libs)
-IVD_driver_LDADD = $(all_libs)
-J2D_driver_LDADD = $(all_libs)
-CH_layer_driver_LDADD = $(all_libs)
-unit_test_43_driver_LDADD = $(all_libs)
-
-AM_CXXFLAGS = $(AM_INCLUDES)
-
-PGFem3D_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-BPA_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-IVD_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-J2D_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-CH_layer_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-unit_test_43_driver_LINK = $(PGFem3D_linker) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+# Universal flags for all binaries
+AM_CXXFLAGS = -fpermissive
+AM_CPPFLAGS = -Wno-unused-result -I$(top_srcdir)/include -I$(top_builddir)/include $(VTK_IO_include) $(energy_equation_include) $(hypre_include) $(suitesparse_include) $(cnstvm_include) $(mkl_include)
+LDADD       = $(VTK_IO_lib) $(energy_equation_lib) $(suitesparse_lib) $(hypre_lib) $(vtk_lib) $(cnstvm_lib) $(mkl_lib)
+AM_LDFLAGS  = -Wl,--allow-multiple-definition

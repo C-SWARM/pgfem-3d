@@ -21,33 +21,25 @@
 #include "eps.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Compute volume average 2PK stress.  Contains global
       communication. */
   double* computeMacroS(ELEMENT *elem,
-			long ne,
-			NODE *node,
-			long nn,
-			SIG *sig,
-			double oVolume,
-			MPI_Comm mpi_comm);
+            long ne,
+            NODE *node,
+            long nn,
+            SIG *sig,
+            double oVolume,
+            MPI_Comm mpi_comm);
 
   /** Compute volume average 1PK stress.  Contains global
       communication. */
   double* computeMacroP(ELEMENT *elem,
-			long ne,
-			NODE *node,
-			long nn,
-			SIG *sig,
-			EPS *eps,
-			double oVolume,
-			MPI_Comm mpi_comm);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+            long ne,
+            NODE *node,
+            long nn,
+            SIG *sig,
+            EPS *eps,
+            double oVolume,
+            MPI_Comm mpi_comm);
 
 #endif /* #ifndef  */

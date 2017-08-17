@@ -25,7 +25,7 @@ Define_Matrix(double);
 #define dim 3
 #define tensor 9
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
-static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0}; 
+static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 static const double LC = 0.20;
 static const double JUMPU = 0.001;
 //static const double DIR[dim] = {[2] = 1.0};
@@ -81,7 +81,7 @@ int ch_read_props(Constitutive_model *m,
      CM MODEL Properties
      }
   */
-  int err = 0; 
+  int err = 0;
 
   FILE *in = fopen(filename, "r");
   if (!in) {
@@ -113,7 +113,7 @@ int ch_read_props(Constitutive_model *m,
   int model_type = -1;
   nread = fscanf(in, "%d", &model_type);
   assert(nread == 1 && "Expected model type identifier");
-  
+
   /* initialize the Model_parameters object */
   err += model_parameters_initialize(p, hm, model_type);
 
@@ -135,7 +135,7 @@ static const char *optstring = "";
 
 typedef struct {
   struct option opt;
-  char *descr;
+  const char *descr;
 } opts_help;
 
 static const opts_help opt_help[] = {
@@ -147,7 +147,7 @@ static const opts_help opt_help[] = {
   {{"normal", required_argument, NULL, 'n'},"Normal to the interface (default = \"0,0,1\")"},
   {{"prop-file", required_argument, NULL, 'i'},"File to read properties from (default = props.in)"},
   {{"output", required_argument, NULL, 'o'},"File to write data to (default = out.dat)"}
-}; 
+};
 
 typedef struct {
   double lc;

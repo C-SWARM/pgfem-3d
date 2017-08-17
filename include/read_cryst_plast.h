@@ -9,18 +9,10 @@
 #include "crpl.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Read in crystal plasticity information. */
   void read_cryst_plast (FILE *in1,
-			 long nmat,
-			 CRPL *crpl,
-			 const int plc);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+             long nmat,
+             CRPL *crpl,
+             const int plc);
 
 #endif /* #ifndef READ_CRYST_PLAST_H */

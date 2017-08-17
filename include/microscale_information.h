@@ -24,11 +24,6 @@
 #include "constitutive_model.h"
 #include "comm_hints.h"
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** This is the structure of microscale information that is
       identical for all microstructures. */
   typedef struct COMMON_MICROSCALE{
@@ -58,9 +53,9 @@ extern "C" {
     double VVolume; /**< original volume */
     NODE *node;
     ELEMENT *elem; /* NOTE: state/solution information is copied from
-		      solution structure */
+              solution structure */
     COEL *coel; /* NOTE: state/solution information is copied from
-		   solution structure */
+           solution structure */
     long n_orient;
     MATGEOM matgeom; /**< !pointer */
     long nhommat;
@@ -99,7 +94,7 @@ extern "C" {
     char *packed_state_var_n;
 
     /** The following are pointers to a shared buffer elsewhere! The
-	buffers are used purely as a workspace. */
+    buffers are used purely as a workspace. */
     /* local vectors */
     double *f;
     double *d_r;
@@ -147,7 +142,7 @@ extern "C" {
     int *map;
   } sol_idx_map;
   void sol_idx_map_build(sol_idx_map *map,
-			 const size_t size);
+             const size_t size);
   void sol_idx_map_destroy(sol_idx_map *map);
   void sol_idx_map_sort_id(sol_idx_map *map);
   void sol_idx_map_sort_idx(sol_idx_map *map);
@@ -157,28 +152,28 @@ extern "C" {
    * the map.
    */
   int sol_idx_map_id_get_idx(const sol_idx_map *map,
-			     const int id);
+                 const int id);
 
   /**
    * Get the idx from the job id and then assign a new id. Aborts if
    * the current id is not valid.
    */
   int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
-				   const int cur_id,
-				   const int new_id);
+                   const int cur_id,
+                   const int new_id);
 
   /**
    * Get the job id from the idx. Return -1 if not found.
    */
   int sol_idx_map_idx_get_id(const sol_idx_map *map,
-			     const int idx);
+                 const int idx);
 
   /**
    * Set the id at the given idx. Aborts if the idx is not found.
    */
   void sol_idx_map_idx_set_id(sol_idx_map *map,
-			      const int idx,
-			      const int id);
+                  const int idx,
+                  const int id);
 
   /** structure to contain all microscale information */
  struct MICROSCALE{
@@ -201,39 +196,39 @@ extern "C" {
   /** build the full MICROSCALE given by the list of command-line
       style options */
   void build_MICROSCALE(MICROSCALE *microscale,
-			MPI_Comm mpi_comm,
-			const int argc,
-			char **argv,
-			const int mp_id, 
-			const Comm_hints *hints);
+            MPI_Comm mpi_comm,
+            const int argc,
+            char **argv,
+            const int mp_id,
+            const Comm_hints *hints);
 
   /** build n solutions to compute on the scale */
   void build_MICROSCALE_solutions(const int n_solutions,
-				  MICROSCALE *microscale);
+                  MICROSCALE *microscale);
 
   void destroy_MICROSCALE(MICROSCALE *microscale);
 
   /** resets a single MICROSCALE_SOLUTION to time (n) */
   int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				const MICROSCALE *micro);
+                const MICROSCALE *micro);
 
   /** updates a single MICROSCALE_SOLUTION to time (n+1) */
   int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-				 const MICROSCALE *micro);
+                 const MICROSCALE *micro);
 
   /**
    * Dump the solution state vector to a binary file. Returns non-zero
    * if there is a problem writing the file.
    */
   int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
-				     FILE *out);
+                     FILE *out);
 
   /**
    * Read a dumped binary state file. Returns non-zero if there is a
    * problem reading the file.
    */
   int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
-				     FILE *in);
+                     FILE *in);
 
   /**=== Aliases for MACROSCALE ===*/
   typedef COMMON_MICROSCALE COMMON_MACROSCALE;
@@ -243,15 +238,11 @@ extern "C" {
   typedef MICROSCALE MACROSCALE;
 #endif
 #define initialize_MACROSCALE(macro) initialize_MICROSCALE(macro)
-#define build_MACROSCALE(macro,comm,argc,argv,mp_id,hints)	\
+#define build_MACROSCALE(macro,comm,argc,argv,mp_id,hints)  \
   build_MICROSCALE(macro,comm,argc,argv,mp_id,hints)
 #define build_MACROSCALE_solution(macro) \
   build_MICROSCALE_solutions(1,macro)
 #define destroy_MACROSCALE(macro) destroy_MICROSCALE(macro)
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */
 

@@ -12,10 +12,6 @@
 #include "microscale_information.h"
 #include "pgf_fe2_rebalancer.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
 typedef struct pgf_FE2_macro_client pgf_FE2_macro_client;
@@ -37,10 +33,10 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
  * Does NOT communicate w/ microscale servers
  */
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
-					  const int n_jobs_max,
-					  const MACROSCALE *macro,
-					  const PGFEM_mpi_comm *mpi_comm,
-					  const int mp_id);
+                      const int n_jobs_max,
+                      const MACROSCALE *macro,
+                      const PGFEM_mpi_comm *mpi_comm,
+                      const int mp_id);
 
 /**
  * Generate initial partitioning of jobs to compute on servers.
@@ -48,7 +44,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
  * Communicates w/ microscale servers
  */
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
-						 const PGFEM_mpi_comm *mpi_comm);
+                         const PGFEM_mpi_comm *mpi_comm);
 
 /**
  * Reassign jobs to balance load on servers. Send new assignment
@@ -59,32 +55,29 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
  * pgf_FE2_macro_client_send_jobs can be executed.
  */
 void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
-					    const PGFEM_mpi_comm *mpi_comm,
-					    const int heuristic);
+                        const PGFEM_mpi_comm *mpi_comm,
+                        const int heuristic);
 
 /**
  * Send jobs to servers to be computed.
  */
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
-				    const PGFEM_mpi_comm *mpi_comm,
-				    const MACROSCALE *macro,
-				    const int job_type);
+                    const PGFEM_mpi_comm *mpi_comm,
+                    const MACROSCALE *macro,
+                    const int job_type);
 
 /**
  * Receive finished jobs from the servers. Returns the maximum number
  * of sub-steps taken at the microscale.
  */
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
-				    MACROSCALE *macro,
-				    int *max_micro_sub_step);
+                    MACROSCALE *macro,
+                    int *max_micro_sub_step);
 
 /**
  * Send signal to servers to exit.
  */
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
-				    const PGFEM_mpi_comm *mpi_comm);
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                    const PGFEM_mpi_comm *mpi_comm);
 
 #endif

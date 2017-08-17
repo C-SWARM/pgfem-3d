@@ -36,53 +36,49 @@
 
 #include "PGFem3D_data_structure.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Print the master VTK file (call on only 1 CPU)*/
   void VTK_print_master(char *path,
-			char *base_name,
-			int time,
-			int nproc,
-			const PGFem3D_opt *opts);
+            char *base_name,
+            int time,
+            int nproc,
+            const PGFem3D_opt *opts);
 
   /** Print master VTK file for cohesive elements (call on only 1 CPU)*/
   void VTK_print_cohesive_master(char *path,
-				 char *base_name,
-				 int time,
-				 int nproc,
-				 const PGFem3D_opt *opts);
+                 char *base_name,
+                 int time,
+                 int nproc,
+                 const PGFem3D_opt *opts);
 
   /** Print the individual vtu files */
   void VTK_print_vtu(char *path,
-		     char *base_name,
-		     int time,
-		     int myrank,
-		     long ne,
-		     long nn,
-		     NODE *node,
-		     ELEMENT *elem,
-		     SUPP sup,
-		     double *r,
-		     SIG *sig,
-		     EPS *eps,
-		     const PGFem3D_opt *opts,
-		     const int mp_id);
+             char *base_name,
+             int time,
+             int myrank,
+             long ne,
+             long nn,
+             NODE *node,
+             ELEMENT *elem,
+             SUPP sup,
+             double *r,
+             SIG *sig,
+             EPS *eps,
+             const PGFem3D_opt *opts,
+             const int mp_id);
 
   /** Print the individual vtu files for the cohesive elements */
   void VTK_print_cohesive_vtu(char *path,
-			      char *base_name,
-			      int time,
-			      int myrank,
-			      long nce,
-			      NODE *node,
-			      COEL *coel,
-			      SUPP sup,
-			      double *r,
-			      ENSIGHT ensight,
-			      const PGFem3D_opt *opts,
-			      const int mp_id);
+                  char *base_name,
+                  int time,
+                  int myrank,
+                  long nce,
+                  NODE *node,
+                  COEL *coel,
+                  SUPP sup,
+                  double *r,
+                  ENSIGHT ensight,
+                  const PGFem3D_opt *opts,
+                  const int mp_id);
 
 struct PRINT_MULTIPHYSICS_RESULT;
 #ifndef TYPE_PRINT_MULTIPHYSICS_RESULT
@@ -91,7 +87,7 @@ typedef struct PRINT_MULTIPHYSICS_RESULT PRINT_MULTIPHYSICS_RESULT;
 #endif
 
 /// Mechanical part of index of output vailabes
-/// for writing simulation resuls 
+/// for writing simulation resuls
 typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_MacroDisplacement,
              MECHANICAL_Var_NodalPressure,
@@ -112,29 +108,29 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_NO} MECHANICAL_Var;
 
 /// Thermal part of index of output vailabes
-/// for writing simulation resuls       
+/// for writing simulation resuls
 typedef enum{THERMAL_Var_Temperature,
              THERMAL_Var_HeatFlux,
-             THERMAL_Var_HeatGenerations,     
+             THERMAL_Var_HeatGenerations,
              Thermal_Var_NO} THERMAL_Var;
 
 /// Chemical part of index of output vailabes
-/// for writing simulation resuls       
+/// for writing simulation resuls
 typedef enum{CHEMICAL_VAR_SPECIES,
-             CHEMICAL_Var_NO} CHEMICAL_Var;     
+             CHEMICAL_Var_NO} CHEMICAL_Var;
 
 /// function pointer for generalizing writing simulation results
 /// Using this function pointer, different variables can be written
 /// in a one function call using PRINT_MULTIPHYSICS_RESULT.
 /// e.g. PRINT_MULTIPHYSICS_RESULT *pmr;
-///      pmr->write_vtk = [function name to write any variables]     
+///      pmr->write_vtk = [function name to write any variables]
 typedef int (*write_vtk) (FILE *out,
                           GRID *grid,
                           const MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *fv,                          
+                          FIELD_VARIABLES *fv,
                           LOADING_STEPS *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
-                          const PGFem3D_opt *opts); 
+                          const PGFem3D_opt *opts);
 
 /// structure for writing multiphysics simulation results
 /// In writing vtk outputs, this object is constructed and used
@@ -147,7 +143,7 @@ struct PRINT_MULTIPHYSICS_RESULT
   char variable_name[1024]; /// variable name to be witten
   int is_point_data;        /// identifer of data (1=point, others cell data)
   void *p_data;             /// data pointer containing variblas to be written
-                            /// When VTK_write_data_double function is used, 
+                            /// When VTK_write_data_double function is used,
                             /// p_data should be allocated in advance.
   int m_row;                /// number of rows
   int m_col;                /// number of columns
@@ -200,14 +196,10 @@ int VTK_write_multiphysics_vtu(GRID *grid,
 /// \param[in] FV array of field variables
 /// \param[in] mp an object for multiphysics stepping
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
-/// \return non-zero on internal error                               
+/// \return non-zero on internal error
 int VTK_construct_PMR(GRID *grid,
                       FIELD_VARIABLES *FV,
                       MULTIPHYSICS *mp,
                       PRINT_MULTIPHYSICS_RESULT *pmr);
-                  
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  VTK_OUTPUT_H */

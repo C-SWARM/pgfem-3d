@@ -17,10 +17,6 @@
 #include "eps.h"
 #include "crpl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** After convergence, compute the reaction forces at nodes with
       prescribed deflections. This is achieved by computing the
       residuals on elements which contain node with prescribed
@@ -30,26 +26,22 @@ extern "C" {
       need to subtract external forces */
 
 int compute_reactions(long ne,
-		      long ndofn,
-		      long npres,
-		      double *r,
-		      NODE *node,
-		      ELEMENT *elem,
-		      MATGEOM matgeom,
-		      HOMMAT *hommat,
-		      SUPP sup,
-		      EPS *eps,
-		      SIG *sig,
-		      double nor_min,
-		      CRPL *crpl,
-		      double dt,
-		      double stab,
-		      MPI_Comm mpi_comm,
-		      const int analysis,
-		      const int mp_id);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+              long ndofn,
+              long npres,
+              double *r,
+              NODE *node,
+              ELEMENT *elem,
+              MATGEOM matgeom,
+              HOMMAT *hommat,
+              SUPP sup,
+              EPS *eps,
+              SIG *sig,
+              double nor_min,
+              CRPL *crpl,
+              double dt,
+              double stab,
+              MPI_Comm mpi_comm,
+              const int analysis,
+              const int mp_id);
 
 #endif /* #ifndef COMPUTE_REACTIONS_H */

@@ -9,16 +9,12 @@
 
 #include "PGFEM_mpi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Structure for MPI communication */
   struct COMMUN_1{
     long *S, /**< Contains how many rows to send to each processor
-		(nproc) */
+        (nproc) */
       *R, /**< Contains how many rows to recieve from each processor
-	     (nproc) */
+         (nproc) */
       *AS, /**< Amount to send (nproc) */
       *AR, /**< Amount to recieve (nproc)*/
       **SLID, /**< Local ID of communicated rows (nproc)(S[rank]) */
@@ -49,35 +45,35 @@ extern "C" {
   /** builds the off-process buffer for assembling the gloabal stiffness
       matrix. Posts non-blocking recieve */
   int init_and_post_stiffmat_comm(double ***Lk,
-				  double ***receive,
-				  MPI_Request **req_r,
-				  MPI_Status **sta_r,
-				  const MPI_Comm mpi_comm,
-				  const COMMUN pgfem_comm);
+                  double ***receive,
+                  MPI_Request **req_r,
+                  MPI_Status **sta_r,
+                  const MPI_Comm mpi_comm,
+                  const COMMUN pgfem_comm);
 
   /** Send the off-process data for stiffness assembly */
   int send_stiffmat_comm(MPI_Status **sta_s,
-			 MPI_Request **req_s,
-			 double **Lk,
-			 const MPI_Comm mpi_comm,
-			 const COMMUN pgfem_comm);
+             MPI_Request **req_s,
+             double **Lk,
+             const MPI_Comm mpi_comm,
+             const COMMUN pgfem_comm);
 
   /** Finalize the stiffmat communication. Simple wrapper for the
       waitall commands. */
   int finalize_stiffmat_comm(MPI_Status *sta_s,
-			     MPI_Status *sta_r,
-			     MPI_Request *req_s,
-			     MPI_Request *req_r,
-			     const COMMUN pgfem_comm);
-	
-	typedef struct PGFEM_HYPRE_solve_info PGFEM_HYPRE_solve_info;
-			     
+                 MPI_Status *sta_r,
+                 MPI_Request *req_s,
+                 MPI_Request *req_r,
+                 const COMMUN pgfem_comm);
+
+    typedef struct PGFEM_HYPRE_solve_info PGFEM_HYPRE_solve_info;
+
   /** Assemble non-local parts as they arrive */
   int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
-			       MPI_Status *sta_r,
-			       MPI_Request *req_r,
-			       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-			       double **recv);
+                   MPI_Status *sta_r,
+                   MPI_Request *req_r,
+                   PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                   double **recv);
 
   /**
    * Build the fast LG and GL index maps.
@@ -92,9 +88,9 @@ extern "C" {
    * \return non-zero on error
    */
   int pgfem_comm_build_fast_maps(COMMUN pgfem_comm,
-				 const long ndofd,
-				 const long ngdof_owned,
-				 const long start_gdof_id);
+                 const long ndofd,
+                 const long ngdof_owned,
+                 const long start_gdof_id);
 
   /**
    * Set the locally owned GLOBAL degrees of freedom VALUES from the local dof array.
@@ -110,8 +106,8 @@ extern "C" {
    *
    */
   int pgfem_comm_get_owned_global_dof_values(const COMMUN pgfem_comm,
-					     const double *local_dofs,
-					     double *global_dofs);
+                         const double *local_dofs,
+                         double *global_dofs);
 
   /**
    * Set the LOCAL dof VALUES from the global dof array.
@@ -126,11 +122,7 @@ extern "C" {
    *
    */
   int pgfem_comm_get_local_dof_values_from_global(const COMMUN pgfem_comm,
-						  const double *global_dofs,
-						  double *local_dofs);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                          const double *global_dofs,
+                          double *local_dofs);
 
 #endif /* #ifndef  */

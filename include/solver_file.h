@@ -15,12 +15,8 @@
 #include <stdlib.h>
 #include "PGFEM_mpi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 struct SOLVER_FILE {
-  FILE *file; /**< file to read data from */ 
+  FILE *file; /**< file to read data from */
   double nonlin_tol;
   size_t max_nonlin_iter;
   size_t n_pressure_nodes;
@@ -50,7 +46,7 @@ enum {UNDEFINED_METHOD = -1, /**< gives overflow on assignment to nonlin_method 
  * opened.
  */
 int solver_file_open(const char *filename,
-		     SOLVER_FILE **sf);
+             SOLVER_FILE **sf);
 
 /**
  * Destroy the solver file object.
@@ -67,9 +63,9 @@ int solver_file_read_header(SOLVER_FILE *sf);
  * Read a load increment from the solver file.
  */
 int solver_file_read_load(SOLVER_FILE *sf,
-			  const size_t step,
-			  const size_t len_load,
-			  double *incr_load);
+              const size_t step,
+              const size_t len_load,
+              double *incr_load);
 
 /**
  * Scan the load section of the file to the specified step. The
@@ -77,12 +73,8 @@ int solver_file_read_load(SOLVER_FILE *sf,
  * *not* reset upon entry
  */
 int solver_file_scan_to_step(SOLVER_FILE *sf,
-			     const size_t step,
-			     const size_t len_load,
-			     double *incr_load);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                 const size_t step,
+                 const size_t len_load,
+                 double *incr_load);
 
 #endif /* #ifndef  */

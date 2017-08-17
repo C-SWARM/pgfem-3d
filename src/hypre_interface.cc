@@ -11,16 +11,16 @@
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 static int create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				 const MPI_Comm mpi_comm);
+                 const MPI_Comm mpi_comm);
 
 static int create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				    const MPI_Comm mpi_comm);
+                    const MPI_Comm mpi_comm);
 
 static int create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				const MPI_Comm mpi_comm);
+                const MPI_Comm mpi_comm);
 
 static int create_precond_BOOMER(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				 const MPI_Comm mpi_comm);
+                 const MPI_Comm mpi_comm);
 
 /*===== API FUNCTION DEFINITIONS ====*/
 void initialize_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info **info)
@@ -52,7 +52,7 @@ void destroy_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info *info)
   if(info != NULL){
     destroy_HYPRE_preconditioner(info);
 
-    switch(info->solver_type){      
+    switch(info->solver_type){
     case HYPRE_GMRES:
       HYPRE_ParCSRGMRESDestroy (info->hypre_solver);
       break;
@@ -76,13 +76,13 @@ void destroy_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info *info)
 }
 
 void hypre_initialize(int *Ap,
-		      int *Ai,
-		      int size,
-		      int maxit,
-		      double err,
-		      PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		      const PGFem3D_opt *options,
-		      MPI_Comm mpi_comm)
+              int *Ai,
+              int size,
+              int maxit,
+              double err,
+              PGFEM_HYPRE_solve_info *PGFEM_hypre,
+              const PGFem3D_opt *options,
+              MPI_Comm mpi_comm)
 {
   int kdim = 0;
   int *diag_sizes = NULL;
@@ -93,7 +93,7 @@ void hypre_initialize(int *Ap,
   /* override maxit with command line options */
   maxit = options->maxit;
   kdim = options->kdim;
-  
+
   /* Rank and nproc */
   int myrank,nproc;
   MPI_Comm_size(mpi_comm,&nproc);
@@ -101,39 +101,39 @@ void hypre_initialize(int *Ap,
 
   if(myrank == 0){
     PGFEM_printf("Iterative solver info:\n"
-		 "Kdim     = %d\n"
-		 "Max. It. = %d\n",kdim,maxit);
+         "Kdim     = %d\n"
+         "Max. It. = %d\n",kdim,maxit);
   }
 
-  
+
   /* Allocations */
   PGFEM_hypre->ncol       = (int *)PGFEM_calloc(size,sizeof(int));
   diag_sizes = (int *)PGFEM_calloc(size,sizeof(int));
   offd_sizes = (int *)PGFEM_calloc(size,sizeof(int));
   PGFEM_hypre->grows = (int *)PGFEM_calloc(size,sizeof(int));
-  
+
   i = 0;
   while(i < size){
     PGFEM_hypre->grows[i] = PGFEM_hypre->ilower+i;
     i++;
   }
-  
+
   /* Compute ncol */
   Ap2ncols(Ap,PGFEM_hypre->ncol,size);
-  
+
   /* Matrix */
   HYPRE_IJMatrixCreate(mpi_comm,PGFEM_hypre->ilower,PGFEM_hypre->iupper,
-		       PGFEM_hypre->ilower,PGFEM_hypre->iupper,
-		       &PGFEM_hypre->hypre_k);
+               PGFEM_hypre->ilower,PGFEM_hypre->iupper,
+               &PGFEM_hypre->hypre_k);
   HYPRE_IJMatrixSetObjectType(PGFEM_hypre->hypre_k,HYPRE_PARCSR);
   GetDiagOffdSizes(PGFEM_hypre->ncol,Ai,diag_sizes,offd_sizes,size,
-		   PGFEM_hypre->ilower,PGFEM_hypre->iupper);
+           PGFEM_hypre->ilower,PGFEM_hypre->iupper);
   HYPRE_IJMatrixSetRowSizes(PGFEM_hypre->hypre_k,PGFEM_hypre->ncol);
   HYPRE_IJMatrixSetDiagOffdSizes(PGFEM_hypre->hypre_k,
-				 diag_sizes,offd_sizes); 
+                 diag_sizes,offd_sizes);
   HYPRE_IJMatrixInitialize(PGFEM_hypre->hypre_k);
   HYPRE_IJMatrixGetObject(PGFEM_hypre->hypre_k,
-			  (void **) &PGFEM_hypre->hypre_pk); 
+              (void **) &PGFEM_hypre->hypre_pk);
 
   if(PFEM_HYPRE_DEBUG){
     /* print pattern */
@@ -143,28 +143,28 @@ void hypre_initialize(int *Ap,
     HYPRE_IJMatrixInitialize(PGFEM_hypre->hypre_k);
   }
 
-  
+
   /* RHS */
   HYPRE_IJVectorCreate(mpi_comm,PGFEM_hypre->ilower,PGFEM_hypre->iupper,
-		       &PGFEM_hypre->hypre_rhs);
+               &PGFEM_hypre->hypre_rhs);
   HYPRE_IJVectorSetObjectType(PGFEM_hypre->hypre_rhs,HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(PGFEM_hypre->hypre_rhs);
   HYPRE_IJVectorGetObject(PGFEM_hypre->hypre_rhs,
-			  (void **)&PGFEM_hypre->hypre_prhs);
-  
+              (void **)&PGFEM_hypre->hypre_prhs);
+
   /* Solution vector */
   HYPRE_IJVectorCreate(mpi_comm,PGFEM_hypre->ilower,PGFEM_hypre->iupper,
-		       &PGFEM_hypre->hypre_sol);
+               &PGFEM_hypre->hypre_sol);
   HYPRE_IJVectorSetObjectType(PGFEM_hypre->hypre_sol,HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(PGFEM_hypre->hypre_sol);
   HYPRE_IJVectorGetObject(PGFEM_hypre->hypre_sol,
-			  (void **)&PGFEM_hypre->hypre_psol);
-  
+              (void **)&PGFEM_hypre->hypre_psol);
+
 
   /* set up the preconditioner */
   PGFEM_hypre->precond_type = options->precond;
   func_err += PGFEM_HYPRE_create_preconditioner(PGFEM_hypre,
-					   mpi_comm);
+                       mpi_comm);
 
   /* set up the solver */
   PGFEM_hypre->solver_type = options->solver;
@@ -214,40 +214,40 @@ void hypre_initialize(int *Ap,
     HYPRE_ParCSRHybridSetConvergenceTol(PGFEM_hypre->hypre_solver,1.0);
     break;
   }
-  
+
   free(diag_sizes); free(offd_sizes);
 }
 
 void Ap2ncols(int *Ap,
-	      int *ncols,
-	      int size)
+          int *ncols,
+          int size)
 {
   int n = 0;
-  
+
   for(n = 0;n < size;n++)
     ncols[n] = Ap[n+1] - Ap[n];
 }
 
 void GetDiagOffdSizes(int *ncols,
-		      int *Ai,
-		      int *dsize,
-		      int *odsize,
-		      int size,
-		      int il,
-		      int iu)
+              int *Ai,
+              int *dsize,
+              int *odsize,
+              int size,
+              int il,
+              int iu)
 {
   int i = 0;
   int c = 0;
   int j = 0;
   int col_id = 0;
   int diag_count = 0;
-  
+
   for(i = 0;i < size;i++){
     diag_count = 0;
     for(c = 0;c < ncols[i];c++){
       col_id = Ai[j++];
       if(col_id >= il && col_id <= iu)
-	diag_count++;
+    diag_count++;
     }
     dsize[i] = diag_count;
     odsize[i] = ncols[i] - diag_count;
@@ -255,43 +255,43 @@ void GetDiagOffdSizes(int *ncols,
 }
 
 void ZeroHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		int *Ai,
-		int size)
+        int *Ai,
+        int size)
 {
   int i = 0;
   int j = 0;
   int curpos = 0;
   double values[1] = {0};
   int cols[1] = {1};
-  
+
   for(i = 0;i < size;i++)
     for(j = 0;j < PGFEM_hypre->ncol[i];j++)
       HYPRE_IJMatrixSetValues(PGFEM_hypre->hypre_k,1,cols,
-			      &PGFEM_hypre->grows[i],
-			      &Ai[curpos++],values);
+                  &PGFEM_hypre->grows[i],
+                  &Ai[curpos++],values);
 }
 
 void SetHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-	       int *Ai,
-	       int size,
-	       double val)
+           int *Ai,
+           int size,
+           double val)
 {
   int i = 0;
   int j = 0;
   int curpos = 0;
   double *values = &val;
   int cols[1] = {1};
-  
+
   for(i = 0;i < size;i++)
     for(j = 0;j < PGFEM_hypre->ncol[i];j++)
       HYPRE_IJMatrixSetValues(PGFEM_hypre->hypre_k,1,cols,
-			      &PGFEM_hypre->grows[i],
-			      &Ai[curpos++],values);
+                  &PGFEM_hypre->grows[i],
+                  &Ai[curpos++],values);
 }
 
 double* hypreGetDiagonal(HYPRE_IJMatrix A,
-			 int lower,
-			 int upper)
+             int lower,
+             int upper)
 {
   int nrows = upper - lower + 1;
   int *ncols, *rows;
@@ -314,9 +314,9 @@ double* hypreGetDiagonal(HYPRE_IJMatrix A,
 }
 
 void set_HYPRE_row_col_bounds(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-			      const long g_n_col,
-			      const long *n_row_proc,
-			      const int myrank)
+                  const long g_n_col,
+                  const long *n_row_proc,
+                  const int myrank)
 {
   int idx = 0;
   PGFEM_hypre->jlower = 0;
@@ -330,7 +330,7 @@ void set_HYPRE_row_col_bounds(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 }
 
 int PGFEM_HYPRE_create_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				      const MPI_Comm mpi_comm)
+                      const MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -405,20 +405,20 @@ int destroy_HYPRE_preconditioner(PGFEM_HYPRE_solve_info *info)
 
 /*==== STATIC FUNCTION DEFINITIONS ====*/
 static int create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				 const MPI_Comm mpi_comm)
+                 const MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank = 0;
   err += MPI_Comm_rank(mpi_comm,&myrank);
   /* Euclid parameters */
   int euclid_argc = 7;
-  char *euclid_argv[] = {"-bj",
-  			 "-rowScale",
-  			 "-maxNzPerRow","100",
-  			 "-level","1",""};
+  const char *euclid_argv[] = {"-bj",
+             "-rowScale",
+             "-maxNzPerRow","100",
+             "-level","1",""};
   /* int euclid_argc = 5; */
   /* char *euclid_argv[] = {"-maxNzPerRow","100", */
-  /* 			 "-level","1",""}; */
+  /*             "-level","1",""}; */
 
   /* {"-level","1","-bj","-eu_stats","1","-rowScale",
      "-sparseA","0.0","-maxNzPerRow","100"};*/
@@ -429,13 +429,13 @@ static int create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 
   err += HYPRE_EuclidCreate(mpi_comm, &PGFEM_hypre->hypre_pc);
   err += HYPRE_EuclidSetParams (PGFEM_hypre->hypre_pc,
-				euclid_argc,euclid_argv);
+                euclid_argc,euclid_argv);
 
   return err;
 }
 
 static int create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				    const MPI_Comm mpi_comm)
+                    const MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -467,7 +467,7 @@ static int create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 }
 
 static int create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				const MPI_Comm mpi_comm)
+                const MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -493,7 +493,7 @@ static int create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre,
 }
 
 static int create_precond_BOOMER(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-				 const MPI_Comm mpi_comm)
+                 const MPI_Comm mpi_comm)
 {
   int err = 0;
   boomerAMGOptions AMGOptions;

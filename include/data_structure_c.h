@@ -122,7 +122,7 @@ typedef struct Matrix_##T                                               \
   (p).m_row = 0;                                                        \
   (p).m_col = 0;                                                        \
   (p).sizeof_T = sizeof(T);                                             \
-} while(0) 
+} while(0)
 
 #define Matrix_construct_redim(T, p, m, n) do {                         \
   (p).temp    = NULL;                                                   \
@@ -138,7 +138,7 @@ typedef struct Matrix_##T                                               \
   (p).temp    = NULL;                                                   \
   (p).m_row = m;                                                        \
   (p).m_col = n;                                                        \
-} while(0)                                     
+} while(0)
 
 #define Matrix_check_null_and_redim(p, m, n) do {                       \
   if((p).m_pdata==NULL || (p).m_row != m || (p).m_col != n)             \
@@ -150,7 +150,7 @@ typedef struct Matrix_##T                                               \
   for(MaTtEmPVar_a = 0; MaTtEmPVar_a < (p).m_row*(p).m_col; MaTtEmPVar_a++){ \
       (p).m_pdata[MaTtEmPVar_a] =  value;                               \
   }                                                                     \
-} while(0) 
+} while(0)
 
 #define Matrix_construct_init(T, p, m, n, value) do {                   \
   (p).temp    = NULL;                                                   \
@@ -160,7 +160,7 @@ typedef struct Matrix_##T                                               \
   (p).m_pdata = malloc((p).sizeof_T*(m)*(n));                           \
   Matrix_init(p, value);                                                \
 } while(0)
-                                                
+
 
 #define Matrix_init_w_array(p, m, n, q) do {                            \
   Matrix_check_null_and_redim(p, m, n);                                 \
@@ -182,7 +182,7 @@ typedef struct Matrix_##T                                               \
 #define Matrix_symmetric(A,A_symm) do {                                 \
   symmetric_part((A_symm).m_pdata,(A).m_pdata,(A).m_row);               \
 } while(0)
-  
+
 /* trA = tr_(A), trA = A_ii */
 #define Matrix_trace(A,trA) do {                                        \
   long MaTtEmPVar_a;                                                    \
@@ -222,7 +222,7 @@ typedef struct Matrix_##T                                               \
     printf("Matrix greater than [3x3] is not currently supported\n");   \
     break;                                                              \
   }                                                                     \
-} while(0)                                                              
+} while(0)
 
 #define Matrix_inv_check_err(A, invA, info) do {                        \
   info = 0;                                                             \
@@ -285,7 +285,7 @@ typedef struct Matrix_##T                                               \
     printf("Matrix greater than [3x3] is not currently supported\n");   \
     break;                                                              \
   }                                                                     \
-} while(0)                                                              
+} while(0)
 
 #define Matrix_cleanup(A) do {                                          \
   (A).m_row = 0;                                                        \
@@ -343,7 +343,7 @@ typedef struct Matrix_##T                                               \
   for(MaTtEmPVar_a = 0; MaTtEmPVar_a < m_row*m_col; MaTtEmPVar_a++)     \
     (A).m_pdata[MaTtEmPVar_a] = (B).m_pdata[MaTtEmPVar_a]*(b);          \
 } while(0)
-  
+
 /* A = transpose(A) */
 #define Matrix_trans(A) do {                                            \
   long MaTtEmPVar_a, MaTtEmPVar_b;                                      \
@@ -449,7 +449,7 @@ typedef struct Matrix_##T                                               \
   A_dd_B = 0.0;                                                         \
   for(int MaTtEmPVar_I = 0; MaTtEmPVar_I<(A).m_row*(A).m_col; MaTtEmPVar_I++) \
     A_dd_B += (A).m_pdata[MaTtEmPVar_I]*(B).m_pdata[MaTtEmPVar_I];      \
-} while(0)          			      
+} while(0)
 /*C = aAxB + bC*/
 // C[m,n] = a*A[m,k] x B[k,n] + b*C[m,n]
 // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,a,A,k,B,n,b,C,n);

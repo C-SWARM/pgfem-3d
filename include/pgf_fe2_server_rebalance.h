@@ -12,10 +12,6 @@
 #include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Structure for handling information about how a server is to be
  * rebalanced. Describes what jobs are to be kept, what jobs should be
@@ -43,9 +39,9 @@ void* pgf_FE2_server_rebalance_buff(const pgf_FE2_server_rebalance *t);
  * Construct a pgf_FE2_server_rebalance object and return a handle.
  */
 void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **t,
-				    const size_t n_keep,
-				    const size_t n_send,
-				    const size_t n_recv);
+                    const size_t n_keep,
+                    const size_t n_send,
+                    const size_t n_recv);
 
 /**
  * Construct a pgf_FE2_server_rebalance object from a buffer and
@@ -54,7 +50,7 @@ void pgf_FE2_server_rebalance_build(pgf_FE2_server_rebalance **t,
  * pgf_FE2_server_rebalance_destroy(t);
  */
 void pgf_FE2_server_rebalance_build_from_buffer(pgf_FE2_server_rebalance **t,
-						void **buffer);
+                        void **buffer);
 /**
  * Destroy the pgf_FE2_server_rebalance object
  */
@@ -109,19 +105,14 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
  * receive.
  */
 int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-					   const PGFEM_mpi_comm *mpi_comm,
-					   MICROSCALE *micro);
+                       const PGFEM_mpi_comm *mpi_comm,
+                       MICROSCALE *micro);
 /**
  * Finalizes exchange communications and releases internal
  * buffers. Need to extend this functionality to overlap with further
  * computation.
  */
 int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-					       const PGFEM_mpi_comm *mpi_comm);
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                           const PGFEM_mpi_comm *mpi_comm);
 
 #endif

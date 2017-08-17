@@ -6,58 +6,50 @@
 
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Note this function is called typically called through the macro
       PGFEM_calloc so that __func__ __FILE__ and __LINE__ can be passed
       from the point of invocation without as much code */
   void* PGFEM_CALLOC(const long nelem,
-		     const long size,
-		     const char *function,
-		     const char *file,
-		     const long line);
+             const long size,
+             const char *function,
+             const char *file,
+             const long line);
 
   void** PGFEM_CALLOC_2(const long nelem1,
-			const long nelem2,
-			const long size,
-			const char *function,
-			const char *file,
-			const long line);
+            const long nelem2,
+            const long size,
+            const char *function,
+            const char *file,
+            const long line);
 
   void*** PGFEM_CALLOC_3(const long nelem1,
-			 const long nelem2,
-			 const long nelem3,
-			 const long size,
-			 const char *function,
-			 const char *file,
-			 const long line);
+             const long nelem2,
+             const long nelem3,
+             const long size,
+             const char *function,
+             const char *file,
+             const long line);
 
   void**** PGFEM_CALLOC_4(const long nelem1,
-			  const long nelem2,
-			  const long nelem3,
-			  const long nelem4,
-			  const long size,
-			  const char *function,
-			  const char *file,
-			  const long line);
+              const long nelem2,
+              const long nelem3,
+              const long nelem4,
+              const long size,
+              const char *function,
+              const char *file,
+              const long line);
 
   void PGFEM_free2(void **a,
-		   const long nelem);
+           const long nelem);
 
   void PGFEM_free3(void ***a,
-		   const long nelem1,
-		   const long nelem2);
+           const long nelem1,
+           const long nelem2);
 
   void PGFEM_free4(void ****a,
-		   const long nelem1,
-		   const long nelem2,
-		   const long nelem3);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+           const long nelem1,
+           const long nelem2,
+           const long nelem3);
 
 /* define macro wrappers to pass in function/file/line info */
 #define PGFEM_calloc(nelem,size) \

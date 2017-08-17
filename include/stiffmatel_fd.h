@@ -12,41 +12,33 @@
 #include "eps.h"
 #include "crpl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /**
    * Compute the element stiffness matrix for the original three-field
    * formulation. To be reimplemented using the Hu_Washizu_element
    * functions.
    */
   int stiffmatel_fd (long ii,
-		     long ndofn,
-		     long nne,
-		     long *nod,
-		     double *x,
-		     double *y,
-		     double *z,
-		     ELEMENT *elem,
-		     MATGEOM matgeom,
-		     HOMMAT *hommat,
-		     NODE *node,
-		     SIG *sig,
-		     EPS *eps,
-		     double *r_e,
-		     long npres,
-		     double nor_min,
-		     double *Ks,
-		     double dt,
-		     CRPL *crpl,
-		     long FNR,
-		     double lm,
-		     double *fe,
-		     const int analysis);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+             long ndofn,
+             long nne,
+             long *nod,
+             double *x,
+             double *y,
+             double *z,
+             ELEMENT *elem,
+             MATGEOM matgeom,
+             HOMMAT *hommat,
+             NODE *node,
+             SIG *sig,
+             EPS *eps,
+             double *r_e,
+             long npres,
+             double nor_min,
+             double *Ks,
+             double dt,
+             CRPL *crpl,
+             long FNR,
+             double lm,
+             double *fe,
+             const int analysis);
 
 #endif /* #ifndef STIFFMATEL_FD_H */

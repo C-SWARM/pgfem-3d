@@ -17,22 +17,14 @@
 #include "eps.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Compute volume average deformation gradient.  Contains global
       communication. */
   double* computeMacroF(ELEMENT *elem,
-			long ne,
-			NODE *node,
-			long nn,
-			EPS *eps,
-			double oVolume,
-			MPI_Comm mpi_comm);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+            long ne,
+            NODE *node,
+            long nn,
+            EPS *eps,
+            double oVolume,
+            MPI_Comm mpi_comm);
 
 #endif /* #ifndef  */
