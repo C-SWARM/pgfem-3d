@@ -26,11 +26,11 @@ int main(int argc,char *argv[])
   MPI_Init (&argc,&argv);
   MPI_Comm_rank (mpi_comm,&myrank);
   MPI_Comm_size (mpi_comm,&nproc);
-  
+
   char processor_name[MPI_MAX_PROCESSOR_NAME];
-  int namelen = 0;  
+  int namelen = 0;
   MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);  
+  PGFEM_initialize_io(NULL,NULL);
   PGFem3D_opt options;
   if (argc <= 2){
     if(myrank == 0){
@@ -48,23 +48,23 @@ int main(int argc,char *argv[])
   long ne = 0;
   long ni = 0;
   double err = 0.0;
-  double limit = 0.0;  
-  long nmat = 0;  
+  double limit = 0.0;
+  long nmat = 0;
   long nc = 0;
   long np = 0;
-  NODE *node = NULL;  
-  ELEMENT *elem = NULL; 
-  MATERIAL *mater = NULL;   
+  NODE *node = NULL;
+  ELEMENT *elem = NULL;
+  MATERIAL *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
-  long nln = 0;  
-  ZATNODE *znod = NULL;   
+  long nln = 0;
+  ZATNODE *znod = NULL;
   long nle_s = 0;
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
-  ZATELEM *zele_v = NULL;    
+  ZATELEM *zele_v = NULL;
   Model_parameters *param_list = NULL;
-  
+
   int in_err = 0;
   int physicsno = 1;
   int ndim = 3;
@@ -78,14 +78,14 @@ int main(int argc,char *argv[])
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
       myrank);
     PGFEM_Abort();
-  }   
+  }
 
   HOMMAT *hommat = NULL;
   Mat_3D_orthotropic (nmat,mater,options.analysis_type);
-  
+
   long ***a = NULL;
   a = aloc3l (nmat,nmat,nc);
-  long nhommat = list(a,ne,nmat,nc,elem); 
+  long nhommat = list(a,ne,nmat,nc,elem);
 
   /*  alocation of the material matrices  */
   hommat = build_hommat(nhommat);
@@ -94,10 +94,10 @@ int main(int argc,char *argv[])
     hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
-  free(mater);  
-  
+  free(mater);
+
   EPS *eps = NULL;
-  
+
   int n_state_varialbles = 0;
   for(int eid=0; eid<ne; eid++)
   {
@@ -106,9 +106,9 @@ int main(int argc,char *argv[])
     int_point(nne,&nint);
     n_state_varialbles += nint;
   }
-        
+
   State_variables *statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
-            
+
   eps = build_eps_il(ne,elem,options.analysis_type,&statv_list);
 
   if (options.analysis_type == CM) {
@@ -124,11 +124,11 @@ int main(int argc,char *argv[])
     init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
   }
 
-  
+
   double *u0 = aloc1(nn*ndofn);
   double *u1 = aloc1(nn*ndofn);
-  double *sigma_r = aloc1(1000);  
-  
+  double *sigma_r = aloc1(1000);
+
   double temp[6];
   if(myrank==0)
   {
@@ -144,16 +144,16 @@ int main(int argc,char *argv[])
   int nsd = 3;
   int npres=0;
   double dt = 0.1;
-  
+
   double G_gn = 0.0;
-  Matrix(double) PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
-  double Err_of_stress = 0.0;  
+  Matrix<double> PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev,eFeffPK2;
+  double Err_of_stress = 0.0;
 
   double tnm1[2] = {-1.0,-1.0};
   double NORM = 0.0;
-  
+
   // initialize and define multiphysics
-  MULTIPHYSICS mp;  
+  MULTIPHYSICS mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int write_no = 0;
   int *coupled_ids = (int *) malloc(sizeof(int));
@@ -161,7 +161,7 @@ int main(int argc,char *argv[])
   {
     coupled_ids[0] = 0;
     sprintf(physicsname, "Mechanical");
- 
+
     mp.physicsno      = 1;
     mp.physicsname    = &physicsname;
     mp.physics_ids    = &id;
@@ -170,7 +170,7 @@ int main(int argc,char *argv[])
     mp.write_ids      = NULL;
     mp.coupled_ids    = &coupled_ids;
     mp.total_write_no = 0;
-  } 
+  }
 
   GRID grid;
   grid_initialization(&grid);
@@ -180,8 +180,8 @@ int main(int argc,char *argv[])
     grid.nsd         = nsd;
     grid.element     = elem;
     grid.node        = node;
-  }  
-  
+  }
+
   // initialize and define field variables
   FIELD_VARIABLES fv;
   {
@@ -194,21 +194,21 @@ int main(int argc,char *argv[])
     fv.NORM   = NORM;
     fv.statv_list = statv_list;
   }
-  
+
   double tns[2];
   PGFem3D_TIME_STEPPING ts;
   {
     time_stepping_initialization(&ts);
-    ts.tns    = tns;  
+    ts.tns    = tns;
   }
-    
+
   // initialize and define loading steps object
-  LOADING_STEPS load;    
+  LOADING_STEPS load;
   {
     loading_steps_initialization(&load);
     load.sups = &sup;
   }
-  
+
   for(int istep=0; istep<1000; istep++)
   {
     options.restart = istep;
@@ -217,90 +217,90 @@ int main(int argc,char *argv[])
     Matrix_construct_init(double, PK2, 3,3,0.0);
     Matrix_construct_init(double, sigma, 3,3,0.0);
     Matrix_construct_init(double, Feff, 3,3,0.0);
-    Matrix_construct_init(double, Eeff, 3,3,0.0);              
+    Matrix_construct_init(double, Eeff, 3,3,0.0);
     Matrix_construct_init(double, eFeff, 3,3,0.0);
     Matrix_construct_init(double, E, 3,3,0.0);
     Matrix_construct_init(double, PK2dev, 3,3,0.0);
     Matrix_construct_init(double, sigma_dev, 3,3,0.0);
     Matrix_construct_init(double, eFeffPK2, 3,3,0.0);
-            
+
     post_processing_compute_stress(PK2.m_pdata,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
     post_processing_deformation_gradient(Feff.m_pdata,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
-    post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);              
-    post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options); 
-                           
+    post_processing_deformation_gradient_elastic_part(eFeff.m_pdata,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
+    post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
+
     if(myrank==0)
-    { 
+    {
       Matrix_eye(Eeff, 3);
       Matrix_AxB(Eeff,0.5,-0.5,Feff,1,Feff,0);
       double det_Fe;
       Matrix_det(eFeff, det_Fe);
       Matrix_AxB(eFeffPK2,1.0,0.0,eFeff,0,PK2,0);
-      Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);        
-                      
+      Matrix_AxB(sigma,1.0/det_Fe,0.0,eFeffPK2,0,eFeff,1);
+
       double trPK2, tr_sigma;
-      
+
       Matrix_trace(PK2,trPK2);
       Matrix_trace(sigma,tr_sigma);
       Matrix_eye(PK2dev, 3);
-      Matrix_eye(sigma_dev, 3);  
-      
+      Matrix_eye(sigma_dev, 3);
+
       Matrix_AplusB(PK2dev,    1.0, PK2,      -trPK2/3.0, PK2dev);
-      Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);    
+      Matrix_AplusB(sigma_dev, 1.0, sigma, -tr_sigma/3.0, sigma_dev);
 
       double norm_sigma, norm_PK2;
-      Matrix_ddot(PK2dev,PK2dev,norm_PK2);    
+      Matrix_ddot(PK2dev,PK2dev,norm_PK2);
       Matrix_ddot(sigma_dev,sigma_dev,norm_sigma);
 
       double sigma_eff=sqrt(3.0/2.0*norm_sigma);
-      double PK2_eff = sqrt(3.0/2.0*norm_PK2);    
-                    
+      double PK2_eff = sqrt(3.0/2.0*norm_PK2);
+
       FILE *fp_ss;
-      if(istep==0) 
+      if(istep==0)
         fp_ss = fopen("strain_stress_crystal_plasticity.txt", "w");
       else
         fp_ss = fopen("strain_stress_crystal_plasticity.txt", "a");
-        
-      fprintf(fp_ss,"%e %e %e %e %e %e\n",dt*(istep+1),sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));                                    
+
+      fprintf(fp_ss,"%e %e %e %e %e %e\n",dt*(istep+1),sigma_eff,PK2_eff, G_gn, Mat_v(Eeff,1,1), Mat_v(PK2,1,1));
 
       fclose(fp_ss);
-      
+
       // compute error
       double Err_pt = sqrt((sigma_r[istep] - sigma_eff)*(sigma_r[istep] - sigma_eff))/sigma_r[istep];
       if(Err_pt > Err_of_stress)
         Err_of_stress = Err_pt;
-    }                  
+    }
   }
 
   Matrix_cleanup(PK2);
   Matrix_cleanup(sigma);
   Matrix_cleanup(Feff);
-  Matrix_cleanup(Eeff);              
+  Matrix_cleanup(Eeff);
   Matrix_cleanup(eFeff);
   Matrix_cleanup(E);
   Matrix_cleanup(PK2dev);
   Matrix_cleanup(sigma_dev);
-  Matrix_cleanup(eFeffPK2);                  
-  
-  free(u0);    
-  free(u1);      
+  Matrix_cleanup(eFeffPK2);
+
+  free(u0);
+  free(u1);
   free(sigma_r);
   destroy_zatnode(znod,nln);
   destroy_zatelem(zele_s,nle_s);
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-  destroy_model_parameters_list(nhommat,param_list);  
+  destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
   destroy_node_multi_physics(nn,node,physicsno);
-  
+
   free(coupled_ids);
-  free(physicsname);  
+  free(physicsname);
 
   if(myrank==0)
-  { 
+  {
     FILE *fp_err = fopen("order_of_error.txt", "w");
     fprintf(fp_err,"%d\n", (int) log10(Err_of_stress/10.0));
     fclose(fp_err);
@@ -308,7 +308,7 @@ int main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize(); 
+  MPI_Finalize();
 
   return(0);
 }

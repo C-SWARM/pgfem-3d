@@ -6,7 +6,7 @@ tension_disp_SOURCES = tension_disp.cc
 tension_pressure_SOURCES = tension_pressure.cc
 UQ_study_SOURCES = UQ_study.cc
 crystal_plasticity_SOURCES = crystal_plasticity.cc
-crystal_plasticity_verification_test_SOURCES = crystal_plasticity_verification_tests.cc
+crystal_plasticity_verification_test_SOURCES = crystal_plasticity_verification_test.cc
 
 # Universal flags for all binaries
 AM_CXXFLAGS = -fpermissive
