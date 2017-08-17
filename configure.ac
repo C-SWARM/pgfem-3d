@@ -131,6 +131,18 @@ AS_IF([test "x$with_suitesparse_dir" != xno],
    AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/UMFPACK/Lib -L$with_suitesparse_dir/AMD/Lib -lumfpack -lamd"])],
   [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])
 
+# TTL
+AC_ARG_WITH(ttl-dir,
+  [AS_HELP_STRING([--with-ttl-dir=<path>],
+			      [Specify path to TTL installation.])],
+  [AC_MSG_CHECKING([location of TTL])
+   AC_MSG_RESULT(["$with_ttl_dir"])],
+  [with_ttl_dir=no])
+
+AS_IF([test "x$with_ttl_dir" != xno],
+  [AC_SUBST([ttl_include],["-I$with_ttl_dir/include"])],
+  [])
+
 # vtk
 AC_ARG_ENABLE(vtk,
   [AS_HELP_STRING([--enable-vtk],

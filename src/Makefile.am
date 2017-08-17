@@ -166,6 +166,7 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               $(energy_equation_include) \
               $(hypre_include) \
               $(suitesparse_include) \
+	      $(ttl_include) \
               $(cnstvm_include) \
               $(mkl_include)
 
@@ -175,6 +176,6 @@ LDADD       = $(VTK_IO_lib) \
               $(hypre_lib) \
               $(vtk_lib) \
               $(cnstvm_lib) \
-	          $(mkl_lib)
+	      $(mkl_lib)
 
 AM_LDFLAGS  = -Wl,--allow-multiple-definition
