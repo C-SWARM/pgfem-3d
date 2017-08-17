@@ -177,6 +177,8 @@ AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
 AC_CONFIG_FILES([Makefile
                  lib/VTK_IO/src/Makefile
                  energy_equation/src/Makefile
-                 src/Makefile])
+                 src/Makefile
+                 verification_tests/Makefile
+                 verification_tests/src/Makefile])
 
 AC_OUTPUT

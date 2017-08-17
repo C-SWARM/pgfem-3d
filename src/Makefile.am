@@ -1,5 +1,6 @@
 bin_PROGRAMS = PGFem3D BPA_driver unit_test_43_driver IVD_driver J2D_driver CH_layer_driver comm_hints_driver
-all_sources = \
+noinst_LIBRARIES = libpgfem3d.a
+libpgfem3d_a_SOURCES = \
 ALM.cc \
 Arc_length.cc \
 boomerAMGInterface.cc \
@@ -170,7 +171,8 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               $(cnstvm_include) \
               $(mkl_include)
 
-LDADD       = $(VTK_IO_lib) \
+LDADD       = libpgfem3d.a \
+              $(VTK_IO_lib) \
               $(energy_equation_lib) \
               $(suitesparse_lib) \
               $(hypre_lib) \
