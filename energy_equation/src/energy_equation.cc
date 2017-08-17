@@ -356,8 +356,6 @@ int compute_hF_ttl(ttl::Tensor<2, DIM_3, double> &hF,
   int err = 0.0;
   // compute thermal part of deformation gradient
   double ax = mat->mater[mat_id].ax;
-  double ay = mat->mater[mat_id].ay;
-  double az = mat->mater[mat_id].az;
 
   switch(diff_order)
   {
@@ -723,6 +721,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
   Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
@@ -902,9 +903,12 @@ int energy_equation_compute_residuals(GRID *grid,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   // save original pointer to access mechanical part
-  double *u_n;
-  double *u_nm1;
+  double *u_n = 0;
+  double *u_nm1 = 0;
   State_variables *statv_list = NULL;
 
   if(is_it_couple_w_mechanical>=0)
@@ -1019,6 +1023,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
   Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
@@ -1155,8 +1162,6 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   if(compute_load4pBCs)
   {
     int ndofn = 1;
-    int k = 0;
-    int jj = 0;
     Matrix<double> u, f_loc;
     Matrix_construct_init(double,u    ,(fe->nne)*ndofn,1,0.0);
     Matrix_construct_init(double,f_loc,(fe->nne)*ndofn,1,0.0);
@@ -1250,9 +1255,12 @@ int energy_equation_compute_stiffness(GRID *grid,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   // save original pointer to access mechanical part
-  double *u_n;
-  double *u_nm1;
+  double *u_n = 0;
+  double *u_nm1 = 0;
   State_variables *statv_list = NULL;
 
   if(is_it_couple_w_mechanical>=0)
@@ -1409,9 +1417,12 @@ int energy_equation_compute_load4pBCs(GRID *grid,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   // save original pointer to access mechanical part
-  double *u_n;
-  double *u_nm1;
+  double *u_n = 0;
+  double *u_nm1 = 0;
   State_variables *statv_list = NULL;
 
   if(is_it_couple_w_mechanical>=0)
@@ -1482,9 +1493,12 @@ int update_thermal_flux4print(GRID *grid,
       is_it_couple_w_chemical = ia;
   }
 
+  // avoid compiler warning until this is used for something
+  (void)is_it_couple_w_chemical;
+  
   // save original pointer to access mechanical part
-  double *u_n;
-  double *u_nm1;
+  double *u_n = 0;
+  double *u_nm1 = 0;
   State_variables *statv_list = NULL;
 
   if(is_it_couple_w_mechanical>=0)
@@ -1511,7 +1525,6 @@ int update_thermal_flux4print(GRID *grid,
 
     // get material constants (parameters)
     const int mat_id = (grid->element[eid]).mat[0];
-    double rho_0 = mat->density[mat_id];
 
     MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
     Matrix<double> k0,k;
@@ -1520,8 +1533,6 @@ int update_thermal_flux4print(GRID *grid,
 
     Matrix_construct_init(double, k,DIM_3,DIM_3,0.0);
     Matrix_AeqB(k,1.0,k0);
-
-    double cp = thermal->cp;
 
     // compute noda values
     Matrix<double> q, Tnp1, Tn;
