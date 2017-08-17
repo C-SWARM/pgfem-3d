@@ -21,26 +21,23 @@
 /** Create a vtkUnstructuredGrid object from a PGFem3D mesh and
     associated information. ***CURRENTLY ONLY SUPPORT LINEAR TETRAS
     FOR DAMAGE*** */
-void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
-				     const int nelems,
-				     const NODE *nodes,
-				     const ELEMENT *elems,
-				     const SUPP supports,
-				     const SIG *stress,
-				     const EPS *strain,
-				     const double *dofs,
-				     const int analysis_type)
+void*
+PGFem3D_to_vtkUnstructuredGrid(const int nnode,
+                               const int nelems,
+                               const NODE *nodes,
+                               const ELEMENT *elems,
+                               const SUPP supports,
+                               const SIG *stress,
+                               const EPS *strain,
+                               const double *dofs,
+                               const int analysis_type)
 {
   int have_pressure = 0;
   // Create Points and point data
-  vtkSmartPointer<vtkPoints> points = 
-    vtkSmartPointer<vtkPoints>::New();
-  vtkSmartPointer<vtkDoubleArray> disp =
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> macro_disp =
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> pressure =
-    vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  vtkSmartPointer<vtkDoubleArray> disp = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> macro_disp = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> pressure = vtkSmartPointer<vtkDoubleArray>::New();
 
   // Allocate points and point data
   points->SetNumberOfPoints(nnode);
@@ -55,7 +52,7 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     // double *jump = new double[3];
     // compute_interface_macro_jump_u(jump,supports);
     // compute_interface_macro_grad_u(supports->F0,supports->lc,
-    // 				   jump,supports->N0);
+    //                 jump,supports->N0);
     // delete[] jump;
 
     compute_macro_grad_u(supports->F0,supports,analysis_type);
@@ -73,11 +70,11 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     double displ[3] = {0.0,0.0,0.0};
     for(int j=0; j<3; j++){
       if(nodes[i].id_map[0].id[j] == 0){
-	displ[j] = 0.0;
+        displ[j] = 0.0;
       }else if(nodes[i].id_map[0].id[j] > 0){
-	displ[j] = dofs[nodes[i].id_map[0].id[j]-1];
+        displ[j] = dofs[nodes[i].id_map[0].id[j]-1];
       } else if(nodes[i].id_map[0].id[j] <  0){
-	displ[j] = supports->defl[abs(nodes[i].id_map[0].id[j])-1];
+        displ[j] = supports->defl[abs(nodes[i].id_map[0].id[j])-1];
       }
     }
     points->SetPoint(i,nodes[i].x1_fd,nodes[i].x2_fd,nodes[i].x3_fd);
@@ -92,39 +89,27 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   }
 
   // Cell connectivity and data
-  vtkSmartPointer<vtkCellArray> cells = 
-    vtkSmartPointer<vtkCellArray>::New();
-  vtkSmartPointer<vtkIdTypeArray> conn = 
-    vtkSmartPointer<vtkIdTypeArray>::New();
+  vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
+  vtkSmartPointer<vtkIdTypeArray> conn = vtkSmartPointer<vtkIdTypeArray>::New();
   int *type;
-  vtkSmartPointer<vtkDoubleArray> vtkStress = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> vtkStrain = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> effStress = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> effStrain = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> damage = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> chi = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkIdTypeArray> prop = 
-    vtkSmartPointer<vtkIdTypeArray>::New();
-      
+  vtkSmartPointer<vtkDoubleArray> vtkStress = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> vtkStrain = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> effStress = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> effStrain = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> damage = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> chi = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkIdTypeArray> prop = vtkSmartPointer<vtkIdTypeArray>::New();
+
   vtkSmartPointer<vtkDoubleArray> tf_pressure = vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> tf_volume = vtkSmartPointer<vtkDoubleArray>::New();              
+  vtkSmartPointer<vtkDoubleArray> tf_volume = vtkSmartPointer<vtkDoubleArray>::New();
 
   /* output F, P, and W at 1st integration point */
-  vtkSmartPointer<vtkDoubleArray> vtkF = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> vtkP = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-  vtkSmartPointer<vtkDoubleArray> vtkW = 
-    vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> vtkF = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> vtkP = vtkSmartPointer<vtkDoubleArray>::New();
+  vtkSmartPointer<vtkDoubleArray> vtkW = vtkSmartPointer<vtkDoubleArray>::New();
 
   // pre-allocate assuming quadradic tets
-  conn->SetNumberOfValues(11*nelems); 
+  conn->SetNumberOfValues(11*nelems);
   conn->Reset(); // Set insertion point to begining and "size" to zero
 
   type = new int[nelems];
@@ -164,24 +149,24 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   vtkW->SetName("W");
 
   if(analysis_type==TF)
-  { 
+  {
     if(elems[0].toe==10)
     {
       tf_pressure->SetNumberOfValues(nelems);
-      tf_pressure->SetName("TF_Pressure"); 
+      tf_pressure->SetName("TF_Pressure");
     }
-    
+
     tf_volume->SetNumberOfValues(nelems);
-    tf_volume->SetName("TF_Volume"); 
-  }  
+    tf_volume->SetName("TF_Volume");
+  }
 
   // build connectivity and populate fields
   for(int i=0; i<nelems; i++){
     switch(elems[i].toe){
-    case 4: type[i] = VTK_TETRA; break;
-    case 8: type[i] = VTK_HEXAHEDRON; break;
-    case 10: type[i] = VTK_QUADRATIC_TETRA; break;
-    default:
+     case 4: type[i] = VTK_TETRA; break;
+     case 8: type[i] = VTK_HEXAHEDRON; break;
+     case 10: type[i] = VTK_QUADRATIC_TETRA; break;
+     default:
       std::cerr << "Unsupported element type!\n" << std::endl;
       MPI_Abort(MPI_COMM_WORLD,0);
       break;
@@ -214,15 +199,15 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     damage->SetValue(i,strain[i].dam[0].wn);
     chi->SetValue(i,strain[i].dam[0].Xn);
     prop->SetValue(i,elems[i].pr);
-    
+
     if(analysis_type==TF)
     {
       if(elems[i].toe==10)
-        tf_pressure->SetValue(i, strain[i].d_T[0]);  
-      
-      tf_volume->SetValue(i, strain[i].T[0]);  
+        tf_pressure->SetValue(i, strain[i].d_T[0]);
+
+      tf_volume->SetValue(i, strain[i].T[0]);
     }
-      
+
 
     vtkF->SetTuple(i,strain[i].il[0].F);
     vtkW->SetValue(i,strain[i].il[0].Y);
@@ -244,13 +229,13 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
     // compute tmp_strain (I know...) = FS
     for(int j=0; j<3; j++){
       for(int k=0; k<3; k++){
-	int i_jk = j*3+k;
-	tmp_strain[i_jk] = 0.0;
-	for(int l=0; l<3; l++){
-	  int i_jl = j*3+l;
-	  int i_lk = l*3+k;
-	  tmp_strain[i_jk] += pF[i_jl]*tmp_stress[i_lk];
-	}
+        int i_jk = j*3+k;
+        tmp_strain[i_jk] = 0.0;
+        for(int l=0; l<3; l++){
+          int i_jl = j*3+l;
+          int i_lk = l*3+k;
+          tmp_strain[i_jk] += pF[i_jl]*tmp_stress[i_lk];
+        }
       }
     }
     vtkP->SetTuple(i,tmp_strain);
@@ -261,7 +246,7 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
 
   // Create Grid
   vtkSmartPointer<vtkUnstructuredGrid> grid =
-    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  vtkSmartPointer<vtkUnstructuredGrid>::New();
   grid->SetPoints(points);
   grid->SetCells(type,cells);
 
@@ -286,10 +271,10 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   {
     if(elems[0].toe==10)
       grid->GetCellData()->AddArray(tf_pressure);
-      
-    grid->GetCellData()->AddArray(tf_volume);    
+
+    grid->GetCellData()->AddArray(tf_volume);
   }
-  
+
   grid->GetCellData()->AddArray(vtkF);
   grid->GetCellData()->AddArray(vtkP);
   grid->GetCellData()->AddArray(vtkW);
@@ -300,21 +285,22 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   return (void*) grid;
 }
 
-void PGFem3D_destroy_vtkUnstructuredGrid(void *grid)
+void
+PGFem3D_destroy_vtkUnstructuredGrid(void *grid)
 {
-  vtkSmartPointer<vtkUnstructuredGrid> vtkGrid = 
-    (vtkUnstructuredGrid*) grid;
+  vtkSmartPointer<vtkUnstructuredGrid> vtkGrid = (vtkUnstructuredGrid*) grid;
   vtkGrid->Delete();
 }
 
-void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
-				       const void *grid,
-				       const int ascii)
+void
+PGFem3D_write_vtkUnstructuredGrid(const char* filename,
+                                  const void *grid,
+                                  const int ascii)
 {
-  vtkSmartPointer<vtkUnstructuredGrid> vtkGrid = 
-    (vtkUnstructuredGrid*) grid;
-  vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = 
-    vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+  vtkSmartPointer<vtkUnstructuredGrid> vtkGrid =
+  (vtkUnstructuredGrid*) grid;
+  vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+  vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
   writer->SetFileName(filename);
 
   if(ascii){
@@ -330,7 +316,8 @@ void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
   writer->Write();
 }
 
-int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
+int
+read_VTK_file4TF(char fn[], double *r, double *P, double *V)
 {
   //parse command line arguments
 
@@ -339,12 +326,12 @@ int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
 
   //************ read all the data from the file **************
   vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
-    vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
   reader->SetFileName(filename.c_str());
   reader->Update(); //read in data from file.
 
   vtkSmartPointer<vtkUnstructuredGrid> grid =
-    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  vtkSmartPointer<vtkUnstructuredGrid>::New();
   grid = reader->GetOutput(); //data is now in unstructured grid.
 
   //*************************************************************
@@ -357,30 +344,30 @@ int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
 
   //************* Example: If(data exists) {}
   /* vtkDataArray *CauchyStress;
-  if(cData->HasArray("CauchyStress")) {
-    CauchyStress = cData->GetArray("CauchyStress");
-  }
- */
- 
- 
- 
-   //********************* Print out displacement data ***********
+     if(cData->HasArray("CauchyStress")) {
+     CauchyStress = cData->GetArray("CauchyStress");
+     }
+  */
+
+
+
+  //********************* Print out displacement data ***********
   //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
-  if(pData->HasArray("Displacement")) 
+  if(pData->HasArray("Displacement"))
   {
     vtkDataArray *Displacement = pData->GetArray("Displacement");
     nelems = Displacement->GetNumberOfTuples();
-    for(int i = 0; i < nelems; i++) 
+    for(int i = 0; i < nelems; i++)
     {
       temp = Displacement->GetTuple(i);
       r[i*3+0] = temp[0];
-      r[i*3+1] = temp[1];      
-      r[i*3+2] = temp[2];      
+      r[i*3+1] = temp[1];
+      r[i*3+2] = temp[2];
     }
   }
   //**************************************************************
 
-  if(cData->HasArray("TF_Pressure")) 
+  if(cData->HasArray("TF_Pressure"))
   {
     vtkDataArray *pressure = cData->GetArray("TF_Pressure");
     nelems = pressure->GetNumberOfTuples();
@@ -388,10 +375,10 @@ int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
     {
       temp = pressure->GetTuple(i);
       P[i] = temp[0];
-    } 
+    }
   }
-  
-  if(cData->HasArray("TF_Volume")) 
+
+  if(cData->HasArray("TF_Volume"))
   {
     vtkDataArray *volume = cData->GetArray("TF_Volume");
     nelems = volume->GetNumberOfTuples();
@@ -399,14 +386,15 @@ int read_VTK_file4TF(char fn[], double *r, double *P, double *V)
     {
       temp = volume->GetTuple(i);
       V[i] = temp[0];
-    } 
+    }
   }
 
   return EXIT_SUCCESS;
 }
 
 
-int read_VTK_file(char fn[], double *r)
+int
+read_VTK_file(char fn[], double *r)
 {
   //parse command line arguments
 
@@ -414,13 +402,11 @@ int read_VTK_file(char fn[], double *r)
 
 
   //************ read all the data from the file **************
-  vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
-    vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  vtkSmartPointer<vtkXMLUnstructuredGridReader> reader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
   reader->SetFileName(filename.c_str());
   reader->Update(); //read in data from file.
 
-  vtkSmartPointer<vtkUnstructuredGrid> grid =
-    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
   grid = reader->GetOutput(); //data is now in unstructured grid.
 
   //*************************************************************
@@ -434,34 +420,34 @@ int read_VTK_file(char fn[], double *r)
 
   //************* Example: If(data exists) {}
   /* vtkDataArray *CauchyStress;
-  if(cData->HasArray("CauchyStress")) {
-    CauchyStress = cData->GetArray("CauchyStress");
-  }
- */
- 
- 
- 
-   //********************* Print out displacement data ***********
+     if(cData->HasArray("CauchyStress")) {
+     CauchyStress = cData->GetArray("CauchyStress");
+     }
+  */
+
+
+
+  //********************* Print out displacement data ***********
   //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
-  if(pData->HasArray("Displacement")) 
+  if(pData->HasArray("Displacement"))
   {
     vtkDataArray *Displacement = pData->GetArray("Displacement");
     nelems = Displacement->GetNumberOfTuples();
-    for(int i = 0; i < nelems; i++) 
+    for(int i = 0; i < nelems; i++)
     {
       temp = Displacement->GetTuple(i);
       r[i*3+0] = temp[0];
-      r[i*3+1] = temp[1];      
-      r[i*3+2] = temp[2];      
+      r[i*3+1] = temp[1];
+      r[i*3+2] = temp[2];
     }
   }
   //**************************************************************
-  
+
   return EXIT_SUCCESS;
- 
- 
- 
- 
+
+
+
+
   if(cData->HasArray("CauchyStress")) {
     vtkData = cData->GetArray("CauchyStress");
     nelems = vtkData->GetNumberOfTuples();
@@ -474,7 +460,7 @@ int read_VTK_file(char fn[], double *r)
       }
       std::cout << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("EulerStrain")) {
@@ -489,7 +475,7 @@ int read_VTK_file(char fn[], double *r)
       }
       std::cout << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("EffectiveStress")) {
@@ -500,7 +486,7 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "EffectiveStress:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("EffectiveStrain")) {
@@ -511,7 +497,7 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "EffectiveStrain:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("Damage")) {
@@ -522,9 +508,9 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "Damage:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
-  
+
   if(cData->HasArray("Chi")) {
     vtkData = cData->GetArray("Chi");
     nelems = vtkData->GetNumberOfTuples();
@@ -533,7 +519,7 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "Chi:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("CellProperty")) {
@@ -544,7 +530,7 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "CellProperty:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("F")) {
@@ -559,7 +545,7 @@ int read_VTK_file(char fn[], double *r)
       }
       std::cout << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("P")) {
@@ -574,7 +560,7 @@ int read_VTK_file(char fn[], double *r)
       }
       std::cout << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
   if(cData->HasArray("W")) {
@@ -585,7 +571,7 @@ int read_VTK_file(char fn[], double *r)
       temp = vtkData->GetTuple(i);
       std::cout << "W:" << i << " " << *temp << std::endl;
       //*************************************************************
-     } 
+    }
   }
 
 
@@ -607,33 +593,44 @@ int read_VTK_file(char fn[], double *r)
 
 #else
 
-void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
-				     const int nelems,
-				     const NODE *nodes,
-				     const ELEMENT *elems,
-				     const SUPP supports,
-				     const SIG *stress,
-				     const EPS *strain,
-				     const double *dofs,
-				     const int analysis_type)
+void*
+PGFem3D_to_vtkUnstructuredGrid(const int nnode,
+                               const int nelems,
+                               const NODE *nodes,
+                               const ELEMENT *elems,
+                               const SUPP supports,
+                               const SIG *stress,
+                               const EPS *strain,
+                               const double *dofs,
+                               const int analysis_type)
 {
   fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
   return NULL;
 }
 
-void PGFem3D_destroy_vtkUnstructuredGrid(void *grid)
+void
+PGFem3D_destroy_vtkUnstructuredGrid(void *grid)
 {
   fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
 }
 
-void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
-				       const void *grid,
-				       const int ascii)
+void
+PGFem3D_write_vtkUnstructuredGrid(const char* filename,
+                                  const void *grid,
+                                  const int ascii)
 {
   fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
 }
-				       
-int read_VTK_file(char fn[], double *r)
+
+int
+read_VTK_file(char fn[], double *r)
+{
+  fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
+  return EXIT_FAILURE;
+}
+
+int
+read_VTK_file4TF(char fn[], double *r, double *P, double *V)
 {
   fprintf(stderr,"WARNING: calling VTK_IO function w/ no VTK support! (%s)",__func__);
   return EXIT_FAILURE;
