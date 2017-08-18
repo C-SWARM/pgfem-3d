@@ -1,15 +1,37 @@
 #!/usr/bin/env bash
+
+# The pgfem executable is built in the build directory.
 pgfem=@top_builddir@/src/PGFem3D
+
+# The reference verification test is build in the build directory.
 cpvr=@top_builddir@/verification_tests/src/crystal_plasticity_verification_test
+
+# Input comes from the (legacy) verification_tests source directory.
+indir=@top_srcdir@/verification_tests/box_compression/input
+
+# The test produces a lot of incidental output so we dump it into a local
+# relative out directory.
+outdir=@builddir@/out
+
+# Running the pgfem executable followed by the reference test produces a local
+# output file, which is the important result of this process.
+out=order_of_error.txt
+
+# The reference output is checked into the source direcory.
 refout=@top_srcdir@/verification_tests/output/plasticity_order_of_error.txt
-in=@srcdir@
-out=@builddir@/out
+
+# The options that we use to run the applications.
 opts="-SS -cm 1 -V "
 
-cmd="$pgfem $opts $in/box_LT_ $out/box_LT"
+# Run the PGFem3D test
+cmd="$pgfem $opts $indir/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
-cmd="$cpvr $opts $in/box_LT_ $out/box_LT"
+
+# Run the reference binary to produce $out
+cmd="$cpvr $opts $indir/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
-numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 order_of_error.txt $refout
+
+# And check the results.
+numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout
