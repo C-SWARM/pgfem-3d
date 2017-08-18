@@ -3,7 +3,7 @@
 # The pgfem executable is built in the build directory.
 pgfem=@top_builddir@/src/PGFem3D
 
-# The reference verification test is build in the build directory.
+# The reference verification test in the build tree.
 cpvr=@top_builddir@/verification_tests/src/crystal_plasticity_verification_test
 
 # Input comes from the (legacy) verification_tests source directory.
