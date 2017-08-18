@@ -1,4 +1,4 @@
-noinst_PROGRAMS = shear tension_disp tension_pressure UQ_study \
+check_PROGRAMS = shear tension_disp tension_pressure UQ_study \
                   crystal_plasticity crystal_plasticity_verification_test
 
 shear_SOURCES = shear.cc

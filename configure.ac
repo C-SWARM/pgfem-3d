@@ -27,6 +27,9 @@ AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
 AC_C_RESTRICT                                   # Works for C++ too
 
+# check for the ability to build tests
+AC_CHECK_PROG([found_numdiff], [numdiff], [yes])
+
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall
                   -Werror parallel-tests color-tests])
@@ -162,12 +165,26 @@ AS_IF([test "x$have_vtk" != xyes],
 
 AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
 
+#tests 
+AC_ARG_ENABLE(tests,
+  [AS_HELP_STRING([--enable-tests],
+		          [Enable tests (requires numdiff) @<:@default=yes@:>@])],
+  [], [enable_tests=yes])
+
 # Checks for header files.
 AC_CHECK_HEADERS([limits.h stdlib.h string.h sys/time.h unistd.h])
 
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
+
+# Deal with tests
+AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
+  [AC_MSG_WARN([Missing numdiff, disabling tests])],
+  [AC_CONFIG_FILES([tests/box_compression/run.sh],
+                   [chmod +x tests/box_compression/run.sh])])
+
+AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
 
 AC_CONFIG_FILES([Makefile
                  lib/VTK_IO/src/Makefile
@@ -176,6 +193,7 @@ AC_CONFIG_FILES([Makefile
                  verification_MMS/Makefile
                  verification_tests/Makefile
                  verification_tests/src/Makefile
-                 tests/Makefile])
+                 tests/Makefile
+                 tests/box_compression/Makefile])
 
 AC_OUTPUT

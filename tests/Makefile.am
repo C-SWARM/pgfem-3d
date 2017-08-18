@@ -1,1 +1,1 @@
-TESTS =
+SUBDIRS = box_compression

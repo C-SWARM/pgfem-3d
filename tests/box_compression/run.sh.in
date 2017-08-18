@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+pgfem=@top_builddir@/src/PGFem3D
+cpvr=@top_builddir@/verification_tests/src/crystal_plasticity_verification_test
+refout=@top_srcdir@/verification_tests/output/plasticity_order_of_error.txt
+in=@srcdir@
+out=@builddir@/out
+opts="-SS -cm 1 -V "
+
+cmd="$pgfem $opts $in/box_LT_ $out/box_LT"
+echo $cmd
+$cmd
+cmd="$cpvr $opts $in/box_LT_ $out/box_LT"
+echo $cmd
+$cmd
+numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 order_of_error.txt $refout
