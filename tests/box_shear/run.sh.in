@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+NP=1
+
+# The pgfem executable is built in the build directory.
+pgfem=@top_builddir@/src/PGFem3D
+
+# The reference verification test in the build tree.
+shear=@top_builddir@/verification_tests/src/shear
+
+# Input comes from the (legacy) verification_tests source directory.
+indir=@top_srcdir@/verification_tests/box_patch_LT/shear/inputs
+
+# The test produces a lot of incidental output so we dump it into a local
+# relative out directory.
+outdir=@builddir@/out
+
+# Running the pgfem executable followed by the reference test produces a local
+# output file, which is the important result of this process.
+out=stress.out
+
+# The reference output is checked into the source direcory.
+refout=@top_srcdir@/verification_tests/output/stress.out
+
+# The options that we use to run the applications.
+opts="-SS -ms -disp -V"
+
+# Run the PGFem3D test
+cmd="$pgfem $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+echo $cmd
+$cmd
+
+# Run the reference binary to produce $out
+cmd="$shear $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+echo $cmd
+$cmd
+
+# And check the results.
+numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout

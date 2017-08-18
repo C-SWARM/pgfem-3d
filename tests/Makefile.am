@@ -1,1 +1,1 @@
-SUBDIRS = box_compression
+SUBDIRS = box_compression box_shear
