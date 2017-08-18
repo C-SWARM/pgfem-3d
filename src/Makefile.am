@@ -167,7 +167,7 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               $(energy_equation_include) \
               $(hypre_include) \
               $(suitesparse_include) \
-	      $(ttl_include) \
+              $(ttl_include) \
               $(cnstvm_include) \
               $(mkl_include)
 
@@ -176,8 +176,9 @@ LDADD       = libpgfem3d.a \
               $(energy_equation_lib) \
               $(suitesparse_lib) \
               $(hypre_lib) \
-              $(vtk_lib) \
+              $(VTK_LIBS) \
               $(cnstvm_lib) \
-	      $(mkl_lib)
+              $(mkl_lib)
 
-AM_LDFLAGS  = -Wl,--allow-multiple-definition
+AM_LDFLAGS  = -Wl,--allow-multiple-definition \
+              $(VTK_LDFLAGS)

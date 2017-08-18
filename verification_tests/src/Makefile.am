@@ -12,18 +12,19 @@ crystal_plasticity_verification_test_SOURCES = crystal_plasticity_verification_t
 # AM_CXXFLAGS = 
 
 AM_CPPFLAGS = -Wall -Werror \
-	      $(hypre_include) \
               -I$(top_srcdir)/include \
               -I$(top_builddir)/include \
-              -I$(top_srcdir)/lib/VTK_IO/include
+              -I$(top_srcdir)/lib/VTK_IO/include \
+              $(hypre_include)
 
 LDADD       = $(top_builddir)/src/libpgfem3d.a \
               $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.a \
               $(top_builddir)/energy_equation/src/libenergy_equation.a \
               $(suitesparse_lib) \
               $(hypre_lib) \
-              $(vtk_lib) \
+              $(VTK_LIBS) \
               $(cnstvm_lib) \
               $(mkl_lib)
 
-AM_LDFLAGS  = -Wl,--allow-multiple-definition
+AM_LDFLAGS  = -Wl,--allow-multiple-definition \
+              $(VTK_LDFLAGS)

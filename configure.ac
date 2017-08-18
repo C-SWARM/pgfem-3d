@@ -149,29 +149,18 @@ AS_IF([test "x$with_ttl_dir" != xno],
   [AC_SUBST([ttl_include],["-I$with_ttl_dir/include"])],
   [])
 
-# vtk
-AC_ARG_ENABLE(vtk,
-  [AS_HELP_STRING([--enable-vtk],
-		          [Output in VTK binary output. Requires additional options --with-vtk-include and --with-vtk-libs @<:@default=no@:>@])],
-  [], [enable_vtk=no])
-  
-AC_ARG_WITH(vtk-include,
-  [AS_HELP_STRING([--with-vtk-include=<include line>],
-		          [Provide the include line for VTK.])],
-  [have_vtk_include=yes])
-  
-AC_ARG_WITH(vtk-libs,
-  [AS_HELP_STRING([--with-vtk-libs=<link line>],
-                  [Provide the link line for VTK.])],
-  [have_vtk_libs=yes])
+# This macro will provide options for the user to enable and specify the path
+# and version of VTK, and will do some configuration-time searching to see if
+# these paths work and to set VTK_CPPFLAGS, VTK_LDFLAGS, and VTK_LIBS.
+PGFEM3D_VTK([5.10.1], [have_vtk=yes])
 
-AS_IF([test "x$enable_vtk" = xyes && test "x$have_vtk_include" = xyes && test "x$have_vtk_libs" = xyes],
-  [AC_MSG_NOTICE([Using VTK Libraries])
-   AC_SUBST([vtk_include], ["$with_vtk_include"])
-   AC_SUBST([vtk_lib], ["$with_vtk_libs"])
-   build_vtk_io=yes],
-  [AC_MSG_NOTICE([No VTK support])
-   AC_DEFINE(NO_VTK_LIB,1,[Do not use VTK libraries])])
+AS_IF([test "x$have_vtk" != xyes],
+  [AC_DEFINE(NO_VTK_LIB,1,[Do not use VTK libraries])],
+  [AC_SUBST([VTK_CPPFLAGS], ["$VTK_CPPFLAGS"])
+   AC_SUBST([VTK_LDFLAGS], ["$VTK_LDFLAGS"])
+   AC_SUBST([VTK_LIBS], ["$VTK_LIBS"])])
+
+AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
 
 # Checks for header files.
 AC_CHECK_HEADERS([limits.h stdlib.h string.h sys/time.h unistd.h])
