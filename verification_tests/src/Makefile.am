@@ -22,6 +22,7 @@ LDADD       = $(top_builddir)/src/libpgfem3d.a \
               $(top_builddir)/energy_equation/src/libenergy_equation.a \
               $(suitesparse_lib) \
               $(hypre_lib) \
+              $(vtk_lib) \
               $(cnstvm_lib) \
               $(mkl_lib)
 
