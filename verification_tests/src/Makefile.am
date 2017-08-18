@@ -12,6 +12,7 @@ crystal_plasticity_verification_test_SOURCES = crystal_plasticity_verification_t
 # AM_CXXFLAGS = 
 
 AM_CPPFLAGS = -Wall -Werror \
+	      $(hypre_include) \
               -I$(top_srcdir)/include \
               -I$(top_builddir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include

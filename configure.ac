@@ -126,10 +126,16 @@ AC_ARG_WITH(suitesparse-dir,
    AC_MSG_RESULT(["$with_suitesparse_dir"])],
   [with_suitesparse_dir=no])
 
-AS_IF([test "x$with_suitesparse_dir" != xno],
+# special case "." argument for source tarball paths
+AS_IF([test "x$with_suitesparse_dir" == x.],
   [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/UMFPACK/Include -I$with_suitesparse_dir/AMD/Include -I$with_suitesparse_dir/UFconfig"])
    AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/UMFPACK/Lib -L$with_suitesparse_dir/AMD/Lib -lumfpack -lamd"])],
-  [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])
+  # else we assume path points to an install target
+  [AS_IF([test "x$with_suitesparse_dir" != xno],
+    [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/include"])
+     AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/lib -lumfpack -lamd"])],
+    # else fallback to user environment
+    [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])])
 
 # TTL
 AC_ARG_WITH(ttl-dir,
