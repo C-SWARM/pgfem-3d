@@ -9,7 +9,7 @@ crystal_plasticity_SOURCES = crystal_plasticity.cc
 crystal_plasticity_verification_test_SOURCES = crystal_plasticity_verification_test.cc
 
 # Universal flags for all binaries
-AM_CXXFLAGS = -fpermissive
+# AM_CXXFLAGS = 
 
 AM_CPPFLAGS = -Wall -Werror \
               -I$(top_srcdir)/include \

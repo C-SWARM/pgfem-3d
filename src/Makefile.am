@@ -159,7 +159,7 @@ energy_equation_include = -I$(top_srcdir)/energy_equation/include
 energy_equation_lib = $(top_builddir)/energy_equation/src/libenergy_equation.a
 
 # Universal flags for all binaries
-AM_CXXFLAGS = -fpermissive
+# AM_CXXFLAGS = 
 AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               -I$(top_srcdir)/include \
               -I$(top_builddir)/include \
