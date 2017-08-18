@@ -175,6 +175,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  verification_MMS/Makefile
                  verification_tests/Makefile
-                 verification_tests/src/Makefile])
+                 verification_tests/src/Makefile
+                 tests/Makefile])
 
 AC_OUTPUT

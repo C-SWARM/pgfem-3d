@@ -13,6 +13,7 @@ install/
 
 # autotools stuff
 ar-lib
+test-driver
 Makefile.in
 Makefile
 /autom4te.cache
