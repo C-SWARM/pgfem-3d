@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 NP=$1
-test=$2
-out=$3
-shift 3
+ltqt=$2
+test=$3
+out=$4
+shift 4
 
 if [ "$NP" -gt @TESTS_NPROCS@ ];
 then
@@ -17,7 +18,7 @@ pgfem=@abs_top_builddir@/src/PGFem3D
 ref=@abs_top_builddir@/verification_tests/src/$test
 
 # Input comes from the (legacy) verification_tests source directory.
-indir=@abs_top_srcdir@/verification_tests/box_patch_LT/$test/inputs
+indir=@abs_top_srcdir@/verification_tests/box_patch_$ltqt/$test/inputs
 
 # The test produces a lot of incidental output so we dump it into a local
 # relative out directory.
@@ -27,12 +28,12 @@ outdir=@abs_builddir@/$test/out
 refout=@abs_top_srcdir@/verification_tests/output/$out
 
 # Run the PGFem3D test
-cmd="mpirun -np $NP $pgfem $@ $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $pgfem $@ $indir/box_${ltqt}_${NP}CPU/box_${ltqt}_ ${outdir}/box_${ltqt}"
 echo $cmd
 $cmd
 
 # Run the reference binary to produce $out
-cmd="mpirun -np $NP $ref $@ $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $ref $@ $indir/box_${ltqt}_${NP}CPU/box_${ltqt}_ ${outdir}/box_${ltqt}"
 echo $cmd
 $cmd
 
