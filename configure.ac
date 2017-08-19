@@ -189,9 +189,11 @@ AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
 AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
   [AC_MSG_WARN([Missing numdiff, disabling tests])],
   [AC_CONFIG_FILES([tests/box/compression/run.sh
-                    tests/box/common.sh],
+                    tests/box/common.sh
+                    tests/time_stepping/4.cpu.sh],
                    [chmod +x tests/box/compression/run.sh
-                    chmod +x tests/box/common.sh])])
+                    chmod +x tests/box/common.sh
+                    chmod +x tests/time_stepping/4.cpu.sh])])
 
 AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
 
@@ -207,6 +209,7 @@ AC_CONFIG_FILES([Makefile
                  tests/box/compression/Makefile
                  tests/box/shear/Makefile
                  tests/box/tension_disp/Makefile
-                 tests/box/tension_pressure/Makefile])
+                 tests/box/tension_pressure/Makefile
+                 tests/time_stepping/Makefile])
 
 AC_OUTPUT

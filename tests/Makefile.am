@@ -1,1 +1,1 @@
-SUBDIRS = box
+SUBDIRS = box time_stepping
