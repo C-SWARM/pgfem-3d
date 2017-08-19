@@ -1,8 +1,8 @@
-check_SCRIPTS=1.cpu.sh \
-              2.cpu.sh \
-              4.cpu.sh \
-              8.cpu.sh \
-             16.cpu.sh 
+noinst_SCRIPTS=1.cpu.sh \
+               2.cpu.sh \
+               4.cpu.sh \
+               8.cpu.sh \
+              16.cpu.sh 
 
 TESTS=1.cpu.sh \
       2.cpu.sh \
@@ -10,7 +10,7 @@ TESTS=1.cpu.sh \
       8.cpu.sh \
      16.cpu.sh 
 
-args=shear stress.out -SS -ms -disp -V
+args=tension_pressure stress_tension_pressure.out -SS -disp -V
 
 1.cpu.sh:
 	echo "#!/usr/bin/env bash" > $@

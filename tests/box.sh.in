@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 NP=$1
+test=$2
+out=$3
+shift 3
 
 if [ "$NP" -gt @TESTS_NPROCS@ ];
 then
@@ -8,35 +11,28 @@ then
 fi
 
 # The pgfem executable is built in the build directory.
-pgfem=@top_builddir@/src/PGFem3D
+pgfem=@abs_top_builddir@/src/PGFem3D
 
 # The reference verification test in the build tree.
-ref=@top_builddir@/verification_tests/src/tension_disp
+ref=@abs_top_builddir@/verification_tests/src/$test
 
 # Input comes from the (legacy) verification_tests source directory.
-indir=@top_srcdir@/verification_tests/box_patch_LT/tension_disp/inputs
+indir=@abs_top_srcdir@/verification_tests/box_patch_LT/$test/inputs
 
 # The test produces a lot of incidental output so we dump it into a local
 # relative out directory.
-outdir=@builddir@/out
-
-# Running the pgfem executable followed by the reference test produces a local
-# output file, which is the important result of this process.
-out=stress_tension_disp.out
+outdir=@abs_builddir@/$test/out
 
 # The reference output is checked into the source direcory.
-refout=@top_srcdir@/verification_tests/output/$out
-
-# The options that we use to run the applications.
-opts="-SS -disp -V"
+refout=@abs_top_srcdir@/verification_tests/output/$out
 
 # Run the PGFem3D test
-cmd="mpirun -np $NP $pgfem $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $pgfem $@ $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
 
 # Run the reference binary to produce $out
-cmd="mpirun -np $NP $ref $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $ref $@ $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
 
