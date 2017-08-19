@@ -190,10 +190,12 @@ AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
   [AC_MSG_WARN([Missing numdiff, disabling tests])],
   [AC_CONFIG_FILES([tests/box/compression/run.sh
                     tests/box/common.sh
-                    tests/time_stepping/4.cpu.sh],
+                    tests/time_stepping/4.cpu.restart.sh
+                    tests/time_stepping/4.cpu.different_dt_tr.sh],
                    [chmod +x tests/box/compression/run.sh
                     chmod +x tests/box/common.sh
-                    chmod +x tests/time_stepping/4.cpu.sh])])
+                    chmod +x tests/time_stepping/4.cpu.restart.sh
+                    chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh])])
 
 AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
 
