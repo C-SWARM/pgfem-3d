@@ -171,6 +171,13 @@ AC_ARG_ENABLE(tests,
 		          [Enable tests (requires numdiff) @<:@default=yes@:>@])],
   [], [enable_tests=yes])
 
+AC_ARG_WITH(tests-nprocs,
+  [AS_HELP_STRING([--with-tests-nprocs=<n>],
+                  [The maximum number of processes to use during testing @<:@default=1@:>@])],
+  [], [with_tests_nprocs=1])
+
+AC_SUBST([TESTS_NPROCS], [$with_tests_nprocs])
+
 # Checks for header files.
 AC_CHECK_HEADERS([limits.h stdlib.h string.h sys/time.h unistd.h])
 

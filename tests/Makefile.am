@@ -1,1 +1,5 @@
-SUBDIRS = box_compression box_shear
+SUBDIRS = box_compression
+
+if HAVE_VTK
+SUBDIRS += box_shear
+endif

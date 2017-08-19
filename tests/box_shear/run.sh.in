@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-NP=1
+NP=$1
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
 
 # The pgfem executable is built in the build directory.
 pgfem=@top_builddir@/src/PGFem3D
@@ -25,12 +31,12 @@ refout=@top_srcdir@/verification_tests/output/stress.out
 opts="-SS -ms -disp -V"
 
 # Run the PGFem3D test
-cmd="$pgfem $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $pgfem $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
 
 # Run the reference binary to produce $out
-cmd="$shear $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
+cmd="mpirun -np $NP $shear $opts $indir/box_LT_${NP}CPU/box_LT_ $outdir/box_LT"
 echo $cmd
 $cmd
 
