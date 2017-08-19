@@ -14,25 +14,25 @@ args=tension_pressure stress_tension_pressure.out -SS -disp -V
 
 1.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 1 LT ${args}" >> $@
+	echo "../common.sh 1 LT ${args}" >> $@
 	chmod +x $@
 
 2.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 2 LT ${args}" >> $@
+	echo "../common.sh 2 LT ${args}" >> $@
 	chmod +x $@
 
 4.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 4 LT ${args}" >> $@
+	echo "../common.sh 4 LT ${args}" >> $@
 	chmod +x $@
 
 8.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 8 LT ${args}" >> $@
+	echo "../common.sh 8 LT ${args}" >> $@
 	chmod +x $@
 
 16.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 16 LT ${args}" >> $@
+	echo "../common.sh 16 LT ${args}" >> $@
 	chmod +x $@

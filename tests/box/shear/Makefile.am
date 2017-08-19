@@ -24,50 +24,50 @@ args=shear stress.out -SS -ms -disp -V
 
 1.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 1 LT ${args}" >> $@
+	echo "../common.sh 1 LT ${args}" >> $@
 	chmod +x $@
 
 2.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 2 LT ${args}" >> $@
+	echo "../common.sh 2 LT ${args}" >> $@
 	chmod +x $@
 
 4.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 4 LT ${args}" >> $@
+	echo "../common.sh 4 LT ${args}" >> $@
 	chmod +x $@
 
 8.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 8 LT ${args}" >> $@
+	echo "../common.sh 8 LT ${args}" >> $@
 	chmod +x $@
 
 16.cpu.lt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 16 LT ${args}" >> $@
+	echo "../common.sh 16 LT ${args}" >> $@
 	chmod +x $@
 
 1.cpu.qt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 1 QT ${args}" >> $@
+	echo "../common.sh 1 QT ${args}" >> $@
 	chmod +x $@
 
 2.cpu.qt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 2 QT ${args}" >> $@
+	echo "../common.sh 2 QT ${args}" >> $@
 	chmod +x $@
 
 4.cpu.qt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 4 QT ${args}" >> $@
+	echo "../common.sh 4 QT ${args}" >> $@
 	chmod +x $@
 
 8.cpu.qt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 8 QT ${args}" >> $@
+	echo "../common.sh 8 QT ${args}" >> $@
 	chmod +x $@
 
 16.cpu.qt.sh:
 	echo "#!/usr/bin/env bash" > $@
-	echo "../box.sh 16 QT ${args}" >> $@
+	echo "../common.sh 16 QT ${args}" >> $@
 	chmod +x $@
