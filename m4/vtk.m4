@@ -42,7 +42,7 @@ AC_DEFUN([AM_OPTIONS_VTK], [
 AC_DEFUN([AM_PATH_VTK], [
  # Use the VTK paths to build some variables that we will need.
  VTK_CPPFLAGS="-I$with_vtk/include/vtk$with_vtk_version"
- VTK_LDFLAGS="-Wl,-rpath,$with_vtk/lib/vtk$with_vtk_version -L$with_vtk/lib/vtk$with_vtk_version"
+ VTK_LDFLAGS="-Wl,-rpath,$with_vtk/lib -L$with_vtk/lib"
  VTK_LIBS="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version"
 
  # Make sure that the vtk headers are found.
