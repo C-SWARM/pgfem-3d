@@ -1,0 +1,1 @@
+../../../verification_tests/crystal_plasticity/box_0.in.st

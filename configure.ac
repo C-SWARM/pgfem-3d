@@ -192,12 +192,12 @@ AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
                     tests/box/common.sh
                     tests/time_stepping/4.cpu.restart.sh
                     tests/time_stepping/4.cpu.different_dt_tr.sh
-                    tests/crystal_plasticity/8.cpu.cp.sh],
+                    tests/crystal_plasticity/common.sh],
                    [chmod +x tests/box/compression/run.sh
                     chmod +x tests/box/common.sh
                     chmod +x tests/time_stepping/4.cpu.restart.sh
                     chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
-                    chmod +x tests/crystal_plasticity/8.cpu.cp.sh])])
+                    chmod +x tests/crystal_plasticity/common.sh])])
 
 AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
 
