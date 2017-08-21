@@ -1,24 +1,24 @@
-check_SCRIPTS=1.cpu.lt.sh \
-              1.cpu.qt.sh \
-              2.cpu.lt.sh \
-              2.cpu.qt.sh \
-              4.cpu.lt.sh \
-              4.cpu.qt.sh \
-              8.cpu.lt.sh \
-              8.cpu.qt.sh \
-             16.cpu.lt.sh \
-             16.cpu.qt.sh 
+noinst_SCRIPTS = 1.cpu.lt.sh \
+                 1.cpu.qt.sh \
+                 2.cpu.lt.sh \
+                 2.cpu.qt.sh \
+                 4.cpu.lt.sh \
+                 4.cpu.qt.sh \
+                 8.cpu.lt.sh \
+                 8.cpu.qt.sh \
+                16.cpu.lt.sh \
+                16.cpu.qt.sh 
 
-TESTS=1.cpu.lt.sh \
-      1.cpu.qt.sh \
-      2.cpu.lt.sh \
-      2.cpu.qt.sh \
-      4.cpu.lt.sh \
-      4.cpu.qt.sh \
-      8.cpu.lt.sh \
-      8.cpu.qt.sh \
-     16.cpu.lt.sh \
-     16.cpu.qt.sh 
+TESTS = 1.cpu.lt.sh \
+        1.cpu.qt.sh \
+        2.cpu.lt.sh \
+        2.cpu.qt.sh \
+        4.cpu.lt.sh \
+        4.cpu.qt.sh \
+        8.cpu.lt.sh \
+        8.cpu.qt.sh \
+       16.cpu.lt.sh \
+       16.cpu.qt.sh 
 
 args=shear stress.out -SS -ms -disp -V
 

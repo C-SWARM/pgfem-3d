@@ -1,5 +1,5 @@
-check_SCRIPTS = 8.cpu.compression.sh \
-                8.cpu.tension.sh
+noinst_SCRIPTS = 8.cpu.compression.sh \
+                 8.cpu.tension.sh
 
 TESTS = 8.cpu.compression.sh \
         8.cpu.tension.sh
