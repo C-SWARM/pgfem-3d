@@ -155,7 +155,7 @@ AS_IF([test "x$with_ttl_dir" != xno],
 # This macro will provide options for the user to enable and specify the path
 # and version of VTK, and will do some configuration-time searching to see if
 # these paths work and to set VTK_CPPFLAGS, VTK_LDFLAGS, and VTK_LIBS.
-PGFEM3D_VTK([5.10.1], [have_vtk=yes])
+PGFEM3D_VTK([5.10.1], [have_vtk=yes], [AC_ERROR(Could not find VTK $with_vtk_version)])
 
 AS_IF([test "x$have_vtk" != xyes],
   [AC_DEFINE(NO_VTK_LIB,1,[Do not use VTK libraries])],
