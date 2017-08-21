@@ -29,6 +29,8 @@ AC_C_RESTRICT                                   # Works for C++ too
 
 # check for the ability to build tests
 AC_CHECK_PROG([found_numdiff], [numdiff], [yes])
+AC_CHECK_PROG([found_head], [head], [yes])
+AC_CHECK_PROG([found_tail], [tail], [yes])
 
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall
@@ -168,7 +170,7 @@ AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
 #tests 
 AC_ARG_ENABLE(tests,
   [AS_HELP_STRING([--enable-tests],
-		          [Enable tests (requires numdiff) @<:@default=yes@:>@])],
+		          [Enable tests (requires numdiff,head,tail) @<:@default=yes@:>@])],
   [], [enable_tests=yes])
 
 AC_ARG_WITH(tests-nprocs,
@@ -192,12 +194,14 @@ AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
                     tests/box/common.sh
                     tests/time_stepping/4.cpu.restart.sh
                     tests/time_stepping/4.cpu.different_dt_tr.sh
-                    tests/crystal_plasticity/common.sh],
+                    tests/crystal_plasticity/common.sh
+                    tests/multiphysics/const_T_with_constrained_BC.sh],
                    [chmod +x tests/box/compression/run.sh
                     chmod +x tests/box/common.sh
                     chmod +x tests/time_stepping/4.cpu.restart.sh
                     chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
-                    chmod +x tests/crystal_plasticity/common.sh])])
+                    chmod +x tests/crystal_plasticity/common.sh
+                    chmod +x tests/multiphysics/const_T_with_constrained_BC.sh])])
 
 AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
 
@@ -215,6 +219,7 @@ AC_CONFIG_FILES([Makefile
                  tests/box/tension_disp/Makefile
                  tests/box/tension_pressure/Makefile
                  tests/time_stepping/Makefile
-                 tests/crystal_plasticity/Makefile])
+                 tests/crystal_plasticity/Makefile
+                 tests/multiphysics/Makefile])
 
 AC_OUTPUT

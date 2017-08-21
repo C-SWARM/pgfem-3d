@@ -1,1 +1,1 @@
-SUBDIRS = box time_stepping crystal_plasticity
+SUBDIRS = box time_stepping crystal_plasticity multiphysics
