@@ -26,8 +26,10 @@ struct EPS;                                     // defined in eps.h
 /// of arguments that are expected automatically.
 template <class... Args>
 static inline void CHECK_SCANF(FILE *stream, Args... args) {
-  if (fscanf(stream, args...) != (sizeof...(args) - 1)) {
-    throw 1;
+  constexpr int N = (sizeof...(args) - 1);   // the number of expected arguments
+  const int n = fscanf(stream, args...);     // the number of actual arguments
+  if (n != N) {
+    throw n;
   }
 }
 
