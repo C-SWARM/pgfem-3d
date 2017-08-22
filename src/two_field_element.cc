@@ -28,20 +28,20 @@
 static const int ndn = 3;
 
 void UL_Kuu_at_ip(double *Kuu,
-		  const int nne,
-		  const int nne_t,
-		  const double *ST,
-		  const double *Fn,
-		  const double *Fr,
-		  const double *Fr_I,
-		  const double Jn,
-		  const double Jr,
-		  const double pres,
-		  const double *S,
-		  const double *dSdF,
-		  const double jj,
-		  const double wt,
-		  const int TYPE)
+          const int nne,
+          const int nne_t,
+          const double *ST,
+          const double *Fn,
+          const double *Fr,
+          const double *Fr_I,
+          const double Jn,
+          const double Jr,
+          const double pres,
+          const double *S,
+          const double *dSdF,
+          const double jj,
+          const double wt,
+          const int TYPE)
 {
   double *AA_ab, *AA_wg, *B, *C, *D, *LAA_wg, *Fr_It;
   AA_ab = aloc1(9);
@@ -57,8 +57,8 @@ void UL_Kuu_at_ip(double *Kuu,
 
   /* offsets for different matrices */
   int len_a, len_w, off_a, off_w;
- 
-  char fdebug[20];
+
+  char fdebug[32];
   int err_rank;
   PGFEM_Error_rank(&err_rank);
 
@@ -68,7 +68,7 @@ void UL_Kuu_at_ip(double *Kuu,
     len_w = nne;
     off_a = 0;
     off_w = 0;
-    sprintf(fdebug,"UL_Kuu_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kuu_debug_%d.log",err_rank);
     break;
 
   case 1: /* Kbb */
@@ -76,7 +76,7 @@ void UL_Kuu_at_ip(double *Kuu,
     len_w = 1;
     off_a = nne;
     off_w = nne;
-    sprintf(fdebug,"UL_Kbb_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kbb_debug_%d.log",err_rank);
     break;
 
   case 2: /* Kub */
@@ -84,12 +84,12 @@ void UL_Kuu_at_ip(double *Kuu,
     len_w = 1;
     off_a = 0;
     off_w = nne;
-    sprintf(fdebug,"UL_Kub_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kub_debug_%d.log",err_rank);
     break;
 
   default: /* default error out */
     PGFEM_printerr("ERROR, unrecognised type in %s\n",
-		   __func__);
+           __func__);
     PGFEM_Abort();
     abort();
   }
@@ -102,11 +102,11 @@ void UL_Kuu_at_ip(double *Kuu,
     for(int j=0; j<ndn; j++){
       D[idx_2(i,j)] = 0.0;
       for(int k=0; k<ndn; k++){
-	for(int l=0; l<ndn; l++){
-	  D[idx_2(i,j)] = (D[idx_2(i,j)] 
-			   + Fn[idx_2(i,k)]*S[idx_2(k,l)]
-			   *Fn[idx_2(j,l)]);
-	}
+    for(int l=0; l<ndn; l++){
+      D[idx_2(i,j)] = (D[idx_2(i,j)]
+               + Fn[idx_2(i,k)]*S[idx_2(k,l)]
+               *Fn[idx_2(j,l)]);
+    }
       }
     }
   }
@@ -114,96 +114,96 @@ void UL_Kuu_at_ip(double *Kuu,
   for (int a=0; a<len_a; a++){
     for (int b=0; b<ndn; b++){
       if(UL_DEBUG){
-      	PGFEM_fprintf(out,"=============== Row %d ===============\n",a*ndn+b);
+        PGFEM_fprintf(out,"=============== Row %d ===============\n",a*ndn+b);
       }
 
       const double* const ptrST_ab = &ST[idx_4_gen(off_a+a,b,0,0,
-						   nne_t,ndn,ndn,ndn)];
+                           nne_t,ndn,ndn,ndn)];
 
       /*** compute AA{ab} = F^t ST{ab} ***/
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-		  3,3,3,1.0,Fr,3,ptrST_ab,3,0.0,AA_ab,3);
- 
+          3,3,3,1.0,Fr,3,ptrST_ab,3,0.0,AA_ab,3);
+
       if(UL_DEBUG){
-      	PGFEM_fprintf(out,"F'ST(a,b)\n");
-      	print_array_d(out,AA_ab,9,3,3);
+        PGFEM_fprintf(out,"F'ST(a,b)\n");
+        print_array_d(out,AA_ab,9,3,3);
       }
 
       for (int w=0; w<len_w; w++){
-	for (int g=0; g<ndn; g++){
+    for (int g=0; g<ndn; g++){
 
-	  const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
-						       nne_t,ndn,ndn,ndn)];
+      const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
+                               nne_t,ndn,ndn,ndn)];
 
-	  /* compute LAA_wg = dSdF:ST_wg */
-	  memset(LAA_wg,0,9*sizeof(double));
-	  for(int j=0; j<9; j++){
-	    if (ptrST_wg[j] == 0.0) continue;
-	    for(int i=0; i<9; i++){
-	      LAA_wg[i] = LAA_wg[i] +  dSdF[9*i +j] * ptrST_wg[j];
-	    }
-	  }
-
-
-	  if(UL_DEBUG){
-	    PGFEM_fprintf(out,"LAA = L:AA_wg\n");
-	    print_array_d(out,LAA_wg,9,3,3);
-	  }
-
-	  /* compute triple matrix products (4 indices)*/
-	  for(int i=0; i<ndn; i++){
-	    for(int j=0; j<ndn; j++){
-	      /* null matrices */
-	      B[idx_2(i,j)] = C[idx_2(i,j)] = G[idx_2(i,j)] = 0.0;
-	      E[idx_2(j,i)] = 0.0; /* null E' !!! */
-
-	      for(int k=0; k<ndn; k++){ /* mat*mat */
-		/* B = ST_wg' ST_ab */
-		B[idx_2(i,j)] = (B[idx_2(i,j)]
-				 + ptrST_wg[idx_2(k,i)]*ptrST_ab[idx_2(k,j)]);
-
-		/* E' = Fr_I ST_wg */
-		E[idx_2(j,i)] = (E[idx_2(j,i)] + Fr_I[idx_2(i,k)]*ptrST_wg[idx_2(k,j)]);
-
-		/* G = Fr_I ST_ab */
-		G[idx_2(i,j)] = (G[idx_2(i,j)] + Fr_I[idx_2(i,k)]*ptrST_ab[idx_2(k,j)]);
-
-		for(int l=0; l<ndn; l++){ /* triple matrix product */
-		  /* C = Fn LAA_wg Fn' */
-		  C[idx_2(i,j)] = (C[idx_2(i,j)] 
-				   + Fn[idx_2(i,k)]*LAA_wg[idx_2(k,l)]
-				   *Fn[idx_2(j,l)]);
-		}
-	      }
-	    }
-	  }
-
-	  /* compute dot products */
-	  double CAA_ab = 0.0;
-	  double DB = 0.0;
-	  double PGS1 = 0.0;
-	  double PGS2 = 0.0;
-	  double PGS3 = 0.0;
-	  for(int i=0; i<9; i++){
-	    CAA_ab += C[i]*AA_ab[i];
-	    DB += D[i]*B[i];
-	    PGS1 += Fr_It[i]*ptrST_wg[i];
-	    PGS2 += Fr_It[i]*ptrST_ab[i];
-	    PGS3 += E[i]*G[i];
-	  }
+      /* compute LAA_wg = dSdF:ST_wg */
+      memset(LAA_wg,0,9*sizeof(double));
+      for(int j=0; j<9; j++){
+        if (ptrST_wg[j] == 0.0) continue;
+        for(int i=0; i<9; i++){
+          LAA_wg[i] = LAA_wg[i] +  dSdF[9*i +j] * ptrST_wg[j];
+        }
+      }
 
 
-	  if(UL_DEBUG){
-	    PGFEM_fprintf(out,"ST(w,g)'ST(a,b)\n");
-	    print_array_d(out,B,9,3,3);
-	  }
+      if(UL_DEBUG){
+        PGFEM_fprintf(out,"LAA = L:AA_wg\n");
+        print_array_d(out,LAA_wg,9,3,3);
+      }
 
-	  Kuu[idx_K_gen(a,b,w,g,
-			len_a,ndn,
-			len_w,ndn)] += ((CAA_ab+DB)/Jn + pres*Jr
-					*(PGS1*PGS2-PGS3))*jj*wt;
+      /* compute triple matrix products (4 indices)*/
+      for(int i=0; i<ndn; i++){
+        for(int j=0; j<ndn; j++){
+          /* null matrices */
+          B[idx_2(i,j)] = C[idx_2(i,j)] = G[idx_2(i,j)] = 0.0;
+          E[idx_2(j,i)] = 0.0; /* null E' !!! */
 
-	} /* g */
+          for(int k=0; k<ndn; k++){ /* mat*mat */
+        /* B = ST_wg' ST_ab */
+        B[idx_2(i,j)] = (B[idx_2(i,j)]
+                 + ptrST_wg[idx_2(k,i)]*ptrST_ab[idx_2(k,j)]);
+
+        /* E' = Fr_I ST_wg */
+        E[idx_2(j,i)] = (E[idx_2(j,i)] + Fr_I[idx_2(i,k)]*ptrST_wg[idx_2(k,j)]);
+
+        /* G = Fr_I ST_ab */
+        G[idx_2(i,j)] = (G[idx_2(i,j)] + Fr_I[idx_2(i,k)]*ptrST_ab[idx_2(k,j)]);
+
+        for(int l=0; l<ndn; l++){ /* triple matrix product */
+          /* C = Fn LAA_wg Fn' */
+          C[idx_2(i,j)] = (C[idx_2(i,j)]
+                   + Fn[idx_2(i,k)]*LAA_wg[idx_2(k,l)]
+                   *Fn[idx_2(j,l)]);
+        }
+          }
+        }
+      }
+
+      /* compute dot products */
+      double CAA_ab = 0.0;
+      double DB = 0.0;
+      double PGS1 = 0.0;
+      double PGS2 = 0.0;
+      double PGS3 = 0.0;
+      for(int i=0; i<9; i++){
+        CAA_ab += C[i]*AA_ab[i];
+        DB += D[i]*B[i];
+        PGS1 += Fr_It[i]*ptrST_wg[i];
+        PGS2 += Fr_It[i]*ptrST_ab[i];
+        PGS3 += E[i]*G[i];
+      }
+
+
+      if(UL_DEBUG){
+        PGFEM_fprintf(out,"ST(w,g)'ST(a,b)\n");
+        print_array_d(out,B,9,3,3);
+      }
+
+      Kuu[idx_K_gen(a,b,w,g,
+            len_a,ndn,
+            len_w,ndn)] += ((CAA_ab+DB)/Jn + pres*Jr
+                    *(PGS1*PGS2-PGS3))*jj*wt;
+
+    } /* g */
       } /* w */
     } /* b */
   } /* a */
@@ -227,15 +227,15 @@ void UL_Kuu_at_ip(double *Kuu,
 } /*** Kuu ***/
 
 void UL_Kup_at_ip(double *Kup,
-		  const int nne,
-		  const int nne_t,
-		  const double *Na,
-		  const double *ST,
-		  const double *Fr_I,
-		  const double Jr, 
-		  const double jj,
-		  const double wt,
-		  const int TYPE)
+          const int nne,
+          const int nne_t,
+          const double *Na,
+          const double *ST,
+          const double *Fr_I,
+          const double Jr,
+          const double jj,
+          const double wt,
+          const int TYPE)
 {
   double *B, *Fr_It;
   B = aloc1(9);
@@ -244,7 +244,7 @@ void UL_Kup_at_ip(double *Kup,
   /* offsets for different matrices */
   int len_a, off_a;
 
-  char fdebug[20];
+  char fdebug[32];
   int err_rank;
   PGFEM_Error_rank(&err_rank);
 
@@ -252,18 +252,18 @@ void UL_Kup_at_ip(double *Kup,
   case 0: /* Kup */
     len_a = nne;
     off_a = 0;
-    sprintf(fdebug,"UL_Kup_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kup_debug_%d.log",err_rank);
     break;
 
   case 1: /* Kbp */
     len_a = 1;
     off_a = nne;
-    sprintf(fdebug,"UL_Kbp_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kbp_debug_%d.log",err_rank);
     break;
 
   default: /* default error out */
     PGFEM_printerr("ERROR, unrecognised type in %s\n",
-		   __func__);
+           __func__);
     PGFEM_Abort();
     abort();
   }
@@ -276,16 +276,16 @@ void UL_Kup_at_ip(double *Kup,
   for (int a=0; a<len_a; a++){
     for(int b=0; b<ndn; b++){
       for(int w=0; w<nne; w++){
-	const double* const ptrST_ab = &ST[idx_4_gen(off_a+a,b,0,0,
-						     nne_t,ndn,ndn,ndn)];
-	Kup[idx_K_gen(a,b,w,0,len_a,
-		      ndn,nne,1)] += (jj*wt*Na[w]*Jr
-				      *cblas_ddot(9,Fr_It,1,
-						  ptrST_ab,1));
+    const double* const ptrST_ab = &ST[idx_4_gen(off_a+a,b,0,0,
+                             nne_t,ndn,ndn,ndn)];
+    Kup[idx_K_gen(a,b,w,0,len_a,
+              ndn,nne,1)] += (jj*wt*Na[w]*Jr
+                      *cblas_ddot(9,Fr_It,1,
+                          ptrST_ab,1));
       }
     }
   }
- 
+
   if(UL_DEBUG){
     PGFEM_fprintf(out,"K\n");
     print_array_d(out,Kup,len_a*ndn*nne,len_a*ndn,nne);
@@ -298,17 +298,17 @@ void UL_Kup_at_ip(double *Kup,
 } /* Kup */
 
 void UL_Kpu_at_ip(double *Kpu,
-		  const int nne,
-		  const int nne_t,
-		  const double *Na,
-		  const double *ST,
-		  const double *Fr_I,
-		  const double Jn,
-		  const double Jr,
-		  const double Upp, 
-		  const double jj,
-		  const double wt,
-		  const int TYPE)
+          const int nne,
+          const int nne_t,
+          const double *Na,
+          const double *ST,
+          const double *Fr_I,
+          const double Jn,
+          const double Jr,
+          const double Upp,
+          const double jj,
+          const double wt,
+          const int TYPE)
 {
   double *B, *Fr_It;
   B = aloc1(9);
@@ -317,7 +317,7 @@ void UL_Kpu_at_ip(double *Kpu,
 
   /* offsets for different matrices */
   int len_w, off_w;
-  char fdebug[20];
+  char fdebug[32];
 
   int err_rank;
   PGFEM_Error_rank(&err_rank);
@@ -326,18 +326,18 @@ void UL_Kpu_at_ip(double *Kpu,
   case 0: /* Kpu */
     len_w = nne;
     off_w = 0;
-    sprintf(fdebug,"UL_Kup_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Kup_debug_%d.log",err_rank);
     break;
 
   case 1: /* Kpb */
     len_w = 1;
     off_w = nne;
-    sprintf(fdebug,"UL_Ktp_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Ktp_debug_%d.log",err_rank);
     break;
 
   default: /* default error out */
     PGFEM_printerr("ERROR, unrecognised type in %s\n",
-		   __func__);
+           __func__);
     PGFEM_Abort();
     abort();
   }
@@ -350,16 +350,16 @@ void UL_Kpu_at_ip(double *Kpu,
   for (int a=0; a<nne; a++){
     for(int w=0; w<len_w; w++){
       for(int g=0; g<ndn; g++){
-	const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
-						     nne_t,ndn,ndn,ndn)];
-	Kpu[idx_K_gen(a,0,w,g,nne,
-		      1,len_w,ndn)] += (jj*wt*Na[a]*Jr*Jn*Upp
-					*cblas_ddot(9,Fr_It,1,
-						    ptrST_wg,1));
+    const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
+                             nne_t,ndn,ndn,ndn)];
+    Kpu[idx_K_gen(a,0,w,g,nne,
+              1,len_w,ndn)] += (jj*wt*Na[a]*Jr*Jn*Upp
+                    *cblas_ddot(9,Fr_It,1,
+                            ptrST_wg,1));
       }
     }
   }
- 
+
   if(UL_DEBUG){
     PGFEM_fprintf(out,"K\n");
     print_array_d(out,Kpu,len_w*ndn*nne,nne,len_w*ndn);
@@ -372,26 +372,26 @@ void UL_Kpu_at_ip(double *Kpu,
 } /* Kpu */
 
 void damage_UL_Kpu_at_ip(double *Kpu,
-			 const int nne,
-			 const int nne_t,
-			 const double *Na,
-			 const double *ST,
-			 const double *Fr_I,
-			 const double Jn,
-			 const double Jr,
-			 const double kappa,
-			 const double Upp,
-			 const double UP, /* n+1 */
-			 const double P,
-			 const double *SS,
-			 const double omega, 
-			 const double jj,
-			 const double wt,
-			 const int TYPE)
+             const int nne,
+             const int nne_t,
+             const double *Na,
+             const double *ST,
+             const double *Fr_I,
+             const double Jn,
+             const double Jr,
+             const double kappa,
+             const double Upp,
+             const double UP, /* n+1 */
+             const double P,
+             const double *SS,
+             const double omega,
+             const double jj,
+             const double wt,
+             const int TYPE)
 {
   /* offsets for different matrices */
   int len_w, off_w;
-  char fdebug[20];
+  char fdebug[32];
 
   int err_rank;
   PGFEM_Error_rank(&err_rank);
@@ -400,18 +400,18 @@ void damage_UL_Kpu_at_ip(double *Kpu,
   case 0: /* Kpu */
     len_w = nne;
     off_w = 0;
-    sprintf(fdebug,"dam_UL_Kup_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"dam_UL_Kup_debug_%d.log",err_rank);
     break;
 
   case 1: /* Kpb */
     len_w = 1;
     off_w = nne;
-    sprintf(fdebug,"dam_UL_Ktp_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"dam_UL_Ktp_debug_%d.log",err_rank);
     break;
 
   default: /* default error out */
     PGFEM_printerr("ERROR, unrecognised type in %s\n",
-		   __func__);
+           __func__);
     PGFEM_Abort();
     abort();
   }
@@ -429,21 +429,21 @@ void damage_UL_Kpu_at_ip(double *Kpu,
   double *kernel = aloc1(9);
   for(int i=0; i<9; i++){
     kernel[i] = (Jr*Jn*(1.-omega)*Upp*Fr_It[i]
-		 - (UP-P/kappa)*SS[i]);
+         - (UP-P/kappa)*SS[i]);
   }
 
   for (int a=0; a<nne; a++){
     for(int w=0; w<len_w; w++){
       for(int g=0; g<ndn; g++){
-	const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
-						     nne_t,ndn,ndn,ndn)];
-	Kpu[idx_K_gen(a,0,w,g,nne,
-		      1,len_w,ndn)] += jj*wt* Na[a] * cblas_ddot(9,kernel,1,
-								 ptrST_wg,1);
+    const double* const ptrST_wg = &ST[idx_4_gen(off_w+w,g,0,0,
+                             nne_t,ndn,ndn,ndn)];
+    Kpu[idx_K_gen(a,0,w,g,nne,
+              1,len_w,ndn)] += jj*wt* Na[a] * cblas_ddot(9,kernel,1,
+                                 ptrST_wg,1);
       }
     }
   }
- 
+
   if(UL_DEBUG){
     PGFEM_fprintf(out,"K\n");
     print_array_d(out,Kpu,len_w*ndn*nne,nne,len_w*ndn);
@@ -456,19 +456,19 @@ void damage_UL_Kpu_at_ip(double *Kpu,
 } /* Kpu */
 
 void UL_Kpp_at_ip(double *Kpp,
-		  const int nne,
-		  const int nne_t,
-		  const double *Na,
-		  const double kappa,
-		  const double jj,
-		  const double wt)
+          const int nne,
+          const int nne_t,
+          const double *Na,
+          const double kappa,
+          const double jj,
+          const double wt)
 {
   FILE *out;
   if(UL_DEBUG){
     int err_rank;
     char fname[50];
     PGFEM_Error_rank(&err_rank);
-    sprintf(fname,"UL_Kpp_debug_%d.log",err_rank);
+    snprintf(fname,sizeof(fname),"UL_Kpp_debug_%d.log",err_rank);
     out = fopen(fname,"a");
   }
 
@@ -488,21 +488,21 @@ void UL_Kpp_at_ip(double *Kpp,
 } /* Kpp */
 
 void damage_UL_Kpp_at_ip(double *Kpp,
-			 const int nne,
-			 const int nne_t,
-			 const double *Na,
-			 const double kappa,
-			 const double omega,
-			 const double HH,
-			 const double jj,
-			 const double wt)
+             const int nne,
+             const int nne_t,
+             const double *Na,
+             const double kappa,
+             const double omega,
+             const double HH,
+             const double jj,
+             const double wt)
 {
   FILE *out;
   if(UL_DEBUG){
     int err_rank;
     char fname[50];
     PGFEM_Error_rank(&err_rank);
-    sprintf(fname,"dam_UL_Kpp_debug_%d.log",err_rank);
+    snprintf(fname,sizeof(fname),"dam_UL_Kpp_debug_%d.log",err_rank);
     out = fopen(fname,"a");
   }
 
@@ -522,19 +522,19 @@ void damage_UL_Kpp_at_ip(double *Kpp,
 } /* Kpp */
 
 void UL_Ru_at_ip(double *Ru,
-		 const int nne,
-		 const int nne_t,
-		 const double *ST,
-		 const double *Fn,
-		 const double *Fr,
-		 const double *Fr_I,
-		 const double Jn,
-		 const double Jr,
-		 const double *S,
-		 const double pres,
-		 const double jj,
-		 const double wt,
-		 const int TYPE)
+         const int nne,
+         const int nne_t,
+         const double *ST,
+         const double *Fn,
+         const double *Fr,
+         const double *Fr_I,
+         const double Jn,
+         const double Jr,
+         const double *S,
+         const double pres,
+         const double jj,
+         const double wt,
+         const int TYPE)
 {
   double *AA_ab, *BB, *CC, *Fr_It;
   AA_ab = aloc1(9);
@@ -545,7 +545,7 @@ void UL_Ru_at_ip(double *Ru,
 
   /* offsets for different matrices */
   int len_a, off_a;
-  char fdebug[20];
+  char fdebug[32];
 
   int err_rank;
   PGFEM_Error_rank(&err_rank);
@@ -554,18 +554,18 @@ void UL_Ru_at_ip(double *Ru,
   case 0: /* Ru */
     len_a = nne;
     off_a = 0;
-    sprintf(fdebug,"UL_Ru_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Ru_debug_%d.log",err_rank);
     break;
 
   case 1: /* Rb */
     len_a = 1;
     off_a = nne;
-    sprintf(fdebug,"UL_Rb_debug_%d.log",err_rank);
+    snprintf(fdebug,sizeof(fdebug),"UL_Rb_debug_%d.log",err_rank);
     break;
 
   default: /* default error out */
     PGFEM_printerr("ERROR, unrecognised type in %s\n",
-		   __func__);
+           __func__);
     PGFEM_Abort();
     abort();
   }
@@ -585,11 +585,11 @@ void UL_Ru_at_ip(double *Ru,
     for(int j=0; j<ndn; j++){
       CC[idx_2(i,j)] = 0.0;
       for(int k=0; k<ndn; k++){
-	for(int l=0; l<ndn; l++){
-	  CC[idx_2(i,j)] = (CC[idx_2(i,j)] 
-			    + Fn[idx_2(i,k)]*S[idx_2(k,l)]
-			    *Fn[idx_2(j,l)]);
-	}
+    for(int l=0; l<ndn; l++){
+      CC[idx_2(i,j)] = (CC[idx_2(i,j)]
+                + Fn[idx_2(i,k)]*S[idx_2(k,l)]
+                *Fn[idx_2(j,l)]);
+    }
       }
     }
   }
@@ -604,20 +604,20 @@ void UL_Ru_at_ip(double *Ru,
     for (int b=0; b<ndn; b++){
       /*** compute AA{ab} = F^t ST{ab} ***/
       const double* const ptrST_ab = &ST[idx_4_gen(off_a+a,b,0,0,
-						   nne_t,ndn,ndn,ndn)];
+                           nne_t,ndn,ndn,ndn)];
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-		  3,3,3,1.0,Fr,3,ptrST_ab,3,0.0,AA_ab,3);
+          3,3,3,1.0,Fr,3,ptrST_ab,3,0.0,AA_ab,3);
 
       if(UL_DEBUG){
-	PGFEM_fprintf(out,"ST\n");
-	print_array_d(out,ptrST_ab,9,1,9);
-	PGFEM_fprintf(out,"Fr' ST\n");
-	print_array_d(out,AA_ab,9,1,9);
+    PGFEM_fprintf(out,"ST\n");
+    print_array_d(out,ptrST_ab,9,1,9);
+    PGFEM_fprintf(out,"Fr' ST\n");
+    print_array_d(out,AA_ab,9,1,9);
       }
 
       for(int i=0; i<9; i++){
-	Ru[a*ndn+b] += ((AA_ab[i]*CC[i]/Jn + pres*Jr
-			 *Fr_It[i]*ptrST_ab[i])*jj*wt);
+    Ru[a*ndn+b] += ((AA_ab[i]*CC[i]/Jn + pres*Jr
+             *Fr_It[i]*ptrST_ab[i])*jj*wt);
       }
 
     }
@@ -635,20 +635,20 @@ void UL_Ru_at_ip(double *Ru,
 }/* Ru */
 
 void UL_Rp_at_ip(double *Rp,
-		 const int nne,
-		 const double *Na,
-		 const double kappa,
-		 const double Up,
-		 const double pres,
-		 const double jj,
-		 const double wt)
+         const int nne,
+         const double *Na,
+         const double kappa,
+         const double Up,
+         const double pres,
+         const double jj,
+         const double wt)
 {
   FILE *out;
   if(UL_DEBUG){
     int err_rank;
     char fname[50];
     PGFEM_Error_rank(&err_rank);
-    sprintf(fname,"UL_Rp_debug_%d.log",err_rank);
+    snprintf(fname,sizeof(fname),"UL_Rp_debug_%d.log",err_rank);
     out = fopen(fname,"a");
   }
 
