@@ -224,18 +224,22 @@ AC_CONFIG_FILES([Makefile
                  tests/crystal_plasticity/Makefile
                  tests/multiphysics/Makefile])
 
+# Configure the test scripts. We do this even if running the scripts has been
+# disabled. 
 AC_CONFIG_FILES([tests/box/compression/run.sh
-                    tests/box/common.sh
-                    tests/time_stepping/4.cpu.restart.sh
-                    tests/time_stepping/4.cpu.different_dt_tr.sh
-                    tests/crystal_plasticity/common.sh
-                    tests/multiphysics/const_T_with_constrained_BC.sh],
-                   [chmod +x tests/box/compression/run.sh
-                    chmod +x tests/box/common.sh
-                    chmod +x tests/time_stepping/4.cpu.restart.sh
-                    chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
-                    chmod +x tests/crystal_plasticity/common.sh
-                    chmod +x tests/multiphysics/const_T_with_constrained_BC.sh])
+                 tests/box/common.sh
+                 tests/time_stepping/4.cpu.restart.sh
+                 tests/time_stepping/4.cpu.different_dt_tr.sh
+                 tests/crystal_plasticity/common.sh
+                 tests/multiphysics/const_T_with_constrained_BC.sh
+                 tests/multiphysics/heat_transfer_on_deformed_config.sh],
+                [chmod +x tests/box/compression/run.sh
+                 chmod +x tests/box/common.sh
+                 chmod +x tests/time_stepping/4.cpu.restart.sh
+                 chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
+                 chmod +x tests/crystal_plasticity/common.sh
+                 chmod +x tests/multiphysics/const_T_with_constrained_BC.sh
+                 chmod +x tests/multiphysics/heat_transfer_on_deformed_config.sh])
 
 # For the crystal plasticity test case we need to move the files that are in
 # tests/crystal_plasticity/CO into the build tree. They are needed by the test
