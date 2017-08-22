@@ -31,6 +31,8 @@ AC_C_RESTRICT                                   # Works for C++ too
 AC_CHECK_PROG([found_numdiff], [numdiff], [yes])
 AC_CHECK_PROG([found_head], [head], [yes])
 AC_CHECK_PROG([found_tail], [tail], [yes])
+AC_CHECK_PROG([found_matlab], [matlab], [yes])
+AC_CHECK_PROG([found_grep], [grep], [yes])
 
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall
@@ -165,8 +167,6 @@ AS_IF([test "x$have_vtk" != xyes],
    AC_SUBST([VTK_LDFLAGS], ["$VTK_LDFLAGS"])
    AC_SUBST([VTK_LIBS], ["$VTK_LIBS"])])
 
-AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
-
 #tests 
 AC_ARG_ENABLE(tests,
   [AS_HELP_STRING([--enable-tests],
@@ -189,21 +189,23 @@ AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
 
 # Deal with tests
 AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
-  [AC_MSG_WARN([Missing numdiff, disabling tests])],
-  [AC_CONFIG_FILES([tests/box/compression/run.sh
-                    tests/box/common.sh
-                    tests/time_stepping/4.cpu.restart.sh
-                    tests/time_stepping/4.cpu.different_dt_tr.sh
-                    tests/crystal_plasticity/common.sh
-                    tests/multiphysics/const_T_with_constrained_BC.sh],
-                   [chmod +x tests/box/compression/run.sh
-                    chmod +x tests/box/common.sh
-                    chmod +x tests/time_stepping/4.cpu.restart.sh
-                    chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
-                    chmod +x tests/crystal_plasticity/common.sh
-                    chmod +x tests/multiphysics/const_T_with_constrained_BC.sh])])
+  [AC_MSG_WARN([Missing numdiff, disabling tests])])
+AS_IF([test "x$enable_tests" == xyes -a "x$found_head" != xyes -o "x$found_tail" != xyes],
+  [AC_MSG_WARN([Missing head/tail, disabling some tests])])
+AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
+  [AC_MSG_WARN([Missing matlab, disabling some tests])])
+AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
+  [AC_MSG_WARN([Missing matlab, disabling some tests])])
+AS_IF([test "x$enable_tests" == xyes -a "have_vtk" != xyes],
+  [AC_MSG_WARN([Missing VTK, disabling some tests])])
 
-AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes -a "x$found_numdiff" == xyes])
+AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes])
+AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
+AM_CONDITIONAL([HAVE_NUMDIFF], [test "x$found_numdiff" == xyes])
+AM_CONDITIONAL([HAVE_HEAD], [test "x$found_head" == xyes])
+AM_CONDITIONAL([HAVE_TAIL], [test "x$found_tail" == xyes])
+AM_CONDITIONAL([HAVE_GREP], [test "x$found_grep" == xyes])
+AM_CONDITIONAL([HAVE_MATLAB], [test "x$have_matlab" == xyes])
 
 AC_CONFIG_FILES([Makefile
                  lib/VTK_IO/src/Makefile
@@ -221,5 +223,18 @@ AC_CONFIG_FILES([Makefile
                  tests/time_stepping/Makefile
                  tests/crystal_plasticity/Makefile
                  tests/multiphysics/Makefile])
+
+AC_CONFIG_FILES([tests/box/compression/run.sh
+                    tests/box/common.sh
+                    tests/time_stepping/4.cpu.restart.sh
+                    tests/time_stepping/4.cpu.different_dt_tr.sh
+                    tests/crystal_plasticity/common.sh
+                    tests/multiphysics/const_T_with_constrained_BC.sh],
+                   [chmod +x tests/box/compression/run.sh
+                    chmod +x tests/box/common.sh
+                    chmod +x tests/time_stepping/4.cpu.restart.sh
+                    chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
+                    chmod +x tests/crystal_plasticity/common.sh
+                    chmod +x tests/multiphysics/const_T_with_constrained_BC.sh])
 
 AC_OUTPUT
