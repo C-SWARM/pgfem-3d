@@ -31,3 +31,7 @@ include/config.h*
 
 # other
 src/bpa.dat
+
+# copied during configuration
+verification_MMS/dynamics.cc
+verification_MMS/super_main.cc

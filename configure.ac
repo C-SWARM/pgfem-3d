@@ -255,4 +255,11 @@ AC_CONFIG_FILES([tests/crystal_plasticity/CO/co_0.in:verification_tests/crystal_
                  tests/crystal_plasticity/CO/co_6.in:verification_tests/crystal_plasticity/CO/co_6.in
                  tests/crystal_plasticity/CO/co_7.in:verification_tests/crystal_plasticity/CO/co_7.in])
 
+# The verification_MMS build wants to use objects from the /src directory, but
+# with different flags (-D). The easiest way I can think of to do this is to
+# build links to the files in the verification_MMS directory and depend on those
+# different sources.
+AC_CONFIG_LINKS([verification_MMS/dynamics.cc:src/dynamics.cc
+                 verification_MMS/super_main.cc:src/super_main.cc])
+
 AC_OUTPUT

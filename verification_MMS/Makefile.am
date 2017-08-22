@@ -1,7 +1,7 @@
 noinst_PROGRAMS = PGFem3D verification_tf_MMS
 
-PGFem3D_SOURCES = ../src/super_main.cc ../src/dynamics.cc MMS.cc
-verification_tf_MMS_SOURCES = ../src/dynamics.cc verification_tf_MMS.cc MMS.cc
+PGFem3D_SOURCES = super_main.cc dynamics.cc MMS.cc
+verification_tf_MMS_SOURCES = verification_tf_MMS.cc dynamics.cc MMS.cc
 
 # Universal flags for all binaries
 # AM_CXXFLAGS = 
