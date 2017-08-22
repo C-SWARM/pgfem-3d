@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+NP=$1
+ltqt=$2
+test=$3
+out=$4
+shift 4
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+# The reference verification test in the build tree.
+ref=@abs_top_builddir@/verification_tests/src/$test
+
+# Input comes from the (legacy) verification_tests source directory.
+indir=@abs_top_srcdir@/verification_tests/box_patch_$ltqt/$test/inputs
+
+# The test produces a lot of incidental output so we dump it into a local
+# relative out directory.
+outdir=@abs_builddir@/$test/out
+
+# The reference output is checked into the source direcory.
+refout=@abs_top_srcdir@/verification_tests/output/$out
+
+# Run the PGFem3D test
+cmd="mpirun -np $NP $pgfem $@ $indir/box_${ltqt}_${NP}CPU/box_${ltqt}_ ${outdir}/box_${ltqt}"
+echo $cmd
+$cmd
+
+# Run the reference binary to produce $out
+cmd="mpirun -np $NP $ref $@ $indir/box_${ltqt}_${NP}CPU/box_${ltqt}_ ${outdir}/box_${ltqt}"
+echo $cmd
+$cmd
+
+# And check the results.
+numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout
