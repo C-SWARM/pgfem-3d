@@ -237,4 +237,18 @@ AC_CONFIG_FILES([tests/box/compression/run.sh
                     chmod +x tests/crystal_plasticity/common.sh
                     chmod +x tests/multiphysics/const_T_with_constrained_BC.sh])
 
+# For the crystal plasticity test case we need to move the files that are in
+# tests/crystal_plasticity/CO into the build tree. They are needed by the test
+# and I don't know how to specify their path to PGFem3D (it expects them
+# relative to the execution directory). I don't know how to copy the entire
+# directory so we just copy each file manually.
+AC_CONFIG_FILES([tests/crystal_plasticity/CO/co_0.in:verification_tests/crystal_plasticity/CO/co_0.in
+                 tests/crystal_plasticity/CO/co_1.in:verification_tests/crystal_plasticity/CO/co_1.in
+                 tests/crystal_plasticity/CO/co_2.in:verification_tests/crystal_plasticity/CO/co_2.in
+                 tests/crystal_plasticity/CO/co_3.in:verification_tests/crystal_plasticity/CO/co_3.in
+                 tests/crystal_plasticity/CO/co_4.in:verification_tests/crystal_plasticity/CO/co_4.in
+                 tests/crystal_plasticity/CO/co_5.in:verification_tests/crystal_plasticity/CO/co_5.in
+                 tests/crystal_plasticity/CO/co_6.in:verification_tests/crystal_plasticity/CO/co_6.in
+                 tests/crystal_plasticity/CO/co_7.in:verification_tests/crystal_plasticity/CO/co_7.in])
+
 AC_OUTPUT
