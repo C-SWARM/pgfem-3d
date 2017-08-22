@@ -448,7 +448,7 @@ long integration_alg (long ne,
     nss,IT,GUESS,IT_MAX,*cn;
   double *r_e,*x,*y,*z,Har,**Fn,**Fr,Jr,Jn,Tn,Tr,*Psi,**E,**S,L[3][3][3][3],
     ksi{},eta{},zet{},*gk,*ge,*gz,****ST,*N_x,*N_y,*N_z,*w,**UU,**Fp,*GA,*TA;
-  double nor,**BB,DD,nor1,**FnB,*rrr,*r_r,tol,**eFnB,**FstB,**AA,lam,HAR_n,TOLER;
+  double nor,**BB,DD,nor1,**FnB,*rrr,*r_r,tol,**eFnB,**FstB,**AA,lam,HAR_n,TOLER{};
 
   // @todo Eliminated dead code (and assignments below). @cp please review. LD
   // double aj,ai,ak,J;
