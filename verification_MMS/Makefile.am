@@ -7,6 +7,7 @@ verification_tf_MMS_SOURCES = ../src/dynamics.cc verification_tf_MMS.cc MMS.cc
 # AM_CXXFLAGS = 
 
 AM_CPPFLAGS = -Wall -Werror \
+              -DVERIFICATION_USING_MMS=1 \
               -I$(top_srcdir)/include \
               -I$(top_builddir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
