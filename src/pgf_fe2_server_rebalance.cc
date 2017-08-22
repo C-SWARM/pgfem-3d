@@ -13,9 +13,9 @@
  */
 namespace {
 struct Workspace {
-  size_t count;
-  char **buffers;
-  MPI_Request *reqs;
+  size_t count = 0;
+  char **buffers = nullptr;
+  MPI_Request *reqs = nullptr;
 };
 }
 
@@ -181,11 +181,11 @@ pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t)
   else return NULL;
 }
 
-int
+size_t
 pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t)
 {
   if(t != NULL) return (t->t)[REBAL_N_SEND];
-  else return -1;
+  else return 0;
 }
 
 int*
@@ -202,11 +202,15 @@ pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t)
   else return NULL;
 }
 
-int
+size_t
 pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t)
 {
-  if(t != NULL) return (t->t)[REBAL_N_RECV];
-  else return -1;
+  if(t != NULL) {
+    return (t->t)[REBAL_N_RECV];
+  }
+  else {
+    return 0;
+  }
 }
 
 int*

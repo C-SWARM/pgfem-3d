@@ -68,7 +68,7 @@ int* pgf_FE2_server_rebalance_keep_buf(const pgf_FE2_server_rebalance *t);
 /**
  * Get the number of jobs to send.
  */
-int pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t);
+size_t pgf_FE2_server_rebalance_n_send(const pgf_FE2_server_rebalance *t);
 
 /**
  * Get pointer to beginning of buffer containing job ids to send.
@@ -84,7 +84,7 @@ int* pgf_FE2_server_rebalance_send_dest(const pgf_FE2_server_rebalance *t);
 /**
  * Get the number of jobs to receive.
  */
-int pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t);
+size_t pgf_FE2_server_rebalance_n_recv(const pgf_FE2_server_rebalance *t);
 
 /**
  * Get pointer to beginning of buffer containing job ids to recv.
