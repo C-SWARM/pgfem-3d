@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # The pgfem executable is built in the build directory.
 pgfem=@top_builddir@/src/PGFem3D
@@ -23,6 +24,13 @@ refout=@top_srcdir@/verification_tests/output/plasticity_order_of_error.txt
 # The options that we use to run the applications.
 opts="-SS -cm 1 -V "
 
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $outdir $out
+}
+trap cleanup EXIT
+
 # Run the PGFem3D test
 cmd="$pgfem $opts $indir/box_LT_ $outdir/box_LT"
 echo $cmd
@@ -35,3 +43,4 @@ $cmd
 
 # And check the results.
 numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout
+cleanup

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 NP=$1
 ltqt=$2
 test=$3
@@ -27,6 +29,13 @@ outdir=@abs_builddir@/$test/out
 # The reference output is checked into the source direcory.
 refout=@abs_top_srcdir@/verification_tests/output/$out
 
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $outdir $out
+}
+trap cleanup EXIT
+
 # Run the PGFem3D test
 cmd="mpirun -np $NP $pgfem $@ $indir/box_${ltqt}_${NP}CPU/box_${ltqt}_ ${outdir}/box_${ltqt}"
 echo $cmd
@@ -39,3 +48,4 @@ $cmd
 
 # And check the results.
 numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout
+cleanup
