@@ -570,9 +570,9 @@ int single_scale_main(int argc,char *argv[])
   MULTIPHYSICS mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
 
-  FIELD_VARIABLES         *fv  =         (FIELD_VARIABLES *) malloc(mp.physicsno*sizeof(FIELD_VARIABLES));
-  SOLVER_OPTIONS          *sol =          (SOLVER_OPTIONS *) malloc(mp.physicsno*sizeof(SOLVER_OPTIONS));
-  COMMUNICATION_STRUCTURE *com = (COMMUNICATION_STRUCTURE *) malloc(mp.physicsno*sizeof(COMMUNICATION_STRUCTURE));
+  FIELD_VARIABLES         *fv  = PGFEM_malloc<FIELD_VARIABLES>(mp.physicsno);
+  SOLVER_OPTIONS          *sol = PGFEM_malloc<SOLVER_OPTIONS>(mp.physicsno);
+  COMMUNICATION_STRUCTURE *com = PGFEM_malloc<COMMUNICATION_STRUCTURE>(mp.physicsno);
 
   for(int ia = 0; ia<mp.physicsno; ia++)
   {
@@ -596,8 +596,8 @@ int single_scale_main(int argc,char *argv[])
     // create memories for saving coupling info
     if(mp.coupled_ids[ia][0]>0)
     {
-      fv[ia].coupled_physics_ids = (int *) malloc((mp.coupled_ids[ia][0])*sizeof(int));
-      fv[ia].fvs = (FIELD_VARIABLES **) malloc((mp.coupled_ids[ia][0])*sizeof(FIELD_VARIABLES *));
+      fv[ia].coupled_physics_ids = PGFEM_malloc<int>(mp.coupled_ids[ia][0]);
+      fv[ia].fvs = PGFEM_malloc<FIELD_VARIABLES*>(mp.coupled_ids[ia][0]);
     }
 
     // save coupling info
@@ -1121,9 +1121,7 @@ int single_scale_main(int argc,char *argv[])
     // set writting output options for Multiphysics
     //----------------------------------------------------------------------
     //---->
-    PRINT_MULTIPHYSICS_RESULT *pmr = NULL;
-
-    pmr = (PRINT_MULTIPHYSICS_RESULT *) malloc(sizeof(PRINT_MULTIPHYSICS_RESULT)*mp.total_write_no);
+    PRINT_MULTIPHYSICS_RESULT *pmr = PGFEM_malloc<PRINT_MULTIPHYSICS_RESULT>(mp.total_write_no);
     err += VTK_construct_PMR(&grid, fv, &mp, pmr);
     //<---------------------------------------------------------------------
 
