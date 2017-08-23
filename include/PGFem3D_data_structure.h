@@ -26,7 +26,7 @@
 
 /// Time stepping struct
 /// Has time stepping information
-typedef struct {
+struct PGFem3D_TIME_STEPPING {
   long nt;          /// total number of times
   long tim;         /// current time step number
   double *times;    /// list of time
@@ -34,11 +34,11 @@ typedef struct {
   double dt_np1;    /// dt at n+1
   long *print;      /// step numbers to be printed
   double *tns;      /// time at n for multiple physics
-} PGFem3D_TIME_STEPPING;
+};
 
 /// Mesh
 /// Has all mesh data
-typedef struct {
+struct GRID {
   long Gnn;                  /// global number of nodes
   long Gne;                  /// global number of elements
   long Gnbndel;              /// global number of boundary elements
@@ -53,21 +53,18 @@ typedef struct {
   ELEMENT *element;          /// list of element
   BOUNDING_ELEMENT *b_elems; /// list of bounding element
   COEL *coel;                /// list of cohesive elements
-} GRID;
+};
 
 /// struct for field variables
-typedef struct FIELD_VARIABLES_TEMPORAL FIELD_VARIABLES_TEMPORAL;
-typedef struct FIELD_VARIABLES_TEMPORAL {
+struct FIELD_VARIABLES_TEMPORAL {
   double *u_nm1;           /// displacement at n-1
   double *u_n;             /// displacement at n
   int element_variable_no; /// number of element variables
   State_variables *var;    /// object to store element variables
-} FIELD_VARIABLES_TEMPORAL;
+};
 
 /// struct for field variables
-typedef struct FIELD_VARIABLES FIELD_VARIABLES;
-
-typedef struct FIELD_VARIABLES {
+struct FIELD_VARIABLES {
   double u0;      /// reference value of field variables
   long Gndof;     /// total number of degree freedom
   long ndofn;     /// number of degree of freedom on a node
@@ -107,10 +104,10 @@ typedef struct FIELD_VARIABLES {
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_n
   double subdivision_factor_np1;      /// use for linearly map subdivided parameters at t(n+1)
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
-} FIELD_VARIABLES;
+};
 
 /// struct for field variables
-typedef struct {
+struct FIELD_VARIABLES_THERMAL {
   long Gndof;   /// total number of degree freedom
   long ndofn;     /// number of degree of freedom on a node
   long ndofd;     /// number of degree of freedom in the domain
@@ -120,10 +117,10 @@ typedef struct {
   double *dT;     /// workspace for local increment of the temperature solution n->n+1
   double *dd_T;   /// workspace for local _iterative_ increment of the solution
   double NORM;    /// [out] residual of first iteration (tim = 0, iter = 0).
-} FIELD_VARIABLES_THERMAL;
+};
 
 /// struct for material properties
-typedef struct {
+struct MATERIAL_PROPERTY {
   double           *density; /// list of material density
   MATERIAL         *mater; /// list of material properites (Mechanical)
   MATERIAL_THERMAL *thermal; /// list of material properites (Thermal)
@@ -135,12 +132,12 @@ typedef struct {
   long n_orient;   /// number of orientations
   int n_co_props;  /// number of cohesive material properites;
   cohesive_props *co_props; /// list of cohesive material properites
-} MATERIAL_PROPERTY;
+};
 
 struct ARC_LENGTH_VARIABLES;
 
 /// struct for solution scheme
-typedef struct {
+struct SOLVER_OPTIONS {
   int n_step;      /// the number of nonlinear steps taken to solve the given increment
   double nor_min;   /// nonlinear convergence tolerance for Newton Raphson
   long iter_max;    /// maximum number of iterations for Newton Raphson
@@ -160,10 +157,10 @@ typedef struct {
   int set_initial_residual; /// if yes, compute residual before the first NR iteration
   double du;                /// perturbation value for computing the first residual
   ARC_LENGTH_VARIABLES *arc;/// Container of Arc length related varialbes
-} SOLVER_OPTIONS;
+};
 
 /// struct for the boundary conditions
-typedef struct {
+struct LOADING_STEPS {
   SUPP *sups;
   double **sup_defl; /// sum of Dirichlet BC increments to step n
   long nln;       ;  /// number of nodes with loads
@@ -174,13 +171,13 @@ typedef struct {
   ZATELEM *zele_v;   /// list of volume element with loads
   long **tim_load;   /// list of time steps to be saved
   FILE **solver_file;/// file pointer for reading loads increments
-} LOADING_STEPS;
+};
 
 /// struct for the communication
-typedef struct {
+struct COMMUNICATION_STRUCTURE {
   int nproc;         /// number of mpi processes
   int *Ap;           /// n_cols in each owned row of global stiffness matrix
-    int *Ai;           /// column ids for owned rows of global stiffness matrix
+  int *Ai;           /// column ids for owned rows of global stiffness matrix
   long *DomDof;      /// number of global DOFs on each domain
   long nbndel;       /// number of ELEMENT on the communication boundary
   long *bndel;       /// ELEMENT ids on the communication boundary
@@ -188,16 +185,18 @@ typedef struct {
   int GDof;          /// maximum id of locally owned global DOF
   long NBN;          /// Number of nodes on domain interfaces
   Comm_hints *hints; /// Comm_hints structure
-} COMMUNICATION_STRUCTURE;
+};
 
 /// for setting physics ids
-typedef enum {MULTIPHYSICS_MECHANICAL,
-              MULTIPHYSICS_THERMAL,
-              MULTIPHYSICS_CHEMICAL,
-              MULTIPHYSICS_NO} MULTIPHYSICS_ANALYSIS;
+enum MULTIPHYSICS_ANALYSIS {
+  MULTIPHYSICS_MECHANICAL,
+  MULTIPHYSICS_THERMAL,
+  MULTIPHYSICS_CHEMICAL,
+  MULTIPHYSICS_NO
+};
 
 /// struct for setting multiphysics
-typedef struct {
+struct MULTIPHYSICS {
   int physicsno;      /// number of physics
   char **physicsname; /// physics names
   int *physics_ids;   /// physics ids
@@ -206,7 +205,7 @@ typedef struct {
   int total_write_no; /// total number of variables to be written as results
   int **write_ids;    /// index of physical varialbes to be written
   int **coupled_ids;  /// coupled physics id
-} MULTIPHYSICS;
+};
 
 /// initialize time stepping variable
 ///
