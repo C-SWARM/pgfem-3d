@@ -2658,7 +2658,7 @@ void tensor_9x9 (double **K,
 
  */
 {
-  long i,j,k,l,I{},J;
+  long i,j,k,l,I{},J{};
 
   for (i=0;i<3;i++){
     for (j=0;j<3;j++){

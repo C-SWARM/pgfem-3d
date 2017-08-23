@@ -113,7 +113,7 @@ int* Psparse_ApAi (int nproc,
   FILE *out=NULL;
   long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
-  long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc,*nodc=NULL;
+  long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   int *Ddof = NULL;
   int *Ai = NULL;
