@@ -1,10 +1,10 @@
-noinst_LIBRARIES = libPGFem3D_to_VTK.a
+noinst_LTLIBRARIES = libPGFem3D_to_VTK.la
 
-libPGFem3D_to_VTK_a_SOURCES = PGFem3D_to_VTK.cc
+libPGFem3D_to_VTK_la_SOURCES = PGFem3D_to_VTK.cc
 
-libPGFem3D_to_VTK_a_CPPFLAGS = -I$(top_srcdir)/include \
-                               -I$(top_builddir)/include \
-                               -I$(srcdir)/../include \
-                               $(VTK_CPPFLAGS)
+libPGFem3D_to_VTK_la_CPPFLAGS = -I$(top_srcdir)/include \
+                                -I$(srcdir)/../include \
+                                -I$(top_builddir)/include \
+                                $(VTK_CPPFLAGS)
 
-libPGFem3D_to_VTK_a_CXXFLAGS = $(VTK_CXXFLAGS)
+libPGFem3D_to_VTK_la_CXXFLAGS = $(VTK_CXXFLAGS)
