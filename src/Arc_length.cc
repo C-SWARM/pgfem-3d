@@ -1118,10 +1118,8 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
-
     sol.nor_min  = solver_file->nonlin_tol;
     sol.FNR      = solver_file->nonlin_method;
     sol.iter_max = solver_file->max_nonlin_iter;

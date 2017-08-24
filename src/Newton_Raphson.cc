@@ -2704,9 +2704,8 @@ double Newton_Raphson_multiscale(const int print_level,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
     if(solver_file==NULL)
     {
       sol.nor_min  = c->lin_err;

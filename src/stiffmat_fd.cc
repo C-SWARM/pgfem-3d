@@ -915,9 +915,8 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
     sol.FNR          = FNR;
     sol.PGFEM_hypre  = c->SOLVER;
     sol.err          = c->lin_err;

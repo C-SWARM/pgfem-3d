@@ -407,37 +407,6 @@ int destruct_material(MATERIAL_PROPERTY *mat,
   return err;
 }
 
-
-/// initialize iterative solver object
-/// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
-///
-/// \param[in, out] sol an object containing data for linear solver
-/// \return non-zero on internal error
-int solution_scheme_initialization(SOLVER_OPTIONS *sol)
-{
-  int err            = 0;
-  sol->n_step        = 0;
-  sol->nor_min       = 0.0;
-  sol->iter_max      = 0;
-  sol->alpha         = 0.5; /// midpoint rule alpha default is 2nd order
-  sol->microscale    = NULL;
-  sol->PGFEM_hypre   = NULL;
-  sol->FNR           = 0;
-  sol->gama          = 0.0;
-  sol->err           = 0.0;
-  sol->iter_max_sol  = 0;
-  sol->computer_zero = 0.0;
-  sol->run_integration_algorithm = 1;
-  sol->max_NR_staggering = 5;
-  sol->max_subdivision = -1;
-  sol->is_subdivided = 0;
-  sol->last_residual = 0.0;
-  sol->set_initial_residual = 0;
-  sol->du            = 0.0;
-  sol->arc           = NULL;
-  return err;
-}
-
 /// initialize loading steps object
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
 ///

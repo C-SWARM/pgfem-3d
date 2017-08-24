@@ -64,7 +64,9 @@
 #include "fd_residuals.h"
 #include "dynamics.h"
 
-static const int periodic = 0;
+#include <memory>
+
+static constexpr int periodic = 0;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -570,13 +572,13 @@ int single_scale_main(int argc,char *argv[])
   MULTIPHYSICS mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
 
-  FIELD_VARIABLES         *fv  = PGFEM_malloc<FIELD_VARIABLES>(mp.physicsno);
-  SOLVER_OPTIONS          *sol = PGFEM_malloc<SOLVER_OPTIONS>(mp.physicsno);
-  COMMUNICATION_STRUCTURE *com = PGFEM_malloc<COMMUNICATION_STRUCTURE>(mp.physicsno);
+  auto fv = std::make_unique<FIELD_VARIABLES[]>(mp.physicsno);
+  auto sol = std::make_unique<SOLVER_OPTIONS[]>(mp.physicsno);
+  auto com = std::make_unique<COMMUNICATION_STRUCTURE[]>(mp.physicsno);
 
   for(int ia = 0; ia<mp.physicsno; ia++)
   {
-    err += field_varialbe_initialization(fv+ia);
+    err += field_varialbe_initialization(&fv[ia]);
     fv[ia].ndofn = mp.ndim[ia];
 
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
@@ -608,11 +610,10 @@ int single_scale_main(int argc,char *argv[])
       // tells physics e.g.) fv[ia].coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
       //                                      :                    :
       fv[ia].coupled_physics_ids[ib] = mp.physics_ids[mp_cp_id];
-      fv[ia].fvs[ib] = fv + mp_cp_id;
+      fv[ia].fvs[ib] = &fv[mp_cp_id];
     }
 
-    err += solution_scheme_initialization(sol+ia);
-    err += communication_structure_initialization(com+ia);
+    err += communication_structure_initialization(&com[ia]);
   }
 
   GRID                  grid;
@@ -692,7 +693,7 @@ int single_scale_main(int argc,char *argv[])
   //---->
   {
     int in_err = 0;
-    in_err = read_mesh_file(&grid,&mat,fv,sol,&load,&mp,mpi_comm,&options);
+    in_err = read_mesh_file(&grid,&mat,fv.get(),sol.get(),&load,&mp,mpi_comm,&options);
 
     if(in_err){
       PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
@@ -894,7 +895,7 @@ int single_scale_main(int argc,char *argv[])
     if (myrank == 0)
     {
       if(ia==0) // print onece
-        err += print_PGFem3D_run_info(argc, argv, &grid, com+ia, &load, gem, &options);
+        err += print_PGFem3D_run_info(argc, argv, &grid, &com[ia], &load, gem, &options);
 
       PGFEM_printf ("---------------------------------------------\n");
       PGFEM_printf ("Physics name: %s\n", mp.physicsname[ia]);
@@ -976,7 +977,7 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps,&mat,fv, sol,&load,crpl,&mp,&options,myrank);
+    err += read_solver_file(&time_steps,&mat,fv.get(),sol.get(),&load,crpl,&mp,&options,myrank);
     //<---------------------------------------------------------------------
 
     if(myrank == 0)
@@ -1027,7 +1028,7 @@ int single_scale_main(int argc,char *argv[])
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, ia);
+      err += construct_field_varialbe(&fv[ia], &grid, &com[ia], &options, &mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       {
         /* push nodal_forces to s->R */
@@ -1047,10 +1048,10 @@ int single_scale_main(int argc,char *argv[])
           free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
-          err += prepare_temporal_field_varialbes(fv+ia,&grid,1);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1);
         }
         else
-          err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
 
         /* alocation of pressure variables */
         switch(options.analysis_type){
@@ -1113,7 +1114,7 @@ int single_scale_main(int argc,char *argv[])
         }
       }
       else
-        err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
+        err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
     }
     /* /\ initialized element varialbes */
 
@@ -1122,7 +1123,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     PRINT_MULTIPHYSICS_RESULT *pmr = PGFEM_malloc<PRINT_MULTIPHYSICS_RESULT>(mp.total_write_no);
-    err += VTK_construct_PMR(&grid, fv, &mp, pmr);
+    err += VTK_construct_PMR(&grid, fv.get(), &mp, pmr);
     //<---------------------------------------------------------------------
 
 
@@ -1131,7 +1132,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     double tnm1[2] = {-1.0,-1.0};
-    err += read_initial_values(&grid,&mat,fv,sol,&load,&time_steps,&options,&mp,tnm1,myrank);
+    err += read_initial_values(&grid,&mat,fv.get(),sol.get(),&load,&time_steps,&options,&mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       for(int ib=0; ib<grid.nn*fv[ia].ndofn; ib++)
@@ -1167,7 +1168,7 @@ int single_scale_main(int argc,char *argv[])
 
       //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
       // of the load vector
-      err += compute_load_vector_for_prescribed_BC(&grid,&mat,fv+ia,sol+ia,&load,time_steps.dt_np1,crpl,
+      err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
                                                    &options,&mp,ia,myrank);
 
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
@@ -1189,7 +1190,7 @@ int single_scale_main(int argc,char *argv[])
       // set extra variables for arc lengh
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
       {
-        err += construct_arc_length_variable(sol[ia].arc, fv+ia, com+ia, myrank);
+        err += construct_arc_length_variable(sol[ia].arc, &fv[ia], &com[ia], myrank);
         // Transform LOCAL load vector to GLOBAL
         LToG (fv[ia].R,sol[ia].arc->BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
         sol[ia].arc->dt0 = time_steps.dt_np1;
@@ -1252,7 +1253,7 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R
         //----------------------------------------------------------------------
         //---->
-        err += read_and_apply_load_increments(&grid, fv, &load, &mp, tim, mpi_comm, myrank);
+        err += read_and_apply_load_increments(&grid, fv.get(), &load, &mp, tim, mpi_comm, myrank);
 
         if(mp_id_M>=0)
         {
@@ -1300,8 +1301,10 @@ int single_scale_main(int argc,char *argv[])
         //---->
         fflush(PGFEM_stdout);
 
-        hypre_time += Multiphysics_Newton_Raphson(&grid,&mat,fv,sol,&load,com,&time_steps,
-                                                  crpl,mpi_comm,VVolume,&options,&mp);
+        hypre_time += Multiphysics_Newton_Raphson(&grid, &mat, fv.get(),
+                                                  sol.get(), &load, com.get(),
+                                                  &time_steps, crpl, mpi_comm,
+                                                  VVolume, &options, &mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1323,8 +1326,11 @@ int single_scale_main(int argc,char *argv[])
       {
         if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
         {
-          double dlm = Multiphysics_Arc_length(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
-                                               crpl,mpi_comm,VVolume,&options,&mp,0);
+          double dlm = Multiphysics_Arc_length(&grid, &mat, &fv[mp_id_M],
+                                               &sol[mp_id_M], &load,
+                                               &com[mp_id_M], &time_steps,
+                                               crpl, mpi_comm, VVolume,
+                                               &options, &mp, 0);
 
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
@@ -1341,7 +1347,7 @@ int single_scale_main(int argc,char *argv[])
         {
           constitutive_model_update_output_variables(&grid,
                                                      &mat,
-                                                     fv,
+                                                     fv.get(),
                                                      &load,
                                                      &options,
                                                      &mp,
@@ -1375,12 +1381,13 @@ int single_scale_main(int argc,char *argv[])
       }
 
       // print simulation results
-      err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,
-                           crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
-                           &options,&mp,tim,myrank);
+      err += print_results(&grid, &mat, fv.get(), sol.get(), &load, com.get(),
+                           &time_steps, crpl, ensight, pmr, mpi_comm, oVolume,
+                           VVolume, &options, &mp, tim, myrank);
 
-      err += write_restart_files(&grid,fv,&load,&time_steps,&options,&mp,
-                                 tim,mpi_comm,myrank,time_step_start,total_time);
+      err += write_restart_files(&grid, fv.get(), &load, &time_steps, &options,
+                                 &mp, tim, mpi_comm, myrank, time_step_start,
+                                 total_time);
 
       if (myrank == 0){
         PGFEM_printf("\n");
@@ -1414,13 +1421,12 @@ int single_scale_main(int argc,char *argv[])
   for(int ia=0; ia<mp.physicsno; ia++)
   {
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
-      err += destory_temporal_field_varialbes(fv+ia,1);
+      err += destory_temporal_field_varialbes(&fv[ia],1);
     else
-      err += destory_temporal_field_varialbes(fv+ia,0);
+      err += destory_temporal_field_varialbes(&fv[ia],0);
 
-    err += destruct_field_varialbe(fv+ia, &grid, &options, &mp, ia);
+    err += destruct_field_varialbe(&fv[ia], &grid, &options, &mp, ia);
   }
-  free(fv);
 
   err += destruct_loading_steps(&load, &mp);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
@@ -1434,7 +1440,7 @@ int single_scale_main(int argc,char *argv[])
       com[ia].bndel = NULL;
       com[ia].hints = NULL;
     }
-    err += destruct_communication_structure(com+ia);
+    err += destruct_communication_structure(&com[ia]);
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)

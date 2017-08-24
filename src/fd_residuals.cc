@@ -619,9 +619,8 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
     sol.nor_min  = solver_file->nonlin_tol;
     sol.alpha   = 0.0;
   }
