@@ -23,7 +23,8 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               $(cnstvm_include) \
               $(mkl_include)
 
-libpgfem3d_la_LIBADD = $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
+libpgfem3d_la_LIBADD = $(builddir)/solvers/libsolvers.la \
+                       $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
                        $(top_builddir)/energy_equation/src/libenergy_equation.la \
                        $(suitesparse_lib) \
                        $(hypre_lib) \
