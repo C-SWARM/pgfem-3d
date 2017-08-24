@@ -120,7 +120,7 @@ AC_ARG_WITH(lapack-lib,
 AS_IF([test "x$with_mkl" = xyes],
   [AC_MSG_NOTICE([Using Intel MKL libraries])
    AC_SUBST([mkl_include],['-m64 -I$(MKLROOT)/include'])
-   AC_SUBST([mkl_lib],['-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl'])],
+   AC_SUBST([mkl_lib],['-L${MKLROOT}/lib/intel64 -Wl,-rpath,${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl'])],
   [AC_MSG_NOTICE([Using specified CBLAS/LAPACK])
    AC_SUBST([mkl_include],["$with_mkl_override $with_cblas_include $with_lapack_include"])
    AC_SUBST([mkl_lib],["$with_cblas_lib $with_lapack_lib"])])
