@@ -35,3 +35,11 @@ src/bpa.dat
 # copied during configuration
 verification_MMS/dynamics.cc
 verification_MMS/super_main.cc
+
+# libtool generated files
+ltmain.sh
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4

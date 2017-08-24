@@ -19,10 +19,6 @@ AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIRS([m4])
 
-AC_PROG_RANLIB
-# AX_PROG_CC_MPI([test "x$with_mpi" != xno], [have_mpicc=yes])
-# AC_PROG_CC_STDC
-# AX_PROG_FC_MPI([test "x$with_mpi" != xno], [have_mpifc=yes])
 AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
 AC_C_RESTRICT                                   # Works for C++ too
@@ -39,6 +35,8 @@ AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wal
                   -Werror parallel-tests color-tests])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+LT_PREREQ([2.4.6])
+LT_INIT([disable-shared])
 
 # Allow the user to disable MPI.
 AC_ARG_WITH(mpi,
