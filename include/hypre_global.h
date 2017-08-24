@@ -18,7 +18,7 @@
 /**
  * @name Structure to contain HYPRE objects and pass them around easily
  */
-typedef struct PGFEM_HYPRE_solve_info{
+struct PGFEM_HYPRE_solve_info {
   HYPRE_IJMatrix hypre_k;        /**< */
   HYPRE_ParCSRMatrix hypre_pk;   /**< */
   HYPRE_Solver hypre_solver;     /**< */
@@ -38,7 +38,7 @@ typedef struct PGFEM_HYPRE_solve_info{
 
   int precond_type;              /**< */
   int solver_type;               /**< */
-}PGFEM_HYPRE_solve_info;
+};
 
 void initialize_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info **info);
 void destroy_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info *info);
