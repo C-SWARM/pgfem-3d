@@ -465,7 +465,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
   MPI_Comm_rank(mpi_comm,&myrank);
   MPI_Comm_size(mpi_comm,&nproc);
   /* initialize the solver information */
-  initialize_PGFEM_HYPRE_solve_info(&common->SOLVER);
+  common->SOLVER = new pgfem3d::solvers::Hypre();
   common->SOLVER->solver_type = opts->solver;
   common->SOLVER->precond_type = opts->precond;
   common->mpi_comm = mpi_comm;
@@ -724,7 +724,7 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   int nproc = 0;
   int mp_id = 0; // id of mutiphysics. Supported only Mechanical part (=0)
   MPI_Comm_size(common->mpi_comm,&nproc);
-  destroy_PGFEM_HYPRE_solve_info(common->SOLVER);
+  delete common->SOLVER;
   free(common->Ap);
   free(common->Ai);
   destroy_commun(common->pgfem_comm,nproc);

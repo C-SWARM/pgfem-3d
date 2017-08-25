@@ -638,9 +638,9 @@ int single_scale_main(int argc,char *argv[])
   {
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      initialize_PGFEM_HYPRE_solve_info(&(sol[ia].PGFEM_hypre));
-      (sol[ia].PGFEM_hypre)->solver_type = options.solver;
-      (sol[ia].PGFEM_hypre)->precond_type = options.precond;
+      sol[ia].PGFEM_hypre = new PGFEM_HYPRE_solve_info{};
+      sol[ia].PGFEM_hypre->solver_type = options.solver;
+      sol[ia].PGFEM_hypre->precond_type = options.precond;
     }
   } else {
     if(myrank == 0){
@@ -1412,8 +1412,9 @@ int single_scale_main(int argc,char *argv[])
   //---->
   if (options.solverpackage == HYPRE)
   {
-    for(int ia=0; ia<mp.physicsno; ia++)
-      destroy_PGFEM_HYPRE_solve_info(sol[ia].PGFEM_hypre);
+    for(int ia=0; ia<mp.physicsno; ia++) {
+      delete sol[ia].PGFEM_hypre;
+    }
   }
 
   err += destruct_time_stepping(&time_steps);

@@ -264,10 +264,9 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 
   /* destroy the preconditioner object(s) and re-initialize the
      microscale preconditioner */
-  destroy_HYPRE_preconditioner(macro_solver);
-  destroy_HYPRE_preconditioner(micro_solver);
-  err += PGFEM_HYPRE_create_preconditioner(micro_solver,
-                       c->mpi_comm);
+  macro_solver->destroyPreconditioner();
+  micro_solver->destroyPreconditioner();
+  err += micro_solver->createPreconditioner(c->mpi_comm);
 
   /* setup the stiffness matrix communication */
   double **Lk, **receive;
@@ -340,9 +339,9 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   PGFEM_redirect_io_macro();
 
   /* re-initialize macroscale preconditioner */
-  destroy_HYPRE_preconditioner(micro_solver);
-  err += PGFEM_HYPRE_create_preconditioner(macro_solver,
-                       macro_mpi_comm);
+  micro_solver->destroyPreconditioner();
+  err += macro_solver->createPreconditioner(macro_mpi_comm);
+
   /* clean up memory */
   for(int i=0; i<macro_nproc; i++){
     if(Lk != NULL) free(Lk[i]);

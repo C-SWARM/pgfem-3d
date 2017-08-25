@@ -9,15 +9,12 @@
 #define PFEM_HYPRE_DEBUG 0
 #endif
 
+using pgfem3d::solvers::Hypre;
+
 /*==== STATIC LOCAL FUNCTIONS ====*/
-static int
-create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
-{
-  int err = 0;
-  int myrank = 0;
-  err += MPI_Comm_rank(mpi_comm, &myrank);
+static int create_EUCLID(MPI_Comm comm, HYPRE_Solver& pre) {
   /* Euclid parameters */
-  const char *euclid_argv[] = {
+  static const char *euclid_argv[] = {
     "-bj",
     "-rowScale",
     "-maxNzPerRow",
@@ -26,6 +23,7 @@ create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
     "1",
     ""
   };
+
   /* int euclid_argc = 5; */
   /* char *euclid_argv[] = {"-maxNzPerRow","100", */
   /*             "-level","1",""}; */
@@ -37,26 +35,18 @@ create_precond_EUCLID(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
   /*   PGFEM_printf ("Preconditioner : Euclid\n"); */
   /* } */
 
-  err += HYPRE_EuclidCreate(mpi_comm, &PGFEM_hypre->hypre_pc);
-  err += HYPRE_EuclidSetParams(PGFEM_hypre->hypre_pc,
-                               7,
-                               const_cast<char**>(euclid_argv));
-  return err;
+
+  return (HYPRE_EuclidCreate(comm, &pre) or
+          HYPRE_EuclidSetParams(pre, 7, const_cast<char**>(euclid_argv)));
 }
 
-static int
-create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
-{
-  int err = 0;
-  int myrank = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);
-
+static int create_PARASAILS(MPI_Comm comm, HYPRE_Solver& pre) {
   /* ParaSails */
-  int sym     = 0;
-  int nlevel  = 1;
-  double thresh  = 0.1;
-  double filter  = 0.05;
-  double loadbal = 0.9;
+  static constexpr int        sym = 0;
+  static constexpr int     nlevel = 1;
+  static constexpr double  thresh = 0.1;
+  static constexpr double  filter = 0.05;
+  static constexpr double loadbal = 0.9;
 
   /* if(myrank == 0){ */
   /*   PGFEM_printf ("Preconditioner : ParaSails\n"); */
@@ -65,27 +55,18 @@ create_precond_PARASAILS(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
   /*   PGFEM_printf ("filter  = %f\n",filter); */
   /*   PGFEM_printf ("loadbal = %f\n",loadbal); */
   /* } */
-
-  err += HYPRE_ParaSailsCreate(mpi_comm,&PGFEM_hypre->hypre_pc);
-  err += HYPRE_ParaSailsSetSym(PGFEM_hypre->hypre_pc,sym);
-  err += HYPRE_ParaSailsSetParams(PGFEM_hypre->hypre_pc,thresh,nlevel);
-  err += HYPRE_ParaSailsSetFilter(PGFEM_hypre->hypre_pc,filter);
-  err += HYPRE_ParaSailsSetLoadbal(PGFEM_hypre->hypre_pc,loadbal);
-  /* err += HYPRE_ParaSailsSetLogging(hypre_pc,1); */
-
-  return err;
+  return (HYPRE_ParaSailsCreate(comm, &pre) or
+          HYPRE_ParaSailsSetSym(pre, sym) or
+          HYPRE_ParaSailsSetParams(pre, thresh, nlevel) or
+          HYPRE_ParaSailsSetFilter(pre, filter) or
+          HYPRE_ParaSailsSetLoadbal(pre, loadbal)
+          /* or HYPRE_ParaSailsSetLogging(hypre_pc,1) */);
 }
 
-static int
-create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
-{
-  int err = 0;
-  int myrank = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);
-
-  double pilut_tol = 0.1;
-  int pilut_row = 20;
-  int pilut_maxit = 50;
+static int create_PILUT(MPI_Comm comm, HYPRE_Solver& pre) {
+  static constexpr double pilut_tol = 0.1;
+  static constexpr int    pilut_row = 20;
+  static constexpr int  pilut_maxit = 50;
 
   /* if(myrank == 0){ */
   /*   PGFEM_printf ("Preconditioner : Pilut\n"); */
@@ -94,33 +75,115 @@ create_precond_PILUT(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
   /*   PGFEM_printf ("nonzeros per row  = %f\n",pilut_row); */
   /* } */
 
-  err += HYPRE_ParCSRPilutCreate(mpi_comm, &PGFEM_hypre->hypre_pc);
-  err += HYPRE_ParCSRPilutSetMaxIter(PGFEM_hypre->hypre_pc, pilut_maxit);
-  err += HYPRE_ParCSRPilutSetDropTolerance(PGFEM_hypre->hypre_pc, pilut_tol);
-  err += HYPRE_ParCSRPilutSetFactorRowSize(PGFEM_hypre->hypre_pc, pilut_row);
-
-  return err;
+  return (HYPRE_ParCSRPilutCreate(comm, &pre) or
+          HYPRE_ParCSRPilutSetMaxIter(pre, pilut_maxit) or
+          HYPRE_ParCSRPilutSetDropTolerance(pre, pilut_tol) or
+          HYPRE_ParCSRPilutSetFactorRowSize(pre, pilut_row));
 }
 
-static int
-create_precond_BOOMER(PGFEM_HYPRE_solve_info *PGFEM_hypre, MPI_Comm mpi_comm)
-{
+static int create_BOOMER(MPI_Comm comm, HYPRE_Solver& pre) {
   boomerAMGOptions AMGOptions;
   setBoomerAMGOptions(&AMGOptions);
-  return initializeBoomerAMG(&PGFEM_hypre->hypre_pc, &AMGOptions, mpi_comm);
+  return initializeBoomerAMG(&pre, &AMGOptions, comm);
 }
 
-static void
-Ap2ncols(int *Ap, int *ncols, int size)
-{
+static void destroy_preconditioner(int type, HYPRE_Solver& pre) {
+  if (!pre) return;
+
+  switch (type) {
+   default:
+    PGFEM_printerr("Unexpected preconditioner type (%d)\n", type);
+    break;
+   case PARA_SAILS:
+    HYPRE_ParaSailsDestroy(pre);
+    break;
+   case PILUT:
+    HYPRE_ParCSRPilutDestroy(pre);
+    break;
+   case EUCLID:
+    HYPRE_EuclidDestroy(pre);
+    break;
+   case BOOMER:
+    HYPRE_BoomerAMGDestroy(pre);
+    break;
+   case DIAG_SCALE:
+    PGFEM_HYPRE_ScaleDiagDestroy(pre);
+    break;
+   case JACOBI:
+    PGFEM_HYPRE_JacobiDestroy(pre);
+    break;
+  }
+
+  pre = nullptr;
+}
+
+static HYPRE_Solver create_preconditioner(MPI_Comm comm, int type) {
+  int error = 0;
+  HYPRE_Solver pre = nullptr;
+  switch (type) {
+   default:
+    /* if(myrank == 0) PGFEM_printf("No Preconditioner\n"); */
+    break;
+   case PARA_SAILS:
+    error = create_PARASAILS(comm, pre);
+    break;
+   case PILUT:
+    error = create_PILUT(comm, pre);
+    break;
+   case EUCLID:
+    error = create_EUCLID(comm, pre);
+    break;
+   case BOOMER:
+    error = create_BOOMER(comm, pre);
+    break;
+   case DIAG_SCALE:
+    /* if(myrank == 0) PGFEM_printf ("Preconditioner : Diagonal Scale\n"); */
+    error = PGFEM_HYPRE_ScaleDiagCreate(&pre);
+    break;
+   case JACOBI:
+    /* if(myrank == 0) PGFEM_printf ("Preconditioner : Jacobi\n"); */
+    error = PGFEM_HYPRE_JacobiCreate(&pre);
+    break;
+  }
+
+  if (error) {
+    PGFEM_printerr("Failed to initialize preconditioner (type %d)\n", type);
+    destroy_preconditioner(type, pre);
+    pre = nullptr;
+  }
+
+  return pre;
+}
+
+static void destroy_solver(int type, HYPRE_Solver& solver) {
+  if (!solver) return;
+
+  switch (type) {
+   default:
+    PGFEM_printerr("Unexpected solver type (%d)\n", type);
+    break;
+   case HYPRE_GMRES:
+    HYPRE_ParCSRGMRESDestroy(solver);
+    break;
+   case HYPRE_BCG_STAB:
+    HYPRE_ParCSRBiCGSTABDestroy(solver);
+    break;
+   case HYPRE_AMG:
+    HYPRE_BoomerAMGDestroy(solver);
+    break;
+  }
+
+  solver = nullptr;
+}
+
+static void ap_to_ncols(int *Ap, int *ncols, int size) {
   for (int n = 0; n < size; n++) {
     ncols[n] = Ap[n + 1] - Ap[n];
   }
 }
 
-static void
-GetDiagOffdSizes(int *ncols, int *Ai, int *dsize, int *odsize, const int size,
-                 const int il, const int iu)
+static void get_diag_offd_sizes(int *ncols, int *Ai, int *dsize, int *odsize,
+                                const int size, const int il, const int iu)
 {
   int j = 0;
 
@@ -136,334 +199,178 @@ GetDiagOffdSizes(int *ncols, int *Ai, int *dsize, int *odsize, const int size,
   }
 }
 
-static void
-SetHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre, int *Ai, const int size,
-          const double val)
-{
-  HYPRE_Int cols[1] = {1};
-  int curpos = 0;
-
-  for(int i = 0, e = size; i < e; ++i) {
-    for(int j = 0, e = PGFEM_hypre->ncol[i]; j < e; ++j) {
-      HYPRE_IJMatrixSetValues(PGFEM_hypre->hypre_k,
-                              1,
-                              cols,
-                              &PGFEM_hypre->grows[i],
-                              &Ai[curpos++],
-                              &val);
-    }
-  }
-}
-
 /*===== API FUNCTION DEFINITIONS ====*/
-void
-initialize_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info **info)
+Hypre::~Hypre()
 {
-  (*info) = PGFEM_calloc(PGFEM_HYPRE_solve_info, 1);
-  (*info)->hypre_k = NULL;
-  (*info)->hypre_pk = NULL;
-  (*info)->hypre_solver = NULL;
-  (*info)->hypre_pc = NULL;
-  (*info)->hypre_pc_gotten = NULL;
-  (*info)->hypre_rhs = NULL;
-  (*info)->hypre_prhs = NULL;
-  (*info)->hypre_sol = NULL;
-  (*info)->hypre_psol = NULL;
+  destroy_preconditioner(precond_type, hypre_pc);
+  destroy_solver(solver_type, hypre_solver);
 
-  (*info)->ncol = NULL;
-  (*info)->grows = NULL;
-  (*info)->ilower = 0;
-  (*info)->iupper = 0;
-  (*info)->jlower = 0;
-  (*info)->jupper = 0;
+  delete [] ncol;
+  delete [] grows;
 
-  (*info)->precond_type = 0;
-  (*info)->solver_type = 0;
+  /* destroy vectors/matrix */
+  HYPRE_IJVectorDestroy(hypre_rhs);
+  HYPRE_IJVectorDestroy(hypre_sol);
+  HYPRE_IJMatrixDestroy(hypre_k);
 }
 
 void
-destroy_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info *info)
+Hypre::initialize(int *Ap, int *Ai, int size, int maxit, double err,
+                  const PGFem3D_opt *options, MPI_Comm comm)
 {
-  if (info != NULL) {
-    destroy_HYPRE_preconditioner(info);
-
-    switch (info->solver_type) {
-     case HYPRE_GMRES:
-      HYPRE_ParCSRGMRESDestroy(info->hypre_solver);
-      break;
-     case HYPRE_BCG_STAB:
-      HYPRE_ParCSRBiCGSTABDestroy(info->hypre_solver);
-      break;
-     case HYPRE_AMG:
-      HYPRE_BoomerAMGDestroy(info->hypre_solver);
-      break;
-    }
-
-    free(info->ncol);
-    free(info->grows);
-
-    /* destroy vectors/matrix */
-    HYPRE_IJVectorDestroy(info->hypre_rhs);
-    HYPRE_IJVectorDestroy(info->hypre_sol);
-    HYPRE_IJMatrixDestroy(info->hypre_k);
-  }
-  free(info);
-}
-
-void hypre_initialize(int *Ap,
-                      int *Ai,
-                      int size,
-                      int maxit,
-                      double err,
-                      PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                      const PGFem3D_opt *options,
-                      MPI_Comm mpi_comm)
-{
-  int kdim = 0;
-  int *diag_sizes = NULL;
-  int *offd_sizes = NULL;
-  int i = 0;
-  int func_err = 0;
-
   /* override maxit with command line options */
   maxit = options->maxit;
-  kdim = options->kdim;
 
   /* Rank and nproc */
   int myrank, nproc;
-  MPI_Comm_size(mpi_comm, &nproc);
-  MPI_Comm_rank(mpi_comm, &myrank);
+  if (MPI_Comm_size(comm, &nproc) or
+      MPI_Comm_rank(comm, &myrank)) {
+    PGFEM_Abort();
+  }
 
   if (myrank == 0) {
     PGFEM_printf("Iterative solver info:\n"
                  "Kdim     = %d\n"
-                 "Max. It. = %d\n",kdim,maxit);
+                 "Max. It. = %d\n", options->kdim, maxit);
   }
 
-
   /* Allocations */
-  PGFEM_hypre->ncol  = PGFEM_calloc(int, size);
-  diag_sizes         = PGFEM_calloc(int, size);
-  offd_sizes         = PGFEM_calloc(int, size);
-  PGFEM_hypre->grows = PGFEM_calloc(int, size);
+  ncol = new int[size];
+  grows = new int[size];
 
-  i = 0;
-  while (i < size) {
-    PGFEM_hypre->grows[i] = PGFEM_hypre->ilower + i;
-    i++;
+  for (int i = 0; i < size; ++i) {
+    grows[i] = ilower + i;
   }
 
   /* Compute ncol */
-  Ap2ncols(Ap, PGFEM_hypre->ncol, size);
+  ap_to_ncols(Ap, ncol, size);
 
   /* Matrix */
-  HYPRE_IJMatrixCreate(mpi_comm,
-                       PGFEM_hypre->ilower, PGFEM_hypre->iupper,
-                       PGFEM_hypre->ilower, PGFEM_hypre->iupper,
-                       &PGFEM_hypre->hypre_k);
+  HYPRE_IJMatrixCreate(comm, ilower, iupper, ilower, iupper, &hypre_k);
+  HYPRE_IJMatrixSetObjectType(hypre_k, HYPRE_PARCSR);
 
-  HYPRE_IJMatrixSetObjectType(PGFEM_hypre->hypre_k, HYPRE_PARCSR);
+  int *diag_sizes = new int[size];
+  int *offd_sizes = new int[size];
 
-  GetDiagOffdSizes(PGFEM_hypre->ncol, Ai, diag_sizes, offd_sizes, size,
-                   PGFEM_hypre->ilower, PGFEM_hypre->iupper);
+  get_diag_offd_sizes(ncol, Ai, diag_sizes, offd_sizes, size, ilower, iupper);
+  HYPRE_IJMatrixSetRowSizes(hypre_k, ncol);
+  HYPRE_IJMatrixSetDiagOffdSizes(hypre_k, diag_sizes, offd_sizes);
 
-  HYPRE_IJMatrixSetRowSizes(PGFEM_hypre->hypre_k, PGFEM_hypre->ncol);
+  delete[] diag_sizes;
+  delete[] offd_sizes;
 
-  HYPRE_IJMatrixSetDiagOffdSizes(PGFEM_hypre->hypre_k,
-                                 diag_sizes, offd_sizes);
-  HYPRE_IJMatrixInitialize(PGFEM_hypre->hypre_k);
-  HYPRE_IJMatrixGetObject(PGFEM_hypre->hypre_k,
-                          (void **) &PGFEM_hypre->hypre_pk);
+  HYPRE_IJMatrixInitialize(hypre_k);
+  HYPRE_IJMatrixGetObject(hypre_k, reinterpret_cast<void**>(&hypre_pk));
 
   if (PFEM_HYPRE_DEBUG) {
     /* print pattern */
-    SetHypreK(PGFEM_hypre, Ai, size, 1.0);
-    HYPRE_IJMatrixAssemble(PGFEM_hypre->hypre_k);
-    HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k, "stiff_pattern.out");
-    HYPRE_IJMatrixInitialize(PGFEM_hypre->hypre_k);
+    setK(Ai, size, 1.0);
+    HYPRE_IJMatrixAssemble(hypre_k);
+    HYPRE_IJMatrixPrint(hypre_k, "stiff_pattern.out");
+    HYPRE_IJMatrixInitialize(hypre_k);
   }
 
-
   /* RHS */
-  HYPRE_IJVectorCreate(mpi_comm,
-                       PGFEM_hypre->ilower, PGFEM_hypre->iupper,
-                       &PGFEM_hypre->hypre_rhs);
-  HYPRE_IJVectorSetObjectType(PGFEM_hypre->hypre_rhs, HYPRE_PARCSR);
-  HYPRE_IJVectorInitialize(PGFEM_hypre->hypre_rhs);
-  HYPRE_IJVectorGetObject(PGFEM_hypre->hypre_rhs,
-                          (void **)&PGFEM_hypre->hypre_prhs);
+  HYPRE_IJVectorCreate(comm, ilower, iupper, &hypre_rhs);
+  HYPRE_IJVectorSetObjectType(hypre_rhs, HYPRE_PARCSR);
+  HYPRE_IJVectorInitialize(hypre_rhs);
+  HYPRE_IJVectorGetObject(hypre_rhs, reinterpret_cast<void**>(&hypre_prhs));
 
   /* Solution vector */
-  HYPRE_IJVectorCreate(mpi_comm,
-                       PGFEM_hypre->ilower, PGFEM_hypre->iupper,
-                       &PGFEM_hypre->hypre_sol);
-  HYPRE_IJVectorSetObjectType(PGFEM_hypre->hypre_sol, HYPRE_PARCSR);
-  HYPRE_IJVectorInitialize(PGFEM_hypre->hypre_sol);
-  HYPRE_IJVectorGetObject(PGFEM_hypre->hypre_sol,
-                          (void**)&PGFEM_hypre->hypre_psol);
+  HYPRE_IJVectorCreate(comm, ilower, iupper, &hypre_sol);
+  HYPRE_IJVectorSetObjectType(hypre_sol, HYPRE_PARCSR);
+  HYPRE_IJVectorInitialize(hypre_sol);
+  HYPRE_IJVectorGetObject(hypre_sol, reinterpret_cast<void**>(&hypre_psol));
 
   /* set up the preconditioner */
-  PGFEM_hypre->precond_type = options->precond;
-  func_err += PGFEM_HYPRE_create_preconditioner(PGFEM_hypre, mpi_comm);
+  precond_type = options->precond;
+  createPreconditioner(comm);
 
   /* set up the solver */
-  PGFEM_hypre->solver_type = options->solver;
+  solver_type = options->solver;
+
   switch (options->solver) {
    default:
    case HYPRE_GMRES:
-    HYPRE_ParCSRGMRESCreate(mpi_comm, &PGFEM_hypre->hypre_solver);
-    HYPRE_ParCSRGMRESSetMaxIter(PGFEM_hypre->hypre_solver, maxit);
-    HYPRE_ParCSRGMRESSetTol(PGFEM_hypre->hypre_solver, err);
-    HYPRE_ParCSRGMRESSetKDim(PGFEM_hypre->hypre_solver, kdim);
-    HYPRE_ParCSRGMRESSetLogging(PGFEM_hypre->hypre_solver, 1);
-    HYPRE_ParCSRGMRESSetPrintLevel(PGFEM_hypre->hypre_solver, 0);
+    HYPRE_ParCSRGMRESCreate(comm, &hypre_solver);
+    HYPRE_ParCSRGMRESSetMaxIter(hypre_solver, maxit);
+    HYPRE_ParCSRGMRESSetTol(hypre_solver, err);
+    HYPRE_ParCSRGMRESSetKDim(hypre_solver, options->kdim);
+    HYPRE_ParCSRGMRESSetLogging(hypre_solver, 1);
+    HYPRE_ParCSRGMRESSetPrintLevel(hypre_solver, 0);
     break;
 
    case HYPRE_BCG_STAB:
-    HYPRE_ParCSRBiCGSTABCreate(mpi_comm, &PGFEM_hypre->hypre_solver);
-    HYPRE_BiCGSTABSetMaxIter(PGFEM_hypre->hypre_solver, maxit);
-    HYPRE_BiCGSTABSetTol(PGFEM_hypre->hypre_solver, err);
-    HYPRE_BiCGSTABSetLogging(PGFEM_hypre->hypre_solver, 1);
+    HYPRE_ParCSRBiCGSTABCreate(comm, &hypre_solver);
+    HYPRE_BiCGSTABSetMaxIter(hypre_solver, maxit);
+    HYPRE_BiCGSTABSetTol(hypre_solver, err);
+    HYPRE_BiCGSTABSetLogging(hypre_solver, 1);
     break;
 
    case HYPRE_AMG:
      {
        boomerAMGOptions AMGOptions;
        setBoomerAMGOptions(&AMGOptions);
-       initializeBoomerAMG(&PGFEM_hypre->hypre_solver, &AMGOptions,mpi_comm);
-       HYPRE_BoomerAMGSetTol(PGFEM_hypre->hypre_solver, err);
-       HYPRE_BoomerAMGSetMaxIter(PGFEM_hypre->hypre_solver, 20);
+       initializeBoomerAMG(&hypre_solver, &AMGOptions, comm);
+       HYPRE_BoomerAMGSetTol(hypre_solver, err);
+       HYPRE_BoomerAMGSetMaxIter(hypre_solver, 20);
      }
      break;
 
    case HYPRE_FLEX:
-    HYPRE_ParCSRFlexGMRESCreate(mpi_comm, &PGFEM_hypre->hypre_solver);
-    HYPRE_ParCSRFlexGMRESSetMaxIter(PGFEM_hypre->hypre_solver, maxit);
-    HYPRE_ParCSRFlexGMRESSetTol(PGFEM_hypre->hypre_solver, err);
-    HYPRE_ParCSRFlexGMRESSetKDim(PGFEM_hypre->hypre_solver, kdim);
-    HYPRE_ParCSRFlexGMRESSetLogging(PGFEM_hypre->hypre_solver, 1);
-    HYPRE_ParCSRFlexGMRESSetPrintLevel(PGFEM_hypre->hypre_solver, 0);
+    HYPRE_ParCSRFlexGMRESCreate(comm, &hypre_solver);
+    HYPRE_ParCSRFlexGMRESSetMaxIter(hypre_solver, maxit);
+    HYPRE_ParCSRFlexGMRESSetTol(hypre_solver, err);
+    HYPRE_ParCSRFlexGMRESSetKDim(hypre_solver, options->kdim);
+    HYPRE_ParCSRFlexGMRESSetLogging(hypre_solver, 1);
+    HYPRE_ParCSRFlexGMRESSetPrintLevel(hypre_solver, 0);
     break;
 
    case HYPRE_HYBRID:
-    HYPRE_ParCSRHybridCreate(&PGFEM_hypre->hypre_solver);
-    HYPRE_ParCSRHybridSetKDim(PGFEM_hypre->hypre_solver, kdim);
-    HYPRE_ParCSRHybridSetTol(PGFEM_hypre->hypre_solver, err);
-    HYPRE_ParCSRHybridSetDSCGMaxIter(PGFEM_hypre->hypre_solver, maxit);
-    HYPRE_ParCSRHybridSetSolverType(PGFEM_hypre->hypre_solver, 2);
-    HYPRE_ParCSRHybridSetConvergenceTol(PGFEM_hypre->hypre_solver, 1.0);
+    HYPRE_ParCSRHybridCreate(&hypre_solver);
+    HYPRE_ParCSRHybridSetKDim(hypre_solver, options->kdim);
+    HYPRE_ParCSRHybridSetTol(hypre_solver, err);
+    HYPRE_ParCSRHybridSetDSCGMaxIter(hypre_solver, maxit);
+    HYPRE_ParCSRHybridSetSolverType(hypre_solver, 2);
+    HYPRE_ParCSRHybridSetConvergenceTol(hypre_solver, 1.0);
     break;
   }
-
-  free(diag_sizes);
-  free(offd_sizes);
 }
 
 void
-ZeroHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre, int *Ai, int size)
+Hypre::setRowColBounds(long g_n_col, const long *n_row_proc, int rank)
 {
-  int curpos = 0;
-  const double values[1] = {0};
+  jlower = 0;
+  jupper = g_n_col - 1;
+  for (int i = 0; i < rank; ++i) {
+    ilower += n_row_proc[i];
+  }
+  iupper = ilower + n_row_proc[rank] - 1;
+}
+
+int
+Hypre::createPreconditioner(MPI_Comm comm)
+{
+  hypre_pc = create_preconditioner(comm, precond_type);
+  return (hypre_pc != nullptr);
+}
+
+int
+Hypre::destroyPreconditioner()
+{
+  destroy_preconditioner(precond_type, hypre_pc);
+  return 0;
+}
+
+void
+Hypre::setK(int *Ai, int size, double val)
+{
   HYPRE_Int cols[1] = {1};
+  int curpos = 0;
 
-  for (int i = 0, e = size; i < e; ++i) {
-    for (int j = 0, e = PGFEM_hypre->ncol[i]; j < e; ++j) {
-      HYPRE_IJMatrixSetValues(PGFEM_hypre->hypre_k,
-                              1,
-                              cols,
-                              &PGFEM_hypre->grows[i],
-                              &Ai[curpos++],
-                              values);
+  for(int i = 0, e = size; i < e; ++i) {
+    for(int j = 0, e = ncol[i]; j < e; ++j) {
+      HYPRE_IJMatrixSetValues(hypre_k, 1, cols, &grows[i], &Ai[curpos++], &val);
     }
   }
-}
-
-void set_HYPRE_row_col_bounds(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                              const long g_n_col,
-                              const long *n_row_proc,
-                              const int myrank)
-{
-  int idx = 0;
-  PGFEM_hypre->jlower = 0;
-  PGFEM_hypre->jupper = g_n_col-1;
-  while(idx < myrank){
-    PGFEM_hypre->ilower += n_row_proc[idx];
-    idx++;
-  }
-  PGFEM_hypre->iupper = PGFEM_hypre->ilower + n_row_proc[idx] - 1;
-
-}
-
-int PGFEM_HYPRE_create_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                                      const MPI_Comm mpi_comm)
-{
-  int err = 0;
-  int myrank = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);
-
-  switch(PGFEM_hypre->precond_type) {
-   case PARA_SAILS:
-    err += create_precond_PARASAILS(PGFEM_hypre,mpi_comm);
-    break;
-
-   case PILUT:
-    err += create_precond_PILUT(PGFEM_hypre,mpi_comm);
-    break;
-
-   case EUCLID:
-    err += create_precond_EUCLID(PGFEM_hypre,mpi_comm);
-    break;
-
-   case BOOMER:
-    err += create_precond_BOOMER(PGFEM_hypre,mpi_comm);
-    break;
-
-   case DIAG_SCALE:
-    /* if(myrank == 0) PGFEM_printf ("Preconditioner : Diagonal Scale\n"); */
-    err += PGFEM_HYPRE_ScaleDiagCreate(&PGFEM_hypre->hypre_pc);
-    break;
-
-   case JACOBI:
-    /* if(myrank == 0) PGFEM_printf ("Preconditioner : Jacobi\n"); */
-    err += PGFEM_HYPRE_JacobiCreate(&PGFEM_hypre->hypre_pc);
-    break;
-
-   default:
-    /* if(myrank == 0) PGFEM_printf("No Preconditioner\n"); */
-    break;
-  }
-
-  return err;
-}
-
-int destroy_HYPRE_preconditioner(PGFEM_HYPRE_solve_info *info)
-{
-  int err = 0;
-  if(info->hypre_pc != NULL){
-    switch(info->precond_type){
-     case PARA_SAILS:
-      HYPRE_ParaSailsDestroy (info->hypre_pc);
-      break;
-     case PILUT:
-      HYPRE_ParCSRPilutDestroy (info->hypre_pc);
-      break;
-     case EUCLID:
-      HYPRE_EuclidDestroy (info->hypre_pc);
-      break;
-     case BOOMER:
-      HYPRE_BoomerAMGDestroy (info->hypre_pc);
-      break;
-     case DIAG_SCALE:
-      PGFEM_HYPRE_ScaleDiagDestroy(info->hypre_pc);
-      break;
-     case JACOBI:
-      PGFEM_HYPRE_JacobiDestroy(info->hypre_pc);
-      break;
-    }
-  }
-
-  /* reset to NULL in case this function is called again from full
-     destructor */
-  info->hypre_pc = NULL;
-  return err;
 }
