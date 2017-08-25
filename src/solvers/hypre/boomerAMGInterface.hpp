@@ -2,13 +2,12 @@
 #define BOOMER_AMG_INTERFACE_H
 
 #include "PGFEM_mpi.h"
+#include <krylov.h>
 
-#ifndef HYPRE_GLOBAL_H
-#include "hypre_global.h"
-#endif
-
-typedef struct boomerAMGOptions{
-
+namespace pgfem3d {
+namespace solvers {
+namespace hypre {
+struct boomerAMGOptions {
   /* Required options to set */
   int useDefault;
 
@@ -79,12 +78,15 @@ typedef struct boomerAMGOptions{
   int printLevel;
   int logging;
 
-} boomerAMGOptions;
+};
 
 int initializeBoomerAMG(HYPRE_Solver *hypre_pc,
-            boomerAMGOptions *options,
-            const MPI_Comm mpi_comm);
+                        boomerAMGOptions *options,
+                        const MPI_Comm mpi_comm);
 
 void setBoomerAMGOptions(boomerAMGOptions *options);
 
+} // namespace hypre
+} // namespace solvers
+} // namespace pgfem3d
 #endif

@@ -4,14 +4,27 @@
 #define PGFEM3D_SOLVER_H
 
 /// @brief This file defines the sparse linear system solver API used in PGFEM.
+#include "pgfem3d/SparseSystem.hpp"
+#include <cstdio>
 
 // Forward declare the types we need.
 struct ARC_LENGTH_VARIABLES;
 
+enum PFEM_SOLVE_ERR {
+  SOLVE_SUCCESS = 0,
+  SOLVE_ERROR = 1,
+  UNREC_SOLVER,
+  UNREC_SOLVER_TYPE,
+  UNREC_PRECOND,
+  BAD_PRECOND
+};
+
+/** Solve the system of equations without calling setup
+    routines. Use this function for subsequent solves are made using
+    the same matrix. */
+int solve_system_check_error(FILE *out, const SOLVER_INFO info);
+
 namespace pgfem3d {
-namespace solvers {
-struct Hypre;
-}
 struct Solver {
   virtual ~Solver();
 
@@ -20,7 +33,7 @@ struct Solver {
   long                 iter_max = 0;       //!< maximum number of iterations for Newton Raphson
   double                  alpha = 0.5;     //!< midpoint rule alpha (default is 2nd order)
   void              *microscale = nullptr; //!< Container of microscale information
-  solvers::Hypre*   PGFEM_hypre = nullptr; //!< HYPRE solver object
+  solvers::SparseSystem* system = nullptr; //!< Sparse system of equations
   long                      FNR = 0;       //!< "Full Newton-Raphson" == 0, only compute tangent on 1st iteration
   double                   gama = 0.0;     //!< related to linesearch, but is modified internally...
   double                    err = 0.0;     //!< linear solve tolerance
@@ -34,6 +47,9 @@ struct Solver {
   int      set_initial_residual = 0;       //!< if yes, compute residual before the first NR iteration
   double                     du = 0.0;     //!< perturbation value for computing the first residual
   ARC_LENGTH_VARIABLES     *arc = nullptr; //!< Container of Arc length related variables
+
+  void createSparseSystem();
+
 }; // struct Solver
 } // namespace pgfem3d
 

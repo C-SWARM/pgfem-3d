@@ -1,3 +1,5 @@
+SUBDIRS = solvers
+
 # There are two targets in this source directory, the PGFem3D application
 # itself, and a convenience library called libgpfem3d.la. The convenience
 # library exists because elsewhere in the project there are executables that
@@ -17,7 +19,6 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               -I$(top_builddir)/include \
               $(VTK_IO_include) \
               $(energy_equation_include) \
-              $(hypre_include) \
               $(suitesparse_include) \
               $(ttl_include) \
               $(cnstvm_include) \
@@ -27,14 +28,12 @@ libpgfem3d_la_LIBADD = $(builddir)/solvers/libsolvers.la \
                        $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
                        $(top_builddir)/energy_equation/src/libenergy_equation.la \
                        $(suitesparse_lib) \
-                       $(hypre_lib) \
                        $(VTK_LDFLAGS) $(VTK_LIBS) \
                        $(cnstvm_lib) \
                        $(mkl_lib)
 
 libpgfem3d_la_SOURCES = ALM.cc \
                         Arc_length.cc \
-                        boomerAMGInterface.cc \
                         GRedist_node.cc \
                         LINE.cc \
                         Newton_Raphson.cc \
@@ -51,7 +50,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         fd_increment.cc \
                         fd_residuals.cc \
                         homogen.cc \
-                        hypre_interface.cc \
                         in.cc \
                         initial_guess.cc \
                         integration.cc \
@@ -111,8 +109,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         generate_dof_ids.cc \
                         node.cc \
                         element.cc \
-                        solve_system.cc \
-                        PGFEM_HYPRE_preconditioners.cc \
                         allocation.cc \
                         cohesive_element_utils.cc \
                         cohesive_element.cc \

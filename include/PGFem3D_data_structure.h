@@ -19,11 +19,10 @@
 #include "matgeom.h"
 #include "hommat.h"
 #include "mesh_load.h"
-#include "hypre_global.h"
 #include "pgfem_comm.h"
 #include "comm_hints.h"
 #include "state_variables.h"
-#include "pgfem3d/Solver.h"
+#include "pgfem3d/Solver.hpp"
 
 using SOLVER_OPTIONS = pgfem3d::Solver;
 

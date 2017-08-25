@@ -8,6 +8,7 @@
 #include "generate_dof_ids.h"
 #include "homogen.h"
 #include "in.h"
+#include "incl.h"
 #include "initialize_damage.h"
 #include "interface_macro.h"
 #include "mesh_load.h"
@@ -27,23 +28,23 @@ static const int ndim = 3;
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
-                    MPI_Comm mpi_comm,
-                    COMMON_MICROSCALE *common,
-                    const int mp_id,
-                    const Comm_hints *hints);
+                                    MPI_Comm mpi_comm,
+                                    COMMON_MICROSCALE *common,
+                                    const int mp_id,
+                                    const Comm_hints *hints);
 static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common);
 
 static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol);
 static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                      const COMMON_MICROSCALE *common,
-                      const int analysis);
+                                      const COMMON_MICROSCALE *common,
+                                      const int analysis);
 static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                    const COMMON_MICROSCALE *common,
-                    const int analysis);
+                                        const COMMON_MICROSCALE *common,
+                                        const int analysis);
 
 static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
-                          const int local_len,
-                          const int global_len);
+                                              const int local_len,
+                                              const int global_len);
 
 static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer);
 
@@ -54,32 +55,32 @@ static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer);
  * MICROSCALE_SOLUTION simply holds pointers to the various buffers.
  */
 typedef struct MICROSCALE_SOLUTION_BUFFERS{
-    /* local vectors */
-    double *f;
-    double *d_r;
-    double *rr;
-    double *D_R;
-    double *R;
-    double *RR;
-    double *f_u;
-    double *f_defl;
-    double *RRn;
-    double *U;
-    double *DK;
-    double *dR;
+  /* local vectors */
+  double *f;
+  double *d_r;
+  double *rr;
+  double *D_R;
+  double *R;
+  double *RR;
+  double *f_u;
+  double *f_defl;
+  double *RRn;
+  double *U;
+  double *DK;
+  double *dR;
 
-    /* global vectors */
-    double *BS_f;
-    double *BS_x;
-    double *BS_RR;
-    double *BS_f_u;
-    double *BS_d_r;
-    double *BS_D_R;
-    double *BS_rr;
-    double *BS_R;
-    double *BS_U;
-    double *BS_DK;
-    double *BS_dR;
+  /* global vectors */
+  double *BS_f;
+  double *BS_x;
+  double *BS_RR;
+  double *BS_f_u;
+  double *BS_d_r;
+  double *BS_D_R;
+  double *BS_rr;
+  double *BS_R;
+  double *BS_U;
+  double *BS_DK;
+  double *BS_dR;
 } MICROSCALE_SOLUTION_BUFFERS;
 
 
@@ -126,7 +127,7 @@ void sol_idx_map_sort_idx(sol_idx_map *map)
 }
 
 int sol_idx_map_id_get_idx(const sol_idx_map *map,
-               const int id)
+                           const int id)
 {
   int val[2] = {0,0}; val[0] = id;
   size_t len = map->size;
@@ -135,7 +136,7 @@ int sol_idx_map_id_get_idx(const sol_idx_map *map,
 }
 
 int sol_idx_map_idx_get_id(const sol_idx_map *map,
-               const int idx)
+                           const int idx)
 {
   int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
@@ -144,8 +145,8 @@ int sol_idx_map_idx_get_id(const sol_idx_map *map,
 }
 
 int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
-                 const int cur_id,
-                 const int new_id)
+                                 const int cur_id,
+                                 const int new_id)
 {
   int val[2] = {0,0}; val[0] = cur_id;
   size_t len = map->size;
@@ -159,8 +160,8 @@ int sol_idx_map_get_idx_reset_id(sol_idx_map *map,
 }
 
 void sol_idx_map_idx_set_id(sol_idx_map *map,
-                const int idx,
-                const int id)
+                            const int idx,
+                            const int id)
 {
   int val[2] = {0,0}; val[1] = idx;
   size_t len = map->size;
@@ -182,11 +183,11 @@ void initialize_MICROSCALE(MICROSCALE **microscale)
 }/* initialize_MICROSCALE */
 
 void build_MICROSCALE(MICROSCALE *microscale,
-              MPI_Comm mpi_comm,
-              const int argc,
-              char **argv,
-              const int mp_id,
-              const Comm_hints *hints)
+                      MPI_Comm mpi_comm,
+                      const int argc,
+                      char **argv,
+                      const int mp_id,
+                      const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;
@@ -200,19 +201,19 @@ void build_MICROSCALE(MICROSCALE *microscale,
   if (microscale->opts->solverpackage != HYPRE){
     if(myrank == 0)
       PGFEM_printerr("ERROR: only the HYPRE solver are supported!"
-             "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+                     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mpi_comm,0);
   }
 
   switch (microscale->opts->analysis_type) {
-  case DISP: break;
-  case CM:
+   case DISP: break;
+   case CM:
     if (microscale->opts->cm == DISP) break;
     /* deliberate drop through */
-  default:
+   default:
     if(myrank == 0)
       PGFEM_printerr("ERROR: only DISP analysis is supported!"
-             "%s:%s:%d\n",__func__,__FILE__,__LINE__);
+                     "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mpi_comm,0);
     break;
   }
@@ -221,7 +222,7 @@ void build_MICROSCALE(MICROSCALE *microscale,
   if(make_path(microscale->opts->opath,DIR_MODE) != 0){
     if(myrank == 0){
       PGFEM_printerr("ERROR: could not write to %s!\n",
-          microscale->opts->opath);
+                     microscale->opts->opath);
     }
     PGFEM_Comm_code_abort(mpi_comm,0);
   }
@@ -233,7 +234,7 @@ void build_MICROSCALE(MICROSCALE *microscale,
 }/* build_MICROSCALE */
 
 void build_MICROSCALE_solutions(const int n_solutions,
-                MICROSCALE *microscale)
+                                MICROSCALE *microscale)
 {
   /*=== BUILD SOLUTIONS ===*/
   sol_idx_map_build(&(microscale->idx_map),n_solutions);
@@ -241,7 +242,7 @@ void build_MICROSCALE_solutions(const int n_solutions,
   for(int i=0; i<n_solutions; i++){
     initialize_MICROSCALE_SOLUTION(microscale->sol + i);
     build_MICROSCALE_SOLUTION(microscale->sol +i,microscale->common,
-                  microscale->opts->analysis_type);
+                              microscale->opts->analysis_type);
   }
 }
 
@@ -249,10 +250,10 @@ void destroy_MICROSCALE(MICROSCALE *microscale)
 {
   if(microscale != NULL){
     for(int i = 0, e = microscale->idx_map.size;
-    i < e; i++){
+        i < e; i++){
       destroy_MICROSCALE_SOLUTION(microscale->sol+i,
-                  microscale->common,
-                  microscale->opts->analysis_type);
+                                  microscale->common,
+                                  microscale->opts->analysis_type);
     }
     free(microscale->sol);
     destroy_COMMON_MICROSCALE(microscale->common);
@@ -264,7 +265,7 @@ void destroy_MICROSCALE(MICROSCALE *microscale)
 } /* destroy_MICROSCALE */
 
 int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                  const MICROSCALE *micro)
+                              const MICROSCALE *micro)
 {
   int err = 0;
   int myrank = 0;
@@ -275,7 +276,7 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* reset displacement (solution) vector */
   unpack_data(sol->packed_state_var_n,
-          sol->r,&pos,loc_ndof,sizeof(*(sol->r)));
+              sol->r,&pos,loc_ndof,sizeof(*(sol->r)));
 
   /* null all of the other local vectors */
   nulld(sol->f,loc_ndof);
@@ -306,30 +307,30 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* reset state variables */
   unpack_eps_list(sol->eps,
-          micro->common->ne,
-          micro->common->elem,
-          micro->opts->analysis_type,
-          sol->packed_state_var_n,
-          &pos);
+                  micro->common->ne,
+                  micro->common->elem,
+                  micro->opts->analysis_type,
+                  sol->packed_state_var_n,
+                  &pos);
 
   /* reset coel state variables */
   coel_list_unpack_state(micro->common->nce,
-             micro->common->coel,
-             micro->common->co_props,
-             sol->packed_state_var_n,
-             &pos);
+                         micro->common->coel,
+                         micro->common->co_props,
+                         sol->packed_state_var_n,
+                         &pos);
 
   /* reset NORM */
   unpack_data(sol->packed_state_var_n,&sol->NORM,
-          &pos,1,sizeof(sol->NORM));
+              &pos,1,sizeof(sol->NORM));
 
   /* reset dt */
   unpack_data(sol->packed_state_var_n,&sol->dt,
-          &pos,1,sizeof(sol->dt));
+              &pos,1,sizeof(sol->dt));
 
   /* reset failed flag */
   unpack_data(sol->packed_state_var_n,&sol->failed,
-          &pos,1,sizeof(sol->failed));
+              &pos,1,sizeof(sol->failed));
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
@@ -337,7 +338,7 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 }/* reset_MICROSCALE_SOLUTION */
 
 int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                   const MICROSCALE *micro)
+                               const MICROSCALE *micro)
 {
   int err = 0;
 
@@ -348,35 +349,35 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* copy r -> rn  */
   pack_data(sol->r,sol->packed_state_var_n,&pos,
-        loc_ndof,sizeof(*(sol->r)));
+            loc_ndof,sizeof(*(sol->r)));
 
   /* leave other solution vectors alone */
 
   /* update state variables */
   pack_eps_list(sol->eps,
-        micro->common->ne,
-        micro->common->elem,
-        micro->opts->analysis_type,
-        sol->packed_state_var_n,
-        &pos);
+                micro->common->ne,
+                micro->common->elem,
+                micro->opts->analysis_type,
+                sol->packed_state_var_n,
+                &pos);
 
   /* update cohesive state variables */
   coel_list_pack_state(micro->common->nce,
-               micro->common->coel,
-               sol->packed_state_var_n,
-               &pos);
+                       micro->common->coel,
+                       sol->packed_state_var_n,
+                       &pos);
 
   /* pack NORM */
   pack_data(&sol->NORM,sol->packed_state_var_n,
-        &pos,1,sizeof(sol->NORM));
+            &pos,1,sizeof(sol->NORM));
 
   /* pack dt */
   pack_data(&sol->dt,sol->packed_state_var_n,
-        &pos,1,sizeof(sol->dt));
+            &pos,1,sizeof(sol->dt));
 
   /* pack failed flag */
   pack_data(&sol->failed,sol->packed_state_var_n,
-        &pos,1,sizeof(sol->failed));
+            &pos,1,sizeof(sol->failed));
 
   assert(pos == sol->packed_state_var_len);
   if(pos != sol->packed_state_var_len) err++;
@@ -386,22 +387,22 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 }/* update_MICROSCALE_SOLUTION */
 
 int dump_MICROSCALE_SOLUTION_state(const MICROSCALE_SOLUTION *sol,
-                   FILE *out)
+                                   FILE *out)
 {
   int err = 0;
   size_t n_write = fwrite(sol->packed_state_var_n,sizeof(char),
-              sol->packed_state_var_len,out);
+                          sol->packed_state_var_len,out);
   assert(n_write == sol->packed_state_var_len);
   if(n_write != sol->packed_state_var_len) err++;
   return err;
 }
 
 int read_MICROSCALE_SOLUTION_state(MICROSCALE_SOLUTION *sol,
-                   FILE *in)
+                                   FILE *in)
 {
   int err = 0;
   size_t n_read = fread(sol->packed_state_var_n,sizeof(char),
-            sol->packed_state_var_len,in);
+                        sol->packed_state_var_len,in);
   assert(n_read == sol->packed_state_var_len);
   if(n_read != sol->packed_state_var_len) err++;
   return err;
@@ -455,27 +456,25 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
 }
 
 static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
-                    MPI_Comm mpi_comm,
-                    COMMON_MICROSCALE *common,
-                    const int mp_id,
-                    const Comm_hints *hints)
+                                    MPI_Comm mpi_comm,
+                                    COMMON_MICROSCALE *common,
+                                    const int mp_id,
+                                    const Comm_hints *hints)
 {
   int myrank = 0;
   int nproc = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
   MPI_Comm_size(mpi_comm,&nproc);
   /* initialize the solver information */
-  common->SOLVER = new pgfem3d::solvers::Hypre();
-  common->SOLVER->solver_type = opts->solver;
-  common->SOLVER->precond_type = opts->precond;
+  common->SOLVER = nullptr;
   common->mpi_comm = mpi_comm;
   common->maxit_nl = 5;
 
   switch(opts->vis_format){
-  case VIS_ENSIGHT: case VIS_VTK:
-   common->ensight = PGFEM_calloc (ENSIGHT_1, 1);
+   case VIS_ENSIGHT: case VIS_VTK:
+    common->ensight = PGFEM_calloc (ENSIGHT_1, 1);
     break;
-  default: break;
+   default: break;
   }
 
   /*=== READ MICROSCALE INPUT FILES ===*/
@@ -505,33 +504,33 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
     switch(opts->analysis_type)
     {
-      case STABILIZED: //intented to over flow.
-      case MINI:
-      case MINI_3F:
-        fv_ndofn = 4;
-        break;
+     case STABILIZED: //intented to over flow.
+     case MINI:
+     case MINI_3F:
+      fv_ndofn = 4;
+      break;
     }
 
     int physicsno = 1; // currently support only mechanical part
     err = read_input_file(opts,mpi_comm,&common->nn, &Gnn,&common->ndofn,
-              &common->ne, &ni,&common->lin_err,
-              &common->lim_zero,&nmat,&n_con,
-              &common->n_orient,&common->node,
-              &common->elem,&mater,&common->matgeom,
-              &common->supports,&nln,&znod,&nle_s,&zele_s,
-              &nle_v,&zele_v, &fv_ndofn,physicsno,&ndim, NULL);
+                          &common->ne, &ni,&common->lin_err,
+                          &common->lim_zero,&nmat,&n_con,
+                          &common->n_orient,&common->node,
+                          &common->elem,&mater,&common->matgeom,
+                          &common->supports,&nln,&znod,&nle_s,&zele_s,
+                          &nle_v,&zele_v, &fv_ndofn,physicsno,&ndim, NULL);
 
     /* error reading file(s) */
     if(err){
       PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-          myrank);
+                     myrank);
       PGFEM_Comm_code_abort(mpi_comm,0);
     }
 
     /* error in input */
     if(nln > 0 || nle_s > 0 || nle_v > 0){
       PGFEM_printerr("[%d]ERROR: applied loads are not consistent w/"
-          " multiscale analysis!\n",myrank);
+                     " multiscale analysis!\n",myrank);
       PGFEM_Comm_code_abort(mpi_comm,0);
     }
 
@@ -542,11 +541,11 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     /* override prescribed displacements */
     if(opts->override_pre_disp){
       if(override_prescribed_displacements(common->supports,opts) != 0){
-    PGFEM_printerr("[%d]ERROR: an error was encountered when"
-               " reading the displacement override file.\n"
-               "Be sure that there are enough prescribed"
-               " displacements in the file.\n",myrank);
-    PGFEM_Abort();
+        PGFEM_printerr("[%d]ERROR: an error was encountered when"
+                       " reading the displacement override file.\n"
+                       "Be sure that there are enough prescribed"
+                       " displacements in the file.\n",myrank);
+        PGFEM_Abort();
       }
     }
 
@@ -555,11 +554,11 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
       common->supports->multi_scale = opts->multi_scale;
       err = read_interface_macro_normal_lc(opts->ipath,common->supports);
       if(err != 0){
-    PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
-               "Check that the file \"%s/normal.in\""
-               " exists and try again.\n",
-               myrank,opts->ipath);
-    PGFEM_Comm_code_abort(mpi_comm,0);
+        PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
+                       "Check that the file \"%s/normal.in\""
+                       " exists and try again.\n",
+                       myrank,opts->ipath);
+        PGFEM_Comm_code_abort(mpi_comm,0);
       }
     }
 
@@ -569,7 +568,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     common->nhommat = list(a,common->ne,nmat,n_con,common->elem);
     common->hommat= build_hommat( common->nhommat);
     hom_matrices(a,common->ne,nmat,n_con,common->elem,mater,common->matgeom,
-         common->hommat,common->matgeom->SH,opts->analysis_type);
+                 common->hommat,common->matgeom->SH,opts->analysis_type);
 
     dealoc3l(a,nmat,nmat);
     free(mater);
@@ -591,7 +590,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     sprintf(filename,"%s%d.in.co_props",in_fname,myrank);
     FILE *in1 = PGFEM_fopen(filename,"r");
     read_cohesive_properties(in1,&common->n_co_props,
-                 &common->co_props,mpi_comm);
+                             &common->co_props,mpi_comm);
     PGFEM_fclose(in1);
 
     /* read coheisve elements */
@@ -605,9 +604,9 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
     /* read the cohesive element info */
     common->coel = read_cohe_elem (in1,ncom,ndim,common->nn,common->node,
-                   &common->nce,comat,common->ensight,
-                   opts->vis_format,myrank,
-                   common->co_props);
+                                   &common->nce,comat,common->ensight,
+                                   opts->vis_format,myrank,
+                                   common->co_props);
     dealoc2 (comat,ncom);
     PGFEM_fclose (in1);
     free(filename);
@@ -615,57 +614,54 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
   /*=== END FILE READING ===*/
   list_el_prescribed_def(common->supports,common->node,common->elem,
-             NULL,common->ne,0,common->nn);
+                         NULL,common->ne,0,common->nn);
 
   common->bndel = list_boundary_el(common->ne,common->elem,common->nn,
-                   common->node,myrank,&common->nbndel);
+                                   common->node,myrank,&common->nbndel);
 
   common->DomDof = PGFEM_calloc(long, nproc);
 
   common->ndofd = generate_local_dof_ids(common->ne,common->nce,common->nn,
-                     common->ndofn,common->node,
-                     common->elem,common->coel,NULL,
-                     mpi_comm,mp_id);
+                                         common->ndofn,common->node,
+                                         common->elem,common->coel,NULL,
+                                         mpi_comm,mp_id);
 
   common->DomDof[myrank] =
-    generate_global_dof_ids(common->ne,common->nce,common->nn,
-                common->ndofn,common->node,common->elem,
-                common->coel,NULL,mpi_comm,mp_id);
+  generate_global_dof_ids(common->ne,common->nce,common->nn,
+                          common->ndofn,common->node,common->elem,
+                          common->coel,NULL,mpi_comm,mp_id);
 
   MPI_Allgather(MPI_IN_PLACE,1,MPI_LONG,common->DomDof,
-        1,MPI_LONG,mpi_comm);
-
-  {
-    long Gndof = 0;
-    for(int i=0; i<nproc; i++)  Gndof += common->DomDof[i];
-    set_HYPRE_row_col_bounds(common->SOLVER,Gndof,common->DomDof,myrank);
-  }
+                1,MPI_LONG,mpi_comm);
 
   renumber_global_dof_ids(common->ne,common->nce,0,common->nn,
-              common->ndofn,common->DomDof,common->node,
-              common->elem,common->coel,NULL,mpi_comm,mp_id);
+                          common->ndofn,common->DomDof,common->node,
+                          common->elem,common->coel,NULL,mpi_comm,mp_id);
 
   long NBN = distribute_global_dof_ids(common->ne,common->nce,
-                       0,common->nn,
-                       common->ndofn,ndim,
-                       common->node,common->elem,
-                       common->coel,NULL, NULL, mpi_comm,mp_id);
+                                       0,common->nn,
+                                       common->ndofn,ndim,
+                                       common->node,common->elem,
+                                       common->coel,NULL, NULL, mpi_comm,mp_id);
 
   /* global stiffness pattern and communication structure */
   common->Ap = PGFEM_calloc(int, common->DomDof[myrank]+1);
   common->pgfem_comm = PGFEM_calloc (COMMUN_1, 1);
   initialize_commun(common->pgfem_comm);
   common->Ai = Psparse_ApAi(nproc,myrank,common->ne,0,common->nn,
-                common->ndofn,common->ndofd,common->elem,
-                NULL,common->node,common->Ap,common->nce,
-                common->coel,common->DomDof,&common->GDof,
-                common->pgfem_comm,mpi_comm,opts->cohesive,hints,mp_id);
+                            common->ndofn,common->ndofd,common->elem,
+                            NULL,common->node,common->Ap,common->nce,
+                            common->coel,common->DomDof,&common->GDof,
+                            common->pgfem_comm,mpi_comm,opts->cohesive,hints,mp_id);
   pgfem_comm_build_fast_maps(common->pgfem_comm,common->ndofd,
-                 common->DomDof[myrank],common->GDof);
+                             common->DomDof[myrank],common->GDof);
 
-  hypre_initialize(common->Ap,common->Ai,common->DomDof[myrank],
-           opts->maxit,common->lin_err,common->SOLVER,opts,
-           mpi_comm);
+  common->SOLVER = pgfem3d::solvers::SparseSystem::Create(*opts, mpi_comm,
+                                                          common->Ap,
+                                                          common->Ai,
+                                                          common->DomDof,
+                                                          opts->maxit,
+                                                          common->lin_err);
 
   if(!common->supports->multi_scale){
     common->VVolume = T_VOLUME (common->ne,ndim,common->elem,common->node);
@@ -678,7 +674,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
   /* allocate solution_buffers */
   common->solution_buffer = PGFEM_calloc(MICROSCALE_SOLUTION_BUFFERS, 1);
   build_MICROSCALE_SOLUTION_BUFFERS(common->solution_buffer,
-                    common->ndofd,common->DomDof[myrank]);
+                                    common->ndofd,common->DomDof[myrank]);
 
 
   free(in_fname);
@@ -698,9 +694,9 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     print_interpreted_options(opts);
     if(opts->multi_scale){
       if(common->supports->npd >= 9){
-    PGFEM_printf("\n*** BULK Multiscale Modelling ***\n");
+        PGFEM_printf("\n*** BULK Multiscale Modelling ***\n");
       } else {
-    PGFEM_printf("\n*** INTERFACE Multiscale Modelling ***\n");
+        PGFEM_printf("\n*** INTERFACE Multiscale Modelling ***\n");
       }
     }
 
@@ -796,8 +792,8 @@ static void initialize_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol)
 }
 
 static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                      const COMMON_MICROSCALE *common,
-                      const int analysis)
+                                      const COMMON_MICROSCALE *common,
+                                      const int analysis)
 {
   int myrank = 0;
   int nproc = 0;
@@ -823,7 +819,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   sol->eps = build_eps_il(common->ne,common->elem,analysis,&(sol->statv_list));
   initialize_damage(common->ne,common->elem,common->hommat,
-            sol->eps,analysis);
+                    sol->eps,analysis);
 
   if (analysis == CM) {
     init_all_constitutive_model(sol->eps, common->ne,
@@ -836,13 +832,13 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   /* length of the EPS list */
   sol->packed_state_var_len += sizeof_eps_list(sol->eps,
-                           common->ne,
-                           common->elem,
-                           analysis);
+                                               common->ne,
+                                               common->elem,
+                                               analysis);
 
   /* length of the state variables stored in COEL */
   sol->packed_state_var_len += coel_list_get_state_length_bytes(common->nce,
-                                common->coel);
+                                                                common->coel);
 
   /* length of NORM */
   sol->packed_state_var_len += sizeof(sol->NORM);
@@ -861,19 +857,19 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
     /* pack eps after end of sol vector buffer */
     size_t pos = local_len*sizeof(double);
     pack_eps_list(sol->eps,common->ne,common->elem,analysis,
-          sol->packed_state_var_n,&pos);
+                  sol->packed_state_var_n,&pos);
   }
   /* need to figure out elem/coel_state_info indexing */
 
   switch(analysis){
-  case STABILIZED: case MINI: case MINI_3F: sol->npres = 4; break;
-  case DISP: case CM: sol->npres = 0; break;
-  default: sol->npres = 1; break;
+   case STABILIZED: case MINI: case MINI_3F: sol->npres = 4; break;
+   case DISP: case CM: sol->npres = 0; break;
+   default: sol->npres = 1; break;
   }
   build_pressure_nodes(common->ne,sol->npres,common->elem,
-               sol->sig_e,sol->eps,analysis);
+                       sol->sig_e,sol->eps,analysis);
   set_fini_def (common->ne,sol->npres,common->elem,
-        sol->eps,sol->sig_e,analysis);
+                sol->eps,sol->sig_e,analysis);
 
   /*=== crystal plasticity is not currently supported ===*/
   /* if (analysis == FS_CRPL) { */
@@ -891,7 +887,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   /* Get pointers to the shared solution workspace */
   {
     MICROSCALE_SOLUTION_BUFFERS *buff =
-      (MICROSCALE_SOLUTION_BUFFERS *) common->solution_buffer;
+    (MICROSCALE_SOLUTION_BUFFERS *) common->solution_buffer;
 
     sol->f  = buff->f     ;
     sol->d_r    = buff->d_r   ;
@@ -928,8 +924,8 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 }
 
 static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
-                    const COMMON_MICROSCALE *common,
-                    const int analysis)
+                                        const COMMON_MICROSCALE *common,
+                                        const int analysis)
 {
   free(sol->r);
   free(sol->packed_state_var_n);
@@ -946,8 +942,8 @@ static void destroy_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 }
 
 static void build_MICROSCALE_SOLUTION_BUFFERS(void *buffer,
-    const int local_len,
-    const int global_len)
+                                              const int local_len,
+                                              const int global_len)
 {
   MICROSCALE_SOLUTION_BUFFERS *buff = (MICROSCALE_SOLUTION_BUFFERS*) buffer;
 

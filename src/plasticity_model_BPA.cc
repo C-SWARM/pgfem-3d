@@ -17,53 +17,50 @@
 
 #include "plasticity_model_BPA.h"
 #include "_plasticity_model_BPA.h"
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
-#include "state_variables.h"
-#include "new_potentials.h"
 #include "data_structure_c.h"
-#include "utils.h"
-#include "index_macros.h"
 #include "mkl_cblas.h"
 #include "mkl_lapack.h"
-
+#include "index_macros.h"
+#include "new_potentials.h"
+#include "state_variables.h"
+#include "utils.h"
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
-#define dim  3
-#define tensor 9
-#define tensor4 81
-#define tan_row 10
-#define tan_col 10
+namespace {
+constexpr int     dim = 3;
+constexpr int  tensor = 9;
+constexpr int tensor4 = 81;
+constexpr int tan_row = 10;
+constexpr int tan_col = 10;
 
 /* Set to value > 0 for extra diagnostics/printing */
-static const int BPA_PRINT_LEVEL = 0;
+constexpr int BPA_PRINT_LEVEL = 0;
 
 /* constants/enums */
-static const int _n_Fs = 6;
-static const int _n_vars = 4;
-static const int _n_flags = 0;
+constexpr int    _n_Fs = 6;
+constexpr int  _n_vars = 4;
+constexpr int _n_flags = 0;
 enum {_Fe,_Fp,_F,_Fe_n,_Fp_n,_F_n};
 enum {_s,_lam,_s_n,_lam_n};
-static const double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
+constexpr double eye[tensor] = {1.0,0,0, 0,1.0,0, 0,0,1.0};
 
 /* enumerations for indexing into the list of model parameters */
 enum {mcA, mcAlpha, mcCr, mcGdot0, mcH, mcN, mcS0, mcSss, mcT, N_PARAM};
+}
 
 /*
  * Purely static functions
  */
-
-static size_t bpa_get_size(const Constitutive_model *m)
-{
+static size_t bpa_get_size(const Constitutive_model *m) {
   return ((_n_Fs * tensor + _n_vars) * sizeof(double)
           + _n_flags * sizeof(int));
 }
 
-static int bpa_pack(const Constitutive_model *m,
-                    char *buffer,
-                    size_t *pos)
-{
+static int bpa_pack(const Constitutive_model *m, char *buffer, size_t *pos) {
   /* pack/unpack Fs */
   const Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   const double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
@@ -74,10 +71,7 @@ static int bpa_pack(const Constitutive_model *m,
   return 0;
 }
 
-static int bpa_unpack(Constitutive_model *m,
-                      const char *buffer,
-                      size_t *pos)
-{
+static int bpa_unpack(Constitutive_model *m, const char *buffer, size_t *pos) {
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
   for (int i = 0; i < _n_Fs; i++) {
@@ -87,29 +81,23 @@ static int bpa_unpack(Constitutive_model *m,
   return 0;
 }
 
-static double bpa_compute_bulk_mod(const HOMMAT *mat)
-{
+static double bpa_compute_bulk_mod(const HOMMAT *mat) {
   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
 }
 
-static void bpa_compute_Ce(double *Ce,
-                           const double *Fe)
-{
+static void bpa_compute_Ce(double *Ce, const double *Fe) {
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
               dim,dim,dim,1.0,Fe,dim,Fe,dim,
               0.0,Ce,dim);
 }
 
-static void bpa_compute_Cp(double * restrict Cp,
-                           const double * restrict Fp)
-{
+static void bpa_compute_Cp(double * restrict Cp, const double * restrict Fp) {
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
               dim,dim,dim,1.0,Fp,dim,Fp,dim,
               0.0,Cp,dim);
 }
 
-static double bpa_compute_plam(const double *Cp)
-{
+static double bpa_compute_plam(const double *Cp) {
   return sqrt((Cp[0] + Cp[4] + Cp[8]) / 3.0);
 }
 
@@ -123,8 +111,7 @@ static void bpa_compute_Cpdev(double * restrict Cpdev,
   Cpdev[8] -= lam;
 }
 
-static void bpa_compute_Fp(double * restrict Fp,
-                           const double * restrict F,
+static void bpa_compute_Fp(double * restrict Fp, const double * restrict F,
                            const double * restrict Fe)
 {
   double invFe[tensor] = {};
@@ -134,32 +121,28 @@ static void bpa_compute_Fp(double * restrict Fp,
               0.0,Fp,dim);
 }
 
-static void bpa_compute_Sdev(const double *Ce,
-                             const HOMMAT *p_hmat,
+static void bpa_compute_Sdev(const double *Ce, const HOMMAT *p_hmat,
                              double *Sdev)
 {
   devStressFuncPtr Stress = getDevStressFunc(-1,p_hmat);
   Stress(Ce,p_hmat,Sdev);
 }
 
-static void bpa_compute_Ldev(const double *Ce,
-                             const HOMMAT *p_hmat,
+static void bpa_compute_Ldev(const double *Ce, const HOMMAT *p_hmat,
                              double *Ldev)
 {
   matStiffFuncPtr Tangent = getMatStiffFunc(-1,p_hmat);
   Tangent(Ce,p_hmat,Ldev);
 }
 
-static void bpa_compute_dudj(const double Je,
-                             const HOMMAT *p_hmat,
+static void bpa_compute_dudj(const double Je, const HOMMAT *p_hmat,
                              double *dudj)
 {
   dUdJFuncPtr Pressure = getDUdJFunc(-1,p_hmat);
   Pressure(Je,p_hmat,dudj);
 }
 
-static void bpa_compute_d2udj2(const double Je,
-                               const HOMMAT *p_hmat,
+static void bpa_compute_d2udj2(const double Je, const HOMMAT *p_hmat,
                                double *d2udj2)
 {
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,p_hmat);

@@ -1,8 +1,8 @@
-#include "Arc_length.h"
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <assert.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "Arc_length.h"
 #include "ALM.h"
 #include "displacement_based_element.h"
 #include "dynamics.h"
@@ -22,14 +22,15 @@
 #include "PGFem3D_data_structure.h"
 #include "press_theta.h"
 #include "res_fini_def.h"
-#include "solve_system.h"
 #include "solver_file.h"
 #include "stabilized.h"
 #include "stiffmat_fd.h"
 #include "subdivision.h"
 #include "utils.h"
 #include "vol_damage_int_alg.h"
-
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <assert.h>
 
 #ifndef ARC_DEBUG
 #define ARC_DEBUG 0
@@ -305,13 +306,13 @@ double Multiphysics_Arc_length(GRID *grid,
     assert(opts->solverpackage == HYPRE);
 
     /* Null the matrix */
-    ZeroHypreK(sol->PGFEM_hypre, com->Ai, com->DomDof[myrank]);
+    sol->system->zero();
 
     stiffmat_fd_MP(grid, mat, fv, sol, load, com, crpl, mpi_comm, opts, mp,
                    mp_id, time_steps->dt_np1, iter, myrank);
 
     /* Assemble the matrix */
-    HYPRE_IJMatrixAssemble(sol->PGFEM_hypre->hypre_k);
+    sol->system->assemble();
 
     if (periodic == 1 && TYPE == 1) {
       dlm0 = nor;
@@ -325,8 +326,8 @@ double Multiphysics_Arc_length(GRID *grid,
     /*** SOLVE THE SYSTEM FOR DIRECTION ***/
     {
       SOLVER_INFO s_info;
-      solve_system(opts, arc->BS_R, arc->BS_rr, time_steps->tim, iter,
-                   com->DomDof, &s_info, sol->PGFEM_hypre, mpi_comm);
+      sol->system->solveSystem(opts, arc->BS_R, arc->BS_rr, time_steps->tim,
+                               iter, com->DomDof, &s_info);
       if(myrank == 0) {
         solve_system_check_error(stdout,s_info);
       }
@@ -572,13 +573,13 @@ double Multiphysics_Arc_length(GRID *grid,
 
       assert(opts->solverpackage == HYPRE);
       /* Null the matrix */
-      ZeroHypreK(sol->PGFEM_hypre, com->Ai, com->DomDof[myrank]);
+      sol->system->zero();
 
       stiffmat_fd_MP(grid, mat, fv, sol, load, com, crpl, mpi_comm, opts, mp,
                      mp_id, time_steps->dt_np1, iter, myrank);
 
       /* Assemble the matrix */
-      HYPRE_IJMatrixAssemble(sol->PGFEM_hypre->hypre_k);
+      sol->system->assemble();
 
       /* Transform unequibriated force: L -> G */
       if (periodic != 1){
@@ -594,8 +595,8 @@ double Multiphysics_Arc_length(GRID *grid,
       /*** SOLVE THE SYSTEM EQUATIONS ***/
       {
         SOLVER_INFO s_info;
-        solve_system(opts, fv->BS_f_u, arc->BS_rr, time_steps->tim, iter,
-                     com->DomDof, &s_info, sol->PGFEM_hypre, mpi_comm);
+        sol->system->solveSystem(opts, fv->BS_f_u, arc->BS_rr, time_steps->tim,
+                                 iter, com->DomDof, &s_info);
         if (myrank == 0) {
           solve_system_check_error(stdout,s_info);
         }
@@ -644,8 +645,8 @@ double Multiphysics_Arc_length(GRID *grid,
       /* Solve i-th incremnt */
       {
         SOLVER_INFO s_info;
-        solve_system(opts, fv->BS_f, arc->BS_U, time_steps->tim, iter,
-                     com->DomDof, &s_info, sol->PGFEM_hypre, mpi_comm);
+        sol->system->solveSystem(opts, fv->BS_f, arc->BS_U, time_steps->tim,
+                                 iter, com->DomDof, &s_info);
         if(myrank == 0) {
           solve_system_check_error(stdout, s_info);
         }
@@ -1233,12 +1234,12 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   /// initialize and define iterative solver object
   SOLVER_OPTIONS sol{};
   {
-    sol.nor_min  = solver_file->nonlin_tol;
-    sol.FNR      = solver_file->nonlin_method;
-    sol.iter_max = solver_file->max_nonlin_iter;
-    sol.PGFEM_hypre  = c->SOLVER;
-    sol.err          = c->lim_zero;
-    sol.microscale   = NULL;
+    sol.nor_min    = solver_file->nonlin_tol;
+    sol.FNR        = solver_file->nonlin_method;
+    sol.iter_max   = solver_file->max_nonlin_iter;
+    sol.system     = c->SOLVER;
+    sol.err        = c->lim_zero;
+    sol.microscale = nullptr;
   }
 
   sol.arc = &arc;

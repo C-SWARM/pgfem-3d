@@ -3,8 +3,8 @@
 #ifndef PGFEM_OPTIONS_H
 #define PGFEM_OPTIONS_H
 
-#include "PGFEM_io.h"
 #include "enumerations.h"
+#include <cstdio>
 
 /** Structure containing option parameters to set from the command
     line. */

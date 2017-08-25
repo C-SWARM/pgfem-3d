@@ -6,7 +6,11 @@
  *  Aaron Howell, [1], <ahowell3@nd.edu>
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
 #include "cm_iso_viscous_damage.h"
@@ -34,21 +38,21 @@
 
 //ttl declarations
 namespace {
-  template<int R, int D = 3, class S = double>
-  using Tensor = ttl::Tensor<R, D, S>;
+template<int R, int D = 3, class S = double>
+using Tensor = ttl::Tensor<R, D, S>;
 
-  static constexpr ttl::Index<'i'> i;
-  static constexpr ttl::Index<'j'> j;
-  static constexpr ttl::Index<'k'> k;
-  static constexpr ttl::Index<'l'> l;
-}
+constexpr ttl::Index<'i'> i;
+constexpr ttl::Index<'j'> j;
+constexpr ttl::Index<'k'> k;
+constexpr ttl::Index<'l'> l;
 
-#define DIM_3        3
-#define DIM_3x3      9
-#define DIM_3x3x3   27
-#define DIM_3x3x3x3 81
+constexpr int       DIM_3 = 3;
+constexpr int     DIM_3x3 = 9;
+constexpr int   DIM_3x3x3 = 27;
+constexpr int DIM_3x3x3x3 = 81;
 
 #define MAX(a, b) ((a) >= (b)? (a) : (b))
+}
 
 /// compute nodal temperature in an element
 ///

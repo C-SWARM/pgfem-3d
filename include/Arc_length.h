@@ -4,33 +4,25 @@
 #ifndef ARC_LENGTH_H
 #define ARC_LENGTH_H
 
-#include "PGFem3D_data_structure.h"
-#include "PGFEM_mpi.h"
-#include "hypre_global.h"
-#include "element.h"
-#include "supp.h"
-#include "hommat.h"
-#include "matgeom.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "pgfem_comm.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
-#include "PGFem3D_options.h"
+#include "crpl.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "pgfem_comm.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
 #include "solver_file.h"
+#include "supp.h"
 
 /**
  * Arc length procedure.
  */
-
-
-#ifndef TYPE_ARC_LENGTH_VARIABLES
-#define TYPE_ARC_LENGTH_VARIABLES
-typedef struct ARC_LENGTH_VARIABLES ARC_LENGTH_VARIABLES;
-#endif
-
 /// Arc length struct. It has additional variables for the Arc length scheme.
 /// Member variables are taken from lagcy code and not yet been fully
 /// identified how the member variables are used in arc length analysis.

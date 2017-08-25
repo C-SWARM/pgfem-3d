@@ -5,6 +5,9 @@
  * AUTHORS:
  *  Matthew Mosby, University of Notre Dame <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "comm_hints.h"
 #include <stdio.h>

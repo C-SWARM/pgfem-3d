@@ -3,9 +3,13 @@
  * AUTHORS:
  *  Matt Mosby, UNiversity of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "constitutive_model.h"
-#include <assert.h>
+#include <cassert>
 
 int main(int argc, char **argv)
 {

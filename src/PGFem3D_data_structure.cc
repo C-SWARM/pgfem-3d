@@ -1,4 +1,9 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "PGFem3D_data_structure.h"
+#include "allocation.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
 #include "comm_hints.h"
@@ -8,7 +13,6 @@
 #include "eps.h"
 #include "femlib.h"
 #include "hommat.h"
-#include "hypre_global.h"
 #include "matgeom.h"
 #include "node.h"
 #include "pgfem_comm.h"

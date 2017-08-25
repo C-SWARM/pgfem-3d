@@ -8,16 +8,20 @@
  * AUTHORS:
  *   Matthew Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "constitutive_model.h"
-#include "hommat.h"
 #include "data_structure_c.h"
+#include "hommat.h"
 #include "index_macros.h"
 #include "utils.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 #include <getopt.h>
 
 #define dim 3

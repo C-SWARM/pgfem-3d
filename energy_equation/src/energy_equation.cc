@@ -5,18 +5,19 @@
 ///  Aaron Howell, [1], <ahowell3@nd.edu>
 ///  [1] - University of Notre Dame, Notre Dame, IN
 
+#include "allocation.h"
+#include "constitutive_model.h"
 #include "energy_equation.h"
 #include "femlib.h"
-#include "PGFem3D_data_structure.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
-#include "PLoc_Sparse.h"
-#include <math.h>
-#include "constitutive_model.h"
-#include "utils.h"
-#include "material_properties.h" // <= constitutive model material properties
 #include "hyperelasticity.h"     // <= constitutive model elasticity
+#include "material_properties.h" // <= constitutive model material properties
+#include "PGFem3D_data_structure.h"
+#include "PLoc_Sparse.h"
+#include "utils.h"
 #include <ttl/ttl.h>
+#include <math.h>
 
 //ttl declarations
 namespace {
@@ -723,7 +724,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
   Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
@@ -905,7 +906,7 @@ int energy_equation_compute_residuals(GRID *grid,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   // save original pointer to access mechanical part
   double *u_n = 0;
   double *u_nm1 = 0;
@@ -1025,7 +1026,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
   Matrix<double> k0,k;
   k0.m_pdata = thermal->k;
@@ -1155,7 +1156,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                 com->nproc,
                 com->comm,
                 interior,
-                sol->PGFEM_hypre,
+                sol->system,
                 opts->analysis_type);
   }
 
@@ -1257,7 +1258,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   // save original pointer to access mechanical part
   double *u_n = 0;
   double *u_nm1 = 0;
@@ -1340,7 +1341,7 @@ int energy_equation_compute_stiffness(GRID *grid,
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->PGFEM_hypre,recieve);
+  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,recieve);
   err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
 
   if(is_it_couple_w_mechanical>=0)
@@ -1419,7 +1420,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   // save original pointer to access mechanical part
   double *u_n = 0;
   double *u_nm1 = 0;
@@ -1495,7 +1496,7 @@ int update_thermal_flux4print(GRID *grid,
 
   // avoid compiler warning until this is used for something
   (void)is_it_couple_w_chemical;
-  
+
   // save original pointer to access mechanical part
   double *u_n = 0;
   double *u_nm1 = 0;

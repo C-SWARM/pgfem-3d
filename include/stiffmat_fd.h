@@ -3,23 +3,23 @@
 #ifndef STIFFMAT_FD_H
 #define STIFFMAT_FD_H
 
-#include "PGFEM_mpi.h"
-#include "element.h"
-#include "node.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "cohesive_element.h"
 #include "bounding_element.h"
-#include "pgfem_comm.h"
-#include "PGFem3D_options.h"
-#include "hypre_global.h"
-#include "PGFem3D_data_structure.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "element.h"
+#include "eps.h"
 #include "femlib.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "node.h"
+#include "pgfem_comm.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
+#include "supp.h"
+#include "pgfem3d/Solver.hpp"
 
 /// compute element stiffness matrix
 ///
@@ -111,9 +111,9 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
-                   MPI_Status *sta_r,
-                   MPI_Request *req_r,
-                   PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                   double **recv);
+                               MPI_Status *sta_r,
+                               MPI_Request *req_r,
+                               pgfem3d::solvers::SparseSystem *system,
+                               double **recv);
 
 #endif /* #ifndef STIFFMAT_FD_H */

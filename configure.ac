@@ -210,6 +210,7 @@ AC_CONFIG_FILES([Makefile
                  energy_equation/src/Makefile
                  src/Makefile
                  src/solvers/Makefile
+                 src/solvers/hypre/Makefile
                  verification_MMS/Makefile
                  verification_tests/Makefile
                  verification_tests/src/Makefile

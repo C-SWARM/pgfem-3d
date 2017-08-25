@@ -38,8 +38,6 @@
 #include "bounding_element.h"
 #include "PGFem3D_options.h"
 #include "pgfem_comm.h"
-
-#include "hypre_global.h"
 #include "macro_micro_functions.h"
 #include "solver_file.h"
 
