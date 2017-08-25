@@ -1,14 +1,15 @@
-bin_PROGRAMS = PGFem3D \
-               BPA_driver \
-               unit_test_43_driver \
-               IVD_driver \
-               J2D_driver \
-               CH_layer_driver \
-               comm_hints_driver
-
+# There are two targets in this source directory, the PGFem3D application
+# itself, and a convenience library called libgpfem3d.la. The convenience
+# library exists because elsewhere in the project there are executables that
+# want to use the functionality, but want to write their own main.
+bin_PROGRAMS = PGFem3D
 noinst_LTLIBRARIES = libpgfem3d.la
 
-# Universal flags for all binaries
+PGFem3D_LDFLAGS = -Wl,--allow-multiple-definition # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
+PGFem3D_LDADD   = libpgfem3d.la
+PGFem3D_SOURCES = super_main.cc
+
+# Universal flags for all targets
 AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               -I$(top_srcdir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
@@ -29,35 +30,6 @@ libpgfem3d_la_LIBADD = $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
                        $(VTK_LDFLAGS) $(VTK_LIBS) \
                        $(cnstvm_lib) \
                        $(mkl_lib)
-
-# This is a hack to get around the fact that there are conflicting symbols in
-# the Generalizsed_constitutive_model.
-#
-# https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
-#
-comm_hints_driver_LDFLAGS   = -Wl,--allow-multiple-definition
-BPA_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-IVD_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-J2D_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-CH_layer_driver_LDFLAGS     = -Wl,--allow-multiple-definition
-unit_test_43_driver_LDFLAGS = -Wl,--allow-multiple-definition
-PGFem3D_LDFLAGS             = -Wl,--allow-multiple-definition
-
-comm_hints_driver_LDADD     = libpgfem3d.la
-BPA_driver_LDADD            = libpgfem3d.la
-IVD_driver_LDADD            = libpgfem3d.la
-J2D_driver_LDADD            = libpgfem3d.la
-CH_layer_driver_LDADD       = libpgfem3d.la
-unit_test_43_driver_LDADD   = libpgfem3d.la
-PGFem3D_LDADD               = libpgfem3d.la
-
-comm_hints_driver_SOURCES   = comm_hints_driver.cc
-BPA_driver_SOURCES          = plasticity_model_BPA_driver.cc
-IVD_driver_SOURCES          = cm_iso_viscous_damage_driver.cc
-J2D_driver_SOURCES          = cm_j2_plasticity_driver.cc
-CH_layer_driver_SOURCES     = CH_layer_driver.cc
-unit_test_43_driver_SOURCES = unit_test_43_driver.cc
-PGFem3D_SOURCES             = super_main.cc
 
 libpgfem3d_la_SOURCES = ALM.cc \
                         Arc_length.cc \

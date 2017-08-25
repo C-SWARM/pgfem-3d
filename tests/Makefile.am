@@ -1,3 +1,5 @@
+SUBDIRS = constitutive_model
+
 if HAVE_NUMDIFF
-SUBDIRS = box time_stepping crystal_plasticity multiphysics
+SUBDIRS += box time_stepping crystal_plasticity multiphysics
 endif

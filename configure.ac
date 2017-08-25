@@ -218,9 +218,10 @@ AC_CONFIG_FILES([Makefile
                  tests/box/shear/Makefile
                  tests/box/tension_disp/Makefile
                  tests/box/tension_pressure/Makefile
-                 tests/time_stepping/Makefile
+                 tests/constitutive_model/Makefile
                  tests/crystal_plasticity/Makefile
-                 tests/multiphysics/Makefile])
+                 tests/multiphysics/Makefile
+                 tests/time_stepping/Makefile])
 
 # Configure the test scripts. We do this even if running the scripts has been
 # disabled. 
