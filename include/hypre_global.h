@@ -45,52 +45,28 @@ void destroy_PGFEM_HYPRE_solve_info(PGFEM_HYPRE_solve_info *info);
 
 /* HYPRE utils */
 void hypre_initialize(int *Ap,
-              int *Ai,
-              int size,
-              int maxit,
-              double err,
-              PGFEM_HYPRE_solve_info *PGFEM_hypre,
-              const PGFem3D_opt *options,
-              MPI_Comm mpi_comm);
-
-void Ap2ncols(int *Ap,
-          int *ncols,
-          int size);
-
-void GetDiagOffdSizes(int *ncols,
-              int *Ai,
-              int *dsize,
-              int *odsize,
-              int size,
-              int il,
-              int iu);
+                      int *Ai,
+                      int size,
+                      int maxit,
+                      double err,
+                      PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                      const PGFem3D_opt *options,
+                      MPI_Comm mpi_comm);
 
 void ZeroHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-        int *Ai,
-        int size);
-
-void SetHypreK(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-           int *Ai,
-           int size,
-           double val);
-
-double* hypreGetDiagonal(HYPRE_IJMatrix A,
-             int lower,
-             int upper);
+                int *Ai,
+                int size);
 
 /** Sets the extends of ownership for the process. We partition the
     global matrix row-wise. Each process owns all columns for a
     contiguous set of rows. */
 void set_HYPRE_row_col_bounds(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                  const long g_n_col,
-                  const long *n_row_proc,
-                  const int myrank);
-
-
+                              const long g_n_col,
+                              const long *n_row_proc,
+                              const int myrank);
 
 int PGFEM_HYPRE_create_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre,
-                      const MPI_Comm mpi_comm);
-
+                                      const MPI_Comm mpi_comm);
 
 int destroy_HYPRE_preconditioner(PGFEM_HYPRE_solve_info *PGFEM_hypre);
 
