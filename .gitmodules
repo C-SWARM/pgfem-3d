@@ -1,3 +1,0 @@
-[submodule "reg-fe2-patch"]
-	path = reg-fe2-patch
-	url = git@gitlab-cswarm.crc.nd.edu:pgfem_3d/reg-fe2-patch.git
