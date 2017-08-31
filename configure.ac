@@ -139,7 +139,8 @@ AS_IF([test "x$with_suitesparse_dir" == x.],
   # else we assume path points to an install target
   [AS_IF([test "x$with_suitesparse_dir" != xno],
     [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/include"])
-     AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/lib -lumfpack -lamd"])],
+     AC_SUBST([SUITESPARSE_LDFLAGS],["-L$with_suitesparse_dir/lib -Wl,-rpath,$with_suitesparse_dir/lib"])
+     AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])],
     # else fallback to user environment
     [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])])
 

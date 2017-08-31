@@ -1,9 +1,9 @@
-noinst_PROGRAMS = shear \
-                  tension_disp \
-                  tension_pressure \
-                  UQ_study \
-                  crystal_plasticity \
-                  crystal_plasticity_verification_test
+bin_PROGRAMS = shear \
+               tension_disp \
+               tension_pressure \
+               UQ_study \
+               crystal_plasticity \
+               crystal_plasticity_verification_test
 
 shear_SOURCES                                = shear.cc
 tension_disp_SOURCES                         = tension_disp.cc
@@ -16,7 +16,7 @@ AM_CPPFLAGS = -Wall -Werror \
               -I$(top_srcdir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
               -I$(top_builddir)/include \
-                $(hypre_include)
+               $(hypre_include)
 
 LDADD       = $(top_builddir)/src/libpgfem3d.la
 
@@ -25,4 +25,4 @@ LDADD       = $(top_builddir)/src/libpgfem3d.la
 #
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 #
-AM_LDFLAGS  = -Wl,--allow-multiple-definition 
+AM_LDFLAGS  = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition 

@@ -20,12 +20,12 @@ AM_CPPFLAGS = -Wall -Werror \
               $(mkl_include)
 
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
-comm_hints_driver_LDFLAGS   = -Wl,--allow-multiple-definition
-BPA_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-IVD_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-J2D_driver_LDFLAGS          = -Wl,--allow-multiple-definition
-CH_layer_driver_LDFLAGS     = -Wl,--allow-multiple-definition
-unit_test_43_driver_LDFLAGS = -Wl,--allow-multiple-definition
+comm_hints_driver_LDFLAGS   = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
+BPA_driver_LDFLAGS          = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
+IVD_driver_LDFLAGS          = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
+J2D_driver_LDFLAGS          = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
+CH_layer_driver_LDFLAGS     = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
+unit_test_43_driver_LDFLAGS = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) -Wl,--allow-multiple-definition
 
 comm_hints_driver_LDADD     = $(top_builddir)/src/libpgfem3d.la
 BPA_driver_LDADD            = $(top_builddir)/src/libpgfem3d.la
