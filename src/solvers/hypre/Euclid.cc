@@ -42,4 +42,9 @@ Euclid::getFuncs(ptr_solve_t& solve, ptr_solve_t& setup, int) const
 void
 Euclid::reset()
 {
+  HYPRE_EuclidDestroy(_solver);
+  if (HYPRE_EuclidCreate(_comm, &_solver) or
+      HYPRE_EuclidSetParams(_solver, 7, const_cast<char**>(config))) {
+    throw std::runtime_error("failed to initialize Euclid preconditioner");
+  }
 }
