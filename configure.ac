@@ -18,6 +18,7 @@ AC_LANG([C++])
 AC_CONFIG_SRCDIR([src/super_main.cc])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIR([m4])
 
 AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
@@ -35,7 +36,7 @@ AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wal
                   -Werror parallel-tests color-tests])
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-LT_PREREQ([2.4.6])
+LT_PREREQ([2.4.2])
 LT_INIT([disable-shared])
 
 # Allow the user to disable MPI.
@@ -194,7 +195,7 @@ AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
   [AC_MSG_WARN([Missing matlab, disabling some tests])])
 AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
   [AC_MSG_WARN([Missing matlab, disabling some tests])])
-AS_IF([test "x$enable_tests" == xyes -a "have_vtk" != xyes],
+AS_IF([test "x$enable_tests" == xyes -a "x$have_vtk" != xyes],
   [AC_MSG_WARN([Missing VTK, disabling some tests])])
 
 AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes])
