@@ -1,70 +1,64 @@
-
 /* HEADER */
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #include "PFEM3d.h"
-#ifndef ENUMERATIONS_H
-#include "enumerations.h"
-#endif
 
-/* Standard headers/libs */
-#include <time.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <assert.h>
-
-/*=== PFEM3d headers ===*/
-#include "PGFEM_io.h"
 #include "allocation.h"
+#include "applied_traction.h"
 #include "Arc_length.h"
+#include "bounding_element.h"
+#include "bounding_element_utils.h"
 #include "build_distribution.h"
+#include "comm_hints.h"
+#include "computeMacroF.h"
+#include "computeMacroS.h"
+#include "constitutive_model.h"
+#include "dynamics.h"
+#include "element.h"
+#include "enumerations.h"
+#include "fd_residuals.h"
+#include "gen_path.h"
+#include "generate_dof_ids.h"
 #include "homogen.h"
-#include "hypre_global.h"
 #include "in.h"
+#include "incl.h"
+#include "initialize_damage.h"
+#include "interface_macro.h"
 #include "load.h"
 #include "matice.h"
 #include "matrix_printing.h"
 #include "Newton_Raphson.h"
+#include "node.h"
 #include "out.h"
+#include "PGFEM_io.h"
+#include "PGFem3D_options.h"
+#include "post_processing.h"
 #include "Printing.h"
 #include "print_dist.h"
 #include "profiler.h"
 #include "Psparse_ApAi.h"
 #include "read_cryst_plast.h"
+#include "read_input_file.h"
 #include "renumber_ID.h"
+#include "restart.h"
+#include "SetGlobalNodeNumbers.h"
 #include "set_fini_def.h"
 #include "skyline.h"
-#include "utils.h"
-#include "SetGlobalNodeNumbers.h"
-#include "interface_macro.h"
-#include "computeMacroF.h"
-#include "computeMacroS.h"
-#include "vtk_output.h"
-#include "PGFem3D_options.h"
-#include "gen_path.h"
-#include "initialize_damage.h"
-#include "bounding_element.h"
-#include "bounding_element_utils.h"
-#include "element.h"
-#include "node.h"
-#include "generate_dof_ids.h"
-#include "applied_traction.h"
-#include "read_input_file.h"
-
 #include "three_field_element.h"
-#include "constitutive_model.h"
-#include "post_processing.h"
-#include "restart.h"
+#include "utils.h"
+#include "vtk_output.h"
 
-#include "comm_hints.h"
-#include "fd_residuals.h"
-#include "dynamics.h"
+#include <time.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <cassert>
 
-static const int periodic = 0;
+#include <vector>
+
+static constexpr int periodic = 0;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -223,19 +217,19 @@ int print_PGFem3D_run_info(int argc,char *argv[],
 /// \return non-zero on internal error
 int print_PGFem3D_final(double total_time,
                         double hypre_time,
-                        struct rusage *usage,
                         int myrank)
 {
   int err = 0;
-  getrusage(RUSAGE_SELF, usage);
+  struct rusage usage;
+  getrusage(RUSAGE_SELF, &usage);
   PGFEM_printf("\n");
   PGFEM_printf("Time of analysis on processor [%d] - "
-          " System %ld.%ld, User %ld.%ld.\n",
-          myrank,(usage->ru_stime).tv_sec, (usage->ru_stime).tv_usec,
-          (usage->ru_utime).tv_sec,(usage->ru_utime).tv_usec);
+               " System %ld.%ld, User %ld.%ld.\n",
+               myrank, usage.ru_stime.tv_sec, usage.ru_stime.tv_usec,
+               usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 
   PGFEM_printf("Total HYPRE solve time on processor [%d] - %f\n",
-          myrank,hypre_time);
+               myrank, hypre_time);
   PGFEM_printf("Total time (no MPI_Init()) - %f\n",total_time);
   return err;
 }
@@ -480,33 +474,24 @@ int single_scale_main(int argc,char *argv[])
 {
   int err = 0;
 
-  static const int ndim = 3;
+  const constexpr int ndim = 3;
+  const constexpr long gem = 0;
+
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
    * may change */
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  struct rusage usage;
 
-  Model_parameters *param_list = NULL;
-
-  char in_dat[500];
+  // Constitutive model
+  Model_parameters *param_list = nullptr;
 
   /* CRYSTAL PLASTICITY */
-  CRPL *crpl = NULL;
+  CRPL *crpl = nullptr;
 
   /* MI */
   double GVolume = 0.0;
-  int namelen = 0;
-
-  char processor_name[MPI_MAX_PROCESSOR_NAME];
-
-  /* Ensight */
-  ENSIGHT ensight;
-
   double oVolume = 0.0; // original volume
   double VVolume = 0.0; // deformed volume
   double hypre_time = 0.0;
-  long gem = 0;
-  int myrank = 0;
 
   /* ***** Set up debug log ***** */
   // FILE *debug_log = NULL;
@@ -516,19 +501,27 @@ int single_scale_main(int argc,char *argv[])
 
   /*=== END INITIALIZATION === */
 
-  int flag_MPI_Init;
-  MPI_Initialized(&flag_MPI_Init);
-  if(!flag_MPI_Init)
-  {
-    MPI_Init (&argc,&argv);
+  int initialized = 1;
+  if (MPI_Initialized(&initialized)) {
+    PGFEM_Abort();
+  }
+  if (!initialized and MPI_Init(&argc, &argv)) {
+    PGFEM_Abort();
   }
 
-  MPI_Comm_rank (mpi_comm,&myrank);
+  int myrank = 0;
+  if (MPI_Comm_rank(mpi_comm, &myrank)) {
+    PGFEM_Abort();
+  }
 
-  MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);
+  int nproc = 0;
+  if (MPI_Comm_size(mpi_comm, &nproc)) {
+    PGFEM_Abort();
+  }
 
-  if(myrank == 0){
+  PGFEM_initialize_io(NULL, NULL);
+
+  if (myrank == 0) {
     PGFEM_printf("=== SINGLE SCALE ANALYSIS ===\n\n");
   }
 
@@ -537,28 +530,27 @@ int single_scale_main(int argc,char *argv[])
   total_time -= MPI_Wtime();
 
 #if (MPI_VERSION < 2)
-  MPI_Errhandler_set(mpi_comm,MPI_ERRORS_ARE_FATAL);
-#else
-  MPI_Comm_set_errhandler(mpi_comm,MPI_ERRORS_ARE_FATAL);
+# define MPI_Comm_set_errhandler MPI_Errhandler_set
 #endif
 
-  if(myrank == 0) {
+  MPI_Comm_set_errhandler(mpi_comm, MPI_ERRORS_ARE_FATAL);
+
+  if (myrank == 0) {
     PGFEM_printf("\n\nInitializing PFEM3d\n\n");
   }
 
-
   /*=== Parse the command line for options ===*/
   PGFem3D_opt options;
-  if (argc <= 2){
-    if(myrank == 0){
+  if (argc <= 2) {
+    if (myrank == 0) {
       print_usage(stdout);
     }
     exit(0);
   }
   set_default_options(&options);
-  re_parse_command_line(myrank,2,argc,argv,&options);
-  if(myrank == 0){
-    print_options(stdout,&options);
+  re_parse_command_line(myrank, 2, argc, argv, &options);
+  if (myrank == 0) {
+    print_options(stdout, &options);
   }
 
   //----------------------------------------------------------------------
@@ -570,93 +562,76 @@ int single_scale_main(int argc,char *argv[])
   MULTIPHYSICS mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
 
-  FIELD_VARIABLES         *fv  = PGFEM_malloc<FIELD_VARIABLES>(mp.physicsno);
-  SOLVER_OPTIONS          *sol = PGFEM_malloc<SOLVER_OPTIONS>(mp.physicsno);
-  COMMUNICATION_STRUCTURE *com = PGFEM_malloc<COMMUNICATION_STRUCTURE>(mp.physicsno);
+  std::vector<FIELD_VARIABLES> fv(mp.physicsno);
+  std::vector<COMMUNICATION_STRUCTURE> com(mp.physicsno);
 
-  for(int ia = 0; ia<mp.physicsno; ia++)
-  {
-    err += field_varialbe_initialization(fv+ia);
+  for (int ia = 0; ia < mp.physicsno; ++ia) {
+    err += field_varialbe_initialization(&fv[ia]);
     fv[ia].ndofn = mp.ndim[ia];
 
-    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
-    {
+    if (mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) {
       mp_id_M = ia;
-      switch(options.analysis_type)
-      {
-        case STABILIZED: //intented to over flow.
-        case MINI:
-        case MINI_3F:
-          fv[ia].ndofn = 4;
-          break;
+      switch (options.analysis_type) {
+       case STABILIZED:                         //intented to over flow.
+       case MINI:
+       case MINI_3F:
+        fv[ia].ndofn = 4;
+        break;
+       default:
+        PGFEM_printerr("Unhandled analysis type %d---defaulting ndofn to %d\n",
+                       options.analysis_type, fv[ia].ndofn);
       }
     }
 
     fv[ia].n_coupled = mp.coupled_ids[ia][0];
     // create memories for saving coupling info
-    if(mp.coupled_ids[ia][0]>0)
-    {
+    if (0 < mp.coupled_ids[ia][0]) {
       fv[ia].coupled_physics_ids = PGFEM_malloc<int>(mp.coupled_ids[ia][0]);
       fv[ia].fvs = PGFEM_malloc<FIELD_VARIABLES*>(mp.coupled_ids[ia][0]);
     }
 
     // save coupling info
-    for(int ib=0; ib<mp.coupled_ids[ia][0]; ib++)
-    {
+    for (int ib = 0; ib < mp.coupled_ids[ia][0]; ++ib) {
       int mp_cp_id = mp.coupled_ids[ia][ib+1];
       // tells physics e.g.) fv[ia].coupled_physics_ids[ib] == MULTIPHYSICS_MECHANICAL
       // tells physics e.g.) fv[ia].coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
       //                                      :                    :
       fv[ia].coupled_physics_ids[ib] = mp.physics_ids[mp_cp_id];
-      fv[ia].fvs[ib] = fv + mp_cp_id;
+      fv[ia].fvs[ib] = &fv[mp_cp_id];
     }
 
-    err += solution_scheme_initialization(sol+ia);
-    err += communication_structure_initialization(com+ia);
+    err += communication_structure_initialization(&com[ia]);
+
+    com[ia].nproc = nproc;
   }
 
-  GRID                  grid;
-  MATERIAL_PROPERTY     mat;
   PGFem3D_TIME_STEPPING time_steps;
-  LOADING_STEPS         load;
-
   err += time_stepping_initialization(&time_steps);
+
+  GRID grid;
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
+
+  MATERIAL_PROPERTY mat;
   err += material_initialization(&mat);
+
+  LOADING_STEPS load;
   err += loading_steps_initialization(&load);
   err += construct_loading_steps(&load, &mp);
-
-  //<---------------------------------------------------------------------
-
-  MPI_Comm_size (mpi_comm,&(com[0].nproc));
-  for(int ia=1; ia<mp.physicsno; ia++)
-    com[ia].nproc = com[0].nproc;
-
-  /* set up solver variables */
-  if(options.solverpackage == HYPRE)
-  {
-    for(int ia=0; ia<mp.physicsno; ia++)
-    {
-      initialize_PGFEM_HYPRE_solve_info(&(sol[ia].PGFEM_hypre));
-      (sol[ia].PGFEM_hypre)->solver_type = options.solver;
-      (sol[ia].PGFEM_hypre)->precond_type = options.precond;
-    }
-  } else {
-    if(myrank == 0){
-      PGFEM_printerr("ERROR: Only HYPRE solvers are supported.\n");
-    }
-    PGFEM_Comm_code_abort(mpi_comm,0);
-  }
 
   /* for attaching debugger */
   while (options.debug);
 
   /* visualization */
-  switch(options.vis_format){
-    case VIS_ENSIGHT: case VIS_VTK:
-     ensight = PGFEM_calloc (ENSIGHT_1, 1);
-      break;
-    default: ensight = NULL; break;
+  /* Ensight */
+  ENSIGHT ensight = nullptr;
+  switch (options.vis_format) {
+   case VIS_ENSIGHT:
+   case VIS_VTK:
+    ensight = PGFEM_calloc (ENSIGHT_1, 1);
+    break;
+   default:
+    PGFEM_printerr("Unexpected visualization format %d\n", options.vis_format);
+    PGFEM_Abort();
   }
 
   /* abort early if unrecognized analysis type */
@@ -675,8 +650,6 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printerr("Restart from step number :%d.\n", options.restart);
   }
 
-  sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
-
   if(make_path(options.opath,DIR_MODE) != 0){
     if(myrank == 0){
       PGFEM_printf("Could not create path (%s)!\n"
@@ -686,19 +659,20 @@ int single_scale_main(int argc,char *argv[])
     PGFEM_Comm_code_abort(mpi_comm,-1);
   }
 
+
+  //<---------------------------------------------------------------------
+  /* set up solver variables */
+  std::vector<SOLVER_OPTIONS> sol(mp.physicsno);
+
   //----------------------------------------------------------------------
   // read main input files ( *.in)
   //----------------------------------------------------------------------
   //---->
+  if (read_mesh_file(&grid, &mat, fv.data(), sol.data(), &load, &mp, mpi_comm,
+                     &options))
   {
-    int in_err = 0;
-    in_err = read_mesh_file(&grid,&mat,fv,sol,&load,&mp,mpi_comm,&options);
-
-    if(in_err){
-      PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-              myrank);
-      PGFEM_Abort();
-    }
+    PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n", myrank);
+    PGFEM_Abort();
   }
   //<---------------------------------------------------------------------
 
@@ -760,10 +734,10 @@ int single_scale_main(int argc,char *argv[])
   /* ADDED/tested 12/18/2012 MM */
   {
     char bnd_file[500];
-    sprintf(bnd_file,"%s%d.in.bnd",in_dat,myrank);
-    read_bounding_elements_fname(bnd_file,3,&(grid.n_be),&(grid.b_elems),mpi_comm);
-    bounding_element_set_local_ids(grid.n_be,grid.b_elems,grid.element);
-    bounding_element_reverse_mapping(grid.n_be,grid.b_elems,grid.element);
+    snprintf(bnd_file, sizeof(bnd_file), "%s/%s%d.in.bnd", options.ipath, options.ifname, myrank);
+    read_bounding_elements_fname(bnd_file, 3, &(grid.n_be), &(grid.b_elems), mpi_comm);
+    bounding_element_set_local_ids(grid.n_be, grid.b_elems, grid.element);
+    bounding_element_reverse_mapping(grid.n_be, grid.b_elems, grid.element);
   }
 
   /*==== ADDITIONAL SETUP ===*/
@@ -862,8 +836,6 @@ int single_scale_main(int argc,char *argv[])
         grid.Gne += DomNe[ib];
     }
 
-    set_HYPRE_row_col_bounds(sol[ia].PGFEM_hypre, fv[ia].Gndof,com[ia].DomDof,myrank);
-
     renumber_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,com[ia].DomDof,grid.node,
                             grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
     com[ia].NBN = distribute_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,ndim,grid.node,
@@ -894,7 +866,7 @@ int single_scale_main(int argc,char *argv[])
     if (myrank == 0)
     {
       if(ia==0) // print onece
-        err += print_PGFem3D_run_info(argc, argv, &grid, com+ia, &load, gem, &options);
+        err += print_PGFem3D_run_info(argc, argv, &grid, &com[ia], &load, gem, &options);
 
       PGFEM_printf ("---------------------------------------------\n");
       PGFEM_printf ("Physics name: %s\n", mp.physicsname[ia]);
@@ -976,7 +948,7 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps,&mat,fv, sol,&load,crpl,&mp,&options,myrank);
+    err += read_solver_file(&time_steps,&mat,fv.data(),sol.data(),&load,crpl,&mp,&options,myrank);
     //<---------------------------------------------------------------------
 
     if(myrank == 0)
@@ -1009,25 +981,20 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf ("\n");
     }
 
-    /* HYPRE INITIALIZATION ROUTINES */
-    if(options.solverpackage == HYPRE){ /* HYPRE */
-      /* Initialize HYPRE */
-      for(int ia=0; ia<mp.physicsno; ia++)
-      {
-        hypre_initialize(com[ia].Ap,
-                         com[ia].Ai,
-                         com[ia].DomDof[myrank],
-                         sol[ia].iter_max_sol,
-                         sol[ia].err,
-                         sol[ia].PGFEM_hypre,
-                         &options,mpi_comm);
-      }
+    /* Sparse INITIALIZATION ROUTINES */
+    for (int ia = 0, e = mp.physicsno; ia < e; ++ia) {
+      sol[ia].system = pgfem3d::solvers::SparseSystem::Create(options, mpi_comm,
+                                                              com[ia].Ap,
+                                                              com[ia].Ai,
+                                                              com[ia].DomDof,
+                                                              sol[ia].iter_max_sol,
+                                                              sol[ia].err);
     }
 
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      err += construct_field_varialbe(fv+ia, &grid, com+ia, &options, &mp, myrank, ia);
+      err += construct_field_varialbe(&fv[ia], &grid, &com[ia], &options, &mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       {
         /* push nodal_forces to s->R */
@@ -1047,10 +1014,10 @@ int single_scale_main(int argc,char *argv[])
           free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
-          err += prepare_temporal_field_varialbes(fv+ia,&grid,1);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1);
         }
         else
-          err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
 
         /* alocation of pressure variables */
         switch(options.analysis_type){
@@ -1113,7 +1080,7 @@ int single_scale_main(int argc,char *argv[])
         }
       }
       else
-        err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
+        err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
     }
     /* /\ initialized element varialbes */
 
@@ -1122,7 +1089,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     PRINT_MULTIPHYSICS_RESULT *pmr = PGFEM_malloc<PRINT_MULTIPHYSICS_RESULT>(mp.total_write_no);
-    err += VTK_construct_PMR(&grid, fv, &mp, pmr);
+    err += VTK_construct_PMR(&grid, fv.data(), &mp, pmr);
     //<---------------------------------------------------------------------
 
 
@@ -1131,7 +1098,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     double tnm1[2] = {-1.0,-1.0};
-    err += read_initial_values(&grid,&mat,fv,sol,&load,&time_steps,&options,&mp,tnm1,myrank);
+    err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,&mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       for(int ib=0; ib<grid.nn*fv[ia].ndofn; ib++)
@@ -1167,7 +1134,7 @@ int single_scale_main(int argc,char *argv[])
 
       //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
       // of the load vector
-      err += compute_load_vector_for_prescribed_BC(&grid,&mat,fv+ia,sol+ia,&load,time_steps.dt_np1,crpl,
+      err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
                                                    &options,&mp,ia,myrank);
 
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
@@ -1189,7 +1156,7 @@ int single_scale_main(int argc,char *argv[])
       // set extra variables for arc lengh
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
       {
-        err += construct_arc_length_variable(sol[ia].arc, fv+ia, com+ia, myrank);
+        err += construct_arc_length_variable(sol[ia].arc, &fv[ia], &com[ia], myrank);
         // Transform LOCAL load vector to GLOBAL
         LToG (fv[ia].R,sol[ia].arc->BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
         sol[ia].arc->dt0 = time_steps.dt_np1;
@@ -1252,7 +1219,7 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R
         //----------------------------------------------------------------------
         //---->
-        err += read_and_apply_load_increments(&grid, fv, &load, &mp, tim, mpi_comm, myrank);
+        err += read_and_apply_load_increments(&grid, fv.data(), &load, &mp, tim, mpi_comm, myrank);
 
         if(mp_id_M>=0)
         {
@@ -1300,8 +1267,10 @@ int single_scale_main(int argc,char *argv[])
         //---->
         fflush(PGFEM_stdout);
 
-        hypre_time += Multiphysics_Newton_Raphson(&grid,&mat,fv,sol,&load,com,&time_steps,
-                                                  crpl,mpi_comm,VVolume,&options,&mp);
+        hypre_time += Multiphysics_Newton_Raphson(&grid, &mat, fv.data(),
+                                                  sol.data(), &load, com.data(),
+                                                  &time_steps, crpl, mpi_comm,
+                                                  VVolume, &options, &mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1323,8 +1292,11 @@ int single_scale_main(int argc,char *argv[])
       {
         if(sol[mp_id_M].FNR == 2 || sol[mp_id_M].FNR == 3)
         {
-          double dlm = Multiphysics_Arc_length(&grid,&mat,fv+mp_id_M,sol+mp_id_M,&load,com+mp_id_M,&time_steps,
-                                               crpl,mpi_comm,VVolume,&options,&mp,0);
+          double dlm = Multiphysics_Arc_length(&grid, &mat, &fv[mp_id_M],
+                                               &sol[mp_id_M], &load,
+                                               &com[mp_id_M], &time_steps,
+                                               crpl, mpi_comm, VVolume,
+                                               &options, &mp, 0);
 
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
@@ -1341,7 +1313,7 @@ int single_scale_main(int argc,char *argv[])
         {
           constitutive_model_update_output_variables(&grid,
                                                      &mat,
-                                                     fv,
+                                                     fv.data(),
                                                      &load,
                                                      &options,
                                                      &mp,
@@ -1375,12 +1347,14 @@ int single_scale_main(int argc,char *argv[])
       }
 
       // print simulation results
-      err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,
-                           crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
-                           &options,&mp,tim,myrank);
+      err += print_results(&grid, &mat, fv.data(), sol.data(), &load,
+                           com.data(), &time_steps, crpl, ensight, pmr,
+                           mpi_comm, oVolume, VVolume, &options, &mp, tim,
+                           myrank);
 
-      err += write_restart_files(&grid,fv,&load,&time_steps,&options,&mp,
-                                 tim,mpi_comm,myrank,time_step_start,total_time);
+      err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
+                                 &mp, tim, mpi_comm, myrank, time_step_start,
+                                 total_time);
 
       if (myrank == 0){
         PGFEM_printf("\n");
@@ -1403,24 +1377,22 @@ int single_scale_main(int argc,char *argv[])
   // deallocate objects
   //----------------------------------------------------------------------
   //---->
-  if (options.solverpackage == HYPRE)
-  {
-    for(int ia=0; ia<mp.physicsno; ia++)
-      destroy_PGFEM_HYPRE_solve_info(sol[ia].PGFEM_hypre);
+  for(int ia=0; ia<mp.physicsno; ia++) {
+    delete sol[ia].system;
   }
+
 
   err += destruct_time_stepping(&time_steps);
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
-      err += destory_temporal_field_varialbes(fv+ia,1);
+      err += destory_temporal_field_varialbes(&fv[ia],1);
     else
-      err += destory_temporal_field_varialbes(fv+ia,0);
+      err += destory_temporal_field_varialbes(&fv[ia],0);
 
-    err += destruct_field_varialbe(fv+ia, &grid, &options, &mp, ia);
+    err += destruct_field_varialbe(&fv[ia], &grid, &options, &mp, ia);
   }
-  free(fv);
 
   err += destruct_loading_steps(&load, &mp);
   err += destroy_model_parameters_list(mat.nhommat,param_list);
@@ -1434,7 +1406,7 @@ int single_scale_main(int argc,char *argv[])
       com[ia].bndel = NULL;
       com[ia].hints = NULL;
     }
-    err += destruct_communication_structure(com+ia);
+    err += destruct_communication_structure(&com[ia]);
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
@@ -1457,7 +1429,7 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   if (myrank == 0)
-    err += print_PGFem3D_final(total_time, hypre_time, &usage, myrank);
+    err += print_PGFem3D_final(total_time, hypre_time, myrank);
 
   PGFEM_finalize_io();
 

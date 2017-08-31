@@ -3,9 +3,13 @@
  * AUTHORS:
  *  Matt Mosby, University of Notre Dame
  */
-#include "pgf_fe2_rebalancer.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "pgf_fe2_job.h"
+#include "pgf_fe2_rebalancer.h"
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_micro_server.h"
 #include "PGFEM_mpi.h"

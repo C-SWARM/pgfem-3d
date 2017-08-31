@@ -1,30 +1,37 @@
 /*** This is the main function for the fully-coupled multiscale modeling */
-#include <assert.h>
-
-#include "PFEM3d.h"
-#ifndef ENUMERATIONS_H
-#include "enumerations.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
-/* Standard headers/libs */
-#include <time.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-/*=== PFEM3d headers ===*/
-#include "PGFEM_io.h"
 #include "allocation.h"
+#include "applied_traction.h"
 #include "Arc_length.h"
 #include "build_distribution.h"
+#include "computeMacroF.h"
+#include "computeMacroS.h"
+#include "dynamics.h"
+#include "enumerations.h"
+#include "fd_residuals.h"
+#include "gen_path.h"
 #include "homogen.h"
-#include "hypre_global.h"
 #include "in.h"
+#include "incl.h"
+#include "interface_macro.h"
 #include "load.h"
+#include "macro_micro_functions.h"
 #include "matice.h"
 #include "matrix_printing.h"
+#include "microscale_information.h"
+#include "ms_cohe_job_list.h"
 #include "Newton_Raphson.h"
 #include "out.h"
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+#include "pgf_fe2_restart.h"
+#include "pgf_fe2_compute_max_n_jobs.h"
+#include "PGFEM_io.h"
+#include "PFEM3d.h"
+#include "PGFem3D_options.h"
 #include "Printing.h"
 #include "print_dist.h"
 #include "profiler.h"
@@ -32,32 +39,23 @@
 #include "read_cryst_plast.h"
 #include "renumber_ID.h"
 #include "set_fini_def.h"
-#include "skyline.h"
-#include "utils.h"
 #include "SetGlobalNodeNumbers.h"
-#include "interface_macro.h"
-#include "computeMacroF.h"
-#include "computeMacroS.h"
-#include "vtk_output.h"
-#include "PGFem3D_options.h"
-#include "gen_path.h"
-#include "microscale_information.h"
-#include "ms_cohe_job_list.h"
-#include "applied_traction.h"
-#include "macro_micro_functions.h"
-
-#include "pgf_fe2_macro_client.h"
-#include "pgf_fe2_micro_server.h"
-#include "pgf_fe2_restart.h"
-#include "pgf_fe2_compute_max_n_jobs.h"
-
+#include "skyline.h"
 #include "solver_file.h"
+#include "utils.h"
+#include "vtk_output.h"
 
-#include "fd_residuals.h"
-#include "dynamics.h"
+/* Standard headers/libs */
+#include <cassert>
+#include <time.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
-static const int ndim = 3;
-static const long ARC = 1;
+namespace {
+constexpr int ndim = 3;
+constexpr long ARC = 1;
+}
 
 int multi_scale_main(int argc, char **argv)
 {
@@ -116,9 +114,10 @@ int multi_scale_main(int argc, char **argv)
   MACROSCALE *macro = NULL;
   MICROSCALE *micro = NULL;
   //load comm hints, macro/micro class, macro/micro filenames
-  if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
 
-    re_parse_command_line(myrank,2,macro_argc,macro_argv,&options);
+  if (mpi_comm->valid_macro) {
+    /*=== MACROSCALE ===*/
+    re_parse_command_line(myrank, 2, macro_argc, macro_argv, &options);
 
     const char* fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
     com[0].hints = Comm_hints_construct();
@@ -135,15 +134,18 @@ int multi_scale_main(int argc, char **argv)
       }
     }
 
-  } else {/*====== MICROSCALE =======*/
-    re_parse_command_line(myrank,2,micro_argc,micro_argv,&options);
+  }
+  else {
+    /*====== MICROSCALE =======*/
+    re_parse_command_line(myrank, 2, micro_argc, micro_argv, &options);
 
     const char* fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
     com[0].hints = Comm_hints_construct();
     int ch_err = Comm_hints_read_filename(com[0].hints, fn);
 
     initialize_MICROSCALE(&micro);
-    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id,com[mp_id].hints);
+    build_MICROSCALE(micro, mpi_comm->micro, micro_argc, micro_argv, mp_id,
+                     com[mp_id].hints);
 
     if (ch_err) {
       Comm_hints_destroy(com[0].hints);
@@ -157,11 +159,13 @@ int multi_scale_main(int argc, char **argv)
   }
 
   /*=== INITIALIZE SCALES ===*/
-  if(mpi_comm->valid_macro){/*=== MACROSCALE ===*/
+  if (mpi_comm->valid_macro) {/*=== MACROSCALE ===*/
     initialize_MACROSCALE(&macro);
-    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
+    build_MACROSCALE(macro, mpi_comm->macro, macro_argc, macro_argv, mp_id,
+                     com[mp_id].hints);
     build_MACROSCALE_solution(macro);
-  } else if(mpi_comm->valid_micro){/*=== MICROSCALE ===*/
+  }
+  else if (mpi_comm->valid_micro) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
     initialize_MICROSCALE(&micro);
 
@@ -169,8 +173,8 @@ int multi_scale_main(int argc, char **argv)
     {
       /* no output */
       PGFEM_redirect_io_null();
-      parse_command_line(micro_argc,micro_argv,
-                         mpi_comm->rank_micro,micro->opts);
+      parse_command_line(micro_argc, micro_argv, mpi_comm->rank_micro,
+                         micro->opts);
       PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
@@ -195,7 +199,8 @@ int multi_scale_main(int argc, char **argv)
     }
 
     /*=== BUILD MICROSCALE ===*/
-    build_MICROSCALE(micro,mpi_comm->micro,micro_argc,micro_argv,mp_id,com[mp_id].hints);
+    build_MICROSCALE(micro, mpi_comm->micro, micro_argc, micro_argv, mp_id,
+                     com[mp_id].hints);
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
                    mpi_comm->rank_world,__func__,__FILE__,__LINE__);
@@ -209,7 +214,7 @@ int multi_scale_main(int argc, char **argv)
   pgf_FE2_macro_client *client = NULL;
 
   /*=== Build MICROSCALE server and solutions ===*/
-  if(mpi_comm->valid_micro){
+  if (mpi_comm->valid_micro) {
     /* allocate space for maximum number of jobs to be computed. */
     build_MICROSCALE_solutions(n_jobs_max,micro);
 
@@ -291,18 +296,18 @@ int multi_scale_main(int argc, char **argv)
     /*=== SOLUTION PROCESS ===*/
     /*=== READ SOLVER FILE ===*/
     SOLVER_FILE *solver_file = NULL;
-    if(macro->opts->override_solver_file){
-      if(mpi_comm->rank_macro == 0){
+    if (macro->opts->override_solver_file) {
+      if (mpi_comm->rank_macro == 0) {
         PGFEM_printf("Overriding the default solver file with:\n%s\n",
                      macro->opts->solver_file);
       }
-      solver_file_open(macro->opts->solver_file,&solver_file);
+      solver_file_open(macro->opts->solver_file, &solver_file);
     } else {
       /* use the default file/filename */
       char *filename = NULL;
       alloc_sprintf (&filename,"%s/%s%d.in.st",macro->opts->ipath,
                      macro->opts->ifname,mpi_comm->rank_macro);
-      solver_file_open(filename,&solver_file);
+      solver_file_open(filename, &solver_file);
       free(filename);
     }
     s->tim = 0;
@@ -313,12 +318,12 @@ int multi_scale_main(int argc, char **argv)
       free(s->times);
       s->times = PGFEM_malloc<double>(solver_file->n_step + 1);
     }
-    memcpy(s->times,solver_file->times,
-           (solver_file->n_step + 1) * sizeof(*(s->times)));
+    memcpy(s->times,solver_file->times, ((solver_file->n_step + 1) *
+                                         sizeof(*(s->times))));
 
     /* Nonlinear solver */
     if (mpi_comm->rank_macro == 0) {
-      switch(solver_file->nonlin_method){
+      switch (solver_file->nonlin_method) {
        case NEWTON_METHOD:
         PGFEM_printf ("\nNONLINEAR SOLVER : NEWTON-RAPHSON METHOD\n");
         break;
@@ -340,8 +345,8 @@ int multi_scale_main(int argc, char **argv)
 
     double hypre_time = 0.0;
 
-    if(macro->opts->restart >= 0){
-      if(mpi_comm->rank_macro == 0){
+    if (macro->opts->restart >= 0) {
+      if (mpi_comm->rank_macro == 0) {
         PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
       }
 
@@ -424,7 +429,7 @@ int multi_scale_main(int argc, char **argv)
 
     /* Prescribed deflection */
     double *sup_defl = NULL;
-    if(c->supports->npd > 0){
+    if (c->supports->npd > 0) {
       sup_defl = PGFEM_calloc(double, c->supports->npd);
     }
 
@@ -442,7 +447,7 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== BEGIN SOLVE ===*/
     assert(s->tim >= 0);
-    while (solver_file->n_step > (unsigned)s->tim){
+    while (solver_file->n_step > (unsigned)s->tim) {
       s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
       if (s->dt <= 0.0){
         if (mpi_comm->rank_macro == 0) {
@@ -451,7 +456,7 @@ int multi_scale_main(int argc, char **argv)
         PGFEM_Abort();
       }
 
-      if (mpi_comm->rank_macro == 0){
+      if (mpi_comm->rank_macro == 0) {
         PGFEM_printf("\nFinite deformations time step %ld) "
                      " Time %f | dt = %10.10f\n",
                      s->tim,s->times[s->tim+1],s->dt);

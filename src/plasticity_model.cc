@@ -6,6 +6,7 @@
  */
 
 #include "plasticity_model.h"
+#include "allocation.h"
 #include "cm_placeholder_functions.h"
 #include "constitutive_model.h"
 #include "crystal_plasticity_integration.h"
@@ -18,21 +19,18 @@
 #include "new_potentials.h"
 #include <ttl/ttl.h>
 #include <math.h>
-#include <string.h>
-#include <stdlib.h>
-
-#define DIM_3        3
-#define DIM_3x3      9
-#define DIM_3x3x3   27
-#define DIM_3x3x3x3 81
-
-#define MAX_D_GAMMA 0.005
-
-
-static const int FLAG_end = 0;
+#include <cstring>
+#include <cstdlib>
 
 // ttl declarations
 namespace {
+constexpr double MAX_D_GAMMA = 0.005;
+constexpr int          DIM_3 = 3;
+constexpr int        DIM_3x3 = 9;
+constexpr int      DIM_3x3x3 = 27;
+constexpr int    DIM_3x3x3x3 = 81;
+constexpr int       FLAG_end = 0;
+
 /// Only dealing with 3 dimensional double data, but it is sometimes const.
 template <int R, class S = double>
 using Tensor = ttl::Tensor<R, 3, S>;
@@ -44,12 +42,12 @@ template <int R>
 using Delta = ttl::Tensor<R, 3, double>;
 
 // ttl indexes
-static constexpr ttl::Index<'i'> i;
-static constexpr ttl::Index<'j'> j;
-static constexpr ttl::Index<'k'> k;
-static constexpr ttl::Index<'l'> l;
-static constexpr ttl::Index<'m'> m;
-static constexpr ttl::Index<'n'> n;
+constexpr ttl::Index<'i'> i;
+constexpr ttl::Index<'j'> j;
+constexpr ttl::Index<'k'> k;
+constexpr ttl::Index<'l'> l;
+constexpr ttl::Index<'m'> m;
+constexpr ttl::Index<'n'> n;
 }
 
 enum variable_names {

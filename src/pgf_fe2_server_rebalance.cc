@@ -3,7 +3,11 @@
  * AUTHORS:
  *  Matt Mosby, University of Notre Dame
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_restart.h"
 #include <assert.h>

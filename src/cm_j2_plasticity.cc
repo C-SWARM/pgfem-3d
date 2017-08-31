@@ -20,27 +20,31 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "cm_j2_plasticity.h"
 #include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
+#include "data_structure_c.h"
+#include "index_macros.h"
+#include "utils.h"
+#include "new_potentials.h"
 #include <math.h>
 #include <string.h>
-#include "utils.h"
-#include "index_macros.h"
-#include "data_structure_c.h"
-#include "new_potentials.h"
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
-#define dim  3
-#define tensor 9
-#define tensor4 81
-
-static const double DAMAGE_THRESH = 0.9999;
-static const double j2d_int_alg_tol = 1.0e-10;
+namespace {
+constexpr int                dim = 3;
+constexpr int             tensor = 9;
+constexpr int            tensor4 = 81;
+constexpr double   DAMAGE_THRESH = 0.9999;
+constexpr double j2d_int_alg_tol = 1.0e-10;
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
-static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+constexpr  double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
 /* macros for easy access to Constitutive_model structure */
 #define cm_Fs(m) ((m)->vars_list[0][m->model_id].Fs)
@@ -52,18 +56,18 @@ static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 #define cm_param(m) ((m)->param->model_param)
 
 /* private context structure */
-typedef struct {
+struct j2d_ctx {
   double F[tensor];
   double dt;
-} j2d_ctx;
+};
 
 enum {FN, FNP1, SPN, SP, NUM_Fs};
 enum {epn, ep, gam_n, gam, wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
 enum {G, nu, beta, hp, k0, mu, ome_max, p1, p2, Yin, NUM_param};
+}
 
-static int j2d_get_info(Model_var_info **info)
-{
+static int j2d_get_info(Model_var_info **info) {
   int err = 0;
   /* make sure I don't leak memory */
   if( *info != NULL) err += model_var_info_destroy(info);

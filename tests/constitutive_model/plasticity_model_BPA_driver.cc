@@ -4,16 +4,21 @@
  * AUTHORS:
  *   Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "plasticity_model_BPA.h"
+#include "_plasticity_model_BPA.h"
+#include "allocation.h"
+#include "constitutive_model.h"
+#include "data_structure_c.h"
+#include "hommat.h"
+#include "index_macros.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "plasticity_model_BPA.h"
-#include "_plasticity_model_BPA.h"
-#include "constitutive_model.h"
-#include "hommat.h"
-#include "utils.h"
-#include "data_structure_c.h"
-#include "index_macros.h"
 
 void set_mat_values(HOMMAT *m)
 {

@@ -9,26 +9,26 @@
 #ifndef MICROSCALE_INFORMATION_H
 #define MICROSCALE_INFORMATION_H
 
-#include "PGFEM_mpi.h"
-#include "element.h"
-#include "node.h"
-#include "pgfem_comm.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "matgeom.h"
-#include "hommat.h"
 #include "cohesive_element.h"
-#include "PGFem3D_options.h"
-#include "hypre_global.h"
 #include "constitutive_model.h"
 #include "comm_hints.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
+#include "matgeom.h"
+#include "node.h"
+#include "pgfem_comm.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
+#include "supp.h"
+#include "pgfem3d/Solver.hpp"
 
 /** This is the structure of microscale information that is
     identical for all microstructures. */
 struct COMMON_MICROSCALE {
   /* options /solver information */
-  PGFEM_HYPRE_solve_info *SOLVER;
+  pgfem3d::solvers::SparseSystem *SOLVER;
   double lin_err;
   double lim_zero;
   int maxit_nl;

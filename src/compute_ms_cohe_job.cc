@@ -1,31 +1,33 @@
-/* HEARER */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include "allocation.h"
 #include "compute_ms_cohe_job.h"
+#include "displacement_based_element.h"
+#include "enumerations.h"
+#include "get_ndof_on_elem.h"
+#include "get_dof_ids_on_elem.h"
+#include "incl.h"
+#include "index_macros.h"
+#include "interface_macro.h"
+#include "matice.h"
+#include "Newton_Raphson.h"
+#include "pgf_fe2_restart.h"
+#include "PGFEM_par_matvec.h"
+#include "stiffmat_fd.h"
+#include "utils.h"
+#include "vtk_output.h"
+#include <mkl_cblas.h>
 #include <math.h>
 #include <string.h>
 #include <assert.h>
-#include "mkl_cblas.h"
-
-#include "vtk_output.h"
-#include "allocation.h"
-#include "enumerations.h"
-#include "utils.h"
-#include "index_macros.h"
-#include "Newton_Raphson.h"
-#include "matice.h"
-#include "PGFEM_par_matvec.h"
-#include "stiffmat_fd.h"
-#include "get_ndof_on_elem.h"
-#include "get_dof_ids_on_elem.h"
-#include "displacement_based_element.h"
-#include "interface_macro.h"
-#include "solve_system.h"
-#include "pgf_fe2_restart.h"
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
 #endif
 
-static const int ndim = 3;
+static constexpr int NDIM = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
 
@@ -114,9 +116,9 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   static const double small_val = 0.05;
 
   int cell_failure_detected = 0;
-  const double tn = cblas_dnrm2(ndim,job->traction_n,1);
-  const double tnp1 = cblas_dnrm2(ndim,job->traction,1);
-  const double jnp1 = cblas_dnrm2(ndim,job->jump,1);
+  const double tn = cblas_dnrm2(NDIM,job->traction_n,1);
+  const double tnp1 = cblas_dnrm2(NDIM,job->traction,1);
+  const double jnp1 = cblas_dnrm2(NDIM,job->jump,1);
 
   /* LOADING CONDITION: eff. jump is greater than any previous */
   if (jnp1 > job->max_jump) {
@@ -136,11 +138,11 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   }
 
   /* UPDATE: n <-- n+1 */
-  memcpy(job->jump_n,job->jump,ndim*sizeof(double));
-  memcpy(job->traction_n,job->traction,ndim*sizeof(double));
+  memcpy(job->jump_n,job->jump,NDIM*sizeof(double));
+  memcpy(job->traction_n,job->traction,NDIM*sizeof(double));
 
   /* RESET: traction, residual and tangent */
-  memset(job->traction,0,ndim*sizeof(double));
+  memset(job->traction,0,NDIM*sizeof(double));
   memset(job->traction_res,0,job->ndofe*sizeof(double));
   memset(job->K_00_contrib,0,job->ndofe*job->ndofe*sizeof(double));
 
@@ -219,7 +221,7 @@ int compute_ms_cohe_job(const int job_id,
       if(!init_mixed){
     /* initialize matrices K_01 and K_10 */
     /* allocate for quad macro elements */
-    const int n_cols = 8*ndim;
+    const int n_cols = 8*NDIM;
     /* const int n_cols = p_job->ndofe; */
       if(JOB_LOGGING && myrank == 0) PGFEM_printf("=== INIT MIXED TANGENT ===\n");
     err += initialize_ms_cohe_job_mixed_tangents(n_cols,common,mp_id);
@@ -305,7 +307,7 @@ int assemble_ms_cohe_job_res(const int job_id,
   /* exit early without doing anything if not the owning domain */
   if(macro_rank != p_job->proc_id) return err;
 
-  for(int i=0; i<p_job->nnode*ndim; i++){
+  for(int i=0; i<p_job->nnode*NDIM; i++){
     const int idx = p_job->loc_dof_ids[i] - 1;
     if(idx >= 0) loc_res[idx] += p_job->traction_res[i];
   }
@@ -344,12 +346,12 @@ static int set_job_supports(const MS_COHE_JOB_INFO *p_job,
   /* NOTE: This is written for TOTAL LAGRANGIAN */
   int err = 0;
   if(!sup->multi_scale || sup->npd != 6) err++;
-  memcpy(sup->N0,p_job->normal,ndim*sizeof(double));
-  for(int i=0; i<ndim; i++){
+  memcpy(sup->N0,p_job->normal,NDIM*sizeof(double));
+  for(int i=0; i<NDIM; i++){
     sup->defl[i] = 0.5*p_job->jump_n[i];
-    sup->defl[i+ndim] = -0.5*p_job->jump_n[i];
+    sup->defl[i+NDIM] = -0.5*p_job->jump_n[i];
     sup->defl_d[i] = 0.5*(p_job->jump[i] - p_job->jump_n[i]);
-    sup->defl_d[i+ndim] = -0.5*(p_job->jump[i] - p_job->jump_n[i]);
+    sup->defl_d[i+NDIM] = -0.5*(p_job->jump[i] - p_job->jump_n[i]);
   }
 
   /* compute the macroscopic deformation gradient. This is
@@ -429,12 +431,12 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
   MPI_Comm_size(c->mpi_comm,&nproc);
 
   /* reset the microscale tangent to zeros */
-  ZeroHypreK(c->SOLVER,c->Ai,c->DomDof[myrank]);
+  c->SOLVER->zero();
 
   err += stiffmat_fd_multiscale(c,s,o,0,nor_min,0,myrank,nproc);
 
   /* finalize the microscale tangent matrix assembly */
-  err += HYPRE_IJMatrixAssemble(c->SOLVER->hypre_k);
+  c->SOLVER->assemble();
 
   return err;
 }
@@ -467,7 +469,7 @@ static int compute_ms_cohe_job_micro_terms(const MS_COHE_JOB_INFO *job,
   err += PGFEM_par_matrix_zero_values(K_10);
   nulld(K_00_contrib,macro_ndof*macro_ndof);
   nulld(job->traction_res,macro_ndof);
-  nulld(job->traction,ndim);
+  nulld(job->traction,NDIM);
 
 
   /* volume elements */
@@ -503,7 +505,7 @@ static int compute_ms_cohe_job_micro_terms(const MS_COHE_JOB_INFO *job,
                MPI_DOUBLE,MPI_SUM,c->mpi_comm);
 
   /* assemble traction from all domains */
-  err += MPI_Allreduce(MPI_IN_PLACE,job->traction,ndim,
+  err += MPI_Allreduce(MPI_IN_PLACE,job->traction,NDIM,
                MPI_DOUBLE,MPI_SUM,c->mpi_comm);
 
   /* finish assembly of the distributed matrices */
@@ -529,7 +531,7 @@ static int compute_elem_micro_terms(const int elem_id,
 
   /* important macro quantities */
   const int macro_nnode = job->nnode;
-  const int macro_ndofn = ndim;
+  const int macro_ndofn = NDIM;
   const int macro_ndof = job->ndofe;
   const double *macro_shape_func = job->shape;
   const double *macro_normal = job->normal;
@@ -550,7 +552,7 @@ static int compute_elem_micro_terms(const int elem_id,
   double *K_10_e = PGFEM_calloc(double, ndofe*macro_ndof);
   double *K_00_e = PGFEM_calloc(double, macro_ndof*macro_ndof);
   double *traction_res_e = PGFEM_calloc(double, macro_ndof);
-  double *traction_e = PGFEM_calloc(double, ndim);
+  double *traction_e = PGFEM_calloc(double, NDIM);
   double *disp = PGFEM_calloc(double, ndofe);
   double *x = PGFEM_calloc(double, nne);
   double *y = PGFEM_calloc(double, nne);
@@ -623,23 +625,23 @@ static int compute_elem_micro_terms(const int elem_id,
 
   /* traction.Add conttribution from LOCAL element */
   cblas_daxpy(macro_ndof,1.0,traction_res_e,1,job->traction_res,1);
-  cblas_daxpy(ndim,1.0,traction_e,1,job->traction,1);
+  cblas_daxpy(NDIM,1.0,traction_e,1,job->traction,1);
 
   {
     /* allocate enough space for full matrix */
-    double *val_01 = PGFEM_calloc(double, macro_nnode*macro_ndofn*nne*ndim);
-    double *val_10 = PGFEM_calloc(double, macro_nnode*macro_ndofn*nne*ndim);
-    int *row = PGFEM_calloc(int, macro_nnode*macro_ndofn*nne*ndim);
-    int *col = PGFEM_calloc(int, macro_nnode*macro_ndofn*nne*ndim);
+    double *val_01 = PGFEM_calloc(double, macro_nnode*macro_ndofn*nne*NDIM);
+    double *val_10 = PGFEM_calloc(double, macro_nnode*macro_ndofn*nne*NDIM);
+    int *row = PGFEM_calloc(int, macro_nnode*macro_ndofn*nne*NDIM);
+    int *col = PGFEM_calloc(int, macro_nnode*macro_ndofn*nne*NDIM);
     int idx = 0;
 
     /* get list */
     for(int a=0; a<macro_nnode; a++){
       for(int b=0; b<macro_ndofn; b++){
     for(int w=0; w<nne; w++){
-      for(int g=0; g<ndim; g++){
+      for(int g=0; g<NDIM; g++){
         /* row idx is the global dof id */
-        row[idx] = global_dof_ids[idx_2_gen(w,g,nne,ndim)] - 1;
+        row[idx] = global_dof_ids[idx_2_gen(w,g,nne,NDIM)] - 1;
 
         /* skip if boundary condition */
         if(row[idx] < 0) continue;
@@ -649,8 +651,8 @@ static int compute_elem_micro_terms(const int elem_id,
 
           /* get values */
           val_01[idx] = *(K_01_e + idx_K_gen(a,b,w,g,macro_nnode,
-                         macro_ndofn,nne,ndim));
-          val_10[idx] = *(K_10_e + idx_K_gen(w,g,a,b,nne,ndim,
+                         macro_ndofn,nne,NDIM));
+          val_10[idx] = *(K_10_e + idx_K_gen(w,g,a,b,nne,NDIM,
                          macro_nnode,macro_ndofn));
           /* increment counter */
           idx++;
@@ -729,11 +731,9 @@ static int compute_ms_cohe_job_tangent(const int macro_ndof,
     /* compute loc_sol = K_11^{-1} K_10{i} */
     if(i == 0){
       /* only setup solver for first time through */
-      solve_system(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-           c->SOLVER,c->mpi_comm);
+      c->SOLVER->solveSystem(o, loc_rhs, loc_sol, 1, 1, c->DomDof, info);
     } else {
-      solve_system_no_setup(o,loc_rhs,loc_sol,1,1,c->DomDof,info,
-                c->SOLVER,c->mpi_comm);
+      c->SOLVER->solveSystemNoSetup(o, loc_rhs, loc_sol, 1, 1, c->DomDof, info);
     }
 
     /* check solver error status and print solve information */

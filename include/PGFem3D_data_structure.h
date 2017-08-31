@@ -19,10 +19,12 @@
 #include "matgeom.h"
 #include "hommat.h"
 #include "mesh_load.h"
-#include "hypre_global.h"
 #include "pgfem_comm.h"
 #include "comm_hints.h"
 #include "state_variables.h"
+#include "pgfem3d/Solver.hpp"
+
+using SOLVER_OPTIONS = pgfem3d::Solver;
 
 /// Time stepping struct
 /// Has time stepping information
@@ -132,31 +134,6 @@ struct MATERIAL_PROPERTY {
   long n_orient;   /// number of orientations
   int n_co_props;  /// number of cohesive material properites;
   cohesive_props *co_props; /// list of cohesive material properites
-};
-
-struct ARC_LENGTH_VARIABLES;
-
-/// struct for solution scheme
-struct SOLVER_OPTIONS {
-  int n_step;      /// the number of nonlinear steps taken to solve the given increment
-  double nor_min;   /// nonlinear convergence tolerance for Newton Raphson
-  long iter_max;    /// maximum number of iterations for Newton Raphson
-  double alpha;     /// midpoint rule alpha
-  void *microscale; /// Container of microscale information
-  PGFEM_HYPRE_solve_info *PGFEM_hypre; /// HYPRE solver object
-  long FNR;         /// "Full Newton-Raphson" == 0, only compute tangent on 1st iteration
-  double gama;      /// related to linesearch, but is modified internally...
-  double err;       /// linear solve tolerance
-  long iter_max_sol;/// maximum number of iterations for linear solver
-  double computer_zero; /// computer zero
-  int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals
-  int max_NR_staggering;    /// maximum number of Newton Raphson staggering when physic is coulpled, default = 5
-  int max_subdivision;      /// maximum number of subdivision, if -1 (default): take maximum
-  int is_subdivided;        /// if yes, has been subdivided
-  double last_residual;     /// last residual achieved during Newton-Raphson iterations
-  int set_initial_residual; /// if yes, compute residual before the first NR iteration
-  double du;                /// perturbation value for computing the first residual
-  ARC_LENGTH_VARIABLES *arc;/// Container of Arc length related varialbes
 };
 
 /// struct for the boundary conditions

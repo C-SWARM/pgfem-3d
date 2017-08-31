@@ -8,6 +8,7 @@
 #define PGFEM_COMM_H
 
 #include "PGFEM_mpi.h"
+#include "pgfem3d/Solver.hpp"
 
 // Forward declare the fast map class. This is an implementation detail of the
 // communication structure and implemented in pgfem_comm.cc.
@@ -69,13 +70,11 @@ int finalize_stiffmat_comm(MPI_Status *sta_s,
                            MPI_Request *req_r,
                            const COMMUN pgfem_comm);
 
-typedef struct PGFEM_HYPRE_solve_info PGFEM_HYPRE_solve_info;
-
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
                                MPI_Status *sta_r,
                                MPI_Request *req_r,
-                               PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                               pgfem3d::solvers::SparseSystem* system,
                                double **recv);
 
 /**

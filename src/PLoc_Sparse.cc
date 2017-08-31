@@ -1,34 +1,33 @@
 /* HEADER */
 #include "PLoc_Sparse.h"
-#include <string.h>
-#include "PGFEM_mpi.h"
-#include "enumerations.h"
 #include "allocation.h"
+#include "enumerations.h"
+#include "PGFEM_mpi.h"
 #include "utils.h"
+#include <string.h>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
 
-void PLoc_Sparse (double **Lk,
-		  double *lk,
-		  int *Ai,
-		  int *Ap,
-		  long *cnL,
-		  long *cnG,
-		  long ndofe,
-		  int *Ddof,
-		  long GDof,
-		  int myrank,
-		  int nproc,
-		  COMMUN comm,
-		  int interior,
-		  PGFEM_HYPRE_solve_info *PGFEM_hypre,
-		  const int analysis)
-{
-  long LI1 = PGFEM_hypre->ilower;
-  long LI2 = PGFEM_hypre->iupper;
+using pgfem3d::solvers::SparseSystem;
 
+void PLoc_Sparse (double **Lk,
+                  double *lk,
+                  int *Ai,
+                  int *Ap,
+                  long *cnL,
+                  long *cnG,
+                  long ndofe,
+                  int *Ddof,
+                  long GDof,
+                  int myrank,
+                  int nproc,
+                  COMMUN comm,
+                  int interior,
+                  SparseSystem *system,
+                  const int analysis)
+{
   int err = 0;
 
   int nrows = 0;
@@ -53,7 +52,7 @@ void PLoc_Sparse (double **Lk,
     if(gDofID[i] < 0){
       continue;
     }
-    if((LI1 <= gDofID[i]) && (gDofID[i] <= LI2)){
+    if (system->isLocalRow(gDofID[i])) {
       rows[nrows++] = i;
       cols[ncols++] = i;
     } else {
@@ -64,7 +63,7 @@ void PLoc_Sparse (double **Lk,
 
   if(interior && nsend){
     PGFEM_printf("[%d]WARNING: interior element needs to send %d rows?!?",
-	   myrank,nsend);
+                 myrank,nsend);
   }
 
   /* Allocate the rows, columns, and values */
@@ -99,18 +98,18 @@ void PLoc_Sparse (double **Lk,
     if(PFEM_DEBUG){
       char ofile[50];
       switch(analysis){
-      case STABILIZED:
-	sprintf(ofile,"stab_assem_loc_%d.log",myrank);
-	break;
-      case MINI:
-	sprintf(ofile,"MINI_assem_loc_%d.log",myrank);
-	break;
-      case MINI_3F:
-	sprintf(ofile,"MINI_3f_assem_loc_%d.log",myrank);
-	break;
-      default:
-	sprintf(ofile,"el_assem_loc_%d.log",myrank);
-	break;
+       case STABILIZED:
+        sprintf(ofile,"stab_assem_loc_%d.log",myrank);
+        break;
+       case MINI:
+        sprintf(ofile,"MINI_assem_loc_%d.log",myrank);
+        break;
+       case MINI_3F:
+        sprintf(ofile,"MINI_3f_assem_loc_%d.log",myrank);
+        break;
+       default:
+        sprintf(ofile,"el_assem_loc_%d.log",myrank);
+        break;
       }
 
       FILE *out;
@@ -123,8 +122,7 @@ void PLoc_Sparse (double **Lk,
       fclose(out);
     }
     /* Add to the stiffness matrix */
-   err = HYPRE_IJMatrixAddToValues(PGFEM_hypre->hypre_k,nrows,n_cols,
-				   row_idx,col_idx,values);
+    system->add(nrows, n_cols, row_idx, col_idx, values);
   }
 
   if(err){
@@ -150,23 +148,23 @@ void PLoc_Sparse (double **Lk,
     for(long j=0; j<comm->Ns; j++){
       proc = comm->Nss[j];
       for(srow_id=0; srow_id<comm->S[proc]; srow_id++){
-	if(gID == comm->LG[comm->SLID[proc][srow_id]]){
-	  goto found_matching_gID;
-	}
+        if(gID == comm->LG[comm->SLID[proc][srow_id]]){
+          goto found_matching_gID;
+        }
       }
     }
-  found_matching_gID: /* label :: breaks two for-loops when matching
-			 gID found */
+   found_matching_gID: /* label :: breaks two for-loops when matching
+                          gID found */
     for(long j=0; j<srow_id; j++){
       s_nnz += comm->SAp[proc][j];
     }
     for(int j=0; j<ncols; j++){
       gID = (long) gDofID[cols[j]];
       for(long k=0; k<comm->SAp[proc][srow_id]; k++){
-	if(gID == comm->SGRId[proc][s_nnz+k]){
-	  Lk[proc][s_nnz+k] += lk[send[i]*ndofe +cols[j]];
-	  break;
-	}
+        if(gID == comm->SGRId[proc][s_nnz+k]){
+          Lk[proc][s_nnz+k] += lk[send[i]*ndofe +cols[j]];
+          break;
+        }
       }
     }
   }
@@ -179,27 +177,23 @@ void PLoc_Sparse (double **Lk,
 
 /** PLoc_Sparse_rec for general (non-square) matrices. */
 void PLoc_Sparse_rec (double **Lk,
-		      double *lk,
-		      int *Ai,
-		      int *Ap,
-		      long *cnG_row,
-		      long *cnG_col,
-		      long nrow,
-		      long ncol,
-		      int *Ddof,
-		      long GDof,
-		      int myrank,
-		      int nproc,
-		      COMMUN comm,
-		      int interior,
-		      PGFEM_HYPRE_solve_info *PGFEM_hypre)
+                      double *lk,
+                      int *Ai,
+                      int *Ap,
+                      long *cnG_row,
+                      long *cnG_col,
+                      long nrow,
+                      long ncol,
+                      int *Ddof,
+                      long GDof,
+                      int myrank,
+                      int nproc,
+                      COMMUN comm,
+                      int interior,
+                      SparseSystem *system)
 {
   /* This function is much the same as PLoc_Sparse with the additional
      ability of handling non-square matrices. */
-
-  /* ilower & iupper are global variables from hypre_global.h */
-  long LI1 = PGFEM_hypre->ilower;
-  long LI2 = PGFEM_hypre->iupper;
 
   int nrows = 0;
   int ncols = 0;
@@ -218,10 +212,14 @@ void PLoc_Sparse_rec (double **Lk,
   /* loop through rows and increment number to keep/send */
   for(int i=0; i< nrow; i++){
     G_row_id[i] = (cnG_row[i] - 1);
-    if(G_row_id[i] < 0) continue; /* BC */
-    else if( (LI1 <= G_row_id[i]) && (G_row_id[i] <= LI2) ){
+    if (G_row_id[i] < 0) {
+      continue; /* BC */
+    }
+
+    if (system->isLocalRow(G_row_id[i])) {
       rows[nrows++] = i;
-    } else {
+    }
+    else {
       send[nsend++] = i;
     }
   }
@@ -253,7 +251,7 @@ void PLoc_Sparse_rec (double **Lk,
     col_idx = aloc1i(1);
     values = aloc1(1);
   }
- 
+
   /* fill local sparse matrix structure */
   for(int i=0; i<nrows; i++){
     row_idx[i] = G_row_id[rows[i]];
@@ -266,8 +264,7 @@ void PLoc_Sparse_rec (double **Lk,
   }
 
   if(nrows > 0){
-    HYPRE_IJMatrixAddToValues(PGFEM_hypre->hypre_k,nrows,n_cols,
-			      row_idx,col_idx,values);
+    system->add(nrows, n_cols, row_idx, col_idx, values);
   }
 
   /* free unnecessary arrays */
@@ -286,23 +283,23 @@ void PLoc_Sparse_rec (double **Lk,
     for(int j=0; j<comm->Ns; j++){
       proc = comm->Nss[j];
       for(srow_id=0; srow_id<comm->S[proc]; srow_id++){
-	if(gID == comm->LG[comm->SLID[proc][srow_id]]){
-	  goto found_match;
-	}
+        if(gID == comm->LG[comm->SLID[proc][srow_id]]){
+          goto found_match;
+        }
       }
     }
 
-  found_match:
+   found_match:
     for(int j=0; j<srow_id; j++){
       s_nnz += comm->SAp[proc][j];
     }
     for(int j=0; j<ncols; j++){
       gID = G_col_id[cols[j]];
       for(int k=0; k<comm->SAp[proc][srow_id]; k++){
-	if(gID == comm->SGRId[proc][s_nnz+k]){
-	  Lk[proc][s_nnz+k] += lk[send[i]*ncols +cols[j]];
-	  break;
-	}
+        if(gID == comm->SGRId[proc][s_nnz+k]){
+          Lk[proc][s_nnz+k] += lk[send[i]*ncols +cols[j]];
+          break;
+        }
       }
     }
   }/* end send loop */

@@ -4,41 +4,45 @@
  */
 
 #include "plasticity_model_none.h"
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
-#include "new_potentials.h"
 #include "data_structure_c.h"
+#include "new_potentials.h"
 
-#define tensor 9
-#define dim 3
+namespace {
+constexpr int    tensor = 9;
+constexpr int       dim = 3;
+constexpr int    g_n_Fs = 3;
+constexpr int  g_n_vars = 0;
+constexpr int g_n_flags = 0;
 
-static const int g_n_Fs = 3;
-static const int g_n_vars = 0;
-static const int g_n_flags = 0;
-enum {Fnm1, Fn, Fnp1, F};
+enum {
+  Fnm1,
+  Fn,
+  Fnp1,
+  F
+};
 
 /**
  * Private structure for use exclusively with this model and
  * associated functions.
  */
-typedef struct none_ctx {
+struct none_ctx {
   double *F;
   double *eFnpa;
   int is_coulpled_with_thermal;
   double *hFn;
   double *hFnp1;
-} none_ctx;
-
-static size_t he_get_size(const Constitutive_model *m)
-{
-  return ((g_n_Fs * tensor + g_n_vars) * sizeof(double)
-          + g_n_flags * sizeof(int));
+};
 }
 
-static int he_pack(const Constitutive_model *m,
-                   char *buffer,
-                   size_t *pos)
-{
+static size_t he_get_size(const Constitutive_model *m) {
+  return ((g_n_Fs * tensor + g_n_vars) * sizeof(double) +
+          g_n_flags * sizeof(int));
+}
+
+static int he_pack(const Constitutive_model *m, char *buffer, size_t *pos) {
   /* pack/unpack Fs */
   const Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   pack_data(Fs[Fn].m_pdata, buffer, pos, tensor, sizeof(double));
@@ -46,19 +50,14 @@ static int he_pack(const Constitutive_model *m,
   return 0;
 }
 
-static int he_unpack(Constitutive_model *m,
-                     const char *buffer,
-                     size_t *pos)
-{
+static int he_unpack(Constitutive_model *m, const char *buffer, size_t *pos) {
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   unpack_data(buffer, Fs[Fn].m_pdata, pos, tensor, sizeof(double));
   unpack_data(buffer, Fs[Fnp1].m_pdata, pos, tensor, sizeof(double));
   return 0;
 }
 
-static void he_compute_C(double * restrict C,
-                         const double * restrict F)
-{
+static void he_compute_C(double * restrict C, const double * restrict F) {
   memset(C, 0, tensor * sizeof(*C));
   for (int i = 0; i < dim; i++){
     for (int j = 0; j < dim; j++){
@@ -71,22 +70,19 @@ static void he_compute_C(double * restrict C,
 
 // @todo Deleted as dead code. @cp should review. LD
 //
-// static double compute_bulk_mod(const HOMMAT *mat)
+// double compute_bulk_mod(const HOMMAT *mat)
 // {
 //   return ( (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu)) );
 // }
 
-static int plasticity_none_int_alg(Constitutive_model *m,
-                                   const void *ctx)
-{
+static int plasticity_none_int_alg(Constitutive_model *m, const void *ctx) {
   int err = 0;
   auto CTX = (none_ctx *) ctx;
   memcpy(m->vars_list[0][m->model_id].Fs[Fnp1].m_pdata, CTX->F, tensor * sizeof(*CTX->F));
   return err;
 }
 
-static int plasticity_none_dev_stress(const Constitutive_model *m,
-                                      const void *ctx,
+static int plasticity_none_dev_stress(const Constitutive_model *m, const void *ctx,
                                       Matrix<double> *stress)
 {
   int err = 0;
@@ -98,8 +94,7 @@ static int plasticity_none_dev_stress(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_none_dudj(const Constitutive_model *m,
-                                const void *ctx,
+static int plasticity_none_dudj(const Constitutive_model *m, const void *ctx,
                                 double *dudj)
 {
   int err = 0;
@@ -110,8 +105,7 @@ static int plasticity_none_dudj(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_none_dev_tangent(const Constitutive_model *m,
-                                       const void *ctx,
+static int plasticity_none_dev_tangent(const Constitutive_model *m, const void *ctx,
                                        Matrix<double> *tangent)
 {
   int err = 0;
@@ -123,8 +117,7 @@ static int plasticity_none_dev_tangent(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_none_d2udj2(const Constitutive_model *m,
-                                  const void *ctx,
+static int plasticity_none_d2udj2(const Constitutive_model *m, const void *ctx,
                                   double *d2udj2)
 {
   int err = 0;
@@ -135,34 +128,33 @@ static int plasticity_none_d2udj2(const Constitutive_model *m,
   return err;
 }
 
-static int plasticity_none_update(Constitutive_model *m)
-{
+static int plasticity_none_update(Constitutive_model *m) {
   int err = 0;
   Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fnm1], 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
   Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fn],   1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
   return err;
 }
 
-static int plasticity_none_reset(Constitutive_model *m)
-{
+static int plasticity_none_reset(Constitutive_model *m) {
   int err = 0;
   Matrix_AeqB(m->vars_list[0][m->model_id].Fs[Fnp1], 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
   return err;
 }
 
 
-static int plasticity_none_reset_using_temporal(const Constitutive_model *m, State_variables *var)
+static int plasticity_none_reset_using_temporal(const Constitutive_model *m,
+                                                State_variables *var)
 {
   int err = 0;
   Matrix<double> *Fs    = (m->vars_list[0][m->model_id]).Fs;
   Matrix<double> *Fs_in = var->Fs;
   Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
   Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
-
   return err;
 }
 
-static int plasticity_none_update_np1_to_temporal(const Constitutive_model *m, State_variables *var)
+static int plasticity_none_update_np1_to_temporal(const Constitutive_model *m,
+                                                  State_variables *var)
 {
   int err = 0;
   Matrix<double> *Fs    = var->Fs;
@@ -172,19 +164,18 @@ static int plasticity_none_update_np1_to_temporal(const Constitutive_model *m, S
   return err;
 }
 
-static int plasticity_none_save_to_temporal(const Constitutive_model *m, State_variables *var)
+static int plasticity_none_save_to_temporal(const Constitutive_model *m,
+                                            State_variables *var)
 {
   int err = 0;
   Matrix<double> *Fs_in = (m->vars_list[0][m->model_id]).Fs;
   Matrix<double> *Fs    = var->Fs;
   Matrix_AeqB(Fs[Fn],    1.0,Fs_in[Fn]);
   Matrix_AeqB(Fs[Fnm1],  1.0,Fs_in[Fnm1]);
-
   return err;
 }
 
-static int plasticity_none_info(Model_var_info **info)
-{
+static int plasticity_none_info(Model_var_info **info) {
   int err = 0;
 
   /* make sure I don't leak memory */
@@ -208,94 +199,76 @@ static int plasticity_none_info(Model_var_info **info)
 }
 
 static int he_get_eF_with_thermal(const Constitutive_model *m,
-                                  Matrix<double> *eF,
-                                  const Matrix<double> *hFI,
+                                  Matrix<double> *eF, const Matrix<double> *hFI,
                                   const int stepno)
 {
   int err = 0;
 
   switch(stepno)
   {
-    case 0: // n-1
-      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnm1],0,*hFI,0);
-      break;
-    case 1: // n
-      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fn],0,*hFI,0);
-      break;
-    case 2: // n+1
-      Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnp1],0,*hFI,0);
-      break;
-    default:
-      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
-      err++;
+   case 0: // n-1
+    Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnm1],0,*hFI,0);
+    break;
+   case 1: // n
+    Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fn],0,*hFI,0);
+    break;
+   case 2: // n+1
+    Matrix_AxB(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[Fnp1],0,*hFI,0);
+    break;
+   default:
+    PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+    err++;
   }
   assert(err == 0);
 
   return err;
 }
 
-static int he_get_F(const Constitutive_model *m,
-                    Matrix<double> *F)
-{
+static int he_get_F(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
   return err;
 }
 
-static int he_get_Fn(const Constitutive_model *m,
-                     Matrix<double> *F)
-{
+static int he_get_Fn(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fn]);
   return err;
 }
 
-static int he_get_Fnm1(const Constitutive_model *m,
-                     Matrix<double> *F)
-{
+static int he_get_Fnm1(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnm1]);
   return err;
 }
 
-static int he_get_eye(const Constitutive_model *m,
-                     Matrix<double> *F)
-{
+static int he_get_eye(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   Matrix_eye(*F,3);
   return err;
 }
 
-static int he_get_eF(const Constitutive_model *m,
-                     Matrix<double> *F)
-{
+static int he_get_eF(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   Matrix_AeqB(*F, 1.0, m->vars_list[0][m->model_id].Fs[Fnp1]);
   return err;
 }
 
-static int he_get_eFn(const Constitutive_model *m,
-                      Matrix<double> *F)
-{
+static int he_get_eFn(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   err += he_get_Fn(m,F);
   return err;
 }
 
-static int he_get_eFnm1(const Constitutive_model *m,
-                      Matrix<double> *F)
-{
+static int he_get_eFnm1(const Constitutive_model *m, Matrix<double> *F) {
   int err = 0;
   err += he_get_Fnm1(m,F);
   return err;
 }
 
-static int he_compute_dMdu(const Constitutive_model *m,
-                           const void *ctx,
-                           const double *Grad_op,
-                           const int nne,
-                           const int ndofn,
-                           double *dM_du)
+static int he_compute_dMdu(const Constitutive_model *m, const void *ctx,
+                           const double *Grad_op, const int nne,
+                           const int ndofn, double *dM_du)
 {
   int err = 0;
   /* there is no plastic deformation in this formulation, return zeros
@@ -304,22 +277,17 @@ static int he_compute_dMdu(const Constitutive_model *m,
   return err;
 }
 
-static int he_read(Model_parameters *p,
-                   FILE *in)
-{
+static int he_read(Model_parameters *p, FILE *in) {
   /* there are no parameters to read */
   return scan_for_valid_line(in);
 }
 
-static int he_set_initial_vals(Constitutive_model *m)
-{
+static int he_set_initial_vals(Constitutive_model *m) {
   /* do nothing */
   return 0;
 }
 
-static int he_write_restart(FILE *out,
-                            const Constitutive_model *m)
-{
+static int he_write_restart(FILE *out, const Constitutive_model *m) {
   /* write Fn to file */
   int err = 0;
   const double *F = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;
@@ -330,9 +298,7 @@ static int he_write_restart(FILE *out,
   return err;
 }
 
-static int he_read_restart(FILE *in,
-                           Constitutive_model *m)
-{
+static int he_read_restart(FILE *in, Constitutive_model *m) {
   /* read Fn from file and set Fnp1 = Fn */
   int err = 0;
   double *FN = m->vars_list[0][m->model_id].Fs[Fn].m_pdata;

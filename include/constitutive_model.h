@@ -14,14 +14,14 @@
 #ifndef CONSTITUTIVE_MODEL_H
 #define CONSTITUTIVE_MODEL_H
 
+#include "crpl.h"                               /* CRPL */
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
+#include "state_variables.h"                    /* Matrix<double> */
+#include "supp.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "state_variables.h" /* provides declaration of Matrix<double> */
-#include "sig.h"
-#include "supp.h"
-#include "PGFem3D_options.h"
-
-#include "PGFem3D_data_structure.h"
 
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;

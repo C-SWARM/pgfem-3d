@@ -1,48 +1,46 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "Newton_Raphson.h"
-
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <assert.h>
-
-
-#include "PGFem3D_data_structure.h"
-#include "PGFEM_io.h"
+#include "bounding_element_utils.h"
+#include "compute_reactions.h"
+#include "constitutive_model.h"
+#include "displacement_based_element.h"
+#include "dynamics.h"
+#include "energy_equation.h"
 #include "enumerations.h"
 #include "fd_increment.h"
 #include "fd_residuals.h"
+#include "get_dof_ids_on_elem.h"
+#include "incl.h"
 #include "integration.h"
-#include "vol_damage_int_alg.h"
+#include "interface_macro.h"
 #include "LINE.h"
 #include "load.h"
+#include "macro_micro_functions.h"
 #include "matice.h"
+#include "matrix_printing.h"
+#include "MINI_element.h"
+#include "MINI_3f_element.h"
+#include "ms_cohe_job_list.h"
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+#include "PGFEM_io.h"
+#include "PGFem3D_data_structure.h"
 #include "press_theta.h"
 #include "res_fini_def.h"
+#include "solver_file.h"
 #include "stabilized.h"
 #include "stiffmat_fd.h"
 #include "subdivision.h"
-#include "utils.h"
-#include "MINI_element.h"
-#include "MINI_3f_element.h"
-#include "displacement_based_element.h"
-#include "matrix_printing.h"
-#include "interface_macro.h"
-#include "compute_reactions.h"
-#include "bounding_element_utils.h"
-#include "solve_system.h"
-#include "vtk_output.h"
-#include "ms_cohe_job_list.h"
-#include "macro_micro_functions.h"
 #include "three_field_element.h"
-
-#include "pgf_fe2_macro_client.h"
-#include "pgf_fe2_micro_server.h"
-
-#include "constitutive_model.h"
-#include "dynamics.h"
-#include "energy_equation.h"
-#include "PGFem3D_data_structure.h"
-#include "get_dof_ids_on_elem.h"
-#include "solver_file.h"
+#include "utils.h"
+#include "vol_damage_int_alg.h"
+#include "vtk_output.h"
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <assert.h>
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -67,6 +65,8 @@
 #ifndef DEBUG_MULTISCALE_SERVER
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
+
+using pgfem3d::solvers::SparseSystem;
 
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
  * any print_level > MINIMAL_OUTPUT, normal output is used. */
@@ -447,7 +447,7 @@ long compute_stiffness_for_NR(int *max_substep,
   long GInfo;
 
   if(sol->microscale == NULL) // Null the matrix (if not doing multiscale)
-    ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
+    sol->system->zero();
 
   switch(mp->physics_ids[mp_id])
   {
@@ -484,7 +484,7 @@ long compute_stiffness_for_NR(int *max_substep,
   }
 
   // Matrix assmbly
-  HYPRE_IJMatrixAssemble((sol->PGFEM_hypre)->hypre_k);
+  sol->system->assemble();
 
   return INFO;
 }
@@ -686,32 +686,6 @@ int update_values_for_next_NR(GRID *grid,
   return err;
 }
 
-/// print system matrix and vector (LHS and RHS) for debugging
-///
-/// this function will generate files as many as number of processes
-///
-/// \param[in] PGFEM_hypre container of HYPRE solver info
-/// \param[in] f double array of RHS
-/// \param[in] ndofd # of degree freedom of domain
-/// \param[in] myrank current process rank
-/// \return non-zero on internal error
-int print_HYPRE_K_matrix_and_RHS(PGFEM_HYPRE_solve_info *PGFEM_hypre, double *f, int ndofd, int myrank)
-{
-  int err = 0;
-  HYPRE_IJMatrixPrint(PGFEM_hypre->hypre_k,"test_k.txt");
-  char fn_f[1024];
-  sprintf(fn_f, "test_f.txt.%.5d", myrank);
-
-  FILE *fp_f = fopen(fn_f, "w");
-  fprintf(fp_f, "%d %d\n", PGFEM_hypre->ilower,
-                            PGFEM_hypre->iupper);
-  for(int ia=0; ia<ndofd; ia++)
-    fprintf(fp_f, "%d %e\n", PGFEM_hypre->ilower +ia, f[ia]);
-
-  fclose(fp_f);
-  return err;
-}
-
 /// check convergence on energy norm
 ///
 /// Very small loading cases, residuals are very small, too, and difficult to converge to the tolarance with
@@ -779,7 +753,7 @@ int check_energy_norm(double *ENORM,
 
 /// Actual Newton Raphson scheme with line search
 ///
-/// \parma[out] solve_time time measure of spent for linear solver (Hypre)
+/// \parma[out] solve_time time measure of spent for linear solver
 /// \parma[out] alpha physics based evolution parameter (maximum value from each physics)
 /// \param[out] NOR Normalize norm of the residuals
 /// \param[out] gam flag for denoting Line search that decreases increment of displacements
@@ -877,10 +851,12 @@ long Newton_Raphson_with_LS(double *solve_time,
     /*=== Solve the system of equations ===*/
     SOLVER_INFO s_info;
 
-    *solve_time += solve_system(opts,fv->BS_f,fv->BS_x,tim,iter,com->DomDof,&s_info,
-                                sol->PGFEM_hypre,mpi_comm);
+    *solve_time += sol->system->solveSystem(opts, fv->BS_f, fv->BS_x, tim, iter,
+                                            com->DomDof, &s_info);
 
-    // print_HYPRE_K_matrix_and_RHS(sol->PGFEM_hypre, fv->BS_f, com->DomDof[myrank], myrank); exit(0);
+    // sol->system->printWithRHS("test_", fv->BS_f, com->DomDof[myrank],
+    //                                myrank);
+    // exit(0);
 
     if(myrank == 0)
       solve_system_check_error(PGFEM_stdout,s_info);
@@ -906,8 +882,6 @@ long Newton_Raphson_with_LS(double *solve_time,
         PGFEM_printf("ERROR in the solver: nor = %8.8e || iter = %d\n",BS_nor,BS_iter);
       break; // goto rest
     }
-    // Clear hypre errors
-    hypre__global_error = 0;
 
     /* Transform GLOBAL displacement vector to LOCAL */
     GToL (fv->BS_x,fv->dd_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
@@ -998,7 +972,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL)
     {
       /* zero the macroscale tangent */
-      ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
+      sol->system->zero();
 
       /* start the microscale jobs */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
@@ -1402,7 +1376,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
     /* recompute the microscale tangent if restart due to error. */
     if(INFO == 1 && DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
       /* zero the macroscale tangent */
-      ZeroHypreK(sol->PGFEM_hypre,com->Ai,com->DomDof[myrank]);
+      sol->system->zero();
 
       /* start the microscale jobs. Do not compute equilibrium. Use
        d_r (no displacement increments) for displacement dof
@@ -2704,9 +2678,8 @@ double Newton_Raphson_multiscale(const int print_level,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
     if(solver_file==NULL)
     {
       sol.nor_min  = c->lin_err;
@@ -2719,10 +2692,10 @@ double Newton_Raphson_multiscale(const int print_level,
       sol.FNR      = solver_file->nonlin_method;
       sol.iter_max = solver_file->max_nonlin_iter;
     }
-    sol.n_step = *n_step;
-    sol.PGFEM_hypre  = c->SOLVER;
-    sol.err          = c->lin_err;
-    sol.microscale   = ctx;
+    sol.n_step     = *n_step;
+    sol.system     = c->SOLVER;
+    sol.err        = c->lin_err;
+    sol.microscale = ctx;
   }
 
   // initialize and define loading steps object

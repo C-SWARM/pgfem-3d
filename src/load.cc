@@ -470,13 +470,12 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
-    sol.PGFEM_hypre  = c->SOLVER;
-    sol.err          = c->lin_err;
-    sol.alpha        = 0.0;
-    sol.nor_min      = nor_min;
+    sol.system  = c->SOLVER;
+    sol.err     = c->lin_err;
+    sol.alpha   = 0.0;
+    sol.nor_min = nor_min;
   }
 
   // initialize and define loading steps object

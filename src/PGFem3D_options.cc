@@ -2,13 +2,13 @@
 
 /** This file contains functions to parse the command line and print
     helpful information */
-
 #include "PGFem3D_options.h"
+#include "allocation.h"
+#include "enumerations.h"
+#include "PGFEM_io.h"
 #include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
-#include "enumerations.h"
-#include "allocation.h"
 
 /* Generated at http://patorjk.com/software/taag/ */
 static const char *prog_name=

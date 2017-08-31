@@ -4,10 +4,11 @@
  * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
  */
 
-#include "pgfem_comm.h"
 #include "allocation.h"
+#include "pgfem_comm.h"
 #include "PGFEM_io.h"
-#include "hypre_global.h"
+
+using pgfem3d::solvers::SparseSystem;
 
 /**
  * Structure for containing an index map.
@@ -196,7 +197,7 @@ int
 assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
                            MPI_Status *sta_r,
                            MPI_Request *req_r,
-                           PGFEM_HYPRE_solve_info *PGFEM_hypre,
+                           SparseSystem *system,
                            double **recv)
 {
   int err = 0;
@@ -229,9 +230,7 @@ assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
     }
 
     /* assemble to local part of global stiffness */
-    err += HYPRE_IJMatrixAddToValues(PGFEM_hypre->hypre_k,
-                                     nrows,ncols,row_idx,col_idx,
-                                     recv[proc]);
+    system->add(nrows, ncols, row_idx, col_idx, recv[proc]);
 
     /* free memory */
     free(row_idx);

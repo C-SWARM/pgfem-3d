@@ -10,15 +10,19 @@
  * AUTHORS:
  *   Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
+#include "allocation.h"
 #include "cm_j2_plasticity.h"
 #include "constitutive_model.h"
-#include "hommat.h"
 #include "data_structure_c.h"
+#include "hommat.h"
 #include "index_macros.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
 
 static void hommat_assign_values(HOMMAT *p_hmat)
 {

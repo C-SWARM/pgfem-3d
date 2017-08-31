@@ -16,43 +16,48 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "allocation.h"
 #include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
+#include "data_structure_c.h"
+#include "index_macros.h"
+#include "new_potentials.h"
+#include "utils.h"
 #include <math.h>
 #include <string.h>
-#include "utils.h"
-#include "index_macros.h"
-#include "data_structure_c.h"
-#include "new_potentials.h"
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
-#define dim  3
-#define tensor 9
-#define tensor4 81
-static const double DAMAGE_THRESH = 0.9999;
-static const double DELTA_W_MAX = 0.05;
+namespace {
+constexpr int              dim = 3;
+constexpr int           tensor = 9;
+constexpr int          tensor4 = 81;
+constexpr double DAMAGE_THRESH = 0.9999;
+constexpr double   DELTA_W_MAX = 0.05;
+
 #define MIN(a,b) ((a)>(b)?(b):(a))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* private context structure */
-typedef struct {
+struct ivd_ctx {
   double F[tensor];
   double dt;
-} ivd_ctx;
+};
 
 enum {Fn, F, NUM_Fs};
 enum {wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
 enum {mu, ome_max, p1, p2, Yin, NUM_param};
+}
 
 /**
  * Matrix multiplication b = a'a, dim(a) = [3 3]
  */
-static void ata(const double *a,
-                double *b)
-{
+static void ata(const double *a, double *b) {
   memset(b, 0, tensor * sizeof(*b));
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
@@ -63,9 +68,7 @@ static void ata(const double *a,
   }
 }
 
-static double ivd_weibull_function(const double Ybar,
-                                   const double *params)
-{
+static double ivd_weibull_function(const double Ybar, const double *params) {
   if(Ybar <= params[Yin]) return 0.0;
   return (params[ome_max] - params[ome_max]
       * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]),
@@ -74,9 +77,7 @@ static double ivd_weibull_function(const double Ybar,
       );
 }
 
-static double ivd_weibull_evolution(const double Ybar,
-                                    const double *params)
-{
+static double ivd_weibull_evolution(const double Ybar, const double *params) {
   if(Ybar <= params[Yin]) return 0.0;
   return (params[ome_max] * params[p2] / (params[p1] * params[Yin])
       * exp(- pow((Ybar - params[Yin]) / (params[p1] * params[Yin]), params[p2]) )

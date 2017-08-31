@@ -1,9 +1,9 @@
 noinst_LTLIBRARIES = libenergy_equation.la
 
-libenergy_equation_la_CPPFLAGS = -I$(srcdir)/../include \
+libenergy_equation_la_CPPFLAGS = -Wall -Werror \
+                                 -I$(srcdir)/../include \
                                  -I$(top_srcdir)/include \
                                  -I$(top_builddir)/include \
-                                 $(hypre_include) \
                                  $(cnstvm_include) \
                                  $(ttl_include) \
                                  $(mkl_include) 

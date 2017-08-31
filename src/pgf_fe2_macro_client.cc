@@ -3,15 +3,19 @@
  * AUTHORS:
  *  Matt Mosby, University of Notre Dame
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "pgf_fe2_macro_client.h"
-#include "pgf_fe2_micro_server.h"
-#include "PGFEM_mpi.h"
-#include "pgf_fe2_job.h"
-#include "pgf_fe2_server_rebalance.h"
+#include "allocation.h"
 #include "ms_cohe_job_info.h"
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
+#include "pgf_fe2_job.h"
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+#include "pgf_fe2_server_rebalance.h"
+#include "PGFEM_mpi.h"
 #include "PLoc_Sparse.h"
 #include "stiffmat_fd.h"
 
@@ -22,9 +26,8 @@
  * Comparator function for array of ints as object. Compares n-th in
  * array object.
  */
-static int compare_nth_int(const void *n,
-               const void *a,
-               const void *b)
+static int
+compare_nth_int(const void *n, const void *a, const void *b)
 {
   const size_t N = *(const size_t*) n;
   return ((int*) a)[N] - ((int*) b)[N];
@@ -35,8 +38,8 @@ static int compare_nth_int(const void *n,
  * Comparator function for array of ints as object. Compares first in
  * array object.
  */
-static int compare_first_int(const void *a,
-                 const void *b)
+static int
+compare_first_int(const void *a, const void *b)
 {
   static const size_t n = 0;
   return compare_nth_int(&n,a,b);
@@ -46,23 +49,12 @@ static int compare_first_int(const void *a,
  * Comparator function for array of ints as object. Compares second in
  * array object.
  */
-static int compare_second_int(const void *a,
-                  const void *b)
+static int
+compare_second_int(const void *a, const void *b)
 {
   static const size_t n = 1;
   return compare_nth_int(&n,a,b);
 }
-
-/**
- * Comparator function for array of ints as object. Compares third in
- * array object.
- */
-// static int compare_third_int(const void *a,
-//               const void *b)
-// {
-//   static const size_t n = 2;
-//   return compare_nth_int(&n,a,b);
-// }
 
 /* fully define the macro client structure */
 struct pgf_FE2_macro_client{

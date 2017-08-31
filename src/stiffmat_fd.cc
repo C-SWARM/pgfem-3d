@@ -4,45 +4,44 @@
  * Matthew Mosby, University of Notre Dame, mmosby1 [at] nd.edu
  * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
-#include "stiffmat_fd.h"
-#include "assert.h"
+#include "allocation.h"
+#include "cast_macros.h"
+#include "condense.h"
+#include "constitutive_model.h"
+#include "def_grad.h"
+#include "displacement_based_element.h"
+#include "dynamics.h"
+#include "elem3d.h"
 #include "enumerations.h"
+#include "femlib.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
-#include "elem3d.h"
-#include "allocation.h"
-#include "PLoc_Sparse.h"
-#include "stabilized.h"
-#include "stiffmatel_fd.h"
-#include "utils.h"
+#include "incl.h"
+#include "index_macros.h"
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
-#include "displacement_based_element.h"
-#include "matice.h"
-
-#include "three_field_element.h"
-#include "condense.h"
-#include "new_potentials.h"
-#include "tensors.h"
-#include "cast_macros.h"
-#include "index_macros.h"
-#include "def_grad.h"
-
-#include "mkl_cblas.h"
-#include "femlib.h"
-#include "dynamics.h"
-
-#include "constitutive_model.h"
-#include "PGFem3D_data_structure.h"
 #include "macro_micro_functions.h"
+#include "matice.h"
+#include "mkl_cblas.h"
+#include "new_potentials.h"
+#include "PGFem3D_data_structure.h"
+#include "PLoc_Sparse.h"
+#include "stabilized.h"
+#include "stiffmat_fd.h"
+#include "stiffmatel_fd.h"
+#include "tensors.h"
+#include "three_field_element.h"
+#include "utils.h"
+#include <cassert>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
 
-#define ndn 3
+using pgfem3d::solvers::SparseSystem;
 
-static const int periodic = 0;
+static constexpr int periodic = 0;
+static constexpr int ndn = 3;
 
 /* This function may not be used outside of this file */
 static void coel_stiffmat(int i, /* coel ID */
@@ -74,7 +73,7 @@ static void coel_stiffmat(int i, /* coel ID */
               int *Ddof,
               int interior,
               const int analysis,
-              PGFEM_HYPRE_solve_info *PGFEM_hypre,
+              SparseSystem *system,
               const int mp_id)
 {
   long j,l,nne,ndofe,*cnL,*cnG,*nod,P,R,II;
@@ -183,7 +182,7 @@ static void coel_stiffmat(int i, /* coel ID */
 
   /* Assembly */
   PLoc_Sparse (Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,
-           GDof,myrank,nproc,comm,interior,PGFEM_hypre,analysis);
+           GDof,myrank,nproc,comm,interior,system,analysis);
 
   /* Localization of TANGENTIAL LOAD VECTOR */
   if (periodic == 1 && (FNR == 2 || FNR == 3)){
@@ -241,7 +240,7 @@ static int bnd_el_stiffmat(int belem_id,
                int *Ddof,
                int interior,
                const int analysis,
-               PGFEM_HYPRE_solve_info *PGFEM_hypre,
+               SparseSystem *system,
                const int mp_id)
 {
   int err = 0;
@@ -315,7 +314,7 @@ static int bnd_el_stiffmat(int belem_id,
     /* PLoc_Sparse_rec(Lk,lk,Ai,Ap,Gcn_be,Gcn_ve,ndof_be,ndof_ve,Ddof, */
     /*         GDof,myrank,nproc,comm,interior); */
     PLoc_Sparse(Lk,lk,Ai,Ap,cn_ve,Gcn_ve,ndof_ve,Ddof,
-        GDof,myrank,nproc,comm,interior,PGFEM_hypre,analysis);
+        GDof,myrank,nproc,comm,interior,system,analysis);
   }
 
 
@@ -618,7 +617,7 @@ static int el_stiffmat_MP(int eid,
 
   // Assembly
   PLoc_Sparse (Lk,lk.m_pdata,com->Ai,com->Ap,cnL,cnG,ndofe,Ddof,com->GDof,
-          myrank,com->nproc,com->comm,interior,sol->PGFEM_hypre,opts->analysis_type);
+          myrank,com->nproc,com->comm,interior,sol->system,opts->analysis_type);
 
   //  dealocation
   free (cnL);
@@ -715,7 +714,7 @@ int stiffmat_fd_MP(GRID *grid,
         coel_stiffmat(eid,Lk,com->Ap,com->Ai,ndofc,grid->element,grid->node,fv->eps,
                 fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,dt,crpl,
                 opts->stab,grid->coel,0,0,fv->f_u,myrank,com->nproc,com->DomDof,
-                com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->PGFEM_hypre, mp_id);
+                com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system, mp_id);
       }
     }
   }
@@ -737,7 +736,7 @@ int stiffmat_fd_MP(GRID *grid,
       err += bnd_el_stiffmat(eid,Lk,com->Ap,com->Ai,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
               mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,
               dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,myrank,com->nproc,com->GDof,
-              com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->PGFEM_hypre,mp_id);
+              com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system,mp_id);
 
       // If there is an error, complete exit the loop
       if(err != 0)
@@ -808,7 +807,7 @@ int stiffmat_fd_MP(GRID *grid,
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->PGFEM_hypre,recieve);
+  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,recieve);
   err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
 
   // stiffnes build is completed
@@ -915,14 +914,13 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
-    sol.FNR          = FNR;
-    sol.PGFEM_hypre  = c->SOLVER;
-    sol.err          = c->lin_err;
-    sol.alpha        = 0.0;
-    sol.nor_min      = nor_min;
+    sol.FNR     = FNR;
+    sol.system  = c->SOLVER;
+    sol.err     = c->lin_err;
+    sol.alpha   = 0.0;
+    sol.nor_min = nor_min;
   }
 
   // initialize and define loading steps object
