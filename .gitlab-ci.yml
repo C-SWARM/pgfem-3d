@@ -17,11 +17,11 @@ scan-build:
  script:
   - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 -g -I/usr/include/openmpi"
   - export LDFLAGS=`mpicxx --showme:link`
-  - ./configure --with-mpi=yes CXX=mpicxx
-                --with-hypre-dir=/opt/hypre_ompi
-                --with-suitesparse-dir=/opt/SuiteSparse
-                --with-cnstvm-dir=/opt/Generalizsed_constitutive_model
-                --with-ttl-dir=/opt/ttl
+  - ./configure CXX=mpicxx
+                --with-hypre=/opt/hypre_ompi
+                --with-suitesparse=/opt/SuiteSparse
+                --with-cnstvm=/opt/Generalizsed_constitutive_model
+                --with-ttl=/opt/ttl
                 --enable-tests=no
                 --enable-vtk=yes
                 --with-vtk-version=-6.3
@@ -34,13 +34,10 @@ check-build:
   - cswarm
  stage: check
  script:
-  - export CXX=mpicxx
-  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O3"
-  - ./configure --with-mpi=yes
-                --with-hypre-dir=/opt/hypre_ompi
-                --with-suitesparse-dir=/opt/SuiteSparse
-                --with-cnstvm-dir=/opt/Generalizsed_constitutive_model
-                --with-ttl-dir=/opt/ttl
+  - ./configure --with-hypre=/opt/hypre_ompi
+                --with-suitesparse=/opt/SuiteSparse
+                --with-cnstvm=/opt/Generalizsed_constitutive_model
+                --with-ttl=/opt/ttl
                 --enable-tests=yes
                 --with-tests-nproc=4
                 --enable-vtk=yes

@@ -9,6 +9,6 @@ libhypre_la_SOURCES = Hypre.cc \
 libhypre_la_CPPFLAGS = -Wall -Werror \
                        -I$(top_srcdir)/include \
                        -I$(top_builddir)/include \
-                       $(hypre_include)
-
-libhypre_la_LIBADD   = $(hypre_lib)
+                       $(HYPRE_INCLUDE)
+libhypre_la_LDFLAGS  = $(HYPRE_LDFLAGS)
+libhypre_la_LIBADD   = $(HYPRE_LIBS)

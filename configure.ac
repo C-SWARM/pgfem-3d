@@ -24,13 +24,6 @@ AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
 AC_C_RESTRICT                                   # Works for C++ too
 
-# check for the ability to build tests
-AC_CHECK_PROG([found_numdiff], [numdiff], [yes])
-AC_CHECK_PROG([found_head], [head], [yes])
-AC_CHECK_PROG([found_tail], [tail], [yes])
-AC_CHECK_PROG([found_matlab], [matlab], [yes])
-AC_CHECK_PROG([found_grep], [grep], [yes])
-
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall
                   -Werror parallel-tests color-tests])
@@ -39,20 +32,14 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 LT_PREREQ([2.4.2])
 LT_INIT([disable-shared])
 
-# Allow the user to disable MPI.
-AC_ARG_WITH(mpi,
-  [AS_HELP_STRING([--with-mpi{=yes,no,auto}],
-                  [Compile with MPI (parallelization) support @<:@default=yes@:>@])],
-  [], [with_mpi=yes])
-
-# Consolidated MPI checks
-# AS_IF([test "x$have_mpicxx" != xyes -o "x$have_mpicc" != xyes],
-# AS_IF([test "x$have_mpicxx" != xyes -o "x$have_mpicc" != xyes -o "x$have_mpifc" != xyes],
-AS_IF([test "x$have_mpicxx" != xyes],
-  [AS_CASE($with_mpi,
-   [yes], [AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])],
-   [auto], [AC_MSG_WARN([No MPI compiler, disabling MPI])],
-   [])])
+CONFIG_MTL([have_mtl=yes])
+CONFIG_TTL([have_ttl=yes])
+CONFIG_HYPRE([have_hypre=yes])
+CONFIG_LAPACK([have_lapack=yes])
+CONFIG_SUITESPARSE([have_suitesparse=yes])
+CONFIG_TESTS()
+CONFIG_VTK([5.10.1])
+CONFIG_GCM([have_gcm=yes])
 
 AC_ARG_WITH(special-link,
   [AS_HELP_STRING([--with-special-link=<linker>],
@@ -64,148 +51,6 @@ AS_IF([test "x$special_link" = xyes],
   [AC_MSG_NOTICE([Linking PGFem3D with "$with_special_link"])
    AC_SUBST([PGFem3D_linker],["$with_special_link"])],
   [AC_SUBST([PGFem3D_linker],['$(CXX)'])])
-
-# Checks for libraries.
-# HYPRE
-AC_ARG_WITH(hypre-dir,
-  [AS_HELP_STRING([--with-hypre-dir=<path>],
-			      [Provide location of root directory for standard HYPRE installation.])],
-  [AC_MSG_CHECKING([location of HYPRE])
-   AC_MSG_RESULT(["$with_hypre_dir"])],
-  [with_hypre_dir=no])
-
-AS_IF([test "x$with_hypre_dir" != xno],
-  [AC_SUBST([hypre_include],["-I$with_hypre_dir/include"])
-   AC_SUBST([hypre_lib],["-L$with_hypre_dir/lib -lHYPRE"])],
-  [AC_SUBST([hypre_lib],["-lHYPRE"])])
-
-# Constitutive_model
-AC_ARG_WITH(cnstvm-dir,
-  [AS_HELP_STRING([--with-cnstvm-dir=<path>],
-                  [Provide location of root directory for standard Constitutive Model installation.])],
-  [], [AC_MSG_FAILURE([--with-cnstvm-dir required!])])
-
-AC_MSG_CHECKING([location of Constitutive Model])
-AC_MSG_RESULT(["$with_cnstvm_dir"])
-AC_SUBST([cnstvm_include],["-I$with_cnstvm_dir/utils/include -I$with_cnstvm_dir/material/include -I$with_cnstvm_dir/elasticity/include -I$with_cnstvm_dir/crystal_plasticity/include"])
-AC_SUBST([cnstvm_lib],["-L$with_cnstvm_dir/lib -lConstitutiveModel"])
-
-# MKL
-AC_ARG_WITH(mkl,
-  [AS_HELP_STRING([--without-mkl],
-			      [Do not use Intel MKL libraries])],
-  [], [with_mkl=yes])
-
-# CBLAS / LAPACK
-AC_ARG_WITH(mkl-override,
-  [AS_HELP_STRING([--with-mkl-override=<include line>],
-			      [Specify include line for MKL override headers (requires --without-mkl)])])
-AC_ARG_WITH(cblas-include,
-  [AS_HELP_STRING([--with-cblas-include=<include line>],
-			      [Specify include line for access to CBLAS (requires --without-mkl)])])
-                  
-AC_ARG_WITH(cblas-lib,
-  [AS_HELP_STRING([--with-cblas-lib=<link line>],
-			      [Specify link line for access to CBLAS (requires --without-mkl)])])
-                  
-AC_ARG_WITH(lapack-include,
-  [AS_HELP_STRING([--with-lapack-include=<include line>],
-			      [Specify include line for access to LAPACK (requires --without-mkl)])])
-                  
-AC_ARG_WITH(lapack-lib,
-  [AS_HELP_STRING([--with-lapack-lib=<link line>],
-			      [Specify link line for access to LAPACK (requires --without-mkl)])])
-
-AS_IF([test "x$with_mkl" = xyes],
-  [AC_MSG_NOTICE([Using Intel MKL libraries])
-   AC_SUBST([mkl_include],['-m64 -I$(MKLROOT)/include'])
-   AC_SUBST([mkl_lib],['-L${MKLROOT}/lib/intel64 -Wl,-rpath,${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl'])],
-  [AC_MSG_NOTICE([Using specified CBLAS/LAPACK])
-   AC_SUBST([mkl_include],["$with_mkl_override $with_cblas_include $with_lapack_include"])
-   AC_SUBST([mkl_lib],["$with_cblas_lib $with_lapack_lib"])])
-
-# suitesparse
-AC_ARG_WITH(suitesparse-dir,
-  [AS_HELP_STRING([--with-suitesparse-dir=<path>],
-			      [Specify path to the root directory of a standard suitesparse installation.])],
-  [AC_MSG_CHECKING([location of SuiteSparse])
-   AC_MSG_RESULT(["$with_suitesparse_dir"])],
-  [with_suitesparse_dir=no])
-
-# special case "." argument for source tarball paths
-AS_IF([test "x$with_suitesparse_dir" == x.],
-  [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/UMFPACK/Include -I$with_suitesparse_dir/AMD/Include -I$with_suitesparse_dir/UFconfig"])
-   AC_SUBST([suitesparse_lib],["-L$with_suitesparse_dir/UMFPACK/Lib -L$with_suitesparse_dir/AMD/Lib -lumfpack -lamd"])],
-  # else we assume path points to an install target
-  [AS_IF([test "x$with_suitesparse_dir" != xno],
-    [AC_SUBST([suitesparse_include],["-I$with_suitesparse_dir/include"])
-     AC_SUBST([SUITESPARSE_LDFLAGS],["-L$with_suitesparse_dir/lib -Wl,-rpath,$with_suitesparse_dir/lib"])
-     AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])],
-    # else fallback to user environment
-    [AC_SUBST([suitesparse_lib],["-lumfpack -lamd"])])])
-
-# TTL
-AC_ARG_WITH(ttl-dir,
-  [AS_HELP_STRING([--with-ttl-dir=<path>],
-			      [Specify path to TTL installation.])],
-  [AC_MSG_CHECKING([location of TTL])
-   AC_MSG_RESULT(["$with_ttl_dir"])],
-  [with_ttl_dir=no])
-
-AS_IF([test "x$with_ttl_dir" != xno],
-  [AC_SUBST([ttl_include],["-I$with_ttl_dir/include"])],
-  [])
-
-# This macro will provide options for the user to enable and specify the path
-# and version of VTK, and will do some configuration-time searching to see if
-# these paths work and to set VTK_CPPFLAGS, VTK_LDFLAGS, and VTK_LIBS.
-PGFEM3D_VTK([5.10.1], [have_vtk=yes], [AC_ERROR(Could not find VTK $with_vtk_version)])
-
-AS_IF([test "x$have_vtk" != xyes],
-  [AC_DEFINE(NO_VTK_LIB,1,[Do not use VTK libraries])],
-  [AC_SUBST([VTK_CPPFLAGS], ["$VTK_CPPFLAGS"])
-   AC_SUBST([VTK_LDFLAGS], ["$VTK_LDFLAGS"])
-   AC_SUBST([VTK_LIBS], ["$VTK_LIBS"])])
-
-#tests 
-AC_ARG_ENABLE(tests,
-  [AS_HELP_STRING([--enable-tests],
-		          [Enable tests (requires numdiff,head,tail) @<:@default=yes@:>@])],
-  [], [enable_tests=yes])
-
-AC_ARG_WITH(tests-nprocs,
-  [AS_HELP_STRING([--with-tests-nprocs=<n>],
-                  [The maximum number of processes to use during testing @<:@default=1@:>@])],
-  [], [with_tests_nprocs=1])
-
-AC_SUBST([TESTS_NPROCS], [$with_tests_nprocs])
-
-# Checks for header files.
-AC_CHECK_HEADERS([limits.h stdlib.h string.h sys/time.h unistd.h])
-
-# Checks for library functions.
-AC_FUNC_MALLOC
-AC_CHECK_FUNCS([memset mkdir pow sqrt strchr strerror strrchr])
-
-# Deal with tests
-AS_IF([test "x$enable_tests" == xyes -a "x$found_numdiff" != xyes],
-  [AC_MSG_WARN([Missing numdiff, disabling tests])])
-AS_IF([test "x$enable_tests" == xyes -a "x$found_head" != xyes -o "x$found_tail" != xyes],
-  [AC_MSG_WARN([Missing head/tail, disabling some tests])])
-AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
-  [AC_MSG_WARN([Missing matlab, disabling some tests])])
-AS_IF([test "x$enable_tests" == xyes -a "x$found_matlab" != xyes],
-  [AC_MSG_WARN([Missing matlab, disabling some tests])])
-AS_IF([test "x$enable_tests" == xyes -a "x$have_vtk" != xyes],
-  [AC_MSG_WARN([Missing VTK, disabling some tests])])
-
-AM_CONDITIONAL([BUILD_TESTS], [test "x$enable_tests" == xyes])
-AM_CONDITIONAL([HAVE_VTK], [test "x$have_vtk" == xyes])
-AM_CONDITIONAL([HAVE_NUMDIFF], [test "x$found_numdiff" == xyes])
-AM_CONDITIONAL([HAVE_HEAD], [test "x$found_head" == xyes])
-AM_CONDITIONAL([HAVE_TAIL], [test "x$found_tail" == xyes])
-AM_CONDITIONAL([HAVE_GREP], [test "x$found_grep" == xyes])
-AM_CONDITIONAL([HAVE_MATLAB], [test "x$have_matlab" == xyes])
 
 AC_CONFIG_FILES([Makefile
                  lib/VTK_IO/src/Makefile

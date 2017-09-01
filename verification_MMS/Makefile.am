@@ -9,7 +9,7 @@ AM_CPPFLAGS = -Wall -Werror \
               -I$(top_srcdir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
               -I$(top_builddir)/include \
-              $(hypre_include)
+              $(HYPRE_INCLUDE)
 
 LDADD       = $(top_builddir)/src/libpgfem3d.la
 
@@ -18,4 +18,4 @@ LDADD       = $(top_builddir)/src/libpgfem3d.la
 #
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 #
-AM_LDFLAGS  = -Wl,--allow-multiple-definition 
+AM_LDFLAGS  = $(HYPRE_LDFLAGS) -Wl,--allow-multiple-definition 

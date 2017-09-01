@@ -7,8 +7,12 @@ SUBDIRS = solvers
 bin_PROGRAMS = PGFem3D
 noinst_LTLIBRARIES = libpgfem3d.la
 
-PGFem3D_LDFLAGS = $(SUITESPARSE_LDFLAGS) $(VTK_LDFLAGS) \
-                  -Wl,--allow-multiple-definition # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
+# https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
+PGFem3D_LDFLAGS = -Wl,--allow-multiple-definition \
+                  $(GCM_LDFLAGS) \
+                  $(LAPACK_LDFLAGS) \
+                  $(SUITESPARSE_LDFLAGS) \
+                  $(VTK_LDFLAGS)
 PGFem3D_LDADD   = libpgfem3d.la
 PGFem3D_SOURCES = super_main.cc
 
@@ -19,19 +23,18 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               -I$(top_srcdir)/energy_equation/include \
               -I$(top_builddir)/include \
               $(VTK_IO_include) \
-              $(energy_equation_include) \
-              $(suitesparse_include) \
-              $(ttl_include) \
-              $(cnstvm_include) \
-              $(mkl_include)
+              $(SUITESPARSE_INCLUDE) \
+              $(TTL_INCLUDE) \
+              $(GCM_INCLUDE) \
+              $(LAPACK_INCLUDE)
 
 libpgfem3d_la_LIBADD = $(builddir)/solvers/libsolvers.la \
                        $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
                        $(top_builddir)/energy_equation/src/libenergy_equation.la \
-                       $(SUITESPARSE_LDFLAGS) $(suitesparse_lib) \
+                       $(SUITESPARSE_LDFLAGS) $(SUITESPARSE_LIBS) \
                        $(VTK_LDFLAGS) $(VTK_LIBS) \
-                       $(cnstvm_lib) \
-                       $(mkl_lib)
+                       $(GCM_LDFLAGS) $(GCM_LIBS) \
+                       $(LAPACK_LDFLAGS) $(LAPACK_LIBS)
 
 libpgfem3d_la_SOURCES = ALM.cc \
                         Arc_length.cc \

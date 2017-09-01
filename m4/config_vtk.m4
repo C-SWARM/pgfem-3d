@@ -8,31 +8,6 @@
 #
 # 18.8.2017 - Substantially modified by Luke D'Alessandro for PGFem3D framework.
 
-
-#
-#  AM_OPTIONS_VTK
-#  ------------------------------------------------------------------------
-#  Adds the --enable-vtk, --with-vtk=path, --with-vtk-version options to the configure options
-#
-AC_DEFUN([AM_OPTIONS_VTK], [
- AC_ARG_ENABLE(vtk,
-   [AS_HELP_STRING([--enable-vtk],
- 		          [Output in VTK binary output @<:@default=yes@:>@])],
-   [], [enable_vtk=yes])
-
- AC_ARG_WITH([vtk],
-   [AC_HELP_STRING([--with-vtk],
-                   [The prefix where VTK is installed @<:@default=/usr@:>@])],
-   [], [with_vtk="/usr"])
-
- AC_ARG_WITH([vtk-version],
-   [AC_HELP_STRING([--with-vtk-version],
-                  [VTK's include directory name is vtk-suffix, e.g. vtk-5.10/. What's the suffix? @<:@default=-5.10.1@:>@])],
-   [], [with_vtk_version="-5.10.1"])
-])# AM_OPTIONS_VTK
-
-
-
 #
 #  AM_PATH_VTK([minimum-version], [action-if-found], [action-if-not-found])
 #  ------------------------------------------------------------------------
@@ -41,9 +16,9 @@ AC_DEFUN([AM_OPTIONS_VTK], [
 #
 AC_DEFUN([AM_PATH_VTK], [
  # Use the VTK paths to build some variables that we will need.
- VTK_CPPFLAGS="-I$with_vtk/include/vtk$with_vtk_version"
- VTK_LDFLAGS="-Wl,-rpath,$with_vtk/lib -L$with_vtk/lib"
- VTK_LIBS="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version"
+ vtk_cppflags="-I$with_vtk/include/vtk$with_vtk_version"
+ vtk_ldflags="-L$with_vtk/lib -Wl,-rpath,$with_vtk/lib"
+ vtk_libs="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version"
 
  # Make sure that the vtk headers are found.
  AC_CHECK_FILE([$with_vtk/include/vtk$with_vtk_version/vtkVersionMacros.h], [found_vtk_headers=yes])
@@ -68,10 +43,10 @@ AC_DEFUN([AM_PATH_VTK], [
        #
        # Note that in order to be able to compile the following test program,
        # we need to add to the current flags, the VTK settings...
-       OLD_CPPFLAGS=$CPPFLAGS
-       OLD_LDFLAGS=$LDFLAGS
-       CPPFLAGS="$VTK_CPPFLAGS $CPPFLAGS"
-       LDFLAGS="$VTK_LDFLAGS $LDFLAGS $VTK_LIBS"
+       old_CPPFLAGS=$CPPFLAGS
+       old_LDFLAGS=$LDFLAGS
+       CPPFLAGS="$CPPFLAGS $vtk_cppflags"
+       LDFLAGS="$LDFLAGS $vtk_ldflags $vtk_libs"
        #
        # check if the installed VTK is greater or not
        AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
@@ -88,8 +63,8 @@ AC_DEFUN([AM_PATH_VTK], [
          [vtkVersion="OK"])
        #
        # restore all flags without VTK values
-       CPPFLAGS=$OLD_CPPFLAGS
-       LDFLAGS=$OLD_LDFLAGS
+       CPPFLAGS=$old_CPPFLAGS
+       LDFLAGS=$old_LDFLAGS
 
        # Execute $2 if version is ok, otherwise execute $3
        AS_IF([test "$vtkVersion" = "OK"],
@@ -106,15 +81,38 @@ AC_DEFUN([AM_PATH_VTK], [
   # a hack to figure out if the local system has
   # -lvtkzlib$with_vtk_version
   # -lvtkexpat$with_vtk_version
-  OLD_LDFLAGS=$LDFLAGS
-  LDFLAGS="$VTK_LDFLAGS $LDFLAGS"
-  AC_CHECK_LIB([vtkzlib$with_vtk_version], [vtk_zlib_zlibVersion], [VTK_LIBS="$VTK_LIBS -lvtkzlib$with_vtk_version"])
-  AC_CHECK_LIB([vtkexpat$with_vtk_version], [vtk_expat_XML_ExpatVersion], [VTK_LIBS="$VTK_LIBS -lvtkexpat$with_vtk_version"])
-  LDFLAGS=$OLD_LDFLAGS
-
+  old_LDFLAGS=$LDFLAGS
+  LDFLAGS="$LDFLAGS $vtk_ldflags"
+  AC_CHECK_LIB([vtkzlib$with_vtk_version], [vtk_zlib_zlibVersion], [vtk_libs="$vtk_libs -lvtkzlib$with_vtk_version"])
+  AC_CHECK_LIB([vtkexpat$with_vtk_version], [vtk_expat_XML_ExpatVersion], [vtk_libs="$vtk_libs -lvtkexpat$with_vtk_version"])
+  LDFLAGS=$old_LDFLAGS
 ])# AM_PATH_VTK
 
-AC_DEFUN([PGFEM3D_VTK], [
-  AM_OPTIONS_VTK
-  AS_IF([test "x$enable_vtk" == xyes], [AM_PATH_VTK([$1], [$2], [$3])])
+AC_DEFUN([CONFIG_VTK], [
+ AC_ARG_ENABLE(vtk,
+   [AS_HELP_STRING([--enable-vtk],
+ 		          [Output in VTK binary output @<:@default=yes@:>@])],
+   [], [enable_vtk=yes])
+
+ AC_ARG_WITH([vtk],
+   [AC_HELP_STRING([--with-vtk],
+                   [The prefix where VTK is installed @<:@default=/usr@:>@])],
+   [], [with_vtk="/usr"])
+
+ AC_ARG_WITH([vtk-version],
+   [AC_HELP_STRING([--with-vtk-version],
+                  [VTK's include directory name is vtk-suffix, e.g. vtk-5.10/. What's the suffix? @<:@default=-5.10.1@:>@])],
+   [], [with_vtk_version="-5.10.1"])
+
+ AS_IF([test "x$enable_vtk" == xyes],
+   [AM_PATH_VTK([$1],
+                [have_vtk=yes],
+                [AC_ERROR(Could not find VTK $with_vtk_version)])])
+                
+ AS_IF([test "x$have_vtk" != xyes],
+   [AC_DEFINE(NO_VTK_LIB, 1, [Do not use VTK libraries])])
+
+ AC_SUBST([VTK_CPPFLAGS], ["$vtk_cppflags"])
+ AC_SUBST([VTK_LDFLAGS], ["$vtk_ldflags"])
+ AC_SUBST([VTK_LIBS], ["$vtk_libs"])
 ])
