@@ -22,7 +22,7 @@ AC_DEFUN([CONFIG_SUITESPARSE], [
  CPPFLAGS=$old_CPPFLAGS
   
  old_LDFLAGS=$LDFLAGS
- LDFALGS="$LDFLAGS $suitesparse_ldflags"
+ LDFLAGS="$LDFLAGS $suitesparse_ldflags"
  AC_SEARCH_LIBS([umfpack_dl_solve], [umfpack amd], [], [AC_MSG_ERROR(Can't link SuiteSparse libraries)])
  LDFLAGS=$old_LDFLAGS
 
