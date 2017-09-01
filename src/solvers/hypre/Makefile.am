@@ -10,5 +10,3 @@ libhypre_la_CPPFLAGS = -Wall -Werror \
                        -I$(top_srcdir)/include \
                        -I$(top_builddir)/include \
                        $(HYPRE_INCLUDE)
-libhypre_la_LDFLAGS  = $(HYPRE_LDFLAGS)
-libhypre_la_LIBADD   = $(HYPRE_LIBS)

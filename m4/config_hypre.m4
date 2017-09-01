@@ -17,9 +17,16 @@ AC_DEFUN([CONFIG_HYPRE], [
 
  # output hypre-related build variables
  AS_IF([test "x$enable_hypre" == xyes],
-  [AC_SUBST([HYPRE_INCLUDE], ["$hypre_include"])
-   AC_SUBST([HYPRE_LDFLAGS], ["$hypre_ldflags"])
-   AC_SUBST([HYPRE_LIBS], ["-lHYPRE"])
-   $1],
-  [$2])
+  [old_CPPFLAGS=$CPPFLAGS
+   CPPFLAGS="$CPPFLAGS $hypre_include"
+   AC_CHECK_HEADER([HYPRE.h], [],
+     [AC_MSG_ERROR(Can't find HYPRE headers $hypre_include)])
+   CPPFLAGS=$old_CPPFLAGS
+
+   LDFLAGS="$LDFLAGS $hypre_ldflags"
+   AC_SEARCH_LIBS([HYPRE_IJMatrixCreate], [HYPRE], [],
+     [AC_MSG_ERROR(Can't link HYPRE with $hypre_ldflags -lHYPRE)])
+   $1])
+
+ AC_SUBST([HYPRE_INCLUDE], ["$hypre_include"])
 ])

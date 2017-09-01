@@ -12,10 +12,3 @@ AM_CPPFLAGS = -Wall -Werror \
               $(HYPRE_INCLUDE)
 
 LDADD       = $(top_builddir)/src/libpgfem3d.la
-
-# This is a hack to get around the fact that there are conflicting symbols in
-# the Generalizsed_constitutive_model.
-#
-# https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
-#
-AM_LDFLAGS  = $(HYPRE_LDFLAGS) -Wl,--allow-multiple-definition 

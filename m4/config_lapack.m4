@@ -9,8 +9,8 @@ AC_DEFUN([CONFIG_LAPACK], [
 
  mkl_include="-m64 -I$with_mkl/include $with_mkl_override"
  mkl_ldflags="-L$with_mkl/lib/intel64 -Wl,-rpath,$with_mkl/lib/intel64"
- mkl_libs="-Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl"
-
+ mkl_libs="-lmkl_intel_lp64 -lmkl_sequential -lmkl_core"
+ 
  AC_ARG_WITH(mkl-override,
   [AS_HELP_STRING([--with-mkl-override=<include line>],
 			      [Specify include line for MKL override headers])])
@@ -49,15 +49,19 @@ AC_DEFUN([CONFIG_LAPACK], [
  AC_CHECK_HEADERS([$cblas_h $lapack_h], [], [AC_MSG_ERROR(Could not find cblas headers)])
  CPPFLAGS=$old_CPPFLAGS
  
- dnl old_LDFLAGS=$LDFLAGS
- dnl LDFALGS="$LDFLAGS $lapack_ldflags"
- dnl AC_SEARCH_LIBS(cblas_dgemm, [$lapack_libs], [], [AC_MSG_ERROR(Failed to link cblas)])
- dnl LDFLAGS=$old_LDFLAGS
+ LDFLAGS="$LDFLAGS $lapack_ldflags"
+ LIBS="$LIBS $lapack_libs"
+ AC_SEARCH_LIBS(cblas_daxpy, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_ddot, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_dgemm, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_dgemv, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_dger, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_dnrm2, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(cblas_dscal, [], [], [AC_MSG_ERROR(Failed to link cblas)])
+ AC_SEARCH_LIBS(dgesv, [], [], [AC_MSG_ERROR(Failed to link lapack)])
 
  AC_SUBST([CBLAS_H], ["$cblas_h"])
  AC_SUBST([LAPACK_H], ["$lapack_h"])
  AC_SUBST([LAPACK_INCLUDE], ["$lapack_include"])
- AC_SUBST([LAPACK_LDFLAGS], ["$lapack_ldflags"])
- AC_SUBST([LAPACK_LIBS], ["$lapack_libs"])
  $1
 ])

@@ -4,8 +4,6 @@ AC_DEFUN([CONFIG_SUITESPARSE], [
 			      [Specify path to the root directory of a standard suitesparse installation.])],
   [], [with_suitesparse=no])
 
- suitesparse_libs="-lumfpack -lamd"
-
  # special case "." argument for source tarball paths
  AS_IF([test "x$with_suitesparse" == x.],
   [suitesparse_include="-I$with_suitesparse/UMFPACK/Include -I$with_suitesparse/AMD/Include -I$with_suitesparse/UFconfig"
@@ -19,15 +17,12 @@ AC_DEFUN([CONFIG_SUITESPARSE], [
  old_CPPFLAGS=$CPPFLAGS
  CPPFLAGS="$CPPFLAGS $suitesparse_include"
  AC_CHECK_HEADER([umfpack.h], [], [AC_MSG_ERROR(Can't find SuiteSparse headers)])
- CPPFLAGS=$old_CPPFLAGS
-  
- old_LDFLAGS=$LDFLAGS
+ CPPFLAGS=$old_CPPFLAGS  
+
  LDFLAGS="$LDFLAGS $suitesparse_ldflags"
- AC_SEARCH_LIBS([umfpack_dl_solve], [umfpack amd], [], [AC_MSG_ERROR(Can't link SuiteSparse libraries)])
- LDFLAGS=$old_LDFLAGS
+ AC_SEARCH_LIBS([umfpack_dl_solve], [umfpack], [],
+   [AC_MSG_ERROR(Can't link SuiteSparse as $suitesparse_ldflags -lumfpack)])
 
  AC_SUBST([SUITESPARSE_INCLUDE], [$suitesparse_include])
- AC_SUBST([SUITESPARSE_LDFLAGS], [$suitesparse_ldflags])
- AC_SUBST([SUITESPARSE_LIBS],    [$suitesparse_libs])
  $1
 ])
