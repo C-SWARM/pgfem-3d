@@ -28,6 +28,7 @@
 #include "index_macros.h"
 #include "data_structure_c.h"
 #include "constitutive_model.h"
+#include <ttl/ttl.h>
 
 #ifndef DISP_DEBUG
 #define DISP_DEBUG 0
@@ -38,6 +39,17 @@
 #endif
 
 Define_Matrix(double);
+
+//ttl declarations
+namespace {
+  template<int R, int D = 3, class S = double>
+  using Tensor = ttl::Tensor<R, D, S>;
+
+  static constexpr ttl::Index<'i'> i;
+  static constexpr ttl::Index<'j'> j;
+  static constexpr ttl::Index<'k'> k;
+  static constexpr ttl::Index<'l'> l;
+}
 
 static const int ndn = 3;
 static const double LAGRANGE_THRESH = 0.1;
@@ -538,7 +550,7 @@ int DISP_resid_el(double *R,
         } else {
           ptrDam = &empty_damage;
           void *ctx = NULL;
-          construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5, NULL);
+          construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5, NULL,-1);
           eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx);
           err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
                                            F, dt, 0);
@@ -1672,70 +1684,45 @@ static void disp_based_tan_at_ip(double *K,
 				 const double jj,
 				 const double wt)
 {
-  double *AA, *BB, *CC, *DD, *LA_wg;
-  AA = aloc1(9);
-  BB = aloc1(9);
-  CC = aloc1(9);
-  DD = aloc1(9);
-  LA_wg = aloc1(9);
+  Tensor<2, 3, double> AA, BB, CC, DD, LA_wg;
+  Tensor<2, 3, const double*> F_ttl(F);  // convert F and L to ttl tensors
+  Tensor<4, 3, const double*> L_ttl(L);
 
   /* POSSIBLE OPTIMIZATION: unroll loops and change abwg order */
 
   for(int a=0; a<nne; a++){
     for(int b=0; b<ndn; b++){
-      const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
-						   nne,ndn,ndn,ndn)];
+      const Tensor<2, 3, const double*> ptrST_ab(&ST[idx_4_gen(a,b,0,0,
+        				 	    nne,ndn,ndn,ndn)]);
 
       /* AA = sym(F'Grad(del u)) */
-      cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-      		  3,3,3,1.0,F,3,ptrST_ab,3,0.0,BB,3);
-      symmetric_part(AA,BB,3);
+      BB(i,j) = F_ttl(k,i).to(i,k) * ptrST_ab(k,j);
+      AA(i,j) = .5 * (BB(i,j) + BB(j,i).to(i,j));
 
       for(int w=0; w<nne; w++){
 	for(int g=0; g<ndn; g++){
-	  const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
-							nne,ndn,ndn,ndn)];
-	  
-	  for(int i=0; i<ndn; i++){
-	    for(int j=0; j<ndn; j++){
-	      BB[idx_2(i,j)] = CC[idx_2(i,j)] = 0.0;
-	      for(int k=0; k<ndn; k++){ 
-		/* BB = F' ST_wg */
-		BB[idx_2(i,j)] += F[idx_2(k,i)]*ptrST_wg[idx_2(k,j)];
-
-		/* CC = ST_wg' ST_ab */
-		CC[idx_2(i,j)] += ptrST_wg[idx_2(k,i)]*ptrST_ab[idx_2(k,j)];
-	      }
-	    }
-	  }
+	  const Tensor<2, 3, const double*> ptrST_wg(&ST[idx_4_gen(w,g,0,0,
+	  						nne,ndn,ndn,ndn)]);
+	 
+	  /* BB = F' * ST_wg */
+	  BB(i,j) = F_ttl(k,i).to(i,k) * ptrST_wg(k,j);
+	  /* CC = ST_wg' * ST_ab */
+	  CC(i,j) = ptrST_wg(k,i).to(i,k) * ptrST_ab(k,j);
 
 	  /* DD = sym(BB) */
-	  symmetric_part(DD,BB,3);
+	  DD = .5 * (BB(i,j) + BB(j,i).to(i,j));
 
 	  /* compute LA_wg = L:sym(F'ST_wg) */
-	  memset(LA_wg,0,9*sizeof(double));
-	  for(int i=0; i<9; i++){
-	    if(DD[i] == 0.0) continue;
-	    for(int j=0; j<9; j++){
-	      LA_wg[j] += L[9*j+i]*DD[i];
-	    }
-	  }
+	  LA_wg(i,j) = L_ttl(i,j,k,l) * DD(k,l);
 
 	  const int K_idx = idx_K(a,b,w,g,nne,ndn);
 	  for(int i=0; i<9; i++){
-	    K[K_idx] += jj*wt*(AA[i]*LA_wg[i] + (1-dam->w)*Sbar[i]*CC[i]);
+	    K[K_idx] += jj*wt*(AA.data[i]*LA_wg.data[i] + (1-dam->w)*Sbar[i]*CC.data[i]);
 	  }
-
 	}
       }
     }
   }
-
-  free(AA);
-  free(BB);
-  free(CC);
-  free(DD);
-  free(LA_wg);
 }/* disp_based_tan_at_ip() */
 
 static void disp_based_bnd_tan_at_ip(double *K,

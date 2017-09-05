@@ -2,6 +2,7 @@
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
  *  Sangmin Lee, University of Notre Dame, Notre Dame, IN, <slee43@nd.edu>
+ *  Aaron Howell, University of Notre Dame, Notre Dame, IN, <ahowell3@nd.edu>
  */
 
 #include "plasticity_model.h"
@@ -19,6 +20,7 @@
 #include "hyperelasticity.h"
 #include "crystal_plasticity_integration.h"
 #include "flowlaw.h"
+#include <ttl/ttl.h>
 
 #define DIM_3        3
 #define DIM_3x3      9
@@ -29,6 +31,27 @@
 
 
 static const int FLAG_end = 0;
+
+// ttl declarations
+namespace {
+/// Only dealing with 3 dimensional double data, but it is sometimes const.
+template <int R, class S = double>
+using Tensor = ttl::Tensor<R, 3, S>;
+
+template <int R, class S = double>
+using Tensor9x9 = ttl::Tensor<R, 9, S>;
+
+template <int R>
+using Delta = ttl::Tensor<R, 3, double>;
+
+// ttl indexes
+static constexpr ttl::Index<'i'> i;
+static constexpr ttl::Index<'j'> j;
+static constexpr ttl::Index<'k'> k;
+static constexpr ttl::Index<'l'> l;
+static constexpr ttl::Index<'m'> m;
+static constexpr ttl::Index<'n'> n;
+}
 
 enum variable_names {
   VAR_L_n,
@@ -1207,78 +1230,15 @@ int plasticity_model_ctx_destroy(void **ctx)
   return err;
 }
 
-static int compute_P_alpha_of_Psys(double *P_sys,
-                                   const int alpha,
-                                   Matrix(double) *Pa)
-{
-  Matrix(double) P;
-  P.m_row = P.m_col = DIM_3; P.m_pdata = P_sys + DIM_3x3*alpha;
-  Matrix_redim(*Pa, DIM_3,DIM_3);
-  Matrix_AeqB(*Pa,1.0,P);
-  return 0;
-}
 
-static int compute_C_D_alpha(const Constitutive_model *m,
-                             Matrix(double) *aC,
-                             Matrix(double) *aD,
-                             const Matrix(double) *eFn,
-                             const Matrix(double) *eFnp1,
-                             const Matrix(double) *M,
-                             const Matrix(double) *Pa,
-                             const Matrix(double) *S,
-                             const Matrix(double) *L,
-                             const Matrix(double) *C)
-{
-  
-  Matrix(double) LC, AA, CAA, eFnp1AA, eFnp1AAMT, MI;
-  Matrix_construct_redim(double,LC,       DIM_3,DIM_3);
-  Matrix_construct_redim( double,AA,       DIM_3,DIM_3);
-  Matrix_construct_redim( double,CAA,      DIM_3,DIM_3);
-  Matrix_construct_redim( double,eFnp1AA,  DIM_3,DIM_3);
-  Matrix_construct_redim( double,eFnp1AAMT,DIM_3,DIM_3);    
-  Matrix_construct_redim(double,MI,       DIM_3,DIM_3);
-
-  for(int ia=0; ia<DIM_3x3; ia++)
-  {
-          aC->m_pdata[ia] = 0.0;
-          aD->m_pdata[ia] = 0.0;
-           AA.m_pdata[ia] = 0.0;
-          CAA.m_pdata[ia] = 0.0;
-      eFnp1AA.m_pdata[ia] = 0.0;
-    eFnp1AAMT.m_pdata[ia] = 0.0;
-  }   
-
-  Matrix_AxB(AA,1.0,0.0,*Pa,0,*S,0);   // AA = Pa*S
-  Matrix_AxB(AA,1.0,1.0,*S,0,*Pa,1);   // AA = AA + S*Pa' 
-       
-  Matrix_Tns4_dd_Tns2(LC, *L, *C);     // LC = L:C
-  Matrix_AxB(AA,1.0,1.0,LC,0,*Pa,0);   // AA = AA + L:C*Pa
-
-  int err = inv3x3(M->m_pdata,MI.m_pdata);
-  Matrix_AxB(CAA,1.0,0.0,*C,0,AA,0);   
-  Matrix_AxB(*aC,1.0,0.0,MI,1,CAA,0);
-
-  Matrix_AxB(eFnp1AA,1.0,0.0,*eFnp1,0,AA,0);
-  Matrix_AxB(eFnp1AAMT,1.0,0.0,eFnp1AA,0,*M,1);
-  Matrix_AxB(*aD,1.0,0.0,eFnp1AAMT,0,*eFn,1);
-  
-  Matrix_cleanup(LC);
-  Matrix_cleanup(AA);
-  Matrix_cleanup(CAA);
-  Matrix_cleanup(eFnp1AA);
-  Matrix_cleanup(eFnp1AAMT);       
-  Matrix_cleanup(MI);          
-  return err;
-}
-
-int compute_dMdu(const Constitutive_model *m,
-                 Matrix(double) *dMdu,
-                 const Matrix(double) *Grad_du,
-                 const Matrix(double) *eFn,
-                 const Matrix(double) *eFnp1,
-                 const Matrix(double) *M,
-                 const Matrix(double) *S,
-                 const Matrix(double) *L,
+int compute_dMdu(const Constitutive_model *con,
+                 Matrix(double) *_dMdu,
+                 const Matrix(double) *_Grad_du,
+                 const Matrix(double) *_eFn,
+                 const Matrix(double) *_eFnp1,
+                 const Matrix(double) *_M,
+                 const Matrix(double) *_S,
+                 const Matrix(double) *_L,
                  const double g_n,
                  const double g_np1,
                  const double *tau,
@@ -1289,8 +1249,8 @@ int compute_dMdu(const Constitutive_model *m,
   // compute dMdu:U = -grad(du):B
   // Grad_du = Grad(du)
 
-  MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((m->param)->cm_mat)->mat_p;
-  const double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  MATERIAL_CRYSTAL_PLASTICITY *mat_p = ((con->param)->cm_mat)->mat_p;
+  const double *state_var = con->vars_list[0][con->model_id].state_vars[0].m_pdata;
   
   const int N_SYS          = (mat_p->slip)->N_SYS;
   const double gamma_dot_0 = mat_p->gamma_dot_0;
@@ -1301,134 +1261,99 @@ int compute_dMdu(const Constitutive_model *m,
   const double gs_0        = mat_p->gs_0;
   const double w           = mat_p->w;
   
-  // --------------> define variables
-  Matrix(double) C;
-  Matrix_construct_init(double, C, DIM_3,DIM_3,0.0);
-  Matrix_AxB(C,1.0,0.0,*eFnp1,1,*eFnp1,0);
-  
-  Matrix(double) U,UI,II,B,aCxPa,CxP,aDxPa,DxP;
-  
-  Matrix_construct_redim(double, U,     DIM_3x3x3x3,1); // 3x3x3x3 tensor
-  Matrix_construct_redim(double, UI,    DIM_3x3,DIM_3x3);
-  Matrix_construct_redim(double, II,    DIM_3x3x3x3,1);
-  Matrix_construct_init( double, B,     DIM_3x3x3x3,1,0.0);
-  Matrix_construct_redim(double, aCxPa, DIM_3x3x3x3,1);
-  Matrix_construct_redim(double, CxP,   DIM_3x3x3x3,1);
-  Matrix_construct_redim(double, aDxPa, DIM_3x3x3x3,1);
-  Matrix_construct_redim(double, DxP,   DIM_3x3x3x3,1);  
-
-  Matrix(double) aC,Pa,aD,sum_aC,sum_Pa,sum_aD;
-  Matrix_construct_redim(double, aC, DIM_3,DIM_3);  
-  Matrix_construct_redim(double, Pa, DIM_3,DIM_3);
-  Matrix_construct_redim(double, aD, DIM_3,DIM_3);
-        
-  Matrix_construct_init( double, sum_aC, DIM_3,DIM_3,0.0);
-  Matrix_construct_init( double, sum_Pa, DIM_3,DIM_3,0.0);
-  Matrix_construct_init( double, sum_aD, DIM_3,DIM_3,0.0);  
-  
-  Matrix_Tns4_eye(II);
-  Matrix_AeqB(U, 1.0/dt, II);
-
-  // <-------------- define variables  
-  
-  double gamma_dot = 0.0;  
+ double gamma_dot = 0.0;
   for(int a = 0; a<N_SYS; a++)
     gamma_dot += fabs(gamma_dots[a]);
 
   double gm_gms   = gamma_dot/gamma_dot_s;
   double sign_gm_gms = (gm_gms < 0) ? -1.0 : 1.0;
-//vvvvvvv need to verify
+
   double R3 = 0.0;
-  double gs_np1 = 0.0;  
+  double gs_np1 = 0.0;
   if(fabs(gm_gms)>1.0e-15)
   {
     R3 = gs_0*w/gamma_dot_s*sign_gm_gms*pow(fabs(gm_gms), w-1.0);
     gs_np1 = gs_0*pow(fabs(gm_gms),w);
-  }   
-//^^^^^^^ need to verify
+  }
 
-  double AA = R3*gamma_dot*(g_n - g0 + dt*G0*gamma_dot) + gs_np1*(gs_np1 - g0 - g_n) + g0*g_n;
+  double AA = R3*gamma_dot*(g_n - g0 + dt*G0*gamma_dot) + 
+    gs_np1 * (gs_np1 - g0 - g_n) + g0*g_n;
   double BB = gs_np1 - g0  - dt*G0*gamma_dot;
   double R4 = dt*G0*AA/BB/BB;
-  
+
   double sum_1gm1gm = 0.0;
-  
+
+  // convert C struct matrices into ttl tensors
+  const Tensor<2, const double*> Grad_du(_Grad_du->m_pdata);
+  const Tensor<2, const double*> eFn(_eFn->m_pdata);
+  const Tensor<2, const double*> eFnp1(_eFnp1->m_pdata);
+  const Tensor<2, const double*> M(_M->m_pdata);
+  const Tensor<2, const double*> S(_S->m_pdata);
+  const Tensor<4, const double*> L(_L->m_pdata);
+
+  const Tensor<2> C = eFnp1(k,i).to(i,k) * eFnp1(k,j);             // eFnp1' * eFnp1
+  Tensor<2> MI = {};
+  int err = inv3x3(_M->m_pdata, MI.data);
+  const Tensor<2> MI_x_C = MI(j,i) * C(j,k);                       // M^{-T} * C
+  const Tensor<2> M_x_eFn = M(j,i).to(i,j) * eFn(k,j).to(j,k);     // M' * eFn'
+
+  // tensors are initialized to 0
+  Tensor<2> sum_aC = {};
+  Tensor<2> sum_Pa = {};
+  Tensor<2> sum_aD = {};
+  Tensor<4> U = {};
+  Tensor<4> B = {};
+
+  // set U to the 9x9 identity scaled by 1.0/dt
+  U(i,j,k,l) = (1.0/dt) * ttl::identity(i,j,k,l);                    
+
   for(int a = 0; a<N_SYS; a++)
   {
     double drdtau = gamma_dot_0/mm/g_np1*pow(fabs(tau[a]/g_np1), 1.0/mm - 1.0);
     double drdg   = -drdtau*tau[a]/g_np1;
 
     double R2_a = ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdtau;
-    sum_1gm1gm += ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdg;  
+    sum_1gm1gm += ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdg;
 
-    compute_P_alpha_of_Psys(Psys,a,&Pa);        
-    compute_C_D_alpha(m,&aC, &aD,eFn,eFnp1,M,&Pa,S,L,&C);
+    // compute P alpha of Psys
+    const Tensor<2, const double*> Pa(Psys + DIM_3x3 * a);        
+
+    // compute C alpha and D alpha using ttl operations
+    auto t0 = Pa(i,k) * S(k,j);                                    // Pa * S
+    auto t1 = S(i,k) * Pa(j,k).to(k,j);                            // S * Pa'
+    auto t2 = L(i,k,n,l) * C(n,l) * Pa(k,j);                       // L:C * Pa
+    const Tensor<2> AA = t0 + t1 + t2;
+    const Tensor<2> aC = MI_x_C(i,j) * AA(j,k);
+    const Tensor<2> aD = eFnp1(i,j) * AA(j,k) * M_x_eFn(k,l);
     
-    Matrix_AOxB(aCxPa, aC, Pa);
-    Matrix_AOxB(aDxPa, aD, Pa);    
-    
-    Matrix_AplusB(sum_aC, 1.0, sum_aC, R2_a, aC);
-    Matrix_AplusB(sum_Pa, 1.0, sum_Pa, drdg, Pa);
-    Matrix_AplusB(sum_aD, 1.0, sum_aD, R2_a, aD);
-        
-    Matrix_AplusB(U, 1.0, U, drdtau, aCxPa);    
-    Matrix_AplusB(B, 1.0, B, drdtau, aDxPa);            
-  } 
-  
+    sum_Pa(i,j) += drdg * Pa(i,j);
+    sum_aC(i,j) += R2_a * aC(i,j);
+    sum_aD(i,j) += R2_a * aD(i,j);
+
+    // perform the Kronecker product using ttl and scales it by drdtau
+    U(i,j,k,l) += drdtau * aC(i,j) * Pa(k,l);
+    B(i,j,k,l) += drdtau * aD(i,j) * Pa(k,l);
+  }
+
   double R1 = R4/(1.0-R4*sum_1gm1gm);
-  
-  Matrix_AOxB(CxP, sum_aC, sum_Pa);
-  Matrix_AOxB(DxP, sum_aD, sum_Pa);
-  Matrix_AplusB(U, 1.0, U, R1, CxP);
-  Matrix_AplusB(B, 1.0, B, R1, DxP);
 
-/*  
-  Matrix(double) V;
-  Matrix_construct_init(double, V, DIM_3,DIM_3,0.0);
-  Matrix_Tns2_dd_Tns4(V,*Grad_du,B);
-  Matrix_AeqB(V, -1.0, V);
-  
-  Matrix_Tns4_mat_9x9(U);
-  Matrix_inv(U, UI);
-  
-  dMdu->m_row = 1;
-  dMdu->m_col = DIM_3x3;
-  Matrix_Mat2Vec(V);        
-  Matrix_AxB(*dMdu,1.0,0.0,V,1,UI,0);   
-  Matrix_Vec2Mat(*dMdu,DIM_3,DIM_3);*/
-  
-  Matrix(double) V;
-  Matrix_construct_redim(double, V, DIM_3,DIM_3);
-  Matrix_Tns4_dd_Tns2(V,B,*Grad_du);
-  Matrix_AeqB(V, -1.0, V);
-  
-  Matrix_Tns4_mat_9x9(U);
-  Matrix_inv(U, UI);
+  // perform the Kronecker product using ttl and scales it by R1
+  U(i,j,k,l) += R1 * sum_aC(i,j) * sum_Pa(k,l);
+  B(i,j,k,l) += R1 * sum_aD(i,j) * sum_Pa(k,l);
 
-  Matrix_Mat2Vec(V);
-  Matrix_Mat2Vec(*dMdu);
-  Matrix_AxB(*dMdu,1.0,0.0,UI,0,V,0); 
-  Matrix_Vec2Mat(*dMdu,DIM_3,DIM_3);
+  // cast _dmdu as a ttl tensor and compute its value
+  // -1 * (inverse(U) * B:Grad_du)
 
-  // clear variables
-  Matrix_cleanup(C);
-  Matrix_cleanup(U);
-  Matrix_cleanup(UI);
-  Matrix_cleanup(II);
-  Matrix_cleanup(B);
-  Matrix_cleanup(aCxPa);
-  Matrix_cleanup(CxP);
-  Matrix_cleanup(aDxPa);
-  Matrix_cleanup(DxP);  
-  Matrix_cleanup(aC);  
-  Matrix_cleanup(Pa);
-  Matrix_cleanup(aD);
-  Matrix_cleanup(sum_aC);
-  Matrix_cleanup(sum_Pa);
-  Matrix_cleanup(sum_aD);   
-  Matrix_cleanup(V);
+  try {
+    Tensor<2,double*>(_dMdu->m_pdata)(i,j) = -(ttl::inverse(U)(i,j,k,l) * 
+					     B(k,l,m,n) * Grad_du(m,n));  
+  }
+  catch (const int inverseException){
+    PGFEM_printf("4th order matrix is singular\n");
+    err++;
+  }
 
-  return 0;
+  return err;
 }
 
 

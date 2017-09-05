@@ -50,7 +50,8 @@ int poro_viscoplasticity_model_ctx_build(void **ctx,
                                          double *eFnpa,
                                          double *hFn,
                                          double *hFnp1,
-                                         const int is_coulpled_with_thermal);
+                                         const int is_coulpled_with_thermal,
+                                         const int npa);
                                          
 int poro_viscoplasticity_model_destroy(Model_parameters *p);
 

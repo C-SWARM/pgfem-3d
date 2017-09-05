@@ -482,6 +482,7 @@ typedef struct ELASTICITY ELASTICITY;
  
 struct Model_parameters {
   /** Pointer to isotropic material props */
+  double *pF;
   const HOMMAT *p_hmat;
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
   int uqcm;   // UQ study through constitutive model 0: no, or yes
@@ -651,7 +652,8 @@ int construct_model_context(void **ctx,
                                    double *F,
                                    const double dt,
                                    const double alpha,
-                                   double *eFnpa);
+                                   double *eFnpa,
+                                   const int npa);
 
 struct FEMLIB;
 #ifndef TYPE_FEMLIB

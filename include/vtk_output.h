@@ -107,6 +107,8 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_W,
              MECHANICAL_Var_ElementPressure,
              MECHANICAL_Var_ElementVolume,
+             MECHANICAL_Var_Density,
+             MECHANICAL_Var_HydrostaticStress,
              MECHANICAL_Var_NO} MECHANICAL_Var;
 
 /// Thermal part of index of output vailabes
@@ -128,6 +130,7 @@ typedef enum{CHEMICAL_VAR_SPECIES,
 ///      pmr->write_vtk = [function name to write any variables]     
 typedef int (*write_vtk) (FILE *out,
                           GRID *grid,
+                          const MATERIAL_PROPERTY *mat,
                           FIELD_VARIABLES *fv,                          
                           LOADING_STEPS *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
@@ -172,6 +175,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
 /// write simulation results in vtk format based on physics
 ///
 /// \param[in] grid an object containing all mesh data
+/// \param[in] mat a material object
 /// \param[in] FV array of field variables
 /// \param[in] load object for loading
 /// \param[in] pD a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
@@ -181,6 +185,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int VTK_write_multiphysics_vtu(GRID *grid,
+                               const MATERIAL_PROPERTY *mat,
                                FIELD_VARIABLES *FV,
                                LOADING_STEPS *load,
                                PRINT_MULTIPHYSICS_RESULT *pD,

@@ -257,6 +257,7 @@ int print_PGFem3D_final(double total_time,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] tim current time step number
+/// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int print_results(GRID *grid,
                   MATERIAL_PROPERTY *mat,
@@ -313,8 +314,10 @@ int print_results(GRID *grid,
       
       dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
 
+      sol->run_integration_algorithm = 0;
       err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
                                          mp_id_M,time_steps->times[tim+1],dts);
+      sol->run_integration_algorithm = 1;                                         
     }
   
     if(opts->comp_print_macro)
@@ -363,7 +366,7 @@ int print_results(GRID *grid,
       if(myrank == 0)
         err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,COM[0].nproc);
       
-      err += VTK_write_multiphysics_vtu(grid,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
+      err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
 
       // print cohesive element results
       if((mp_id_M >= 0) && (opts->cohesive == 1))
@@ -399,15 +402,77 @@ int print_results(GRID *grid,
         }/* switch(format) */
       }
     }
-
-    // write restart files
-    if(SAVE_RESTART_FILE)
-    {
-      write_restart(grid,FV,load,time_steps,opts,mp,myrank,tim);
-      
-    }
   }/* end output */
   
+  return err;
+}
+
+/// write restart files
+///
+/// When check point is active, write restart files. Even if check point is not active but 
+/// close to walltime (from command line), write restart files because the run is about to 
+/// finish or be killed.
+///
+/// \param[in] grid a mesh object
+/// \param[in] FV array of field variable object
+/// \param[in] load object for loading
+/// \param[in] time_steps object for time stepping
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] tim current time step number
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+/// \param[in] time_step_start time measure when time stepping starts for step tim
+/// \param[in] time_0 time measure when simulation starts
+/// \return non-zero on internal error
+int write_restart_files(GRID *grid,
+                        FIELD_VARIABLES *FV,
+                        LOADING_STEPS *load,
+                        PGFem3D_TIME_STEPPING *time_steps,
+                        PGFem3D_opt *opts,
+                        MULTIPHYSICS *mp,
+                        long tim,
+                        MPI_Comm mpi_comm,
+                        int myrank,
+                        double time_step_start,
+                        double time_0) 
+{
+  int err = 0;
+
+  int write_restart_global = 0;
+  if(time_steps->print[tim] == 1)    
+    write_restart_global = 1;
+  else
+  {
+    if(opts->walltime>0)
+    {  
+      // Make decesion to write restart when time is close to walltime 
+      // even if tim is not check point
+      double time_step_end = MPI_Wtime();
+      double time_taken = time_step_end - time_step_start;
+    
+      int write_restart_local  = 0;
+
+      if(opts->walltime - time_taken*3.0 < (time_step_end + time_0))
+        write_restart_local = 1;
+      
+      MPI_Allreduce (&write_restart_local,&write_restart_global,1,MPI_INT,MPI_MAX,mpi_comm);
+      if(write_restart_global>0)
+      {  
+        if(myrank==0)
+        {  
+          printf("INFO: write restart file since PGFem3D is about to done.(walltime = %f[s], now = %f[s], time taken = %f[s])\n",
+                 opts->walltime, time_step_end + time_0, time_taken);
+        }
+        
+        opts->walltime = -1.0;
+      }
+    }
+  }
+
+  if(SAVE_RESTART_FILE && write_restart_global>0)
+    write_restart(grid,FV,load,time_steps,opts,mp,myrank,tim);
+    
   return err;
 }
 
@@ -969,7 +1034,7 @@ int single_scale_main(int argc,char *argv[])
           free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
-          err += prepare_temporal_field_varialbes(fv+ia,&grid,1);          
+          err += prepare_temporal_field_varialbes(fv+ia,&grid,1);
         }
         else
           err += prepare_temporal_field_varialbes(fv+ia,&grid,0);
@@ -1059,6 +1124,84 @@ int single_scale_main(int argc,char *argv[])
     err += read_initial_values(&grid,&mat,fv,sol,&load,&time_steps,&options,&mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)
     {
+      // set inital plastic deformation
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
+      {
+        if(param_list[0].pF != NULL)
+        {
+          int cnt_npd = 0;
+          int npd = load.sups[ia]->npd;
+          int *is_npd_set = NULL;
+          
+          if(npd>0)
+            is_npd_set = (int *) malloc(sizeof(int)*npd);
+          
+          for(int ic=0; ic<npd; ic++)
+            is_npd_set[ic] = 0;
+          
+          double pFI[9];
+          inv3x3(param_list[0].pF, pFI);
+          if(myrank==0)
+          {
+            printf("set initial plastic deformation:\npF=[");
+            printf("%e %e %e\n%e %e %e\n%e %e %e]\n", param_list[0].pF[0], param_list[0].pF[1], param_list[0].pF[2]
+                                                    , param_list[0].pF[3], param_list[0].pF[4], param_list[0].pF[5]
+                                                    , param_list[0].pF[6], param_list[0].pF[7], param_list[0].pF[8]);
+          }
+          for(int ic=0; ic<grid.nn; ic++)
+          {
+            double x[3], X[3], u[3];
+            x[0] = grid.node[ic].x1_fd;
+            x[1] = grid.node[ic].x2_fd;
+            x[2] = grid.node[ic].x3_fd;
+            
+            X[0] = pFI[0]*x[0] + pFI[1]*x[1] + pFI[2]*x[2];
+            X[1] = pFI[3]*x[0] + pFI[4]*x[1] + pFI[5]*x[2];
+            X[2] = pFI[6]*x[0] + pFI[7]*x[1] + pFI[8]*x[2];
+            
+            u[0] = x[0] - X[0];
+            u[1] = x[1] - X[1];
+            u[2] = x[2] - X[2];
+            
+            grid.node[ic].x1 = grid.node[ic].x1_fd = X[0];
+            grid.node[ic].x2 = grid.node[ic].x2_fd = X[1];
+            grid.node[ic].x3 = grid.node[ic].x3_fd = X[2];            
+            
+            if(options.restart < 0)
+            {
+              fv[ia].u_n[ic*3+0] = fv[ia].u_nm1[ic*3+0] = u[0];
+              fv[ia].u_n[ic*3+1] = fv[ia].u_nm1[ic*3+1] = u[1];
+              fv[ia].u_n[ic*3+2] = fv[ia].u_nm1[ic*3+2] = u[2];
+            }
+            //printf("x = %e %e %e -> %e %e %e: u = %e %e %e\n", x[0], x[1], x[2],
+            //                                                   X[0], X[1], X[2],
+            //                                                   u[0], u[1], u[2]);
+                          
+            for(int im=0; im<3; im++)
+            {
+              long id = grid.node[ic].id_map[ia].id[im];
+              
+              if(id>0 && options.restart < 0)
+                fv[ia].u_np1[id-1] = u[im];                               
+              
+              if(cnt_npd==npd)
+                continue;
+              
+              if(id<0)
+              {
+                if(is_npd_set[abs(id)-1]==0)
+                { 
+                  (load.sups[ia])->defl[abs(id)-1] = u[im];
+                  is_npd_set[abs(id)-1] = 1;
+                  cnt_npd++;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // set temporal variables
       for(int ib=0; ib<grid.nn*fv[ia].ndofn; ib++)
       {
         fv[ia].temporal->u_n[ib]   = fv[ia].u_n[ib];
@@ -1145,6 +1288,8 @@ int single_scale_main(int argc,char *argv[])
     ///////////////////////////////////////////////////////////////////
     while (time_steps.nt > tim)
     {
+      double time_step_start = MPI_Wtime();
+      
       if(tim>options.restart)
       {  
         time_steps.tim    = tim;
@@ -1301,6 +1446,9 @@ int single_scale_main(int argc,char *argv[])
       err += print_results(&grid,&mat,fv,sol,&load,com,&time_steps,
                            crpl,ensight,pmr,mpi_comm,oVolume,VVolume,
                            &options,&mp,tim,myrank);
+                           
+      err += write_restart_files(&grid,fv,&load,&time_steps,&options,&mp,
+                                 tim,mpi_comm,myrank,time_step_start,total_time);
                               
       if (myrank == 0){
         PGFEM_printf("\n");

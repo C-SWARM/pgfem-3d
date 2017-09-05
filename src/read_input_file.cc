@@ -448,15 +448,18 @@ int read_mesh_file(GRID *grid,
   
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
-  for(int iA=1; iA<mp->physicsno; iA++)
+  for(int iA=0; iA<mp->physicsno; iA++)
   {
+    if(mp->physics_ids[iA]==MULTIPHYSICS_MECHANICAL)
+    {    
+      FV[iA].ndofn = ndofn;
+      continue;
+    }
     SOL[iA].iter_max_sol  = SOL[0].iter_max_sol;
     SOL[iA].err           = SOL[0].err; 
     SOL[iA].computer_zero = SOL[0].computer_zero;
     FV[iA].n_concentrations = FV[0].n_concentrations;
-    FV[iA].NORM             = FV[0].NORM;
-    if(mp->physics_ids[iA]==MULTIPHYSICS_MECHANICAL)
-      FV[iA].ndofn = ndofn;   
+    FV[iA].NORM             = FV[0].NORM;   
   }                            
   // need to update number of elements that have prescribed BCs (supported)                             
   for (long ia=0;ia<grid->ne;ia++)

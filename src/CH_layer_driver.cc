@@ -375,7 +375,7 @@ int main(int argc, char **argv)
     get_F0(opt->lc, jumpu, opt->normal, F0);
 
     /* run the integration algorithm */
-    err += construct_model_context(&ctx, p->type, F0, opt->dt, alpha,NULL);
+    err += construct_model_context(&ctx, p->type, F0, opt->dt, alpha,NULL,-1);
     err += p->integration_algorithm(m, ctx);
     err += p->update_state_vars(m);
     err += ch_output_ts(m, jumpu, opt->normal, F0, opt->dt, out);
