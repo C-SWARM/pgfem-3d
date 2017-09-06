@@ -196,9 +196,9 @@ int compute_temperature_at_ip(FEMLIB *fe,
 /* add the macroscopic deformation gradient to the _TOTAL_ deformation
    gradient */
 static void cm_add_macro_F(const SUPP sup,
-                           double * restrict F)
+                           double * __restrict F)
 {
-  const double * restrict F0 = sup->F0;
+  const double * __restrict F0 = sup->F0;
   for (int i = 0; i < DIM_3x3; i++) F[i] += F0[i];
 }
 

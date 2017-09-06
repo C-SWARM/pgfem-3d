@@ -219,8 +219,8 @@ int compute_eF(Matrix<double> *eF,
 static int plasticity_int_alg(Constitutive_model *m,
                               const void *ctx);
 
-static int cp_compute_eC(const double * restrict eF,
-                         double * restrict eC)
+static int cp_compute_eC(const double * __restrict eF,
+                         double * __restrict eC)
 {
   int err = 0;
   memset(eC, 0, DIM_3x3 * sizeof(*eC));

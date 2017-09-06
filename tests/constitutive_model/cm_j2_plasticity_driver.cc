@@ -65,7 +65,7 @@ static void param_assign_values(double *param,
 
 }
 
-static int compute_stress(double * restrict sig,
+static int compute_stress(double * __restrict sig,
                           const Constitutive_model *m,
                           const void *ctx)
 {

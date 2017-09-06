@@ -22,7 +22,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
-AC_C_RESTRICT                                   # Works for C++ too
 
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall

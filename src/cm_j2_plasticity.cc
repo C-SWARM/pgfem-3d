@@ -220,8 +220,8 @@ static int j2d_plasticity_model_ctx_destroy(void **ctx)
 }
 
 /* bbar = J^-(2/3) F F' */
-static void j2d_bbar(const double * restrict F,
-                     double * restrict bbar)
+static void j2d_bbar(const double * __restrict F,
+                     double * __restrict bbar)
 {
   memset(bbar, 0, tensor * sizeof(*bbar));
   const double J23 = pow(det3x3(F), -2./3.);
@@ -235,8 +235,8 @@ static void j2d_bbar(const double * restrict F,
 }
 
 /* dev(a) = a - 1/3 tr(a) i */
-static void j2d_dev(const double * restrict a,
-                    double * restrict dev_a)
+static void j2d_dev(const double * __restrict a,
+                    double * __restrict dev_a)
 {
   const double tra = 1./3. * (a[0] + a[4] + a[8]);
   memcpy(dev_a, a, tensor * sizeof(*a));
@@ -247,8 +247,8 @@ static void j2d_dev(const double * restrict a,
 
 /* s0 = G * dev(bbar) */
 static void j2d_compute_s0(const double G,
-                           const double * restrict bbar,
-                           double * restrict s0)
+                           const double * __restrict bbar,
+                           double * __restrict s0)
 {
   double devbbar[tensor] = {0};
   j2d_dev(bbar, devbbar);
@@ -258,9 +258,9 @@ static void j2d_compute_s0(const double G,
 }
 
 /* compute Fubar */
-static int j2d_compute_Fubar(const double * restrict F,
-                             const double * restrict Fn,
-                             double * restrict Fubar)
+static int j2d_compute_Fubar(const double * __restrict F,
+                             const double * __restrict Fn,
+                             double * __restrict Fubar)
 {
   int err = 0;
   double FnI[tensor] = {0};
@@ -279,9 +279,9 @@ static int j2d_compute_Fubar(const double * restrict F,
 }
 
 /* push-forward operation a = F A F'. */
-static void j2d_push_forward(const double * restrict F,
-                             const double * restrict A,
-                             double * restrict a)
+static void j2d_push_forward(const double * __restrict F,
+                             const double * __restrict A,
+                             double * __restrict a)
 {
   memset(a, 0, tensor * sizeof(*a));
   double wkspc[tensor] = {0};
@@ -329,10 +329,10 @@ static int j2d_compute_sp_tr(const double *F,
   return err;
 }
 
-static double j2d_compute_normal(const double * restrict s_tr,
-                                 const double * restrict sp_tr,
-                                 const double * restrict param,
-                                 double  * restrict n)
+static double j2d_compute_normal(const double * __restrict s_tr,
+                                 const double * __restrict sp_tr,
+                                 const double * __restrict param,
+                                 double  * __restrict n)
 {
   const double coef = param[hp] / (3. * param[G]) * (1. - param[beta]);
   double nrm = 0;
@@ -438,7 +438,7 @@ static int j2d_int_alg(Constitutive_model *m,
    configuration */
 static int j2d_unloading_Aep_dev(const Constitutive_model *m,
                                  const void *CTX,
-                                 double * restrict Aep_dev)
+                                 double * __restrict Aep_dev)
 {
   int err = 0;
   memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
@@ -486,9 +486,9 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   return err;
 }
 
-static int j2d_pull_back4(const double * restrict FI,
-                          const double * restrict aep,
-                          double * restrict Aep)
+static int j2d_pull_back4(const double * __restrict FI,
+                          const double * __restrict aep,
+                          double * __restrict Aep)
 {
   int err = 0;
   memset(Aep, 0, tensor4 * sizeof(*Aep));
@@ -521,7 +521,7 @@ static int j2d_pull_back4(const double * restrict FI,
    configuration */
 static int j2d_loading_Aep_dev(const Constitutive_model *m,
                                const void *CTX,
-                               double * restrict Aep_dev)
+                               double * __restrict Aep_dev)
 {
   int err = 0;
   const auto ctx = (j2d_ctx *) CTX;
@@ -609,7 +609,7 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
 
 static int j2d_compute_Lbar(const Constitutive_model *m,
                             const void *CTX,
-                            double * restrict Lbar)
+                            double * __restrict Lbar)
 {
   int err = 0;
   const auto ctx = (j2d_ctx *) CTX;
@@ -752,7 +752,7 @@ static int j2d_compute_AST(const Constitutive_model *m,
 static int j2d_compute_sbar(const double *F,
                             const double *sp,
                             const double G,
-                            double * restrict sbar)
+                            double * __restrict sbar)
 {
   int err = 0;
   double bbar[tensor] = {0};
