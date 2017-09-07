@@ -29,6 +29,13 @@ input=$in_dir/${name}_${NP}CPU_tr/${name}_
 output3=${out_dir}_3steps/${name}_${NP}CPU
 output5=${out_dir}_5steps/${name}_${NP}CPU
 
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $out_dir *.log *.txt
+}
+trap cleanup EXIT
+
 # get restart
 opts="-SS -cm 1 -noLS -noCCE -no-compute-reactions -no-compute-macro -kdim 1000 -maxit 2000 -V -override-pre-disp ${override_dir}/initial_disp.in"
 cmd="mpirun -np $NP $pgfem $opts -override-solver-file ${override_dir}/${name}_0.in.st_3steps $input $output3/${name}"
