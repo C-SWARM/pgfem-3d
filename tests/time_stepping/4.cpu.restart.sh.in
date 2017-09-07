@@ -20,6 +20,13 @@ outdir=@abs_builddir@/out
 input=$indir/box_${NP}CPU_ss/box_
 output=$outdir/box_${NP}CPU
 
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $outdir *.log *.txt
+}
+trap cleanup EXIT
+
 # get restart
 opts="-SS -cm 1 -restart -1 -noLS -noCCE -no-compute-reactions -no-compute-macro -kdim 1000 -maxit 2000 -V"
 cmd="mpirun -np $NP $pgfem $opts $input $output"
