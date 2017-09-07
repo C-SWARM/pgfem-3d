@@ -555,6 +555,8 @@ class Model_parameters
   int *model_param_index;
 };
 
+/// Allocate a Model_parameters
+int construct_Model_parameters(Model_parameters **p, int model_id, int model_type);
 
 /// Allocate and populate a list of Model_parameters given the number
 /// of materials.

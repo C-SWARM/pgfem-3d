@@ -21,40 +21,39 @@ int main(int argc, char **argv)
     test_single = atoi(argv[1]);
   }
 
-  Model_parameters *p = PGFEM_malloc<Model_parameters>();
-  Model_var_info *info = NULL;
+  HOMMAT mat;
+  mat.nu = 0.3;
+  mat.E = 1.0;
+  mat.devPotFlag = 1;
+  mat.volPotFlag = 2; 
 
   if (test_all) {
     for (int i = 0; i < NUM_MODELS; i++) {
-      err += model_parameters_construct(p);
-      err += model_parameters_initialize(p, NULL, i);
+      Model_parameters *p = new Model_parameters[1];
+      err += construct_Model_parameters(&p,0,i);
+      err += p->initialization(&mat, i);
       assert(err == 0);
 
       /* Create and print the model info */
-      err += p->get_var_info(&info);
-      err += model_var_info_print(stdout, info);
+      Model_var_info info; 
+      err += p->get_var_info(info);
+      err += info.print_variable_info(stdout);
+      delete p;
       printf("\n");
-
-      /* cleanup */
-      err += model_var_info_destroy(&info);
-      err += model_parameters_destroy(p);
     }
   } else {
-    err += model_parameters_construct(p);
-    err += model_parameters_initialize(p, NULL, test_single);
-    assert(err == 0);
+      Model_parameters *p = new Model_parameters[1];
+      err += construct_Model_parameters(&p,0,test_single);
+      err += p->initialization(&mat, test_single);
+      assert(err == 0);
 
-    /* Create and print the model info */
-    err += p->get_var_info(&info);
-    err += model_var_info_print(stdout, info);
-    printf("\n");
-
-    /* cleanup */
-    err += model_var_info_destroy(&info);
-    err += model_parameters_destroy(p);
+      /* Create and print the model info */
+      Model_var_info info; 
+      err += p->get_var_info(info);
+      err += info.print_variable_info(stdout);
+      delete p;
+      printf("\n");
   }
-
-  free(p);
 
   return err;
 }

@@ -357,6 +357,42 @@ int Constitutive_model::initialization(const Model_parameters *p)
   return err;
 }
 
+/// Construct a Model_parameters. Model type will be determined at runtime.
+/// 
+/// \param[out] **p        a Model_parameters, p[model_id] will be constructed
+/// \param[in]  model_id   index of p
+/// \param[in]  model_type constitutive model type
+/// \return non-zero on error.
+int construct_Model_parameters(Model_parameters **p, int model_id, int model_type)
+{
+  int err = 0;
+
+  switch(model_type)
+  {
+    case TESTING:
+    case HYPER_ELASTICITY:
+      p[model_id] = new HE_PARAM;
+      break;
+    case CRYSTAL_PLASTICITY:
+      p[model_id] = new CP_PARAM;
+      break;            
+    case BPA_PLASTICITY:
+      p[model_id] = new BPA_PARAM;
+      break;
+    case ISO_VISCOUS_DAMAGE:
+      p[model_id] = new CM_IVD_PARAM;
+      break;
+    case J2_PLASTICITY_DAMAGE:
+      p[model_id] = new HE_PARAM; //<<-- needs to be updated
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);
+      err++;
+      return err;
+  }  
+  
+  return err;
+}
 /// Initialize the Model_parameters object. The object may be used
 /// after calling this function. Calling this function on an already
 /// initialized object is undefined.
@@ -577,32 +613,9 @@ int read_model_parameters_list(Model_parameters **param_list,
           param_list[idx]->uqcm = 1;
           err += scan_for_valid_line(in);
           CHECK_SCANF(in, "%d", &model_type);
-        }                    
-
-        switch(model_type)
-        {
-          case TESTING:
-          case HYPER_ELASTICITY:
-            param_list[idx] = new HE_PARAM;
-            break;
-          case CRYSTAL_PLASTICITY:
-            param_list[idx] = new CP_PARAM;
-            break;            
-          case BPA_PLASTICITY:
-            param_list[idx] = new BPA_PARAM;
-            break;
-          case ISO_VISCOUS_DAMAGE:
-            param_list[idx] = new HE_PARAM; //<<-- needs to be updated
-            break;
-          case J2_PLASTICITY_DAMAGE:
-            param_list[idx] = new HE_PARAM; //<<-- needs to be updated
-            break;
-          default:
-            PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);
-            err++;
-            return err;
-        }         
-
+        }
+        
+        err += construct_Model_parameters(param_list, idx, model_type);
         param_list[idx]->uqcm = model_type_uq;
         
         err += param_list[idx]->initialization(hmat_list + idx, model_type);
