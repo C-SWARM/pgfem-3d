@@ -9,29 +9,21 @@
 #include "eps.h"
 #include "crpl.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** */
   void set_fini_def (long ne,
-		     long npres,
-		     ELEMENT *elem,
-		     EPS *eps,
-		     SIG *sig,
-		     const int analysis);
+             long npres,
+             ELEMENT *elem,
+             EPS *eps,
+             SIG *sig,
+             const int analysis);
 
   void set_fini_def_pl (long ne,
-			long npres,
-			ELEMENT *elem,
-			EPS *eps,
-			SIG *sig,
-			CRPL *crpl,
-			const int analysis,
-			const int plc);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+            long npres,
+            ELEMENT *elem,
+            EPS *eps,
+            SIG *sig,
+            CRPL *crpl,
+            const int analysis,
+            const int plc);
 
 #endif /* #ifndef SET_FINI_DEF */

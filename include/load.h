@@ -24,37 +24,33 @@
 #include "PGFem3D_options.h"
 #include "macro_micro_functions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * \brief Get the list of times to increment the load from the file.
  */
 long* compute_times_load (FILE *in1,
-			  const long nt,
-			  const long nlod_tim);
+              const long nt,
+              const long nlod_tim);
 
 /**
  * \brief Get the load from the nodes with prescribed force.
  */
 void load_vec_node (double *f,
-		    const long nln,
-		    const long ndofn,
-		    const ZATNODE *znode,
-		    const NODE *node,
-		    const int mp_id);
+            const long nln,
+            const long ndofn,
+            const ZATNODE *znode,
+            const NODE *node,
+            const int mp_id);
 
 /**
  * \brief Compute the load vector from the elements with surface load
  * [NOT IMPLEMENTED].
  */
 void load_vec_elem_sur (double *f,
-			const long nle_s,
-			const long ndofn,
-			const ELEMENT *elem,
-			const ZATELEM *zele_s);
-			
+            const long nle_s,
+            const long ndofn,
+            const ELEMENT *elem,
+            const ZATELEM *zele_s);
+
 /// Compute load vector for prescribed BCs(Dirichlet)
 ///
 /// \param[in] grid a mesh object
@@ -74,13 +70,13 @@ int compute_load_vector_for_prescribed_BC(GRID *grid,
                                           FIELD_VARIABLES *fv,
                                           SOLVER_OPTIONS *sol,
                                           LOADING_STEPS *load,
-                                          double dt,                                          
+                                          double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
                                           MULTIPHYSICS *mp,
                                           int mp_id,
                                           int myrank);
-                                          
+
 /// Multiscale simulation interface to compute load vector due to BCs(Dirichlet)
 ///
 /// s->f_defl will be updated
@@ -96,10 +92,5 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
                                                      const PGFem3D_opt *opts,
                                                      double nor_min,
                                                      int myrank);
-                                                     
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
 
 #endif

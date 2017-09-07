@@ -12,17 +12,17 @@
 #include "utils.h"
 
 int integrate_surface(const int nne,
-		      const int face_id,
-		      const int int_order,
-		      int *n_ip,
-		      double **ksi_3D,
-		      double **eta_3D,
-		      double **zet_3D,
-		      double **ksi_2D,
-		      double **eta_2D,
-		      double **wt_2D,
-		      int *nne_2D,
-		      int **nod_2D)
+              const int face_id,
+              const int int_order,
+              int *n_ip,
+              double **ksi_3D,
+              double **eta_3D,
+              double **zet_3D,
+              double **ksi_2D,
+              double **eta_2D,
+              double **wt_2D,
+              int *nne_2D,
+              int **nod_2D)
 {
   int err = 0;
   /* initialize variables */
@@ -40,12 +40,12 @@ int integrate_surface(const int nne,
   case 4: /* Tet --> tria */
     /* get 2D integration points */
     err = get_tria_quadrature_rule(int_order,n_ip,ksi_2D,eta_2D,
-				   wt_2D);
+                   wt_2D);
     *nne_2D = 3;
-    *ksi_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *eta_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *zet_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *nod_2D = PGFEM_calloc(*nne_2D,sizeof(int));
+    *ksi_3D = PGFEM_calloc(double, *n_ip);
+    *eta_3D = PGFEM_calloc(double, *n_ip);
+    *zet_3D = PGFEM_calloc(double, *n_ip);
+    *nod_2D = PGFEM_calloc(int, *nne_2D);
     /* assign 3D integration points */
     switch(face_id){
     case 0:
@@ -68,7 +68,7 @@ int integrate_surface(const int nne,
       memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
       memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
       for(int i=0; i<*n_ip; i++){
-	*zet_3D[i] = 1 - *ksi_3D[i] - *eta_3D[i];
+        *zet_3D[i] = 1 - *ksi_3D[i] - *eta_3D[i];
       }
       (*nod_2D)[0] = 1;
       (*nod_2D)[1] = 2;
@@ -85,14 +85,14 @@ int integrate_surface(const int nne,
     }/* end switch face */
     break;
   case 10:
-    
+
     err = get_tria_quadrature_rule(int_order,n_ip,ksi_2D,eta_2D,
-				   wt_2D);
+                   wt_2D);
     *nne_2D = 6;
-    *ksi_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *eta_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *zet_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *nod_2D = PGFEM_calloc(*nne_2D,sizeof(int));
+    *ksi_3D = PGFEM_calloc(double, *n_ip);
+    *eta_3D = PGFEM_calloc(double, *n_ip);
+    *zet_3D = PGFEM_calloc(double, *n_ip);
+    *nod_2D = PGFEM_calloc(int, *nne_2D);
     /* assign 3D integration points */
     switch(face_id){
     case 0:
@@ -103,7 +103,7 @@ int integrate_surface(const int nne,
       (*nod_2D)[2] = 1;
       (*nod_2D)[3] = 6;
       (*nod_2D)[4] = 5;
-      (*nod_2D)[5] = 4;      
+      (*nod_2D)[5] = 4;
       break;
     case 1:
       memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
@@ -120,7 +120,7 @@ int integrate_surface(const int nne,
       memcpy(*ksi_3D,*ksi_2D,(*n_ip)*sizeof(double));
       memcpy(*eta_3D,*eta_2D,(*n_ip)*sizeof(double));
       for(int i=0; i<*n_ip; i++){
-	*zet_3D[i] = 1 - *ksi_3D[i] - *eta_3D[i];
+    *zet_3D[i] = 1 - *ksi_3D[i] - *eta_3D[i];
       }
       (*nod_2D)[0] = 1;
       (*nod_2D)[1] = 2;
@@ -145,10 +145,10 @@ int integrate_surface(const int nne,
   case 8: // Hex --> quad
     err = get_quad_quadrature_rule(int_order,n_ip,ksi_2D,eta_2D,wt_2D);
     *nne_2D = 4;
-    *ksi_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *eta_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *zet_3D = PGFEM_calloc(*n_ip,sizeof(double));
-    *nod_2D = PGFEM_calloc(*nne_2D,sizeof(int));    
+    *ksi_3D = PGFEM_calloc(double, *n_ip);
+    *eta_3D = PGFEM_calloc(double, *n_ip);
+    *zet_3D = PGFEM_calloc(double, *n_ip);
+    *nod_2D = PGFEM_calloc(int, *nne_2D);    
     switch(face_id)
     {
       case 0:
@@ -200,15 +200,14 @@ int integrate_surface(const int nne,
         (*nod_2D)[3] = 7; // 8
         break;
       }
-      break; 
-    break;
-  default:
+      break;
+    default:
     {
       int myrank = 0;
       MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
       PGFEM_printerr("[%d] WARNING: unrecognized element type!"
-	      " Surface will not be integrated! %s:%s:%d\n",
-	      myrank,__func__,__FILE__,__LINE__);
+          " Surface will not be integrated! %s:%s:%d\n",
+          myrank,__func__,__FILE__,__LINE__);
       break;
     }
   }/* end switch type (nne) */
@@ -217,23 +216,23 @@ int integrate_surface(const int nne,
 }
 
 double compute_surface_jacobian(const int nne_2D,
-				const int *nod_2D,
-				const double *x,
-				const double *y,
-				const double *z,
-				const double ksi_2D,
-				const double eta_2D)
+                const int *nod_2D,
+                const double *x,
+                const double *y,
+                const double *z,
+                const double ksi_2D,
+                const double eta_2D)
 {
   double J = 0.0;
-  double *Nk = PGFEM_calloc(nne_2D,sizeof(double));
-  double *Ne = PGFEM_calloc(nne_2D,sizeof(double));
+  double *Nk = PGFEM_calloc(double, nne_2D);
+  double *Ne = PGFEM_calloc(double, nne_2D);
 
   /* compute derivative of 2D shape functions with respect to natural
      coordinates */
   dN_2D(nne_2D,ksi_2D,eta_2D,Nk,Ne);
 
-  double *jac = PGFEM_calloc(6,sizeof(double));
-  double *jtj = PGFEM_calloc(4,sizeof(double));
+  double *jac = PGFEM_calloc(double, 6);
+  double *jtj = PGFEM_calloc(double, 4);
 
   /* compute the Jacobian matrix */
   for(int i=0; i<nne_2D; i++){
@@ -247,7 +246,7 @@ double compute_surface_jacobian(const int nne_2D,
 
   /* Compute the Jacobian of the transformation */
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,2,2,3,
-	      1.0,jac,2,jac,2,0.0,jtj,2);
+          1.0,jac,2,jac,2,0.0,jtj,2);
   J = sqrt(det2x2(jtj));
 
   free(Nk);

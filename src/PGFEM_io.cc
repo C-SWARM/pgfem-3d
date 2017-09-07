@@ -9,7 +9,7 @@
 
 /* FILE pointers for macro and micro output */
 FILE *PGFEM_macro_stdout = NULL;
-FILE *PGFEM_macro_stderr = NULL; 
+FILE *PGFEM_macro_stderr = NULL;
 FILE *PGFEM_micro_stdout = NULL;
 FILE *PGFEM_micro_stderr = NULL;
 
@@ -30,17 +30,17 @@ static inline int init_null()
 
 /** allocate enough space for the  filename and populate */
 static void create_filename(const char *base,
-			    const char *ext,
-			    char **dest)
+                const char *ext,
+                char **dest)
 {
   const int len = strlen(base) + strlen(ext) + 1 /* for terminating char */;
-  *dest = PGFEM_calloc(len,sizeof(char));
+  *dest = PGFEM_calloc(char, len);
   sprintf(*dest,"%s%s",base,ext);
 }
 
 /* points the PGFEM_* streams to out and err respectively */
 static inline int redirect_output(FILE *out,
-				  FILE *err)
+                  FILE *err)
 {
 
   if(out == NULL) PGFEM_stdout = stdout; else PGFEM_stdout = out;
@@ -49,7 +49,7 @@ static inline int redirect_output(FILE *out,
 }
 
 int PGFEM_initialize_io(const char *macro_filename,
-			const char *micro_filename)
+            const char *micro_filename)
 {
   int err = 0;
   initialized = 1;
@@ -179,17 +179,17 @@ int PGFEM_printerr(const char *format,...)
 /** This function is typically called from a macro to pass function,
     file and line information from invocation point. */
 FILE* PGFEM_FOPEN(const char *filename,
-		  const char *mode,
-		  const char *function,
-		  const char *file,
-		  const long line)
+          const char *mode,
+          const char *function,
+          const char *file,
+          const long line)
 {
   FILE *stream = fopen(filename,mode);
   if(stream == NULL){
     int err_rank = 0;
     PGFEM_Error_rank(&err_rank);
     PGFEM_printerr("[%d]ERROR: cannot open file (%s)! %s:%s:%ld\n",
-		   err_rank,filename,function,file,line);
+           err_rank,filename,function,file,line);
     PGFEM_Abort();
   }
   return stream;

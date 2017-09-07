@@ -1,0 +1,46 @@
+before_script:
+ - uname -a
+ - df -h
+ - source /opt/intel/bin/compilervars.sh -arch intel64 -platform linux
+ - source scripts/check_funcs.sh
+ - autoreconf -if
+
+stages:
+ - scan
+ - check
+
+scan-build:
+ allow_failure: true
+ tags:
+  - cswarm
+ stage: scan
+ script:
+  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 -g -I/usr/include/openmpi"
+  - export LDFLAGS=`mpicxx --showme:link`
+  - ./configure CXX=mpicxx
+                --with-hypre=/opt/hypre_ompi
+                --with-suitesparse=/opt/SuiteSparse
+                --with-cnstvm=/opt/Generalizsed_constitutive_model
+                --with-ttl=/opt/ttl
+                --enable-tests=no
+                --enable-vtk=yes
+                --with-vtk-version=-6.3
+  - BOUT=/tmp/scan-build-${CI_BUILD_ID}
+  - scan-build -o /var/www/html/scan-builds make -j 8 | tee $BOUT
+  - check_scan $BOUT
+
+check-build:
+ tags:
+  - cswarm
+ stage: check
+ script:
+  - ./configure --with-hypre=/opt/hypre_ompi
+                --with-suitesparse=/opt/SuiteSparse
+                --with-cnstvm=/opt/Generalizsed_constitutive_model
+                --with-ttl=/opt/ttl
+                --enable-tests=yes
+                --with-tests-nproc=4
+                --enable-vtk=yes
+                --with-vtk-version=-6.3
+  - make -j 8
+  - make -C tests check || check_check

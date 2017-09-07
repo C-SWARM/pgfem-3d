@@ -20,14 +20,15 @@ void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server *server)
   const pgf_FE2_micro_server_stats *stat = server->stats;
   PGFEM_printf("SERVER STATS: njob total avg std min max\n");
   PGFEM_printf("%ld %0.5e %0.5e %0.5e %0.5e %0.5e\n\n",
-	       server->n_jobs,
-	       stat->total,stat->avg,
-	       stat->std,stat->min,stat->max);
+           server->n_jobs,
+           stat->total,stat->avg,
+           stat->std,stat->min,stat->max);
 }
 
 void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server)
 {
-  *server = malloc(sizeof(**server));
+  static constexpr auto bytes = sizeof(pgf_FE2_micro_server);
+  *server = static_cast<pgf_FE2_micro_server*>(malloc(bytes));
 
   (*server)->n_jobs = 0;
   (*server)->jobs = NULL;
@@ -35,15 +36,16 @@ void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server)
 }
 
 void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
-				const pgf_FE2_server_rebalance *rebal)
+                const pgf_FE2_server_rebalance *rebal)
 {
   const size_t keep = pgf_FE2_server_rebalance_n_keep(rebal);
   const size_t recv = pgf_FE2_server_rebalance_n_recv(rebal);
   server->n_jobs = keep + recv;
-  
-  server->jobs = malloc(server->n_jobs*sizeof(*(server->jobs)));
-  server->stats = malloc(sizeof(*(server->stats)));
-  
+
+  server->jobs = static_cast<pgf_FE2_job*>(malloc(server->n_jobs *
+                                                  sizeof(pgf_FE2_job)));
+  server->stats = static_cast<pgf_FE2_micro_server_stats*>(malloc(sizeof(pgf_FE2_micro_server_stats)));
+
   /* initialize the jobs that do not need rebalancing */
   const int *job_ids_keep = pgf_FE2_server_rebalance_keep_buf(rebal);
   for(size_t i=0; i<keep; i++){
@@ -54,7 +56,7 @@ void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
   const int *job_ids_recv = pgf_FE2_server_rebalance_recv_buf(rebal);
   for(size_t i=0; i<recv; i++){
     pgf_FE2_job_init((server->jobs) + keep + i,job_ids_recv[i],
-		     FE2_STATE_NEED_INFO_REBALANCE);
+             FE2_STATE_NEED_INFO_REBALANCE);
   }
 }
 
@@ -85,7 +87,7 @@ static int pgf_FE2_micro_server_done(pgf_FE2_micro_server *server)
  * Attempt to get information from the microscale.
  */
 static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
-					  const PGFEM_mpi_comm *mpi_comm)
+                      const PGFEM_mpi_comm *mpi_comm)
 {
   pgf_FE2_job *restrict jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
@@ -97,9 +99,9 @@ static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
  * Attempt to compute ready jobs.
  */
 static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
-					       MICROSCALE *micro,
-					       const PGFEM_mpi_comm *mpi_comm,
-					       const int mp_id)
+                           MICROSCALE *micro,
+                           const PGFEM_mpi_comm *mpi_comm,
+                           const int mp_id)
 {
   pgf_FE2_job *restrict jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
@@ -112,19 +114,19 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
  * Busy loop looking for message to start the server cycle.
  */
 static void pgf_FE2_micro_server_probe_start(const PGFEM_mpi_comm *mpi_comm,
-					     MPI_Status *stat)
+                         MPI_Status *stat)
 {
   int msg_waiting = 0;
   while (1){
 
     /* exit */
     MPI_Iprobe(MPI_ANY_SOURCE,FE2_MICRO_SERVER_EXIT,
-	       mpi_comm->mm_inter,&msg_waiting,stat);
+           mpi_comm->mm_inter,&msg_waiting,stat);
     if(msg_waiting) break;
 
     /* rebalance */
     MPI_Iprobe(MPI_ANY_SOURCE,FE2_MICRO_SERVER_REBALANCE,
-	       mpi_comm->mm_inter,&msg_waiting,stat);
+           mpi_comm->mm_inter,&msg_waiting,stat);
     if(msg_waiting) break;
 
     /* other ... */
@@ -132,8 +134,8 @@ static void pgf_FE2_micro_server_probe_start(const PGFEM_mpi_comm *mpi_comm,
 
   /* this assert will fail if we accidentally overlap with
      MPI_ANY_TAG. FYI: often MPI_ANY_TAG = -1.*/
-  assert(stat->MPI_TAG == FE2_MICRO_SERVER_EXIT 
-	 || stat->MPI_TAG == FE2_MICRO_SERVER_REBALANCE);
+  assert(stat->MPI_TAG == FE2_MICRO_SERVER_EXIT
+     || stat->MPI_TAG == FE2_MICRO_SERVER_REBALANCE);
 }
 
 
@@ -142,13 +144,13 @@ static void pgf_FE2_micro_server_probe_start(const PGFEM_mpi_comm *mpi_comm,
  * propogate to the workers.
  */
 static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
-					     pgf_FE2_micro_server *server,
-					     pgf_FE2_server_rebalance **rebal,
-					     int *exit_server)
+                         pgf_FE2_micro_server *server,
+                         pgf_FE2_server_rebalance **rebal,
+                         int *exit_server)
 {
   static const size_t n_info = 2;
   long info[n_info]; /* = {0 /\* tag *\/, */
-		    /*    0 /\* buffer_len *\/}; */
+            /*    0 /\* buffer_len *\/}; */
   *exit_server = 0;
   MPI_Status stat;
 
@@ -170,13 +172,13 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
   info[1] = buf_len;
 
   /* allocate buffer for receive */
-  char *buf = malloc(buf_len);
+  char *buf = static_cast<char*>(malloc(buf_len));
 
   /* post non-blocking receive matching the probed message */
   MPI_Request req;
   MPI_Irecv(buf,buf_len,MPI_CHAR,
-	    stat.MPI_SOURCE,stat.MPI_TAG,
-	    mpi_comm->mm_inter,&req);
+        stat.MPI_SOURCE,stat.MPI_TAG,
+        mpi_comm->mm_inter,&req);
 
   /* broadcast information to workers !!Signature must match that in
      worker busy loop!!*/
@@ -193,7 +195,7 @@ static void pgf_FE2_micro_server_start_cycle(const PGFEM_mpi_comm *mpi_comm,
     /* free the buffer */
     free(buf);
     break;
- 
+
  case FE2_MICRO_SERVER_REBALANCE:
     /* broadcast information to microscale (could change to
        non-blocking?) */
@@ -245,15 +247,15 @@ static void pgf_FE2_micro_server_compute_stats(pgf_FE2_micro_server *server)
   s->std = sqrt(1./njob*std);
   s->min = min;
   s->max = max;
-}					     
+}
 
 /**
  * Make a fairly shallow copy of the job data into a communication
  * buffer.
  */
 static void pgf_FE2_micro_server_pack_summary(pgf_FE2_micro_server *server,
-					      size_t *buf_len,
-					      char **buf)
+                          size_t *buf_len,
+                          char **buf)
 {
   /* compute stats */
   pgf_FE2_micro_server_compute_stats(server);
@@ -263,7 +265,7 @@ static void pgf_FE2_micro_server_pack_summary(pgf_FE2_micro_server *server,
   static const size_t size_job = sizeof(*(server->jobs));
   static const size_t size_stats = sizeof(*(server->stats));
   *buf_len = sizeof(server->n_jobs) + n_jobs*size_job + size_stats;
-  (*buf) = malloc(*buf_len);
+  (*buf) = static_cast<char*>(malloc(*buf_len));
 
   /* pack the server job summary */
   size_t pos = 0;
@@ -273,22 +275,22 @@ static void pgf_FE2_micro_server_pack_summary(pgf_FE2_micro_server *server,
 }
 
 static void pgf_FE2_micro_server_finish_cycle(const PGFEM_mpi_comm *mpi_comm,
-					      pgf_FE2_micro_server *server)
+                          pgf_FE2_micro_server *server)
 {
   int n_micro_proc = 0;
   int n_macro_proc = 0;
   MPI_Comm_size(mpi_comm->worker_inter,&n_micro_proc);
   MPI_Comm_size(mpi_comm->mm_inter,&n_macro_proc);
   n_macro_proc -= n_micro_proc;
-  MPI_Request *req = malloc(n_macro_proc*sizeof(*req));
+  MPI_Request *req = static_cast<MPI_Request*>(malloc(n_macro_proc *
+                                                      sizeof(MPI_Request)));
   char *buf = NULL;
   size_t buf_len = 0;
   pgf_FE2_micro_server_pack_summary(server,&buf_len,&buf);
 
-  for(int i=0; i<n_macro_proc; i++){
-    MPI_Isend(buf,buf_len,MPI_CHAR,i,
-	      FE2_MICRO_SERVER_REBALANCE,
-	      mpi_comm->mm_inter,req+i);
+  for (int i=0; i<n_macro_proc; i++) {
+    MPI_Isend(buf, buf_len, MPI_CHAR, i, FE2_MICRO_SERVER_REBALANCE,
+              mpi_comm->mm_inter, req+i);
   }
 
   MPI_Waitall(n_macro_proc,req,MPI_STATUS_IGNORE);
@@ -296,18 +298,19 @@ static void pgf_FE2_micro_server_finish_cycle(const PGFEM_mpi_comm *mpi_comm,
   free(buf);
 }
 
-void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
-					 const char *buf)
+void
+pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
+                                    const char *buf)
 {
   pgf_FE2_micro_server_init(Server);
   pgf_FE2_micro_server *server = *Server; /* alias */
-  static const size_t size_jobs = sizeof(*(server->jobs));
-  static const size_t size_stats = sizeof(*(server->stats));
+  static constexpr size_t size_jobs = sizeof(*(server->jobs));
+  static constexpr size_t size_stats = sizeof(*(server->stats));
 
-  server->stats = malloc(size_stats);
+  server->stats = static_cast<pgf_FE2_micro_server_stats*>(malloc(size_stats));
   size_t pos = 0;
   unpack_data(buf,&(server->n_jobs),&pos,1,sizeof(server->n_jobs));
-  server->jobs = malloc(server->n_jobs*size_jobs);
+  server->jobs = static_cast<pgf_FE2_job*>(malloc(server->n_jobs*size_jobs));
   unpack_data(buf,server->stats,&pos,1,size_stats);
   unpack_data(buf,server->jobs,&pos,server->n_jobs,size_jobs);
   for(int i=0,e=server->n_jobs; i<e; i++){
@@ -315,9 +318,10 @@ void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
   }
 }
 
-static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
-				       MICROSCALE *micro,
-				       const int mp_id)
+static int
+pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
+                            MICROSCALE *micro,
+                            const int mp_id)
 {
   int err = 0;
   int exit_server = 0;
@@ -354,8 +358,8 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
       pgf_FE2_micro_server_get_info(server,mpi_comm);
 
       /* in improved implementation, advance rebalancing here. I.e.,
-	 check for rebalancing jobs where the communication has
-	 completed and update their state appropriately. */
+     check for rebalancing jobs where the communication has
+     completed and update their state appropriately. */
 
       /* compute the jobs that are ready. Posts sends */
       pgf_FE2_micro_server_compute_ready(server,micro,mpi_comm,mp_id);
@@ -377,14 +381,14 @@ static int pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
  * Worker busy loop. Some logic as to which jobs to initiate.
  */
 static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
-				       MICROSCALE *micro,
-				       const int mp_id)
+                       MICROSCALE *micro,
+                       const int mp_id)
 {
   int err = 0;
   int exit_server = 0;
   static const size_t n_info = 2;
   long info[n_info]; /* = {0 /\*id*\/, */
-		     /*   0 /\*msg_size in bytes *\/}; */
+             /*   0 /\*msg_size in bytes *\/}; */
   while( !exit_server ){
     /* get information from master on server */
     MPI_Bcast(info,n_info,MPI_LONG,0,micro->common->mpi_comm);
@@ -397,25 +401,25 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
     case FE2_MICRO_SERVER_REBALANCE:
       /* rebalance on workers */
       {
-	/* allocate buffer for receive */
-	int buf_len = info[1];
-	char *buf = malloc(buf_len);
-	pgf_FE2_server_rebalance *rebal = NULL;
+    /* allocate buffer for receive */
+    int buf_len = info[1];
+    char *buf = static_cast<char*>(malloc(buf_len));
+    pgf_FE2_server_rebalance *rebal = NULL;
 
-	/* get information from MASTER */
-	MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
+    /* get information from MASTER */
+    MPI_Bcast(buf,buf_len,MPI_CHAR,0,mpi_comm->micro);
 
-	/* build rebalancing data structure */
-	pgf_FE2_server_rebalance_build_from_buffer(&rebal,(void**) &buf);
+    /* build rebalancing data structure */
+    pgf_FE2_server_rebalance_build_from_buffer(&rebal,(void**) &buf);
 
-	/* perform rebalancing */
-	pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);
-	/* blocks until all exchanges are done. Could improve
-	   async. comm here. */
-	pgf_FE2_server_rebalance_finalize_exchange(rebal,mpi_comm);
+    /* perform rebalancing */
+    pgf_FE2_server_rebalance_post_exchange(rebal,mpi_comm,micro);
+    /* blocks until all exchanges are done. Could improve
+       async. comm here. */
+    pgf_FE2_server_rebalance_finalize_exchange(rebal,mpi_comm);
 
-	/* implicitly free's buf */
-	pgf_FE2_server_rebalance_destroy(rebal);
+    /* implicitly free's buf */
+    pgf_FE2_server_rebalance_destroy(rebal);
       }
       break;
 
@@ -429,8 +433,8 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 }
 
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
-			       MICROSCALE *micro,
-			       const int mp_id)
+                   MICROSCALE *micro,
+                   const int mp_id)
 {
   int err = 0;
   assert(mpi_comm->valid_micro);

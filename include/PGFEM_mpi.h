@@ -21,10 +21,6 @@
 /** Get the rank on MPI_COMM_WORLD for error messages */
 #define PGFEM_Error_rank(myrank) MPI_Comm_rank(MPI_COMM_WORLD,(myrank))
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Structure for passing around communicators etc. and managing
       macro/micro execution */
   typedef struct PGFEM_mpi_comm{
@@ -35,7 +31,7 @@ extern "C" {
     MPI_Comm micro;
     MPI_Comm mm_inter;
     MPI_Comm worker_inter; /* equivalent workers on different
-			      microscales */
+                  microscales */
 
     /* stored ranks on respective communicators */
     int rank_world;
@@ -58,15 +54,15 @@ extern "C" {
   /** Initialize PGFEM_mpi_comm to MPI_COMM_WORLD, or whatever is passed
       as comm_world */
   int initialize_PGFEM_mpi_comm(const MPI_Comm comm_world,
-				PGFEM_mpi_comm *pgfem_mpi_comm);
+                PGFEM_mpi_comm *pgfem_mpi_comm);
 
   /** Destroy a PGFEM_mpi_comm object */
   int destroy_PGFEM_mpi_comm(PGFEM_mpi_comm *pgfem_mpi_comm);
 
   /** Split up PGFEM_mpi_comm->world for macro-micro */
   int PGFEM_mpi_comm_MM_split(const int macro_nproc,
-			      const int micro_group_size,
-			      PGFEM_mpi_comm *pgfem_mpi_comm);
+                  const int micro_group_size,
+                  PGFEM_mpi_comm *pgfem_mpi_comm);
 
   /** Common structure for building a point-to-point communication
       graph. This is a basic building block that can be frequently
@@ -83,8 +79,8 @@ extern "C" {
       communicated with each prcess. NOTE: the buffer sizes are
       allocated but are not computed */
   int build_PGFEM_comm_info(const int nproc,
-			    const int *n_buff_proc,
-			    PGFEM_comm_info **info);
+                const int *n_buff_proc,
+                PGFEM_comm_info **info);
 
   /** destroy a PGFEM_comm_info object */
   int destroy_PGFEM_comm_info(PGFEM_comm_info *info);
@@ -92,13 +88,13 @@ extern "C" {
   /** expand a PGFEM_comm_info structure into a list of communications
       to carry out */
   int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
-				  int *n_comms,
-				  int **procs,
-				  int **sizes);
+                  int *n_comms,
+                  int **procs,
+                  int **sizes);
 
   /** compute the number of communications in PGFEM_comm_info */
   int PGFEM_comm_info_get_n_comms(const PGFEM_comm_info *info,
-				  int *n_comms);
+                  int *n_comms);
 
   /** a context for a server-type operation */
   typedef struct PGFEM_server_ctx{
@@ -119,14 +115,14 @@ extern "C" {
    * Build a server context
    */
   void build_PGFEM_server_ctx(PGFEM_server_ctx *ctx,
-			      const int n_comm,
-			      const int *buf_sizes);
+                  const int n_comm,
+                  const int *buf_sizes);
 
   /** construct a PGFEM_server_ctx object based on a PGFEM_comm_info
       object */
   int build_PGFEM_server_ctx_from_PGFEM_comm_info(const PGFEM_comm_info
-						  *info,
-						  PGFEM_server_ctx *ctx);
+                          *info,
+                          PGFEM_server_ctx *ctx);
 
   /**
    * Return the indices for communication associated with tag
@@ -136,41 +132,37 @@ extern "C" {
    * as the number of cummunications described by ctx.
    */
   int PGFEM_server_ctx_get_idx_from_tag(const PGFEM_server_ctx *ctx,
-					const int tag,
-					int *count,
-					int *indices);
+                    const int tag,
+                    int *count,
+                    int *indices);
 
   /**
    * Set the processor id for the message described at index idx.
    */
   int PGFEM_server_ctx_set_proc_at_idx(PGFEM_server_ctx *ctx,
-				       const int proc,
-				       const int idx);
+                       const int proc,
+                       const int idx);
 
   /**
    * Set the tag for the message described at index idx.
    */
   int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
-				      const int tag,
-				      const int idx);
+                      const int tag,
+                      const int idx);
 
   /**
    * Get message info from server context at index. Note that the
    * buffer may be modified through the returned pointer.
    */
   int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
-				   const int idx,
-				   void *buf,
-				   int *n_bytes,
-				   int *proc,
-				   int *tag,
-				   MPI_Request *req);
+                   const int idx,
+                   void *buf,
+                   int *n_bytes,
+                   int *proc,
+                   int *tag,
+                   MPI_Request *req);
 
   /** Destroy a PGFEM_server_ctx object */
   int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */

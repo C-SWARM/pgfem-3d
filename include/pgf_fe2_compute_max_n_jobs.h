@@ -10,15 +10,12 @@
 #include "microscale_information.h"
 #include "PGFEM_mpi.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-/**  
+/**
  * Compute the maximum number of jobs to allow on a single server.
  * This function must be called by ALL processes simultaneously.
  *
  * The maximum number of jobs is `max_n_jobs = 1.1 * min_n_jobs`,
- * where `min_n_jobs = total_macro_nce / n_servers + rem` and 
+ * where `min_n_jobs = total_macro_nce / n_servers + rem` and
  * `rem = 1` if `total_macro_nce % n_servers > 0`. The maximum
  * number of jobs may also be specified at runtime through the
  * command line (see -h) so long as it is greater than min_n_jobs.
@@ -30,11 +27,7 @@ extern "C" {
  * \return non-zero on internal error
  */
 int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
-			       const PGFEM_mpi_comm *mpi_comm,
-			       int *max_n_jobs);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                   const PGFEM_mpi_comm *mpi_comm,
+                   int *max_n_jobs);
 
 #endif /* #ifndef  */

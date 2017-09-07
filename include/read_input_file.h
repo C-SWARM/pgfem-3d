@@ -14,40 +14,36 @@
 #include "PGFem3D_data_structure.h"
 #include "Arc_length.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Function for reading the entire input file. All required space
       is allocated within this function */
   int read_input_file(const PGFem3D_opt *opts,
-		      MPI_Comm comm,
-		      long *nn,
-		      long *Gnn,
-		      long *ndofn,
-		      long *ne,
-		      long *lin_maxit,
-		      double *lin_err,
-		      double *lim_zero,
-		      long *nmat,
-		      long *n_concentrations,
-		      long *n_orient,
-		      NODE **node,
-		      ELEMENT **elem,
-		      MATERIAL **material,
-		      MATGEOM *matgeom,
-		      SUPP *sup,
-		      long *nln,
-		      ZATNODE **znod,
-		      long *nel_s,
-		      ZATELEM **zelem_s,
-		      long *nel_v,
-		      ZATELEM **zelem_v,
+              MPI_Comm comm,
+              long *nn,
+              long *Gnn,
+              long *ndofn,
+              long *ne,
+              long *lin_maxit,
+              double *lin_err,
+              double *lim_zero,
+              long *nmat,
+              long *n_concentrations,
+              long *n_orient,
+              NODE **node,
+              ELEMENT **elem,
+              MATERIAL **material,
+              MATGEOM *matgeom,
+              SUPP *sup,
+              long *nln,
+              ZATNODE **znod,
+              long *nel_s,
+              ZATELEM **zelem_s,
+              long *nel_v,
+              ZATELEM **zelem_v,
                       const int *fv_ndofn,
-		      const int phyicsno,
-		      const int *ndim,
+              const int phyicsno,
+              const int *ndim,
                       char **physicsnames);
-		      
+
 /// Read mesh info, boundary conditions, and material properties.
 /// from main input files (*.in)
 ///
@@ -60,7 +56,7 @@ extern "C" {
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
-int read_mesh_file(GRID *grid, 
+int read_mesh_file(GRID *grid,
                    MATERIAL_PROPERTY *mat,
                    FIELD_VARIABLES *FV,
                    SOLVER_OPTIONS *SOL,
@@ -69,7 +65,7 @@ int read_mesh_file(GRID *grid,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts);
 
-/// Read solver file for time stepping. 
+/// Read solver file for time stepping.
 ///
 /// \param[out] time_steps object for time stepping
 /// \param[out] mat a material object
@@ -114,7 +110,7 @@ int read_initial_values(GRID *grid,
                         PGFem3D_TIME_STEPPING *ts,
                         PGFem3D_opt *opts,
                         MULTIPHYSICS *mp,
-                        double *tnm1, 
+                        double *tnm1,
                         int myrank);
 
 /// Read loads increments.
@@ -126,12 +122,12 @@ int read_initial_values(GRID *grid,
 /// \param[in] tim time step ID
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
-/// \return non-zero on internal error 
+/// \return non-zero on internal error
 int read_and_apply_load_increments(GRID *grid,
                                    FIELD_VARIABLES *variables,
                                    LOADING_STEPS *load,
-                                   MULTIPHYSICS *mp,  
-                                   long tim, 
+                                   MULTIPHYSICS *mp,
+                                   long tim,
                                    MPI_Comm mpi_comm,
                                    int myrank);
 
@@ -143,15 +139,12 @@ int read_and_apply_load_increments(GRID *grid,
 /// \param[in] ensight ENSIGHT object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
-/// \return non-zero on internal error  
+/// \return non-zero on internal error
 int read_cohesive_elements(GRID *grid,
                            MATERIAL_PROPERTY *mat,
                            const PGFem3D_opt *opts,
                            ENSIGHT ensight,
                            MPI_Comm mpi_comm,
-                           int myrank);                           
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                           int myrank);
 
 #endif /* #ifndef  */

@@ -6,10 +6,6 @@
 #include "element.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Structure of stresses SIG */
   typedef struct { /* Inelastic stress in all integration points */
     double *o,
@@ -47,20 +43,16 @@ extern "C" {
   SIG* build_sig_el(const long ne);
 
   void destroy_sig_el(SIG* sig,
-		      const long ne);
+              const long ne);
 
   SIG* build_sig_il (const long ne,
-		     const int analysis,
-		     ELEMENT *elem);
+             const int analysis,
+             ELEMENT *elem);
 
   /*** MUST be called before destroy_elem */
   void destroy_sig_il(SIG* sig,
-		      const ELEMENT *elem,
-		      const long ne,
-		      const int analysis);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+              const ELEMENT *elem,
+              const long ne,
+              const int analysis);
 
 #endif /* #ifndef  */

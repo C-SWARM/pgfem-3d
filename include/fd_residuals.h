@@ -24,10 +24,6 @@
 #include "solver_file.h"
 #include "macro_micro_functions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /// Compute residuals
 ///
 /// \param[in] grid a mesh object
@@ -57,7 +53,7 @@ long fd_residuals_MP(GRID *grid,
                      int updated_deformation);
 
 /// compute the reaction force for multiphysics mode
-/// 
+///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] variables object for field variables
@@ -82,7 +78,7 @@ int fd_res_compute_reactions_MP(GRID *grid,
                                 int mp_id,
                                 double t,
                                 double *dts);
-                                                               
+
 /// Multiscale simulation interface computing reaction forces
 ///
 /// \param[in] c structure of macroscale information
@@ -96,9 +92,5 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         SOLVER_FILE *solver_file,
                                         const PGFem3D_opt *opts,
                                         double *dts);
-                                           
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef FD_RESIDUALS_H */

@@ -2,10 +2,6 @@
 #ifndef TFA_H
 #define TFA_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Structure of material properties */
   struct TFA{
     double *Dmm,
@@ -20,10 +16,6 @@ extern "C" {
       *Am,
       *A2;
   };
-  typedef struct TFA TFA;
 
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */

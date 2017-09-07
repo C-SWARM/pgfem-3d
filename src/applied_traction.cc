@@ -3,51 +3,27 @@
    model features. Currently, only surface tractions are supported */
 
 #include "applied_traction.h"
+#include "allocation.h"
+#include "cohesive_element_utils.h"
+#include "elem3d.h"
+#include "get_ndof_on_elem.h"
+#include "get_dof_ids_on_elem.h"
+#include "index_macros.h"
+#include "integrate_surface.h"
+#include "utils.h"
 #include <string.h>
 
-#ifndef ALLOCATION_H
-#include "allocation.h"
-#endif
-
-#ifndef INDEX_MACROS_H
-#include "index_macros.h"
-#endif
-
-#ifndef UTILS_H
-#include "utils.h"
-#endif
-
-#ifndef INTEGRATE_SURFACE_H
-#include "integrate_surface.h"
-#endif
-
-#ifndef ELEM3D_H
-#include "elem3d.h"
-#endif
-
-#ifndef GET_NDOF_ON_ELEM_H
-#include "get_ndof_on_elem.h"
-#endif
-
-#ifndef GET_DOF_IDS_ON_ELEM_H
-#include "get_dof_ids_on_elem.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_UTILS_H
-#include "cohesive_element_utils.h"
-#endif
-
 int read_applied_surface_tractions_fname(char *fname,
-					 int *n_feats,
-					 int **feat_type,
-					 int **feat_id,
-					 double **loads)
+    int *n_feats,
+    int **feat_type,
+    int **feat_id,
+    double **loads)
 {
   int err = 0;
   FILE *in = fopen(fname,"r");
   if(in == NULL)
   {
-    MPI_Comm mpi_comm = MPI_COMM_WORLD; 
+    MPI_Comm mpi_comm = MPI_COMM_WORLD;
     int myrank = 0;
 
     MPI_Comm_rank (mpi_comm,&myrank);
@@ -63,10 +39,10 @@ int read_applied_surface_tractions_fname(char *fname,
 }
 
 int read_applied_surface_tractions(FILE *in,
-				   int *n_feats,
-				   int **feat_type,
-				   int **feat_id,
-				   double **loads)
+    int *n_feats,
+    int **feat_type,
+    int **feat_id,
+    double **loads)
 {
   int err = 0;
   (*n_feats) = 0;
@@ -75,19 +51,19 @@ int read_applied_surface_tractions(FILE *in,
   (*loads) = NULL;
 
   /* read number of features and allocate */
-  fscanf(in,"%d",n_feats);
+  CHECK_SCANF(in,"%d",n_feats);
   if(*n_feats > 0){
-    (*feat_type) = PGFEM_calloc(*n_feats,sizeof(int));
-    (*feat_id) = PGFEM_calloc(*n_feats,sizeof(int));
-    (*loads) = PGFEM_calloc(3*(*n_feats),sizeof(double));
+    (*feat_type) = PGFEM_calloc(int, *n_feats);
+    (*feat_id) = PGFEM_calloc(int, *n_feats);
+    (*loads) = PGFEM_calloc(double, 3*(*n_feats));
 
     int *ft = &(*feat_type)[0];
     int *fi = &(*feat_id)[0];
     double *ld = &(*loads)[0];
     for(int i=0; i<*n_feats; i++){
       int idx = idx_2_gen(i,0,*n_feats,3);
-      fscanf(in,"%d %d %lf %lf %lf",
-	     ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
+      CHECK_SCANF(in,"%d %d %lf %lf %lf",
+          ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
     }
   }
 
@@ -95,20 +71,20 @@ int read_applied_surface_tractions(FILE *in,
 }
 
 int generate_applied_surface_traction_list(const int ne,
-					   const ELEMENT *elem,
-					   const int n_feats,
-					   const int *feat_type,
-					   const int *feat_id,
-					   int *n_sur_trac_elem,
-					   SUR_TRAC_ELEM **sur_trac_elem)
+    const ELEMENT *elem,
+    const int n_feats,
+    const int *feat_type,
+    const int *feat_id,
+    int *n_sur_trac_elem,
+    SUR_TRAC_ELEM **sur_trac_elem)
 {
   int err = 0;
   (*n_sur_trac_elem) = 0;
   (*sur_trac_elem) = NULL;
 
-  int *elem_has_trac = PGFEM_calloc(ne,sizeof(int));
-  int *elem_n_faces = PGFEM_calloc(ne,sizeof(int));
-  int *n_faces = PGFEM_calloc(ne,sizeof(int));
+  int *elem_has_trac = PGFEM_calloc(int, ne);
+  int *elem_n_faces = PGFEM_calloc(int, ne);
+  int *n_faces = PGFEM_calloc(int, ne);
 
   /* determine how many elements have tractions, which ones, and how
      many faces on the element have an applied traction */
@@ -118,23 +94,23 @@ int generate_applied_surface_traction_list(const int ne,
     /* get number of element faces */
     switch(el->toe){
       /* tetrahedron */
-    case 4: case 5: case 10: n_faces[i] = 4; break;
+     case 4: case 5: case 10: n_faces[i] = 4; break;
       /* hexas */
-    case 8: n_faces[i] = 6; break;
-    default:
+     case 8: n_faces[i] = 6; break;
+     default:
       PGFEM_printerr("WARNING: Unsupported elemet type,"
-		     " no tractions will be applied! %s:%s:%d\n",
-		     __func__,__FILE__,__LINE__);
+          " no tractions will be applied! %s:%s:%d\n",
+          __func__,__FILE__,__LINE__);
       break;
     }
 
     for(int k=0; k<n_feats; k++){
       for(int j=0; j<n_faces[i]; j++){
-	if(el->bnd_type[j] == feat_type[k]
-	   && el->bnd_id[j] == feat_id[k]){
-	  elem_has_trac[i] = 1;
-	  elem_n_faces[i] ++;
-	}
+        if(el->bnd_type[j] == feat_type[k]
+            && el->bnd_id[j] == feat_id[k]){
+          elem_has_trac[i] = 1;
+          elem_n_faces[i] ++;
+        }
       }/* faces */
     }/* features */
 
@@ -147,19 +123,19 @@ int generate_applied_surface_traction_list(const int ne,
   /* get short list of elements */
   int *elem_ids = NULL;
   if(*n_sur_trac_elem > 0){
-    elem_ids = PGFEM_calloc(*n_sur_trac_elem,sizeof(int));
+    elem_ids = PGFEM_calloc(int, *n_sur_trac_elem);
     {
       int idx = 0;
       for(int i=0; i<ne; i++){
-	if(elem_has_trac[i]){
-	  elem_ids[idx] = i;
-	  idx++;
-	}      
+        if(elem_has_trac[i]){
+          elem_ids[idx] = i;
+          idx++;
+        }
       }
     }
 
     /* allocate and populate */
-    (*sur_trac_elem) = PGFEM_calloc(*n_sur_trac_elem,sizeof(SUR_TRAC_ELEM));
+    (*sur_trac_elem) = PGFEM_calloc(SUR_TRAC_ELEM, *n_sur_trac_elem);
     for(int i=0; i<(*n_sur_trac_elem); i++){
       int idx = elem_ids[i];
       const ELEMENT *el = &elem[idx];
@@ -167,20 +143,20 @@ int generate_applied_surface_traction_list(const int ne,
 
       ste->elem_id = idx;
       ste->n_faces = elem_n_faces[idx];
-      ste->faces = PGFEM_calloc(ste->n_faces,sizeof(int));
-      ste->feat_num = PGFEM_calloc(ste->n_faces,sizeof(int));
+      ste->faces = PGFEM_calloc(int, ste->n_faces);
+      ste->feat_num = PGFEM_calloc(int, ste->n_faces);
 
       /* loop through faces on element */
       int fidx = 0;
       for(int k=0; k<n_feats; k++){
-	for(int j=0; j<n_faces[i]; j++){
-	  if(el->bnd_type[j] == feat_type[k]
-	     && el->bnd_id[j] == feat_id[k]){
-	    ste->faces[fidx] = j;
-	    ste->feat_num[fidx] =  k;
-	    fidx++;
-	  }
-	}/* faces */
+        for(int j=0; j<n_faces[i]; j++){
+          if(el->bnd_type[j] == feat_type[k]
+              && el->bnd_id[j] == feat_id[k]){
+            ste->faces[fidx] = j;
+            ste->feat_num[fidx] =  k;
+            fidx++;
+          }
+        }/* faces */
       }/* features */
     }/* for each loaded element */
   }
@@ -195,7 +171,7 @@ int generate_applied_surface_traction_list(const int ne,
 }/* generate_applied_surface_traction_list() */
 
 int destroy_applied_surface_traction_list(const int n_sur_trac_elem,
-					  SUR_TRAC_ELEM *sur_trac_elem)
+    SUR_TRAC_ELEM *sur_trac_elem)
 {
   int err = 0;
   for(int i=0; i< n_sur_trac_elem; i++){
@@ -208,14 +184,14 @@ int destroy_applied_surface_traction_list(const int n_sur_trac_elem,
 
 /* Distributed dead load is computed in reference configuration */
 int compute_applied_traction_res(const int ndofn,
-				 const NODE *nodes,
-				 const ELEMENT *elem,
-				 const int n_ste,
-				 const SUR_TRAC_ELEM *ste,
-				 const int n_feats,
-				 const double *loads,
-				 double *res,
-				 const int mp_id)
+    const NODE *nodes,
+    const ELEMENT *elem,
+    const int n_ste,
+    const SUR_TRAC_ELEM *ste,
+    const int n_feats,
+    const double *loads,
+    double *res,
+    const int mp_id)
 {
   int err = 0;
   int int_order = 1;
@@ -226,23 +202,23 @@ int compute_applied_traction_res(const int ndofn,
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
 
-    double *x = PGFEM_calloc(nne_3D,sizeof(double));
-    double *y = PGFEM_calloc(nne_3D,sizeof(double));
-    double *z = PGFEM_calloc(nne_3D,sizeof(double));
+    double *x = PGFEM_calloc(double, nne_3D);
+    double *y = PGFEM_calloc(double, nne_3D);
+    double *z = PGFEM_calloc(double, nne_3D);
     nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);
     if(nne_3D==10)
       int_order = 2;
 
     const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes,ndofn);
-    long *cn = PGFEM_calloc(ndofe,sizeof(long));
-    double *res_el = PGFEM_calloc(ndofe,sizeof(double));
+    long *cn = PGFEM_calloc(long, ndofe);
+    double *res_el = PGFEM_calloc(double, ndofe);
     get_dof_ids_on_elem_nodes(0,nne_3D,ndofn,nod_3D,nodes,cn,mp_id);
 
-    double *N_3D = PGFEM_calloc(nne_3D,sizeof(double));
+    double *N_3D = PGFEM_calloc(double, nne_3D);
 
     for(int j=0; j<pste->n_faces; j++){
       const double *trac = &loads[idx_2_gen(pste->feat_num[j],
-					    0,n_feats,3)];
+            0,n_feats,3)];
       int n_ip = 0;
       double *ksi_3D = NULL;
       double *eta_3D = NULL;
@@ -254,21 +230,21 @@ int compute_applied_traction_res(const int ndofn,
       int nne_2D = 0;
 
       err += integrate_surface(nne_3D,pste->faces[j],int_order,
-			       &n_ip,&ksi_3D,&eta_3D,&zet_3D,
-			       &ksi_2D,&eta_2D,&wt_2D,
-			       &nne_2D,&nod_2D);
+          &n_ip,&ksi_3D,&eta_3D,&zet_3D,
+          &ksi_2D,&eta_2D,&wt_2D,
+          &nne_2D,&nod_2D);
 
       for(int ip=0; ip<n_ip; ip++){
-	double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
-					     ksi_2D[ip],eta_2D[ip]);
-	shape_func(ksi_3D[ip],eta_3D[ip],zet_3D[ip],nne_3D,N_3D);
+        double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
+            ksi_2D[ip],eta_2D[ip]);
+        shape_func(ksi_3D[ip],eta_3D[ip],zet_3D[ip],nne_3D,N_3D);
 
-	for(int k=0; k<nne_3D; k++){
-	  for(int m=0; m<3; m++){
-	    int idx = idx_2_gen(k,m,nne_3D,ndofn);
-	    res_el[idx] += N_3D[k]*trac[m]*jj*wt_2D[ip];
-	  }/* dims */
-	}/* nodes */
+        for(int k=0; k<nne_3D; k++){
+          for(int m=0; m<3; m++){
+            int idx = idx_2_gen(k,m,nne_3D,ndofn);
+            res_el[idx] += N_3D[k]*trac[m]*jj*wt_2D[ip];
+          }/* dims */
+        }/* nodes */
 
       }/* for each integration point */
 
@@ -284,7 +260,7 @@ int compute_applied_traction_res(const int ndofn,
     /* assembly */
     for(int j=0; j<ndofe; j++){
       if(cn[j] - 1 >= 0){
-	res[cn[j] - 1] += res_el[j];
+        res[cn[j] - 1] += res_el[j];
       }
     }
 
@@ -303,13 +279,13 @@ int compute_applied_traction_res(const int ndofn,
 /** integrate the force on the marked boundaries LAGRANGIAN. forces
     vector is [n_feats x ndim] */
 int compute_resultant_force(const int n_feats,
-			    const int n_ste,
-			    const SUR_TRAC_ELEM *ste,
-			    const NODE *nodes,
-			    const ELEMENT *elem,
-			    const SIG *sig,
-			    const EPS *eps,
-			    double *forces)
+    const int n_ste,
+    const SUR_TRAC_ELEM *ste,
+    const NODE *nodes,
+    const ELEMENT *elem,
+    const SIG *sig,
+    const EPS *eps,
+    double *forces)
 {
   int err = 0;
   static const int ndim = 3;
@@ -325,14 +301,14 @@ int compute_resultant_force(const int n_feats,
 
   /* F0 = int_A FS.N dA */
   /* allocate space for S and P */
-  double *S = PGFEM_calloc(ndim*ndim,sizeof(double));
-  double *P = PGFEM_calloc(ndim*ndim,sizeof(double));
+  double *S = PGFEM_calloc(double, ndim*ndim);
+  double *P = PGFEM_calloc(double, ndim*ndim);
 
   /* allocate space for basis */
-  double *e1 = PGFEM_calloc(ndim,sizeof(double));
-  double *e2 = PGFEM_calloc(ndim,sizeof(double));
-  double *e2h = PGFEM_calloc(ndim,sizeof(double));
-  double *n = PGFEM_calloc(ndim,sizeof(double));
+  double *e1 = PGFEM_calloc(double, ndim);
+  double *e2 = PGFEM_calloc(double, ndim);
+  double *e2h = PGFEM_calloc(double, ndim);
+  double *n = PGFEM_calloc(double, ndim);
 
   for(int i=0; i<n_ste; i++){
     /* get pointer to relavent objects */
@@ -341,12 +317,12 @@ int compute_resultant_force(const int n_feats,
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
     if(nne_3D==10)
-      int_order = 2;    
+      int_order = 2;
 
     /* get 3D nodal coordinates */
-    double *x = PGFEM_calloc(nne_3D,sizeof(double));
-    double *y = PGFEM_calloc(nne_3D,sizeof(double));
-    double *z = PGFEM_calloc(nne_3D,sizeof(double));
+    double *x = PGFEM_calloc(double, nne_3D);
+    double *y = PGFEM_calloc(double, nne_3D);
+    double *z = PGFEM_calloc(double, nne_3D);
     nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);
 
     /* for each marked face on the element */
@@ -363,50 +339,50 @@ int compute_resultant_force(const int n_feats,
 
       /* compute the integration points and weights */
       err += integrate_surface(nne_3D,pste->faces[j],int_order,
-			       &n_ip,&ksi_3D,&eta_3D,&zet_3D,
-			       &ksi_2D,&eta_2D,&wt_2D,
-			       &nne_2D,&nod_2D);
+          &n_ip,&ksi_3D,&eta_3D,&zet_3D,
+          &ksi_2D,&eta_2D,&wt_2D,
+          &nne_2D,&nod_2D);
 
       /* allocate space for 2D elem nodal coordinates */
-      double *x2 = PGFEM_calloc(nne_2D,sizeof(double));
-      double *y2 = PGFEM_calloc(nne_2D,sizeof(double));
-      double *z2 = PGFEM_calloc(nne_2D,sizeof(double));
+      double *x2 = PGFEM_calloc(double, nne_2D);
+      double *y2 = PGFEM_calloc(double, nne_2D);
+      double *z2 = PGFEM_calloc(double, nne_2D);
       for(int k=0; k<nne_2D; k++){
-	const int idx = nod_2D[k];
-	x2[k] = x[idx];
-	y2[k] = y[idx];
-	z2[k] = z[idx];
+        const int idx = nod_2D[k];
+        x2[k] = x[idx];
+        y2[k] = y[idx];
+        z2[k] = z[idx];
       }
 
       for(int ip=0; ip<n_ip; ip++){
-	/* compute the jacobian of the transformation for the element
-	   face */
-	double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
-					     ksi_2D[ip],eta_2D[ip]);
+        /* compute the jacobian of the transformation for the element
+           face */
+        double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
+            ksi_2D[ip],eta_2D[ip]);
 
-	/* compute the normal */
-	base_vec(nne_2D,ksi_2D[ip],eta_2D[ip],x2,y2,z2,e1,e2,e2h,n,0);
+        /* compute the normal */
+        base_vec(nne_2D,ksi_2D[ip],eta_2D[ip],x2,y2,z2,e1,e2,e2h,n,0);
 
-	/* I am not interpolating, so I do not need 3D shape functions */
-	/* get full S from sig structure (stored symmetric part) */
-	S[idx_2(0,0)] = sig[pste->elem_id].il[ip].o[0]; 
-	S[idx_2(1,1)] = sig[pste->elem_id].il[ip].o[1]; 
-	S[idx_2(2,2)] = sig[pste->elem_id].il[ip].o[2]; 
-	S[idx_2(1,2)] = S[idx_2(2,1)] = sig[pste->elem_id].il[ip].o[3]; 
-	S[idx_2(0,2)] = S[idx_2(2,0)] = sig[pste->elem_id].il[ip].o[4]; 
-	S[idx_2(0,1)] = S[idx_2(1,0)] = sig[pste->elem_id].il[ip].o[5];
+        /* I am not interpolating, so I do not need 3D shape functions */
+        /* get full S from sig structure (stored symmetric part) */
+        S[idx_2(0,0)] = sig[pste->elem_id].il[ip].o[0];
+        S[idx_2(1,1)] = sig[pste->elem_id].il[ip].o[1];
+        S[idx_2(2,2)] = sig[pste->elem_id].il[ip].o[2];
+        S[idx_2(1,2)] = S[idx_2(2,1)] = sig[pste->elem_id].il[ip].o[3];
+        S[idx_2(0,2)] = S[idx_2(2,0)] = sig[pste->elem_id].il[ip].o[4];
+        S[idx_2(0,1)] = S[idx_2(1,0)] = sig[pste->elem_id].il[ip].o[5];
 
-	/* F0 = jj*wt*FS.N */
-	double *F0 = (forces + idx_2_gen(pste->feat_num[j],0,
-					  n_feats,ndim));
-	const double *F = eps[pste->elem_id].il[ip].F;
-	for(int I=0; I<ndim; I++){
-	  for(int J=0; J<ndim; J++){
-	    for(int K=0; K<ndim; K++){
-	      F0[I] += jj*wt_2D[ip]*F[idx_2(I,J)]*S[idx_2(J,K)]*n[K];
-	    }
-	  }
-	}
+        /* F0 = jj*wt*FS.N */
+        double *F0 = (forces + idx_2_gen(pste->feat_num[j],0,
+                n_feats,ndim));
+        const double *F = eps[pste->elem_id].il[ip].F;
+        for(int I=0; I<ndim; I++){
+          for(int J=0; J<ndim; J++){
+            for(int K=0; K<ndim; K++){
+              F0[I] += jj*wt_2D[ip]*F[idx_2(I,J)]*S[idx_2(J,K)]*n[K];
+            }
+          }
+        }
 
       }/* for each integration point */
 

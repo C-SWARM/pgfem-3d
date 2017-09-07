@@ -1,9 +1,10 @@
-noinst_LIBRARIES = libPGFem3D_FEMLIB.a
-libPGFem3D_FEMLIB_a_SOURCES = femlib.cc
+noinst_LTLIBRARIES = libPGFem3D_FEMLIB.la
 
-AM_INCLUDES = -I../../include \
-              $(hypre_include) \
-              $(cnstvm_include) \
-              $(mkl_include)
+libPGFem3D_FEMLIB_la_CPPFLAGS = -Wall -Werror \
+                                -I$(srcdir)/../include \
+                                -I$(top_srcdir)/include \
+                                $(GCM_INCLUDE) \
+                                $(LAPACK_INCLUDE)
 
-AM_CXXFLAGS = -I../include $(AM_INCLUDES)
+libPGFem3D_FEMLIB_la_SOURCES  = femlib.cc
+

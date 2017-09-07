@@ -4,27 +4,23 @@
 #define STIFFMAT_FD_H
 
 #include "data_structure.h"
-#include "PGFEM_mpi.h"
-#include "element.h"
-#include "node.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "cohesive_element.h"
 #include "bounding_element.h"
-#include "pgfem_comm.h"
-#include "PGFem3D_options.h"
-#include "hypre_global.h"
-#include "PGFem3D_data_structure.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "element.h"
+#include "eps.h"
 #include "femlib.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
+#include "matgeom.h"
+#include "node.h"
+#include "pgfem_comm.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
+#include "supp.h"
+#include "pgfem3d/Solver.hpp"
 
 /// compute element stiffness matrix
 ///
@@ -43,7 +39,7 @@ extern "C" {
 /// \param[in] lm Load multiplier level in Arc Length scheme
 /// \param[in] be tangential load vector when periodic and solution scheme is Arc Length
 /// \param[in] r_e nodal variabls(displacements) on the current element
-/// \return non-zero on internal error 
+/// \return non-zero on internal error
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
                            GRID *grid,
@@ -59,7 +55,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                            double lm,
                            double *be,
                            double *r_e);
-		   
+
 /// Compute stiffnes
 ///
 /// \param[in] grid a mesh object
@@ -92,7 +88,7 @@ int stiffmat_fd_MP(GRID *grid,
                    double dt,
                    long iter,
                    int myrank);
-                   
+
 /// Multiscale simulation interface to compute stiffness matrix
 ///
 /// \param[in] c structure of macroscale information
@@ -112,17 +108,13 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            double nor_min,
                            long FNR,
                            int myrank,
-                           int nproc);                   
-                   
+                           int nproc);
+
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
-			       MPI_Status *sta_r,
-			       MPI_Request *req_r,
-			       PGFEM_HYPRE_solve_info *PGFEM_hypre,
-			       double **recv);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                               MPI_Status *sta_r,
+                               MPI_Request *req_r,
+                               pgfem3d::solvers::SparseSystem *system,
+                               double **recv);
 
 #endif /* #ifndef STIFFMAT_FD_H */

@@ -31,8 +31,8 @@ int read_from_VTK(const PGFem3D_opt *opts, int myrank, int step, double *u)
 {
   int err = 0;
   char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,step,opts->ofname,myrank, step);   
-  err += read_VTK_file(filename, u);      
+  sprintf(filename,"%s/VTK/STEP_%.5d/%s_%d_%d.vtu",opts->opath,step,opts->ofname,myrank, step);
+  err += read_VTK_file(filename, u);
   return err;
 }
 
@@ -47,7 +47,7 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, double *S_in, HOM
   inv(C,CI);
   
   int mat = elem[e].mat[2];
-  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu)); 
+  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   Stress(C.data,&hommat[mat],devS.data);
@@ -72,8 +72,8 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMA
   inv(C,CI);
   
   int mat = elem[e].mat[2];
-  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));                  
-  
+  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
+
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
   Stress(C.data,&hommat[mat],devS.data);
@@ -92,7 +92,7 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
                                                   HOMMAT *hommat, ELEMENT *elem, EPS *eps)
 {
   int compute_stiffness = 0;
-  
+
   Constitutive_model *m = &(eps[e].model[ip-1]);
   Tensor<2> Fnp1, eFnp1;
   m->param->get_F(m,Fnp1.data,1);
@@ -102,8 +102,8 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
   *Jnp1 = ttl::det(Fnp1);  
 }                          
 void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -113,13 +113,13 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     
   if((opts->analysis_type==CM || opts->analysis_type==CM3F)&& opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
-  
+
   int nsd = 3;
   Tensor<2> F,S,LS;
 
   double LV = 0.0;
   double GV = 0.0;
-  
+
   for(int e = 0; e<ne; e++)
   {        
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
@@ -140,7 +140,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
     }
 
     if(opts->analysis_type==TF)
-    {       
+    {
       if(npres==1)
         P(1) = eps[e].d_T[0];
       else
@@ -150,9 +150,9 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
           int nid = fe.node_id(a+1);
           P(a+1) = r[nid*ndofn + 3];
         }
-      }          
+      }
     }
-    
+
     for(int ip = 1; ip<=fe.nint; ip++)
     {     
       fe.elem_basis_V(ip);  
@@ -184,7 +184,7 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
         default:
           break;
       }
-      
+
       LV += fe.detJxW/Jnp1;
 
       for(int a=0; a<9; a++)
@@ -195,12 +195,12 @@ void post_processing_compute_stress(double *GS, ELEMENT *elem, HOMMAT *hommat, l
   MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);  
   
   for(int a=0; a<9; a++)
-    GS[a] = GS[a]/GV;    
+    GS[a] = GS[a]/GV;
 }
 
 void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                          double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -216,7 +216,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
 
   double LV = 0.0;
   double GV = 0.0;
-  
+
   for(int e = 0; e<ne; e++)
   {        
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
@@ -232,7 +232,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
         u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
-    
+
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
       fe.elem_basis_V(ip);  
@@ -254,7 +254,7 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
           LF.data[a] += Fnp1.data[a]*fe.detJxW/Jnp1;
       }
       else
-      {        
+      {
         LV += fe.detJxW;
         for(int a=0; a<9; a++)
           LF.data[a] += F.data[a]*fe.detJxW;
@@ -270,8 +270,8 @@ void post_processing_deformation_gradient(double *GF, ELEMENT *elem, HOMMAT *hom
 }
 
 void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                                       double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -287,7 +287,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
 
   double LV = 0.0;
   double GV = 0.0;
-  
+
   for(int e = 0; e<ne; e++)
   {        
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
@@ -303,7 +303,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
         u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
-    
+
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
       fe.elem_basis_V(ip);  
@@ -327,7 +327,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
           LF.data[a] += eFnp1.data[a]*fe.detJxW/Jnp1;
       }
       else
-      {        
+      {
         LV += fe.detJxW;
         for(int a=0; a<9; a++)
           LF.data[a] += F.data[a]*fe.detJxW;
@@ -344,8 +344,8 @@ void post_processing_deformation_gradient_elastic_part(double *GF, ELEMENT *elem
 
 
 void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                      double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -360,7 +360,7 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
 
   double LV = 0.0;
   double GV = 0.0;
-  
+
   for(int e = 0; e<ne; e++)
   {        
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
@@ -383,16 +383,16 @@ void post_processing_plastic_hardness(double *G_gn, ELEMENT *elem, HOMMAT *homma
       L_gn += g_n*fe.detJxW/Jnp1;
     }
   }
-      
+
   MPI_Allreduce(&L_gn,G_gn,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
-  
+  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+
   (*G_gn) = (*G_gn)/GV;
 }
 
 void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                      double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -409,9 +409,9 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
   double LE = 0.0;
    
   for(int e = 0; e<ne; e++)
-  { 
+  {
     int mat = elem[e].mat[2];
-    double kappa = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));    
+    double kappa = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
 
     devPotentialFuncPtr dev_func = getDevPotentialFunc(1,&hommat[mat]);
     UFuncPtr              U_func =            getUFunc(1,&hommat[mat]);
@@ -429,7 +429,7 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
         u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
-    
+
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
       fe.elem_basis_V(ip);  
@@ -470,13 +470,13 @@ void post_processing_potential_energy(double *GE, ELEMENT *elem, HOMMAT *hommat,
       }
     }
   }
-      
+
   MPI_Allreduce(&LE,GE,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
 }
 
 void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
-                    
+                                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+
 {
   int total_Lagrangian = 1;
   int intg_order = 1;
@@ -491,7 +491,7 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
 
   double LV = 0.0;
   *GV = 0.0;
-  
+
   for(int e = 0; e<ne; e++)
   {        
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
@@ -507,14 +507,14 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
         u(a*nsd+b+1) = r[nid*ndofn + b];
       }
     }
-    
+
     for(int ip = 1; ip<=fe.nint; ip++)
     {      
       fe.elem_basis_V(ip);  
       fe.update_shape_tensor();
       
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
-      { 
+      {
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
         Tensor<2> Fnp1;
@@ -527,13 +527,13 @@ void post_processing_deformed_volume(double *GV, ELEMENT *elem, long ne, NODE *n
         LV += fe.detJxW/Jnp1;
       }
       else
-      {        
+      {
         LV += fe.detJxW;
       }
     }
   }
-      
-  MPI_Allreduce(&LV,GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);    
-  
+
+  MPI_Allreduce(&LV,GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+
 }
 

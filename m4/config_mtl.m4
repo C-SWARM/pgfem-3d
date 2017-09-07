@@ -1,0 +1,1 @@
+AC_DEFUN([CONFIG_MTL], [])

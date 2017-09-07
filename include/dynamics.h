@@ -1,39 +1,32 @@
 #ifndef _H_DYNAMICS_H_
 #define _H_DYNAMICS_H_
 
+#include "crpl.h"
 #include "element.h"
-#include "node.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
 #include "eps.h"
-#include "PGFem3D_options.h"
+#include "hommat.h"
+#include "node.h"
+#include "sig.h"
+#include "supp.h"
 #include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
 
 #define MIN_DENSITY 1.0e-16
 #define DT_NP1 0
 #define DT_N   1
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-		     
 void DISP_resid_body_force_el(double *f,
          const int ii,
          const int ndofn,
          const int nne,
          const double *x,
          const double *y,
-         const double *z,		     
+         const double *z,
          const ELEMENT *elem,
          const HOMMAT *hommat,
-		     const NODE *node, double dt, double t);		     
-		     
+             const NODE *node, double dt, double t);
+
 struct FEMLIB;
-#ifndef TYPE_FEMLIB
-#define TYPE_FEMLIB
-typedef struct FEMLIB FEMLIB;
-#endif
 
 /// compute element residual vector in transient
 ///
@@ -97,8 +90,5 @@ int stiffness_with_inertia(FEMLIB *fe,
                            MULTIPHYSICS *mp,
                            int mp_id,
                            double dt);
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef _H_DYNAMICS_H_ */

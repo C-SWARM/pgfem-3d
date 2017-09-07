@@ -3,10 +3,6 @@
 #ifndef MESH_LOAD_H
 #define MESH_LOAD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Structure of load on nodes */
   struct ZATNODE{
     long nod;
@@ -32,9 +28,5 @@ extern "C" {
   ZATELEM* build_zatelem(long ndofn,long nle);
 
   void destroy_zatelem(ZATELEM* ze, long nle);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */

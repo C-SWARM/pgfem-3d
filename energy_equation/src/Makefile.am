@@ -1,10 +1,12 @@
-noinst_LIBRARIES = libPGFem3D_Energy_equation.a
-libPGFem3D_Energy_equation_a_SOURCES = energy_equation.cc
+noinst_LTLIBRARIES = libenergy_equation.la
 
-AM_INCLUDES = -I../../include \
-              -I../../FEMLIB/include \
-              $(hypre_include) \
-              $(cnstvm_include) \
-              $(mkl_include)
+libenergy_equation_la_CPPFLAGS = -Wall -Werror \
+                                 -I$(srcdir)/../include \
+                                 -I$(top_srcdir)/FEMLIB/include \
+                                 -I$(top_srcdir)/include \
+                                 -I$(top_builddir)/include \
+                                 $(GCM_INCLUDE) \
+                                 $(TTL_INCLUDE) \
+                                 $(LAPACK_INCLUDE)
 
-AM_CXXFLAGS = -I../include $(AM_INCLUDES)
+libenergy_equation_la_SOURCES  = energy_equation.cc

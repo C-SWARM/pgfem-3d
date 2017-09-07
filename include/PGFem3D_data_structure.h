@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 /// Define the PGFem3D data structs
-/// 
+///
 /// Authors:
 ///   Sangmin Lee, University of Notre Dame <slee43 [at] nd.edu>
 //////////////////////////////////////////////////////////////////////
@@ -19,18 +19,16 @@
 #include "matgeom.h"
 #include "hommat.h"
 #include "mesh_load.h"
-#include "hypre_global.h"
 #include "pgfem_comm.h"
 #include "comm_hints.h"
 #include "state_variables.h"
+#include "pgfem3d/Solver.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
+using SOLVER_OPTIONS = pgfem3d::Solver;
 
 /// Time stepping struct
 /// Has time stepping information
-typedef struct {
+struct PGFem3D_TIME_STEPPING {
   long nt;          /// total number of times
   long tim;         /// current time step number
   double *times;    /// list of time
@@ -38,11 +36,11 @@ typedef struct {
   double dt_np1;    /// dt at n+1
   long *print;      /// step numbers to be printed
   double *tns;      /// time at n for multiple physics
-} PGFem3D_TIME_STEPPING;
+};
 
-/// Mesh  
+/// Mesh
 /// Has all mesh data
-typedef struct {
+struct GRID {
   long Gnn;                  /// global number of nodes
   long Gne;                  /// global number of elements
   long Gnbndel;              /// global number of boundary elements
@@ -56,22 +54,19 @@ typedef struct {
   NODE *node;                /// list of node
   ELEMENT *element;          /// list of element
   BOUNDING_ELEMENT *b_elems; /// list of bounding element
-  COEL *coel;                /// list of cohesive elements 
-} GRID;
+  COEL *coel;                /// list of cohesive elements
+};
 
 /// struct for field variables
-typedef struct FIELD_VARIABLES_TEMPORAL FIELD_VARIABLES_TEMPORAL;
-typedef struct FIELD_VARIABLES_TEMPORAL {
+struct FIELD_VARIABLES_TEMPORAL {
   double *u_nm1;           /// displacement at n-1
   double *u_n;             /// displacement at n
   int element_variable_no; /// number of element variables
   State_variables *var;    /// object to store element variables
-} FIELD_VARIABLES_TEMPORAL;  
+};
 
 /// struct for field variables
-typedef struct FIELD_VARIABLES FIELD_VARIABLES;
-
-typedef struct FIELD_VARIABLES {
+struct FIELD_VARIABLES {
   double u0;      /// reference value of field variables
   long Gndof;     /// total number of degree freedom
   long ndofn;     /// number of degree of freedom on a node
@@ -82,34 +77,34 @@ typedef struct FIELD_VARIABLES {
   double *u_np1;  /// displacement at n+1
   double *u_n;    /// displacement at n
   double *u_nm1;  /// displacement at n-1
-  double *d_u;    /// workspace for local increment of the solution n->n+1 
-  double *dd_u;   /// workspace for local _iterative_ increment of the solution 
-  double *f;      /// workspace for local residual 
-  double *R;      /// [in] vector of Neumann loads (Incramental forces) 
-  double *f_defl; /// workspace for the load vector due to derichlet conditions 
+  double *d_u;    /// workspace for local increment of the solution n->n+1
+  double *dd_u;   /// workspace for local _iterative_ increment of the solution
+  double *f;      /// workspace for local residual
+  double *R;      /// [in] vector of Neumann loads (Incramental forces)
+  double *f_defl; /// workspace for the load vector due to derichlet conditions
   double *RR;     /// [out] total Neumann load (Total forces for subdivided increment)
-  double *f_u;    /// workspace for load due to body force 
+  double *f_u;    /// workspace for load due to body force
   double *RRn;    /// [in] Neumann load to time n (Total force after equiblirium)
-  double pores;   /// [out] opening volume of failed cohesive interfaces 
+  double pores;   /// [out] opening volume of failed cohesive interfaces
   double *BS_x;   /// workspace for the locally owned part of the global solution 'rr'
-  double *BS_f;   /// Global part of 'f' 
+  double *BS_f;   /// Global part of 'f'
   double *BS_f_u; /// Global part of 'f_u'
-  double *BS_RR;  /// Global part of 'RR' 
+  double *BS_RR;  /// Global part of 'RR'
   double NORM;    /// [out] residual of first iteration (tim = 0, iter = 0).
   SIG *sig;       /// pointer for the stress
   EPS *eps;       /// pointer for strain
   SIG *sig_n;     /// smoothed stress
   int n_coupled;  /// number of coupled physics
   int *coupled_physics_ids;     /// array of phyiscs ids to be coupled
-                                /// it tells physics e.g.) fv.coupled_physics_ids[ib] == MULTIPHYSICS_MECHANICAL 
+                                /// it tells physics e.g.) fv.coupled_physics_ids[ib] == MULTIPHYSICS_MECHANICAL
                                 ///                        fv.coupled_physics_ids[ib] == MULTIPHYSICS_THERMAL
                                 ///                               :                         :
   struct FIELD_VARIABLES **fvs; /// array of FIELD_VARIABLES pointers for multiphysics coupling
   FIELD_VARIABLES_TEMPORAL *temporal; /// temporal space for transient time stepping
   State_variables *statv_list;        /// list of state variables for constitutive model interface
-  double subdivision_factor_n;        /// use for linearly map subdivided parameters at t(n)   
+  double subdivision_factor_n;        /// use for linearly map subdivided parameters at t(n)
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_n
-  double subdivision_factor_np1;      /// use for linearly map subdivided parameters at t(n+1) 
+  double subdivision_factor_np1;      /// use for linearly map subdivided parameters at t(n+1)
                                       ///   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
   /// pressure
   Matrix<double> Pnp1;
@@ -121,63 +116,38 @@ typedef struct FIELD_VARIABLES {
   Matrix<double> Vnm1;
   Matrix<double> Vn;
     
-} FIELD_VARIABLES;
+};
 
 /// struct for field variables
-typedef struct {
+struct FIELD_VARIABLES_THERMAL {
   long Gndof;   /// total number of degree freedom
   long ndofn;     /// number of degree of freedom on a node
   long ndofd;     /// number of degree of freedom in the domain
   double *T_np1;  /// displacement at n+1
   double *T_n;    /// displacement at n
   double *T_nm1;  /// displacement at n-1
-  double *dT;     /// workspace for local increment of the temperature solution n->n+1 
-  double *dd_T;   /// workspace for local _iterative_ increment of the solution 
+  double *dT;     /// workspace for local increment of the temperature solution n->n+1
+  double *dd_T;   /// workspace for local _iterative_ increment of the solution
   double NORM;    /// [out] residual of first iteration (tim = 0, iter = 0).
-} FIELD_VARIABLES_THERMAL;
+};
 
 /// struct for material properties
-typedef struct {
+struct MATERIAL_PROPERTY {
   double           *density; /// list of material density
   MATERIAL         *mater; /// list of material properites (Mechanical)
   MATERIAL_THERMAL *thermal; /// list of material properites (Thermal)
 
-  HOMMAT *hommat;  /// list of homogeneous material properites 
+  HOMMAT *hommat;  /// list of homogeneous material properites
   MATGEOM matgeom; /// information related to material geometry (for crystal plasticity)
   long nhommat;    /// number of homogeneous materials
   long nmat;       /// number of materials
   long n_orient;   /// number of orientations
   int n_co_props;  /// number of cohesive material properites;
   cohesive_props *co_props; /// list of cohesive material properites
-} MATERIAL_PROPERTY;
-
-struct ARC_LENGTH_VARIABLES;
-
-/// struct for solution scheme
-typedef struct {
-  int n_step;      /// the number of nonlinear steps taken to solve the given increment
-  double nor_min;   /// nonlinear convergence tolerance for Newton Raphson
-  long iter_max;    /// maximum number of iterations for Newton Raphson
-  double alpha;     /// midpoint rule alpha
-  void *microscale; /// Container of microscale information
-  PGFEM_HYPRE_solve_info *PGFEM_hypre; /// HYPRE solver object 
-  long FNR;         /// "Full Newton-Raphson" == 0, only compute tangent on 1st iteration 
-  double gama;      /// related to linesearch, but is modified internally... 
-  double err;       /// linear solve tolerance 
-  long iter_max_sol;/// maximum number of iterations for linear solver 
-  double computer_zero; /// computer zero 
-  int run_integration_algorithm; /// if yes, run integration algorithm when compute residuals
-  int max_NR_staggering;    /// maximum number of Newton Raphson staggering when physic is coulpled, default = 5
-  int max_subdivision;      /// maximum number of subdivision, if -1 (default): take maximum
-  int is_subdivided;        /// if yes, has been subdivided
-  double last_residual;     /// last residual achieved during Newton-Raphson iterations
-  int set_initial_residual; /// if yes, compute residual before the first NR iteration
-  double du;                /// perturbation value for computing the first residual
-  ARC_LENGTH_VARIABLES *arc;/// Container of Arc length related varialbes 
-} SOLVER_OPTIONS;
+};
 
 /// struct for the boundary conditions
-typedef struct {
+struct LOADING_STEPS {
   SUPP *sups;
   double **sup_defl; /// sum of Dirichlet BC increments to step n
   long nln;       ;  /// number of nodes with loads
@@ -188,39 +158,41 @@ typedef struct {
   ZATELEM *zele_v;   /// list of volume element with loads
   long **tim_load;   /// list of time steps to be saved
   FILE **solver_file;/// file pointer for reading loads increments
-} LOADING_STEPS;
+};
 
 /// struct for the communication
-typedef struct {
+struct COMMUNICATION_STRUCTURE {
   int nproc;         /// number of mpi processes
-  int *Ap;           /// n_cols in each owned row of global stiffness matrix 
-	int *Ai;           /// column ids for owned rows of global stiffness matrix 
-  long *DomDof;      /// number of global DOFs on each domain 
-  long nbndel;       /// number of ELEMENT on the communication boundary 
-  long *bndel;       /// ELEMENT ids on the communication boundary 
-  COMMUN comm;       /// sparse communication structure 
+  int *Ap;           /// n_cols in each owned row of global stiffness matrix
+  int *Ai;           /// column ids for owned rows of global stiffness matrix
+  long *DomDof;      /// number of global DOFs on each domain
+  long nbndel;       /// number of ELEMENT on the communication boundary
+  long *bndel;       /// ELEMENT ids on the communication boundary
+  COMMUN comm;       /// sparse communication structure
   int GDof;          /// maximum id of locally owned global DOF
   long NBN;          /// Number of nodes on domain interfaces
   Comm_hints *hints; /// Comm_hints structure
-} COMMUNICATION_STRUCTURE;
+};
 
 /// for setting physics ids
-typedef enum {MULTIPHYSICS_MECHANICAL, 
-              MULTIPHYSICS_THERMAL,
-              MULTIPHYSICS_CHEMICAL, 
-              MULTIPHYSICS_NO} MULTIPHYSICS_ANALYSIS;
+enum MULTIPHYSICS_ANALYSIS {
+  MULTIPHYSICS_MECHANICAL,
+  MULTIPHYSICS_THERMAL,
+  MULTIPHYSICS_CHEMICAL,
+  MULTIPHYSICS_NO
+};
 
 /// struct for setting multiphysics
-typedef struct {
-  int physicsno;      /// number of physics 
+struct MULTIPHYSICS {
+  int physicsno;      /// number of physics
   char **physicsname; /// physics names
   int *physics_ids;   /// physics ids
-  int *ndim;          /// degree of feedom of the physics 
+  int *ndim;          /// degree of feedom of the physics
   int *write_no;      /// number of variables to be written as results
   int total_write_no; /// total number of variables to be written as results
   int **write_ids;    /// index of physical varialbes to be written
   int **coupled_ids;  /// coupled physics id
-} MULTIPHYSICS;
+};
 
 /// initialize time stepping variable
 ///
@@ -245,19 +217,19 @@ int grid_initialization(GRID *grid);
 /// \param[in, out] grid an object containing all mesh data
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_grid(GRID *grid, 
+int destruct_grid(GRID *grid,
                   const PGFem3D_opt *opts,
                   MULTIPHYSICS *mp);
 
 
 /// initialize field variables
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \return non-zero on internal error
 int field_varialbe_initialization(FIELD_VARIABLES *fv);
 
 /// construct field variables
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] com an object for communication
@@ -266,7 +238,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv);
 /// \param[in] myrank current process rank
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int construct_field_varialbe(FIELD_VARIABLES *fv, 
+int construct_field_varialbe(FIELD_VARIABLES *fv,
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
@@ -275,28 +247,28 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
                              int mp_id);
 
 /// destruct field variables
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int destruct_field_varialbe(FIELD_VARIABLES *fv, 
+int destruct_field_varialbe(FIELD_VARIABLES *fv,
                             GRID *grid,
                             const PGFem3D_opt *opts,
                             MULTIPHYSICS *mp,
-                            int mp_id); 
+                            int mp_id);
 
 /// initialize field variables thermal part
-/// 
+///
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \return non-zero on internal error
 int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv);
 
 /// prepare temporal varialbes for staggering Newton Raphson iterations
-/// 
-/// Before call this function, physics coupling should be defined in 
+///
+/// Before call this function, physics coupling should be defined in
 /// fv->n_coupled and fv->coupled_physics_ids
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
@@ -306,9 +278,9 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv);
 int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
                                     GRID *grid,
                                     int is_for_Mechanical);
-                            
+
 /// destory temporal varialbes for staggering Newton Raphson iterations
-/// 
+///
 /// should be called before destroying fv
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
@@ -329,7 +301,7 @@ int material_initialization(MATERIAL_PROPERTY *mat);
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int destruct_material(MATERIAL_PROPERTY *mat,
-                      const PGFem3D_opt *opts);                            
+                      const PGFem3D_opt *opts);
 
 
 /// initialize iterative solver object
@@ -379,45 +351,27 @@ int multiphysics_initialization(MULTIPHYSICS *mp);
 
 
 /// construct multiphysics object
-/// 
+///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \param[in] physicsno number of physics
 /// \return non-zero on internal error
-int construct_multiphysics(MULTIPHYSICS *mp, 
+int construct_multiphysics(MULTIPHYSICS *mp,
                            int physicsno);
-                           
-/// set a physics
-/// 
-/// \param[in, out] mp an object for multiphysics stepping
-/// \param[in] obj_id id to access each physics 
-/// \param[in] mp_id multiphysics id
-/// \param[in] n_dof number of degree freedom of the physics
-/// \param[in] name physics name
-/// \return non-zero on internal error
-int set_a_physics(MULTIPHYSICS *mp,
-                  int obj_id,
-                  int mp_id, 
-                  int n_dof,
-                  char *name);
-                                             
+
 /// destruct multiphysics object
-/// 
+///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
 int destruct_multiphysics(MULTIPHYSICS *mp);
 
 /// read and construct multiphysics
-/// 
+///
 /// \param[in, out] mp an object for multiphysics stepping
-/// \param[in] opts structure PGFem3D option 
+/// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_multiphysics_settings(MULTIPHYSICS *mp,
                                const PGFem3D_opt *opts,
-                               int myrank);                           
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                               int myrank);
 
 #endif

@@ -11,28 +11,22 @@
 #include "node.h"
 #include "supp.h"
 #include "sig.h"
-//#include "eps.h"
+#include "eps.h"
 #include "enumerations.h"
 #include "interface_macro.h"
-
-typedef struct EPS EPS;
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 /** Create a vtkUnstructuredGrid object from a PGFem3D mesh and
     associated information. ***CURRENTLY ONLY SUPPORT LINEAR TETRAS
     FOR DAMAGE*** */
 void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
-				     const int nelems,
-				     const NODE *nodes,
-				     const ELEMENT *elems,
-				     const SUPP supports,
-				     const SIG *stress,
-				     const EPS *strain,
-				     const double *dofs,
-				     const int analysis_type);
+                     const int nelems,
+                     const NODE *nodes,
+                     const ELEMENT *elems,
+                     const SUPP supports,
+                     const SIG *stress,
+                     const EPS *strain,
+                     const double *dofs,
+                     const int analysis_type);
 
 void PGFem3D_destroy_vtkUnstructuredGrid(void *grid);
 
@@ -40,14 +34,10 @@ void PGFem3D_destroy_vtkUnstructuredGrid(void *grid);
     or ASCII format. It does not matter how the VTK object is
     constructed, it will be printed properly. */
 void PGFem3D_write_vtkUnstructuredGrid(const char* filename,
-				       const void *grid,
-				       const int ascii);
-				       
-int read_VTK_file(char fn[], double *r);	
-int read_VTK_file4TF(char fn[], double *r, double *P, double *V);				       
+                       const void *grid,
+                       const int ascii);
 
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+int read_VTK_file(char fn[], double *r);
+int read_VTK_file4TF(char fn[], double *r, double *P, double *V);
 
 #endif

@@ -1,6 +1,6 @@
 /**
  * Declare/define functions that integrate with the plasticty model
- * interface (see constitutive_model.h). 
+ * interface (see constitutive_model.h).
  *
  * Authors:
  *  Matt Mosby, University of Notre Dame, Notre Dame, IN, <mmosby1@nd.edu>
@@ -85,9 +85,8 @@ class CP_PARAM: public Model_parameters
   virtual int read_param(FILE *in) const;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
+struct Model_parameters;
+struct Constitutive_model;
 
 /**
  * Initialize the Model_parameters object for this particular model.
@@ -101,7 +100,7 @@ extern "C" {
 
 /// Construct and initialize the model context for calling functions
 /// through the constitutive model interface.
-/// 
+///
 /// \param[in,out] ctx - handle to an opaque model context object.
 /// \param[in] F The total deformation gradient.
 /// \param[in] dt time increment
@@ -149,7 +148,7 @@ int plasticity_model_set_orientations(EPS *eps,
  *
  *------------------------------------------------------------------------------------------------
  * model_params.in
- *------------------------------------------------------------------------------------------------ 
+ *------------------------------------------------------------------------------------------------
  * # <= this denotes this line is a comment. It will be ignored.
  * # Number of material
  * 2
@@ -162,7 +161,7 @@ int plasticity_model_set_orientations(EPS *eps,
  * # num_of_properties gamma_dot_0    m    G0    g0  gs_0 gamma_dot_s     w
  *                   7         1.0 0.05 200.0 210.0 330.0     50.0e+9 0.005
  * #
- * ######################################################################## 
+ * ########################################################################
  * # unit_cell orientation
  * ########################################################################
  * # 0: FCC
@@ -180,9 +179,5 @@ int plasticity_model_set_orientations(EPS *eps,
  * #    e.g) 0 3 0.1 0.1 0.1
  * 0 2 CRYSTAL_ORIENTATION/orientation
  */
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
 
 #endif

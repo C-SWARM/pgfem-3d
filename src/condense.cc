@@ -11,13 +11,14 @@
 #include "allocation.h"
 #include "utils.h"
 
+using namespace gcm;
 //*
 // KttI:       [nVol]*[nVol]
 // Kut:     [nne*nsd]*[nVol]
 // KutKttI: [nne*nsd]*[nVol]
 // Kpt:       [npres]*[nVol]
 // KptKttI:   [npres]*[nVol]
-	
+
 //*/
 
 
@@ -58,7 +59,7 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
                    Matrix<double> &fu, Matrix<double> &ft, Matrix<double> &fp, 
                    Matrix<double> &Kup, Matrix<double> &Ktp, Matrix<double> &Ktt, Matrix<double> &Kpt)                               
 {  
-	Matrix<double> KptI, KtpI, fu_add;
+  Matrix<double> KptI, KtpI, fu_add;
 
   KtpI.inv(Ktp);
   KptI.inv(Kpt);
@@ -171,8 +172,8 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
 
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
   int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);	
-  
+  MPI_Comm_rank(mpi_comm,&myrank);
+
   if(myrank==-1)
   { 
 	  printf("-------------------------------------\n");
@@ -242,56 +243,56 @@ void condense_Kupt_to_Kup(double *Ks, int nne, int nsd, int npres, int nVol,
 } 
 
 void condense_K_out(double *Ks, int nne, int nsd, int npres, int nVol,
-                   double *Kuu, double *Kut, double *Kup,
-                   double *Ktu, double *Ktt, double *Ktp,
-                   double *Kpu, double *Kpt, double *Kpp)                               
+                    double *Kuu, double *Kut, double *Kup,
+                    double *Ktu, double *Ktt, double *Ktp,
+                    double *Kpu, double *Kpt, double *Kpp)
 {
   
   Matrix<double> Kuu_temp, Kut_temp, Kup_temp;
   Matrix<double> Ktu_temp, Ktt_temp, Ktp_temp;  
   Matrix<double> Kpu_temp, Kpt_temp, Kpp_temp;  
   
-	Kuu_temp.use_reference(nne*nsd, nne*nsd, Kuu);
-	Ktu_temp.use_reference(nVol,    nne*nsd, Ktu);
-	Kpu_temp.use_reference(npres,   nne*nsd, Kpu);
-	Kut_temp.use_reference(nne*nsd, nVol,    Kut);
-	Ktt_temp.use_reference(nVol,    nVol,    Ktt);
-	Kpt_temp.use_reference(npres,   nVol,    Kpt);	
-	Kup_temp.use_reference(nne*nsd, npres,   Kup);
-	Ktp_temp.use_reference(nVol,    npres,   Ktp);
-	Kpp_temp.use_reference(npres,   npres,   Kpp);	
+  Kuu_temp.use_reference(nne*nsd, nne*nsd, Kuu);
+  Ktu_temp.use_reference(nVol,    nne*nsd, Ktu);
+  Kpu_temp.use_reference(npres,   nne*nsd, Kpu);
+  Kut_temp.use_reference(nne*nsd, nVol,    Kut);
+  Ktt_temp.use_reference(nVol,    nVol,    Ktt);
+  Kpt_temp.use_reference(npres,   nVol,    Kpt);	
+  Kup_temp.use_reference(nne*nsd, npres,   Kup);
+  Ktp_temp.use_reference(nVol,    npres,   Ktp);
+  Kpp_temp.use_reference(npres,   npres,   Kpp);	
    
   switch(npres)
   {
-    case 1:
-      condense_Kupt_to_Ku(Ks,nne,nsd,npres,nVol,
-                     Kuu_temp,Kut_temp,Kup_temp,
-                     Ktu_temp,Ktt_temp,Ktp_temp,
-                     Kpu_temp,Kpt_temp,Kpp_temp);
-      break;
-    case 4:                  
-      condense_Kupt_to_Kup(Ks,nne,nsd,npres,nVol,
-                     Kuu_temp,Kut_temp,Kup_temp,
-                     Ktu_temp,Ktt_temp,Ktp_temp,
-                     Kpu_temp,Kpt_temp,Kpp_temp);
-      break;                     
+   case 1:
+    condense_Kupt_to_Ku(Ks,nne,nsd,npres,nVol,
+                        Kuu_temp,Kut_temp,Kup_temp,
+                        Ktu_temp,Ktt_temp,Ktp_temp,
+                        Kpu_temp,Kpt_temp,Kpp_temp);
+    break;
+   case 4:
+    condense_Kupt_to_Kup(Ks,nne,nsd,npres,nVol,
+                         Kuu_temp,Kut_temp,Kup_temp,
+                         Ktu_temp,Ktt_temp,Ktp_temp,
+                         Kpu_temp,Kpt_temp,Kpp_temp);
+    break;
   }
   
   if(npres!=1 && npres!=4)
-  {    
+  {
     printf("codensing with pressure # %d is not supported\n", npres);
     exit(0);
-  }                                             
+  }
 }
 
 void condense_F_out(double *fe, int nne, int nsd, int npres, int nVol,
-                   double *fu, double *ft, double *fp, 
-                   double *Kut, double *Kup, double *Ktp, double *Ktt,double *Kpt)
+                    double *fu, double *ft, double *fp,
+                    double *Kut, double *Kup, double *Ktp, double *Ktt,double *Kpt)
 {
   Matrix<double> fu_temp,ft_temp,fp_temp;
-	fu_temp.use_reference(nne*nsd, 1, fu);	
-	ft_temp.use_reference(nVol,    1, ft);	
-	fp_temp.use_reference(npres,   1, fp);	
+  fu_temp.use_reference(nne*nsd, 1, fu);	
+  ft_temp.use_reference(nVol,    1, ft);	
+  fp_temp.use_reference(npres,   1, fp);	
 	
   Matrix<double> Kut_temp,Kup_temp,Ktp_temp,Ktt_temp,Kpt_temp;
   Kut_temp.use_reference(nne*nsd, nVol,  Kut);	

@@ -2,13 +2,13 @@
 
 /** This file contains functions to parse the command line and print
     helpful information */
-
 #include "PGFem3D_options.h"
+#include "allocation.h"
+#include "enumerations.h"
+#include "PGFEM_io.h"
 #include <getopt.h>
 #include <stdlib.h>
 #include <string.h>
-#include "enumerations.h"
-#include "allocation.h"
 
 /* Generated at http://patorjk.com/software/taag/ */
 static const char *prog_name=
@@ -26,7 +26,7 @@ static char cur_dir = '.';
 
 typedef struct long_opt_descr{
   struct option opt;
-  char *descr;
+  const char *descr;
   int sc;
 } long_opt_descr;
 
@@ -72,7 +72,7 @@ static const long_opt_descr solver_opts[] = {
   {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0},
   {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
   {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0},
-  {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0}  
+  {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0}
 };
 
 static const long_opt_descr precond_opts[] = {
@@ -198,7 +198,7 @@ void set_default_options(PGFem3D_opt *options)
   options->maxit = 1000;
   options->solution_scheme_opt[LINE_SEARCH]              = 1;
   options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING]   = 0;
-  options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 1;    
+  options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 1;
 
   /* analysis options */
   options->analysis_type = -1;
@@ -221,7 +221,7 @@ void set_default_options(PGFem3D_opt *options)
   options->debug = 0;
   options->me = 0;
   options->restart = -1; /* flag >= 0 used to specify both restart and
-			    step to start from */
+                step to start from */
   options->max_n_jobs = 0;
   options->no_migrate = 0;
 
@@ -256,17 +256,17 @@ void print_options(FILE *out,
     PGFEM_fprintf(out,"LINE SEARCH is enabled\n");
   else
     PGFEM_fprintf(out,"LINE SEARCH is disabled\n");
-      
+
   if(options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING])
     PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is enabled\n");
   else
     PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");
-            
+
   if(options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
     PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is enabled\n");
   else
     PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is disabled\n");
-      
+
   PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
   PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
   PGFEM_fprintf(out,"Stab parameter:     %.12e\n",options->stab);
@@ -368,7 +368,7 @@ void print_interpreted_options(const PGFem3D_opt *opts)
   case TF:
     PGFEM_printf("THREE FIELD MIXED METHOD:\n"
                  "TOTAL LAGRANGIAN DISPLACEMENT, PRESSURE, AND VOLUME BASED ELEMENT\n");
-    break; 
+    break;
   case CM:
     PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE:\n"
                  "UPDATED LAGRANGIAN, TOTAL LAGRANGIAN, AND MIXED ANALYSIS MODE\n");
@@ -399,7 +399,7 @@ void print_interpreted_options(const PGFem3D_opt *opts)
       default:
   PGFEM_printerr("Unrecognized solver package!\n");
   abort();
-	break;
+    break;
       }
     }
 
@@ -422,11 +422,10 @@ void re_parse_command_line(const int myrank,
                            PGFem3D_opt *options)
 {
   const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
-  struct option *opts;/* [n_options+1]; */
-  opts = (struct option*) PGFEM_calloc(n_options+1,sizeof(struct option));
+  option *opts = PGFEM_calloc(option, n_options+1);
   copy_options(opts);
   opterr = 0;
-  
+
   options->cm = -1; //default: no use of constitutive model
 
   /* print command line to parse */
@@ -459,7 +458,7 @@ void re_parse_command_line(const int myrank,
       break;
     case 'h':
       if(myrank == 0){
-  	    print_usage(stdout);
+        print_usage(stdout);
       }
       exit(0);
 
@@ -475,7 +474,7 @@ void re_parse_command_line(const int myrank,
       if(strcmp("st",opts[opts_idx].name) == 0){
         options->analysis_type = STABILIZED;
         options->stab = atof(optarg);
-      } 
+      }
       /* Cohesive */
       else if(strcmp("coh",opts[opts_idx].name) == 0){
         options->cohesive = 1;
@@ -490,7 +489,7 @@ void re_parse_command_line(const int myrank,
       } else if(strcmp("disp",opts[opts_idx].name) == 0){
         options->analysis_type = DISP;
       } else if(strcmp("tf",opts[opts_idx].name) == 0){
-        options->analysis_type = TF;	
+        options->analysis_type = TF;
       } else if(strcmp("cm",opts[opts_idx].name) == 0){
         options->analysis_type = CM;
         options->cm = atof(optarg);
@@ -499,9 +498,9 @@ void re_parse_command_line(const int myrank,
         options->cm = atof(optarg);        	
       } else if(strcmp("disp-cm",opts[opts_idx].name) == 0){
         options->analysis_type = CM;
-        options->cm = DISP;	
+        options->cm = DISP;
       }
-      
+
       break;
 
       /* SOLVER OPTIONS */
@@ -578,11 +577,11 @@ void re_parse_command_line(const int myrank,
 
     case 'O':
       if(strcmp("override-pre-disp",opts[opts_idx].name) == 0){
-	      options->override_pre_disp = 1;
+          options->override_pre_disp = 1;
         options->pre_disp_file = optarg;
       } else  if(strcmp("override-solver-file",opts[opts_idx].name) == 0){
-	      options->override_solver_file = 1;
-	      options->solver_file = optarg;
+          options->override_solver_file = 1;
+          options->solver_file = optarg;
       } else  if(strcmp("override-material-props",opts[opts_idx].name) == 0){
         options->override_material_props = optarg;
       }
@@ -590,7 +589,7 @@ void re_parse_command_line(const int myrank,
 
     case 'm':
       if(strcmp("ms",opts[opts_idx].name) == 0){
-	      options->multi_scale = 1;
+          options->multi_scale = 1;
       }
       break;
 
@@ -620,7 +619,7 @@ void re_parse_command_line(const int myrank,
 
     case 'M':
       options->comp_print_macro = 0;
-      break;  
+      break;
 
     case 'w':
       options->walltime = atoi(optarg);
@@ -642,12 +641,12 @@ void re_parse_command_line(const int myrank,
       char *sp;
       sp = strrchr(argv[argc-2],'/');
       if(sp != NULL){ /* input files not in current directory */
-   	    *sp = '\0';
-   	    options->ipath = argv[argc-2];
-   	    options->ifname = sp + 1;
+        *sp = '\0';
+        options->ipath = argv[argc-2];
+        options->ifname = sp + 1;
       } else {
-   	    options->ifname = argv[argc-2];
-   	    options->ipath = &cur_dir;
+        options->ifname = argv[argc-2];
+        options->ipath = &cur_dir;
       }
     }
 
@@ -655,19 +654,19 @@ void re_parse_command_line(const int myrank,
       char *sp;
       sp = strrchr(argv[argc-1],'/');
       if(sp != NULL){ /* input files not in current directory */
-   	    *sp = '\0';
-   	    options->opath = argv[argc-1];
-   	    options->ofname = sp + 1;
+        *sp = '\0';
+        options->opath = argv[argc-1];
+        options->ofname = sp + 1;
       } else {
-   	    options->ofname = argv[argc-1];
-   	    options->opath = &cur_dir;
+        options->ofname = argv[argc-1];
+        options->opath = &cur_dir;
       }
     }
-   
+
   } else {
     if(myrank == 0){
       PGFEM_printf("ERROR: must provide input and output file names!\n"
-		   "Please see usage information below:\n\n");
+           "Please see usage information below:\n\n");
       print_usage(PGFEM_stdout);
     }
     exit(1);
@@ -695,7 +694,7 @@ void get_macro_micro_option_blocks(const int myrank,
        MACRO_NPROC,
        MICRO_SIZE,
        N_OPT};
-  int *got_opt = calloc(N_OPT,sizeof(int));
+  int *got_opt = static_cast<int*>(calloc(N_OPT,sizeof(int)));
   for(int i=0; i<argc; i++){
     const char *arg_str = argv[i];
 

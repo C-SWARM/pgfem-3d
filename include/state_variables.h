@@ -20,10 +20,6 @@ using namespace gcm;
  * Object for storing state variables at an integration point.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 class State_variables
 {
   public:
@@ -84,10 +80,5 @@ class State_variables
   int state_variables_unpack(const char *buffer,
                              size_t *pos);
 };
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
 
 #endif

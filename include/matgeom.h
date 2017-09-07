@@ -2,10 +2,6 @@
 #ifndef MATGEOM_H
 #define MATGEOM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /**  Structures of geometric properties */
   struct MATGEOM_1{
     /* Volume fraction (cf), Fibre orientation [vector base ee =
@@ -18,9 +14,5 @@ extern "C" {
 
   MATGEOM build_matgeom(long nc,long np);
   void destroy_matgeom(MATGEOM mg, long np);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */

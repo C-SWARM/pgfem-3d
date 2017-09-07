@@ -22,27 +22,27 @@ static double DAMAGE_THRESH = 0.9999;
 static void damage_initialize_values(damage *dam);
 
 static int set_damage_function(damage *dam,
-			       vd_fun function);
+                   vd_fun function);
 
 static int set_damage_evolution(damage *dam,
-				vd_fun evolution);
+                vd_fun evolution);
 
 static int set_damage_parameters(damage *dam,
-				 const double *params,
-				 const int len);
+                 const double *params,
+                 const int len);
 
 static int set_damage_evolution_rate(damage *dam,
-				     vd_fun evolution_rate);
+                     vd_fun evolution_rate);
 
 /*========================================================*/
 /*                 Main interface                         */
 /*========================================================*/
 void init_damage(damage *dam,
-		 vd_fun function,
-		 vd_fun evolution,
-		 vd_fun evolution_rate,
-		 const double *params,
-		 const int len)
+         vd_fun function,
+         vd_fun evolution,
+         vd_fun evolution_rate,
+         const double *params,
+         const int len)
 {
   int err = 0;
   damage_initialize_values(dam);
@@ -64,9 +64,9 @@ void init_damage(damage *dam,
 }
 
 void init_damagef(damage *dam,
-		  const int eq_flag,
-		  const double *params,
-		  const int len)
+          const int eq_flag,
+          const double *params,
+          const int len)
 {
   int perr = 0;
 
@@ -77,7 +77,7 @@ void init_damagef(damage *dam,
     PGFEM_printerr("set_damage_parameters returned error in %s.\n",__func__);
     perr = 1;
   }
-  
+
   /* damage functions */
   reset_damage_functions(dam,eq_flag);
 
@@ -87,7 +87,7 @@ void init_damagef(damage *dam,
 }
 
 void reset_damage_functions(damage *dam,
-			    const int eq_flag)
+                const int eq_flag)
 {
   int ferr = 0;
   int eerr = 0;
@@ -119,7 +119,7 @@ void reset_damage_functions(damage *dam,
 }
 
 void copy_damage(damage *restrict dest,
-		 const damage *restrict src)
+         const damage *restrict src)
 {
   if(dest == src) return;
   memcpy(dest,src,sizeof(*src));
@@ -136,8 +136,8 @@ size_t sizeof_damage(const damage *dam)
 }
 
 void pack_damage(const damage *src,
-		 char *buffer,
-		 size_t *pos)
+         char *buffer,
+         size_t *pos)
 {
   pack_data(&(src->params),buffer,pos,1,sizeof(src->params));
   pack_data(&(src->wn),buffer,pos,1,sizeof(src->wn));
@@ -156,8 +156,8 @@ void pack_damage(const damage *src,
 }
 
 void unpack_damage(damage *dest,
-		   const char *buffer,
-		   size_t *pos)
+           const char *buffer,
+           size_t *pos)
 {
   unpack_data(buffer,&(dest->params),pos,1,sizeof(dest->params));
   unpack_data(buffer,&(dest->wn),pos,1,sizeof(dest->wn));
@@ -194,8 +194,8 @@ void update_damage(damage *dam){
 }
 
 double damage_int_alg(damage *dam,
-		      const double Ybar,
-		      const double dt)
+              const double Ybar,
+              const double dt)
 {
   dam->dmu = dt*dam->params.mu;
   double G = dam->function(Ybar,&(dam->params));
@@ -232,14 +232,14 @@ double damage_int_alg(damage *dam,
 /*                     Damage Equations  (G)              */
 /*========================================================*/
 double weibull_function(const double Ybar,
-			const damage_params *params)
+            const damage_params *params)
 {
   if(Ybar <= params->Yin) return 0.0;
   return (DAMAGE_THRESH - DAMAGE_THRESH
-	  *exp(-pow((Ybar-params->Yin)/(params->p1*params->Yin),
-		    params->p2)
-	       )
-	  );
+      *exp(-pow((Ybar-params->Yin)/(params->p1*params->Yin),
+            params->p2)
+           )
+      );
 
 }
 
@@ -247,31 +247,31 @@ double weibull_function(const double Ybar,
 /*               Damage Evolution Equations  (H)          */
 /*========================================================*/
 double weibull_evolution(const double Ybar,
-			 const damage_params *params)
+             const damage_params *params)
 {
   if(Ybar <= params->Yin) return 0.0;
   return (DAMAGE_THRESH*params->p2/(params->p1*params->Yin)
-	  *exp(-pow((Ybar - params->Yin)/(params->p1*params->Yin),params->p2))
-	  *pow((Ybar - params->Yin)/(params->p1*params->Yin),params->p2-1.0)
-	  );
+      *exp(-pow((Ybar - params->Yin)/(params->p1*params->Yin),params->p2))
+      *pow((Ybar - params->Yin)/(params->p1*params->Yin),params->p2-1.0)
+      );
 }
 
 /*========================================================*/
 /*         Damage Rate of Evolution Equations  (Hp)       */
-/*========================================================*/	      
+/*========================================================*/
 double weibull_evolution_rate(const double Ybar,
-			      const damage_params *params)
+                  const damage_params *params)
 {
   if(Ybar <= params->Yin) return 0.0;
   return (
-	  -DAMAGE_THRESH/pow(Ybar-params->Yin,2.)
-	  *exp(-pow((Ybar-params->Yin)/(params->p1*params->Yin),params->p2))
-	  *params->p2*(1.
-		       + params->p2*(-1 + pow((Ybar-params->Yin)
-					      /(params->p1*params->Yin)
-					      ,params->p2)))
-	  *pow((Ybar-params->Yin)/(params->p1*params->Yin),params->p2)
-	  );
+      -DAMAGE_THRESH/pow(Ybar-params->Yin,2.)
+      *exp(-pow((Ybar-params->Yin)/(params->p1*params->Yin),params->p2))
+      *params->p2*(1.
+               + params->p2*(-1 + pow((Ybar-params->Yin)
+                          /(params->p1*params->Yin)
+                          ,params->p2)))
+      *pow((Ybar-params->Yin)/(params->p1*params->Yin),params->p2)
+      );
 }
 
 /*========================================================*/
@@ -302,7 +302,7 @@ static void damage_initialize_values(damage *dam)
 }
 
 static int set_damage_function(damage *dam,
-			       vd_fun function)
+                   vd_fun function)
 {
   dam->function = function;
   if(dam->function != NULL) return 0;
@@ -310,7 +310,7 @@ static int set_damage_function(damage *dam,
 }
 
 static int set_damage_evolution(damage *dam,
-				vd_fun evolution)
+                vd_fun evolution)
 {
   dam->evolution = evolution;
   if(dam->evolution != NULL) return 0;
@@ -318,7 +318,7 @@ static int set_damage_evolution(damage *dam,
 }
 
 static int set_damage_evolution_rate(damage *dam,
-				     vd_fun evolution_rate)
+                     vd_fun evolution_rate)
 {
   dam->evolution_rate = evolution_rate;
   if(dam->evolution_rate != NULL) return 0;
@@ -326,11 +326,12 @@ static int set_damage_evolution_rate(damage *dam,
 }
 
 static int set_damage_parameters(damage *dam,
-				 const double *params,
-				 const int len)
+                 const double *params,
+                 const int len)
 {
   /* return error if not enough parameters given */
-  if(len < sizeof(damage_params)/sizeof(double)){
+  constexpr int n_params = sizeof(damage_params)/sizeof(double);
+  if(len < n_params){
     return 1;
   }
 

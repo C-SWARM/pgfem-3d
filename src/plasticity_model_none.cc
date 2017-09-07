@@ -5,6 +5,7 @@
  */
 
 #include "plasticity_model_none.h"
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
 #include "new_potentials.h"
@@ -63,7 +64,7 @@ typedef struct none_ctx {
   double *eFnpa;
   int is_coulpled_with_thermal;
   double *hFn;
-  double *hFnp1;   
+  double *hFnp1;
 } none_ctx;
 
 static void he_compute_C(double *C_in,
@@ -253,7 +254,7 @@ const
   }
   assert(err == 0);
 
-  return err;      
+  return err;
 }
 
 int HE_get_F(const Constitutive_model *m,
@@ -353,8 +354,8 @@ const
 {
   int err = 0;
   auto ctx = (none_ctx *) ctx_in;
-  
-  // if transient cases, 
+
+  // if transient cases,
   // get_eF is not working because eF needs to be updated using mid-point alpha
   // below checks whether to use get_eF or give eFnpa in ctx
 
@@ -376,7 +377,7 @@ const
     else
       err += constitutive_model_default_update_elasticity(m, Fs[TENSOR_Fnp1].m_pdata, L, S, compute_stiffness);
   }
-      
+
   return err;
 }
 
@@ -393,17 +394,17 @@ int plasticity_model_none_ctx_build(void **ctx,
   /* assign internal pointers. NOTE: We are copying the pointer NOT
      the value. No additional memory is allocated. */
 
-  t_ctx->F     = NULL;  
+  t_ctx->F     = NULL;
   t_ctx->eFnpa = NULL;
   t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL;  
+  t_ctx->hFnp1 = NULL;
 
-  t_ctx->F = F;    
+  t_ctx->F = F;
   t_ctx->eFnpa = eFnpa;
-  
+
   t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
   t_ctx->hFn  = hFn;
-  t_ctx->hFnp1= hFnp1;  
+  t_ctx->hFnp1= hFnp1;
 
   /* assign handle */
   *ctx = t_ctx;
@@ -424,8 +425,8 @@ const
   t_ctx->F     = NULL;
   t_ctx->eFnpa = NULL;
   t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL;    
-    
+  t_ctx->hFnp1 = NULL;
+
   free(t_ctx);
   return err;
 }

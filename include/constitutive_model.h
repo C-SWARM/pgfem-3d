@@ -14,18 +14,14 @@
 #ifndef CONSTITUTIVE_MODEL_H
 #define CONSTITUTIVE_MODEL_H
 
+#include "crpl.h"                               /* CRPL */
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "sig.h"
+#include "state_variables.h"                    /* Matrix<double> */
+#include "supp.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "state_variables.h" /* provides declaration of Matrix_double */
-#include "sig.h"
-#include "supp.h"
-#include "PGFem3D_options.h"
-
-#include "PGFem3D_data_structure.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
 typedef struct EPS EPS;
 typedef struct ELEMENT ELEMENT;
@@ -516,6 +512,7 @@ class Model_parameters
   /// \return non-zero on error.
   virtual int read_param(FILE *in) const { return 0; };
 
+/*
   /// User defined function that returns the size of the data to be
   /// packed/unpacked.
   /// Does not modify the CM object or any of the data it holds.
@@ -548,7 +545,7 @@ class Model_parameters
   int unpack(Constitutive_model *m,
              const char *buffer,
              size_t *pos);
-             
+*/             
   public:                        
   size_t type;          /// Model type, see enumeration @model_type
   size_t n_param;       /// array for storing the model constants.
@@ -604,7 +601,36 @@ class Constitutive_model
   /// and properties. The object may be used after calling this function.
   /// 
   /// \return non-zero on error.
-  int initialization(const Model_parameters *param);  
+  int initialization(const Model_parameters *param);
+
+  /// User defined function that returns the size of the data to be
+  /// packed/unpacked.
+  /// Does not modify the CM object or any of the data it holds.
+  ///
+  /// \return size in bytes of the pack/unpack data
+  int get_size(void);
+
+
+  /// User defined function to pack the CM data into a buffer (see pack_data).
+  /// Does not modify the CM object or any of the data it holds.
+  ///
+  /// \param[in,out] buffer, a buffer to insert data to
+  ///
+  /// \param[in,out] pos,    insert position in the buffer. Upon exit - next
+  ///                        insertion position.
+  /// \return non-zero on error.
+  int pack(char *buffer,
+           size_t *pos);
+
+  /// User defined function to unpack CM data from a buffer (see also
+  /// usr_pack, unpack_data).
+  ///
+  /// \param[in]     buffer, the buffer to read data from
+  /// \param[in,out] pos,    the position in buffer to begin reading from.
+  ///                        Upon exit - position for next read.
+  /// \return        non-zero on error.              
+  int unpack(const char *buffer,
+             size_t *pos);
 };
 
 /// 
@@ -617,14 +643,14 @@ int init_all_constitutive_model(EPS *eps,
                                 const ELEMENT *elem,
                                 const int n_mat,
                                 const Model_parameters *param_list);
-/// save state variables 
+/// save state variables
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
 int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
                                                    GRID *grid);
-/// update state variables 
+/// update state variables
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
@@ -638,7 +664,7 @@ int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
 int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
-                                                  GRID *grid);                                
+                                                  GRID *grid);
 
 /// Reset the cinstitutive model at each integration point in the
 /// domain by calling its respective reset function.
@@ -662,7 +688,7 @@ int constitutive_model_reset_state(EPS *eps,
 /// \return non-zero on internal error.
 ///  
 int constitutive_model_default_update_elasticity(const Constitutive_model *m,
-                                                 double *eF,
+                                                 const double *eF,
                                                  double *L,
                                                  double *S,
                                                  const int compute_stiffness);
@@ -786,7 +812,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     MULTIPHYSICS *mp,
                                     int mp_id,
                                     double dt);
-                                    
+
 /// compute element residual vector in transient
 ///
 /// \param[in] fe finite element helper object
@@ -854,14 +880,11 @@ int constitutive_model_update_NR(GRID *grid,
                                  MATERIAL_PROPERTY *mat,
                                  FIELD_VARIABLES *fv,
                                  LOADING_STEPS *load,
-                                 PGFem3D_opt *opts,
+                                 const PGFem3D_opt *opts,
                                  MULTIPHYSICS *mp,
                                  int mp_id,
                                  const double dt,
                                  double alpha);                                                                       
 
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -e
+
+NP=3
+name=box
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+# a script that can extract the force data
+extract=@srcdir@/scripts/extract-force-data.sh
+
+total_nproc=${NP}
+macro_nproc=1
+micro_nproc=1
+
+macro_in_dir=@srcdir@/in/macro/macro_${macro_nproc}CPU
+micro_in_dir=@srcdir@/in/micro/pack_${micro_nproc}CPU
+
+out=@builddir@/output
+macro_opath=${out}/macro
+micro_opath=${out}/micro
+
+# output log, data, and reference output
+ref=@srcdir@/ref/force.dat
+log=${out}/test.log
+dat=${out}/force.dat
+
+# macro-scale options
+macro_opts="-disp -coh"
+macro_opt_block="-macro-start $macro_opts -ipath $macro_in_dir -opath $macro_opath macro_ macro -macro-end"
+
+# micro-scale options
+micro_opts="-ms -disp"
+micro_opt_block="-micro-start $micro_opts -ipath $micro_in_dir -opath $micro_opath pack_ pack -micro-end"
+
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out"
+    rm -rf $out
+}
+trap cleanup EXIT
+
+mkdir $out
+
+# run the simulation
+cmd="mpirun -np $total_nproc $pgfem -MS -macro-np $macro_nproc -micro-group-size $micro_nproc $macro_opt_block $micro_opt_block"
+echo $cmd
+$cmd |& tee $log
+
+# extract the output from the log
+cmd="$extract $log $dat"
+echo $cmd
+$cmd
+
+# compare to the reference output data
+cmd="numdiff --verbose --absolute-tolerance=1.0e-6 --relative-tolerance=1.0e-3 $dat $ref"
+echo $cmd
+$cmd

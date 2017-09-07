@@ -14,10 +14,6 @@
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Specify the minimum tag upper bound prescribed in the MPI
  * standard. It seems that querying MPI_TAG_UB may not be accurate for
@@ -49,7 +45,6 @@ struct pgf_FE2_micro_server_stats{
   double min;
   double max;
 };
-typedef struct pgf_FE2_micro_server_stats pgf_FE2_micro_server_stats;
 
 /**
  * Sturucture to organize a server's work.
@@ -59,7 +54,6 @@ struct pgf_FE2_micro_server{
   pgf_FE2_job *jobs;
   pgf_FE2_micro_server_stats *stats;
 };
-typedef struct pgf_FE2_micro_server pgf_FE2_micro_server;
 
 /**
  * Initialize a handle to a pgf_FE2_micro_server object. (allow for
@@ -72,7 +66,7 @@ void pgf_FE2_micro_server_init(pgf_FE2_micro_server **server);
  * the pgf_FE2_server_rebalance object.
  */
 void pgf_FE2_micro_server_build(pgf_FE2_micro_server *server,
-				const pgf_FE2_server_rebalance *rebal);
+                const pgf_FE2_server_rebalance *rebal);
 
 /**
  * Destroy the pgf_FE2_micro_server object. Points the handle to NULL.
@@ -85,8 +79,8 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
  * processes.
  */
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
-			       MICROSCALE *micro,
-			       const int mp_id);
+                   MICROSCALE *micro,
+                   const int mp_id);
 
 /**
  * Unpack a server summary (shallow copy) from a buffer and return a
@@ -98,7 +92,7 @@ int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
  * destroyed.
  */
 void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **server,
-					 const char *buf);
+                     const char *buf);
 
 /**
  * Print the stats structure nicely so it can be grepped from the logs.
@@ -106,11 +100,5 @@ void pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **server,
  * The printed line(s) begins with "SERVER STATS"
  */
 void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server *server);
-
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

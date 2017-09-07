@@ -11,11 +11,6 @@
 
 #include <stdio.h>
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Typedef handle to opaque Comm_hints object.
  */
@@ -105,10 +100,5 @@ const int* Comm_hints_recv_list(const Comm_hints *hints);
 char* Comm_hints_filename(const char *ipath,
                           const char *base_filename,
                           const int rank);
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef  */
