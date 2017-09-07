@@ -36,9 +36,9 @@ CONFIG_TTL([have_ttl=yes])
 CONFIG_MTL([have_mtl=yes])
 CONFIG_HYPRE([have_hypre=yes])
 CONFIG_SUITESPARSE([have_suitesparse=yes])
-CONFIG_TESTS()
 CONFIG_VTK([5.10.1])
 CONFIG_GCM([have_gcm=yes])
+CONFIG_TESTS()
 
 AC_ARG_WITH(special-link,
   [AS_HELP_STRING([--with-special-link=<linker>],
