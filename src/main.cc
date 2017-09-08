@@ -579,8 +579,7 @@ int single_scale_main(int argc,char *argv[])
         fv[ia].ndofn = 4;
         break;
        default:
-        PGFEM_printerr("Unhandled analysis type %d---defaulting ndofn to %d\n",
-                       options.analysis_type, fv[ia].ndofn);
+        break; // do nothing
       }
     }
 
