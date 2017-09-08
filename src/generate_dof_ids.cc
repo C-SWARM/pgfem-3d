@@ -12,44 +12,44 @@ static const int ndn = 3;
 
 /*=== STATIC FUNCTIONS ===*/
 static int generate_local_dof_ids_on_elem(const int nnode,
-					  const int ndofn,
-					  const int start_id,
-					  const int elem_id,
-					  int *visited_node_dof,
-					  NODE *nodes,
-					  ELEMENT *elems,
-					  BOUNDING_ELEMENT *b_elems,
-					  MPI_Comm mpi_comm,
-					  const int mp_id);
+                      const int ndofn,
+                      const int start_id,
+                      const int elem_id,
+                      int *visited_node_dof,
+                      NODE *nodes,
+                      ELEMENT *elems,
+                      BOUNDING_ELEMENT *b_elems,
+                      MPI_Comm mpi_comm,
+                      const int mp_id);
 
 static int generate_local_dof_ids_on_coel(const int nnode,
-					  const int ndofn,
-					  const int start_id,
-					  const int coel_id,
-					  int *visited_node_dof,
-					  NODE *nodes,
-					  COEL *coel,
-					  MPI_Comm mpi_comm,
-					  const int mp_id);
+                      const int ndofn,
+                      const int start_id,
+                      const int coel_id,
+                      int *visited_node_dof,
+                      NODE *nodes,
+                      COEL *coel,
+                      MPI_Comm mpi_comm,
+                      const int mp_id);
 
 static int generate_global_dof_ids_on_elem(const int ndofn,
-					   const int start_id,
-					   const int elem_id,
-					   int *visited_node_dof,
-					   NODE *nodes,
-					   ELEMENT *elems,
-					   BOUNDING_ELEMENT *b_elems,
-					   MPI_Comm mpi_comm,
-					   const int mp_id);
+                       const int start_id,
+                       const int elem_id,
+                       int *visited_node_dof,
+                       NODE *nodes,
+                       ELEMENT *elems,
+                       BOUNDING_ELEMENT *b_elems,
+                       MPI_Comm mpi_comm,
+                       const int mp_id);
 
 static int generate_global_dof_ids_on_coel(const int ndofn,
-					   const int start_id,
-					   const int coel_id,
-					   int *visited_node_dof,
-					   NODE *nodes,
-					   COEL *coel,
-					   MPI_Comm mpi_comm,
-					   const int mp_id);
+                       const int start_id,
+                       const int coel_id,
+                       int *visited_node_dof,
+                       NODE *nodes,
+                       COEL *coel,
+                       MPI_Comm mpi_comm,
+                       const int mp_id);
 
 static void distribute_global_dof_ids_on_bounding_elements
 (const int n_belem,
@@ -59,15 +59,15 @@ static void distribute_global_dof_ids_on_bounding_elements
 
 /*=== API FUNCTIONS ===*/
 int generate_local_dof_ids(const int nelem,
-			   const int ncoel,
-			   const int nnode,
-			   const int ndofn,
-			   NODE *nodes,
-			   ELEMENT *elems,
-			   COEL *coel,
-			   BOUNDING_ELEMENT *b_elems,
-			   MPI_Comm mpi_comm,
-			   const int mp_id)
+               const int ncoel,
+               const int nnode,
+               const int ndofn,
+               NODE *nodes,
+               ELEMENT *elems,
+               COEL *coel,
+               BOUNDING_ELEMENT *b_elems,
+               MPI_Comm mpi_comm,
+               const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -79,25 +79,25 @@ int generate_local_dof_ids(const int nelem,
     for(int j=0; j<i; j++){
       const NODE *ptr_pnode = &nodes[ j ];
       if(i<=j || ptr_node->Gnn == -1 || ptr_pnode->Gnn == -1
-	 || ptr_node->Gnn != ptr_pnode->Gnn){
-	continue;
+     || ptr_node->Gnn != ptr_pnode->Gnn){
+    continue;
       } else {
-	ptr_node->Pr = j;
-	break;
+    ptr_node->Pr = j;
+    break;
       }
     }
   }
 
   /* allocate boolean array for whether or not we have assigned the
      node dof id (index = node_id * ndofn + dof_idx */
-  int *visited_node_dof = PGFEM_calloc(ndofn*nnode,sizeof(int));
+  int *visited_node_dof = PGFEM_calloc(int, ndofn*nnode);
 
   int ndof = 1;
   for(int i=0; i<nelem; i++){
     ndof += generate_local_dof_ids_on_elem(nnode,ndofn,ndof,
-					   i,visited_node_dof,
-					   nodes,elems,b_elems,
-					   mpi_comm,mp_id);
+                       i,visited_node_dof,
+                       nodes,elems,b_elems,
+                       mpi_comm,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -106,8 +106,8 @@ int generate_local_dof_ids(const int nelem,
      the element. See similar note in Psparse_ApAi*/
   for(int i=0; i<ncoel; i++){
     ndof += generate_local_dof_ids_on_coel(nnode,ndofn,ndof,
-					   i,visited_node_dof,
-					   nodes,coel,mpi_comm,mp_id);
+                       i,visited_node_dof,
+                       nodes,coel,mpi_comm,mp_id);
   }
 
   /* some periodic nodes may not actually be a part of an element,
@@ -117,29 +117,29 @@ int generate_local_dof_ids(const int nelem,
     for(int j=0; j<ndofn; j++){
       const int idx = i*ndofn+j;
       if(!visited_node_dof[idx]){
-	/* periodic nodes have different pressure ids! */
-	if(j<ndn){
-	  if(nodes[i].Pr == -1){
-	    PGFEM_printerr("[%d] ERROR: Hanging node (%d)!\n",myrank,i);
-	    err = 1;
-	    break;
-	  } else { /* node is periodic */
-	    const int pidx = nodes[i].Pr*ndofn+j;
-	    if(!visited_node_dof[pidx]){
-	      PGFEM_printerr("[%d] ERROR: master periodic node (%ld)"
-			     " has not been numbered!\n",myrank,nodes[i].Pr);
-	      err = 1;
-	      break;
-	    } else {
-	      nodes[i].id_map[mp_id].id[j] = nodes[nodes[i].Pr].id_map[mp_id].id[j];
-	      visited_node_dof[idx] = 1;
-	    }
-	  }
-	} else { /* pressure node */
-	  PGFEM_printerr("[%d] TESTING: Periodic pressure node (%d)\n",myrank,i);
-	  nodes[i].id_map[mp_id].id[j] = ndof;
-	  ndof ++;
-	}
+    /* periodic nodes have different pressure ids! */
+    if(j<ndn){
+      if(nodes[i].Pr == -1){
+        PGFEM_printerr("[%d] ERROR: Hanging node (%d)!\n",myrank,i);
+        err = 1;
+        break;
+      } else { /* node is periodic */
+        const int pidx = nodes[i].Pr*ndofn+j;
+        if(!visited_node_dof[pidx]){
+          PGFEM_printerr("[%d] ERROR: master periodic node (%ld)"
+                 " has not been numbered!\n",myrank,nodes[i].Pr);
+          err = 1;
+          break;
+        } else {
+          nodes[i].id_map[mp_id].id[j] = nodes[nodes[i].Pr].id_map[mp_id].id[j];
+          visited_node_dof[idx] = 1;
+        }
+      }
+    } else { /* pressure node */
+      PGFEM_printerr("[%d] TESTING: Periodic pressure node (%d)\n",myrank,i);
+      nodes[i].id_map[mp_id].id[j] = ndof;
+      ndof ++;
+    }
       }
     }
   }
@@ -164,23 +164,23 @@ int generate_local_dof_ids(const int nelem,
 }/* generate_local_dof_ids() */
 
 int generate_global_dof_ids(const int nelem,
-			    const int ncoel,
-			    const int nnode,
-			    const int ndofn,
-			    NODE *nodes,
-			    ELEMENT *elems,
-			    COEL *coel,
-			    BOUNDING_ELEMENT *b_elems,
-			    MPI_Comm mpi_comm,
-			    const int mp_id)
+                const int ncoel,
+                const int nnode,
+                const int ndofn,
+                NODE *nodes,
+                ELEMENT *elems,
+                COEL *coel,
+                BOUNDING_ELEMENT *b_elems,
+                MPI_Comm mpi_comm,
+                const int mp_id)
 {
-  int *visited_node_dof = PGFEM_calloc(nnode*ndofn,sizeof(int));
+  int *visited_node_dof = PGFEM_calloc(int, nnode*ndofn);
   int ndof = 1;
 
   for(int i=0; i<nelem; i++){
     ndof += generate_global_dof_ids_on_elem(ndofn,ndof,i,visited_node_dof,
-					    nodes,elems,b_elems,
-					    mpi_comm,mp_id);
+                        nodes,elems,b_elems,
+                        mpi_comm,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -189,7 +189,7 @@ int generate_global_dof_ids(const int nelem,
      the element. See similar note in Psparse_ApAi*/
   for(int i=0; i<ncoel; i++){
     ndof += generate_global_dof_ids_on_coel(ndofn,ndof,i,visited_node_dof,
-					    nodes,coel,mpi_comm,mp_id);
+                        nodes,coel,mpi_comm,mp_id);
   }
 
   /* sanity check */
@@ -213,17 +213,17 @@ int generate_global_dof_ids(const int nelem,
 }/* generate_global_dof_ids() */
 
 void renumber_global_dof_ids(const int nelem,
-			     const int ncoel,
-			     const int n_belem,
-			     const int nnode,
-			     const int ndofn,
-			     const long *n_G_dof_on_dom,
-			     NODE *nodes,
-			     ELEMENT *elems,
-			     COEL *coel,
-			     BOUNDING_ELEMENT *b_elems,
-			     MPI_Comm mpi_comm,
-			     const int mp_id)
+                 const int ncoel,
+                 const int n_belem,
+                 const int nnode,
+                 const int ndofn,
+                 const long *n_G_dof_on_dom,
+                 NODE *nodes,
+                 ELEMENT *elems,
+                 COEL *coel,
+                 BOUNDING_ELEMENT *b_elems,
+                 MPI_Comm mpi_comm,
+                 const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -251,7 +251,7 @@ void renumber_global_dof_ids(const int nelem,
   for(int i=0; i<n_belem; i++){
     if(!b_elems[i].periodic || b_elems[i].master_dom == myrank){
       for(int j=0; j<b_elems[i].n_dofs; j++){
-	b_elems[i].G_dof_ids[j] += dof_id_adder;
+    b_elems[i].G_dof_ids[j] += dof_id_adder;
       }
     }
   }
@@ -260,9 +260,9 @@ void renumber_global_dof_ids(const int nelem,
   for(int i=0; i<nnode; i++){
     if(nodes[i].Dom == myrank){
       for(int j=0; j<ndofn; j++){
-	if(nodes[i].id_map[mp_id].Gid[j] > 0){
-	  nodes[i].id_map[mp_id].Gid[j] += dof_id_adder;
-	}
+    if(nodes[i].id_map[mp_id].Gid[j] > 0){
+      nodes[i].id_map[mp_id].Gid[j] += dof_id_adder;
+    }
       }
     }
   }
@@ -270,18 +270,18 @@ void renumber_global_dof_ids(const int nelem,
 } /* renumber_global_dof_ids */
 
 int distribute_global_dof_ids(const int nelem,
-			      const int ncoel,
-			      const int n_belem,
-			      const int nnode,
-			      const int ndofn,
-			      const int ndof_be,
-			      NODE *nodes,
-			      ELEMENT *elems,
-			      COEL *coel,
-			      BOUNDING_ELEMENT *b_elems,
+                  const int ncoel,
+                  const int n_belem,
+                  const int nnode,
+                  const int ndofn,
+                  const int ndof_be,
+                  NODE *nodes,
+                  ELEMENT *elems,
+                  COEL *coel,
+                  BOUNDING_ELEMENT *b_elems,
             const Comm_hints *hints,
-			      MPI_Comm mpi_comm,
-			      const int mp_id)
+                  MPI_Comm mpi_comm,
+                  const int mp_id)
 {
   int myrank = 0;
   int nproc = 0;
@@ -291,28 +291,28 @@ int distribute_global_dof_ids(const int nelem,
   /* Distrubute the global dofs on the nodes and return the number of
      communication boundary nodes */
   int n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
-				 ndofn, nodes, hints, mpi_comm,mp_id);
+                 ndofn, nodes, hints, mpi_comm,mp_id);
 
   /* Under current formulation, element dofs are always owned by the
      current domain and no communication is required. */
 
   distribute_global_dof_ids_on_bounding_elements(n_belem,ndof_be,
-						 b_elems,mpi_comm);
+                         b_elems,mpi_comm);
 
   return n_bnd_nodes;
 } /* distribute_global_dof_ids */
 
 /*=== STATIC FUNCTIONS ===*/
 static int generate_local_dof_ids_on_elem(const int nnode,
-					  const int ndofn,
-					  const int start_id,
-					  const int elem_id,
-					  int *visited_node_dof,
-					  NODE *nodes,
-					  ELEMENT *elems,
-					  BOUNDING_ELEMENT *b_elems,
-					  MPI_Comm mpi_comm,
-					  const int mp_id)
+                      const int ndofn,
+                      const int start_id,
+                      const int elem_id,
+                      int *visited_node_dof,
+                      NODE *nodes,
+                      ELEMENT *elems,
+                      BOUNDING_ELEMENT *b_elems,
+                      MPI_Comm mpi_comm,
+                      const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -330,36 +330,36 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
-	if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
-	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
-	  ptr_node->id_map[mp_id].id[j] = 0;
-	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id_map[mp_id].id[j] >= 0){
-	  /* periodic node/dofs. Do not set pressure periodic! */
-	  if(ptr_node->Pr != -1 && j < ndn){ 
-	    const int pdof_idx = ptr_node->Pr*ndofn + j;
-	    /* if the dof id has not been set yet on the master node,
-	       set it now */
-	    if(!visited_node_dof[pdof_idx]){
-	      nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
-	      visited_node_dof[pdof_idx] = 1;
-	      id_adder ++;
-	    }
-	    ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
-	    visited_node_dof[dof_idx] = 1;
-	  } else {
-	    ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
-	    id_adder ++;
-	    visited_node_dof[dof_idx] = 1;
-	  }
-	}
+    if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
+      visited_node_dof[dof_idx] = 1;
+    } else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
+      ptr_node->id_map[mp_id].id[j] = 0;
+      visited_node_dof[dof_idx] = 1;
+    } else if(ptr_node->id_map[mp_id].id[j] >= 0){
+      /* periodic node/dofs. Do not set pressure periodic! */
+      if(ptr_node->Pr != -1 && j < ndn){
+        const int pdof_idx = ptr_node->Pr*ndofn + j;
+        /* if the dof id has not been set yet on the master node,
+           set it now */
+        if(!visited_node_dof[pdof_idx]){
+          nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
+          visited_node_dof[pdof_idx] = 1;
+          id_adder ++;
+        }
+        ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
+        visited_node_dof[dof_idx] = 1;
+      } else {
+        ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
+        id_adder ++;
+        visited_node_dof[dof_idx] = 1;
+      }
+    }
       } else { /* have already set the current dof id */
-	continue;
+    continue;
       }
     } /* for each dof on the node */
   } /* for each node on the element */
-  
+
   /* Assign element dof ids (if there are any) */
   for(int i=0; i<ptr_elem->n_dofs; i++){
     ptr_elem->L_dof_ids[i] = start_id + id_adder;
@@ -372,55 +372,55 @@ static int generate_local_dof_ids_on_elem(const int nnode,
     BOUNDING_ELEMENT *ptr_be = &b_elems[be_id];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
-	if(ptr_be->L_dof_ids[j] == 0){
-	  ptr_be->L_dof_ids[j] = start_id + id_adder;
-	  id_adder ++;
-	}
+    if(ptr_be->L_dof_ids[j] == 0){
+      ptr_be->L_dof_ids[j] = start_id + id_adder;
+      id_adder ++;
+    }
       }
     } else { /* periodic element */
       if( ptr_be->master_dom != myrank
-	  || (ptr_be->master_dom == myrank 
-	      && ptr_be->master_be_id == be_id) ){
-	for(int j=0; j<ptr_be->n_dofs; j++){
-	  if(ptr_be->L_dof_ids[j] == 0){
-	    ptr_be->L_dof_ids[j] = start_id + id_adder;
-	    id_adder ++;
-	  }
-	}
-      } else { 
-	/* master is on this domain but is not this element. */
-	BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
-	if(ptr_mbe->n_dofs != ptr_be->n_dofs){
-	  PGFEM_printerr("ERROR: different number of dofs on periodic"
-			 " bounding elements!\n");
-	  PGFEM_Abort();
-	}
-	/* Number the master dofs first */
-	for(int j=0; j<ptr_mbe->n_dofs; j++){
-	  if(ptr_mbe->L_dof_ids[j] == 0){
-	    ptr_mbe->L_dof_ids[j] = start_id + id_adder;
-	    id_adder ++;
-	  }
-	}
-	memcpy(ptr_be->L_dof_ids,ptr_mbe->L_dof_ids,
-	       ptr_mbe->n_dofs*sizeof(long));
+      || (ptr_be->master_dom == myrank
+          && ptr_be->master_be_id == be_id) ){
+    for(int j=0; j<ptr_be->n_dofs; j++){
+      if(ptr_be->L_dof_ids[j] == 0){
+        ptr_be->L_dof_ids[j] = start_id + id_adder;
+        id_adder ++;
+      }
+    }
+      } else {
+    /* master is on this domain but is not this element. */
+    BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
+    if(ptr_mbe->n_dofs != ptr_be->n_dofs){
+      PGFEM_printerr("ERROR: different number of dofs on periodic"
+             " bounding elements!\n");
+      PGFEM_Abort();
+    }
+    /* Number the master dofs first */
+    for(int j=0; j<ptr_mbe->n_dofs; j++){
+      if(ptr_mbe->L_dof_ids[j] == 0){
+        ptr_mbe->L_dof_ids[j] = start_id + id_adder;
+        id_adder ++;
+      }
+    }
+    memcpy(ptr_be->L_dof_ids,ptr_mbe->L_dof_ids,
+           ptr_mbe->n_dofs*sizeof(long));
 
       }
     }/* periodic element */
   }/* each bounding element on vol elem */
- 
+
   return id_adder;
 }/* generate_local_dof_ids_on_elem() */
 
 static int generate_local_dof_ids_on_coel(const int nnode,
-					  const int ndofn,
-					  const int start_id,
-					  const int coel_id,
-					  int *visited_node_dof,
-					  NODE *nodes,
-					  COEL *coel,
-					  MPI_Comm mpi_comm,
-					  const int mp_id)
+                      const int ndofn,
+                      const int start_id,
+                      const int coel_id,
+                      int *visited_node_dof,
+                      NODE *nodes,
+                      COEL *coel,
+                      MPI_Comm mpi_comm,
+                      const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -438,32 +438,32 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
-	if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
-	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
-	  ptr_node->id_map[mp_id].id[j] = 0;
-	  visited_node_dof[dof_idx] = 1;
-	} else if(ptr_node->id_map[mp_id].id[j] >= 0){
-	  /* periodic node/dofs. Do not set pressure periodic! */
-	  if(ptr_node->Pr != -1 && j < ndn){
-	    const int pdof_idx = ptr_node->Pr*ndofn + j;
-	    /* if the dof id has not been set yet on the master node,
-	       set it now */
-	    if(!visited_node_dof[pdof_idx]){
-	      nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
-	      visited_node_dof[pdof_idx] = 1;
-	      id_adder ++;
-	    }
-	    ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
-	    visited_node_dof[dof_idx] = 1;
-	  } else {
-	    ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
-	    id_adder ++;
-	    visited_node_dof[dof_idx] = 1;
-	  }
-	}
+    if(ptr_node->id_map[mp_id].id[j] < 0){ /* prescribed dof */
+      visited_node_dof[dof_idx] = 1;
+    } else if(ptr_node->id_map[mp_id].id[j] == 1){ /* fixed dof */
+      ptr_node->id_map[mp_id].id[j] = 0;
+      visited_node_dof[dof_idx] = 1;
+    } else if(ptr_node->id_map[mp_id].id[j] >= 0){
+      /* periodic node/dofs. Do not set pressure periodic! */
+      if(ptr_node->Pr != -1 && j < ndn){
+        const int pdof_idx = ptr_node->Pr*ndofn + j;
+        /* if the dof id has not been set yet on the master node,
+           set it now */
+        if(!visited_node_dof[pdof_idx]){
+          nodes[ptr_node->Pr].id_map[mp_id].id[j] = start_id + id_adder;
+          visited_node_dof[pdof_idx] = 1;
+          id_adder ++;
+        }
+        ptr_node->id_map[mp_id].id[j] = nodes[ptr_node->Pr].id_map[mp_id].id[j];
+        visited_node_dof[dof_idx] = 1;
+      } else {
+        ptr_node->id_map[mp_id].id[j] = start_id + id_adder;
+        id_adder ++;
+        visited_node_dof[dof_idx] = 1;
+      }
+    }
       } else { /* have already set the current dof id */
-	continue;
+    continue;
       }
     } /* for each dof on the node */
   } /* for each node on the element */
@@ -472,14 +472,14 @@ static int generate_local_dof_ids_on_coel(const int nnode,
 } /* generate_local_dof_ids_on_coel */
 
 static int generate_global_dof_ids_on_elem(const int ndofn,
-					   const int start_id,
-					   const int elem_id,
-					   int *visited_node_dof,
-					   NODE *nodes,
-					   ELEMENT *elems,
-					   BOUNDING_ELEMENT *b_elems,
-					   MPI_Comm mpi_comm,
-					   const int mp_id)
+                       const int start_id,
+                       const int elem_id,
+                       int *visited_node_dof,
+                       NODE *nodes,
+                       ELEMENT *elems,
+                       BOUNDING_ELEMENT *b_elems,
+                       MPI_Comm mpi_comm,
+                       const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -494,35 +494,35 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
       for(int j=0; j<ndofn; j++){
-	const int dof_idx = node_id*ndofn + j;
-	visited_node_dof[dof_idx] = 1;
+    const int dof_idx = node_id*ndofn + j;
+    visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
       for(int j=0; j<ndofn; j++){
-	const int dof_idx = node_id*ndofn + j;
-	if(!visited_node_dof[dof_idx]){
-	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
-	    ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
-	    visited_node_dof[dof_idx] = 1;
-	  }
-	  /* periodic node/dofs. Do not set pressure periodic! */
-	  else if(ptr_node->Pr != -1 && j < ndn){
-	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
-	    const int pdof_idx = ptr_node->Pr*ndofn + j;
-	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
-	      ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
-	      visited_node_dof[pdof_idx] = 1;
-	      id_adder ++;
-	    }
-	    ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
-	    visited_node_dof[dof_idx] = 1;
-	  } else { /* all other nodes */
-	    ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
-	    visited_node_dof[dof_idx] = 1;
-	    id_adder ++;
-	  }
-	}
+    const int dof_idx = node_id*ndofn + j;
+    if(!visited_node_dof[dof_idx]){
+      if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
+        ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
+        visited_node_dof[dof_idx] = 1;
+      }
+      /* periodic node/dofs. Do not set pressure periodic! */
+      else if(ptr_node->Pr != -1 && j < ndn){
+        NODE *ptr_pnode = &nodes[ptr_node->Pr];
+        const int pdof_idx = ptr_node->Pr*ndofn + j;
+        if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
+          ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
+          visited_node_dof[pdof_idx] = 1;
+          id_adder ++;
+        }
+        ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
+        visited_node_dof[dof_idx] = 1;
+      } else { /* all other nodes */
+        ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
+        visited_node_dof[dof_idx] = 1;
+        id_adder ++;
+      }
+    }
       } /* for each dof on node */
     }/* node is owned by current domain */
   }/* for each node on element */
@@ -539,39 +539,39 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
     BOUNDING_ELEMENT *ptr_be = &b_elems[ be_id ];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
-	if(ptr_be->G_dof_ids[j] == 0){
-	  ptr_be->G_dof_ids[j] = start_id + id_adder;
-	  id_adder ++;
-	}
+    if(ptr_be->G_dof_ids[j] == 0){
+      ptr_be->G_dof_ids[j] = start_id + id_adder;
+      id_adder ++;
+    }
       }
     } else { /* periodic bounding element */
-      if( ptr_be->master_dom != myrank ){ 
-	/* master on different domain, do not number G_id */
-	continue;
+      if( ptr_be->master_dom != myrank ){
+    /* master on different domain, do not number G_id */
+    continue;
       } else if (ptr_be->master_dom == myrank && ptr_be->master_be_id == be_id){
-	/* master is current bounding element */
-	for(int j=0; j<ptr_be->n_dofs; j++){
-	  if(ptr_be->G_dof_ids[j] == 0){
-	    ptr_be->G_dof_ids[j] = start_id + id_adder;
-	    id_adder ++;
-	  }
-	}
+    /* master is current bounding element */
+    for(int j=0; j<ptr_be->n_dofs; j++){
+      if(ptr_be->G_dof_ids[j] == 0){
+        ptr_be->G_dof_ids[j] = start_id + id_adder;
+        id_adder ++;
+      }
+    }
       } else {
-	/* master is current domain, but different element. Number
-	   master element and copy G_dof_ids to current element */
-	BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
-	if(ptr_mbe->n_dofs != ptr_be->n_dofs){
-	  PGFEM_printerr("ERROR: non-matching n_dofs on bnd elems in %s\n",__func__);
-	  PGFEM_Abort();
-	}
-	for(int j=0; j<ptr_mbe->n_dofs; j++){
-	  if(ptr_mbe->G_dof_ids[j] == 0){
-	    ptr_mbe->G_dof_ids[j] = start_id + id_adder;
-	    id_adder ++;
-	  }
-	}
-	memcpy(ptr_be->G_dof_ids,ptr_mbe->G_dof_ids,
-	       ptr_be->n_dofs*sizeof(long));
+    /* master is current domain, but different element. Number
+       master element and copy G_dof_ids to current element */
+    BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
+    if(ptr_mbe->n_dofs != ptr_be->n_dofs){
+      PGFEM_printerr("ERROR: non-matching n_dofs on bnd elems in %s\n",__func__);
+      PGFEM_Abort();
+    }
+    for(int j=0; j<ptr_mbe->n_dofs; j++){
+      if(ptr_mbe->G_dof_ids[j] == 0){
+        ptr_mbe->G_dof_ids[j] = start_id + id_adder;
+        id_adder ++;
+      }
+    }
+    memcpy(ptr_be->G_dof_ids,ptr_mbe->G_dof_ids,
+           ptr_be->n_dofs*sizeof(long));
       }
     } /* periodic b_elem */
   } /* for each b_elem on vol_elem */
@@ -580,13 +580,13 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 }/* generate_global_dof_ids_on_elem() */
 
 static int generate_global_dof_ids_on_coel(const int ndofn,
-					   const int start_id,
-					   const int coel_id,
-					   int *visited_node_dof,
-					   NODE *nodes,
-					   COEL *coel,
-					   MPI_Comm mpi_comm,
-					   const int mp_id)
+                       const int start_id,
+                       const int coel_id,
+                       int *visited_node_dof,
+                       NODE *nodes,
+                       COEL *coel,
+                       MPI_Comm mpi_comm,
+                       const int mp_id)
 {
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
@@ -601,35 +601,35 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
     NODE *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
       for(int j=0; j<ndofn; j++){
-	const int dof_idx = node_id*ndofn + j;
-	visited_node_dof[dof_idx] = 1;
+    const int dof_idx = node_id*ndofn + j;
+    visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
       for(int j=0; j<ndofn; j++){
-	const int dof_idx = node_id*ndofn + j;
-	if(!visited_node_dof[dof_idx]){
-	  if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
-	    ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
-	    visited_node_dof[dof_idx] = 1;
-	  }
-	  /* periodic node/dofs. Do not set pressure periodic! */
-	  else if(ptr_node->Pr != -1 && j < ndn){
-	    NODE *ptr_pnode = &nodes[ptr_node->Pr];
-	    const int pdof_idx = ptr_node->Pr*ndofn + j;
-	    if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
-	      ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
-	      visited_node_dof[pdof_idx] = 1;
-	      id_adder ++;
-	    }
-	    ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
-	    visited_node_dof[dof_idx] = 1;
-	  } else { /* all other nodes */
-	    ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
-	    visited_node_dof[dof_idx] = 1;
-	    id_adder ++;
-	  }
-	}
+    const int dof_idx = node_id*ndofn + j;
+    if(!visited_node_dof[dof_idx]){
+      if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
+        ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
+        visited_node_dof[dof_idx] = 1;
+      }
+      /* periodic node/dofs. Do not set pressure periodic! */
+      else if(ptr_node->Pr != -1 && j < ndn){
+        NODE *ptr_pnode = &nodes[ptr_node->Pr];
+        const int pdof_idx = ptr_node->Pr*ndofn + j;
+        if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
+          ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
+          visited_node_dof[pdof_idx] = 1;
+          id_adder ++;
+        }
+        ptr_node->id_map[mp_id].Gid[j] = ptr_pnode->id_map[mp_id].Gid[j];
+        visited_node_dof[dof_idx] = 1;
+      } else { /* all other nodes */
+        ptr_node->id_map[mp_id].Gid[j] = start_id + id_adder;
+        visited_node_dof[dof_idx] = 1;
+        id_adder ++;
+      }
+    }
       } /* for each dof on node */
     }/* node is owned by current domain */
   }/* for each node on element */
@@ -639,9 +639,9 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 
 
 static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
-							   const int ndof_be,
-							   BOUNDING_ELEMENT *b_elems,
-							   MPI_Comm mpi_comm)
+                               const int ndof_be,
+                               BOUNDING_ELEMENT *b_elems,
+                               MPI_Comm mpi_comm)
 {
   int myrank = 0;
   int nproc = 0;
@@ -653,18 +653,18 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   for(int i=0; i<n_belem; i++){
     const BOUNDING_ELEMENT *p_be = &b_elems[i];
     if(p_be->periodic /* non periodic are local to domain */
-       && p_be->master_dom == myrank 
+       && p_be->master_dom == myrank
        && p_be->master_be_id == i){
       n_Gbelem_on_dom += 1;
     }
   }
 
   /* allocate space */
-  int *NG_bel = PGFEM_calloc(nproc,sizeof(int));
+  int *NG_bel = PGFEM_calloc(int, nproc);
   int n_Gdof_on_dom = n_Gbelem_on_dom*(ndof_be+1);
   long *Gdof_on_dom = NULL;
   if(n_Gdof_on_dom > 0){
-    Gdof_on_dom = PGFEM_calloc(n_Gdof_on_dom,sizeof(long));
+    Gdof_on_dom = PGFEM_calloc(long, n_Gdof_on_dom);
   }
 
   /*
@@ -677,13 +677,13 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
     for(int i=0; i<n_belem; i++){
       const BOUNDING_ELEMENT *p_be = &b_elems[i];
       if(p_be->periodic /* non periodic are local to domain */
-	 && p_be->master_dom == myrank 
-	 && p_be->master_be_id == i){
-	long *ptr = &Gdof_on_dom[idx*(ndof_be+1)];
-	*ptr = i; /* store elem id */
-	ptr += 1; /* increment pointer */
-	memcpy(ptr,b_elems[i].G_dof_ids,ndof_be*sizeof(long));
-	idx++;
+     && p_be->master_dom == myrank
+     && p_be->master_be_id == i){
+    long *ptr = &Gdof_on_dom[idx*(ndof_be+1)];
+    *ptr = i; /* store elem id */
+    ptr += 1; /* increment pointer */
+    memcpy(ptr,b_elems[i].G_dof_ids,ndof_be*sizeof(long));
+    idx++;
       }
     }
   }
@@ -691,8 +691,8 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   /* compute number of global dofs from all domains */
   MPI_Allgather(&n_Gbelem_on_dom,1,MPI_INT,NG_bel,1,MPI_INT,mpi_comm);
   int n_Gbelem_on_all_dom = 0;
-  int *allgatherv_disp = PGFEM_calloc(nproc,sizeof(int));
-  int *allgatherv_count = PGFEM_calloc(nproc,sizeof(int));
+  int *allgatherv_disp = PGFEM_calloc(int, nproc);
+  int *allgatherv_count = PGFEM_calloc(int, nproc);
   for(int i=0; i<nproc; i++){
     allgatherv_disp[i] = n_Gbelem_on_all_dom*(ndof_be + 1);
     allgatherv_count[i] = NG_bel[i]*(ndof_be + 1);
@@ -701,9 +701,9 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   int n_Gdof_on_all_dom = n_Gbelem_on_all_dom*(ndof_be+1);
   long *Gdof_on_all_dom = NULL;
   if(n_Gdof_on_all_dom > 0){
-    PGFEM_calloc(n_Gdof_on_all_dom,sizeof(long));
+    PGFEM_calloc(long, n_Gdof_on_all_dom);
     MPI_Allgatherv(Gdof_on_dom,n_Gdof_on_dom,MPI_LONG,Gdof_on_all_dom,
-		   allgatherv_count,allgatherv_disp,MPI_LONG,mpi_comm);
+           allgatherv_count,allgatherv_disp,MPI_LONG,mpi_comm);
   }
 
   /* Now I have the global dofs from all domains. NOTE:
@@ -717,13 +717,16 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
       const int n_elem = NG_bel[master_dom];
       const size_t size = (ndof_be+1)*sizeof(long);
       const long *ptr_base = Gdof_on_all_dom + allgatherv_disp[master_dom];
-      const long *ptr_match = bsearch((const void*) &master_be_id,
-				      ptr_base,n_elem,size,compare_long);
+      const long *ptr_match = static_cast<const long*>(bsearch(&master_be_id,
+                                                               ptr_base,
+                                                               n_elem,
+                                                               size,
+                                                               compare_long));
 
       if(ptr_match == NULL){
-	PGFEM_printerr("[%d]ERROR: did not find matching"
-		       " master element in %s!\n",myrank,__func__);
-	PGFEM_Abort();
+    PGFEM_printerr("[%d]ERROR: did not find matching"
+               " master element in %s!\n",myrank,__func__);
+    PGFEM_Abort();
       }
 
       /* ptr_match is incremented to ommit the master_be_id from the copy */

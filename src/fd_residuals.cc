@@ -133,16 +133,16 @@ static int fd_res_elem_MP(double *be,
   int err = 0;
   int intg_order = 0;
   double dt = dts[DT_NP1];
-  
+
   ELEMENT *elem = grid->element;
   SUPP sup = load->sups[mp_id];
-  
+
   double *f;
   if(updated_deformation)
     f = fv->f;
   else
     f = fv->d_u;
-  
+
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
@@ -150,53 +150,54 @@ static int fd_res_elem_MP(double *be,
     case TF:
       total_Lagrangian = 1;
       break;
-    case CM:
+    case CM:   // intented to flow
+    case CM3F:      
       if(opts->cm != UPDATED_LAGRANGIAN)
         total_Lagrangian = 1;
-      
+
       break;
   }
-  
+
   if(sup->multi_scale)
     total_Lagrangian = 1;
-  
+
   // set FEMLIB
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-    FEMLIB_initialization_by_elem_w_bubble(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
   else
-    FEMLIB_initialization_by_elem(&fe,eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
   
   long *nod = (fe.node_id).m_pdata; // list of node ids in this element
-  
+
   /* Element Dof */
   long ndofe = get_ndof_on_elem_nodes(fe.nne,nod,grid->node,fv->ndofn);
-  
+
   long *cn;
   double *r_e;
-  
+
   /* allocation */
   cn  = aloc1l (ndofe);
   r_e = aloc1 (ndofe);
-  
+
   //global local ids on element
   get_dof_ids_on_elem_nodes(0,fe.nne,fv->ndofn,nod,grid->node,cn,mp_id);
-  
+
   // get the deformation on the element
   if(total_Lagrangian)
     def_elem_total(cn,ndofe,fv->u_np1,f,grid->element,grid->node,sup,r_e);
   else
     def_elem (cn,ndofe,f,grid->element,grid->node,r_e,sup,0);
-  
+
   int nsd = 3;
-  
+
   double *x = (fe.temp_v).x.m_pdata;
   double *y = (fe.temp_v).y.m_pdata;
   double *z = (fe.temp_v).z.m_pdata;
-  
+
   if(include_inertia) {
     err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
-                          
+
 /*    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
                                   ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
                                   nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);*/
@@ -220,12 +221,12 @@ static int fd_res_elem_MP(double *be,
         double *bf = aloc1(ndofe);
         memset(bf, 0, sizeof(double)*ndofe);
         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
-        
+
         err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
                              mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
         for(long a = 0; a<ndofe; a++)
           be[a] += -bf[a];
-        
+
         dealoc1(bf);
         break;
       }
@@ -234,43 +235,42 @@ static int fd_res_elem_MP(double *be,
         double *bf = aloc1(ndofe);
         memset(bf, 0, sizeof(double)*ndofe);
         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
-                
+
         residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
                         x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
         for(long a = 0; a<ndofe; a++)
           be[a] += -bf[a];
-        
+
         dealoc1(bf);
         break;
       }
-      case CM:
+      case CM:  // intented to flow
+      case CM3F:  
         err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
-                                               opts,mp,mp_id,dt);                                            
-        break;      
+                                               opts,mp,mp_id,dt);
+        break;
       default:
         err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
                              mat->hommat,x,y,z,fv->eps,fv->sig,r_e,fv->npres,
                              sol->nor_min,be,crpl,dt,opts->analysis_type);
-        
+
         break;
     }
   }
   
-  FEMLIB_destruct(&fe);
-  
   dealoc1 (r_e);
   dealoc1l (cn);
-  
+
   return err;
 }
 
 /// Compute residuals
 ///
-/// Compute redidual vector for mechanical problem. 
+/// Compute redidual vector for mechanical problem.
 /// Integration algorithm will be perfromed based on constitutive model.
-/// If either integration algorithm if faild to converge or jacobian of the 
+/// If either integration algorithm if faild to converge or jacobian of the
 /// deformation gradient is small than zero, element loop will be stopped and
-/// return non-zero value.    
+/// return non-zero value.
 ///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
@@ -302,13 +302,13 @@ long fd_residuals_MP(GRID *grid,
   ELEMENT *elem = grid->element;
   BOUNDING_ELEMENT *b_elems = grid->b_elems;
   SUPP sup = load->sups[mp_id];
-   
+
   double *f;
   if(updated_deformation)
     f = fv->f;
   else
-    f = fv->d_u;  
-  
+    f = fv->d_u;
+
   /* make decision to include ineria*/
   const int mat_id = grid->element[0].mat[2];
   double rho = mat->hommat[mat_id].density;
@@ -332,7 +332,7 @@ long fd_residuals_MP(GRID *grid,
     double *fe = aloc1 (ndofe);
 
     err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
-                          mpi_comm, opts, mp, mp_id, t, dts, 
+                          mpi_comm, opts, mp, mp_id, t, dts,
                           include_inertia, updated_deformation);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
@@ -418,7 +418,7 @@ long fd_residuals_MP(GRID *grid,
 
     if(opts->analysis_type == DISP){
       err += DISP_resid_bnd_el(fe,i,fv->ndofn,ndofe,x,y,z,b_elems,elem,
-			       mat->hommat,grid->node,fv->eps,fv->sig,sup,r_e);
+                   mat->hommat,grid->node,fv->eps,fv->sig,sup,r_e);
     } else {
       /* not implemented/needed so do nothing */
     }
@@ -448,15 +448,15 @@ long fd_residuals_MP(GRID *grid,
     /*** RETURN on error ***/
     if(err != 0) return err;
   } /* for each bounding element */
-  
-  return err;  
+
+  return err;
 }
 
 /// compute the reaction force for multiphysics mode (for each magnitude of prescribed
 /// deflection). CAVEATS: Does not include contributions from cohesive
 /// or boundary elements.
 ///
-/// 
+///
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] variables object for field variables
@@ -486,18 +486,18 @@ int fd_res_compute_reactions_MP(GRID *grid,
 
   //computing reaction in quasi-steady state gives correct results
   const long include_inertia = 0;
-  
+
   const int updated_deformation = 0;
 
   ELEMENT *elem = grid->element;
   SUPP sup = load->sups[mp_id];
-  
+
   const int ne = sup->nde;
   const long *el_id = sup->lepd;
   const int n_rxn = sup->npd + 1;
-  double *rxn = PGFEM_calloc(n_rxn, sizeof(*rxn));
-  double *RXN = PGFEM_calloc(n_rxn, sizeof(*RXN));
-  for(int i = 0; i < ne; i++) 
+  double *rxn = PGFEM_calloc(double, n_rxn);
+  double *RXN = PGFEM_calloc(double, n_rxn);
+  for(int i = 0; i < ne; i++)
   {
     const int nne = elem[el_id[i]].toe;
     long *nod = aloc1l(nne);
@@ -506,19 +506,19 @@ int fd_res_compute_reactions_MP(GRID *grid,
     double *fe = aloc1(ndofe);
 
     err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
-                          mpi_comm, opts, mp, mp_id, t, dts, 
+                          mpi_comm, opts, mp, mp_id, t, dts,
                           include_inertia, updated_deformation);
 
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we
     // didn't play with any rate sensitive behavior
-    if (opts->analysis_type == CM) 
+    if (opts->analysis_type == CM || opts->analysis_type == CM3F) 
       constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
 
     long *cn = aloc1l (ndofe);
     get_dof_ids_on_elem_nodes(0,nne,fv->ndofn,nod,grid->node,cn,mp_id);
 
-    for (int j = 0; j < ndofe; j++) 
+    for (int j = 0; j < ndofe; j++)
     {
       if (cn[j] <= 0)
         rxn[labs(cn[j])] += fe[j];
@@ -558,10 +558,9 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         double *dts)
 {
   int err = 0;
-  int mp_id = 0;
-  
+
   // initialize and define multiphysics
-  MULTIPHYSICS mp;  
+  MULTIPHYSICS mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -570,7 +569,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   {
     coupled_ids[0] = 0;
     sprintf(physicsname, "Mechanical");
- 
+
     mp.physicsno      = 1;
     mp.physicsname    = &physicsname;
     mp.physics_ids    = &id;
@@ -580,7 +579,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mp.coupled_ids    = &coupled_ids;
     mp.total_write_no = 0;
   }
-  
+
   GRID grid;
   grid_initialization(&grid);
   {
@@ -593,7 +592,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     grid.coel        = c->coel;
     grid.n_be        = 0;
   }
-  
+
   // initialize and define field variables
   FIELD_VARIABLES fv;
   {
@@ -617,23 +616,22 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     fv.BS_f_u = s->BS_f_u;
     fv.sig_n  = s->sig_n;
     fv.NORM   = s->NORM;
-  }    
+  }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol;
+  SOLVER_OPTIONS sol{};
   {
-    solution_scheme_initialization(&sol);
     sol.nor_min  = solver_file->nonlin_tol;
     sol.alpha   = 0.0;
   }
-  
+
   // initialize and define loading steps object
-  LOADING_STEPS load;    
+  LOADING_STEPS load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
-  
+
   // initialize and define material properties
   MATERIAL_PROPERTY mat;
   {
@@ -641,12 +639,12 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mat.hommat  = c->hommat;
     mat.matgeom = c->matgeom;
   }
-  
+
   err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,&mp,
                                      0,s->times[s->tim+1],dts);
-                                 
+
   free(coupled_ids);
   free(physicsname);
-  
+
   return err;
 }

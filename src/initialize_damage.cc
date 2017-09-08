@@ -14,15 +14,13 @@
 #endif
 
 void initialize_damage(const int ne,
-		       const ELEMENT *elem,
-		       const HOMMAT *hommat,
-		       EPS *eps,
-		       const int analysis)
+               const ELEMENT *elem,
+               const HOMMAT *hommat,
+               EPS *eps,
+               const int analysis)
 {
-  double *dam_params;
   int n_params = sizeof(damage_params)/sizeof(double);
-  if(n_params < 4) n_params = 4;
-  dam_params = (double*) PGFEM_calloc (n_params,sizeof(double));
+  double *dam_params = PGFEM_calloc (double, std::max(n_params, 4));
 
   for(int i=0; i<ne; i++){/* for each element */
     const int mat = elem[i].mat[2];
@@ -49,7 +47,7 @@ void initialize_damage(const int ne,
     if(analysis == STABILIZED){
       int_point(10,&n_ip);
       for(int j=0; j<n_ip; j++){
-	init_damagef(&eps[i].st[j].dam,eq_flag,dam_params,n_params);
+    init_damagef(&eps[i].st[j].dam,eq_flag,dam_params,n_params);
       }
     }
 

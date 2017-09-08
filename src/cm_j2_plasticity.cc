@@ -21,28 +21,31 @@
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "allocation.h"
 #include "cm_j2_plasticity.h"
 #include "cm_iso_viscous_damage.h"
 #include "constitutive_model.h"
-#include <math.h>
-#include <string.h>
-#include "utils.h"
 #include "index_macros.h"
-#include "data_structure_c.h"
+#include "utils.h"
 #include "new_potentials.h"
+#include <math.h>
+#include <string.h> 
+#include <assert.h>
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
-#define dim  3
-#define tensor 9
-#define tensor4 81
-
-static const double DAMAGE_THRESH = 0.9999;
-static const double j2d_int_alg_tol = 1.0e-10;
+namespace {
+constexpr int                dim = 3;
+constexpr int             tensor = 9;
+constexpr int            tensor4 = 81;
+constexpr double   DAMAGE_THRESH = 0.9999;
+constexpr double j2d_int_alg_tol = 1.0e-10;
 //static const double eye[tensor] = {[0] = 1.0, [4] = 1.0, [8] = 1.0};
-static const double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
-
-Define_Matrix(double);
+constexpr  double eye[tensor] = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
 /* macros for easy access to Constitutive_model structure */
 #define cm_Fs(m) ((m)->vars_list[0][m->model_id].Fs)
@@ -54,56 +57,55 @@ Define_Matrix(double);
 #define cm_param(m) ((m)->param->model_param)
 
 /* private context structure */
-typedef struct {
+struct j2d_ctx {
   double F[tensor];
   double dt;
-} j2d_ctx;
+};
 
 enum {FN, FNP1, SPN, SP, NUM_Fs};
 enum {epn, ep, gam_n, gam, wn, w, Xn, X, Hn, H, NUM_vars};
 enum {damaged_n, damaged, NUM_flags};
 enum {G, nu, beta, hp, k0, mu, ome_max, p1, p2, Yin, NUM_param};
+}
 
-static int j2d_get_info(Model_var_info **info)
+int CM_J2P_PARAM::get_var_info(Model_var_info &info)
+const 
 {
   int err = 0;
-  /* make sure I don't leak memory */
-  if( *info != NULL) err += model_var_info_destroy(info);
 
-  /* allocate pointers */
-  (*info) = malloc(sizeof(**info));
-  (*info)->n_Fs = NUM_Fs;
-  (*info)->n_vars = NUM_vars;
-  (*info)->n_flags = NUM_flags;
-  (*info)->F_names = malloc(NUM_Fs * sizeof( ((*info)->F_names) ));
-  (*info)->var_names = malloc( NUM_vars * sizeof( ((*info)->var_names) ));
-  (*info)->flag_names = malloc( NUM_flags * sizeof( ((*info)->flag_names) ));
+  info.n_Fs = NUM_Fs;
+  info.n_vars = NUM_vars;
+  info.n_flags = NUM_flags;
+  info.F_names = PGFEM_malloc<char*>(NUM_Fs);
+  info.var_names = PGFEM_malloc<char*>(NUM_vars);
+  info.flag_names = PGFEM_malloc<char*>(NUM_flags);
 
   /* allocate/copy strings */
-  (*info)->F_names[FNP1] = strdup("F");
-  (*info)->F_names[FN]   = strdup("Fn");
-  (*info)->F_names[SPN]   = strdup("spn");
-  (*info)->F_names[SP]   = strdup("sp");
+  info.F_names[FNP1] = strdup("F");
+  info.F_names[FN]   = strdup("Fn");
+  info.F_names[SPN]   = strdup("spn");
+  info.F_names[SP]   = strdup("sp");
 
-  (*info)->var_names[epn] = strdup("epn");
-  (*info)->var_names[ep] = strdup("ep");
-  (*info)->var_names[gam_n] = strdup("gam_n");
-  (*info)->var_names[gam] = strdup("gam");
+  info.var_names[epn] = strdup("epn");
+  info.var_names[ep] = strdup("ep");
+  info.var_names[gam_n] = strdup("gam_n");
+  info.var_names[gam] = strdup("gam");
 
-  (*info)->var_names[wn] = strdup("wn");
-  (*info)->var_names[w] = strdup("w");
-  (*info)->var_names[Xn] = strdup("Xn");
-  (*info)->var_names[X] = strdup("X");
-  (*info)->var_names[Hn] = strdup("Hn");
-  (*info)->var_names[H] = strdup("H");
+  info.var_names[wn] = strdup("wn");
+  info.var_names[w] = strdup("w");
+  info.var_names[Xn] = strdup("Xn");
+  info.var_names[X] = strdup("X");
+  info.var_names[Hn] = strdup("Hn");
+  info.var_names[H] = strdup("H");
 
-  (*info)->flag_names[damaged_n] = strdup("damaged_n");
-  (*info)->flag_names[damaged] = strdup("damaged");
+  info.flag_names[damaged_n] = strdup("damaged_n");
+  info.flag_names[damaged] = strdup("damaged");
 
   return err;
 }
 
-static int j2d_set_init_vals(Constitutive_model *m)
+int CM_J2P_PARAM::set_init_vals(Constitutive_model *m)
+const
 {
   int err = 0;
   /* tensors default init to identity and vars default to 0. Only need
@@ -113,13 +115,15 @@ static int j2d_set_init_vals(Constitutive_model *m)
   return err;
 }
 
-static int j2d_reset(Constitutive_model *m)
+int CM_J2P_PARAM::reset_state_vars(Constitutive_model *m)
+const
 {
   int err = 0;
   double *vars = cm_vars(m);
   int *flags = cm_flags(m);
-  Matrix_copy(cm_Fs(m)[FNP1], cm_Fs(m)[FN]);
-  Matrix_copy(cm_Fs(m)[SP], cm_Fs(m)[SPN]);
+  Matrix<double> *Fs = cm_Fs(m);  
+  Fs[FNP1]= Fs[FN];
+  Fs[SP]  = Fs[SPN];
   vars[ep] = vars[epn];
   vars[gam] = vars[gam_n];
   vars[w] = vars[wn];
@@ -128,14 +132,15 @@ static int j2d_reset(Constitutive_model *m)
   flags[damaged] = flags[damaged_n];
   return err;
 }
-
-static int j2d_update(Constitutive_model *m)
+int CM_J2P_PARAM::update_state_vars(Constitutive_model *m)
+const
 {
   int err = 0;
   double *vars = cm_vars(m);
   int *flags = cm_flags(m);
-  Matrix_copy(cm_Fs(m)[FN], cm_Fs(m)[FNP1]);
-  Matrix_copy(cm_Fs(m)[SPN], cm_Fs(m)[SP]);
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  Fs[FN] = Fs[FNP1];
+  Fs[SPN]= Fs[SP];
   vars[epn] = vars[ep];
   vars[gam_n] = vars[gam];
   vars[wn] = vars[w];
@@ -145,12 +150,12 @@ static int j2d_update(Constitutive_model *m)
   return err;
 }
 
-static int j2d_read_param(Model_parameters *p,
-                          FILE *in)
+int CM_J2P_PARAM::read_param(FILE *in)
+const
 {
   int err = 0;
   /* get pointer to parameter data */
-  double *param = p->model_param;
+  double *param = this->model_param;
   assert(param != NULL); // check the pointer
 
   /* There are three (3) sets of parameters:
@@ -178,8 +183,8 @@ static int j2d_read_param(Model_parameters *p,
     formulation in Simo and Ju.
   */
   int match = 2;
-  param[G] = p->p_hmat->G;
-  param[nu] = p->p_hmat->nu;
+  param[G] = this->p_hmat->G;
+  param[nu] = this->p_hmat->nu;
 
   /* PLASTIC PROPERTIES */
   err += scan_for_valid_line(in);
@@ -209,7 +214,8 @@ static int j2d_read_param(Model_parameters *p,
   return err;
 }
 
-static int j2d_plasticity_model_ctx_destroy(void **ctx)
+int CM_J2P_PARAM::destroy_ctx(void **ctx)
+const
 {
   int err = 0;
   free(*ctx);
@@ -218,8 +224,8 @@ static int j2d_plasticity_model_ctx_destroy(void **ctx)
 }
 
 /* bbar = J^-(2/3) F F' */
-static void j2d_bbar(const double * restrict F,
-                     double * restrict bbar)
+static void j2d_bbar(const double * __restrict F,
+                     double * __restrict bbar)
 {
   memset(bbar, 0, tensor * sizeof(*bbar));
   const double J23 = pow(det3x3(F), -2./3.);
@@ -233,8 +239,8 @@ static void j2d_bbar(const double * restrict F,
 }
 
 /* dev(a) = a - 1/3 tr(a) i */
-static void j2d_dev(const double * restrict a,
-                    double * restrict dev_a)
+static void j2d_dev(const double * __restrict a,
+                    double * __restrict dev_a)
 {
   const double tra = 1./3. * (a[0] + a[4] + a[8]);
   memcpy(dev_a, a, tensor * sizeof(*a));
@@ -245,8 +251,8 @@ static void j2d_dev(const double * restrict a,
 
 /* s0 = G * dev(bbar) */
 static void j2d_compute_s0(const double G,
-                           const double * restrict bbar,
-                           double * restrict s0)
+                           const double * __restrict bbar,
+                           double * __restrict s0)
 {
   double devbbar[tensor] = {0};
   j2d_dev(bbar, devbbar);
@@ -256,9 +262,9 @@ static void j2d_compute_s0(const double G,
 }
 
 /* compute Fubar */
-static int j2d_compute_Fubar(const double * restrict F,
-                             const double * restrict Fn,
-                             double * restrict Fubar)
+static int j2d_compute_Fubar(const double * __restrict F,
+                             const double * __restrict Fn,
+                             double * __restrict Fubar)
 {
   int err = 0;
   double FnI[tensor] = {0};
@@ -277,9 +283,9 @@ static int j2d_compute_Fubar(const double * restrict F,
 }
 
 /* push-forward operation a = F A F'. */
-static void j2d_push_forward(const double * restrict F,
-                             const double * restrict A,
-                             double * restrict a)
+static void j2d_push_forward(const double * __restrict F,
+                             const double * __restrict A,
+                             double * __restrict a)
 {
   memset(a, 0, tensor * sizeof(*a));
   double wkspc[tensor] = {0};
@@ -327,10 +333,10 @@ static int j2d_compute_sp_tr(const double *F,
   return err;
 }
 
-static double j2d_compute_normal(const double * restrict s_tr,
-                                 const double * restrict sp_tr,
-                                 const double * restrict param,
-                                 double  * restrict n)
+static double j2d_compute_normal(const double * __restrict s_tr,
+                                 const double * __restrict sp_tr,
+                                 const double * __restrict param,
+                                 double  * __restrict n)
 {
   const double coef = param[hp] / (3. * param[G]) * (1. - param[beta]);
   double nrm = 0;
@@ -356,7 +362,6 @@ static int j2d_compute_Y0(const HOMMAT *p_hmat,
                           const double G,
                           double *Y0)
 {
-  int err = 0;
   const double kappa = hommat_get_kappa(p_hmat);
   double U = 0.0;
   new_pot_compute_U(J, p_hmat, &U);
@@ -365,8 +370,9 @@ static int j2d_compute_Y0(const HOMMAT *p_hmat,
 }
 
 /* see box 4 of Simo and Ju (1989) */
-static int j2d_int_alg(Constitutive_model *m,
-                       const void *CTX)
+int CM_J2P_PARAM::integration_algorithm(Constitutive_model *m,
+                                        const void *CTX)
+const
 {
   int err = 0;
   auto ctx = (j2d_ctx *) CTX;
@@ -437,13 +443,12 @@ static int j2d_int_alg(Constitutive_model *m,
    configuration */
 static int j2d_unloading_Aep_dev(const Constitutive_model *m,
                                  const void *CTX,
-                                 double * restrict Aep_dev)
+                                 double * __restrict Aep_dev)
 {
   int err = 0;
   memset(Aep_dev, 0, tensor4 * sizeof(*Aep_dev));
 
   //const j2d_ctx *ctx = CTX;
-  const auto ctx = (j2d_ctx *) CTX;
   const double *F = cm_Fs_data(m,FNP1);
   const double *Fn = cm_Fs_data(m, FN);
   const double *spn = cm_Fs_data(m, SPN);
@@ -486,9 +491,9 @@ static int j2d_unloading_Aep_dev(const Constitutive_model *m,
   return err;
 }
 
-static int j2d_pull_back4(const double * restrict FI,
-                          const double * restrict aep,
-                          double * restrict Aep)
+static int j2d_pull_back4(const double * __restrict FI,
+                          const double * __restrict aep,
+                          double * __restrict Aep)
 {
   int err = 0;
   memset(Aep, 0, tensor4 * sizeof(*Aep));
@@ -521,7 +526,7 @@ static int j2d_pull_back4(const double * restrict FI,
    configuration */
 static int j2d_loading_Aep_dev(const Constitutive_model *m,
                                const void *CTX,
-                               double * restrict Aep_dev)
+                               double * __restrict Aep_dev)
 {
   int err = 0;
   const auto ctx = (j2d_ctx *) CTX;
@@ -559,7 +564,6 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
   double s_tr[tensor] = {0};
   double normal[tensor] = {0};
   double normal2[tensor] = {0};
-  double zeros[tensor] = {0};
   j2d_compute_s0(param[G], bbar, s_tr);
   double norm_s_tr = 0.0;
   for (int i = 0; i < tensor; i++) {
@@ -610,7 +614,7 @@ static int j2d_loading_Aep_dev(const Constitutive_model *m,
 
 static int j2d_compute_Lbar(const Constitutive_model *m,
                             const void *CTX,
-                            double * restrict Lbar)
+                            double * __restrict Lbar)
 {
   int err = 0;
   const auto ctx = (j2d_ctx *) CTX;
@@ -636,31 +640,20 @@ static int j2d_compute_Lbar(const Constitutive_model *m,
   for (int i=0; i < dim; i++) {
     for (int j=0; j < dim; j++) {
       for (int k=0; k < dim; k++) {
-	for (int l=0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  /* Deviatoric + Volumetric stiffness */
-	  Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
+    for (int l=0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      /* Deviatoric + Volumetric stiffness */
+      Lbar[idx4] += ((kappa * J * (dudj + J * d2udj2)
                           * C_I[idx_2(i,j)] * C_I[idx_2(k,l)])
-			 - (2. * kappa * J * dudj
+             - (2. * kappa * J * dudj
                             * C_I[idx_2(i,k)] * C_I[idx_2(l,j)])
                          );
-	}
+    }
       }
     }
   }
 
   return err;
-}
-
-static int j2d_compute_dMdu(const Constitutive_model *m,
-                            const void *ctx,
-                            const double *Grad_op,
-                            const int nne,
-                            const int ndofn,
-                            double *dM_du)
-{
-  memset(dM_du, 0, tensor * nne *dim * sizeof(*dM_du));
-  return 0;
 }
 
 static int j2d_compute_S0_Sbar(const Constitutive_model *m,
@@ -716,9 +709,9 @@ static int j2d_modify_AST(const Constitutive_model *m,
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
       for (int k = 0; k < dim; k++) {
-	for (int l = 0; l < dim; l++) {
-	  const int idx4 = idx_4(i,j,k,l);
-	  L[idx4] -= evo * 0.5 * (Sbar[idx_2(i,j)] * S0[idx_2(k,l)]
+    for (int l = 0; l < dim; l++) {
+      const int idx4 = idx_4(i,j,k,l);
+      L[idx4] -= evo * 0.5 * (Sbar[idx_2(i,j)] * S0[idx_2(k,l)]
                                   + S0[idx_2(i,j)] * Sbar[idx_2(k,l)]);
         }
       }
@@ -730,20 +723,20 @@ static int j2d_modify_AST(const Constitutive_model *m,
 
 static int j2d_compute_AST(const Constitutive_model *m,
                            const void *ctx,
-                           Matrix_double *L)
+                           double *L)
 {
   int err = 0;
-  err += j2d_compute_Lbar(m, ctx, L->m_pdata);
+  err += j2d_compute_Lbar(m, ctx, L);
 
   /* scale by damage parameter */
   const double dam = 1.0 - cm_vars(m)[w];
   for (int i = 0; i < tensor4; i++) {
-    L->m_pdata[i] *= dam;
+    L[i] *= dam;
   }
 
   /* if evolving damage, modify tangent */
   if (cm_flags(m)[damaged]) {
-    err += j2d_modify_AST(m, ctx, L->m_pdata);
+    err += j2d_modify_AST(m, ctx, L);
   }
 
   return err;
@@ -753,7 +746,7 @@ static int j2d_compute_AST(const Constitutive_model *m,
 static int j2d_compute_sbar(const double *F,
                             const double *sp,
                             const double G,
-                            double * restrict sbar)
+                            double * __restrict sbar)
 {
   int err = 0;
   double bbar[tensor] = {0};
@@ -764,9 +757,10 @@ static int j2d_compute_sbar(const double *F,
 }
 
 /* compute the deviatoric PK2 stress */
-static int j2d_Sdev(const Constitutive_model *m,
-                    const void *CTX,
-                    Matrix_double *Sdev)
+int CM_J2P_PARAM::compute_dev_stress(const Constitutive_model *m,
+                                     const void *CTX,
+                                     double *stress)
+const 
 {
   int err = 0;
   auto ctx = (j2d_ctx *) CTX;
@@ -775,18 +769,19 @@ static int j2d_Sdev(const Constitutive_model *m,
                           cm_Fs_data(m, SP),
                           cm_param(m)[G],
                           sbar);
-  err += j2d_pull_back(ctx->F, sbar, Sdev->m_pdata);
+  err += j2d_pull_back(ctx->F, sbar, stress);
   const double dam = 1. - cm_vars(m)[w];
-  for(int i = 0; i < tensor; i++) Sdev->m_pdata[i] *= dam;
+  for(int i = 0; i < tensor; i++) stress[i] *= dam;
   return err;
 }
 
 /* compute the volumetric stress. NOTE we are still using the actual
    HOMMAT object here for convenience, but the only used information
    is for the flag */
-static int j2d_dudj(const Constitutive_model *m,
-                    const void *ctx,
-                    double *dudj)
+int CM_J2P_PARAM::compute_dudj(const Constitutive_model *m,
+                               const void *ctx,
+                               double *dudj)
+const
 {
   int err = 0;
   auto CTX = (j2d_ctx *) ctx;
@@ -798,16 +793,35 @@ static int j2d_dudj(const Constitutive_model *m,
   return err;
 }
 
-static int j2d_get_damage(const Constitutive_model *m,
-                          double *damage)
+int CM_J2P_PARAM::get_hardening(const Constitutive_model *m,
+                                double *var,
+                                const int stepno)
+const 
 {
   int err = 0;
-  *damage = cm_vars(m)[wn];
-  return err;
+  double *s_var = cm_vars(m);
+  switch(stepno)
+  {
+    case 0: // n-1
+      *var = s_var[wn];
+      break;
+    case 1: // n
+      *var = s_var[wn];
+      break;
+    case 2: // n+1
+      *var = s_var[w];
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+  return err;  
 }
 
-static int j2d_get_ep(const Constitutive_model *m,
-                      double *ep)
+int CM_J2P_PARAM::get_plast_strain_var(const Constitutive_model *m,
+                                       double *ep)
+const
 {
   int err = 0;
   *ep = cm_vars(m)[epn];
@@ -815,27 +829,54 @@ static int j2d_get_ep(const Constitutive_model *m,
 }
 
 static int j2d_identity_tensor(const Constitutive_model *m,
-                               Matrix_double *F)
+                               double *F)
 {
   int err = 0;
-  Matrix_eye(*F, dim);
+  double I[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+  memcpy(F,I,tensor*sizeof(double));
   return err;
 }
 
-static int j2d_get_Fn(const Constitutive_model *m,
-                      Matrix_double *Fn)
+int CM_J2P_PARAM::get_pF(const Constitutive_model *m,
+                         double *F,
+                         const int stepno)
+const
+{
+  return j2d_identity_tensor(m, F);
+}
+
+int CM_J2P_PARAM::get_F(const Constitutive_model *m,
+                        double *F,
+                        const int stepno)
+const 
 {
   int err = 0;
-  Matrix_copy(*Fn, cm_Fs(m)[FN]);
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  switch(stepno)
+  {
+    case 0: // n-1
+      memcpy(F,Fs[FN].m_pdata, tensor*sizeof(double));
+      break;
+    case 1: // n
+      memcpy(F,Fs[FN].m_pdata, tensor*sizeof(double));
+      break;
+    case 2: // n+1
+      memcpy(F,Fs[FNP1].m_pdata, tensor*sizeof(double));
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
   return err;
 }
 
-static int j2d_get_Fnp1(const Constitutive_model *m,
-                        Matrix_double *Fnp1)
+int CM_J2P_PARAM::get_eF(const Constitutive_model *m,
+                         double *eF_in,
+                         const int stepno)
+const
 {
-  int err = 0;
-  Matrix_copy(*Fnp1, cm_Fs(m)[FNP1]);
-  return err;
+  return this->get_F(m,eF_in,stepno);
 }
 
 static int j2d_read_tensor(FILE *in,
@@ -846,8 +887,8 @@ static int j2d_read_tensor(FILE *in,
                  &FF[4], &FF[5], &FF[6], &FF[7], &FF[8]) != tensor);
 }
 
-static int j2d_read_restart(FILE *in,
-                            Constitutive_model *m)
+int CM_J2P_PARAM::read_restart(FILE *in, Constitutive_model *m)
+const
 {
   int err = 0;
   err += j2d_read_tensor(in, cm_Fs_data(m, FN));
@@ -858,7 +899,7 @@ static int j2d_read_restart(FILE *in,
              &vars[epn], &vars[gam_n],
              &vars[wn], &vars[Xn], &vars[Hn],
              &flags[damaged_n]) != 6 ) err ++;
-  err += j2d_reset(m);
+  err += this->reset_state_vars(m);
   return err;
 }
 
@@ -869,8 +910,8 @@ static int j2d_write_tensor(FILE *out,
                   FF[0], FF[1], FF[2], FF[3], FF[4], FF[5], FF[6], FF[7], FF[8]) < 0);
 }
 
-static int j2d_write_restart(FILE *out,
-                             const Constitutive_model *m)
+int CM_J2P_PARAM::write_restart(FILE *out, const Constitutive_model *m)
+const
 {
   int err = 0;
   err += j2d_write_tensor(out, cm_Fs_data(m, FN));
@@ -884,28 +925,10 @@ static int j2d_write_restart(FILE *out,
   return err;
 }
 
-static size_t j2d_get_size(const Constitutive_model *m)
-{
-  return state_variables_get_packed_size(m->vars_list[0]+m->model_id);
-}
-
-static int j2d_pack(const Constitutive_model *m,
-                    char *buffer,
-                    size_t *pos)
-{
-  return state_variables_pack(m->vars_list[0]+m->model_id, buffer, pos);
-}
-
-static int j2d_unpack(Constitutive_model *m,
-                      const char *buffer,
-                      size_t *pos)
-{
-  return state_variables_unpack(m->vars_list[0]+m->model_id, buffer, pos);
-}
-
-static int j2d_get_subdiv_param(const Constitutive_model *m,
-                                double *subdiv_param,
-                                double dt)
+int CM_J2P_PARAM::get_subdiv_param(const Constitutive_model *m,
+                                   double *subdiv_param,
+                                   double dt)
+const
 {
   int err = 0;
 
@@ -923,75 +946,38 @@ static int j2d_get_subdiv_param(const Constitutive_model *m,
   return err;
 }
 
-int j2d_update_elasticity(const Constitutive_model *m,
-                          const void *ctx,
-                          Matrix_double *L,
-                          Matrix_double *S,
-                          const int compute_stiffness)
+int CM_J2P_PARAM::update_elasticity(const Constitutive_model *m,
+                                    const void *ctx,
+                                    double *L,
+                                    double *S,
+                                    const int compute_stiffness)
+const
 {
   int err = 0;
 
   double S0[tensor] = {0};
-  err += j2d_compute_S0_Sbar(m,ctx,S0,S->m_pdata);
+  err += j2d_compute_S0_Sbar(m,ctx,S0,S);
 
-  double dam = (1.0 - cm_vars(m)[w]);  
+  double dam = (1.0 - cm_vars(m)[w]);
   for(int a=0; a<tensor; a++)
-    S->m_pdata[a] *= dam;
-  
+    S[a] *= dam;
+
   if(compute_stiffness)
     err += j2d_compute_AST(m, ctx, L); //compute stiffness
 
   return err;
 }
 
-int j2d_plasticity_model_initialize(Model_parameters *p)
+int CM_J2P_PARAM::model_dependent_initialization(void)
 {
   int err = 0;
 
-  /* set function pointers */
-  p->integration_algorithm = j2d_int_alg;
-  p->compute_dev_stress = j2d_Sdev;
-  p->compute_dudj = j2d_dudj;
-  p->compute_dev_tangent = NULL;
-  p->compute_d2udj2 = NULL;
-  p->compute_AST = j2d_compute_AST;
-  p->update_elasticity = j2d_update_elasticity;
-  p->update_state_vars = j2d_update;
-  p->reset_state_vars = j2d_reset;
-  p->get_var_info = j2d_get_info;
-  p->get_Fn = j2d_get_Fn;
-  p->get_Fnm1 = NULL;
-  p->get_pF = j2d_identity_tensor;
-  p->get_pFn = j2d_identity_tensor;
-  p->get_pFnm1 = NULL;
-  p->get_eF = j2d_get_Fnp1;
-  p->get_eFn = j2d_get_Fn;
-  p->get_eFnm1 = NULL;
-
-  p->get_hardening = j2d_get_damage;
-  p->get_hardening_nm1 = NULL;
-  p->get_plast_strain_var = j2d_get_ep;
-  p->get_subdiv_param = j2d_get_subdiv_param;
-
-  p->write_restart = j2d_write_restart;
-  p->read_restart = j2d_read_restart;
-
-  p->destroy_ctx = j2d_plasticity_model_ctx_destroy;
-  p->compute_dMdu = j2d_compute_dMdu;
-
-  p->set_init_vals = j2d_set_init_vals;
-  p->read_param = j2d_read_param;
-
-  p->get_size = j2d_get_size;
-  p->pack = j2d_pack;
-  p->unpack = j2d_unpack;
-
   /* reset counters/flags */
-  p->type = J2_PLASTICITY_DAMAGE;
+  this->type = J2_PLASTICITY_DAMAGE;
 
   /* allocate room for parameters */
-  p->n_param = NUM_param;
-  p->model_param = calloc(NUM_param, sizeof(*(p->model_param)));
+  this->n_param = NUM_param;
+  this->model_param = PGFEM_calloc(double, NUM_param);
 
   return err;
 }
@@ -1000,7 +986,7 @@ int j2d_plasticity_model_ctx_build(void **ctx,
                                    const double *F,
                                    const double dt)
 {
-  j2d_ctx *CTX = malloc(sizeof(*CTX));
+  j2d_ctx *CTX = PGFEM_malloc<j2d_ctx>();
   //CTX = (j2d_ctx *) malloc(sizeof(*CTX));
   memcpy(CTX->F, F, tensor * sizeof(*F));
   CTX->dt = dt;

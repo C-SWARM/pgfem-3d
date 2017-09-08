@@ -4,7 +4,7 @@ OBJ_TEST=$(shell ls ../../src/*.o | grep -v 'super_main.o' | grep -v '[a-z]*'_dr
 UQ_stdy_inc=../include
 
 PGFem3D_dir=../..
-pfem_incl_dir = $(PGFem3D_dir)/include
+pgfem_incl_dir = $(PGFem3D_dir)/include
 
 # SUITESPARSE
 SUITESPARSE_lib	= -L${PGFEM3D_EXT_LIB}/UMFPACK/UMFPACK/Lib -lumfpack \
@@ -60,7 +60,7 @@ RM = rm -rf
 
 CXXFLAGS = -Wall -std=c++14 -fpermissive -Ofast -g 
 
-INCLUDES = -I$(pfem_incl_dir) \
+INCLUDES = -I$(pgfem_incl_dir) \
             $(HYPRE_inc) \
 	    $(CNSTVM_incl) \
 	    $(VTK_IO_incl) \

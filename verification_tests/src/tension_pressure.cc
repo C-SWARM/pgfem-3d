@@ -22,12 +22,12 @@ int main(int argc,char *argv[])
   MPI_Init (&argc,&argv);
   MPI_Comm_rank (mpi_comm,&myrank);
   MPI_Comm_size (mpi_comm,&nproc);
-  
+
   char processor_name[MPI_MAX_PROCESSOR_NAME];
-  int namelen = 0;  
+  int namelen = 0;
   MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);  
-    
+  PGFEM_initialize_io(NULL,NULL);
+
   PGFem3D_opt options;
   if (argc <= 2){
     if(myrank == 0){
@@ -36,7 +36,7 @@ int main(int argc,char *argv[])
     exit(0);
   }
   set_default_options(&options);
-  re_parse_command_line(myrank,2,argc,argv,&options); 
+  re_parse_command_line(myrank,2,argc,argv,&options);
 
   long nn = 0;
   long Gnn = 0;
@@ -44,43 +44,45 @@ int main(int argc,char *argv[])
   long ne = 0;
   long ni = 0;
   double err = 0.0;
-  double limit = 0.0;  
-  long nmat = 0;  
+  double limit = 0.0;
+  long nmat = 0;
   long nc = 0;
   long np = 0;
-  NODE *node = NULL;  
-  ELEMENT *elem = NULL; 
-  MATERIAL *mater = NULL;   
+  NODE *node = NULL;
+  ELEMENT *elem = NULL;
+  MATERIAL *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
-  long nln = 0;  
-  ZATNODE *znod = NULL;   
+  long nln = 0;
+  ZATNODE *znod = NULL;
   long nle_s = 0;
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
-  ZATELEM *zele_v = NULL;    
-  Model_parameters *param_list = NULL;  
-  
+  ZATELEM *zele_v = NULL;
+  Model_parameters *param_list = NULL;
+
   int in_err = 0;
   int physicsno = 1;
   int ndim = 3;
+  int fv_ndofn = ndim;
+
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
          &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
          &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v,physicsno,&ndim,NULL);
+         &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
       myrank);
     PGFEM_Abort();
-  }   
+  }
 
   HOMMAT *hommat = NULL;
   Mat_3D_orthotropic (nmat,mater,options.analysis_type);
-  
+
   long ***a = NULL;
   a = aloc3l (nmat,nmat,nc);
-  long nhommat = list(a,ne,nmat,nc,elem); 
-  
+  long nhommat = list(a,ne,nmat,nc,elem);
+
   /*  alocation of the material matrices  */
   hommat = build_hommat(nhommat);
 
@@ -88,9 +90,9 @@ int main(int argc,char *argv[])
     hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
-  free(mater);  
-  
-  EPS *eps = NULL;    
+  free(mater);
+
+  EPS *eps = NULL;
   eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   if (options.analysis_type == CM) {
@@ -108,9 +110,9 @@ int main(int argc,char *argv[])
 /////////////////////////////////////////////////////////////////////////////////////
 // read inputs
   char filename[1024];
-  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);   
-  
-  
+  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);
+
+
   double *u = aloc1(nn*ndofn);
   double *P, *V;
 
@@ -120,39 +122,39 @@ int main(int argc,char *argv[])
   if(options.analysis_type==TF)
   {
     if(elem[0].toe==10 && ndofn==3)
-    {  
+    {
       npres = 1;
       nVol = 1;
     }
-    
+
     P = (double *) malloc(sizeof(double)*ne*npres);
     V = (double *) malloc(sizeof(double)*ne*nVol);
-    read_VTK_file4TF(filename, u, P, V);        
+    read_VTK_file4TF(filename, u, P, V);
     for (int e=0;e<ne;e++)
     {
       if(npres==1)
       {
-      	eps[e].d_T   = (double *) PGFEM_calloc(3,sizeof(double));
-      	eps[e].d_T[0] = P[e];
+        eps[e].d_T   = PGFEM_calloc(double, 3);
+        eps[e].d_T[0] = P[e];
       }
-    
-     	eps[e].T   = (double *) PGFEM_calloc(nVol*3,sizeof(double));	
-  		eps[e].T[0] = V[e];
+
+      eps[e].T   = PGFEM_calloc(double, nVol*3);
+      eps[e].T[0] = V[e];
     }
-                              
+
     free(P);
-    free(V);          
+    free(V);
   }
   else
     read_VTK_file(filename, u);
 
-  double *GS = aloc1(9);      
-  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);            
+  double *GS = aloc1(9);
+  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);
 
-  FILE *fp = fopen("stress_tension_pressure.out", "w");  
+  FILE *fp = fopen("stress_tension_pressure.out", "w");
   fprintf(fp, "%e\n", GS[0]);
-  fclose(fp);  
-  free(u);    
+  fclose(fp);
+  free(u);
   free(GS);
 
   destroy_zatnode(znod,nln);
@@ -160,7 +162,7 @@ int main(int argc,char *argv[])
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-  destroy_model_parameters_list(nhommat,param_list);  
+  destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);
@@ -168,6 +170,6 @@ int main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize(); 
+  MPI_Finalize();
   return(0);
 }

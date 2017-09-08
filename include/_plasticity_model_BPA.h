@@ -13,25 +13,9 @@
 #ifndef _PLASTICITY_MODEL_BPA_H
 #define _PLASTICITY_MODEL_BPA_H
 
-#ifndef TYPE_MATRIX_DOUBLE
-#define TYPE_MATRIX_DOUBLE
-typedef struct Matrix_double Matrix_double;
-#endif
-
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
-
-#ifndef TYPE_MODEL_VAR_INFO
-#define TYPE_MODEL_VAR_INFO
-typedef struct Model_var_info Model_var_info;
-#endif
-
-#ifndef TYPE_HOMMAT
-#define TYPE_HOMMAT
-typedef struct HOMMAT HOMMAT;
-#endif
+struct Constitutive_model;
+struct Model_var_info;
+struct HOMMAT;
 
 /**
  * Private structure used exclsively with this model and associated
@@ -57,7 +41,7 @@ int BPA_int_alg(Constitutive_model *m,
  */
 int BPA_dev_stress(const Constitutive_model *m,
                    const void *ctx,
-                   Matrix_double *dev_stress);
+                   double *dev_stress);
 
 /**
  * Compute the pressure term for the BPA model.
@@ -71,7 +55,7 @@ int BPA_dudj(const Constitutive_model *m,
  */
 int BPA_dev_tangent(const Constitutive_model *m,
                     const void *ctx,
-                    Matrix_double *dev_tangent);
+                    double *dev_tangent);
 
 /**
  * Compute the pressure tangent for the BPA model.

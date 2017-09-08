@@ -12,59 +12,73 @@
 #define STATE_VARIABLES_H
 
 #include <stdlib.h>
+#include "data_structure.h"
 
-struct Matrix_double;
-#ifndef TYPE_MATRIX_DOUBLE
-#define TYPE_MATRIX_DOUBLE
-typedef struct Matrix_double Matrix_double;
-#endif
+using namespace gcm;
 
-#ifndef TYPE_VECTOR_DOUBLE
-#define TYPE_VECTOR_DOUBLE
-typedef struct Matrix_double Vector_double;
-#endif
 /**
  * Object for storing state variables at an integration point.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
-struct State_variables {
+class State_variables
+{
+  public:
+  Matrix<double> *Fs;
   /** Array of handles to deformation gradients, e.g., Fp, Ft, Fe,... */
-  Matrix_double *Fs;
 
   /** Handle to vector of state variables */
-  Vector_double *state_vars;
+  Matrix<double> *state_vars;
   int *flags;
-
+  
+  Matrix<double> pressure;
+  Matrix<double> tFr;
+  
   size_t n_Fs;
   size_t n_flags;
-};
+  
+  State_variables()
+  {
+    Fs = NULL;
+    state_vars = NULL;
+    flags = NULL;
+    n_Fs = 0;
+    n_flags = 0;
+  };
 
-#ifndef TYPE_STATE_VARIABLES
-#define TYPE_STATE_VARIABLES
-typedef struct State_variables State_variables;
-#endif
+  ~State_variables()
+  {
+    if(Fs)
+    {
+      delete[] Fs;  
+      Fs = NULL;
+    }
+    
+    n_Fs = 0;  
+  
+    if(state_vars)
+    {  
+      delete[] state_vars;
+      state_vars = NULL;
+    }
+  
+    if(flags)
+    {
+      delete[] flags;
+      flags = NULL;
+    }  
+    n_flags = 0;    
+  }  
 
-int state_variables_build(State_variables *s);
-int state_variables_destroy(State_variables *s);
-int state_variables_initialize(State_variables *s,
-                               const size_t n_Fs,
-                               const size_t n_vars,
-                               const size_t n_flags);
-size_t state_variables_get_packed_size(const State_variables *s);
-int state_variables_pack(const State_variables *s,
-                         char *buffer,
-                         size_t *pos);
-int state_variables_unpack(State_variables *s,
-                           const char *buffer,
+  int initialization(const size_t n_Fs,
+                      const size_t n_vars,
+                      const size_t n_flags);
+                      
+  size_t state_variables_get_packed_size(void);                     
+
+  int state_variables_pack(char *buffer,
                            size_t *pos);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
+  int state_variables_unpack(const char *buffer,
+                             size_t *pos);
+};
 
 #endif

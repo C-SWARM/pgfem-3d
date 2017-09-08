@@ -27,10 +27,6 @@ typedef struct MICROSCALE MICROSCALE;
 typedef MICROSCALE MACROSCALE;
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
 /**
  * Print a restart file for the macroscale domain.
  *
@@ -46,7 +42,7 @@ int pgf_FE2_restart_print_macro(MACROSCALE *macro);
  * \return non-zero on error.
  */
 int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
-				const size_t cell_id);
+                const size_t cell_id);
 
 /**
  * Read a restart file for the macroscale domain and reset the
@@ -55,8 +51,8 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
  * \return non-zero on error.
  */
 int pgf_FE2_restart_read_macro(MACROSCALE *macro,
-			       const size_t step,
-			       const int mp_id);
+                   const size_t step,
+                   const int mp_id);
 
 /**
  * Read a restart file for a microscale domain and reset the
@@ -65,11 +61,7 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
  * \return non-zero on error.
  */
 int pgf_FE2_restart_read_micro(MICROSCALE *micro,
-			       const size_t step,
-			       const size_t cell_id);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                   const size_t step,
+                   const size_t cell_id);
 
 #endif /* #ifndef  */

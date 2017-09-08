@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# This is hard coded because we have access only to a hard-coded domain
+# decomposition at this time.
+NP=4
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+indir=@abs_top_srcdir@/verification_tests/time_stepping/inputs/box
+
+outdir=@abs_builddir@/out
+
+input=$indir/box_${NP}CPU_ss/box_
+output=$outdir/box_${NP}CPU
+
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $outdir *.log *.txt
+}
+trap cleanup EXIT
+
+# get restart
+opts="-SS -cm 1 -restart -1 -noLS -noCCE -no-compute-reactions -no-compute-macro -kdim 1000 -maxit 2000 -V"
+cmd="mpirun -np $NP $pgfem $opts $input $output"
+echo "$cmd >& out_run_all.log"
+$cmd >& out_run_all.log
+
+opts="-SS -cm 1 -restart 3 -noLS -no-compute-reactions -no-compute-macro -kdim 1000 -maxit 2000 -V"
+cmd="mpirun -np $NP $pgfem $opts $input $output"
+echo "$cmd >& out_restart.log"
+$cmd >& out_restart.log
+
+grep -m 5 "Damage thresh alpha:" out_run_all.log | tail -n 1 >& Damage_all.txt
+grep -m 1 "Damage thresh alpha:" out_restart.log | tail -n 1 >& Damage_restart.txt
+
+numdiff Damage_all.txt Damage_restart.txt

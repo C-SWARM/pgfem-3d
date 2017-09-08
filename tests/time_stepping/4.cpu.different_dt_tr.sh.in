@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# This is hard coded because we have access only to a hard-coded domain
+# decomposition at this time.
+NP=4
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+# This comes up in the input and output specification for PGFem3D. I don't
+# really understand how or why it is necessary but it is appended as a prefix
+# for files in the input directory, as well as a prefix for some output.
+name=box
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+in_dir=@abs_top_srcdir@/verification_tests/time_stepping/inputs/${name}
+
+out_dir=@abs_builddir@/out
+
+# This is where the overrides come from.
+override_dir=@abs_top_srcdir@/verification_tests/time_stepping/different_dt_tr
+
+input=$in_dir/${name}_${NP}CPU_tr/${name}_
+output3=${out_dir}_3steps/${name}_${NP}CPU
+output5=${out_dir}_5steps/${name}_${NP}CPU
+
+# cleanup on failure.
+function cleanup {
+    echo "Removing $out $outdir"
+    rm -rf $out_dir *.log *.txt
+}
+trap cleanup EXIT
+
+# get restart
+opts="-SS -cm 1 -noLS -noCCE -no-compute-reactions -no-compute-macro -kdim 1000 -maxit 2000 -V -override-pre-disp ${override_dir}/initial_disp.in"
+cmd="mpirun -np $NP $pgfem $opts -override-solver-file ${override_dir}/${name}_0.in.st_3steps $input $output3/${name}"
+echo "$cmd >& out_run_3steps.log"
+$cmd >& out_run_3steps.log
+
+cmd="mpirun -np $NP $pgfem $opts -override-solver-file ${override_dir}/${name}_0.in.st_5steps $input $output5/${name}"
+echo "$cmd >& out_run_5steps.log"
+$cmd >& out_run_5steps.log
+
+for ((n=0;n<$NP;n++))
+do
+    node=`grep -m 1 -o "[0-9]*" ${input}$n.in | head -n 1`
+    head ${output3}/restart/Mechanical/STEP_000002/${name}_${n}_2.res -n $node >& disp_3steps_${n}.txt
+    head ${output5}/restart/Mechanical/STEP_000004/${name}_${n}_4.res -n $node >& disp_5steps_${n}.txt
+    numdiff -a 1.0e-5 disp_3steps_${n}.txt disp_5steps_${n}.txt
+done
+

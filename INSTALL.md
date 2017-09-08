@@ -4,22 +4,25 @@ University of Notre Dame.
 
 PGFem3D relies on several external libraries. They are:
 
-VTK-6.0	      	       : http://vtk.org/VTK/resources/software.html
-hypre-2.40b   	       : http://computation.llnl.gov/casc/hypre/software.html
-suitesparse-2.1.1      : http://www.cise.ufl.edu/research/sparse/SuiteSparse/
-           	         (only the AMD and UMFPACK routines are utilized)
-Intel MKL	       : included w/ the Intel compiler suite
+- hypre (v2.40b or above)            : http://computation.llnl.gov/casc/hypre/software.html
+- suitesparse (v2.1.1 or above)      : http://faculty.cse.tamu.edu/davis/suitesparse.html
+                                     (only the AMD and UMFPACK routines are utilized)
+- VTK (v5.10.1 or above) - optional  : http://www.vtk.org/
+- Intel MKL                          : included w/ the Intel compiler suite, or can downloaded
+- Tensor Template Library (TTL)      : included with the code
 
-While many of these libraries have newer versions available, these
-versions will not break our build tree and are known to work properly
-for our cases.
+Currently we are using hypre (v2.40b), suitesparse (v2.1.1), VTK (v6.0.0) and they are
+known to work properly for our cases. However, if you use a newer version of these software
+some of them may break our build tree and this can be easily fixed by adjusting library
+paths into configure.ac file of PGFem3D.
+
 
 PGFem3D also depends on the internal library
 `Generalizsed_constitutive_model` available at
 git@gitlab-cswarm.crc.nd.edu:Constitutive_Model/Generalizsed_constitutive_model.git
 
 We are using the GNU autotools to build this project. If a configure
-script does not exist, recreate it using 'autoreconf -if'. We
+script does not exist, create/recreate it using 'autoreconf -if'. We
 currently requrie the following options to be specified in the
 configuration step:
 
@@ -37,33 +40,8 @@ following options:
 See `./configure -h` for more information. After configuration, simply
 `make && make install`.
 
-### Tips for Developers ###
+### Quick Compilation Guide ###
 
-It is suggested that you set a config.site file for each Git branch
-you are actively developing such as
-
-`.../pgfem3d_install/branch_name/share/config.site`
-
-then options will automatically be set when you envoke
-
-`./configure --prefix=.../pgfem3d_install/branch_name`
-
-A sample `config.site` might look like the following:
-
-# required options
-with_hypre_dir=/path/to/hypre-2.4.0b
-with_suitesparse_dir=/path/to/suitesparse
-with_cnstvm_dir=/path/to/Generalizsed_constitutive_model
-
-# enable/disable vtk
-enable_vtk=yes
-
-# required extra opts for enable_vtk=yes
-vtk_dir=/path/to/vtk
-with_vtk_include="-I$vtk_dir/include/vtk-6.0"
-with_vtk_libs="-Wl,-rpath=$vtk_dir/lib -L$vtk_dir/lib \
--lvtkIOXML-6.0 -lvtkIOXMLParser-6.0 -lvtkIOCore-6.0 -lvtkzlib-6.0 \
--lvtkCommonExecutionModel-6.0 -lvtkCommonDataModel-6.0 \
--lvtkCommonMisc-6.0 -lvtkCommonSystem-6.0 -lvtkCommonTransforms-6.0 \
--lvtkCommonMath-6.0 -lvtkIOGeometry-6.0 -lvtkCommonCore-6.0 \
--lvtksys-6.0 -lvtkexpat-6.0"
+Sample compilation scripts along with a README file are available at 
+/pgfem_3d/SampleBuildScripts. You can simply copy a script to the pgfem_3d
+root directory and follow the README file to build PGFem3D. 

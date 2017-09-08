@@ -8,16 +8,13 @@
  * functions regarding its use.
  */
 
+#include "data_structure.h"
 #include "PGFEM_io.h"
 #include "node.h"
 #include "cohesive_potentials.h"
 #include "ensight.h"
 #include "eps.h"
 #include "supp.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
 
   /** Structure of COHESIVE ELEMENTS */
   struct COEL {
@@ -31,8 +28,8 @@ extern "C" {
     double Sc,Xc,b,k;
 
     /** Transformation for updated Lagrangian formulation. Note that
-	cohesive elements are *always* total Lagrangian, thus Jjn = 1
-	always. */
+    cohesive elements are *always* total Lagrangian, thus Jjn = 1
+    always. */
     double Jjn;
 
     /** buffers for basis vectors (updated every time) */
@@ -52,7 +49,7 @@ extern "C" {
 
     /** pointer to a particular set of material properties. */
     const cohesive_props *props;
-    
+
     /** internal cohesive state variables */
     int nvar;
     double **vars; /* variables at each ip */
@@ -65,64 +62,64 @@ extern "C" {
    * Reset the coel properties accorting to p_coel->mat.
    */
   void reset_coel_props(const cohesive_props *co_props,
-			COEL *p_coel);
+            COEL *p_coel);
 
   COEL* read_cohe_elem (FILE* in1,
-			long ncom,
-			long ndofn,
-			long nn,
-			NODE *node,
-			long *NCE,
-			double **comat,
-			ENSIGHT ensight,
-			long gr2,
-			int myrank,
-			const cohesive_props *co_props);
+            long ncom,
+            long ndofn,
+            long nn,
+            NODE *node,
+            long *NCE,
+            double **comat,
+            ENSIGHT ensight,
+            long gr2,
+            int myrank,
+            const cohesive_props *co_props);
 
   void stiff_mat_coh (long ii,
-		      long ndofn,
-		      long nne,
-		      long *nod,
-		      double *x,
-		      double *y,
-		      double *z,
-		      COEL *coel,
-		      double *r_e,
-		      double *Kch,
-		      double nor_min,
-		      EPS *eps,
-		      long FNR,
-		      double lm,
-		      double *fe,
-		      int myrank);
+              long ndofn,
+              long nne,
+              long *nod,
+              double *x,
+              double *y,
+              double *z,
+              COEL *coel,
+              double *r_e,
+              double *Kch,
+              double nor_min,
+              EPS *eps,
+              long FNR,
+              double lm,
+              double *fe,
+              int myrank);
 
   void resid_co_elem (long ii,
-		      long ndofn,
-		      long nne,
-		      long *nod,
-		      double *x,
-		      double *y,
-		      double *z,
-		      COEL *coel,
-		      double *r_e,
-		      double *fe,
-		      double nor_min,
-		      int myrank);
+              long ndofn,
+              long nne,
+              long *nod,
+              double *x,
+              double *y,
+              double *z,
+              COEL *coel,
+              double *r_e,
+              double *fe,
+              double nor_min,
+              int myrank);
 
   int increment_cohesive_elements(const int nce,
-				  COEL *coel,
-				  double *pores,
-				  const NODE *node,
-				  const SUPP sup,
-				  const double *d_r,
-				  const int mp_id);
+                  COEL *coel,
+                  double *pores,
+                  const NODE *node,
+                  const SUPP sup,
+                  const double *d_r,
+                  const int mp_id);
 
   /**
    * Get the storage size (in bytes) of the internal state variables
    * for all cohesive elements in the domain.
    */
   size_t coel_list_get_state_length_bytes(const int nce,
-					  const COEL *coel);
+                      const COEL *coel);
 
   /**
    * Pack the cohesive element state variables into a buffer.
@@ -132,9 +129,9 @@ extern "C" {
    * insertion location BUF_POS.
    */
   void coel_list_pack_state(const int nce,
-			    const COEL *coel,
-			    char *buffer,
-			    size_t *buf_pos);
+                const COEL *coel,
+                char *buffer,
+                size_t *buf_pos);
 
   /**
    * Unpack the cohesive element state variables from a buffer.
@@ -144,13 +141,9 @@ extern "C" {
    * and updated insertion/copy location BUF_POS.
    */
   void coel_list_unpack_state(const int nce,
-			      COEL *coel,
-			      const cohesive_props *co_props,
-			      const char *buffer,
-			      size_t *buf_pos);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+                  COEL *coel,
+                  const cohesive_props *co_props,
+                  const char *buffer,
+                  size_t *buf_pos);
 
 #endif

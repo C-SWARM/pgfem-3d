@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+NP=$1
+name=$2
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+base=box
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+# The original test directory has some specific files, including the input, the
+# reference output, and the override solver file.
+test_dir=@top_srcdir@/verification_tests/crystal_plasticity
+ref_out_dir=${test_dir}/ref_out_${name}
+solver_file=${test_dir}/${base}_0.in.st_${name} 
+input=${test_dir}/${base}_${NP}CPU_${name}/${base}_
+output=${name}/${base}_${NP}CPU/${base}
+
+opts="-SS -cm 1 -noLS -noCCE -no-compute-macro -maxit 3000 -kdim 1000 -V -override-solver-file ${solver_file}"
+cmd="mpirun -np $NP $pgfem $opts $input $output"
+echo $cmd
+$cmd
+
+for (( i=0; i<$NP; i++ ))
+do
+    fn=box_${i}_49.res
+    cmd="numdiff -a 1.0e-5 -r 1.0e-5 ${name}/${base}_${NP}CPU/restart/Mechanical/STEP_000049/${fn} ${ref_out_dir}/${fn}"
+    echo $cmd
+    $cmd
+done

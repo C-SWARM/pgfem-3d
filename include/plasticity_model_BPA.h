@@ -18,29 +18,67 @@
 #ifndef PLASTICITY_MODEL_BPA_H
 #define PLASTICITY_MODEL_BPA_H
 
-#include <stdio.h>
+#include "constitutive_model.h"
+#include "cm_placeholder_functions.h"
 
-#ifndef TYPE_CONSTITUTIVE_MODEL
-#define TYPE_CONSTITUTIVE_MODEL
-typedef struct Constitutive_model Constitutive_model;
-#endif
+class BPA_PARAM: public Model_parameters
+{
+  public:
 
-#ifndef TYPE_MODEL_PARAMETERS
-#define TYPE_MODEL_PARAMETERS
-typedef struct Model_parameters Model_parameters;
-#endif
+  virtual int model_dependent_initialization(void);
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
-/**
- * Initialize the Model_parameters object for this particular model.
- *
- * \param[in,out] p - pointer to a Model_parameters object
- * \return non-zero on internal error
- */
-int plasticity_model_BPA_initialize(Model_parameters *p);
+  virtual int integration_algorithm(Constitutive_model *m,
+                                    const void *usr_ctx) const;
+  virtual int compute_dev_stress(const Constitutive_model *m,
+                                 const void *ctx,
+                                 double *S) const;
+  virtual int compute_dudj(const Constitutive_model *m,
+                           const void *ctx,
+                           double *value) const;
+  virtual int compute_dev_tangent(const Constitutive_model *m,
+                                  const void *ctx,
+                                  double *L) const;
+  virtual int compute_d2udj2(const Constitutive_model *m,
+                             const void *ctx,
+                             double *value) const;
+  virtual int update_elasticity(const Constitutive_model *m,
+                                const void *ctx,
+                                double *L,
+                                double *S,
+                                const int compute_stiffness) const;
+  virtual int update_state_vars(Constitutive_model *m) const;  
+  virtual int reset_state_vars(Constitutive_model *m) const;
+  virtual int get_var_info(Model_var_info &info) const;
+  virtual int get_F(const Constitutive_model *m, 
+                    double *F,
+                    const int stepno) const;
+  virtual int get_pF(const Constitutive_model *m, 
+                     double *F, 
+                     const int stepno) const;
+  virtual int get_eF(const Constitutive_model *m, 
+                     double *F, 
+                     const int stepno) const;
+  virtual int get_hardening(const Constitutive_model *m,
+                            double *var,
+                            const int stepno) const;
+  virtual int get_plast_strain_var(const Constitutive_model *m,
+                                   double *lam_p)
+  const { return cm_get_lam_p(m, lam_p);};
+                              
+  virtual int write_restart(FILE *fp,
+                            const Constitutive_model *m) const;
+  virtual int read_restart(FILE *fp,
+                           Constitutive_model *m) const;
+  virtual int destroy_ctx(void **ctx) const;
+  virtual int compute_dMdu(const Constitutive_model *m,
+                           const void *ctx,
+                           const double *Grad_op,
+                           const int nne,
+                           const int ndofn,
+                           double *dM_du) const;
+  virtual int read_param(FILE *in) const;
+  virtual int set_init_vals(Constitutive_model *m) const;
+};
 
 /**
  * Construct and initialize the model context for calling functions
@@ -54,19 +92,5 @@ int plasticity_model_BPA_initialize(Model_parameters *p);
 int plasticity_model_BPA_ctx_build(void **ctx,
                                    const double *F,
                                    const double dt);
-
-/**
- * Destroy the model context and invalidate the handle.
- *
- * \param[in,out] ctx - handle to context object. ctx = NULL on exit.
- * \return non-zero on internal error.
- */
-int plasticity_model_BPA_ctx_destroy(void **ctx);
-
-
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif

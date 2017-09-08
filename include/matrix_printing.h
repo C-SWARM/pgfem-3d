@@ -1,10 +1,6 @@
 #ifndef MATRIX_PRINTING_H
 #define MATRIX_PRINTING_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** Prints the matrix indicies by columns. Note that this function
       cannot print the renumbered columns until after the matrix has
       been rebuilt. */
@@ -33,9 +29,5 @@ extern "C" {
 
   /** prints a vector to a file */
   void printVector(double *vector, int length,char *filename);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
 
 #endif /* #ifndef MATRIX_PRINTING_H */

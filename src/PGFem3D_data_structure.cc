@@ -1,25 +1,28 @@
-#include "PGFem3D_data_structure.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "node.h"
-#include "element.h"
-#include "cohesive_element.h"
+#include "PGFem3D_data_structure.h"
+#include "allocation.h"
 #include "bounding_element.h"
-#include "sig.h"
-#include "eps.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "hypre_global.h"
-#include "pgfem_comm.h"
+#include "cohesive_element.h"
 #include "comm_hints.h"
+#include "constitutive_model.h"
+#include "elem3d.h"
+#include "element.h"
+#include "eps.h"
+#include "femlib.h"
+#include "hommat.h"
+#include "matgeom.h"
+#include "node.h"
+#include "pgfem_comm.h"
+#include "sig.h"
 #include "utils.h"
 #include "vtk_output.h"
-#include "constitutive_model.h"
-#include "femlib.h"
-#include "elem3d.h"
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
-/// 
+///
 /// \param[in, out] ts an object for time stepping
 /// \return non-zero on internal error
 int time_stepping_initialization(PGFem3D_TIME_STEPPING *ts)
@@ -47,7 +50,7 @@ int destruct_time_stepping(PGFem3D_TIME_STEPPING *ts)
   if(NULL != ts->times) free(ts->times);
   if(NULL != ts->print) free(ts->print);
   if(NULL != ts->tns)   free(ts->tns);
-  err += time_stepping_initialization(ts);  
+  err += time_stepping_initialization(ts);
   return err;
 }
 
@@ -85,7 +88,7 @@ int grid_initialization(GRID *grid)
 /// \param[in, out] grid an object containing all mesh data
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_grid(GRID *grid, 
+int destruct_grid(GRID *grid,
                   const PGFem3D_opt *opts,
                   MULTIPHYSICS *mp)
 {
@@ -93,10 +96,10 @@ int destruct_grid(GRID *grid,
   destroy_bounding_elements(grid->n_be,grid->b_elems);
   destroy_elem(grid->element,grid->ne);
   destroy_node_multi_physics(grid->nn,grid->node, mp->physicsno);
-  
+
   if(opts->cohesive == 1)
     destroy_coel(grid->coel,grid->nce);
-    
+
   err += grid_initialization(grid);
   return err;
 }
@@ -104,7 +107,7 @@ int destruct_grid(GRID *grid,
 
 /// initialize field variables
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \return non-zero on internal error
 int field_varialbe_initialization(FIELD_VARIABLES *fv)
@@ -151,7 +154,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
 /// construct field variables
 /// create memory space for member arrays and structs
 /// prior to run this function, ndofn, ndofd, and npres must be assigned properly
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] com an object for communication
@@ -160,7 +163,7 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
 /// \param[in] myrank current process rank
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int construct_field_varialbe(FIELD_VARIABLES *fv, 
+int construct_field_varialbe(FIELD_VARIABLES *fv,
                              GRID *grid,
                              COMMUNICATION_STRUCTURE *com,
                              const PGFem3D_opt *opts,
@@ -188,7 +191,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   fv->BS_RR  = aloc1(DomDof_myrank);
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
-    if(opts->analysis_type == CM)
+    if(opts->analysis_type == CM || opts->analysis_type == CM3F)
     {      
       const ELEMENT *elem = grid->element;
       int n_state_varialbles = 0;
@@ -200,9 +203,9 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
         n_state_varialbles += nint;
       }
         
-      fv->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+      fv->statv_list = new State_variables[n_state_varialbles];
     }
-    
+
     fv->sig = build_sig_il(grid->ne,opts->analysis_type,grid->element);
     fv->eps = build_eps_il(grid->ne,grid->element,opts->analysis_type,&(fv->statv_list));
     if (opts->smoothing == 0)
@@ -217,14 +220,14 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 
 /// destruct field variables
 /// free memory spaces for member arrays and structs
-/// 
+///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int destruct_field_varialbe(FIELD_VARIABLES *fv, 
+int destruct_field_varialbe(FIELD_VARIABLES *fv,
                             GRID *grid,
                             const PGFem3D_opt *opts,
                             MULTIPHYSICS *mp,
@@ -245,26 +248,28 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
   if(NULL != fv->BS_x)   free(fv->BS_x);
   if(NULL != fv->BS_f)   free(fv->BS_f);
   if(NULL != fv->BS_f_u) free(fv->BS_f_u);
-  if(NULL != fv->BS_RR)  free(fv->BS_RR);  
-  if(NULL != fv->coupled_physics_ids) free(fv->coupled_physics_ids);  
+  if(NULL != fv->BS_RR)  free(fv->BS_RR);
+  if(NULL != fv->coupled_physics_ids) free(fv->coupled_physics_ids);
   if(NULL != fv->fvs)    free(fv->fvs);
 
   destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
-  {  
+  {
     destroy_sig_il(fv->sig,grid->element,grid->ne,opts->analysis_type);
     if(opts->smoothing == 0)
       destroy_sig_el(fv->sig_n, grid->nn);
   }
   
-  if(NULL != fv->statv_list) free(fv->statv_list);  
+  if(NULL != fv->statv_list) 
+    delete[] fv->statv_list;
+  
   err += field_varialbe_initialization(fv);  
   return err;
 }
 
 
 /// initialize field variables thermal part
-/// 
+///
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \return non-zero on internal error
 int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
@@ -283,8 +288,8 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
 }
 
 /// prepare temporal varialbes for staggering Newton Raphson iterations
-/// 
-/// Before call this function, physics coupling should be defined in 
+///
+/// Before call this function, physics coupling should be defined in
 /// fv->n_coupled and fv->coupled_physics_ids
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
@@ -310,32 +315,32 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
       long nint = 0;
       int_point(nne,&nint);
       n_state_varialbles += nint;
-    }      
+    }
     fv->temporal->element_variable_no = n_state_varialbles;
-    fv->temporal->var     = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    fv->temporal->var = new State_variables[n_state_varialbles];
     
     for(int eid=0; eid<grid->ne; eid++)
     {
       int nne = elem[eid].toe;
       long nint = 0;
       int_point(nne,&nint);
-      
+
       for(int ip=0; ip<nint; ip++)
       {
         Constitutive_model *m = &(fv->eps[eid].model[ip]);
-        Model_var_info *info = NULL;
-        m->param->get_var_info(&info);
-        err += state_variables_initialize(fv->temporal->var + m->model_id, info->n_Fs,
-                                          info->n_vars, info->n_flags);
-        err += model_var_info_destroy(&info);                                                                            
+        Model_var_info info;
+        m->param->get_var_info(info);
+        err += fv->temporal->var[m->model_id].initialization(info.n_Fs,
+                                                             info.n_vars, 
+                                                             info.n_flags);                                                                            
       }
     }
-  }      
+  }
   return err;
 }
 
 /// destory temporal varialbes for staggering Newton Raphson iterations
-/// 
+///
 /// should be called before destroying fv
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
@@ -345,19 +350,17 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
                                      int is_for_Mechanical)
 {
   int err =0;
-  free(fv->temporal->u_n);    
+  free(fv->temporal->u_n);
   free(fv->temporal->u_nm1);
   fv->temporal->u_n = NULL;
   fv->temporal->u_nm1 = NULL;
-    
+
   if(is_for_Mechanical)
   {
-    for(int ia=0; ia<fv->temporal->element_variable_no; ia++)
-      err += state_variables_destroy(fv->temporal->var + ia);
+    delete[] fv->temporal->var;
       
-    free(fv->temporal->var);
     fv->temporal->var = NULL;
-    fv->temporal->element_variable_no = 0;                
+    fv->temporal->element_variable_no = 0;
   }
   free(fv->temporal);
   fv->temporal = NULL;
@@ -377,7 +380,7 @@ int material_initialization(MATERIAL_PROPERTY *mat)
   mat->thermal  = NULL;
   mat->hommat   = NULL;
   mat->matgeom  = NULL;
-  mat->co_props = NULL;      
+  mat->co_props = NULL;
   mat->nhommat    = 0;
   mat->nmat       = 0;
   mat->n_orient   = 0;
@@ -405,37 +408,6 @@ int destruct_material(MATERIAL_PROPERTY *mat,
     destroy_cohesive_props(mat->n_co_props,mat->co_props);
 
   err += material_initialization(mat);
-  return err;
-}
-
-
-/// initialize iterative solver object
-/// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
-///
-/// \param[in, out] sol an object containing data for linear solver
-/// \return non-zero on internal error
-int solution_scheme_initialization(SOLVER_OPTIONS *sol)
-{
-  int err            = 0;
-  sol->n_step        = 0;
-  sol->nor_min       = 0.0;
-  sol->iter_max      = 0;
-  sol->alpha         = 0.5; /// midpoint rule alpha default is 2nd order
-  sol->microscale    = NULL;
-  sol->PGFEM_hypre   = NULL;
-  sol->FNR           = 0;
-  sol->gama          = 0.0;
-  sol->err           = 0.0;
-  sol->iter_max_sol  = 0;
-  sol->computer_zero = 0.0;
-  sol->run_integration_algorithm = 1;
-  sol->max_NR_staggering = 5;
-  sol->max_subdivision = -1;
-  sol->is_subdivided = 0;
-  sol->last_residual = 0.0;
-  sol->set_initial_residual = 0;
-  sol->du            = 0.0;
-  sol->arc           = NULL; 
   return err;
 }
 
@@ -468,13 +440,13 @@ int loading_steps_initialization(LOADING_STEPS *load)
 /// \return non-zero on internal error
 int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
-  int err = 0;  
+  int err = 0;
 
-  load->sups        = (SUPP *)    malloc(sizeof(SUPP)*mp->physicsno);
+  load->sups        = (SUPP *)   malloc(sizeof(SUPP)*mp->physicsno);
   load->sup_defl    = (double **) malloc(sizeof(double *)*mp->physicsno);
   load->tim_load    = (long **)   malloc(sizeof(long *)*mp->physicsno);
   load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp->physicsno);
-  
+
   return err;
 }
 
@@ -486,25 +458,25 @@ int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 /// \return non-zero on internal error
 int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 {
-  int err = 0;  
-          
+  int err = 0;
+
   destroy_zatnode(load->znod,   load->nln);
   destroy_zatelem(load->zele_s, load->nle_s);
   destroy_zatelem(load->zele_v, load->nle_v);
 
   for(int ia=0; ia<mp->physicsno; ia++)
   {
-    destroy_supp(load->sups[ia]);    
-    if(NULL != load->tim_load[ia]) free(load->tim_load[ia]);    
+    destroy_supp(load->sups[ia]);
+    if(NULL != load->tim_load[ia]) free(load->tim_load[ia]);
     if(NULL != load->sup_defl[ia]) free(load->sup_defl[ia]);
-    if(NULL != load->solver_file[ia]) fclose(load->solver_file[ia]);      
+    if(NULL != load->solver_file[ia]) fclose(load->solver_file[ia]);
   }
-  free(load->sups);  
+  free(load->sups);
   free(load->tim_load);
   free(load->sup_defl);
   free(load->solver_file);
 
-  
+
   err += loading_steps_initialization(load);
   return err;
 }
@@ -520,7 +492,7 @@ int communication_structure_initialization(COMMUNICATION_STRUCTURE *com)
   int err = 0;
   com->nproc  = 0;
   com->Ap     = NULL;
-	com->Ai     = NULL;
+    com->Ai     = NULL;
   com->DomDof = NULL;
   com->nbndel = 0;
   com->bndel  = NULL;
@@ -541,12 +513,12 @@ int destruct_communication_structure(COMMUNICATION_STRUCTURE *com)
 {
   int err = 0;
   if(NULL != com->Ap) free(com->Ap);
-	if(NULL != com->Ai) free(com->Ai);
+    if(NULL != com->Ai) free(com->Ai);
   if(NULL != com->DomDof) free(com->DomDof);
   if(NULL != com->bndel)  free(com->bndel);
-  if(NULL != com->comm)   destroy_commun(com->comm ,com->nproc);  
+  if(NULL != com->comm)   destroy_commun(com->comm ,com->nproc);
   if(NULL != com->hints)  Comm_hints_destroy(com->hints);
-  
+
   err += communication_structure_initialization(com);
   return err;
 }
@@ -566,18 +538,18 @@ int multiphysics_initialization(MULTIPHYSICS *mp)
   mp->write_no    = NULL;
   mp->write_ids   = NULL;
   mp->coupled_ids = NULL;
-  mp->total_write_no = 0;  
+  mp->total_write_no = 0;
   return err = 0;
 }
 
 
 /// construct multiphysics object
 /// create memory space for member arrays and structs
-/// 
+///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \param[in] physicsno number of physics
 /// \return non-zero on internal error
-int construct_multiphysics(MULTIPHYSICS *mp, 
+int construct_multiphysics(MULTIPHYSICS *mp,
                            int physicsno)
 {
   int err = 0;
@@ -599,68 +571,68 @@ int construct_multiphysics(MULTIPHYSICS *mp,
     mp->coupled_ids[ia] = NULL;
   }
   mp->total_write_no  = 0;
-  return err = 0;  
+  return err = 0;
 }
 
 /// set a physics
 /// set physics id, number of degree freedom, and name
-/// 
+///
 /// \param[in, out] mp an object for multiphysics
-/// \param[in] obj_id id to access each physics 
+/// \param[in] obj_id id to access each physics
 /// \param[in] mp_id multiphysics id
 /// \param[in] n_dof number of degree freedom of the physics
 /// \param[in] name physics name
 /// \return non-zero on internal error
-int set_a_physics(MULTIPHYSICS *mp,
+static int set_a_physics(MULTIPHYSICS *mp,
                   int obj_id,
-                  int mp_id, 
+                  int mp_id,
                   int n_dof,
-                  char *name)
+                  const char *name)
 {
   int err = 0;
-  mp->physics_ids[obj_id] = mp_id; 
+  mp->physics_ids[obj_id] = mp_id;
   mp->ndim[obj_id]        = n_dof;
   sprintf(mp->physicsname[obj_id], "%s", name);
-  return err = 0;  
+  return err = 0;
 }
-                           
+
 /// destruct multiphysics object
 /// free memory spaces for member arrays and structs
-/// 
+///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
 int destruct_multiphysics(MULTIPHYSICS *mp)
 {
   int err = 0;
   if(NULL != mp->physicsname)
-  {  
+  {
     for(int ia=0; ia<mp->physicsno; ia++)
       if(NULL != mp->physicsname[ia]) free(mp->physicsname[ia]);
-    
+
     free(mp->physicsname);
   }
 
   if(NULL != mp->coupled_ids)
-  {  
+  {
     for(int ia=0; ia<mp->physicsno; ia++)
       if(NULL != mp->coupled_ids[ia])   free(mp->coupled_ids[ia]);
-    
+
     free(mp->coupled_ids);
-  }  
-  
+  }
+
   if(NULL != mp->write_ids)
-  {  
+  {
     for(int ia=0; ia<  mp->physicsno; ia++)
       if(NULL != mp->write_ids[ia])   free(mp->write_ids[ia]);
-    
+
     free(mp->write_ids);
   }
-  
+
   if(NULL != mp->physics_ids) free(mp->physics_ids);
   if(NULL != mp->ndim)        free(mp->ndim);
   if(NULL != mp->write_no)    free(mp->write_no);
-  err += multiphysics_initialization(mp);  
-  return err = 0;  
+  err += multiphysics_initialization(mp);
+  return err = 0;
 }
 
 /// read and construct multiphysics
@@ -718,64 +690,64 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
 {
   int err = 0;
   int physicsno = 0;
-  
+
   char filename[1024];
   sprintf(filename,"%s/multiphysics.in",opts->ipath);
   FILE *in = NULL;
   in = fopen(filename,"r");
-  
-  if(in==NULL) // check file is readable 
+
+  if(in==NULL) // check file is readable
   {
     if(myrank==0)
-    {  
+    {
       printf("no [%s/multiphysics.in] is provided\n", opts->ipath);
       printf("Use default setting (Mechanical only).\n");
     }
   }
   else
-  {        
+  {
     err += scan_for_valid_line(in);
-    fscanf(in, "%d", &physicsno);
+    CHECK_SCANF(in, "%d", &physicsno);
     if(physicsno>0)
-    {  
+    {
       err += construct_multiphysics(mp, physicsno);
 
       int physics_id, ndof;
       int n_couple;
-  
+
       char name[1024];
       int cnt_pmr = 0;
       for(int ia=0; ia<physicsno; ia++)
       {
         // read physics id, physics name and number of degree of freedons on node
         err += scan_for_valid_line(in);
-        fscanf(in, "%d%s%d", &physics_id,name,&ndof);
+        CHECK_SCANF(in, "%d%s%d", &physics_id,name,&ndof);
         err += set_a_physics(mp, ia,physics_id,ndof, name);
-        
+
         // read ids for coupling
         err += scan_for_valid_line(in);
-        fscanf(in, "%d", &n_couple);
-        
+        CHECK_SCANF(in, "%d", &n_couple);
+
         if(n_couple<0)
           n_couple = 0;
-          
-        mp->coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));        
+
+        mp->coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));
         mp->coupled_ids[ia][0] = n_couple;
         for(int ib = 0; ib<n_couple; ib++)
-          fscanf(in, "%d", (mp->coupled_ids[ia])+(ib+1));
+          CHECK_SCANF(in, "%d", (mp->coupled_ids[ia])+(ib+1));
 
         // read ids for writing results
         err += scan_for_valid_line(in);
-        fscanf(in, "%d", mp->write_no+ia);
-          
-        if(mp->write_no[ia]>0) 
+        CHECK_SCANF(in, "%d", mp->write_no+ia);
+
+        if(mp->write_no[ia]>0)
         {
-          // read from file for writing results  
+          // read from file for writing results
           mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
           err += scan_for_valid_line(in);
           cnt_pmr += mp->write_no[ia];
           for(int ib=0; ib<mp->write_no[ia]; ib++)
-            fscanf(in, "%d", mp->write_ids[ia]+ib);
+            CHECK_SCANF(in, "%d", mp->write_ids[ia]+ib);
         }
         if(mp->write_no[ia]==-1)
         {
@@ -792,38 +764,38 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
               break;
             default:
               mp->write_no[ia] = MECHANICAL_Var_NO;
-          }    
-              
+          }
+
           // set default : all outputs
           mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
           err += scan_for_valid_line(in);
           cnt_pmr += mp->write_no[ia];
           for(int ib=0; ib<mp->write_no[ia]; ib++)
             mp->write_ids[ia][ib] = ib;
-        }                    
+        }
       }
       mp->total_write_no  = cnt_pmr;
     }
     fclose(in); // close file
   }
-    
+
   if(physicsno<=0)
-  {  
+  {
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
 
-    mp->coupled_ids[0] = (int *) malloc(sizeof(int)); 
+    mp->coupled_ids[0] = (int *) malloc(sizeof(int));
     mp->coupled_ids[0][0] = 0;
-        
-    mp->write_no[0] = MECHANICAL_Var_NO;    
+
+    mp->write_no[0] = MECHANICAL_Var_NO;
     mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
     for(int ib=0; ib<mp->write_no[0]; ib++)
       mp->write_ids[0][ib] = ib;
-    mp->total_write_no  = MECHANICAL_Var_NO;                  
+    mp->total_write_no  = MECHANICAL_Var_NO;
   }
   // print multiphysics setting
   if(myrank==0)
-  {  
+  {
     printf("Total number of physics: %d\n", mp->physicsno);
     for(int ia=0; ia<mp->physicsno; ia++)
     {
@@ -833,18 +805,18 @@ int read_multiphysics_settings(MULTIPHYSICS *mp,
       printf(", ids = ");
       for(int ib=0; ib<mp->coupled_ids[ia][0]; ib++)
         printf("%d ", mp->coupled_ids[ia][ib+1]);
-        
+
       printf("\n");
-      
+
       printf("   # of output variables \t= %d", mp->write_no[ia]);
       printf(", ids = ");
       for(int ib=0; ib<mp->write_no[ia]; ib++)
         printf("%d ", mp->write_ids[ia][ib]);
 
-      printf("\n\n");      
+      printf("\n\n");
     }
   }
   return err;
 }
-                               
+
 

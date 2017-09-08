@@ -14,64 +14,47 @@
 
 #include <stdio.h>
 
+/* FILE pointers that get switched about */
+extern FILE *PGFEM_stdout;
+extern FILE *PGFEM_stderr;
+extern FILE *PGFEM_null;
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
+/** Initializes ability to redirect stdout/stderr streams */
+int PGFEM_initialize_io(const char *macro_filename,
+                        const char *micro_filename);
 
+/** Finalizes/removes ability to redirect stdout/stderr streams */
+int PGFEM_finalize_io();
 
-  /* FILE pointers that get switched about */
-  extern FILE *PGFEM_stdout;
-  extern FILE *PGFEM_stderr;
-  extern FILE *PGFEM_null;
+/** Redirect output for microscale */
+int PGFEM_redirect_io_micro();
 
-  /** Initializes ability to redirect stdout/stderr streams */
-  int PGFEM_initialize_io(const char *macro_filename,
-			  const char *micro_filename);
+/** Redirect output for macroscale */
+int PGFEM_redirect_io_macro();
 
-  /** Finalizes/removes ability to redirect stdout/stderr streams */
-  int PGFEM_finalize_io();
+/** Redirect to /dev/null */
+int PGFEM_redirect_io_null();
 
-  /** Redirect output for microscale */
-  int PGFEM_redirect_io_micro();
+/** Wrapper for fprintf */
+int PGFEM_fprintf(FILE *stream, const char *format,...);
 
-  /** Redirect output for macroscale */
-  int PGFEM_redirect_io_macro();
+/** Wrapper for printf. Prints to PGFEM_stdout */
+int PGFEM_printf(const char *format,...);
 
-  /** Redirect to /dev/null */
-  int PGFEM_redirect_io_null();
+/** Print to PGFEM_stderr */
+int PGFEM_printerr(const char *format,...);
 
-  /** Wrapper for fprintf */
-  int PGFEM_fprintf(FILE *stream, const char *format,...);
+/** This function is typically called from a macro to pass function,
+    file and line information from invocation point. */
+FILE* PGFEM_FOPEN(const char *filename,
+                  const char *mode,
+                  const char *function,
+                  const char *file,
+                  const long line);
 
-  /** Wrapper for printf. Prints to PGFEM_stdout */
-  int PGFEM_printf(const char *format,...);
-
-  /** Print to PGFEM_stderr */
-  int PGFEM_printerr(const char *format,...);
-
-  /** This function is typically called from a macro to pass function,
-      file and line information from invocation point. */
-  FILE* PGFEM_FOPEN(const char *filename,
-		    const char *mode,
-		    const char *function,
-		    const char *file,
-		    const long line);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
-
-#define PGFEM_fopen(filename,mode)			\
+#define PGFEM_fopen(filename,mode)                      \
   PGFEM_FOPEN(filename,mode,__func__,__FILE__,__LINE__)
+
 #define PGFEM_fclose(a) fclose(a)
 
 #endif /* #ifndef  */
-
-/* include block
-
-#ifndef PGFEM_IO_H
-#include "PGFEM_io.h"
-#endif
-
- */

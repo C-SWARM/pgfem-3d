@@ -3,15 +3,19 @@
  * AUTHORS:
  *  Matt Mosby, University of Notre Dame
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "pgf_fe2_macro_client.h"
-#include "pgf_fe2_micro_server.h"
-#include "PGFEM_mpi.h"
-#include "pgf_fe2_job.h"
-#include "pgf_fe2_server_rebalance.h"
+#include "allocation.h"
 #include "ms_cohe_job_info.h"
 #include "ms_cohe_job_list.h"
 #include "macro_micro_functions.h"
+#include "pgf_fe2_job.h"
+#include "pgf_fe2_macro_client.h"
+#include "pgf_fe2_micro_server.h"
+#include "pgf_fe2_server_rebalance.h"
+#include "PGFEM_mpi.h"
 #include "PLoc_Sparse.h"
 #include "stiffmat_fd.h"
 
@@ -22,9 +26,8 @@
  * Comparator function for array of ints as object. Compares n-th in
  * array object.
  */
-static int compare_nth_int(const void *n,
-			   const void *a,
-			   const void *b)
+static int
+compare_nth_int(const void *n, const void *a, const void *b)
 {
   const size_t N = *(const size_t*) n;
   return ((int*) a)[N] - ((int*) b)[N];
@@ -35,8 +38,8 @@ static int compare_nth_int(const void *n,
  * Comparator function for array of ints as object. Compares first in
  * array object.
  */
-static int compare_first_int(const void *a,
-			     const void *b)
+static int
+compare_first_int(const void *a, const void *b)
 {
   static const size_t n = 0;
   return compare_nth_int(&n,a,b);
@@ -46,21 +49,10 @@ static int compare_first_int(const void *a,
  * Comparator function for array of ints as object. Compares second in
  * array object.
  */
-static int compare_second_int(const void *a,
-			      const void *b)
+static int
+compare_second_int(const void *a, const void *b)
 {
   static const size_t n = 1;
-  return compare_nth_int(&n,a,b);
-}
-
-/**
- * Comparator function for array of ints as object. Compares third in
- * array object.
- */
-static int compare_third_int(const void *a,
-			     const void *b)
-{
-  static const size_t n = 2;
   return compare_nth_int(&n,a,b);
 }
 
@@ -106,8 +98,8 @@ struct pgf_FE2_macro_client{
  * \return non-zero on error.
  */
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
-						 pgf_FE2_server_rebalance **rb_list,
-						 const size_t nproc_macro)
+                         pgf_FE2_server_rebalance **rb_list,
+                         const size_t nproc_macro)
 {
   int err = 0;
   assert(nproc_macro > 0);
@@ -122,7 +114,7 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
 
   /* push information into tuple workspace {tag, idx, server} */
   const size_t len = 3;
-  int *s_tags = malloc(s_tags_nel*len*sizeof(*s_tags));
+  int *s_tags = PGFEM_malloc<int>(s_tags_nel*len);
   for(size_t i = 0; i < s_tags_nel; i++){
     s_tags[i*len] = client->send->tags[i];
     s_tags[i*len + 1] = i;
@@ -132,11 +124,11 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
   /* sort s_tags by {tag} */
   qsort(s_tags,s_tags_nel,len*sizeof(*s_tags),compare_first_int);
 
-  /* 
+  /*
    * loop through each server and extract list of jobs on the server
    * after rebalancing (kept + received).
    */
-  int n_client_matched = 0;
+  unsigned n_client_matched = 0;
   for(size_t i = 0, e = client->n_server; i<e; i++){
     const size_t n_keep = pgf_FE2_server_rebalance_n_keep((rb_list[i]));
     const size_t n_recv = pgf_FE2_server_rebalance_n_recv((rb_list[i]));
@@ -148,38 +140,39 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
      * rebalancing
      */
     const size_t serv_tags_len = (n_keep + n_recv);
-    int *serv_tags = malloc(serv_tags_len * sizeof(*serv_tags));
+    int *serv_tags = PGFEM_malloc<int>(serv_tags_len);
     memcpy(serv_tags,k,n_keep*sizeof(*serv_tags));
     memcpy(serv_tags + n_keep,r,n_recv*sizeof(*serv_tags));
 
     /* sort by job id */
     qsort(serv_tags,serv_tags_len,sizeof(*serv_tags),compare_first_int);
 
-    /* 
+    /*
      * Determine if server i contains tag (cell) j. If so, mark it
      * with the server rank (in mpi_comm->mm_inter, rank = i +
      * nproc_macro) to communicate with.
      */
-    int n_server_matched = 0;
+    unsigned n_server_matched = 0;
     for(size_t j = 0; j < s_tags_nel; j++){
-      if (s_tags[j*len + 2] >= nproc_macro) {
-	/* already matched */
-	continue;
+      assert(s_tags[j*len + 2] >= 0);
+      if ((unsigned)s_tags[j*len + 2] >= nproc_macro) {
+    /* already matched */
+    continue;
       } else if (n_server_matched >= serv_tags_len
-		 || n_client_matched >= s_tags_nel) {
-	/* no more possible matches on server or client */
-	break;
+         || n_client_matched >= s_tags_nel) {
+    /* no more possible matches on server or client */
+    break;
       }
 
       /* search server for match on client */
       void *ptr = bsearch(s_tags + j*len,serv_tags,serv_tags_len,
-			  sizeof(*serv_tags),compare_first_int);
+              sizeof(*serv_tags),compare_first_int);
 
       /* Check for match, set src/dest proc id */
       if(ptr != NULL){
-	s_tags[j*len + 2] = i + nproc_macro;
-	n_server_matched++;
-	n_client_matched++;
+    s_tags[j*len + 2] = i + nproc_macro;
+    n_server_matched++;
+    n_client_matched++;
       }
     }
     free(serv_tags);
@@ -218,7 +211,7 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
  * Initializes client->bcast.
  */
 static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
-					   const PGFEM_mpi_comm *mpi_comm)
+                       const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
   const size_t rank = mpi_comm->rank_macro;
@@ -233,23 +226,26 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   err += MPI_Comm_size(mpi_comm->macro,&nproc_macro);
   err += MPI_Comm_size(mpi_comm->mm_inter,&nproc_inter);
 
+  assert(nproc_macro > 0);
+  assert(nproc_inter > 0);
+
   /* determine what ranks (in mm_inter) this domain is responsible
      for broadcasting info to. */
-  if(nproc_macro >= n_server) n_comm = 1;
+  if((unsigned)nproc_macro >= n_server) n_comm = 1;
   else {
     n_comm = n_server/nproc_macro;
-    int rem = n_server % nproc_macro;
+    unsigned rem = n_server % nproc_macro;
     if(rem > 0 && rem > rank) n_comm++;
   }
 
   /* allocate/populate client->bcast */
   client->bcast.n_comm = n_comm;
-  client->bcast.ranks = malloc(n_comm*sizeof(*(client->bcast.ranks)));
-  client->bcast.req = calloc(n_comm,sizeof(*(client->bcast.req)));
+  client->bcast.ranks = PGFEM_malloc<int>(n_comm);
+  client->bcast.req = PGFEM_calloc(MPI_Request, n_comm);
   {
-    int * restrict r = client->bcast.ranks; /* restrict alias */
+    int * __restrict r = client->bcast.ranks; /* __restrict alias */
     r[0] = rank + nproc_macro;
-    for(size_t i=1; i<n_comm; i++){
+    for(int i=1; i<n_comm; i++){
       r[i] = r[i-1] + nproc_macro;
     }
   }
@@ -259,7 +255,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
 
   return err;
 }
-					   
+
 
 /**
  * Send the rebalancing information to the servers.
@@ -268,8 +264,8 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
  * macro-clients may perform communication.
  */
 static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *client,
-						       pgf_FE2_server_rebalance **rb_list,
-						       const PGFEM_mpi_comm *mpi_comm)
+                               pgf_FE2_server_rebalance **rb_list,
+                               const PGFEM_mpi_comm *mpi_comm)
 {
   int err = 0;
 
@@ -287,7 +283,7 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
   client->bcast.active = 1;
 
   /* hold addresses of rebal buffers to send */
-  void **buffs = calloc(n_send,sizeof(*buffs));
+  void **buffs = PGFEM_calloc(void*, n_send);
 
   for(size_t i = 0; i < n_send; i++){
     size_t idx = rank + i*nproc_macro;
@@ -295,8 +291,8 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
     size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list[idx]);
     buffs[i] = pgf_FE2_server_rebalance_buff(rb_list[idx]);
     err += MPI_Isend(buffs[i],len,MPI_CHAR,ranks[i],
-		     FE2_MICRO_SERVER_REBALANCE,
-		     mpi_comm->mm_inter,req+i);
+             FE2_MICRO_SERVER_REBALANCE,
+             mpi_comm->mm_inter,req+i);
   }
 
   err += MPI_Waitall(n_send,req,MPI_STATUS_IGNORE);
@@ -308,7 +304,7 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
 
 void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client)
 {
-  *client = malloc(sizeof(**client));
+  *client = PGFEM_malloc<pgf_FE2_macro_client>();
   (*client)->n_jobs_loc = 0;
   (*client)->n_jobs_glob = 0;
   (*client)->n_jobs_max = 0;
@@ -316,8 +312,8 @@ void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client)
   (*client)->jobs = NULL;
 
   /* should be done by PGFEM_server_ctx init function... */
-  (*client)->send = malloc(sizeof(*((*client)->send)));
-  (*client)->recv = malloc(sizeof(*((*client)->recv)));
+  (*client)->send = PGFEM_malloc<PGFEM_server_ctx>();
+  (*client)->recv = PGFEM_malloc<PGFEM_server_ctx>();
   initialize_PGFEM_server_ctx((*client)->send);
   initialize_PGFEM_server_ctx((*client)->recv);
 
@@ -356,10 +352,10 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
 }
 
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
-					  const int n_jobs_max,
-					  const MACROSCALE *macro,
-					  const PGFEM_mpi_comm *mpi_comm,
-					  const int mp_id)
+                      const int n_jobs_max,
+                      const MACROSCALE *macro,
+                      const PGFEM_mpi_comm *mpi_comm,
+                      const int mp_id)
 {
   /* compute and store number of servers */
   {
@@ -381,10 +377,11 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   long Gn_jobs = 0;
   long *n_job_dom = NULL;
   create_group_ms_cohe_job_list(c->nce,c->coel,c->node,
-				mpi_comm->macro,MPI_COMM_SELF,
-				0,&Gn_jobs,&n_job_dom,
-				&(client->jobs),mp_id);
+                mpi_comm->macro,MPI_COMM_SELF,
+                0,&Gn_jobs,&n_job_dom,
+                &(client->jobs),mp_id);
   /* error check */
+  assert(Gn_jobs >= 0);
   assert(Gn_jobs == n_jobs);
 
   /* free unused memory */
@@ -397,9 +394,9 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   client->n_jobs_max = n_jobs_max;
 
   /* make sure sufficient resources to compute solution */
-  if(client->n_server * client->n_jobs_max < Gn_jobs){
+  if(client->n_server * client->n_jobs_max < (size_t)Gn_jobs){
     PGFEM_printerr("ERROR: insufficent microscale resources!\n"
-		   "Increase n_jobs_max or number of servers and try again!\n");
+           "Increase n_jobs_max or number of servers and try again!\n");
     PGFEM_Abort();
   }
 
@@ -415,8 +412,8 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
     const MS_COHE_JOB_INFO *j = client->jobs;
     for(int i=0; i<n_jobs; i++){
       const int tag = pgf_FE2_job_compute_encoded_id(j[i].proc_id,
-						     j[i].elem_id,
-						     j[i].int_pt);
+                             j[i].elem_id,
+                             j[i].int_pt);
 
       PGFEM_server_ctx_set_tag_at_idx(client->send,tag,i);
       PGFEM_server_ctx_set_tag_at_idx(client->recv,tag,i);
@@ -427,17 +424,17 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
-						 const PGFEM_mpi_comm *mpi_comm)
+                         const PGFEM_mpi_comm *mpi_comm)
 {
   /* create initial partition and send to microscale */
   int nproc_macro = 0;
   const int rank = mpi_comm->rank_macro;
   MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-  int *restrict n_jobs = malloc(nproc_macro*sizeof(*n_jobs));
-  int *restrict displ = malloc(nproc_macro*sizeof(*n_jobs));
-  int *restrict id = malloc(client->n_jobs_glob*sizeof(*id));
-  int *restrict proc = malloc(client->n_jobs_glob*sizeof(*proc));
-  int *restrict time = malloc(client->n_jobs_glob*sizeof(*time));
+  int *__restrict n_jobs = PGFEM_malloc<int>(nproc_macro);
+  int *__restrict displ = PGFEM_malloc<int>(nproc_macro);
+  int *__restrict id = PGFEM_malloc<int>(client->n_jobs_glob);
+  int *__restrict proc = PGFEM_malloc<int>(client->n_jobs_glob);
+  int *__restrict time = PGFEM_malloc<int>(client->n_jobs_glob);
 
   n_jobs[rank] = client->n_jobs_loc;
   MPI_Allgather(MPI_IN_PLACE,1,MPI_INT,n_jobs,1,MPI_INT,mpi_comm->macro);
@@ -467,13 +464,13 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 
   /* get job ids from other procs */
   MPI_Allgatherv(MPI_IN_PLACE,n_jobs[rank],MPI_INT,
-		 id,n_jobs,displ,MPI_INT,mpi_comm->macro);
+         id,n_jobs,displ,MPI_INT,mpi_comm->macro);
 
   void *all_part = NULL;
   void *parts = NULL;
 
   new_partition_build_set_keep(&all_part,client->n_jobs_glob,
-			       client->n_jobs_glob,id,time,proc);
+                   client->n_jobs_glob,id,time,proc);
   new_partitions_void(&parts,client->n_server,client->n_jobs_max);
 
   /* partition the jobs using the greedy algorithm. Since everything
@@ -481,7 +478,7 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   rebalance_partitions_greedy(client->n_server,all_part,parts);
 
   /* push partitions into structure I will send */
-  pgf_FE2_server_rebalance **rb = calloc(client->n_server,sizeof(*rb));
+  auto rb = PGFEM_calloc(pgf_FE2_server_rebalance *, client->n_server);
   new_partitions_void_to_pgf_FE2_server_rebalance(client->n_server,parts,rb);
 
   /* cleanup */
@@ -502,17 +499,17 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
-					    const PGFEM_mpi_comm *mpi_comm,
-					    const int heuristic)
+                        const PGFEM_mpi_comm *mpi_comm,
+                        const int heuristic)
 {
   int nproc_macro = 0;
   MPI_Comm_size(mpi_comm->macro,&nproc_macro);
 
   /* receive message and rebalance according to heuristic */
   pgf_FE2_server_rebalance **rb_list = pgf_FE2_rebalancer(mpi_comm,
-							 client->n_jobs_glob,
-							 client->n_jobs_max,
-							 heuristic);
+                             client->n_jobs_glob,
+                             client->n_jobs_max,
+                             heuristic);
 
   /* update the server context (send/recv) */
   pgf_FE2_macro_client_update_send_recv(client,rb_list,nproc_macro);
@@ -528,9 +525,9 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
-				    const PGFEM_mpi_comm *mpi_comm,
-				    const MACROSCALE *macro,
-				    const int job_type)
+                    const PGFEM_mpi_comm *mpi_comm,
+                    const MACROSCALE *macro,
+                    const int job_type)
 {
   int err = 0;
   /* see start_macroscale_compute_jobs */
@@ -548,7 +545,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
      MPI_Wait* commands should return immediately */
   if(send->in_process || recv->in_process){
     PGFEM_printerr("WARNING: communication in progress!(%s:%s:%d)\n",
-		   __func__,__FILE__,__LINE__);
+           __func__,__FILE__,__LINE__);
     err++;
     err += MPI_Waitall(recv->n_comms,recv->req,recv->stat);
     err += MPI_Waitall(send->n_comms,send->req,send->stat);
@@ -560,8 +557,8 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
   /* post recieves (from the running server) */
   for(int i=0; i<recv->n_comms; i++){
     err += MPI_Irecv(recv->buffer[i],recv->sizes[i],MPI_CHAR,
-		     recv->procs[i],recv->tags[i],comm,
-		     &(recv->req[i]));
+             recv->procs[i],recv->tags[i],comm,
+             &(recv->req[i]));
   }
 
   for(int i=0; i<send->n_comms; i++){
@@ -573,12 +570,12 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 
     /* pack the job info into the buffer to send */
     err += pack_MS_COHE_JOB_INFO(job_list + i,send->sizes[i],
-				 send->buffer[i]);
+                 send->buffer[i]);
 
     /* post the send (to the running server) */
     err += MPI_Isend(send->buffer[i],send->sizes[i],MPI_CHAR,
-		     send->procs[i],send->tags[i],comm,
-		     &(send->req[i]));
+             send->procs[i],send->tags[i],comm,
+             &(send->req[i]));
   }
 
   /* set in_process flags to true (1) */
@@ -588,8 +585,8 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
-				    MACROSCALE *macro,
-				    int *max_micro_sub_step)
+                    MACROSCALE *macro,
+                    int *max_micro_sub_step)
 {
   int err = 0;
 
@@ -621,7 +618,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     MPI_Request *req_r = NULL;
     MPI_Status *sta_r = NULL;
     err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
-				       c->mpi_comm,c->pgfem_comm);
+                       c->mpi_comm,c->pgfem_comm);
 
     /* assemble jobs as they are received */
     for(int i=0; i<recv->n_comms; i++){
@@ -629,7 +626,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
       err += MPI_Waitany(recv->n_comms,recv->req,&idx,recv->stat);
       MS_COHE_JOB_INFO *job = job_list + idx;
       err += unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
-				     recv->buffer[idx]);
+                     recv->buffer[idx]);
 
       /* compute the number of micro-sub-steps */
       if(job->n_step > *max_micro_sub_step) *max_micro_sub_step = job->n_step;
@@ -637,24 +634,24 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
       /* finish jobs based on job_type */
       switch(job->job_type){
       case JOB_COMPUTE_EQUILIBRIUM:
-	/* assemble residual (local) */
-	for(int j=0; j<job->ndofe; j++){
-	  int dof_id = job->loc_dof_ids[j] - 1;
-	  if(dof_id < 0) continue; /* boundary condition */
-	  s->f_u[dof_id] += job->traction_res[j];
-	}
+    /* assemble residual (local) */
+    for(int j=0; j<job->ndofe; j++){
+      int dof_id = job->loc_dof_ids[j] - 1;
+      if(dof_id < 0) continue; /* boundary condition */
+      s->f_u[dof_id] += job->traction_res[j];
+    }
 
-	/*** Deliberate drop through ***/
+    /*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
-	/* assemble tangent to local and off-proc buffers */
-	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
-		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
-		    c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
-	break;
+    /* assemble tangent to local and off-proc buffers */
+    PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+            job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
+            c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
+    break;
       case JOB_UPDATE:
-	/* update cohesive elements */
-	err += macroscale_update_coel(job,macro);
-	break;
+    /* update cohesive elements */
+    err += macroscale_update_coel(job,macro);
+    break;
       default: /* do nothing */ break;
       }
     }
@@ -666,10 +663,10 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 
     /* get maximum number of steps from all macro processors */
     err += MPI_Allreduce(MPI_IN_PLACE,max_micro_sub_step,
-			 1,MPI_INT,MPI_MAX,c->mpi_comm);
+             1,MPI_INT,MPI_MAX,c->mpi_comm);
 
     err += assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
-				      c->SOLVER,receive);
+                      c->SOLVER,receive);
 
     err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,c->pgfem_comm);
 
@@ -701,7 +698,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
-				    const PGFEM_mpi_comm *mpi_comm)
+                    const PGFEM_mpi_comm *mpi_comm)
 {
   const size_t n_send = client->bcast.n_comm;
   const int *ranks = client->bcast.ranks;
@@ -711,7 +708,7 @@ void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
   void *empty = NULL;
   for(size_t i=0; i<n_send; i++){
     MPI_Isend(empty,0,MPI_CHAR,ranks[i],FE2_MICRO_SERVER_EXIT,
-	      mpi_comm->mm_inter,req + i);
+          mpi_comm->mm_inter,req + i);
   }
 
   /* wait for exit code to be received */

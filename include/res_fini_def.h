@@ -1,6 +1,7 @@
 #ifndef RES_FINI_DEF_H
 #define RES_FINI_DEF_H
 
+#include "data_structure.h"
 #ifndef ELEMENT_H
 #include "element.h"
 #endif
@@ -17,21 +18,13 @@
 #include "crpl.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* #ifdef __cplusplus */
-
   /** */
   void res_fini_def (long ne,
-		     long npres,
-		     ELEMENT *elem,
-		     EPS *eps,
-		     SIG *sig,
-		     CRPL *crpl,
-		     const int analysis);
-
-#ifdef __cplusplus
-}
-#endif /* #ifdef __cplusplus */
+             long npres,
+             ELEMENT *elem,
+             EPS *eps,
+             SIG *sig,
+             CRPL *crpl,
+             const int analysis);
 
 #endif /* #ifndef RES_FINI_DEF_H */

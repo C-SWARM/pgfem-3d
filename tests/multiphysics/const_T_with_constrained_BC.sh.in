@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+NP=1
+name=box
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+test_dir=@top_srcdir@/verification_tests_multiphysics/const_T_with_constrained_BC
+in_dir=${test_dir}/${name}_${NP}CPU
+out_dir=${name}_${NP}CPU
+input=${in_dir}/${name}_
+output=${out_dir}/${name}
+
+opts="-SS -cm 1 -noLS -no-compute-macro -noCCE -maxit 3000 -kdim 1000 -V"
+cmd="mpirun -np $NP $pgfem $opts $input $output"
+echo $cmd
+$cmd
+
+#Justify verfication
+head ${out_dir}/restart/solid_mechanics/STEP_000009/${name}_0_9.res -n 7 | grep -o '[0-9].[0-9]*e[+-]?*[0-9]*' | tail -n 1 > disp.txt
+cmd="numdiff -a 1.0e-5 -r 1.0e-5 ${test_dir}/disp.ref disp.txt"
+echo $cmd
+$cmd

@@ -2,26 +2,26 @@
     as allocation, deallocation, reading and writing */
 #include "node.h"
 #include "allocation.h"
+#include "utils.h"
 #include <assert.h>
-
 
 NODE* build_node(const long nn,
                  const int ndofn)
 {
-  return build_node_multi_physics(nn,&ndofn,1);                   
+  return build_node_multi_physics(nn,&ndofn,1);
 }
 
 void destroy_node(const long nn,
                   NODE* node)
 {
   destroy_node_multi_physics(nn, node, 1);
-}                  
+}
 
 /// build node array.
 /// Multiphysics needs many ids for nodal variables.
 /// To assign local and global ids according to the number physics,
 /// an array of id_map object is created as many as number of physics.
-/// In id_map, ids is also created based on the number of dofs for 
+/// In id_map, ids is also created based on the number of dofs for
 /// the individual physics.
 ///
 /// \param[in] nn number of nodes
@@ -31,18 +31,18 @@ void destroy_node(const long nn,
 NODE* build_node_multi_physics(const long nn,
                                const int *ndofn,
                                const int physicsno)
-{  
-  NODE *pom = (NODE*) PGFEM_calloc (nn, sizeof(NODE));
+{
+  NODE *pom = PGFEM_calloc (NODE, nn);
   for(int ia=0;ia<nn;ia++)
   {
     pom[ia].id_map = (NODE_ID_MAP *) malloc(physicsno*sizeof(NODE_ID_MAP));
     for(int ib=0; ib<physicsno; ib++)
-    {    	 
-      pom[ia].id_map[ib].id  = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
-      pom[ia].id_map[ib].Gid = (long*) PGFEM_calloc (ndofn[ib],sizeof(long));
+    {
+      pom[ia].id_map[ib].id  = PGFEM_calloc (long, ndofn[ib]);
+      pom[ia].id_map[ib].Gid = PGFEM_calloc (long, ndofn[ib]);
     }
   }
-  
+
   return (pom);
 }
 
@@ -50,17 +50,17 @@ NODE* build_node_multi_physics(const long nn,
 ///
 /// \param[in] nn number of nodes
 /// \param[in] physicsno number of physics
-/// 
+///
 /// \return non-zero on internal error
 int destroy_node_multi_physics(const long nn,
-                              NODE* node,
-                              const int physicsno)
+                               NODE* node,
+                               const int physicsno)
 {
-  int err = 0;  
+  int err = 0;
   for(int ia=0; ia<nn; ia++)
   {
     for(int ib=0; ib<physicsno; ib++)
-    {    	 
+    {
       free(node[ia].id_map[ib].id);
       free(node[ia].id_map[ib].Gid);
     }
@@ -71,20 +71,20 @@ int destroy_node_multi_physics(const long nn,
 }
 
 long read_nodes (FILE *in,
-		 const long nn,
-		 NODE *node,
-		 const int legacy,
-		 MPI_Comm comm)
-     /*
-       in   - Input file
-       nn   - Number of nodes
-       node - Structure type of NODE
-       
-       returns: total number of nodes over all domains, counting nodes
-       on boundries only once
-       %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
-       %%%%%%%%%%%%%%%% MODIFIED 7.20.05 %%%%%%%%%%%%%%%
-     */
+                 const long nn,
+                 NODE *node,
+                 const int legacy,
+                 MPI_Comm comm)
+/*
+  in   - Input file
+  nn   - Number of nodes
+  node - Structure type of NODE
+
+  returns: total number of nodes over all domains, counting nodes
+  on boundries only once
+  %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%% MODIFIED 7.20.05 %%%%%%%%%%%%%%%
+*/
 {
   int myrank = 0;
   MPI_Comm_rank(comm,&myrank);
@@ -98,19 +98,19 @@ long read_nodes (FILE *in,
       long id = 0;
       long Gnn = 0;
       long Dom = 0;
-      fscanf (in,"%ld %ld %ld",&Gnn,&Dom,&id);
+      CHECK_SCANF(in,"%ld %ld %ld",&Gnn,&Dom,&id);
       p_node = &node[id];
       p_node->loc_id = id;
       p_node->Gnn = Gnn;
       p_node->Dom = Dom;
     }
-    
+
     /* Input file error checking */
     if (p_node->Gnn < 0 && p_node->Dom != myrank){
       PGFEM_printerr("[%d] ERROR: incorrect node domain info (node %ld)!"
-	      " %s:%s:%d\n",myrank,i,__func__,__FILE__,__LINE__);
+                     " %s:%s:%d\n",myrank,i,__func__,__FILE__,__LINE__);
       PGFEM_Abort();
-    } 
+    }
 
     /* If we get a global node that doesn't live on this domain,
        subtract it from tnn */
@@ -119,12 +119,19 @@ long read_nodes (FILE *in,
     }
 
     if (legacy) {
-      fscanf (in,"%lf %lf %lf %ld",&p_node->x1,&p_node->x2,&p_node->x3,
-	      &p_node->pr);
+      CHECK_SCANF(in,"%lf %lf %lf %ld",
+                  &p_node->x1,
+                  &p_node->x2,
+                  &p_node->x3,
+                  &p_node->pr);
     } else {
-      fscanf (in,"%lf %lf %lf %d %d %ld",
-	      &p_node->x1,&p_node->x2,&p_node->x3,
-	      &p_node->model_type,&p_node->model_id,&p_node->pr);
+      CHECK_SCANF(in,"%lf %lf %lf %d %d %ld",
+                  &p_node->x1,
+                  &p_node->x2,
+                  &p_node->x3,
+                  &p_node->model_type,
+                  &p_node->model_id,
+                  &p_node->pr);
     }
 
     p_node->x1_fd = p_node->x1;
@@ -134,26 +141,26 @@ long read_nodes (FILE *in,
     /* error check read */
     if(ferror(in)){
       PGFEM_printerr("[%d]ERROR:fscanf returned error"
-	      " reading node %ld!\n",myrank,i);
+                     " reading node %ld!\n",myrank,i);
       PGFEM_Abort();
     } else if(feof(in)){
       PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
-	      myrank);
+                     myrank);
       PGFEM_Abort();
     }
   }
 
   /* Gather tnn from all domains */
-  MPI_Allreduce(&tnn,&Gtnn,1,MPI_LONG,MPI_SUM,comm);  
+  MPI_Allreduce(&tnn,&Gtnn,1,MPI_LONG,MPI_SUM,comm);
 
   return Gtnn;
 }
 
 void write_node_fname(const char *filename,
-		      const int nnodes,
-		      const NODE *nodes,
-		      const int ndofn,
-		      const int mp_id)
+                      const int nnodes,
+                      const NODE *nodes,
+                      const int ndofn,
+                      const int mp_id)
 {
   FILE *ofile = fopen(filename,"w");
   if(ofile == NULL){
@@ -167,22 +174,22 @@ void write_node_fname(const char *filename,
 }
 
 void write_node(FILE *ofile,
-		const int nnodes,
-		const NODE *nodes,
-		const int ndofn,
-		const int mp_id)
+                const int nnodes,
+                const NODE *nodes,
+                const int ndofn,
+                const int mp_id)
 {
   /* write header describing format */
   PGFEM_fprintf(ofile,"  Gnn DOM   Lnn       X            Y            Z"
-	  "              X_fd         Y_fd         Z_fd         Lid::Gid ...\n");
+                "              X_fd         Y_fd         Z_fd         Lid::Gid ...\n");
   PGFEM_fprintf(ofile,"===================================================="
-	  "================================================================\n");
+                "================================================================\n");
   for(int i=0; i<nnodes; i++){
     const NODE *p_node = &nodes[i];
     PGFEM_fprintf(ofile,"%5ld %3ld %5d ",p_node->Gnn,p_node->Dom,i);
     PGFEM_fprintf(ofile,"%12.5e %12.5e %12.5e    %12.5e %12.5e %12.5e    ",
-	    p_node->x1,p_node->x2,p_node->x3,
-	    p_node->x1_fd,p_node->x2_fd,p_node->x3_fd);
+                  p_node->x1,p_node->x2,p_node->x3,
+                  p_node->x1_fd,p_node->x2_fd,p_node->x3_fd);
     for(int j=0; j<ndofn; j++){
       PGFEM_fprintf(ofile,"%5ld::%-5ld ",p_node->id_map[mp_id].id[j],p_node->id_map[mp_id].Gid[j]);
     }
@@ -266,8 +273,11 @@ int nodes_get_shared_idx_range(const int nnode,
   comp_node.Dom = dom;
 
   /* search for a node with matching ownership */
-  const NODE *ptr_lb = bsearch(&comp_node, nodes, nnode,
-                               sizeof(*nodes), node_comp_own);
+  const NODE *ptr_lb = static_cast<const NODE*>(bsearch(&comp_node,
+                                                        nodes,
+                                                        nnode,
+                                                        sizeof(*nodes),
+                                                        node_comp_own));
 
   /* exit early if no match found */
   if (!ptr_lb) return 1;

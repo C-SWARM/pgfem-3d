@@ -25,18 +25,18 @@ typedef struct entry{
 } entry;
 static inline void build_entry(entry *e);
 static inline void set_entry(const int row,
-			     const int col,
-			     const double val,
-			     entry *e);
+                 const int col,
+                 const double val,
+                 entry *e);
 static inline void destroy_entry(entry *e);
 static inline void destroy_entries(const int n_entry,
-				   entry *e);
+                   entry *e);
 static int compare_entry_row(const void *a, const void *b);
 static int get_sorted_list_of_entries(const int n_entries,
-				      const int *row_idx,
-				      const int *col_idx,
-				      const double *vals,
-				      entry **e);
+                      const int *row_idx,
+                      const int *col_idx,
+                      const double *vals,
+                      entry **e);
 
 /*=== COMM_INFO ===*/
 typedef struct comm_info{
@@ -45,13 +45,13 @@ typedef struct comm_info{
   int *n_info; /* number of rows to s/r with each proc */
 } comm_info;
 static int build_comm_info(const int nproc,
-			   const int myrank,
-			   const int *proc_comm_info,
-			   comm_info *info);
+               const int myrank,
+               const int *proc_comm_info,
+               comm_info *info);
 static void destroy_comm_info(comm_info *info);
 static void print_comm_info_graph(const int myrank,
-				  comm_info *send,
-				  comm_info *recv);
+                  comm_info *send,
+                  comm_info *recv);
 
 /*=== OFF_PROC_ENTRIES ===*/
 typedef struct off_proc_entries{
@@ -59,8 +59,8 @@ typedef struct off_proc_entries{
   double *data; /* com_info.n_info[proc]*n_col */
 }off_proc_entries;
 static int build_off_proc_entries(const int n_rows,
-				  const int n_col,
-				  off_proc_entries *info);
+                  const int n_col,
+                  off_proc_entries *info);
 static void destroy_off_proc_entries(off_proc_entries *info);
 
 /*=== COMM_CTX ===*/
@@ -71,19 +71,19 @@ typedef struct comm_ctx{
   MPI_Status *s_stat;
 } comm_ctx;
 static int build_comm_ctx(const int n_send,
-			  const int n_recv,
-			  comm_ctx *COMM);
+              const int n_recv,
+              comm_ctx *COMM);
 static void destroy_comm_ctx(comm_ctx *COMM);
 
 /*=== LOC UTILS ===*/
 #ifndef NDEBUG
 #define my_assert(arg) \
-  do {							    \
-    if(!(arg)){						    \
-      PGFEM_printerr("Assertion ("#arg") failed! %s:%s:%d\n",	\
-		     __func__,__FILE__,__LINE__);		\
+  do {                              \
+    if(!(arg)){                         \
+      PGFEM_printerr("Assertion ("#arg") failed! %s:%s:%d\n",   \
+             __func__,__FILE__,__LINE__);       \
       PGFEM_Abort(); } } while(0)
-#else 
+#else
 #define my_assert(arg) do{/* nothing */}
 #endif
 
@@ -107,39 +107,39 @@ void LOG_MSG(const char *msg){}
 
 static int PGFEM_par_matvec_compare_int(const void *a, const void *b);
 static int set_local_value(const int row_start,
-			   const int n_row,
-			   const int n_col,
-			   const entry *e,
-			   double *data);
+               const int n_row,
+               const int n_col,
+               const entry *e,
+               double *data);
 static int set_off_proc_value(const int row_start,
-			      const int n_row,
-			      const int n_col,
-			      const entry *e,
-			      const int *row_ids,
-			      double *data);
+                  const int n_row,
+                  const int n_col,
+                  const entry *e,
+                  const int *row_ids,
+                  double *data);
 static int add_to_local_value(const int row_start,
-			      const int n_row,
-			      const int n_col,
-			      const entry *e,
-			      double *data);
+                  const int n_row,
+                  const int n_col,
+                  const entry *e,
+                  double *data);
 static int add_to_off_proc_value(const int row_start,
-				 const int n_row,
-				 const int n_col,
-				 const entry *e,
-				 const int *row_ids,
-				 double *data);
+                 const int n_row,
+                 const int n_col,
+                 const entry *e,
+                 const int *row_ids,
+                 double *data);
 static int add_assemble_matrix(PGFEM_par_matrix *mat);
 static int set_assemble_matrix(PGFEM_par_matrix *mat);
 
 /*==== API FUNCTIONS ====*/
 int initialize_PGFEM_par_matrix(const int n_rows,
-				const int n_cols,
-				const int n_own_rows,
-				const int n_entries,
-				const int *row_idx,
-				const int *col_idx,
-				MPI_Comm mpi_comm,
-				PGFEM_par_matrix **mat)
+                const int n_cols,
+                const int n_own_rows,
+                const int n_entries,
+                const int *row_idx,
+                const int *col_idx,
+                MPI_Comm mpi_comm,
+                PGFEM_par_matrix **mat)
 {
   int err = 0;
   int myrank = 0;
@@ -150,7 +150,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   if(myrank == 0) LOG_MSG("Entering initialization.");
 
   /* allocate the object and get alias */
-  *mat = PGFEM_calloc(1,sizeof(PGFEM_par_matrix));
+  *mat = PGFEM_calloc(PGFEM_par_matrix, 1);
   PGFEM_par_matrix *m = *mat;
 
   /* set internal variables */
@@ -161,11 +161,11 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   m->add_values = 0;
   m->n_rows = n_rows;
   m->n_cols = n_cols;
-  m->n_own_rows = PGFEM_calloc(nproc,sizeof(int));
-  m->idx_starts = PGFEM_calloc(nproc+1,sizeof(int));
-  m->data = PGFEM_calloc(n_cols*n_own_rows,sizeof(double));
-  m->send_info = PGFEM_calloc(1,sizeof(comm_info));
-  m->recv_info = PGFEM_calloc(1,sizeof(comm_info));
+  m->n_own_rows = PGFEM_calloc(int, nproc);
+  m->idx_starts = PGFEM_calloc(int, nproc+1);
+  m->data = PGFEM_calloc(double, n_cols*n_own_rows);
+  m->send_info = PGFEM_calloc(comm_info, 1);
+  m->recv_info = PGFEM_calloc(comm_info, 1);
   m->s_rows = NULL;
   m->r_rows = NULL;
 
@@ -174,22 +174,21 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   comm_info *recv_info = (comm_info*) m->recv_info;
 
   /* post receive of information */
-  int *r_off_proc_rows = PGFEM_calloc(nproc,sizeof(int));
+  int *r_off_proc_rows = PGFEM_calloc(int, nproc);
   MPI_Request *r_req = NULL;
   MPI_Status *r_stat = NULL;
 
   if(myrank == 0) LOG_MSG("\tPosting non-blocking receives.");
   if(nproc > 1){
-    r_req = PGFEM_calloc(nproc-1,sizeof(MPI_Request));
-    r_stat = PGFEM_calloc(nproc-1,sizeof(MPI_Status));
+    r_req = PGFEM_calloc(MPI_Request, nproc-1);
+    r_stat = PGFEM_calloc(MPI_Status, nproc-1);
     {
-      int idx = 0;
       int req_idx = 0;
       for(int i=0; i<nproc; i++){
-	if(i == myrank) continue;
-	MPI_Irecv(&r_off_proc_rows[i],1,MPI_INT,i,MPI_ANY_TAG,
-		  m->mpi_comm,&r_req[req_idx]);
-	req_idx++;
+    if(i == myrank) continue;
+    MPI_Irecv(&r_off_proc_rows[i],1,MPI_INT,i,MPI_ANY_TAG,
+          m->mpi_comm,&r_req[req_idx]);
+    req_idx++;
       }
     }
   }
@@ -197,14 +196,14 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* gather n_own_rows on all processes and compute the idx_starts */
   m->n_own_rows[myrank] = n_own_rows;
   MPI_Allgather(MPI_IN_PLACE,1,MPI_INT,m->n_own_rows,
-		1,MPI_INT,m->mpi_comm);
+        1,MPI_INT,m->mpi_comm);
   m->idx_starts[0] = 0;
   for(int i=1; i<=nproc; i++){
     m->idx_starts[i] = m->idx_starts[i-1] + m->n_own_rows[i-1];
   }
 
   /* push row/col info into entry, sort */
-  entry *e = PGFEM_calloc(n_entries,sizeof(entry));
+  entry *e = PGFEM_calloc(entry, n_entries);
   for(int i=0; i<n_entries; i++){
     build_entry(e+i);
     set_entry(row_idx[i],col_idx[i],0.0,e+i);
@@ -218,10 +217,10 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     int idx = 0;
     for(int i=1; i<n_entries; i++){
       if(e[i].row <= e[idx].row){
-	e[i].row = -1;
-	n_dup++;
+    e[i].row = -1;
+    n_dup++;
       } else {
-	idx = i;
+    idx = i;
       }
     }
   }
@@ -233,16 +232,15 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   if(e[n_dup].row < 0) n_dup++;
 
   /* count number of rows for each process */
-  int *s_off_proc_rows = PGFEM_calloc(nproc,sizeof(int));
+  int *s_off_proc_rows = PGFEM_calloc(int, nproc);
   {
     int idx = n_dup;
-    int total_rows = 0;
     for(int i=0; i<nproc; i++){
       while(idx < n_entries){
-	/* break loop if row owned by other dom */
-	if(e[idx].row >= m->idx_starts[i+1]) break;
-	s_off_proc_rows[i] ++;
-	idx ++;
+    /* break loop if row owned by other dom */
+    if(e[idx].row >= m->idx_starts[i+1]) break;
+    s_off_proc_rows[i] ++;
+    idx ++;
       }
     }
   }
@@ -252,13 +250,13 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   MPI_Request *s_req = NULL;
   MPI_Status *s_stat = NULL;
   if(nproc > 1){
-    s_req = PGFEM_calloc(nproc-1,sizeof(MPI_Request));
-    s_stat = PGFEM_calloc(nproc-1,sizeof(MPI_Status));
+    s_req = PGFEM_calloc(MPI_Request, nproc-1);
+    s_stat = PGFEM_calloc(MPI_Status, nproc-1);
     int req_idx = 0;
     for(int i=0; i<nproc; i++){
       if(i == myrank) continue;
       MPI_Isend(s_off_proc_rows + i,1,MPI_INT,i,i /*tag*/,
-		m->mpi_comm,&s_req[req_idx]);
+        m->mpi_comm,&s_req[req_idx]);
       req_idx++;
     }
   }
@@ -270,12 +268,12 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* build s_rows and get alias */
   if(myrank == 0) LOG_MSG("\tBuild off-proc send data.");
   if(send_info->nproc > 0){
-    m->s_rows = PGFEM_calloc(send_info->nproc,sizeof(off_proc_entries));
+    m->s_rows = PGFEM_calloc(off_proc_entries, send_info->nproc);
   }
   off_proc_entries *s_rows = (off_proc_entries*) m->s_rows;
   for(int i=0; i<send_info->nproc; i++){
     err += build_off_proc_entries(send_info->n_info[i],
-				  m->n_cols,s_rows+i);
+                  m->n_cols,s_rows+i);
   }
 
   /* set the row_loc_ids */
@@ -286,8 +284,8 @@ int initialize_PGFEM_par_matrix(const int n_rows,
       int off_proc_start = m->idx_starts[send_info->proc[i]];
       while(e[ent_idx].row < off_proc_start) ent_idx++;
       for(int j=0; j<send_info->n_info[i]; j++){
-	s_rows[i].row_loc_ids[j] = e[ent_idx].row - off_proc_start;
-	ent_idx++;
+    s_rows[i].row_loc_ids[j] = e[ent_idx].row - off_proc_start;
+    ent_idx++;
       }
     }
   }
@@ -313,27 +311,27 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   }
 
   if(recv_info->nproc > 0){
-    m->r_rows = PGFEM_calloc(recv_info->nproc,sizeof(off_proc_entries));
+    m->r_rows = PGFEM_calloc(off_proc_entries, recv_info->nproc);
   }
 
   off_proc_entries *r_rows = (off_proc_entries*) m->r_rows;
   for(int i=0; i<recv_info->nproc; i++){
     err += build_off_proc_entries(recv_info->n_info[i],
-				  m->n_cols,r_rows+i);
+                  m->n_cols,r_rows+i);
   }
 
   /* communicate local row ids for off-proc entries */
   if(myrank == 0) LOG_MSG("\tCommunicate off-process row ids (nonblocking).");
   if(send_info->nproc > 0){
-    s_req = PGFEM_calloc(send_info->nproc,sizeof(MPI_Request));
-    s_stat = PGFEM_calloc(send_info->nproc,sizeof(MPI_Status));
+    s_req = PGFEM_calloc(MPI_Request, send_info->nproc);
+    s_stat = PGFEM_calloc(MPI_Status, send_info->nproc);
   }else{
     PGFEM_printerr("[%d]WARNING: no send_info in %s!\n",myrank,__func__);
   }
 
   if(recv_info->nproc > 0){
-    r_req = PGFEM_calloc(recv_info->nproc,sizeof(MPI_Request));
-    r_stat = PGFEM_calloc(recv_info->nproc,sizeof(MPI_Status));
+    r_req = PGFEM_calloc(MPI_Request, recv_info->nproc);
+    r_stat = PGFEM_calloc(MPI_Status, recv_info->nproc);
   }else{
     PGFEM_printerr("[%d]WARNING: no recv_info in %s!\n",myrank,__func__);
   }
@@ -341,13 +339,13 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* post receive */
   for(int i=0; i<recv_info->nproc; i++){
     MPI_Irecv(r_rows[i].row_loc_ids,recv_info->n_info[i],MPI_INT,
-	      recv_info->proc[i],MPI_ANY_TAG,m->mpi_comm,&r_req[i]);
+          recv_info->proc[i],MPI_ANY_TAG,m->mpi_comm,&r_req[i]);
   }
 
   /* post send */
   for(int i=0; i<send_info->nproc; i++){
     MPI_Isend(s_rows[i].row_loc_ids,send_info->n_info[i],MPI_INT,
-	      send_info->proc[i],i /*tag*/,m->mpi_comm,&s_req[i]);
+          send_info->proc[i],i /*tag*/,m->mpi_comm,&s_req[i]);
   }
 
   /* complete communication */
@@ -412,10 +410,10 @@ void destroy_PGFEM_par_matrix(PGFEM_par_matrix *mat)
 }
 
 int PGFEM_par_matrix_set_values(const int n_entries,
-				const int *row_idx,
-				const int *col_idx,
-				const double *values,
-				PGFEM_par_matrix *mat)
+                const int *row_idx,
+                const int *col_idx,
+                const double *values,
+                PGFEM_par_matrix *mat)
 {
   int err = 0;
   int myrank = 0;
@@ -435,7 +433,7 @@ int PGFEM_par_matrix_set_values(const int n_entries,
   off_proc_entries *s_rows = (off_proc_entries *) mat->s_rows;
 
   /* get proc ids and sort */
-  int *proc_order = PGFEM_calloc(send->nproc+1,sizeof(int));
+  int *proc_order = PGFEM_calloc(int, send->nproc+1);
   for(int i=0; i<send->nproc; i++){
     proc_order[i] = send->proc[i];
   }
@@ -445,13 +443,13 @@ int PGFEM_par_matrix_set_values(const int n_entries,
      already ordered by proc id. Therefore indexing through
      'proc_order' will maintain the order in 'send' */
   qsort(proc_order,send->nproc+1,sizeof(int),
-	PGFEM_par_matvec_compare_int);
+    PGFEM_par_matvec_compare_int);
 
   /* check to make sure that bounds of row values are valid */
   if(e[0].row < mat->idx_starts[proc_order[0]] ||
      e[n_entries-1].row >= mat->idx_starts[proc_order[send->nproc]+1]){
     PGFEM_printerr("[%d]ERROR: invalid row! %s:%s:%d\n",
-	    myrank,__func__,__FILE__,__LINE__);
+        myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->mpi_comm,0);
   }
 
@@ -465,21 +463,21 @@ int PGFEM_par_matrix_set_values(const int n_entries,
     int n_rows = mat->n_own_rows[proc];
     if(proc == myrank){
       while(ent_idx < n_entries){
-	/* break loop if owned by other domain */
-	if(e[ent_idx].row >= row_end) break;
-	err += set_local_value(row_start,n_rows,mat->n_cols,
-			       e+ent_idx,mat->data);
-	ent_idx++;
+    /* break loop if owned by other domain */
+    if(e[ent_idx].row >= row_end) break;
+    err += set_local_value(row_start,n_rows,mat->n_cols,
+                   e+ent_idx,mat->data);
+    ent_idx++;
       }
     } else {
       while(ent_idx < n_entries){
-	/* break loop if owned by other domain */
-	if(e[ent_idx].row >= row_end) break;
-	err += set_off_proc_value(row_start,send->n_info[send_idx],
-				  mat->n_cols,e+ent_idx,
-				  s_rows[send_idx].row_loc_ids,
-				  s_rows[send_idx].data);
-	ent_idx++;
+    /* break loop if owned by other domain */
+    if(e[ent_idx].row >= row_end) break;
+    err += set_off_proc_value(row_start,send->n_info[send_idx],
+                  mat->n_cols,e+ent_idx,
+                  s_rows[send_idx].row_loc_ids,
+                  s_rows[send_idx].data);
+    ent_idx++;
       }
       send_idx++;
     }
@@ -487,7 +485,7 @@ int PGFEM_par_matrix_set_values(const int n_entries,
 
   if(ent_idx != n_entries){
     PGFEM_printerr("[%d]ERROR: did not reach end of entry list!\n"
-	    "%s:%s:%d\n",myrank,__func__,__FILE__,__LINE__);
+        "%s:%s:%d\n",myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->mpi_comm,0);
   }
 
@@ -497,10 +495,10 @@ int PGFEM_par_matrix_set_values(const int n_entries,
 }
 
 int PGFEM_par_matrix_add_to_values(const int n_entries,
-				   const int *row_idx,
-				   const int *col_idx,
-				   const double *values,
-				   PGFEM_par_matrix *mat)
+                   const int *row_idx,
+                   const int *col_idx,
+                   const double *values,
+                   PGFEM_par_matrix *mat)
 {
   int err = 0;
   int myrank = 0;
@@ -514,14 +512,14 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
 
   entry *e = NULL;
   err += get_sorted_list_of_entries(n_entries,row_idx,
-				    col_idx,values,&e);
+                    col_idx,values,&e);
 
   /* get aliases to send information */
   comm_info *send = (comm_info *) mat->send_info;
   off_proc_entries *s_rows = (off_proc_entries *) mat->s_rows;
 
   /* get proc ids and sort */
-  int *proc_order = PGFEM_calloc(send->nproc+1,sizeof(int));
+  int *proc_order = PGFEM_calloc(int, send->nproc+1);
   for(int i=0; i<send->nproc; i++){
     proc_order[i] = send->proc[i];
   }
@@ -531,13 +529,13 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
      already ordered by proc id. Therefore indexing through
      'proc_order' will maintain the order in 'send' */
   qsort(proc_order,send->nproc+1,sizeof(int),
-	PGFEM_par_matvec_compare_int);
+    PGFEM_par_matvec_compare_int);
 
   /* check to make sure that bounds of row values are valid */
   if(e[0].row < mat->idx_starts[proc_order[0]] ||
      e[n_entries-1].row >= mat->idx_starts[proc_order[send->nproc]+1]){
     PGFEM_printerr("[%d]ERROR: invalid row! %s:%s:%d\n",
-	    myrank,__func__,__FILE__,__LINE__);
+        myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->mpi_comm,0);
   }
 
@@ -551,21 +549,21 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
     int n_rows = mat->n_own_rows[proc];
     if(proc == myrank){
        while(ent_idx < n_entries){
-	/* break loop if owned by other domain */
-	if(e[ent_idx].row >= row_end) break;
-	err += add_to_local_value(row_start,n_rows,mat->n_cols,
-				  e+ent_idx,mat->data);
-	ent_idx++;
+    /* break loop if owned by other domain */
+    if(e[ent_idx].row >= row_end) break;
+    err += add_to_local_value(row_start,n_rows,mat->n_cols,
+                  e+ent_idx,mat->data);
+    ent_idx++;
       }
     } else {
        while(ent_idx < n_entries){
-	/* break loop if owned by other domain */
-	if(e[ent_idx].row >= row_end) break;
-	err += add_to_off_proc_value(row_start,send->n_info[send_idx],
-				     mat->n_cols,e+ent_idx,
-				     s_rows[send_idx].row_loc_ids,
-				     s_rows[send_idx].data);
-	ent_idx++;
+    /* break loop if owned by other domain */
+    if(e[ent_idx].row >= row_end) break;
+    err += add_to_off_proc_value(row_start,send->n_info[send_idx],
+                     mat->n_cols,e+ent_idx,
+                     s_rows[send_idx].row_loc_ids,
+                     s_rows[send_idx].data);
+    ent_idx++;
       }
       send_idx++;
     }
@@ -573,7 +571,7 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
 
   if(ent_idx != n_entries){
     PGFEM_printerr("[%d]ERROR: did not reach end of entry list!\n"
-	    "%s:%s:%d\n",myrank,__func__,__FILE__,__LINE__);
+        "%s:%s:%d\n",myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->mpi_comm,0);
   }
 
@@ -611,12 +609,12 @@ int PGFEM_par_matrix_zero_values(PGFEM_par_matrix *mat)
 }
 
 int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
-				    PGFEM_par_matrix_comm *comm)
+                    PGFEM_par_matrix_comm *comm)
 {
   int err = 0;
 
   /* allocate a communication context */
-  *comm = PGFEM_calloc(1,sizeof(comm_ctx));
+  *comm = PGFEM_calloc(comm_ctx, 1);
   comm_info *send = (comm_info *) mat->send_info;
   comm_info *recv = (comm_info *) mat->recv_info;
   comm_ctx *COMM = (comm_ctx*) *comm;
@@ -627,7 +625,7 @@ int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
   for(int i=0; i<recv->nproc; i++){
     int len = recv->n_info[i]*mat->n_cols;
     MPI_Irecv(r_rows[i].data,len,MPI_DOUBLE,recv->proc[i],
-	      MPI_ANY_TAG,mat->mpi_comm,&COMM->r_req[i]);
+          MPI_ANY_TAG,mat->mpi_comm,&COMM->r_req[i]);
   }
 
   /* post the sends */
@@ -635,14 +633,14 @@ int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
   for(int i=0; i<send->nproc; i++){
     int len = send->n_info[i]*mat->n_cols;
     MPI_Isend(s_rows[i].data,len,MPI_DOUBLE,send->proc[i],
-	      i /*tag*/,mat->mpi_comm,&COMM->s_req[i]);
+          i /*tag*/,mat->mpi_comm,&COMM->s_req[i]);
   }
 
   return err;
 }
 
 int PGFEM_par_matrix_end_assembly(PGFEM_par_matrix *mat,
-				  PGFEM_par_matrix_comm comm)
+                  PGFEM_par_matrix_comm comm)
 {
   int err = 0;
   comm_ctx *COMM = (comm_ctx*) comm;
@@ -667,8 +665,8 @@ int PGFEM_par_matrix_end_assembly(PGFEM_par_matrix *mat,
 }
 
 int PGFEM_par_matrix_get_column(const PGFEM_par_matrix *mat,
-				const int col_idx,
-				double *col)
+                const int col_idx,
+                double *col)
 {
   int err = 0;
   /* return error code if matrix is not assembled or specified column
@@ -690,10 +688,10 @@ int PGFEM_par_matrix_get_column(const PGFEM_par_matrix *mat,
 }
 
 int PGFEM_par_vec_dot(const int len,
-		      const double *vec_a,
-		      const double *vec_b,
-		      MPI_Comm comm,
-		      double *result)
+              const double *vec_a,
+              const double *vec_b,
+              MPI_Comm comm,
+              double *result)
 {
   int err = 0;
   *result = cblas_ddot(len,vec_a,1,vec_b,1);
@@ -708,10 +706,10 @@ static int PGFEM_par_matvec_compare_int(const void *a, const void *b)
 }
 
 static int set_local_value(const int row_start,
-			   const int n_row,
-			   const int n_col,
-			   const entry *e,
-			   double *data)
+               const int n_row,
+               const int n_col,
+               const entry *e,
+               double *data)
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
@@ -722,28 +720,28 @@ static int set_local_value(const int row_start,
 }
 
 static int set_off_proc_value(const int row_start,
-			      const int n_row,
-			      const int n_col,
-			      const entry *e,
-			      const int *row_ids,
-			      double *data)
+                  const int n_row,
+                  const int n_col,
+                  const entry *e,
+                  const int *row_ids,
+                  double *data)
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
-  int *row = bsearch(&loc_row_id,row_ids,n_row,sizeof(int),
-		     PGFEM_par_matvec_compare_int);
+  int *row = static_cast<int*>(bsearch(&loc_row_id, row_ids, n_row, sizeof(int),
+                                       PGFEM_par_matvec_compare_int));
   my_assert(row != NULL);
   int row_id = (row-row_ids);///sizeof(int);
   int idx = idx_2_gen(row_id,e->col,
-		      n_row,n_col);
+              n_row,n_col);
   data[idx] = e->val;
   return err;
 }
 static int add_to_local_value(const int row_start,
-			      const int n_row,
-			      const int n_col,
-			      const entry *e,
-			      double *data)
+                  const int n_row,
+                  const int n_col,
+                  const entry *e,
+                  double *data)
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
@@ -754,20 +752,20 @@ static int add_to_local_value(const int row_start,
 }
 
 static int add_to_off_proc_value(const int row_start,
-				 const int n_row,
-				 const int n_col,
-				 const entry *e,
-				 const int *row_ids,
-				 double *data)
+                 const int n_row,
+                 const int n_col,
+                 const entry *e,
+                 const int *row_ids,
+                 double *data)
 {
   int err = 0;
   int loc_row_id = e->row - row_start;
-  int *row = bsearch(&loc_row_id,row_ids,n_row,sizeof(int),
-		     PGFEM_par_matvec_compare_int);
+  int *row = static_cast<int*>(bsearch(&loc_row_id, row_ids, n_row, sizeof(int),
+                                       PGFEM_par_matvec_compare_int));
   my_assert(row != NULL);
   int row_id = (row-row_ids);///sizeof(int);
   int idx = idx_2_gen(row_id,e->col,
-		      n_row,n_col);
+              n_row,n_col);
   data[idx] += e->val;
   return err;
 }
@@ -781,7 +779,6 @@ static int add_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */
     int n_rec_row = recv->n_info[i];
@@ -789,7 +786,7 @@ static int add_assemble_matrix(PGFEM_par_matrix *mat)
       int loc_idx = idx_2_gen(r_rows[i].row_loc_ids[j],0,n_row,n_col);
       int rec_idx = idx_2_gen(j,0,n_rec_row,n_col);
       cblas_daxpy(n_col,1.0,&r_rows[i].data[rec_idx],1,
-		  &mat->data[loc_idx],1);
+          &mat->data[loc_idx],1);
     }
   }
   return err;
@@ -804,7 +801,6 @@ static int set_assemble_matrix(PGFEM_par_matrix *mat)
 
   MPI_Comm_rank(mat->mpi_comm,&myrank);
   int n_col = mat->n_cols;
-  int n_row = mat->n_own_rows[myrank];
   int row_len = n_col*sizeof(double);
 
   for(int i=0; i<recv->nproc; i++){ /* from each proc */
@@ -820,9 +816,9 @@ static int set_assemble_matrix(PGFEM_par_matrix *mat)
 
 static inline void build_entry(entry *e){}
 static inline void set_entry(const int row,
-			     const int col,
-			     const double val,
-			     entry *e)
+                 const int col,
+                 const double val,
+                 entry *e)
 {
   e->row = row;
   e->col = col;
@@ -831,7 +827,7 @@ static inline void set_entry(const int row,
 
 static inline void destroy_entry(entry *e){}
 static inline void destroy_entries(const int n_entry,
-				   entry *e)
+                   entry *e)
 {
   /* for(int i=0; i<n_entry) destroy_entry(e+i); */
   free(e);
@@ -841,14 +837,14 @@ static int compare_entry_row(const void *a, const void *b)
   return (((const entry*) a)->row - ((const entry*) b)->row);
 }
 static int get_sorted_list_of_entries(const int n_entries,
-				      const int *row_idx,
-				      const int *col_idx,
-				      const double *vals,
-				      entry **e)
+                      const int *row_idx,
+                      const int *col_idx,
+                      const double *vals,
+                      entry **e)
 {
   int err = 0;
   /* push data into entry list and sort by rows */
-  *e = PGFEM_calloc(n_entries,sizeof(entry));
+  *e = PGFEM_calloc(entry, n_entries);
   for(int i=0; i<n_entries; i++){
     build_entry(*e+i);
     set_entry(row_idx[i],col_idx[i],vals[i],*e+i);
@@ -859,9 +855,9 @@ static int get_sorted_list_of_entries(const int n_entries,
 
 
 static int build_comm_info(const int nproc,
-			   const int myrank,
-			   const int *proc_comm_info,
-			   comm_info *info)
+               const int myrank,
+               const int *proc_comm_info,
+               comm_info *info)
 {
   int err = 0;
   info->nproc = 0;
@@ -876,8 +872,8 @@ static int build_comm_info(const int nproc,
     if(proc_comm_info[i] > 0) info->nproc ++;
   }
 
-  info->proc = PGFEM_calloc(info->nproc,sizeof(int));
-  info->n_info = PGFEM_calloc(info->nproc,sizeof(int));
+  info->proc = PGFEM_calloc(int, info->nproc);
+  info->n_info = PGFEM_calloc(int, info->nproc);
 
   int idx = 0;
   for(int i=0; i<nproc; i++){
@@ -902,12 +898,12 @@ static void destroy_comm_info(comm_info *info)
 }
 
 static int build_off_proc_entries(const int n_rows,
-				  const int n_col,
-				  off_proc_entries *info)
+                  const int n_col,
+                  off_proc_entries *info)
 {
   int err = 0;
-  info->row_loc_ids = PGFEM_calloc(n_rows,sizeof(int));
-  info->data = PGFEM_calloc(n_rows*n_col,sizeof(double));
+  info->row_loc_ids = PGFEM_calloc(int, n_rows);
+  info->data = PGFEM_calloc(double, n_rows*n_col);
   return err;
 }
 
@@ -920,22 +916,22 @@ static void destroy_off_proc_entries(off_proc_entries *info)
 }
 
 static int build_comm_ctx(const int n_send,
-			  const int n_recv,
-			  comm_ctx *COMM)
+              const int n_recv,
+              comm_ctx *COMM)
 {
   int err = 0;
   COMM->r_req = NULL;
   COMM->r_stat = NULL;
   if(n_recv > 0){
-    COMM->r_req = PGFEM_calloc(n_recv,sizeof(MPI_Request));
-    COMM->r_stat = PGFEM_calloc(n_recv,sizeof(MPI_Status));
+    COMM->r_req = PGFEM_calloc(MPI_Request, n_recv);
+    COMM->r_stat = PGFEM_calloc(MPI_Status, n_recv);
   }
 
   COMM->s_req = NULL;
   COMM->s_stat = NULL;
   if(n_send > 0){
-    COMM->s_req = PGFEM_calloc(n_send,sizeof(MPI_Request));
-    COMM->s_stat = PGFEM_calloc(n_send,sizeof(MPI_Status));
+    COMM->s_req = PGFEM_calloc(MPI_Request, n_send);
+    COMM->s_stat = PGFEM_calloc(MPI_Status, n_send);
   }
   return err;
 }
@@ -952,8 +948,8 @@ static void destroy_comm_ctx(comm_ctx *COMM)
   COMM = NULL;
 }
 static void print_comm_info_graph(const int myrank,
-				  comm_info *send,
-				  comm_info *recv)
+                  comm_info *send,
+                  comm_info *recv)
 {
   char fname[500];
   comm_info *info = NULL;
@@ -961,12 +957,12 @@ static void print_comm_info_graph(const int myrank,
   for(int i=0; i<2; i++){
     switch(i){
     case 0: /* send */
-      sprintf(fname,"send_info_%0.3d.log",myrank);
+      sprintf(fname,"send_info_%.3d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = send;
       break;
     case 1: /* recv */
-      sprintf(fname,"recv_info_%0.3d.log",myrank);
+      sprintf(fname,"recv_info_%.3d.log",myrank);
       out = PGFEM_fopen(fname,"w");
       info = recv;
       break;
@@ -975,7 +971,7 @@ static void print_comm_info_graph(const int myrank,
     PGFEM_fprintf(out,"%% %d\n",info->nproc);
     for(int j=0; j<info->nproc; j++){
       PGFEM_fprintf(out,"%d %d %d\n",myrank,info->proc[j],
-		    info->n_info[j]);
+            info->n_info[j]);
     }
     PGFEM_fprintf(out,"\n");
     PGFEM_fclose(out);

@@ -42,6 +42,36 @@
 
 static const int FLAG_end = 0;
 
+// ttl declarations
+namespace {
+  /// Only dealing with 3 dimensional double data, but it is sometimes const.
+  template <int R, class S = double>
+  using Tensor = ttl::Tensor<R, 3, S>;
+    
+  template <int R, class S = double *>
+  using TensorA = ttl::Tensor<R, 3, S>;  
+  
+  template <int R, class S = double>
+  using Tensor9x9 = ttl::Tensor<R, 9, S>;
+  
+  template <int R>
+  using Delta = ttl::Tensor<R, 3, double>;
+  
+  template<class T1, class T2> int inv(T1 &A, T2 &AI)
+  {
+    int err = inv3x3(A.data, AI.data);
+    return err;
+  }   
+  
+  // ttl indexes
+  static constexpr ttl::Index<'i'> i;
+  static constexpr ttl::Index<'j'> j;
+  static constexpr ttl::Index<'k'> k;
+  static constexpr ttl::Index<'l'> l;
+  static constexpr ttl::Index<'m'> m;
+  static constexpr ttl::Index<'n'> n;
+}
+
 enum variable_names {
   VAR_pc_n,
   VAR_pc_np1,
@@ -93,23 +123,6 @@ enum param_index_names {
   PARAM_INX_NO
 };
 
-Define_Matrix(double);
-Define_Matrix(int);
-
-void matrix_print_name(Matrix(double) *A, char name[])
-{
-  printf("double %s[9] = {\t", name);
-  for(int ia=0; ia<9; ia++)
-  {
-    if(ia==3 || ia==6)
-      printf("\n\t\t\t");
-    printf("%.17e", A->m_pdata[ia]);
-    if(ia<8)
-      printf(",");
-  }
-  printf("};\n");
-}
-
 int test_cm_poro_viscoplasticity_model(Constitutive_model *m);
 
 /// Private structure for use exclusively with this model and
@@ -130,7 +143,7 @@ int poro_viscoplasticity_model_ctx_build(void **ctx,
                                          double *F,
                                          const double dt,
                                          const double alpha,
-                                          double *eFnpa,
+                                         double *eFnpa,
                                          double *hFn,
                                          double *hFnp1,
                                          const int is_coulpled_with_thermal,
@@ -160,27 +173,20 @@ int poro_viscoplasticity_model_ctx_build(void **ctx,
   return err;
 }
 
-static int cm_pvp_int_alg(Constitutive_model *m,
-                              const void *ctx)
+int CM_PVP_PARAM::integration_algorithm(Constitutive_model *m,
+                                        const void *ctx)
+const
 {
   int err = 0;
   
-//  err += test_cm_poro_viscoplasticity_model(m);
-
-
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
 
   const double dt = CTX->dt;
-  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  double *param     = (m->param)->model_param;
-  int    *param_idx = (m->param)->model_param_index;  
   
   memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;
-  
-  int myrank=0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
 
   err += pvp_intf_perform_integration_algorithm(Fs[TENSOR_Fnp1].m_pdata,
                                                 Fs[TENSOR_Fn].m_pdata,
@@ -193,13 +199,15 @@ static int cm_pvp_int_alg(Constitutive_model *m,
   return err;
 }
 
-static int cm_pvp_dev_stress(const Constitutive_model *m,
-                                 const void *ctx,
-                                 Matrix(double) *stress)
+
+int CM_PVP_PARAM::compute_dev_stress(const Constitutive_model *m,
+                                     const void *ctx,
+                                     double *stress)
+const
 {
   int err = 0;
-  auto CTX = (poro_viscoplasticity_ctx *) ctx;
-  double eC[DIM_3x3] = {};
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  double eC[DIM_3x3] = {};
       
 //  err += cp_compute_eC(CTX->F,eC);
 //  err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
@@ -207,43 +215,58 @@ static int cm_pvp_dev_stress(const Constitutive_model *m,
   return err;
 }
 
-static int cm_pvp_dudj(const Constitutive_model *m,
-                           const void *ctx,
-                           double *dudj)
+int CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
+                               const void *ctx,
+                               double *dudj)
+const
 {
   int err = 0;
-  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
 //  dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
 //  double J = det3x3(CTX->F);
 //  Pressure(J,m->param->p_hmat,dudj);
   return err;
 }
 
-static int cm_pvp_dev_tangent(const Constitutive_model *m,
-                                  const void *ctx,
-                                  Matrix(double) *tangent)
+int CM_PVP_PARAM::compute_dev_tangent(const Constitutive_model *m,
+                                      const void *ctx,
+                                      double *L)
+const
 {
   int err = 0;
-  auto CTX = (poro_viscoplasticity_ctx *) ctx;
-  double eC[DIM_3x3] = {};
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  double eC[DIM_3x3] = {};
   
 //  err += cp_compute_eC(CTX->F,eC);
 //  err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
   return err;
 }
 
+int CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
+                                 const void *ctx,
+                                 double *d2udj2)
+const
+{
+  int err = 0;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  double J = det3x3(CTX->F);
 
-int cm_pvp_update_elasticity(const Constitutive_model *m,
-                                       const void *ctx_in,
-                                       Matrix_double *L_in,
-                                       Matrix_double *S_in,
-                                       const int compute_stiffness)
+//  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
+//  D_Pressure(J,m->param->p_hmat,d2udj2);
+  return err;
+}
+
+int CM_PVP_PARAM::update_elasticity(const Constitutive_model *m,
+                                    const void *ctx_in,
+                                    double *L_in,
+                                    double *S,
+                                    const int compute_stiffness)
+const
 {
   int err = 0;
   auto ctx = (poro_viscoplasticity_ctx *) ctx_in;
   
   double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
   
   double pc = vars[VAR_pc_np1];
   switch(ctx->npa)
@@ -256,17 +279,17 @@ int cm_pvp_update_elasticity(const Constitutive_model *m,
       break;
   }
       
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;    
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   double *L = NULL;
   if(compute_stiffness)
-    L = L_in->m_pdata;
+    L = L_in;
   
   if(ctx->eFnpa)
   {
     err += pvp_intf_update_elasticity(ctx->eFnpa, 
                                       pc, 
-                                      S_in->m_pdata, 
+                                      S, 
                                       L, 
                                       mat_pvp,
                                       compute_stiffness);
@@ -274,237 +297,234 @@ int cm_pvp_update_elasticity(const Constitutive_model *m,
   else
   {
     // shorthand of deformation gradients
-    Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;  
-    Matrix(double) eF, pFnp1_I;  
-    Matrix_construct_init( double,eF,      DIM_3,DIM_3, 0.0); 
-    Matrix_construct_redim(double,pFnp1_I, DIM_3, DIM_3);  
-  
-    err += inv3x3(Fs[TENSOR_pFnp1].m_pdata, pFnp1_I.m_pdata);    
+    Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;  
+    Tensor<2> eF = {}, pFnp1_I;  
+    TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
+    
+    err += inv(pFnp1, pFnp1_I);    
     if(ctx->is_coulpled_with_thermal)
     {
-      Matrix(double) hFnp1, hFnp1_I;
-      hFnp1.m_row = hFnp1.m_col = DIM_3; hFnp1.m_pdata = ctx->hFnp1;
-      Matrix_construct_redim(double, hFnp1_I, DIM_3, DIM_3);
+      TensorA<2> hFnp1(ctx->hFnp1);
+      Tensor<2> hFnp1_I;
 
-      err += inv3x3(ctx->hFnp1,   hFnp1_I.m_pdata);
-      Matrix_Tns2_AxBxC(eF,1.0,0.0,Fs[TENSOR_Fnp1],hFnp1_I,pFnp1_I);
-      Matrix_cleanup(hFnp1_I);
+      err += inv(hFnp1, hFnp1_I);
+      eF = Fnp1(i,k)*hFnp1_I(k,l)*pFnp1_I(l,j);    
     }
-    else      
-      Matrix_AxB(eF,1.0,0.0,Fs[TENSOR_Fnp1],0,pFnp1_I,0);
+    else
+      eF = Fnp1(i,k)*pFnp1_I(k,j);
     
-    err += pvp_intf_update_elasticity(eF.m_pdata, 
+    err += pvp_intf_update_elasticity(eF.data, 
                                       pc, 
-                                      S_in->m_pdata, 
+                                      S, 
                                       L, 
                                       mat_pvp,
                                       compute_stiffness);
-    Matrix_cleanup(eF);
-    Matrix_cleanup(pFnp1_I);
-  }
-  if(err!=0)
-    printf("model id = %e\n", m->model_id);
-     
+  }     
   return err;
 }
 
-static int cm_pvp_d2udj2(const Constitutive_model *m,
-                             const void *ctx,
-                             double *d2udj2)
+
+
+int CM_PVP_PARAM::update_state_vars(Constitutive_model *m)
+const
 {
   int err = 0;
-  auto CTX = (poro_viscoplasticity_ctx *) ctx;
-  double J = det3x3(CTX->F);
-
-//  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
-//  D_Pressure(J,m->param->p_hmat,d2udj2);
-  return err;
-}
-
-static int cm_pvp_update(Constitutive_model *m)
-{
-  int err = 0;
-  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *state_var  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  for(int ia=0; ia<DIM_3x3; ia++)
-  {
-    Fs[TENSOR_Fnm1].m_pdata[ia]  = Fs[TENSOR_Fn].m_pdata[ia];
-    Fs[TENSOR_Fn].m_pdata[ia]    = Fs[TENSOR_Fnp1].m_pdata[ia];
-    Fs[TENSOR_pFnm1].m_pdata[ia] = Fs[TENSOR_pFn].m_pdata[ia];
-    Fs[TENSOR_pFn].m_pdata[ia]   = Fs[TENSOR_pFnp1].m_pdata[ia];    
-  }
+  Fs[TENSOR_Fnm1] = Fs[TENSOR_Fn];    
+  Fs[TENSOR_Fn]   = Fs[TENSOR_Fnp1];
+  Fs[TENSOR_pFnm1]= Fs[TENSOR_pFn];
+  Fs[TENSOR_pFn]  = Fs[TENSOR_pFnp1];
+  
   state_var[VAR_pc_nm1] = state_var[VAR_pc_n];
   state_var[VAR_pc_n]   = state_var[VAR_pc_np1];
   return err;
 }
 
-static int cm_pvp_reset(Constitutive_model *m)
+int CM_PVP_PARAM::reset_state_vars(Constitutive_model *m)
+const
 {
   int err = 0;
-  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  for(int ia=0; ia<DIM_3x3; ia++)
-  {
-    Fs[TENSOR_Fnp1].m_pdata[ia]  = Fs[TENSOR_Fn].m_pdata[ia];
-    Fs[TENSOR_pFnp1].m_pdata[ia] = Fs[TENSOR_pFn].m_pdata[ia];
-  }  
+  Fs[TENSOR_Fnp1]  = Fs[TENSOR_Fn];
+  Fs[TENSOR_pFnp1] = Fs[TENSOR_pFn];  
   state_var[VAR_pc_np1] = state_var[VAR_pc_n];
   return err;
 }
 
-int cm_pvp_get_subdiv_param(const Constitutive_model *m,
-                                double *subdiv_param, double dt)
+int CM_PVP_PARAM::get_subdiv_param(const Constitutive_model *m,
+                                   double *subdiv_param,
+                                   double dt)
+const
 {
-  int err = 0;
-  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
-  
+  int err = 0;  
   double alpha = 0.0;
   *subdiv_param = alpha/MAX_D_ALPHA;
   return err;
 }
 
-static int cm_pvp_info(Model_var_info **info)
+int CM_PVP_PARAM::get_var_info(Model_var_info &info)
+const 
 {
-  *info = malloc(sizeof(**info));
   int Fno = TENSOR_end;
   
-  (*info)->n_Fs = Fno;
-  (*info)->F_names = (char **)malloc(sizeof(char*)*Fno);
+  info.n_Fs = Fno;
+  info.F_names = (char **)malloc(sizeof(char*)*Fno);
   for(int a=0; a<Fno; a++)
-    (*info)->F_names[a] = (char *)malloc(sizeof(char)*1024);
+    info.F_names[a] = (char *)malloc(sizeof(char)*1024);
 
-  sprintf((*info)->F_names[TENSOR_Fn],    "Fn");
-  sprintf((*info)->F_names[TENSOR_pFn],   "pFn");
-  sprintf((*info)->F_names[TENSOR_Fnp1],  "Fnp1");
-  sprintf((*info)->F_names[TENSOR_pFnp1], "pFnp1");
-  sprintf((*info)->F_names[TENSOR_Fnm1],  "Fnm1");
-  sprintf((*info)->F_names[TENSOR_pFnm1], "pFnm1");
+  sprintf(info.F_names[TENSOR_Fn],    "Fn");
+  sprintf(info.F_names[TENSOR_pFn],   "pFn");
+  sprintf(info.F_names[TENSOR_Fnp1],  "Fnp1");
+  sprintf(info.F_names[TENSOR_pFnp1], "pFnp1");
+  sprintf(info.F_names[TENSOR_Fnm1],  "Fnm1");
+  sprintf(info.F_names[TENSOR_pFnm1], "pFnm1");
   
   int varno = VAR_end;
-  (*info)->n_vars = varno;
-  (*info)->var_names = (char **)malloc(sizeof(char*)*varno);
+  info.n_vars = varno;
+  info.var_names = (char **)malloc(sizeof(char*)*varno);
   for(int a=0; a<varno; a++)
-    (*info)->var_names[a] = (char *)malloc(sizeof(char)*1024);
+    info.var_names[a] = (char *)malloc(sizeof(char)*1024);
   
-  sprintf((*info)->var_names[VAR_pc_n],   "pc_n");
-  sprintf((*info)->var_names[VAR_pc_np1], "pc_np1");
-  sprintf((*info)->var_names[VAR_pc_nm1], "pc_nm1");
+  sprintf(info.var_names[VAR_pc_n],   "pc_n");
+  sprintf(info.var_names[VAR_pc_np1], "pc_np1");
+  sprintf(info.var_names[VAR_pc_nm1], "pc_nm1");
 
-  (*info)->n_flags = FLAG_end;
-  (*info)->flag_names = malloc(FLAG_end * sizeof( ((*info)->flag_names) ));
+  info.n_flags = FLAG_end;
+  info.flag_names = (char **) malloc(FLAG_end * sizeof( (info.flag_names) ));
 
   return 0;
 }
 
-
-static int cm_pvp_get_F(const Constitutive_model *m,
-                            Matrix(double) *F)
+int CM_PVP_PARAM::get_pF(const Constitutive_model *m,
+                         double *F,
+                         const int stepno)
+const 
 {
   int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1]);
-  return err;
-}
-
-static int cm_pvp_get_Fn(const Constitutive_model *m,
-                             Matrix(double) *F)
-{
-  int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn]);
-  return err;
-}
-
-static int cm_pvp_get_Fnm1(const Constitutive_model *m,
-                             Matrix(double) *F)
-{
-  int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1]);
-  return err;
-}
-
-static int cm_pvp_get_pF(const Constitutive_model *m,
-                             Matrix(double) *F)
-{
-  int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1]);
-  return err;
-}
-
-static int cm_pvp_get_pFn(const Constitutive_model *m,
-                              Matrix(double) *F)
-{
-  int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFn]);
-  return err;
-}
-
-static int cm_pvp_get_pFnm1(const Constitutive_model *m,
-                              Matrix(double) *F)
-{
-  int err = 0;
-  Matrix_AeqB(*F,1.0,m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1]);
-  return err;
-}
-
-static int cm_pvp_get_eF(const Constitutive_model *m,
-                             Matrix(double) *F)
-{
-  int err = 0;
-  Matrix(double) invFp;
-  Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1].m_pdata,invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1], 0, invFp, 0);
-  Matrix_cleanup(invFp);
-  return err;
-}
-
-static int cm_pvp_get_eFn(const Constitutive_model *m,
-                              Matrix(double) *F)
-{
-  int err = 0;
-  Matrix(double) invFp;
-  Matrix_construct_redim(double,invFp,DIM_3,DIM_3);
-  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFn].m_pdata, invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fn], 0, invFp, 0);
-  Matrix_cleanup(invFp);
-  return err;
-}
-
-static int cm_pvp_get_eFnm1(const Constitutive_model *m,
-                              Matrix(double) *F)
-{
-  int err = 0;
-  Matrix(double) invFp;
-  Matrix_construct_redim(double,invFp,DIM_3,DIM_3);  
-  err += inv3x3(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1].m_pdata,invFp.m_pdata);
-  Matrix_AxB(*F, 1.0, 0.0, m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1], 0, invFp, 0);
-  Matrix_cleanup(invFp);
-  return err;
-}
-
-static int cm_pvp_get_eF_with_thermal(const Constitutive_model *m,
-                                          Matrix(double) *eF,
-                                          const Matrix(double) *hFI,
-                                          const int stepno)
-{
-  int err = 0;
-  double temp[DIM_3x3];
-  Matrix(double) pFI;
-  pFI.m_pdata = temp; pFI.m_row = pFI.m_col = DIM_3;
-  
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   switch(stepno)
   {
     case 0: // n-1
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnm1], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnm1],*hFI,pFI);
+      memcpy(F,Fs[TENSOR_pFnm1].m_pdata,DIM_3x3*sizeof(double));
       break;
     case 1: // n
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFn], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fn],*hFI,pFI);      
+      memcpy(F,Fs[TENSOR_pFn].m_pdata,  DIM_3x3*sizeof(double));
+      break;      
+    case 2: // n+1
+      memcpy(F,Fs[TENSOR_pFnp1].m_pdata,DIM_3x3*sizeof(double));
+      break;      
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+  return err;
+}
+
+int CM_PVP_PARAM::get_F(const Constitutive_model *m,
+                        double *F,
+                        const int stepno)
+const 
+{
+  int err = 0;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  switch(stepno)
+  {
+    case 0: // n-1
+      memcpy(F,Fs[TENSOR_Fnm1].m_pdata,DIM_3x3*sizeof(double));
+      break;
+    case 1: // n
+      memcpy(F,Fs[TENSOR_Fn].m_pdata,  DIM_3x3*sizeof(double));
       break;
     case 2: // n+1
-      Matrix_inv(m->vars_list[0][m->model_id].Fs[TENSOR_pFnp1], pFI);
-      Matrix_Tns2_AxBxC(*eF,1.0,0.0,m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1],*hFI,pFI);      
+      memcpy(F,Fs[TENSOR_Fnp1].m_pdata,DIM_3x3*sizeof(double));
       break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+  return err;
+}
+
+int CM_PVP_PARAM::get_eF(const Constitutive_model *m,
+                         double *eF_in,
+                         const int stepno)
+const
+{
+  int err = 0;
+  Tensor<2> pFI;
+  TensorA<2> eF(eF_in);
+  
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  switch(stepno)
+  {
+    case 0: // n-1
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFnm1].m_pdata), F(Fs[TENSOR_Fnm1].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*pFI(k,j);
+      break;
+    }
+    case 1: // n
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFn].m_pdata), F(Fs[TENSOR_Fn].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*pFI(k,j);
+      break;
+    }
+    case 2: // n+1
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFnp1].m_pdata), F(Fs[TENSOR_Fnp1].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*pFI(k,j);
+      break;
+    }
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+
+  return err;
+}
+
+int CM_PVP_PARAM::get_eF_of_hF(const Constitutive_model *m,
+                               double *eF_in,
+                               double *hFI_in,
+                               const int stepno)
+const
+{
+  int err = 0;
+  Tensor<2> pFI;
+  TensorA<2> eF(eF_in), hFI(hFI_in);
+  
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  switch(stepno)
+  {
+    case 0: // n-1
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFnm1].m_pdata), F(Fs[TENSOR_Fnm1].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*hFI(k,l)*pFI(l,j);
+      break;
+    }
+    case 1: // n
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFn].m_pdata), F(Fs[TENSOR_Fn].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*hFI(k,l)*pFI(l,j);      
+      break;
+    }
+    case 2: // n+1
+    {  
+      TensorA<2> pF(Fs[TENSOR_pFnp1].m_pdata), F(Fs[TENSOR_Fnp1].m_pdata);
+      inv(pF, pFI);
+      eF = F(i,k)*hFI(k,l)*pFI(l,j);
+      break;
+    }
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -514,11 +534,12 @@ static int cm_pvp_get_eF_with_thermal(const Constitutive_model *m,
   return err;      
 }
 
-static int cm_pvp_reset_using_temporal(const Constitutive_model *m, State_variables *var)
-{
+int CM_PVP_PARAM::reset_state_vars_using_temporal(const Constitutive_model *m, 
+                                                  State_variables *var)
+const {
   int err = 0;
-  Matrix(double) *Fs    = m->vars_list[0][m->model_id].Fs;
-  Matrix(double) *Fs_in = var->Fs;
+  Matrix<double> *Fs    = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs_in = var->Fs;
   double *state_var     = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   double *state_var_in  = var->state_vars[0].m_pdata;
 
@@ -536,11 +557,12 @@ static int cm_pvp_reset_using_temporal(const Constitutive_model *m, State_variab
   return err;
 }
 
-static int cm_pvp_update_np1_to_temporal(const Constitutive_model *m, State_variables *var)
-{
+int CM_PVP_PARAM::update_np1_state_vars_to_temporal(const Constitutive_model *m, 
+                                                    State_variables *var)
+const{
   int err = 0;
-  Matrix(double) *Fs    = var->Fs;
-  Matrix(double) *Fs_in = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs    = var->Fs;
+  Matrix<double> *Fs_in = m->vars_list[0][m->model_id].Fs;
   double *state_var     = var->state_vars[0].m_pdata;
   double *state_var_in  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
     
@@ -556,11 +578,12 @@ static int cm_pvp_update_np1_to_temporal(const Constitutive_model *m, State_vari
   return err;
 }
 
-static int cm_pvp_save_to_temporal(const Constitutive_model *m, State_variables *var)
-{
+int CM_PVP_PARAM::save_state_vars_to_temporal(const Constitutive_model *m, 
+                                              State_variables *var)
+const{
   int err = 0;
-  Matrix(double) *Fs_in = m->vars_list[0][m->model_id].Fs;
-  Matrix(double) *Fs    = var->Fs;
+  Matrix<double> *Fs_in = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs    = var->Fs;
   double *state_var     = var->state_vars[0].m_pdata;
   double *state_var_in  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
   
@@ -576,27 +599,38 @@ static int cm_pvp_save_to_temporal(const Constitutive_model *m, State_variables 
   return err;
 }
 
-static int cm_pvp_get_hardening(const Constitutive_model *m,
-                                    double *var)
+int CM_PVP_PARAM::get_hardening(const Constitutive_model *m,
+                                double *var,
+                                const int stepno)
+const 
 {
   int err = 0;
-  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_pc_np1];
-        
-  return err;
-}
-static int cm_pvp_get_hardening_nm1(const Constitutive_model *m,
-                                    double *var)
-{
-  int err = 0;
-  *var = m->vars_list[0][m->model_id].state_vars->m_pdata[VAR_pc_nm1];
-  return err;
+  double *s_var = m->vars_list[0][m->model_id].state_vars->m_pdata;
+  switch(stepno)
+  {
+    case 0: // n-1
+      *var = s_var[VAR_pc_nm1];
+      break;
+    case 1: // n
+      *var = s_var[VAR_pc_n];
+      break;
+    case 2: // n+1
+      *var = s_var[VAR_pc_np1];
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  assert(err == 0);
+  return err;  
 }
 
-static int cm_pvp_write_restart(FILE *fp, const Constitutive_model *m)
+int CM_PVP_PARAM::write_restart(FILE *fp, const Constitutive_model *m)
+const
 {
 
   int err = 0;
-  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var  = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
   err += cm_write_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
@@ -609,10 +643,11 @@ static int cm_pvp_write_restart(FILE *fp, const Constitutive_model *m)
   return err;
 }
 
-static int cm_pvp_read_restart(FILE *fp, Constitutive_model *m)
+int CM_PVP_PARAM::read_restart(FILE *fp, Constitutive_model *m)
+const
 {
   int err = 0;
-  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
   err += cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
@@ -621,19 +656,16 @@ static int cm_pvp_read_restart(FILE *fp, Constitutive_model *m)
   err += cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
                                                         
   fscanf(fp, "%lf %lf\n", state_var+VAR_pc_n, state_var+VAR_pc_nm1);
-  
-  Matrix_AeqB(Fs[TENSOR_Fnp1],     1.0,Fs[TENSOR_Fn]);
-  Matrix_AeqB(Fs[TENSOR_pFnp1],    1.0,Fs[TENSOR_pFn]);
-  state_var[VAR_pc_np1] = state_var[VAR_pc_n];
 
-  err += cm_pvp_reset(m);
+  err += this->reset_state_vars(m);
   return 0;  
 }
 
-int cm_pvp_ctx_destroy(void **ctx)
+int CM_PVP_PARAM::destroy_ctx(void **ctx)
+const
 {
   int err = 0;
-  poro_viscoplasticity_ctx *t_ctx = *ctx;
+  poro_viscoplasticity_ctx *t_ctx = (poro_viscoplasticity_ctx *) *ctx;
   /* invalidate handle */
   *ctx = NULL;
 
@@ -647,25 +679,24 @@ int cm_pvp_ctx_destroy(void **ctx)
   return err;
 }
 
-static int cm_pvp_compute_dMdu(const Constitutive_model *m,
-                                   const void *ctx,
-                                   const double *Grad_op,
-                                   const int nne,
-                                   const int nsd,
-                                   double *dM_du)
+
+int CM_PVP_PARAM::compute_dMdu(const Constitutive_model *m,
+                               const void *ctx,
+                               const double *Grad_op,
+                               const int nne,
+                               const int nsd,
+                               double *dM_du)
+const
 {
   int err = 0;
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
   const double dt = CTX->dt;
-  Matrix(double) *Fs = m->vars_list[0][m->model_id].Fs;
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  double *param     = (m->param)->model_param;
-  int    *param_idx = (m->param)->model_param_index;  
-
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
   
   double dMdF_in[DIM_3x3x3x3];
-  Matrix(double) dMdF;
+  Matrix<double> dMdF;
   
   err += pvp_intf_compute_dMdF(dMdF_in,
                                Fs[TENSOR_Fnp1].m_pdata,
@@ -677,29 +708,24 @@ static int cm_pvp_compute_dMdu(const Constitutive_model *m,
                                mat_pvp,
                                dt);
 
-  dMdF.m_pdata = dMdF_in;
-  dMdF.m_row = DIM_3x3x3x3;
-  dMdF.m_col = 1;
+  dMdF.use_reference(DIM_3x3x3x3, 1, dMdF_in);
 
-  Matrix(double) dMdu_ab, Grad_op_ab;
-     dMdu_ab.m_row =    dMdu_ab.m_col = DIM_3;
-  Grad_op_ab.m_row = Grad_op_ab.m_col = DIM_3;
-  
-
+  Matrix<double> dMdu_ab;
+//  double *Grad_op_ab = new double[DIM_3x3];
     
   for (int a = 0; a<nne; a++)
   {
     for(int b = 0; b<nsd; b++)
     {
       int idx_ab = idx_4_gen(a,b,0,0,nne,nsd,DIM_3,DIM_3);
-         dMdu_ab.m_pdata = dM_du + idx_ab;
-      Grad_op_ab.m_pdata = Grad_op + idx_ab;
+      dMdu_ab.use_reference(DIM_3,DIM_3, dM_du + idx_ab);
+ //     memcpy(Grad_op_ab,Grad_op+idx_ab,DIM_3x3*sizeof(double));
       
       for(int w = 1; w<=DIM_3; w++)
       {
         for(int x = 1; x<=DIM_3; x++)
         {
-          Mat_v(dMdu_ab,w,x) = 0.0;
+          dMdu_ab(w,x) = 0.0;
 /*          for(int y = 1; y<=DIM_3; y++)
           {
             for(int z = 1; z<=DIM_3; z++)
@@ -714,18 +740,16 @@ static int cm_pvp_compute_dMdu(const Constitutive_model *m,
 }
 
 /* THIS IS A FUNCTION STUB. */
-static int cm_pvp_set_init_vals(Constitutive_model *m)
+int CM_PVP_PARAM::set_init_vals(Constitutive_model *m)
+const
 {
   // inital values are set in the more convoluted
   // read_constitutive_model_parameters->plasticity_model_read_parameters
   //   calling sequence
   
-  Matrix(double) *Fs = (m->vars_list[0][m->model_id]).Fs;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *param      = (m->param)->model_param;
   double *vars       = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
-
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;
-
   double pJ   = param[PARAM_pJ];
   
   double pF11 = pow(pJ, 1.0/3.0);
@@ -756,15 +780,14 @@ static int cm_pvp_set_init_vals(Constitutive_model *m)
   return 0;
 }
 
-/* THIS IS A FUNCTION STUB. */
-static int cm_pvp_read(Model_parameters *p,
-                       FILE *in)
+int CM_PVP_PARAM::read_param(FILE *in)
+const
 {
   int err = 0;
 
   /* get pointer to parameter data */
-  double *param     = p->model_param;
-  int    *param_idx = p->model_param_index;
+  double *param     = this->model_param;
+  int    *param_idx = this->model_param_index;
   assert(param     != NULL); // check the pointer
   assert(param_idx != NULL); // check the pointer
 
@@ -799,8 +822,8 @@ static int cm_pvp_read(Model_parameters *p,
   assert(!feof(in) && "EOF reached prematurely");
 
   bool usingSmoothMacauleyBrackets = true;  
-  p->cm_mat_2->mat_pvp = new KMS_IJSS2017_Parameters;
-  (p->cm_mat_2->mat_pvp)->set_parameters(param[PARAM_yf_M],
+  this->cm_mat->mat_pvp = new KMS_IJSS2017_Parameters;
+  (this->cm_mat->mat_pvp)->set_parameters(param[PARAM_yf_M],
                                          param[PARAM_yf_alpha],
                                          param[PARAM_flr_m],
                                          param[PARAM_flr_gamma0],
@@ -824,80 +847,24 @@ static int cm_pvp_read(Model_parameters *p,
   return err;
 }
 
-static size_t cm_pvp_get_size(const Constitutive_model *m)
-{
-  return state_variables_get_packed_size(m->vars_list[0]+m->model_id);
-}
 
-static int cm_pvp_pack(const Constitutive_model *m,
-                    char *buffer,
-                    size_t *pos)
-{
-  return state_variables_pack(m->vars_list[0]+m->model_id, buffer, pos);
-}
-
-static int cm_pvp_unpack(Constitutive_model *m,
-                     const char *buffer,
-                     size_t *pos)
-{
-  return state_variables_unpack(m->vars_list[0]+m->model_id, buffer, pos);
-}
-                                        
-int poro_viscoplasticity_model_initialize(Model_parameters *p)
+int CM_PVP_PARAM::model_dependent_initialization(void)
 {
   int err = 0;
 
-  /* set functions */
-  p->integration_algorithm = cm_pvp_int_alg;
-  p->compute_dev_stress    = cm_pvp_dev_stress;
-  p->compute_dudj          = cm_pvp_dudj;
-  p->compute_dev_tangent   = cm_pvp_dev_tangent;
-  p->update_elasticity     = cm_pvp_update_elasticity;
-  p->compute_d2udj2        = cm_pvp_d2udj2;
-  p->update_state_vars     = cm_pvp_update;
-  p->reset_state_vars      = cm_pvp_reset;
-  p->get_subdiv_param      = cm_pvp_get_subdiv_param;
-  p->get_var_info          = cm_pvp_info;
-  p->get_F                 = cm_pvp_get_F;
-  p->get_Fn                = cm_pvp_get_Fn;
-  p->get_Fnm1              = cm_pvp_get_Fnm1;  
-  p->get_pF                = cm_pvp_get_pF;
-  p->get_pFn               = cm_pvp_get_pFn;
-  p->get_pFnm1             = cm_pvp_get_pFnm1;    
-  p->get_eF                = cm_pvp_get_eF;
-  p->get_eFn               = cm_pvp_get_eFn;
-  p->get_eFnm1             = cm_pvp_get_eFnm1;
-  p->get_eF_of_hF          = cm_pvp_get_eF_with_thermal;
-
-  p->reset_state_vars_using_temporal   = cm_pvp_reset_using_temporal;
-  p->update_np1_state_vars_to_temporal = cm_pvp_update_np1_to_temporal;
-  p->save_state_vars_to_temporal       = cm_pvp_save_to_temporal;
-    
-  p->get_hardening         = cm_pvp_get_hardening;
-  p->get_hardening_nm1     = cm_pvp_get_hardening_nm1;  
-  p->get_plast_strain_var  = cm_get_lam_p;
-  p->write_restart         = cm_pvp_write_restart;
-  p->read_restart          = cm_pvp_read_restart;
-  p->destroy_ctx           = cm_pvp_ctx_destroy;
-  p->compute_dMdu          = cm_pvp_compute_dMdu;
-  p->set_init_vals         = cm_pvp_set_init_vals;
-  p->read_param            = cm_pvp_read;
-  p->get_size              = cm_pvp_get_size;
-  p->pack                  = cm_pvp_pack;
-  p->unpack                = cm_pvp_unpack;
-  p->type                  = POROVISCO_PLASTICITY;
-
-  p->n_param           = PARAM_NO;
-  p->model_param       = (double *) calloc(PARAM_NO, sizeof(*(p->model_param)));
-  p->n_param_index     = PARAM_INX_NO;
-  p->model_param_index = (int *) calloc(PARAM_INX_NO, sizeof(*(p->model_param_index)));
+  this->type              = POROVISCO_PLASTICITY;
+  this->n_param           = PARAM_NO;
+  this->model_param       = new double[PARAM_NO]();
+  this->n_param_index     = PARAM_INX_NO;
+  this->model_param_index = new int [PARAM_INX_NO]();  
+  
   return err;
 }
 
-int poro_viscoplasticity_model_destroy(Model_parameters *p)
+int CM_PVP_PARAM::model_dependent_finalization(void)
 {
   int err = 0;
-  delete (p->cm_mat_2)->mat_pvp;  
+  delete (this->cm_mat)->mat_pvp;  
   return err;
 }
 
@@ -911,7 +878,7 @@ int test_cm_poro_viscoplasticity_model(Constitutive_model *m)
 
   double *param = (m->param)->model_param;
   
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat_2->mat_pvp;
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
   
   double p0 = param[PARAM_K_p0];
   double h  = pvp_intf_hardening_law(p0, mat_pvp);

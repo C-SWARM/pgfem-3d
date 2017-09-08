@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # number of precesses is fixed to 8 for this example
-#NP=8
+NP=8
 filebase=box
 
 if [ $# -lt 1 ]; then
@@ -40,7 +40,7 @@ fi
 #branch=master
 
 TEST_DIR=$PWD
-exe=$PGFEM3D_INSTALL/${branch}/bin/PGFem3D
+exe=../../build/src/PGFem3D
 
 # inputs
 IN_DIR=${TEST_DIR}/${filebase}_${NP}CPU_${test_name}

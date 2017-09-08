@@ -1,5 +1,5 @@
 default:
-	@echo ${TEST_DIR}
+	@echo ${pgfem_root_dir}
 	(cd src ; make )
 
 clean:

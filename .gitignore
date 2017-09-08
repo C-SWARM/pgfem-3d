@@ -12,6 +12,8 @@ src/*driver
 install/
 
 # autotools stuff
+ar-lib
+test-driver
 Makefile.in
 Makefile
 /autom4te.cache
@@ -29,3 +31,20 @@ include/config.h*
 
 # other
 src/bpa.dat
+
+# copied during configuration
+verification_MMS/dynamics.cc
+verification_MMS/super_main.cc
+
+# libtool generated files
+ltmain.sh
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+config.guess
+config.sub
+
+# for convenience during development
+build

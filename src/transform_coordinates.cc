@@ -9,26 +9,26 @@
 
 /* TESTED MM 1/21/2013 */
 void transform_coordinates(const int n_pts,
-			   const double *x,
-			   const double *y,
-			   const double *z,
-			   const double *e1,
-			   const double *e2,
-			   const double *n,
-			   const int TRANS, /* boolean to use transpose */
-			   double *tx,
-			   double *ty,
-			   double *tz)
+               const double *x,
+               const double *y,
+               const double *z,
+               const double *e1,
+               const double *e2,
+               const double *n,
+               const int TRANS, /* boolean to use transpose */
+               double *tx,
+               double *ty,
+               double *tz)
 {
   /*
     TRANS = 0 ==> Global to local coordinates
     TRANS = 1 ==> Local to global coordinates
    */
-  double *TM = PGFEM_calloc(9,sizeof(double));
+  double *TM = PGFEM_calloc(double, 9);
   transformation_matrix(e1,e2,n,TM);
 
-  double *result_mat = PGFEM_calloc(3*n_pts,sizeof(double));
-  double *coords_mat = PGFEM_calloc(3*n_pts,sizeof(double));
+  double *result_mat = PGFEM_calloc(double, 3*n_pts);
+  double *coords_mat = PGFEM_calloc(double, 3*n_pts);
   /* coords_mat = { x , y , z }' */
   memcpy(coords_mat,             x,n_pts*sizeof(double));
   memcpy(coords_mat + n_pts,     y,n_pts*sizeof(double));
@@ -36,12 +36,12 @@ void transform_coordinates(const int n_pts,
 
   if(TRANS){
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-		3,n_pts,3,1.0,TM,3,coords_mat,n_pts,
-		0.0,result_mat,n_pts);
+        3,n_pts,3,1.0,TM,3,coords_mat,n_pts,
+        0.0,result_mat,n_pts);
   } else {
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-		3,n_pts,3,1.0,TM,3,coords_mat,n_pts,
-		0.0,result_mat,n_pts);
+        3,n_pts,3,1.0,TM,3,coords_mat,n_pts,
+        0.0,result_mat,n_pts);
   }
 
   /* result_mat = { tx , ty , tz }' */
@@ -56,9 +56,9 @@ void transform_coordinates(const int n_pts,
 
 /* TESTED MM 1/21/2013 */
 void transformation_matrix(const double *e1,
-			   const double *e2,
-			   const double *n,
-			   double *tm)
+               const double *e2,
+               const double *n,
+               double *tm)
 {
   /* T = { e1 , e2 , n }' */
   memcpy(tm,e1,3*sizeof(double));
@@ -70,7 +70,7 @@ void transformation_matrix(const double *e1,
 /*=============================================================================
   DRIVER PROGRAM
   compile command:
-  
+
   icc -Wall -O0 -std=c99 -I../include \
   -I/opt/crc/intel/12.0/mkl/include -DTRANSFORM_COORDINATES_DRIVER -o \
   tc_driver transform_coordinates.c -Wl,--start-group \
@@ -84,8 +84,8 @@ void transformation_matrix(const double *e1,
 #include <math.h>
 #include <stdio.h>
 static void cross_product(const double *a,
-			  const double *b,
-			  double *c)
+              const double *b,
+              double *c)
 {
   c[0] = a[1]*b[2] - a[2]*b[1];
   c[1] = a[2]*b[0] - a[0]*b[2];
@@ -93,7 +93,7 @@ static void cross_product(const double *a,
 }
 
 static void print_array(const int len,
-			const double *a)
+            const double *a)
 {
   for(int i=0; i<len; i++){
     printf("%f ",a[i]);
@@ -103,18 +103,18 @@ static void print_array(const int len,
 
 int main()
 {
-  const int n_pts = 3; /* here we MUST use three to guarantee plane */
-  double *x = PGFEM_calloc(n_pts,sizeof(double));
-  double *y = PGFEM_calloc(n_pts,sizeof(double));
-  double *z = PGFEM_calloc(n_pts,sizeof(double));
-  double *tx = PGFEM_calloc(n_pts,sizeof(double));
-  double *ty = PGFEM_calloc(n_pts,sizeof(double));
-  double *tz = PGFEM_calloc(n_pts,sizeof(double));
+  constexpr int n_pts = 3; /* here we MUST use three to guarantee plane */
+  double *x = PGFEM_calloc(double, n_pts);
+  double *y = PGFEM_calloc(double, n_pts);
+  double *z = PGFEM_calloc(double, n_pts);
+  double *tx = PGFEM_calloc(double, n_pts);
+  double *ty = PGFEM_calloc(double, n_pts);
+  double *tz = PGFEM_calloc(double, n_pts);
 
-  double *coords = PGFEM_calloc(n_pts*3,sizeof(double));
-  double *e1 = PGFEM_calloc(n_pts,sizeof(double));
-  double *e2 = PGFEM_calloc(n_pts,sizeof(double));
-  double *n = PGFEM_calloc(n_pts,sizeof(double));
+  double *coords = PGFEM_calloc(double, n_pts*3);
+  double *e1 = PGFEM_calloc(double, n_pts);
+  double *e2 = PGFEM_calloc(double, n_pts);
+  double *n = PGFEM_calloc(double, n_pts);
 
   /* get random coordinates for the three points */
   for(int i=0; i<n_pts; i++){
