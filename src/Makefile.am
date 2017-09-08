@@ -21,14 +21,16 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
               -I$(top_builddir)/include \
               $(SUITESPARSE_INCLUDE) \
               $(TTL_INCLUDE) \
-              $(GCM_INCLUDE) \
+              $(LIBGCM_CPPFLAGS) \
               $(LAPACK_INCLUDE)
 
-libpgfem3d_la_LIBADD = $(builddir)/solvers/libsolvers.la \
-                       $(top_builddir)/FEMLIB/src/libPGFem3D_FEMLIB.la \
-                       $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
-                       $(top_builddir)/energy_equation/src/libenergy_equation.la \
-                       $(VTK_LDFLAGS) $(VTK_LIBS)
+libpgfem3d_la_LIBADD = \
+  $(builddir)/solvers/libsolvers.la \
+  $(top_builddir)/FEMLIB/src/libPGFem3D_FEMLIB.la \
+  $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
+  $(top_builddir)/energy_equation/src/libenergy_equation.la \
+  $(LIBGCM_LIBADD) \
+  $(VTK_LDFLAGS) $(VTK_LIBS)
 
 libpgfem3d_la_SOURCES = ALM.cc \
                         Arc_length.cc \

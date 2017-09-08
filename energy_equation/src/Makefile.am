@@ -5,7 +5,7 @@ libenergy_equation_la_CPPFLAGS = -Wall -Werror \
                                  -I$(top_srcdir)/FEMLIB/include \
                                  -I$(top_srcdir)/include \
                                  -I$(top_builddir)/include \
-                                 $(GCM_INCLUDE) \
+                                 $(LIBGCM_CPPFLAGS) \
                                  $(TTL_INCLUDE) \
                                  $(LAPACK_INCLUDE)
 

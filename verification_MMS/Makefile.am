@@ -10,7 +10,7 @@ AM_CPPFLAGS = -Wall -Werror \
               -I$(top_srcdir)/FEMLIB/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
               -I$(top_builddir)/include \
-              $(GCM_INCLUDE) \
+              $(LIBGCM_CPPFLAGS) \
               $(LAPACK_INCLUDE) \
               $(HYPRE_INCLUDE)
 

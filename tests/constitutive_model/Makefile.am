@@ -14,7 +14,7 @@ AM_CPPFLAGS = -Wall -Werror \
               $(HYPRE_INCLUDE) \
               $(SUITESPARSE_INCLUDE) \
               $(TTL_INCLUDE) \
-              $(GCM_INCLUDE) \
+              $(LIBGCM_CPPFLAGS) \
               $(LAPACK_INCLUDE)
 
 AM_LDFLAGS  = $(VTK_LDFLAGS)
