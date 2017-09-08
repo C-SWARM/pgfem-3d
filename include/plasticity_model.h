@@ -85,9 +85,6 @@ class CP_PARAM: public Model_parameters
   virtual int read_param(FILE *in) const;
 };
 
-struct Model_parameters;
-struct Constitutive_model;
-
 /**
  * Initialize the Model_parameters object for this particular model.
  *

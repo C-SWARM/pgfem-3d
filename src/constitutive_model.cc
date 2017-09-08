@@ -383,7 +383,7 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
       p[model_id] = new CM_IVD_PARAM;
       break;
     case J2_PLASTICITY_DAMAGE:
-      p[model_id] = new HE_PARAM; //<<-- needs to be updated
+      p[model_id] = new CM_J2P_PARAM;
       break;
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);

@@ -74,9 +74,8 @@ static int compute_stress(double * __restrict sig,
   const double kappa = hommat_get_kappa(m->param->p_hmat);
   err += m->param->compute_dudj(m,ctx,&p);
   p *= kappa;
-  Matrix<double> S;
-  Matrix_construct_redim(double,S,3,3);
-  err += m->param->compute_dev_stress(m,ctx,&S);
+  Matrix<double> S(3,3);
+  err += m->param->compute_dev_stress(m,ctx,S.m_pdata);
 
   /* push stress forward */
   const double *Fe = m->vars_list[0][m->model_id].Fs[0].m_pdata;
@@ -126,29 +125,26 @@ static int write_data_point(FILE *f,
 int main(int argc, char **argv)
 {
   int err = 0;
-  FILE *in = fopen("j2d.props","r");
+  
   FILE *out = fopen("j2d.dat","w");
+  HOMMAT mat; 
+  CM_J2P_PARAM p;
+  Constitutive_model m;
+  m.model_id = 0;
+  State_variables *sv = new State_variables;
+  m.vars_list = &sv;
 
-  HOMMAT *p_hmat = PGFEM_calloc(HOMMAT, 1);
-  hommat_assign_values(p_hmat);
-  // const double kappa = hommat_get_kappa(p_hmat);
-
-  Model_parameters *p = PGFEM_malloc<Model_parameters>();
-  err += model_parameters_construct(p);
-  err += model_parameters_initialize(p, p_hmat, J2_PLASTICITY_DAMAGE);
-  if (in == NULL) {
-    param_assign_values(p->model_param, p_hmat);
-  } else {
-    printf("READING PROPS FROM FILE\n\n");
-    err += p->read_param(p, in);
-  }
-  assert(err == 0 && "ERROR in initializing the Model_parameters object");
-
-  Constitutive_model *m = PGFEM_malloc<Constitutive_model>();
-  err += constitutive_model_construct(m);
-  err += constitutive_model_initialize(m, p);
-  assert(err == 0 && "ERROR in initializing the Constitutive_model object");
-
+   // initialize values   
+  hommat_assign_values(&mat);  
+  err += p.initialization(&mat, BPA_PLASTICITY);
+  param_assign_values(p.model_param, &mat);
+  err += m.initialization(&p);
+  
+  // get the model info
+  Model_var_info info;
+  err +=  m.param->get_var_info(info);
+  err += info.print_variable_info(stdout);
+    
   const double dt = 5.0;
   double t = dt;
   double F[9] = {0};
@@ -156,25 +152,18 @@ int main(int argc, char **argv)
   const int n_step = 20;
   for (int i = 0; i < n_step; i++) {
     printf("STEP [%d]=================================\n",i);
-    get_F(t,p_hmat->nu, F);
+    get_F(t,mat.nu, F);
     err += j2d_plasticity_model_ctx_build(&ctx, F, dt);
-    err += m->param->integration_algorithm(m, ctx);
-    err += m->param->update_state_vars(m);
-    err += write_data_point(stdout,ctx,m,t);
-    /* err += write_data_point(out,ctx,m,t); */
-    err += m->param->destroy_ctx(&ctx);
+    err += m.param->integration_algorithm(&m, ctx);
+    err += m.param->update_state_vars(&m);
+    //err += write_data_point(stdout,ctx,&m,t);
+    err += write_data_point(out,ctx,&m,t);
+    err += m.param->destroy_ctx(&ctx);
     t += dt;
     /* printf("\n"); */
   }
 
-  /* cleanup */
-  if(in != NULL) fclose(in);
+  delete sv;
   fclose(out);
-  err += constitutive_model_destroy(m);
-  free(m);
-  err += model_parameters_destroy(p);
-  free(p);
-  free(p_hmat);
-
   return err;
 }

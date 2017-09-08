@@ -117,17 +117,18 @@ int ch_read_props(Constitutive_model *m,
   assert(nread == 1 && "Expected model type identifier");
 
   /* initialize the Model_parameters object */
-  err += model_parameters_initialize(p, hm, model_type);
+  err += construct_Model_parameters(&p, 0, model_type);
+  err += p->initialization(hm, model_type);
 
   /* read in the model parameters */
   err += scan_for_valid_line(in);
   assert( !feof(in) && "Premature EOF");
   brace = fgetc(in);
   assert(brace == '{' && "Expect opening brace before CM properties");
-  err += p->read_param(p, in);
+  err += p->read_param(in);
 
   /* initialize cm object */
-  err += constitutive_model_initialize(m, p);
+  err += m->initialization(p);
 
   fclose(in);
   return err;
@@ -313,18 +314,14 @@ int ch_output_ts(const Constitutive_model *m,
 {
   int err = 0;
 
-  Matrix<double> F, S, P;
-  Matrix_construct_init(double, S, dim, dim, 0.0);
-  Matrix_construct(double, P);
-  Matrix_construct(double, F);
-  Matrix_init_w_array(F, dim, dim, F0);
+  Matrix<double> F(3,3,F0), S(3,3), P(3,3);
 
   /* compute the total SPK stress tensor */
-  err += constitutive_model_default_update_elasticity(m, &F,  NULL, &S, 0);
+  err += constitutive_model_default_update_elasticity(m, F.m_pdata,  NULL, S.m_pdata, 0);
 
   /* compute the FPK stress tensor */
-  Matrix_AxB(P, 1.0, 0.0, F, 0, S, 0);
-
+  P.prod(F,S);
+  
   /* compute the traction vector */
   double trac[dim] = {0};
   cblas_dgemv(CblasRowMajor, CblasNoTrans, dim, dim,
@@ -334,9 +331,6 @@ int ch_output_ts(const Constitutive_model *m,
           jumpu[0], jumpu[1], jumpu[2],
           trac[0],   trac[1],  trac[2]);
 
-  Matrix_cleanup(F);
-  Matrix_cleanup(S);
-  Matrix_cleanup(P);
   return err;
 }
 
@@ -357,14 +351,15 @@ int main(int argc, char **argv)
     printf("ERROR: coupld not open \"%s\"\n", opt->ofname);
   }
 
-  /* construct/initialize objects */
-  Constitutive_model *m = PGFEM_calloc(Constitutive_model, 1);
-  Model_parameters *p = PGFEM_calloc(Model_parameters, 1);
-  HOMMAT *hm = PGFEM_calloc(HOMMAT, 1);
-
-  err += constitutive_model_construct(m);
-  err += model_parameters_construct(p);
-  err += ch_read_props(m, p, hm, opt->ifname);
+  // construct/initialize objects
+  HOMMAT hm;  
+  Model_parameters *p = NULL;
+  Constitutive_model m;
+  m.model_id = 0;
+  State_variables *sv = new State_variables;
+  m.vars_list = &sv;
+    
+  err += ch_read_props(&m, p, &hm, opt->ifname);
 
   double F0[tensor] = {0};
   double jumpu[tensor] = {0};
@@ -378,21 +373,20 @@ int main(int argc, char **argv)
 
     /* run the integration algorithm */
     err += construct_model_context(&ctx, p->type, F0, opt->dt, alpha,NULL);
-    err += p->integration_algorithm(m, ctx);
-    err += p->update_state_vars(m);
-    err += ch_output_ts(m, jumpu, opt->normal, F0, opt->dt, out);
+    err += p->integration_algorithm(&m, ctx);
+    err += p->update_state_vars(&m);
+    err += ch_output_ts(&m, jumpu, opt->normal, F0, opt->dt, out);
     err += p->destroy_ctx(&ctx);
     if (err) break;
   }
 
  exit_main:
   if (err) printf("Caught error, exiting early!\n");
+
+  if(p!=NULL)
+    delete p;
+    
   fclose(out);
   opts_destroy(opt);
-  err += constitutive_model_destroy(m);
-  err += model_parameters_destroy(p);
-  free(m);
-  free(p);
-  free(hm);
   return err;
 }
