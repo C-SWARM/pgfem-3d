@@ -579,7 +579,7 @@ int single_scale_main(int argc,char *argv[])
         fv[ia].ndofn = 4;
         break;
        default:
-        // do nothing
+        break; // do nothing
       }
     }
 
