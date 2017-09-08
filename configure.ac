@@ -22,7 +22,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AX_PROG_CXX_MPI([test "x$with_mpi" != xno], [have_mpicxx=yes])
 AX_CXX_COMPILE_STDCXX_14([ext],[mandatory])
-AC_C_RESTRICT                                   # Works for C++ too
 
 # Initialize autotools and libtool
 AM_INIT_AUTOMAKE([1.11 nostdinc dist-bzip2 subdir-objects foreign tar-ustar -Wall
@@ -32,10 +31,10 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 LT_PREREQ([2.4.2])
 LT_INIT([disable-shared])
 
-CONFIG_MTL([have_mtl=yes])
-CONFIG_TTL([have_ttl=yes])
-CONFIG_HYPRE([have_hypre=yes])
 CONFIG_LAPACK([have_lapack=yes])
+CONFIG_TTL([have_ttl=yes])
+CONFIG_MTL([have_mtl=yes])
+CONFIG_HYPRE([have_hypre=yes])
 CONFIG_SUITESPARSE([have_suitesparse=yes])
 CONFIG_TESTS()
 CONFIG_VTK([5.10.1])

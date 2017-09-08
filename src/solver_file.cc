@@ -149,11 +149,11 @@ int solver_file_read_load(SOLVER_FILE *sf,
 int solver_file_scan_to_step(SOLVER_FILE *sf,
                              const size_t step,
                              const size_t len_load,
-                             double *restrict incr_load)
+                             double *__restrict incr_load)
 {
   int err = 0;
 
-  double *restrict tmp = PGFEM_malloc<double>(len_load);
+  double *__restrict tmp = PGFEM_malloc<double>(len_load);
   /* We start from i = 1 since the initial increment comes from a
      different file. */
   for(size_t i = 1; i <= step; i++){

@@ -243,7 +243,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   client->bcast.ranks = PGFEM_malloc<int>(n_comm);
   client->bcast.req = PGFEM_calloc(MPI_Request, n_comm);
   {
-    int * restrict r = client->bcast.ranks; /* restrict alias */
+    int * __restrict r = client->bcast.ranks; /* __restrict alias */
     r[0] = rank + nproc_macro;
     for(int i=1; i<n_comm; i++){
       r[i] = r[i-1] + nproc_macro;
@@ -430,11 +430,11 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   int nproc_macro = 0;
   const int rank = mpi_comm->rank_macro;
   MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-  int *restrict n_jobs = PGFEM_malloc<int>(nproc_macro);
-  int *restrict displ = PGFEM_malloc<int>(nproc_macro);
-  int *restrict id = PGFEM_malloc<int>(client->n_jobs_glob);
-  int *restrict proc = PGFEM_malloc<int>(client->n_jobs_glob);
-  int *restrict time = PGFEM_malloc<int>(client->n_jobs_glob);
+  int *__restrict n_jobs = PGFEM_malloc<int>(nproc_macro);
+  int *__restrict displ = PGFEM_malloc<int>(nproc_macro);
+  int *__restrict id = PGFEM_malloc<int>(client->n_jobs_glob);
+  int *__restrict proc = PGFEM_malloc<int>(client->n_jobs_glob);
+  int *__restrict time = PGFEM_malloc<int>(client->n_jobs_glob);
 
   n_jobs[rank] = client->n_jobs_loc;
   MPI_Allgather(MPI_IN_PLACE,1,MPI_INT,n_jobs,1,MPI_INT,mpi_comm->macro);

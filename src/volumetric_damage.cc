@@ -118,8 +118,8 @@ void reset_damage_functions(damage *dam,
   }
 }
 
-void copy_damage(damage *restrict dest,
-         const damage *restrict src)
+void copy_damage(damage *__restrict dest,
+         const damage *__restrict src)
 {
   if(dest == src) return;
   memcpy(dest,src,sizeof(*src));
