@@ -1060,12 +1060,12 @@ int constitutive_model_update_output_variables(GRID *grid,
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
 
-  for (int i = 0; i < grid->ne; i++)
+  for (int ie = 0; ie < grid->ne; ie++)
   {
-    FEMLIB fe(i,elem,node,0,total_Lagrangian);
+    FEMLIB fe(ie,elem,node,0,total_Lagrangian);
 
-    memset(sig[i].el.o,0,6*sizeof(double));
-    memset(eps[i].el.o,0,6*sizeof(double));
+    memset(sig[ie].el.o,0,6*sizeof(double));
+    memset(eps[ie].el.o,0,6*sizeof(double));
     double volume = 0.0;
 
     Matrix<double> Tnp1, Tn, Tnm1;    
@@ -1090,7 +1090,7 @@ int constitutive_model_update_output_variables(GRID *grid,
     {
       fe.elem_basis_V(ip+1);
           
-      Constitutive_model *m = &(eps[i].model[ip]);
+      Constitutive_model *m = &(eps[ie].model[ip]);
       const Model_parameters *func = m->param;
 
       err += func->get_F(m,  F.data,1);
@@ -1139,21 +1139,21 @@ int constitutive_model_update_output_variables(GRID *grid,
       const double eJ = det3x3(eFd);      
 
       /* store symmetric part of S (PK2) */
-      sig[i].il[ip].o[0] = Sd[idx_2(0,0)]; /* XX */
-      sig[i].il[ip].o[1] = Sd[idx_2(1,1)]; /* YY */
-      sig[i].il[ip].o[2] = Sd[idx_2(2,2)]; /* ZZ */
-      sig[i].il[ip].o[3] = Sd[idx_2(1,2)]; /* YZ */
-      sig[i].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
-      sig[i].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
+      sig[ie].il[ip].o[0] = Sd[idx_2(0,0)]; /* XX */
+      sig[ie].il[ip].o[1] = Sd[idx_2(1,1)]; /* YY */
+      sig[ie].il[ip].o[2] = Sd[idx_2(2,2)]; /* ZZ */
+      sig[ie].il[ip].o[3] = Sd[idx_2(1,2)]; /* YZ */
+      sig[ie].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
+      sig[ie].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
 
       /* store total deformation */
-      memcpy(eps[i].il[ip].F, F.data, DIM_3x3 * sizeof(double));
+      memcpy(eps[ie].il[ip].F, F.data, DIM_3x3 * sizeof(double));
 
       /* store the hardening parameter */
-      err += func->get_hardening(m, &eps[i].dam[ip].wn,2);
+      err += func->get_hardening(m, &eps[ie].dam[ip].wn,2);
 
       /* compute/store the plastic strain variable */
-      err += func->get_plast_strain_var(m, &eps[i].dam[ip].Xn);
+      err += func->get_plast_strain_var(m, &eps[ie].dam[ip].Xn);
 
       /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
       double sigma[DIM_3x3] = {};
@@ -1169,12 +1169,12 @@ int constitutive_model_update_output_variables(GRID *grid,
       volume += fe.detJxW;
 
       /* store symmetric part */
-      sig[i].el.o[0] += fe.detJxW*sigma[idx_2(0,0)]; /* XX */
-      sig[i].el.o[1] += fe.detJxW*sigma[idx_2(1,1)]; /* YY */
-      sig[i].el.o[2] += fe.detJxW*sigma[idx_2(2,2)]; /* ZZ */
-      sig[i].el.o[3] += fe.detJxW*sigma[idx_2(1,2)]; /* YZ */
-      sig[i].el.o[4] += fe.detJxW*sigma[idx_2(0,2)]; /* XZ */
-      sig[i].el.o[5] += fe.detJxW*sigma[idx_2(0,1)]; /* XY */
+      sig[ie].el.o[0] += fe.detJxW*sigma[idx_2(0,0)]; /* XX */
+      sig[ie].el.o[1] += fe.detJxW*sigma[idx_2(1,1)]; /* YY */
+      sig[ie].el.o[2] += fe.detJxW*sigma[idx_2(2,2)]; /* ZZ */
+      sig[ie].el.o[3] += fe.detJxW*sigma[idx_2(1,2)]; /* YZ */
+      sig[ie].el.o[4] += fe.detJxW*sigma[idx_2(0,2)]; /* XZ */
+      sig[ie].el.o[5] += fe.detJxW*sigma[idx_2(0,1)]; /* XY */
 
       /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
       cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
@@ -1186,19 +1186,19 @@ int constitutive_model_update_output_variables(GRID *grid,
         temp[ia] = 0.5*(eye[ia]-temp_I[ia]);
 
       /* store symmetric part (also Eng. strain) */
-      eps[i].el.o[0] += fe.detJxW*temp[idx_2(0,0)];
-      eps[i].el.o[1] += fe.detJxW*temp[idx_2(1,1)];
-      eps[i].el.o[2] += fe.detJxW*temp[idx_2(2,2)];
+      eps[ie].el.o[0] += fe.detJxW*temp[idx_2(0,0)];
+      eps[ie].el.o[1] += fe.detJxW*temp[idx_2(1,1)];
+      eps[ie].el.o[2] += fe.detJxW*temp[idx_2(2,2)];
 
-      eps[i].el.o[3] += fe.detJxW*2.0*temp[idx_2(1,2)];
-      eps[i].el.o[4] += fe.detJxW*2.0*temp[idx_2(0,2)];
-      eps[i].el.o[5] += fe.detJxW*2.0*temp[idx_2(0,1)];
+      eps[ie].el.o[3] += fe.detJxW*2.0*temp[idx_2(1,2)];
+      eps[ie].el.o[4] += fe.detJxW*2.0*temp[idx_2(0,2)];
+      eps[ie].el.o[5] += fe.detJxW*2.0*temp[idx_2(0,1)];
 
     }
     for(int ia=0; ia<6; ia++)
     {
-      sig[i].el.o[ia] = sig[i].el.o[ia]/volume;
-      eps[i].el.o[ia] = eps[i].el.o[ia]/volume;
+      sig[ie].el.o[ia] = sig[ie].el.o[ia]/volume;
+      eps[ie].el.o[ia] = eps[ie].el.o[ia]/volume;
     }
   }
 
