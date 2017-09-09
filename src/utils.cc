@@ -843,7 +843,7 @@ void print_array_l(FILE *out,
 }
 
 void print_material(FILE *out,
-                    const MATERIAL *mat)
+                    const Material *mat)
 {
   PGFEM_fprintf(out,
                 "E_x,y,z:    %12.5e %12.5e %12.5e\n"

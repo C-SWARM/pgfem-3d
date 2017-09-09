@@ -49,7 +49,7 @@ int main(int argc,char *argv[])
   long np = 0;
   NODE *node = NULL;
   ELEMENT *elem = NULL;
-  MATERIAL *mater = NULL;
+  Material *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
   long nln = 0;

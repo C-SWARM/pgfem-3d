@@ -192,7 +192,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     if(opts->analysis_type == CM || opts->analysis_type == CM3F)
-    {      
+    {
       const ELEMENT *elem = grid->element;
       int n_state_varialbles = 0;
       for(int eid=0; eid<grid->ne; eid++)
@@ -202,7 +202,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
         int_point(nne,&nint);
         n_state_varialbles += nint;
       }
-        
+
       fv->statv_list = new State_variables[n_state_varialbles];
     }
 
@@ -259,11 +259,11 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
     if(opts->smoothing == 0)
       destroy_sig_el(fv->sig_n, grid->nn);
   }
-  
-  if(NULL != fv->statv_list) 
+
+  if(NULL != fv->statv_list)
     delete[] fv->statv_list;
-  
-  err += field_varialbe_initialization(fv);  
+
+  err += field_varialbe_initialization(fv);
   return err;
 }
 
@@ -318,7 +318,7 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
     }
     fv->temporal->element_variable_no = n_state_varialbles;
     fv->temporal->var = new State_variables[n_state_varialbles];
-    
+
     for(int eid=0; eid<grid->ne; eid++)
     {
       int nne = elem[eid].toe;
@@ -331,8 +331,8 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
         Model_var_info info;
         m->param->get_var_info(info);
         err += fv->temporal->var[m->model_id].initialization(info.n_Fs,
-                                                             info.n_vars, 
-                                                             info.n_flags);                                                                            
+                                                             info.n_vars,
+                                                             info.n_flags);
       }
     }
   }
@@ -358,7 +358,7 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
   if(is_for_Mechanical)
   {
     delete[] fv->temporal->var;
-      
+
     fv->temporal->var = NULL;
     fv->temporal->element_variable_no = 0;
   }
@@ -400,7 +400,7 @@ int destruct_material(MATERIAL_PROPERTY *mat,
   int err = 0;
   if(NULL != mat->density) free(mat->density);
   if(NULL != mat->mater)   free(mat->mater);
-  if(NULL != mat->thermal) free(mat->thermal);
+  delete [] mat->thermal;
   destroy_matgeom(mat->matgeom,mat->n_orient);
   destroy_hommat(mat->hommat,mat->nhommat);
 

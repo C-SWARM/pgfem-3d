@@ -4,27 +4,15 @@
  * December 2000                       (c) *
  *******************************************/
 
+#include "enumerations.h"
 #include "homogen.h"
+#include "incl.h"
+#include "matice.h"
+#include "PGFEM_mpi.h"
 #include <math.h>
 
-#ifndef PGFEM_MPI_H
-#include "PGFEM_mpi.h"
-#endif
-
-#ifndef ENUMERATIONS_H
-#include "enumerations.h"
-#endif
-
-#ifndef INCL_H
-#include "incl.h"
-#endif
-
-#ifndef MATICE_H
-#include "matice.h"
-#endif
-
 void Mat_3D_orthotropic (const long nmat,
-             MATERIAL *mater,
+             Material *mater,
              const int analysis)
 /*
 
@@ -45,7 +33,7 @@ void Mat_3D_orthotropic (const long nmat,
     case DISP:
     case TF:
     case CM:
-    case CM3F:  
+    case CM3F:
       M[0][0] = 1./mater[i].Ex;            M[0][1] = -mater[i].nyz/mater[i].Ex;  M[0][2] = -mater[i].nyz/mater[i].Ex;
       M[1][0] = -mater[i].nyz/mater[i].Ex; M[1][1] = 1./mater[i].Ex;             M[1][2] = -mater[i].nyz/mater[i].Ex;
       M[2][0] = -mater[i].nyz/mater[i].Ex; M[2][1] = -mater[i].nyz/mater[i].Ex;  M[2][2] = 1./mater[i].Ex;
@@ -88,7 +76,7 @@ void Mat_3D_orthotropic (const long nmat,
   dealoc2 (L,6);
 }
 
-void Mat_trans_isotropic (long nmat,MATERIAL *mater)
+void Mat_trans_isotropic (long nmat,Material *mater)
 /*
 
  */
@@ -148,7 +136,7 @@ void hom_matrices (long ***a,
            const long nmat,
            const long nc,
            ELEMENT *elem,
-           MATERIAL *mater,
+           Material *mater,
            MATGEOM matgeom,
            HOMMAT *hommat,
            const long SHAPE,
@@ -163,39 +151,39 @@ void hom_matrices (long ***a,
   for (i=0;i<nmat;i++){
     for (j=0;j<nmat;j++){
       for (k=0;k<nc;k++){
-	if (a[i][j][k]==1){
-	  Overall_Mat (i,j,k,nn,mater,matgeom,hommat,SHAPE);
-	  hommat[nn].e1 =  hommat[nn].e2
-	    = hommat[nn].e3 = hommat[nn].e4 =  0.0;
-	  switch(analysis){
-	  case DISP: /* only DISP gets damage parameters */
-	    /* use extra entries for extra variables 
-	       (vol damage: Yin, p1, p2, mu) */
-	    hommat[nn].e1 = mater[i].Gxz;
-	    hommat[nn].e2 = mater[i].Gxy;
-	    hommat[nn].e3 = mater[i].nxz;
-	    hommat[nn].e4 = mater[i].nxy;
-	    /* intentional drop through for isotropic properties */
+    if (a[i][j][k]==1){
+      Overall_Mat (i,j,k,nn,mater,matgeom,hommat,SHAPE);
+      hommat[nn].e1 =  hommat[nn].e2
+        = hommat[nn].e3 = hommat[nn].e4 =  0.0;
+      switch(analysis){
+      case DISP: /* only DISP gets damage parameters */
+        /* use extra entries for extra variables
+           (vol damage: Yin, p1, p2, mu) */
+        hommat[nn].e1 = mater[i].Gxz;
+        hommat[nn].e2 = mater[i].Gxy;
+        hommat[nn].e3 = mater[i].nxz;
+        hommat[nn].e4 = mater[i].nxy;
+        /* intentional drop through for isotropic properties */
 
-	    /* ISOTROPIC MAT PROPS */
-	  case STABILIZED:
-	  case MINI:
-	  case MINI_3F:
-	  case TF:
-	  case CM:
-	  case CM3F:
-	    
-	    /* Mooney - Rivlin */
-	    /* This is a material input from file LOOK OUT */
-	    hommat[nn].m10 = mater[i].Ey;
-	    hommat[nn].m01 = mater[i].Ez; 
-	    hommat[nn].E = mater[i].Ex;
-	    hommat[nn].G = mater[i].Gyz;
-	    hommat[nn].nu = mater[i].nyz;
+        /* ISOTROPIC MAT PROPS */
+      case STABILIZED:
+      case MINI:
+      case MINI_3F:
+      case TF:
+      case CM:
+      case CM3F:
 
-	    /* Potential functions for isotropic materials */
-	    hommat[nn].devPotFlag = mater[i].devPotFlag;
-	    hommat[nn].volPotFlag = mater[i].volPotFlag;
+        /* Mooney - Rivlin */
+        /* This is a material input from file LOOK OUT */
+        hommat[nn].m10 = mater[i].Ey;
+        hommat[nn].m01 = mater[i].Ez;
+        hommat[nn].E = mater[i].Ex;
+        hommat[nn].G = mater[i].Gyz;
+        hommat[nn].nu = mater[i].nyz;
+
+        /* Potential functions for isotropic materials */
+        hommat[nn].devPotFlag = mater[i].devPotFlag;
+        hommat[nn].volPotFlag = mater[i].volPotFlag;
             hommat[nn].mat_id = i;
         break;
 
@@ -243,7 +231,7 @@ void assign_homogenized_material(const long ne,
   }
 }
 
-void funkce_Wf (long jj,MATERIAL *mater,double **Lf,double **Mf,double **Lm,double **Mm,double **Wf)
+void funkce_Wf (long jj,Material *mater,double **Lf,double **Mf,double **Lm,double **Mm,double **Wf)
 /*
 
  */
@@ -354,7 +342,7 @@ void funkce_Bm (long kk,MATGEOM matgeom,double **Wf,double **Bm)
   dealoc2 (A,6);  dealoc2 (I,6);  dealoc2 (B,6);
 }
 
-void mat_vrs (long nn,long kk,HOMMAT *hommat,MATERIAL *mater,MATGEOM matgeom,double **Bf,double **Bm,double **Mf,double **Mm)
+void mat_vrs (long nn,long kk,HOMMAT *hommat,Material *mater,MATGEOM matgeom,double **Bf,double **Bm,double **Mf,double **Mm)
 /*
 
  */
@@ -376,7 +364,7 @@ void mat_vrs (long nn,long kk,HOMMAT *hommat,MATERIAL *mater,MATGEOM matgeom,dou
   dealoc2 (A,6);  dealoc2 (B,6);
 }
 
-void mori_tanaka (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat)
+void mori_tanaka (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat)
 /*
 
  */
@@ -483,7 +471,7 @@ TFA* build_tfa (long i)
   return (pom);
 }
 
-void Overall_Mat (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,long TYPE)
+void Overall_Mat (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat,long TYPE)
 /*
 
  */
@@ -581,7 +569,7 @@ void Overall_Mat (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
   dealoc2 (L2,6); dealoc2 (M2,6); dealoc2 (Lm,6); dealoc2 (Mm,6); dealoc2 (Am,6); dealoc2 (A2,6);
 }
 
-void TFA_tensors (long ***a,long ne,long nmat,long nc,ELEMENT *elem,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
+void TFA_tensors (long ***a,long ne,long nmat,long nc,ELEMENT *elem,Material *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
 /*
   creates material matrices of the homogeneous medium
 */
@@ -602,7 +590,7 @@ void TFA_tensors (long ***a,long ne,long nmat,long nc,ELEMENT *elem,MATERIAL *ma
   }
 }
 
-void A_D_tensors (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
+void A_D_tensors (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
 /*
 
  */

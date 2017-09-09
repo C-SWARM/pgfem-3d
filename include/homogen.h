@@ -8,44 +8,26 @@
 #define HOMOGEN_H
 
 #include "data_structure.h"
-
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
-
-#ifndef MATERIAL_H
 #include "material.h"
-#endif
-
-#ifndef MATGEOM_H
 #include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
 #include "hommat.h"
-#endif
-
-#ifndef TFA_H
 #include "tfa.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
 #include "PGFem3D_options.h"
-#endif
 
 void Mat_3D_orthotropic (const long nmat,
-             MATERIAL *mater,
+             Material *mater,
              const int analysis);
 
 void Mat_trans_isotropic (long nmat,
-              MATERIAL *mater);
+              Material *mater);
 
 void hom_matrices (long ***a,
            const long ne,
            const long nmat,
            const long nc,
            ELEMENT *elem,
-           MATERIAL *mater,
+           Material *mater,
            MATGEOM matgeom,
            HOMMAT *hommat,
            const long SHAPE,
@@ -58,7 +40,7 @@ void assign_homogenized_material(const long ne,
                  const int analysis);
 
 void funkce_Wf (long jj,
-        MATERIAL *mater,
+        Material *mater,
         double **Lf,
         double **Mf,
         double **Lm,
@@ -78,7 +60,7 @@ void funkce_Bm (long kk,
 void mat_vrs (long nn,
           long kk,
           HOMMAT *hommat,
-          MATERIAL *mater,
+          Material *mater,
           MATGEOM matgeom,
           double **Bf,
           double **Bm,
@@ -89,7 +71,7 @@ void mori_tanaka (long ii,
           long jj,
           long kk,
           long nn,
-          MATERIAL *mater,
+          Material *mater,
           MATGEOM matgeom,
           HOMMAT *hommat);
 
@@ -106,7 +88,7 @@ void Overall_Mat (long ii,
           long jj,
           long kk,
           long nn,
-          MATERIAL *mater,
+          Material *mater,
           MATGEOM matgeom,
           HOMMAT *hommat,
           long TYPE);
@@ -116,7 +98,7 @@ void TFA_tensors (long ***a,
           long nmat,
           long nc,
           ELEMENT *elem,
-          MATERIAL *mater,
+          Material *mater,
           MATGEOM matgeom,
           HOMMAT *hommat,
           TFA *tfa,
@@ -127,7 +109,7 @@ void A_D_tensors (long ii,
           long jj,
           long kk,
           long nn,
-          MATERIAL *mater,
+          Material *mater,
           MATGEOM matgeom,
           HOMMAT *hommat,
           TFA *tfa,

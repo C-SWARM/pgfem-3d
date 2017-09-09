@@ -54,7 +54,7 @@ int read_material_for_Thermal(FILE *fp,
   int err = 0;
   int param_in = 10;
 
-  MATERIAL_THERMAL *thermal = (MATERIAL_THERMAL *) malloc(sizeof(MATERIAL_THERMAL)*(mat->nmat));
+  MaterialThermal *thermal = new MaterialThermal[mat->nmat];
 
   for(int ia=0; ia<mat->nmat; ia++)
   {
@@ -253,7 +253,7 @@ int read_input_file(const PGFem3D_opt *opts,
             long *n_orient,
             NODE **node,
             ELEMENT **elem,
-            MATERIAL **material,
+            Material **material,
             MATGEOM *matgeom,
             SUPP *sup,
             long *nln,
@@ -283,7 +283,7 @@ int read_input_file(const PGFem3D_opt *opts,
 
   (*node) = build_node_multi_physics(*nn,fv_ndofn,physicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
-  (*material) = PGFEM_calloc(MATERIAL, *nmat);
+  (*material) = PGFEM_calloc(Material, *nmat);
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
 
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
@@ -882,7 +882,7 @@ int read_initial_for_Mechanical(FILE *fp,
   int err = 0;
   char line[1024];
   double dt = ts->times[1] - ts->times[0];;
-    
+
   if((opts->analysis_type == CM || opts->analysis_type == CM3F) && opts->cm == UPDATED_LAGRANGIAN)
   {
     opts->cm = TOTAL_LAGRANGIAN;

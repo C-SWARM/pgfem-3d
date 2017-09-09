@@ -67,7 +67,7 @@ int main(int argc,char *argv[])
   long np = 0;
   NODE *node = NULL;
   ELEMENT *elem = NULL;
-  MATERIAL *mater = NULL;
+  Material *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
   long nln = 0;
@@ -161,7 +161,7 @@ int main(int argc,char *argv[])
   double G_gn = 0.0;
   ttl::Tensor<2, 3, double> I,PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev;
   I = ttl::identity(i,j);
-    
+
   double Err_of_stress = 0.0;
 
   double tnm1[2] = {-1.0,-1.0};
@@ -236,17 +236,17 @@ int main(int argc,char *argv[])
 
     if(myrank==0)
     {
-      Eeff = 0.5*(Feff(k,i)*Feff(k,j) - I(i,j));      
+      Eeff = 0.5*(Feff(k,i)*Feff(k,j) - I(i,j));
       double det_Fe = ttl::det(eFeff);
-      
+
       sigma = 1.0/det_Fe*eFeff(i,k)*PK2(k,l)*eFeff(j,l);
-      
+
       double trPK2    = PK2(i,i);
       double tr_sigma = sigma(i,i);
-      
+
       PK2dev    = PK2(i,j) - trPK2/3.0*I(i,j);
       sigma_dev = sigma(i,j) - tr_sigma/3.0*I(i,j);
-      
+
       double norm_sigma = sigma_dev(i,j)*sigma_dev(i,j);
       double norm_PK2   = PK2dev(i,j)*PK2dev(i,j);
 

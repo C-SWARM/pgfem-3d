@@ -30,7 +30,7 @@
               long *n_orient,
               NODE **node,
               ELEMENT **elem,
-              MATERIAL **material,
+              Material **material,
               MATGEOM *matgeom,
               SUPP *sup,
               long *nln,

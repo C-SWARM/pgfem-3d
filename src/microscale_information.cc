@@ -498,7 +498,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
     long ni = 0;
     long nmat = 0;
     long n_con = 0;
-    MATERIAL *mater = NULL;
+    Material *mater = NULL;
 
     int fv_ndofn = ndim;
 

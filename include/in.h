@@ -69,7 +69,7 @@ SUPP read_supports (FILE *in,
  */
 int read_material (FILE *in,
                    const size_t mat_id,
-                   MATERIAL *mater,
+                   Material *mater,
                    const int legacy);
 
 /**
@@ -87,7 +87,7 @@ int read_material (FILE *in,
  */
 int override_material_properties(const size_t nmat,
                                  const PGFem3D_opt *opt,
-                                 MATERIAL *mater);
+                                 Material *mater);
 
 
 /* Function gives stiffnesses matrix of materials */

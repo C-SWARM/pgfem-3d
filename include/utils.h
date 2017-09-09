@@ -294,9 +294,9 @@ void print_array_l(FILE *out,
            const int nrow,
            const int ncol);
 
-/** Print the elements of a MATERIAL element to a file */
+/** Print the elements of a Material element to a file */
 void print_material(FILE *out,
-            const MATERIAL *mat);
+            const Material *mat);
 
 /** Update the bubble dofs on the elements */
 void update_elem_bub_dofs(const long ne,

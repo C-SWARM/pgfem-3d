@@ -175,7 +175,7 @@ SUPP read_supports(FILE *in,
 
 int read_material (FILE *in,
                    const size_t mat_id,
-                   MATERIAL *mater,
+                   Material *mater,
                    const int legacy)
 {
   int err = 0;
@@ -300,7 +300,7 @@ int override_prescribed_displacements(SUPP sup,
 
 int override_material_properties(const size_t nmat,
                                  const PGFem3D_opt *opt,
-                                 MATERIAL *mater)
+                                 Material *mater)
 {
   int err = 0;
   int n_override = 0;

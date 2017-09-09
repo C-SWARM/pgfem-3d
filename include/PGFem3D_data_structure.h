@@ -4,23 +4,21 @@
 /// Authors:
 ///   Sangmin Lee, University of Notre Dame <slee43 [at] nd.edu>
 //////////////////////////////////////////////////////////////////////
-
-#pragma once
 #ifndef _H_PGFEM3D_DATA_STRUCTURE_H_
 #define _H_PGFEM3D_DATA_STRUCTURE_H_
 
-#include "node.h"
-#include "element.h"
-#include "cohesive_element.h"
 #include "bounding_element.h"
-#include "sig.h"
+#include "cohesive_element.h"
+#include "comm_hints.h"
+#include "element.h"
 #include "eps.h"
+#include "hommat.h"
 #include "material.h"
 #include "matgeom.h"
-#include "hommat.h"
 #include "mesh_load.h"
+#include "node.h"
 #include "pgfem_comm.h"
-#include "comm_hints.h"
+#include "sig.h"
 #include "state_variables.h"
 #include "pgfem3d/Solver.hpp"
 
@@ -110,12 +108,12 @@ struct FIELD_VARIABLES {
   Matrix<double> Pnp1;
   Matrix<double> Pnm1;
   Matrix<double> Pn;
-  
+
   /// volume
   Matrix<double> Vnp1;
   Matrix<double> Vnm1;
   Matrix<double> Vn;
-    
+
 };
 
 /// struct for field variables
@@ -134,8 +132,8 @@ struct FIELD_VARIABLES_THERMAL {
 /// struct for material properties
 struct MATERIAL_PROPERTY {
   double           *density; /// list of material density
-  MATERIAL         *mater; /// list of material properites (Mechanical)
-  MATERIAL_THERMAL *thermal; /// list of material properites (Thermal)
+  Material           *mater; /// list of material properites (Mechanical)
+  MaterialThermal  *thermal; /// list of material properites (Thermal)
 
   HOMMAT *hommat;  /// list of homogeneous material properites
   MATGEOM matgeom; /// information related to material geometry (for crystal plasticity)
