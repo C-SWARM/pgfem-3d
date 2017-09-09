@@ -52,7 +52,7 @@ AS_IF([test "x$special_link" = xyes],
   [AC_SUBST([PGFem3D_linker],['$(CXX)'])])
 
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
-LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
+dnl LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
 
 AC_CONFIG_FILES([Makefile
                  lib/VTK_IO/src/Makefile

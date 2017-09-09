@@ -7,7 +7,6 @@ SUBDIRS = solvers
 bin_PROGRAMS = PGFem3D
 noinst_LTLIBRARIES = libpgfem3d.la
 
-# https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 PGFem3D_LDFLAGS = $(VTK_LDFLAGS)
 PGFem3D_LDADD   = libpgfem3d.la
 PGFem3D_SOURCES = super_main.cc
