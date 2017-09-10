@@ -19,14 +19,14 @@
 #endif
 
 int bounding_element_set_local_ids(const int n_be,
-                                   BOUNDING_ELEMENT *b_elems,
+                                   BoundingElement *b_elems,
                                    const Element *elem)
 {
   /* loop through bounding elements and get local node id's from
      volume element connectivity */
   int err = 0;
   for(int i=0; i<n_be; i++){
-    const BOUNDING_ELEMENT *ptr_be = &b_elems[i];
+    const BoundingElement *ptr_be = &b_elems[i];
     const long *be_nod = ptr_be->nodes;
     const int be_nne = ptr_be->nnodes;
 
@@ -51,7 +51,7 @@ int bounding_element_set_local_ids(const int n_be,
 }/* bounding_element_compute_local_ids */
 
 int bounding_element_reverse_mapping(const int n_be,
-                                     const BOUNDING_ELEMENT *b_elems,
+                                     const BoundingElement *b_elems,
                                      Element *elem)
 {
   int err = 0;
@@ -119,7 +119,7 @@ int bounding_element_reverse_mapping(const int n_be,
 }
 
 int bounding_element_communicate_damage(const int n_be,
-                                        BOUNDING_ELEMENT *b_elems,
+                                        BoundingElement *b_elems,
                                         const int ne,
                                         const EPS *eps,
                                         const MPI_Comm mpi_comm)
@@ -145,7 +145,7 @@ int bounding_element_communicate_damage(const int n_be,
   const int n_sd = 3;
   int *src_dest = PGFEM_calloc(int, n_be*n_sd);
   for(int src_id=0; src_id<n_be; src_id++){
-    const BOUNDING_ELEMENT *pbe = &b_elems[src_id];
+    const BoundingElement *pbe = &b_elems[src_id];
     if(pbe->master){
       src_dest[src_id*n_sd + 0] = pbe->slave_dom;
       src_dest[src_id*n_sd + 1] = pbe->slave_be_id;
@@ -241,8 +241,8 @@ int bounding_element_communicate_damage(const int n_be,
     }
 
     for(int i=0; i<n_SR[myrank]; i++){
-      BOUNDING_ELEMENT *p_dest_be = &b_elems[p_src_dest[1]];
-      const BOUNDING_ELEMENT *p_src_be = &b_elems[p_src_dest[2]];
+      BoundingElement *p_dest_be = &b_elems[p_src_dest[1]];
+      const BoundingElement *p_src_be = &b_elems[p_src_dest[2]];
       p_src_dest += n_sd;
       p_dest_be->other_val = eps[p_src_be->vol_elem_id].dam[0].w;
     }
@@ -256,7 +256,7 @@ int bounding_element_communicate_damage(const int n_be,
   for(int i=0; i<nproc; i++){
     if(n_SR[i] > 0 && i != myrank){
       for(int j=0; j<n_SR[i]; j++){
-        BOUNDING_ELEMENT *p_dest_be = &b_elems[receive_id[i][j]];
+        BoundingElement *p_dest_be = &b_elems[receive_id[i][j]];
         p_dest_be->other_val = receive_val[i][j];
       }
     }
@@ -301,7 +301,7 @@ int bounding_element_communicate_damage(const int n_be,
 }
 
 int bounding_element_compute_resulting_traction(const int n_be,
-                                                const BOUNDING_ELEMENT *b_elems,
+                                                const BoundingElement *b_elems,
                                                 const Element *elems,
                                                 const NODE *nodes,
                                                 const EPS *eps,
@@ -343,7 +343,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
 
   for(int be_id=0; be_id<n_be; be_id++){
     const int ip = 0;
-    const BOUNDING_ELEMENT *p_be = &b_elems[be_id];
+    const BoundingElement *p_be = &b_elems[be_id];
     const long *L_be_dofs = p_be->L_dof_ids;
     const int nn_be = p_be->nnodes;
     const int ve_id = p_be->vol_elem_id;
@@ -469,7 +469,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
     BOTTLENECK FOR LARGE SYSTEMS */
 int compute_block_permutation(const int n_be,
                               const int ndofn,
-                              const BOUNDING_ELEMENT *b_elems,
+                              const BoundingElement *b_elems,
                               const Element *elems,
                               const NODE *nodes,
                               const long *DomDof,
@@ -509,7 +509,7 @@ int compute_block_permutation(const int n_be,
   int *is_lm_dof = aloc1i(n_dof);
   int *dof_ids = aloc1i(2*n_dof); /* contains new_id, orig_id */
   for(int i=0; i<n_be; i++){
-    const BOUNDING_ELEMENT *p_be = &b_elems[i];
+    const BoundingElement *p_be = &b_elems[i];
     const Element *p_ve = &elems[p_be->vol_elem_id];
     const int ndofe = get_ndof_on_bnd_elem(nodes,p_be,elems,ndofn);
     const int ndof_ve = get_ndof_on_elem_nodes(p_ve->toe,p_ve->nod,nodes,ndofn);

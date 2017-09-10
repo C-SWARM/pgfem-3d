@@ -1,4 +1,3 @@
-/* HEADER */
 /**
  * \file Routines for assigning DOF ids on nodes and elements.
  *
@@ -24,7 +23,7 @@ int generate_local_dof_ids(const int nelem,
                            NODE *nodes,
                            Element *elems,
                            COEL *coel,
-                           BOUNDING_ELEMENT *b_elems,
+                           BoundingElement *b_elems,
                            MPI_Comm mpi_comm,
                            const int mp_id);
 
@@ -37,7 +36,7 @@ int generate_global_dof_ids(const int nelem,
                             NODE *nodes,
                             Element *elems,
                             COEL *coel,
-                            BOUNDING_ELEMENT *b_elems,
+                            BoundingElement *b_elems,
                             MPI_Comm mpi_comm,
                             const int mp_id);
 
@@ -52,7 +51,7 @@ void renumber_global_dof_ids(const int nelem,
                              NODE *nodes,
                              Element *elems,
                              COEL *coel,
-                             BOUNDING_ELEMENT *b_elems,
+                             BoundingElement *b_elems,
                              MPI_Comm mpi_comm,
                              const int mp_id);
 
@@ -67,7 +66,7 @@ int distribute_global_dof_ids(const int nelem,
                               NODE *nodes,
                               Element *elems,
                               COEL *coel,
-                              BOUNDING_ELEMENT *b_elems,
+                              BoundingElement *b_elems,
                               const Comm_hints *hints,
                               MPI_Comm mpi_comm,
                               const int mp_id);

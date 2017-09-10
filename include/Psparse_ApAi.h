@@ -1,22 +1,18 @@
-/* HEADER */
-
 /**
  * AUTHORS:
  *    Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
  *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
  */
-
-#pragma once
 #ifndef PGFEM3D_PSPARSE_APAI_H
 #define PGFEM3D_PSPARSE_APAI_H
 
+#include "PGFEM_mpi.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
 #include "comm_hints.h"
 #include "data_structure.h"
 #include "element.h"
 #include "pgfem_comm.h"
-#include "PGFEM_mpi.h"
 
 /**
  * Create the global sparsity pattern and commincation structure.
@@ -29,7 +25,7 @@ int* Psparse_ApAi (int nproc,
                    long ndofn,
                    long ndofd,
                    Element *elem,
-                   BOUNDING_ELEMENT *b_elems,
+                   BoundingElement *b_elems,
                    NODE *node,
                    int *Ap,
                    long nce,
@@ -42,4 +38,4 @@ int* Psparse_ApAi (int nproc,
                    const Comm_hints *hints,
                    const int mp_id);
 
-#endif /* #ifndef PSPARSE_APAI_H */
+#endif /* #define PGFEM3D_PSPARSE_APAI_H */

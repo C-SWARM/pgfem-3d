@@ -303,7 +303,7 @@ long fd_residuals_MP(GRID *grid,
 {
   int err = 0;
   Element *elem = grid->element;
-  BOUNDING_ELEMENT *b_elems = grid->b_elems;
+  BoundingElement *b_elems = grid->b_elems;
   SUPP sup = load->sups[mp_id];
 
   double *f;
@@ -379,7 +379,7 @@ long fd_residuals_MP(GRID *grid,
     /* get the coordinates and dof id's on the element nodes */
     const long *ptr_vnodes = elem[b_elems[i].vol_elem_id].nod; /* --"-- */
     const Element *ptr_elem = elem + b_elems[i].vol_elem_id; /* --"-- */
-    const BOUNDING_ELEMENT *ptr_be = &b_elems[i];
+    const BoundingElement *ptr_be = &b_elems[i];
     const int nne = ptr_elem->toe;
 
     double *x = aloc1(nne);

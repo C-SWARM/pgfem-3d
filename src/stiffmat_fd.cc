@@ -218,7 +218,7 @@ static int bnd_el_stiffmat(int belem_id,
                            int *Ai,
                            long ndofn,
                            Element *elem,
-                           BOUNDING_ELEMENT *b_elems,
+                           BoundingElement *b_elems,
                            NODE *node,
                            HOMMAT *hommat,
                            MATGEOM matgeom,
@@ -247,7 +247,7 @@ static int bnd_el_stiffmat(int belem_id,
                            const int mp_id)
 {
   int err = 0;
-  const BOUNDING_ELEMENT *ptr_be = &b_elems[belem_id];
+  const BoundingElement *ptr_be = &b_elems[belem_id];
   const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
   const long *ptr_vnodes = ptr_ve->nod;
   const int nn_ve = ptr_ve->toe;
@@ -730,7 +730,7 @@ int stiffmat_fd_MP(GRID *grid,
 
     // temporary for compile testing
     // int n_be = 0;
-    // BOUNDING_ELEMENT *b_elems = NULL;
+    // BoundingElement *b_elems = NULL;
     for(int eid=0; eid<grid->n_be; eid++){
       err += bnd_el_stiffmat(eid,Lk,com->Ap,com->Ai,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
                              mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,

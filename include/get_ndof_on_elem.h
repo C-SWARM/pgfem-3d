@@ -1,4 +1,3 @@
-/* HEADER */
 #ifndef PGFEM3D_GET_NDOF_ON_ELEM_H
 #define PGFEM3D_GET_NDOF_ON_ELEM_H
 
@@ -13,7 +12,7 @@
 int get_total_ndof_on_elem(const int n_nodes_on_elem,
                            const long *node_ids_on_elem,
                            const NODE *nodes,
-                           const BOUNDING_ELEMENT *b_elems,
+                           const BoundingElement *b_elems,
                            const Element *ptr_cur_elem,
                            const int ndofn);
 
@@ -25,14 +24,14 @@ int get_ndof_on_elem_nodes(const int n_nodes_on_elem,
 
 /** Get the number of degrees of freedom associated with all
     bounding elements on the element. */
-int get_ndof_on_all_elem_be(const BOUNDING_ELEMENT *b_elems,
+int get_ndof_on_all_elem_be(const BoundingElement *b_elems,
                             const Element *ptr_cur_elem);
 
 /** Get the number of degrees of freedom associated with a bounding
     element. This includes the dofs on the bounding element itself
     and dofs associated with the volume element nodes */
 int get_ndof_on_bnd_elem(const NODE *nodes,
-                         const BOUNDING_ELEMENT *ptr_cur_be,
+                         const BoundingElement *ptr_cur_be,
                          const Element *elems,
                          const int ndofn);
 

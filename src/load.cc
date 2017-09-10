@@ -221,7 +221,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     /* get pointers and constant vaules for the bounding element we
      * are working on. */
     const int be_id = sup->lbepd[i];
-    const BOUNDING_ELEMENT *ptr_be = &grid->b_elems[be_id];
+    const BoundingElement *ptr_be = &grid->b_elems[be_id];
     const int ve_id = ptr_be->vol_elem_id;
     const Element *ptr_ve = &elem[ve_id];
     const long *ve_nod = ptr_ve->nod;

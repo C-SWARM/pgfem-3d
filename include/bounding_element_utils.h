@@ -13,25 +13,25 @@
 /** get the element local node numbers, i.e. ordering in volumetric
     element connectivity */
 int bounding_element_set_local_ids(const int n_be,
-                                   BOUNDING_ELEMENT *b_elems,
+                                   BoundingElement *b_elems,
                                    const Element *elem);
 
 /** get the reverse mapping (elem -> b_elem) */
 int bounding_element_reverse_mapping(const int n_be,
-                                     const BOUNDING_ELEMENT *b_elems,
+                                     const BoundingElement *b_elems,
                                      Element *elem);
 
 /** get the value of damage from the periodic bounding element. If
     the periodic element is on the other domain communicate the
     value. */
 int bounding_element_communicate_damage(const int n_be,
-                                        BOUNDING_ELEMENT *b_elems,
+                                        BoundingElement *b_elems,
                                         const int ne,
                                         const EPS *eps,
                                         const MPI_Comm mpi_comm);
 
 int bounding_element_compute_resulting_traction(const int n_be,
-                                                const BOUNDING_ELEMENT *b_elems,
+                                                const BoundingElement *b_elems,
                                                 const Element *elems,
                                                 const NODE *nodes,
                                                 const EPS *eps,
@@ -48,7 +48,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
     block-ordered matrix for preconditioning */
 int compute_block_permutation(const int n_be,
                               const int ndofn,
-                              const BOUNDING_ELEMENT *b_elems,
+                              const BoundingElement *b_elems,
                               const Element *elems,
                               const NODE *nodes,
                               const long *DomDof,

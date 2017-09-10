@@ -21,7 +21,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           int *visited_node_dof,
                                           NODE *nodes,
                                           Element *elems,
-                                          BOUNDING_ELEMENT *b_elems,
+                                          BoundingElement *b_elems,
                                           MPI_Comm mpi_comm,
                                           const int mp_id);
 
@@ -41,7 +41,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            int *visited_node_dof,
                                            NODE *nodes,
                                            Element *elems,
-                                           BOUNDING_ELEMENT *b_elems,
+                                           BoundingElement *b_elems,
                                            MPI_Comm mpi_comm,
                                            const int mp_id);
 
@@ -57,7 +57,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 static void distribute_global_dof_ids_on_bounding_elements
 (const int n_belem,
  const int ndof_be,
- BOUNDING_ELEMENT *b_elems,
+ BoundingElement *b_elems,
  MPI_Comm mpi_comm);
 
 /*=== API FUNCTIONS ===*/
@@ -68,7 +68,7 @@ int generate_local_dof_ids(const int nelem,
                            NODE *nodes,
                            Element *elems,
                            COEL *coel,
-                           BOUNDING_ELEMENT *b_elems,
+                           BoundingElement *b_elems,
                            MPI_Comm mpi_comm,
                            const int mp_id)
 {
@@ -173,7 +173,7 @@ int generate_global_dof_ids(const int nelem,
                             NODE *nodes,
                             Element *elems,
                             COEL *coel,
-                            BOUNDING_ELEMENT *b_elems,
+                            BoundingElement *b_elems,
                             MPI_Comm mpi_comm,
                             const int mp_id)
 {
@@ -224,7 +224,7 @@ void renumber_global_dof_ids(const int nelem,
                              NODE *nodes,
                              Element *elems,
                              COEL *coel,
-                             BOUNDING_ELEMENT *b_elems,
+                             BoundingElement *b_elems,
                              MPI_Comm mpi_comm,
                              const int mp_id)
 {
@@ -281,7 +281,7 @@ int distribute_global_dof_ids(const int nelem,
                               NODE *nodes,
                               Element *elems,
                               COEL *coel,
-                              BOUNDING_ELEMENT *b_elems,
+                              BoundingElement *b_elems,
                               const Comm_hints *hints,
                               MPI_Comm mpi_comm,
                               const int mp_id)
@@ -313,7 +313,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           int *visited_node_dof,
                                           NODE *nodes,
                                           Element *elems,
-                                          BOUNDING_ELEMENT *b_elems,
+                                          BoundingElement *b_elems,
                                           MPI_Comm mpi_comm,
                                           const int mp_id)
 {
@@ -372,7 +372,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
   /* Assign dof ids on boundary elements. Currently unassigned if == 0 */
   for(int i=0; i<ptr_elem->n_be; i++){
     const int be_id = ptr_elem->be_ids[i];
-    BOUNDING_ELEMENT *ptr_be = &b_elems[be_id];
+    BoundingElement *ptr_be = &b_elems[be_id];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
         if(ptr_be->L_dof_ids[j] == 0){
@@ -392,7 +392,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
         }
       } else {
         /* master is on this domain but is not this element. */
-        BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
+        BoundingElement *ptr_mbe = &b_elems[ptr_be->master_be_id];
         if(ptr_mbe->n_dofs != ptr_be->n_dofs){
           PGFEM_printerr("ERROR: different number of dofs on periodic"
                          " bounding elements!\n");
@@ -480,7 +480,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            int *visited_node_dof,
                                            NODE *nodes,
                                            Element *elems,
-                                           BOUNDING_ELEMENT *b_elems,
+                                           BoundingElement *b_elems,
                                            MPI_Comm mpi_comm,
                                            const int mp_id)
 {
@@ -539,7 +539,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
   /* number bounding element dofs */
   for(int i=0; i<ptr_elem->n_be; i++){
     const int be_id = ptr_elem->be_ids[i];
-    BOUNDING_ELEMENT *ptr_be = &b_elems[ be_id ];
+    BoundingElement *ptr_be = &b_elems[ be_id ];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
         if(ptr_be->G_dof_ids[j] == 0){
@@ -562,7 +562,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
       } else {
         /* master is current domain, but different element. Number
            master element and copy G_dof_ids to current element */
-        BOUNDING_ELEMENT *ptr_mbe = &b_elems[ptr_be->master_be_id];
+        BoundingElement *ptr_mbe = &b_elems[ptr_be->master_be_id];
         if(ptr_mbe->n_dofs != ptr_be->n_dofs){
           PGFEM_printerr("ERROR: non-matching n_dofs on bnd elems in %s\n",__func__);
           PGFEM_Abort();
@@ -643,7 +643,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 
 static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
                                                            const int ndof_be,
-                                                           BOUNDING_ELEMENT *b_elems,
+                                                           BoundingElement *b_elems,
                                                            MPI_Comm mpi_comm)
 {
   int myrank = 0;
@@ -654,7 +654,7 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   /* get number of global elems/dofs */
   int n_Gbelem_on_dom = 0;
   for(int i=0; i<n_belem; i++){
-    const BOUNDING_ELEMENT *p_be = &b_elems[i];
+    const BoundingElement *p_be = &b_elems[i];
     if(p_be->periodic /* non periodic are local to domain */
        && p_be->master_dom == myrank
        && p_be->master_be_id == i){
@@ -678,7 +678,7 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   {
     int idx = 0;
     for(int i=0; i<n_belem; i++){
-      const BOUNDING_ELEMENT *p_be = &b_elems[i];
+      const BoundingElement *p_be = &b_elems[i];
       if(p_be->periodic /* non periodic are local to domain */
          && p_be->master_dom == myrank
          && p_be->master_be_id == i){
@@ -713,7 +713,7 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
      Gdof_on_all_dom is sorted (on each domain) by be_id by
      construction */
   for(int i=0; i<n_belem; i++){
-    BOUNDING_ELEMENT *p_be = &b_elems[i];
+    BoundingElement *p_be = &b_elems[i];
     if(p_be->periodic && p_be->master_dom != myrank){
       const int master_dom = p_be->master_dom;
       const int master_be_id = p_be->master_be_id;

@@ -1,4 +1,6 @@
-/* HEADER */
+#ifdef HACE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "bounding_element.h"
 #include "allocation.h"
@@ -11,7 +13,7 @@ using idx_type = long;
 int read_bounding_elements(FILE *ifile,
                            const int ndof_be,
                            int *nbe,
-                           BOUNDING_ELEMENT **b_elems,
+                           BoundingElement **b_elems,
                            MPI_Comm mpi_comm)
 {
   int err = 0;
@@ -109,7 +111,7 @@ int read_bounding_elements(FILE *ifile,
 int read_bounding_elements_fname(char *filename,
                                  const int ndof_be,
                                  int *nbe,
-                                 BOUNDING_ELEMENT **b_elems,
+                                 BoundingElement **b_elems,
                                  MPI_Comm mpi_comm)
 {
   int err = 0;
@@ -142,7 +144,7 @@ int read_bounding_elements_fname(char *filename,
 
 int write_bounding_elements(FILE *ofile,
                             int nbe,
-                            BOUNDING_ELEMENT *b_elems)
+                            BoundingElement *b_elems)
 {
   int err = 0;
   PGFEM_fprintf(ofile,"%d\n\n",nbe);
@@ -186,7 +188,7 @@ int write_bounding_elements(FILE *ofile,
 
 int write_bounding_elements_fname(char *filename,
                                   int nbe,
-                                  BOUNDING_ELEMENT *b_elems)
+                                  BoundingElement *b_elems)
 {
   int err = 0;
   FILE *ofile = NULL;
@@ -206,12 +208,12 @@ int write_bounding_elements_fname(char *filename,
 
 int construct_bounding_elements(int nbe,
                                 int *nn_per_elem,
-                                BOUNDING_ELEMENT **b_elems)
+                                BoundingElement **b_elems)
 {
   int err = 0;
 
   /* allocate the overall structure */
-  (*b_elems) = PGFEM_calloc (BOUNDING_ELEMENT, nbe);
+  (*b_elems) = PGFEM_calloc (BoundingElement, nbe);
 
   for(int i=0; i<nbe; i++){
     (*b_elems)[i].nnodes = nn_per_elem[i];
@@ -224,7 +226,7 @@ int construct_bounding_elements(int nbe,
 }/* construct_bounding_elements */
 
 int destroy_bounding_elements(int nbe,
-                              BOUNDING_ELEMENT *b_elems)
+                              BoundingElement *b_elems)
 {
   int err = 0;
 
@@ -270,7 +272,7 @@ int main(int argc, char **argv)
   MPI_Init(&argc,&argv);
 
   int nbe;
-  BOUNDING_ELEMENT *b_elems;
+  BoundingElement *b_elems;
 
   /* read/allocate the bounding elements */
   read_bounding_elements_fname("test.in",&nbe,&b_elems);

@@ -5,7 +5,7 @@
 #include "PGFEM_mpi.h"
 
 /** Define the bounding element type */
-struct BOUNDING_ELEMENT {
+struct BoundingElement {
   /* data */
   int id;
   int vol_elem_id;
@@ -32,7 +32,7 @@ struct BOUNDING_ELEMENT {
 int read_bounding_elements(FILE *ifile,
                            const int ndof_be,
                            int *nbe,
-                           BOUNDING_ELEMENT **b_elems,
+                           BoundingElement **b_elems,
                            MPI_Comm mpi_comm);
 
 /** read the bounding element information from a file with provided
@@ -40,29 +40,29 @@ int read_bounding_elements(FILE *ifile,
 int read_bounding_elements_fname(char *filename,
                                  const int ndof_be,
                                  int *nbe,
-                                 BOUNDING_ELEMENT **b_elems,
+                                 BoundingElement **b_elems,
                                  MPI_Comm mpi_comm);
 
 /** Write the bounding element information to a file. */
 int write_bounding_elements(FILE *ofile,
                             int nbe,
-                            BOUNDING_ELEMENT *b_elems);
+                            BoundingElement *b_elems);
 
 /** Write the bounding element information to a file with a provided
     filename */
 int write_bounding_elements_fname(char *filename,
                                   int nbe,
-                                  BOUNDING_ELEMENT *b_elems);
+                                  BoundingElement *b_elems);
 
 /** allocate the bounding element data structure given the number of
     elements and a list of number of nodes per element */
 int construct_bounding_elements(int nbe,
                                 int *nn_per_elem,
-                                BOUNDING_ELEMENT **b_elems);
+                                BoundingElement **b_elems);
 
 /** Safely destroy the bounding element structure */
 int destroy_bounding_elements(int nbe,
-                              BOUNDING_ELEMENT *b_elems);
+                              BoundingElement *b_elems);
 
 #endif /* #define PGFEM3D_BOUNDING_ELEMENT_H */
 

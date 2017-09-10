@@ -1,24 +1,20 @@
-/* HEADER */
-
 /**
  * @file This file declares utility functions for PGFem3D.
  */
+#ifndef PGFEM3D_UTILS_H
+#define PGFEM3D_UTILS_H
 
-#pragma once
-#ifndef UTILS_H
-#define UTILS_H
-
-#include "data_structure.h"
-#include <stdio.h>
 #include "PGFEM_mpi.h"
+#include "bounding_element.h"
+#include "data_structure.h"
 #include "element.h"
-#include "node.h"
+#include "hommat.h"
 #include "material.h"
 #include "matgeom.h"
-#include "hommat.h"
-#include "bounding_element.h"
+#include "node.h"
 #include "pgfem_comm.h"
 #include "sig.h"
+#include <cstdio>
 
 struct EPS;                                     // defined in eps.h
 
@@ -486,7 +482,7 @@ void nodecoord_updated (const long nne,
 void list_el_prescribed_def(SUPP sup,
                             const NODE *node,
                             const Element *elem,
-                            const BOUNDING_ELEMENT *b_elems,
+                            const BoundingElement *b_elems,
                             const long ne,
                             const int n_be,
                             const long nn);
@@ -725,4 +721,4 @@ double compute_volumes_from_coordinates(double *x,
                                         double *z,
                                         long nne);
 
-#endif
+#endif // #define PGFEM3D_UTILS_H

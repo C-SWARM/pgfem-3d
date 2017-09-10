@@ -12,7 +12,7 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
                              const int ndof_per_node,
                              const long *node_ids_on_elem,
                              const NODE *nodes,
-                             const BOUNDING_ELEMENT *b_elems,
+                             const BoundingElement *b_elems,
                              const Element *ptr_cur_elem,
                              long *dof_ids,
                              const int mp_id)
@@ -70,14 +70,14 @@ void get_dof_ids_on_elem(const int global,
 }
 
 void get_dof_ids_on_all_elem_be(const int global,
-                                const BOUNDING_ELEMENT *b_elems,
+                                const BoundingElement *b_elems,
                                 const Element *ptr_cur_elem,
                                 long *dof_ids)
 {
   long *ptr_copy = dof_ids;
   for(int i=0; i<ptr_cur_elem->n_be; i++){
     const int be_id = ptr_cur_elem->be_ids[i];
-    const BOUNDING_ELEMENT *ptr_be = &b_elems[be_id];
+    const BoundingElement *ptr_be = &b_elems[be_id];
     const int n_be_dof = ptr_be->n_dofs;
     const size_t n_copy = n_be_dof*sizeof(long);
     if(global){
@@ -93,7 +93,7 @@ void get_dof_ids_on_all_elem_be(const int global,
 void get_dof_ids_on_bnd_elem(const int global,
                              const int n_dof_per_node,
                              const NODE *nodes,
-                             const BOUNDING_ELEMENT *ptr_cur_be,
+                             const BoundingElement *ptr_cur_be,
                              const Element *elems,
                              long *dof_ids,
                              const int mp_id)

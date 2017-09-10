@@ -8,7 +8,7 @@
 int get_total_ndof_on_elem(const int n_nodes_on_elem,
                            const long *node_ids_on_elem,
                            const NODE *nodes,
-                           const BOUNDING_ELEMENT *b_elems,
+                           const BoundingElement *b_elems,
                            const Element *ptr_cur_elem,
                            const int ndofn)
 {
@@ -36,7 +36,7 @@ int get_ndof_on_elem_nodes(const int n_nodes_on_elem,
   return ndof_on_elem;
 }
 
-int get_ndof_on_all_elem_be(const BOUNDING_ELEMENT *b_elems,
+int get_ndof_on_all_elem_be(const BoundingElement *b_elems,
                             const Element *ptr_cur_elem)
 {
   int ndof_on_elem = 0;
@@ -49,7 +49,7 @@ int get_ndof_on_all_elem_be(const BOUNDING_ELEMENT *b_elems,
 }
 
 int get_ndof_on_bnd_elem(const NODE *nodes,
-                         const BOUNDING_ELEMENT *ptr_cur_be,
+                         const BoundingElement *ptr_cur_be,
                          const Element *elems,
                          const int ndofn)
 {

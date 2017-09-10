@@ -1,29 +1,31 @@
-/* HEADER */
-#include "utils.h"
-#include <assert.h>
-#include <string.h>
-#include <time.h>
-#include <stdarg.h>
-#include <math.h>
-#include "mkl_cblas.h"
-#include "mkl_lapack.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "enumerations.h"
-#include "index_macros.h"
-#include "get_dof_ids_on_elem.h"
-#include "elem3d.h"
-#include "homogen.h"
+#include "utils.h"
 #include "allocation.h"
+#include "elem3d.h"
+#include "enumerations.h"
+#include "get_dof_ids_on_elem.h"
+#include "homogen.h"
 #include "incl.h"
+#include "index_macros.h"
 #include "localizat.h"
 #include "matice.h"
 #include "resice.h"
+#include <mkl_cblas.h>
+#include <mkl_lapack.h>
+#include <cassert>
+#include <cstring>
+#include <cstdarg>
+#include <cmath>
+#include <time.h>
 
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
 #endif
 
-static const int periodic = 0;
+static const constexpr int periodic = 0;
 
 int scan_for_valid_line(FILE *in)
 {
@@ -1464,7 +1466,7 @@ void nodecoord_updated (const long nne,
 void list_el_prescribed_def (SUPP sup,
                              const NODE *node,
                              const Element *elem,
-                             const BOUNDING_ELEMENT *b_elems,
+                             const BoundingElement *b_elems,
                              const long ne,
                              const int n_be,
                              const long nn)

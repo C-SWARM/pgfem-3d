@@ -1,4 +1,3 @@
-/* HEADER */
 #ifndef PGFEM3D_GET_DOF_IDS_ON_ELEM_H
 #define PGFEM3D_GET_DOF_IDS_ON_ELEM_H
 
@@ -14,7 +13,7 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
                              const int ndof_per_node,
                              const long *node_ids_on_elem,
                              const NODE *nodes,
-                             const BOUNDING_ELEMENT *b_elems,
+                             const BoundingElement *b_elems,
                              const Element *ptr_cur_elem,
                              long *dof_ids,
                              const int mp_id);
@@ -37,7 +36,7 @@ void get_dof_ids_on_elem(const int global,
 
 /** get the dof ids associated with all bounding elements on the volume element */
 void get_dof_ids_on_all_elem_be(const int global,
-                                const BOUNDING_ELEMENT *b_elems,
+                                const BoundingElement *b_elems,
                                 const Element *ptr_cur_elem,
                                 long *dof_ids);
 
@@ -48,7 +47,7 @@ void get_dof_ids_on_all_elem_be(const int global,
 void get_dof_ids_on_bnd_elem(const int global,
                              const int n_dof_per_node,
                              const NODE *nodes,
-                             const BOUNDING_ELEMENT *ptr_cur_be,
+                             const BoundingElement *ptr_cur_be,
                              const Element *elems,
                              long *dof_ids,
                              const int mp_id);

@@ -1,9 +1,8 @@
 /**
- * This file declares the functions for the displacement-based TOTAL
- * LAGRANGIAN element. Note that there are several helper functions
- * which are defined in the definitions file which are not listed
- * here.  This is on purpose as these functions should ONLY be used
- * within the diplacement based element context.
+ * This file declares the functions for the displacement-based TOTAL LAGRANGIAN
+ * element. Note that there are several helper functions which are defined in
+ * the definitions file which are not listed here.  This is on purpose as these
+ * functions should ONLY be used within the diplacement based element context.
  */
 #ifndef PGFEM3D_DISP_BASED_ELEM_H
 #define PGFEM3D_DISP_BASED_ELEM_H
@@ -70,7 +69,7 @@ int DISP_resid_bnd_el(double *R,
                       const double *x_ve,
                       const double *y_ve,
                       const double *z_ve,
-                      const BOUNDING_ELEMENT *b_elems,
+                      const BoundingElement *b_elems,
                       const Element *elem,
                       const HOMMAT *hommat,
                       const NODE *node,
@@ -88,7 +87,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
                          const double *x_ve,
                          const double *y_ve,
                          const double *z_ve,
-                         const BOUNDING_ELEMENT *b_elems,
+                         const BoundingElement *b_elems,
                          const Element *elem,
                          const HOMMAT *hommat,
                          const NODE *node,

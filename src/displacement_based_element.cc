@@ -208,7 +208,7 @@ static int integration_help(const int elem_id,
 
 /** helper function which handles all of the domain mapping and
     computes function values at the 2D integration points */
-static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
+static int bnd_integration_help(const BoundingElement *ptr_be,
                                 const Element *ptr_ve,
                                 const damage *ptr_dam,
                                 const SUPP sup,
@@ -575,7 +575,7 @@ int DISP_resid_bnd_el(double *R,
                       const double *x_ve,
                       const double *y_ve,
                       const double *z_ve,
-                      const BOUNDING_ELEMENT *b_elems,
+                      const BoundingElement *b_elems,
                       const Element *elem,
                       const HOMMAT *hommat,
                       const NODE *node,
@@ -591,7 +591,7 @@ int DISP_resid_bnd_el(double *R,
   int err = 0;
 
   /* Get const pointers */
-  const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
+  const BoundingElement *ptr_be = &b_elems[b_el_id];
   const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
   const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
   const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
@@ -721,7 +721,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
                          const double *x_ve,
                          const double *y_ve,
                          const double *z_ve,
-                         const BOUNDING_ELEMENT *b_elems,
+                         const BoundingElement *b_elems,
                          const Element *elem,
                          const HOMMAT *hommat,
                          const NODE *node,
@@ -737,7 +737,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
   int err = 0;
 
   /* Get const pointers */
-  const BOUNDING_ELEMENT *ptr_be = &b_elems[b_el_id];
+  const BoundingElement *ptr_be = &b_elems[b_el_id];
   const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
   const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
   const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
@@ -1842,7 +1842,7 @@ static int integration_help(const int elem_id,
   return err;
 }/* integration_help */
 
-static int bnd_integration_help(const BOUNDING_ELEMENT *ptr_be,
+static int bnd_integration_help(const BoundingElement *ptr_be,
                                 const Element *ptr_ve,
                                 const damage *ptr_dam,
                                 const SUPP sup,
