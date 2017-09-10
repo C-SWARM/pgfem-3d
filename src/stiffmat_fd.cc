@@ -41,10 +41,13 @@
 #define PFEM_DEBUG 0
 #endif
 
+namespace {
+using pgfem3d::Solver;
 using pgfem3d::solvers::SparseSystem;
 
-static constexpr int periodic = 0;
-static constexpr int ndn = 3;
+const constexpr int periodic = 0;
+const constexpr int ndn = 3;
+}
 
 /* This function may not be used outside of this file */
 static void coel_stiffmat(int i, /* coel ID */
@@ -360,14 +363,14 @@ static int bnd_el_stiffmat(int belem_id,
 /// \return non-zero on internal error
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           MaterialProperty *mat,
+                           FieldVariables *fv,
+                           Solver *sol,
+                           LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
+                           Multiphysics *mp,
                            int mp_id,
                            double dt,
                            double lm,
@@ -475,16 +478,16 @@ static int el_stiffmat_MP(int eid,
                           double **Lk,
                           int *Ddof,
                           int interior,
-                          GRID *grid,
-                          MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *fv,
-                          SOLVER_OPTIONS *sol,
-                          LOADING_STEPS *load,
-                          COMMUNICATION_STRUCTURE *com,
+                          Grid *grid,
+                          MaterialProperty *mat,
+                          FieldVariables *fv,
+                          Solver *sol,
+                          LoadingSteps *load,
+                          CommunicationStructure *com,
                           CRPL *crpl,
                           MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
-                          MULTIPHYSICS *mp,
+                          Multiphysics *mp,
                           int mp_id,
                           double dt,
                           long iter,
@@ -656,16 +659,16 @@ static int el_stiffmat_MP(int eid,
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int stiffmat_fd_MP(GRID *grid,
-                   MATERIAL_PROPERTY *mat,
-                   FIELD_VARIABLES *fv,
-                   SOLVER_OPTIONS *sol,
-                   LOADING_STEPS *load,
-                   COMMUNICATION_STRUCTURE *com,
+int stiffmat_fd_MP(Grid *grid,
+                   MaterialProperty *mat,
+                   FieldVariables *fv,
+                   Solver *sol,
+                   LoadingSteps *load,
+                   CommunicationStructure *com,
                    CRPL *crpl,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
-                   MULTIPHYSICS *mp,
+                   Multiphysics *mp,
                    int mp_id,
                    double dt,
                    long iter,
@@ -854,7 +857,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   int mp_id = 0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -876,7 +879,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define mesh object
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -888,7 +891,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -912,7 +915,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  Solver sol{};
   {
     sol.FNR     = FNR;
     sol.system  = c->SOLVER;
@@ -922,14 +925,14 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;
@@ -937,7 +940,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define communication structures
-  COMMUNICATION_STRUCTURE com;
+  CommunicationStructure com;
   {
     communication_structure_initialization(&com);
     com.nproc  = nproc;

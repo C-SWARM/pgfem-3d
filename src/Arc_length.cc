@@ -95,8 +95,8 @@ int arc_length_variable_initialization(ARC_LENGTH_VARIABLES *arc)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int construct_arc_length_variable(ARC_LENGTH_VARIABLES *arc,
-                                  FIELD_VARIABLES *fv,
-                                  COMMUNICATION_STRUCTURE *com,
+                                  FieldVariables *fv,
+                                  CommunicationStructure *com,
                                   int myrank)
 {
   int err = 0;
@@ -156,18 +156,18 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc)
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return load multiplier
-double Multiphysics_Arc_length(GRID *grid,
-                               MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *fv,
-                               SOLVER_OPTIONS *sol,
-                               LOADING_STEPS *load,
-                               COMMUNICATION_STRUCTURE *com,
-                               PGFem3D_TIME_STEPPING *time_steps,
+double Multiphysics_Arc_length(Grid *grid,
+                               MaterialProperty *mat,
+                               FieldVariables *fv,
+                               pgfem3d::Solver *sol,
+                               LoadingSteps *load,
+                               CommunicationStructure *com,
+                               TimeStepping *time_steps,
                                CRPL *crpl,
                                MPI_Comm mpi_comm,
                                const double VVolume,
                                const PGFem3D_opt *opts,
-                               MULTIPHYSICS *mp,
+                               Multiphysics *mp,
                                const int mp_id)
 {
   ARC_LENGTH_VARIABLES *arc = sol->arc;
@@ -1143,7 +1143,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              double *sup_defl)
 {
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -1165,7 +1165,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define mesh object
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -1179,7 +1179,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -1232,7 +1232,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  pgfem3d::Solver sol{};
   {
     sol.nor_min    = solver_file->nonlin_tol;
     sol.FNR        = solver_file->nonlin_method;
@@ -1245,7 +1245,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   sol.arc = &arc;
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
@@ -1253,7 +1253,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;
@@ -1261,7 +1261,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define communication structures
-  COMMUNICATION_STRUCTURE com;
+  CommunicationStructure com;
   {
     communication_structure_initialization(&com);
     com.Ap     = c->Ap;
@@ -1274,7 +1274,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define time stepping variable
-  PGFem3D_TIME_STEPPING ts;
+  TimeStepping ts;
   {
     time_stepping_initialization(&ts);
     ts.nt  = solver_file->n_step;

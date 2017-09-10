@@ -14,16 +14,16 @@
 #include "restart.h"
 #include "utils.h"
 #include "elem3d.h"
-#include <cmath>
 #include <ttl/ttl.h>
 #include <ttl/Library/matrix.h>
+#include <cmath>
 
 namespace {
 using namespace ttl;
-constexpr Index<'i'> i;
-constexpr Index<'j'> j;
-constexpr Index<'k'> k;
-constexpr Index<'l'> l;
+const constexpr Index<'i'> i;
+const constexpr Index<'j'> j;
+const constexpr Index<'k'> k;
+const constexpr Index<'l'> l;
 }
 
 /*****************************************************/
@@ -169,7 +169,7 @@ int main(int argc,char *argv[])
   double NORM = 0.0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int write_no = 0;
   int *coupled_ids = (int *) malloc(sizeof(int));
@@ -188,7 +188,7 @@ int main(int argc,char *argv[])
     mp.total_write_no = 0;
   }
 
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = ne;
@@ -199,7 +199,7 @@ int main(int argc,char *argv[])
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = ndofn;
@@ -212,14 +212,14 @@ int main(int argc,char *argv[])
   }
 
   double tns[2];
-  PGFem3D_TIME_STEPPING ts;
+  TimeStepping ts;
   {
     time_stepping_initialization(&ts);
     ts.tns    = tns;
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups = &sup;

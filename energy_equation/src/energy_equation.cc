@@ -26,6 +26,8 @@ namespace {
 using namespace gcm;
 using namespace ttl;
 
+using pgfem3d::Solver;
+
 const constexpr int DIM_3 = 3;
 const constexpr int DIM_3x3 = 9;
 const constexpr int DIM_3x3x3 = 27;
@@ -34,21 +36,21 @@ const constexpr int DIM_3x3x3x3 = 81;
 const constexpr double TOL_FHS = 1.0e-6;
 const constexpr double PLASTIC_HEAT_FACTOR = 0.8;
 
-constexpr Index<'A'> A;
-constexpr Index<'B'> B;
-constexpr Index<'C'> C;
-constexpr Index<'D'> D;
-constexpr Index<'I'> I;
-constexpr Index<'J'> J;
-constexpr Index<'K'> K;
-constexpr Index<'L'> L;
-constexpr Index<'M'> M;
-constexpr Index<'N'> N;
-constexpr Index<'O'> O;
-constexpr Index<'P'> P;
-constexpr Index<'Q'> Q;
-constexpr Index<'X'> X;
-constexpr Index<'Y'> Y;
+const constexpr Index<'A'> A;
+const constexpr Index<'B'> B;
+const constexpr Index<'C'> C;
+const constexpr Index<'D'> D;
+const constexpr Index<'I'> I;
+const constexpr Index<'J'> J;
+const constexpr Index<'K'> K;
+const constexpr Index<'L'> L;
+const constexpr Index<'M'> M;
+const constexpr Index<'N'> N;
+const constexpr Index<'O'> O;
+const constexpr Index<'P'> P;
+const constexpr Index<'Q'> Q;
+const constexpr Index<'X'> X;
+const constexpr Index<'Y'> Y;
 
 template <class T1, class T2>
 inline int inv(T1 &A, T2 &AI)
@@ -141,7 +143,7 @@ int compute_d2ePdeF2(double *_d2PdF2,
 ///
 /// \param[out] hF deformation gradient due to heat expansion
 /// \param[in] dT temperature difference
-/// \param[in] mat MATERIAL_PROPERTY object
+/// \param[in] mat MaterialProperty object
 /// \param[in] mat_id material id
 /// \param[in] diff_order, if 0 deformation gradient
 ///                        if 1 1st order of differentiation of hF w.r.t temperature
@@ -149,7 +151,7 @@ int compute_d2ePdeF2(double *_d2PdF2,
 /// \return non-zero with interal error
 int compute_hF_ttl(Tensor<2, DIM_3, double> &hF,
                    double dT,
-                   const MATERIAL_PROPERTY *mat,
+                   const MaterialProperty *mat,
                    const int mat_id,
                    const int diff_order)
 {
@@ -289,8 +291,8 @@ int compute_dPdhF(Matrix<double> *dPdhF_in,
 /// \param[out] Qe thermal source due to mechanical work (elastic part)
 /// \param[out] Qp thermal source due to mechanical work (plastic part)
 /// \param[out] DQ tangent of heat generation w.r.t temperature (computed only if compute_tangent = 1)
-/// \param[in] mat MATERIAL_PROPERTY object
-/// \param[in] fv_m mechanical FIELD_VARIABLES object
+/// \param[in] mat MaterialProperty object
+/// \param[in] fv_m mechanical FieldVariables object
 /// \param[in] T temperature
 /// \param[in] dT temperature changes
 /// \param[in] dt time step size
@@ -301,8 +303,8 @@ int compute_dPdhF(Matrix<double> *dPdhF_in,
 int compute_mechanical_heat_gen(double *Qe,
                                 double *Qp,
                                 double *DQ,
-                                const MATERIAL_PROPERTY *mat,
-                                const FIELD_VARIABLES *fv_m,
+                                const MaterialProperty *mat,
+                                const FieldVariables *fv_m,
                                 const double T,
                                 const double deltaT_np1,
                                 const double deltaT_n,
@@ -459,8 +461,8 @@ int get_temperature_elem(const long *cn,
 /// \return non-zero on internal error
 int energy_equation_residuals_assemble(FEMLIB *fe,
                                        double *fi,
-                                       GRID *grid,
-                                       FIELD_VARIABLES *fv,
+                                       Grid *grid,
+                                       FieldVariables *fv,
                                        const int mp_id)
 {
   int err = 0;
@@ -498,10 +500,10 @@ int energy_equation_residuals_assemble(FEMLIB *fe,
 int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            double *fi,
                                            double *du,
-                                           GRID *grid,
-                                           MATERIAL_PROPERTY *mat,
-                                           FIELD_VARIABLES *fv,
-                                           LOADING_STEPS *load,
+                                           Grid *grid,
+                                           MaterialProperty *mat,
+                                           FieldVariables *fv,
+                                           LoadingSteps *load,
                                            int mp_id,
                                            double dt_in,
                                            int total_Lagrangian)
@@ -584,7 +586,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
     if(is_it_couple_w_mechanical>=0)
     {
-      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+      FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
       int compute_tangent = 0;
       double DQ = 0.0;
       double Qe = 0.0;
@@ -657,10 +659,10 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 ///                           use_updated=0, compute residuals using temporal temperature
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_residuals(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_residuals(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      LoadingSteps *load,
                                       const int mp_id,
                                       int use_updated,
                                       double dt)
@@ -692,7 +694,7 @@ int energy_equation_compute_residuals(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -724,7 +726,7 @@ int energy_equation_compute_residuals(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -762,12 +764,12 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            double **Lk,
-                                           GRID *grid,
-                                           MATERIAL_PROPERTY *mat,
-                                           FIELD_VARIABLES *fv,
-                                           SOLVER_OPTIONS *sol,
-                                           LOADING_STEPS *load,
-                                           COMMUNICATION_STRUCTURE *com,
+                                           Grid *grid,
+                                           MaterialProperty *mat,
+                                           FieldVariables *fv,
+                                           Solver *sol,
+                                           LoadingSteps *load,
+                                           CommunicationStructure *com,
                                            int *Ddof,
                                            int myrank,
                                            int interior,
@@ -856,7 +858,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 
     if(is_it_couple_w_mechanical>=0)
     {
-      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+      FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
       int compute_tangent = 1;
       double Qe = 0.0;
       double Qp = 0.0;
@@ -970,12 +972,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_stiffness(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
-                                      COMMUNICATION_STRUCTURE *com,
+int energy_equation_compute_stiffness(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      Solver *sol,
+                                      LoadingSteps *load,
+                                      CommunicationStructure *com,
                                       MPI_Comm mpi_comm,
                                       int myrank,
                                       const PGFem3D_opt *opts,
@@ -1012,7 +1014,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1087,7 +1089,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -1130,11 +1132,11 @@ int energy_equation_compute_stiffness(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_load4pBCs(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_load4pBCs(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      Solver *sol,
+                                      LoadingSteps *load,
                                       int myrank,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
@@ -1170,7 +1172,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1195,7 +1197,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -1212,9 +1214,9 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 /// \param[in,out] fv a field variable object
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int update_thermal_flux4print(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
+int update_thermal_flux4print(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
                               double dt)
 {
   int err = 0;
@@ -1246,7 +1248,7 @@ int update_thermal_flux4print(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1314,7 +1316,7 @@ int update_thermal_flux4print(GRID *grid,
       double Jn = 1.0;
       if(is_it_couple_w_mechanical>=0)
       {
-        FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+        FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
         int compute_tangent = 0;
 
         Tensor<2,3,double> F;
@@ -1370,7 +1372,7 @@ int update_thermal_flux4print(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;

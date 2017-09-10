@@ -3,7 +3,6 @@
 #endif
 
 #include "load.h"
-
 #include "MINI_3f_element.h"
 #include "MINI_element.h"
 #include "PGFem3D_data_structure.h"
@@ -23,6 +22,8 @@
 #include "stiffmatel_fd.h"
 #include "three_field_element.h"
 #include "utils.h"
+
+using pgfem3d::Solver;
 
 long* compute_times_load (FILE *in1,
                           const long nt,
@@ -97,15 +98,15 @@ void load_vec_node (double *f,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal erro
-int momentum_equation_load4pBCs(GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                LOADING_STEPS *load,
+int momentum_equation_load4pBCs(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                Solver *sol,
+                                LoadingSteps *load,
                                 double dt,
                                 CRPL *crpl,
                                 const PGFem3D_opt *opts,
-                                MULTIPHYSICS *mp,
+                                Multiphysics *mp,
                                 int mp_id,
                                 int myrank)
 {
@@ -349,15 +350,15 @@ int momentum_equation_load4pBCs(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_load_vector_for_prescribed_BC(GRID *grid,
-                                          MATERIAL_PROPERTY *mat,
-                                          FIELD_VARIABLES *fv,
-                                          SOLVER_OPTIONS *sol,
-                                          LOADING_STEPS *load,
+int compute_load_vector_for_prescribed_BC(Grid *grid,
+                                          MaterialProperty *mat,
+                                          FieldVariables *fv,
+                                          Solver *sol,
+                                          LoadingSteps *load,
                                           double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
-                                          MULTIPHYSICS *mp,
+                                          Multiphysics *mp,
                                           int mp_id,
                                           int myrank)
 {
@@ -415,7 +416,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   int mp_id = 0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -437,7 +438,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define mesh object
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -449,7 +450,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -473,7 +474,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  Solver sol{};
   {
     sol.system  = c->SOLVER;
     sol.err     = c->lin_err;
@@ -482,14 +483,14 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;
@@ -497,7 +498,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define communication structures
-  COMMUNICATION_STRUCTURE com;
+  CommunicationStructure com;
   {
     communication_structure_initialization(&com);
     com.Ap     = c->Ap;

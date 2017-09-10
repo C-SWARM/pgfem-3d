@@ -28,12 +28,14 @@
 #include "tensors.h"
 #include "three_field_element.h"
 #include "utils.h"
-
 #include <cassert>
 #include <cmath>
 #include <cstring>
 
-static constexpr const int ndn = 3;
+namespace {
+using pgfem3d::Solver;
+const constexpr int ndn = 3;
+}
 
 /* assemble the element residual to the local portion of the global
    residual vector */
@@ -118,15 +120,15 @@ static int fd_res_coel(double *fe,
 /// \return non-zero on internal error
 static int fd_res_elem_MP(double *be,
                           const int eid,
-                          GRID *grid,
-                          MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *fv,
-                          SOLVER_OPTIONS *sol,
-                          LOADING_STEPS *load,
+                          Grid *grid,
+                          MaterialProperty *mat,
+                          FieldVariables *fv,
+                          Solver *sol,
+                          LoadingSteps *load,
                           CRPL *crpl,
                           MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
-                          MULTIPHYSICS *mp,
+                          Multiphysics *mp,
                           int mp_id,
                           double t,
                           double *dts,
@@ -287,15 +289,15 @@ static int fd_res_elem_MP(double *be,
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long fd_residuals_MP(GRID *grid,
-                     MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *fv,
-                     SOLVER_OPTIONS *sol,
-                     LOADING_STEPS *load,
+long fd_residuals_MP(Grid *grid,
+                     MaterialProperty *mat,
+                     FieldVariables *fv,
+                     Solver *sol,
+                     LoadingSteps *load,
                      CRPL *crpl,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     MULTIPHYSICS *mp,
+                     Multiphysics *mp,
                      int mp_id,
                      double t,
                      double *dts,
@@ -472,15 +474,15 @@ long fd_residuals_MP(GRID *grid,
 /// \param[in] t time
 /// \param[in] dts time step sizes at n, and n+1
 /// \return non-zero on internal error
-int fd_res_compute_reactions_MP(GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                LOADING_STEPS *load,
+int fd_res_compute_reactions_MP(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                Solver *sol,
+                                LoadingSteps *load,
                                 CRPL *crpl,
                                 MPI_Comm mpi_comm,
                                 const PGFem3D_opt *opts,
-                                MULTIPHYSICS *mp,
+                                Multiphysics *mp,
                                 int mp_id,
                                 double t,
                                 double *dts)
@@ -563,7 +565,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   int err = 0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -583,7 +585,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mp.total_write_no = 0;
   }
 
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -597,7 +599,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -622,21 +624,21 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  Solver sol{};
   {
     sol.nor_min  = solver_file->nonlin_tol;
     sol.alpha   = 0.0;
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;

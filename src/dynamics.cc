@@ -11,6 +11,7 @@
 #include "three_field_element.h"
 #include "utils.h"
 
+using pgfem3d::Solver;
 
 #ifndef VERIFICATION_USING_MMS
 #define INTG_ORDER 0
@@ -192,14 +193,14 @@ void DISP_resid_w_inertia_el(double *f,
 int residual_with_inertia(FEMLIB *fe,
                           double *be,
                           double *r_e,
-                          GRID *grid,
-                          MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *fv,
-                          SOLVER_OPTIONS *sol,
-                          LOADING_STEPS *load,
+                          Grid *grid,
+                          MaterialProperty *mat,
+                          FieldVariables *fv,
+                          Solver *sol,
+                          LoadingSteps *load,
                           CRPL *crpl,
                           const PGFem3D_opt *opts,
-                          MULTIPHYSICS *mp,
+                          Multiphysics *mp,
                           int mp_id,
                           double *dts,
                           double t)
@@ -344,14 +345,14 @@ int residual_with_inertia(FEMLIB *fe,
 int stiffness_with_inertia(FEMLIB *fe,
                            double *Ks,
                            double *r_e,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           MaterialProperty *mat,
+                           FieldVariables *fv,
+                           Solver *sol,
+                           LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
+                           Multiphysics *mp,
                            int mp_id,
                            double dt)
 {

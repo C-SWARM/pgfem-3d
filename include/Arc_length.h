@@ -1,21 +1,19 @@
-/* HEADER */
+#ifndef PGFEM3D_ARC_LENGTH_H
+#define PGFEM3D_ARC_LENGTH_H
 
-#pragma once
-#ifndef ARC_LENGTH_H
-#define ARC_LENGTH_H
-#include "data_structure.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
 #include "crpl.h"
+#include "data_structure.h"
 #include "element.h"
 #include "eps.h"
 #include "hommat.h"
 #include "macro_micro_functions.h"
 #include "matgeom.h"
 #include "pgfem_comm.h"
-#include "PGFEM_mpi.h"
-#include "PGFem3D_data_structure.h"
-#include "PGFem3D_options.h"
 #include "sig.h"
 #include "solver_file.h"
 #include "supp.h"
@@ -67,8 +65,8 @@ int arc_length_variable_initialization(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int construct_arc_length_variable(ARC_LENGTH_VARIABLES *arc,
-                                  FIELD_VARIABLES *fv,
-                                  COMMUNICATION_STRUCTURE *com,
+                                  FieldVariables *fv,
+                                  CommunicationStructure *com,
                                   int myrank);
 
 int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
@@ -89,18 +87,18 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \return load multiplier
-double Multiphysics_Arc_length(GRID *grid,
-                               MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *variables,
-                               SOLVER_OPTIONS *sol,
-                               LOADING_STEPS *load,
-                               COMMUNICATION_STRUCTURE *com,
-                               PGFem3D_TIME_STEPPING *time_steps,
+double Multiphysics_Arc_length(Grid *grid,
+                               MaterialProperty *mat,
+                               FieldVariables *variables,
+                               pgfem3d::Solver *sol,
+                               LoadingSteps *load,
+                               CommunicationStructure *com,
+                               TimeStepping *time_steps,
                                CRPL *crpl,
                                MPI_Comm mpi_comm,
                                const double VVolume,
                                const PGFem3D_opt *opts,
-                               MULTIPHYSICS *mp,
+                               Multiphysics *mp,
                                const int mp_id);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
@@ -142,4 +140,4 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              double *DAL,
                              double *sup_defl);
 
-#endif /* #ifndef ARC_LENGTH_H */
+#endif // #define PGFEM3D_ARC_LENGTH_H

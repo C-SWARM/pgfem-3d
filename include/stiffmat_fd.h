@@ -1,12 +1,13 @@
-/* HEADER */
-#pragma once
-#ifndef STIFFMAT_FD_H
-#define STIFFMAT_FD_H
+#ifndef PGFEM3D_STIFFMAT_FD_H
+#define PGFEM3D_STIFFMAT_FD_H
 
-#include "data_structure.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
 #include "crpl.h"
+#include "data_structure.h"
 #include "element.h"
 #include "eps.h"
 #include "femlib.h"
@@ -15,9 +16,6 @@
 #include "matgeom.h"
 #include "node.h"
 #include "pgfem_comm.h"
-#include "PGFEM_mpi.h"
-#include "PGFem3D_data_structure.h"
-#include "PGFem3D_options.h"
 #include "sig.h"
 #include "supp.h"
 #include "pgfem3d/Solver.hpp"
@@ -42,14 +40,14 @@
 /// \return non-zero on internal error
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           MaterialProperty *mat,
+                           FieldVariables *fv,
+                           pgfem3d::Solver *sol,
+                           LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
+                           Multiphysics *mp,
                            int mp_id,
                            double dt,
                            double lm,
@@ -74,16 +72,16 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int stiffmat_fd_MP(GRID *grid,
-                   MATERIAL_PROPERTY *mat,
-                   FIELD_VARIABLES *fv,
-                   SOLVER_OPTIONS *sol,
-                   LOADING_STEPS *load,
-                   COMMUNICATION_STRUCTURE *com,
+int stiffmat_fd_MP(Grid *grid,
+                   MaterialProperty *mat,
+                   FieldVariables *fv,
+                   pgfem3d::Solver *sol,
+                   LoadingSteps *load,
+                   CommunicationStructure *com,
                    CRPL *crpl,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
-                   MULTIPHYSICS *mp,
+                   Multiphysics *mp,
                    int mp_id,
                    double dt,
                    long iter,

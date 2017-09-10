@@ -27,9 +27,9 @@
 #include "femlib.h"
 #include "get_dof_ids_on_elem.h"
 #include "hommat.h"
-#include "hyperelasticity.h"     // <= constitutive model elasticity
+#include "hyperelasticity.h"                 // <= constitutive model elasticity
 #include "index_macros.h"
-#include "material_properties.h" // <= constitutive model material properties
+#include "material_properties.h"    // <= constitutive model material properties
 #include "plasticity_model_none.h"
 #include "plasticity_model.h"
 #include "plasticity_model_BPA.h"
@@ -37,6 +37,8 @@
 #include "utils.h"
 #include <ttl/ttl.h>
 #include <algorithm>
+
+using pgfem3d::Solver;
 
 int
 Model_var_info::print_variable_info(FILE *f)
@@ -126,9 +128,9 @@ inline int inv(T1 &A, T2 &AI) {
 /// \param[in] factor_n factor of computing temperature for t(n)
 /// \return non-zero on internal error
 int get_nodal_temperatures(FEMLIB *fe,
-                           GRID *grid,
-                           FIELD_VARIABLES *fv_h,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           FieldVariables *fv_h,
+                           LoadingSteps *load,
                            int mp_id,
                            double *Tnp1_e,
                            double *Tn_e,
@@ -192,8 +194,8 @@ int get_nodal_temperatures(FEMLIB *fe,
 /// \param[out] hFnm1 computed deformation gradient at t(n-1)
 /// \return non-zero on internal error
 int compute_temperature_at_ip(FEMLIB *fe,
-                              const GRID *grid,
-                              const MATERIAL_PROPERTY *mat,
+                              const Grid *grid,
+                              const MaterialProperty *mat,
                               const double T0,
                               double *Tnp1,
                               double *Tn,
@@ -711,8 +713,8 @@ int constitutive_model_reset_state(EPS *eps,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
-                                                   GRID *grid)
+int constitutive_model_save_state_vars_to_temporal(FieldVariables *fv,
+                                                   Grid *grid)
 {
   int err = 0;
   State_variables *var = fv->temporal->var;
@@ -739,8 +741,8 @@ int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
-                                                         GRID *grid)
+int constitutive_model_update_np1_state_vars_to_temporal(FieldVariables *fv,
+                                                         Grid *grid)
 {
   int err = 0;
   State_variables *var = fv->temporal->var;
@@ -768,8 +770,8 @@ int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
-                                                  GRID *grid)
+int constitutive_model_reset_state_using_temporal(FieldVariables *fv,
+                                                  Grid *grid)
 {
   int err = 0;
   State_variables *var = fv->temporal->var;
@@ -1016,12 +1018,12 @@ int compute_residual_vector(double *f,
 /// \param[in] dt time step size
 /// \param[in] alpha mid point rule alpha
 /// \return non-zero on internal error
-int constitutive_model_update_output_variables(GRID *grid,
-                                               MATERIAL_PROPERTY *mat,
-                                               FIELD_VARIABLES *FV,
-                                               LOADING_STEPS *load,
+int constitutive_model_update_output_variables(Grid *grid,
+                                               MaterialProperty *mat,
+                                               FieldVariables *FV,
+                                               LoadingSteps *load,
                                                PGFem3D_opt *opts,
-                                               MULTIPHYSICS *mp,
+                                               Multiphysics *mp,
                                                int mp_id,
                                                const double dt,
                                                double alpha)
@@ -1032,7 +1034,7 @@ int constitutive_model_update_output_variables(GRID *grid,
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
 
-  FIELD_VARIABLES *fv = FV+mp_id;
+  FieldVariables *fv = FV+mp_id;
   SIG *sig = fv->sig;
   EPS *eps = fv->eps;
   Node *node = grid->node;
@@ -1068,7 +1070,7 @@ int constitutive_model_update_output_variables(GRID *grid,
     double volume = 0.0;
 
     Matrix<double> Tnp1, Tn, Tnm1;
-    FIELD_VARIABLES *fv_h = NULL;
+    FieldVariables *fv_h = NULL;
 
     if(is_it_couple_w_thermal >= 0)
     {
@@ -1340,14 +1342,14 @@ int cm_get_subdivision_parameter(double *subdiv_param,
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
                                               double *r_e,
-                                              GRID *grid,
-                                              MATERIAL_PROPERTY *mat,
-                                              FIELD_VARIABLES *fv,
-                                              SOLVER_OPTIONS *sol,
-                                              LOADING_STEPS *load,
+                                              Grid *grid,
+                                              MaterialProperty *mat,
+                                              FieldVariables *fv,
+                                              Solver *sol,
+                                              LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              MULTIPHYSICS *mp,
+                                              Multiphysics *mp,
                                               int mp_id,
                                               double dt)
 {
@@ -1391,7 +1393,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
   Tensor<4,3,double> L;
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -1520,14 +1522,14 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        double *lk,
                                        double *r_e,
-                                       GRID *grid,
-                                       MATERIAL_PROPERTY *mat,
-                                       FIELD_VARIABLES *fv,
-                                       SOLVER_OPTIONS *sol,
-                                       LOADING_STEPS *load,
+                                       Grid *grid,
+                                       MaterialProperty *mat,
+                                       FieldVariables *fv,
+                                       Solver *sol,
+                                       LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       MULTIPHYSICS *mp,
+                                       Multiphysics *mp,
                                        int mp_id,
                                        double dt)
 {
@@ -1572,7 +1574,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
   Tensor<4,3,double> L;
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -1772,14 +1774,14 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
 int stiffness_el_constitutive_model_3f(FEMLIB *fe,
                                        double *lk,
                                        double *r_e,
-                                       GRID *grid,
-                                       MATERIAL_PROPERTY *mat,
-                                       FIELD_VARIABLES *fv,
-                                       SOLVER_OPTIONS *sol,
-                                       LOADING_STEPS *load,
+                                       Grid *grid,
+                                       MaterialProperty *mat,
+                                       FieldVariables *fv,
+                                       Solver *sol,
+                                       LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       MULTIPHYSICS *mp,
+                                       Multiphysics *mp,
                                        int mp_id,
                                        double dt)
 {
@@ -1825,7 +1827,7 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
   Tensor<4,3,double> Ld={};
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -2051,14 +2053,14 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
 int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double *lk,
                                     double *r_e,
-                                    GRID *grid,
-                                    MATERIAL_PROPERTY *mat,
-                                    FIELD_VARIABLES *fv,
-                                    SOLVER_OPTIONS *sol,
-                                    LOADING_STEPS *load,
+                                    Grid *grid,
+                                    MaterialProperty *mat,
+                                    FieldVariables *fv,
+                                    Solver *sol,
+                                    LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    MULTIPHYSICS *mp,
+                                    Multiphysics *mp,
                                     int mp_id,
                                     double dt)
 {
@@ -2099,14 +2101,14 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *r_e,
-                                              GRID *grid,
-                                              MATERIAL_PROPERTY *mat,
-                                              FIELD_VARIABLES *fv,
-                                              SOLVER_OPTIONS *sol,
-                                              LOADING_STEPS *load,
+                                              Grid *grid,
+                                              MaterialProperty *mat,
+                                              FieldVariables *fv,
+                                              Solver *sol,
+                                              LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              MULTIPHYSICS *mp,
+                                              Multiphysics *mp,
                                               const double *dts,
                                               int mp_id,
                                               double dt)
@@ -2149,7 +2151,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
         hFnp1,hFn,hFnm1;
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -2269,14 +2271,14 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 int residuals_el_constitutive_model_1f(FEMLIB *fe,
                                        double *f,
                                        double *r_e,
-                                       GRID *grid,
-                                       MATERIAL_PROPERTY *mat,
-                                       FIELD_VARIABLES *fv,
-                                       SOLVER_OPTIONS *sol,
-                                       LOADING_STEPS *load,
+                                       Grid *grid,
+                                       MaterialProperty *mat,
+                                       FieldVariables *fv,
+                                       Solver *sol,
+                                       LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       MULTIPHYSICS *mp,
+                                       Multiphysics *mp,
                                        int mp_id,
                                        double dt)
 {
@@ -2318,7 +2320,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
             hFn,hFnp1,hFnp1_I;
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -2518,14 +2520,14 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        double *f,
                                        double *r_e,
-                                       GRID *grid,
-                                       MATERIAL_PROPERTY *mat,
-                                       FIELD_VARIABLES *fv,
-                                       SOLVER_OPTIONS *sol,
-                                       LOADING_STEPS *load,
+                                       Grid *grid,
+                                       MaterialProperty *mat,
+                                       FieldVariables *fv,
+                                       Solver *sol,
+                                       LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       MULTIPHYSICS *mp,
+                                       Multiphysics *mp,
                                        int mp_id,
                                        double dt)
 {
@@ -2570,7 +2572,7 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
   Tensor<4,3,double> Ld={};
 
   Matrix<double> Tnp1, Tn, Tnm1;
-  FIELD_VARIABLES *fv_h = NULL;
+  FieldVariables *fv_h = NULL;
 
   if(is_it_couple_w_thermal >= 0)
   {
@@ -2799,14 +2801,14 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
                                     double *r_e,
-                                    GRID *grid,
-                                    MATERIAL_PROPERTY *mat,
-                                    FIELD_VARIABLES *fv,
-                                    SOLVER_OPTIONS *sol,
-                                    LOADING_STEPS *load,
+                                    Grid *grid,
+                                    MaterialProperty *mat,
+                                    FieldVariables *fv,
+                                    Solver *sol,
+                                    LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    MULTIPHYSICS *mp,
+                                    Multiphysics *mp,
                                     int mp_id,
                                     double dt)
 {
@@ -2835,12 +2837,12 @@ int residuals_el_constitutive_model(FEMLIB *fe,
 /// \param[in] dt time step size
 /// \param[in] alpha mid point rule alpha
 /// \return non-zero on internal error
-int constitutive_model_update_NR(GRID *grid,
-                                 MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *fv,
-                                 LOADING_STEPS *load,
+int constitutive_model_update_NR(Grid *grid,
+                                 MaterialProperty *mat,
+                                 FieldVariables *fv,
+                                 LoadingSteps *load,
                                  const PGFem3D_opt *opts,
-                                 MULTIPHYSICS *mp,
+                                 Multiphysics *mp,
                                  int mp_id,
                                  const double dt,
                                  double alpha)
@@ -2909,7 +2911,7 @@ int constitutive_model_update_NR(GRID *grid,
     Matrix<double> dMdt(DIM_3x3*Vno,1);
 
     Matrix<double> Tnp1, Tn, Tnm1;
-    FIELD_VARIABLES *fv_h = NULL;
+    FieldVariables *fv_h = NULL;
 
     if(is_it_couple_w_thermal >= 0)
     {

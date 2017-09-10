@@ -19,12 +19,12 @@
 /// \param[out] tnm1 times at t(n-1), t(n)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_restart(GRID *grid,
-                 FIELD_VARIABLES *fv,
-                 PGFem3D_TIME_STEPPING *time_steps,
-                 LOADING_STEPS *load,
+int read_restart(Grid *grid,
+                 FieldVariables *fv,
+                 TimeStepping *time_steps,
+                 LoadingSteps *load,
                  const PGFem3D_opt *opts,
-                 MULTIPHYSICS *mp,
+                 Multiphysics *mp,
                  double *tnm1,
                  int myrank);
 
@@ -41,12 +41,12 @@ int read_restart(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart(GRID *grid,
-                  FIELD_VARIABLES *fv,
-                  LOADING_STEPS *load,
-                  PGFem3D_TIME_STEPPING *time_steps,
+int write_restart(Grid *grid,
+                  FieldVariables *fv,
+                  LoadingSteps *load,
+                  TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp,
+                  Multiphysics *mp,
                   int stepno,
                   int myrank);
 

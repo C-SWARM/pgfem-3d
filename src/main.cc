@@ -1,4 +1,3 @@
-/* HEADER */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -55,7 +54,10 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-static constexpr int periodic = 0;
+namespace {
+using namespace pgfem3d;
+const constexpr int periodic = 0;
+}
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -67,17 +69,17 @@ static constexpr int periodic = 0;
 ///
 /// \param[in] argc number of arguments passed through command line
 /// \param[in] argv arguments passed through command line
-/// \param[in] fv field variables (FIELD_VARIABLES object)
-/// \param[in] grid mesh info (GRID object)
-/// \param[in] com commuincation info (COMMUNICATION_STRUCTURE object)
-/// \param[in] load info for loading steps (LOADING_STEPS object)
+/// \param[in] fv field variables (FieldVariables object)
+/// \param[in] grid mesh info (Grid object)
+/// \param[in] com commuincation info (CommunicationStructure object)
+/// \param[in] load info for loading steps (LoadingSteps object)
 /// \param[in] gem flag for Generalized finite element method
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int print_PGFem3D_run_info(int argc,char *argv[],
-                           GRID *grid,
-                           COMMUNICATION_STRUCTURE *com,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           CommunicationStructure *com,
+                           LoadingSteps *load,
                            long gem,
                            PGFem3D_opt *opts)
 {
@@ -251,13 +253,13 @@ int print_PGFem3D_final(double total_time,
 /// \param[in] tim current time step number
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int print_results(GRID *grid,
-                  MATERIAL_PROPERTY *mat,
-                  FIELD_VARIABLES *FV,
-                  SOLVER_OPTIONS *SOL,
-                  LOADING_STEPS *load,
-                  COMMUNICATION_STRUCTURE *COM,
-                  PGFem3D_TIME_STEPPING *time_steps,
+int print_results(Grid *grid,
+                  MaterialProperty *mat,
+                  FieldVariables *FV,
+                  Solver *SOL,
+                  LoadingSteps *load,
+                  CommunicationStructure *COM,
+                  TimeStepping *time_steps,
                   CRPL *crpl,
                   ENSIGHT ensight,
                   PRINT_MULTIPHYSICS_RESULT *pmr,
@@ -265,15 +267,15 @@ int print_results(GRID *grid,
                   const double oVolume,
                   const double VVolume,
                   const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp,
+                  Multiphysics *mp,
                   long tim,
                   int myrank)
 {
   int err = 0;
 
-  SOLVER_OPTIONS          *sol = NULL;
-  FIELD_VARIABLES         *fv  = NULL;
-  COMMUNICATION_STRUCTURE *com = NULL;
+  Solver                 *sol = NULL;
+  FieldVariables          *fv = NULL;
+  CommunicationStructure *com = NULL;
   SUPP sup = NULL;
   int mp_id_M = -1;
 
@@ -416,12 +418,12 @@ int print_results(GRID *grid,
 /// \param[in] time_step_start time measure when time stepping starts for step tim
 /// \param[in] time_0 time measure when simulation starts
 /// \return non-zero on internal error
-int write_restart_files(GRID *grid,
-                        FIELD_VARIABLES *FV,
-                        LOADING_STEPS *load,
-                        PGFem3D_TIME_STEPPING *time_steps,
+int write_restart_files(Grid *grid,
+                        FieldVariables *FV,
+                        LoadingSteps *load,
+                        TimeStepping *time_steps,
                         PGFem3D_opt *opts,
-                        MULTIPHYSICS *mp,
+                        Multiphysics *mp,
                         long tim,
                         MPI_Comm mpi_comm,
                         int myrank,
@@ -557,11 +559,11 @@ int single_scale_main(int argc,char *argv[])
   //---->
   // Multiphysics setting
   int mp_id_M = -1;
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   err += read_multiphysics_settings(&mp,&options,myrank);
 
-  std::vector<FIELD_VARIABLES> fv(mp.physicsno);
-  std::vector<COMMUNICATION_STRUCTURE> com(mp.physicsno);
+  std::vector<FieldVariables> fv(mp.physicsno);
+  std::vector<CommunicationStructure> com(mp.physicsno);
 
   for (int ia = 0; ia < mp.physicsno; ++ia) {
     err += field_varialbe_initialization(&fv[ia]);
@@ -584,7 +586,7 @@ int single_scale_main(int argc,char *argv[])
     // create memories for saving coupling info
     if (0 < mp.coupled_ids[ia][0]) {
       fv[ia].coupled_physics_ids = PGFEM_malloc<int>(mp.coupled_ids[ia][0]);
-      fv[ia].fvs = PGFEM_malloc<FIELD_VARIABLES*>(mp.coupled_ids[ia][0]);
+      fv[ia].fvs = PGFEM_malloc<FieldVariables*>(mp.coupled_ids[ia][0]);
     }
 
     // save coupling info
@@ -602,16 +604,16 @@ int single_scale_main(int argc,char *argv[])
     com[ia].nproc = nproc;
   }
 
-  PGFem3D_TIME_STEPPING time_steps;
+  TimeStepping time_steps;
   err += time_stepping_initialization(&time_steps);
 
-  GRID grid;
+  Grid grid;
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
 
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   err += material_initialization(&mat);
 
-  LOADING_STEPS load;
+  LoadingSteps load;
   err += loading_steps_initialization(&load);
   err += construct_loading_steps(&load, &mp);
 
@@ -659,7 +661,7 @@ int single_scale_main(int argc,char *argv[])
 
   //<---------------------------------------------------------------------
   /* set up solver variables */
-  std::vector<SOLVER_OPTIONS> sol(mp.physicsno);
+  std::vector<Solver> sol(mp.physicsno);
 
   //----------------------------------------------------------------------
   // read main input files ( *.in)

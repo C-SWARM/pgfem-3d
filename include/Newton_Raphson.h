@@ -54,15 +54,15 @@
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long compute_residuals_for_NR(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
-                              SOLVER_OPTIONS *sol,
-                              LOADING_STEPS *load,
+long compute_residuals_for_NR(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
+                              pgfem3d::Solver *sol,
+                              LoadingSteps *load,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
-                              MULTIPHYSICS *mp,
+                              Multiphysics *mp,
                               int mp_id,
                               double t,
                               double *dts,
@@ -83,18 +83,18 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
-double Multiphysics_Newton_Raphson(GRID *grid,
-                                   MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   SOLVER_OPTIONS *SOL,
-                                   LOADING_STEPS *load,
-                                   COMMUNICATION_STRUCTURE *COM,
-                                   PGFem3D_TIME_STEPPING *time_steps,
+double Multiphysics_Newton_Raphson(Grid *grid,
+                                   MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   pgfem3d::Solver *SOL,
+                                   LoadingSteps *load,
+                                   CommunicationStructure *COM,
+                                   TimeStepping *time_steps,
                                    CRPL *crpl,
                                    MPI_Comm mpi_comm,
                                    const double VVolume,
                                    const PGFem3D_opt *opts,
-                                   MULTIPHYSICS *mp);
+                                   Multiphysics *mp);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///

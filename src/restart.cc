@@ -78,10 +78,10 @@ static int read_initial_from_VTK(const PGFem3D_opt *opts,
 /// \param[out] tnm1 times at t(n-1), t(n)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_time_step_info(FIELD_VARIABLES *fv,
-                        PGFem3D_TIME_STEPPING *time_steps,
+int read_time_step_info(FieldVariables *fv,
+                        TimeStepping *time_steps,
                         const PGFem3D_opt *opts,
-                        MULTIPHYSICS *mp,
+                        Multiphysics *mp,
                         double *tnm1,
                         int myrank)
 {
@@ -137,10 +137,10 @@ int read_time_step_info(FIELD_VARIABLES *fv,
 /// \param[in] myrank current process rank
 /// \param[in] stepno current time step number
 /// \return non-zero on internal error
-int write_time_step_info(FIELD_VARIABLES *fv,
-                         PGFem3D_TIME_STEPPING *time_steps,
+int write_time_step_info(FieldVariables *fv,
+                         TimeStepping *time_steps,
                          const PGFem3D_opt *opts,
-                         MULTIPHYSICS *mp,
+                         Multiphysics *mp,
                          int myrank,
                          int stepno)
 {
@@ -193,10 +193,10 @@ int write_time_step_info(FIELD_VARIABLES *fv,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_constitutive_model(GRID *grid,
-                                     FIELD_VARIABLES *fv,
+int write_restart_constitutive_model(Grid *grid,
+                                     FieldVariables *fv,
                                      const PGFem3D_opt *opts,
-                                     MULTIPHYSICS *mp,
+                                     Multiphysics *mp,
                                      int myrank,
                                      int mp_id,
                                      int stepno,
@@ -264,10 +264,10 @@ int write_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-static int read_restart_constitutive_model(GRID *grid,
-                                           FIELD_VARIABLES *fv,
+static int read_restart_constitutive_model(Grid *grid,
+                                           FieldVariables *fv,
                                            const PGFem3D_opt *opts,
-                                           MULTIPHYSICS *mp,
+                                           Multiphysics *mp,
                                            int myrank,
                                            int mp_id,
                                            char rs_path[1024])
@@ -332,11 +332,11 @@ static int read_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-static int read_restart_mechanical(GRID *grid,
-                                   FIELD_VARIABLES *fv,
-                                   LOADING_STEPS *load,
+static int read_restart_mechanical(Grid *grid,
+                                   FieldVariables *fv,
+                                   LoadingSteps *load,
                                    const PGFem3D_opt *opts,
-                                   MULTIPHYSICS *mp,
+                                   Multiphysics *mp,
                                    double *tnm1,
                                    int myrank,
                                    int mp_id,
@@ -369,8 +369,8 @@ static int read_restart_mechanical(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int read_restart_thermal(GRID *grid,
-                         FIELD_VARIABLES *fv,
+int read_restart_thermal(Grid *grid,
+                         FieldVariables *fv,
                          const PGFem3D_opt *opts,
                          int myrank,
                          int mp_id,
@@ -411,12 +411,12 @@ int read_restart_thermal(GRID *grid,
 /// \param[out] tnm1 times at t(n-1), t(n)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_restart(GRID *grid,
-                 FIELD_VARIABLES *fv,
-                 PGFem3D_TIME_STEPPING *time_steps,
-                 LOADING_STEPS *load,
+int read_restart(Grid *grid,
+                 FieldVariables *fv,
+                 TimeStepping *time_steps,
+                 LoadingSteps *load,
                  const PGFem3D_opt *opts,
-                 MULTIPHYSICS *mp,
+                 Multiphysics *mp,
                  double *tnm1,
                  int myrank)
 {
@@ -469,12 +469,12 @@ int read_restart(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_mechanical(GRID *grid,
-                             FIELD_VARIABLES *fv,
-                             LOADING_STEPS *load,
-                             PGFem3D_TIME_STEPPING *time_steps,
+int write_restart_mechanical(Grid *grid,
+                             FieldVariables *fv,
+                             LoadingSteps *load,
+                             TimeStepping *time_steps,
                              const PGFem3D_opt *opts,
-                             MULTIPHYSICS *mp,
+                             Multiphysics *mp,
                              int myrank,
                              int mp_id,
                              int stepno,
@@ -523,8 +523,8 @@ int write_restart_mechanical(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_thermal(GRID *grid,
-                          FIELD_VARIABLES *fv,
+int write_restart_thermal(Grid *grid,
+                          FieldVariables *fv,
                           const PGFem3D_opt *opts,
                           int myrank,
                           int mp_id,
@@ -576,12 +576,12 @@ int write_restart_thermal(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart(GRID *grid,
-                  FIELD_VARIABLES *fv,
-                  LOADING_STEPS *load,
-                  PGFem3D_TIME_STEPPING *time_steps,
+int write_restart(Grid *grid,
+                  FieldVariables *fv,
+                  LoadingSteps *load,
+                  TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp,
+                  Multiphysics *mp,
                   int myrank,
                   int stepno)
 

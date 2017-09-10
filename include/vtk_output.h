@@ -97,10 +97,10 @@ typedef enum{CHEMICAL_VAR_SPECIES,
 /// e.g. PRINT_MULTIPHYSICS_RESULT *pmr;
 ///      pmr->write_vtk = [function name to write any variables]
 typedef int (*write_vtk_t) (FILE *out,
-                            GRID *grid,
-                            const MATERIAL_PROPERTY *mat,
-                            FIELD_VARIABLES *fv,
-                            LOADING_STEPS *load,
+                            Grid *grid,
+                            const MaterialProperty *mat,
+                            FieldVariables *fv,
+                            LoadingSteps *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
                             const PGFem3D_opt *opts);
 
@@ -152,10 +152,10 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
 /// \param[in] time time step number
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int VTK_write_multiphysics_vtu(GRID *grid,
-                               const MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *FV,
-                               LOADING_STEPS *load,
+int VTK_write_multiphysics_vtu(Grid *grid,
+                               const MaterialProperty *mat,
+                               FieldVariables *FV,
+                               LoadingSteps *load,
                                PRINT_MULTIPHYSICS_RESULT *pD,
                                int datano,
                                const PGFem3D_opt *opts,
@@ -169,9 +169,9 @@ int VTK_write_multiphysics_vtu(GRID *grid,
 /// \param[in] mp an object for multiphysics stepping
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \return non-zero on internal error
-int VTK_construct_PMR(GRID *grid,
-                      FIELD_VARIABLES *FV,
-                      MULTIPHYSICS *mp,
+int VTK_construct_PMR(Grid *grid,
+                      FieldVariables *FV,
+                      Multiphysics *mp,
                       PRINT_MULTIPHYSICS_RESULT *pmr);
 
 #endif /* #define PGFEM3D_VTK_OUTPUT_H */

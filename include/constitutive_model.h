@@ -17,7 +17,7 @@
 #include "PGFem3D_options.h"
 #include "crpl.h"
 #include "sig.h"
-#include "state_variables.h"                    /* Matrix<double> */
+#include "state_variables.h"
 #include "supp.h"
 #include <cstdlib>
 #include <cstdio>
@@ -639,23 +639,23 @@ int init_all_constitutive_model(EPS *eps,
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_save_state_vars_to_temporal(FIELD_VARIABLES *fv,
-                                                   GRID *grid);
+int constitutive_model_save_state_vars_to_temporal(FieldVariables *fv,
+                                                   Grid *grid);
 /// update state variables
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_update_np1_state_vars_to_temporal(FIELD_VARIABLES *fv,
-                                                         GRID *grid);
+int constitutive_model_update_np1_state_vars_to_temporal(FieldVariables *fv,
+                                                         Grid *grid);
 
 /// reset state variables using priori stored values
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \param[in] grid an object containing all mesh data
 /// \return non-zero on internal error
-int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
-                                                  GRID *grid);
+int constitutive_model_reset_state_using_temporal(FieldVariables *fv,
+                                                  Grid *grid);
 
 /// Reset the cinstitutive model at each integration point in the
 /// domain by calling its respective reset function.
@@ -712,12 +712,12 @@ int constitutive_model_test(const HOMMAT *hmat,
 /// \param[in] dt time step size
 /// \param[in] alpha mid point rule alpha
 /// \return non-zero on internal error
-int constitutive_model_update_output_variables(GRID *grid,
-                                               MATERIAL_PROPERTY *mat,
-                                               FIELD_VARIABLES *FV,
-                                               LOADING_STEPS *load,
+int constitutive_model_update_output_variables(Grid *grid,
+                                               MaterialProperty *mat,
+                                               FieldVariables *FV,
+                                               LoadingSteps *load,
                                                PGFem3D_opt *opts,
-                                               MULTIPHYSICS *mp,
+                                               Multiphysics *mp,
                                                int mp_id,
                                                const double dt,
                                                double alpha);
@@ -759,14 +759,14 @@ struct FEMLIB;
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
                                               double *r_e,
-                                              GRID *grid,
-                                              MATERIAL_PROPERTY *mat,
-                                              FIELD_VARIABLES *fv,
-                                              SOLVER_OPTIONS *sol,
-                                              LOADING_STEPS *load,
+                                              Grid *grid,
+                                              MaterialProperty *mat,
+                                              FieldVariables *fv,
+                                              pgfem3d::Solver *sol,
+                                              LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              MULTIPHYSICS *mp,
+                                              Multiphysics *mp,
                                               int mp_id,
                                               double dt);
 
@@ -789,14 +789,14 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double *lk,
                                     double *r_e,
-                                    GRID *grid,
-                                    MATERIAL_PROPERTY *mat,
-                                    FIELD_VARIABLES *fv,
-                                    SOLVER_OPTIONS *sol,
-                                    LOADING_STEPS *load,
+                                    Grid *grid,
+                                    MaterialProperty *mat,
+                                    FieldVariables *fv,
+                                    pgfem3d::Solver *sol,
+                                    LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    MULTIPHYSICS *mp,
+                                    Multiphysics *mp,
                                     int mp_id,
                                     double dt);
 
@@ -821,14 +821,14 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *r_e,
-                                              GRID *grid,
-                                              MATERIAL_PROPERTY *mat,
-                                              FIELD_VARIABLES *fv,
-                                              SOLVER_OPTIONS *sol,
-                                              LOADING_STEPS *load,
+                                              Grid *grid,
+                                              MaterialProperty *mat,
+                                              FieldVariables *fv,
+                                              pgfem3d::Solver *sol,
+                                              LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              MULTIPHYSICS *mp,
+                                              Multiphysics *mp,
                                               const double *dts,
                                               int mp_id,
                                               double dt);
@@ -852,23 +852,23 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
                                     double *r_e,
-                                    GRID *grid,
-                                    MATERIAL_PROPERTY *mat,
-                                    FIELD_VARIABLES *fv,
-                                    SOLVER_OPTIONS *sol,
-                                    LOADING_STEPS *load,
+                                    Grid *grid,
+                                    MaterialProperty *mat,
+                                    FieldVariables *fv,
+                                    pgfem3d::Solver *sol,
+                                    LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    MULTIPHYSICS *mp,
+                                    Multiphysics *mp,
                                     int mp_id,
                                     double dt);
 
-int constitutive_model_update_NR(GRID *grid,
-                                 MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *fv,
-                                 LOADING_STEPS *load,
+int constitutive_model_update_NR(Grid *grid,
+                                 MaterialProperty *mat,
+                                 FieldVariables *fv,
+                                 LoadingSteps *load,
                                  const PGFem3D_opt *opts,
-                                 MULTIPHYSICS *mp,
+                                 Multiphysics *mp,
                                  int mp_id,
                                  const double dt,
                                  double alpha);

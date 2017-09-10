@@ -62,15 +62,15 @@ void load_vec_elem_sur (double *f,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_load_vector_for_prescribed_BC(GRID *grid,
-                                          MATERIAL_PROPERTY *mat,
-                                          FIELD_VARIABLES *fv,
-                                          SOLVER_OPTIONS *sol,
-                                          LOADING_STEPS *load,
+int compute_load_vector_for_prescribed_BC(Grid *grid,
+                                          MaterialProperty *mat,
+                                          FieldVariables *fv,
+                                          pgfem3d::Solver *sol,
+                                          LoadingSteps *load,
                                           double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
-                                          MULTIPHYSICS *mp,
+                                          Multiphysics *mp,
                                           int mp_id,
                                           int myrank);
 
