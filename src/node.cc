@@ -1,18 +1,22 @@
 /** This file defines some routines related to the node structure such
     as allocation, deallocation, reading and writing */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "node.h"
 #include "allocation.h"
 #include "utils.h"
-#include <assert.h>
+#include <cassert>
 
-NODE* build_node(const long nn,
+Node* build_node(const long nn,
                  const int ndofn)
 {
   return build_node_multi_physics(nn,&ndofn,1);
 }
 
 void destroy_node(const long nn,
-                  NODE* node)
+                  Node* node)
 {
   destroy_node_multi_physics(nn, node, 1);
 }
@@ -28,14 +32,14 @@ void destroy_node(const long nn,
 /// \param[in] ndofn number of dofs on a node
 /// \param[in] physicsno number of physics
 /// \return node array
-NODE* build_node_multi_physics(const long nn,
+Node* build_node_multi_physics(const long nn,
                                const int *ndofn,
                                const int physicsno)
 {
-  NODE *pom = PGFEM_calloc (NODE, nn);
+  Node *pom = PGFEM_calloc (Node, nn);
   for(int ia=0;ia<nn;ia++)
   {
-    pom[ia].id_map = (NODE_ID_MAP *) malloc(physicsno*sizeof(NODE_ID_MAP));
+    pom[ia].id_map = new NodeIDMap[physicsno];
     for(int ib=0; ib<physicsno; ib++)
     {
       pom[ia].id_map[ib].id  = PGFEM_calloc (long, ndofn[ib]);
@@ -53,7 +57,7 @@ NODE* build_node_multi_physics(const long nn,
 ///
 /// \return non-zero on internal error
 int destroy_node_multi_physics(const long nn,
-                               NODE* node,
+                               Node* node,
                                const int physicsno)
 {
   int err = 0;
@@ -64,7 +68,7 @@ int destroy_node_multi_physics(const long nn,
       free(node[ia].id_map[ib].id);
       free(node[ia].id_map[ib].Gid);
     }
-    free(node[ia].id_map);
+    delete [] node[ia].id_map;
   }
   free(node);
   return err;
@@ -72,13 +76,13 @@ int destroy_node_multi_physics(const long nn,
 
 long read_nodes (FILE *in,
                  const long nn,
-                 NODE *node,
+                 Node *node,
                  const int legacy,
                  MPI_Comm comm)
 /*
   in   - Input file
   nn   - Number of nodes
-  node - Structure type of NODE
+  node - Structure type of Node
 
   returns: total number of nodes over all domains, counting nodes
   on boundries only once
@@ -91,7 +95,7 @@ long read_nodes (FILE *in,
 
   long Gtnn = 0;
   long tnn = nn;
-  NODE *p_node = NULL;
+  Node *p_node = NULL;
 
   for (long i=0; i<nn; i++){
     {
@@ -158,7 +162,7 @@ long read_nodes (FILE *in,
 
 void write_node_fname(const char *filename,
                       const int nnodes,
-                      const NODE *nodes,
+                      const Node *nodes,
                       const int ndofn,
                       const int mp_id)
 {
@@ -175,7 +179,7 @@ void write_node_fname(const char *filename,
 
 void write_node(FILE *ofile,
                 const int nnodes,
-                const NODE *nodes,
+                const Node *nodes,
                 const int ndofn,
                 const int mp_id)
 {
@@ -185,7 +189,7 @@ void write_node(FILE *ofile,
   PGFEM_fprintf(ofile,"===================================================="
                 "================================================================\n");
   for(int i=0; i<nnodes; i++){
-    const NODE *p_node = &nodes[i];
+    const Node *p_node = &nodes[i];
     PGFEM_fprintf(ofile,"%5ld %3ld %5d ",p_node->Gnn,p_node->Dom,i);
     PGFEM_fprintf(ofile,"%12.5e %12.5e %12.5e    %12.5e %12.5e %12.5e    ",
                   p_node->x1,p_node->x2,p_node->x3,
@@ -200,19 +204,19 @@ void write_node(FILE *ofile,
 static int node_comp_loc_id(const void *a,
                             const void *b)
 {
-  return (((NODE*) a)->loc_id - ((NODE*) b)->loc_id);
+  return (((Node*) a)->loc_id - ((Node*) b)->loc_id);
 }
 
 static int node_comp_own(const void *a,
                          const void *b)
 {
-  return (((NODE*) a)->Dom - ((NODE*) b)->Dom);
+  return (((Node*) a)->Dom - ((Node*) b)->Dom);
 }
 
 static int node_comp_Gnn(const void *a,
                          const void *b)
 {
-  return (((NODE*) a)->Gnn - ((NODE*) b)->Gnn);
+  return (((Node*) a)->Gnn - ((Node*) b)->Gnn);
 }
 
 static int node_comp_own_Gnn(const void *a,
@@ -240,13 +244,13 @@ static int node_comp_own_Gnn_loc(const void *a,
 }
 
 void nodes_sort_loc_id(const int nnode,
-                       NODE *nodes)
+                       Node *nodes)
 {
   qsort(nodes, nnode, sizeof(*nodes), node_comp_loc_id);
 }
 
 void nodes_sort_own_Gnn_loc(const int nnode,
-                            NODE *nodes)
+                            Node *nodes)
 {
   qsort(nodes, nnode, sizeof(*nodes), node_comp_own_Gnn_loc);
 }
@@ -263,17 +267,17 @@ void nodes_sort_own_Gnn_loc(const int nnode,
  * [range[0], range[1]).
  */
 int nodes_get_shared_idx_range(const int nnode,
-                               const NODE *nodes,
+                               const Node *nodes,
                                const int dom,
                                int range[2])
 {
   int err = 0;
   /* create a node for comparison */
-  NODE comp_node = {0};
+  Node comp_node = {0};
   comp_node.Dom = dom;
 
   /* search for a node with matching ownership */
-  const NODE *ptr_lb = static_cast<const NODE*>(bsearch(&comp_node,
+  const Node *ptr_lb = static_cast<const Node*>(bsearch(&comp_node,
                                                         nodes,
                                                         nnode,
                                                         sizeof(*nodes),
@@ -283,7 +287,7 @@ int nodes_get_shared_idx_range(const int nnode,
   if (!ptr_lb) return 1;
 
   /* linearly search for bounds */
-  const NODE *ptr_ub = ptr_lb;
+  const Node *ptr_ub = ptr_lb;
   while (ptr_ub->Dom == dom) {
     /* limit the search by the length of the array */
     if((++ptr_ub - nodes) == nnode) break;
@@ -318,9 +322,9 @@ int nodes_get_shared_idx_range(const int nnode,
 }
 
 int nodes_filter_shared_nodes(const int nnode,
-                              NODE *nodes,
+                              Node *nodes,
                               int *n_shared,
-                              const NODE **shared)
+                              const Node **shared)
 {
   int err = 0;
 
@@ -330,7 +334,7 @@ int nodes_filter_shared_nodes(const int nnode,
   /* perform linear search from the end to find the beginning of the
      shared nodes list. We start from the end as typically there are
      fewer boundary nodes than local nodes. */
-  NODE *ptr = &nodes[nnode-1];
+  Node *ptr = &nodes[nnode-1];
   while (ptr->Gnn >= 0) if ((--ptr - nodes) < 0) break;
   ++ptr; /* lower bound is inclusive, increment pointer */
 

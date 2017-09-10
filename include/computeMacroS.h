@@ -12,7 +12,7 @@
     communication. */
 double* computeMacroS(Element *elem,
                       long ne,
-                      NODE *node,
+                      Node *node,
                       long nn,
                       SIG *sig,
                       double oVolume,
@@ -22,7 +22,7 @@ double* computeMacroS(Element *elem,
     communication. */
 double* computeMacroP(Element *elem,
                       long ne,
-                      NODE *node,
+                      Node *node,
                       long nn,
                       SIG *sig,
                       EPS *eps,

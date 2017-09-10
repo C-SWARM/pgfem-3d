@@ -4,18 +4,15 @@
   (intreficial) nodes on each domain, (c) the total number of nodes,
   assign a global number to each node in the set.
 */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "SetGlobalNodeNumbers.h"
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
 
-void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
+void SetGlobalNodeNumbers(int nNodesDom, Node *node, MPI_Comm comm)
 {
   int myrank,nproc;
   MPI_Comm_size(comm,&nproc);
@@ -95,9 +92,9 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
   }
 
   MPI_Allgatherv(&boundaryNodeMapping[nodeMappingPtr[myrank]],
-         nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
-         MPI_INT,boundaryNodeMapping,nodeMappingCnt,
-         nodeMappingPtr,MPI_INT,comm);
+                 nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
+                 MPI_INT,boundaryNodeMapping,nodeMappingCnt,
+                 nodeMappingPtr,MPI_INT,comm);
 
   /* Loop through the boundary nodes and update global numbers */
   int domain, oldGnn, newGnn{};
@@ -110,14 +107,14 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
     for(j=nodeMappingPtr[domain]; j<nodeMappingPtr[domain+1]; j += 2){
 
       if(boundaryNodeMapping[j] == oldGnn){
-    newGnn = boundaryNodeMapping[j+1];
-    break;
+        newGnn = boundaryNodeMapping[j+1];
+        break;
       }
 
       if(j == nodeMappingPtr[domain+1] -1){
-    PGFEM_printf("ERROR: could not find match for node %d on domain %d owned by domain %d!\n%s",
-           boundaryLookup[i],myrank,domain,"Exiting.\n");
-    abort();
+        PGFEM_printf("ERROR: could not find match for node %d on domain %d owned by domain %d!\n%s",
+                     boundaryLookup[i],myrank,domain,"Exiting.\n");
+        abort();
       }
     } /* search for newGnn */
 
@@ -130,14 +127,14 @@ void SetGlobalNodeNumbers(int nNodesDom,NODE *node,MPI_Comm comm)
   }
 
   /*
-  if(myrank == 0){
+    if(myrank == 0){
     for(i=0; i<nproc; i++){
-      PGFEM_printf("Mappings for process %d:\n",i);
-      for(j=nodeMappingPtr[i]; j<nodeMappingPtr[i+1]; j+=2){
+    PGFEM_printf("Mappings for process %d:\n",i);
+    for(j=nodeMappingPtr[i]; j<nodeMappingPtr[i+1]; j+=2){
     PGFEM_printf("%d -> %d\n",boundaryNodeMapping[j],boundaryNodeMapping[j+1]);
-      }
     }
-  }
+    }
+    }
   */
 
   if(myrank == 0){

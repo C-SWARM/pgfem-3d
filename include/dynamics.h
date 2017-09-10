@@ -24,7 +24,7 @@ void DISP_resid_body_force_el(double *f,
                               const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
-                              const NODE *node, double dt, double t);
+                              const Node *node, double dt, double t);
 
 struct FEMLIB;
 

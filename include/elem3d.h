@@ -1,19 +1,15 @@
-/* HEADER */
-
 /**
  * @file @todo Describe remaining functions and migrate integration
  * rules to @see quadrature_rules.c
  */
-
-#pragma once
 #ifndef PGFEM3D_ELEM3D_H
 #define PGFEM3D_ELEM3D_H
 
+#include "PGFem3D_options.h"
 #include "data_structure.h"
 #include "element.h"
 #include "node.h"
 #include "hommat.h"
-#include "PGFem3D_options.h"
 
 /**
  * Get the number of integration points for the element.
@@ -176,7 +172,7 @@ void stiffmat (long *adr,
                long ne,
                long ndofn,
                Element *elem,
-               NODE *node,
+               Node *node,
                HOMMAT *hommat,
                long *ci,
                long typsolveru,
@@ -192,7 +188,7 @@ void stiffmatel (long ii,
                  long ndofn,
                  Element *elem,
                  HOMMAT *hommat,
-                 NODE *node,
+                 Node *node,
                  double *K,
                  const PGFem3D_opt *opts);
 

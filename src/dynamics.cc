@@ -36,7 +36,7 @@ void DISP_resid_body_force_el(double *f,
                               const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
-                              const NODE *node, double dt, double t)
+                              const Node *node, double dt, double t)
 {
   const int mat = elem[ii].mat[2];
   // double rho = hommat[mat].density;
@@ -87,7 +87,7 @@ void DISP_resid_w_inertia_el(double *f,
                              const double *z,
                              const Element *elem,
                              const HOMMAT *hommat,
-                             const NODE *node, const double *dts, double t,
+                             const Node *node, const double *dts, double t,
                              double *r_2, double* r_1, double *r_0, double alpha)
 {
   const int mat = elem[ii].mat[2];

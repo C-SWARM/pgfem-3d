@@ -4,14 +4,14 @@
 
 #include "elem3d.h"
 #include "enumerations.h"
-#include "incl.h"
-#include "quadrature_rules.h"
 #include "get_dof_ids_on_elem.h"
 #include "homogen.h"
+#include "incl.h"
 #include "localizat.h"
 #include "matice.h"
-#include "utils.h"
+#include "quadrature_rules.h"
 #include "resice.h"
+#include "utils.h"
 
 #ifndef NO_BUBBLE
 #define NO_BUBBLE 0
@@ -1021,7 +1021,7 @@ void stiffmatel (long ii,
                  long ndofn,
                  Element *elem,
                  HOMMAT *hommat,
-                 NODE *node,
+                 Node *node,
                  double *K,
                  const PGFem3D_opt *opts)
 /*
@@ -1119,7 +1119,7 @@ void stiffmat (long *adr,
                long ne,
                long ndofn,
                Element *elem,
-               NODE *node,
+               Node *node,
                HOMMAT *hommat,
                long *ci,
                long typsolveru,

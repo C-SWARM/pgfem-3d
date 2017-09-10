@@ -39,7 +39,7 @@ static constexpr const int ndn = 3;
    residual vector */
 static void fd_res_assemble(double *f_u,
                             const double *fe,
-                            const NODE *node,
+                            const Node *node,
                             const int nne,
                             const int ndofn,
                             const long *nod,
@@ -57,7 +57,7 @@ static void fd_res_assemble(double *f_u,
 /* compute the residual for a single cohesive element */
 static int fd_res_coel(double *fe,
                        const int i,
-                       NODE *node,
+                       Node *node,
                        COEL *coel,
                        SUPP sup,
                        const int ndofc,

@@ -18,29 +18,29 @@ void resid_w_inertia_Rp_ip(double *fp, int npres, double *F, double jj, double w
 
 void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
                     const double *x, const double *y, const double *z, const Element *elem, const HOMMAT *hommat,
-                    const long *nod, const NODE *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_e);
+                    const long *nod, const Node *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_e);
 
 void residuals_3f_el(double *f, const int ii, const int ndofn, const int nne, const int npres, const int nVol, const int nsd,
                      const double *x, const double *y, const double *z,
-                     const Element *elem, const HOMMAT *hommat, const long *nod, const NODE *node,
+                     const Element *elem, const HOMMAT *hommat, const long *nod, const Node *node,
                      double dt, SIG *sig, EPS *eps,  const SUPP sup, double *r_e);
 
 void residuals_3f_w_inertia_el(double *f,const int ii,
                                const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
                                const double *x,const double *y,const double *z,
-                               const Element *elem,const HOMMAT *hommat,const NODE *node,
+                               const Element *elem,const HOMMAT *hommat,const Node *node,
                                const double *dts,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
 
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
-               NODE *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
                MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1,
                const int mp_id);
 
 void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
-                               NODE *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+                               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
                                MPI_Comm mpi_comm, const int mp_id);
 
-void compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm,int analysis);
 
 #endif // #define PGFEM3D_THREE_FIELD_ELEMENT_H

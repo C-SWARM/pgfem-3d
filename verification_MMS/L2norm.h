@@ -13,7 +13,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-void compute_L2_error(double *GL2_err, Element *elem, long ne, NODE *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
+void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
 {
   int myrank = 0;
   MPI_Comm_rank (mpi_comm,&myrank);

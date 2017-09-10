@@ -2,13 +2,13 @@
 # include "config.h"
 #endif
 
+#include "PLoc_Sparse.h"
 #include "allocation.h"
 #include "cohesive_element_utils.h"
 #include "compute_ms_cohe_job.h"
 #include "get_dof_ids_on_elem.h"
 #include "incl.h"
 #include "ms_cohe_job_list.h"
-#include "PLoc_Sparse.h"
 #include "quadrature_rules.h"
 #include "utils.h"
 
@@ -35,7 +35,7 @@ CHECK_WARNING(int err_code, int rank, const char *func, const char *file, int li
 /** compute the number of multiscale coheisve jobs on the domain. */
 static int compute_local_ms_cohe_n_jobs(const long nce,
                                         const COEL *coel,
-                                        const NODE *node,
+                                        const Node *node,
                                         long *n_jobs);
 
 /** Loop through the cohesive elements and pre-compute all of the
@@ -43,7 +43,7 @@ static int compute_local_ms_cohe_n_jobs(const long nce,
     analysis. Creates a job for each integration point. */
 static int create_local_ms_cohe_job_list(const long nce,
                                          const COEL *coel,
-                                         const NODE *node,
+                                         const Node *node,
                                          const int group_id,
                                          const long n_jobs,
                                          const MPI_Comm macro_mpi_comm,
@@ -54,7 +54,7 @@ static int create_local_ms_cohe_job_list(const long nce,
 /** update the local job list displacement jumps */
 static int update_loc_ms_cohe_job_list(const int nce,
                                        const COEL *coel,
-                                       const NODE *node,
+                                       const Node *node,
                                        const SUPP sup,
                                        const double *sol,
                                        MS_COHE_JOB_INFO *loc_job_list,
@@ -66,7 +66,7 @@ static int update_loc_ms_cohe_job_list(const int nce,
     communication on ms_comm */
 static int compute_loc_job_list_metadata(const long nce,
                                          const COEL *coel,
-                                         const NODE *node,
+                                         const Node *node,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,
@@ -84,7 +84,7 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
 
 int create_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
-                                  const NODE *node,
+                                  const Node *node,
                                   const MPI_Comm macro_mpi_comm,
                                   const MPI_Comm ms_comm,
                                   const int group_id,
@@ -196,7 +196,7 @@ int create_group_ms_cohe_job_list(const long nce,
 
 int update_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
-                                  const NODE *node,
+                                  const Node *node,
                                   const SUPP sup,
                                   const double *sol,
                                   MPI_Comm ms_comm,
@@ -410,7 +410,7 @@ void destroy_ms_cohe_job_list(const long Gn_job,
 
 static int compute_local_ms_cohe_n_jobs(const long nce,
                                         const COEL *coel,
-                                        const NODE *node,
+                                        const Node *node,
                                         long *n_jobs)
 {
   int err = 0;
@@ -430,7 +430,7 @@ static int compute_local_ms_cohe_n_jobs(const long nce,
 
 static int create_local_ms_cohe_job_list(const long nce,
                                          const COEL *coel,
-                                         const NODE *node,
+                                         const Node *node,
                                          const int group_id,
                                          const long n_jobs,
                                          const MPI_Comm macro_mpi_comm,
@@ -582,7 +582,7 @@ static int create_local_ms_cohe_job_list(const long nce,
 
 static int update_loc_ms_cohe_job_list(const int nce,
                                        const COEL *coel,
-                                       const NODE *node,
+                                       const Node *node,
                                        const SUPP sup,
                                        const double *sol,
                                        MS_COHE_JOB_INFO *loc_job_list,
@@ -640,7 +640,7 @@ static int update_loc_ms_cohe_job_list(const int nce,
 
 static int compute_loc_job_list_metadata(const long nce,
                                          const COEL *coel,
-                                         const NODE *node,
+                                         const Node *node,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,

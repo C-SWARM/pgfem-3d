@@ -1,10 +1,8 @@
-/* HEADER */
 /**
  * Authors:
  * Karel Matous
  * Matthew Mosby
  */
-#pragma once
 #ifndef PGFEM3D_STABILIZED_H
 #define PGFEM3D_STABILIZED_H
 
@@ -44,7 +42,7 @@ int resid_st_elem (long ii,
                    long nne,
                    Element *elem,
                    long *nod,
-                   NODE *node,
+                   Node *node,
                    HOMMAT *hommat,
                    double *x,
                    double *y,
@@ -67,7 +65,7 @@ int stiffmatel_st (long ii,
                    Element *elem,
                    HOMMAT *hommat,
                    long *nod,
-                   NODE *node,
+                   Node *node,
                    SIG *sig,
                    EPS *eps,
                    SUPP sup,
@@ -88,7 +86,7 @@ int st_increment (long ne,
                   MATGEOM matgeom,
                   HOMMAT *hommat,
                   Element *elem,
-                  NODE *node,
+                  Node *node,
                   SUPP sup,
                   EPS *eps,
                   SIG *sig,

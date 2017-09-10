@@ -21,13 +21,13 @@
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return     sup   created boundary condition structure
 SUPP read_Dirichlet_BCs(FILE *in,
                         long nn,
                         long ndofn,
-                        NODE *node,
+                        Node *node,
                         const int mp_id)
 {
   int err_rank = 0;
@@ -106,13 +106,13 @@ SUPP read_Dirichlet_BCs(FILE *in,
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return non-zero on internal ERROR
 int read_Dirichlet_BCs_values(FILE *in,
                               long nn,
                               long ndofn,
-                              NODE *node,
+                              Node *node,
                               SUPP sup,
                               const int mp_id)
 {
@@ -154,13 +154,13 @@ int read_Dirichlet_BCs_values(FILE *in,
 SUPP read_supports(FILE *in,
                    long nn,
                    long ndofn,
-                   NODE *node,
+                   Node *node,
                    const int mp_id)
 /*
   in    - Input file
   nl    - Number of layers
   ndofn - Number of degrees of freedom in one node
-  node  - Structure type of NODE
+  node  - Structure type of Node
   sup   - Structure type of SUPP
 
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%

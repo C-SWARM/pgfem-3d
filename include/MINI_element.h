@@ -1,4 +1,3 @@
-/* HEADER */
 #ifndef PGFEM3D_MINI_ELEMENT_H
 #define PGFEM3D_MINI_ELEMENT_H
 
@@ -30,7 +29,7 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
                      const Element *elem,
                      const HOMMAT *hommat,
                      const long *nod,
-                     const NODE *node,
+                     const Node *node,
                      const EPS *eps,
                      const SIG *sig,
                      const double *r_e);    /**< dof values on elem */
@@ -46,7 +45,7 @@ int MINI_resid_el(double *Res,         /**< Element residual */
                   const double *z,
                   const Element *elem,
                   const long *nod,
-                  const NODE *node,
+                  const Node *node,
                   const HOMMAT *hommat,
                   const EPS *eps,
                   const SIG *sig,
@@ -56,7 +55,7 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 int MINI_update_bubble_el(Element *elem,
                           const int ii, /* id of element working on */
                           const int nne,
-                          const NODE *node,
+                          const Node *node,
                           const int ndofn,
                           const double *x,
                           const double *y,
@@ -71,7 +70,7 @@ int MINI_update_bubble_el(Element *elem,
 /** Update the bubble dofs on ALL elements */
 int MINI_update_bubble(Element *elem,
                        const int nelem,
-                       const NODE *node,
+                       const Node *node,
                        const int ndofn,
                        const SUPP sup,
                        const EPS *eps,
@@ -86,7 +85,7 @@ int MINI_update_bubble(Element *elem,
 void MINI_increment_el(Element *elem,
                        const int ii, /* id of element working on */
                        const int nne,
-                       const NODE *node,
+                       const Node *node,
                        const long *nod,
                        const int ndofn,
                        const double *x,
@@ -100,7 +99,7 @@ void MINI_increment_el(Element *elem,
 /** Increment ALL elements after a converged solution is obtained */
 void MINI_increment(Element *elem,
                     const int nelem,
-                    NODE *node,
+                    Node *node,
                     const int nnodes,
                     const int ndofn,
                     const SUPP sup,
@@ -114,7 +113,7 @@ void MINI_increment(Element *elem,
 void MINI_check_resid(const int ndofn,
                       const int ne,
                       const Element *elem,
-                      const NODE *node,
+                      const Node *node,
                       const HOMMAT *hommat,
                       const EPS *eps,
                       const SIG *sig,

@@ -1,16 +1,14 @@
-/* HEADER */
-#pragma once
 #ifndef PGFEM3D_RESID_ON_ELEM_H
 #define PGFEM3D_RESID_ON_ELEM_H
 
+#include "crpl.h"
 #include "data_structure.h"
 #include "element.h"
-#include "node.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "sig.h"
 #include "eps.h"
-#include "crpl.h"
+#include "hommat.h"
+#include "matgeom.h"
+#include "node.h"
+#include "sig.h"
 
 /**
  * Compute the residual on an element.
@@ -23,7 +21,7 @@ int resid_on_elem (long ii,
                    long nne,
                    long *nod,
                    Element *elem,
-                   NODE *node,
+                   Node *node,
                    MATGEOM matgeom,
                    HOMMAT *hommat,
                    double *x,

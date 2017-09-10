@@ -50,7 +50,7 @@ struct COMMON_MICROSCALE {
   long ndofn; /**< no. dof on each node */
   long npres; /**< no. pressure nodes on elem */
   double VVolume; /**< original volume */
-  NODE *node;
+  Node *node;
   Element *elem; /* NOTE: state/solution information is copied from
                     solution structure */
   COEL *coel; /* NOTE: state/solution information is copied from

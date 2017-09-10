@@ -252,7 +252,7 @@ int read_input_file(const PGFem3D_opt *opts,
                     long *nmat,
                     long *n_concentrations,
                     long *n_orient,
-                    NODE **node,
+                    Node **node,
                     Element **elem,
                     Material **material,
                     MATGEOM *matgeom,
@@ -1218,7 +1218,7 @@ int read_and_apply_load_increments(GRID *grid,
         read_nodal_load(load->solver_file[mp_id],load->nln,grid->nsd,load->znod);
         // read elem surface load */
         read_elem_surface_load(load->solver_file[mp_id],load->nle_s,grid->nsd,grid->element,load->zele_s);
-        //  NODE - generation of the load vector
+        //  Node - generation of the load vector
         load_vec_node(fv[mp_id].R,load->nln,grid->nsd,load->znod,grid->node,MULTIPHYSICS_MECHANICAL);
         //  ELEMENT - generation of the load vector
         load_vec_elem_sur(fv[mp_id].R,load->nle_s,grid->nsd,grid->element,load->zele_s);

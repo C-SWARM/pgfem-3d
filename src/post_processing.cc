@@ -3,7 +3,6 @@
 #endif
 
 #include "post_processing.h"
-
 #include "PGFem3D_to_VTK.hpp"
 #include "allocation.h"
 #include "constitutive_model.h"
@@ -101,7 +100,7 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
   constitutive_model_default_update_elasticity(m,eFnp1.data,NULL,S,compute_stiffness);
   *Jnp1 = det(Fnp1);
 }
-void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
@@ -198,7 +197,7 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
     GS[a] = GS[a]/GV;
 }
 
-void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                                           double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
@@ -269,7 +268,7 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
     GF[a] = GF[a]/GV;
 }
 
-void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                                                        double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
@@ -343,7 +342,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
 }
 
 
-void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                                       double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
@@ -390,7 +389,7 @@ void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *homma
   (*G_gn) = (*G_gn)/GV;
 }
 
-void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat, long ne, int npres, NODE *node, EPS *eps,
+void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                                       double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
@@ -474,7 +473,7 @@ void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
   MPI_Allreduce(&LE,GE,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
 }
 
-void post_processing_deformed_volume(double *GV, Element *elem, long ne, NODE *node, EPS *eps,
+void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *node, EPS *eps,
                                      double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {

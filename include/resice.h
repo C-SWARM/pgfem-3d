@@ -2,7 +2,6 @@
  *  Solvers         *
  *  Jaroslav Kruis  *
  ********************/
-
 #ifndef PGFEM3D_RESICE_H
 #define PGFEM3D_RESICE_H
 
@@ -36,7 +35,7 @@ void strci_scr (long *adr,
                 long ne,
                 long ndofn,
                 Element *elem,
-                NODE *node,
+                Node *node,
                 const int mp_id);
 
 void aci_scr (long *ci,
@@ -44,7 +43,7 @@ void aci_scr (long *ci,
               long ne,
               long ndofn,
               Element *elem,
-              NODE *node,
+              Node *node,
               const int mp_id);
 
 void sort_cr (long *ci,

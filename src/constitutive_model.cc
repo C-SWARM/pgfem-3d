@@ -790,7 +790,7 @@ int constitutive_model_reset_state_using_temporal(FIELD_VARIABLES *fv,
 }
 
 int constitutive_model_update_time_steps(const Element *elem,
-                                         NODE *node,
+                                         Node *node,
                                          EPS *eps,
                                          const int ne,
                                          const int nn,
@@ -1035,7 +1035,7 @@ int constitutive_model_update_output_variables(GRID *grid,
   FIELD_VARIABLES *fv = FV+mp_id;
   SIG *sig = fv->sig;
   EPS *eps = fv->eps;
-  NODE *node = grid->node;
+  Node *node = grid->node;
   Element *elem = grid->element;
 
   int is_it_couple_w_thermal  = -1;
@@ -2864,7 +2864,7 @@ int constitutive_model_update_NR(GRID *grid,
   }
 
   EPS *eps = fv->eps;
-  NODE *node = grid->node;
+  Node *node = grid->node;
   Element *elem = grid->element;
 
   int ndofn = fv->ndofn;

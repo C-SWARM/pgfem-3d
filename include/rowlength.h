@@ -1,5 +1,3 @@
-/* HEADER */
-#pragma once
 #ifndef PGFEM3D_ROWLENGTH_H
 #define PGFEM3D_ROWLENGTH_H
 
@@ -12,7 +10,7 @@ void rowlength (long *adr,
                 long ne,
                 long ndofn,
                 long ndof,
-                NODE *node,
+                Node *node,
                 Element *elem,
                 long gr4,
                 const int mp_id);

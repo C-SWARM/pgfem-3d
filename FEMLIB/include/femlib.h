@@ -50,7 +50,7 @@ class FEMLIB
   };
   FEMLIB(int e,
          const Element *elem,
-         const NODE *node,
+         const Node *node,
          int i_order,
          int is_total,
          bool add_bubble = false)
@@ -70,7 +70,7 @@ class FEMLIB
   /// set FEM libray by element
   void initialization(int e,
                       const Element *elem,
-                      const NODE *node,
+                      const Node *node,
                       int i_order,
                       int is_total,
                       bool add_bubble = false);

@@ -1,5 +1,3 @@
-/* HEADER */
-#pragma once
 #ifndef PGFEM3D_OUT_H
 #define PGFEM3D_OUT_H
 
@@ -17,11 +15,11 @@
 void logo (FILE *out);
 
 void coordinates (FILE *out,
-                  NODE *node,
+                  Node *node,
                   long nn);
 
 void deform (FILE *out,
-             NODE *node,
+             Node *node,
              Element *elem,
              long nn,
              long ne,
@@ -66,7 +64,7 @@ void elixir (char jmeno[50],
              long nn,
              long ne,
              long ndofn,
-             NODE *node,
+             Node *node,
              Element *elem,
              SUPP sup,
              double *r,
@@ -84,7 +82,7 @@ void EnSight (char jmeno[500],
               long nn,
               long ne,
               long ndofn,
-              NODE *node,
+              Node *node,
               Element *elem,
               SUPP sup,
               double *r,
@@ -119,7 +117,7 @@ void ASCII_output(const PGFem3D_opt *opts,
                   double lm,
                   double pores,
                   double VVolume,
-                  NODE *node,
+                  Node *node,
                   Element *elem,
                   SUPP sup,
                   double *r,

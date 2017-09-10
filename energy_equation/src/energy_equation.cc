@@ -4,7 +4,12 @@
 ///  Sangmin Lee, [1], <slee43@nd.edu>
 ///  Aaron Howell, [1], <ahowell3@nd.edu>
 ///  [1] - University of Notre Dame, Notre Dame, IN
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "PGFem3D_data_structure.h"
+#include "PLoc_Sparse.h"
 #include "data_structure.h"
 #include "constitutive_model.h"
 #include "energy_equation.h"
@@ -13,23 +18,21 @@
 #include "get_dof_ids_on_elem.h"
 #include "hyperelasticity.h"     // <= constitutive model elasticity
 #include "material_properties.h" // <= constitutive model material properties
-#include "PGFem3D_data_structure.h"
-#include "PLoc_Sparse.h"
 #include "utils.h"
 #include <ttl/ttl.h>
-#include <math.h>
-
-#define DIM_3        3
-#define DIM_3x3      9
-#define DIM_3x3x3   27
-#define DIM_3x3x3x3 81
-
-#define TOL_FHS 1.0e-6
-#define PLASTIC_HEAT_FACTOR 0.8
+#include <cmath>
 
 namespace {
 using namespace gcm;
 using namespace ttl;
+
+const constexpr int DIM_3 = 3;
+const constexpr int DIM_3x3 = 9;
+const constexpr int DIM_3x3x3 = 27;
+const constexpr int DIM_3x3x3x3 = 81;
+
+const constexpr double TOL_FHS = 1.0e-6;
+const constexpr double PLASTIC_HEAT_FACTOR = 0.8;
 
 constexpr Index<'A'> A;
 constexpr Index<'B'> B;
@@ -413,7 +416,7 @@ int compute_mechanical_heat_gen(double *Qe,
 /// \param[in] T nodal temperature for all node
 /// \param[in] dT temperature increment
 /// \param[in] elem Element object
-/// \param[in] node NODE object
+/// \param[in] node Node object
 /// \param[in] sup struct for BC's
 /// \param[out] T_e computed nodal temperature for current element
 /// \param[in] T0 reference temperature
@@ -423,7 +426,7 @@ int get_temperature_elem(const long *cn,
                          const double *T,
                          const double *dT,
                          const Element *elem,
-                         const NODE *node,
+                         const Node *node,
                          const SUPP sup,
                          double *T_e,
                          double T0)

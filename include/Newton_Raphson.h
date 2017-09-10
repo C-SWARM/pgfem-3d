@@ -1,4 +1,3 @@
-/* HEADER */
 /**
  *  Newton-Raphson solution algorithm.
  *
@@ -21,26 +20,25 @@
  *  Sangmin Lee, University of Notre Dame, <slee43 [at] nd.edu>
  *  Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
  */
-#pragma once
-#ifndef NEWTON_RAPHSON_H
-#define NEWTON_RAPHSON_H
+#ifndef PGFEM3D_NEWTON_RAPHSON_H
+#define PGFEM3D_NEWTON_RAPHSON_H
 
-#include "data_structure.h"
-#include "PGFem3D_data_structure.h"
 #include "PGFEM_mpi.h"
-#include "element.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "cohesive_element.h"
-#include "bounding_element.h"
+#include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
-#include "pgfem_comm.h"
+#include "bounding_element.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "data_structure.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "pgfem_comm.h"
+#include "sig.h"
 #include "solver_file.h"
+#include "supp.h"
 
 /// Compute residuals for Newton Raphson iteration
 ///
@@ -120,4 +118,4 @@ double Newton_Raphson_multiscale(const int print_level,
                                  double *pores,
                                  int *n_step);
 
-#endif /* #ifndef NEWTON_RAPHSON_H */
+#endif /* #define PGFEM3D_NEWTON_RAPHSON_H */

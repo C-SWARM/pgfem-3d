@@ -9,7 +9,7 @@
 
 double* computeMacroF(Element *elem,
                       long ne,
-                      NODE *node,
+                      Node *node,
                       long nn,
                       EPS *eps,
                       double oVolume,

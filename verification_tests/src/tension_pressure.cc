@@ -51,7 +51,7 @@ int main(int argc,char *argv[])
   long nmat = 0;
   long nc = 0;
   long np = 0;
-  NODE *node = NULL;
+  Node *node = NULL;
   Element *elem = NULL;
   Material *mater = NULL;
   MATGEOM matgeom = NULL;

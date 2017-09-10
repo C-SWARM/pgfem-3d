@@ -24,7 +24,7 @@
 
 struct EPS;
 struct Element;
-struct NODE;
+struct Node;
 
 /// Pre-declare HOMMAT structure
 struct HOMMAT;
@@ -687,7 +687,7 @@ int constitutive_model_default_update_elasticity(const Constitutive_model *m,
 /// update values for next time step: variables[tn] = variables[tn+1]
 /// \return non-zero on error.
 int constitutive_model_update_time_steps(const Element *elem,
-                                         NODE *node,
+                                         Node *node,
                                          EPS *eps,
                                          const int ne,
                                          const int nn,

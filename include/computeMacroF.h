@@ -1,5 +1,5 @@
-#ifndef COMPUTE_MACRO_F_H
-#define COMPUTE_MACRO_F_H
+#ifndef PGFEM3D_COMPUTE_MACRO_F_H
+#define PGFEM3D_COMPUTE_MACRO_F_H
 
 #include "PGFEM_mpi.h"
 #include "data_structure.h"
@@ -11,7 +11,7 @@
     communication. */
 double* computeMacroF(Element *elem,
                       long ne,
-                      NODE *node,
+                      Node *node,
                       long nn,
                       EPS *eps,
                       double oVolume,

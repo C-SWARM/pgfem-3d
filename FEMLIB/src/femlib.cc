@@ -1,19 +1,22 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "femlib.h"
-#include "elem3d.h"
-
-#include "utils.h"
-#include "cast_macros.h"
 #include "allocation.h"
-#include "tensors.h"
-#include "def_grad.h"
+#include "cast_macros.h"
 #include "data_structure.h"
+#include "def_grad.h"
+#include "elem3d.h"
+#include "tensors.h"
+#include "utils.h"
 
-#define LINE           1
-#define TRIANGLE       3
-#define QUADRILATERAL  4
-#define TETRAHEDRON    4
-#define HEXAHEDRAL     8
-#define QTETRAHEDRON   10
+static const constexpr int          LINE = 1;
+static const constexpr int      TRIANGLE = 3;
+static const constexpr int QUADRILATERAL = 4;
+static const constexpr int   TETRAHEDRON = 4;
+static const constexpr int    HEXAHEDRAL = 8;
+static const constexpr int  QTETRAHEDRON = 10;
 
 void
 TEMP_VARIABLES::set_variable_size(int nne_t, int nne)
@@ -228,7 +231,7 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
 ///
 /// \param[in] e element id
 /// \param[in] elem list of Element
-/// \param[in] node list of NODE
+/// \param[in] node list of Node
 /// \param[in] i_order integration order, 0: linear, 1: quadratic, and 2: higher
 /// \param[in] is_total if 1: total Lagrangian, 0: updated Lagrangian
 /// \param[in] add_bubble if ture, set FEM libray by element with bubble
@@ -236,7 +239,7 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
 void
 FEMLIB::initialization(int e,
                        const Element *elem,
-                       const NODE *node,
+                       const Node *node,
                        int i_order,
                        int is_total,
                        bool add_bubble)

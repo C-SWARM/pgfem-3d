@@ -3,11 +3,8 @@
 /// Authors:
 ///  Sangmin Lee, [1], <slee43@nd.edu>
 ///  [1] - University of Notre Dame, Notre Dame, IN
-
-
-#pragma once
-#ifndef H__PGFEM3D_ENERGY_EQUATION__H
-#define H__PGFEM3D_ENERGY_EQUATION__H
+#ifndef PGFEM3D_ENERGY_EQUATION__H
+#define PGFEM3D_ENERGY_EQUATION__H
 
 #include "PGFem3D_data_structure.h"
 
@@ -91,4 +88,4 @@ int update_thermal_flux4print(GRID *grid,
                               FIELD_VARIABLES *fv,
                               double dt);
 
-#endif
+#endif // #define PGFEM3D_ENERGY_EQUATION_H

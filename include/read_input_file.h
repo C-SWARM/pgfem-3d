@@ -1,17 +1,15 @@
-/* HEADER */
-#pragma once
 #ifndef PGFEM3D_READ_INPUT_FILE_H
 #define PGFEM3D_READ_INPUT_FILE_H
 
 #include "Arc_length.h"
+#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
 #include "element.h"
 #include "material.h"
 #include "matgeom.h"
 #include "mesh_load.h"
 #include "node.h"
-#include "PGFEM_mpi.h"
-#include "PGFem3D_data_structure.h"
-#include "PGFem3D_options.h"
 #include "supp.h"
 
 /** Function for reading the entire input file. All required space
@@ -28,7 +26,7 @@ int read_input_file(const PGFem3D_opt *opts,
                     long *nmat,
                     long *n_concentrations,
                     long *n_orient,
-                    NODE **node,
+                    Node **node,
                     Element **elem,
                     Material **material,
                     MATGEOM *matgeom,

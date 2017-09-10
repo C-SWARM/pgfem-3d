@@ -1,5 +1,3 @@
-/* HEADER */
-
 /**
  * AUTHORS:
  *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
@@ -24,26 +22,26 @@
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return     sup   created boundary condition structure
 SUPP read_Dirichlet_BCs(FILE *in,
                         long nn,
                         long ndofn,
-                        NODE *node,
+                        Node *node,
                         const int mp_id);
 
 /// read Dirichlet boundary condition values
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return non-zero on internal ERROR
 int read_Dirichlet_BCs_values(FILE *in,
                               long nn,
                               long ndofn,
-                              NODE *node,
+                              Node *node,
                               SUPP sup,
                               const int mp_id);
 
@@ -51,7 +49,7 @@ int read_Dirichlet_BCs_values(FILE *in,
 SUPP read_supports (FILE *in,
                     long nn,
                     long ndofn,
-                    NODE *node,
+                    Node *node,
                     const int mp_id);
 
 /**

@@ -1,4 +1,3 @@
-/* HEADER */
 #ifndef PGFEM3D_VOL_DAMAGE_INT_ALG_H
 #define PGFEM3D_VOL_DAMAGE_INT_ALG_H
 
@@ -17,7 +16,7 @@ int vol_damage_int_alg(const int ne,
                        const double *d_r,
                        const double *r,
                        const Element *elem,
-                       const NODE *node,
+                       const Node *node,
                        const HOMMAT *hommat,
                        const SUPP sup,
                        const double dt,

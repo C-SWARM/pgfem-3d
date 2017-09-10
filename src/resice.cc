@@ -353,7 +353,7 @@ void lokalizace_scr (double *a,double *b,long *lcn,long *adr,long *ci,long n)
 }
 
 
-void strci_scr (long *adr,long ne,long ndofn,Element *elem,NODE *node, const int mp_id)
+void strci_scr (long *adr,long ne,long ndofn,Element *elem,Node *node, const int mp_id)
 /*
   funkce zjistuje prispevek k velikosti pomocneho pole
   sloupcovych indexu v ukladani symmetric compressed rows
@@ -399,7 +399,7 @@ void strci_scr (long *adr,long ne,long ndofn,Element *elem,NODE *node, const int
   dealoc1l (cn);  dealoc1l (nod);
 }
 
-void aci_scr (long *ci,long *adr,long ne,long ndofn,Element *elem,NODE *node, const int mp_id)
+void aci_scr (long *ci,long *adr,long ne,long ndofn,Element *elem,Node *node, const int mp_id)
 /*
   funkce sestavuje prispevky do pomocneho pole sloupcovych
   indexu v ukladani symmetric compressed rows od jednoho typu prvku

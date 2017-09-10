@@ -64,7 +64,7 @@ void load_vec_node (double *f,
                     const long nln,
                     const long ndofn,
                     const ZATNODE *znode,
-                    const NODE *node,
+                    const Node *node,
                     const int mp_id)
 {
   long i,j,ii;
@@ -114,7 +114,7 @@ int momentum_equation_load4pBCs(GRID *grid,
   int intg_order = 0;
 
   Element *elem = grid->element;
-  NODE *node = grid->node;
+  Node *node = grid->node;
   SUPP sup = load->sups[mp_id];
 
 

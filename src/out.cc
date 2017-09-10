@@ -39,7 +39,7 @@ void logo (FILE *out)
   PGFEM_fprintf (out,"\n%s\n",PGFEM_LOGO);
 }
 
-void coordinates (FILE *out, NODE *node, long nn)
+void coordinates (FILE *out, Node *node, long nn)
 /* This function prints out the nodal coordinates.  Created to aid in
    comparing parallel output to single processor output */
 {
@@ -61,7 +61,7 @@ void coordinates (FILE *out, NODE *node, long nn)
 }
 
 void deform (FILE *out,
-    NODE *node,
+    Node *node,
     Element *elem,
     long nn,
     long ne,
@@ -357,7 +357,7 @@ void elixir (char jmeno[50],
          long nn,
          long ne,
          long ndofn,
-         NODE *node,
+         Node *node,
          Element *elem,
          SUPP sup,
          double *r,
@@ -551,7 +551,7 @@ void EnSight (char jmeno[500],
           long nn,
           long ne,
           long ndofn,
-          NODE *node,
+          Node *node,
           Element *elem,
           SUPP sup,
           double *r,
@@ -1907,7 +1907,7 @@ void ASCII_output(const PGFem3D_opt *opts,
           double lm,
           double pores,
           double VVolume,
-          NODE *node,
+          Node *node,
           Element *elem,
           SUPP sup,
           double *r,

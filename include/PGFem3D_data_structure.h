@@ -49,7 +49,7 @@ struct GRID {
   int n_be;                  //!< number of bounding elements
   long nce;                  //!< number of COEL (cohesive elements)
   long Gnce;                 //!< global number of cohesive elements
-  NODE *node;                //!< list of node
+  Node *node;                //!< list of node
   Element *element;          //!< list of element
   BoundingElement *b_elems;  //!< list of bounding element
   COEL *coel;                //!< list of cohesive elements

@@ -11,7 +11,7 @@
     out as well as from bounding elements. */
 int get_total_ndof_on_elem(const int n_nodes_on_elem,
                            const long *node_ids_on_elem,
-                           const NODE *nodes,
+                           const Node *nodes,
                            const BoundingElement *b_elems,
                            const Element *ptr_cur_elem,
                            const int ndofn);
@@ -19,7 +19,7 @@ int get_total_ndof_on_elem(const int n_nodes_on_elem,
 /** Get the number of dofs associated with the nodes only */
 int get_ndof_on_elem_nodes(const int n_nodes_on_elem,
                            const long *node_ids_on_elem,
-                           const NODE *nodes,
+                           const Node *nodes,
                            const int ndofn);
 
 /** Get the number of degrees of freedom associated with all
@@ -30,7 +30,7 @@ int get_ndof_on_all_elem_be(const BoundingElement *b_elems,
 /** Get the number of degrees of freedom associated with a bounding
     element. This includes the dofs on the bounding element itself
     and dofs associated with the volume element nodes */
-int get_ndof_on_bnd_elem(const NODE *nodes,
+int get_ndof_on_bnd_elem(const Node *nodes,
                          const BoundingElement *ptr_cur_be,
                          const Element *elems,
                          const int ndofn);

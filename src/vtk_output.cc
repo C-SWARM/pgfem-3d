@@ -3,7 +3,6 @@
 #endif
 
 #include "vtk_output.h"
-
 #include "PGFEM_io.h"
 #include "PGFem3D_to_VTK.hpp"
 #include "allocation.h"
@@ -209,7 +208,7 @@ void VTK_print_vtu(char *path,
                    int myrank,
                    long ne,
                    long nn,
-                   NODE *node,
+                   Node *node,
                    Element *elem,
                    SUPP sup,
                    double *r,
@@ -505,7 +504,7 @@ void VTK_print_cohesive_vtu(char *path,
                             int time,
                             int myrank,
                             long nce,
-                            NODE *node,
+                            Node *node,
                             COEL *coel,
                             SUPP sup,
                             double *r,
@@ -942,7 +941,7 @@ int VTK_write_mesh(GRID *grid,
 {
   int err = 0;
   /* Nodes */
-  NODE    *node = grid->node;
+  Node    *node = grid->node;
   Element *elem = grid->element;
 
   PGFEM_fprintf(out,"<Points>\n");
@@ -1121,7 +1120,7 @@ int VTK_write_data_MacroDisplacement(FILE *out,
 {
   int err = 0;
 
-  NODE *node = grid->node;
+  Node *node = grid->node;
   SUPP sup = load->sups[pmr->mp_id];
 
   if(sup->multi_scale){
@@ -1160,7 +1159,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
 {
   int err = 0;
   Element *elem = grid->element;
-  NODE *node = grid->node;
+  Node *node = grid->node;
   int mp_id = pmr->mp_id;
   /* Pressure */
   switch(opts->analysis_type){
@@ -1621,7 +1620,7 @@ int VTK_write_data_Density(FILE *out,
   int err = 0;
   int total_Lagrangian = 1;
   EPS *eps = FV[pmr->mp_id].eps;
-  NODE *node = grid->node;
+  Node *node = grid->node;
   Element *elem = grid->element;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);

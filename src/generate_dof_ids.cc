@@ -19,7 +19,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           const int start_id,
                                           const int elem_id,
                                           int *visited_node_dof,
-                                          NODE *nodes,
+                                          Node *nodes,
                                           Element *elems,
                                           BoundingElement *b_elems,
                                           MPI_Comm mpi_comm,
@@ -30,7 +30,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
                                           const int start_id,
                                           const int coel_id,
                                           int *visited_node_dof,
-                                          NODE *nodes,
+                                          Node *nodes,
                                           COEL *coel,
                                           MPI_Comm mpi_comm,
                                           const int mp_id);
@@ -39,7 +39,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            const int start_id,
                                            const int elem_id,
                                            int *visited_node_dof,
-                                           NODE *nodes,
+                                           Node *nodes,
                                            Element *elems,
                                            BoundingElement *b_elems,
                                            MPI_Comm mpi_comm,
@@ -49,7 +49,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
                                            const int start_id,
                                            const int coel_id,
                                            int *visited_node_dof,
-                                           NODE *nodes,
+                                           Node *nodes,
                                            COEL *coel,
                                            MPI_Comm mpi_comm,
                                            const int mp_id);
@@ -65,7 +65,7 @@ int generate_local_dof_ids(const int nelem,
                            const int ncoel,
                            const int nnode,
                            const int ndofn,
-                           NODE *nodes,
+                           Node *nodes,
                            Element *elems,
                            COEL *coel,
                            BoundingElement *b_elems,
@@ -77,10 +77,10 @@ int generate_local_dof_ids(const int nelem,
 
   /* set periodicity */
   for(int i=0; i<nnode; i++){
-    NODE *ptr_node = &nodes[ i ];
+    Node *ptr_node = &nodes[ i ];
     ptr_node->Pr = -1;
     for(int j=0; j<i; j++){
-      const NODE *ptr_pnode = &nodes[ j ];
+      const Node *ptr_pnode = &nodes[ j ];
       if(i<=j || ptr_node->Gnn == -1 || ptr_pnode->Gnn == -1
          || ptr_node->Gnn != ptr_pnode->Gnn){
         continue;
@@ -170,7 +170,7 @@ int generate_global_dof_ids(const int nelem,
                             const int ncoel,
                             const int nnode,
                             const int ndofn,
-                            NODE *nodes,
+                            Node *nodes,
                             Element *elems,
                             COEL *coel,
                             BoundingElement *b_elems,
@@ -221,7 +221,7 @@ void renumber_global_dof_ids(const int nelem,
                              const int nnode,
                              const int ndofn,
                              const long *n_G_dof_on_dom,
-                             NODE *nodes,
+                             Node *nodes,
                              Element *elems,
                              COEL *coel,
                              BoundingElement *b_elems,
@@ -278,7 +278,7 @@ int distribute_global_dof_ids(const int nelem,
                               const int nnode,
                               const int ndofn,
                               const int ndof_be,
-                              NODE *nodes,
+                              Node *nodes,
                               Element *elems,
                               COEL *coel,
                               BoundingElement *b_elems,
@@ -311,7 +311,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           const int start_id,
                                           const int elem_id,
                                           int *visited_node_dof,
-                                          NODE *nodes,
+                                          Node *nodes,
                                           Element *elems,
                                           BoundingElement *b_elems,
                                           MPI_Comm mpi_comm,
@@ -326,7 +326,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
   int id_adder = 0;
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];
-    NODE *ptr_node = &nodes[node_id];
+    Node *ptr_node = &nodes[node_id];
 
     for(int j=0; j<ndofn; j++){
       const int dof_idx = node_id*ndofn + j;
@@ -420,7 +420,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
                                           const int start_id,
                                           const int coel_id,
                                           int *visited_node_dof,
-                                          NODE *nodes,
+                                          Node *nodes,
                                           COEL *coel,
                                           MPI_Comm mpi_comm,
                                           const int mp_id)
@@ -435,7 +435,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
   int id_adder = 0;
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];
-    NODE *ptr_node = &nodes[node_id];
+    Node *ptr_node = &nodes[node_id];
     for(int j=0; j<ndofn; j++){
       const int dof_idx = node_id*ndofn + j;
 
@@ -478,7 +478,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            const int start_id,
                                            const int elem_id,
                                            int *visited_node_dof,
-                                           NODE *nodes,
+                                           Node *nodes,
                                            Element *elems,
                                            BoundingElement *b_elems,
                                            MPI_Comm mpi_comm,
@@ -494,7 +494,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];
-    NODE *ptr_node = &nodes[node_id];
+    Node *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
       for(int j=0; j<ndofn; j++){
         const int dof_idx = node_id*ndofn + j;
@@ -511,7 +511,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
           }
           /* periodic node/dofs. Do not set pressure periodic! */
           else if(ptr_node->Pr != -1 && j < ndn){
-            NODE *ptr_pnode = &nodes[ptr_node->Pr];
+            Node *ptr_pnode = &nodes[ptr_node->Pr];
             const int pdof_idx = ptr_node->Pr*ndofn + j;
             if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
               ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
@@ -586,7 +586,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
                                            const int start_id,
                                            const int coel_id,
                                            int *visited_node_dof,
-                                           NODE *nodes,
+                                           Node *nodes,
                                            COEL *coel,
                                            MPI_Comm mpi_comm,
                                            const int mp_id)
@@ -601,7 +601,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 
   for(int i=0; i<nne; i++){
     const int node_id = elem_nod[i];
-    NODE *ptr_node = &nodes[node_id];
+    Node *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
       for(int j=0; j<ndofn; j++){
         const int dof_idx = node_id*ndofn + j;
@@ -618,7 +618,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
           }
           /* periodic node/dofs. Do not set pressure periodic! */
           else if(ptr_node->Pr != -1 && j < ndn){
-            NODE *ptr_pnode = &nodes[ptr_node->Pr];
+            Node *ptr_pnode = &nodes[ptr_node->Pr];
             const int pdof_idx = ptr_node->Pr*ndofn + j;
             if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
               ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;

@@ -311,7 +311,7 @@ void compute_disp_grad(const int nne,
 long* list_boundary_el(const long ne,
                        const Element *elem,
                        const long nn,
-                       const NODE *node,
+                       const Node *node,
                        const long myrank,
                        long *nbndel);
 
@@ -358,7 +358,7 @@ void GToL (const double *Gr,
 MPI_Comm* CreateGraph (int nproc,
                        int myrank,
                        long nn,
-                       NODE *node,
+                       Node *node,
                        MPI_Comm mpi_comm);
 
 /** Pause for t seconds */
@@ -416,7 +416,7 @@ void def_elem (const long *cn,
                const long ndofe,
                const double *r,
                const Element *elem,
-               const NODE *node,
+               const Node *node,
                double *r_e,
                const SUPP sup,
                const long TYPE);
@@ -428,7 +428,7 @@ void def_elem_total (const long *cn,
                      const double *r,
                      const double *d_r,
                      const Element *elem,
-                     const NODE *node,
+                     const Node *node,
                      const SUPP sup,
                      double *r_e);
 
@@ -439,7 +439,7 @@ void def_elem_total (const long *cn,
 /// \param[in] r nodal variables at n+1
 /// \param[in] d_r nodal variable increments at n+1
 /// \param[in] elem Element object
-/// \param[in] node NODE object
+/// \param[in] node Node object
 /// \param[out] r_e computed nodal variables for an element
 /// \param[in] reference nodal value
 /// \return non-zero on interal error
@@ -448,7 +448,7 @@ int def_elem_with_reference(const long *cn,
                             const double *r,
                             const double *d_r,
                             const Element *elem,
-                            const NODE *node,
+                            const Node *node,
                             const SUPP sup,
                             double *r_e,
                             double r0);
@@ -463,7 +463,7 @@ void elemnodes (const long ii,
     (i.e. undeformed) */
 void nodecoord_total (const long nne,
                       const long *nod,
-                      const NODE *node,
+                      const Node *node,
                       double *x,
                       double *y,
                       double *z);
@@ -472,7 +472,7 @@ void nodecoord_total (const long nne,
     (i.e. deformed config) */
 void nodecoord_updated (const long nne,
                         const long *nod,
-                        const NODE *node,
+                        const Node *node,
                         double *x,
                         double *y,
                         double *z);
@@ -480,7 +480,7 @@ void nodecoord_updated (const long nne,
 /** Determines the elements which have prescribed nodes and adds the
     indices to a list in the SUPP object.*/
 void list_el_prescribed_def(SUPP sup,
-                            const NODE *node,
+                            const Node *node,
                             const Element *elem,
                             const BoundingElement *b_elems,
                             const long ne,
@@ -503,7 +503,7 @@ void eps_element(long nne,
 
 void stress (long ne,
              long ndofn,
-             NODE *node,
+             Node *node,
              Element *elem,
              MATGEOM matgeom,
              HOMMAT *hommat,
@@ -538,7 +538,7 @@ void str_proj_matrix (long *adr,
                       long ne,
                       long ndofn,
                       Element *elem,
-                      NODE *node,
+                      Node *node,
                       HOMMAT *hommat,
                       double *k,
                       const int analysis);
@@ -556,7 +556,7 @@ void str_solve (double *r,
                 long ne,
                 long nn,
                 long ndofn,
-                NODE *node,
+                Node *node,
                 Element *elem,
                 HOMMAT *hommat,
                 SIG *sig_e,
@@ -643,7 +643,7 @@ void check_equi (double *fu,
                  long ndofd,
                  long ndofn,
                  Element *elem,
-                 NODE *node,
+                 Node *node,
                  MATGEOM matgeom,
                  SIG *sig,
                  const int analysis,
@@ -653,7 +653,7 @@ double* Energy_functional (long ne,
                            long ndofn,
                            long ndofd,
                            Element *elem,
-                           NODE *node,
+                           Node *node,
                            SIG *sig,
                            EPS *eps,
                            MATGEOM matgeom,
@@ -667,7 +667,7 @@ long* sparse_ApAi (long ne,
                    long ndofd,
                    long ndofn,
                    Element *elem,
-                   NODE *node,
+                   Node *node,
                    long *Ap,
                    const int mp_id);
 
@@ -695,7 +695,7 @@ void Mises (long ne,
 double T_VOLUME (const long ne,
                  const long ndofn,
                  const Element *elem,
-                 const NODE *node);
+                 const Node *node);
 
 double area (long nne,
              double *x,

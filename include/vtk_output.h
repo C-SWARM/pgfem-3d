@@ -1,4 +1,3 @@
-/* HEADER */
 #ifndef PGFEM3D_VTK_OUTPUT_H
 #define PGFEM3D_VTK_OUTPUT_H
 
@@ -34,7 +33,7 @@ void VTK_print_vtu(char *path,
                    int myrank,
                    long ne,
                    long nn,
-                   NODE *node,
+                   Node *node,
                    Element *elem,
                    SUPP sup,
                    double *r,
@@ -49,7 +48,7 @@ void VTK_print_cohesive_vtu(char *path,
                             int time,
                             int myrank,
                             long nce,
-                            NODE *node,
+                            Node *node,
                             COEL *coel,
                             SUPP sup,
                             double *r,
@@ -58,10 +57,6 @@ void VTK_print_cohesive_vtu(char *path,
                             const int mp_id);
 
 struct PRINT_MULTIPHYSICS_RESULT;
-#ifndef TYPE_PRINT_MULTIPHYSICS_RESULT
-#define TYPE_PRINT_MULTIPHYSICS_RESULT
-typedef struct PRINT_MULTIPHYSICS_RESULT PRINT_MULTIPHYSICS_RESULT;
-#endif
 
 /// Mechanical part of index of output vailabes
 /// for writing simulation resuls

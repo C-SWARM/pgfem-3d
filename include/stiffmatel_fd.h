@@ -1,5 +1,3 @@
-/* HEADER */
-#pragma once
 #ifndef PGFEM3D_STIFFMATEL_FD_H
 #define PGFEM3D_STIFFMATEL_FD_H
 
@@ -27,7 +25,7 @@ int stiffmatel_fd (long ii,
                    Element *elem,
                    MATGEOM matgeom,
                    HOMMAT *hommat,
-                   NODE *node,
+                   Node *node,
                    SIG *sig,
                    EPS *eps,
                    double *r_e,

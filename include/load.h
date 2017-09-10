@@ -1,4 +1,3 @@
-/* HEADER */
 /**
  * AUTHORS:
  * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
@@ -36,7 +35,7 @@ void load_vec_node (double *f,
                     const long nln,
                     const long ndofn,
                     const ZATNODE *znode,
-                    const NODE *node,
+                    const Node *node,
                     const int mp_id);
 
 /**
