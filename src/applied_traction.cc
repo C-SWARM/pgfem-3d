@@ -1,23 +1,25 @@
-/* HEADER */
 /* This file contains functions to compute the applied tractions to
    model features. Currently, only surface tractions are supported */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "applied_traction.h"
 #include "allocation.h"
 #include "cohesive_element_utils.h"
 #include "elem3d.h"
-#include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
+#include "get_ndof_on_elem.h"
 #include "index_macros.h"
 #include "integrate_surface.h"
 #include "utils.h"
-#include <string.h>
+#include <cstring>
 
 int read_applied_surface_tractions_fname(char *fname,
-    int *n_feats,
-    int **feat_type,
-    int **feat_id,
-    double **loads)
+                                         int *n_feats,
+                                         int **feat_type,
+                                         int **feat_id,
+                                         double **loads)
 {
   int err = 0;
   FILE *in = fopen(fname,"r");
@@ -39,10 +41,10 @@ int read_applied_surface_tractions_fname(char *fname,
 }
 
 int read_applied_surface_tractions(FILE *in,
-    int *n_feats,
-    int **feat_type,
-    int **feat_id,
-    double **loads)
+                                   int *n_feats,
+                                   int **feat_type,
+                                   int **feat_id,
+                                   double **loads)
 {
   int err = 0;
   (*n_feats) = 0;
@@ -63,7 +65,7 @@ int read_applied_surface_tractions(FILE *in,
     for(int i=0; i<*n_feats; i++){
       int idx = idx_2_gen(i,0,*n_feats,3);
       CHECK_SCANF(in,"%d %d %lf %lf %lf",
-          ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
+                  ft+i,fi+i,ld+idx,ld+idx+1,ld+idx+2);
     }
   }
 
@@ -71,12 +73,12 @@ int read_applied_surface_tractions(FILE *in,
 }
 
 int generate_applied_surface_traction_list(const int ne,
-    const ELEMENT *elem,
-    const int n_feats,
-    const int *feat_type,
-    const int *feat_id,
-    int *n_sur_trac_elem,
-    SUR_TRAC_ELEM **sur_trac_elem)
+                                           const Element *elem,
+                                           const int n_feats,
+                                           const int *feat_type,
+                                           const int *feat_id,
+                                           int *n_sur_trac_elem,
+                                           SURFACE_TRACTION_ELEM **sur_trac_elem)
 {
   int err = 0;
   (*n_sur_trac_elem) = 0;
@@ -89,7 +91,7 @@ int generate_applied_surface_traction_list(const int ne,
   /* determine how many elements have tractions, which ones, and how
      many faces on the element have an applied traction */
   for(int i=0; i<ne; i++){
-    const ELEMENT *el = &elem[i];
+    const Element *el = &elem[i];
 
     /* get number of element faces */
     switch(el->toe){
@@ -99,15 +101,15 @@ int generate_applied_surface_traction_list(const int ne,
      case 8: n_faces[i] = 6; break;
      default:
       PGFEM_printerr("WARNING: Unsupported elemet type,"
-          " no tractions will be applied! %s:%s:%d\n",
-          __func__,__FILE__,__LINE__);
+                     " no tractions will be applied! %s:%s:%d\n",
+                     __func__,__FILE__,__LINE__);
       break;
     }
 
     for(int k=0; k<n_feats; k++){
       for(int j=0; j<n_faces[i]; j++){
         if(el->bnd_type[j] == feat_type[k]
-            && el->bnd_id[j] == feat_id[k]){
+           && el->bnd_id[j] == feat_id[k]){
           elem_has_trac[i] = 1;
           elem_n_faces[i] ++;
         }
@@ -135,11 +137,11 @@ int generate_applied_surface_traction_list(const int ne,
     }
 
     /* allocate and populate */
-    (*sur_trac_elem) = PGFEM_calloc(SUR_TRAC_ELEM, *n_sur_trac_elem);
+    (*sur_trac_elem) = PGFEM_calloc(SURFACE_TRACTION_ELEM, *n_sur_trac_elem);
     for(int i=0; i<(*n_sur_trac_elem); i++){
       int idx = elem_ids[i];
-      const ELEMENT *el = &elem[idx];
-      SUR_TRAC_ELEM *ste = &(*sur_trac_elem)[i];
+      const Element *el = &elem[idx];
+      SURFACE_TRACTION_ELEM *ste = &(*sur_trac_elem)[i];
 
       ste->elem_id = idx;
       ste->n_faces = elem_n_faces[idx];
@@ -151,7 +153,7 @@ int generate_applied_surface_traction_list(const int ne,
       for(int k=0; k<n_feats; k++){
         for(int j=0; j<n_faces[i]; j++){
           if(el->bnd_type[j] == feat_type[k]
-              && el->bnd_id[j] == feat_id[k]){
+             && el->bnd_id[j] == feat_id[k]){
             ste->faces[fidx] = j;
             ste->feat_num[fidx] =  k;
             fidx++;
@@ -171,7 +173,7 @@ int generate_applied_surface_traction_list(const int ne,
 }/* generate_applied_surface_traction_list() */
 
 int destroy_applied_surface_traction_list(const int n_sur_trac_elem,
-    SUR_TRAC_ELEM *sur_trac_elem)
+                                          SURFACE_TRACTION_ELEM *sur_trac_elem)
 {
   int err = 0;
   for(int i=0; i< n_sur_trac_elem; i++){
@@ -184,21 +186,21 @@ int destroy_applied_surface_traction_list(const int n_sur_trac_elem,
 
 /* Distributed dead load is computed in reference configuration */
 int compute_applied_traction_res(const int ndofn,
-    const NODE *nodes,
-    const ELEMENT *elem,
-    const int n_ste,
-    const SUR_TRAC_ELEM *ste,
-    const int n_feats,
-    const double *loads,
-    double *res,
-    const int mp_id)
+                                 const NODE *nodes,
+                                 const Element *elem,
+                                 const int n_ste,
+                                 const SURFACE_TRACTION_ELEM *ste,
+                                 const int n_feats,
+                                 const double *loads,
+                                 double *res,
+                                 const int mp_id)
 {
   int err = 0;
   int int_order = 1;
   for(int i=0; i<n_ste; i++){
-    const SUR_TRAC_ELEM *pste = &ste[i];
+    const SURFACE_TRACTION_ELEM *pste = &ste[i];
 
-    const ELEMENT *el = &elem[pste->elem_id];
+    const Element *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
 
@@ -218,7 +220,7 @@ int compute_applied_traction_res(const int ndofn,
 
     for(int j=0; j<pste->n_faces; j++){
       const double *trac = &loads[idx_2_gen(pste->feat_num[j],
-            0,n_feats,3)];
+                                            0,n_feats,3)];
       int n_ip = 0;
       double *ksi_3D = NULL;
       double *eta_3D = NULL;
@@ -230,13 +232,13 @@ int compute_applied_traction_res(const int ndofn,
       int nne_2D = 0;
 
       err += integrate_surface(nne_3D,pste->faces[j],int_order,
-          &n_ip,&ksi_3D,&eta_3D,&zet_3D,
-          &ksi_2D,&eta_2D,&wt_2D,
-          &nne_2D,&nod_2D);
+                               &n_ip,&ksi_3D,&eta_3D,&zet_3D,
+                               &ksi_2D,&eta_2D,&wt_2D,
+                               &nne_2D,&nod_2D);
 
       for(int ip=0; ip<n_ip; ip++){
         double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
-            ksi_2D[ip],eta_2D[ip]);
+                                             ksi_2D[ip],eta_2D[ip]);
         shape_func(ksi_3D[ip],eta_3D[ip],zet_3D[ip],nne_3D,N_3D);
 
         for(int k=0; k<nne_3D; k++){
@@ -279,13 +281,13 @@ int compute_applied_traction_res(const int ndofn,
 /** integrate the force on the marked boundaries LAGRANGIAN. forces
     vector is [n_feats x ndim] */
 int compute_resultant_force(const int n_feats,
-    const int n_ste,
-    const SUR_TRAC_ELEM *ste,
-    const NODE *nodes,
-    const ELEMENT *elem,
-    const SIG *sig,
-    const EPS *eps,
-    double *forces)
+                            const int n_ste,
+                            const SURFACE_TRACTION_ELEM *ste,
+                            const NODE *nodes,
+                            const Element *elem,
+                            const SIG *sig,
+                            const EPS *eps,
+                            double *forces)
 {
   int err = 0;
   static const int ndim = 3;
@@ -312,8 +314,8 @@ int compute_resultant_force(const int n_feats,
 
   for(int i=0; i<n_ste; i++){
     /* get pointer to relavent objects */
-    const SUR_TRAC_ELEM *pste = &ste[i];
-    const ELEMENT *el = &elem[pste->elem_id];
+    const SURFACE_TRACTION_ELEM *pste = &ste[i];
+    const Element *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
     if(nne_3D==10)
@@ -339,9 +341,9 @@ int compute_resultant_force(const int n_feats,
 
       /* compute the integration points and weights */
       err += integrate_surface(nne_3D,pste->faces[j],int_order,
-          &n_ip,&ksi_3D,&eta_3D,&zet_3D,
-          &ksi_2D,&eta_2D,&wt_2D,
-          &nne_2D,&nod_2D);
+                               &n_ip,&ksi_3D,&eta_3D,&zet_3D,
+                               &ksi_2D,&eta_2D,&wt_2D,
+                               &nne_2D,&nod_2D);
 
       /* allocate space for 2D elem nodal coordinates */
       double *x2 = PGFEM_calloc(double, nne_2D);
@@ -358,7 +360,7 @@ int compute_resultant_force(const int n_feats,
         /* compute the jacobian of the transformation for the element
            face */
         double jj = compute_surface_jacobian(nne_2D,nod_2D,x,y,z,
-            ksi_2D[ip],eta_2D[ip]);
+                                             ksi_2D[ip],eta_2D[ip]);
 
         /* compute the normal */
         base_vec(nne_2D,ksi_2D[ip],eta_2D[ip],x2,y2,z2,e1,e2,e2h,n,0);
@@ -374,7 +376,7 @@ int compute_resultant_force(const int n_feats,
 
         /* F0 = jj*wt*FS.N */
         double *F0 = (forces + idx_2_gen(pste->feat_num[j],0,
-                n_feats,ndim));
+                                         n_feats,ndim));
         const double *F = eps[pste->elem_id].il[ip].F;
         for(int I=0; I<ndim; I++){
           for(int J=0; J<ndim; J++){

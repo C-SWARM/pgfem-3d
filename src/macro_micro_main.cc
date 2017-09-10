@@ -3,9 +3,15 @@
 # include "config.h"
 #endif
 
+#include "Arc_length.h"
+#include "PGFEM_io.h"
+#include "PFEM3d.h"
+#include "PGFem3D_options.h"
+#include "Printing.h"
+#include "Psparse_ApAi.h"
+#include "SetGlobalNodeNumbers.h"
 #include "allocation.h"
 #include "applied_traction.h"
-#include "Arc_length.h"
 #include "build_distribution.h"
 #include "computeMacroF.h"
 #include "computeMacroS.h"
@@ -29,17 +35,11 @@
 #include "pgf_fe2_micro_server.h"
 #include "pgf_fe2_restart.h"
 #include "pgf_fe2_compute_max_n_jobs.h"
-#include "PGFEM_io.h"
-#include "PFEM3d.h"
-#include "PGFem3D_options.h"
-#include "Printing.h"
 #include "print_dist.h"
 #include "profiler.h"
-#include "Psparse_ApAi.h"
 #include "read_cryst_plast.h"
 #include "renumber_ID.h"
 #include "set_fini_def.h"
-#include "SetGlobalNodeNumbers.h"
 #include "skyline.h"
 #include "solver_file.h"
 #include "utils.h"
@@ -47,8 +47,8 @@
 
 /* Standard headers/libs */
 #include <cassert>
+#include <cstdlib>
 #include <time.h>
-#include <stdlib.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -250,7 +250,7 @@ int multi_scale_main(int argc, char **argv)
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
     double *nodal_forces = PGFEM_calloc(double, c->ndofd);
-    SUR_TRAC_ELEM *ste = NULL;
+    SURFACE_TRACTION_ELEM *ste = NULL;
     int n_feats = 0;
     int n_sur_trac_elem = 0;
     {

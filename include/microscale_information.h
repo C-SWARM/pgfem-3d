@@ -5,10 +5,11 @@
  * AUTHORS:
  *    Matthew Mosby, University of Notre Dame, <mmosby1 (at) nd.edu>
  */
-#pragma once
-#ifndef MICROSCALE_INFORMATION_H
-#define MICROSCALE_INFORMATION_H
+#ifndef PGFEM3D_MICROSCALE_INFORMATION_H
+#define PGFEM3D_MICROSCALE_INFORMATION_H
 
+#include "PGFEM_mpi.h"
+#include "PGFem3D_options.h"
 #include "cohesive_element.h"
 #include "constitutive_model.h"
 #include "comm_hints.h"
@@ -18,8 +19,6 @@
 #include "matgeom.h"
 #include "node.h"
 #include "pgfem_comm.h"
-#include "PGFEM_mpi.h"
-#include "PGFem3D_options.h"
 #include "sig.h"
 #include "supp.h"
 #include "pgfem3d/Solver.hpp"
@@ -52,7 +51,7 @@ struct COMMON_MICROSCALE {
   long npres; /**< no. pressure nodes on elem */
   double VVolume; /**< original volume */
   NODE *node;
-  ELEMENT *elem; /* NOTE: state/solution information is copied from
+  Element *elem; /* NOTE: state/solution information is copied from
                     solution structure */
   COEL *coel; /* NOTE: state/solution information is copied from
                  solution structure */
@@ -245,5 +244,5 @@ using MACROSCALE = MICROSCALE;
   build_MICROSCALE_solutions(1,macro)
 #define destroy_MACROSCALE(macro) destroy_MICROSCALE(macro)
 
-#endif /* #ifndef  */
+#endif /* #define PGFEM3D_MICROSCALE_INFORMATION_H */
 

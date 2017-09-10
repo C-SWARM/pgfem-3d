@@ -1,23 +1,18 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "initialize_damage.h"
-#include <stdlib.h>
-
-#ifndef ENUMERATIONS_H
-#include "enumerations.h"
-#endif
-
-#ifndef ELEM3D_H
-#include "elem3d.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
+#include "elem3d.h"
+#include "enumerations.h"
+#include <cstdlib>
 
 void initialize_damage(const int ne,
-               const ELEMENT *elem,
-               const HOMMAT *hommat,
-               EPS *eps,
-               const int analysis)
+                       const Element *elem,
+                       const HOMMAT *hommat,
+                       EPS *eps,
+                       const int analysis)
 {
   int n_params = sizeof(damage_params)/sizeof(double);
   double *dam_params = PGFEM_calloc (double, std::max(n_params, 4));
@@ -47,7 +42,7 @@ void initialize_damage(const int ne,
     if(analysis == STABILIZED){
       int_point(10,&n_ip);
       for(int j=0; j<n_ip; j++){
-    init_damagef(&eps[i].st[j].dam,eq_flag,dam_params,n_params);
+        init_damagef(&eps[i].st[j].dam,eq_flag,dam_params,n_params);
       }
     }
 

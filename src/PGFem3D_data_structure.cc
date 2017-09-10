@@ -193,7 +193,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   {
     if(opts->analysis_type == CM || opts->analysis_type == CM3F)
     {
-      const ELEMENT *elem = grid->element;
+      const Element *elem = grid->element;
       int n_state_varialbles = 0;
       for(int eid=0; eid<grid->ne; eid++)
       {
@@ -306,7 +306,7 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
   fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
   if(is_for_Mechanical)
   {
-    const ELEMENT *elem = grid->element;
+    const Element *elem = grid->element;
 
     int n_state_varialbles = 0;
     for(int eid=0; eid<grid->ne; eid++)

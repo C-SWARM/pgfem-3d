@@ -1,12 +1,13 @@
-/* HEADER */
-#include "in.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "PGFEM_mpi.h"
 #include "allocation.h"
+#include "in.h"
 #include "utils.h"
-
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -253,7 +254,7 @@ void read_nodal_load (FILE *in,
 void read_elem_surface_load (FILE *in,
                              long nle_s,
                              long ndofn,
-                             ELEMENT *elem,
+                             Element *elem,
                              ZATELEM *zele_s)
 /*
 

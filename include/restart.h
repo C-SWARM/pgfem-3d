@@ -1,5 +1,5 @@
-#ifndef __H_PGEM3D_RESTART_H__
-#define __H_PGEM3D_RESTART_H__
+#ifndef PGEM3D_RESTART_H
+#define PGEM3D_RESTART_H
 
 #include "PGFem3D_options.h"
 #include "PGFem3D_data_structure.h"
@@ -53,11 +53,11 @@ int write_restart(GRID *grid,
 int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1);
 
 int read_restart(double *u0, double *u1, const PGFem3D_opt *opts,
-                 ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
+                 Element *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
                  int myrank, int elemno, int nodeno, int nsd, int *stepno, double *tnm1, double *NORM);
 
 int write_restart(double *u0, double *u1, const PGFem3D_opt *opts,
-                  ELEMENT *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
+                  Element *elem, NODE *node, SIG * sig_e, EPS *eps, SUPP sup,
                   int myrank, int elemno, int nodeno, int ndofn, int ndofd, int stepno, double *times, double NORM);
 
-#endif
+#endif // #define PGFEM3D_RESTART_H

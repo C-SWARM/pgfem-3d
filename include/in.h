@@ -6,22 +6,19 @@
  *    Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
  *    Jaroslav Kruis, Czech Technical University
  */
+#ifndef PGFEM3D_IN_H
+#define PGFEM3D_IN_H
 
-#pragma once
-#ifndef IN_H
-#define IN_H
-
-#include "data_structure.h"
 #include "PGFEM_io.h"
-#include "element.h"
-#include "node.h"
 #include "PGFem3D_options.h"
+#include "data_structure.h"
+#include "element.h"
 #include "material.h"
 #include "matgeom.h"
 #include "mesh_load.h"
+#include "node.h"
 #include "supp.h"
-
-#include <stdlib.h>
+#include <cstdlib>
 
 /// read Dirichlet boundary conditions on nodes
 ///
@@ -31,10 +28,10 @@
 /// \param[in]  mp_id multiphysics id
 /// \return     sup   created boundary condition structure
 SUPP read_Dirichlet_BCs(FILE *in,
-                            long nn,
-                            long ndofn,
-                            NODE *node,
-                            const int mp_id);
+                        long nn,
+                        long ndofn,
+                        NODE *node,
+                        const int mp_id);
 
 /// read Dirichlet boundary condition values
 ///
@@ -44,18 +41,18 @@ SUPP read_Dirichlet_BCs(FILE *in,
 /// \param[in]  mp_id multiphysics id
 /// \return non-zero on internal ERROR
 int read_Dirichlet_BCs_values(FILE *in,
-                                  long nn,
-                                  long ndofn,
-                                  NODE *node,
-                                  SUPP sup,
-                                  const int mp_id);
+                              long nn,
+                              long ndofn,
+                              NODE *node,
+                              SUPP sup,
+                              const int mp_id);
 
 /* Function reads parameters of supports */
 SUPP read_supports (FILE *in,
-            long nn,
-            long ndofn,
-            NODE *node,
-            const int mp_id);
+                    long nn,
+                    long ndofn,
+                    NODE *node,
+                    const int mp_id);
 
 /**
  * Read material property listing for material mat_id [0,nmat).
@@ -92,28 +89,28 @@ int override_material_properties(const size_t nmat,
 
 /* Function gives stiffnesses matrix of materials */
 void read_matgeom (FILE *in,
-           long nc,
-           long np,
-           MATGEOM matgeom);
+                   long nc,
+                   long np,
+                   MATGEOM matgeom);
 
 /* Function reads nodal load */
 void read_nodal_load (FILE *in,
-              long nln,
-              long ndofn,
-              ZATNODE *znod);
+                      long nln,
+                      long ndofn,
+                      ZATNODE *znod);
 
 /* Function reads element surface load */
 void read_elem_surface_load (FILE *in,
-                 long nle_s,
-                 long ndofn,
-                 ELEMENT *elem,
-                 ZATELEM *zele_s);
+                             long nle_s,
+                             long ndofn,
+                             Element *elem,
+                             ZATELEM *zele_s);
 
 /** Function reads a specified file from the command line options to
     override the prescribed displacements used on the first step of
     the simulation. A non-zero value is returned if there is an error
     reading the file. */
 int override_prescribed_displacements(SUPP sup,
-                      const PGFem3D_opt *opt);
+                                      const PGFem3D_opt *opt);
 
-#endif
+#endif // #define PGFEM3D_IN_H

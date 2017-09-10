@@ -1,48 +1,48 @@
 /* HEADER */
 #pragma once
-#ifndef READ_INPUT_FILE_H
-#define READ_INPUT_FILE_H
+#ifndef PGFEM3D_READ_INPUT_FILE_H
+#define PGFEM3D_READ_INPUT_FILE_H
 
-#include "PGFEM_mpi.h"
-#include "PGFem3D_options.h"
-#include "node.h"
+#include "Arc_length.h"
 #include "element.h"
 #include "material.h"
 #include "matgeom.h"
-#include "supp.h"
 #include "mesh_load.h"
+#include "node.h"
+#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
-#include "Arc_length.h"
+#include "PGFem3D_options.h"
+#include "supp.h"
 
-  /** Function for reading the entire input file. All required space
-      is allocated within this function */
-  int read_input_file(const PGFem3D_opt *opts,
-              MPI_Comm comm,
-              long *nn,
-              long *Gnn,
-              long *ndofn,
-              long *ne,
-              long *lin_maxit,
-              double *lin_err,
-              double *lim_zero,
-              long *nmat,
-              long *n_concentrations,
-              long *n_orient,
-              NODE **node,
-              ELEMENT **elem,
-              Material **material,
-              MATGEOM *matgeom,
-              SUPP *sup,
-              long *nln,
-              ZATNODE **znod,
-              long *nel_s,
-              ZATELEM **zelem_s,
-              long *nel_v,
-              ZATELEM **zelem_v,
-                      const int *fv_ndofn,
-              const int phyicsno,
-              const int *ndim,
-                      char **physicsnames);
+/** Function for reading the entire input file. All required space
+    is allocated within this function */
+int read_input_file(const PGFem3D_opt *opts,
+                    MPI_Comm comm,
+                    long *nn,
+                    long *Gnn,
+                    long *ndofn,
+                    long *ne,
+                    long *lin_maxit,
+                    double *lin_err,
+                    double *lim_zero,
+                    long *nmat,
+                    long *n_concentrations,
+                    long *n_orient,
+                    NODE **node,
+                    Element **elem,
+                    Material **material,
+                    MATGEOM *matgeom,
+                    SUPP *sup,
+                    long *nln,
+                    ZATNODE **znod,
+                    long *nel_s,
+                    ZATELEM **zelem_s,
+                    long *nel_v,
+                    ZATELEM **zelem_v,
+                    const int *fv_ndofn,
+                    const int phyicsno,
+                    const int *ndim,
+                    char **physicsnames);
 
 /// Read mesh info, boundary conditions, and material properties.
 /// from main input files (*.in)
@@ -147,4 +147,4 @@ int read_cohesive_elements(GRID *grid,
                            MPI_Comm mpi_comm,
                            int myrank);
 
-#endif /* #ifndef  */
+#endif /* #define PGFEM3D_READ_INPUT_FILE_H */

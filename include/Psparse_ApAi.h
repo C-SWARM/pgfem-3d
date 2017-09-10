@@ -7,39 +7,39 @@
  */
 
 #pragma once
-#ifndef PSPARSE_APAI_H
-#define PSPARSE_APAI_H
+#ifndef PGFEM3D_PSPARSE_APAI_H
+#define PGFEM3D_PSPARSE_APAI_H
 
-#include "data_structure.h"
-#include "PGFEM_mpi.h"
-#include "element.h"
-#include "cohesive_element.h"
 #include "bounding_element.h"
-#include "pgfem_comm.h"
+#include "cohesive_element.h"
 #include "comm_hints.h"
+#include "data_structure.h"
+#include "element.h"
+#include "pgfem_comm.h"
+#include "PGFEM_mpi.h"
 
-  /**
-   * Create the global sparsity pattern and commincation structure.
-   */
-  int* Psparse_ApAi (int nproc,
-             int myrank,
-             long ne,
-             long n_be,
-             long nn,
-             long ndofn,
-             long ndofd,
-             ELEMENT *elem,
-             BOUNDING_ELEMENT *b_elems,
-             NODE *node,
-             int *Ap,
-             long nce,
-             COEL *coel,
-             long *DomDof,
-             int *GDof,
-             COMMUN comm,
-             MPI_Comm Comm_Orig,
-             const int cohesive,
-             const Comm_hints *hints,
-             const int mp_id);
+/**
+ * Create the global sparsity pattern and commincation structure.
+ */
+int* Psparse_ApAi (int nproc,
+                   int myrank,
+                   long ne,
+                   long n_be,
+                   long nn,
+                   long ndofn,
+                   long ndofd,
+                   Element *elem,
+                   BOUNDING_ELEMENT *b_elems,
+                   NODE *node,
+                   int *Ap,
+                   long nce,
+                   COEL *coel,
+                   long *DomDof,
+                   int *GDof,
+                   COMMUN comm,
+                   MPI_Comm Comm_Orig,
+                   const int cohesive,
+                   const Comm_hints *hints,
+                   const int mp_id);
 
 #endif /* #ifndef PSPARSE_APAI_H */

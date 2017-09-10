@@ -1,26 +1,26 @@
-#ifndef __MMS_L2NORM_h__
-#define __MMS_L2NORM_h__
+#ifndef PGFEM3D_MMS_L2NORM_H
+#define PGFEM3D_MMS_L2NORM_H
 
-#include<math.h>
+#include "allocation.h"
+#include "elem3d.h"
 #include "enumerations.h"
+#include "femlib.h"
+#include "MMS.h"
+#include "utils.h"
+#include <cmath>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-#include "elem3d.h"
-
-#include "MMS.h"
-#include "femlib.h"
-
-void compute_L2_error(double *GL2_err, ELEMENT *elem, long ne, NODE *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
+void compute_L2_error(double *GL2_err, Element *elem, long ne, NODE *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
 {
   int myrank = 0;
   MPI_Comm_rank (mpi_comm,&myrank);
   int ndofn = 3;
 
   double L2_err[3];
-   L2_err[0] =  L2_err[1] =  L2_err[2] = 0.0;
+  L2_err[0] =  L2_err[1] =  L2_err[2] = 0.0;
   GL2_err[0] = GL2_err[1] = GL2_err[2]= 0.0;
 
   for(long e = 0; e<ne; e++)
@@ -74,6 +74,6 @@ void compute_L2_error(double *GL2_err, ELEMENT *elem, long ne, NODE *node, doubl
   }
 
   MPI_Allreduce(L2_err,GL2_err,3,MPI_DOUBLE,MPI_SUM,mpi_comm);
-};
+}
 
-#endif
+#endif // #define PGFEM3D_MMS_L2NORM_H

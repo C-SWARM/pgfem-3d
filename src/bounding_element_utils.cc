@@ -1,23 +1,26 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "bounding_element_utils.h"
-#include <math.h>
-#include "enumerations.h"
-#include "get_ndof_on_elem.h"
-#include "get_dof_ids_on_elem.h"
-#include "matice.h"
-#include "index_macros.h"
-#include "utils.h"
 #include "cohesive_element_utils.h"
-#include "transform_coordinates.h"
+#include "enumerations.h"
+#include "get_dof_ids_on_elem.h"
+#include "get_ndof_on_elem.h"
 #include "incl.h"
+#include "index_macros.h"
+#include "matice.h"
+#include "transform_coordinates.h"
+#include "utils.h"
+#include <cmath>
 
 #ifndef DEBUG_BE_UTILS
 #define DEBUG_BE_UTILS 0
 #endif
 
 int bounding_element_set_local_ids(const int n_be,
-                   BOUNDING_ELEMENT *b_elems,
-                   const ELEMENT *elem)
+                                   BOUNDING_ELEMENT *b_elems,
+                                   const Element *elem)
 {
   /* loop through bounding elements and get local node id's from
      volume element connectivity */
@@ -27,7 +30,7 @@ int bounding_element_set_local_ids(const int n_be,
     const long *be_nod = ptr_be->nodes;
     const int be_nne = ptr_be->nnodes;
 
-    const ELEMENT *ptr_ve = &elem[ptr_be->vol_elem_id];
+    const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
     const long *ve_nod = ptr_ve->nod;
     const int ve_nne = ptr_ve->toe;
 
@@ -36,10 +39,10 @@ int bounding_element_set_local_ids(const int n_be,
 
     for(int j=0; j<be_nne; j++){
       for(int k=0; k<ve_nne; k++){
-    if(be_nod[j] == ve_nod[k]){
-      loc_nod[j] = k;
-      break;
-    }
+        if(be_nod[j] == ve_nod[k]){
+          loc_nod[j] = k;
+          break;
+        }
       }
     }
 
@@ -48,8 +51,8 @@ int bounding_element_set_local_ids(const int n_be,
 }/* bounding_element_compute_local_ids */
 
 int bounding_element_reverse_mapping(const int n_be,
-                     const BOUNDING_ELEMENT *b_elems,
-                     ELEMENT *elem)
+                                     const BOUNDING_ELEMENT *b_elems,
+                                     Element *elem)
 {
   int err = 0;
   if(n_be == 0){ /* no bounding elements on domain, exit */
@@ -100,7 +103,7 @@ int bounding_element_reverse_mapping(const int n_be,
     }
 
     /* set values on the element */
-    ELEMENT *ptr_elem = &elem[vol_elem_ids[i]];
+    Element *ptr_elem = &elem[vol_elem_ids[i]];
     ptr_elem->n_be = n_be_on_elem[i];
     ptr_elem->be_ids = PGFEM_calloc(long, ptr_elem->n_be);
     for(int j=0; j<ptr_elem->n_be; j++){
@@ -116,10 +119,10 @@ int bounding_element_reverse_mapping(const int n_be,
 }
 
 int bounding_element_communicate_damage(const int n_be,
-                    BOUNDING_ELEMENT *b_elems,
-                    const int ne,
-                    const EPS *eps,
-                    const MPI_Comm mpi_comm)
+                                        BOUNDING_ELEMENT *b_elems,
+                                        const int ne,
+                                        const EPS *eps,
+                                        const MPI_Comm mpi_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -180,10 +183,10 @@ int bounding_element_communicate_damage(const int n_be,
       double *p_send_val = send_val[i];
 
       for(int j=0; j<n_val; j++){
-    p_send_id[j] = p_src_dest[1];
-    const int ve_id = b_elems[p_src_dest[2]].vol_elem_id;
-    p_send_val[j] = eps[ve_id].dam[0].w;
-    p_src_dest += n_sd;
+        p_send_id[j] = p_src_dest[1];
+        const int ve_id = b_elems[p_src_dest[2]].vol_elem_id;
+        p_send_val[j] = eps[ve_id].dam[0].w;
+        p_src_dest += n_sd;
       }
 
       n_proc_comm++;
@@ -212,15 +215,15 @@ int bounding_element_communicate_damage(const int n_be,
     if(n_SR[i] > 0 && i != myrank){
       /* post receives */
       MPI_Irecv(receive_id[i],n_SR[i],MPI_INT,i,
-        MPI_ANY_TAG,mpi_comm,&req_r[2*count+0]);
+                MPI_ANY_TAG,mpi_comm,&req_r[2*count+0]);
       MPI_Irecv(receive_val[i],n_SR[i],MPI_DOUBLE,i,
-        MPI_ANY_TAG,mpi_comm,&req_r[2*count+1]);
+                MPI_ANY_TAG,mpi_comm,&req_r[2*count+1]);
 
       /* post sends */
       MPI_Isend(send_id[i],n_SR[i],MPI_INT,i,
-        MPI_ANY_TAG,mpi_comm,&req_s[2*count+0]);
+                MPI_ANY_TAG,mpi_comm,&req_s[2*count+0]);
       MPI_Isend(send_val[i],n_SR[i],MPI_DOUBLE,i,
-        MPI_ANY_TAG,mpi_comm,&req_s[2*count+1]);
+                MPI_ANY_TAG,mpi_comm,&req_s[2*count+1]);
       count++;
     }
   }
@@ -232,7 +235,7 @@ int bounding_element_communicate_damage(const int n_be,
     p_src_dest = src_dest;
     int pos = 0;
     while(*p_src_dest != myrank
-      && pos < n_be*n_sd){
+          && pos < n_be*n_sd){
       pos+= n_sd;
       p_src_dest += n_sd;
     }
@@ -253,8 +256,8 @@ int bounding_element_communicate_damage(const int n_be,
   for(int i=0; i<nproc; i++){
     if(n_SR[i] > 0 && i != myrank){
       for(int j=0; j<n_SR[i]; j++){
-    BOUNDING_ELEMENT *p_dest_be = &b_elems[receive_id[i][j]];
-    p_dest_be->other_val = receive_val[i][j];
+        BOUNDING_ELEMENT *p_dest_be = &b_elems[receive_id[i][j]];
+        p_dest_be->other_val = receive_val[i][j];
       }
     }
   }
@@ -269,7 +272,7 @@ int bounding_element_communicate_damage(const int n_be,
     PGFEM_fprintf(out,"=== src_dest structure ===\n");
     for(int i=0; i<n_be; i++){
       PGFEM_fprintf(out,"dest dom: %3d || dest id: %5d || src id: %5d\n",
-          src_dest[i*n_sd],src_dest[i*n_sd+1],src_dest[i*n_sd+2]);
+                    src_dest[i*n_sd],src_dest[i*n_sd+1],src_dest[i*n_sd+2]);
     }
     fclose(out);
   }
@@ -298,18 +301,18 @@ int bounding_element_communicate_damage(const int n_be,
 }
 
 int bounding_element_compute_resulting_traction(const int n_be,
-                        const BOUNDING_ELEMENT *b_elems,
-                        const ELEMENT *elems,
-                        const NODE *nodes,
-                        const EPS *eps,
-                        const SIG *sig,
-                        const int ndofd,
-                        const long *DomDof,
-                        const int GDof,
-                        const COMMUN comm,
-                        const MPI_Comm mpi_comm,
-                        const int analysis,
-                        double *res_trac)
+                                                const BOUNDING_ELEMENT *b_elems,
+                                                const Element *elems,
+                                                const NODE *nodes,
+                                                const EPS *eps,
+                                                const SIG *sig,
+                                                const int ndofd,
+                                                const long *DomDof,
+                                                const int GDof,
+                                                const COMMUN comm,
+                                                const MPI_Comm mpi_comm,
+                                                const int analysis,
+                                                double *res_trac)
 {
   int err = 0;
   int myrank = 0;
@@ -378,12 +381,12 @@ int bounding_element_compute_resulting_traction(const int n_be,
       double *Ny = aloc1(nn_be);
 
       switch(analysis){
-      case DISP:
-    nodecoord_total(nn_be,b_nodes,nodes,x,y,z);
-    break;
-      default:
-    nodecoord_updated(nn_be,b_nodes,nodes,x,y,z);
-    break;
+       case DISP:
+        nodecoord_total(nn_be,b_nodes,nodes,x,y,z);
+        break;
+       default:
+        nodecoord_updated(nn_be,b_nodes,nodes,x,y,z);
+        break;
       }
       base_vec(nn_be,ksi,eta,x,y,z,e1,e2,e2h,normal,myrank);
       transform_coordinates(nn_be,x,y,z,e1,e2,normal,0,xl,yl,zl);
@@ -414,13 +417,13 @@ int bounding_element_compute_resulting_traction(const int n_be,
     /* integrate traction on bounding element */
     for(int i=0; i<3; i++){
       for(int j=0; j<3; j++){
-    for(int k=0; k<3; k++){
-      const int ik = idx_2(i,k);
-      const int kj = idx_2(k,j);
-      L_trac[L_be_dofs[i]-1] += F[ik]*S[kj]*normal[j]*jj*wt;
-      L_trac_sgn[L_be_dofs[i]-1] += sgn*F[ik]*S[kj]*normal[j]*jj*wt;
-      res_trac[i] += F[ik]*S[kj]*normal[j]*jj*wt;
-    }
+        for(int k=0; k<3; k++){
+          const int ik = idx_2(i,k);
+          const int kj = idx_2(k,j);
+          L_trac[L_be_dofs[i]-1] += F[ik]*S[kj]*normal[j]*jj*wt;
+          L_trac_sgn[L_be_dofs[i]-1] += sgn*F[ik]*S[kj]*normal[j]*jj*wt;
+          res_trac[i] += F[ik]*S[kj]*normal[j]*jj*wt;
+        }
       }
     }
 
@@ -447,7 +450,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
 
   if(myrank == 0){
     PGFEM_printf("[1]||t(+) + t(-)|| = %12.5e :: [2]||t(+) - t(-)|| = %12.5e\n"
-        "2*[1]/[2] = %12.5e\n",norms[0],norms[1],norms[2]);
+                 "2*[1]/[2] = %12.5e\n",norms[0],norms[1],norms[2]);
     PGFEM_printf("Resulting tractions on bounding elements: ");
     print_array_d(PGFEM_stdout,res_trac,3,1,3);
   }
@@ -465,14 +468,14 @@ int bounding_element_compute_resulting_traction(const int n_be,
     block-ordered matrix for preconditioning. NOTE THIS WILL PROBABLY
     BOTTLENECK FOR LARGE SYSTEMS */
 int compute_block_permutation(const int n_be,
-                  const int ndofn,
-                  const BOUNDING_ELEMENT *b_elems,
-                  const ELEMENT *elems,
-                  const NODE *nodes,
-                  const long *DomDof,
-                  const MPI_Comm mpi_comm,
-                  long *perm,
-                  const int mp_id)
+                              const int ndofn,
+                              const BOUNDING_ELEMENT *b_elems,
+                              const Element *elems,
+                              const NODE *nodes,
+                              const long *DomDof,
+                              const MPI_Comm mpi_comm,
+                              long *perm,
+                              const int mp_id)
 {
   int err = 0;
   int myrank = 0;
@@ -507,7 +510,7 @@ int compute_block_permutation(const int n_be,
   int *dof_ids = aloc1i(2*n_dof); /* contains new_id, orig_id */
   for(int i=0; i<n_be; i++){
     const BOUNDING_ELEMENT *p_be = &b_elems[i];
-    const ELEMENT *p_ve = &elems[p_be->vol_elem_id];
+    const Element *p_ve = &elems[p_be->vol_elem_id];
     const int ndofe = get_ndof_on_bnd_elem(nodes,p_be,elems,ndofn);
     const int ndof_ve = get_ndof_on_elem_nodes(p_ve->toe,p_ve->nod,nodes,ndofn);
     long *dof = aloc1l(ndofe);
@@ -516,19 +519,19 @@ int compute_block_permutation(const int n_be,
       const int id = dof[j] - 1;
       if(id >= 0){
 
-    /* count number of dofs on domain */
-    if(l_bound <= id && id <= u_bound
-       && !is_lm_dof[id] /* don't double-count */){
-      if(j<ndof_ve) n_bnd_u_dofs++;
-      else n_lm_dofs++;
-    }
+        /* count number of dofs on domain */
+        if(l_bound <= id && id <= u_bound
+           && !is_lm_dof[id] /* don't double-count */){
+          if(j<ndof_ve) n_bnd_u_dofs++;
+          else n_lm_dofs++;
+        }
 
-    /* set marker */
-    if(j < ndof_ve){ /* disp dofs */
-      is_lm_dof[id] = 0;
-    } else { /* lm dofs */
-      is_lm_dof[id] = 3;
-    }
+        /* set marker */
+        if(j < ndof_ve){ /* disp dofs */
+          is_lm_dof[id] = 0;
+        } else { /* lm dofs */
+          is_lm_dof[id] = 3;
+        }
       }
     }
     free(dof);

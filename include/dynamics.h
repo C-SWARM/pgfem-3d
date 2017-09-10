@@ -1,6 +1,8 @@
-#ifndef _H_DYNAMICS_H_
-#define _H_DYNAMICS_H_
+#ifndef PGFEM3D_DYNAMICS_H
+#define PGFEM3D_DYNAMICS_H
 
+#include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
 #include "crpl.h"
 #include "element.h"
 #include "eps.h"
@@ -8,23 +10,21 @@
 #include "node.h"
 #include "sig.h"
 #include "supp.h"
-#include "PGFem3D_data_structure.h"
-#include "PGFem3D_options.h"
 
 #define MIN_DENSITY 1.0e-16
 #define DT_NP1 0
 #define DT_N   1
 
 void DISP_resid_body_force_el(double *f,
-         const int ii,
-         const int ndofn,
-         const int nne,
-         const double *x,
-         const double *y,
-         const double *z,
-         const ELEMENT *elem,
-         const HOMMAT *hommat,
-             const NODE *node, double dt, double t);
+                              const int ii,
+                              const int ndofn,
+                              const int nne,
+                              const double *x,
+                              const double *y,
+                              const double *z,
+                              const Element *elem,
+                              const HOMMAT *hommat,
+                              const NODE *node, double dt, double t);
 
 struct FEMLIB;
 
@@ -91,4 +91,4 @@ int stiffness_with_inertia(FEMLIB *fe,
                            int mp_id,
                            double dt);
 
-#endif /* #ifndef _H_DYNAMICS_H_ */
+#endif /* #define PGFEM3D_DYNAMICS_H */

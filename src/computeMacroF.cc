@@ -1,24 +1,19 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "computeMacroF.h"
-
-#ifndef INCL_H
-#include "incl.h"
-#endif
-
-#ifndef UTILS_H
-#include "utils.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
+#include "incl.h"
+#include "utils.h"
 
-double* computeMacroF(ELEMENT *elem,
-		      long ne,
-		      NODE *node,
-		      long nn,
-		      EPS *eps,
-		      double oVolume,
-		      MPI_Comm mpi_comm)
+double* computeMacroF(Element *elem,
+                      long ne,
+                      NODE *node,
+                      long nn,
+                      EPS *eps,
+                      double oVolume,
+                      MPI_Comm mpi_comm)
 {
   long *nod;
   double *F, *gk, *ge, *gz, *w;
@@ -66,32 +61,32 @@ double* computeMacroF(ELEMENT *elem,
     int ip = 0;
     for(int j=0; j<JJ; j++){
       for(int k=0; k<KK; k++){
-	for(int m=0; m<MM; m++){
-	  double ksi, eta, zet, ai, aj, ak, J;
+        for(int m=0; m<MM; m++){
+          double ksi, eta, zet, ai, aj, ak, J;
 
-	  ksi = gk[m];
-	  eta = ge[m];
-	  zet = gz[m];
-	  ai = w[m];
-	  aj = ak = 1.0;
+          ksi = gk[m];
+          eta = ge[m];
+          zet = gz[m];
+          ai = w[m];
+          aj = ak = 1.0;
 
-	  shape_func(ksi,eta,zet,nne,Np);
-	  J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+          shape_func(ksi,eta,zet,nne,Np);
+          J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
-	  F[0] += ai*aj*ak*J* eps[i].il[ip].F[0];
-	  F[1] += ai*aj*ak*J* eps[i].il[ip].F[1];
-	  F[2] += ai*aj*ak*J* eps[i].il[ip].F[2];
+          F[0] += ai*aj*ak*J* eps[i].il[ip].F[0];
+          F[1] += ai*aj*ak*J* eps[i].il[ip].F[1];
+          F[2] += ai*aj*ak*J* eps[i].il[ip].F[2];
 
-	  F[3] += ai*aj*ak*J* eps[i].il[ip].F[3];
-	  F[4] += ai*aj*ak*J* eps[i].il[ip].F[4];
-	  F[5] += ai*aj*ak*J* eps[i].il[ip].F[5];
+          F[3] += ai*aj*ak*J* eps[i].il[ip].F[3];
+          F[4] += ai*aj*ak*J* eps[i].il[ip].F[4];
+          F[5] += ai*aj*ak*J* eps[i].il[ip].F[5];
 
-	  F[6] += ai*aj*ak*J* eps[i].il[ip].F[6];
-	  F[7] += ai*aj*ak*J* eps[i].il[ip].F[7];
-	  F[8] += ai*aj*ak*J* eps[i].il[ip].F[8];
+          F[6] += ai*aj*ak*J* eps[i].il[ip].F[6];
+          F[7] += ai*aj*ak*J* eps[i].il[ip].F[7];
+          F[8] += ai*aj*ak*J* eps[i].il[ip].F[8];
 
-	  ip++;
-	}
+          ip++;
+        }
       }
     }
 

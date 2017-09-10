@@ -1,25 +1,24 @@
-#include "vtk_output.h"
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-#include "mkl_cblas.h"
+#include "vtk_output.h"
 
 #include "PGFEM_io.h"
-#include "enumerations.h"
-#include "gen_path.h"
-#include "utils.h"
-#include "allocation.h"
-#include "interface_macro.h"
 #include "PGFem3D_to_VTK.hpp"
+#include "allocation.h"
+#include "enumerations.h"
 #include "femlib.h"
+#include "gen_path.h"
+#include "interface_macro.h"
+#include "utils.h"
+#include <mkl_cblas.h>
+#include <cstring>
+#include <cstdlib>
 
-static const char *out_dir = "VTK";
-static const char *step_dir = "STEP_";
-static const int ndim = 3;
+static constexpr const char *out_dir = "VTK";
+static constexpr const char *step_dir = "STEP_";
+static constexpr int ndim = 3;
 
 void VTK_print_master(char *path,
                       char *base_name,
@@ -211,7 +210,7 @@ void VTK_print_vtu(char *path,
                    long ne,
                    long nn,
                    NODE *node,
-                   ELEMENT *elem,
+                   Element *elem,
                    SUPP sup,
                    double *r,
                    SIG *sig,
@@ -944,7 +943,7 @@ int VTK_write_mesh(GRID *grid,
   int err = 0;
   /* Nodes */
   NODE    *node = grid->node;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   PGFEM_fprintf(out,"<Points>\n");
   PGFEM_fprintf(out,"<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
@@ -1160,7 +1159,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
   NODE *node = grid->node;
   int mp_id = pmr->mp_id;
   /* Pressure */
@@ -1338,7 +1337,7 @@ int VTK_write_data_CellProperty(FILE *out,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
@@ -1553,7 +1552,7 @@ int VTK_write_data_ElementPressure(FILE *out,
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   if(opts->analysis_type==TF && elem[0].toe==10)
   {
@@ -1623,7 +1622,7 @@ int VTK_write_data_Density(FILE *out,
   int total_Lagrangian = 1;
   EPS *eps = FV[pmr->mp_id].eps;
   NODE *node = grid->node;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
@@ -1639,7 +1638,7 @@ int VTK_write_data_Density(FILE *out,
     for(int ip=0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip+1);
-      
+
       const double *F = eps[i].il[ip].F;
       double J = det3x3(F);
       rho    += fe.detJxW*rho_0/J;

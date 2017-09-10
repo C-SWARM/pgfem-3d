@@ -1,19 +1,22 @@
-#include "subdivision.h"
-#include <math.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "PGFEM_io.h"
-#include "enumerations.h"
-#include "matice.h"
-#include "stabilized.h"
+#include "subdivision.h"
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
-#include "res_fini_def.h"
-#include "elem3d.h"
+#include "PGFEM_io.h"
 #include "constitutive_model.h"
+#include "elem3d.h"
+#include "enumerations.h"
+#include "matice.h"
+#include "res_fini_def.h"
+#include "stabilized.h"
+#include <cmath>
 
-static const int MAX_STEP = 10000;
-static const double MIN_D_TIME = 1.0e-15;
-static const int periodic = 0;
+static constexpr int MAX_STEP = 10000;
+static constexpr double MIN_D_TIME = 1.0e-15;
+static constexpr int periodic = 0;
 
 /// determine time step size based on the previous time step convergence history
 /// and physics based evolution rate.
@@ -206,7 +209,7 @@ int subdivision_scheme(int was_NR_ok,
     if(myrank == 0)
     {
       PGFEM_printf("\n[%ld] Sub. steps = %ld :: gama = %e ||"
-              " Time %e | dt = %e\n", tim,step_size,gama,times[tim+1],*dt);
+                   " Time %e | dt = %e\n", tim,step_size,gama,times[tim+1],*dt);
     }
 
     sp->reset_variables = 1;
@@ -233,42 +236,42 @@ int subdivision_scheme(int was_NR_ok,
 }
 
 double subdiv_arc (long INFO,
-           double *dt,
-           double dt0,
-           long *STEP,
-           long *DIV,
-           long tim,
-           double *times,
-           long *ST,
-           long ne,
-           long ndofd,
-           long npres,
-           ELEMENT *elem,
-           CRPL *crpl,
-           EPS *eps,
-           SIG *sig,
-           SUPP sup,
-           double *sup_defl,
-           double *rr,
-           double *d_r,
-           double *D_R,
-           double *f_defl,
-           double *f,
-           long *GAMA,
-           double *DT,
-           long *OME,
-           double stab,
-           double dAL0,
-           double dAL,
-           double dALMAX,
-           double nor_min,
-           double dlm0,
-           long *ITT,
-           long iter,
-           long iter_max,
-           long TYPE,
-           MPI_Comm mpi_comm,
-           const int analysis)
+                   double *dt,
+                   double dt0,
+                   long *STEP,
+                   long *DIV,
+                   long tim,
+                   double *times,
+                   long *ST,
+                   long ne,
+                   long ndofd,
+                   long npres,
+                   Element *elem,
+                   CRPL *crpl,
+                   EPS *eps,
+                   SIG *sig,
+                   SUPP sup,
+                   double *sup_defl,
+                   double *rr,
+                   double *d_r,
+                   double *D_R,
+                   double *f_defl,
+                   double *f,
+                   long *GAMA,
+                   double *DT,
+                   long *OME,
+                   double stab,
+                   double dAL0,
+                   double dAL,
+                   double dALMAX,
+                   double nor_min,
+                   double dlm0,
+                   long *ITT,
+                   long iter,
+                   long iter_max,
+                   long TYPE,
+                   MPI_Comm mpi_comm,
+                   const int analysis)
 {
   long i;
   double nor,gama,DLM0,I1,I2;
@@ -287,194 +290,194 @@ double subdiv_arc (long INFO,
   if (TYPE == 0){/* Time subdivision scheme */
     if (INFO == 0) {
       if (*DIV == 0){
-    nor = (times[tim+1] - times[tim])/(times[tim] - times[tim-1]);
-    *STEP =  round1 (nor) - 1;
-    if (*STEP <= 0)
-      *STEP = 1;
-    *dt = (times[tim+1] - times[tim])/(*STEP);
+        nor = (times[tim+1] - times[tim])/(times[tim] - times[tim-1]);
+        *STEP =  round1 (nor) - 1;
+        if (*STEP <= 0)
+          *STEP = 1;
+        *dt = (times[tim+1] - times[tim])/(*STEP);
 
-    /*
-      DDT = (times[tim+1] - times[tim])/(times[tim] - times[tim-1]);
-      I1 = *ITT-1;
-      I2 = (iter_max+2)/2;
-      if (I1 <= 0)
-        I1 = 1;
-      *dt = sqrt (I2/I1)*DDT;
-      nor = (times[tim+1] - times[tim])/(*dt);
-      *STEP = round1 (nor);
-      if (*STEP <= 0)
-        *STEP = 1;
-      *dt = (times[tim+1] - times[tim])/(*STEP);
-      PGFEM_printf ("NS =  %ld || I1 = %ld || I2 = %ld ::"
-              " Time %f | dt = %10.10f\n",*STEP,*ITT-1,
+        /*
+          DDT = (times[tim+1] - times[tim])/(times[tim] - times[tim-1]);
+          I1 = *ITT-1;
+          I2 = (iter_max+2)/2;
+          if (I1 <= 0)
+          I1 = 1;
+          *dt = sqrt (I2/I1)*DDT;
+          nor = (times[tim+1] - times[tim])/(*dt);
+          *STEP = round1 (nor);
+          if (*STEP <= 0)
+          *STEP = 1;
+          *dt = (times[tim+1] - times[tim])/(*STEP);
+          PGFEM_printf ("NS =  %ld || I1 = %ld || I2 = %ld ::"
+          " Time %f | dt = %10.10f\n",*STEP,*ITT-1,
           (iter_max+2)/2,times[tim+1],*dt);
-    */
+        */
       }/* end DIV == 0 */
       else{
-    if (*OME == 0) {
-      *DT = *dt;
-      gama = 0.75;
-      *OME = 1;
-    }
-    else {
-      gama = 1./exp(*OME*1./2.);
-      *OME += 1;
-    }
-    *dt = (times[tim+1] - times[tim])/(*STEP)**DIV;
-    times[tim] += *dt;
+        if (*OME == 0) {
+          *DT = *dt;
+          gama = 0.75;
+          *OME = 1;
+        }
+        else {
+          gama = 1./exp(*OME*1./2.);
+          *OME += 1;
+        }
+        *dt = (times[tim+1] - times[tim])/(*STEP)**DIV;
+        times[tim] += *dt;
 
-    *dt = *DT/gama;
-    nor = (times[tim+1] - times[tim])/(*dt);
-    *STEP = round1 (nor);
-    if (*STEP <= 0)
-      *STEP = 1;
+        *dt = *DT/gama;
+        nor = (times[tim+1] - times[tim])/(*dt);
+        *STEP = round1 (nor);
+        if (*STEP <= 0)
+          *STEP = 1;
 
-    /* Restart  */
-    if (fabs(dlm0) < nor_min) {
-      if (myrank == 0) PGFEM_printf ("Trying increment length restart\n");
-      *STEP = 1;
-    }
-    *dt = (times[tim+1] - times[tim])/(*STEP);
-    if (*STEP == 1)
-      *ST = 1;
-    *DIV = 0;
+        /* Restart  */
+        if (fabs(dlm0) < nor_min) {
+          if (myrank == 0) PGFEM_printf ("Trying increment length restart\n");
+          *STEP = 1;
+        }
+        *dt = (times[tim+1] - times[tim])/(*STEP);
+        if (*STEP == 1)
+          *ST = 1;
+        *DIV = 0;
 
-    /* DDT = *dt; */
-    /* *dt = (times[tim+1] - times[tim])/(*STEP)**DIV; */
-    /* times[tim] += *dt; */
-    /* I1 = *ITT-1; */
-    /* I2 = (iter_max+2)/2; */
-    /* if (I1 <= 0) */
-    /*   I1 = 1; */
-    /* *dt = sqrt (I2/I1)*DDT; */
+        /* DDT = *dt; */
+        /* *dt = (times[tim+1] - times[tim])/(*STEP)**DIV; */
+        /* times[tim] += *dt; */
+        /* I1 = *ITT-1; */
+        /* I2 = (iter_max+2)/2; */
+        /* if (I1 <= 0) */
+        /*   I1 = 1; */
+        /* *dt = sqrt (I2/I1)*DDT; */
 
-    /* nor = (times[tim+1] - times[tim])/(*dt); */
-    /* *STEP = round1 (nor); */
-    /* if (*STEP <= 0) */
-    /*   *STEP = 1; */
+        /* nor = (times[tim+1] - times[tim])/(*dt); */
+        /* *STEP = round1 (nor); */
+        /* if (*STEP <= 0) */
+        /*   *STEP = 1; */
 
-    /* /\* Restart *\/ */
-    /* if (fabs(dlm0) < nor_min) { */
-    /*   PGFEM_printf ("Trying increment length restart\n"); */
-    /*   *STEP = 1; */
-    /*   } */
+        /* /\* Restart *\/ */
+        /* if (fabs(dlm0) < nor_min) { */
+        /*   PGFEM_printf ("Trying increment length restart\n"); */
+        /*   *STEP = 1; */
+        /*   } */
 
-    /* *dt = (times[tim+1] - times[tim])/(*STEP); */
-    /* if (*STEP == 1) */
-    /*   *ST = 1; */
-    /* *DIV = 0; */
-    /* PGFEM_printf ("STEP = %ld :: NS =  %ld || I1 = %ld || I2 = %ld" */
-    /*         " :: Time %f | dt = %10.10f\n",*DIV,*STEP,*ITT-1, */
-    /*    (iter_max+2)/2,times[tim+1],*dt); */
+        /* *dt = (times[tim+1] - times[tim])/(*STEP); */
+        /* if (*STEP == 1) */
+        /*   *ST = 1; */
+        /* *DIV = 0; */
+        /* PGFEM_printf ("STEP = %ld :: NS =  %ld || I1 = %ld || I2 = %ld" */
+        /*         " :: Time %f | dt = %10.10f\n",*DIV,*STEP,*ITT-1, */
+        /*    (iter_max+2)/2,times[tim+1],*dt); */
 
       }
     }/* end INFO = 0 */
     else{
       if (*DIV == 0){
-    if (*GAMA == 0) {
-      *DT = *dt;
-      gama = 0.75;
-      *GAMA = 2;
-    } else {
-      gama = 1./exp(*GAMA*1./2.);
-      *GAMA += 2;
-    }
+        if (*GAMA == 0) {
+          *DT = *dt;
+          gama = 0.75;
+          *GAMA = 2;
+        } else {
+          gama = 1./exp(*GAMA*1./2.);
+          *GAMA += 2;
+        }
 
-    *dt = *DT*gama;
-    nor = (times[tim+1] - times[tim])/(*dt);
-    i = round1 (nor);
-    if (i <= *STEP)
-      *STEP += 1;
-    else
-      *STEP = i;
-    if (*STEP <= 0)
-      *STEP = 1;
+        *dt = *DT*gama;
+        nor = (times[tim+1] - times[tim])/(*dt);
+        i = round1 (nor);
+        if (i <= *STEP)
+          *STEP += 1;
+        else
+          *STEP = i;
+        if (*STEP <= 0)
+          *STEP = 1;
 
-    /* Limit long overflow */
-    if (*STEP >= 200000000) {
-      *STEP = 1;
-      *DIV = 0;
-      *GAMA = 0;
-      gama = 0.0;
-    }
+        /* Limit long overflow */
+        if (*STEP >= 200000000) {
+          *STEP = 1;
+          *DIV = 0;
+          *GAMA = 0;
+          gama = 0.0;
+        }
 
-    *dt = (times[tim+1] - times[tim])/(*STEP);
-    *OME = 0;
+        *dt = (times[tim+1] - times[tim])/(*STEP);
+        *OME = 0;
       }/* end DIV = 0 */
       else{
-    *DT = *dt;
-    gama = 0.75;
-    *GAMA = 2;
+        *DT = *dt;
+        gama = 0.75;
+        *GAMA = 2;
 
-    *dt = (times[tim+1] - times[tim])/(*STEP)**DIV;
-    times[tim] += *dt;
-    *dt = *DT*gama;
-    nor = (times[tim+1] - times[tim])/(*dt);
-    i = round1 (nor);
-    if (i <= (*STEP-*DIV))
-      *STEP += 1;
-    if (*STEP <= 0)
-      *STEP = 1;
+        *dt = (times[tim+1] - times[tim])/(*STEP)**DIV;
+        times[tim] += *dt;
+        *dt = *DT*gama;
+        nor = (times[tim+1] - times[tim])/(*dt);
+        i = round1 (nor);
+        if (i <= (*STEP-*DIV))
+          *STEP += 1;
+        if (*STEP <= 0)
+          *STEP = 1;
 
-    /* Limit long overflow */
-    if (*STEP >= 200000000) {
-      *STEP = 1;
-      *DIV = 0;
-      *GAMA = 0;
-      gama = 0.0;
-    }
+        /* Limit long overflow */
+        if (*STEP >= 200000000) {
+          *STEP = 1;
+          *DIV = 0;
+          *GAMA = 0;
+          gama = 0.0;
+        }
 
-    *dt = (times[tim+1] - times[tim])/(*STEP);
-    *DIV = 0;
-    *OME = 0;
+        *dt = (times[tim+1] - times[tim])/(*STEP);
+        *DIV = 0;
+        *OME = 0;
       }/* DIV != 0 */
 
       if (myrank == 0)
-    PGFEM_printf ("\n[%ld] Sub. steps = %ld :: gama = %8.8e ||"
-        " Time %f | dt = %10.10f\n",tim,*STEP,
-        gama,times[tim+1],*dt);
+        PGFEM_printf ("\n[%ld] Sub. steps = %ld :: gama = %8.8e ||"
+                      " Time %f | dt = %10.10f\n",tim,*STEP,
+                      gama,times[tim+1],*dt);
 
       /* Reset variables */
       switch(analysis){
-      case FS_CRPL:
-      case FINITE_STRAIN:
-    res_fini_def (ne,npres,elem,eps,sig,crpl,analysis);
-    break;
-      case STABILIZED:
-    res_stab_def (ne,npres,elem,eps,sig,stab);
-    break;
-      case MINI:
-    MINI_reset(elem,ne,npres,sig);
-    break;
-      case MINI_3F:
-    MINI_3f_reset(elem,ne,npres,4,sig,eps);
-    break;
-      default: break;
+       case FS_CRPL:
+       case FINITE_STRAIN:
+        res_fini_def (ne,npres,elem,eps,sig,crpl,analysis);
+        break;
+       case STABILIZED:
+        res_stab_def (ne,npres,elem,eps,sig,stab);
+        break;
+       case MINI:
+        MINI_reset(elem,ne,npres,sig);
+        break;
+       case MINI_3F:
+        MINI_3f_reset(elem,ne,npres,4,sig,eps);
+        break;
+       default: break;
       }
 
       /* reset damage variables */
       for(i=0; i<ne; i++){
-    long n_ip;
-    int_point(elem[i].toe,&n_ip);
-    for(int j=0; j<n_ip; j++){
-      reset_damage(&eps[i].dam[j]);
-    }
-    if(analysis == STABILIZED){/* get pressure terms too */
-      int_point(10,&n_ip);
-      for(int j=0; j<n_ip; j++){
-        reset_damage(&eps[i].st[j].dam);
-      }
-    }
+        long n_ip;
+        int_point(elem[i].toe,&n_ip);
+        for(int j=0; j<n_ip; j++){
+          reset_damage(&eps[i].dam[j]);
+        }
+        if(analysis == STABILIZED){/* get pressure terms too */
+          int_point(10,&n_ip);
+          for(int j=0; j<n_ip; j++){
+            reset_damage(&eps[i].st[j].dam);
+          }
+        }
       }
 
       for (i=0;i<ndofd;i++) {
-    rr[i] = d_r[i] = D_R[i] = f_defl[i] = f[i] = 0.0;
+        rr[i] = d_r[i] = D_R[i] = f_defl[i] = f[i] = 0.0;
       }
 
       if (gama < nor_min && (*dt/dt0)*dAL0 < nor_min*nor_min) {
-    if (myrank == 0)
-      PGFEM_printf ("Error in Subdivision rutine\n");
-    PGFEM_Comm_code_abort(mpi_comm,0); }
+        if (myrank == 0)
+          PGFEM_printf ("Error in Subdivision rutine\n");
+        PGFEM_Comm_code_abort(mpi_comm,0); }
     }/* end INFO = 1 */
 
     DLM0 = (*dt/dt0)*dAL0;
@@ -488,73 +491,73 @@ double subdiv_arc (long INFO,
 
     if (INFO == 0) {
       if (tim == 0){
-    DLM0 = dAL0;
+        DLM0 = dAL0;
       } else {
-    if (I1 <= 0) I1 = 1;
-    if ( I1 <= last_it && last_it < iter_max){
-      I1 = (I1<last_it)?I1:(last_it - 1);
-    }
-    DLM0 = sqrt (I2/I1)*dAL;
-    if (DLM0 > dALMAX) DLM0 = dALMAX;
+        if (I1 <= 0) I1 = 1;
+        if ( I1 <= last_it && last_it < iter_max){
+          I1 = (I1<last_it)?I1:(last_it - 1);
+        }
+        DLM0 = sqrt (I2/I1)*dAL;
+        if (DLM0 > dALMAX) DLM0 = dALMAX;
       }
     }/* end INFO = 0 */
     else{
       if (*GAMA == 0) {
-    gama = 0.75;
-    *GAMA = 2;
+        gama = 0.75;
+        *GAMA = 2;
       } else {
-    gama = 1./exp(*GAMA*1./2.);
-    *GAMA += 2;
+        gama = 1./exp(*GAMA*1./2.);
+        *GAMA += 2;
       }
 
       DLM0 = dAL*gama;
 
       if (myrank == 0)
-    PGFEM_printf ("\n[%ld] gama = %8.8e || Time %f | dt = %10.10f\n",
-        tim,gama,times[tim+1],*dt);
+        PGFEM_printf ("\n[%ld] gama = %8.8e || Time %f | dt = %10.10f\n",
+                      tim,gama,times[tim+1],*dt);
 
       /* Reset variables */
       switch(analysis){
-      case FS_CRPL:
-      case FINITE_STRAIN:
-    res_fini_def (ne,npres,elem,eps,sig,crpl,analysis);
-    break;
-      case STABILIZED:
-    res_stab_def (ne,npres,elem,eps,sig,stab);
-    break;
-      case MINI:
-    MINI_reset(elem,ne,npres,sig);
-    break;
-      case MINI_3F:
-    MINI_3f_reset(elem,ne,npres,4,sig,eps);
-    break;
-      default: break;
+       case FS_CRPL:
+       case FINITE_STRAIN:
+        res_fini_def (ne,npres,elem,eps,sig,crpl,analysis);
+        break;
+       case STABILIZED:
+        res_stab_def (ne,npres,elem,eps,sig,stab);
+        break;
+       case MINI:
+        MINI_reset(elem,ne,npres,sig);
+        break;
+       case MINI_3F:
+        MINI_3f_reset(elem,ne,npres,4,sig,eps);
+        break;
+       default: break;
       }
 
       /* reset damage variables */
       for(i=0; i<ne; i++){
-    long n_ip;
-    int_point(elem[i].toe,&n_ip);
-    for(int j=0; j<n_ip; j++){
-      reset_damage(&eps[i].dam[j]);
-    }
-    if(analysis == STABILIZED){/* get pressure terms too */
-      int_point(10,&n_ip);
-      for(int j=0; j<n_ip; j++){
-        reset_damage(&eps[i].st[j].dam);
-      }
-    }
+        long n_ip;
+        int_point(elem[i].toe,&n_ip);
+        for(int j=0; j<n_ip; j++){
+          reset_damage(&eps[i].dam[j]);
+        }
+        if(analysis == STABILIZED){/* get pressure terms too */
+          int_point(10,&n_ip);
+          for(int j=0; j<n_ip; j++){
+            reset_damage(&eps[i].st[j].dam);
+          }
+        }
       }
 
 
       for (i=0;i<ndofd;i++) {
-    rr[i] = d_r[i] = D_R[i] = f_defl[i] = f[i] = 0.0;
+        rr[i] = d_r[i] = D_R[i] = f_defl[i] = f[i] = 0.0;
       }
 
       if (DLM0 < nor_min*nor_min) {
-    if (myrank == 0)
-      PGFEM_printf ("Error in Subdivision rutine\n");
-    PGFEM_Comm_code_abort(mpi_comm,0);
+        if (myrank == 0)
+          PGFEM_printf ("Error in Subdivision rutine\n");
+        PGFEM_Comm_code_abort(mpi_comm,0);
       }
     }/* end INFO = 1 */
 

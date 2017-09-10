@@ -1,29 +1,29 @@
 /* HEADER */
 #pragma once
-#ifndef SET_FINI_DEF
-#define SET_FINI_DEF
+#ifndef PGFEM3D_SET_FINI_DEF
+#define PGFEM3D_SET_FINI_DEF
 
+#include "crpl.h"
 #include "data_structure.h"
 #include "element.h"
-#include "sig.h"
 #include "eps.h"
-#include "crpl.h"
+#include "sig.h"
 
-  /** */
-  void set_fini_def (long ne,
-             long npres,
-             ELEMENT *elem,
-             EPS *eps,
-             SIG *sig,
-             const int analysis);
+/** */
+void set_fini_def (long ne,
+                   long npres,
+                   Element *elem,
+                   EPS *eps,
+                   SIG *sig,
+                   const int analysis);
 
-  void set_fini_def_pl (long ne,
-            long npres,
-            ELEMENT *elem,
-            EPS *eps,
-            SIG *sig,
-            CRPL *crpl,
-            const int analysis,
-            const int plc);
+void set_fini_def_pl (long ne,
+                      long npres,
+                      Element *elem,
+                      EPS *eps,
+                      SIG *sig,
+                      CRPL *crpl,
+                      const int analysis,
+                      const int plc);
 
-#endif /* #ifndef SET_FINI_DEF */
+#endif /* #define PGFEM3D_SET_FINI_DEF */

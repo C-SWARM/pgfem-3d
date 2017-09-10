@@ -2,57 +2,55 @@
 #ifndef SIG_H
 #define SIG_H
 
-#ifndef ELEMENT_H
 #include "element.h"
-#endif
 
-  /** Structure of stresses SIG */
-  typedef struct { /* Inelastic stress in all integration points */
-    double *o,
-      *f,
-      *m,
-      *d,
-      *a;
-    /* crystal plasticity */
-    double *Tau,Har,Har1;
-  }IL0_sig;
+/** Structure of stresses SIG */
+struct IL0_sig { /* Inelastic stress in all integration points */
+  double *o,
+    *f,
+    *m,
+    *d,
+    *a;
+  /* crystal plasticity */
+  double *Tau,Har,Har1;
+};
 
-  /** Structure of stresses SIG */
-  typedef struct { /* Inelastic stress in all integration points */
-    double *o,*f,*m,*d,*a;
-  }IL1_sig;
+/** Structure of stresses SIG */
+struct IL1_sig { /* Inelastic stress in all integration points */
+  double *o,*f,*m,*d,*a;
+};
 
-  struct SIG{
-    /** Elastic stress */
-    struct {
-      /** Overall stress. */
-      double *o;
-      /** Stress in the fibre */
-      double *f;
-      /** Stress in the matrix */
-      double *m;
-      double *d,eq,eq_m;
-    }el;
-    IL0_sig *il;
-    IL1_sig *d_il;
-    /** crystal plasticity */
-    double *p,*d_p,*pn_1;
-  };
-  typedef struct SIG SIG;
+struct SIG {
+  /** Elastic stress */
+  struct {
+    /** Overall stress. */
+    double *o;
+    /** Stress in the fibre */
+    double *f;
+    /** Stress in the matrix */
+    double *m;
+    double *d,eq,eq_m;
+  } el;
 
-  SIG* build_sig_el(const long ne);
+  IL0_sig *il;
+  IL1_sig *d_il;
+  /** crystal plasticity */
+  double *p,*d_p,*pn_1;
+};
 
-  void destroy_sig_el(SIG* sig,
-              const long ne);
+SIG* build_sig_el(const long ne);
 
-  SIG* build_sig_il (const long ne,
-             const int analysis,
-             ELEMENT *elem);
+void destroy_sig_el(SIG* sig,
+                    const long ne);
 
-  /*** MUST be called before destroy_elem */
-  void destroy_sig_il(SIG* sig,
-              const ELEMENT *elem,
-              const long ne,
-              const int analysis);
+SIG* build_sig_il (const long ne,
+                   const int analysis,
+                   Element *elem);
+
+/*** MUST be called before destroy_elem */
+void destroy_sig_il(SIG* sig,
+                    const Element *elem,
+                    const long ne,
+                    const int analysis);
 
 #endif /* #ifndef  */

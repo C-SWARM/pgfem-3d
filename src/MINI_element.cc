@@ -1,33 +1,34 @@
-/* HEADER */
 /**
  * AUTHORS:
  * Matthew Mosby
  */
-#include "MINI_element.h"
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
-#include <math.h>
-#include "mkl_cblas.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "MINI_element.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
+#include "cast_macros.h"
+#include "def_grad.h"
+#include "elem3d.h"
+#include "get_ndof_on_elem.h"
+#include "get_dof_ids_on_elem.h"
+#include "incl.h"
+#include "index_macros.h"
+#include "potential.h"
+#include "tensors.h"
 #include "two_field_element.h"
 #include "utils.h"
-#include "incl.h"
+#include <mkl_cblas.h>
+#include <cstdlib>
+#include <cassert>
+#include <cstring>
+#include <cmath>
 
 /* need to update to new_potentials for consistencey. requires change to
    1D pointers */
-#include "potential.h"
 /* #include "new_potentials.h" */
-
-#include "tensors.h"
-#include "def_grad.h"
-#include "get_ndof_on_elem.h"
-#include "get_dof_ids_on_elem.h"
-#include "cast_macros.h"
-#include "elem3d.h"
-#include "index_macros.h"
 
 #ifndef MINI_DEBUG
 #define MINI_DEBUG 0
@@ -37,10 +38,10 @@
 #define MINI_P1_P1 0
 #endif
 
-void MINI_reset(ELEMENT *elem,
-        const int nelem,
-        const int npres,
-        SIG *sig)
+void MINI_reset(Element *elem,
+                const int nelem,
+                const int npres,
+                SIG *sig)
 {
   for(int i=0; i<nelem; i++){
     for(int j=0; j<npres; j++){
@@ -54,19 +55,19 @@ void MINI_reset(ELEMENT *elem,
 }
 
 int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
-              const int ii,          /**< element id */
-              const int ndofn,
-              const int nne,
-              const double *x,
-              const double *y,
-              const double *z,
-              const ELEMENT *elem,
-              const HOMMAT *hommat,
-              const long *nod,
-              const NODE *node,
-              const EPS *eps,
-              const SIG *sig,
-              const double *r_e)    /**< dof values on elem */
+                     const int ii,          /**< element id */
+                     const int ndofn,
+                     const int nne,
+                     const double *x,
+                     const double *y,
+                     const double *z,
+                     const Element *elem,
+                     const HOMMAT *hommat,
+                     const long *nod,
+                     const NODE *node,
+                     const EPS *eps,
+                     const SIG *sig,
+                     const double *r_e)    /**< dof values on elem */
 {
   int count; /* ALWAYS reset before use */
   int err = 0;
@@ -94,12 +95,12 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
-    disp[i*ndn + j] = r_e[count+j];
+        disp[i*ndn + j] = r_e[count+j];
       } else if (j==ndn){                       /* pressure dof */
-    p[i] = r_e[count+j];
+        p[i] = r_e[count+j];
       } else {                                         /* ERROR */
-    PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
-    PGFEM_Abort();
+        PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
+        PGFEM_Abort();
       }
     } /* ndofn */
     count += ndofn;
@@ -109,7 +110,7 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
   for (int i=0; i<n_bub; i++){
     for (int j=0; j<n_bub_dofs; j++){
       disp[nne*ndn + i*n_bub_dofs + j] =
-    elem[ii].bub_dofs[i*n_bub_dofs + j];
+      elem[ii].bub_dofs[i*n_bub_dofs + j];
     }
   }
 
@@ -126,7 +127,7 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
   /* get the integration points and weights */
   integrate (total_nne,&npt_x,&npt_y,&npt_z,
-         int_pt_ksi,int_pt_eta,int_pt_zet,weights);
+             int_pt_ksi,int_pt_eta,int_pt_zet,weights);
 
   /* allocate space for the shape functions, derivatives etc */
   double *Na, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
@@ -207,9 +208,9 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
     inverse(Fr,3,Fr_I);
 
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
+                3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,AA,3,0.0,C,3);
+                3,3,3,1.0,AA,3,AA,3,0.0,C,3);
     array2mat(C,C_mat,3,3);
 
     // Get Deviatoric 2 P-K stress
@@ -222,9 +223,9 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
     Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
     Stiffness(CCONST_2(double) C_mat,&hommat[mat],
-          CCONST_2(double) Fn_mat,
-          CCONST_2(double) Fr_mat,
-          dSdF_tensor);
+              CCONST_2(double) Fn_mat,
+              CCONST_2(double) Fr_mat,
+              dSdF_tensor);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
     /* convert from mat/tensor to array */
@@ -234,15 +235,15 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
     /* Begin computing matrices */
     /*** Kuu (12 x 12) ***/
     UL_Kuu_at_ip(Kuu,nne,total_nne,ST,Fn,Fr,
-         Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,0);
+                 Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,0);
 
     /*** Ktt (Kuu on bubble) (3 x 3) ***/
     UL_Kuu_at_ip(Ktt,nne,total_nne,ST,Fn,Fr,
-         Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,1);
+                 Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,1);
 
     /*** Kut (12 x 3) ***/
     UL_Kuu_at_ip(Kut,nne,total_nne,ST,Fn,Fr,
-         Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,2);
+                 Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,2);
 
     /*** Kup (12 x 4) ***/
     UL_Kup_at_ip(Kup,nne,total_nne,Na,ST,Fr_I,Jr,J,wt,0);
@@ -303,10 +304,10 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
     print_array_d(debug_log,Kuu,nne*ndn*nne*ndn,nne*ndn,nne*ndn);
     PGFEM_fprintf(debug_log,"Ktt\n");
     print_array_d(debug_log,Ktt,n_bub*n_bub_dofs*n_bub*n_bub_dofs,
-          n_bub*n_bub_dofs,n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs,n_bub*n_bub_dofs);
     PGFEM_fprintf(debug_log,"Kut\n");
     print_array_d(debug_log,Kut,nne*ndn*n_bub*n_bub_dofs,nne*ndn,
-          n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs);
     PGFEM_fprintf(debug_log,"Kup\n");
     print_array_d(debug_log,Kup,nne*ndn*nne,nne*ndn,nne);
     PGFEM_fprintf(debug_log,"Kpu\n");
@@ -334,15 +335,15 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
   /* KutKttI (12 x 3) */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne*ndn,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
-          Kut,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
-          0.0,KutKttI,n_bub*n_bub_dofs);
+              nne*ndn,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
+              Kut,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
+              0.0,KutKttI,n_bub*n_bub_dofs);
 
   /* KptKttI (4 x 3) */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
-          Kpt,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
-          0.0,KptKttI,n_bub*n_bub_dofs);
+              nne,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
+              Kpt,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
+              0.0,KptKttI,n_bub*n_bub_dofs);
 
   if(MINI_DEBUG){
     PGFEM_fprintf(debug_log,"Ktt_I\n");
@@ -355,27 +356,27 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 
   /*** Kuu  ***/
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
-          nne*ndn,nne*ndn,n_bub*n_bub_dofs,-1.0,
-          KutKttI,n_bub*n_bub_dofs,Kut,n_bub*n_bub_dofs,
-          1.0,Kuu,nne*ndn);
+              nne*ndn,nne*ndn,n_bub*n_bub_dofs,-1.0,
+              KutKttI,n_bub*n_bub_dofs,Kut,n_bub*n_bub_dofs,
+              1.0,Kuu,nne*ndn);
 
   /*** Kup ***/
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne*ndn,nne,n_bub*n_bub_dofs,-1.0,
-          KutKttI,n_bub*n_bub_dofs,Ktp,nne,
-          1.0,Kup,nne);
+              nne*ndn,nne,n_bub*n_bub_dofs,-1.0,
+              KutKttI,n_bub*n_bub_dofs,Ktp,nne,
+              1.0,Kup,nne);
 
   /*** Kpu ***/
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
-          nne,nne*ndn,n_bub*n_bub_dofs,-1.0,
-          KptKttI,n_bub*n_bub_dofs,Kut,n_bub*n_bub_dofs,
-          1.0,Kpu,nne*ndn);
+              nne,nne*ndn,n_bub*n_bub_dofs,-1.0,
+              KptKttI,n_bub*n_bub_dofs,Kut,n_bub*n_bub_dofs,
+              1.0,Kpu,nne*ndn);
 
   /*** Kpp ***/
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne,nne,n_bub*n_bub_dofs,-1.0,
-          KptKttI,n_bub*n_bub_dofs,Ktp,nne,
-          1.0,Kpp,nne);
+              nne,nne,n_bub*n_bub_dofs,-1.0,
+              KptKttI,n_bub*n_bub_dofs,Ktp,nne,
+              1.0,Kpp,nne);
 
   if(MINI_DEBUG){
     PGFEM_fprintf(debug_log,"Kuu BAR\n");
@@ -395,26 +396,26 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
   for(int a=0; a<nne; a++){
     for(int b=0; b<ndofn; b++){
       for(int w=0; w<nne; w++){
-    for(int g=0; g<ndofn; g++){
-      if ((b<ndn) && (g<ndn)){ /* from Kuu */
-        Ks[idx_K(a,b,w,g,nne,ndofn)] = Kuu[idx_K(a,b,w,g,nne,ndn)];
-      } else if ((b==ndn) && (g==ndn)){ /* from Kpp */
-        Ks[idx_K(a,b,w,g,nne,ndofn)] = Kpp[idx_K(a,0,w,0,nne,1)];
-      } else if ((b==ndn) || (g==ndn)){ /* from Kup */
-        /* Kpu = Trans(Kup) so get appropriate value */
-        if (g==ndn){ /* From Kup */
-          Ks[idx_K(a,b,w,g,nne,ndofn)] =
-        Kup[idx_K_gen(a,b,w,0,nne,ndn,nne,1)];
-        } else { /* From Kpu */
-          Ks[idx_K(a,b,w,g,nne,ndofn)] =
-        Kpu[idx_K_gen(a,0,w,g,nne,1,nne,ndn)];
+        for(int g=0; g<ndofn; g++){
+          if ((b<ndn) && (g<ndn)){ /* from Kuu */
+            Ks[idx_K(a,b,w,g,nne,ndofn)] = Kuu[idx_K(a,b,w,g,nne,ndn)];
+          } else if ((b==ndn) && (g==ndn)){ /* from Kpp */
+            Ks[idx_K(a,b,w,g,nne,ndofn)] = Kpp[idx_K(a,0,w,0,nne,1)];
+          } else if ((b==ndn) || (g==ndn)){ /* from Kup */
+            /* Kpu = Trans(Kup) so get appropriate value */
+            if (g==ndn){ /* From Kup */
+              Ks[idx_K(a,b,w,g,nne,ndofn)] =
+              Kup[idx_K_gen(a,b,w,0,nne,ndn,nne,1)];
+            } else { /* From Kpu */
+              Ks[idx_K(a,b,w,g,nne,ndofn)] =
+              Kpu[idx_K_gen(a,0,w,g,nne,1,nne,ndn)];
+            }
+          } else {
+            PGFEM_printerr("ERROR constructing stiffness matrix!\n");
+            PGFEM_Abort();
+            abort();
+          }
         }
-      } else {
-        PGFEM_printerr("ERROR constructing stiffness matrix!\n");
-        PGFEM_Abort();
-        abort();
-      }
-    }
       }
     }
   }
@@ -440,19 +441,19 @@ int MINI_stiffmat_el(double *Ks,            /**< Element stiffmat */
 } /* stiffmat_el_lin_bub */
 
 int MINI_resid_el(double *Res,         /**< Element residual */
-           const int ii,        /**< element id */
-           const int ndofn,
-           const int nne,
-           const double *x,
-           const double *y,
-           const double *z,
-           const ELEMENT *elem,
-           const long *nod,
-           const NODE *node,
-           const HOMMAT *hommat,
-           const EPS *eps,
-           const SIG *sig,
-           const double *r_e)    /**< dof values on elem */
+                  const int ii,        /**< element id */
+                  const int ndofn,
+                  const int nne,
+                  const double *x,
+                  const double *y,
+                  const double *z,
+                  const Element *elem,
+                  const long *nod,
+                  const NODE *node,
+                  const HOMMAT *hommat,
+                  const EPS *eps,
+                  const SIG *sig,
+                  const double *r_e)    /**< dof values on elem */
 {
   int count; /* ALWAYS reset before use */
   int err = 0;
@@ -480,12 +481,12 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
-    disp[i*ndn + j] = r_e[count+j];
+        disp[i*ndn + j] = r_e[count+j];
       } else if (j==ndn){                       /* pressure dof */
-    p[i] = r_e[count+j];
+        p[i] = r_e[count+j];
       } else {                                         /* ERROR */
-    PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
-    PGFEM_Abort();
+        PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
+        PGFEM_Abort();
       }
     } /* ndofn */
     count += ndofn;
@@ -495,7 +496,7 @@ int MINI_resid_el(double *Res,         /**< Element residual */
   for (int i=0; i<n_bub; i++){
     for (int j=0; j<n_bub_dofs; j++){
       disp[nne*ndn + i*n_bub_dofs + j] =
-    elem[ii].bub_dofs[i*n_bub_dofs + j];
+      elem[ii].bub_dofs[i*n_bub_dofs + j];
     }
   }
 
@@ -512,7 +513,7 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
   /* get the integration points and weights */
   integrate (total_nne,&npt_x,&npt_y,&npt_z,
-         int_pt_ksi,int_pt_eta,int_pt_zet,weights);
+             int_pt_ksi,int_pt_eta,int_pt_zet,weights);
 
   /* allocate space for the shape functions, derivatives etc */
   double *Na, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
@@ -594,10 +595,10 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
     /* Compute total F; F=FnFr */
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
+                3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
     /* C = F^t F */
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,AA,3,0.0,C,3);
+                3,3,3,1.0,AA,3,AA,3,0.0,C,3);
     array2mat(C,C_mat,3,3);
 
     // Get Deviatoric 2 P-K stress
@@ -612,10 +613,10 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
     Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
     Stiffness(CCONST_2(double) C_mat,
-          &hommat[mat],
-          CCONST_2(double) Fn_mat,
-          CCONST_2(double) Fr_mat,
-          dSdF_tensor);
+              &hommat[mat],
+              CCONST_2(double) Fn_mat,
+              CCONST_2(double) Fr_mat,
+              dSdF_tensor);
     Pressure(Jn,Jr,&hommat[mat],&Up);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
@@ -626,20 +627,20 @@ int MINI_resid_el(double *Res,         /**< Element residual */
     /* Compute residuals */
     /***  Ru (12 x 1) ***/
     UL_Ru_at_ip(Ru,nne,total_nne,ST,Fn,Fr,Fr_I,
-        Jn,Jr,S,pressure,J,wt,0);
+                Jn,Jr,S,pressure,J,wt,0);
 
     /*** Rt (3 x 1) ***/
     UL_Ru_at_ip(Rt,nne,total_nne,ST,Fn,Fr,Fr_I,
-        Jn,Jr,S,pressure,J,wt,1);
+                Jn,Jr,S,pressure,J,wt,1);
 
     /* Compute needed tangents */
     /*** Ktt (3 x 3) ***/
     UL_Kuu_at_ip(Ktt,nne,total_nne,ST,Fn,Fr,Fr_I,Jn,Jr,
-         pressure,S,dSdF,J,wt,1);
+                 pressure,S,dSdF,J,wt,1);
 
     /*** Kut (12 x 3) ***/
     UL_Kuu_at_ip(Kut,nne,total_nne,ST,Fn,Fr,Fr_I,Jn,Jr,
-         pressure,S,dSdF,J,wt,2);
+                 pressure,S,dSdF,J,wt,2);
 
     /* compute incremental pressure */
     pressure = 0;
@@ -711,27 +712,27 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
   /* KutKttI (12 x 3) */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne*ndn,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
-          Kut,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
-          0.0,KutKttI,n_bub*n_bub_dofs);
+              nne*ndn,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
+              Kut,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
+              0.0,KutKttI,n_bub*n_bub_dofs);
 
   /* KptKttI (4 x 3) */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-          nne,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
-          Kpt,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
-          0.0,KptKttI,n_bub*n_bub_dofs);
+              nne,n_bub*n_bub_dofs,n_bub*n_bub_dofs,1.0,
+              Kpt,n_bub*n_bub_dofs,Ktt_I,n_bub*n_bub_dofs,
+              0.0,KptKttI,n_bub*n_bub_dofs);
 
   /*** Ru (12 x 1) ***/
   cblas_dgemv(CblasRowMajor,CblasNoTrans,
-          nne*ndn,n_bub*n_bub_dofs,1.0,
-          KutKttI,n_bub*n_bub_dofs,Rt,1,
-          -1.0,Ru,1);
+              nne*ndn,n_bub*n_bub_dofs,1.0,
+              KutKttI,n_bub*n_bub_dofs,Rt,1,
+              -1.0,Ru,1);
 
   /*** Rp (4 x 1) ***/
   cblas_dgemv(CblasRowMajor,CblasNoTrans,
-          nne,n_bub*n_bub_dofs,1.0,
-          KptKttI,n_bub*n_bub_dofs,Rt,1,
-          -1.0,Rp,1);
+              nne,n_bub*n_bub_dofs,1.0,
+              KptKttI,n_bub*n_bub_dofs,Rt,1,
+              -1.0,Rp,1);
 
   /* free un-needed */
   free(Ktt);
@@ -748,13 +749,13 @@ int MINI_resid_el(double *Res,         /**< Element residual */
   for (int a=0; a<nne; a++){
     for (int b=0; b<ndofn; b++){
       if (b<ndn){ /* from Ru */
-    Res[a*ndofn+b] = sign*Ru[a*ndn+b];
+        Res[a*ndofn+b] = sign*Ru[a*ndn+b];
       } else if (b == ndn){ /* from Rp */
-    Res[a*ndofn+b] = sign*Rp[a];
+        Res[a*ndofn+b] = sign*Rp[a];
       } else {
-    PGFEM_printerr("ERROR constructing residual vector!\n");
-    PGFEM_Abort();
-    abort();
+        PGFEM_printerr("ERROR constructing residual vector!\n");
+        PGFEM_Abort();
+        abort();
       }
     }
   }
@@ -778,20 +779,20 @@ int MINI_resid_el(double *Res,         /**< Element residual */
 
 }
 
-int MINI_update_bubble_el(ELEMENT *elem,
-               const int ii, /* id of element working on */
-               const int nne,
-               const NODE *node,
-               const int ndofn,
-               const double *x,
-               const double *y,
-               const double *z,
-               const long *nod, /* list of node ids on elem */
-               const EPS *eps,
-               const SIG *sig,
-               const HOMMAT *hommat,
-               const double *sol_e, /* accum. incr on elem */
-               const double *dsol_e) /* increment on element */
+int MINI_update_bubble_el(Element *elem,
+                          const int ii, /* id of element working on */
+                          const int nne,
+                          const NODE *node,
+                          const int ndofn,
+                          const double *x,
+                          const double *y,
+                          const double *z,
+                          const long *nod, /* list of node ids on elem */
+                          const EPS *eps,
+                          const SIG *sig,
+                          const HOMMAT *hommat,
+                          const double *sol_e, /* accum. incr on elem */
+                          const double *dsol_e) /* increment on element */
 {
   const int ndn = 3;
   const int mat = elem[ii].mat[2];
@@ -821,7 +822,7 @@ int MINI_update_bubble_el(ELEMENT *elem,
     PGFEM_fprintf(debug_log,"***********************************\n");
     PGFEM_fprintf(debug_log,"Current bub dofs\n");
     print_array_d(debug_log,elem[ii].bub_dofs,
-          n_bub*n_bub_dofs,1,n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs,1,n_bub*n_bub_dofs);
   }
 
   /* disp contains displacements from nodes + bub */
@@ -837,14 +838,14 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
-    disp[i*ndn + j] = sol_e[count+j];
-    ddisp[i*ndn + j] = dsol_e[count+j];
+        disp[i*ndn + j] = sol_e[count+j];
+        ddisp[i*ndn + j] = dsol_e[count+j];
       } else if (j==ndn){                       /* pressure dof */
-    p[i] = sol_e[count+j];
-    dp[i] = dsol_e[count+j];
+        p[i] = sol_e[count+j];
+        dp[i] = dsol_e[count+j];
       } else {                                         /* ERROR */
-    PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
-    PGFEM_Abort();
+        PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
+        PGFEM_Abort();
       }
     } /* ndofn */
     count += ndofn;
@@ -854,7 +855,7 @@ int MINI_update_bubble_el(ELEMENT *elem,
   for (int i=0; i<n_bub; i++){
     for (int j=0; j<n_bub_dofs; j++){
       disp[nne*ndn + i*n_bub_dofs + j] =
-    elem[ii].bub_dofs[i*n_bub_dofs + j];
+      elem[ii].bub_dofs[i*n_bub_dofs + j];
     }
   }
 
@@ -869,7 +870,7 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
   /* get the integration points and weights */
   integrate (total_nne,&npt_x,&npt_y,&npt_z,
-         int_pt_ksi,int_pt_eta,int_pt_zet,weights);
+             int_pt_ksi,int_pt_eta,int_pt_zet,weights);
 
   /* allocate space for the shape functions, derivatives etc */
   double *Na, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
@@ -946,9 +947,9 @@ int MINI_update_bubble_el(ELEMENT *elem,
     inverse(Fr,3,Fr_I);
 
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
+                3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,AA,3,0.0,C,3);
+                3,3,3,1.0,AA,3,AA,3,0.0,C,3);
     array2mat(C,C_mat,3,3);
 
     // Get Deviatoric 2 P-K stress
@@ -961,10 +962,10 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
     Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
     Stiffness(CCONST_2(double) C_mat,
-          &hommat[mat],
-          CCONST_2(double) Fn_mat,
-          CCONST_2(double) Fr_mat,
-          dSdF_tensor);
+              &hommat[mat],
+              CCONST_2(double) Fn_mat,
+              CCONST_2(double) Fr_mat,
+              dSdF_tensor);
     D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
     /* convert from mat/tensor to array */
@@ -975,18 +976,18 @@ int MINI_update_bubble_el(ELEMENT *elem,
 
     /*** Ktt (Kuu on bubble) (3 x 3) ***/
     UL_Kuu_at_ip(Ktt,nne,total_nne,ST,Fn,Fr,
-         Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,1);
+                 Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,1);
 
     /*** Kut (12 x 3) ***/
     UL_Kuu_at_ip(Kut,nne,total_nne,ST,Fn,Fr,
-         Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,2);
+                 Fr_I,Jn,Jr,pressure,S,dSdF,J,wt,2);
 
     /*** Ktp (3 x 4) ***/
     UL_Kup_at_ip(Ktp,nne,total_nne,Na,ST,Fr_I,Jr,J,wt,1);
 
     /*** Rt (3 x 1) ***/
     UL_Ru_at_ip(Rt,nne,total_nne,ST,Fn,Fr,Fr_I,
-        Jn,Jr,S,pressure,J,wt,1);
+                Jn,Jr,S,pressure,J,wt,1);
 
   } /* int z-dir */
 
@@ -1028,16 +1029,16 @@ int MINI_update_bubble_el(ELEMENT *elem,
   if(MINI_DEBUG){
     PGFEM_fprintf(debug_log,"Ktt\n");
     print_array_d(debug_log,Ktt,n_bub*n_bub_dofs*n_bub*n_bub_dofs,
-          n_bub*n_bub_dofs,n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs,n_bub*n_bub_dofs);
     PGFEM_fprintf(debug_log,"Ktt_I\n");
     print_array_d(debug_log,Ktt_I,n_bub*n_bub_dofs*n_bub*n_bub_dofs,
-          n_bub*n_bub_dofs,n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs,n_bub*n_bub_dofs);
     PGFEM_fprintf(debug_log,"Kut\n");
     print_array_d(debug_log,Kut,n_bub*n_bub_dofs*nne*ndn,
-          nne*ndn,n_bub*n_bub_dofs);
+                  nne*ndn,n_bub*n_bub_dofs);
     PGFEM_fprintf(debug_log,"Ktp\n");
     print_array_d(debug_log,Ktp,n_bub*n_bub_dofs*nne,
-          n_bub*n_bub_dofs,nne);
+                  n_bub*n_bub_dofs,nne);
     PGFEM_fprintf(debug_log,"ddisp\n");
     print_array_d(debug_log,ddisp,nne*ndn,1,nne*ndn);
     PGFEM_fprintf(debug_log,"dp\n");
@@ -1077,8 +1078,8 @@ int MINI_update_bubble_el(ELEMENT *elem,
   if (MINI_DEBUG){
     PGFEM_fprintf(debug_log,"Updated bubble dofs\n");
     print_array_d(debug_log,elem[ii].bub_dofs,
-          n_bub*n_bub_dofs,
-          1,n_bub*n_bub_dofs);
+                  n_bub*n_bub_dofs,
+                  1,n_bub*n_bub_dofs);
     fclose(debug_log);
   }
 
@@ -1094,18 +1095,18 @@ int MINI_update_bubble_el(ELEMENT *elem,
   return err;
 }
 
-int MINI_update_bubble(ELEMENT *elem,
-               const int nelem,
-               const NODE *node,
-               const int ndofn,
-               const SUPP sup,
-               const EPS *eps,
-               const SIG *sig,
-               const HOMMAT *hommat,
-               const double *sol, /* accum. solution  on incr */
-               const double *dsol, /* sol from current iter */
-               const int iter,
-               const int mp_id)
+int MINI_update_bubble(Element *elem,
+                       const int nelem,
+                       const NODE *node,
+                       const int ndofn,
+                       const SUPP sup,
+                       const EPS *eps,
+                       const SIG *sig,
+                       const HOMMAT *hommat,
+                       const double *sol, /* accum. solution  on incr */
+                       const double *dsol, /* sol from current iter */
+                       const int iter,
+                       const int mp_id)
 {
   int err = 0;
 
@@ -1144,44 +1145,44 @@ int MINI_update_bubble(ELEMENT *elem,
     element_center(nne,x,y,z);
 
     /*** compute the iteration and accumlated solution vectors on the
-     element ***/
+         element ***/
     /* solution for this iteration */
     if (iter != 0){
       for (int j=0;j<sup->npd;j++){
-    sup_def[j] = sup->defl_d[j];
-    sup->defl_d[j] = 0.0;
+        sup_def[j] = sup->defl_d[j];
+        sup->defl_d[j] = 0.0;
       }
     }
     def_elem(cn,nne*ndofn,dsol,elem,node,dsol_e,sup,0);
     if (iter != 0){
       for (int j=0;j<sup->npd;j++)
-    sup->defl_d[j] = sup_def[j];
+        sup->defl_d[j] = sup_def[j];
     }
     /* accumulated solution for this load increment */
     if (iter == 0){
       for (int j=0;j<sup->npd;j++){
-    sup_def[j] = sup->defl_d[j];
-    sup->defl_d[j] = 0.0;
+        sup_def[j] = sup->defl_d[j];
+        sup->defl_d[j] = 0.0;
       }
     }
     def_elem(cn,nne*ndofn,sol,elem,node,sol_e,sup,0);
     if (iter == 0){
       for (int j=0;j<sup->npd;j++)
-    sup->defl_d[j] = sup_def[j];
+        sup->defl_d[j] = sup_def[j];
     }
 
     if(MINI_DEBUG){
       int err_rank = 0;
       PGFEM_Error_rank(&err_rank);
       if(err_rank==0){
-    PGFEM_printf("Solution vector on element %d:\n",i);
-    print_array_d(stdout,dsol_e,nne*ndofn,1,nne*ndofn);
+        PGFEM_printf("Solution vector on element %d:\n",i);
+        print_array_d(stdout,dsol_e,nne*ndofn,1,nne*ndofn);
       }
     }
 
     /* compute the bubble update on the element */
     err = MINI_update_bubble_el(elem,i,nne,node,ndofn,x,y,z,nod,
-                eps,sig,hommat,sol_e,dsol_e);
+                                eps,sig,hommat,sol_e,dsol_e);
 
 
     free(nod);
@@ -1197,19 +1198,19 @@ int MINI_update_bubble(ELEMENT *elem,
   return err;
 }
 
-void MINI_increment_el(ELEMENT *elem,
-               const int ii, /* id of element working on */
-               const int nne,
-               const NODE *node,
-               const long *nod,
-               const int ndofn,
-               const double *x,
-               const double *y,
-               const double *z,
-               EPS *eps,
-               SIG *sig,
-               const HOMMAT *hommat,
-               const double *sol_e)
+void MINI_increment_el(Element *elem,
+                       const int ii, /* id of element working on */
+                       const int nne,
+                       const NODE *node,
+                       const long *nod,
+                       const int ndofn,
+                       const double *x,
+                       const double *y,
+                       const double *z,
+                       EPS *eps,
+                       SIG *sig,
+                       const HOMMAT *hommat,
+                       const double *sol_e)
 {
   const int ndn = 3;
   const int mat = elem[ii].mat[2];
@@ -1236,12 +1237,12 @@ void MINI_increment_el(ELEMENT *elem,
 
       /* filter displacement and pressure from element unknowns */
       if (j<ndn){                           /* displacement dof */
-    disp[i*ndn + j] = sol_e[count+j];
+        disp[i*ndn + j] = sol_e[count+j];
       } else if (j==ndn){                       /* pressure dof */
-    p[i] = sol_e[count+j];
+        p[i] = sol_e[count+j];
       } else {                                         /* ERROR */
-    PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
-    PGFEM_Abort();
+        PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
+        PGFEM_Abort();
       }
     } /* ndofn */
     count += ndofn;
@@ -1251,7 +1252,7 @@ void MINI_increment_el(ELEMENT *elem,
   for (int i=0; i<n_bub; i++){
     for (int j=0; j<n_bub_dofs; j++){
       disp[nne*ndn + i*n_bub_dofs + j] =
-    elem[ii].bub_dofs[i*n_bub_dofs + j];
+      elem[ii].bub_dofs[i*n_bub_dofs + j];
     }
   }
 
@@ -1266,7 +1267,7 @@ void MINI_increment_el(ELEMENT *elem,
 
   /* get the integration points and weights */
   integrate (total_nne,&npt_x,&npt_y,&npt_z,
-         int_pt_ksi,int_pt_eta,int_pt_zet,weights);
+             int_pt_ksi,int_pt_eta,int_pt_zet,weights);
 
   /* allocate space for the shape functions, derivatives etc */
   double *Na, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
@@ -1346,11 +1347,11 @@ void MINI_increment_el(ELEMENT *elem,
 
     /* total deformation gradient */
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,Fr,3,Fn,3,0.0,F_total,3);
+                3,3,3,1.0,Fr,3,Fn,3,0.0,F_total,3);
 
     /* Green-Lagrange deformation tensor */
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,F_total,3,F_total,3,0.0,C,3);
+                3,3,3,1.0,F_total,3,F_total,3,0.0,C,3);
     array2mat(C,C_mat,3,3);
     inverse(C,3,C_I);
 
@@ -1370,9 +1371,9 @@ void MINI_increment_el(ELEMENT *elem,
 
     /* Compute Cauchy stress (Jn*Jr)^-1 F S F' */
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,F_total,3,S,3,0.0,AA,3);
+                3,3,3,1.0,F_total,3,S,3,0.0,AA,3);
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
-        3,3,3,1./(Jn*Jr),AA,3,F_total,3,0.0,S,3);
+                3,3,3,1./(Jn*Jr),AA,3,F_total,3,0.0,S,3);
 
     sig[ii].el.o[0] += wt*J/volume*S[idx_2(0,0)];
     sig[ii].el.o[1] += wt*J/volume*S[idx_2(1,1)];
@@ -1385,9 +1386,9 @@ void MINI_increment_el(ELEMENT *elem,
     /* Compute logarithmic strain */
     inverse(F_total,3,F_total_I);
     cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,F_total_I,3,E,3,0.0,AA,3);
+                3,3,3,1.0,F_total_I,3,E,3,0.0,AA,3);
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,F_total_I,3,0.0,E,3);
+                3,3,3,1.0,AA,3,F_total_I,3,0.0,E,3);
 
     eps[ii].el.o[0] += wt*J/volume*E[idx_2(0,0)];
     eps[ii].el.o[1] += wt*J/volume*E[idx_2(1,1)];
@@ -1440,18 +1441,18 @@ void MINI_increment_el(ELEMENT *elem,
   free(ident);
 }
 
-void MINI_increment(ELEMENT *elem,
-            const int nelem,
-            NODE *node,
-            const int nnodes,
-            const int ndofn,
-            const SUPP sup,
-            EPS *eps,
-            SIG *sig,
-            const HOMMAT *hommat,
-            const double *sol,
-            const MPI_Comm mpi_comm,
-            const int mp_id)
+void MINI_increment(Element *elem,
+                    const int nelem,
+                    NODE *node,
+                    const int nnodes,
+                    const int ndofn,
+                    const SUPP sup,
+                    EPS *eps,
+                    SIG *sig,
+                    const HOMMAT *hommat,
+                    const double *sol,
+                    const MPI_Comm mpi_comm,
+                    const int mp_id)
 {
   const int ndn = 3;
 
@@ -1490,7 +1491,7 @@ void MINI_increment(ELEMENT *elem,
 
     /* increment the element quantities */
     MINI_increment_el(elem,i,nne,node,nod,ndofn,
-              x,y,z,eps,sig,hommat,sol_e);
+                      x,y,z,eps,sig,hommat,sol_e);
 
     free(nod);
     free(cn);
@@ -1505,14 +1506,14 @@ void MINI_increment(ELEMENT *elem,
     for (int i=0;i<ndn;i++){
       II = node[ii].id_map[mp_id].id[i];
       if (II > 0){
-    if (i == 0) node[ii].x1 += sol[II-1];
-    if (i == 1) node[ii].x2 += sol[II-1];
-    if (i == 2) node[ii].x3 += sol[II-1];
+        if (i == 0) node[ii].x1 += sol[II-1];
+        if (i == 1) node[ii].x2 += sol[II-1];
+        if (i == 2) node[ii].x3 += sol[II-1];
       }
       if (II < 0){
-    if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-    if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-    if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
+        if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
+        if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
+        if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
       }
     }
   }/* end ii < nn */
@@ -1529,21 +1530,21 @@ void MINI_increment(ELEMENT *elem,
 }
 
 void MINI_check_resid(const int ndofn,
-              const int ne,
-              const ELEMENT *elem,
-              const NODE *node,
-              const HOMMAT *hommat,
-              const EPS *eps,
-              const SIG *sig,
-              const double *d_r,
-              const SUPP sup,
-              const double *RR,
-              const long *DomDof,
-              const int ndofd,
-              const int GDof,
-              const COMMUN comm,
-              const MPI_Comm mpi_comm,
-              const int mp_id)
+                      const int ne,
+                      const Element *elem,
+                      const NODE *node,
+                      const HOMMAT *hommat,
+                      const EPS *eps,
+                      const SIG *sig,
+                      const double *d_r,
+                      const SUPP sup,
+                      const double *RR,
+                      const long *DomDof,
+                      const int ndofd,
+                      const int GDof,
+                      const COMMUN comm,
+                      const MPI_Comm mpi_comm,
+                      const int mp_id)
 {
 
   /* compute the norm of the residauls for each variable */
@@ -1610,15 +1611,15 @@ void MINI_check_resid(const int ndofn,
     for (int i=0; i<nne; i++){
       for (int j=0; j<ndofn; j++){
 
-    /* filter displacement and pressure from element unknowns */
-    if (j<ndn){                           /* displacement dof */
-      disp[i*ndn + j] = r_e[count+j];
-    } else if (j==ndn){                       /* pressure dof */
-      p[i] = r_e[count+j];
-    } else {                                         /* ERROR */
-      PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
-      PGFEM_Abort();
-    }
+        /* filter displacement and pressure from element unknowns */
+        if (j<ndn){                           /* displacement dof */
+          disp[i*ndn + j] = r_e[count+j];
+        } else if (j==ndn){                       /* pressure dof */
+          p[i] = r_e[count+j];
+        } else {                                         /* ERROR */
+          PGFEM_printerr("Too many DOFs on node in %s!\n",__func__);
+          PGFEM_Abort();
+        }
       } /* ndofn */
       count += ndofn;
     } /* nne */
@@ -1626,8 +1627,8 @@ void MINI_check_resid(const int ndofn,
     /* displacements from bubble */
     for (int i=0; i<n_bub; i++){
       for (int j=0; j<n_bub_dofs; j++){
-    disp[nne*ndn + i*n_bub_dofs + j] =
-      elem[ii].bub_dofs[i*n_bub_dofs + j];
+        disp[nne*ndn + i*n_bub_dofs + j] =
+        elem[ii].bub_dofs[i*n_bub_dofs + j];
       }
     }
 
@@ -1642,7 +1643,7 @@ void MINI_check_resid(const int ndofn,
 
     /* get the integration points and weights */
     integrate (total_nne,&npt_x,&npt_y,&npt_z,
-           int_pt_ksi,int_pt_eta,int_pt_zet,weights);
+               int_pt_ksi,int_pt_eta,int_pt_zet,weights);
 
     /* allocate space for the shape functions, derivatives etc */
     double *Na, *N_x, *N_y, *N_z, ****ST_tensor, *ST, J;
@@ -1690,8 +1691,8 @@ void MINI_check_resid(const int ndofn,
       wt = weights[ip];
 
       /* get shape functions and derivative of shape functions and
-     Jacobian of element.  NOTE: x, y, z must also contain the
-     element center */
+         Jacobian of element.  NOTE: x, y, z must also contain the
+         element center */
       shape_func(ksi,eta,zet,total_nne,Na);
       J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
       get_bubble_grad(total_nne,ksi,eta,zet,x,y,z,N_x,N_y,N_z);
@@ -1701,60 +1702,60 @@ void MINI_check_resid(const int ndofn,
       /* compute total pressure */
       pressure = 0;
       for(int i=0; i<nPres; i++){
-    pressure += Na[i]*(sig[ii].p[i] + p[i]);
+        pressure += Na[i]*(sig[ii].p[i] + p[i]);
       }
 
 
-    /* get the deformation gradients */
-    memcpy(Fn,eps[ii].st[ip].Fpp,9*sizeof(double));
-    array2mat(Fn,Fn_mat,3,3);
-    double Jn = getJacobian(Fn,ii,&err);
+      /* get the deformation gradients */
+      memcpy(Fn,eps[ii].st[ip].Fpp,9*sizeof(double));
+      array2mat(Fn,Fn_mat,3,3);
+      double Jn = getJacobian(Fn,ii,&err);
 
-    def_grad_get(total_nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
-    mat2array(Fr,CONST_2(double) Fr_mat,3,3);
-    double Jr = getJacobian(Fr,ii,&err);
-    inverse(Fr,3,Fr_I);
+      def_grad_get(total_nne,ndn,CONST_4(double) ST_tensor,disp,Fr_mat);
+      mat2array(Fr,CONST_2(double) Fr_mat,3,3);
+      double Jr = getJacobian(Fr,ii,&err);
+      inverse(Fr,3,Fr_I);
 
-    /* Compute total F; F=FnFr */
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
-    /* C = F^t F */
-    cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,AA,3,0.0,C,3);
-    array2mat(C,C_mat,3,3);
+      /* Compute total F; F=FnFr */
+      cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+                  3,3,3,1.0,Fr,3,Fn,3,0.0,AA,3);
+      /* C = F^t F */
+      cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
+                  3,3,3,1.0,AA,3,AA,3,0.0,C,3);
+      array2mat(C,C_mat,3,3);
 
-    // Get Deviatoric 2 P-K stress
-    deviatoricStressFunctionPtr Stress;
-    volumetricPressureFunctionPtr Pressure;
-    d2UdJ2FunctionPtr D2UDJ2;
-    Stress = getDeviatoricStressFunction(1,&hommat[mat]);
-    Pressure = getVolumetricPressureFunction(1,&hommat[mat]);
-    D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
+      // Get Deviatoric 2 P-K stress
+      deviatoricStressFunctionPtr Stress;
+      volumetricPressureFunctionPtr Pressure;
+      d2UdJ2FunctionPtr D2UDJ2;
+      Stress = getDeviatoricStressFunction(1,&hommat[mat]);
+      Pressure = getVolumetricPressureFunction(1,&hommat[mat]);
+      D2UDJ2 = getd2UdJ2Function(1,&hommat[mat]);
 
-    Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
-    Pressure(Jn,Jr,&hommat[mat],&Up);
-    D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
+      Stress(CCONST_2(double) C_mat,&hommat[mat],S_mat);
+      Pressure(Jn,Jr,&hommat[mat],&Up);
+      D2UDJ2(Jn,Jr,&hommat[mat],&Upp);
 
-    /* convert from mat/tensor to array */
-    mat2array(S,CONST_2(double) S_mat,3,3);
+      /* convert from mat/tensor to array */
+      mat2array(S,CONST_2(double) S_mat,3,3);
 
-    /* Compute residuals */
-    /***  Ru (12 x 1) ***/
-    UL_Ru_at_ip(Ru,nne,total_nne,ST,Fn,Fr,Fr_I,
-        Jn,Jr,S,pressure,J,wt,0);
+      /* Compute residuals */
+      /***  Ru (12 x 1) ***/
+      UL_Ru_at_ip(Ru,nne,total_nne,ST,Fn,Fr,Fr_I,
+                  Jn,Jr,S,pressure,J,wt,0);
 
-    /*** Rt (3 x 1) ***/
-    UL_Ru_at_ip(Rt,nne,total_nne,ST,Fn,Fr,Fr_I,
-        Jn,Jr,S,pressure,J,wt,1);
+      /*** Rt (3 x 1) ***/
+      UL_Ru_at_ip(Rt,nne,total_nne,ST,Fn,Fr,Fr_I,
+                  Jn,Jr,S,pressure,J,wt,1);
 
-    /* compute incremental pressure */
-    pressure = 0;
-    for(int i=0; i<nne; i++){
-      pressure += Na[i]*(p[i]);
-    }
+      /* compute incremental pressure */
+      pressure = 0;
+      for(int i=0; i<nne; i++){
+        pressure += Na[i]*(p[i]);
+      }
 
-    /*** Rp (4 x 1) ***/
-    UL_Rp_at_ip(Rp,nne,Na,kappa,Up,pressure,J,wt);
+      /*** Rp (4 x 1) ***/
+      UL_Rp_at_ip(Rp,nne,Na,kappa,Up,pressure,J,wt);
 
     }/* end integration */
 
@@ -1788,15 +1789,15 @@ void MINI_check_resid(const int ndofn,
     /* NOTE residuals are negative because subtracted from RHS later */
     for (int a=0; a<nne; a++){
       for (int b=0; b<ndofn; b++){
-    if (b<ndn){ /* from Ru */
-      fe[a*ndofn+b] = sign*Ru[a*ndn+b];
-    } else if (b == ndn){ /* from Rp */
-      fe[a*ndofn+b] = sign*Rp[a];
-    } else {
-      PGFEM_printerr("ERROR constructing residual vector!\n");
-      PGFEM_Abort();
-      abort();
-    }
+        if (b<ndn){ /* from Ru */
+          fe[a*ndofn+b] = sign*Ru[a*ndn+b];
+        } else if (b == ndn){ /* from Rp */
+          fe[a*ndofn+b] = sign*Rp[a];
+        } else {
+          PGFEM_printerr("ERROR constructing residual vector!\n");
+          PGFEM_Abort();
+          abort();
+        }
       }
     }
 
@@ -1804,18 +1805,18 @@ void MINI_check_resid(const int ndofn,
     nrB += cblas_ddot(n_bub*n_bub_dofs,Rt,1,Rt,1);
     /*============== END COMPUTE ELEMENT RESIDUALS ============*/
 
-   /* Assemble global residual for U and P, but separate into
+    /* Assemble global residual for U and P, but separate into
        separate arrays */
     int j = 0;
     for (int k=0;k<nne;k++){
       for (int kk=0;kk<ndofn;kk++){
-    int II = node[nod[k]].id_map[mp_id].id[kk]-1;
-    if (II < 0) continue;
-    if (kk<ndofn-1){
-      f_u[II] += fe[j+kk];
-    } else {
-      f_p[II] += fe[j+kk];
-    }
+        int II = node[nod[k]].id_map[mp_id].id[kk]-1;
+        if (II < 0) continue;
+        if (kk<ndofn-1){
+          f_u[II] += fe[j+kk];
+        } else {
+          f_p[II] += fe[j+kk];
+        }
       }/*end kk*/
       j += ndofn;
     }/*end k*/

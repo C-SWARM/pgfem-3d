@@ -896,7 +896,7 @@ int single_scale_main(int argc,char *argv[])
   {
     // set for surface tractions
     double *nodal_forces = NULL;
-    SUR_TRAC_ELEM *ste = NULL;
+    SURFACE_TRACTION_ELEM *ste = NULL;
     int n_feats = 0;
     int n_sur_trac_elem = 0;
 
@@ -1111,7 +1111,7 @@ int single_scale_main(int argc,char *argv[])
               fv[ia].eps[e].T[a] = 1.0;
           }
         }
-        
+
         if(options.analysis_type==CM3F)
         {
           fv[ia].Pnp1.initialization(grid.ne,fv[ia].npres,0.0);
@@ -1355,7 +1355,7 @@ int single_scale_main(int argc,char *argv[])
         /*=== OUTPUT ===*/
         /* update output stuff for CM interface */
         if((options.analysis_type == CM || options.analysis_type == CM3F) && options.cm!=0)
-        {  
+        {
           constitutive_model_update_output_variables(&grid,
                                                      &mat,
                                                      fv.data(),
@@ -1431,7 +1431,7 @@ int single_scale_main(int argc,char *argv[])
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
-    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && 
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL &&
       (options.analysis_type == CM || options.analysis_type == CM3F))
       err += destory_temporal_field_varialbes(&fv[ia],1);
     else

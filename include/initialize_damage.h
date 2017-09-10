@@ -3,21 +3,19 @@
  * AUTHORS:
  *    Matthew Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
  */
-
-#pragma once
-#ifndef INITIALIZE_DAMAGE_H
-#define INITIALIZE_DAMAGE_H
+#ifndef PGFEM3D_INITIALIZE_DAMAGE_H
+#define PGFEM3D_INITIALIZE_DAMAGE_H
 
 #include "data_structure.h"
 #include "element.h"
-#include "hommat.h"
 #include "eps.h"
+#include "hommat.h"
 
-  /** Initialize the damage part of the strain object */
-  void initialize_damage(const int ne,
-             const ELEMENT *elem,
-             const HOMMAT *hommat,
-             EPS *eps,
-             const int analysis);
+/** Initialize the damage part of the strain object */
+void initialize_damage(const int ne,
+                       const Element *elem,
+                       const HOMMAT *hommat,
+                       EPS *eps,
+                       const int analysis);
 
-#endif /* #ifndef INITIALIZE_DAMAGE_H */
+#endif /* #define PGFEM3D_INITIALIZE_DAMAGE_H */

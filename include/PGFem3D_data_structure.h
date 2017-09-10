@@ -50,7 +50,7 @@ struct GRID {
   long nce;                  /// number of COEL (cohesive elements)
   long Gnce;                 /// global number of cohesive elements
   NODE *node;                /// list of node
-  ELEMENT *element;          /// list of element
+  Element *element;          /// list of element
   BOUNDING_ELEMENT *b_elems; /// list of bounding element
   COEL *coel;                /// list of cohesive elements
 };
@@ -164,8 +164,8 @@ struct COMMUNICATION_STRUCTURE {
   int *Ap;           /// n_cols in each owned row of global stiffness matrix
   int *Ai;           /// column ids for owned rows of global stiffness matrix
   long *DomDof;      /// number of global DOFs on each domain
-  long nbndel;       /// number of ELEMENT on the communication boundary
-  long *bndel;       /// ELEMENT ids on the communication boundary
+  long nbndel;       /// number of Element on the communication boundary
+  long *bndel;       /// Element ids on the communication boundary
   COMMUN comm;       /// sparse communication structure
   int GDof;          /// maximum id of locally owned global DOF
   long NBN;          /// Number of nodes on domain interfaces

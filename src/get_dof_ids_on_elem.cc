@@ -1,23 +1,27 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "get_dof_ids_on_elem.h"
-#include <string.h>
+#include <cstring>
 
 /* TESTED MM 1/18/2013 */
 void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
-			     const int n_nodes_on_elem,
-			     const int ndof_on_elem,
-			     const int ndof_per_node,
-			     const long *node_ids_on_elem,
-			     const NODE *nodes,
-			     const BOUNDING_ELEMENT *b_elems,
-			     const ELEMENT *ptr_cur_elem,
-			     long *dof_ids,
-			     const int mp_id)
+                             const int n_nodes_on_elem,
+                             const int ndof_on_elem,
+                             const int ndof_per_node,
+                             const long *node_ids_on_elem,
+                             const NODE *nodes,
+                             const BOUNDING_ELEMENT *b_elems,
+                             const Element *ptr_cur_elem,
+                             long *dof_ids,
+                             const int mp_id)
 {
   const int ndof_on_elem_nodes = n_nodes_on_elem*ndof_per_node;
-  
+
   /* node dof ids go in the first part of the dof_ids vector */
   get_dof_ids_on_elem_nodes(global,n_nodes_on_elem,ndof_per_node,
-			    node_ids_on_elem,nodes,dof_ids, mp_id);
+                            node_ids_on_elem,nodes,dof_ids, mp_id);
 
   /* element dofs are appended to the list in dof_ids */
   long *ptr_elem_dof_ids = dof_ids + ndof_on_elem_nodes;
@@ -29,12 +33,12 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
 
 /* TESTED MM 1/18/2013 */
 void get_dof_ids_on_elem_nodes(const int global,
-			       const int n_nodes_on_elem,
-			       const int n_dof_per_node,
-			       const long *node_ids_on_elem,
-			       const NODE *nodes,
-			       long *dof_ids,
-			       const int mp_id)
+                               const int n_nodes_on_elem,
+                               const int n_dof_per_node,
+                               const long *node_ids_on_elem,
+                               const NODE *nodes,
+                               long *dof_ids,
+                               const int mp_id)
 {
   const size_t n_copy = n_dof_per_node * sizeof(long);
   if(global){
@@ -52,8 +56,8 @@ void get_dof_ids_on_elem_nodes(const int global,
 
 /* TESTED MM 1/18/2013 */
 void get_dof_ids_on_elem(const int global,
-			 const ELEMENT *ptr_cur_elem,
-			 long *dof_ids)
+                         const Element *ptr_cur_elem,
+                         long *dof_ids)
 {
   const size_t n_copy = ptr_cur_elem->n_dofs * sizeof(long);
   if(n_copy > 0){
@@ -66,9 +70,9 @@ void get_dof_ids_on_elem(const int global,
 }
 
 void get_dof_ids_on_all_elem_be(const int global,
-				const BOUNDING_ELEMENT *b_elems,
-				const ELEMENT *ptr_cur_elem,
-				long *dof_ids)
+                                const BOUNDING_ELEMENT *b_elems,
+                                const Element *ptr_cur_elem,
+                                long *dof_ids)
 {
   long *ptr_copy = dof_ids;
   for(int i=0; i<ptr_cur_elem->n_be; i++){
@@ -87,15 +91,15 @@ void get_dof_ids_on_all_elem_be(const int global,
 
 /* TESTED 2/14/2013 MM */
 void get_dof_ids_on_bnd_elem(const int global,
-			     const int n_dof_per_node,
-			     const NODE *nodes,
-			     const BOUNDING_ELEMENT *ptr_cur_be,
-			     const ELEMENT *elems,
-			     long *dof_ids,
-			     const int mp_id)
+                             const int n_dof_per_node,
+                             const NODE *nodes,
+                             const BOUNDING_ELEMENT *ptr_cur_be,
+                             const Element *elems,
+                             long *dof_ids,
+                             const int mp_id)
 {
   const int elem_id = ptr_cur_be->vol_elem_id;
-  const ELEMENT *ptr_elem = &elems[elem_id];
+  const Element *ptr_elem = &elems[elem_id];
   const int nnodes = ptr_elem->toe;
   const long *elem_nodes = ptr_elem->nod;
 

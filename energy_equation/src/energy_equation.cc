@@ -412,7 +412,7 @@ int compute_mechanical_heat_gen(double *Qe,
 /// \param[in] ndofe number of degree of freedom for element
 /// \param[in] T nodal temperature for all node
 /// \param[in] dT temperature increment
-/// \param[in] elem ELEMENT object
+/// \param[in] elem Element object
 /// \param[in] node NODE object
 /// \param[in] sup struct for BC's
 /// \param[out] T_e computed nodal temperature for current element
@@ -422,7 +422,7 @@ int get_temperature_elem(const long *cn,
                          const long ndofe,
                          const double *T,
                          const double *dT,
-                         const ELEMENT *elem,
+                         const Element *elem,
                          const NODE *node,
                          const SUPP sup,
                          double *T_e,

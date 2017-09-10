@@ -1,19 +1,24 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "out.h"
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <math.h>
-#include "enumerations.h"
-#include "def_grad.h"
-#include "incl.h"
+
 #include "allocation.h"
-#include "utils.h"
+#include "cast_macros.h"
+#include "def_grad.h"
+#include "enumerations.h"
+#include "incl.h"
 #include "elem3d.h"
 #include "gen_path.h"
-#include "cast_macros.h"
+#include "utils.h"
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <cmath>
 
 #define MP_ID 0
-static const int periodic = 0;
-static const int ndim = 3;
+static constexpr int periodic = 0;
+static constexpr int ndim = 3;
 
 static const char *PGFEM_LOGO =
   " _______    ______   ________                        ______   _______  \n"
@@ -57,7 +62,7 @@ void coordinates (FILE *out, NODE *node, long nn)
 
 void deform (FILE *out,
     NODE *node,
-    ELEMENT *elem,
+    Element *elem,
     long nn,
     long ne,
     long ndofn,
@@ -98,7 +103,7 @@ void deform (FILE *out,
   dealoc1 (rl);
 }
 
-void stress_out (FILE *out,long ne,long nn,ELEMENT *elem,SIG *sig_e,SIG *sig_n,long gr4)
+void stress_out (FILE *out,long ne,long nn,Element *elem,SIG *sig_e,SIG *sig_n,long gr4)
      /*
       */
 {
@@ -137,7 +142,7 @@ void stress_out (FILE *out,long ne,long nn,ELEMENT *elem,SIG *sig_e,SIG *sig_n,l
   }
 }
 
-void strain_out (FILE *out,long ne,ELEMENT *elem,EPS *eps,const PGFem3D_opt *opts)
+void strain_out (FILE *out,long ne,Element *elem,EPS *eps,const PGFem3D_opt *opts)
      /*
       */
 {
@@ -166,7 +171,7 @@ void strain_out (FILE *out,long ne,ELEMENT *elem,EPS *eps,const PGFem3D_opt *opt
   }/* end jj < ne */
 }
 
-void deform_grad_out (FILE *out,long ne,ELEMENT *elem,EPS *eps)
+void deform_grad_out (FILE *out,long ne,Element *elem,EPS *eps)
      /*
 
      */
@@ -314,7 +319,7 @@ void cohesive_out (FILE *out,long nce,COEL *coel)
 }
 void damage_out(FILE *out,
         const long ne,
-        const ELEMENT *elem,
+        const Element *elem,
         const EPS *eps)
 {
   /* print out the damage variable for each integration point of the
@@ -353,7 +358,7 @@ void elixir (char jmeno[50],
          long ne,
          long ndofn,
          NODE *node,
-         ELEMENT *elem,
+         Element *elem,
          SUPP sup,
          double *r,
          SIG *sig_e,
@@ -547,7 +552,7 @@ void EnSight (char jmeno[500],
           long ne,
           long ndofn,
           NODE *node,
-          ELEMENT *elem,
+          Element *elem,
           SUPP sup,
           double *r,
           SIG *sig_e,
@@ -1903,7 +1908,7 @@ void ASCII_output(const PGFem3D_opt *opts,
           double pores,
           double VVolume,
           NODE *node,
-          ELEMENT *elem,
+          Element *elem,
           SUPP sup,
           double *r,
           EPS *eps,

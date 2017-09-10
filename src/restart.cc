@@ -1,12 +1,17 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "restart.h"
+#include "PGFem3D_data_structure.h"
 #include "constitutive_model.h"
 #include "elem3d.h"
 #include "element.h"
 #include "gen_path.h"
 #include "node.h"
-#include "PGFem3D_data_structure.h"
-#include "vtk_output.h"
 #include "utils.h"
+#include "vtk_output.h"
+
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
 
@@ -225,12 +230,12 @@ int write_restart_constitutive_model(GRID *grid,
     }
     fprintf(fp, "\n");
   }
-  
+
   if(opts->analysis_type==CM || opts->analysis_type==CM3F)
-  {  
+  {
     for (int e = 0; e < grid->ne; e++)
     {
-      const ELEMENT *p_el = grid->element + e;
+      const Element *p_el = grid->element + e;
       long n_ip = 0;
       int_point(p_el->toe,&n_ip);
       fprintf(fp, "%ld\n", n_ip);
@@ -290,7 +295,7 @@ static int read_restart_constitutive_model(GRID *grid,
   {
     for (int e = 0; e < grid->ne; e++)
     {
-      const ELEMENT *p_el = grid->element + e;
+      const Element *p_el = grid->element + e;
       long n_ip = 0;
       long n_ip_read = 0;
       int_point(p_el->toe,&n_ip);
@@ -341,13 +346,13 @@ static int read_restart_mechanical(GRID *grid,
 
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case CM:
-      err += read_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,rs_path);
-      break;
-    default:
-      read_initial_from_VTK(opts, myrank, fv[mp_id].u_nm1, fv[mp_id].u_n, rs_path);
-      break;
+   case DISP: // intended to flow
+   case CM:
+    err += read_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,rs_path);
+    break;
+   default:
+    read_initial_from_VTK(opts, myrank, fv[mp_id].u_nm1, fv[mp_id].u_n, rs_path);
+    break;
   }
 
   return err;
@@ -429,17 +434,17 @@ int read_restart(GRID *grid,
     }
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_restart_thermal(grid,fv,opts,myrank,ia,rs_path);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        // not yet implemented
-        break;
-      default:
-        err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_restart_thermal(grid,fv,opts,myrank,ia,rs_path);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      // not yet implemented
+      break;
+     default:
+      err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
     }
   }
   // read time stepping info
@@ -479,29 +484,29 @@ int write_restart_mechanical(GRID *grid,
 
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case CM:
-      err += write_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,stepno,rs_path);
-      break;
-    default:
-    {
-      double *r_n_dof = (double *) malloc(sizeof(double)*(fv[mp_id].ndofd));
-      for(long a = 0; a<grid->nn; a++)
-      {
-        for(long b = 0; b<fv[mp_id].ndofn; b++)
-        {
-          long id = grid->node[a].id_map[mp_id].id[b];
-          if(id>0)
-          r_n_dof[id-1] = fv[mp_id].u_nm1[a*(fv[mp_id].ndofn) + b];
-        }
-      }
-      VTK_print_vtu(rs_path,opts->ofname,stepno,
-                    myrank,grid->ne,grid->nn,grid->node,grid->element,load->sups[mp_id],
-                    r_n_dof,fv[mp_id].sig,fv[mp_id].eps,
-                    opts, mp_id);
-      free(r_n_dof);
-      break;
-    }
+   case DISP: // intended to flow
+   case CM:
+    err += write_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,stepno,rs_path);
+    break;
+   default:
+     {
+       double *r_n_dof = (double *) malloc(sizeof(double)*(fv[mp_id].ndofd));
+       for(long a = 0; a<grid->nn; a++)
+       {
+         for(long b = 0; b<fv[mp_id].ndofn; b++)
+         {
+           long id = grid->node[a].id_map[mp_id].id[b];
+           if(id>0)
+             r_n_dof[id-1] = fv[mp_id].u_nm1[a*(fv[mp_id].ndofn) + b];
+         }
+       }
+       VTK_print_vtu(rs_path,opts->ofname,stepno,
+                     myrank,grid->ne,grid->nn,grid->node,grid->element,load->sups[mp_id],
+                     r_n_dof,fv[mp_id].sig,fv[mp_id].eps,
+                     opts, mp_id);
+       free(r_n_dof);
+       break;
+     }
   }
   return err;
 }
@@ -596,17 +601,17 @@ int write_restart(GRID *grid,
 
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += write_restart_thermal(grid,fv,opts,myrank,ia,stepno,rs_path);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        // not yet implemented
-        break;
-      default:
-        err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+     case MULTIPHYSICS_MECHANICAL:
+      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += write_restart_thermal(grid,fv,opts,myrank,ia,stepno,rs_path);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      // not yet implemented
+      break;
+     default:
+      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
     }
   }
 

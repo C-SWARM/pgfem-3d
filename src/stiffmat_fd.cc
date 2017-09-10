@@ -1,9 +1,16 @@
-/* HEADER */
 /**
  * AUTHORS:
  * Matthew Mosby, University of Notre Dame, mmosby1 [at] nd.edu
  * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
+#include "MINI_element.h"
+#include "MINI_3f_element.h"
+#include "PGFem3D_data_structure.h"
+#include "PLoc_Sparse.h"
 #include "allocation.h"
 #include "cast_macros.h"
 #include "condense.h"
@@ -18,20 +25,16 @@
 #include "get_dof_ids_on_elem.h"
 #include "incl.h"
 #include "index_macros.h"
-#include "MINI_element.h"
-#include "MINI_3f_element.h"
 #include "macro_micro_functions.h"
 #include "matice.h"
-#include "mkl_cblas.h"
 #include "new_potentials.h"
-#include "PGFem3D_data_structure.h"
-#include "PLoc_Sparse.h"
 #include "stabilized.h"
 #include "stiffmat_fd.h"
 #include "stiffmatel_fd.h"
 #include "tensors.h"
 #include "three_field_element.h"
 #include "utils.h"
+#include <mkl_cblas.h>
 #include <cassert>
 
 #ifndef PFEM_DEBUG
@@ -45,36 +48,36 @@ static constexpr int ndn = 3;
 
 /* This function may not be used outside of this file */
 static void coel_stiffmat(int i, /* coel ID */
-              double **Lk,
-              int *Ap,
-              int *Ai,
-              long ndofc,
-              ELEMENT *elem,
-              NODE *node,
-              EPS *eps,
-              double *d_r,
-              double *r,
-              long npres,
-              SUPP sup,
-              long iter,
-              double nor_min,
-              double dt,
-              CRPL *crpl,
-              double stab,
-              COEL *coel,
-              long FNR,
-              double lm,
-              double *f_u,
-              int myrank,
-              int nproc,
-              long *DomDof,
-              long GDof,
-              COMMUN comm,
-              int *Ddof,
-              int interior,
-              const int analysis,
-              SparseSystem *system,
-              const int mp_id)
+                          double **Lk,
+                          int *Ap,
+                          int *Ai,
+                          long ndofc,
+                          Element *elem,
+                          NODE *node,
+                          EPS *eps,
+                          double *d_r,
+                          double *r,
+                          long npres,
+                          SUPP sup,
+                          long iter,
+                          double nor_min,
+                          double dt,
+                          CRPL *crpl,
+                          double stab,
+                          COEL *coel,
+                          long FNR,
+                          double lm,
+                          double *f_u,
+                          int myrank,
+                          int nproc,
+                          long *DomDof,
+                          long GDof,
+                          COMMUN comm,
+                          int *Ddof,
+                          int interior,
+                          const int analysis,
+                          SparseSystem *system,
+                          const int mp_id)
 {
   long j,l,nne,ndofe,*cnL,*cnG,*nod,P,R,II;
   double *lk,*x,*y,*z,*r_e,*sup_def,*fe, *X, *Y;
@@ -138,29 +141,29 @@ static void coel_stiffmat(int i, /* coel ID */
       X[1] = y[j];
       X[2] = z[j];
       for (P=0;P<3;P++){
-    Y[P] = 0.0;
-    for (R=0;R<3;R++){
-      Y[P] += eps[0].F[P][R]*X[R];
-    }
+        Y[P] = 0.0;
+        for (R=0;R<3;R++){
+          Y[P] += eps[0].F[P][R]*X[R];
+        }
       }
       for (P=0;P<3;P++){
-    II = node[nod[j]].id_map[mp_id].id[P];
+        II = node[nod[j]].id_map[mp_id].id[P];
 
-    if (P == 0)
-      x[j] = Y[P];
-    if (P == 1)
-      y[j] = Y[P];
-    if (P == 2)
-      z[j] = Y[P];
+        if (P == 0)
+          x[j] = Y[P];
+        if (P == 1)
+          y[j] = Y[P];
+        if (P == 2)
+          z[j] = Y[P];
 
-    if (II > 0){
-      if (P == 0)
-        x[j] += r[II-1];
-      if (P == 1)
-        y[j] += r[II-1];
-      if (P == 2)
-        z[j] += r[II-1];
-    }
+        if (II > 0){
+          if (P == 0)
+            x[j] += r[II-1];
+          if (P == 1)
+            y[j] += r[II-1];
+          if (P == 2)
+            z[j] += r[II-1];
+        }
       }/* P < 3 */
     }/* j < coel[i].toe */
 
@@ -178,19 +181,19 @@ static void coel_stiffmat(int i, /* coel ID */
 
   nulld (lk,ndofe*ndofe);
   stiff_mat_coh (i,ndofc,nne,nod,x,y,z,coel,r_e,lk,
-         nor_min,eps,FNR,lm,fe,myrank);
+                 nor_min,eps,FNR,lm,fe,myrank);
 
   /* Assembly */
   PLoc_Sparse (Lk,lk,Ai,Ap,cnL,cnG,ndofe,Ddof,
-           GDof,myrank,nproc,comm,interior,system,analysis);
+               GDof,myrank,nproc,comm,interior,system,analysis);
 
   /* Localization of TANGENTIAL LOAD VECTOR */
   if (periodic == 1 && (FNR == 2 || FNR == 3)){
     for (l=0;l<coel[i].toe;l++){
       for (kk=0;kk<ndofc;kk++){
-    II = node[nod[l]].id_map[mp_id].id[kk]-1;
-    if (II < 0)  continue;
-    f_u[II] += fe[l*ndofc+kk];
+        II = node[nod[l]].id_map[mp_id].id[kk]-1;
+        if (II < 0)  continue;
+        f_u[II] += fe[l*ndofc+kk];
       }/*end l */
     }/*end kk */
   }/* end periodic */
@@ -210,42 +213,42 @@ static void coel_stiffmat(int i, /* coel ID */
 } /* COHESIVE ELEMENT STIFFNESS */
 
 static int bnd_el_stiffmat(int belem_id,
-               double **Lk,
-               int *Ap,
-               int *Ai,
-               long ndofn,
-               ELEMENT *elem,
-               BOUNDING_ELEMENT *b_elems,
-               NODE *node,
-               HOMMAT *hommat,
-               MATGEOM matgeom,
-               SIG *sig,
-               EPS *eps,
-               double *d_r,
-               double *r,
-               long npres,
-               SUPP sup,
-               long iter,
-               double nor_min,
-               double dt,
-               CRPL *crpl,
-               double stab,
-               long FNR,
-               double lm,
-               double *f_u,
-               int myrank,
-               int nproc,
-               long GDof,
-               COMMUN comm,
-               int *Ddof,
-               int interior,
-               const int analysis,
-               SparseSystem *system,
-               const int mp_id)
+                           double **Lk,
+                           int *Ap,
+                           int *Ai,
+                           long ndofn,
+                           Element *elem,
+                           BOUNDING_ELEMENT *b_elems,
+                           NODE *node,
+                           HOMMAT *hommat,
+                           MATGEOM matgeom,
+                           SIG *sig,
+                           EPS *eps,
+                           double *d_r,
+                           double *r,
+                           long npres,
+                           SUPP sup,
+                           long iter,
+                           double nor_min,
+                           double dt,
+                           CRPL *crpl,
+                           double stab,
+                           long FNR,
+                           double lm,
+                           double *f_u,
+                           int myrank,
+                           int nproc,
+                           long GDof,
+                           COMMUN comm,
+                           int *Ddof,
+                           int interior,
+                           const int analysis,
+                           SparseSystem *system,
+                           const int mp_id)
 {
   int err = 0;
   const BOUNDING_ELEMENT *ptr_be = &b_elems[belem_id];
-  const ELEMENT *ptr_ve = &elem[ptr_be->vol_elem_id];
+  const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
   const long *ptr_vnodes = ptr_ve->nod;
   const int nn_ve = ptr_ve->toe;
 
@@ -254,10 +257,10 @@ static int bnd_el_stiffmat(int belem_id,
   double *y = aloc1(nn_ve);
   double *z = aloc1(nn_ve);
   switch(analysis){
-  case DISP:
+   case DISP:
     nodecoord_total(nn_ve,ptr_vnodes,node,x,y,z);
     break;
-  default:
+   default:
     nodecoord_updated(nn_ve,ptr_vnodes,node,x,y,z);
     break;
   }
@@ -303,8 +306,8 @@ static int bnd_el_stiffmat(int belem_id,
   double *lk = aloc1(ndof_ve*ndof_ve);
   if(analysis == DISP){
     err += DISP_stiffmat_bnd_el(lk,belem_id,ndofn,ndof_ve,
-                x,y,z,b_elems,elem,hommat,node,eps,
-                sig,sup,v_disp);
+                                x,y,z,b_elems,elem,hommat,node,eps,
+                                sig,sup,v_disp);
   } else {
     /* Not implemented, do nothing */
   }
@@ -314,7 +317,7 @@ static int bnd_el_stiffmat(int belem_id,
     /* PLoc_Sparse_rec(Lk,lk,Ai,Ap,Gcn_be,Gcn_ve,ndof_be,ndof_ve,Ddof, */
     /*         GDof,myrank,nproc,comm,interior); */
     PLoc_Sparse(Lk,lk,Ai,Ap,cn_ve,Gcn_ve,ndof_ve,Ddof,
-        GDof,myrank,nproc,comm,interior,system,analysis);
+                GDof,myrank,nproc,comm,interior,system,analysis);
   }
 
 
@@ -398,37 +401,37 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
   else
   {
     switch(opts->analysis_type){
-      case STABILIZED:
-        err += stiffmatel_st(eid,fv->ndofn,fe->nne,x,y,z,grid->element,mat->hommat,nod,grid->node,fv->sig,fv->eps,
-                sup,r_e,fv->npres,sol->nor_min,lk,dt,opts->stab,sol->FNR,lm,be);
-        break;
-      case MINI:
-        err += MINI_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
-                mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
-        break;
-      case MINI_3F:
-        err += MINI_3f_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
-                mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
-        break;
-      case DISP:
-        err += DISP_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
-                mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
-        break;
-      case TF:
-        stiffmat_3f_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,
-                x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
-        break;
-      case CM:  // intened to flow
-      case CM3F:
-        err += stiffness_el_constitutive_model(fe,lk,r_e,grid,mat,fv,sol,load,crpl,
-                                               opts,mp,mp_id,dt);
+     case STABILIZED:
+      err += stiffmatel_st(eid,fv->ndofn,fe->nne,x,y,z,grid->element,mat->hommat,nod,grid->node,fv->sig,fv->eps,
+                           sup,r_e,fv->npres,sol->nor_min,lk,dt,opts->stab,sol->FNR,lm,be);
+      break;
+     case MINI:
+      err += MINI_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
+                              mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
+      break;
+     case MINI_3F:
+      err += MINI_3f_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
+                                 mat->hommat,nod,grid->node,fv->eps,fv->sig,r_e);
+      break;
+     case DISP:
+      err += DISP_stiffmat_el(lk,eid,fv->ndofn,fe->nne,x,y,z,grid->element,
+                              mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
+      break;
+     case TF:
+      stiffmat_3f_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,
+                     x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
+      break;
+     case CM:  // intened to flow
+     case CM3F:
+      err += stiffness_el_constitutive_model(fe,lk,r_e,grid,mat,fv,sol,load,crpl,
+                                             opts,mp,mp_id,dt);
 
-        break;
-      default:
-        err += stiffmatel_fd (eid,fv->ndofn,fe->nne,nod,x,y,z,grid->element,mat->matgeom,
-                mat->hommat,grid->node,fv->sig,fv->eps,r_e,fv->npres,
-                sol->nor_min,lk,dt,crpl,sol->FNR,lm,be,opts->analysis_type);
-        break;
+      break;
+     default:
+      err += stiffmatel_fd (eid,fv->ndofn,fe->nne,nod,x,y,z,grid->element,mat->matgeom,
+                            mat->hommat,grid->node,fv->sig,fv->eps,r_e,fv->npres,
+                            sol->nor_min,lk,dt,crpl,sol->FNR,lm,be,opts->analysis_type);
+      break;
     } // switch (analysis)
   } // if(include_inertia)
 
@@ -469,23 +472,23 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 static int el_stiffmat_MP(int eid,
-        double **Lk,
-        int *Ddof,
-        int interior,
-        GRID *grid,
-        MATERIAL_PROPERTY *mat,
-        FIELD_VARIABLES *fv,
-        SOLVER_OPTIONS *sol,
-        LOADING_STEPS *load,
-        COMMUNICATION_STRUCTURE *com,
-        CRPL *crpl,
-        MPI_Comm mpi_comm,
-        const PGFem3D_opt *opts,
-        MULTIPHYSICS *mp,
-        int mp_id,
-        double dt,
-        long iter,
-        int myrank)
+                          double **Lk,
+                          int *Ddof,
+                          int interior,
+                          GRID *grid,
+                          MATERIAL_PROPERTY *mat,
+                          FIELD_VARIABLES *fv,
+                          SOLVER_OPTIONS *sol,
+                          LOADING_STEPS *load,
+                          COMMUNICATION_STRUCTURE *com,
+                          CRPL *crpl,
+                          MPI_Comm mpi_comm,
+                          const PGFem3D_opt *opts,
+                          MULTIPHYSICS *mp,
+                          int mp_id,
+                          double dt,
+                          long iter,
+                          int myrank)
 {
   int err = 0;
   double lm = 0.0;
@@ -498,16 +501,16 @@ static int el_stiffmat_MP(int eid,
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case TF:
+   case DISP: // intended to flow
+   case TF:
+    total_Lagrangian = 1;
+    break;
+   case CM:   // intended to flow
+   case CM3F:
+    if(opts->cm != UPDATED_LAGRANGIAN)
       total_Lagrangian = 1;
-      break;
-    case CM:   // intended to flow 
-    case CM3F:
-      if(opts->cm != UPDATED_LAGRANGIAN)
-        total_Lagrangian = 1;
 
-      break;
+    break;
   }
 
   if(sup->multi_scale)
@@ -516,12 +519,12 @@ static int el_stiffmat_MP(int eid,
   // set FEMLIB
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,true);    
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,true);
   else
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);  
-  
-  long *nod = (fe.node_id).m_pdata; // list of node ids in this element  
-  
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
+
+  long *nod = (fe.node_id).m_pdata; // list of node ids in this element
+
   /* Element Dof */
   long ndofe = get_ndof_on_elem_nodes(fe.nne,nod,grid->node,fv->ndofn);
 
@@ -568,27 +571,27 @@ static int el_stiffmat_MP(int eid,
     for(int j=0; j<sup->npd; j++)
       sup->defl_d[j] = sup_def[j];
   }
-  
+
   Matrix<double> lk(ndofe,ndofe,0.0);
-  
+
   err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
-                                crpl,opts,mp,mp_id,dt,lm,be,r_e);         
-  
+                                crpl,opts,mp,mp_id,dt,lm,be,r_e);
+
   if (PFEM_DEBUG){
     char filename[50];
     switch(opts->analysis_type){
-      case STABILIZED:
-        sprintf(filename,"stab_stiff_%d.log",myrank);
-        break;
-      case MINI:
-        sprintf(filename,"MINI_stiff_%d.log",myrank);
-        break;
-      case MINI_3F:
-        sprintf(filename,"MINI_3f_stiff_%d.log",myrank);
-        break;
-      default:
-        sprintf(filename,"stiff_%d.log",myrank);
-        break;
+     case STABILIZED:
+      sprintf(filename,"stab_stiff_%d.log",myrank);
+      break;
+     case MINI:
+      sprintf(filename,"MINI_stiff_%d.log",myrank);
+      break;
+     case MINI_3F:
+      sprintf(filename,"MINI_3f_stiff_%d.log",myrank);
+      break;
+     default:
+      sprintf(filename,"stiff_%d.log",myrank);
+      break;
     }
 
     FILE *output;
@@ -615,7 +618,7 @@ static int el_stiffmat_MP(int eid,
 
   // Assembly
   PLoc_Sparse (Lk,lk.m_pdata,com->Ai,com->Ap,cnL,cnG,ndofe,Ddof,com->GDof,
-          myrank,com->nproc,com->comm,interior,sol->system,opts->analysis_type);
+               myrank,com->nproc,com->comm,interior,sol->system,opts->analysis_type);
 
   //  dealocation
   free (cnL);
@@ -654,19 +657,19 @@ static int el_stiffmat_MP(int eid,
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int stiffmat_fd_MP(GRID *grid,
-        MATERIAL_PROPERTY *mat,
-        FIELD_VARIABLES *fv,
-        SOLVER_OPTIONS *sol,
-        LOADING_STEPS *load,
-        COMMUNICATION_STRUCTURE *com,
-        CRPL *crpl,
-        MPI_Comm mpi_comm,
-        const PGFem3D_opt *opts,
-        MULTIPHYSICS *mp,
-        int mp_id,
-        double dt,
-        long iter,
-        int myrank)
+                   MATERIAL_PROPERTY *mat,
+                   FIELD_VARIABLES *fv,
+                   SOLVER_OPTIONS *sol,
+                   LOADING_STEPS *load,
+                   COMMUNICATION_STRUCTURE *com,
+                   CRPL *crpl,
+                   MPI_Comm mpi_comm,
+                   const PGFem3D_opt *opts,
+                   MULTIPHYSICS *mp,
+                   int mp_id,
+                   double dt,
+                   long iter,
+                   int myrank)
 {
   int err = 0;
   // if 0, update only stiffness
@@ -677,10 +680,10 @@ int stiffmat_fd_MP(GRID *grid,
   MPI_Request *req_s,*req_r;
 
   err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
-          mpi_comm,com->comm);
-  
+                                     mpi_comm,com->comm);
+
   Matrix<int> Ddof(com->nproc,1);
-  
+
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)
     Ddof.m_pdata[ia] = Ddof.m_pdata[ia-1] + com->DomDof[ia];
@@ -688,7 +691,7 @@ int stiffmat_fd_MP(GRID *grid,
   for(int eid=0; eid<com->nbndel; eid++)
   {
     err += el_stiffmat_MP(com->bndel[eid],Lk,Ddof.m_pdata,0,grid,mat,fv,sol,load,com,crpl,
-            mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 
     if(err != 0)
       break;
@@ -708,9 +711,9 @@ int stiffmat_fd_MP(GRID *grid,
       for(int eid=0; eid<grid->nce; eid++)
       {
         coel_stiffmat(eid,Lk,com->Ap,com->Ai,ndofc,grid->element,grid->node,fv->eps,
-                fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,dt,crpl,
-                opts->stab,grid->coel,0,0,fv->f_u,myrank,com->nproc,com->DomDof,
-                com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system, mp_id);
+                      fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,dt,crpl,
+                      opts->stab,grid->coel,0,0,fv->f_u,myrank,com->nproc,com->DomDof,
+                      com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system, mp_id);
       }
     }
   }
@@ -730,9 +733,9 @@ int stiffmat_fd_MP(GRID *grid,
     // BOUNDING_ELEMENT *b_elems = NULL;
     for(int eid=0; eid<grid->n_be; eid++){
       err += bnd_el_stiffmat(eid,Lk,com->Ap,com->Ai,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
-              mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,
-              dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,myrank,com->nproc,com->GDof,
-              com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system,mp_id);
+                             mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,
+                             dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,myrank,com->nproc,com->GDof,
+                             com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system,mp_id);
 
       // If there is an error, complete exit the loop
       if(err != 0)
@@ -744,18 +747,18 @@ int stiffmat_fd_MP(GRID *grid,
   {
     char ofile[50];
     switch(opts->analysis_type){
-      case STABILIZED:
-        sprintf(ofile,"stab_el_stiff_send_%d.log",myrank);
-        break;
-      case MINI:
-        sprintf(ofile,"MINI_el_stiff_send_%d.log",myrank);
-        break;
-      case MINI_3F:
-        sprintf(ofile,"MINI_3f_el_stiff_send_%d.log",myrank);
-        break;
-      default:
-        sprintf(ofile,"el_stiff_send_%d.log",myrank);
-        break;
+     case STABILIZED:
+      sprintf(ofile,"stab_el_stiff_send_%d.log",myrank);
+      break;
+     case MINI:
+      sprintf(ofile,"MINI_el_stiff_send_%d.log",myrank);
+      break;
+     case MINI_3F:
+      sprintf(ofile,"MINI_3f_el_stiff_send_%d.log",myrank);
+      break;
+     default:
+      sprintf(ofile,"el_stiff_send_%d.log",myrank);
+      break;
     }
 
     FILE *out;
@@ -797,7 +800,7 @@ int stiffmat_fd_MP(GRID *grid,
 
     // do volume integration at an element
     err += el_stiffmat_MP(eid,Lk,Ddof.m_pdata,1,grid,mat,fv,sol,load,com,crpl,
-            mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 
     if(err != 0)
       break;
@@ -819,7 +822,7 @@ int stiffmat_fd_MP(GRID *grid,
   free (sta_r);
   free (req_s);
   free (req_r);
-  
+
   return err;
 }
 

@@ -4,52 +4,50 @@
  * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
  * Karel Matous, University of Notre Dame, kmatous [at] nd.edu
  */
+#ifndef PGFEM3D_LOAD_H
+#define PGFEM3D_LOAD_H
 
-#pragma once
-#ifndef LOAD_H
-#define LOAD_H
-
+#include "PGFem3D_options.h"
+#include "bounding_element.h"
+#include "cohesive_element.h"
+#include "crpl.h"
 #include "data_structure.h"
 #include "element.h"
-#include "node.h"
-#include "supp.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "mesh_load.h"
-#include "cohesive_element.h"
-#include "bounding_element.h"
-#include "sig.h"
 #include "eps.h"
-#include "crpl.h"
-#include "PGFem3D_options.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "mesh_load.h"
+#include "node.h"
+#include "sig.h"
+#include "supp.h"
 
 /**
  * \brief Get the list of times to increment the load from the file.
  */
 long* compute_times_load (FILE *in1,
-              const long nt,
-              const long nlod_tim);
+                          const long nt,
+                          const long nlod_tim);
 
 /**
  * \brief Get the load from the nodes with prescribed force.
  */
 void load_vec_node (double *f,
-            const long nln,
-            const long ndofn,
-            const ZATNODE *znode,
-            const NODE *node,
-            const int mp_id);
+                    const long nln,
+                    const long ndofn,
+                    const ZATNODE *znode,
+                    const NODE *node,
+                    const int mp_id);
 
 /**
  * \brief Compute the load vector from the elements with surface load
  * [NOT IMPLEMENTED].
  */
 void load_vec_elem_sur (double *f,
-            const long nle_s,
-            const long ndofn,
-            const ELEMENT *elem,
-            const ZATELEM *zele_s);
+                        const long nle_s,
+                        const long ndofn,
+                        const Element *elem,
+                        const ZATELEM *zele_s);
 
 /// Compute load vector for prescribed BCs(Dirichlet)
 ///
@@ -93,4 +91,4 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
                                                      double nor_min,
                                                      int myrank);
 
-#endif
+#endif // #define PGFEM3D_LOAD_H

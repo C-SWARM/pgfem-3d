@@ -4,22 +4,23 @@
 ///   Matt Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
 ///   Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
 ///   Sangmin Lee, University of Notre Dame <slee43 [at] nd.edu>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-
-/* HEADER */
 #include "read_input_file.h"
-#include "allocation.h"
 #include "Arc_length.h"
+#include "PGFem3D_data_structure.h"
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "enumerations.h"
 #include "gen_path.h"
 #include "in.h"
 #include "load.h"
-#include "PGFem3D_data_structure.h"
 #include "read_cryst_plast.h"
 #include "restart.h"
 #include "utils.h"
-#include <string.h>
+#include <cstring>
 
 /// read mechanical part of material properties
 ///
@@ -68,8 +69,8 @@ int read_material_for_Thermal(FILE *fp,
 
     scan_for_valid_line(fp);
     match += fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", k+0, k+1, k+2
-                                                             , k+3, k+4, k+5
-                                                             , k+6, k+7, k+8);
+                    , k+3, k+4, k+5
+                    , k+6, k+7, k+8);
 
     if(match != param_in)
       PGFEM_Abort();
@@ -127,16 +128,16 @@ int read_multiphysics_material_properties(MATERIAL_PROPERTY *mat,
 
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_material_for_Mechanical(fp,mat,opts);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_material_for_Thermal(fp,mat,opts);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        break;
-      default:
-        break;
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_material_for_Mechanical(fp,mat,opts);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_material_for_Thermal(fp,mat,opts);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      break;
+     default:
+      break;
     }
     fclose(fp);
   }
@@ -240,30 +241,30 @@ int interpret_ranges(double *ranges, char str_in[])
 }
 
 int read_input_file(const PGFem3D_opt *opts,
-            MPI_Comm comm,
-            long *nn,
-            long *Gnn,
-            long *ndofn,
-            long *ne,
-            long *lin_maxit,
-            double *lin_err,
-            double *lim_zero,
-            long *nmat,
-            long *n_concentrations,
-            long *n_orient,
-            NODE **node,
-            ELEMENT **elem,
-            Material **material,
-            MATGEOM *matgeom,
-            SUPP *sup,
-            long *nln,
-            ZATNODE **znod,
-            long *nel_s,
-            ZATELEM **zelem_s,
-            long *nel_v,
-            ZATELEM **zelem_v,
+                    MPI_Comm comm,
+                    long *nn,
+                    long *Gnn,
+                    long *ndofn,
+                    long *ne,
+                    long *lin_maxit,
+                    double *lin_err,
+                    double *lim_zero,
+                    long *nmat,
+                    long *n_concentrations,
+                    long *n_orient,
+                    NODE **node,
+                    Element **elem,
+                    Material **material,
+                    MATGEOM *matgeom,
+                    SUPP *sup,
+                    long *nln,
+                    ZATNODE **znod,
+                    long *nel_s,
+                    ZATELEM **zelem_s,
+                    long *nel_v,
+                    ZATELEM **zelem_v,
                     const int *fv_ndofn,
-            const int physicsno,
+                    const int physicsno,
                     const int *ndim,
                     char **physicsnames)
 {
@@ -480,7 +481,7 @@ int read_mesh_file(GRID *grid,
           break;
       }
       if(is_it_supp)
-      (load->sups[iA]->nde)++;
+        (load->sups[iA]->nde)++;
     }
   }
   return err;
@@ -629,9 +630,9 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     sprintf(load_fn,"%s/%s.load",load_path,mp->physicsname[ia]);
     load->solver_file[ia] = NULL;
     load->solver_file[ia] = fopen(load_fn, "r"); // Load increments are needed to be read
-                                             // while time is elapsing.
-                                             // This file point needs to be freed end of the simulation
-                                             // by calling destruction of the LOADING_STEPS
+    // while time is elapsing.
+    // This file point needs to be freed end of the simulation
+    // by calling destruction of the LOADING_STEPS
 
     if(load->solver_file[ia]==NULL)
       continue;
@@ -1102,16 +1103,16 @@ int read_initial_values_IC(GRID *grid,
     }
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        break;
-      default:
-        break;
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      break;
+     default:
+      break;
     }
 
     fclose(fp);
@@ -1281,8 +1282,8 @@ int read_cohesive_elements(GRID *grid,
 
   /* read the cohesive element info */
   grid->coel = read_cohe_elem (fp,ncom,grid->nsd,grid->nn,grid->node,&(grid->nce),
-          comat,ensight,opts->vis_format,
-          myrank,mat->co_props);
+                               comat,ensight,opts->vis_format,
+                               myrank,mat->co_props);
   if(ncom <= 0)
     dealoc2(comat,ncom);
   else
