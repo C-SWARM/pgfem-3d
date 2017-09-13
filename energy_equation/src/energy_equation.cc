@@ -625,8 +625,10 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       // q = [nsd, 1] = k*dN'*T
       for(int ib=1; ib<=grid->nsd; ib++)
       {
-        for(int ic=1; ic<=grid->nsd; ic++)
-          q(ib) += k[ib-1][ic-1]*fe->dN(ia,ic)*Tnp1(ia);
+        for(int ic=1; ic<=grid->nsd; ic++) {
+          q(ib) += k(ib-1,ic-1)      // NB: TTL does not support 1-based indices
+                   *fe->dN(ia,ic)*Tnp1(ia);
+        }
       }
     }
 
@@ -896,7 +898,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
         for(int im = 1; im<=grid->nsd; im++)
         {
           for(int in = 1; in<=grid->nsd; in++)
-            lk(ia,ib) += dt*fe->dN(ia,in)*k(in, im)*fe->dN(ib,im)*(fe->detJxW)/Jn;
+            lk(ia,ib) += dt*fe->dN(ia,in)*
+                         k(in-1, im-1) // NB: TTL does not support 1-based indices
+                         *fe->dN(ib,im)*(fe->detJxW)/Jn;
         }
       }
     }
@@ -1352,8 +1356,10 @@ int update_thermal_flux4print(Grid *grid,
         // q = [nsd, 1] = k*dN'*T
         for(int ib=1; ib<=grid->nsd; ib++)
         {
-          for(int ic=1; ic<=grid->nsd; ic++)
-            q(ib) -= k(ib, ic)*fe.dN(ia,ic)*Tnp1(ia);
+          for(int ic=1; ic<=grid->nsd; ic++) {
+            q(ib) -= k(ib-1, ic-1)   // NB: TTL does not support 1-based indices
+                     *fe.dN(ia,ic)*Tnp1(ia);
+          }
         }
       }
 
