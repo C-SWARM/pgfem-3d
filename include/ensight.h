@@ -1,14 +1,17 @@
-/* HEADER */
-#ifndef ENSIGHT_H
-#define ENSIGHT_H
+#ifndef PGFEM3D_ENSIGHT_H
+#define PGFEM3D_ENSIGHT_H
 
-  /** Structure of ENSIGHT */
-  struct ENSIGHT_1{
-    long ncn,*Sm,*Sp,*No,NVp,NCp,*Vp,*Cp;
-  };
-  typedef struct ENSIGHT_1 ENSIGHT_1;
-  typedef struct ENSIGHT_1 *ENSIGHT;
+struct Ensight {
+  long ncn = 0,
+    *Sm = nullptr,
+    *Sp = nullptr,
+    *No = nullptr,
+    NVp = 0,
+    NCp = 0,
+    *Vp = nullptr,
+    *Cp = nullptr;
 
-  void destroy_ensight(ENSIGHT ensight);
+  ~Ensight();
+};
 
-#endif /* #ifndef  */
+#endif // #define PGFEM3D_ENSIGHT_H

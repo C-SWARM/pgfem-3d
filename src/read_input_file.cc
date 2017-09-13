@@ -1240,14 +1240,14 @@ int read_and_apply_load_increments(Grid *grid,
 /// \param[out] grid a mesh object
 /// \param[out] mat a material object
 /// \param[in] opts structure PGFem3D option
-/// \param[in] ensight ENSIGHT object
+/// \param[in] ensight object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_cohesive_elements(Grid *grid,
                            MaterialProperty *mat,
                            const PGFem3D_opt *opts,
-                           ENSIGHT ensight,
+                           Ensight *ensight,
                            MPI_Comm mpi_comm,
                            int myrank)
 {

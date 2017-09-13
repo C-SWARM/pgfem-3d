@@ -60,7 +60,7 @@ struct COMMON_MICROSCALE {
   long nhommat;
   HOMMAT *hommat;
   Model_parameters *param_list;
-  ENSIGHT ensight; /**< !pointer */
+  Ensight *ensight;
   SUPP supports; /**< !pointer */
   int n_co_props;
   cohesive_props *co_props;

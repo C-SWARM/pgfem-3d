@@ -57,7 +57,7 @@ COEL* read_cohe_elem (FILE *in1,
                       Node *node,
                       long *NCE,
                       double **comat,
-                      ENSIGHT ensight,
+                      Ensight *ensight,
                       long gr2,
                       int myrank,
                       const cohesive_props *co_props)
@@ -200,12 +200,12 @@ COEL* read_cohe_elem (FILE *in1,
       Enodes[i] = -1;
     }
     if(ensight->ncn > 0){
-      ensight->Sm = PGFEM_calloc (long, ensight->ncn);
-      ensight->Sp = PGFEM_calloc (long, ensight->ncn);
+      ensight->Sm = new long[ensight->ncn]{};
+      ensight->Sp = new long[ensight->ncn]{};
     } else {
-      ensight->Sm = ensight->Sp = NULL;
+      ensight->Sm = ensight->Sp = nullptr;
     }
-    ensight->No = PGFEM_calloc (long, nn);
+    ensight->No = new long[nn];
 
     k = 0;
     for (i=0;i<nce;i++){

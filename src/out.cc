@@ -567,7 +567,7 @@ void EnSight (char jmeno[500],
         GNOD *gnod,*/
           long FNR,
           double lm,
-          ENSIGHT ensight,
+          Ensight *ensight,
           MPI_Comm mpi_comm,
           const PGFem3D_opt *opts)
 {
@@ -742,7 +742,7 @@ void EnSight (char jmeno[500],
   }
 
   ensight->NVp = 1; for (i=0;i<ne-1;i++) if (property[i] < property[i+1]) ensight->NVp++;
-  ensight->Vp = PGFEM_calloc (long, ensight->NVp);
+  ensight->Vp = new long[ensight->NVp]{};
   k = 1; ensight->Vp[0] = property[0]; for (i=0;i<ne-1;i++) if (property[i] < property[i+1]) {ensight->Vp[k] = property[i+1]; k++;}
 
   dealoc1l (property);
@@ -772,9 +772,9 @@ void EnSight (char jmeno[500],
     }
   }
 
-  free (ensight->Vp);
+  delete [] ensight->Vp;
   ensight->NVp = 1; for (i=0;i<GNV-1;i++) if (property[i] < property[i+1]) ensight->NVp++;
-  ensight->Vp = PGFEM_calloc (long, ensight->NVp);
+  ensight->Vp = new long[ensight->NVp]{};
   k = 1; ensight->Vp[0] = property[0]; for (i=0;i<GNV-1;i++) if (property[i] < property[i+1]) {ensight->Vp[k] = property[i+1]; k++;}
 
   dealoc1l (GNVp); dealoc1i (GNVpint); dealoc1i (shift); dealoc1l (GVp); dealoc1l (property);
@@ -799,7 +799,7 @@ void EnSight (char jmeno[500],
     }
 
     ensight->NCp = 1; for (i=0;i<nce-1;i++) if (property[i] < property[i+1]) ensight->NCp++;
-    ensight->Cp = PGFEM_calloc (long, ensight->NCp);
+    ensight->Cp = new long[ensight->NCp]{};
     k = 1; ensight->Cp[0] = property[0]; for (i=0;i<nce-1;i++) if (property[i] < property[i+1]) {ensight->Cp[k] = property[i+1]; k++;}
 
     dealoc1l (property);
@@ -828,9 +828,9 @@ void EnSight (char jmeno[500],
       }
     }
 
-    free (ensight->Cp);
+    delete [] ensight->Cp;
     ensight->NCp = 1; for (i=0;i<GNV-1;i++) if (property[i] < property[i+1]) ensight->NCp++;
-    ensight->Cp = PGFEM_calloc (long, ensight->NCp);
+    ensight->Cp = new long[ensight->NCp]{};
     k = 1; ensight->Cp[0] = property[0]; for (i=0;i<GNV-1;i++) if (property[i] < property[i+1]) {ensight->Cp[k] = property[i+1]; k++;}
 
     dealoc1l (GNVp); dealoc1i (GNVpint); dealoc1i (shift); dealoc1l (GVp); dealoc1l (property);

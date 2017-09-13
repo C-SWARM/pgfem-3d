@@ -98,7 +98,7 @@ void EnSight (char jmeno[500],
                 GNOD *gnod,
               */long FNR,
               double lm,
-              ENSIGHT ensight,
+              Ensight *ensight,
               MPI_Comm mpi_comm,
               const PGFem3D_opt *opts);
 

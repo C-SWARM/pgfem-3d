@@ -261,7 +261,7 @@ int print_results(Grid *grid,
                   CommunicationStructure *COM,
                   TimeStepping *time_steps,
                   CRPL *crpl,
-                  ENSIGHT ensight,
+                  Ensight *ensight,
                   PRINT_MULTIPHYSICS_RESULT *pmr,
                   MPI_Comm mpi_comm,
                   const double oVolume,
@@ -622,11 +622,11 @@ int single_scale_main(int argc,char *argv[])
 
   /* visualization */
   /* Ensight */
-  ENSIGHT ensight = nullptr;
+  Ensight *ensight = nullptr;
   switch (options.vis_format) {
    case VIS_ENSIGHT:
    case VIS_VTK:
-    ensight = PGFEM_calloc (ENSIGHT_1, 1);
+    ensight = new Ensight{};
     break;
    default:
     PGFEM_printerr("Unexpected visualization format %d\n", options.vis_format);
@@ -1464,7 +1464,7 @@ int single_scale_main(int argc,char *argv[])
 
   err += destruct_multiphysics(&mp);
 
-  destroy_ensight(ensight);
+  delete ensight;
   //<---------------------------------------------------------------------
 
   total_time += MPI_Wtime(); // measure time spent

@@ -67,7 +67,7 @@ COEL* read_cohe_elem (FILE* in1,
                       Node *node,
                       long *NCE,
                       double **comat,
-                      ENSIGHT ensight,
+                      Ensight *ensight,
                       long gr2,
                       int myrank,
                       const cohesive_props *co_props);

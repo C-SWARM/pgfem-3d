@@ -1,17 +1,14 @@
-#include "ensight.h"
-
-#ifndef ALLOCATION_H
-#include "allocation.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
-void destroy_ensight(ENSIGHT ensight)
+#include "ensight.h"
+
+Ensight::~Ensight()
 {
-  if(ensight != NULL){
-    free(ensight->Sm);
-    free(ensight->Sp);
-    free(ensight->No);
-    free(ensight->Vp);
-    free(ensight->Cp);
-    free(ensight);
-  }
+  delete [] Sm;
+  delete [] Sp;
+  delete [] No;
+  delete [] Vp;
+  delete [] Cp;
 }

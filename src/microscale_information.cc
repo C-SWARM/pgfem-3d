@@ -472,7 +472,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
   switch(opts->vis_format){
    case VIS_ENSIGHT: case VIS_VTK:
-    common->ensight = PGFEM_calloc (ENSIGHT_1, 1);
+    common->ensight = new Ensight{};
     break;
    default: break;
   }
@@ -732,7 +732,7 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_matgeom(common->matgeom,common->n_orient);
   destroy_hommat(common->hommat,common->nhommat);
   destroy_model_parameters_list(common->nhommat, common->param_list);
-  destroy_ensight(common->ensight);
+  delete common->ensight;
   destroy_supp(common->supports);
   destroy_cohesive_props(common->n_co_props,common->co_props);
   destroy_PGFEM_par_matrix((PGFEM_par_matrix *) common->K_01);

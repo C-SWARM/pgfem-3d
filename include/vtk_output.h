@@ -52,7 +52,7 @@ void VTK_print_cohesive_vtu(char *path,
                             COEL *coel,
                             SUPP sup,
                             double *r,
-                            ENSIGHT ensight,
+                            Ensight *ensight,
                             const PGFem3D_opt *opts,
                             const int mp_id);
 
