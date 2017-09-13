@@ -419,6 +419,8 @@ int stiffness_with_inertia(FEMLIB *fe,
 
     for(long a = 0; a<ndofe*ndofe; a++)
       Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
+    
+    break;
 
    case TF:
     if(0<sol->alpha && sol->alpha<1.0)
