@@ -612,30 +612,33 @@ int read_model_parameters_list(Model_parameters **param_list,
      * specified.
      */
 
-    /* search for matching pointer in hmat_list (assume unique) */
-    p_hmat = static_cast<HOMMAT*>(bsearch(key, hmat_list, n_mat,
-                                          sizeof(*hmat_list), compare_mat_id));
-
-    /* check for match */
-    if (p_hmat != NULL) {
-      int idx = p_hmat - hmat_list;
-      if (!is_set[idx]) {
-        is_set[idx] = 1;
-        // construct and initialize this object        
-        if(model_type==CM_UQCM)
-        {
-          model_type_uq = 1;
-          param_list[idx]->uqcm = 1;
-          err += scan_for_valid_line(in);
-          CHECK_SCANF(in, "%d", &model_type);
+    if(key->mat_id>=0)
+    {
+      /* search for matching pointer in hmat_list (assume unique) */
+      p_hmat = static_cast<HOMMAT*>(bsearch(key, hmat_list, n_mat,
+                                            sizeof(*hmat_list), compare_mat_id));
+  
+      /* check for match */
+      if (p_hmat != NULL) {
+        int idx = p_hmat - hmat_list;
+        if (!is_set[idx]) {
+          is_set[idx] = 1;
+          // construct and initialize this object        
+          if(model_type==CM_UQCM)
+          {
+            model_type_uq = 1;
+            param_list[idx]->uqcm = 1;
+            err += scan_for_valid_line(in);
+            CHECK_SCANF(in, "%d", &model_type);
+          }
+          printf("%d %d\n", idx, model_type);
+          err += construct_Model_parameters(param_list, idx, model_type);
+          param_list[idx]->uqcm = model_type_uq;
+          
+          err += param_list[idx]->initialization(hmat_list + idx, model_type);
+          err += param_list[idx]->read_param(in);
+          param_list[idx]->mat_id = key->mat_id;
         }
-        
-        err += construct_Model_parameters(param_list, idx, model_type);
-        param_list[idx]->uqcm = model_type_uq;
-        
-        err += param_list[idx]->initialization(hmat_list + idx, model_type);
-        err += param_list[idx]->read_param(in);
-        param_list[idx]->mat_id = key->mat_id;
       }
     }
     else
