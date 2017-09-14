@@ -8,7 +8,6 @@ before_script:
  - autoreconf -if
 
 stages:
- - scan
  - check
 
 scan-build:
