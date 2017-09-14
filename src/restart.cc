@@ -1,12 +1,17 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "restart.h"
+#include "PGFem3D_data_structure.h"
 #include "constitutive_model.h"
 #include "elem3d.h"
 #include "element.h"
 #include "gen_path.h"
 #include "node.h"
-#include "PGFem3D_data_structure.h"
-#include "vtk_output.h"
 #include "utils.h"
+#include "vtk_output.h"
+
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
 
@@ -73,10 +78,10 @@ static int read_initial_from_VTK(const PGFem3D_opt *opts,
 /// \param[out] tnm1 times at t(n-1), t(n)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_time_step_info(FIELD_VARIABLES *fv,
-                        PGFem3D_TIME_STEPPING *time_steps,
+int read_time_step_info(FieldVariables *fv,
+                        TimeStepping *time_steps,
                         const PGFem3D_opt *opts,
-                        MULTIPHYSICS *mp,
+                        Multiphysics *mp,
                         double *tnm1,
                         int myrank)
 {
@@ -132,10 +137,10 @@ int read_time_step_info(FIELD_VARIABLES *fv,
 /// \param[in] myrank current process rank
 /// \param[in] stepno current time step number
 /// \return non-zero on internal error
-int write_time_step_info(FIELD_VARIABLES *fv,
-                         PGFem3D_TIME_STEPPING *time_steps,
+int write_time_step_info(FieldVariables *fv,
+                         TimeStepping *time_steps,
                          const PGFem3D_opt *opts,
-                         MULTIPHYSICS *mp,
+                         Multiphysics *mp,
                          int myrank,
                          int stepno)
 {
@@ -188,10 +193,10 @@ int write_time_step_info(FIELD_VARIABLES *fv,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_constitutive_model(GRID *grid,
-                                     FIELD_VARIABLES *fv,
+int write_restart_constitutive_model(Grid *grid,
+                                     FieldVariables *fv,
                                      const PGFem3D_opt *opts,
-                                     MULTIPHYSICS *mp,
+                                     Multiphysics *mp,
                                      int myrank,
                                      int mp_id,
                                      int stepno,
@@ -225,12 +230,12 @@ int write_restart_constitutive_model(GRID *grid,
     }
     fprintf(fp, "\n");
   }
-  
+
   if(opts->analysis_type==CM || opts->analysis_type==CM3F)
-  {  
+  {
     for (int e = 0; e < grid->ne; e++)
     {
-      const ELEMENT *p_el = grid->element + e;
+      const Element *p_el = grid->element + e;
       long n_ip = 0;
       int_point(p_el->toe,&n_ip);
       fprintf(fp, "%ld\n", n_ip);
@@ -259,10 +264,10 @@ int write_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-static int read_restart_constitutive_model(GRID *grid,
-                                           FIELD_VARIABLES *fv,
+static int read_restart_constitutive_model(Grid *grid,
+                                           FieldVariables *fv,
                                            const PGFem3D_opt *opts,
-                                           MULTIPHYSICS *mp,
+                                           Multiphysics *mp,
                                            int myrank,
                                            int mp_id,
                                            char rs_path[1024])
@@ -290,7 +295,7 @@ static int read_restart_constitutive_model(GRID *grid,
   {
     for (int e = 0; e < grid->ne; e++)
     {
-      const ELEMENT *p_el = grid->element + e;
+      const Element *p_el = grid->element + e;
       long n_ip = 0;
       long n_ip_read = 0;
       int_point(p_el->toe,&n_ip);
@@ -327,11 +332,11 @@ static int read_restart_constitutive_model(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-static int read_restart_mechanical(GRID *grid,
-                                   FIELD_VARIABLES *fv,
-                                   LOADING_STEPS *load,
+static int read_restart_mechanical(Grid *grid,
+                                   FieldVariables *fv,
+                                   LoadingSteps *load,
                                    const PGFem3D_opt *opts,
-                                   MULTIPHYSICS *mp,
+                                   Multiphysics *mp,
                                    double *tnm1,
                                    int myrank,
                                    int mp_id,
@@ -341,13 +346,13 @@ static int read_restart_mechanical(GRID *grid,
 
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case CM:
-      err += read_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,rs_path);
-      break;
-    default:
-      read_initial_from_VTK(opts, myrank, fv[mp_id].u_nm1, fv[mp_id].u_n, rs_path);
-      break;
+   case DISP: // intended to flow
+   case CM:
+    err += read_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,rs_path);
+    break;
+   default:
+    read_initial_from_VTK(opts, myrank, fv[mp_id].u_nm1, fv[mp_id].u_n, rs_path);
+    break;
   }
 
   return err;
@@ -364,8 +369,8 @@ static int read_restart_mechanical(GRID *grid,
 /// \param[in] mp_id multiphysics id
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int read_restart_thermal(GRID *grid,
-                         FIELD_VARIABLES *fv,
+int read_restart_thermal(Grid *grid,
+                         FieldVariables *fv,
                          const PGFem3D_opt *opts,
                          int myrank,
                          int mp_id,
@@ -406,12 +411,12 @@ int read_restart_thermal(GRID *grid,
 /// \param[out] tnm1 times at t(n-1), t(n)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_restart(GRID *grid,
-                 FIELD_VARIABLES *fv,
-                 PGFem3D_TIME_STEPPING *time_steps,
-                 LOADING_STEPS *load,
+int read_restart(Grid *grid,
+                 FieldVariables *fv,
+                 TimeStepping *time_steps,
+                 LoadingSteps *load,
                  const PGFem3D_opt *opts,
-                 MULTIPHYSICS *mp,
+                 Multiphysics *mp,
                  double *tnm1,
                  int myrank)
 {
@@ -429,17 +434,17 @@ int read_restart(GRID *grid,
     }
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_restart_thermal(grid,fv,opts,myrank,ia,rs_path);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        // not yet implemented
-        break;
-      default:
-        err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_restart_thermal(grid,fv,opts,myrank,ia,rs_path);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      // not yet implemented
+      break;
+     default:
+      err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
     }
   }
   // read time stepping info
@@ -464,12 +469,12 @@ int read_restart(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_mechanical(GRID *grid,
-                             FIELD_VARIABLES *fv,
-                             LOADING_STEPS *load,
-                             PGFem3D_TIME_STEPPING *time_steps,
+int write_restart_mechanical(Grid *grid,
+                             FieldVariables *fv,
+                             LoadingSteps *load,
+                             TimeStepping *time_steps,
                              const PGFem3D_opt *opts,
-                             MULTIPHYSICS *mp,
+                             Multiphysics *mp,
                              int myrank,
                              int mp_id,
                              int stepno,
@@ -479,29 +484,29 @@ int write_restart_mechanical(GRID *grid,
 
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case CM:
-      err += write_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,stepno,rs_path);
-      break;
-    default:
-    {
-      double *r_n_dof = (double *) malloc(sizeof(double)*(fv[mp_id].ndofd));
-      for(long a = 0; a<grid->nn; a++)
-      {
-        for(long b = 0; b<fv[mp_id].ndofn; b++)
-        {
-          long id = grid->node[a].id_map[mp_id].id[b];
-          if(id>0)
-          r_n_dof[id-1] = fv[mp_id].u_nm1[a*(fv[mp_id].ndofn) + b];
-        }
-      }
-      VTK_print_vtu(rs_path,opts->ofname,stepno,
-                    myrank,grid->ne,grid->nn,grid->node,grid->element,load->sups[mp_id],
-                    r_n_dof,fv[mp_id].sig,fv[mp_id].eps,
-                    opts, mp_id);
-      free(r_n_dof);
-      break;
-    }
+   case DISP: // intended to flow
+   case CM:
+    err += write_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,stepno,rs_path);
+    break;
+   default:
+     {
+       double *r_n_dof = (double *) malloc(sizeof(double)*(fv[mp_id].ndofd));
+       for(long a = 0; a<grid->nn; a++)
+       {
+         for(long b = 0; b<fv[mp_id].ndofn; b++)
+         {
+           long id = grid->node[a].id_map[mp_id].id[b];
+           if(id>0)
+             r_n_dof[id-1] = fv[mp_id].u_nm1[a*(fv[mp_id].ndofn) + b];
+         }
+       }
+       VTK_print_vtu(rs_path,opts->ofname,stepno,
+                     myrank,grid->ne,grid->nn,grid->node,grid->element,load->sups[mp_id],
+                     r_n_dof,fv[mp_id].sig,fv[mp_id].eps,
+                     opts, mp_id);
+       free(r_n_dof);
+       break;
+     }
   }
   return err;
 }
@@ -518,8 +523,8 @@ int write_restart_mechanical(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart_thermal(GRID *grid,
-                          FIELD_VARIABLES *fv,
+int write_restart_thermal(Grid *grid,
+                          FieldVariables *fv,
                           const PGFem3D_opt *opts,
                           int myrank,
                           int mp_id,
@@ -571,12 +576,12 @@ int write_restart_thermal(GRID *grid,
 /// \param[in] stepno current time step number
 /// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
-int write_restart(GRID *grid,
-                  FIELD_VARIABLES *fv,
-                  LOADING_STEPS *load,
-                  PGFem3D_TIME_STEPPING *time_steps,
+int write_restart(Grid *grid,
+                  FieldVariables *fv,
+                  LoadingSteps *load,
+                  TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp,
+                  Multiphysics *mp,
                   int myrank,
                   int stepno)
 
@@ -596,17 +601,17 @@ int write_restart(GRID *grid,
 
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += write_restart_thermal(grid,fv,opts,myrank,ia,stepno,rs_path);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        // not yet implemented
-        break;
-      default:
-        err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+     case MULTIPHYSICS_MECHANICAL:
+      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += write_restart_thermal(grid,fv,opts,myrank,ia,stepno,rs_path);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      // not yet implemented
+      break;
+     default:
+      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
     }
   }
 

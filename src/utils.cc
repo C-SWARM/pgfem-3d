@@ -1,29 +1,31 @@
-/* HEADER */
-#include "utils.h"
-#include <assert.h>
-#include <string.h>
-#include <time.h>
-#include <stdarg.h>
-#include <math.h>
-#include "mkl_cblas.h"
-#include "mkl_lapack.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "enumerations.h"
-#include "index_macros.h"
-#include "get_dof_ids_on_elem.h"
-#include "elem3d.h"
-#include "homogen.h"
+#include "utils.h"
 #include "allocation.h"
+#include "elem3d.h"
+#include "enumerations.h"
+#include "get_dof_ids_on_elem.h"
+#include "homogen.h"
 #include "incl.h"
+#include "index_macros.h"
 #include "localizat.h"
 #include "matice.h"
 #include "resice.h"
+#include <mkl_cblas.h>
+#include <mkl_lapack.h>
+#include <cassert>
+#include <cstring>
+#include <cstdarg>
+#include <cmath>
+#include <time.h>
 
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
 #endif
 
-static const int periodic = 0;
+static const constexpr int periodic = 0;
 
 int scan_for_valid_line(FILE *in)
 {
@@ -843,7 +845,7 @@ void print_array_l(FILE *out,
 }
 
 void print_material(FILE *out,
-                    const MATERIAL *mat)
+                    const Material *mat)
 {
   PGFEM_fprintf(out,
                 "E_x,y,z:    %12.5e %12.5e %12.5e\n"
@@ -859,7 +861,7 @@ void print_material(FILE *out,
 }
 
 void update_elem_bub_dofs(const long ne,
-                          ELEMENT *const elem)
+                          Element *const elem)
 {
   for(long i=0; i<ne; i++){
     cblas_daxpy(elem[i].n_bub*elem[i].n_bub_dofs,1.0,
@@ -902,9 +904,9 @@ void compute_disp_grad(const int nne,
 }
 
 long* list_boundary_el(const long ne,
-                       const ELEMENT *elem,
+                       const Element *elem,
                        const long nn,
-                       const NODE *node,
+                       const Node *node,
                        const long myrank,
                        long *nbndel)
 {
@@ -1004,7 +1006,7 @@ long* times_print (FILE *in1,
 
 long num_fib (long nmat,
               long ne,
-              ELEMENT *elem)
+              Element *elem)
 /*
   funkce vraci pocet fiberu
 */
@@ -1026,7 +1028,7 @@ long num_fib (long nmat,
 
 long num_matr (long nmat,
                long ne,
-               ELEMENT *elem)
+               Element *elem)
 /*
   funkce vraci pocet matric
 */
@@ -1050,7 +1052,7 @@ long list (long ***a,
            long ne,
            long nmat,
            long nc,
-           ELEMENT *elem)
+           Element *elem)
 /*
   function creates list of combinations fiber - matrix - volume fraction
 */
@@ -1258,8 +1260,8 @@ double Hexa_V (const double *x,
 
 double T_VOLUME (const long ne,
                  const long ndofn,
-                 const ELEMENT *elem,
-                 const NODE *node)
+                 const Element *elem,
+                 const Node *node)
 {
   long ii,nne,*nod;
   double PL=0.0,*x,*y,*z,volume{};
@@ -1310,8 +1312,8 @@ double area (long nne,
 void def_elem (const long *cn,
                const long ndofe,
                const double *r,
-               const ELEMENT *elem,
-               const NODE *node,
+               const Element *elem,
+               const Node *node,
                double *r_e,
                const SUPP sup,
                const long TYPE)
@@ -1337,8 +1339,8 @@ void def_elem_total (const long *cn,
                      const long ndofe,
                      const double *r,
                      const double *d_r,
-                     const ELEMENT *elem,
-                     const NODE *node,
+                     const Element *elem,
+                     const Node *node,
                      const SUPP sup,
                      double *r_e)
 {
@@ -1365,8 +1367,8 @@ void def_elem_total (const long *cn,
 /// \param[in] ndofe number of degree of freedom on an element
 /// \param[in] r nodal variables at n+1
 /// \param[in] d_r nodal variable increments at n+1
-/// \param[in] elem ELEMENT object
-/// \param[in] node NODE object
+/// \param[in] elem Element object
+/// \param[in] node Node object
 /// \param[out] r_e computed nodal variables for an element
 /// \param[in] reference nodal value
 /// \return non-zero on interal error
@@ -1374,8 +1376,8 @@ int def_elem_with_reference(const long *cn,
                             const long ndofe,
                             const double *r,
                             const double *d_r,
-                            const ELEMENT *elem,
-                            const NODE *node,
+                            const Element *elem,
+                            const Node *node,
                             const SUPP sup,
                             double *r_e,
                             double r0)
@@ -1399,7 +1401,7 @@ int def_elem_with_reference(const long *cn,
 void elemnodes (const long ii,
                 const long nne,
                 long *nod,
-                const ELEMENT *elem)
+                const Element *elem)
 /*
   returns nodes of actual element
 
@@ -1419,7 +1421,7 @@ void elemnodes (const long ii,
 
 /* void nodecoord (const long nne, */
 /*      const long *nod, */
-/*      const NODE *node, */
+/*      const Node *node, */
 /*      double *x, */
 /*      double *y, */
 /*      double *z) */
@@ -1434,7 +1436,7 @@ void elemnodes (const long ii,
 
 void nodecoord_total (const long nne,
                       const long *nod,
-                      const NODE *node,
+                      const Node *node,
                       double *x,
                       double *y,
                       double *z)
@@ -1448,7 +1450,7 @@ void nodecoord_total (const long nne,
 
 void nodecoord_updated (const long nne,
                         const long *nod,
-                        const NODE *node,
+                        const Node *node,
                         double *x,
                         double *y,
                         double *z)
@@ -1462,9 +1464,9 @@ void nodecoord_updated (const long nne,
 
 
 void list_el_prescribed_def (SUPP sup,
-                             const NODE *node,
-                             const ELEMENT *elem,
-                             const BOUNDING_ELEMENT *b_elems,
+                             const Node *node,
+                             const Element *elem,
+                             const BoundingElement *b_elems,
                              const long ne,
                              const int n_be,
                              const long nn)
@@ -1735,8 +1737,8 @@ void eps_e_in (long nne,
 
 void stress (long ne,
              long ndofn,
-             NODE *node,
-             ELEMENT *elem,
+             Node *node,
+             Element *elem,
              MATGEOM matgeom,
              HOMMAT *hommat,
              double *r,
@@ -2051,8 +2053,8 @@ void str_solve (double *r,
                 long ne,
                 long nn,
                 long ndofn,
-                NODE *node,
-                ELEMENT *elem,
+                Node *node,
+                Element *elem,
                 HOMMAT *hommat,
                 SIG *sig_e,
                 SIG *sig_n,
@@ -2210,8 +2212,8 @@ void str_elem_matrix (long kk,
 void str_proj_matrix (long *adr,
                       long ne,
                       long ndofn,
-                      ELEMENT *elem,
-                      NODE *node,
+                      Element *elem,
+                      Node *node,
                       HOMMAT *hommat,
                       double *k,
                       const int analysis)
@@ -2343,7 +2345,7 @@ void unequal_forces (long ii,
                      double *z,
                      long nne,
                      long ndofn,
-                     ELEMENT *elem,
+                     Element *elem,
                      double **dsig,
                      double *fe)
 /*
@@ -2464,8 +2466,8 @@ void check_equi (double *fu,
                  long ne,
                  long ndofd,
                  long ndofn,
-                 ELEMENT *elem,
-                 NODE *node,
+                 Element *elem,
+                 Node *node,
                  MATGEOM matgeom,
                  SIG *sig,
                  const int analysis,
@@ -2524,8 +2526,8 @@ void check_equi (double *fu,
 double* Energy_functional (long ne,
                            long ndofn,
                            long ndofd,
-                           ELEMENT *elem,
-                           NODE *node,
+                           Element *elem,
+                           Node *node,
                            SIG *sig,
                            EPS *eps,
                            MATGEOM matgeom,
@@ -3069,7 +3071,7 @@ void GToL (const double *Gr,
 MPI_Comm* CreateGraph (int nproc,
                        int myrank,
                        long nn,
-                       NODE *node,
+                       Node *node,
                        MPI_Comm mpi_comm)
 /*
 
@@ -3238,8 +3240,8 @@ double new_arc_length (long iter,
 long* sparse_ApAi (long ne,
                    long ndofd,
                    long ndofn,
-                   ELEMENT *elem,
-                   NODE *node,
+                   Element *elem,
+                   Node *node,
                    long *Ap,
                    const int mp_id)
 /*

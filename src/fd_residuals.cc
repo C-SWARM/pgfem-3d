@@ -1,42 +1,47 @@
-#include "fd_residuals.h"
-#include "assert.h"
-#include "enumerations.h"
-#include "utils.h"
-#include "allocation.h"
-#include "resid_on_elem.h"
-#include "stabilized.h"
-#include "get_ndof_on_elem.h"
-#include "get_dof_ids_on_elem.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
-#include "displacement_based_element.h"
-#include "matice.h"
-#include "elem3d.h"
-#include <math.h>
-#include <string.h>
-#include "three_field_element.h"
-#include "condense.h"
-#include "new_potentials.h"
-#include "tensors.h"
-#include "cast_macros.h"
-#include "index_macros.h"
-#include "def_grad.h"
-#include "mkl_cblas.h"
-#include "dynamics.h"
-
-#include "constitutive_model.h"
 #include "PGFem3D_data_structure.h"
-
-#include "solver_file.h"
+#include "allocation.h"
+#include "cast_macros.h"
+#include "condense.h"
+#include "constitutive_model.h"
+#include "def_grad.h"
+#include "displacement_based_element.h"
+#include "dynamics.h"
+#include "elem3d.h"
+#include "enumerations.h"
+#include "fd_residuals.h"
+#include "get_ndof_on_elem.h"
+#include "get_dof_ids_on_elem.h"
+#include "index_macros.h"
 #include "macro_micro_functions.h"
+#include "matice.h"
+#include "mkl_cblas.h"
+#include "new_potentials.h"
+#include "resid_on_elem.h"
+#include "solver_file.h"
+#include "stabilized.h"
+#include "tensors.h"
+#include "three_field_element.h"
+#include "utils.h"
+#include <cassert>
+#include <cmath>
+#include <cstring>
 
-#define ndn 3
+namespace {
+using pgfem3d::Solver;
+const constexpr int ndn = 3;
+}
 
 /* assemble the element residual to the local portion of the global
    residual vector */
 static void fd_res_assemble(double *f_u,
                             const double *fe,
-                            const NODE *node,
+                            const Node *node,
                             const int nne,
                             const int ndofn,
                             const long *nod,
@@ -54,7 +59,7 @@ static void fd_res_assemble(double *f_u,
 /* compute the residual for a single cohesive element */
 static int fd_res_coel(double *fe,
                        const int i,
-                       NODE *node,
+                       Node *node,
                        COEL *coel,
                        SUPP sup,
                        const int ndofc,
@@ -114,27 +119,27 @@ static int fd_res_coel(double *fe,
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
 static int fd_res_elem_MP(double *be,
-        const int eid,
-        GRID *grid,
-        MATERIAL_PROPERTY *mat,
-        FIELD_VARIABLES *fv,
-        SOLVER_OPTIONS *sol,
-        LOADING_STEPS *load,
-        CRPL *crpl,
-        MPI_Comm mpi_comm,
-        const PGFem3D_opt *opts,
-        MULTIPHYSICS *mp,
-        int mp_id,
-        double t,
-        double *dts,
-        int include_inertia,
-        int updated_deformation)
+                          const int eid,
+                          Grid *grid,
+                          MaterialProperty *mat,
+                          FieldVariables *fv,
+                          Solver *sol,
+                          LoadingSteps *load,
+                          CRPL *crpl,
+                          MPI_Comm mpi_comm,
+                          const PGFem3D_opt *opts,
+                          Multiphysics *mp,
+                          int mp_id,
+                          double t,
+                          double *dts,
+                          int include_inertia,
+                          int updated_deformation)
 {
   int err = 0;
   int intg_order = 0;
   double dt = dts[DT_NP1];
 
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
   SUPP sup = load->sups[mp_id];
 
   double *f;
@@ -146,16 +151,16 @@ static int fd_res_elem_MP(double *be,
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
-    case DISP: // intented to flow
-    case TF:
+   case DISP: // intented to flow
+   case TF:
+    total_Lagrangian = 1;
+    break;
+   case CM:   // intented to flow
+   case CM3F:
+    if(opts->cm != UPDATED_LAGRANGIAN)
       total_Lagrangian = 1;
-      break;
-    case CM:   // intented to flow
-    case CM3F:      
-      if(opts->cm != UPDATED_LAGRANGIAN)
-        total_Lagrangian = 1;
 
-      break;
+    break;
   }
 
   if(sup->multi_scale)
@@ -167,7 +172,7 @@ static int fd_res_elem_MP(double *be,
     fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
   else
     fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
-  
+
   long *nod = (fe.node_id).m_pdata; // list of node ids in this element
 
   /* Element Dof */
@@ -198,66 +203,66 @@ static int fd_res_elem_MP(double *be,
   if(include_inertia) {
     err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
 
-/*    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
-                                  ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
-                                  nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);*/
+    /*    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
+          ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
+          nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);*/
   } else {
     /* Residuals on element */
     switch(opts->analysis_type) {
-      case STABILIZED:
-        err = resid_st_elem (eid,fv->ndofn,fe.nne,elem,nod,grid->node,mat->hommat,
-                             x,y,z,fv->eps,fv->sig,sup,r_e,sol->nor_min,be,dt,opts->stab);
-        break;
-      case MINI:
-        err = MINI_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
-                            nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
-        break;
-      case MINI_3F:
-        err = MINI_3f_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
-                               nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
-        break;
-      case DISP:
-      {
-        double *bf = aloc1(ndofe);
-        memset(bf, 0, sizeof(double)*ndofe);
-        DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
+     case STABILIZED:
+      err = resid_st_elem (eid,fv->ndofn,fe.nne,elem,nod,grid->node,mat->hommat,
+                           x,y,z,fv->eps,fv->sig,sup,r_e,sol->nor_min,be,dt,opts->stab);
+      break;
+     case MINI:
+      err = MINI_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                          nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
+      break;
+     case MINI_3F:
+      err = MINI_3f_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                             nod,grid->node,mat->hommat,fv->eps,fv->sig,r_e);
+      break;
+     case DISP:
+       {
+         double *bf = aloc1(ndofe);
+         memset(bf, 0, sizeof(double)*ndofe);
+         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
 
-        err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
-                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
-        for(long a = 0; a<ndofe; a++)
-          be[a] += -bf[a];
+         err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
+                              mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
+         for(long a = 0; a<ndofe; a++)
+           be[a] += -bf[a];
 
-        dealoc1(bf);
-        break;
-      }
-      case TF:
-      {
-        double *bf = aloc1(ndofe);
-        memset(bf, 0, sizeof(double)*ndofe);
-        DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
+         dealoc1(bf);
+         break;
+       }
+     case TF:
+       {
+         double *bf = aloc1(ndofe);
+         memset(bf, 0, sizeof(double)*ndofe);
+         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
 
-        residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
-                        x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
-        for(long a = 0; a<ndofe; a++)
-          be[a] += -bf[a];
+         residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
+                         x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
+         for(long a = 0; a<ndofe; a++)
+           be[a] += -bf[a];
 
-        dealoc1(bf);
-        break;
-      }
-      case CM:  // intented to flow
-      case CM3F:  
-        err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
-                                               opts,mp,mp_id,dt);
-        break;
-      default:
-        err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
-                             mat->hommat,x,y,z,fv->eps,fv->sig,r_e,fv->npres,
-                             sol->nor_min,be,crpl,dt,opts->analysis_type);
+         dealoc1(bf);
+         break;
+       }
+     case CM:  // intented to flow
+     case CM3F:
+      err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
+                                             opts,mp,mp_id,dt);
+      break;
+     default:
+      err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
+                           mat->hommat,x,y,z,fv->eps,fv->sig,r_e,fv->npres,
+                           sol->nor_min,be,crpl,dt,opts->analysis_type);
 
-        break;
+      break;
     }
   }
-  
+
   dealoc1 (r_e);
   dealoc1l (cn);
 
@@ -284,23 +289,23 @@ static int fd_res_elem_MP(double *be,
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long fd_residuals_MP(GRID *grid,
-                     MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *fv,
-                     SOLVER_OPTIONS *sol,
-                     LOADING_STEPS *load,
+long fd_residuals_MP(Grid *grid,
+                     MaterialProperty *mat,
+                     FieldVariables *fv,
+                     Solver *sol,
+                     LoadingSteps *load,
                      CRPL *crpl,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     MULTIPHYSICS *mp,
+                     Multiphysics *mp,
                      int mp_id,
                      double t,
                      double *dts,
                      int updated_deformation)
 {
   int err = 0;
-  ELEMENT *elem = grid->element;
-  BOUNDING_ELEMENT *b_elems = grid->b_elems;
+  Element *elem = grid->element;
+  BoundingElement *b_elems = grid->b_elems;
   SUPP sup = load->sups[mp_id];
 
   double *f;
@@ -375,8 +380,8 @@ long fd_residuals_MP(GRID *grid,
 
     /* get the coordinates and dof id's on the element nodes */
     const long *ptr_vnodes = elem[b_elems[i].vol_elem_id].nod; /* --"-- */
-    const ELEMENT *ptr_elem = elem + b_elems[i].vol_elem_id; /* --"-- */
-    const BOUNDING_ELEMENT *ptr_be = &b_elems[i];
+    const Element *ptr_elem = elem + b_elems[i].vol_elem_id; /* --"-- */
+    const BoundingElement *ptr_be = &b_elems[i];
     const int nne = ptr_elem->toe;
 
     double *x = aloc1(nne);
@@ -384,10 +389,10 @@ long fd_residuals_MP(GRID *grid,
     double *z = aloc1(nne);
 
     switch(opts->analysis_type){
-    case DISP:
+     case DISP:
       nodecoord_total(nne,ptr_vnodes,grid->node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated(nne,ptr_vnodes,grid->node,x,y,z);
       break;
     }
@@ -418,7 +423,7 @@ long fd_residuals_MP(GRID *grid,
 
     if(opts->analysis_type == DISP){
       err += DISP_resid_bnd_el(fe,i,fv->ndofn,ndofe,x,y,z,b_elems,elem,
-                   mat->hommat,grid->node,fv->eps,fv->sig,sup,r_e);
+                               mat->hommat,grid->node,fv->eps,fv->sig,sup,r_e);
     } else {
       /* not implemented/needed so do nothing */
     }
@@ -469,15 +474,15 @@ long fd_residuals_MP(GRID *grid,
 /// \param[in] t time
 /// \param[in] dts time step sizes at n, and n+1
 /// \return non-zero on internal error
-int fd_res_compute_reactions_MP(GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                LOADING_STEPS *load,
+int fd_res_compute_reactions_MP(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                Solver *sol,
+                                LoadingSteps *load,
                                 CRPL *crpl,
                                 MPI_Comm mpi_comm,
                                 const PGFem3D_opt *opts,
-                                MULTIPHYSICS *mp,
+                                Multiphysics *mp,
                                 int mp_id,
                                 double t,
                                 double *dts)
@@ -489,7 +494,7 @@ int fd_res_compute_reactions_MP(GRID *grid,
 
   const int updated_deformation = 0;
 
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
   SUPP sup = load->sups[mp_id];
 
   const int ne = sup->nde;
@@ -512,7 +517,7 @@ int fd_res_compute_reactions_MP(GRID *grid,
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we
     // didn't play with any rate sensitive behavior
-    if (opts->analysis_type == CM || opts->analysis_type == CM3F) 
+    if (opts->analysis_type == CM || opts->analysis_type == CM3F)
       constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
 
     long *cn = aloc1l (ndofe);
@@ -560,7 +565,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   int err = 0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -580,7 +585,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mp.total_write_no = 0;
   }
 
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -594,7 +599,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -619,21 +624,21 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  Solver sol{};
   {
     sol.nor_min  = solver_file->nonlin_tol;
     sol.alpha   = 0.0;
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;

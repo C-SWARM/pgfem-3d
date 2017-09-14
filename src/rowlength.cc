@@ -1,19 +1,22 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "rowlength.h"
-#include <stdlib.h>
 #include "allocation.h"
-#include "utils.h"
 #include "get_dof_ids_on_elem.h"
 #include "get_ndof_on_elem.h"
+#include "utils.h"
+#include <cstdlib>
 
 void rowlength (long *adr,
-        long ne,
-        long ndofn,
-        long ndof,
-        NODE *node,
-        ELEMENT *elem,
-        long gr4,
-        const int mp_id)
+                long ne,
+                long ndofn,
+                long ndof,
+                Node *node,
+                Element *elem,
+                long gr4,
+                const int mp_id)
 {
   long i,k,nne,ndofe,min;
   long *nod,*cn;

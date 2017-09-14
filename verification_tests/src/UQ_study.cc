@@ -1,11 +1,14 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "allocation.h"
 #include "homogen.h"
-#include "utils.h"
-
-#include "read_input_file.h"
 #include "post_processing.h"
+#include "read_input_file.h"
+#include "utils.h"
+#include <cstdlib>
 
-#include <stdlib.h>
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
@@ -171,8 +174,8 @@ int main(int argc, char **argv)
   for(long a = 0; a < argc; a++)
   {
     long n = strlen(argv[a]) + 1;
-                argv_4func[a] = (char*)malloc(n);
-                strcpy(argv_4func[a], argv[a]);
+    argv_4func[a] = (char*)malloc(n);
+    strcpy(argv_4func[a], argv[a]);
   }
 
   int flag_MPI_Init;
@@ -201,8 +204,8 @@ int main(int argc, char **argv)
     fgets(line, 1024, fp_in);
 
     sscanf(line, "%lf %lf %lf %lf %lf %lf",
-                  stress+0, stress+1, stress+2,
-                  stress+3, stress+4, stress+5);
+           stress+0, stress+1, stress+2,
+           stress+3, stress+4, stress+5);
     fclose(fp_in);
 
     FILE *fp_out = fopen("stress.out", "w");

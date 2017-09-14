@@ -1,45 +1,48 @@
-/* HEADER */
-#include "fd_increment.h"
-#include <math.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "PGFEM_io.h"
-#include "incl.h"
-#include "enumerations.h"
-#include "get_dof_ids_on_elem.h"
-#include "get_ndof_on_elem.h"
+#include "TA_GA.h"
 #include "cast_macros.h"
 #include "def_grad.h"
 #include "elem3d.h"
+#include "enumerations.h"
+#include "fd_increment.h"
+#include "get_dof_ids_on_elem.h"
+#include "get_ndof_on_elem.h"
+#include "incl.h"
 #include "pressu_shape.h"
 #include "stress_strain.h"
-#include "TA_GA.h"
 #include "tensors.h"
 #include "utils.h"
+#include <cmath>
 
-static const int periodic = 0;
+static constexpr int periodic = 0;
 
 void fd_increment (long ne,
-             long nn,
-             long ndofn,
-             long npres,
-             MATGEOM matgeom,
-             HOMMAT *hommat,
-             ELEMENT *elem,
-             NODE *node,
-             SUPP sup,
-             EPS *eps,
-             SIG *sig,
-             double *d_r,
-             double *r,
-             double nor_min,
-             CRPL *crpl,
-             double dt,
-             long nce,
-             COEL *coel,
-             double *pores,
-             MPI_Comm mpi_comm,
-             const double VVolume,
-             const PGFem3D_opt *opts,
-             const int mp_id)
+                   long nn,
+                   long ndofn,
+                   long npres,
+                   MATGEOM matgeom,
+                   HOMMAT *hommat,
+                   Element *elem,
+                   Node *node,
+                   SUPP sup,
+                   EPS *eps,
+                   SIG *sig,
+                   double *d_r,
+                   double *r,
+                   double nor_min,
+                   CRPL *crpl,
+                   double dt,
+                   long nce,
+                   COEL *coel,
+                   double *pores,
+                   MPI_Comm mpi_comm,
+                   const double VVolume,
+                   const PGFem3D_opt *opts,
+                   const int mp_id)
 {
   long ii,i,j,k,ip,II,JJ,KK,nne,*nod;
   long M,N,P,Q,R,ndn,mat,nss,U,W,ndofe,*cn;
@@ -94,12 +97,12 @@ void fd_increment (long ne,
     EL_e = 0.0;
     for (P=0;P<3;P++){
       for (R=0;R<3;R++){
-    FoN[P][R] = eps[0].FB[P][R];
-    eps[0].P[P][R] = eps[0].FB[P][R] = eps[0].Fe[P][R] = 0.0;
+        FoN[P][R] = eps[0].FB[P][R];
+        eps[0].P[P][R] = eps[0].FB[P][R] = eps[0].Fe[P][R] = 0.0;
 
-    if (opts->analysis_type == FS_CRPL){
-      eps[0].Fp[P][R] = 0.0;
-    }
+        if (opts->analysis_type == FS_CRPL){
+          eps[0].Fp[P][R] = 0.0;
+        }
       }
     }
   }/* end PERIODIC */
@@ -141,10 +144,10 @@ void fd_increment (long ne,
 
     /* Coordinates of element */
     switch(opts->analysis_type){
-    case DISP:
+     case DISP:
       nodecoord_total (nne,nod,node,x,y,z);
       break;
-    default:
+     default:
       nodecoord_updated (nne,nod,node,x,y,z);
       break;
     }
@@ -168,8 +171,8 @@ void fd_increment (long ne,
       eps[ii].el.o[k] = 0.0;
       sig[ii].el.o[k] = 0.0;
       if (opts->analysis_type == FS_CRPL) {
-    eps[ii].pl.o[k] = 0.0;
-    eps[ii].pl.eq[0] = 0.0;
+        eps[ii].pl.o[k] = 0.0;
+        eps[ii].pl.eq[0] = 0.0;
       }
     }
     eps[ii].GD = 0.0;
@@ -177,622 +180,622 @@ void fd_increment (long ne,
     ip = 0;
     for (i=0;i<II;i++){
       for (j=0;j<JJ;j++){
-    for (k=0;k<KK;k++){
+        for (k=0;k<KK;k++){
 
-      if (nne == 4)  {ksi = *(gk+k);
-        eta = *(ge+k);
-        zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
-      }
-      if (nne == 10) {ksi = *(gk+k);
-        eta = *(ge+k);
-        zet = *(gz+k);
-        ai = *(w+k);
-        aj = 1.0;
-        ak = 1.0;
-      }
-      if (nne == 8)  {ksi = *(gk+i);
-        eta = *(gk+j);
-        zet = *(gk+k);
-        ai = *(w+i);
-        aj = *(w+j);
-        ak = *(w+k);
-      }
-
-      /* Derivatives of shape functions and Jacobian of integration */
-      J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
-
-      /* eFn -> denotes only elastic part of deformation fpr plasticity */
-      Fn[0][0] = eps[ii].il[ip].F[0];
-      Fn[0][1] = eps[ii].il[ip].F[1];
-      Fn[0][2] = eps[ii].il[ip].F[2];
-
-      Fn[1][0] = eps[ii].il[ip].F[3];
-      Fn[1][1] = eps[ii].il[ip].F[4];
-      Fn[1][2] = eps[ii].il[ip].F[5];
-
-      Fn[2][0] = eps[ii].il[ip].F[6];
-      Fn[2][1] = eps[ii].il[ip].F[7];
-      Fn[2][2] = eps[ii].il[ip].F[8];
-
-      shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
-      def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
-      Jr = def_grad_det (CCONST_2(double) Fr);
-      Jn = def_grad_det (CCONST_2(double) Fn);
-
-      /* Pressure shape functions */
-      pressu_shape (npres,ksi,eta,zet,Psi);
-
-      Tr = 0.0;
-      Tn = 0.0;
-      for (M=0;M<npres;M++){
-        Tn += Psi[M]*eps[ii].T[M];
-        Tr += Psi[M]*eps[ii].d_T[M];
-      }
-
-      /* Fn+1 for elasticity and F* = Fr*eFn for plasticity || SET Fn-BAR */
-      for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          Fn1[M][N] = 0.0;
-          FnB[M][N] = pow(Tn,1./3.)*pow(Jn,-1./3.)*Fn[M][N];
-
-          for (P=0;P<3;P++){
-        Fn1[M][N] += Fr[M][P]*Fn[P][N];
+          if (nne == 4)  {ksi = *(gk+k);
+            eta = *(ge+k);
+            zet = *(gz+k);
+            ai = *(w+k);
+            aj = 1.0;
+            ak = 1.0;
           }
-        }
-      }
-
-      /**** UNIT CELL APPROACH ****/
-      if (periodic == 1) {
-        if (opts->analysis_type == FS_CRPL){
-          S[0][0] = eps[ii].il[ip].Fp[0];
-          S[0][1] = eps[ii].il[ip].Fp[1];
-          S[0][2] = eps[ii].il[ip].Fp[2];
-
-          S[1][0] = eps[ii].il[ip].Fp[3];
-          S[1][1] = eps[ii].il[ip].Fp[4];
-          S[1][2] = eps[ii].il[ip].Fp[5];
-
-          S[2][0] = eps[ii].il[ip].Fp[6];
-          S[2][1] = eps[ii].il[ip].Fp[7];
-          S[2][2] = eps[ii].il[ip].Fp[8];
-
-          def_grad_inv (CCONST_2(double) S,FnB);
-        }
-        else{
-          for (N=0;N<3;N++){
-        for (P=0;P<3;P++){
-          if (N == P) dij = 1.0; else dij = 0.0;
-          FnB[N][P] = dij;
-        }
+          if (nne == 10) {ksi = *(gk+k);
+            eta = *(ge+k);
+            zet = *(gz+k);
+            ai = *(w+k);
+            aj = 1.0;
+            ak = 1.0;
           }
-        }/* end elastic */
-
-        /* Fn1 : total fluctuation def gradient || Fr total micro
-           deformation gradient */
-        for (N=0;N<3;N++){
-          for (P=0;P<3;P++){
-        Fn1[N][P] = Fr[N][P] + Fn[N][P];
-        Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
+          if (nne == 8)  {ksi = *(gk+i);
+            eta = *(gk+j);
+            zet = *(gk+k);
+            ai = *(w+i);
+            aj = *(w+j);
+            ak = *(w+k);
           }
-        }
 
-        Jr = def_grad_det (CCONST_2(double) Fr);
-        Jn = Tn = 1.;
+          /* Derivatives of shape functions and Jacobian of integration */
+          J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
-      }/* end PERIODIC */
+          /* eFn -> denotes only elastic part of deformation fpr plasticity */
+          Fn[0][0] = eps[ii].il[ip].F[0];
+          Fn[0][1] = eps[ii].il[ip].F[1];
+          Fn[0][2] = eps[ii].il[ip].F[2];
 
-      /**** CRYSTAL PLASTICITY ****/
-      if (opts->analysis_type == FS_CRPL){
-        S[0][0] = eps[ii].il[ip].Fp[0];
-        S[0][1] = eps[ii].il[ip].Fp[1];
-        S[0][2] = eps[ii].il[ip].Fp[2];
+          Fn[1][0] = eps[ii].il[ip].F[3];
+          Fn[1][1] = eps[ii].il[ip].F[4];
+          Fn[1][2] = eps[ii].il[ip].F[5];
 
-        S[1][0] = eps[ii].il[ip].Fp[3];
-        S[1][1] = eps[ii].il[ip].Fp[4];
-        S[1][2] = eps[ii].il[ip].Fp[5];
+          Fn[2][0] = eps[ii].il[ip].F[6];
+          Fn[2][1] = eps[ii].il[ip].F[7];
+          Fn[2][2] = eps[ii].il[ip].F[8];
 
-        S[2][0] = eps[ii].il[ip].Fp[6];
-        S[2][1] = eps[ii].il[ip].Fp[7];
-        S[2][2] = eps[ii].il[ip].Fp[8];
+          shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
+          def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
+          Jr = def_grad_det (CCONST_2(double) Fr);
+          Jn = def_grad_det (CCONST_2(double) Fn);
 
+          /* Pressure shape functions */
+          pressu_shape (npres,ksi,eta,zet,Psi);
 
-        UU[0][0] = eps[ii].il[ip].UU[0];
-        UU[0][1] = eps[ii].il[ip].UU[1];
-        UU[0][2] = eps[ii].il[ip].UU[2];
-
-        UU[1][0] = eps[ii].il[ip].UU[3];
-        UU[1][1] = eps[ii].il[ip].UU[4];
-        UU[1][2] = eps[ii].il[ip].UU[5];
-
-        UU[2][0] = eps[ii].il[ip].UU[6];
-        UU[2][1] = eps[ii].il[ip].UU[7];
-        UU[2][2] = eps[ii].il[ip].UU[8];
-
-
-        eps[ii].il[ip].UU[0] = 1.0;
-        eps[ii].il[ip].UU[1] = 0.0;
-        eps[ii].il[ip].UU[2] = 0.0;
-
-        eps[ii].il[ip].UU[3] = 0.0;
-        eps[ii].il[ip].UU[4] = 1.0;
-        eps[ii].il[ip].UU[5] = 0.0;
-
-        eps[ii].il[ip].UU[6] = 0.0;
-        eps[ii].il[ip].UU[7] = 0.0;
-        eps[ii].il[ip].UU[8] = 1.0;
-
-        def_grad_inv (CCONST_2(double) UU,UU_I);
-
-        /********************************************************/
-        /* EFFECTIVE PLASTIC STRAIN */
-
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        if (M == N)
-          dij = 1.0;
-        else
-          dij = 0.0;
-        BB[M][N] = 1./dt*(dij - UU[M][N]);
+          Tr = 0.0;
+          Tn = 0.0;
+          for (M=0;M<npres;M++){
+            Tn += Psi[M]*eps[ii].T[M];
+            Tr += Psi[M]*eps[ii].d_T[M];
           }
-        }
 
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        AA[M][N] = 1./2.*(BB[M][N] + BB[N][M]);
-        /* Macroscopic Dp */
-        eps[0].Dp[M][N]  += 1./VVolume *ai*aj*ak*J* AA[M][N];
-          }
-        }
-
-        pom = 0;
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        pom += AA[M][N]*AA[M][N];
-          }
-        }
-
-        eps[ii].il[ip].eff += dt*sqrt(2./3.*pom);
-        eps[ii].pl.eq[0] += ai*aj*ak*J/volume*eps[ii].il[ip].eff;
-        /********************************************************/
-
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        Fp[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          Fp[M][N] += UU_I[M][P]*S[P][N];
-        }
-          }
-        }
-
-        /* pFn */
-        AA[0][0] = eps[ii].il[ip].Fp[0];
-        AA[0][1] = eps[ii].il[ip].Fp[1];
-        AA[0][2] = eps[ii].il[ip].Fp[2];
-
-        AA[1][0] = eps[ii].il[ip].Fp[3];
-        AA[1][1] = eps[ii].il[ip].Fp[4];
-        AA[1][2] = eps[ii].il[ip].Fp[5];
-
-        AA[2][0] = eps[ii].il[ip].Fp[6];
-        AA[2][1] = eps[ii].il[ip].Fp[7];
-        AA[2][2] = eps[ii].il[ip].Fp[8];
-
-
-        /* pFn+1 || Avaluate Plastic deformation gradient at time
-           t+1 */
-        eps[ii].il[ip].Fp[0] = Fp[0][0];
-        eps[ii].il[ip].Fp[1] = Fp[0][1];
-        eps[ii].il[ip].Fp[2] = Fp[0][2];
-
-        eps[ii].il[ip].Fp[3] = Fp[1][0];
-        eps[ii].il[ip].Fp[4] = Fp[1][1];
-        eps[ii].il[ip].Fp[5] = Fp[1][2];
-
-        eps[ii].il[ip].Fp[6] = Fp[2][0];
-        eps[ii].il[ip].Fp[7] = Fp[2][1];
-        eps[ii].il[ip].Fp[8] = Fp[2][2];
-
-
-        /* eFn+1 || Avaluate Elastic deformation gradient at time t+1 */
-        if (periodic != 1){
+          /* Fn+1 for elasticity and F* = Fr*eFn for plasticity || SET Fn-BAR */
           for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          S[M][N] = 0.0;
-          for (P=0;P<3;P++){
-            S[M][N] += Fn1[M][P]*UU[P][N];
+            for (N=0;N<3;N++){
+              Fn1[M][N] = 0.0;
+              FnB[M][N] = pow(Tn,1./3.)*pow(Jn,-1./3.)*Fn[M][N];
+
+              for (P=0;P<3;P++){
+                Fn1[M][N] += Fr[M][P]*Fn[P][N];
+              }
+            }
           }
-        }
+
+          /**** UNIT CELL APPROACH ****/
+          if (periodic == 1) {
+            if (opts->analysis_type == FS_CRPL){
+              S[0][0] = eps[ii].il[ip].Fp[0];
+              S[0][1] = eps[ii].il[ip].Fp[1];
+              S[0][2] = eps[ii].il[ip].Fp[2];
+
+              S[1][0] = eps[ii].il[ip].Fp[3];
+              S[1][1] = eps[ii].il[ip].Fp[4];
+              S[1][2] = eps[ii].il[ip].Fp[5];
+
+              S[2][0] = eps[ii].il[ip].Fp[6];
+              S[2][1] = eps[ii].il[ip].Fp[7];
+              S[2][2] = eps[ii].il[ip].Fp[8];
+
+              def_grad_inv (CCONST_2(double) S,FnB);
+            }
+            else{
+              for (N=0;N<3;N++){
+                for (P=0;P<3;P++){
+                  if (N == P) dij = 1.0; else dij = 0.0;
+                  FnB[N][P] = dij;
+                }
+              }
+            }/* end elastic */
+
+            /* Fn1 : total fluctuation def gradient || Fr total micro
+               deformation gradient */
+            for (N=0;N<3;N++){
+              for (P=0;P<3;P++){
+                Fn1[N][P] = Fr[N][P] + Fn[N][P];
+                Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
+              }
+            }
+
+            Jr = def_grad_det (CCONST_2(double) Fr);
+            Jn = Tn = 1.;
+
+          }/* end PERIODIC */
+
+          /**** CRYSTAL PLASTICITY ****/
+          if (opts->analysis_type == FS_CRPL){
+            S[0][0] = eps[ii].il[ip].Fp[0];
+            S[0][1] = eps[ii].il[ip].Fp[1];
+            S[0][2] = eps[ii].il[ip].Fp[2];
+
+            S[1][0] = eps[ii].il[ip].Fp[3];
+            S[1][1] = eps[ii].il[ip].Fp[4];
+            S[1][2] = eps[ii].il[ip].Fp[5];
+
+            S[2][0] = eps[ii].il[ip].Fp[6];
+            S[2][1] = eps[ii].il[ip].Fp[7];
+            S[2][2] = eps[ii].il[ip].Fp[8];
+
+
+            UU[0][0] = eps[ii].il[ip].UU[0];
+            UU[0][1] = eps[ii].il[ip].UU[1];
+            UU[0][2] = eps[ii].il[ip].UU[2];
+
+            UU[1][0] = eps[ii].il[ip].UU[3];
+            UU[1][1] = eps[ii].il[ip].UU[4];
+            UU[1][2] = eps[ii].il[ip].UU[5];
+
+            UU[2][0] = eps[ii].il[ip].UU[6];
+            UU[2][1] = eps[ii].il[ip].UU[7];
+            UU[2][2] = eps[ii].il[ip].UU[8];
+
+
+            eps[ii].il[ip].UU[0] = 1.0;
+            eps[ii].il[ip].UU[1] = 0.0;
+            eps[ii].il[ip].UU[2] = 0.0;
+
+            eps[ii].il[ip].UU[3] = 0.0;
+            eps[ii].il[ip].UU[4] = 1.0;
+            eps[ii].il[ip].UU[5] = 0.0;
+
+            eps[ii].il[ip].UU[6] = 0.0;
+            eps[ii].il[ip].UU[7] = 0.0;
+            eps[ii].il[ip].UU[8] = 1.0;
+
+            def_grad_inv (CCONST_2(double) UU,UU_I);
+
+            /********************************************************/
+            /* EFFECTIVE PLASTIC STRAIN */
+
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                if (M == N)
+                  dij = 1.0;
+                else
+                  dij = 0.0;
+                BB[M][N] = 1./dt*(dij - UU[M][N]);
+              }
+            }
+
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                AA[M][N] = 1./2.*(BB[M][N] + BB[N][M]);
+                /* Macroscopic Dp */
+                eps[0].Dp[M][N]  += 1./VVolume *ai*aj*ak*J* AA[M][N];
+              }
+            }
+
+            pom = 0;
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                pom += AA[M][N]*AA[M][N];
+              }
+            }
+
+            eps[ii].il[ip].eff += dt*sqrt(2./3.*pom);
+            eps[ii].pl.eq[0] += ai*aj*ak*J/volume*eps[ii].il[ip].eff;
+            /********************************************************/
+
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                Fp[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  Fp[M][N] += UU_I[M][P]*S[P][N];
+                }
+              }
+            }
+
+            /* pFn */
+            AA[0][0] = eps[ii].il[ip].Fp[0];
+            AA[0][1] = eps[ii].il[ip].Fp[1];
+            AA[0][2] = eps[ii].il[ip].Fp[2];
+
+            AA[1][0] = eps[ii].il[ip].Fp[3];
+            AA[1][1] = eps[ii].il[ip].Fp[4];
+            AA[1][2] = eps[ii].il[ip].Fp[5];
+
+            AA[2][0] = eps[ii].il[ip].Fp[6];
+            AA[2][1] = eps[ii].il[ip].Fp[7];
+            AA[2][2] = eps[ii].il[ip].Fp[8];
+
+
+            /* pFn+1 || Avaluate Plastic deformation gradient at time
+               t+1 */
+            eps[ii].il[ip].Fp[0] = Fp[0][0];
+            eps[ii].il[ip].Fp[1] = Fp[0][1];
+            eps[ii].il[ip].Fp[2] = Fp[0][2];
+
+            eps[ii].il[ip].Fp[3] = Fp[1][0];
+            eps[ii].il[ip].Fp[4] = Fp[1][1];
+            eps[ii].il[ip].Fp[5] = Fp[1][2];
+
+            eps[ii].il[ip].Fp[6] = Fp[2][0];
+            eps[ii].il[ip].Fp[7] = Fp[2][1];
+            eps[ii].il[ip].Fp[8] = Fp[2][2];
+
+
+            /* eFn+1 || Avaluate Elastic deformation gradient at time t+1 */
+            if (periodic != 1){
+              for (M=0;M<3;M++){
+                for (N=0;N<3;N++){
+                  S[M][N] = 0.0;
+                  for (P=0;P<3;P++){
+                    S[M][N] += Fn1[M][P]*UU[P][N];
+                  }
+                }
+              }
+              for (M=0;M<3;M++){
+                for (N=0;N<3;N++){
+                  Fn1[M][N] = S[M][N];
+                }
+              }
+            }
+          }/* end analysis == FS_CRPL */
+
+          /* Deformation gradient || Fn+1 or eFn+1 for crystal
+             plasticity || F(fluctuation) for multi-scale modeling */
+          eps[ii].il[ip].F[0] = Fn1[0][0];
+          eps[ii].il[ip].F[1] = Fn1[0][1];
+          eps[ii].il[ip].F[2] = Fn1[0][2];
+
+          eps[ii].il[ip].F[3] = Fn1[1][0];
+          eps[ii].il[ip].F[4] = Fn1[1][1];
+          eps[ii].il[ip].F[5] = Fn1[1][2];
+
+          eps[ii].il[ip].F[6] = Fn1[2][0];
+          eps[ii].il[ip].F[7] = Fn1[2][1];
+          eps[ii].il[ip].F[8] = Fn1[2][2];
+
+
+          /**** UNIT CELL APPROACH ****/
+
+          /* eFn+1-BAR */
+          if (opts->analysis_type == FS_CRPL){
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                Fn1B[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  for (Q=0;Q<3;Q++){
+                    Fn1B[M][N] +=  (pow(Tr,1./3.)*pow(Jr,-1./3.)
+                                    *Fr[M][P]*FnB[P][Q]*UU[Q][N]);
+                  }
+                }
+              }
+            }
           }
-          for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          Fn1[M][N] = S[M][N];
-        }
+          else{
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                Fn1B[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  Fn1B[M][N] +=  (pow(Tr,1./3.)*pow(Jr,-1./3.)
+                                  *Fr[M][P]*FnB[P][N]);
+                }
+              }
+            }
           }
-        }
-      }/* end analysis == FS_CRPL */
 
-      /* Deformation gradient || Fn+1 or eFn+1 for crystal
-         plasticity || F(fluctuation) for multi-scale modeling */
-      eps[ii].il[ip].F[0] = Fn1[0][0];
-      eps[ii].il[ip].F[1] = Fn1[0][1];
-      eps[ii].il[ip].F[2] = Fn1[0][2];
+          if (periodic == 1){
 
-      eps[ii].il[ip].F[3] = Fn1[1][0];
-      eps[ii].il[ip].F[4] = Fn1[1][1];
-      eps[ii].il[ip].F[5] = Fn1[1][2];
+            /* Elastic : eFn at time n */
+            BB[0][0] = eps[ii].il[ip].Fe[0];
+            BB[0][1] = eps[ii].il[ip].Fe[1];
+            BB[0][2] = eps[ii].il[ip].Fe[2];
 
-      eps[ii].il[ip].F[6] = Fn1[2][0];
-      eps[ii].il[ip].F[7] = Fn1[2][1];
-      eps[ii].il[ip].F[8] = Fn1[2][2];
+            BB[1][0] = eps[ii].il[ip].Fe[3];
+            BB[1][1] = eps[ii].il[ip].Fe[4];
+            BB[1][2] = eps[ii].il[ip].Fe[5];
+
+            BB[2][0] = eps[ii].il[ip].Fe[6];
+            BB[2][1] = eps[ii].il[ip].Fe[7];
+            BB[2][2] = eps[ii].il[ip].Fe[8];
 
 
-      /**** UNIT CELL APPROACH ****/
+            if (opts->analysis_type == FS_CRPL){
+              /* Total Fn */
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  FlN[P][R] = 0.0;
+                  for (U=0;U<3;U++){
+                    FlN[P][R] += BB[P][U]*AA[U][R];
+                  }
+                }
+              }
+            }
+            else{
 
-      /* eFn+1-BAR */
-      if (opts->analysis_type == FS_CRPL){
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        Fn1B[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          for (Q=0;Q<3;Q++){
-            Fn1B[M][N] +=  (pow(Tr,1./3.)*pow(Jr,-1./3.)
-                    *Fr[M][P]*FnB[P][Q]*UU[Q][N]);
+              /* Inverse total def. grad. */
+              def_grad_inv (CCONST_2(double) Fn1B,AA);
+
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  FlN[P][R] = BB[P][R]; E[P][R] = 0.0;
+                  for (U=0;U<3;U++){
+                    E[P][R] += BB[P][U]*AA[U][R];
+                  }
+                }
+              }
+
+              /* EFFECTIVE STRAIN */
+              for (M=0;M<3;M++){
+                for (N=0;N<3;N++){
+                  if (M == N) dij = 1.0; else dij = 0.0;
+                  BB[M][N] = 1./dt*(dij - E[M][N]);
+                }
+              }
+
+              for (M=0;M<3;M++){
+                for (N=0;N<3;N++){
+                  /* Macroscopic Dp */
+                  eps[0].Dp[M][N]  += (1./VVolume *ai*aj*ak*J
+                                       * 1./2.*(BB[M][N] + BB[N][M]));
+                }
+              }
+            }/* end elastic */
+
+            /* Elastic or total deformation gradient */
+            eps[ii].il[ip].Fe[0] = eps[ii].il[ip].Fe1[0] = Fn1B[0][0];
+            eps[ii].il[ip].Fe[1] = eps[ii].il[ip].Fe1[1] = Fn1B[0][1];
+            eps[ii].il[ip].Fe[2] = eps[ii].il[ip].Fe1[2] = Fn1B[0][2];
+
+            eps[ii].il[ip].Fe[3] = eps[ii].il[ip].Fe1[3] = Fn1B[1][0];
+            eps[ii].il[ip].Fe[4] = eps[ii].il[ip].Fe1[4] = Fn1B[1][1];
+            eps[ii].il[ip].Fe[5] = eps[ii].il[ip].Fe1[5] = Fn1B[1][2];
+
+            eps[ii].il[ip].Fe[6] = eps[ii].il[ip].Fe1[6] = Fn1B[2][0];
+            eps[ii].il[ip].Fe[7] = eps[ii].il[ip].Fe1[7] = Fn1B[2][1];
+            eps[ii].il[ip].Fe[8] = eps[ii].il[ip].Fe1[8] = Fn1B[2][2];
+
+          }/* end periodic */
+
+          /* Material stiffness matrix */
+          matrix_tensor_3D (elem[ii].mat[2],hommat,L);
+
+          /**** CRYSTAL PLASTICITY ****/
+          if (opts->analysis_type == FS_CRPL){
+            /* Strain */
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                S[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  S[M][N] += FnB[M][P]*UU[P][N];
+                }
+              }
+            }
+            get_GL_strain (S,Fr,Jr,Tr,E);
           }
-        }
+          else
+            /* Strain */
+            get_GL_strain (FnB,Fr,Jr,Tr,E);
+
+          /* Stress */
+          get_SPK_stress (L,E,S);
+          /* PGFEM_printf ("[S] pressure =
+             %12.12f\n",(S[0][0]+S[1][1]+S[2][2])/3.); */
+
+          /**** CRYSTAL PLASTICITY ****/
+          if (opts->analysis_type == FS_CRPL){
+
+            /* Get stress and plastic rate on slip systems */
+            TA_GA (nss,mat,crpl,sig[ii].il[ip].Har1,Fn1B,S,TA,GA);
+
+            /* Update hardenenig and shear stress */
+            pom = 0.0;
+            for (M=0;M<nss;M++) {
+              eps[ii].il[ip].GA[M] = GA[M];
+              sig[ii].il[ip].Tau[M] = TA[M];
+              pom += fabs(GA[M]);
+            }
+
+            /* Acumulative plastic slip : PLC */
+            eps[ii].il[ip].GAMA += dt*pom;
+            eps[ii].GD += ai*aj*ak*J/volume*eps[ii].il[ip].GAMA;
+
+            /* Hardening stress update */
+            sig[ii].il[ip].Har = sig[ii].il[ip].Har1;
           }
-        }
-      }
-      else{
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        Fn1B[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          Fn1B[M][N] +=  (pow(Tr,1./3.)*pow(Jr,-1./3.)
-                  *Fr[M][P]*FnB[P][N]);
-        }
-          }
-        }
-      }
 
-      if (periodic == 1){
+          /* Second Piola Kirchoff stress */
+          sig[ii].il[ip].o[0] = S[0][0];
+          sig[ii].il[ip].o[1] = S[1][1];
+          sig[ii].il[ip].o[2] = S[2][2];
 
-        /* Elastic : eFn at time n */
-        BB[0][0] = eps[ii].il[ip].Fe[0];
-        BB[0][1] = eps[ii].il[ip].Fe[1];
-        BB[0][2] = eps[ii].il[ip].Fe[2];
+          sig[ii].il[ip].o[3] = S[1][2];
+          sig[ii].il[ip].o[4] = S[0][2];
+          sig[ii].il[ip].o[5] = S[0][1];
 
-        BB[1][0] = eps[ii].il[ip].Fe[3];
-        BB[1][1] = eps[ii].il[ip].Fe[4];
-        BB[1][2] = eps[ii].il[ip].Fe[5];
+          /* Elastic Green Lagrange strain */
+          eps[ii].il[ip].o[0] = E[0][0];
+          eps[ii].il[ip].o[1] = E[1][1];
+          eps[ii].il[ip].o[2] = E[2][2];
 
-        BB[2][0] = eps[ii].il[ip].Fe[6];
-        BB[2][1] = eps[ii].il[ip].Fe[7];
-        BB[2][2] = eps[ii].il[ip].Fe[8];
+          eps[ii].il[ip].o[3] = 2.*E[1][2];
+          eps[ii].il[ip].o[4] = 2.*E[0][2];
+          eps[ii].il[ip].o[5] = 2.*E[0][1];
 
+          /**** UNIT CELL APPROACH ****/
+          if (periodic == 1){
+            if (opts->analysis_type == FS_CRPL){
 
-        if (opts->analysis_type == FS_CRPL){
-          /* Total Fn */
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          FlN[P][R] = 0.0;
-          for (U=0;U<3;U++){
-            FlN[P][R] += BB[P][U]*AA[U][R];
-          }
-        }
-          }
-        }
-        else{
+              /* total plastic and elastic def. gradients */
+              def_grad_inv (CCONST_2(double) Fp,BB);
+              def_grad_inv (CCONST_2(double) Fn1B,DD);
 
-          /* Inverse total def. grad. */
+              /* First P-K stress */
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  AA[P][R] = 0.0;
+                  CC[P][R] = 0.0;
+                  UU_I[P][R] = 0.0;
+                  for (U=0;U<3;U++){
+                    CC[P][R] += Fn1[P][U]*BB[U][R];
+                    UU_I[P][R] += DD[P][U]*Fn1[U][R];
+                    for (Q=0;Q<3;Q++){
+                      AA[P][R] += Fn1B[P][U]*S[U][Q]*BB[R][Q];
+                    }
+                  }
+                }
+              }
+
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  /* First P-K stress */
+                  eps[0].P[P][R]  += 1./VVolume*ai*aj*ak*J * AA[P][R];
+                  /* Total def. gradient */
+                  eps[0].FB[P][R] += (1./VVolume*ai*aj*ak*J
+                                      * pow(Tr,1./3.)*pow(Jr,-1./3.)*Fr[P][R]);
+                  /* Elastic def. gradient */
+                  eps[0].Fe[P][R] += 1./VVolume*ai*aj*ak*J * DD[P][R];
+                  /* Plastic def. gradient */
+                  eps[0].Fp[P][R] += (1./VVolume*ai*aj*ak*J
+                                      * pow(Tr,1./3.)*pow(Jr,-1./3.)*BB[P][R]);
+                  Fee[P][R] += 1./VVolume*ai*aj*ak*J * UU_I[P][R];
+                  Fpp[P][R] += (1./VVolume*ai*aj*ak*J
+                                * pow(Tr,1./3.)*pow(Jr,-1./3.)*CC[P][R]);
+                }
+              }
+            }/* opts->analysis_type == FS_CRPL */
+            else{
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  AA[P][R] = 0.0;
+                  for (U=0;U<3;U++){
+                    AA[P][R] += Fn1B[P][U]*S[U][R];
+                  }
+                }
+              }
+              for (P=0;P<3;P++){
+                for (R=0;R<3;R++){
+                  eps[0].P[P][R]  += 1./VVolume*ai*aj*ak*J* AA[P][R];
+                  eps[0].FB[P][R] += (1./VVolume*ai*aj*ak*J* pow(Tr,1./3.)
+                                      *pow(Jr,-1./3.)*Fr[P][R]);
+                }
+              }
+            }/* elastic */
+
+            /* COMPUTE ENERGY || S:dE */
+            for (P=0;P<3;P++){
+              for (R=0;R<3;R++){
+                AA[P][R] = (1./dt * (pow(Tr,1./3.)*pow(Jr,-1./3.)
+                                     *Fr[P][R] - FlN[P][R]));
+              }
+            }
+
+            for (P=0;P<3;P++){
+              for (R=0;R<3;R++){
+                BB[P][R] = 0.0;
+                for (U=0;U<3;U++){
+                  BB[P][R] += (1./2. *(AA[U][P]*pow(Tr,1./3.)
+                                       *pow(Jr,-1./3.)*Fr[U][R]
+                                       + pow(Tr,1./3.)*pow(Jr,-1./3.)
+                                       *Fr[U][P]*AA[U][R]));
+                }
+              }
+            }
+            for (P=0;P<3;P++){
+              for (R=0;R<3;R++){
+                EL_e += 1./VVolume *ai*aj*ak*J * S[P][R]*BB[P][R];
+              }
+            }
+          }/* end PERIODIC */
+
+          /* Solve for Cauchy stress and elastic Almansi tensor */
           def_grad_inv (CCONST_2(double) Fn1B,AA);
-
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          FlN[P][R] = BB[P][R]; E[P][R] = 0.0;
-          for (U=0;U<3;U++){
-            E[P][R] += BB[P][U]*AA[U][R];
-          }
-        }
-          }
-
-          /* EFFECTIVE STRAIN */
+          pom = def_grad_det (CCONST_2(double) Fn1B);
           for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          if (M == N) dij = 1.0; else dij = 0.0;
-          BB[M][N] = 1./dt*(dij - E[M][N]);
-        }
-          }
-
-          for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          /* Macroscopic Dp */
-          eps[0].Dp[M][N]  += (1./VVolume *ai*aj*ak*J
-                       * 1./2.*(BB[M][N] + BB[N][M]));
-        }
-          }
-        }/* end elastic */
-
-        /* Elastic or total deformation gradient */
-        eps[ii].il[ip].Fe[0] = eps[ii].il[ip].Fe1[0] = Fn1B[0][0];
-        eps[ii].il[ip].Fe[1] = eps[ii].il[ip].Fe1[1] = Fn1B[0][1];
-        eps[ii].il[ip].Fe[2] = eps[ii].il[ip].Fe1[2] = Fn1B[0][2];
-
-        eps[ii].il[ip].Fe[3] = eps[ii].il[ip].Fe1[3] = Fn1B[1][0];
-        eps[ii].il[ip].Fe[4] = eps[ii].il[ip].Fe1[4] = Fn1B[1][1];
-        eps[ii].il[ip].Fe[5] = eps[ii].il[ip].Fe1[5] = Fn1B[1][2];
-
-        eps[ii].il[ip].Fe[6] = eps[ii].il[ip].Fe1[6] = Fn1B[2][0];
-        eps[ii].il[ip].Fe[7] = eps[ii].il[ip].Fe1[7] = Fn1B[2][1];
-        eps[ii].il[ip].Fe[8] = eps[ii].il[ip].Fe1[8] = Fn1B[2][2];
-
-      }/* end periodic */
-
-      /* Material stiffness matrix */
-      matrix_tensor_3D (elem[ii].mat[2],hommat,L);
-
-      /**** CRYSTAL PLASTICITY ****/
-      if (opts->analysis_type == FS_CRPL){
-        /* Strain */
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        S[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          S[M][N] += FnB[M][P]*UU[P][N];
-        }
-          }
-        }
-        get_GL_strain (S,Fr,Jr,Tr,E);
-      }
-      else
-        /* Strain */
-        get_GL_strain (FnB,Fr,Jr,Tr,E);
-
-      /* Stress */
-      get_SPK_stress (L,E,S);
-      /* PGFEM_printf ("[S] pressure =
-         %12.12f\n",(S[0][0]+S[1][1]+S[2][2])/3.); */
-
-      /**** CRYSTAL PLASTICITY ****/
-      if (opts->analysis_type == FS_CRPL){
-
-        /* Get stress and plastic rate on slip systems */
-        TA_GA (nss,mat,crpl,sig[ii].il[ip].Har1,Fn1B,S,TA,GA);
-
-        /* Update hardenenig and shear stress */
-        pom = 0.0;
-        for (M=0;M<nss;M++) {
-          eps[ii].il[ip].GA[M] = GA[M];
-          sig[ii].il[ip].Tau[M] = TA[M];
-          pom += fabs(GA[M]);
-        }
-
-        /* Acumulative plastic slip : PLC */
-        eps[ii].il[ip].GAMA += dt*pom;
-        eps[ii].GD += ai*aj*ak*J/volume*eps[ii].il[ip].GAMA;
-
-        /* Hardening stress update */
-        sig[ii].il[ip].Har = sig[ii].il[ip].Har1;
-      }
-
-      /* Second Piola Kirchoff stress */
-      sig[ii].il[ip].o[0] = S[0][0];
-      sig[ii].il[ip].o[1] = S[1][1];
-      sig[ii].il[ip].o[2] = S[2][2];
-
-      sig[ii].il[ip].o[3] = S[1][2];
-      sig[ii].il[ip].o[4] = S[0][2];
-      sig[ii].il[ip].o[5] = S[0][1];
-
-      /* Elastic Green Lagrange strain */
-      eps[ii].il[ip].o[0] = E[0][0];
-      eps[ii].il[ip].o[1] = E[1][1];
-      eps[ii].il[ip].o[2] = E[2][2];
-
-      eps[ii].il[ip].o[3] = 2.*E[1][2];
-      eps[ii].il[ip].o[4] = 2.*E[0][2];
-      eps[ii].il[ip].o[5] = 2.*E[0][1];
-
-      /**** UNIT CELL APPROACH ****/
-      if (periodic == 1){
-        if (opts->analysis_type == FS_CRPL){
-
-          /* total plastic and elastic def. gradients */
-          def_grad_inv (CCONST_2(double) Fp,BB);
-          def_grad_inv (CCONST_2(double) Fn1B,DD);
-
-          /* First P-K stress */
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          AA[P][R] = 0.0;
-          CC[P][R] = 0.0;
-          UU_I[P][R] = 0.0;
-          for (U=0;U<3;U++){
-            CC[P][R] += Fn1[P][U]*BB[U][R];
-            UU_I[P][R] += DD[P][U]*Fn1[U][R];
-            for (Q=0;Q<3;Q++){
-              AA[P][R] += Fn1B[P][U]*S[U][Q]*BB[R][Q];
+            for (N=0;N<3;N++){
+              UU_I[M][N] = 0.0;
+              BB[M][N] = 0.0;
+              for (P=0;P<3;P++){
+                for (Q=0;Q<3;Q++){
+                  UU_I[M][N] += 1./pom*Fn1B[M][P]*S[P][Q]*Fn1B[N][Q];
+                  BB[M][N] += AA[P][M]*E[P][Q]*AA[Q][N];
+                }
+              }
             }
           }
-        }
-          }
-
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          /* First P-K stress */
-          eps[0].P[P][R]  += 1./VVolume*ai*aj*ak*J * AA[P][R];
-          /* Total def. gradient */
-          eps[0].FB[P][R] += (1./VVolume*ai*aj*ak*J
-                      * pow(Tr,1./3.)*pow(Jr,-1./3.)*Fr[P][R]);
-          /* Elastic def. gradient */
-          eps[0].Fe[P][R] += 1./VVolume*ai*aj*ak*J * DD[P][R];
-          /* Plastic def. gradient */
-          eps[0].Fp[P][R] += (1./VVolume*ai*aj*ak*J
-                      * pow(Tr,1./3.)*pow(Jr,-1./3.)*BB[P][R]);
-          Fee[P][R] += 1./VVolume*ai*aj*ak*J * UU_I[P][R];
-          Fpp[P][R] += (1./VVolume*ai*aj*ak*J
-                * pow(Tr,1./3.)*pow(Jr,-1./3.)*CC[P][R]);
-        }
-          }
-        }/* opts->analysis_type == FS_CRPL */
-        else{
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          AA[P][R] = 0.0;
-          for (U=0;U<3;U++){
-            AA[P][R] += Fn1B[P][U]*S[U][R];
-          }
-        }
-          }
-          for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          eps[0].P[P][R]  += 1./VVolume*ai*aj*ak*J* AA[P][R];
-          eps[0].FB[P][R] += (1./VVolume*ai*aj*ak*J* pow(Tr,1./3.)
-                      *pow(Jr,-1./3.)*Fr[P][R]);
-        }
-          }
-        }/* elastic */
-
-        /* COMPUTE ENERGY || S:dE */
-        for (P=0;P<3;P++){
-          for (R=0;R<3;R++){
-        AA[P][R] = (1./dt * (pow(Tr,1./3.)*pow(Jr,-1./3.)
-                     *Fr[P][R] - FlN[P][R]));
-          }
-        }
-
-        for (P=0;P<3;P++){
-          for (R=0;R<3;R++){
-        BB[P][R] = 0.0;
-        for (U=0;U<3;U++){
-          BB[P][R] += (1./2. *(AA[U][P]*pow(Tr,1./3.)
-                       *pow(Jr,-1./3.)*Fr[U][R]
-                       + pow(Tr,1./3.)*pow(Jr,-1./3.)
-                       *Fr[U][P]*AA[U][R]));
-        }
-          }
-        }
-        for (P=0;P<3;P++){
-          for (R=0;R<3;R++){
-        EL_e += 1./VVolume *ai*aj*ak*J * S[P][R]*BB[P][R];
-          }
-        }
-      }/* end PERIODIC */
-
-      /* Solve for Cauchy stress and elastic Almansi tensor */
-      def_grad_inv (CCONST_2(double) Fn1B,AA);
-      pom = def_grad_det (CCONST_2(double) Fn1B);
-      for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          UU_I[M][N] = 0.0;
-          BB[M][N] = 0.0;
-          for (P=0;P<3;P++){
-        for (Q=0;Q<3;Q++){
-          UU_I[M][N] += 1./pom*Fn1B[M][P]*S[P][Q]*Fn1B[N][Q];
-          BB[M][N] += AA[P][M]*E[P][Q]*AA[Q][N];
-        }
-          }
-        }
-      }
-      for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          S[M][N] = UU_I[M][N];
-          E[M][N] = AA[M][N] = BB[M][N];
-        }
-      }
-
-      /* PGFEM_printf ("[sig] S0 = %12.12f : S1 = %12.12f : S2 = %12.12f
-         || pressure = %12.12f\n",S[0][0],S[1][1],S[2][2],
-         (S[0][0]+S[1][1]+S[2][2])/3.); */
-
-      /**** CRYSTAL PLASTICITY ****/
-      if (opts->analysis_type == FS_CRPL){
-
-        /* En+1 || Total strain */
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        if (M == N)
-          dij = 1.;
-        else
-          dij = 0;
-        UU[M][N] = -1./2.*dij;
-
-        AA[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          AA[M][N] += Fn1B[M][P]*Fp[P][N];
-
-          for (Q=0;Q<3;Q++){
-            for (R=0;R<3;R++){
-              UU[M][N] += (1./2.*Fp[P][M]*Fn1B[Q][P]
-                   *Fn1B[Q][R]*Fp[R][N]);
+          for (M=0;M<3;M++){
+            for (N=0;N<3;N++){
+              S[M][N] = UU_I[M][N];
+              E[M][N] = AA[M][N] = BB[M][N];
             }
           }
-        }
-          }
-        }
 
-        def_grad_inv (CCONST_2(double) AA,UU_I);
+          /* PGFEM_printf ("[sig] S0 = %12.12f : S1 = %12.12f : S2 = %12.12f
+             || pressure = %12.12f\n",S[0][0],S[1][1],S[2][2],
+             (S[0][0]+S[1][1]+S[2][2])/3.); */
 
-        for (M=0;M<3;M++){
-          for (N=0;N<3;N++){
-        AA[M][N] = 0.0;
-        for (P=0;P<3;P++){
-          for (Q=0;Q<3;Q++){
-            AA[M][N] += UU_I[P][M]*UU[P][Q]*UU_I[Q][N];
-          }
-        }
-          }
-        }
+          /**** CRYSTAL PLASTICITY ****/
+          if (opts->analysis_type == FS_CRPL){
 
-        /* Almansi Plastic Strain on element */
-        eps[ii].pl.o[0] += ai*aj*ak*J/volume*(AA[0][0] - E[0][0]);
-        eps[ii].pl.o[1] += ai*aj*ak*J/volume*(AA[1][1] - E[1][1]);
-        eps[ii].pl.o[2] += ai*aj*ak*J/volume*(AA[2][2] - E[2][2]);
+            /* En+1 || Total strain */
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                if (M == N)
+                  dij = 1.;
+                else
+                  dij = 0;
+                UU[M][N] = -1./2.*dij;
 
-        eps[ii].pl.o[3] += 2.*ai*aj*ak*J/volume*(AA[1][2] - E[1][2]);
-        eps[ii].pl.o[4] += 2.*ai*aj*ak*J/volume*(AA[0][2] - E[0][2]);
-        eps[ii].pl.o[5] += 2.*ai*aj*ak*J/volume*(AA[0][1] - E[0][1]);
+                AA[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  AA[M][N] += Fn1B[M][P]*Fp[P][N];
 
-        for (P=0;P<3;P++){
-          for (R=0;R<3;R++){
-        eps[ii].il[ip].dUU_Tr_n[P][R] = eps[ii].il[ip].dUU_Tr[P][R];
-        for (U=0;U<3;U++){
-          for (W=0;W<3;W++){
-            eps[ii].il[ip].dUU_Fr_n[P][R][U][W] =
-              eps[ii].il[ip].dUU_Fr[P][R][U][W];
-          }
-        }/* end U */
-          }
-        }/* end  P < 3 */
+                  for (Q=0;Q<3;Q++){
+                    for (R=0;R<3;R++){
+                      UU[M][N] += (1./2.*Fp[P][M]*Fn1B[Q][P]
+                                   *Fn1B[Q][R]*Fp[R][N]);
+                    }
+                  }
+                }
+              }
+            }
 
-      }/* end analysis == FS_CRPL */
+            def_grad_inv (CCONST_2(double) AA,UU_I);
 
-      /* Compute Logarithmic strain */
-      /* Logarithmic_strain (Fn1B,AA); */
+            for (M=0;M<3;M++){
+              for (N=0;N<3;N++){
+                AA[M][N] = 0.0;
+                for (P=0;P<3;P++){
+                  for (Q=0;Q<3;Q++){
+                    AA[M][N] += UU_I[P][M]*UU[P][Q]*UU_I[Q][N];
+                  }
+                }
+              }
+            }
 
-      /* Almansi or Logarithmic strain */
-      eps[ii].el.o[0] += ai*aj*ak*J/volume*AA[0][0];
-      eps[ii].el.o[1] += ai*aj*ak*J/volume*AA[1][1] ;
-      eps[ii].el.o[2] += ai*aj*ak*J/volume*AA[2][2];
+            /* Almansi Plastic Strain on element */
+            eps[ii].pl.o[0] += ai*aj*ak*J/volume*(AA[0][0] - E[0][0]);
+            eps[ii].pl.o[1] += ai*aj*ak*J/volume*(AA[1][1] - E[1][1]);
+            eps[ii].pl.o[2] += ai*aj*ak*J/volume*(AA[2][2] - E[2][2]);
 
-      eps[ii].el.o[3] += 2.*ai*aj*ak*J/volume*AA[1][2];
-      eps[ii].el.o[4] += 2.*ai*aj*ak*J/volume*AA[0][2];
-      eps[ii].el.o[5] += 2.*ai*aj*ak*J/volume*AA[0][1];
+            eps[ii].pl.o[3] += 2.*ai*aj*ak*J/volume*(AA[1][2] - E[1][2]);
+            eps[ii].pl.o[4] += 2.*ai*aj*ak*J/volume*(AA[0][2] - E[0][2]);
+            eps[ii].pl.o[5] += 2.*ai*aj*ak*J/volume*(AA[0][1] - E[0][1]);
 
-      /* Cauchy Stress */
-      sig[ii].el.o[0] += ai*aj*ak*J/volume*S[0][0];
-      sig[ii].el.o[1] += ai*aj*ak*J/volume*S[1][1] ;
-      sig[ii].el.o[2] += ai*aj*ak*J/volume*S[2][2];
+            for (P=0;P<3;P++){
+              for (R=0;R<3;R++){
+                eps[ii].il[ip].dUU_Tr_n[P][R] = eps[ii].il[ip].dUU_Tr[P][R];
+                for (U=0;U<3;U++){
+                  for (W=0;W<3;W++){
+                    eps[ii].il[ip].dUU_Fr_n[P][R][U][W] =
+                    eps[ii].il[ip].dUU_Fr[P][R][U][W];
+                  }
+                }/* end U */
+              }
+            }/* end  P < 3 */
 
-      sig[ii].el.o[3] += ai*aj*ak*J/volume*S[1][2];
-      sig[ii].el.o[4] += ai*aj*ak*J/volume*S[0][2];
-      sig[ii].el.o[5] += ai*aj*ak*J/volume*S[0][1];
+          }/* end analysis == FS_CRPL */
+
+          /* Compute Logarithmic strain */
+          /* Logarithmic_strain (Fn1B,AA); */
+
+          /* Almansi or Logarithmic strain */
+          eps[ii].el.o[0] += ai*aj*ak*J/volume*AA[0][0];
+          eps[ii].el.o[1] += ai*aj*ak*J/volume*AA[1][1] ;
+          eps[ii].el.o[2] += ai*aj*ak*J/volume*AA[2][2];
+
+          eps[ii].el.o[3] += 2.*ai*aj*ak*J/volume*AA[1][2];
+          eps[ii].el.o[4] += 2.*ai*aj*ak*J/volume*AA[0][2];
+          eps[ii].el.o[5] += 2.*ai*aj*ak*J/volume*AA[0][1];
+
+          /* Cauchy Stress */
+          sig[ii].el.o[0] += ai*aj*ak*J/volume*S[0][0];
+          sig[ii].el.o[1] += ai*aj*ak*J/volume*S[1][1] ;
+          sig[ii].el.o[2] += ai*aj*ak*J/volume*S[2][2];
+
+          sig[ii].el.o[3] += ai*aj*ak*J/volume*S[1][2];
+          sig[ii].el.o[4] += ai*aj*ak*J/volume*S[0][2];
+          sig[ii].el.o[5] += ai*aj*ak*J/volume*S[0][1];
 
 
-      ip++;
-    }/* end k < KK */
+          ip++;
+        }/* end k < KK */
       }/* end j < JJ */
     }/* end i < II */
 
@@ -802,17 +805,17 @@ void fd_increment (long ne,
     /* PRESSURE AND VOLUME CHANGES */
     for (M=0;M<npres;M++){
       if (periodic == 1){
-    eps[ii].T[M]  = eps[ii].d_T[M];
-    sig[ii].p[M] += sig[ii].d_p[M];
+        eps[ii].T[M]  = eps[ii].d_T[M];
+        sig[ii].p[M] += sig[ii].d_p[M];
 
-    sig[ii].d_p[M] = 0.0;
+        sig[ii].d_p[M] = 0.0;
       }
       else{
-    eps[ii].T[M] *= eps[ii].d_T[M];
-    sig[ii].p[M] += sig[ii].d_p[M];
+        eps[ii].T[M] *= eps[ii].d_T[M];
+        sig[ii].p[M] += sig[ii].d_p[M];
 
-    eps[ii].d_T[M] = 1.0;
-    sig[ii].d_p[M] = 0.0;
+        eps[ii].d_T[M] = 1.0;
+        sig[ii].d_p[M] = 0.0;
       }
     }
 
@@ -841,73 +844,73 @@ void fd_increment (long ne,
 
       U = 0;
       for (P=0;P<3;P++){
-    for (R=0;R<3;R++){
-      LPf[U+0]  = eps[0].P[P][R];
-      LPf[U+9]  = eps[0].FB[P][R];
-      LPf[U+18] = eps[0].Fe[P][R];
-      LPf[U+27] = eps[0].Fp[P][R];
-      LPf[U+36] = Fee[P][R];
-      LPf[U+45] = Fpp[P][R];
-      U++;
-    }
+        for (R=0;R<3;R++){
+          LPf[U+0]  = eps[0].P[P][R];
+          LPf[U+9]  = eps[0].FB[P][R];
+          LPf[U+18] = eps[0].Fe[P][R];
+          LPf[U+27] = eps[0].Fp[P][R];
+          LPf[U+36] = Fee[P][R];
+          LPf[U+45] = Fpp[P][R];
+          U++;
+        }
       }
 
       MPI_Allgather (LPf,54,MPI_DOUBLE,GPf,54,MPI_DOUBLE,mpi_comm);
 
       for (M=0;M<nproc;M++){
-    if (M == myrank) continue;
-    U = 0;
-    for (P=0;P<3;P++){
-      for (R=0;R<3;R++){
-        eps[0].P[P][R] += GPf[M*54+U+0];
-        eps[0].FB[P][R] += GPf[M*54+U+9];
-        eps[0].Fe[P][R] += GPf[M*54+U+18];
-        eps[0].Fp[P][R] += GPf[M*54+U+27];
-        Fee[P][R] += GPf[M*54+U+36];
-        Fpp[P][R] += GPf[M*54+U+45];
-        U++;
-      }
-    }
+        if (M == myrank) continue;
+        U = 0;
+        for (P=0;P<3;P++){
+          for (R=0;R<3;R++){
+            eps[0].P[P][R] += GPf[M*54+U+0];
+            eps[0].FB[P][R] += GPf[M*54+U+9];
+            eps[0].Fe[P][R] += GPf[M*54+U+18];
+            eps[0].Fp[P][R] += GPf[M*54+U+27];
+            Fee[P][R] += GPf[M*54+U+36];
+            Fpp[P][R] += GPf[M*54+U+45];
+            U++;
+          }
+        }
       }
 
       dealoc1 (GPf);
 
       pom = 0.0;
       for (P=0;P<3;P++){
-    for (R=0;R<3;R++){
-      AA[P][R] = Fpp[P][R];
-      CC[P][R] = Fee[P][R];
-      for (U=0;U<3;U++){
-        AA[P][R] += eps[0].FB[P][U]*eps[0].Fp[U][R];
-        CC[P][R] += eps[0].Fe[P][U]*eps[0].FB[U][R];
-      }
-    }
-      }
-
-      for (P=0;P<3;P++){
-    for (R=0;R<3;R++){
-      eps[0].Fe[P][R] = AA[P][R];
-      eps[0].Fp[P][R] = CC[P][R];
-    }
+        for (R=0;R<3;R++){
+          AA[P][R] = Fpp[P][R];
+          CC[P][R] = Fee[P][R];
+          for (U=0;U<3;U++){
+            AA[P][R] += eps[0].FB[P][U]*eps[0].Fp[U][R];
+            CC[P][R] += eps[0].Fe[P][U]*eps[0].FB[U][R];
+          }
+        }
       }
 
       for (P=0;P<3;P++){
-    for (R=0;R<3;R++){
-      BB[P][R] = 0.0;
-      for (U=0;U<3;U++){
-        BB[P][R] += AA[P][U]*CC[U][R];
+        for (R=0;R<3;R++){
+          eps[0].Fe[P][R] = AA[P][R];
+          eps[0].Fp[P][R] = CC[P][R];
+        }
       }
-    }
+
+      for (P=0;P<3;P++){
+        for (R=0;R<3;R++){
+          BB[P][R] = 0.0;
+          for (U=0;U<3;U++){
+            BB[P][R] += AA[P][U]*CC[U][R];
+          }
+        }
       }
 
       if (myrank == 0){
-    PGFEM_printf("FB=Fe*Fp\n");
-    for (P=0;P<3;P++){
-      for (R=0;R<3;R++){
-        PGFEM_printf("%12.12f  ",BB[P][R]);
-      }
-      PGFEM_printf("\n");
-    }
+        PGFEM_printf("FB=Fe*Fp\n");
+        for (P=0;P<3;P++){
+          for (R=0;R<3;R++){
+            PGFEM_printf("%12.12f  ",BB[P][R]);
+          }
+          PGFEM_printf("\n");
+        }
       }
     }/* end analysis == FS_CRPL */
     else {
@@ -916,27 +919,27 @@ void fd_increment (long ne,
 
       U = 0;
       for (P=0;P<3;P++){
-    for (R=0;R<3;R++){
-      LPf[U+0]  = eps[0].P[P][R];
-      LPf[U+9]  = eps[0].FB[P][R];
-      LPf[U+18] = eps[0].Fn[P][R];
-      U++;
-    }
+        for (R=0;R<3;R++){
+          LPf[U+0]  = eps[0].P[P][R];
+          LPf[U+9]  = eps[0].FB[P][R];
+          LPf[U+18] = eps[0].Fn[P][R];
+          U++;
+        }
       }
 
       MPI_Allgather (LPf,27,MPI_DOUBLE,GPf,27,MPI_DOUBLE,mpi_comm);
 
       for (M=0;M<nproc;M++){
-    if (M == myrank) continue;
-    U = 0;
-    for (P=0;P<3;P++){
-      for (R=0;R<3;R++){
-        eps[0].P[P][R] += GPf[M*27+U+0];
-        eps[0].FB[P][R] += GPf[M*27+U+9];
-        eps[0].Fn[P][R] += GPf[M*27+U+18];
-        U++;
-      }
-    }
+        if (M == myrank) continue;
+        U = 0;
+        for (P=0;P<3;P++){
+          for (R=0;R<3;R++){
+            eps[0].P[P][R] += GPf[M*27+U+0];
+            eps[0].FB[P][R] += GPf[M*27+U+9];
+            eps[0].Fn[P][R] += GPf[M*27+U+18];
+            U++;
+          }
+        }
       }
 
       dealoc1 (GPf);
@@ -945,25 +948,25 @@ void fd_increment (long ne,
     /* MACRO ENERGY || P:dF */
     for (P=0;P<3;P++){
       for (R=0;R<3;R++){
-    AA[P][R] = 1./dt * (eps[0].F[P][R] - FoN[P][R]);
+        AA[P][R] = 1./dt * (eps[0].F[P][R] - FoN[P][R]);
       }
     }
 
     for (P=0;P<3;P++){
       for (R=0;R<3;R++){
-    BB[P][R] = 0.0;
-    for (U=0;U<3;U++){
-      BB[P][R] += (1./2. *(AA[U][P]*eps[0].FB[U][R]
-                   + eps[0].FB[U][P]*AA[U][R]));
-    }
+        BB[P][R] = 0.0;
+        for (U=0;U<3;U++){
+          BB[P][R] += (1./2. *(AA[U][P]*eps[0].FB[U][R]
+                               + eps[0].FB[U][P]*AA[U][R]));
+        }
       }
     }
 
     pom = 0.0;
     for (P=0;P<3;P++){
       for (R=0;R<3;R++){
-    pom  += eps[0].P[P][R] * AA[P][R];
-    eps[0].Fn[P][R] = eps[0].F[P][R];
+        pom  += eps[0].P[P][R] * AA[P][R];
+        eps[0].Fn[P][R] = eps[0].F[P][R];
       }
     }
 
@@ -990,8 +993,8 @@ void fd_increment (long ne,
     U = 0;
     for (P=0;P<3;P++){
       for (R=0;R<3;R++){
-    eps[0].Dp[P][R] += GDp[M*9+U];
-    U++;
+        eps[0].Dp[P][R] += GDp[M*9+U];
+        U++;
       }
     }
   }
@@ -1016,41 +1019,41 @@ void fd_increment (long ne,
       X[2] = node[ii].x3_fd;
 
       for (P=0;P<3;P++){
-    Y[P] = 0.0;
-    for (R=0;R<3;R++){
-      Y[P] += eps[0].F[P][R]*X[R];
-    }
+        Y[P] = 0.0;
+        for (R=0;R<3;R++){
+          Y[P] += eps[0].F[P][R]*X[R];
+        }
       }
 
       for (i=0;i<ndn;i++){
-    II = node[ii].id_map[mp_id].id[i];
+        II = node[ii].id_map[mp_id].id[i];
 
-    if (i == 0) node[ii].x1 = Y[i];
-    if (i == 1) node[ii].x2 = Y[i];
-    if (i == 2) node[ii].x3 = Y[i];
+        if (i == 0) node[ii].x1 = Y[i];
+        if (i == 1) node[ii].x2 = Y[i];
+        if (i == 2) node[ii].x3 = Y[i];
 
-    if (II > 0){
-      if (i == 0) node[ii].x1 += r[II-1] + d_r[II-1];
-      if (i == 1) node[ii].x2 += r[II-1] + d_r[II-1];
-      if (i == 2) node[ii].x3 += r[II-1] + d_r[II-1];
-    }
+        if (II > 0){
+          if (i == 0) node[ii].x1 += r[II-1] + d_r[II-1];
+          if (i == 1) node[ii].x2 += r[II-1] + d_r[II-1];
+          if (i == 2) node[ii].x3 += r[II-1] + d_r[II-1];
+        }
       }
     }
   }/* end periodic */
   else{
     for (ii=0;ii<nn;ii++){
       for (i=0;i<ndn;i++){
-    II = node[ii].id_map[mp_id].id[i];
-    if (II > 0){
-      if (i == 0) node[ii].x1 += d_r[II-1];
-      if (i == 1) node[ii].x2 += d_r[II-1];
-      if (i == 2) node[ii].x3 += d_r[II-1];
-    }
-    if (II < 0){
-      if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
-      if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
-      if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
-    }
+        II = node[ii].id_map[mp_id].id[i];
+        if (II > 0){
+          if (i == 0) node[ii].x1 += d_r[II-1];
+          if (i == 1) node[ii].x2 += d_r[II-1];
+          if (i == 2) node[ii].x3 += d_r[II-1];
+        }
+        if (II < 0){
+          if (i == 0) node[ii].x1 += sup->defl_d[abs(II)-1];
+          if (i == 1) node[ii].x2 += sup->defl_d[abs(II)-1];
+          if (i == 2) node[ii].x3 += sup->defl_d[abs(II)-1];
+        }
       }
     }/* end ii < nn */
   }
@@ -1069,9 +1072,9 @@ void fd_increment (long ne,
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f\n",GVol);
     else
       PGFEM_printf ("AFTER DEF - VOLUME = %12.12f ||"
-          " Volume of voids %12.12f ||"
-          " Vv/V = %12.12f\n",
-          GVol,Gpores,Gpores/VVolume);
+                    " Volume of voids %12.12f ||"
+                    " Vv/V = %12.12f\n",
+                    GVol,Gpores,Gpores/VVolume);
   }
 
   dealoc1 (gk);

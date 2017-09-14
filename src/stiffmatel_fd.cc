@@ -1,62 +1,65 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "stiffmatel_fd.h"
-#include <math.h>
 #include "PGFEM_io.h"
-#include "enumerations.h"
 #include "allocation.h"
 #include "cast_macros.h"
 #include "def_grad.h"
+#include "enumerations.h"
 #include "elem3d.h"
 #include "pressu_shape.h"
 #include "stress_strain.h"
 #include "tensors.h"
 #include "utils.h"
+#include <math.h>
 
-static const int periodic = 0;
+static constexpr int periodic = 0;
 
 /* VVolume only appears in deprecated 'periodic' branch. Poison value
    to return NaN, prompting investigation of how entered deprecated
    branch of code. */
-static const double VVolume = 0.0;
+static constexpr double VVolume = 0.0;
 
 int stiffmatel_fd (long ii,
-           long ndofn,
-           long nne,
-           long *nod,
-           double *x,
-           double *y,
-           double *z,
-           ELEMENT *elem,
-           MATGEOM matgeom,
-           HOMMAT *hommat,
-           NODE *node,
-           SIG *sig,
-           EPS *eps,
-           double *r_e,
-           long npres,
-           double nor_min,
-           double *Ks,
-           double dt,
-           CRPL *crpl,
-           long FNR,
-           double lm,
-           double *fe,
-           const int analysis)
+                   long ndofn,
+                   long nne,
+                   long *nod,
+                   double *x,
+                   double *y,
+                   double *z,
+                   Element *elem,
+                   MATGEOM matgeom,
+                   HOMMAT *hommat,
+                   Node *node,
+                   SIG *sig,
+                   EPS *eps,
+                   double *r_e,
+                   long npres,
+                   double nor_min,
+                   double *Ks,
+                   double dt,
+                   CRPL *crpl,
+                   long FNR,
+                   double lm,
+                   double *fe,
+                   const int analysis)
 {
   int err = 0;
   long  i,j,k,II,JJ,kK,ip,ndn,M,N,X,P,R,Q,U,V,W,Y,Z,ndofe;
   double ai{},aj{},ak{},ksi{},eta{},zet{};
   double **B,**S,*N_x,*N_y,*N_z,J,*w,*gk,*ge,*gz,****ST,**Fr,**Fr_I,**Fn,***AA,***aa,Jn,Jr,*Psi,**DD,
-    **dd,L[3][3][3][3],**f,**MM,**mm;
+  **dd,L[3][3][3][3],**f,**MM,**mm;
   double ***BB,***bb,****FF,help1,help2,help3,****KK,****kk,Tn,
-    Tr,pp,**E,****EE,****ee,****GG,****gg,****HH,****hh,help4,
-    **UU{},****pFFp{},**pfp{},***BB1{},***bb1{};
-  double ***BB2{},***bb2{},**MMp{},**mmp{},****pKKp{},****pkkp{},****pGGp{},
-  ****pggp{},****pGp{},**FnB,dij,**Flam,**FFlam,**pFFplam,**KKlam,
-    **EElam,**GGlam,**HHlam;
+  Tr,pp,**E,****EE,****ee,****GG,****gg,****HH,****hh,help4,
+  **UU{},****pFFp{},**pfp{},***BB1{},***bb1{};
+  double ***BB2{}, ***bb2{}, **MMp{}, **mmp{}, ****pKKp{}, ****pkkp{}, ****pGGp{},
+                                                                       ****pggp{}, ****pGp{};
+  double **FnB,dij,**Flam,**FFlam,**pFFplam,**KKlam,**EElam,**GGlam,**HHlam;
   double **pKKplam,**pGGplam,**pGplam,**kklam,**eelam,**gglam,
-    **hhlam,**pkkplam,**pggplam,*Re2,*re2,*Re3,*re3,*Re2lam,
-    *re2lam,*Re3lam,*re3lam;
+  **hhlam,**pkkplam,**pggplam,*Re2,*re2,*Re3,*re3,*Re2lam,
+  *re2lam,*Re3lam,*re3lam;
 
   /*
     FILE *slon;
@@ -167,524 +170,524 @@ int stiffmatel_fd (long ii,
     for(j=0;j<JJ;j++){
       for (k=0;k<kK;k++){
 
-    if (nne == 4)  {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 10) {
-      ksi = *(gk+k);
-      eta = *(ge+k);
-      zet = *(gz+k);
-      ai = *(w+k);
-      aj = 1.0;
-      ak = 1.0;
-    }
-    if (nne == 8)  {
-      ksi = *(gk+i);
-      eta = *(gk+j);
-      zet = *(gk+k);
-      ai = *(w+i);
-      aj = *(w+j);
-      ak = *(w+k);
-    }
-
-    /* Derivatives of shape functions and Jacobian of integration */
-    J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
-
-    Fn[0][0] = eps[ii].il[ip].F[0];
-    Fn[0][1] = eps[ii].il[ip].F[1];
-    Fn[0][2] = eps[ii].il[ip].F[2];
-
-    Fn[1][0] = eps[ii].il[ip].F[3];
-    Fn[1][1] = eps[ii].il[ip].F[4];
-    Fn[1][2] = eps[ii].il[ip].F[5];
-
-    Fn[2][0] = eps[ii].il[ip].F[6];
-    Fn[2][1] = eps[ii].il[ip].F[7];
-    Fn[2][2] = eps[ii].il[ip].F[8];
-
-    shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
-    def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
-    def_grad_inv (CCONST_2(double) Fr,Fr_I);
-    Jr = def_grad_det (CCONST_2(double) Fr);
-    Jn = def_grad_det (CCONST_2(double) Fn);
-
-    /* Check determinants and exit cleanly with error if
-       negative */
-    if(Jn <= 0.0 || Jr <= 0.0){
-      err += 1;
-      goto exit_function;
-    }
-
-    /* Pressure shape functions */
-    pressu_shape (npres,ksi,eta,zet,Psi);
-
-    Tn = 0.0; Tr = 0.0; pp = 0.0;
-    for (M=0;M<npres;M++){
-      Tn += Psi[M]*eps[ii].T[M];
-      Tr += Psi[M]*eps[ii].d_T[M];
-      pp += Psi[M]*(sig[ii].p[M] + sig[ii].d_p[M]);
-    }
-
-    /* Set Fn-BAR */
-    for (Q=0;Q<3;Q++){
-      for (R=0;R<3;R++){
-        FnB[Q][R] = pow(Tn,1./3.)*pow(Jn,-1./3.)*Fn[Q][R];
-      }
-    }
-
-    /********************** UNIT CELL APPROACH ************************/
-    if (periodic == 1) {
-      if (analysis == FS_CRPL){
-        S[0][0] = eps[ii].il[ip].Fp[0];
-        S[0][1] = eps[ii].il[ip].Fp[1];
-        S[0][2] = eps[ii].il[ip].Fp[2];
-
-        S[1][0] = eps[ii].il[ip].Fp[3];
-        S[1][1] = eps[ii].il[ip].Fp[4];
-        S[1][2] = eps[ii].il[ip].Fp[5];
-
-        S[2][0] = eps[ii].il[ip].Fp[6];
-        S[2][1] = eps[ii].il[ip].Fp[7];
-        S[2][2] = eps[ii].il[ip].Fp[8];
-
-        def_grad_inv (CCONST_2(double) S,FnB);
-      }/* end analysis == FS_CRPL */
-      else{
-        for (N=0;N<3;N++){
-          for (P=0;P<3;P++){
-        if (N == P)
-          dij = 1.0;
-        else
-          dij = 0.0;
-        FnB[N][P] = dij;
-          }
+        if (nne == 4)  {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
         }
-      }
-
-      for (N=0;N<3;N++){
-        for (P=0;P<3;P++)
-          Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
-      }
-
-      Jr = def_grad_det (CCONST_2(double) Fr);
-      def_grad_inv (CCONST_2(double) Fr,Fr_I);
-      Jn = Tn = 1.;
-
-      if (FNR == 2 || FNR == 3){
-        /* Compression */
-        if (eps[0].type == 1){
-          Flam[0][0] = eps[0].load/((1.-lm*eps[0].load)*(1.-lm*eps[0].load));
-          Flam[1][1] = -eps[0].load;
-          Flam[2][2] = 0.0;
+        if (nne == 10) {
+          ksi = *(gk+k);
+          eta = *(ge+k);
+          zet = *(gz+k);
+          ai = *(w+k);
+          aj = 1.0;
+          ak = 1.0;
         }
-      }
-
-    }/* end PERIODIC */
-
-    /* Material stiffness matrix */
-    matrix_tensor_3D (elem[ii].mat[2],hommat,L);
-
-    /*********************** CRYSTAL PLASTICITY *********************************/
-    if (analysis == FS_CRPL){
-      UU[0][0] = eps[ii].il[ip].UU[0];
-      UU[0][1] = eps[ii].il[ip].UU[1];
-      UU[0][2] = eps[ii].il[ip].UU[2];
-
-      UU[1][0] = eps[ii].il[ip].UU[3];
-      UU[1][1] = eps[ii].il[ip].UU[4];
-      UU[1][2] = eps[ii].il[ip].UU[5];
-
-      UU[2][0] = eps[ii].il[ip].UU[6];
-      UU[2][1] = eps[ii].il[ip].UU[7];
-      UU[2][2] = eps[ii].il[ip].UU[8];
-
-      for (M=0;M<3;M++){
-        for (N=0;N<3;N++){
-          S[M][N] = 0.0;
-          for (P=0;P<3;P++){
-        S[M][N] += FnB[M][P]*UU[P][N];
-          }
+        if (nne == 8)  {
+          ksi = *(gk+i);
+          eta = *(gk+j);
+          zet = *(gk+k);
+          ai = *(w+i);
+          aj = *(w+j);
+          ak = *(w+k);
         }
-      }
 
-      /* Strain */
-      get_GL_strain (S,Fr,Jr,Tr,E);
-    }/* end analysis == FS_CRPL */
-    else
-      /* Strain */
-      get_GL_strain (FnB,Fr,Jr,Tr,E);
+        /* Derivatives of shape functions and Jacobian of integration */
+        J = deriv (ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
-    /* Stress */
-    get_SPK_stress (L,E,S);
+        Fn[0][0] = eps[ii].il[ip].F[0];
+        Fn[0][1] = eps[ii].il[ip].F[1];
+        Fn[0][2] = eps[ii].il[ip].F[2];
 
-    /* Tensors used in analysis */
-    tensors_FF_f (nne,ndn,FnB,Fr,Fr_I,Jr,ST,FF,f);
-    if (periodic == 1 && (FNR == 2 || FNR == 3))
-      tensors_FFla (ii,ip,nne,ndn,eps,FnB,Fr,Fr_I,Jr,f,
-            UU,Flam,FFlam,pGplam,analysis);
+        Fn[1][0] = eps[ii].il[ip].F[3];
+        Fn[1][1] = eps[ii].il[ip].F[4];
+        Fn[1][2] = eps[ii].il[ip].F[5];
 
-    /*********************** CRYSTAL PLASTICITY ********************/
-    if (analysis == FS_CRPL){
+        Fn[2][0] = eps[ii].il[ip].F[6];
+        Fn[2][1] = eps[ii].il[ip].F[7];
+        Fn[2][2] = eps[ii].il[ip].F[8];
 
-      for (P=0;P<3;P++){
-        for (R=0;R<3;R++){
-          /* eFn+1 and F* */
-          pfp[P][R] = 0.0;
-          if (periodic == 1 && (FNR == 2 || FNR == 3))
-        pFFplam[P][R] = 0.0;
+        shape_tensor (nne,ndofn,N_x,N_y,N_z,ST);
+        def_grad_get (nne,ndofn,CONST_4(double) ST,r_e,Fr);
+        def_grad_inv (CCONST_2(double) Fr,Fr_I);
+        Jr = def_grad_det (CCONST_2(double) Fr);
+        Jn = def_grad_det (CCONST_2(double) Fn);
 
-          for (U=0;U<3;U++){
-        for (W=0;W<3;W++){
-          pfp[P][R] += UU[U][P] * f[U][W] * UU[W][R];
-          if (periodic == 1 && (FNR == 2 || FNR == 3))
-            pFFplam[P][R] += UU[U][P] * FFlam[U][W] * UU[W][R];
+        /* Check determinants and exit cleanly with error if
+           negative */
+        if(Jn <= 0.0 || Jr <= 0.0){
+          err += 1;
+          goto exit_function;
         }
-          }
 
-          for (M=0;M<ndn;M++){
-        for (N=0;N<nne;N++){
-          pFFp[P][R][M][N] = 0.0;
+        /* Pressure shape functions */
+        pressu_shape (npres,ksi,eta,zet,Psi);
 
-          for (U=0;U<3;U++){
-            for (W=0;W<3;W++){
-              if (FF[U][W][M][N] == 0.0)
-            continue;
-              pFFp[P][R][M][N] += UU[U][P] * FF[U][W][M][N] * UU[W][R];
-            }
-          }
+        Tn = 0.0; Tr = 0.0; pp = 0.0;
+        for (M=0;M<npres;M++){
+          Tn += Psi[M]*eps[ii].T[M];
+          Tr += Psi[M]*eps[ii].d_T[M];
+          pp += Psi[M]*(sig[ii].p[M] + sig[ii].d_p[M]);
         }
-          }
-        }/* end R < 3 */
-      }/* end P < 3 */
 
-      /* Elasto-Plastic tensors */
-      tensors_aa_bb_dd_mm_plast (ii,ip,nne,ndn,npres,ai,aj,ak,J,Psi,L,Fn,Fr,
-                     Fr_I,Jn,Jr,Tn,Tr,ST,FF,f,AA,aa,BB,bb,DD,dd,
-                     MM,mm,S,pFFp,pfp,UU,eps,BB1,bb1,BB2,bb2,MMp,mmp,pGp);
-    }/* end analysis == FS_CRPL */
-    else
-      tensors_aa_bb_dd_mm (nne,ndn,npres,ai,aj,ak,J,Psi,L,FnB,Fr,Fr_I,Jn,Jr,
-                   Tn,Tr,ST,FF,f,AA,aa,BB,bb,DD,dd,MM,mm);
-
-    /***************************************************************/
-    /***************************************************************/
-    /***************************************************************/
-
-    /* Tensor EE */
-    for (R=0;R<3;R++){
-      for (U=0;U<3;U++){
-        B[R][U] = 0.0;
-        if (analysis == FS_CRPL){
-          for (V=0;V<3;V++){
-        for (W=0;W<3;W++){
-
-          for (Y=0;Y<3;Y++){
-            for (Z=0;Z<3;Z++){
-              B[R][U] += 1./Jn*pow(Tr,2./3.)*pow(Jr,-2./3.) *
-            FnB[R][V]*UU[V][W]*S[W][Y]*UU[Z][Y]*FnB[U][Z];
-            }
-          }
-        }
-          }
-        }
-        else{
-          for (V=0;V<3;V++){
-        for (W=0;W<3;W++){
-          B[R][U] += 1./Jn*pow(Tr,2./3.)*pow(Jr,-2./3.) *
-            FnB[R][V]*S[V][W]*FnB[U][W];
-        }
-          }
-        }/* end else */
-      }/* end U */
-    }/* end R */
-
-    for (M=0;M<ndn;M++){
-      for (N=0;N<ndn;N++){
-        for (X=0;X<nne;X++){
-          for (P=0;P<nne;P++){
-        /* null matrices */
-        KK[M][N][X][P] = EE[M][N][X][P] = GG[M][N][X][P] = HH[M][N][X][P] = 0.0;
-        if (analysis == FS_CRPL) { /* gboa */
-          pKKp[M][N][X][P] = pGGp[M][N][X][P] = 0.0;
-        }  /* gboa */
-
-        help1 = 0.0;
-        help2 = 0.0;
-        help3 = 0.0;
-        help4 = 0.0;
+        /* Set Fn-BAR */
         for (Q=0;Q<3;Q++){
           for (R=0;R<3;R++){
-            for (U=0;U<3;U++){
-              for (V=0;V<3;V++){
-            /* MATERIAL STIFFNESS MATRIX - Tensor KK */
-            if (analysis == FS_CRPL) {
-              if (L[Q][R][U][V] != 0.0 &&
-                  pFFp[Q][R][M][X] != 0.0 &&
-                  pFFp[U][V][N][P] != 0.0)
-                KK[M][N][X][P] += 1./Jn*pow(Tr,4./3.)*pFFp[Q][R][M][X]*
-                  L[Q][R][U][V]*pFFp[U][V][N][P];
-            }
-            else {
-              if (L[Q][R][U][V] != 0.0 &&
-                  FF[Q][R][M][X] != 0.0 &&
-                  FF[U][V][N][P] != 0.0)
-                KK[M][N][X][P] += 1./Jn*pow(Tr,4./3.)*FF[Q][R][M][X]*
-                  L[Q][R][U][V]*FF[U][V][N][P];
-            }
-
-            if (analysis == FS_CRPL){/* PLASTIC MATERIAL + GEOMETRIC STIFFNESS */
-              if (L[Q][R][U][V] != 0.0 &&
-                  pFFp[Q][R][M][X] != 0.0 &&
-                  pGp[U][V][N][P] != 0.0)
-                pKKp[M][N][X][P] += 1./Jn*1./2.*pow(Tr,4./3.)* pFFp[Q][R][M][X]*
-                  L[Q][R][U][V]*pGp[U][V][N][P];
-
-              for (Y=0;Y<3;Y++){
-                if (ST[Q][R][N][P] == 0.0 || FF[U][V][M][X] == 0.0)
-                  break;
-                for (Z=0;Z<3;Z++){
-                  if (eps[ii].il[ip].dUU_Fr[Q][R][U][Y] != 0.0)
-                pGGp[M][N][X][P] += 1./Jn*pow(Tr,2./3.)*ST[Q][R][N][P]*
-                  FF[U][V][M][X]*eps[ii].il[ip].dUU_Fr[Q][R][U][Y]*UU[V][Z] *
-                  S[Y][Z];
-                  if (eps[ii].il[ip].dUU_Fr[Q][R][V][Z] != 0.0)
-                pGGp[M][N][X][P] += 1./Jn*pow(Tr,2./3.)*ST[Q][R][N][P]*
-                  FF[U][V][M][X]*UU[U][Y]*eps[ii].il[ip].dUU_Fr[Q][R][V][Z] *
-                  S[Y][Z];
-                }
-              }/* end Y */
-            }/* analysis == FS_CRPL */
-
-            if (ST[Q][R][M][X] != 0.0 && ST[U][V][N][P] != 0.0){/* gboa */
-              help1 += (2./9.*Fr_I[R][Q]*Fr_I[V][U] + 1./3.*Fr_I[V][Q]*Fr_I[R][U])
-                *ST[Q][R][M][X]*ST[U][V][N][P];
-              help3 += (Fr_I[R][Q]*Fr_I[V][U] - Fr_I[V][Q]*Fr_I[R][U])*
-                ST[Q][R][M][X]*ST[U][V][N][P];
-            }
-
-              }/* end V */
-            }/* end U */
-            if (ST[Q][R][M][X] != 0.0)
-              help2 += Fr_I[R][Q]*ST[Q][R][M][X];
-            if (ST[Q][R][N][P] != 0.0)
-              help4 += Fr_I[R][Q]*ST[Q][R][N][P];
-          }/* end R */
-        }/* end Q */
-
-        /* Geometric Stiffness */
-        EE[M][N][X][P] = Jr*pp*help3;
-
-        for (Q=0;Q<3;Q++){
-          for (R=0;R<3;R++){
-            for (U=0;U<3;U++){
-              GG[M][N][X][P] += B[Q][R] * 1./2.*
-            (ST[U][Q][M][X]*ST[U][R][N][P] + ST[U][Q][N][P]*ST[U][R][M][X]);
-              HH[M][N][X][P] += B[Q][R] *
-            (help1*Fr[U][Q]*Fr[U][R] - 2./3.*help2 * 1./2.*
-             (ST[U][Q][N][P]*Fr[U][R] + Fr[U][Q]*ST[U][R][N][P])
-             - 2./3.*help4 * 1./2.*
-             (ST[U][Q][M][X]*Fr[U][R] + Fr[U][Q]*ST[U][R][M][X]));
-            }
-          }
-        }/* end Q */
-        if (periodic == 1){
-          ee[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * EE[M][N][X][P];
-          gg[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * GG[M][N][X][P];
-          hh[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * HH[M][N][X][P];
-          kk[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * KK[M][N][X][P];
-        }
-        else{
-          ee[M][N][X][P] += ai*aj*ak*J * EE[M][N][X][P];
-          gg[M][N][X][P] += ai*aj*ak*J * GG[M][N][X][P];
-          hh[M][N][X][P] += ai*aj*ak*J * HH[M][N][X][P];
-          kk[M][N][X][P] += ai*aj*ak*J * KK[M][N][X][P];
-        }
-        if (analysis == FS_CRPL){
-          if (periodic == 1){
-            pkkp[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * pKKp[M][N][X][P];
-            pggp[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * pGGp[M][N][X][P];
-          }
-          else{
-            pkkp[M][N][X][P] += ai*aj*ak*J * pKKp[M][N][X][P];
-            pggp[M][N][X][P] += ai*aj*ak*J * pGGp[M][N][X][P];
+            FnB[Q][R] = pow(Tn,1./3.)*pow(Jn,-1./3.)*Fn[Q][R];
           }
         }
 
-          }/* end P */
-        }
-      }
-    }/* end  M */
-
-    /**************************/
-    /* Tangential load vector */
-    /**************************/
-
-    if (periodic == 1 && (FNR == 2 || FNR == 3)){
-      for (M=0;M<ndn;M++){
-        for (X=0;X<nne;X++){
-          /* null matricies */
-          KKlam[M][X] = EElam[M][X] = GGlam[M][X] = HHlam[M][X] = 0.0;  /* gb */
-          if (analysis == FS_CRPL) {
-        pKKplam[M][X] = pGGplam[M][X] = 0.0;
-          }  /* gb */
-
-          help1 = 0.0;
-          help2 = 0.0;
-          help3 = 0.0;
-          help4 = 0.0;
-          for (Q=0;Q<3;Q++){
-        for (R=0;R<3;R++){
-          for (U=0;U<3;U++){
-            for (V=0;V<3;V++){
-              if (analysis == FS_CRPL){/* plastic */
-            if (L[Q][R][U][V] != 0.0 &&
-                pFFp[Q][R][M][X] != 0.0 &&
-                pFFplam[U][V] != 0.0){
-              KKlam[M][X] += 1./Jn*pow(Tr,4./3.)*pFFp[Q][R][M][X]*
-                L[Q][R][U][V]*pFFplam[U][V];
-            }
-              }
-              else{/* elastic */
-            if (L[Q][R][U][V] != 0.0 &&
-                FF[Q][R][M][X] != 0.0 &&
-                FFlam[U][V] != 0.0){
-              KKlam[M][X] += 1./Jn*pow(Tr,4./3.)*FF[Q][R][M][X]*
-                L[Q][R][U][V]*FFlam[U][V];
-            }
-              }
-
-              if (analysis == FS_CRPL){/* plastic */
-            if (L[Q][R][U][V] != 0.0 &&
-                pFFp[Q][R][M][X] != 0.0 &&
-                pGplam[U][V] != 0.0){
-              pKKplam[M][X] += 1./Jn*1./2.*pow(Tr,4./3.)* pFFp[Q][R][M][X]*
-                L[Q][R][U][V]*pGplam[U][V];
-            }
-
-            for (Y=0;Y<3;Y++){
-              if (FF[U][V][M][X] == 0.0) break;
-              for (Z=0;Z<3;Z++){
-                if (eps[ii].il[ip].dUU_Fr[Q][R][U][Y] != 0.0)
-                  pGGplam[M][X] += 1./Jn*pow(Tr,2./3.)*Flam[Q][R]*FF[U][V][M][X]*
-                eps[ii].il[ip].dUU_Fr[Q][R][U][Y]*UU[V][Z] * S[Y][Z];
-                if (eps[ii].il[ip].dUU_Fr[Q][R][V][Z] != 0.0)
-                  pGGplam[M][X] += 1./Jn*pow(Tr,2./3.)*Flam[Q][R]*FF[U][V][M][X]*
-                UU[U][Y]*eps[ii].il[ip].dUU_Fr[Q][R][V][Z] * S[Y][Z];
-              }
-            }/* end Y */
-              }/* analysis == FS_CRPL */
-
-              if (ST[Q][R][M][X] != 0.0){
-            help1 += (2./9.*Fr_I[R][Q]*Fr_I[V][U] + 1./3.*Fr_I[V][Q]*Fr_I[R][U])*
-              ST[Q][R][M][X]*Flam[U][V];
-            help3 += (Fr_I[R][Q]*Fr_I[V][U] - Fr_I[V][Q]*Fr_I[R][U])*
-              ST[Q][R][M][X]*Flam[U][V];
-              }
-
-            }/* end V */
-          }/* end U */
-
-          if (ST[Q][R][M][X] != 0.0)
-            help2 += Fr_I[R][Q]*ST[Q][R][M][X];
-          help4 += Fr_I[R][Q]*Flam[Q][R];
-
-        }/* end R */
-          }/* end Q */
-
-          /* Geometric Stiffness */
-          EElam[M][X] = Jr*pp*help3;
-
-          for (Q=0;Q<3;Q++){
-        for (R=0;R<3;R++){
-          for (U=0;U<3;U++){
-            GGlam[M][X] += B[Q][R] * 1./2.*(ST[U][Q][M][X]*Flam[U][R] +
-                            Flam[U][Q]*ST[U][R][M][X]);
-            HHlam[M][X] += B[Q][R] *
-              (help1*Fr[U][Q]*Fr[U][R] - 2./3.*help2 * 1./2.*
-               (Flam[U][Q]*Fr[U][R] + Fr[U][Q]*Flam[U][R])
-               - 2./3.*help4 * 1./2.*
-               (ST[U][Q][M][X]*Fr[U][R] + Fr[U][Q]*ST[U][R][M][X]));
-          }
-        }
-          }/* end Q */
-
-          eelam[M][X] += 1./(VVolume) *ai*aj*ak*J * EElam[M][X];
-          gglam[M][X] += 1./(VVolume) *ai*aj*ak*J * GGlam[M][X];
-          hhlam[M][X] += 1./(VVolume) *ai*aj*ak*J * HHlam[M][X];
-          kklam[M][X] += 1./(VVolume) *ai*aj*ak*J * KKlam[M][X];
-
+        /********************** UNIT CELL APPROACH ************************/
+        if (periodic == 1) {
           if (analysis == FS_CRPL){
-        pkkplam[M][X] += 1./(VVolume) *ai*aj*ak*J * pKKplam[M][X];
-        pggplam[M][X] += 1./(VVolume) *ai*aj*ak*J * pGGplam[M][X];
+            S[0][0] = eps[ii].il[ip].Fp[0];
+            S[0][1] = eps[ii].il[ip].Fp[1];
+            S[0][2] = eps[ii].il[ip].Fp[2];
+
+            S[1][0] = eps[ii].il[ip].Fp[3];
+            S[1][1] = eps[ii].il[ip].Fp[4];
+            S[1][2] = eps[ii].il[ip].Fp[5];
+
+            S[2][0] = eps[ii].il[ip].Fp[6];
+            S[2][1] = eps[ii].il[ip].Fp[7];
+            S[2][2] = eps[ii].il[ip].Fp[8];
+
+            def_grad_inv (CCONST_2(double) S,FnB);
+          }/* end analysis == FS_CRPL */
+          else{
+            for (N=0;N<3;N++){
+              for (P=0;P<3;P++){
+                if (N == P)
+                  dij = 1.0;
+                else
+                  dij = 0.0;
+                FnB[N][P] = dij;
+              }
+            }
           }
 
-        }/* end X */
-      }/* end  M */
+          for (N=0;N<3;N++){
+            for (P=0;P<3;P++)
+              Fr[N][P] += eps[0].F[N][P] + Fn[N][P];
+          }
 
-      for (M=0;M<npres;M++){
-        Re2lam[M] = Re3lam[M] = 0.0;
+          Jr = def_grad_det (CCONST_2(double) Fr);
+          def_grad_inv (CCONST_2(double) Fr,Fr_I);
+          Jn = Tn = 1.;
 
-        Re2[M] = 1./Jn*Psi[M]*(Jr*Jn - Tr*Tn);
-        Re3[M] = -1./Jn*Tn*pp*Psi[M];
+          if (FNR == 2 || FNR == 3){
+            /* Compression */
+            if (eps[0].type == 1){
+              Flam[0][0] = eps[0].load/((1.-lm*eps[0].load)*(1.-lm*eps[0].load));
+              Flam[1][1] = -eps[0].load;
+              Flam[2][2] = 0.0;
+            }
+          }
 
-        for (X=0;X<3;X++){
-          for (P=0;P<3;P++){
+        }/* end PERIODIC */
 
-        if (analysis == FS_CRPL)
-          Re3[M] += 1./Jn*1./3.*pow(Tr,-1./3)*Psi[M]*pfp[X][P]*S[X][P];
+        /* Material stiffness matrix */
+        matrix_tensor_3D (elem[ii].mat[2],hommat,L);
+
+        /*********************** CRYSTAL PLASTICITY *********************************/
+        if (analysis == FS_CRPL){
+          UU[0][0] = eps[ii].il[ip].UU[0];
+          UU[0][1] = eps[ii].il[ip].UU[1];
+          UU[0][2] = eps[ii].il[ip].UU[2];
+
+          UU[1][0] = eps[ii].il[ip].UU[3];
+          UU[1][1] = eps[ii].il[ip].UU[4];
+          UU[1][2] = eps[ii].il[ip].UU[5];
+
+          UU[2][0] = eps[ii].il[ip].UU[6];
+          UU[2][1] = eps[ii].il[ip].UU[7];
+          UU[2][2] = eps[ii].il[ip].UU[8];
+
+          for (M=0;M<3;M++){
+            for (N=0;N<3;N++){
+              S[M][N] = 0.0;
+              for (P=0;P<3;P++){
+                S[M][N] += FnB[M][P]*UU[P][N];
+              }
+            }
+          }
+
+          /* Strain */
+          get_GL_strain (S,Fr,Jr,Tr,E);
+        }/* end analysis == FS_CRPL */
         else
-          Re3[M] += 1./Jn*1./3.*pow(Tr,-1./3)*Psi[M]*f[X][P]*S[X][P];
+          /* Strain */
+          get_GL_strain (FnB,Fr,Jr,Tr,E);
 
-        Re2lam[M] += Jr*Psi[M]*Fr_I[P][X]*Flam[X][P];
+        /* Stress */
+        get_SPK_stress (L,E,S);
 
-        if (analysis == FS_CRPL){/* plastic */
-          if (pFFplam[X][P] != 0.0)
-            Re3lam[M] += 1./Jn*2./3.*pow(Tr,-1./3.)*Psi[M]*pFFplam[X][P]*S[X][P];
-          if (pGplam[X][P]  != 0.0)
-            Re3lam[M] += 1./Jn*1./3.*pow(Tr,-1./3.)*Psi[M]*pGplam[X][P]*S[X][P];
-        }
-        else{/* elastic */
-          if (FFlam[X][P] != 0.0)
-            Re3lam[M] += 1./Jn*2./3.*pow(Tr,-1./3.)*Psi[M]*FFlam[X][P]*S[X][P];
-        }
+        /* Tensors used in analysis */
+        tensors_FF_f (nne,ndn,FnB,Fr,Fr_I,Jr,ST,FF,f);
+        if (periodic == 1 && (FNR == 2 || FNR == 3))
+          tensors_FFla (ii,ip,nne,ndn,eps,FnB,Fr,Fr_I,Jr,f,
+                        UU,Flam,FFlam,pGplam,analysis);
 
-        for (V=0;V<3;V++){
-          for (W=0;W<3;W++){
-            if (L[X][P][V][W] == 0.0) continue;
-            if (analysis == FS_CRPL){/* plastic */
-              if (pFFplam[X][P] != 0.0 && pfp[V][W] != 0.0)
-            Re3lam[M] += 1./Jn*1./3.*pow(Tr,1./3.)*Psi[M]*pFFplam[X][P]*
-              L[X][P][V][W]*pfp[V][W];
-              if (pGplam[X][P] != 0.0 && pfp[V][W] != 0.0)
-            Re3lam[M] += 1./Jn*1./6.*pow(Tr,1./3.)*Psi[M]*pGplam[X][P]*
-              L[X][P][V][W]*pfp[V][W];
+        /*********************** CRYSTAL PLASTICITY ********************/
+        if (analysis == FS_CRPL){
+
+          for (P=0;P<3;P++){
+            for (R=0;R<3;R++){
+              /* eFn+1 and F* */
+              pfp[P][R] = 0.0;
+              if (periodic == 1 && (FNR == 2 || FNR == 3))
+                pFFplam[P][R] = 0.0;
+
+              for (U=0;U<3;U++){
+                for (W=0;W<3;W++){
+                  pfp[P][R] += UU[U][P] * f[U][W] * UU[W][R];
+                  if (periodic == 1 && (FNR == 2 || FNR == 3))
+                    pFFplam[P][R] += UU[U][P] * FFlam[U][W] * UU[W][R];
+                }
+              }
+
+              for (M=0;M<ndn;M++){
+                for (N=0;N<nne;N++){
+                  pFFp[P][R][M][N] = 0.0;
+
+                  for (U=0;U<3;U++){
+                    for (W=0;W<3;W++){
+                      if (FF[U][W][M][N] == 0.0)
+                        continue;
+                      pFFp[P][R][M][N] += UU[U][P] * FF[U][W][M][N] * UU[W][R];
+                    }
+                  }
+                }
+              }
+            }/* end R < 3 */
+          }/* end P < 3 */
+
+          /* Elasto-Plastic tensors */
+          tensors_aa_bb_dd_mm_plast (ii,ip,nne,ndn,npres,ai,aj,ak,J,Psi,L,Fn,Fr,
+                                     Fr_I,Jn,Jr,Tn,Tr,ST,FF,f,AA,aa,BB,bb,DD,dd,
+                                     MM,mm,S,pFFp,pfp,UU,eps,BB1,bb1,BB2,bb2,MMp,mmp,pGp);
+        }/* end analysis == FS_CRPL */
+        else
+          tensors_aa_bb_dd_mm (nne,ndn,npres,ai,aj,ak,J,Psi,L,FnB,Fr,Fr_I,Jn,Jr,
+                               Tn,Tr,ST,FF,f,AA,aa,BB,bb,DD,dd,MM,mm);
+
+        /***************************************************************/
+        /***************************************************************/
+        /***************************************************************/
+
+        /* Tensor EE */
+        for (R=0;R<3;R++){
+          for (U=0;U<3;U++){
+            B[R][U] = 0.0;
+            if (analysis == FS_CRPL){
+              for (V=0;V<3;V++){
+                for (W=0;W<3;W++){
+
+                  for (Y=0;Y<3;Y++){
+                    for (Z=0;Z<3;Z++){
+                      B[R][U] += 1./Jn*pow(Tr,2./3.)*pow(Jr,-2./3.) *
+                                 FnB[R][V]*UU[V][W]*S[W][Y]*UU[Z][Y]*FnB[U][Z];
+                    }
+                  }
+                }
+              }
             }
-            else{/* elastic */
-              if (FFlam[X][P] != 0.0 && f[V][W] != 0.0)
-            Re3lam[M] += 1./Jn*1./3.*pow(Tr,1./3.)*Psi[M]*FFlam[X][P]*
-              L[X][P][V][W]*f[V][W];
+            else{
+              for (V=0;V<3;V++){
+                for (W=0;W<3;W++){
+                  B[R][U] += 1./Jn*pow(Tr,2./3.)*pow(Jr,-2./3.) *
+                             FnB[R][V]*S[V][W]*FnB[U][W];
+                }
+              }
+            }/* end else */
+          }/* end U */
+        }/* end R */
+
+        for (M=0;M<ndn;M++){
+          for (N=0;N<ndn;N++){
+            for (X=0;X<nne;X++){
+              for (P=0;P<nne;P++){
+                /* null matrices */
+                KK[M][N][X][P] = EE[M][N][X][P] = GG[M][N][X][P] = HH[M][N][X][P] = 0.0;
+                if (analysis == FS_CRPL) { /* gboa */
+                  pKKp[M][N][X][P] = pGGp[M][N][X][P] = 0.0;
+                }  /* gboa */
+
+                help1 = 0.0;
+                help2 = 0.0;
+                help3 = 0.0;
+                help4 = 0.0;
+                for (Q=0;Q<3;Q++){
+                  for (R=0;R<3;R++){
+                    for (U=0;U<3;U++){
+                      for (V=0;V<3;V++){
+                        /* MATERIAL STIFFNESS MATRIX - Tensor KK */
+                        if (analysis == FS_CRPL) {
+                          if (L[Q][R][U][V] != 0.0 &&
+                              pFFp[Q][R][M][X] != 0.0 &&
+                              pFFp[U][V][N][P] != 0.0)
+                            KK[M][N][X][P] += 1./Jn*pow(Tr,4./3.)*pFFp[Q][R][M][X]*
+                                              L[Q][R][U][V]*pFFp[U][V][N][P];
+                        }
+                        else {
+                          if (L[Q][R][U][V] != 0.0 &&
+                              FF[Q][R][M][X] != 0.0 &&
+                              FF[U][V][N][P] != 0.0)
+                            KK[M][N][X][P] += 1./Jn*pow(Tr,4./3.)*FF[Q][R][M][X]*
+                                              L[Q][R][U][V]*FF[U][V][N][P];
+                        }
+
+                        if (analysis == FS_CRPL){/* PLASTIC MATERIAL + GEOMETRIC STIFFNESS */
+                          if (L[Q][R][U][V] != 0.0 &&
+                              pFFp[Q][R][M][X] != 0.0 &&
+                              pGp[U][V][N][P] != 0.0)
+                            pKKp[M][N][X][P] += 1./Jn*1./2.*pow(Tr,4./3.)* pFFp[Q][R][M][X]*
+                                                L[Q][R][U][V]*pGp[U][V][N][P];
+
+                          for (Y=0;Y<3;Y++){
+                            if (ST[Q][R][N][P] == 0.0 || FF[U][V][M][X] == 0.0)
+                              break;
+                            for (Z=0;Z<3;Z++){
+                              if (eps[ii].il[ip].dUU_Fr[Q][R][U][Y] != 0.0)
+                                pGGp[M][N][X][P] += 1./Jn*pow(Tr,2./3.)*ST[Q][R][N][P]*
+                                                    FF[U][V][M][X]*eps[ii].il[ip].dUU_Fr[Q][R][U][Y]*UU[V][Z] *
+                                                    S[Y][Z];
+                              if (eps[ii].il[ip].dUU_Fr[Q][R][V][Z] != 0.0)
+                                pGGp[M][N][X][P] += 1./Jn*pow(Tr,2./3.)*ST[Q][R][N][P]*
+                                                    FF[U][V][M][X]*UU[U][Y]*eps[ii].il[ip].dUU_Fr[Q][R][V][Z] *
+                                                    S[Y][Z];
+                            }
+                          }/* end Y */
+                        }/* analysis == FS_CRPL */
+
+                        if (ST[Q][R][M][X] != 0.0 && ST[U][V][N][P] != 0.0){/* gboa */
+                          help1 += (2./9.*Fr_I[R][Q]*Fr_I[V][U] + 1./3.*Fr_I[V][Q]*Fr_I[R][U])
+                                   *ST[Q][R][M][X]*ST[U][V][N][P];
+                          help3 += (Fr_I[R][Q]*Fr_I[V][U] - Fr_I[V][Q]*Fr_I[R][U])*
+                                   ST[Q][R][M][X]*ST[U][V][N][P];
+                        }
+
+                      }/* end V */
+                    }/* end U */
+                    if (ST[Q][R][M][X] != 0.0)
+                      help2 += Fr_I[R][Q]*ST[Q][R][M][X];
+                    if (ST[Q][R][N][P] != 0.0)
+                      help4 += Fr_I[R][Q]*ST[Q][R][N][P];
+                  }/* end R */
+                }/* end Q */
+
+                /* Geometric Stiffness */
+                EE[M][N][X][P] = Jr*pp*help3;
+
+                for (Q=0;Q<3;Q++){
+                  for (R=0;R<3;R++){
+                    for (U=0;U<3;U++){
+                      GG[M][N][X][P] += B[Q][R] * 1./2.*
+                                        (ST[U][Q][M][X]*ST[U][R][N][P] + ST[U][Q][N][P]*ST[U][R][M][X]);
+                      HH[M][N][X][P] += B[Q][R] *
+                                        (help1*Fr[U][Q]*Fr[U][R] - 2./3.*help2 * 1./2.*
+                                         (ST[U][Q][N][P]*Fr[U][R] + Fr[U][Q]*ST[U][R][N][P])
+                                         - 2./3.*help4 * 1./2.*
+                                         (ST[U][Q][M][X]*Fr[U][R] + Fr[U][Q]*ST[U][R][M][X]));
+                    }
+                  }
+                }/* end Q */
+                if (periodic == 1){
+                  ee[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * EE[M][N][X][P];
+                  gg[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * GG[M][N][X][P];
+                  hh[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * HH[M][N][X][P];
+                  kk[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * KK[M][N][X][P];
+                }
+                else{
+                  ee[M][N][X][P] += ai*aj*ak*J * EE[M][N][X][P];
+                  gg[M][N][X][P] += ai*aj*ak*J * GG[M][N][X][P];
+                  hh[M][N][X][P] += ai*aj*ak*J * HH[M][N][X][P];
+                  kk[M][N][X][P] += ai*aj*ak*J * KK[M][N][X][P];
+                }
+                if (analysis == FS_CRPL){
+                  if (periodic == 1){
+                    pkkp[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * pKKp[M][N][X][P];
+                    pggp[M][N][X][P] += 1./(VVolume) *ai*aj*ak*J * pGGp[M][N][X][P];
+                  }
+                  else{
+                    pkkp[M][N][X][P] += ai*aj*ak*J * pKKp[M][N][X][P];
+                    pggp[M][N][X][P] += ai*aj*ak*J * pGGp[M][N][X][P];
+                  }
+                }
+
+              }/* end P */
             }
           }
-        }/* end V */
+        }/* end  M */
 
-          }/* end P */
-        }/* end X */
+        /**************************/
+        /* Tangential load vector */
+        /**************************/
 
-        re2[M] += 1./(VVolume) *ai*aj*ak*J* Re2[M];
-        re3[M] += 1./(VVolume) *ai*aj*ak*J* Re3[M];
+        if (periodic == 1 && (FNR == 2 || FNR == 3)){
+          for (M=0;M<ndn;M++){
+            for (X=0;X<nne;X++){
+              /* null matricies */
+              KKlam[M][X] = EElam[M][X] = GGlam[M][X] = HHlam[M][X] = 0.0;  /* gb */
+              if (analysis == FS_CRPL) {
+                pKKplam[M][X] = pGGplam[M][X] = 0.0;
+              }  /* gb */
 
-        re2lam[M] += 1./(VVolume) *ai*aj*ak*J* Re2lam[M];
-        re3lam[M] += 1./(VVolume) *ai*aj*ak*J* Re3lam[M];
+              help1 = 0.0;
+              help2 = 0.0;
+              help3 = 0.0;
+              help4 = 0.0;
+              for (Q=0;Q<3;Q++){
+                for (R=0;R<3;R++){
+                  for (U=0;U<3;U++){
+                    for (V=0;V<3;V++){
+                      if (analysis == FS_CRPL){/* plastic */
+                        if (L[Q][R][U][V] != 0.0 &&
+                            pFFp[Q][R][M][X] != 0.0 &&
+                            pFFplam[U][V] != 0.0){
+                          KKlam[M][X] += 1./Jn*pow(Tr,4./3.)*pFFp[Q][R][M][X]*
+                                         L[Q][R][U][V]*pFFplam[U][V];
+                        }
+                      }
+                      else{/* elastic */
+                        if (L[Q][R][U][V] != 0.0 &&
+                            FF[Q][R][M][X] != 0.0 &&
+                            FFlam[U][V] != 0.0){
+                          KKlam[M][X] += 1./Jn*pow(Tr,4./3.)*FF[Q][R][M][X]*
+                                         L[Q][R][U][V]*FFlam[U][V];
+                        }
+                      }
 
-      }/* end M */
-    }/* end periodic */
+                      if (analysis == FS_CRPL){/* plastic */
+                        if (L[Q][R][U][V] != 0.0 &&
+                            pFFp[Q][R][M][X] != 0.0 &&
+                            pGplam[U][V] != 0.0){
+                          pKKplam[M][X] += 1./Jn*1./2.*pow(Tr,4./3.)* pFFp[Q][R][M][X]*
+                                           L[Q][R][U][V]*pGplam[U][V];
+                        }
 
-    ip++;
+                        for (Y=0;Y<3;Y++){
+                          if (FF[U][V][M][X] == 0.0) break;
+                          for (Z=0;Z<3;Z++){
+                            if (eps[ii].il[ip].dUU_Fr[Q][R][U][Y] != 0.0)
+                              pGGplam[M][X] += 1./Jn*pow(Tr,2./3.)*Flam[Q][R]*FF[U][V][M][X]*
+                                               eps[ii].il[ip].dUU_Fr[Q][R][U][Y]*UU[V][Z] * S[Y][Z];
+                            if (eps[ii].il[ip].dUU_Fr[Q][R][V][Z] != 0.0)
+                              pGGplam[M][X] += 1./Jn*pow(Tr,2./3.)*Flam[Q][R]*FF[U][V][M][X]*
+                                               UU[U][Y]*eps[ii].il[ip].dUU_Fr[Q][R][V][Z] * S[Y][Z];
+                          }
+                        }/* end Y */
+                      }/* analysis == FS_CRPL */
+
+                      if (ST[Q][R][M][X] != 0.0){
+                        help1 += (2./9.*Fr_I[R][Q]*Fr_I[V][U] + 1./3.*Fr_I[V][Q]*Fr_I[R][U])*
+                                 ST[Q][R][M][X]*Flam[U][V];
+                        help3 += (Fr_I[R][Q]*Fr_I[V][U] - Fr_I[V][Q]*Fr_I[R][U])*
+                                 ST[Q][R][M][X]*Flam[U][V];
+                      }
+
+                    }/* end V */
+                  }/* end U */
+
+                  if (ST[Q][R][M][X] != 0.0)
+                    help2 += Fr_I[R][Q]*ST[Q][R][M][X];
+                  help4 += Fr_I[R][Q]*Flam[Q][R];
+
+                }/* end R */
+              }/* end Q */
+
+              /* Geometric Stiffness */
+              EElam[M][X] = Jr*pp*help3;
+
+              for (Q=0;Q<3;Q++){
+                for (R=0;R<3;R++){
+                  for (U=0;U<3;U++){
+                    GGlam[M][X] += B[Q][R] * 1./2.*(ST[U][Q][M][X]*Flam[U][R] +
+                                                    Flam[U][Q]*ST[U][R][M][X]);
+                    HHlam[M][X] += B[Q][R] *
+                                   (help1*Fr[U][Q]*Fr[U][R] - 2./3.*help2 * 1./2.*
+                                    (Flam[U][Q]*Fr[U][R] + Fr[U][Q]*Flam[U][R])
+                                    - 2./3.*help4 * 1./2.*
+                                    (ST[U][Q][M][X]*Fr[U][R] + Fr[U][Q]*ST[U][R][M][X]));
+                  }
+                }
+              }/* end Q */
+
+              eelam[M][X] += 1./(VVolume) *ai*aj*ak*J * EElam[M][X];
+              gglam[M][X] += 1./(VVolume) *ai*aj*ak*J * GGlam[M][X];
+              hhlam[M][X] += 1./(VVolume) *ai*aj*ak*J * HHlam[M][X];
+              kklam[M][X] += 1./(VVolume) *ai*aj*ak*J * KKlam[M][X];
+
+              if (analysis == FS_CRPL){
+                pkkplam[M][X] += 1./(VVolume) *ai*aj*ak*J * pKKplam[M][X];
+                pggplam[M][X] += 1./(VVolume) *ai*aj*ak*J * pGGplam[M][X];
+              }
+
+            }/* end X */
+          }/* end  M */
+
+          for (M=0;M<npres;M++){
+            Re2lam[M] = Re3lam[M] = 0.0;
+
+            Re2[M] = 1./Jn*Psi[M]*(Jr*Jn - Tr*Tn);
+            Re3[M] = -1./Jn*Tn*pp*Psi[M];
+
+            for (X=0;X<3;X++){
+              for (P=0;P<3;P++){
+
+                if (analysis == FS_CRPL)
+                  Re3[M] += 1./Jn*1./3.*pow(Tr,-1./3)*Psi[M]*pfp[X][P]*S[X][P];
+                else
+                  Re3[M] += 1./Jn*1./3.*pow(Tr,-1./3)*Psi[M]*f[X][P]*S[X][P];
+
+                Re2lam[M] += Jr*Psi[M]*Fr_I[P][X]*Flam[X][P];
+
+                if (analysis == FS_CRPL){/* plastic */
+                  if (pFFplam[X][P] != 0.0)
+                    Re3lam[M] += 1./Jn*2./3.*pow(Tr,-1./3.)*Psi[M]*pFFplam[X][P]*S[X][P];
+                  if (pGplam[X][P]  != 0.0)
+                    Re3lam[M] += 1./Jn*1./3.*pow(Tr,-1./3.)*Psi[M]*pGplam[X][P]*S[X][P];
+                }
+                else{/* elastic */
+                  if (FFlam[X][P] != 0.0)
+                    Re3lam[M] += 1./Jn*2./3.*pow(Tr,-1./3.)*Psi[M]*FFlam[X][P]*S[X][P];
+                }
+
+                for (V=0;V<3;V++){
+                  for (W=0;W<3;W++){
+                    if (L[X][P][V][W] == 0.0) continue;
+                    if (analysis == FS_CRPL){/* plastic */
+                      if (pFFplam[X][P] != 0.0 && pfp[V][W] != 0.0)
+                        Re3lam[M] += 1./Jn*1./3.*pow(Tr,1./3.)*Psi[M]*pFFplam[X][P]*
+                                     L[X][P][V][W]*pfp[V][W];
+                      if (pGplam[X][P] != 0.0 && pfp[V][W] != 0.0)
+                        Re3lam[M] += 1./Jn*1./6.*pow(Tr,1./3.)*Psi[M]*pGplam[X][P]*
+                                     L[X][P][V][W]*pfp[V][W];
+                    }
+                    else{/* elastic */
+                      if (FFlam[X][P] != 0.0 && f[V][W] != 0.0)
+                        Re3lam[M] += 1./Jn*1./3.*pow(Tr,1./3.)*Psi[M]*FFlam[X][P]*
+                                     L[X][P][V][W]*f[V][W];
+                    }
+                  }
+                }/* end V */
+
+              }/* end P */
+            }/* end X */
+
+            re2[M] += 1./(VVolume) *ai*aj*ak*J* Re2[M];
+            re3[M] += 1./(VVolume) *ai*aj*ak*J* Re3[M];
+
+            re2lam[M] += 1./(VVolume) *ai*aj*ak*J* Re2lam[M];
+            re3lam[M] += 1./(VVolume) *ai*aj*ak*J* Re3lam[M];
+
+          }/* end M */
+        }/* end periodic */
+
+        ip++;
       }/* end k */
     }/* end j */
   }/* end i */
@@ -698,15 +701,15 @@ int stiffmatel_fd (long ii,
     /* Tensors BB and bb */
     for (P=0;P<ndn;P++){
       for (M=0;M<npres;M++){
-    for (N=0;N<nne;N++){
-      bb1[P][M][N] += bb[P][M][N];
-      bb2[P][M][N] += bb[P][M][N];
-    }
+        for (N=0;N<nne;N++){
+          bb1[P][M][N] += bb[P][M][N];
+          bb2[P][M][N] += bb[P][M][N];
+        }
       }
     }
     for (P=0;P<npres;P++){
       for (M=0;M<npres;M++){
-    mm[P][M] += mmp[P][M];
+        mm[P][M] += mmp[P][M];
       }
     }
   }
@@ -715,38 +718,38 @@ int stiffmatel_fd (long ii,
   for (M=0;M<ndn;M++){
     for (N=0;N<ndn;N++){
       for (X=0;X<nne;X++){
-    for (P=0;P<nne;P++){
-
-      if (analysis == FS_CRPL)
-        KK[M][N][X][P] = kk[M][N][X][P] + gg[M][N][X][P] + hh[M][N][X][P] +
-          ee[M][N][X][P] + pkkp[M][N][X][P] + pggp[M][N][X][P];
-      else
-        KK[M][N][X][P] = kk[M][N][X][P] + gg[M][N][X][P] +
-          hh[M][N][X][P] + ee[M][N][X][P];
-
-      for (R=0;R<npres;R++){
-        for (U=0;U<npres;U++){
+        for (P=0;P<nne;P++){
 
           if (analysis == FS_CRPL)
-        KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*bb2[N][U][P] + bb1[M][R][X]*
-          (1./dd[R][U])*aa[N][U][P];
+            KK[M][N][X][P] = kk[M][N][X][P] + gg[M][N][X][P] + hh[M][N][X][P] +
+                             ee[M][N][X][P] + pkkp[M][N][X][P] + pggp[M][N][X][P];
           else
-        KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*bb[N][U][P] + bb[M][R][X]*
-          (1./dd[R][U])*aa[N][U][P];
+            KK[M][N][X][P] = kk[M][N][X][P] + gg[M][N][X][P] +
+                             hh[M][N][X][P] + ee[M][N][X][P];
 
-          for (V=0;V<npres;V++){
-        for (W=0;W<npres;W++){
-          KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*mm[U][V]*
-            (1./dd[V][W])*aa[N][W][P];
-        }
+          for (R=0;R<npres;R++){
+            for (U=0;U<npres;U++){
+
+              if (analysis == FS_CRPL)
+                KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*bb2[N][U][P] + bb1[M][R][X]*
+                                  (1./dd[R][U])*aa[N][U][P];
+              else
+                KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*bb[N][U][P] + bb[M][R][X]*
+                                  (1./dd[R][U])*aa[N][U][P];
+
+              for (V=0;V<npres;V++){
+                for (W=0;W<npres;W++){
+                  KK[M][N][X][P] += aa[M][R][X]*(1./dd[R][U])*mm[U][V]*
+                                    (1./dd[V][W])*aa[N][W][P];
+                }
+              }
+            }
           }
-        }
-      }
 
-      /* Composition */
-      Ks[(X*ndn+M)*ndofe + P*ndn+N] = KK[M][N][X][P];
+          /* Composition */
+          Ks[(X*ndn+M)*ndofe + P*ndn+N] = KK[M][N][X][P];
 
-    }/* end P */
+        }/* end P */
       }/* end X */
     }/* end N */
   }/* end M */
@@ -758,29 +761,29 @@ int stiffmatel_fd (long ii,
   if (periodic == 1 && (FNR == 2 || FNR == 3)){/* fext(l) = -dfint/dl */
     for (X=0;X<nne;X++){
       for (M=0;M<ndn;M++){
-    if (analysis == FS_CRPL)
-      fe[X*ndofn+M] = -1.*(kklam[M][X] + gglam[M][X] + hhlam[M][X] +
-                   eelam[M][X] + pkkplam[M][X] + pggplam[M][X]);
-    else
-      fe[X*ndofn+M] = -1.*(kklam[M][X] + gglam[M][X] + hhlam[M][X] + eelam[M][X]);
-
-    for (P=0;P<npres;P++){
-      for (R=0;R<npres;R++){
-
         if (analysis == FS_CRPL)
-          fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*re3lam[R] +
-                    bb1[M][P][X]*1./dd[P][R]*re2lam[R]);
+          fe[X*ndofn+M] = -1.*(kklam[M][X] + gglam[M][X] + hhlam[M][X] +
+                               eelam[M][X] + pkkplam[M][X] + pggplam[M][X]);
         else
-          fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*re3lam[R] +
-                    bb[M][P][X]*1./dd[P][R]*re2lam[R]);
+          fe[X*ndofn+M] = -1.*(kklam[M][X] + gglam[M][X] + hhlam[M][X] + eelam[M][X]);
 
-        for (U=0;U<npres;U++){
-          for (W=0;W<npres;W++){
-        fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*mm[R][U]*1./dd[U][W]*re2lam[W]);
+        for (P=0;P<npres;P++){
+          for (R=0;R<npres;R++){
+
+            if (analysis == FS_CRPL)
+              fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*re3lam[R] +
+                                    bb1[M][P][X]*1./dd[P][R]*re2lam[R]);
+            else
+              fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*re3lam[R] +
+                                    bb[M][P][X]*1./dd[P][R]*re2lam[R]);
+
+            for (U=0;U<npres;U++){
+              for (W=0;W<npres;W++){
+                fe[X*ndofn+M] += -1.*(aa[M][P][X]*1./dd[P][R]*mm[R][U]*1./dd[U][W]*re2lam[W]);
+              }
+            }
           }
-        }
-      }
-    }/* end P */
+        }/* end P */
 
       }
     }/* end X */

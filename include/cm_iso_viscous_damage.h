@@ -48,24 +48,24 @@ class CM_IVD_PARAM: public Model_parameters
                                 double *L,
                                 double *S,
                                 const int compute_stiffness) const;
-  virtual int update_state_vars(Constitutive_model *m) const;  
+  virtual int update_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int get_var_info(Model_var_info &info) const;
-  virtual int get_F(const Constitutive_model *m, 
+  virtual int get_F(const Constitutive_model *m,
                     double *F,
                     const int stepno) const;
-  virtual int get_pF(const Constitutive_model *m, 
-                     double *F, 
+  virtual int get_pF(const Constitutive_model *m,
+                     double *F,
                      const int stepno) const;
-  virtual int get_eF(const Constitutive_model *m, 
-                     double *F, 
+  virtual int get_eF(const Constitutive_model *m,
+                     double *F,
                      const int stepno) const;
   virtual int get_hardening(const Constitutive_model *m,
                             double *var,
                             const int stepno) const;
   virtual int get_plast_strain_var(const Constitutive_model *m,
                                    double *chi) const;
-                                                                 
+
   virtual int get_subdiv_param(const Constitutive_model *m,
                                double *var,
                                const double t) const;
@@ -84,7 +84,9 @@ class CM_IVD_PARAM: public Model_parameters
  * \param[in,out] p - pointer to a Model_parameters object
  * \return non-zero on internal error
  */
-int iso_viscous_damage_model_initialize(Model_parameters *p) {return 0;};
+static inline int iso_viscous_damage_model_initialize(Model_parameters *p) {
+  return 0;
+}
 
 /**
  * Construct and initialize the model context for calling functions

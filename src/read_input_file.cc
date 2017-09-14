@@ -4,22 +4,25 @@
 ///   Matt Mosby, University of Notre Dame, <mmosby1 [at] nd.edu>
 ///   Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
 ///   Sangmin Lee, University of Notre Dame <slee43 [at] nd.edu>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-
-/* HEADER */
 #include "read_input_file.h"
-#include "allocation.h"
 #include "Arc_length.h"
+#include "PGFem3D_data_structure.h"
+#include "allocation.h"
 #include "constitutive_model.h"
 #include "enumerations.h"
 #include "gen_path.h"
 #include "in.h"
 #include "load.h"
-#include "PGFem3D_data_structure.h"
 #include "read_cryst_plast.h"
 #include "restart.h"
 #include "utils.h"
-#include <string.h>
+#include <cstring>
+
+using pgfem3d::Solver;
 
 /// read mechanical part of material properties
 ///
@@ -28,7 +31,7 @@
 /// \param[in] opts PGFem3D options
 /// \return non-zero on interal error
 int read_material_for_Mechanical(FILE *fp,
-                                 MATERIAL_PROPERTY *mat,
+                                 MaterialProperty *mat,
                                  const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -48,13 +51,13 @@ int read_material_for_Mechanical(FILE *fp,
 /// \param[in] opts PGFem3D options
 /// \return non-zero on interal error
 int read_material_for_Thermal(FILE *fp,
-                              MATERIAL_PROPERTY *mat,
+                              MaterialProperty *mat,
                               const PGFem3D_opt *opts)
 {
   int err = 0;
   int param_in = 10;
 
-  MATERIAL_THERMAL *thermal = (MATERIAL_THERMAL *) malloc(sizeof(MATERIAL_THERMAL)*(mat->nmat));
+  MaterialThermal *thermal = new MaterialThermal[mat->nmat];
 
   for(int ia=0; ia<mat->nmat; ia++)
   {
@@ -68,8 +71,8 @@ int read_material_for_Thermal(FILE *fp,
 
     scan_for_valid_line(fp);
     match += fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", k+0, k+1, k+2
-                                                             , k+3, k+4, k+5
-                                                             , k+6, k+7, k+8);
+                    , k+3, k+4, k+5
+                    , k+6, k+7, k+8);
 
     if(match != param_in)
       PGFEM_Abort();
@@ -98,9 +101,9 @@ int read_material_for_Thermal(FILE *fp,
 /// \param[in] opts PGFem3D options
 /// \param[in] mp multiphysics object
 /// \return non-zero on interal error
-int read_multiphysics_material_properties(MATERIAL_PROPERTY *mat,
+int read_multiphysics_material_properties(MaterialProperty *mat,
                                           const PGFem3D_opt *opts,
-                                          const MULTIPHYSICS *mp)
+                                          const Multiphysics *mp)
 {
   int err = 0;
 
@@ -127,16 +130,16 @@ int read_multiphysics_material_properties(MATERIAL_PROPERTY *mat,
 
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_material_for_Mechanical(fp,mat,opts);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_material_for_Thermal(fp,mat,opts);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        break;
-      default:
-        break;
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_material_for_Mechanical(fp,mat,opts);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_material_for_Thermal(fp,mat,opts);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      break;
+     default:
+      break;
     }
     fclose(fp);
   }
@@ -240,30 +243,30 @@ int interpret_ranges(double *ranges, char str_in[])
 }
 
 int read_input_file(const PGFem3D_opt *opts,
-            MPI_Comm comm,
-            long *nn,
-            long *Gnn,
-            long *ndofn,
-            long *ne,
-            long *lin_maxit,
-            double *lin_err,
-            double *lim_zero,
-            long *nmat,
-            long *n_concentrations,
-            long *n_orient,
-            NODE **node,
-            ELEMENT **elem,
-            MATERIAL **material,
-            MATGEOM *matgeom,
-            SUPP *sup,
-            long *nln,
-            ZATNODE **znod,
-            long *nel_s,
-            ZATELEM **zelem_s,
-            long *nel_v,
-            ZATELEM **zelem_v,
+                    MPI_Comm comm,
+                    long *nn,
+                    long *Gnn,
+                    long *ndofn,
+                    long *ne,
+                    long *lin_maxit,
+                    double *lin_err,
+                    double *lim_zero,
+                    long *nmat,
+                    long *n_concentrations,
+                    long *n_orient,
+                    Node **node,
+                    Element **elem,
+                    Material **material,
+                    MATGEOM *matgeom,
+                    SUPP *sup,
+                    long *nln,
+                    ZATNODE **znod,
+                    long *nel_s,
+                    ZATELEM **zelem_s,
+                    long *nel_v,
+                    ZATELEM **zelem_v,
                     const int *fv_ndofn,
-            const int physicsno,
+                    const int physicsno,
                     const int *ndim,
                     char **physicsnames)
 {
@@ -283,7 +286,7 @@ int read_input_file(const PGFem3D_opt *opts,
 
   (*node) = build_node_multi_physics(*nn,fv_ndofn,physicsno);
   (*elem) = build_elem(in,*ne,opts->analysis_type);
-  (*material) = PGFEM_calloc(MATERIAL, *nmat);
+  (*material) = PGFEM_calloc(Material, *nmat);
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
 
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
@@ -398,12 +401,12 @@ int read_input_file(const PGFem3D_opt *opts,
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
-int read_mesh_file(GRID *grid,
-                   MATERIAL_PROPERTY *mat,
-                   FIELD_VARIABLES *FV,
-                   SOLVER_OPTIONS *SOL,
-                   LOADING_STEPS *load,
-                   MULTIPHYSICS *mp,
+int read_mesh_file(Grid *grid,
+                   MaterialProperty *mat,
+                   FieldVariables *FV,
+                   Solver *SOL,
+                   LoadingSteps *load,
+                   Multiphysics *mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts)
 {
@@ -480,13 +483,13 @@ int read_mesh_file(GRID *grid,
           break;
       }
       if(is_it_supp)
-      (load->sups[iA]->nde)++;
+        (load->sups[iA]->nde)++;
     }
   }
   return err;
 }
 
-int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
+int read_time_steps(FILE *fp, TimeStepping *ts)
 {
   int err = 0;
 
@@ -510,7 +513,7 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
 
 /// Read solver file for time stepping.
 /// If command line includes override solver file option, all solver files will be overrided.
-/// At the end of this function, file pointer is stored in LOADING_STEPS
+/// At the end of this function, file pointer is stored in LoadingSteps
 /// in order to read load increments as time elapses.
 /// Detailed slover file format can be found at the following link:
 /// https://wiki-cswarm.crc.nd.edu/foswiki/pub/Main/CodeDevelopment/PGFem3DQuickStarts/generate_input_file.pdf
@@ -526,13 +529,13 @@ int read_time_steps(FILE *fp, PGFem3D_TIME_STEPPING *ts)
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_solver_file(PGFem3D_TIME_STEPPING *ts,
-                     MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,
-                     SOLVER_OPTIONS *SOL,
-                     LOADING_STEPS *load,
+int read_solver_file(TimeStepping *ts,
+                     MaterialProperty *mat,
+                     FieldVariables *FV,
+                     Solver *SOL,
+                     LoadingSteps *load,
                      CRPL *crpl,
-                     MULTIPHYSICS *mp,
+                     Multiphysics *mp,
                      const PGFem3D_opt *opts,
                      int myrank)
 {
@@ -629,9 +632,9 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     sprintf(load_fn,"%s/%s.load",load_path,mp->physicsname[ia]);
     load->solver_file[ia] = NULL;
     load->solver_file[ia] = fopen(load_fn, "r"); // Load increments are needed to be read
-                                             // while time is elapsing.
-                                             // This file point needs to be freed end of the simulation
-                                             // by calling destruction of the LOADING_STEPS
+    // while time is elapsing.
+    // This file point needs to be freed end of the simulation
+    // by calling destruction of the LoadingSteps
 
     if(load->solver_file[ia]==NULL)
       continue;
@@ -657,7 +660,7 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
     load->solver_file[0] = fp; // load increments are still need to be read
                                // while time is elapsing
                                // this file point needs to be freed end of the simulation
-                               // by calling destruction of the LOADING_STEPS
+                               // by calling destruction of the LoadingSteps
   }
 
   for(int ia=0; ia<mp->physicsno; ia++)
@@ -693,14 +696,14 @@ int read_solver_file(PGFem3D_TIME_STEPPING *ts,
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_initial_values_lagcy(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
-                              SOLVER_OPTIONS *sol,
-                              LOADING_STEPS *load,
-                              PGFem3D_TIME_STEPPING *ts,
+int read_initial_values_lagcy(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
+                              Solver *sol,
+                              LoadingSteps *load,
+                              TimeStepping *ts,
                               PGFem3D_opt *opts,
-                              MULTIPHYSICS *mp,
+                              Multiphysics *mp,
                               double *tnm1,
                               int myrank)
 {
@@ -870,11 +873,11 @@ int read_initial_values_lagcy(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \return non-zero on internal error
 int read_initial_for_Mechanical(FILE *fp,
-                                GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                PGFem3D_TIME_STEPPING *ts,
+                                Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                Solver *sol,
+                                TimeStepping *ts,
                                 PGFem3D_opt *opts,
                                 int myrank,
                                 int mp_id)
@@ -882,7 +885,7 @@ int read_initial_for_Mechanical(FILE *fp,
   int err = 0;
   char line[1024];
   double dt = ts->times[1] - ts->times[0];;
-    
+
   if((opts->analysis_type == CM || opts->analysis_type == CM3F) && opts->cm == UPDATED_LAGRANGIAN)
   {
     opts->cm = TOTAL_LAGRANGIAN;
@@ -987,11 +990,11 @@ int read_initial_for_Mechanical(FILE *fp,
 /// \param[in] mp_id mutiphysics id
 /// \return non-zero on internal error
 int read_initial_for_Thermal(FILE *fp,
-                             GRID *grid,
-                             MATERIAL_PROPERTY *mat,
-                             FIELD_VARIABLES *fv,
-                             SOLVER_OPTIONS *sol,
-                             PGFem3D_TIME_STEPPING *ts,
+                             Grid *grid,
+                             MaterialProperty *mat,
+                             FieldVariables *fv,
+                             Solver *sol,
+                             TimeStepping *ts,
                              PGFem3D_opt *opts,
                              int myrank,
                              int mp_id)
@@ -1059,14 +1062,14 @@ int read_initial_for_Thermal(FILE *fp,
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_initial_values_IC(GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *FV,
-                           SOLVER_OPTIONS *SOL,
-                           LOADING_STEPS *load,
-                           PGFem3D_TIME_STEPPING *ts,
+int read_initial_values_IC(Grid *grid,
+                           MaterialProperty *mat,
+                           FieldVariables *FV,
+                           Solver *SOL,
+                           LoadingSteps *load,
+                           TimeStepping *ts,
                            PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
+                           Multiphysics *mp,
                            double *tnm1,
                            int myrank)
 {
@@ -1102,16 +1105,16 @@ int read_initial_values_IC(GRID *grid,
     }
     switch(mp->physics_ids[ia])
     {
-      case MULTIPHYSICS_MECHANICAL:
-        err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
-        break;
-      case MULTIPHYSICS_THERMAL:
-        err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
-        break;
-      case MULTIPHYSICS_CHEMICAL:
-        break;
-      default:
-        break;
+     case MULTIPHYSICS_MECHANICAL:
+      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      break;
+     case MULTIPHYSICS_THERMAL:
+      err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      break;
+     case MULTIPHYSICS_CHEMICAL:
+      break;
+     default:
+      break;
     }
 
     fclose(fp);
@@ -1134,14 +1137,14 @@ int read_initial_values_IC(GRID *grid,
 /// \param[out] tnm1 if restart, read time step info from the previous run
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_initial_values(GRID *grid,
-                        MATERIAL_PROPERTY *mat,
-                        FIELD_VARIABLES *FV,
-                        SOLVER_OPTIONS *SOL,
-                        LOADING_STEPS *load,
-                        PGFem3D_TIME_STEPPING *ts,
+int read_initial_values(Grid *grid,
+                        MaterialProperty *mat,
+                        FieldVariables *FV,
+                        Solver *SOL,
+                        LoadingSteps *load,
+                        TimeStepping *ts,
                         PGFem3D_opt *opts,
-                        MULTIPHYSICS *mp,
+                        Multiphysics *mp,
                         double *tnm1,
                         int myrank)
 {
@@ -1167,9 +1170,9 @@ int read_initial_values(GRID *grid,
 
 /// Read loads increments.
 /// As time is elapsing, loads increments are read from solver file which
-/// file pointer is saved in LOADING_STEPS. Prior to run this function,
+/// file pointer is saved in LoadingSteps. Prior to run this function,
 /// read_initial_values function shold be called which open and the solver file pointer.
-/// The file pointer will be freed when LOADING_STEPS object is destoryed.
+/// The file pointer will be freed when LoadingSteps object is destoryed.
 /// The number of loads increments should be exact as read before in read_initial_values.
 ///
 /// \param[in] grid a mesh object
@@ -1180,10 +1183,10 @@ int read_initial_values(GRID *grid,
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_and_apply_load_increments(GRID *grid,
-                                   FIELD_VARIABLES *fv,
-                                   LOADING_STEPS *load,
-                                   MULTIPHYSICS *mp,
+int read_and_apply_load_increments(Grid *grid,
+                                   FieldVariables *fv,
+                                   LoadingSteps *load,
+                                   Multiphysics *mp,
                                    long tim,
                                    MPI_Comm mpi_comm,
                                    int myrank)
@@ -1217,7 +1220,7 @@ int read_and_apply_load_increments(GRID *grid,
         read_nodal_load(load->solver_file[mp_id],load->nln,grid->nsd,load->znod);
         // read elem surface load */
         read_elem_surface_load(load->solver_file[mp_id],load->nle_s,grid->nsd,grid->element,load->zele_s);
-        //  NODE - generation of the load vector
+        //  Node - generation of the load vector
         load_vec_node(fv[mp_id].R,load->nln,grid->nsd,load->znod,grid->node,MULTIPHYSICS_MECHANICAL);
         //  ELEMENT - generation of the load vector
         load_vec_elem_sur(fv[mp_id].R,load->nle_s,grid->nsd,grid->element,load->zele_s);
@@ -1237,14 +1240,14 @@ int read_and_apply_load_increments(GRID *grid,
 /// \param[out] grid a mesh object
 /// \param[out] mat a material object
 /// \param[in] opts structure PGFem3D option
-/// \param[in] ensight ENSIGHT object
+/// \param[in] ensight object
 /// \param[in] comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_cohesive_elements(GRID *grid,
-                           MATERIAL_PROPERTY *mat,
+int read_cohesive_elements(Grid *grid,
+                           MaterialProperty *mat,
                            const PGFem3D_opt *opts,
-                           ENSIGHT ensight,
+                           Ensight *ensight,
                            MPI_Comm mpi_comm,
                            int myrank)
 {
@@ -1281,8 +1284,8 @@ int read_cohesive_elements(GRID *grid,
 
   /* read the cohesive element info */
   grid->coel = read_cohe_elem (fp,ncom,grid->nsd,grid->nn,grid->node,&(grid->nce),
-          comat,ensight,opts->vis_format,
-          myrank,mat->co_props);
+                               comat,ensight,opts->vis_format,
+                               myrank,mat->co_props);
   if(ncom <= 0)
     dealoc2(comat,ncom);
   else

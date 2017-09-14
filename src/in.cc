@@ -1,12 +1,13 @@
-/* HEADER */
-#include "in.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "PGFEM_mpi.h"
 #include "allocation.h"
+#include "in.h"
 #include "utils.h"
-
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -20,13 +21,13 @@
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return     sup   created boundary condition structure
 SUPP read_Dirichlet_BCs(FILE *in,
                         long nn,
                         long ndofn,
-                        NODE *node,
+                        Node *node,
                         const int mp_id)
 {
   int err_rank = 0;
@@ -105,13 +106,13 @@ SUPP read_Dirichlet_BCs(FILE *in,
 ///
 /// \param[in]  in    Input file
 /// \param[in]  ndofn Number of degrees of freedom in one node
-/// \param[in]  node  Structure type of NODE
+/// \param[in]  node  Structure type of Node
 /// \param[in]  mp_id multiphysics id
 /// \return non-zero on internal ERROR
 int read_Dirichlet_BCs_values(FILE *in,
                               long nn,
                               long ndofn,
-                              NODE *node,
+                              Node *node,
                               SUPP sup,
                               const int mp_id)
 {
@@ -153,13 +154,13 @@ int read_Dirichlet_BCs_values(FILE *in,
 SUPP read_supports(FILE *in,
                    long nn,
                    long ndofn,
-                   NODE *node,
+                   Node *node,
                    const int mp_id)
 /*
   in    - Input file
   nl    - Number of layers
   ndofn - Number of degrees of freedom in one node
-  node  - Structure type of NODE
+  node  - Structure type of Node
   sup   - Structure type of SUPP
 
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
@@ -175,7 +176,7 @@ SUPP read_supports(FILE *in,
 
 int read_material (FILE *in,
                    const size_t mat_id,
-                   MATERIAL *mater,
+                   Material *mater,
                    const int legacy)
 {
   int err = 0;
@@ -253,7 +254,7 @@ void read_nodal_load (FILE *in,
 void read_elem_surface_load (FILE *in,
                              long nle_s,
                              long ndofn,
-                             ELEMENT *elem,
+                             Element *elem,
                              ZATELEM *zele_s)
 /*
 
@@ -300,7 +301,7 @@ int override_prescribed_displacements(SUPP sup,
 
 int override_material_properties(const size_t nmat,
                                  const PGFem3D_opt *opt,
-                                 MATERIAL *mater)
+                                 Material *mater)
 {
   int err = 0;
   int n_override = 0;

@@ -1,8 +1,8 @@
-#include "PGFem3D_to_VTK.hpp"
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include "PGFem3D_to_VTK.hpp"
 #include <iostream>
 
 #ifndef NO_VTK_LIB
@@ -24,8 +24,8 @@
 void*
 PGFem3D_to_vtkUnstructuredGrid(const int nnode,
                                const int nelems,
-                               const NODE *nodes,
-                               const ELEMENT *elems,
+                               const Node *nodes,
+                               const Element *elems,
                                const SUPP supports,
                                const SIG *stress,
                                const EPS *strain,
@@ -596,8 +596,8 @@ read_VTK_file(char fn[], double *r)
 void*
 PGFem3D_to_vtkUnstructuredGrid(const int nnode,
                                const int nelems,
-                               const NODE *nodes,
-                               const ELEMENT *elems,
+                               const Node *nodes,
+                               const Element *elems,
                                const SUPP supports,
                                const SIG *stress,
                                const EPS *strain,

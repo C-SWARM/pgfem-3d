@@ -1,16 +1,11 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "sig.h"
-
-#ifndef ENUMERATIONS_H
-#include "enumerations.h"
-#endif
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
+#include "enumerations.h"
 
 SIG* build_sig_el (const long ne)
 /*
@@ -35,7 +30,7 @@ SIG* build_sig_el (const long ne)
 }
 
 void destroy_sig_el(SIG* sig,
-    const long ne)
+                    const long ne)
 {
   for(long i=0; i<ne; i++){
     free(sig[i].el.o);
@@ -49,8 +44,8 @@ void destroy_sig_el(SIG* sig,
 }
 
 SIG* build_sig_il (const long ne,
-    const int analysis,
-    ELEMENT *elem)
+                   const int analysis,
+                   Element *elem)
 /*
   INELASTIC
 */
@@ -118,9 +113,9 @@ SIG* build_sig_il (const long ne,
 }
 
 void destroy_sig_il(SIG* sig,
-    const ELEMENT *elem,
-    const long ne,
-    const int analysis)
+                    const Element *elem,
+                    const long ne,
+                    const int analysis)
 {
   if(elem == NULL){
     PGFEM_printf("Must destroy sig_il before element\n");

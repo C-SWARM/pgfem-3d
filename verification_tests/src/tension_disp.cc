@@ -1,12 +1,15 @@
-#include "allocation.h"
-#include "homogen.h"
-#include "utils.h"
-#include "constitutive_model.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "read_input_file.h"
-#include "post_processing.h"
-#include "enumerations.h"
 #include "PGFem3D_to_VTK.hpp"
+#include "allocation.h"
+#include "constitutive_model.h"
+#include "enumerations.h"
+#include "homogen.h"
+#include "post_processing.h"
+#include "read_input_file.h"
+#include "utils.h"
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -48,9 +51,9 @@ int main(int argc,char *argv[])
   long nmat = 0;
   long nc = 0;
   long np = 0;
-  NODE *node = NULL;
-  ELEMENT *elem = NULL;
-  MATERIAL *mater = NULL;
+  Node *node = NULL;
+  Element *elem = NULL;
+  Material *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
   long nln = 0;
@@ -67,12 +70,12 @@ int main(int argc,char *argv[])
   int fv_ndofn = ndim;
 
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-         &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-         &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
+                           &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+                           &elem,&mater,&matgeom,&sup,&nln,&znod,
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-      myrank);
+                   myrank);
     PGFEM_Abort();
   }
 
@@ -87,7 +90,7 @@ int main(int argc,char *argv[])
   hommat = build_hommat(nhommat);
 
   hom_matrices(a,ne,nmat,nc,elem,mater,matgeom,
-    hommat,matgeom->SH,options.analysis_type);
+               hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
   free(mater);
@@ -107,8 +110,8 @@ int main(int argc,char *argv[])
     fclose(cm_in);
     init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
   }
-/////////////////////////////////////////////////////////////////////////////////////
-// read inputs
+  /////////////////////////////////////////////////////////////////////////////////////
+  // read inputs
   char filename[1024];
   sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);
 

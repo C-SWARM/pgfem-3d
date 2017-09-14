@@ -1,28 +1,29 @@
-#include "allocation.h"
-#include "homogen.h"
-#include "utils.h"
-#include "constitutive_model.h"
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "read_input_file.h"
-#include "post_processing.h"
-#include "enumerations.h"
-#include "PGFem3D_to_VTK.hpp"
-#include "restart.h"
-#include "math.h"
 #include "PGFem3D_data_structure.h"
+#include "PGFem3D_to_VTK.hpp"
+#include "allocation.h"
+#include "constitutive_model.h"
+#include "enumerations.h"
+#include "homogen.h"
+#include "math_help.h"
+#include "post_processing.h"
+#include "read_input_file.h"
+#include "restart.h"
+#include "utils.h"
 #include "elem3d.h"
-
-
 #include <ttl/ttl.h>
 #include <ttl/Library/matrix.h>
-#include <math.h>
-#include "math_help.h"
+#include <cmath>
 
 namespace {
-  static constexpr ttl::Index<'i'> i;
-  static constexpr ttl::Index<'j'> j;
-  static constexpr ttl::Index<'k'> k;
-  static constexpr ttl::Index<'l'> l;
+using namespace ttl;
+const constexpr Index<'i'> i;
+const constexpr Index<'j'> j;
+const constexpr Index<'k'> k;
+const constexpr Index<'l'> l;
 }
 
 /*****************************************************/
@@ -65,9 +66,9 @@ int main(int argc,char *argv[])
   long nmat = 0;
   long nc = 0;
   long np = 0;
-  NODE *node = NULL;
-  ELEMENT *elem = NULL;
-  MATERIAL *mater = NULL;
+  Node *node = NULL;
+  Element *elem = NULL;
+  Material *mater = NULL;
   MATGEOM matgeom = NULL;
   SUPP sup = NULL;
   long nln = 0;
@@ -84,12 +85,12 @@ int main(int argc,char *argv[])
   int fv_ndofn = ndim;
 
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
-         &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-         &elem,&mater,&matgeom,&sup,&nln,&znod,
-         &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
+                           &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
+                           &elem,&mater,&matgeom,&sup,&nln,&znod,
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-      myrank);
+                   myrank);
     PGFEM_Abort();
   }
 
@@ -104,7 +105,7 @@ int main(int argc,char *argv[])
   hommat = build_hommat(nhommat);
 
   hom_matrices(a,ne,nmat,nc,elem,mater,matgeom,
-    hommat,matgeom->SH,options.analysis_type);
+               hommat,matgeom->SH,options.analysis_type);
 
   dealoc3l(a,nmat,nmat);
   free(mater);
@@ -159,16 +160,16 @@ int main(int argc,char *argv[])
   double dt = 0.1;
 
   double G_gn = 0.0;
-  ttl::Tensor<2, 3, double> I,PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev;
-  I = ttl::identity(i,j);
-    
+  Tensor<2, 3, double> I,PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev;
+  I = identity(i,j);
+
   double Err_of_stress = 0.0;
 
   double tnm1[2] = {-1.0,-1.0};
   double NORM = 0.0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int write_no = 0;
   int *coupled_ids = (int *) malloc(sizeof(int));
@@ -187,7 +188,7 @@ int main(int argc,char *argv[])
     mp.total_write_no = 0;
   }
 
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = ne;
@@ -198,7 +199,7 @@ int main(int argc,char *argv[])
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = ndofn;
@@ -211,14 +212,14 @@ int main(int argc,char *argv[])
   }
 
   double tns[2];
-  PGFem3D_TIME_STEPPING ts;
+  TimeStepping ts;
   {
     time_stepping_initialization(&ts);
     ts.tns    = tns;
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups = &sup;
@@ -236,17 +237,17 @@ int main(int argc,char *argv[])
 
     if(myrank==0)
     {
-      Eeff = 0.5*(Feff(k,i)*Feff(k,j) - I(i,j));      
-      double det_Fe = ttl::det(eFeff);
-      
+      Eeff = 0.5*(Feff(k,i)*Feff(k,j) - I(i,j));
+      double det_Fe = det(eFeff);
+
       sigma = 1.0/det_Fe*eFeff(i,k)*PK2(k,l)*eFeff(j,l);
-      
+
       double trPK2    = PK2(i,i);
       double tr_sigma = sigma(i,i);
-      
+
       PK2dev    = PK2(i,j) - trPK2/3.0*I(i,j);
       sigma_dev = sigma(i,j) - tr_sigma/3.0*I(i,j);
-      
+
       double norm_sigma = sigma_dev(i,j)*sigma_dev(i,j);
       double norm_PK2   = PK2dev(i,j)*PK2dev(i,j);
 

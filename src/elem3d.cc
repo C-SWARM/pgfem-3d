@@ -1,22 +1,24 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 #include "elem3d.h"
 #include "enumerations.h"
-#include "incl.h"
-#include "quadrature_rules.h"
 #include "get_dof_ids_on_elem.h"
 #include "homogen.h"
+#include "incl.h"
 #include "localizat.h"
 #include "matice.h"
-#include "utils.h"
+#include "quadrature_rules.h"
 #include "resice.h"
+#include "utils.h"
 
 #ifndef NO_BUBBLE
 #define NO_BUBBLE 0
 #endif
 
 void int_point (const long nne,
-    long *II)
+                long *II)
 /*
 
  */
@@ -28,13 +30,13 @@ void int_point (const long nne,
 }
 
 void integrate (const long nne,
-    long *II,
-    long *JJ,
-    long *KK,
-    double *gk,
-    double *ge,
-    double *gz,
-    double *w)
+                long *II,
+                long *JJ,
+                long *KK,
+                double *gk,
+                double *ge,
+                double *gz,
+                double *w)
 /*
   Determine the integration points (gk, ge, gz)
   Determine the integration weights (w)
@@ -160,9 +162,9 @@ void int_tetra_5 (double *gk,double *ge,double *gz,double *w)
 }
 
 void int_tetra_11 (double *gk,
-    double *ge,
-    double *gz,
-    double *w)
+                   double *ge,
+                   double *gz,
+                   double *w)
 {
 
   /* 11 point formula for exact integration of 4th degree polunomial
@@ -188,9 +190,9 @@ void int_tetra_11 (double *gk,
 }
 
 void int_tetra_24(double *gk,
-    double *ge,
-    double *gz,
-    double *w)
+                  double *ge,
+                  double *gz,
+                  double *w)
 {
   /* 24 point formula for exact integration of 6th degree polunomial
      on tetrahedron */
@@ -326,9 +328,9 @@ void int_tetra_24(double *gk,
 }
 
 void shape_tria (const double ksi,
-    const double eta,
-    const double zet,
-    double *N)
+                 const double eta,
+                 const double zet,
+                 double *N)
 /*
 
  */
@@ -342,10 +344,10 @@ void shape_tria (const double ksi,
 }
 
 void shape_func (const double ksi,
-    const double eta,
-    const double zet,
-    const long nne,
-    double *N)
+                 const double eta,
+                 const double zet,
+                 const long nne,
+                 double *N)
 /*
   ksi -souradnice integracniho bodu (integration points)
   eta -souradnice integracniho bodu
@@ -414,9 +416,9 @@ void shape_func (const double ksi,
 }
 
 void shape_2D (const long nne,
-    const double ksi,
-    const double eta,
-    double *N)
+               const double ksi,
+               const double eta,
+               double *N)
 /*
   ksi - integration poin
   eta - integration poin
@@ -437,12 +439,12 @@ void shape_2D (const long nne,
 }
 
 void dN_kez (const double ksi,
-    const double eta,
-    const double zet,
-    const long nne,
-    double *N_ksi,
-    double *N_eta,
-    double *N_zet)
+             const double eta,
+             const double zet,
+             const long nne,
+             double *N_ksi,
+             double *N_eta,
+             double *N_zet)
 /*
 
  */
@@ -614,18 +616,18 @@ void dN_kez (const double ksi,
 }
 
 void dxyz_kez (const double ksi,
-    const double eta,
-    const double zet,
-    const long nne,
-    const double *x,
-    const double *y,
-    const double *z,
-    const double *N_ksi,
-    const double *N_eta,
-    const double *N_zet,
-    double *dx,
-    double *dy,
-    double *dz)
+               const double eta,
+               const double zet,
+               const long nne,
+               const double *x,
+               const double *y,
+               const double *z,
+               const double *N_ksi,
+               const double *N_eta,
+               const double *N_zet,
+               double *dx,
+               double *dy,
+               double *dz)
 /*
   dx - derivace x podle ksi, eta, zet
   dy - derivace y podle ksi, eta, zet
@@ -662,27 +664,27 @@ void dxyz_kez (const double ksi,
 }
 
 double Jacobi (const double ksi,
-    const double eta,
-    const double zet,
-    const double *x,
-    const double *y,
-    const double *z,
-    const double *dx,
-    const double *dy,
-    const double *dz)
+               const double eta,
+               const double zet,
+               const double *x,
+               const double *y,
+               const double *z,
+               const double *dx,
+               const double *dy,
+               const double *dz)
 {
   double J;
 
   J = ((dx[0]*dy[1]*dz[2]) +
-      (dy[0]*dz[1]*dx[2]) +
-      (dz[0]*dx[1]*dy[2]) -
-      (dz[0]*dy[1]*dx[2]) -
-      (dx[0]*dz[1]*dy[2]) -
-      (dy[0]*dx[1]*dz[2]));
+       (dy[0]*dz[1]*dx[2]) +
+       (dz[0]*dx[1]*dy[2]) -
+       (dz[0]*dy[1]*dx[2]) -
+       (dx[0]*dz[1]*dy[2]) -
+       (dy[0]*dx[1]*dz[2]));
 
   if (J <= 0.0) {
     PGFEM_printf ("Negative determinant is isoparametric"
-        " mapping : J = %12.12e || Bye Bye\n",J);
+                  " mapping : J = %12.12e || Bye Bye\n",J);
     PGFEM_Abort();
   }
 
@@ -690,15 +692,15 @@ double Jacobi (const double ksi,
 }
 
 double deriv (const double ksi,
-    const double eta,
-    const double zet,
-    const long nne,
-    const double *x,
-    const double *y,
-    const double *z,
-    double *N_x,
-    double *N_y,
-    double *N_z)
+              const double eta,
+              const double zet,
+              const long nne,
+              const double *x,
+              const double *y,
+              const double *z,
+              double *N_x,
+              double *N_y,
+              double *N_z)
 /*
 
  */
@@ -734,16 +736,16 @@ double deriv (const double ksi,
 
   for (i=0;i<nne;i++){
     N_x[i] = 1./J * (Jac[0][0]*N_ksi[i]
-        + Jac[0][1]*N_eta[i]
-        + Jac[0][2]*N_zet[i]);
+                     + Jac[0][1]*N_eta[i]
+                     + Jac[0][2]*N_zet[i]);
 
     N_y[i] = 1./J * (Jac[1][0]*N_ksi[i]
-        + Jac[1][1]*N_eta[i]
-        + Jac[1][2]*N_zet[i]);
+                     + Jac[1][1]*N_eta[i]
+                     + Jac[1][2]*N_zet[i]);
 
     N_z[i] = 1./J * (Jac[2][0]*N_ksi[i]
-        + Jac[2][1]*N_eta[i]
-        + Jac[2][2]*N_zet[i]);
+                     + Jac[2][1]*N_eta[i]
+                     + Jac[2][2]*N_zet[i]);
   }
 
   dealoc1 (N_ksi);
@@ -758,9 +760,9 @@ double deriv (const double ksi,
 }
 
 void get_element_node_parent_coords(const int nne,
-    double *ksi,
-    double *eta,
-    double *zet)
+                                    double *ksi,
+                                    double *eta,
+                                    double *zet)
 {
   /* NOTE: When adding new elements, be sure that the coordinates are
      consistend with the shape function order!!! */
@@ -792,15 +794,15 @@ void get_element_node_parent_coords(const int nne,
 
    default:
     PGFEM_printerr("%s does not currently support element type %d.\n",
-        __func__,nne);
+                   __func__,nne);
     PGFEM_Abort();
   }
 }
 
 void element_center(const int nne,
-    double *x,
-    double *y,
-    double *z)
+                    double *x,
+                    double *y,
+                    double *z)
 {
   /* The centroid of an general polyhedron consisting of a finite set
      of points is simply the average of its nodal coordinates */
@@ -816,9 +818,9 @@ void element_center(const int nne,
 }
 
 int element_center_kez(const int nne,
-    double *x,
-    double *y,
-    double *z)
+                       double *x,
+                       double *y,
+                       double *z)
 {
   /*** NOTE: length(x_i) >= nne + 1 ***/
   /* compute the element center in (x,y,z) from the center in
@@ -852,15 +854,15 @@ int element_center_kez(const int nne,
 }
 
 void get_bubble_grad(const int nne_t, /* The bubble is the last node */
-    const double ksi,
-    const double eta,
-    const double zet,
-    const double *x,
-    const double *y,
-    const double *z,
-    double *N_x,
-    double *N_y,
-    double *N_z)
+                     const double ksi,
+                     const double eta,
+                     const double zet,
+                     const double *x,
+                     const double *y,
+                     const double *z,
+                     double *N_x,
+                     double *N_y,
+                     double *N_z)
 {
   double *N_ksi, *N_eta, *N_zet,*dx,*dy,*dz,**Jac;
 
@@ -876,8 +878,8 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
 
   /* only get dx, dy, dz for linear element */
   dxyz_kez (ksi,eta,zet,nne_t-1,
-      x,y,z,N_ksi,N_eta,N_zet,
-      dx,dy,dz);
+            x,y,z,N_ksi,N_eta,N_zet,
+            dx,dy,dz);
 
   double J = Jacobi (ksi,eta,zet,x,y,z,dx,dy,dz);
 
@@ -895,16 +897,16 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
 
 
   N_x[nne_t-1] = 1./J * (Jac[0][0]*N_ksi[nne_t-1]
-      + Jac[0][1]*N_eta[nne_t-1]
-      + Jac[0][2]*N_zet[nne_t-1]);
+                         + Jac[0][1]*N_eta[nne_t-1]
+                         + Jac[0][2]*N_zet[nne_t-1]);
 
   N_y[nne_t-1] = 1./J * (Jac[1][0]*N_ksi[nne_t-1]
-      + Jac[1][1]*N_eta[nne_t-1]
-      + Jac[1][2]*N_zet[nne_t-1]);
+                         + Jac[1][1]*N_eta[nne_t-1]
+                         + Jac[1][2]*N_zet[nne_t-1]);
 
   N_z[nne_t-1] = 1./J * (Jac[2][0]*N_ksi[nne_t-1]
-      + Jac[2][1]*N_eta[nne_t-1]
-      + Jac[2][2]*N_zet[nne_t-1]);
+                         + Jac[2][1]*N_eta[nne_t-1]
+                         + Jac[2][2]*N_zet[nne_t-1]);
 
 
   dealoc1 (N_ksi);
@@ -917,13 +919,13 @@ void get_bubble_grad(const int nne_t, /* The bubble is the last node */
 }
 
 double Bmat (const double ksi,
-    const double eta,
-    const double zet,
-    const long nne,
-    const double *x,
-    const double *y,
-    const double *z,
-    double **B)
+             const double eta,
+             const double zet,
+             const long nne,
+             const double *x,
+             const double *y,
+             const double *z,
+             double **B)
 /*
 
  */
@@ -965,10 +967,10 @@ double Bmat (const double ksi,
 }
 
 void B_BAR (double **B,
-    const long nne,
-    const double *x,
-    const double *y,
-    const double *z)
+            const long nne,
+            const double *x,
+            const double *y,
+            const double *z)
 /*
 
  */
@@ -1012,16 +1014,16 @@ void B_BAR (double **B,
 }
 
 void stiffmatel (long ii,
-    double *x,
-    double *y,
-    double *z,
-    long nne,
-    long ndofn,
-    ELEMENT *elem,
-    HOMMAT *hommat,
-    NODE *node,
-    double *K,
-    const PGFem3D_opt *opts)
+                 double *x,
+                 double *y,
+                 double *z,
+                 long nne,
+                 long ndofn,
+                 Element *elem,
+                 HOMMAT *hommat,
+                 Node *node,
+                 double *K,
+                 const PGFem3D_opt *opts)
 /*
 
  */
@@ -1114,16 +1116,16 @@ void stiffmatel (long ii,
 }
 
 void stiffmat (long *adr,
-    long ne,
-    long ndofn,
-    ELEMENT *elem,
-    NODE *node,
-    HOMMAT *hommat,
-    long *ci,
-    long typsolveru,
-    double *k,
-    const PGFem3D_opt *opts,
-    const int mp_id)
+               long ne,
+               long ndofn,
+               Element *elem,
+               Node *node,
+               HOMMAT *hommat,
+               long *ci,
+               long typsolveru,
+               double *k,
+               const PGFem3D_opt *opts,
+               const int mp_id)
 /*
 
   k - stiffness matrix of the subdomain

@@ -4,7 +4,12 @@
 ///  Sangmin Lee, [1], <slee43@nd.edu>
 ///  Aaron Howell, [1], <ahowell3@nd.edu>
 ///  [1] - University of Notre Dame, Notre Dame, IN
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "PGFem3D_data_structure.h"
+#include "PLoc_Sparse.h"
 #include "data_structure.h"
 #include "constitutive_model.h"
 #include "energy_equation.h"
@@ -13,54 +18,50 @@
 #include "get_dof_ids_on_elem.h"
 #include "hyperelasticity.h"     // <= constitutive model elasticity
 #include "material_properties.h" // <= constitutive model material properties
-#include "PGFem3D_data_structure.h"
-#include "PLoc_Sparse.h"
 #include "utils.h"
 #include <ttl/ttl.h>
-#include <math.h>
+#include <cmath>
 
-using namespace gcm;
-
-//ttl declarations
 namespace {
-  template<int R, int D = 3, class S = double>
-  using Tensor = ttl::Tensor<R, D, S>;
-  template<int R, int D = 3, class S = double *>  
-  using TensorA = ttl::Tensor<R, D, S>;
+using namespace gcm;
+using namespace ttl;
 
-  static constexpr ttl::Index<'A'> A;
-  static constexpr ttl::Index<'B'> B;
-  static constexpr ttl::Index<'C'> C;
-  static constexpr ttl::Index<'D'> D;
-  static constexpr ttl::Index<'I'> I;
-  static constexpr ttl::Index<'J'> J;
-  static constexpr ttl::Index<'K'> K;
-  static constexpr ttl::Index<'L'> L;
-  static constexpr ttl::Index<'M'> M;
-  static constexpr ttl::Index<'N'> N;
-  static constexpr ttl::Index<'O'> O;
-  static constexpr ttl::Index<'P'> P;
-  static constexpr ttl::Index<'Q'> Q;
-  static constexpr ttl::Index<'X'> X;
-  static constexpr ttl::Index<'Y'> Y;
-    
-  template<class T1, class T2> int inv(T1 &A, T2 &AI)
-  {
-    int err = inv3x3(A.data, AI.data);
-    return err;
-  }     
+using pgfem3d::Solver;
+
+const constexpr int DIM_3 = 3;
+const constexpr int DIM_3x3 = 9;
+const constexpr int DIM_3x3x3 = 27;
+const constexpr int DIM_3x3x3x3 = 81;
+
+const constexpr double TOL_FHS = 1.0e-6;
+const constexpr double PLASTIC_HEAT_FACTOR = 0.8;
+
+const constexpr Index<'A'> A;
+const constexpr Index<'B'> B;
+const constexpr Index<'C'> C;
+const constexpr Index<'D'> D;
+const constexpr Index<'I'> I;
+const constexpr Index<'J'> J;
+const constexpr Index<'K'> K;
+const constexpr Index<'L'> L;
+const constexpr Index<'M'> M;
+const constexpr Index<'N'> N;
+const constexpr Index<'O'> O;
+const constexpr Index<'P'> P;
+const constexpr Index<'Q'> Q;
+const constexpr Index<'X'> X;
+const constexpr Index<'Y'> Y;
+
+template <class T1, class T2>
+inline int inv(T1 &A, T2 &AI)
+{
+  int err = inv3x3(A.data, AI.data);
+  return err;
 }
 
-#define DIM_3        3
-#define DIM_3x3      9
-#define DIM_3x3x3   27
-#define DIM_3x3x3x3 81
+const Tensor<2,3,double> TD = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+}
 
-#define TOL_FHS 1.0e-6
-#define PLASTIC_HEAT_FACTOR 0.8
-
-double Delta[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
-TensorA<2> TD(Delta); // delta for Tensor
 /*
 /// compute derivative of PK1 w.r.t F
 ///
@@ -78,20 +79,20 @@ int compute_dePdeF(double *_dePdeF,
                    double *_F)
 {
   int err = 0;
-  
+
   TensorA<4> dePdeF(_dePdeF);
   TensorA<2> S(_S);
   TensorA<4> dWdE(_dWdE);
   TensorA<2> F(_F);
 
   Tensor<4> dEdF = {};
-  Tensor<2> delta;
-  delta(I,J) = ttl::identity(I,J);
+  Tensor<2,3,double> delta;
+  delta(I,J) = identity(I,J);
   dEdF(P,Q,K,L) = delta(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
   dePdeF(I,J,K,L) = delta(I,K)*S(L,J) + F(I,M)*dWdE(M,J,P,Q)*dEdF(P,Q,K,L);
 
   return err;
-}*/                 
+}*/
 /*
 /// compute derivative of PK1 w.r.t F
 ///
@@ -114,14 +115,14 @@ int compute_d2ePdeF2(double *_d2PdF2,
                      double *_F)
 {
   int err = 0;
-  
+
   TensorA<6, 3, double*> d2PdF2(_d2PdF2);
   TensorA<2, 3, double*> S(_S);
   TensorA<4, 3, double*> dWdE(_dWdE);
   TensorA<6, 3, double*> dCdE(_dCdE);
   TensorA<2, 3, double*> F(_F);
 
-  Tensor<2, 3, double> delta = ttl::identity(I,J);
+  Tensor<2, 3, double> delta = identity(I,J);
 
   Tensor<4, 3, double> dEdF = delta(P,L)*F(K,Q)+F(K,P)*delta(Q,L);
 
@@ -142,15 +143,15 @@ int compute_d2ePdeF2(double *_d2PdF2,
 ///
 /// \param[out] hF deformation gradient due to heat expansion
 /// \param[in] dT temperature difference
-/// \param[in] mat MATERIAL_PROPERTY object
+/// \param[in] mat MaterialProperty object
 /// \param[in] mat_id material id
 /// \param[in] diff_order, if 0 deformation gradient
 ///                        if 1 1st order of differentiation of hF w.r.t temperature
 ///                        if 2 2nd order of differentiation of hF w.r.t temperature
 /// \return non-zero with interal error
-int compute_hF_ttl(ttl::Tensor<2, DIM_3, double> &hF,
+int compute_hF_ttl(Tensor<2, DIM_3, double> &hF,
                    double dT,
-                   const MATERIAL_PROPERTY *mat,
+                   const MaterialProperty *mat,
                    const int mat_id,
                    const int diff_order)
 {
@@ -158,9 +159,9 @@ int compute_hF_ttl(ttl::Tensor<2, DIM_3, double> &hF,
   // compute thermal part of deformation gradient
   double ax = mat->mater[mat_id].ax;
   double ay = mat->mater[mat_id].ay;
-  double az = mat->mater[mat_id].az;  
+  double az = mat->mater[mat_id].az;
 
-  hF = 0.0*TD(I,J);  
+  hF = 0.0*TD(I,J);
   switch(diff_order)
   {
     case 0:
@@ -290,8 +291,8 @@ int compute_dPdhF(Matrix<double> *dPdhF_in,
 /// \param[out] Qe thermal source due to mechanical work (elastic part)
 /// \param[out] Qp thermal source due to mechanical work (plastic part)
 /// \param[out] DQ tangent of heat generation w.r.t temperature (computed only if compute_tangent = 1)
-/// \param[in] mat MATERIAL_PROPERTY object
-/// \param[in] fv_m mechanical FIELD_VARIABLES object
+/// \param[in] mat MaterialProperty object
+/// \param[in] fv_m mechanical FieldVariables object
 /// \param[in] T temperature
 /// \param[in] dT temperature changes
 /// \param[in] dt time step size
@@ -302,8 +303,8 @@ int compute_dPdhF(Matrix<double> *dPdhF_in,
 int compute_mechanical_heat_gen(double *Qe,
                                 double *Qp,
                                 double *DQ,
-                                const MATERIAL_PROPERTY *mat,
-                                const FIELD_VARIABLES *fv_m,
+                                const MaterialProperty *mat,
+                                const FieldVariables *fv_m,
                                 const double T,
                                 const double deltaT_np1,
                                 const double deltaT_n,
@@ -333,8 +334,8 @@ int compute_mechanical_heat_gen(double *Qe,
   err += compute_hF_ttl(hFp,  deltaT_np1, mat, mat_id, 1);
   err += compute_hF_ttl(hFpp, deltaT_np1, mat, mat_id, 2);
 
-  hFI   = ttl::inverse(hF);
-  hFnI  = ttl::inverse(hFn);
+  hFI   = inverse(hF);
+  hFnI  = inverse(hFn);
 
   // 2. obtain deformation gradient from mechanical part
   Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
@@ -342,16 +343,16 @@ int compute_mechanical_heat_gen(double *Qe,
   ELASTICITY *elast = (m->param)->cm_elast;
 
   Tensor<2,DIM_3,double> F,Fn,pF,pFn;
-  
-  err += m->param->get_F(  m,F.data, 1); // this brings  F(t(n+1))       
-  err += m->param->get_F( m,Fn.data, 0); // this brings  F(t(n))  
+
+  err += m->param->get_F(  m,F.data, 1); // this brings  F(t(n+1))
+  err += m->param->get_F( m,Fn.data, 0); // this brings  F(t(n))
   err += m->param->get_pF( m,pF.data,1); //             pF(t(n+1))
-  err += m->param->get_pF(m,pFn.data,0); //             pF(t(n))   
+  err += m->param->get_pF(m,pFn.data,0); //             pF(t(n))
 
   // 3. compute eFs, dot_xFs, det(xFs)
   Tensor<2,DIM_3,double> eF,eFn,pFI,pFnI,deF,dpF,dhF;
-  pFI  = ttl::inverse(pF);
-  pFnI = ttl::inverse(pFn);
+  pFI  = inverse(pF);
+  pFnI = inverse(pFn);
 
   eF  = F(I,K)*hFI(K,L)*pFI(L,J);
   eFn = F(I,K)*hFI(K,L)*pFI(L,J);
@@ -367,8 +368,8 @@ int compute_mechanical_heat_gen(double *Qe,
   // 4. compute stress and elasticity
   elast->update_elasticity(elast,eF.data,compute_stiffness);
 
-  Tensor<2,DIM_3,double *> S(elast->S);
-  Tensor<4,DIM_3,double *> dWdE(elast->L);
+  const Tensor<2,DIM_3,double*> S{elast->S};
+  const Tensor<4,DIM_3,double*> dWdE{elast->L};
   Tensor<2,DIM_3,double> dWdeF = eF(I,K)*S(K,J);
 
   // 5. compute heat gen of elastic part:
@@ -416,8 +417,8 @@ int compute_mechanical_heat_gen(double *Qe,
 /// \param[in] ndofe number of degree of freedom for element
 /// \param[in] T nodal temperature for all node
 /// \param[in] dT temperature increment
-/// \param[in] elem ELEMENT object
-/// \param[in] node NODE object
+/// \param[in] elem Element object
+/// \param[in] node Node object
 /// \param[in] sup struct for BC's
 /// \param[out] T_e computed nodal temperature for current element
 /// \param[in] T0 reference temperature
@@ -426,8 +427,8 @@ int get_temperature_elem(const long *cn,
                          const long ndofe,
                          const double *T,
                          const double *dT,
-                         const ELEMENT *elem,
-                         const NODE *node,
+                         const Element *elem,
+                         const Node *node,
                          const SUPP sup,
                          double *T_e,
                          double T0)
@@ -460,8 +461,8 @@ int get_temperature_elem(const long *cn,
 /// \return non-zero on internal error
 int energy_equation_residuals_assemble(FEMLIB *fe,
                                        double *fi,
-                                       GRID *grid,
-                                       FIELD_VARIABLES *fv,
+                                       Grid *grid,
+                                       FieldVariables *fv,
                                        const int mp_id)
 {
   int err = 0;
@@ -499,10 +500,10 @@ int energy_equation_residuals_assemble(FEMLIB *fe,
 int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            double *fi,
                                            double *du,
-                                           GRID *grid,
-                                           MATERIAL_PROPERTY *mat,
-                                           FIELD_VARIABLES *fv,
-                                           LOADING_STEPS *load,
+                                           Grid *grid,
+                                           MaterialProperty *mat,
+                                           FieldVariables *fv,
+                                           LoadingSteps *load,
                                            int mp_id,
                                            double dt_in,
                                            int total_Lagrangian)
@@ -525,20 +526,20 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
       is_it_couple_w_chemical = ia;
   }
-  
+
   if(is_it_couple_w_chemical>=0)
   {
     // compute for chemical
-  }     
-  
-  MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  TensorA<2>  k0(thermal->k);
-  Tensor<2>   k = k0(I,J);
-    
+  }
+
+  const MaterialThermal&     thermal = mat->thermal[mat_id];
+  const Tensor<2,3,const double*> k0 = thermal.k;
+  Tensor<2,3,double>               k = k0(I,J);
+
   int myrank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
 
-  double cp = thermal->cp;
+  double cp = thermal.cp;
 
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
@@ -549,34 +550,34 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   long *nod = fe->node_id.m_pdata; // use only address, no need deallication
   int ndofn = fv->ndofn;
   long ndofe = (fe->nne)*ndofn;
-  
+
   Matrix<long> cnL(ndofe, 1);
-  
-  get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL.m_pdata,mp_id); 
-  
-  Matrix<double> q(grid->nsd,1), Tnp1(fe->nne,1), Tn(fe->nne,1);  
-  
+
+  get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL.m_pdata,mp_id);
+
+  Matrix<double> q(grid->nsd,1), Tnp1(fe->nne,1), Tn(fe->nne,1);
+
   //compute nodal value
   get_temperature_elem(cnL.m_pdata,ndofe,fv->u_np1,du,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
-  
+
   for(int ia=0; ia<fe->nne; ia++)
-    Tn(ia+1) = fv->u_n[nod[ia]];    
+    Tn(ia+1) = fv->u_n[nod[ia]];
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     double Q = 0.0;
     // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);
-    fe->update_shape_tensor(); 
-        
+    fe->update_shape_tensor();
+
     double Temp = 0.0;
     double dT   = 0.0;
     double deltaT_np1 = 0.0;
     double deltaT_n   = 0.0;
-    
+
     // compute varialbes at the integration point
     for(int ia=1; ia<=fe->nne; ia++)
-    { 
+    {
       Temp += fe->N(ia)*Tnp1(ia);
       dT   += fe->N(ia)*(Tnp1(ia)-Tn(ia));
       deltaT_np1 += fe->N(ia)*(Tnp1(ia) - fv->u0);
@@ -585,38 +586,38 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
     if(is_it_couple_w_mechanical>=0)
     {
-      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+      FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
       int compute_tangent = 0;
       double DQ = 0.0;
       double Qe = 0.0;
       double Qp = 0.0;
 
-      Tensor<2> F;
+      Tensor<2,3,double> F;
       Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
       const Model_parameters *func = m->param;
       err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
-      
+
       if(total_Lagrangian)
       {
-        double detF = ttl::det(F);
-        
-        Tensor<2> FI;          
+        double detF = det(F);
+
+        Tensor<2,3,double> FI;
         inv(F,FI);
-        k = detF*FI(I,K)*k0(K,L)*FI(J,L); // k = J*FI*k0*FIT        
+        k = detF * FI(I,K) * k0(K,L) * FI(J,L); // k = J*FI*k0*FIT
       }
       else
-        Jn = ttl::det(F); //updated Lagrangian
-                
-      if(thermal->FHS_MW>TOL_FHS)
+        Jn = det(F); //updated Lagrangian
+
+      if (thermal.FHS_MW > TOL_FHS)
       {
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,deltaT_np1,deltaT_np1,dt,eid,ip,mat_id,compute_tangent);
-        Q += thermal->FHS_MW*(Qe + Qp);
+        Q += thermal.FHS_MW * (Qe + Qp);
 
       }
     }
-    
+
     q.set_values(0.0);
-            
+
     // compute heat flux
     for(int ia=1; ia<=fe->nne; ia++)
     {
@@ -624,10 +625,12 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       // q = [nsd, 1] = k*dN'*T
       for(int ib=1; ib<=grid->nsd; ib++)
       {
-        for(int ic=1; ic<=grid->nsd; ic++)        
-          q(ib) += k[ib-1][ic-1]*fe->dN(ia,ic)*Tnp1(ia);
-      }        
-    }    
+        for(int ic=1; ic<=grid->nsd; ic++) {
+          q(ib) += k(ib-1,ic-1)      // NB: TTL does not support 1-based indices
+                   *fe->dN(ia,ic)*Tnp1(ia);
+        }
+      }
+    }
 
     // R = rho*cp*dT + dt*grad.q - dt*Q = 0;
     // rho = rho_0/Jn
@@ -637,9 +640,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       fi[ia-1] += fe->N(ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW)/Jn;
       for(int ib=1; ib<=grid->nsd; ib++)
         fi[ia-1] += dt*fe->dN(ia,ib)*q(ib)*(fe->detJxW)/Jn;
-    }  
+    }
   }
-  
+
   return err;
 }
 
@@ -658,10 +661,10 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 ///                           use_updated=0, compute residuals using temporal temperature
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_residuals(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_residuals(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      LoadingSteps *load,
                                       const int mp_id,
                                       int use_updated,
                                       double dt)
@@ -680,12 +683,12 @@ int energy_equation_compute_residuals(GRID *grid,
     if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
       is_it_couple_w_chemical = ia;
   }
-  
+
   if(is_it_couple_w_chemical>=0)
   {
     // compute for chemical
   }
-    
+
   // save original pointer to access mechanical part
   double *u_n = NULL;
   double *u_nm1 = NULL;
@@ -693,7 +696,7 @@ int energy_equation_compute_residuals(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -715,9 +718,9 @@ int energy_equation_compute_residuals(GRID *grid,
     // It provide element wise integration info
     // such as basis function, weights, ...
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
-    
-    // do volume integration at an element, 
-    // fe needs to be updated by integration points 
+
+    // do volume integration at an element,
+    // fe needs to be updated by integration points
     Matrix<double> fi(fe.nne, 1, 0.0);
     err += energy_equation_compute_residuals_elem(&fe,fi.m_pdata,du,grid,mat,fv,load,mp_id,dt,total_Lagrangian);
     err += energy_equation_residuals_assemble(&fe,fi.m_pdata,grid,fv,mp_id);
@@ -725,7 +728,7 @@ int energy_equation_compute_residuals(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -763,12 +766,12 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \return non-zero on internal error
 int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            double **Lk,
-                                           GRID *grid,
-                                           MATERIAL_PROPERTY *mat,
-                                           FIELD_VARIABLES *fv,
-                                           SOLVER_OPTIONS *sol,
-                                           LOADING_STEPS *load,
-                                           COMMUNICATION_STRUCTURE *com,
+                                           Grid *grid,
+                                           MaterialProperty *mat,
+                                           FieldVariables *fv,
+                                           Solver *sol,
+                                           LoadingSteps *load,
+                                           CommunicationStructure *com,
                                            int *Ddof,
                                            int myrank,
                                            int interior,
@@ -802,12 +805,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   {
     // compute for chemical
   }
-    
-  MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;  
-  TensorA<2>  k0(thermal->k);
-  Tensor<2>   k = k0(I,J);
-  
-  double cp = thermal->cp;
+
+  const MaterialThermal& thermal = mat->thermal[mat_id];
+  const Tensor<2,3,const double*> k0 = thermal.k;
+  Tensor<2,3,double> k = k0(I,J);
+
+  double cp = thermal.cp;
 
   double dt = 1.0; // for the quasi steady state
   if(rho_0>0)
@@ -820,25 +823,25 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   long ndofe = (fe->nne)*ndofn;
   Matrix<long> cnL(ndofe, 1);
   Matrix<long> cnG(ndofe, 1);
-  
+
   get_dof_ids_on_elem_nodes(0,fe->nne,ndofn,nod,grid->node,cnL.m_pdata,mp_id);
   get_dof_ids_on_elem_nodes(1,fe->nne,ndofn,nod,grid->node,cnG.m_pdata,mp_id);
-  
-  Matrix<double> lk(ndofe,ndofe,0.0);  
-  Matrix<double> Tnp1(fe->nne,1,0.0), Tn(fe->nne,1,0.0);  
-    
+
+  Matrix<double> lk(ndofe,ndofe,0.0);
+  Matrix<double> Tnp1(fe->nne,1,0.0), Tn(fe->nne,1,0.0);
+
   //compute nodal value
   get_temperature_elem(cnL.m_pdata,ndofe,fv->u_np1,fv->f,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
 
   for(int ia=0; ia<fe->nne; ia++)
-    Tn(ia+1) = fv->u_n[nod[ia]];    
+    Tn(ia+1) = fv->u_n[nod[ia]];
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
-    // Udate basis functions at the integration points.    
+    // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);
-    fe->update_shape_tensor(); 
-    
+    fe->update_shape_tensor();
+
     double Temp = 0.0;
     double dT   = 0.0;
     double deltaT_np1 = 0.0;
@@ -846,7 +849,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 
     // compute varialbes at the integration point
     for(int ia=1; ia<=fe->nne; ia++)
-    { 
+    {
       Temp += fe->N(ia)*Tnp1(ia);
       dT   += fe->N(ia)*(Tnp1(ia)-Tn(ia));
       deltaT_np1 += fe->N(ia)*(Tnp1(ia) - fv->u0);
@@ -857,31 +860,31 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 
     if(is_it_couple_w_mechanical>=0)
     {
-      FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+      FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
       int compute_tangent = 1;
       double Qe = 0.0;
       double Qp = 0.0;
 
-      Tensor<2> F = {};
+      Tensor<2,3,double> F = {};
       Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
       const Model_parameters *func = m->param;
       err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
 
       if(total_Lagrangian)
       {
-        double detF = ttl::det(F);
-        
-        Tensor<2> FI;          
+        double detF = det(F);
+
+        Tensor<2,3,double> FI;
         inv(F,FI);
-        k = detF*FI(I,K)*k0(K,L)*FI(J,L); // k = J*FI*k0*FIT        
+        k = detF*FI(I,K)*k0(K,L)*FI(J,L); // k = J*FI*k0*FIT
       }
       else
-        Jn = ttl::det(F); //updated Lagrangian
-        
-      if(thermal->FHS_MW>TOL_FHS)
+        Jn = det(F); //updated Lagrangian
+
+      if (thermal.FHS_MW > TOL_FHS)
       {
         err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,deltaT_np1,deltaT_n,dt,eid,ip,mat_id,compute_tangent);
-        DQ = thermal->FHS_MW*DQ;
+        DQ = thermal.FHS_MW * DQ;
       }
     }
 
@@ -895,8 +898,10 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
         for(int im = 1; im<=grid->nsd; im++)
         {
           for(int in = 1; in<=grid->nsd; in++)
-            lk(ia,ib) += dt*fe->dN(ia,in)*k(in, im)*fe->dN(ib,im)*(fe->detJxW)/Jn;
-        }    
+            lk(ia,ib) += dt*fe->dN(ia,in)*
+                         k(in-1, im-1) // NB: TTL does not support 1-based indices
+                         *fe->dN(ib,im)*(fe->detJxW)/Jn;
+        }
       }
     }
   }
@@ -921,7 +926,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   {
     int ndofn = 1;
     Matrix<double> u((fe->nne)*ndofn,1,0.0), f_loc((fe->nne)*ndofn,1,0.0);
-    
+
     // get the bc increment
     for(int ia=0; ia<fe->nne; ia++)
     {
@@ -935,7 +940,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       }
     }
     f_loc.prod(lk,u);
-    
+
     // element -> localization
     for(int ia=0; ia<fe->nne; ia++)
     {
@@ -946,9 +951,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
         if (id_l < 0)  continue;
           fv->f_defl[id_l] += f_loc.m_pdata[id_e];
       }
-    }    
+    }
   }
-    
+
   return err;
 }
 
@@ -971,12 +976,12 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_stiffness(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
-                                      COMMUNICATION_STRUCTURE *com,
+int energy_equation_compute_stiffness(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      Solver *sol,
+                                      LoadingSteps *load,
+                                      CommunicationStructure *com,
                                       MPI_Comm mpi_comm,
                                       int myrank,
                                       const PGFem3D_opt *opts,
@@ -1000,12 +1005,12 @@ int energy_equation_compute_stiffness(GRID *grid,
     if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
       is_it_couple_w_chemical = ia;
   }
-  
+
   if(is_it_couple_w_chemical>=0)
   {
     // compute for chemical
-  }  
-  
+  }
+
   // save original pointer to access mechanical part
   double *u_n = NULL;
   double *u_nm1 = NULL;
@@ -1013,7 +1018,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1031,7 +1036,7 @@ int energy_equation_compute_stiffness(GRID *grid,
                                      mpi_comm,com->comm);
 
   Matrix<int> Ddof(com->nproc,1);
-  
+
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)
     Ddof.m_pdata[ia] = Ddof.m_pdata[ia-1] + com->DomDof[ia];
@@ -1039,8 +1044,8 @@ int energy_equation_compute_stiffness(GRID *grid,
   for(int eid=0; eid<com->nbndel; eid++)
   {
     // construct finite element library
-    // it provide element wise integration info 
-    // such as basis function, weights, ... 
+    // it provide element wise integration info
+    // such as basis function, weights, ...
     FEMLIB fe(com->bndel[eid],grid->element,grid->node,intg_order,total_Lagrangian);
 
     // do volume integration at an element
@@ -1048,7 +1053,7 @@ int energy_equation_compute_stiffness(GRID *grid,
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
-    
+
     if(err != 0)
       break;
   }
@@ -1069,16 +1074,16 @@ int energy_equation_compute_stiffness(GRID *grid,
 
     if(is_it_in==0)
       continue;
-    
+
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
-    
+
     // do volume integration at an element
     int interior = 1;
 
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
                                                   myrank,interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
-      
+
     if(err != 0)
       break;
   }
@@ -1088,7 +1093,7 @@ int energy_equation_compute_stiffness(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -1106,8 +1111,8 @@ int energy_equation_compute_stiffness(GRID *grid,
   free (sta_s);
   free (sta_r);
   free (req_s);
-  free (req_r);  
-  
+  free (req_r);
+
   return err;
 }
 
@@ -1131,11 +1136,11 @@ int energy_equation_compute_stiffness(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_load4pBCs(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_load4pBCs(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      Solver *sol,
+                                      LoadingSteps *load,
                                       int myrank,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
@@ -1163,7 +1168,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
   {
     // compute for chemical
   }
-    
+
   // save original pointer to access mechanical part
   double *u_n = NULL;
   double *u_nm1 = NULL;
@@ -1171,7 +1176,7 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1189,14 +1194,14 @@ int energy_equation_compute_load4pBCs(GRID *grid,
     // do volume integration at an element
     err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,NULL,NULL,
                                                   myrank,interior,opts,mp_id,
-                                                  do_assemble,compute_load4pBCs,dt,total_Lagrangian);    
+                                                  do_assemble,compute_load4pBCs,dt,total_Lagrangian);
     if(err != 0)
       break;
   }
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
@@ -1213,9 +1218,9 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 /// \param[in,out] fv a field variable object
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int update_thermal_flux4print(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
+int update_thermal_flux4print(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
                               double dt)
 {
   int err = 0;
@@ -1239,7 +1244,7 @@ int update_thermal_flux4print(GRID *grid,
   {
     // compute for chemical
   }
-      
+
   // save original pointer to access mechanical part
   double *u_n = NULL;
   double *u_nm1 = NULL;
@@ -1247,7 +1252,7 @@ int update_thermal_flux4print(GRID *grid,
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     u_n   = fv_m->u_n;
     u_nm1 = fv_m->u_nm1;
     statv_list = fv_m->statv_list;
@@ -1256,27 +1261,27 @@ int update_thermal_flux4print(GRID *grid,
     fv_m->u_nm1 = fv_m->temporal->u_nm1;
     fv_m->statv_list = fv_m->temporal->var;
   }
-  
+
   if(is_it_couple_w_chemical>=0)
   {
     // compute for chemical
   }
-  
+
   int myrank = 0;
   MPI_Comm_rank (MPI_COMM_WORLD,&myrank);
 
   for(int eid=0; eid<grid->ne; eid++)
-  {    
+  {
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
     memset(eps[eid].el.o,0,6*sizeof(double));
 
     // get material constants (parameters)
-    const int mat_id = (grid->element[eid]).mat[0];  
-    
-    MATERIAL_THERMAL *thermal = (mat->thermal) + mat_id;
-    TensorA<2>  k0(thermal->k);
-    Tensor<2>   k = k0(I,J);
-      
+    const int mat_id = (grid->element[eid]).mat[0];
+
+    const MaterialThermal& thermal = mat->thermal[mat_id];
+    const Tensor<2,3,const double*> k0 = thermal.k;
+    Tensor<2,3,double> k = k0(I,J);
+
     // compute noda values
     Matrix<double> q(grid->nsd,1), Tnp1(fe.nne,1), Tn(fe.nne,1);
 
@@ -1293,7 +1298,7 @@ int update_thermal_flux4print(GRID *grid,
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
-    
+
       double Temp = 0.0;
       double dT   = 0.0;
       double deltaT_np1 = 0.0;
@@ -1301,7 +1306,7 @@ int update_thermal_flux4print(GRID *grid,
 
       // compute values at the integration point
       for(int ia=1; ia<=fe.nne; ia++)
-      {         
+      {
         Temp += fe.N(ia,1)*Tnp1(ia,1);
         dT   += fe.N(ia,1)*(Tnp1(ia,1)-Tn(ia,1));
         deltaT_np1 += fe.N(ia,1)*(Tnp1(ia,1) - fv->u0);
@@ -1315,35 +1320,35 @@ int update_thermal_flux4print(GRID *grid,
       double Jn = 1.0;
       if(is_it_couple_w_mechanical>=0)
       {
-        FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+        FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
         int compute_tangent = 0;
 
-        Tensor<2> F;
+        Tensor<2,3,double> F;
         Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
         const Model_parameters *func = m->param;
         err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
-  
+
         if(total_Lagrangian)
         {
-          double detF = ttl::det(F);
-        
-          Tensor<2> FI;          
+          double detF = det(F);
+
+          Tensor<2,3,double> FI;
           inv(F,FI);
-          k = detF*FI(I,K)*k0(K,L)*FI(J,L); // k = J*FI*k0*FIT        
+          k = detF*FI(I,K)*k0(K,L)*FI(J,L); // k = J*FI*k0*FIT
         }
         else
-          Jn = ttl::det(F); //updated Lagrangian          
-        
-        if(thermal->FHS_MW>TOL_FHS)
+          Jn = det(F); //updated Lagrangian
+
+        if(thermal.FHS_MW > TOL_FHS)
         {
           err += compute_mechanical_heat_gen(&Qe,&Qp,&DQ,mat,fv_m,Temp,deltaT_np1,deltaT_n,dt,eid,ip,mat_id,compute_tangent);
-          Qe = thermal->FHS_MW*Qe;
-          Qp = thermal->FHS_MW*Qp;
+          Qe = thermal.FHS_MW * Qe;
+          Qp = thermal.FHS_MW * Qp;
         }
       }
-      
+
       q.set_values(0.0);
-              
+
       // compute heat flux
       for(int ia=1; ia<=fe.nne; ia++)
       {
@@ -1351,11 +1356,13 @@ int update_thermal_flux4print(GRID *grid,
         // q = [nsd, 1] = k*dN'*T
         for(int ib=1; ib<=grid->nsd; ib++)
         {
-          for(int ic=1; ic<=grid->nsd; ic++)        
-            q(ib) -= k(ib, ic)*fe.dN(ia,ic)*Tnp1(ia);
-        }        
-      }       
-      
+          for(int ic=1; ic<=grid->nsd; ic++) {
+            q(ib) -= k(ib-1, ic-1)   // NB: TTL does not support 1-based indices
+                     *fe.dN(ia,ic)*Tnp1(ia);
+          }
+        }
+      }
+
       // save the values
       fv->eps[eid].el.o[0] += fe.detJxW*q(1);
       fv->eps[eid].el.o[1] += fe.detJxW*q(2);
@@ -1366,12 +1373,12 @@ int update_thermal_flux4print(GRID *grid,
     }
     for(int ia=0; ia<6; ia++)
       eps[eid].el.o[ia] = eps[eid].el.o[ia]/volume;
-       
+
   }
 
   if(is_it_couple_w_mechanical>=0)
   {
-    FIELD_VARIABLES *fv_m = fv->fvs[is_it_couple_w_mechanical];
+    FieldVariables *fv_m = fv->fvs[is_it_couple_w_mechanical];
     fv_m->u_n   = u_n;
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;

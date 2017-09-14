@@ -1,11 +1,13 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include"incl.h"
-#include <string.h>
-#include "enumerations.h"
+#include "incl.h"
 #include "elem3d.h"
+#include "enumerations.h"
+#include <cstring>
 
-void build_elem_inelas (long ne,ELEMENT *elem)
+void build_elem_inelas (long ne,Element *elem)
 {
   long i,j,II,nne;
 
@@ -27,11 +29,11 @@ void build_elem_inelas (long ne,ELEMENT *elem)
 }
 
 void build_pressure_nodes (long ne,
-               long npres,
-               ELEMENT *elem,
-               SIG *sig,
-               EPS *eps,
-               const int analysis)
+                           long npres,
+                           Element *elem,
+                           SIG *sig,
+                           EPS *eps,
+                           const int analysis)
 {
   long i;
 
@@ -40,16 +42,16 @@ void build_pressure_nodes (long ne,
 
   for (i=0;i<ne;i++){
     switch(analysis){
-    case FS_CRPL:
-    case FINITE_STRAIN:
-     eps[i].T   = PGFEM_calloc (double, npres);
-     eps[i].d_T = PGFEM_calloc (double, npres);
+     case FS_CRPL:
+     case FINITE_STRAIN:
+      eps[i].T   = PGFEM_calloc (double, npres);
+      eps[i].d_T = PGFEM_calloc (double, npres);
       break;
-    case MINI_3F:
-     eps[i].T   = PGFEM_calloc (double, 4);
-     eps[i].d_T = PGFEM_calloc (double, 4);
+     case MINI_3F:
+      eps[i].T   = PGFEM_calloc (double, 4);
+      eps[i].d_T = PGFEM_calloc (double, 4);
       break;
-    default:
+     default:
       eps[i].T   = NULL;
       eps[i].d_T = NULL;
       break;
@@ -62,15 +64,15 @@ void build_pressure_nodes (long ne,
 }
 
 void build_crystal_plast (long ne,
-              ELEMENT *elem,
-              SIG *sig,
-              EPS *eps,
-              CRPL *crpl,
-              const int analysis,
-              const int plc)
-     /*
+                          Element *elem,
+                          SIG *sig,
+                          EPS *eps,
+                          CRPL *crpl,
+                          const int analysis,
+                          const int plc)
+/*
 
-     */
+ */
 {
   long i,II,nne,k;
   if (analysis == FS_CRPL) {

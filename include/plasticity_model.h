@@ -15,7 +15,7 @@
 
 class CP_PARAM: public Model_parameters
 {
-  public:
+ public:
 
   virtual int model_dependent_initialization(void);
   virtual int model_dependent_finalization(void);
@@ -39,7 +39,7 @@ class CP_PARAM: public Model_parameters
                                 double *L,
                                 double *S,
                                 const int compute_stiffness) const;
-  virtual int update_state_vars(Constitutive_model *m) const;  
+  virtual int update_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,
                                               State_variables *var) const;
@@ -48,18 +48,18 @@ class CP_PARAM: public Model_parameters
   virtual int save_state_vars_to_temporal(const Constitutive_model *m,
                                           State_variables *var) const;
   virtual int get_var_info(Model_var_info &info) const;
-  virtual int get_F(const Constitutive_model *m, 
+  virtual int get_F(const Constitutive_model *m,
                     double *F,
                     const int stepno) const;
-  virtual int get_pF(const Constitutive_model *m, 
-                     double *F, 
+  virtual int get_pF(const Constitutive_model *m,
+                     double *F,
                      const int stepno) const;
-  virtual int get_eF(const Constitutive_model *m, 
-                     double *F, 
+  virtual int get_eF(const Constitutive_model *m,
+                     double *F,
                      const int stepno) const;
-  virtual int get_eF_of_hF(const Constitutive_model *m, 
-                           double *F, 
-                           double *hFI, 
+  virtual int get_eF_of_hF(const Constitutive_model *m,
+                           double *F,
+                           double *hFI,
                            const int stepno) const;
   virtual int get_hardening(const Constitutive_model *m,
                             double *var,
@@ -67,7 +67,7 @@ class CP_PARAM: public Model_parameters
   virtual int get_plast_strain_var(const Constitutive_model *m,
                                    double *lam_p)
   const { return cm_get_lam_p(m, lam_p);};
-                              
+
   virtual int get_subdiv_param(const Constitutive_model *m,
                                double *var,
                                const double t) const;
@@ -127,19 +127,14 @@ int plasticity_model_ctx_build(void **ctx,
  */
 int plasticity_model_slip_system(double *P);
 
-#ifndef ELEMENT_H
-typedef struct EPS EPS;
-#endif
-
-#ifndef EPS_H
-typedef struct ELEMENT ELEMENT;
-#endif
+struct EPS;
+struct Element;
 
 int plasticity_model_set_orientations(EPS *eps,
-                                const int ne,
-                                const ELEMENT *elem,
-                                const int n_mat,
-                                const Model_parameters *param_list);
+                                      const int ne,
+                                      const Element *elem,
+                                      const int n_mat,
+                                      const Model_parameters *param_list);
 /** read material properties for plasticity
  * need to provide model_params.in with format as below
  *

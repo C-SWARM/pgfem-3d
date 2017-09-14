@@ -3,11 +3,8 @@
 /// Authors:
 ///  Sangmin Lee, [1], <slee43@nd.edu>
 ///  [1] - University of Notre Dame, Notre Dame, IN
-
-
-#pragma once
-#ifndef H__PGFEM3D_ENERGY_EQUATION__H
-#define H__PGFEM3D_ENERGY_EQUATION__H
+#ifndef PGFEM3D_ENERGY_EQUATION_H
+#define PGFEM3D_ENERGY_EQUATION_H
 
 #include "PGFem3D_data_structure.h"
 
@@ -22,10 +19,10 @@
 ///                           use_updated=0, compute residuals using temporal temperature
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_residuals(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_residuals(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      LoadingSteps *load,
                                       const int mp_id,
                                       int use_updated,
                                       double dt);
@@ -44,12 +41,12 @@ int energy_equation_compute_residuals(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_stiffness(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
-                                      COMMUNICATION_STRUCTURE *com,
+int energy_equation_compute_stiffness(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      pgfem3d::Solver *sol,
+                                      LoadingSteps *load,
+                                      CommunicationStructure *com,
                                       MPI_Comm mpi_comm,
                                       int myrank,
                                       const PGFem3D_opt *opts,
@@ -69,11 +66,11 @@ int energy_equation_compute_stiffness(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int energy_equation_compute_load4pBCs(GRID *grid,
-                                      MATERIAL_PROPERTY *mat,
-                                      FIELD_VARIABLES *fv,
-                                      SOLVER_OPTIONS *sol,
-                                      LOADING_STEPS *load,
+int energy_equation_compute_load4pBCs(Grid *grid,
+                                      MaterialProperty *mat,
+                                      FieldVariables *fv,
+                                      pgfem3d::Solver *sol,
+                                      LoadingSteps *load,
                                       int myrank,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
@@ -86,9 +83,9 @@ int energy_equation_compute_load4pBCs(GRID *grid,
 /// \param[in,out] fv field variable object
 /// \param[in] dt time step size
 /// \return non-zero on internal error
-int update_thermal_flux4print(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
+int update_thermal_flux4print(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
                               double dt);
 
-#endif
+#endif // #define PGFEM3D_ENERGY_EQUATION_H

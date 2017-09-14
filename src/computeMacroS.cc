@@ -1,31 +1,22 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "computeMacroS.h"
-
-#include <string.h>
-#include "mkl_cblas.h"
-
-#ifndef ALLOCATION_H
 #include "allocation.h"
-#endif
-
-#ifndef INDEX_MACROS_H
-#include "index_macros.h"
-#endif
-
-#ifndef UTILS_H
-#include "utils.h"
-#endif
-
-#ifndef ELEM3D_H
 #include "elem3d.h"
-#endif
+#include "index_macros.h"
+#include "utils.h"
+#include <mkl_cblas.h>
+#include <cstring>
 
-double* computeMacroS(ELEMENT *elem,
-		      long ne,
-		      NODE *node,
-		      long nn,
-		      SIG *sig,
-		      double oVolume,
-		      MPI_Comm mpi_comm)
+double* computeMacroS(Element *elem,
+                      long ne,
+                      Node *node,
+                      long nn,
+                      SIG *sig,
+                      double oVolume,
+                      MPI_Comm mpi_comm)
 {
   long *nod;
   double  *S, *gk, *ge, *gz, *w;
@@ -37,7 +28,7 @@ double* computeMacroS(ELEMENT *elem,
   ge = aloc1 (5);
   gz = aloc1 (5);
   w = aloc1 (5);
-  
+
   S[0] = S[1] = S[2] = S[3] = S[4] = S[5] = 0.0;
 
   for(int i=0; i<ne; i++){
@@ -69,27 +60,27 @@ double* computeMacroS(ELEMENT *elem,
     int ip = 0;
     for(int j=0; j<JJ; j++){
       for(int k=0; k<KK; k++){
-	for(int m=0; m<MM; m++){
-	  double ksi, eta, zet, ai, aj, ak, J;
+        for(int m=0; m<MM; m++){
+          double ksi, eta, zet, ai, aj, ak, J;
 
-	  ksi = gk[m];
-	  eta = ge[m];
-	  zet = gz[m];
-	  ai = w[m];
-	  aj = ak = 1.0;
+          ksi = gk[m];
+          eta = ge[m];
+          zet = gz[m];
+          ai = w[m];
+          aj = ak = 1.0;
 
-	  shape_func(ksi,eta,zet,nne,Np);
-	  J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+          shape_func(ksi,eta,zet,nne,Np);
+          J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
-	  S[0] += ai*aj*ak*J* sig[i].il[ip].o[0]; 
-	  S[1] += ai*aj*ak*J* sig[i].il[ip].o[1]; 
-	  S[2] += ai*aj*ak*J* sig[i].il[ip].o[2]; 
-	  S[3] += ai*aj*ak*J* sig[i].il[ip].o[3]; 
-	  S[4] += ai*aj*ak*J* sig[i].il[ip].o[4]; 
-	  S[5] += ai*aj*ak*J* sig[i].il[ip].o[5]; 
+          S[0] += ai*aj*ak*J* sig[i].il[ip].o[0];
+          S[1] += ai*aj*ak*J* sig[i].il[ip].o[1];
+          S[2] += ai*aj*ak*J* sig[i].il[ip].o[2];
+          S[3] += ai*aj*ak*J* sig[i].il[ip].o[3];
+          S[4] += ai*aj*ak*J* sig[i].il[ip].o[4];
+          S[5] += ai*aj*ak*J* sig[i].il[ip].o[5];
 
-	  ip++;
-	}
+          ip++;
+        }
       }
     }
 
@@ -130,14 +121,14 @@ double* computeMacroS(ELEMENT *elem,
   return(GS);
 }
 
-double* computeMacroP(ELEMENT *elem,
-		      long ne,
-		      NODE *node,
-		      long nn,
-		      SIG *sig,
-		      EPS *eps,
-		      double oVolume,
-		      MPI_Comm mpi_comm)
+double* computeMacroP(Element *elem,
+                      long ne,
+                      Node *node,
+                      long nn,
+                      SIG *sig,
+                      EPS *eps,
+                      double oVolume,
+                      MPI_Comm mpi_comm)
 {
   long *nod;
   double  *S, *P, *gk, *ge, *gz, *w;
@@ -151,7 +142,7 @@ double* computeMacroP(ELEMENT *elem,
   gz = aloc1 (5);
   w = aloc1 (5);
 
-  /* null P */  
+  /* null P */
   memset(P,0,9*sizeof(double));
 
   for(int i=0; i<ne; i++){
@@ -183,30 +174,30 @@ double* computeMacroP(ELEMENT *elem,
     int ip = 0;
     for(int j=0; j<JJ; j++){
       for(int k=0; k<KK; k++){
-	for(int m=0; m<MM; m++){
-	  double ksi, eta, zet, ai, aj, ak, J;
+        for(int m=0; m<MM; m++){
+          double ksi, eta, zet, ai, aj, ak, J;
 
-	  ksi = gk[m];
-	  eta = ge[m];
-	  zet = gz[m];
-	  ai = w[m];
-	  aj = ak = 1.0;
+          ksi = gk[m];
+          eta = ge[m];
+          zet = gz[m];
+          ai = w[m];
+          aj = ak = 1.0;
 
-	  shape_func(ksi,eta,zet,nne,Np);
-	  J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
+          shape_func(ksi,eta,zet,nne,Np);
+          J = deriv(ksi,eta,zet,nne,x,y,z,N_x,N_y,N_z);
 
-	  S[idx_2(0,0)] = sig[i].il[ip].o[0]; 
-	  S[idx_2(1,1)] = sig[i].il[ip].o[1]; 
-	  S[idx_2(2,2)] = sig[i].il[ip].o[2]; 
-	  S[idx_2(1,2)] = S[idx_2(2,1)] = sig[i].il[ip].o[3]; 
-	  S[idx_2(0,2)] = S[idx_2(2,0)] = sig[i].il[ip].o[4]; 
-	  S[idx_2(0,1)] = S[idx_2(1,0)] = sig[i].il[ip].o[5]; 
+          S[idx_2(0,0)] = sig[i].il[ip].o[0];
+          S[idx_2(1,1)] = sig[i].il[ip].o[1];
+          S[idx_2(2,2)] = sig[i].il[ip].o[2];
+          S[idx_2(1,2)] = S[idx_2(2,1)] = sig[i].il[ip].o[3];
+          S[idx_2(0,2)] = S[idx_2(2,0)] = sig[i].il[ip].o[4];
+          S[idx_2(0,1)] = S[idx_2(1,0)] = sig[i].il[ip].o[5];
 
-	  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-		      3,3,3,(ai*aj*ak*J),eps[i].il[ip].F,3,
-		      S,3,1.0,P,3);
-	  ip++;
-	}
+          cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+                      3,3,3,(ai*aj*ak*J),eps[i].il[ip].F,3,
+                      S,3,1.0,P,3);
+          ip++;
+        }
       }
     }
 

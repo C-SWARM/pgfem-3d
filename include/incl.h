@@ -1,7 +1,7 @@
 /* HEADER */
 #pragma once
-#ifndef INCL_H
-#define INCL_H
+#ifndef PGFEM3D_INCL_H
+#define PGFEM3D_INCL_H
 
 #include "data_structure.h"
 #include "element.h"
@@ -11,28 +11,28 @@
 #include "allocation.h"
 
 void build_elem_inelas (long ne,
-            ELEMENT *elem);
+                        Element *elem);
 
 void build_pressure_nodes (long ne,
-               long npres,
-               ELEMENT *elem,
-               SIG *sig,
-               EPS *eps,
-               const int analysis);
+                           long npres,
+                           Element *elem,
+                           SIG *sig,
+                           EPS *eps,
+                           const int analysis);
 
 void build_crystal_plast (long ne,
-              ELEMENT *elem,
-              SIG *sig,
-              EPS *eps,
-              CRPL *crpl,
-              const int analysis,
-              const int plc);
+                          Element *elem,
+                          SIG *sig,
+                          EPS *eps,
+                          CRPL *crpl,
+                          const int analysis,
+                          const int plc);
 
 void nulld (double *a,
-        long n);
+            long n);
 
 void nulld2 (double **a,
-         long m,
-         long n);
+             long m,
+             long n);
 
-#endif
+#endif // PGFEM3D_INCL_H

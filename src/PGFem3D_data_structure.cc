@@ -25,7 +25,7 @@
 ///
 /// \param[in, out] ts an object for time stepping
 /// \return non-zero on internal error
-int time_stepping_initialization(PGFem3D_TIME_STEPPING *ts)
+int time_stepping_initialization(TimeStepping *ts)
 {
   int err = 0;
   ts->nt     = 0;
@@ -44,7 +44,7 @@ int time_stepping_initialization(PGFem3D_TIME_STEPPING *ts)
 ///
 /// \param[in, out] ts an object for time stepping
 /// \return non-zero on internal error
-int destruct_time_stepping(PGFem3D_TIME_STEPPING *ts)
+int destruct_time_stepping(TimeStepping *ts)
 {
   int err = 0;
   if(NULL != ts->times) free(ts->times);
@@ -61,7 +61,7 @@ int destruct_time_stepping(PGFem3D_TIME_STEPPING *ts)
 ///
 /// \param[in, out] grid an object containing all mesh data
 /// \return non-zero on internal error
-int grid_initialization(GRID *grid)
+int grid_initialization(Grid *grid)
 {
   int err = 0;
   grid->Gnn     = 0;
@@ -88,9 +88,9 @@ int grid_initialization(GRID *grid)
 /// \param[in, out] grid an object containing all mesh data
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_grid(GRID *grid,
+int destruct_grid(Grid *grid,
                   const PGFem3D_opt *opts,
-                  MULTIPHYSICS *mp)
+                  Multiphysics *mp)
 {
   int err = 0;
   destroy_bounding_elements(grid->n_be,grid->b_elems);
@@ -110,7 +110,7 @@ int destruct_grid(GRID *grid,
 ///
 /// \param[in, out] fv an object containing all field variables
 /// \return non-zero on internal error
-int field_varialbe_initialization(FIELD_VARIABLES *fv)
+int field_varialbe_initialization(FieldVariables *fv)
 {
   int err = 0;
   fv->u0     = 0.0;
@@ -163,11 +163,11 @@ int field_varialbe_initialization(FIELD_VARIABLES *fv)
 /// \param[in] myrank current process rank
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int construct_field_varialbe(FIELD_VARIABLES *fv,
-                             GRID *grid,
-                             COMMUNICATION_STRUCTURE *com,
+int construct_field_varialbe(FieldVariables *fv,
+                             Grid *grid,
+                             CommunicationStructure *com,
                              const PGFem3D_opt *opts,
-                             MULTIPHYSICS *mp,
+                             Multiphysics *mp,
                              int myrank,
                              int mp_id)
 {
@@ -192,8 +192,8 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     if(opts->analysis_type == CM || opts->analysis_type == CM3F)
-    {      
-      const ELEMENT *elem = grid->element;
+    {
+      const Element *elem = grid->element;
       int n_state_varialbles = 0;
       for(int eid=0; eid<grid->ne; eid++)
       {
@@ -202,7 +202,7 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
         int_point(nne,&nint);
         n_state_varialbles += nint;
       }
-        
+
       fv->statv_list = new State_variables[n_state_varialbles];
     }
 
@@ -227,10 +227,10 @@ int construct_field_varialbe(FIELD_VARIABLES *fv,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id physics id
 /// \return non-zero on internal error
-int destruct_field_varialbe(FIELD_VARIABLES *fv,
-                            GRID *grid,
+int destruct_field_varialbe(FieldVariables *fv,
+                            Grid *grid,
                             const PGFem3D_opt *opts,
-                            MULTIPHYSICS *mp,
+                            Multiphysics *mp,
                             int mp_id)
 {
   int err = 0;
@@ -259,11 +259,11 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
     if(opts->smoothing == 0)
       destroy_sig_el(fv->sig_n, grid->nn);
   }
-  
-  if(NULL != fv->statv_list) 
+
+  if(NULL != fv->statv_list)
     delete[] fv->statv_list;
-  
-  err += field_varialbe_initialization(fv);  
+
+  err += field_varialbe_initialization(fv);
   return err;
 }
 
@@ -272,7 +272,7 @@ int destruct_field_varialbe(FIELD_VARIABLES *fv,
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \return non-zero on internal error
-int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
+int thermal_field_varialbe_initialization(FieldVariablesThermal *fv)
 {
   int err = 0;
   fv->Gndof = 0;
@@ -296,17 +296,17 @@ int thermal_field_varialbe_initialization(FIELD_VARIABLES_THERMAL *fv)
 /// \param[in] grid an object containing all mesh data
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
 /// \return non-zero on internal error
-int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
-                                     GRID *grid,
+int prepare_temporal_field_varialbes(FieldVariables *fv,
+                                     Grid *grid,
                                      int is_for_Mechanical)
 {
   int err =0;
-  fv->temporal = (FIELD_VARIABLES_TEMPORAL *) malloc(sizeof(FIELD_VARIABLES_TEMPORAL));
+  fv->temporal = new FieldVariablesTemporal{};
   fv->temporal->u_n   = aloc1(grid->nn*fv->ndofn);
   fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
   if(is_for_Mechanical)
   {
-    const ELEMENT *elem = grid->element;
+    const Element *elem = grid->element;
 
     int n_state_varialbles = 0;
     for(int eid=0; eid<grid->ne; eid++)
@@ -318,7 +318,7 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
     }
     fv->temporal->element_variable_no = n_state_varialbles;
     fv->temporal->var = new State_variables[n_state_varialbles];
-    
+
     for(int eid=0; eid<grid->ne; eid++)
     {
       int nne = elem[eid].toe;
@@ -331,8 +331,8 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
         Model_var_info info;
         m->param->get_var_info(info);
         err += fv->temporal->var[m->model_id].initialization(info.n_Fs,
-                                                             info.n_vars, 
-                                                             info.n_flags);                                                                            
+                                                             info.n_vars,
+                                                             info.n_flags);
       }
     }
   }
@@ -346,7 +346,7 @@ int prepare_temporal_field_varialbes(FIELD_VARIABLES *fv,
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
 /// \return non-zero on internal error
-int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
+int destory_temporal_field_varialbes(FieldVariables *fv,
                                      int is_for_Mechanical)
 {
   int err =0;
@@ -358,11 +358,11 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
   if(is_for_Mechanical)
   {
     delete[] fv->temporal->var;
-      
+
     fv->temporal->var = NULL;
     fv->temporal->element_variable_no = 0;
   }
-  free(fv->temporal);
+  delete fv->temporal;
   fv->temporal = NULL;
   return err;
 }
@@ -372,7 +372,7 @@ int destory_temporal_field_varialbes(FIELD_VARIABLES *fv,
 ///
 /// \param[in, out] mat an object containing all material parameters
 /// \return non-zero on internal error
-int material_initialization(MATERIAL_PROPERTY *mat)
+int material_initialization(MaterialProperty *mat)
 {
   int err = 0;
   mat->density  = NULL;
@@ -394,13 +394,12 @@ int material_initialization(MATERIAL_PROPERTY *mat)
 ///
 /// \param[in, out] mat an object containing all material parameters
 /// \return non-zero on internal error
-int destruct_material(MATERIAL_PROPERTY *mat,
-                      const PGFem3D_opt *opts)
+int destruct_material(MaterialProperty *mat, const PGFem3D_opt *opts)
 {
   int err = 0;
   if(NULL != mat->density) free(mat->density);
   if(NULL != mat->mater)   free(mat->mater);
-  if(NULL != mat->thermal) free(mat->thermal);
+  delete [] mat->thermal;
   destroy_matgeom(mat->matgeom,mat->n_orient);
   destroy_hommat(mat->hommat,mat->nhommat);
 
@@ -416,7 +415,7 @@ int destruct_material(MATERIAL_PROPERTY *mat,
 ///
 /// \param[in, out] load an object containing boundary increments
 /// \return non-zero on internal error
-int loading_steps_initialization(LOADING_STEPS *load)
+int loading_steps_initialization(LoadingSteps *load)
 {
   int err = 0;
   load->sups        = NULL;
@@ -438,7 +437,7 @@ int loading_steps_initialization(LOADING_STEPS *load)
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
+int construct_loading_steps(LoadingSteps *load, Multiphysics *mp)
 {
   int err = 0;
 
@@ -456,7 +455,7 @@ int construct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
+int destruct_loading_steps(LoadingSteps *load, Multiphysics *mp)
 {
   int err = 0;
 
@@ -487,7 +486,7 @@ int destruct_loading_steps(LOADING_STEPS *load, MULTIPHYSICS *mp)
 ///
 /// \param[in, out] com an object for communication
 /// \return non-zero on internal error
-int communication_structure_initialization(COMMUNICATION_STRUCTURE *com)
+int communication_structure_initialization(CommunicationStructure *com)
 {
   int err = 0;
   com->nproc  = 0;
@@ -509,11 +508,11 @@ int communication_structure_initialization(COMMUNICATION_STRUCTURE *com)
 ///
 /// \param[in, out] com an object for communication
 /// \return non-zero on internal error
-int destruct_communication_structure(COMMUNICATION_STRUCTURE *com)
+int destruct_communication_structure(CommunicationStructure *com)
 {
   int err = 0;
   if(NULL != com->Ap) free(com->Ap);
-    if(NULL != com->Ai) free(com->Ai);
+  if(NULL != com->Ai) free(com->Ai);
   if(NULL != com->DomDof) free(com->DomDof);
   if(NULL != com->bndel)  free(com->bndel);
   if(NULL != com->comm)   destroy_commun(com->comm ,com->nproc);
@@ -528,7 +527,7 @@ int destruct_communication_structure(COMMUNICATION_STRUCTURE *com)
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int multiphysics_initialization(MULTIPHYSICS *mp)
+int multiphysics_initialization(Multiphysics *mp)
 {
   int err = 0;
   mp->physicsno   = 0;
@@ -549,7 +548,7 @@ int multiphysics_initialization(MULTIPHYSICS *mp)
 /// \param[in, out] mp an object for multiphysics stepping
 /// \param[in] physicsno number of physics
 /// \return non-zero on internal error
-int construct_multiphysics(MULTIPHYSICS *mp,
+int construct_multiphysics(Multiphysics *mp,
                            int physicsno)
 {
   int err = 0;
@@ -583,7 +582,7 @@ int construct_multiphysics(MULTIPHYSICS *mp,
 /// \param[in] n_dof number of degree freedom of the physics
 /// \param[in] name physics name
 /// \return non-zero on internal error
-static int set_a_physics(MULTIPHYSICS *mp,
+static int set_a_physics(Multiphysics *mp,
                   int obj_id,
                   int mp_id,
                   int n_dof,
@@ -601,7 +600,7 @@ static int set_a_physics(MULTIPHYSICS *mp,
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int destruct_multiphysics(MULTIPHYSICS *mp)
+int destruct_multiphysics(Multiphysics *mp)
 {
   int err = 0;
   if(NULL != mp->physicsname)
@@ -684,7 +683,7 @@ int destruct_multiphysics(MULTIPHYSICS *mp)
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_multiphysics_settings(MULTIPHYSICS *mp,
+int read_multiphysics_settings(Multiphysics *mp,
                                const PGFem3D_opt *opts,
                                int myrank)
 {

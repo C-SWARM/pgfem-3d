@@ -1,28 +1,30 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "three_field_element.h"
-#include "mkl_cblas.h"
-#include "index_macros.h"
-#include "utils.h"
-#include "allocation.h"
-#include "femlib.h"
-
 #include "Hu_Washizu_element.h"
-#include "displacement_based_element.h"
-
+#include "allocation.h"
 #include "condense.h"
 #include "cast_macros.h"
 #include "def_grad.h"
+#include "displacement_based_element.h"
+#include "dynamics.h"
+#include "enumerations.h"
+#include "femlib.h"
 #include "get_ndof_on_elem.h"
 #include "get_dof_ids_on_elem.h"
-#include "enumerations.h"
-#include "dynamics.h"
+#include "index_macros.h"
+#include "utils.h"
+#include <mkl_cblas.h>
 
-#define ndn 3
-#define USE_HW_FUNCS 0
-#define INTG_ORDER 1
+static constexpr int ndn = 3;
+static constexpr int USE_HW_FUNCS = 0;
+static constexpr int INTG_ORDER = 1;
 
-void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe, 
-        double *ST, Matrix<double> &F, Matrix<double> &S, double *L,
-        double dt_alpha_1_minus_alpha)
+void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
+                        double *ST, Matrix<double> &F, Matrix<double> &S, double *L,
+                        double dt_alpha_1_minus_alpha)
 {
   int nne = fe->nne;
   int nsd = fe->nsd;
@@ -34,8 +36,8 @@ void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
   sAA.initialization(3,3);
   sBB.initialization(3,3);
   sCC.initialization(3,3);
-  
-  
+
+
   double LsBB[9];
 
   for(int a=0; a<nne; a++)
@@ -43,11 +45,11 @@ void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
     for(int b=0; b<nsd; b++)
     {
       double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
-              nne,nsd,nsd,nsd)];
+                                             nne,nsd,nsd,nsd)];
       ST_ab.use_reference(3,3,ptrST_ab);
 
       // AA = F^T Grad(del u)
-      AA.prod(F,1,ST_ab,0); 
+      AA.prod(F,1,ST_ab,0);
       symmetric_part(sAA.m_pdata,AA.m_pdata,3);
 
       for(int w=0; w<nne; w++)
@@ -55,14 +57,14 @@ void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
         for(int g=0; g<nsd; g++)
         {
           double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
-                  nne,nsd,nsd,nsd)];
+                                                  nne,nsd,nsd,nsd)];
           ST_wg.use_reference(3,3,ptrST_wg);
-                                    
-          // BB = F^T Grad(du) 
+
+          // BB = F^T Grad(du)
           BB.prod(F,1,ST_wg,0);
           symmetric_part(sBB.m_pdata,BB.m_pdata,3);
-          
-          // CC = Grad(del u)^T Grad(du) 
+
+          // CC = Grad(del u)^T Grad(du)
           CC.prod(ST_ab,1,ST_wg,0);
           symmetric_part(sCC.m_pdata,CC.m_pdata,3);
 
@@ -71,7 +73,7 @@ void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
           for (int i=0; i<nsd; i++){
             for (int j=0; j<nsd; j++){
               LsBB[idx_2(i,j)] = cblas_ddot(9,&L[idx_4(i,j,0,0)],1,
-                          sBB.m_pdata,1);
+                                            sBB.m_pdata,1);
             }
           }
           const int K_idx = idx_K(a,b,w,g,nne,nsd);
@@ -80,12 +82,12 @@ void add_3F_Kuu_ip_disp(double *K, FEMLIB *fe,
         }
       }
     }
-  }    
+  }
 }
 
 void add_3F_Kuu_ip(double *K,
-        int nne, double *ST, double *F, double jj, double wt, double Pn,
-        double dt_alpha_1_minus_alpha)
+                   int nne, double *ST, double *F, double jj, double wt, double Pn,
+                   double dt_alpha_1_minus_alpha)
 {
   int nsd = 3;
   double AA[9], BB[9], CC[9];
@@ -99,11 +101,11 @@ void add_3F_Kuu_ip(double *K,
     for(int b=0; b<nsd; b++)
     {
       const double* const ptrST_ab = &ST[idx_4_gen(a,b,0,0,
-              nne,nsd,nsd,nsd)];
+                                                   nne,nsd,nsd,nsd)];
 
       /* AA = F_I Grad(del u) */
       cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-              3,3,3,1.0,F_I,3,ptrST_ab,3,0.0,AA,3);
+                  3,3,3,1.0,F_I,3,ptrST_ab,3,0.0,AA,3);
       double trAA = 0.0;
       for(int m=0;m<nsd;m++)
         trAA += AA[m*nsd + m];
@@ -113,11 +115,11 @@ void add_3F_Kuu_ip(double *K,
         for(int g=0; g<nsd; g++)
         {
           const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
-                  nne,nsd,nsd,nsd)];
+                                                        nne,nsd,nsd,nsd)];
 
           /* BB = F_I Grad(d u) */
           cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-                  3,3,3,1.0,F_I,3,ptrST_wg,3,0.0,BB,3);
+                      3,3,3,1.0,F_I,3,ptrST_wg,3,0.0,BB,3);
 
           double trBB = 0.0;
           for(int m=0;m<nsd;m++)
@@ -125,7 +127,7 @@ void add_3F_Kuu_ip(double *K,
 
           /* CC = BB*AA */
           cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-                  3,3,3,1.0,BB,3,AA,3,0.0,CC,3);
+                      3,3,3,1.0,BB,3,AA,3,0.0,CC,3);
 
           double trCC = 0.0;
           for(int m=0;m<nsd;m++)
@@ -140,10 +142,10 @@ void add_3F_Kuu_ip(double *K,
   }
 }
 void add_3F_Kup_ip(double *K,
-        int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
-        double dt_alpha_1_minus_alpha)
+                   int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
+                   double dt_alpha_1_minus_alpha)
 {
-    int nsd = 3;
+  int nsd = 3;
 
   double *AA  = aloc1(9);
   double *C   = aloc1(9);
@@ -151,7 +153,7 @@ void add_3F_Kup_ip(double *K,
 
   double Jn = det3x3(F);
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-          3,3,3,1.0,F,3,F,3,0.0,C,3);
+              3,3,3,1.0,F,3,F,3,0.0,C,3);
 
   inverse(C,3,C_I);
 
@@ -163,7 +165,7 @@ void add_3F_Kup_ip(double *K,
 
       /* AA = F'Grad(del u) */
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-              3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
+                  3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
 
       /* C_IFdu = C_I:AA*/
       double C_IFdu = cblas_ddot(9,C_I,1,AA,1);
@@ -182,7 +184,7 @@ void add_3F_Kup_ip(double *K,
 }
 
 void add_3F_Ktt_ip(double *K, int nVol, double jj, double wt, double *Nt, double Upp,
-        double dt_alpha_1_minus_alpha)
+                   double dt_alpha_1_minus_alpha)
 {
   for(int a=0; a<nVol; a++)
   {
@@ -191,8 +193,8 @@ void add_3F_Ktt_ip(double *K, int nVol, double jj, double wt, double *Nt, double
   }
 }
 void add_3F_Ktp_ip(double *K,
-        int nVol, int npres, double jj, double wt, double *Nt, double *Np,
-        double dt_alpha_1_minus_alpha)
+                   int nVol, int npres, double jj, double wt, double *Nt, double *Np,
+                   double dt_alpha_1_minus_alpha)
 {
 
   for(int a=0; a<nVol; a++)
@@ -202,10 +204,10 @@ void add_3F_Ktp_ip(double *K,
   }
 }
 void add_3F_Kpu_ip(double *K,
-        int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
-        double dt_alpha_1_minus_alpha)
+                   int nne, int npres, double *ST, double *F, double jj, double wt, double *Np,
+                   double dt_alpha_1_minus_alpha)
 {
-    int nsd = 3;
+  int nsd = 3;
   double *AA  = aloc1(9);
   double *C   = aloc1(9);
   double *C_I = aloc1(9);
@@ -213,7 +215,7 @@ void add_3F_Kpu_ip(double *K,
 
   double Jn = det3x3(F);
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-          3,3,3,1.0,F,3,F,3,0.0,C,3);
+              3,3,3,1.0,F,3,F,3,0.0,C,3);
 
   inverse(F,3,F_I);
   inverse(C,3,C_I);
@@ -227,11 +229,11 @@ void add_3F_Kpu_ip(double *K,
       for(int g=0;g<nsd;g++)
       {
         const double * const ptrST_wg = &ST[idx_4_gen(w,g,0,0,
-                nne,nsd,nsd,nsd)];
+                                                      nne,nsd,nsd,nsd)];
 
         /* AA = F'Grad(du) */
         cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-                3,3,3,1.0,F,3,ptrST_wg,3,0.0,AA,3);
+                    3,3,3,1.0,F,3,ptrST_wg,3,0.0,AA,3);
 
         double C_IFdu = 0.0;
         double F_I_Tdu = 0.0;
@@ -258,8 +260,8 @@ void add_3F_Kpu_ip(double *K,
   free(F_I);
 }
 void add_3F_Kpt_ip(double *K,
-        int nVol, int npres, double jj, double wt, double *Nt, double *Np,
-        double dt_alpha_1_minus_alpha)
+                   int nVol, int npres, double jj, double wt, double *Nt, double *Np,
+                   double dt_alpha_1_minus_alpha)
 {
 
   for(int a=0; a<npres; a++)
@@ -269,9 +271,9 @@ void add_3F_Kpt_ip(double *K,
   }
 }
 void resid_w_inertia_Ru_ip(double *fu,
-        int nne, double *ST, double *F, double *S, double jj, double wt, double Pn)
+                           int nne, double *ST, double *F, double *S, double jj, double wt, double Pn)
 {
-    int nsd = 3;
+  int nsd = 3;
 
   double *AA  = aloc1(9);
   double *sAA = aloc1(9);
@@ -281,12 +283,12 @@ void resid_w_inertia_Ru_ip(double *fu,
 
   double Jn = det3x3(F);
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-          3,3,3,1.0,F,3,F,3,0.0,C,3);
+              3,3,3,1.0,F,3,F,3,0.0,C,3);
 
   inverse(C,3,C_I);
-//  for(int a = 0; a<9; a++)
-//    S_temp[a] = Jn*Pn*C_I[a] + S[a];
-//  cblas_daxpy(9,Jn*Pn,C_I,1,S,1);
+  //  for(int a = 0; a<9; a++)
+  //    S_temp[a] = Jn*Pn*C_I[a] + S[a];
+  //  cblas_daxpy(9,Jn*Pn,C_I,1,S,1);
 
   for(int a=0; a<nne; a++)
   {
@@ -296,7 +298,7 @@ void resid_w_inertia_Ru_ip(double *fu,
 
       // AA = F'Grad(del u);
       cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-              3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
+                  3,3,3,1.0,F,3,ptrST_ab,3,0.0,AA,3);
       symmetric_part(sAA,AA,3);
       //sAA:S
       double sAAS = cblas_ddot(9,sAA,1,S,1);
@@ -304,7 +306,7 @@ void resid_w_inertia_Ru_ip(double *fu,
       double C_IFdu = cblas_ddot(9,C_I,1,AA,1);
 
       fu[a*nsd + b] += jj*wt*(sAAS + Jn*Pn*C_IFdu);
-//fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
+      //fu[a*nsd + b] += cblas_ddot(9,S_temp,1,AA,1)*jj*wt;
 
     }
   }
@@ -324,12 +326,12 @@ void resid_w_inertia_Rt_ip(double *ft, int nVol, double jj, double wt, double *N
 void resid_w_inertia_Rp_ip(double *fp, int npres, double *F, double jj, double wt, double *Np, double Tn)
 {
   double Jn = det3x3(F);
- // printf("%e, %e, %e\n", Jn, Tn, Jn - Tn); 
-	for(int a=0; a<npres; a++)
-		fp[a] += jj*wt*Np[a]*(Jn - Tn);
-}    
-void TF_Ru_ip(Matrix<double> &f, FEMLIB *fe, 
-        Matrix<double> &F, Matrix<double> &S, double Pn)
+  // printf("%e, %e, %e\n", Jn, Tn, Jn - Tn);
+  for(int a=0; a<npres; a++)
+    fp[a] += jj*wt*Np[a]*(Jn - Tn);
+}
+void TF_Ru_ip(Matrix<double> &f, FEMLIB *fe,
+              Matrix<double> &F, Matrix<double> &S, double Pn)
 {
   int nne = fe->nne;
   if(USE_HW_FUNCS)
@@ -340,30 +342,30 @@ void TF_Ru_ip(Matrix<double> &f, FEMLIB *fe,
     double F_I[9];
     inverse(F.m_pdata,3,F_I);
     HW_Ru_at_ip(f.m_pdata,nne,nne,fe->ST,Fn,F.m_pdata,F_I,
-            1.0,0.0,1.0,1.0,S.m_pdata,Pn,fe->detJ,fe->temp_v.w_ip,0);
+                1.0,0.0,1.0,1.0,S.m_pdata,Pn,fe->detJ,fe->temp_v.w_ip,0);
   }
   else
     resid_w_inertia_Ru_ip(f.m_pdata,nne,fe->ST,F.m_pdata,S.m_pdata,fe->detJ,fe->temp_v.w_ip, Pn);
 }
-void TF_Rt_ip(Matrix<double> &f, FEMLIB *fe, 
-        Matrix<double> &F, int nVol, Matrix<double> &Nt, double Pn, double Up)
+void TF_Rt_ip(Matrix<double> &f, FEMLIB *fe,
+              Matrix<double> &F, int nVol, Matrix<double> &Nt, double Pn, double Up)
 {
   if(USE_HW_FUNCS)
     HW_Rt_at_ip(f.m_pdata,nVol,Nt.m_pdata,1.0,1.0,Pn,1.0,Up,fe->detJ,fe->temp_v.w_ip);
   else
     resid_w_inertia_Rt_ip(f.m_pdata,nVol,fe->detJ,fe->temp_v.w_ip, Nt.m_pdata, Pn, Up);
 }
-void TF_Rp_ip(Matrix<double> &f, FEMLIB *fe, 
-        Matrix<double> &F, int npres, Matrix<double> &Np, double Tn)
+void TF_Rp_ip(Matrix<double> &f, FEMLIB *fe,
+              Matrix<double> &F, int npres, Matrix<double> &Np, double Tn)
 {
   if(USE_HW_FUNCS)
     HW_Rp_at_ip(f.m_pdata,npres,Np.m_pdata,1.0,1.0,1.0,1.0,fe->detJ,fe->temp_v.w_ip);
   else
     resid_w_inertia_Rp_ip(f.m_pdata, npres, F.m_pdata, fe->detJ,fe->temp_v.w_ip, Np.m_pdata, Tn);
 }
-void TF_Kuu_ip(Matrix<double> &K, FEMLIB *fe, 
-        Matrix<double> &F, Matrix<double> &S, double *L, 
-        double Pn, double dt_alpha_1_minus_alpha)
+void TF_Kuu_ip(Matrix<double> &K, FEMLIB *fe,
+               Matrix<double> &F, Matrix<double> &S, double *L,
+               double Pn, double dt_alpha_1_minus_alpha)
 {
   int nne = fe->nne;
 
@@ -380,8 +382,8 @@ void TF_Kuu_ip(Matrix<double> &K, FEMLIB *fe,
     add_3F_Kuu_ip_disp(K.m_pdata, fe, fe->ST, F, S, L, dt_alpha_1_minus_alpha);
   }
 }
-void TF_Kup_ip(Matrix<double> &K, FEMLIB *fe, 
-        Matrix<double> &F, int npres, Matrix<double> &Np, double dt_alpha_1_minus_alpha)
+void TF_Kup_ip(Matrix<double> &K, FEMLIB *fe,
+               Matrix<double> &F, int npres, Matrix<double> &Np, double dt_alpha_1_minus_alpha)
 {
   int nne = fe->nne;
   if(USE_HW_FUNCS)
@@ -389,23 +391,23 @@ void TF_Kup_ip(Matrix<double> &K, FEMLIB *fe,
   else
     add_3F_Kup_ip(K.m_pdata,nne,npres,fe->ST,F.m_pdata,fe->detJ,fe->temp_v.w_ip,Np.m_pdata,dt_alpha_1_minus_alpha);
 }
-void TF_Kut_ip(Matrix<double> &K, FEMLIB *fe, 
-        Matrix<double> &F, int nVol, Matrix<double> &Nt, double dt_alpha_1_minus_alpha)
+void TF_Kut_ip(Matrix<double> &K, FEMLIB *fe,
+               Matrix<double> &F, int nVol, Matrix<double> &Nt, double dt_alpha_1_minus_alpha)
 {
   return;
 }
-void TF_Kpt_ip(Matrix<double> &K, FEMLIB *fe, 
-        Matrix<double> &F, int npres, int nVol, Matrix<double> &Np, Matrix<double> &Nt,
-        double dt_alpha_1_minus_alpha)
+void TF_Kpt_ip(Matrix<double> &K, FEMLIB *fe,
+               Matrix<double> &F, int npres, int nVol, Matrix<double> &Np, Matrix<double> &Nt,
+               double dt_alpha_1_minus_alpha)
 {
   if(USE_HW_FUNCS)
     HW_Kpt_at_ip(K.m_pdata,npres,Np.m_pdata,nVol,Nt.m_pdata,1.0,1.0,fe->detJ,fe->temp_v.w_ip);
   else
     add_3F_Kpt_ip(K.m_pdata,nVol,npres,fe->detJ,fe->temp_v.w_ip,Nt.m_pdata,Np.m_pdata,dt_alpha_1_minus_alpha);
 }
-void TF_Ktt_ip(Matrix<double> &K, FEMLIB *fe, 
-        Matrix<double> &F, int nVol, Matrix<double> &Nt, double Upp,
-        double dt_alpha_1_minus_alpha)
+void TF_Ktt_ip(Matrix<double> &K, FEMLIB *fe,
+               Matrix<double> &F, int nVol, Matrix<double> &Nt, double Upp,
+               double dt_alpha_1_minus_alpha)
 {
   if(USE_HW_FUNCS)
     HW_Ktt_at_ip(K.m_pdata,nVol,Nt.m_pdata,1.0,1.0,1.0,Upp,fe->detJ,fe->temp_v.w_ip);
@@ -414,24 +416,24 @@ void TF_Ktt_ip(Matrix<double> &K, FEMLIB *fe,
 }
 
 void stiffmat_3f_el(double *Ks,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        int npres,
-        int nVol,
-        int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double alpha, double *r_e)
+                    const int ii,
+                    const int ndofn,
+                    const int nne,
+                    int npres,
+                    int nVol,
+                    int nsd,
+                    const double *x,
+                    const double *y,
+                    const double *z,
+                    const Element *elem,
+                    const HOMMAT *hommat,
+                    const long *nod,
+                    const Node *node,
+                    double dt,
+                    SIG *sig,
+                    EPS *eps,
+                    const SUPP sup,
+                    double alpha, double *r_e)
 {
   double alpha_1;
   double alpha_2;
@@ -458,7 +460,7 @@ void stiffmat_3f_el(double *Ks,
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-        u[a*nsd+b] = r_e[a*ndofn+b];
+      u[a*nsd+b] = r_e[a*ndofn+b];
 
     if(npres==nne)
       P[a] = r_e[a*ndofn+nsd];
@@ -487,88 +489,88 @@ void stiffmat_3f_el(double *Ks,
   F.initialization(3,3,0.0);
   C.initialization(3,3,0.0);
   S.initialization(3,3,0.0);
-  
+
   Kuu.initialization(nne*nsd,nne*nsd,0.0);
   Kut.initialization(nne*nsd,nVol   ,0.0);
   Kup.initialization(nne*nsd,npres  ,0.0);
   Ktu.initialization(nVol   ,nne*nsd,0.0);
   Ktt.initialization(nVol   ,nVol   ,0.0);
-  Ktp.initialization(nVol   ,npres  ,0.0);    
+  Ktp.initialization(nVol   ,npres  ,0.0);
   Kpu.initialization(npres  ,nne*nsd,0.0);
   Kpt.initialization(npres  ,nVol   ,0.0);
-  Kpp.initialization(npres  ,npres  ,0.0);  
+  Kpp.initialization(npres  ,npres  ,0.0);
 
 
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-  
+
   Matrix<double> Np, Nt;
   Np.initialization(npres,1,0.0);
-  Nt.initialization(nVol, 1,0.0);    
-                         
+  Nt.initialization(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip);  
+    fe.elem_basis_V(ip);
     fe.elem_shape_function(ip,npres,Np.m_pdata);
     fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
-    fe.update_deformation_gradient(ndofn,u,F.m_pdata);    
-              
-    double Tn = 0.0; 
+    fe.update_deformation_gradient(ndofn,u,F.m_pdata);
+
+    double Tn = 0.0;
     double Pn = 0.0;
 
     for(int a=0; a<nVol; a++)
       Tn += Nt(a+1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);
-       
+
     for(int a=0; a<npres; a++)
-      Pn += Np(a+1)*P[a];  
-      
-    C.prod(F,1,F,0);  
-    double Upp = 0.0;          
+      Pn += Np(a+1)*P[a];
+
+    C.prod(F,1,F,0);
+    double Upp = 0.0;
     UPP(Tn,&hommat[mat],&Upp);
     Upp = Upp*kappa;
     double Up = 0.0;
     UP(Tn,&hommat[mat],&Up);
     Up = Up*kappa;
-    
-    Stress(C.m_pdata,&hommat[mat],S.m_pdata);       
-    Stiffness(C.m_pdata,&hommat[mat],L);            
+
+    Stress(C.m_pdata,&hommat[mat],S.m_pdata);
+    Stiffness(C.m_pdata,&hommat[mat],L);
 
     TF_Kuu_ip(Kuu,&fe,F,S,L,Pn,dt_alpha_1_minus_alpha);
     TF_Kup_ip(Kup,&fe,F,npres,Np,dt_alpha_1_minus_alpha);
     TF_Kpt_ip(Kpt,&fe,F,npres,nVol,Np,Nt,dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt,&fe,F,nVol,Nt,Upp,dt_alpha_1_minus_alpha);
-  } 
+  }
 
   Kpu.trans(Kup);
   Ktp.trans(Kpt);
-                
+
   condense_K_out(Ks,nne,nsd,npres,nVol,
                  Kuu.m_pdata,Kut.m_pdata,Kup.m_pdata,
                  Ktu.m_pdata,Ktt.m_pdata,Ktp.m_pdata,
                  Kpu.m_pdata,Kpt.m_pdata,Kpp.m_pdata);
-    
-  free(P); free(u);     
+
+  free(P); free(u);
 }
 
 void residuals_3f_el(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const long *nod,
-        const NODE *node,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        const SUPP sup,
-        double *r_e)
+                     const int ii,
+                     const int ndofn,
+                     const int nne,
+                     const int npres,
+                     const int nVol,
+                     const int nsd,
+                     const double *x,
+                     const double *y,
+                     const double *z,
+                     const Element *elem,
+                     const HOMMAT *hommat,
+                     const long *nod,
+                     const Node *node,
+                     double dt,
+                     SIG *sig,
+                     EPS *eps,
+                     const SUPP sup,
+                     double *r_e)
 {
   double *u, *P;
   u = aloc1(nne*nsd);
@@ -577,7 +579,7 @@ void residuals_3f_el(double *f,
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-        u[a*nsd+b] = r_e[a*ndofn+b];
+      u[a*nsd+b] = r_e[a*ndofn+b];
 
     if(npres==nne)
       P[a] = r_e[a*ndofn+nsd];
@@ -595,55 +597,55 @@ void residuals_3f_el(double *f,
 
   Matrix<double> F,S,C;
   F.initialization(3,3,0.0);
-  C.initialization(3,3,0.0);  
-  S.initialization(3,3,0.0);  
-  
+  C.initialization(3,3,0.0);
+  S.initialization(3,3,0.0);
+
   Matrix<double> fu,Kut;
   Matrix<double> fp,Kpt;
   Matrix<double> ft,Ktt;
   Matrix<double> Kup,Ktp;
-  
-   fu.initialization( nne*nsd,1,    0.0);
-   fp.initialization( npres,  1,    0.0);
-   ft.initialization( nVol,   1,    0.0);
+
+  fu.initialization( nne*nsd,1,    0.0);
+  fp.initialization( npres,  1,    0.0);
+  ft.initialization( nVol,   1,    0.0);
   Kut.initialization(nne*nsd,nVol, 0.0);
   Kpt.initialization(npres,  nVol, 0.0);
-  Ktt.initialization(nVol,   nVol, 0.0);    
+  Ktt.initialization(nVol,   nVol, 0.0);
   Kup.initialization(nne*nsd,npres,0.0);
   Ktp.initialization(nVol,   npres,0.0);
-  
+
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-                          
+
   Matrix<double> Np, Nt;
   Np.initialization(npres,1,0.0);
-  Nt.initialization(nVol, 1,0.0);    
-                         
+  Nt.initialization(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip);  
+    fe.elem_basis_V(ip);
     fe.elem_shape_function(ip,npres,Np.m_pdata);
     fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
     fe.update_deformation_gradient(ndofn,u,F.m_pdata);
-                  
-    double Tn = 0.0; 
+
+    double Tn = 0.0;
     double Pn = 0.0;
 
     for(int a=0; a<nVol; a++)
       Tn += Nt(a+1)*eps[ii].T[a*3+0];
-    
+
     for(int a=0; a<npres; a++)
       Pn += Np(a+1)*P[a];
-      
-                
+
+
     double Upp = 0.0;
     double Up = 0.0;
     UPP(Tn,&hommat[mat],&Upp);
     Upp = Upp*kappa;
 
     UP(Tn, &hommat[mat], &Up);
-    Up = Up*kappa;    
-    
+    Up = Up*kappa;
+
     C.prod(F,1,F,0);
     Stress(C.m_pdata,&hommat[mat],S.m_pdata);
 
@@ -652,10 +654,10 @@ void residuals_3f_el(double *f,
 
     if(npres==nne)
       TF_Kut_ip(Kut,&fe,F,nVol,Nt,-1.0);
-      
+
     if(npres==1)
       TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);
-      
+
     TF_Ru_ip(fu,&fe,F,S,Pn);
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
@@ -664,28 +666,28 @@ void residuals_3f_el(double *f,
   Ktp.trans(Kpt);
 
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
-                    Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
-  
-  free(P); free(u);   
+                 Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
+
+  free(P); free(u);
 }
 
 void residuals_3f_w_inertia_el(double *f,
-        const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        const double *dts,
-        SIG *sig,
-        EPS *eps,
-        double alpha, double *r_n_a, double *r_n_1_a)
+                               const int ii,
+                               const int ndofn,
+                               const int nne,
+                               const int npres,
+                               const int nVol,
+                               const int nsd,
+                               const double *x,
+                               const double *y,
+                               const double *z,
+                               const Element *elem,
+                               const HOMMAT *hommat,
+                               const Node *node,
+                               const double *dts,
+                               SIG *sig,
+                               EPS *eps,
+                               double alpha, double *r_n_a, double *r_n_1_a)
 {
   double alpha_1;
   double alpha_2;
@@ -720,8 +722,8 @@ void residuals_3f_w_inertia_el(double *f,
   {
     for(int b=0; b<nsd;b++)
     {
-        u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
-        u2[a*nsd+b] = r_n_a[a*ndofn+b];
+      u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
+      u2[a*nsd+b] = r_n_a[a*ndofn+b];
     }
 
     if(npres==nne)
@@ -745,38 +747,38 @@ void residuals_3f_w_inertia_el(double *f,
 
   Matrix<double> F1,F2,C1,C2,S1,S2;
   F1.initialization(3,3,0.0);
-  F2.initialization(3,3,0.0);  
+  F2.initialization(3,3,0.0);
   C1.initialization(3,3,0.0);
-  C2.initialization(3,3,0.0);    
+  C2.initialization(3,3,0.0);
   S1.initialization(3,3,0.0);
-  S2.initialization(3,3,0.0); 
-  
+  S2.initialization(3,3,0.0);
+
   Matrix<double> fu,fu1,fu2,Kut;
   Matrix<double> fp,fp1,fp2,Kpt;
   Matrix<double> ft,ft1,ft2,Ktt;
   Matrix<double> Kup,Ktp;
-  
-   fu.initialization(nne*nsd,1,    0.0);
+
+  fu.initialization(nne*nsd,1,    0.0);
   fu1.initialization(nne*nsd,1,    0.0);
-  fu2.initialization(nne*nsd,1,    0.0);  
-   fp.initialization(npres,  1,    0.0);
+  fu2.initialization(nne*nsd,1,    0.0);
+  fp.initialization(npres,  1,    0.0);
   fp1.initialization(npres,  1,    0.0);
-  fp2.initialization(npres,  1,    0.0);  
-   ft.initialization(nVol,   1,    0.0);
+  fp2.initialization(npres,  1,    0.0);
+  ft.initialization(nVol,   1,    0.0);
   ft1.initialization(nVol,   1,    0.0);
-  ft2.initialization(nVol,   1,    0.0);  
+  ft2.initialization(nVol,   1,    0.0);
   Kut.initialization(nne*nsd,nVol, 0.0);
   Kpt.initialization(npres,  nVol, 0.0);
-  Ktt.initialization(nVol,   nVol, 0.0);    
+  Ktt.initialization(nVol,   nVol, 0.0);
   Kup.initialization(nne*nsd,npres,0.0);
   Ktp.initialization(nVol,   npres,0.0);
-  
+
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-                        
+
   Matrix<double> Np, Nt;
   Np.initialization(npres,1,0.0);
-  Nt.initialization(nVol, 1,0.0);    
-                         
+  Nt.initialization(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
     fe.elem_basis_V(ip);
@@ -784,8 +786,8 @@ void residuals_3f_w_inertia_el(double *f,
     fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
     fe.update_deformation_gradient(ndofn,u1,F1.m_pdata);
-    fe.update_deformation_gradient(ndofn,u2,F2.m_pdata);    
-      
+    fe.update_deformation_gradient(ndofn,u2,F2.m_pdata);
+
     double Tn1 = 0.0; // 1: n-1+alpha
     double Tn2 = 0.0; // 2: n+alpha
     double Pn1 = 0.0;
@@ -794,7 +796,7 @@ void residuals_3f_w_inertia_el(double *f,
     for(int a=0; a<nVol; a++)
     {
       Tn1 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+2] + alpha_2*eps[ii].T[a*3+1]);
-      Tn2 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);      
+      Tn2 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);
     }
     for(int a=0; a<npres; a++)
     {
@@ -813,24 +815,24 @@ void residuals_3f_w_inertia_el(double *f,
     Up1 = Up1*kappa;
 
     UP(Tn2, &hommat[mat], &Up2);
-    Up2 = Up2*kappa;    
-    
+    Up2 = Up2*kappa;
+
     C1.prod(F1,1,F1,0);
     Stress(C1.m_pdata,&hommat[mat],S1.m_pdata);
-    
+
     C2.prod(F2,1,F2,0);
-    Stress(C2.m_pdata,&hommat[mat],S2.m_pdata);    
-    		
+    Stress(C2.m_pdata,&hommat[mat],S2.m_pdata);
+
     TF_Kpt_ip(Kpt,&fe,F2,npres,nVol,Np,Nt,dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt,&fe,F2,nVol,Nt,Upp2,dt_alpha_1_minus_alpha);
 
     if(npres==nne)
       TF_Kut_ip(Kut,&fe,F2,nVol,Nt,dt_alpha_1_minus_alpha);
 
-        if(npres==1)
+    if(npres==1)
       TF_Kup_ip(Kup,&fe,F2,npres,Np,dt_alpha_1_minus_alpha);
 
-    
+
     TF_Ru_ip(fu1,&fe,F1,S1,Pn1);
     TF_Rp_ip(fp1,&fe,F1,npres,Np,Tn1);
     TF_Rt_ip(ft1,&fe,F1,nVol,Nt,Pn1,Up1);
@@ -852,21 +854,21 @@ void residuals_3f_w_inertia_el(double *f,
 
 
   condense_F_out(f,nne,nsd,npres,nVol,fu.m_pdata,ft.m_pdata,fp.m_pdata,
-                    Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
+                 Kut.m_pdata,Kup.m_pdata,Ktp.m_pdata,Ktt.m_pdata,Kpt.m_pdata);
 
   free(P1); free(P2); free(u1); free(u2);
 }
 
 void update_3f_state_variables_ip(int ii, int ip,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        SIG *sig,
-        EPS *eps,
-        double *F,
-        double pressure,
-        double theta,
-        double volume,
-        double detJxW)
+                                  const Element *elem,
+                                  const HOMMAT *hommat,
+                                  SIG *sig,
+                                  EPS *eps,
+                                  double *F,
+                                  double pressure,
+                                  double theta,
+                                  double volume,
+                                  double detJxW)
 {
   if(ip==1)
   {
@@ -885,7 +887,7 @@ void update_3f_state_variables_ip(int ii, int ip,
     F_total[a] = alpha*F[a];
 
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,F_total,3,F_total,3,0.0,C,3);
+              3,3,3,1.0,F_total,3,F_total,3,0.0,C,3);
 
   inverse(C,3,C_I);
 
@@ -897,19 +899,19 @@ void update_3f_state_variables_ip(int ii, int ip,
   /* Compute total stress S = dev(S) + p*Tn*Tr*C_I */
   cblas_daxpy(9,pressure*theta,C_I,1,S,1);
 
-    /* store S at ip */
-    sig[ii].il[ip-1].o[0] = S[idx_2(0,0)]; /* XX */
-    sig[ii].il[ip-1].o[1] = S[idx_2(1,1)]; /* YY */
-    sig[ii].il[ip-1].o[2] = S[idx_2(2,2)]; /* ZZ */
-    sig[ii].il[ip-1].o[3] = S[idx_2(1,2)]; /* YZ */
-    sig[ii].il[ip-1].o[4] = S[idx_2(0,2)]; /* XZ */
-    sig[ii].il[ip-1].o[5] = S[idx_2(0,1)]; /* XY */
+  /* store S at ip */
+  sig[ii].il[ip-1].o[0] = S[idx_2(0,0)]; /* XX */
+  sig[ii].il[ip-1].o[1] = S[idx_2(1,1)]; /* YY */
+  sig[ii].il[ip-1].o[2] = S[idx_2(2,2)]; /* ZZ */
+  sig[ii].il[ip-1].o[3] = S[idx_2(1,2)]; /* YZ */
+  sig[ii].il[ip-1].o[4] = S[idx_2(0,2)]; /* XZ */
+  sig[ii].il[ip-1].o[5] = S[idx_2(0,1)]; /* XY */
 
   /* Compute Cauchy stress (theta)^-1 F S F' */
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,F_total,3,S,3,0.0,AA,3);
+              3,3,3,1.0,F_total,3,S,3,0.0,AA,3);
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
-        3,3,3,1.0/theta,AA,3,F_total,3,0.0,S,3);
+              3,3,3,1.0/theta,AA,3,F_total,3,0.0,S,3);
 
   sig[ii].el.o[0] += detJxW/volume*S[idx_2(0,0)];
   sig[ii].el.o[1] += detJxW/volume*S[idx_2(1,1)];
@@ -925,21 +927,21 @@ void update_3f_state_variables_ip(int ii, int ip,
   for(int a=0; a<9; a++)
     E[a] = 0.5*(C[a] - 1.0*(a==0 || a==4 || a==8));
 
-    /* Elastic Green Lagrange strain */
-    eps[ii].il[ip-1].o[0] = E[idx_2(0,0)];
-    eps[ii].il[ip-1].o[1] = E[idx_2(1,1)];
-    eps[ii].il[ip-1].o[2] = E[idx_2(2,2)];
-    eps[ii].il[ip-1].o[3] = E[idx_2(1,2)]*2.0;
-    eps[ii].il[ip-1].o[4] = E[idx_2(0,2)]*2.0;
-    eps[ii].il[ip-1].o[5] = E[idx_2(0,1)]*2.0;
+  /* Elastic Green Lagrange strain */
+  eps[ii].il[ip-1].o[0] = E[idx_2(0,0)];
+  eps[ii].il[ip-1].o[1] = E[idx_2(1,1)];
+  eps[ii].il[ip-1].o[2] = E[idx_2(2,2)];
+  eps[ii].il[ip-1].o[3] = E[idx_2(1,2)]*2.0;
+  eps[ii].il[ip-1].o[4] = E[idx_2(0,2)]*2.0;
+  eps[ii].il[ip-1].o[5] = E[idx_2(0,1)]*2.0;
 
 
   /* Compute logarithmic strain */
   inverse(F_total,3,F_total_I);
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
-        3,3,3,1.0,F_total_I,3,E,3,0.0,AA,3);
+              3,3,3,1.0,F_total_I,3,E,3,0.0,AA,3);
   cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
-        3,3,3,1.0,AA,3,F_total_I,3,0.0,E,3);
+              3,3,3,1.0,AA,3,F_total_I,3,0.0,E,3);
 
   eps[ii].el.o[0] += detJxW/volume*E[idx_2(0,0)];
   eps[ii].el.o[1] += detJxW/volume*E[idx_2(1,1)];
@@ -951,20 +953,20 @@ void update_3f_state_variables_ip(int ii, int ip,
 
 
 void update_3f_state_variables_el(const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        double *u,
-        const double *P,
-        double dt,
-        SIG *sig,
-        EPS *eps)
+                                  const int ndofn,
+                                  const int nne,
+                                  const int npres,
+                                  const double *x,
+                                  const double *y,
+                                  const double *z,
+                                  const Element *elem,
+                                  const HOMMAT *hommat,
+                                  const Node *node,
+                                  double *u,
+                                  const double *P,
+                                  double dt,
+                                  SIG *sig,
+                                  EPS *eps)
 {
 
   // const int mat = elem[ii].mat[2];
@@ -972,30 +974,30 @@ void update_3f_state_variables_el(const int ii,
   const double volume = Tetra_V(x,y,z);
 
   const int nVol = N_VOL_TREE_FIELD;
-  
+
   Matrix<double> F(3,3,0.0);
-  
+
   FEMLIB fe(ii, elem, node, 1,1);
-    
-  Matrix<double> Np(npres,1,0.0), Nt(nVol, 1,0.0);       
-    
+
+  Matrix<double> Np(npres,1,0.0), Nt(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip);  
+    fe.elem_basis_V(ip);
     fe.elem_shape_function(ip,npres,Np.m_pdata);
     fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
     fe.update_deformation_gradient(ndofn,u,F.m_pdata);
-                      
-    double Tn = 0.0; 
+
+    double Tn = 0.0;
     double Pn = 0.0;
 
     for(int a=0; a<nVol; a++)
       Tn += Nt(a+1)*eps[ii].T[a*3+0];
-    
+
     for(int a=0; a<npres; a++)
       Pn += Np(a+1)*P[a];
-                      
+
     update_3f_state_variables_ip(ii,ip,elem,hommat,sig,eps,F.m_pdata,Pn,Tn,volume,fe.detJxW);
 
   }
@@ -1003,22 +1005,22 @@ void update_3f_state_variables_el(const int ii,
 
 
 void evaluate_PT_el(const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        const double *r_e,
-        double *du,
-        double dt,
-        SIG *sig,
-        EPS *eps)
+                    const int ndofn,
+                    const int nne,
+                    const int npres,
+                    const int nVol,
+                    const int nsd,
+                    const double *x,
+                    const double *y,
+                    const double *z,
+                    const Element *elem,
+                    const HOMMAT *hommat,
+                    const Node *node,
+                    const double *r_e,
+                    double *du,
+                    double dt,
+                    SIG *sig,
+                    EPS *eps)
 {
   double *P, *u;
   u = aloc1(nne*nsd);
@@ -1027,7 +1029,7 @@ void evaluate_PT_el(const int ii,
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-        u[a*nsd+b] = r_e[a*ndofn+b];
+      u[a*nsd+b] = r_e[a*ndofn+b];
 
     if(npres==nne)
       P[a] = r_e[a*ndofn+nsd];
@@ -1040,43 +1042,43 @@ void evaluate_PT_el(const int ii,
 
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
   d2UdJ2FuncPtr UPP = getD2UdJ2Func(1, &hommat[mat]);
-  
+
   Matrix<double> F(3,3,0.0);
-	
+
   Matrix<double> fp(npres, 1, 0.0), ft(nVol,  1, 0.0);
-		
+
   Matrix<double> Ktu,Ktt,Ktp;
   Matrix<double> Kup,Kpu,Kpt;
-  
+
   Ktu.initialization(nVol   ,nne*nsd,0.0);
   Ktt.initialization(nVol   ,nVol   ,0.0);
-  Kup.initialization(nne*nsd,npres  ,0.0);      
+  Kup.initialization(nne*nsd,npres  ,0.0);
   Kpu.initialization(npres  ,nne*nsd,0.0);
   Kpt.initialization(npres  ,nVol   ,0.0);
   Ktp.initialization(nVol   ,npres  ,0.0);
-  
+
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-  
-  Matrix<double> Np(npres,1,0.0), Nt(nVol, 1,0.0);    
-                         
+
+  Matrix<double> Np(npres,1,0.0), Nt(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip);  
+    fe.elem_basis_V(ip);
     fe.elem_shape_function(ip,npres,Np.m_pdata);
     fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
     fe.update_deformation_gradient(ndofn,u,F.m_pdata);
-              
-    double Tn = 0.0; 
+
+    double Tn = 0.0;
     double Pn = 0.0;
 
     for(int a=0; a<nVol; a++)
       Tn += Nt(a+1)*eps[ii].T[a*3+0];
-    
+
     for(int a=0; a<npres; a++)
       Pn += Np(a+1)*P[a];
-      
-                
+
+
     double Upp = 0.0;
     double Up = 0.0;
     UPP(Tn,&hommat[mat],&Upp);
@@ -1084,11 +1086,11 @@ void evaluate_PT_el(const int ii,
 
     UP(Tn, &hommat[mat], &Up);
     Up = Up*kappa;
-                  
-    TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);     
-    
+
+    TF_Kup_ip(Kup,&fe,F,npres,Np,-1.0);
+
     TF_Kpt_ip(Kpt,&fe,F,npres,nVol,Np,Nt,-1.0);
-    TF_Ktt_ip(Ktt,&fe,F,nVol,Nt,Upp,-1.0);        
+    TF_Ktt_ip(Ktt,&fe,F,nVol,Nt,Upp,-1.0);
 
     TF_Rt_ip(ft,&fe,F,nVol,Nt,Pn,Up);
     TF_Rp_ip(fp,&fe,F,npres,Np,Tn);
@@ -1096,57 +1098,57 @@ void evaluate_PT_el(const int ii,
 
   free(u);
   free(P);
-  
+
   Kpu.trans(Kup);
   Ktp.trans(Kpt);
-  
-  Matrix<double> theta(nVol,1,0.0),KptI(nVol,nVol,0.0);  
+
+  Matrix<double> theta(nVol,1,0.0),KptI(nVol,nVol,0.0);
   KptI.inv(Kpt);
-  
+
   Matrix<double> uu;
   uu.use_reference(nne*ndofn, 1, du);
-    
+
   Matrix<double> Kpu_uu;
   Kpu_uu.prod(Kpu,uu);
   fp.add(Kpu_uu);
-  
+
   theta.prod(KptI,fp);
   theta.prod(-1.0);
-  
-	for(int a = 0; a<nVol; a++)
-	  eps[ii].T[a*3+0] += theta.m_pdata[a];
 
-  Matrix<double> press(npres,1,0.0),KtpI(nVol,npres,0.0);  
+  for(int a = 0; a<nVol; a++)
+    eps[ii].T[a*3+0] += theta.m_pdata[a];
+
+  Matrix<double> press(npres,1,0.0),KtpI(nVol,npres,0.0);
   KtpI.inv(Ktp);
-  
+
   Matrix<double> Ktt_theta;
   Ktt_theta.prod(Ktt,theta);
   ft.add(Ktt_theta);
-  
+
   press.prod(KtpI,ft);
-  press.prod(-1.0);  
-  
+  press.prod(-1.0);
+
   for(int a = 0; a<npres; a++)
-    eps[ii].d_T[a*3+0] += press.m_pdata[a]; 
+    eps[ii].d_T[a*3+0] += press.m_pdata[a];
 }
 
 void evaluate_PT_w_inertia_el(const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        double *du,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        double alpha, double *r_n_a, double *r_n_1_a)
+                              const int ndofn,
+                              const int nne,
+                              const int npres,
+                              const int nVol,
+                              const int nsd,
+                              const double *x,
+                              const double *y,
+                              const double *z,
+                              const Element *elem,
+                              const HOMMAT *hommat,
+                              const Node *node,
+                              double *du,
+                              double dt,
+                              SIG *sig,
+                              EPS *eps,
+                              double alpha, double *r_n_a, double *r_n_1_a)
 {
   double alpha_1;
   double alpha_2;
@@ -1181,8 +1183,8 @@ void evaluate_PT_w_inertia_el(const int ii,
   {
     for(int b=0; b<nsd;b++)
     {
-        u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
-        u2[a*nsd+b] = r_n_a[a*ndofn+b];
+      u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
+      u2[a*nsd+b] = r_n_a[a*ndofn+b];
     }
     if(npres==nne)
     {
@@ -1202,41 +1204,41 @@ void evaluate_PT_w_inertia_el(const int ii,
   dUdJFuncPtr          UP = getDUdJFunc(1, &hommat[mat]);
   d2UdJ2FuncPtr       UPP = getD2UdJ2Func(1, &hommat[mat]);
 
-  Matrix<double> F1(3,3,0.0),F2(3,3,0.0);      
-	
+  Matrix<double> F1(3,3,0.0),F2(3,3,0.0);
+
   Matrix<double> fp, fp1, fp2;
   Matrix<double> ft, ft1, ft2;
-  
-   fp.initialization(npres,  1,    0.0);
+
+  fp.initialization(npres,  1,    0.0);
   fp1.initialization(npres,  1,    0.0);
   fp2.initialization(npres,  1,    0.0);
-   ft.initialization(nVol,   1,    0.0);  
-  ft1.initialization(nVol,   1,    0.0);  
+  ft.initialization(nVol,   1,    0.0);
+  ft1.initialization(nVol,   1,    0.0);
   ft2.initialization(nVol,   1,    0.0);
-		
+
   Matrix<double> Ktu,Ktt,Ktp;
   Matrix<double> Kup,Kpu,Kpt;
-  
+
   Ktu.initialization(nVol   ,nne*nsd,0.0);
   Ktt.initialization(nVol   ,nVol   ,0.0);
-  Kup.initialization(nne*nsd,npres  ,0.0);      
+  Kup.initialization(nne*nsd,npres  ,0.0);
   Kpu.initialization(npres  ,nne*nsd,0.0);
   Kpt.initialization(npres  ,nVol   ,0.0);
-  Ktp.initialization(nVol   ,npres  ,0.0);   
+  Ktp.initialization(nVol   ,npres  ,0.0);
 
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-    
-  Matrix<double> Np(npres,1,0.0),Nt(nVol, 1,0.0);    
-                             
+
+  Matrix<double> Np(npres,1,0.0),Nt(nVol, 1,0.0);
+
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip);  
+    fe.elem_basis_V(ip);
     fe.elem_shape_function(ip,npres,Np.m_pdata);
-    fe.elem_shape_function(ip,nVol, Nt.m_pdata);   
+    fe.elem_shape_function(ip,nVol, Nt.m_pdata);
     fe.update_shape_tensor();
     fe.update_deformation_gradient(ndofn,u1,F1.m_pdata);
-    fe.update_deformation_gradient(ndofn,u2,F2.m_pdata);    
-    
+    fe.update_deformation_gradient(ndofn,u2,F2.m_pdata);
+
     double Tn1 = 0.0; // 1: n-1+alpha
     double Tn2 = 0.0; // 2: n+alpha
     double Pn1 = 0.0;
@@ -1245,7 +1247,7 @@ void evaluate_PT_w_inertia_el(const int ii,
     for(int a=0; a<nVol; a++)
     {
       Tn1 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+2] + alpha_2*eps[ii].T[a*3+1]);
-      Tn2 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);      
+      Tn2 += Nt(a+1)*(alpha_1*eps[ii].T[a*3+1] + alpha_2*eps[ii].T[a*3+0]);
     }
     for(int a=0; a<npres; a++)
     {
@@ -1263,22 +1265,22 @@ void evaluate_PT_w_inertia_el(const int ii,
     Up1 = Up1*kappa;
 
     UP(Tn2, &hommat[mat], &Up2);
-    Up2 = Up2*kappa;        
-    
+    Up2 = Up2*kappa;
+
     TF_Kup_ip(Kup,&fe,F2,npres,Np,dt_alpha_1_minus_alpha);
-    
+
     TF_Kpt_ip(Kpt,&fe,F2,npres,nVol,Np,Nt,dt_alpha_1_minus_alpha);
-    TF_Ktt_ip(Ktt,&fe,F2,nVol,Nt,Upp2,dt_alpha_1_minus_alpha); 
-    
+    TF_Ktt_ip(Ktt,&fe,F2,nVol,Nt,Upp2,dt_alpha_1_minus_alpha);
+
     TF_Rt_ip(ft1,&fe,F1,nVol,Nt,Pn1,Up1);
     TF_Rt_ip(ft2,&fe,F2,nVol,Nt,Pn2,Up2);
 
     TF_Rp_ip(fp1,&fe,F1,npres,Np,Tn1);
     TF_Rp_ip(fp2,&fe,F2,npres,Np,Tn2);
   }
-  
+
   Kpu.trans(Kup);
-  Ktp.trans(Kpt); 
+  Ktp.trans(Kpt);
 
   for(int a=0; a<nVol; a++)
     ft.m_pdata[a] = dt_alpha_1*ft2.m_pdata[a] + dt_alpha_2*ft1.m_pdata[a];
@@ -1287,67 +1289,67 @@ void evaluate_PT_w_inertia_el(const int ii,
     fp.m_pdata[a] = dt_alpha_1*fp2.m_pdata[a] + dt_alpha_2*fp1.m_pdata[a];
 
   free(P1); free(P2); free(u1); free(u2);
-  
-  Matrix<double> theta(nVol,1,0.0),KptI(nVol,npres,0.0);  
+
+  Matrix<double> theta(nVol,1,0.0),KptI(nVol,npres,0.0);
   KptI.inv(Kpt);
-  
-  
+
+
   Matrix<double> uu;
   uu.use_reference(nne*ndofn, 1, du);
-    
+
   Matrix<double> Kpu_uu;
   Kpu_uu.prod(Kpu,uu);
   fp.add(Kpu_uu);
-  
+
   theta.prod(KptI,fp);
   theta.prod(-1.0);
-  
-	for(int a = 0; a<nVol; a++)
-	  eps[ii].T[a*3+0] += theta.m_pdata[a];
 
-  Matrix<double> press(npres,1,0.0),KtpI(nVol,npres,0.0);  
+  for(int a = 0; a<nVol; a++)
+    eps[ii].T[a*3+0] += theta.m_pdata[a];
+
+  Matrix<double> press(npres,1,0.0),KtpI(nVol,npres,0.0);
   KtpI.inv(Ktp);
-  
+
   Matrix<double> Ktt_theta;
   Ktt_theta.prod(Ktt,theta);
   ft.add(Ktt_theta);
-  
+
   press.prod(KtpI,ft);
-  press.prod(-1.0);  
-  
+  press.prod(-1.0);
+
   for(int a = 0; a<npres; a++)
-    eps[ii].d_T[a*3+0] += press.m_pdata[a];   
+    eps[ii].d_T[a*3+0] += press.m_pdata[a];
 }
 
 void evaluate_theta_el(const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        const double *r_e,
-        const double *du,
-        double dt,
-        SIG *sig,
-        EPS *eps)
+                       const int ndofn,
+                       const int nne,
+                       const int npres,
+                       const int nVol,
+                       const int nsd,
+                       const double *x,
+                       const double *y,
+                       const double *z,
+                       const Element *elem,
+                       const HOMMAT *hommat,
+                       const Node *node,
+                       const double *r_e,
+                       const double *du,
+                       double dt,
+                       SIG *sig,
+                       EPS *eps)
 {
   double *P, *u;
   u = aloc1(nne*nsd);
-    P = aloc1(npres);
+  P = aloc1(npres);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-        u[a*nsd+b] = r_e[a*ndofn+b];
+      u[a*nsd+b] = r_e[a*ndofn+b];
 
     if(npres==nne)
-            P[a] = r_e[a*ndofn+nsd];
+      P[a] = r_e[a*ndofn+nsd];
   }
   if(npres==1)
     P[0] = eps[ii].d_T[0];
@@ -1384,7 +1386,7 @@ void evaluate_theta_el(const int ii,
   double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST;
   double Upp, Up;
 
-    Na = aloc1(nne);
+  Na = aloc1(nne);
   Np = aloc1(npres);
   Nt = aloc1(nVol);
   N_x = aloc1(nne);
@@ -1395,8 +1397,8 @@ void evaluate_theta_el(const int ii,
 
   /*=== INTEGRATION LOOP ===*/
   integrate(nne,&npt_x,&npt_y,&npt_z,
-          int_pt_ksi,int_pt_eta,int_pt_zet,
-          weights);
+            int_pt_ksi,int_pt_eta,int_pt_zet,
+            weights);
 
   double **F_mat,*F;
 
@@ -1438,11 +1440,11 @@ void evaluate_theta_el(const int ii,
         def_grad_get(nne,ndofn,CONST_4(double) ST_tensor,u,F_mat);
         mat2array(F,CONST_2(double) F_mat,3,3);
 
-//        add_3F_Ktu_ip(Ktu,nne,nVol,  ST,F,detJ,wt,Nt,-1.0);
-                add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,-1.0);
-                add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp,-1.0);
+        //        add_3F_Ktu_ip(Ktu,nne,nVol,  ST,F,detJ,wt,Nt,-1.0);
+        add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,-1.0);
+        add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp,-1.0);
 
-                resid_w_inertia_Rt_ip(ft, nVol, detJ, wt, Nt, Pn, Up);
+        resid_w_inertia_Rt_ip(ft, nVol, detJ, wt, Nt, Pn, Up);
 
       }
     }
@@ -1469,43 +1471,43 @@ void evaluate_theta_el(const int ii,
   dealoc2(F_mat,3);
 
 
-    double *KttI, *KttIKtu, *KttIKtp;
+  double *KttI, *KttIKtu, *KttIKtp;
   KttI = aloc1(nVol*nVol);
   KttIKtu = aloc1(nne*nsd*nVol);
   KttIKtp = aloc1(npres*nVol);
 
-    inverse(Ktt,nVol,KttI);
+  inverse(Ktt,nVol,KttI);
 
   double *theta1 = aloc1(nVol);
   double *theta2 = aloc1(nVol);
   double *theta3 = aloc1(nVol);
 
 
-    // KttI:    [nVol]*[nVol]
-    // Ktu:     [nVol]*[nne*nsd]
-    // KttIKtu: [nVol]*[nne*nsd]
-    // Ktp:     [nVol]*[npres]
-    // KttIKpt: [nVol]*[npres]
+  // KttI:    [nVol]*[nVol]
+  // Ktu:     [nVol]*[nne*nsd]
+  // KttIKtu: [nVol]*[nne*nsd]
+  // Ktp:     [nVol]*[npres]
+  // KttIKpt: [nVol]*[npres]
 
   // A[m,k] x B[k,n] = C[m,n]
   // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,1.0,A,k,B,n,0.0,C,n);
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,nne*nsd,nVol,1.0,KttI,nVol,Ktu,nne*nsd,0.0,KttIKtu,nne*nsd);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,npres,nVol,1.0,KttI,nVol,Ktp,npres,0.0,KttIKtp,npres);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nne*nsd,1.0,KttIKtu,nne*nsd,u,1,0.0,theta1,1);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,npres,1.0,KttIKtp,npres,P,1,0.0,theta2,1);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nVol,1.0,KttI,nVol,ft,1,0.0,theta3,1);
 
-    for(long a = 0; a<nVol; a++)
-      eps[ii].T[a*3+0] = eps[ii].T[a*3+0] - (theta1[a] + theta2[a] + theta3[a]);
+  for(long a = 0; a<nVol; a++)
+    eps[ii].T[a*3+0] = eps[ii].T[a*3+0] - (theta1[a] + theta2[a] + theta3[a]);
 
   free(ft);
 
@@ -1518,22 +1520,22 @@ void evaluate_theta_el(const int ii,
 }
 
 void evaluate_theta_w_inertia_el(const int ii,
-        const int ndofn,
-        const int nne,
-        const int npres,
-        const int nVol,
-        const int nsd,
-        const double *x,
-        const double *y,
-        const double *z,
-        const ELEMENT *elem,
-        const HOMMAT *hommat,
-        const NODE *node,
-        const double *du,
-        double dt,
-        SIG *sig,
-        EPS *eps,
-        double alpha, double *r_n_a, double *r_n_1_a)
+                                 const int ndofn,
+                                 const int nne,
+                                 const int npres,
+                                 const int nVol,
+                                 const int nsd,
+                                 const double *x,
+                                 const double *y,
+                                 const double *z,
+                                 const Element *elem,
+                                 const HOMMAT *hommat,
+                                 const Node *node,
+                                 const double *du,
+                                 double dt,
+                                 SIG *sig,
+                                 EPS *eps,
+                                 double alpha, double *r_n_a, double *r_n_1_a)
 {
   double *u2 = aloc1(nne*nsd); // 2: n+alpha
   double *u1 = aloc1(nne*nsd); // 1: n-1+alpha
@@ -1544,8 +1546,8 @@ void evaluate_theta_w_inertia_el(const int ii,
   {
     for(int b=0; b<nsd;b++)
     {
-        u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
-        u2[a*nsd+b] = r_n_a[a*ndofn+b];
+      u1[a*nsd+b] = r_n_1_a[a*ndofn+b];
+      u2[a*nsd+b] = r_n_a[a*ndofn+b];
     }
     if(npres==nne)
     {
@@ -1577,9 +1579,9 @@ void evaluate_theta_w_inertia_el(const int ii,
   memset(ft, 0,        nVol*sizeof(double));
   memset(ft1,0,        nVol*sizeof(double));
   memset(ft2,0,        nVol*sizeof(double));
-    memset(Ktu,0,nne*nsd*nVol*sizeof(double));
-    memset(Ktp,0,  nVol*npres*sizeof(double));
-    memset(Ktt,0,     nVol*nVol*sizeof(double));
+  memset(Ktu,0,nne*nsd*nVol*sizeof(double));
+  memset(Ktp,0,  nVol*npres*sizeof(double));
+  memset(Ktt,0,     nVol*nVol*sizeof(double));
 
   /* INTEGRATION */
   long npt_x, npt_y, npt_z;
@@ -1595,7 +1597,7 @@ void evaluate_theta_w_inertia_el(const int ii,
   double *Na, *Np, *Nt, *N_x, *N_y, *N_z, ****ST_tensor, *ST;
   double Upp2, Up1, Up2;
 
-    Na = aloc1(nne);
+  Na = aloc1(nne);
   Np = aloc1(npres);
   Nt = aloc1(nVol);
   N_x = aloc1(nne);
@@ -1606,8 +1608,8 @@ void evaluate_theta_w_inertia_el(const int ii,
 
   /*=== INTEGRATION LOOP ===*/
   integrate(nne,&npt_x,&npt_y,&npt_z,
-          int_pt_ksi,int_pt_eta,int_pt_zet,
-          weights);
+            int_pt_ksi,int_pt_eta,int_pt_zet,
+            weights);
 
   double **F_mat1, **F_mat2, *F1, *F2;
 
@@ -1663,12 +1665,12 @@ void evaluate_theta_w_inertia_el(const int ii,
         def_grad_get(nne,ndofn,CONST_4(double) ST_tensor,u2,F_mat2);
         mat2array(F2,CONST_2(double) F_mat2,3,3);
 
-//        add_3F_Ktu_ip(Ktu,nne,nVol,  ST,F2,detJ,wt,Nt,dt*(1.0-alpha)*alpha);
-                add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,dt*(1.0-alpha)*alpha);
-                add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp2,dt*(1.0-alpha)*alpha);
+        //        add_3F_Ktu_ip(Ktu,nne,nVol,  ST,F2,detJ,wt,Nt,dt*(1.0-alpha)*alpha);
+        add_3F_Ktp_ip(Ktp,nVol,npres,detJ,wt,Nt,Np,dt*(1.0-alpha)*alpha);
+        add_3F_Ktt_ip(Ktt,nVol,detJ,wt,Nt,Upp2,dt*(1.0-alpha)*alpha);
 
-                resid_w_inertia_Rt_ip(ft1, nVol, detJ, wt, Nt, Pn1, Up1);
-                resid_w_inertia_Rt_ip(ft2, nVol, detJ, wt, Nt, Pn2, Up2);
+        resid_w_inertia_Rt_ip(ft1, nVol, detJ, wt, Nt, Pn1, Up1);
+        resid_w_inertia_Rt_ip(ft2, nVol, detJ, wt, Nt, Pn2, Up2);
 
       }
     }
@@ -1698,43 +1700,43 @@ void evaluate_theta_w_inertia_el(const int ii,
   dealoc2(F_mat2,3);
 
 
-    double *KttI, *KttIKtu, *KttIKtp;
+  double *KttI, *KttIKtu, *KttIKtp;
   KttI = aloc1(nVol*nVol);
   KttIKtu = aloc1(nne*nsd*nVol);
   KttIKtp = aloc1(npres*nVol);
 
-    inverse(Ktt,nVol,KttI);
+  inverse(Ktt,nVol,KttI);
 
   double *theta1 = aloc1(nVol);
   double *theta2 = aloc1(nVol);
   double *theta3 = aloc1(nVol);
 
 
-    // KttI:    [nVol]*[nVol]
-    // Ktu:     [nVol]*[nne*nsd]
-    // KttIKtu: [nVol]*[nne*nsd]
-    // Ktp:     [nVol]*[npres]
-    // KttIKpt: [nVol]*[npres]
+  // KttI:    [nVol]*[nVol]
+  // Ktu:     [nVol]*[nne*nsd]
+  // KttIKtu: [nVol]*[nne*nsd]
+  // Ktp:     [nVol]*[npres]
+  // KttIKpt: [nVol]*[npres]
 
   // A[m,k] x B[k,n] = C[m,n]
   // cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,1.0,A,k,B,n,0.0,C,n);
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,nne*nsd,nVol,1.0,KttI,nVol,Ktu,nne*nsd,0.0,KttIKtu,nne*nsd);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,npres,nVol,1.0,KttI,nVol,Ktp,npres,0.0,KttIKtp,npres);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nne*nsd,1.0,KttIKtu,nne*nsd,u2,1,0.0,theta1,1);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,npres,1.0,KttIKtp,npres,P2,1,0.0,theta2,1);
 
-    cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
               nVol,1,nVol,1.0,KttI,nVol,ft,1,0.0,theta3,1);
 
-    for(long a = 0; a<nVol; a++)
-      eps[ii].T[a*3+0] = eps[ii].T[a*3+0] - (theta1[a] + theta2[a] + theta3[a]);
+  for(long a = 0; a<nVol; a++)
+    eps[ii].T[a*3+0] = eps[ii].T[a*3+0] - (theta1[a] + theta2[a] + theta3[a]);
 
   free(ft);
   free(ft1); free(ft2);
@@ -1748,9 +1750,9 @@ void evaluate_theta_w_inertia_el(const int ii,
 }
 
 void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
-               NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-                   MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1,
-                   const int mp_id)
+               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+               MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1,
+               const int mp_id)
 {
   const int mat = elem[0].mat[2];
   double rho = hommat[mat].density;
@@ -1762,9 +1764,9 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
   if(fabs(rho)<MIN_DENSITY)
     include_inertia = 0;
 
-//////////////////////////////////////////////////////////////////////
-//  include_inertia = 0;
-//////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //  include_inertia = 0;
+  //////////////////////////////////////////////////////////////////////
 
   for (int i=0;i<ne;i++)
   {
@@ -1798,51 +1800,51 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
 
     for(int a=0;a<nne;a++)
     {
-        for(int b=0; b<nsd;b++)
-            du[a*nsd+b] = dr_e[a*ndofn+b];
+      for(int b=0; b<nsd;b++)
+        du[a*nsd+b] = dr_e[a*ndofn+b];
     }
 
-      if(include_inertia && (0<alpha && alpha<1))
-      {
-        double *r0, *r0_;
+    if(include_inertia && (0<alpha && alpha<1))
+    {
+      double *r0, *r0_;
       r0      = aloc1(ndofe);
-        r0_     = aloc1(ndofe);
+      r0_     = aloc1(ndofe);
 
       for (long I=0;I<nne;I++)
+      {
+        for(long J=0; J<nsd; J++)
         {
-          for(long J=0; J<nsd; J++)
-          {
-            r0[I*ndofn + J] =   r_n[nod[I]*ndofn + J];
-            r0_[I*ndofn + J] = r_n_1[nod[I]*ndofn + J];
-          }
+          r0[I*ndofn + J] =   r_n[nod[I]*ndofn + J];
+          r0_[I*ndofn + J] = r_n_1[nod[I]*ndofn + J];
         }
+      }
 
-        double *r_n_a, *r_n_1_a;
-        r_n_a = aloc1(ndofe);
-        r_n_1_a = aloc1(ndofe);
+      double *r_n_a, *r_n_1_a;
+      r_n_a = aloc1(ndofe);
+      r_n_1_a = aloc1(ndofe);
 
       mid_point_rule(r_n_1_a,r0_,r0,  alpha, ndofe);
       mid_point_rule(r_n_a,  r0, r_e, alpha, ndofe);
 
-        if(npres==1)
-          evaluate_PT_w_inertia_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,du,dt,sig,eps,alpha,r_n_a,r_n_1_a);
-        else
-          evaluate_theta_w_inertia_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,du,dt,sig,eps,alpha,r_n_a,r_n_1_a);
+      if(npres==1)
+        evaluate_PT_w_inertia_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,du,dt,sig,eps,alpha,r_n_a,r_n_1_a);
+      else
+        evaluate_theta_w_inertia_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,du,dt,sig,eps,alpha,r_n_a,r_n_1_a);
 
-        free(r0);
-        free(r0_);
-          free(r_n_a);
-          free(r_n_1_a);
+      free(r0);
+      free(r0_);
+      free(r_n_a);
+      free(r_n_1_a);
     }
     else
     {
-        if(npres==1)
-          evaluate_PT_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,r_e,du,dt,sig,eps);
-        else
-          evaluate_theta_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,r_e,du,dt,sig,eps);
+      if(npres==1)
+        evaluate_PT_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,r_e,du,dt,sig,eps);
+      else
+        evaluate_theta_el(i,ndofn,nne,npres,nVol,nsd,x,y,z,elem,hommat,node,r_e,du,dt,sig,eps);
     }
 
-      free(du);
+    free(du);
     free(nod);
     free(cn);
     free(x);
@@ -1850,12 +1852,12 @@ void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *
     free(z);
     free(r_e);
     free(dr_e);
-    }
+  }
 }
 
 void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
-               NODE *node, ELEMENT *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-                   MPI_Comm mpi_comm,const int mp_id)
+                               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
+                               MPI_Comm mpi_comm,const int mp_id)
 {
   // @todo Commented out as dead code. @cp shoud review. LD
   // long include_inertia = 1;
@@ -1891,26 +1893,26 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
 
     int nsd = 3;
 
-        double *u, *P;
-        u = aloc1(nne*nsd);
-        P = aloc1(npres);
+    double *u, *P;
+    u = aloc1(nne*nsd);
+    P = aloc1(npres);
 
-        for(int a=0;a<nne;a++)
-        {
-            for(int b=0; b<nsd;b++)
-            {
-                u[a*nsd+b] = r_e[a*ndofn+b];
-            }
-            if(npres==nne)
-            P[a] = r_e[a*ndofn+nsd];
-        }
+    for(int a=0;a<nne;a++)
+    {
+      for(int b=0; b<nsd;b++)
+      {
+        u[a*nsd+b] = r_e[a*ndofn+b];
+      }
+      if(npres==nne)
+        P[a] = r_e[a*ndofn+nsd];
+    }
     if(npres==1)
       P[0] = eps[i].d_T[0];
 
     update_3f_state_variables_el(i,ndofn,nne,npres,x,y,z,elem,hommat,node,u,P,dt,sig,eps);
 
-      free(u);
-        free(P);
+    free(u);
+    free(P);
 
     free(nod);
     free(cn);
@@ -1918,5 +1920,5 @@ void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, dou
     free(y);
     free(z);
     free(r_e);
-    }
+  }
 }

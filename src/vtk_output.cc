@@ -1,25 +1,23 @@
-#include "vtk_output.h"
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
-#include <string.h>
-#include <stdlib.h>
-#include "mkl_cblas.h"
-
+#include "vtk_output.h"
 #include "PGFEM_io.h"
-#include "enumerations.h"
-#include "gen_path.h"
-#include "utils.h"
-#include "allocation.h"
-#include "interface_macro.h"
 #include "PGFem3D_to_VTK.hpp"
+#include "allocation.h"
+#include "enumerations.h"
 #include "femlib.h"
+#include "gen_path.h"
+#include "interface_macro.h"
+#include "utils.h"
+#include <mkl_cblas.h>
+#include <cstring>
+#include <cstdlib>
 
-static const char *out_dir = "VTK";
-static const char *step_dir = "STEP_";
-static const int ndim = 3;
+static constexpr const char *out_dir = "VTK";
+static constexpr const char *step_dir = "STEP_";
+static constexpr int ndim = 3;
 
 void VTK_print_master(char *path,
                       char *base_name,
@@ -210,8 +208,8 @@ void VTK_print_vtu(char *path,
                    int myrank,
                    long ne,
                    long nn,
-                   NODE *node,
-                   ELEMENT *elem,
+                   Node *node,
+                   Element *elem,
                    SUPP sup,
                    double *r,
                    SIG *sig,
@@ -506,11 +504,11 @@ void VTK_print_cohesive_vtu(char *path,
                             int time,
                             int myrank,
                             long nce,
-                            NODE *node,
+                            Node *node,
                             COEL *coel,
                             SUPP sup,
                             double *r,
-                            ENSIGHT ensight,
+                            Ensight *ensight,
                             const PGFem3D_opt *opts,
                             const int mp_id)
 {
@@ -938,13 +936,13 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
 /// \param[in] grid an object containing all mesh data
 /// \param[in] out file pointer for writing vtk file
 /// \return non-zero on internal error
-int VTK_write_mesh(GRID *grid,
+int VTK_write_mesh(Grid *grid,
                    FILE *out)
 {
   int err = 0;
   /* Nodes */
-  NODE    *node = grid->node;
-  ELEMENT *elem = grid->element;
+  Node    *node = grid->node;
+  Element *elem = grid->element;
 
   PGFEM_fprintf(out,"<Points>\n");
   PGFEM_fprintf(out,"<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
@@ -1014,10 +1012,10 @@ int VTK_write_mesh(GRID *grid,
 /// \param[in] time time step number
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int VTK_write_multiphysics_vtu(GRID *grid,
-                               const MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *FV,
-                               LOADING_STEPS *load,
+int VTK_write_multiphysics_vtu(Grid *grid,
+                               const MaterialProperty *mat,
+                               FieldVariables *FV,
+                               LoadingSteps *load,
                                PRINT_MULTIPHYSICS_RESULT *pD,
                                int datano,
                                const PGFem3D_opt *opts,
@@ -1079,10 +1077,10 @@ int VTK_write_multiphysics_vtu(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_double(FILE *out,
-                          GRID *grid,
-                          const MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *FV,
-                          LOADING_STEPS *load,
+                          Grid *grid,
+                          const MaterialProperty *mat,
+                          FieldVariables *FV,
+                          LoadingSteps *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
                           const PGFem3D_opt *opts)
 {
@@ -1113,16 +1111,16 @@ int VTK_write_data_double(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_MacroDisplacement(FILE *out,
-                                     GRID *grid,
-                                     const MATERIAL_PROPERTY *mat,
-                                     FIELD_VARIABLES *FV,
-                                     LOADING_STEPS *load,
+                                     Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *FV,
+                                     LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
                                      const PGFem3D_opt *opts)
 {
   int err = 0;
 
-  NODE *node = grid->node;
+  Node *node = grid->node;
   SUPP sup = load->sups[pmr->mp_id];
 
   if(sup->multi_scale){
@@ -1152,16 +1150,16 @@ int VTK_write_data_MacroDisplacement(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_Nodal_pressure(FILE *out,
-                                  GRID *grid,
-                                  const MATERIAL_PROPERTY *mat,
-                                  FIELD_VARIABLES *FV,
-                                  LOADING_STEPS *load,
+                                  Grid *grid,
+                                  const MaterialProperty *mat,
+                                  FieldVariables *FV,
+                                  LoadingSteps *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;
-  ELEMENT *elem = grid->element;
-  NODE *node = grid->node;
+  Element *elem = grid->element;
+  Node *node = grid->node;
   int mp_id = pmr->mp_id;
   /* Pressure */
   switch(opts->analysis_type){
@@ -1197,10 +1195,10 @@ int VTK_write_data_Nodal_pressure(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_CauchyStress(FILE *out,
-                                GRID *grid,
-                                const MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *FV,
-                                LOADING_STEPS *load,
+                                Grid *grid,
+                                const MaterialProperty *mat,
+                                FieldVariables *FV,
+                                LoadingSteps *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
                                 const PGFem3D_opt *opts)
 {
@@ -1232,10 +1230,10 @@ int VTK_write_data_CauchyStress(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_EulerStrain(FILE *out,
-                               GRID *grid,
-                               const MATERIAL_PROPERTY *mat,
-                               FIELD_VARIABLES *FV,
-                               LOADING_STEPS *load,
+                               Grid *grid,
+                               const MaterialProperty *mat,
+                               FieldVariables *FV,
+                               LoadingSteps *load,
                                PRINT_MULTIPHYSICS_RESULT *pmr,
                                const PGFem3D_opt *opts)
 {
@@ -1267,10 +1265,10 @@ int VTK_write_data_EulerStrain(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_EffectiveStrain(FILE *out,
-                                   GRID *grid,
-                                   const MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   LOADING_STEPS *load,
+                                   Grid *grid,
+                                   const MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
                                    const PGFem3D_opt *opts)
 {
@@ -1299,10 +1297,10 @@ int VTK_write_data_EffectiveStrain(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_EffectiveStress(FILE *out,
-                                   GRID *grid,
-                                   const MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   LOADING_STEPS *load,
+                                   Grid *grid,
+                                   const MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
                                    const PGFem3D_opt *opts)
 {
@@ -1330,15 +1328,15 @@ int VTK_write_data_EffectiveStress(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_CellProperty(FILE *out,
-                                GRID *grid,
-                                const MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *FV,
-                                LOADING_STEPS *load,
+                                Grid *grid,
+                                const MaterialProperty *mat,
+                                FieldVariables *FV,
+                                LoadingSteps *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
@@ -1361,10 +1359,10 @@ int VTK_write_data_CellProperty(FILE *out,
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \param[in] opts structure PGFem3D option
 int VTK_write_data_Damage(FILE *out,
-                          GRID *grid,
-                          const MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *FV,
-                          LOADING_STEPS *load,
+                          Grid *grid,
+                          const MaterialProperty *mat,
+                          FieldVariables *FV,
+                          LoadingSteps *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
                           const PGFem3D_opt *opts)
 {
@@ -1391,10 +1389,10 @@ int VTK_write_data_Damage(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_Chi(FILE *out,
-                       GRID *grid,
-                       const MATERIAL_PROPERTY *mat,
-                       FIELD_VARIABLES *FV,
-                       LOADING_STEPS *load,
+                       Grid *grid,
+                       const MaterialProperty *mat,
+                       FieldVariables *FV,
+                       LoadingSteps *load,
                        PRINT_MULTIPHYSICS_RESULT *pmr,
                        const PGFem3D_opt *opts)
 {
@@ -1422,10 +1420,10 @@ int VTK_write_data_Chi(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_F(FILE *out,
-                     GRID *grid,
-                     const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,
-                     LOADING_STEPS *load,
+                     Grid *grid,
+                     const MaterialProperty *mat,
+                     FieldVariables *FV,
+                     LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
 {
@@ -1457,10 +1455,10 @@ int VTK_write_data_F(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_P(FILE *out,
-                     GRID *grid,
-                     const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,
-                     LOADING_STEPS *load,
+                     Grid *grid,
+                     const MaterialProperty *mat,
+                     FieldVariables *FV,
+                     LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
 {
@@ -1510,10 +1508,10 @@ int VTK_write_data_P(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_W(FILE *out,
-                     GRID *grid,
-                     const MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *FV,
-                     LOADING_STEPS *load,
+                     Grid *grid,
+                     const MaterialProperty *mat,
+                     FieldVariables *FV,
+                     LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
                      const PGFem3D_opt *opts)
 {
@@ -1544,16 +1542,16 @@ int VTK_write_data_W(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_ElementPressure(FILE *out,
-                                   GRID *grid,
-                                   const MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   LOADING_STEPS *load,
+                                   Grid *grid,
+                                   const MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
   EPS *eps = FV[pmr->mp_id].eps;
-  ELEMENT *elem = grid->element;
+  Element *elem = grid->element;
 
   if(opts->analysis_type==TF && elem[0].toe==10)
   {
@@ -1581,10 +1579,10 @@ int VTK_write_data_ElementPressure(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_ElementVolume(FILE *out,
-                                 GRID *grid,
-                                 const MATERIAL_PROPERTY *mat,
-                                 FIELD_VARIABLES *FV,
-                                 LOADING_STEPS *load,
+                                 Grid *grid,
+                                 const MaterialProperty *mat,
+                                 FieldVariables *FV,
+                                 LoadingSteps *load,
                                  PRINT_MULTIPHYSICS_RESULT *pmr,
                                  const PGFem3D_opt *opts)
 {
@@ -1612,18 +1610,18 @@ int VTK_write_data_ElementVolume(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_Density(FILE *out,
-                           GRID *grid,
-                           const MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *FV,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           const MaterialProperty *mat,
+                           FieldVariables *FV,
+                           LoadingSteps *load,
                            PRINT_MULTIPHYSICS_RESULT *pmr,
                            const PGFem3D_opt *opts)
 {
   int err = 0;
   int total_Lagrangian = 1;
   EPS *eps = FV[pmr->mp_id].eps;
-  NODE *node = grid->node;
-  ELEMENT *elem = grid->element;
+  Node *node = grid->node;
+  Element *elem = grid->element;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
   for (int i=0; i<grid->ne; i++)
@@ -1639,7 +1637,7 @@ int VTK_write_data_Density(FILE *out,
     for(int ip=0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip+1);
-      
+
       const double *F = eps[i].il[ip].F;
       double J = det3x3(F);
       rho    += fe.detJxW*rho_0/J;
@@ -1662,10 +1660,10 @@ int VTK_write_data_Density(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_HydrostaticStress(FILE *out,
-                                     GRID *grid,
-                                     const MATERIAL_PROPERTY *mat,
-                                     FIELD_VARIABLES *FV,
-                                     LOADING_STEPS *load,
+                                     Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *FV,
+                                     LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
                                      const PGFem3D_opt *opts)
 {
@@ -1697,10 +1695,10 @@ int VTK_write_data_HydrostaticStress(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_HeatFlux(FILE *out,
-                            GRID *grid,
-                            const MATERIAL_PROPERTY *mat,
-                            FIELD_VARIABLES *FV,
-                            LOADING_STEPS *load,
+                            Grid *grid,
+                            const MaterialProperty *mat,
+                            FieldVariables *FV,
+                            LoadingSteps *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
                             const PGFem3D_opt *opts)
 {
@@ -1730,10 +1728,10 @@ int VTK_write_data_HeatFlux(FILE *out,
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_HeatGeneration(FILE *out,
-                                  GRID *grid,
-                                  const MATERIAL_PROPERTY *mat,
-                                  FIELD_VARIABLES *FV,
-                                  LOADING_STEPS *load,
+                                  Grid *grid,
+                                  const MaterialProperty *mat,
+                                  FieldVariables *FV,
+                                  LoadingSteps *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
                                   const PGFem3D_opt *opts)
 {
@@ -1762,9 +1760,9 @@ int VTK_write_data_HeatGeneration(FILE *out,
 /// \param[in] mp an object for multiphysics stepping
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \return non-zero on internal error
-int VTK_construct_PMR(GRID *grid,
-                      FIELD_VARIABLES *FV,
-                      MULTIPHYSICS *mp,
+int VTK_construct_PMR(Grid *grid,
+                      FieldVariables *FV,
+                      Multiphysics *mp,
                       PRINT_MULTIPHYSICS_RESULT *pmr)
 {
   int cnt_pmr = 0;

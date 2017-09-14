@@ -1,4 +1,3 @@
-/* HEADER */
 /**
  *  Newton-Raphson solution algorithm.
  *
@@ -21,26 +20,25 @@
  *  Sangmin Lee, University of Notre Dame, <slee43 [at] nd.edu>
  *  Karel Matous, University of Notre Dame, <kmatous [at] nd.edu>
  */
-#pragma once
-#ifndef NEWTON_RAPHSON_H
-#define NEWTON_RAPHSON_H
+#ifndef PGFEM3D_NEWTON_RAPHSON_H
+#define PGFEM3D_NEWTON_RAPHSON_H
 
-#include "data_structure.h"
-#include "PGFem3D_data_structure.h"
 #include "PGFEM_mpi.h"
-#include "element.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "cohesive_element.h"
-#include "bounding_element.h"
+#include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
-#include "pgfem_comm.h"
+#include "bounding_element.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "data_structure.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "pgfem_comm.h"
+#include "sig.h"
 #include "solver_file.h"
+#include "supp.h"
 
 /// Compute residuals for Newton Raphson iteration
 ///
@@ -56,15 +54,15 @@
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long compute_residuals_for_NR(GRID *grid,
-                              MATERIAL_PROPERTY *mat,
-                              FIELD_VARIABLES *fv,
-                              SOLVER_OPTIONS *sol,
-                              LOADING_STEPS *load,
+long compute_residuals_for_NR(Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
+                              pgfem3d::Solver *sol,
+                              LoadingSteps *load,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
-                              MULTIPHYSICS *mp,
+                              Multiphysics *mp,
                               int mp_id,
                               double t,
                               double *dts,
@@ -85,18 +83,18 @@ long compute_residuals_for_NR(GRID *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
-double Multiphysics_Newton_Raphson(GRID *grid,
-                                   MATERIAL_PROPERTY *mat,
-                                   FIELD_VARIABLES *FV,
-                                   SOLVER_OPTIONS *SOL,
-                                   LOADING_STEPS *load,
-                                   COMMUNICATION_STRUCTURE *COM,
-                                   PGFem3D_TIME_STEPPING *time_steps,
+double Multiphysics_Newton_Raphson(Grid *grid,
+                                   MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   pgfem3d::Solver *SOL,
+                                   LoadingSteps *load,
+                                   CommunicationStructure *COM,
+                                   TimeStepping *time_steps,
                                    CRPL *crpl,
                                    MPI_Comm mpi_comm,
                                    const double VVolume,
                                    const PGFem3D_opt *opts,
-                                   MULTIPHYSICS *mp);
+                                   Multiphysics *mp);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///
@@ -120,4 +118,4 @@ double Newton_Raphson_multiscale(const int print_level,
                                  double *pores,
                                  int *n_step);
 
-#endif /* #ifndef NEWTON_RAPHSON_H */
+#endif /* #define PGFEM3D_NEWTON_RAPHSON_H */

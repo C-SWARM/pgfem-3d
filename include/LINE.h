@@ -1,58 +1,21 @@
-#ifndef LINE_H
-#define LINE_H
+#ifndef PGFEM3D_LINE_H
+#define PGFEM3D_LINE_H
 
-#include "data_structure.h"
 #include "PGFEM_mpi.h"
-
-#ifndef ELEMENT_H
-#include "element.h"
-#endif
-
-#ifndef NODE_H
-#include "node.h"
-#endif
-
-#ifndef MATGEOM_H
-#include "matgeom.h"
-#endif
-
-#ifndef HOMMAT_H
-#include "hommat.h"
-#endif
-
-#ifndef SUPP_H
-#include "supp.h"
-#endif
-
-#ifndef SIG_H
-#include "sig.h"
-#endif
-
-#ifndef EPS_H
-#include "eps.h"
-#endif
-
-#ifndef CRPL_H
-#include "crpl.h"
-#endif
-
-#ifndef COHESIVE_ELEMENT_H
-#include "cohesive_element.h"
-#endif
-
-#ifndef BOUNDING_ELEMENT_H
-#include "bounding_element.h"
-#endif
-
-#ifndef PGFEM_COMM_H
-#include "pgfem_comm.h"
-#endif
-
-#ifndef PGFEM_OPTIONS_H
-#include "PGFem3D_options.h"
-#endif
-
 #include "PGFem3D_data_structure.h"
+#include "PGFem3D_options.h"
+#include "bounding_element.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "data_structure.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
+#include "matgeom.h"
+#include "node.h"
+#include "pgfem_comm.h"
+#include "sig.h"
+#include "supp.h"
 
 /// Line search algorith for multiphysics mode
 ///
@@ -79,16 +42,16 @@
 /// \param[in] tim current time step number
 /// \param[in] STEP subdivision number
 /// \return info id about convergence
-long LINE_S3_MP(GRID *grid,
-                MATERIAL_PROPERTY *mat,
-                FIELD_VARIABLES *fv,
-                SOLVER_OPTIONS *sol,
-                LOADING_STEPS *load,
-                COMMUNICATION_STRUCTURE *com,
+long LINE_S3_MP(Grid *grid,
+                MaterialProperty *mat,
+                FieldVariables *fv,
+                pgfem3d::Solver *sol,
+                LoadingSteps *load,
+                CommunicationStructure *com,
                 CRPL *crpl,
                 MPI_Comm mpi_comm,
                 const PGFem3D_opt *opts,
-                MULTIPHYSICS *mp,
+                Multiphysics *mp,
                 double *dts,
                 double t,
                 int mp_id,
@@ -130,16 +93,16 @@ long LINE_S3_MP(GRID *grid,
 /// \param[in] dlm Arc Length parameter
 /// \param[in] dAL Arc Length parameter
 /// \return info id about convergence
-long ALINE_S3_MP(GRID *grid,
-                 MATERIAL_PROPERTY *mat,
-                 FIELD_VARIABLES *fv,
-                 SOLVER_OPTIONS *sol,
-                 LOADING_STEPS *load,
-                 COMMUNICATION_STRUCTURE *com,
+long ALINE_S3_MP(Grid *grid,
+                 MaterialProperty *mat,
+                 FieldVariables *fv,
+                 pgfem3d::Solver *sol,
+                 LoadingSteps *load,
+                 CommunicationStructure *com,
                  CRPL *crpl,
                  MPI_Comm mpi_comm,
                  const PGFem3D_opt *opts,
-                 MULTIPHYSICS *mp,
+                 Multiphysics *mp,
                  double *dts,
                  int mp_id,
                  double *nor,
@@ -156,4 +119,4 @@ long ALINE_S3_MP(GRID *grid,
                  double dlm,
                  double dAL);
 
-#endif /* #ifndef LINE_H */
+#endif /* #define PGFEM3D_LINE_H */

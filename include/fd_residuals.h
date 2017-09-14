@@ -3,26 +3,25 @@
  * Matt Mosby, University of Notre Dame, mmosby1 [at] nd.edu
  * Karel Matous, University of Notre Dame, kmatous [at] nd.
  */
-#pragma once
-#ifndef FD_RESIDUALS_H
-#define FD_RESIDUALS_H
+#ifndef PGFEM3D_FD_RESIDUALS_H
+#define PGFEM3D_FD_RESIDUALS_H
 
-#include "data_structure.h"
 #include "PGFEM_mpi.h"
-#include "element.h"
-#include "node.h"
-#include "matgeom.h"
-#include "hommat.h"
-#include "supp.h"
-#include "sig.h"
-#include "eps.h"
-#include "crpl.h"
-#include "cohesive_element.h"
-#include "bounding_element.h"
-#include "PGFem3D_options.h"
 #include "PGFem3D_data_structure.h"
-#include "solver_file.h"
+#include "PGFem3D_options.h"
+#include "bounding_element.h"
+#include "cohesive_element.h"
+#include "crpl.h"
+#include "data_structure.h"
+#include "element.h"
+#include "eps.h"
+#include "hommat.h"
 #include "macro_micro_functions.h"
+#include "matgeom.h"
+#include "node.h"
+#include "sig.h"
+#include "solver_file.h"
+#include "supp.h"
 
 /// Compute residuals
 ///
@@ -38,15 +37,15 @@
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long fd_residuals_MP(GRID *grid,
-                     MATERIAL_PROPERTY *mat,
-                     FIELD_VARIABLES *fv,
-                     SOLVER_OPTIONS *sol,
-                     LOADING_STEPS *load,
+long fd_residuals_MP(Grid *grid,
+                     MaterialProperty *mat,
+                     FieldVariables *fv,
+                     pgfem3d::Solver *sol,
+                     LoadingSteps *load,
                      CRPL *crpl,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     MULTIPHYSICS *mp,
+                     Multiphysics *mp,
                      int mp_id,
                      double t,
                      double *dts,
@@ -66,15 +65,15 @@ long fd_residuals_MP(GRID *grid,
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-int fd_res_compute_reactions_MP(GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                LOADING_STEPS *load,
+int fd_res_compute_reactions_MP(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                pgfem3d::Solver *sol,
+                                LoadingSteps *load,
                                 CRPL *crpl,
                                 MPI_Comm mpi_comm,
                                 const PGFem3D_opt *opts,
-                                MULTIPHYSICS *mp,
+                                Multiphysics *mp,
                                 int mp_id,
                                 double t,
                                 double *dts);
@@ -93,4 +92,4 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         const PGFem3D_opt *opts,
                                         double *dts);
 
-#endif /* #ifndef FD_RESIDUALS_H */
+#endif /* #define PGFEM3D_FD_RESIDUALS_H */

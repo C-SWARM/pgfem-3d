@@ -3,29 +3,20 @@
  * Karel Matous                            *
  * December 2000                       (c) *
  *******************************************/
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "homogen.h"
-#include <math.h>
-
-#ifndef PGFEM_MPI_H
 #include "PGFEM_mpi.h"
-#endif
-
-#ifndef ENUMERATIONS_H
 #include "enumerations.h"
-#endif
-
-#ifndef INCL_H
+#include "homogen.h"
 #include "incl.h"
-#endif
-
-#ifndef MATICE_H
 #include "matice.h"
-#endif
+#include <cmath>
 
 void Mat_3D_orthotropic (const long nmat,
-             MATERIAL *mater,
-             const int analysis)
+                         Material *mater,
+                         const int analysis)
 /*
 
  */
@@ -39,20 +30,20 @@ void Mat_3D_orthotropic (const long nmat,
     M = aloc2 (6,6);
 
     switch(analysis){
-    case STABILIZED:
-    case MINI:
-    case MINI_3F:
-    case DISP:
-    case TF:
-    case CM:
-    case CM3F:  
+     case STABILIZED:
+     case MINI:
+     case MINI_3F:
+     case DISP:
+     case TF:
+     case CM:
+     case CM3F:
       M[0][0] = 1./mater[i].Ex;            M[0][1] = -mater[i].nyz/mater[i].Ex;  M[0][2] = -mater[i].nyz/mater[i].Ex;
       M[1][0] = -mater[i].nyz/mater[i].Ex; M[1][1] = 1./mater[i].Ex;             M[1][2] = -mater[i].nyz/mater[i].Ex;
       M[2][0] = -mater[i].nyz/mater[i].Ex; M[2][1] = -mater[i].nyz/mater[i].Ex;  M[2][2] = 1./mater[i].Ex;
 
       M[3][3] = 1./mater[i].Gyz;  M[4][4] = 1./mater[i].Gyz;  M[5][5] = 1./mater[i].Gyz;
       break;
-    default:
+     default:
       M[0][0] = 1./mater[i].Ex;            M[0][1] = -mater[i].nxy/mater[i].Ey;  M[0][2] = -mater[i].nxz/mater[i].Ez;
       M[1][0] = -mater[i].nxy/mater[i].Ey; M[1][1] = 1./mater[i].Ey;             M[1][2] = -mater[i].nyz/mater[i].Ez;
       M[2][0] = -mater[i].nxz/mater[i].Ez; M[2][1] = -mater[i].nyz/mater[i].Ez;  M[2][2] = 1./mater[i].Ez;
@@ -88,7 +79,7 @@ void Mat_3D_orthotropic (const long nmat,
   dealoc2 (L,6);
 }
 
-void Mat_trans_isotropic (long nmat,MATERIAL *mater)
+void Mat_trans_isotropic (long nmat,Material *mater)
 /*
 
  */
@@ -144,15 +135,15 @@ void Mat_trans_isotropic (long nmat,MATERIAL *mater)
 }
 
 void hom_matrices (long ***a,
-           const long ne,
-           const long nmat,
-           const long nc,
-           ELEMENT *elem,
-           MATERIAL *mater,
-           MATGEOM matgeom,
-           HOMMAT *hommat,
-           const long SHAPE,
-           const int analysis)
+                   const long ne,
+                   const long nmat,
+                   const long nc,
+                   Element *elem,
+                   Material *mater,
+                   MATGEOM matgeom,
+                   HOMMAT *hommat,
+                   const long SHAPE,
+                   const int analysis)
 /*
   creates material matrices of the homogeneous medium
 */
@@ -163,49 +154,49 @@ void hom_matrices (long ***a,
   for (i=0;i<nmat;i++){
     for (j=0;j<nmat;j++){
       for (k=0;k<nc;k++){
-	if (a[i][j][k]==1){
-	  Overall_Mat (i,j,k,nn,mater,matgeom,hommat,SHAPE);
-	  hommat[nn].e1 =  hommat[nn].e2
-	    = hommat[nn].e3 = hommat[nn].e4 =  0.0;
-	  switch(analysis){
-	  case DISP: /* only DISP gets damage parameters */
-	    /* use extra entries for extra variables 
-	       (vol damage: Yin, p1, p2, mu) */
-	    hommat[nn].e1 = mater[i].Gxz;
-	    hommat[nn].e2 = mater[i].Gxy;
-	    hommat[nn].e3 = mater[i].nxz;
-	    hommat[nn].e4 = mater[i].nxy;
-	    /* intentional drop through for isotropic properties */
+        if (a[i][j][k]==1){
+          Overall_Mat (i,j,k,nn,mater,matgeom,hommat,SHAPE);
+          hommat[nn].e1 =  hommat[nn].e2
+                        = hommat[nn].e3 = hommat[nn].e4 =  0.0;
+          switch(analysis){
+           case DISP: /* only DISP gets damage parameters */
+            /* use extra entries for extra variables
+               (vol damage: Yin, p1, p2, mu) */
+            hommat[nn].e1 = mater[i].Gxz;
+            hommat[nn].e2 = mater[i].Gxy;
+            hommat[nn].e3 = mater[i].nxz;
+            hommat[nn].e4 = mater[i].nxy;
+            /* intentional drop through for isotropic properties */
 
-	    /* ISOTROPIC MAT PROPS */
-	  case STABILIZED:
-	  case MINI:
-	  case MINI_3F:
-	  case TF:
-	  case CM:
-	  case CM3F:
-	    
-	    /* Mooney - Rivlin */
-	    /* This is a material input from file LOOK OUT */
-	    hommat[nn].m10 = mater[i].Ey;
-	    hommat[nn].m01 = mater[i].Ez; 
-	    hommat[nn].E = mater[i].Ex;
-	    hommat[nn].G = mater[i].Gyz;
-	    hommat[nn].nu = mater[i].nyz;
+            /* ISOTROPIC MAT PROPS */
+           case STABILIZED:
+           case MINI:
+           case MINI_3F:
+           case TF:
+           case CM:
+           case CM3F:
 
-	    /* Potential functions for isotropic materials */
-	    hommat[nn].devPotFlag = mater[i].devPotFlag;
-	    hommat[nn].volPotFlag = mater[i].volPotFlag;
+            /* Mooney - Rivlin */
+            /* This is a material input from file LOOK OUT */
+            hommat[nn].m10 = mater[i].Ey;
+            hommat[nn].m01 = mater[i].Ez;
+            hommat[nn].E = mater[i].Ex;
+            hommat[nn].G = mater[i].Gyz;
+            hommat[nn].nu = mater[i].nyz;
+
+            /* Potential functions for isotropic materials */
+            hommat[nn].devPotFlag = mater[i].devPotFlag;
+            hommat[nn].volPotFlag = mater[i].volPotFlag;
             hommat[nn].mat_id = i;
-        break;
+            break;
 
-      default:
-        break;
-      }
+           default:
+            break;
+          }
 
-      a[i][j][k] = nn;
-      nn++;
-    }
+          a[i][j][k] = nn;
+          nn++;
+        }
       }
     }
   }
@@ -215,9 +206,9 @@ void hom_matrices (long ***a,
 }
 
 void assign_homogenized_material(const long ne,
-                 ELEMENT *elem,
-                 long ***a,
-                 const int analysis)
+                                 Element *elem,
+                                 long ***a,
+                                 const int analysis)
 {
   /* Copied from hom_matrices for more general use 12/10/2012 MM */
   long i;
@@ -227,15 +218,15 @@ void assign_homogenized_material(const long ne,
 
   for (i=0;i<ne;i++){
     switch(analysis){
-    case ELASTIC:
-    case TP_ELASTO_PLASTIC:
+     case ELASTIC:
+     case TP_ELASTO_PLASTIC:
       break;
-    default:
+     default:
       if (elem[i].mat[0] != elem[i].mat[1]){
-    if (err_rank == 0){
-      PGFEM_printf("Incorrect material input\n");
-    }
-    PGFEM_Abort();
+        if (err_rank == 0){
+          PGFEM_printf("Incorrect material input\n");
+        }
+        PGFEM_Abort();
       }
       break;
     }
@@ -243,7 +234,7 @@ void assign_homogenized_material(const long ne,
   }
 }
 
-void funkce_Wf (long jj,MATERIAL *mater,double **Lf,double **Mf,double **Lm,double **Mm,double **Wf)
+void funkce_Wf (long jj,Material *mater,double **Lf,double **Mf,double **Lm,double **Mm,double **Wf)
 /*
 
  */
@@ -354,7 +345,7 @@ void funkce_Bm (long kk,MATGEOM matgeom,double **Wf,double **Bm)
   dealoc2 (A,6);  dealoc2 (I,6);  dealoc2 (B,6);
 }
 
-void mat_vrs (long nn,long kk,HOMMAT *hommat,MATERIAL *mater,MATGEOM matgeom,double **Bf,double **Bm,double **Mf,double **Mm)
+void mat_vrs (long nn,long kk,HOMMAT *hommat,Material *mater,MATGEOM matgeom,double **Bf,double **Bm,double **Mf,double **Mm)
 /*
 
  */
@@ -376,7 +367,7 @@ void mat_vrs (long nn,long kk,HOMMAT *hommat,MATERIAL *mater,MATGEOM matgeom,dou
   dealoc2 (A,6);  dealoc2 (B,6);
 }
 
-void mori_tanaka (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat)
+void mori_tanaka (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat)
 /*
 
  */
@@ -414,7 +405,7 @@ void mori_tanaka (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
   dealoc2(Bm,6);
 }
 
-void Stiffness_Matrix_3D (long ii,long ip,ELEMENT *elem,HOMMAT *hommat,double **D,long TYPE)
+void Stiffness_Matrix_3D (long ii,long ip,Element *elem,HOMMAT *hommat,double **D,long TYPE)
 /*
   elem[ii].mat[0] -> Matrix
   elem[ii].mat[1] -> Fiber
@@ -483,7 +474,7 @@ TFA* build_tfa (long i)
   return (pom);
 }
 
-void Overall_Mat (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,long TYPE)
+void Overall_Mat (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat,long TYPE)
 /*
 
  */
@@ -530,24 +521,24 @@ void Overall_Mat (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
 
   /* Type of inclusion */
   switch (TYPE){
-  case 0:{ /* Spherical inclusion in Isotropic medium */
-    E = 1./Mo[0][0];  G = 1./Mo[3][3];  nu = -Mo[0][1]*E;  K = E/(3*(1 - 2*nu));  si = (1 + nu)/(3*(1 - nu));  th = 2*(4 - 5*nu)/(15*(1 - nu));
+   case 0:{ /* Spherical inclusion in Isotropic medium */
+     E = 1./Mo[0][0];  G = 1./Mo[3][3];  nu = -Mo[0][1]*E;  K = E/(3*(1 - 2*nu));  si = (1 + nu)/(3*(1 - nu));  th = 2*(4 - 5*nu)/(15*(1 - nu));
 
-    P[0][0] = 1./3.*(si/3./K + th/G);    P[0][1] = 1./3.*(si/3./K - th/2./G); P[0][2] = 1./3.*(si/3./K - th/2./G);
-    P[1][0] = 1./3.*(si/3./K - th/2./G); P[1][1] = 1./3.*(si/3./K + th/G);    P[1][2] = 1./3.*(si/3./K - th/2./G);
-    P[2][0] = 1./3.*(si/3./K - th/2./G); P[2][1] = 1./3.*(si/3./K - th/2./G); P[2][2] = 1./3.*(si/3./K + th/G);
+     P[0][0] = 1./3.*(si/3./K + th/G);    P[0][1] = 1./3.*(si/3./K - th/2./G); P[0][2] = 1./3.*(si/3./K - th/2./G);
+     P[1][0] = 1./3.*(si/3./K - th/2./G); P[1][1] = 1./3.*(si/3./K + th/G);    P[1][2] = 1./3.*(si/3./K - th/2./G);
+     P[2][0] = 1./3.*(si/3./K - th/2./G); P[2][1] = 1./3.*(si/3./K - th/2./G); P[2][2] = 1./3.*(si/3./K + th/G);
 
-    P[3][3] = th/G;  P[4][4] = th/G;  P[5][5] = th/G;
+     P[3][3] = th/G;  P[4][4] = th/G;  P[5][5] = th/G;
 
-    /* Eshelby tensor */
-    nas_AB (Lo,P,S,6,6,6);
-    break;
-  }
-  default:{
-    PGFEM_printf ("Non existing shape of inclusion\n");
-    abort();
-    break;
-  }
+     /* Eshelby tensor */
+     nas_AB (Lo,P,S,6,6,6);
+     break;
+   }
+   default:{
+     PGFEM_printf ("Non existing shape of inclusion\n");
+     abort();
+     break;
+   }
   }
 
   inv_I (S,SI,6); for (i=0;i<6;i++) for (j=0;j<6;j++) B[i][j] = I[i][j] - S[i][j]; nas_AB (Lo,B,A,6,6,6); nas_AB (A,SI,Lst,6,6,6);
@@ -581,7 +572,7 @@ void Overall_Mat (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
   dealoc2 (L2,6); dealoc2 (M2,6); dealoc2 (Lm,6); dealoc2 (Mm,6); dealoc2 (Am,6); dealoc2 (A2,6);
 }
 
-void TFA_tensors (long ***a,long ne,long nmat,long nc,ELEMENT *elem,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
+void TFA_tensors (long ***a,long ne,long nmat,long nc,Element *elem,Material *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
 /*
   creates material matrices of the homogeneous medium
 */
@@ -592,17 +583,17 @@ void TFA_tensors (long ***a,long ne,long nmat,long nc,ELEMENT *elem,MATERIAL *ma
   for (i=0;i<nmat;i++){
     for (j=0;j<nmat;j++){
       for (k=0;k<nc;k++){
-    if (a[i][j][k] == 1){
-      A_D_tensors (i,j,k,nn,mater,matgeom,hommat,tfa,SHAPE,TYPE);
-      a[i][j][k] = nn;
-      nn++;
-    }
+        if (a[i][j][k] == 1){
+          A_D_tensors (i,j,k,nn,mater,matgeom,hommat,tfa,SHAPE,TYPE);
+          a[i][j][k] = nn;
+          nn++;
+        }
       }
     }
   }
 }
 
-void A_D_tensors (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
+void A_D_tensors (long ii,long jj,long kk,long nn,Material *mater,MATGEOM matgeom,HOMMAT *hommat,TFA *tfa,long SHAPE,long TYPE)
 /*
 
  */
@@ -650,24 +641,24 @@ void A_D_tensors (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
 
   /* Type of inclusion */
   switch (SHAPE){
-  case 0:{ /* Spherical inclusion in Isotropic medium */
-    E = 1./Mo[0][0];  G = 1./Mo[3][3];  nu = -Mo[0][1]*E;  K = E/(3*(1 - 2*nu));  si = (1 + nu)/(3*(1 - nu));  th = 2*(4 - 5*nu)/(15*(1 - nu));
+   case 0:{ /* Spherical inclusion in Isotropic medium */
+     E = 1./Mo[0][0];  G = 1./Mo[3][3];  nu = -Mo[0][1]*E;  K = E/(3*(1 - 2*nu));  si = (1 + nu)/(3*(1 - nu));  th = 2*(4 - 5*nu)/(15*(1 - nu));
 
-    P[0][0] = 1./3.*(si/3./K + th/G);    P[0][1] = 1./3.*(si/3./K - th/2./G); P[0][2] = 1./3.*(si/3./K - th/2./G);
-    P[1][0] = 1./3.*(si/3./K - th/2./G); P[1][1] = 1./3.*(si/3./K + th/G);    P[1][2] = 1./3.*(si/3./K - th/2./G);
-    P[2][0] = 1./3.*(si/3./K - th/2./G); P[2][1] = 1./3.*(si/3./K - th/2./G); P[2][2] = 1./3.*(si/3./K + th/G);
+     P[0][0] = 1./3.*(si/3./K + th/G);    P[0][1] = 1./3.*(si/3./K - th/2./G); P[0][2] = 1./3.*(si/3./K - th/2./G);
+     P[1][0] = 1./3.*(si/3./K - th/2./G); P[1][1] = 1./3.*(si/3./K + th/G);    P[1][2] = 1./3.*(si/3./K - th/2./G);
+     P[2][0] = 1./3.*(si/3./K - th/2./G); P[2][1] = 1./3.*(si/3./K - th/2./G); P[2][2] = 1./3.*(si/3./K + th/G);
 
-    P[3][3] = th/G;  P[4][4] = th/G;  P[5][5] = th/G;
+     P[3][3] = th/G;  P[4][4] = th/G;  P[5][5] = th/G;
 
-    /* Eshelby tensor */
-    nas_AB (Lo,P,S,6,6,6);
-    break;
-  }
-  default:{
-    PGFEM_printf ("Non existing shape of inclusion\n");
-    abort();
-    break;
-  }
+     /* Eshelby tensor */
+     nas_AB (Lo,P,S,6,6,6);
+     break;
+   }
+   default:{
+     PGFEM_printf ("Non existing shape of inclusion\n");
+     abort();
+     break;
+   }
   }
 
   inv_I (S,SI,6); for (i=0;i<6;i++) for (j=0;j<6;j++) B[i][j] = I[i][j] - S[i][j]; nas_AB (Lo,B,A,6,6,6); nas_AB (A,SI,Lst,6,6,6);
@@ -732,7 +723,7 @@ void A_D_tensors (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
   for (i=0;i<6;i++) for (j=0;j<6;j++){ A[i][j] = tfa[nn].Dmm[i*6+j] + tfa[nn].Dmb[i*6+j];  B[i][j] = I[i][j] - Am[i][j];
       C[i][j] = tfa[nn].Dbm[i*6+j] + tfa[nn].Dbb[i*6+j]; SI[i][j] = I[i][j] - A2[i][j];
       if (sqrt((A[i][j] - B[i][j])*(A[i][j] - B[i][j])) >= 1.e-10 || sqrt((C[i][j] - SI[i][j])*(C[i][j] - SI[i][j])) >= 1.e-10) {
-    PGFEM_printf("Incorrect Concentration tensors | SUM_s=1^N Drs = I - Ar\n"); abort();}
+        PGFEM_printf("Incorrect Concentration tensors | SUM_s=1^N Drs = I - Ar\n"); abort();}
     }
 
   /* SUM_s=1^N Drs*Ms = 0 */
@@ -749,18 +740,18 @@ void A_D_tensors (long ii,long jj,long kk,long nn,MATERIAL *mater,MATGEOM matgeo
   for (i=0;i<6;i++) for (j=0;j<6;j++){ A[i][j] = matgeom->cm[kk]*tfa[nn].Dmb[i*6+j]; B[i][j] = matgeom->cf[kk]*tfa[nn].Dbm[i*6+j];}
   nas_AB (A,M2,C,6,6,6); nas_ABT (Mm,B,SI,6,6,6);
   for (i=0;i<6;i++) for (j=0;j<6;j++) if (sqrt((C[i][j] - SI[i][j])*(C[i][j] - SI[i][j])) >= 1.e-10) {
-    PGFEM_printf("Incorrect Concentration tensors | cr*Drs*Ms = cs*Mr*Dsr^T AAAAAAAA\n"); abort();}
+        PGFEM_printf("Incorrect Concentration tensors | cr*Drs*Ms = cs*Mr*Dsr^T AAAAAAAA\n"); abort();}
   for (i=0;i<6;i++) for (j=0;j<6;j++){ A[i][j] = matgeom->cf[kk]*tfa[nn].Dbm[i*6+j]; B[i][j] = matgeom->cm[kk]*tfa[nn].Dmb[i*6+j];}
   nas_AB (A,Mm,C,6,6,6); nas_ABT (M2,B,SI,6,6,6);
   for (i=0;i<6;i++) for (j=0;j<6;j++) if (sqrt((C[i][j] - SI[i][j])*(C[i][j] - SI[i][j])) >= 1.e-10) {
-    PGFEM_printf("Incorrect Concentration tensors | cr*Drs*Ms = cs*Mr*Dsr^T\n"); abort();}
+        PGFEM_printf("Incorrect Concentration tensors | cr*Drs*Ms = cs*Mr*Dsr^T\n"); abort();}
 
   /* SUM_s=1^N cs*Dsr = 0 */
   for (i=0;i<6;i++) for (j=0;j<6;j++) {
       A[i][j] = matgeom->cm[kk]*tfa[nn].Dmm[i*6+j] + matgeom->cf[kk]*tfa[nn].Dbm[i*6+j];
       B[i][j] = matgeom->cm[kk]*tfa[nn].Dmb[i*6+j] + matgeom->cf[kk]*tfa[nn].Dbb[i*6+j];
       if (A[i][j] >= 1.000e-10 || A[i][j] <= -1.000e-10 || B[i][j] >= 1.000e-10 || B[i][j] <= -1.000e-10)
-    {PGFEM_printf("Incorrect Concentration tensors | SUM_s=1^N cs*Dsr = 0\n"); abort();}
+      {PGFEM_printf("Incorrect Concentration tensors | SUM_s=1^N cs*Dsr = 0\n"); abort();}
     }
 
   if (TYPE == 1){/* Three Phase Medium System */

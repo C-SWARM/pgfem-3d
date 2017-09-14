@@ -1,10 +1,14 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "element.h"
+#include "PGFEM_mpi.h"
 #include "allocation.h"
 #include "enumerations.h"
-#include "PGFEM_mpi.h"
 #include "utils.h"
 
-ELEMENT* build_elem (FILE *in,
+Element* build_elem (FILE *in,
                      const long ne,
                      const int analysis)
 /*
@@ -12,7 +16,7 @@ ELEMENT* build_elem (FILE *in,
   type - Type of finite element
 */
 {
-  ELEMENT *pom = PGFEM_calloc (ELEMENT, ne);
+  Element *pom = PGFEM_calloc (Element, ne);
 
   for (long ii=0;ii<ne;ii++){
     /* initialize all variables for current element. */
@@ -111,7 +115,7 @@ ELEMENT* build_elem (FILE *in,
   return (pom);
 } /* build_elem() */
 
-void destroy_elem(ELEMENT *elem,
+void destroy_elem(Element *elem,
                   const long ne)
 {
   for(long i=0; i<ne; i++){
@@ -131,20 +135,20 @@ void destroy_elem(ELEMENT *elem,
 }/* destroy_elem() */
 
 /*=== Declare static read functions ===*/
-static int read_tet_conn_legacy(FILE *in,ELEMENT *elem);
-static int read_qtet_conn_legacy(FILE *in,ELEMENT *elem);
-static int read_hex_conn_legacy(FILE *in,ELEMENT *elem);
-static int read_tet_conn(FILE *in,ELEMENT *elem);
-static int read_qtet_conn(FILE *in,ELEMENT *elem);
-static int read_hex_conn(FILE *in,ELEMENT *elem);
-static int read_assign_elem_material(FILE *in,ELEMENT *elem);
-static int is_elem_supported(const ELEMENT *p_elem,
+static int read_tet_conn_legacy(FILE *in,Element *elem);
+static int read_qtet_conn_legacy(FILE *in,Element *elem);
+static int read_hex_conn_legacy(FILE *in,Element *elem);
+static int read_tet_conn(FILE *in,Element *elem);
+static int read_qtet_conn(FILE *in,Element *elem);
+static int read_hex_conn(FILE *in,Element *elem);
+static int read_assign_elem_material(FILE *in,Element *elem);
+static int is_elem_supported(const Element *p_elem,
                              const long nsup_node,
                              const long *sup_node_id);
 
 void read_elem (FILE *in,
                 long ne,
-                ELEMENT *elem,
+                Element *elem,
                 SUPP sup,
                 const int legacy)
 /*
@@ -152,7 +156,7 @@ void read_elem (FILE *in,
   ne   - Number of elements
   nl   - Number of layers
   toe  - Array of types of element
-  elem - Structure type of ELEMENT
+  elem - Structure type of Element
 
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
 */
@@ -212,7 +216,7 @@ void read_elem (FILE *in,
 
 void write_element_fname(const char *filename,
                          const int nelem,
-                         const ELEMENT *elems)
+                         const Element *elems)
 {
   FILE *ofile = fopen(filename,"w");
   if(ofile == NULL){
@@ -227,7 +231,7 @@ void write_element_fname(const char *filename,
 
 void write_element(FILE *ofile,
                    const int nelem,
-                   const ELEMENT *elems)
+                   const Element *elems)
 {
   /* print header describing format */
   PGFEM_fprintf(ofile,"Each element is printed in a block with each line in\n"
@@ -237,7 +241,7 @@ void write_element(FILE *ofile,
                 " n_be       be_ids...\n");
   PGFEM_fprintf(ofile,"====================================================\n");
   for(int i=0; i<nelem; i++){
-    const ELEMENT *p_elem = &elems[i];
+    const Element *p_elem = &elems[i];
 
     /* line 1 (connectivity */
     PGFEM_fprintf(ofile,"%5d %3ld ",i,p_elem->toe);
@@ -263,7 +267,7 @@ void write_element(FILE *ofile,
 }
 
 static int read_assign_elem_material(FILE *in,
-                                     ELEMENT *elem)
+                                     Element *elem)
 {
   int err = 0;
   long id;
@@ -278,7 +282,7 @@ static int read_assign_elem_material(FILE *in,
   return err;
 }/* read_assign_elem_material */
 
-static int is_elem_supported(const ELEMENT *p_elem,
+static int is_elem_supported(const Element *p_elem,
                              const long nsup_node,
                              const long *sup_node_id)
 {
@@ -297,7 +301,7 @@ static int is_elem_supported(const ELEMENT *p_elem,
 }
 
 static int read_tet_conn(FILE *in,
-                         ELEMENT *elem)
+                         Element *elem)
 {
   int err = 0;
 
@@ -315,10 +319,10 @@ static int read_tet_conn(FILE *in,
 
   /* read data */
   CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld "
-          "%d %d %d %d %d %d %d %d",
-          nod,nod+1,nod+2,nod+3,&ftype,&fid,pr,
-          bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
-          bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
+               "%d %d %d %d %d %d %d %d",
+               nod,nod+1,nod+2,nod+3,&ftype,&fid,pr,
+               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
 
   /* check for file error */
   if(ferror(in) != 0) err = 1;
@@ -327,7 +331,7 @@ static int read_tet_conn(FILE *in,
 }/* read_tet_conn() */
 
 static int read_qtet_conn(FILE *in,
-                          ELEMENT *elem)
+                          Element *elem)
 {
   int err = 0;
 
@@ -345,11 +349,11 @@ static int read_qtet_conn(FILE *in,
 
   /* read data */
   CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
-          "%ld %ld %ld  %d %d %d %d "
-          "%d %d %d %d",
-          nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,
-          &ftype,&fid,pr,bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
-          bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
+               "%ld %ld %ld  %d %d %d %d "
+               "%d %d %d %d",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,
+               &ftype,&fid,pr,bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
 
   /* check for file error */
   if(ferror(in) != 0) err = 1;
@@ -358,7 +362,7 @@ static int read_qtet_conn(FILE *in,
 }/* read_qtet_conn() */
 
 static int read_hex_conn(FILE *in,
-                         ELEMENT *elem)
+                         Element *elem)
 {
   int err = 0;
 
@@ -376,12 +380,12 @@ static int read_hex_conn(FILE *in,
 
   /* read data */
   CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
-          "%d %d %d %d %d %d "
-          "%d %d %d %d %d %d",
-          nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,&ftype,&fid,pr,
-          bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,bnd_id+4,bnd_id+5,
-          bnd_type,bnd_type+1,bnd_type+2,bnd_type+3,bnd_type+4,
-          bnd_type+5);
+               "%d %d %d %d %d %d "
+               "%d %d %d %d %d %d",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,&ftype,&fid,pr,
+               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,bnd_id+4,bnd_id+5,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3,bnd_type+4,
+               bnd_type+5);
 
   /* check for file error */
   if(ferror(in) != 0) err = 1;
@@ -392,7 +396,7 @@ static int read_hex_conn(FILE *in,
 
 /*=== LEGACY FILE FORMAT ===*/
 static int read_tet_conn_legacy(FILE *in,
-                                ELEMENT *elem)
+                                Element *elem)
 {
   int err = 0;
 
@@ -414,7 +418,7 @@ static int read_tet_conn_legacy(FILE *in,
 }/* read_tet_conn_legacy() */
 
 static int read_qtet_conn_legacy(FILE *in,
-                                 ELEMENT *elem)
+                                 Element *elem)
 {
   int err = 0;
 
@@ -428,7 +432,7 @@ static int read_qtet_conn_legacy(FILE *in,
 
   /* read data */
   CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",
-          nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,pr);
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,pr);
 
   /* check for file error */
   if(ferror(in) != 0) err = 1;
@@ -437,7 +441,7 @@ static int read_qtet_conn_legacy(FILE *in,
 }/* read_qtet_conn_legacy() */
 
 static int read_hex_conn_legacy(FILE *in,
-                                ELEMENT *elem)
+                                Element *elem)
 {
   int err = 0;
 
@@ -451,7 +455,7 @@ static int read_hex_conn_legacy(FILE *in,
 
   /* read data */
   CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld",
-          nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,pr);
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,pr);
 
   /* check for file error */
   if(ferror(in) != 0) err = 1;

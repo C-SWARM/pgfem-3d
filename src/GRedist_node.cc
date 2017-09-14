@@ -1,10 +1,13 @@
-#include "GRedist_node.h"
-#include <stdlib.h>
-#include <string.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
+#include "GRedist_node.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
 #include "matice.h"
+#include <cstdlib>
+#include <cstring>
 
 #ifndef NDEBUG
 #define PFEM_DEBUG 1
@@ -18,12 +21,12 @@
  * Original implementation of GRedist_node
  */
 static long fallback_GRedist_node(const int nproc,
-    const int myrank,
-    const long nn,
-    const long ndofn,
-    NODE *node,
-    const MPI_Comm Comm,
-    const long mp_id)
+                                  const int myrank,
+                                  const long nn,
+                                  const long ndofn,
+                                  Node *node,
+                                  const MPI_Comm Comm,
+                                  const long mp_id)
 {
   long NBN = 0; /* return value */
 
@@ -93,7 +96,7 @@ static long fallback_GRedist_node(const int nproc,
   long *Gnn_Gid = NULL;
   if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
   MPI_Allgatherv(own_buf,recvcount[myrank],MPI_LONG,
-      Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
+                 Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
 
   /* sort the list of Gnn and their associated Gid by Gnn */
   qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
@@ -155,13 +158,13 @@ static long fallback_GRedist_node(const int nproc,
  * \return total number of global nodes
  */
 static long comm_hints_GRedist_node(const int nproc,
-    const int myrank,
-    const long nnode,
-    const long ndofn,
-    NODE *nodes,
-    const Comm_hints *hints,
-    const MPI_Comm comm,
-    const long mp_id)
+                                    const int myrank,
+                                    const long nnode,
+                                    const long ndofn,
+                                    Node *nodes,
+                                    const Comm_hints *hints,
+                                    const MPI_Comm comm,
+                                    const long mp_id)
 {
   int err = 0;
   long owned_gnn = 0;
@@ -170,7 +173,7 @@ static long comm_hints_GRedist_node(const int nproc,
 
   /* get the reduced list of shared global nodes */
   int n_shared = 0;
-  const NODE *shared = NULL;
+  const Node *shared = NULL;
   err += nodes_filter_shared_nodes(nnode, nodes, &n_shared, &shared);
 
   /* get the owned Gnn and Gid and pack into a buffer to
@@ -213,7 +216,7 @@ static long comm_hints_GRedist_node(const int nproc,
   MPI_Request *req = static_cast<MPI_Request*>(malloc(nsend * sizeof(*req)));
   for (int i = 0; i < nsend; i++) {
     err += MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
-        send[i], GREDIST_TAG, comm, req + i);
+                     send[i], GREDIST_TAG, comm, req + i);
   }
 
   /* reduce the total number of boundary nodes */
@@ -251,7 +254,7 @@ static long comm_hints_GRedist_node(const int nproc,
        matching* receive, so we use the tag instead of MPI_ANY_TAG */
     MPI_Request breq;
     err += MPI_Irecv(recv_Gnn_Gid, msg_count, MPI_LONG,
-        recv[idx], stat.MPI_TAG, comm, &breq);
+                     recv[idx], stat.MPI_TAG, comm, &breq);
 
     /* While waiting for communication to complete, find the range of
        nodes we need to work on that are owned by the current
@@ -259,7 +262,7 @@ static long comm_hints_GRedist_node(const int nproc,
     int range[2] = {0};
     if (nodes_get_shared_idx_range(n_shared, shared, recv[idx], range)) {
       PGFEM_printerr("ERROR: got bad hints on proc [%d] for proc [%d]! No matching nodes\n",
-          myrank, recv[idx]);
+                     myrank, recv[idx]);
       PGFEM_Abort();
     }
 
@@ -318,13 +321,13 @@ static long comm_hints_GRedist_node(const int nproc,
 }
 
 long GRedist_node (const int nproc,
-    const int myrank,
-    const long nn,
-    const long ndofn,
-    NODE *node,
-    const Comm_hints *hints,
-    const MPI_Comm Comm,
-    const int mp_id)
+                   const int myrank,
+                   const long nn,
+                   const long ndofn,
+                   Node *node,
+                   const Comm_hints *hints,
+                   const MPI_Comm Comm,
+                   const int mp_id)
 {
   if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm, mp_id);
   else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm, mp_id);

@@ -1,5 +1,11 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "load.h"
+#include "MINI_3f_element.h"
+#include "MINI_element.h"
+#include "PGFem3D_data_structure.h"
 #include "allocation.h"
 #include "constitutive_model.h"
 #include "displacement_based_element.h"
@@ -11,14 +17,13 @@
 #include "get_dof_ids_on_elem.h"
 #include "incl.h"
 #include "matice.h"
-#include "MINI_3f_element.h"
-#include "MINI_element.h"
-#include "PGFem3D_data_structure.h"
 #include "stabilized.h"
 #include "stiffmat_fd.h"
 #include "stiffmatel_fd.h"
 #include "three_field_element.h"
 #include "utils.h"
+
+using pgfem3d::Solver;
 
 long* compute_times_load (FILE *in1,
                           const long nt,
@@ -60,7 +65,7 @@ void load_vec_node (double *f,
                     const long nln,
                     const long ndofn,
                     const ZATNODE *znode,
-                    const NODE *node,
+                    const Node *node,
                     const int mp_id)
 {
   long i,j,ii;
@@ -93,15 +98,15 @@ void load_vec_node (double *f,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal erro
-int momentum_equation_load4pBCs(GRID *grid,
-                                MATERIAL_PROPERTY *mat,
-                                FIELD_VARIABLES *fv,
-                                SOLVER_OPTIONS *sol,
-                                LOADING_STEPS *load,
+int momentum_equation_load4pBCs(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                Solver *sol,
+                                LoadingSteps *load,
                                 double dt,
                                 CRPL *crpl,
                                 const PGFem3D_opt *opts,
-                                MULTIPHYSICS *mp,
+                                Multiphysics *mp,
                                 int mp_id,
                                 int myrank)
 {
@@ -109,8 +114,8 @@ int momentum_equation_load4pBCs(GRID *grid,
   double *be = NULL;
   int intg_order = 0;
 
-  ELEMENT *elem = grid->element;
-  NODE *node = grid->node;
+  Element *elem = grid->element;
+  Node *node = grid->node;
   SUPP sup = load->sups[mp_id];
 
 
@@ -119,16 +124,16 @@ int momentum_equation_load4pBCs(GRID *grid,
   int total_Lagrangian = 0;
   switch(opts->analysis_type)
   {
-    case DISP: // intended to flow
-    case TF:
+   case DISP: // intended to flow
+   case TF:
+    total_Lagrangian = 1;
+    break;
+   case CM:   // intended to flow
+   case CM3F:
+    if(opts->cm != UPDATED_LAGRANGIAN)
       total_Lagrangian = 1;
-      break;
-    case CM:   // intended to flow
-    case CM3F: 
-      if(opts->cm != UPDATED_LAGRANGIAN)
-        total_Lagrangian = 1;
-      
-      break;
+
+    break;
   }
 
   if(sup->multi_scale)
@@ -143,7 +148,7 @@ int momentum_equation_load4pBCs(GRID *grid,
       fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
     else
       fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
-    
+
     long *nod = (fe.node_id).m_pdata; // list of node ids in this element
 
     /* Element Dof */
@@ -206,7 +211,7 @@ int momentum_equation_load4pBCs(GRID *grid,
     dealoc1(floc);
     dealoc1(rloc);
     dealoc1 (r_e);
-    
+
     if(err != 0) return err;
   }/* end i (each volume element) */
 
@@ -217,9 +222,9 @@ int momentum_equation_load4pBCs(GRID *grid,
     /* get pointers and constant vaules for the bounding element we
      * are working on. */
     const int be_id = sup->lbepd[i];
-    const BOUNDING_ELEMENT *ptr_be = &grid->b_elems[be_id];
+    const BoundingElement *ptr_be = &grid->b_elems[be_id];
     const int ve_id = ptr_be->vol_elem_id;
-    const ELEMENT *ptr_ve = &elem[ve_id];
+    const Element *ptr_ve = &elem[ve_id];
     const long *ve_nod = ptr_ve->nod;
     const int nne_ve = ptr_ve->toe;
 
@@ -232,14 +237,14 @@ int momentum_equation_load4pBCs(GRID *grid,
     double *z = aloc1(nne_ve);
 
     switch(opts->analysis_type){
-      case DISP: case TF:
-        nodecoord_total (nne_ve,ve_nod,node,x,y,z);
-        break;
-      case CM:
-      case CM3F:
-      {
-        switch(opts->cm)
-        {
+     case DISP: case TF:
+      nodecoord_total (nne_ve,ve_nod,node,x,y,z);
+      break;
+     case CM:
+     case CM3F:
+       {
+         switch(opts->cm)
+         {
           case UPDATED_LAGRANGIAN:
            nodecoord_updated(nne_ve,ve_nod,node,x,y,z);
            break;
@@ -345,15 +350,15 @@ int momentum_equation_load4pBCs(GRID *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_load_vector_for_prescribed_BC(GRID *grid,
-                                          MATERIAL_PROPERTY *mat,
-                                          FIELD_VARIABLES *fv,
-                                          SOLVER_OPTIONS *sol,
-                                          LOADING_STEPS *load,
+int compute_load_vector_for_prescribed_BC(Grid *grid,
+                                          MaterialProperty *mat,
+                                          FieldVariables *fv,
+                                          Solver *sol,
+                                          LoadingSteps *load,
                                           double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
-                                          MULTIPHYSICS *mp,
+                                          Multiphysics *mp,
                                           int mp_id,
                                           int myrank)
 {
@@ -411,7 +416,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   int mp_id = 0;
 
   // initialize and define multiphysics
-  MULTIPHYSICS mp;
+  Multiphysics mp;
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
@@ -433,7 +438,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define mesh object
-  GRID grid;
+  Grid grid;
   grid_initialization(&grid);
   {
     grid.ne          = c->ne;
@@ -445,7 +450,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define field variables
-  FIELD_VARIABLES fv;
+  FieldVariables fv;
   {
     field_varialbe_initialization(&fv);
     fv.ndofn  = c->ndofn;
@@ -469,7 +474,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define iterative solver object
-  SOLVER_OPTIONS sol{};
+  Solver sol{};
   {
     sol.system  = c->SOLVER;
     sol.err     = c->lin_err;
@@ -478,14 +483,14 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   // initialize and define loading steps object
-  LOADING_STEPS load;
+  LoadingSteps load;
   {
     loading_steps_initialization(&load);
     load.sups     = &(c->supports);
   }
 
   // initialize and define material properties
-  MATERIAL_PROPERTY mat;
+  MaterialProperty mat;
   {
     material_initialization(&mat);
     mat.hommat  = c->hommat;
@@ -493,7 +498,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   /// initialize and define communication structures
-  COMMUNICATION_STRUCTURE com;
+  CommunicationStructure com;
   {
     communication_structure_initialization(&com);
     com.Ap     = c->Ap;
@@ -518,7 +523,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
 void load_vec_elem_sur (double *f,
                         const long nle_s,
                         const long ndofn,
-                        const ELEMENT *elem,
+                        const Element *elem,
                         const ZATELEM *zele_s)
 {
 }

@@ -1,29 +1,22 @@
-/* HEADER */
-#pragma once
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef PGFEM3D_MATERIAL_H
+#define PGFEM3D_MATERIAL_H
 
-/** Structure of material properties */
-struct MATERIAL{
+/// Structure of material properties
+struct Material {
   double Ex,Ey,Ez,Gyz,Gxz,Gxy,nyz,nxz,nxy,ax,ay,az,sig;
   /*Elastic stiffness*/
-  double L[9];/* Local coordinate system */
-  double M[9];/* Local coordinate system */
+  double L[9];                                  //!< Local coordinate system
+  double M[9];                                  //!< Local coordinate system
 
-  /* potential function flags */
+  /// potential function flags
   int devPotFlag;
   int volPotFlag;
 };
 
-#ifndef TYPE_MATERIAL
-#define TYPE_MATERIAL
-typedef struct MATERIAL MATERIAL;
-#endif
+struct MaterialThermal {
+  double k[9];                //!< heat conductivity
+  double cp;                  //!< heat capacity
+  double FHS_MW;              //!< fraction_of_heat_sorce_due_to_mechanical_work
+};
 
-typedef struct {
-  double k[9]; /// heat conductivity
-  double cp;   /// heat capacity
-  double FHS_MW; /// fraction_of_heat_sorce_due_to_mechanical_work   
-} MATERIAL_THERMAL;
-
-#endif /* #ifndef  */
+#endif // #ifndef PGFEM3D_MATERIAL_H

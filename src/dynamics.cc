@@ -1,16 +1,19 @@
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
-#include "femlib.h"
 #include "dynamics.h"
-#include "utils.h"
-#include "enumerations.h"
 #include "allocation.h"
-#include "displacement_based_element.h"
-#include "three_field_element.h"
 #include "constitutive_model.h"
+#include "displacement_based_element.h"
+#include "enumerations.h"
+#include "femlib.h"
+#include "three_field_element.h"
+#include "utils.h"
 
+using pgfem3d::Solver;
 
 #ifndef VERIFICATION_USING_MMS
-
 #define INTG_ORDER 0
 
 void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
@@ -32,9 +35,9 @@ void DISP_resid_body_force_el(double *f,
                               const double *x,
                               const double *y,
                               const double *z,
-                              const ELEMENT *elem,
+                              const Element *elem,
                               const HOMMAT *hommat,
-                              const NODE *node, double dt, double t)
+                              const Node *node, double dt, double t)
 {
   const int mat = elem[ii].mat[2];
   // double rho = hommat[mat].density;
@@ -42,14 +45,14 @@ void DISP_resid_body_force_el(double *f,
 
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
-  
+
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
-    
+
   double *bf = aloc1(ndofn);
 
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip); 
+    fe.elem_basis_V(ip);
     double X[3];
     X[0] = X[1] = X[2] = 0.0;
 
@@ -58,8 +61,8 @@ void DISP_resid_body_force_el(double *f,
     for(long a = 0; a<nne; a++)
     {
       X[0] += fe.N(a+1)*x[a];
-      X[1] += fe.N(a+1)*y[a];          
-      X[2] += fe.N(a+1)*z[a];                                    
+      X[1] += fe.N(a+1)*y[a];
+      X[2] += fe.N(a+1)*z[a];
     }
 
     MMS_body_force(bf, &hommat[mat], t,  X[0], X[1], X[2]);
@@ -67,14 +70,14 @@ void DISP_resid_body_force_el(double *f,
     for(long a = 0; a<nne; a++)
     {
       for(long b=0; b<3; b++)
-	    {
-	      long id = a*ndofn + b;
-        f[id] += bf[b]*fe.N(a+1)*fe.detJxW;	      	      	      
-	    }
-	  }	          
-  }        
-  dealoc1(bf);        
-}		     
+      {
+        long id = a*ndofn + b;
+        f[id] += bf[b]*fe.N(a+1)*fe.detJxW;
+      }
+    }
+  }
+  dealoc1(bf);
+}
 
 void DISP_resid_w_inertia_el(double *f,
                              const int ii,
@@ -83,9 +86,9 @@ void DISP_resid_w_inertia_el(double *f,
                              const double *x,
                              const double *y,
                              const double *z,
-                             const ELEMENT *elem,
+                             const Element *elem,
                              const HOMMAT *hommat,
-                             const NODE *node, const double *dts, double t,
+                             const Node *node, const double *dts, double t,
                              double *r_2, double* r_1, double *r_0, double alpha)
 {
   const int mat = elem[ii].mat[2];
@@ -94,10 +97,10 @@ void DISP_resid_w_inertia_el(double *f,
 
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
-  
+
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
   Matrix<double> du(3,1);
-      
+
   double *bf0, *bf1, *bf2, *bf_n1a, *bf;
   bf0 = aloc1(ndofn);
   bf1 = aloc1(ndofn);
@@ -107,7 +110,7 @@ void DISP_resid_w_inertia_el(double *f,
 
   for(int ip = 1; ip<=fe.nint; ip++)
   {
-    fe.elem_basis_V(ip); 
+    fe.elem_basis_V(ip);
 
     du.set_values(0.0);
     double X[3];
@@ -122,8 +125,8 @@ void DISP_resid_w_inertia_el(double *f,
     for(long a = 0; a<nne; a++)
     {
       X[0] += fe.N(a+1)*x[a];
-      X[1] += fe.N(a+1)*y[a];          
-      X[2] += fe.N(a+1)*z[a];                                    
+      X[1] += fe.N(a+1)*y[a];
+      X[2] += fe.N(a+1)*z[a];
       for(long b = 0; b<3; b++)
       {
         long id = a*ndofn + b;
@@ -152,16 +155,16 @@ void DISP_resid_w_inertia_el(double *f,
         long id = a*ndofn + b;
         f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe.N(a+1)*du(b+1)*fe.detJxW;
         f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe.N(a+1)*fe.detJxW;
-        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe.N(a+1)*fe.detJxW;	      	      	      
+        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe.N(a+1)*fe.detJxW;
       }
-    }	          
+    }
   }
 
   dealoc1(bf0);
   dealoc1(bf1);
   dealoc1(bf2);
-  dealoc1(bf_n1a);        
-  dealoc1(bf);         
+  dealoc1(bf_n1a);
+  dealoc1(bf);
 }
 
 /// compute element residual vector in transient
@@ -190,24 +193,24 @@ void DISP_resid_w_inertia_el(double *f,
 int residual_with_inertia(FEMLIB *fe,
                           double *be,
                           double *r_e,
-                          GRID *grid,
-                          MATERIAL_PROPERTY *mat,
-                          FIELD_VARIABLES *fv,
-                          SOLVER_OPTIONS *sol,
-                          LOADING_STEPS *load,
+                          Grid *grid,
+                          MaterialProperty *mat,
+                          FieldVariables *fv,
+                          Solver *sol,
+                          LoadingSteps *load,
                           CRPL *crpl,
                           const PGFem3D_opt *opts,
-                          MULTIPHYSICS *mp,
+                          Multiphysics *mp,
                           int mp_id,
                           double *dts,
                           double t)
 {
   int err = 0;
-  	
-  if(!(opts->analysis_type == DISP 
-    || opts->analysis_type == TF 
-    || opts->analysis_type == CM
-    || opts->analysis_type == CM3F))
+
+  if(!(opts->analysis_type == DISP
+       || opts->analysis_type == TF
+       || opts->analysis_type == CM
+       || opts->analysis_type == CM3F))
   {
     int myrank = 0;
     MPI_Comm_rank (MPI_COMM_WORLD,&myrank);
@@ -258,54 +261,54 @@ int residual_with_inertia(FEMLIB *fe,
   DISP_resid_w_inertia_el(f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha);
 
   switch(opts->analysis_type)
-  {   		
-    case DISP:
-    {   
-      double *f_n_a   = aloc1(ndofe);
-      double *f_n_1_a = aloc1(ndofe);      
-       
-      err +=  DISP_resid_el(f_n_1_a,eid,ndofn,nne,x,y,z,grid->element,
-                            mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_1_a, dts[DT_N]);
+  {
+   case DISP:
+     {
+       double *f_n_a   = aloc1(ndofe);
+       double *f_n_1_a = aloc1(ndofe);
 
-      err +=  DISP_resid_el(f_n_a,eid,ndofn,nne,x,y,z,grid->element,
-                            mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_a, dts[DT_NP1]);
-            	
-      for(long a = 0; a<ndofe; a++)
-        be[a] = -f_i[a] - (1.0-(sol->alpha))*dts[DT_NP1]*f_n_a[a] - (sol->alpha)*dts[DT_N]*f_n_1_a[a];
-	      
-      free(f_n_a);
-      free(f_n_1_a);		      
-	      
-      break;
-    }  
-    case TF:
-    {  
-      if(0<(sol->alpha) && (sol->alpha)<1.0)
-      {	    
-        residuals_3f_w_inertia_el(be,eid,ndofn,nne,fv->npres,fv->nVol,nsd,x,y,z,grid->element,mat->hommat,grid->node,
-                                  dts,fv->sig,fv->eps,sol->alpha,r_n_a,r_n_1_a);
-      }
-	                              
-      for(long a = 0; a<ndofe; a++)
-        be[a] -= f_i[a];
-	      
-      break;
-	    
-    }
-    case CM:   //intended to flow
-    case CM3F:
-    {
-      double *f_n   = aloc1(ndofe);    
-      memset(f_n, 0, sizeof(double)*ndofe);
-      err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);    	       
+       err +=  DISP_resid_el(f_n_1_a,eid,ndofn,nne,x,y,z,grid->element,
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_1_a, dts[DT_N]);
 
-      for(long a = 0; a<ndofe; a++)
-        be[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
-	        
-      free(f_n);
-        break;                                                                                                           
-    }  
-    default:
+       err +=  DISP_resid_el(f_n_a,eid,ndofn,nne,x,y,z,grid->element,
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_a, dts[DT_NP1]);
+
+       for(long a = 0; a<ndofe; a++)
+         be[a] = -f_i[a] - (1.0-(sol->alpha))*dts[DT_NP1]*f_n_a[a] - (sol->alpha)*dts[DT_N]*f_n_1_a[a];
+
+       free(f_n_a);
+       free(f_n_1_a);
+
+       break;
+     }
+   case TF:
+     {
+       if(0<(sol->alpha) && (sol->alpha)<1.0)
+       {
+         residuals_3f_w_inertia_el(be,eid,ndofn,nne,fv->npres,fv->nVol,nsd,x,y,z,grid->element,mat->hommat,grid->node,
+                                   dts,fv->sig,fv->eps,sol->alpha,r_n_a,r_n_1_a);
+       }
+
+       for(long a = 0; a<ndofe; a++)
+         be[a] -= f_i[a];
+
+       break;
+
+     }
+   case CM:   //intended to flow
+   case CM3F:
+     {
+       double *f_n   = aloc1(ndofe);
+       memset(f_n, 0, sizeof(double)*ndofe);
+       err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
+
+       for(long a = 0; a<ndofe; a++)
+         be[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
+
+       free(f_n);
+       break;
+     }
+   default:
     printf("Only displacement based element and three field element are supported\n");
     break;
   }
@@ -342,14 +345,14 @@ int residual_with_inertia(FEMLIB *fe,
 int stiffness_with_inertia(FEMLIB *fe,
                            double *Ks,
                            double *r_e,
-                           GRID *grid,
-                           MATERIAL_PROPERTY *mat,
-                           FIELD_VARIABLES *fv,
-                           SOLVER_OPTIONS *sol,
-                           LOADING_STEPS *load,
+                           Grid *grid,
+                           MaterialProperty *mat,
+                           FieldVariables *fv,
+                           Solver *sol,
+                           LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           MULTIPHYSICS *mp,
+                           Multiphysics *mp,
                            int mp_id,
                            double dt)
 {
@@ -366,9 +369,9 @@ int stiffness_with_inertia(FEMLIB *fe,
 
   Matrix<double> Kuu_K,Kuu_I, u, u_n;
   Kuu_I.initialization(ndofe,ndofe,0.0);
-  Kuu_K.initialization(ndofe,ndofe,0.0);  
-      u.initialization(ndofe,1,0.0);
-    u_n.initialization(ndofe,1,0.0);      
+  Kuu_K.initialization(ndofe,ndofe,0.0);
+  u.initialization(ndofe,1,0.0);
+  u_n.initialization(ndofe,1,0.0);
 
   /* make sure the stiffenss matrix contains all zeros */
   memset(Ks,0,ndofe*ndofe*sizeof(double));
@@ -377,20 +380,20 @@ int stiffness_with_inertia(FEMLIB *fe,
   for (long I=0;I<nne;I++)
   {
     for(long J=0; J<ndofn; J++)
-      u_n(I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];  
+      u_n(I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];
   }
-   
-  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe); 
-  
-  if(opts->analysis_type == DISP || 
-     opts->analysis_type == TF   || 
+
+  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe);
+
+  if(opts->analysis_type == DISP ||
+     opts->analysis_type == TF   ||
      opts->analysis_type == CM   ||
-     opts->analysis_type == CM3F)      
-  {    
+     opts->analysis_type == CM3F)
+  {
     for(int ip = 1; ip<=fe->nint; ip++)
     {
-      fe->elem_basis_V(ip); 
-    
+      fe->elem_basis_V(ip);
+
       for(long a = 0; a<nne; a++)
       {
         for(long c=0; c<nne; c++)
@@ -416,34 +419,36 @@ int stiffness_with_inertia(FEMLIB *fe,
 
     for(long a = 0; a<ndofe*ndofe; a++)
       Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
+    
+    break;
 
-    case TF:
-      if(0<sol->alpha && sol->alpha<1.0)
-      {
-        stiffmat_3f_el(Kuu_K.m_pdata,eid,ndofn,nne,fv->npres,fv->nVol,fe->nsd,x,y,z,
-                                 grid->element,mat->hommat,nod,grid->node,dt,
-                                 fv->sig,fv->eps,sup,sol->alpha,u.m_pdata);                                                              
-      }                          
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];                                
-
-      break;
-    case CM:  // intended to flow
-    case CM3F:
+   case TF:
+    if(0<sol->alpha && sol->alpha<1.0)
     {
-      err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
-                                                       grid,mat,fv,sol,load,crpl,
-                                                       opts,mp,mp_id,dt);
-                                                    
-      for(long a = 0; a<ndofe*ndofe; a++)
-        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a]; 
+      stiffmat_3f_el(Kuu_K.m_pdata,eid,ndofn,nne,fv->npres,fv->nVol,fe->nsd,x,y,z,
+                     grid->element,mat->hommat,nod,grid->node,dt,
+                     fv->sig,fv->eps,sup,sol->alpha,u.m_pdata);
+    }
+    for(long a = 0; a<ndofe*ndofe; a++)
+      Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];
 
-      break;        
-    }  
-      
-    default:
-      printf("Only displacement based element and three field element are supported\n");
-      break;                         
+    break;
+   case CM:  // intended to flow
+   case CM3F:
+     {
+       err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
+                                                        grid,mat,fv,sol,load,crpl,
+                                                        opts,mp,mp_id,dt);
+
+       for(long a = 0; a<ndofe*ndofe; a++)
+         Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
+
+       break;
+     }
+
+   default:
+    printf("Only displacement based element and three field element are supported\n");
+    break;
   }
-  return err;  
+  return err;
 }
