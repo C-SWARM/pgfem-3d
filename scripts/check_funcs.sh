@@ -19,21 +19,22 @@ function check_scan() {
 }
 
 function grep_log() {
-    LOG=$1
+    while read LOG; do
 
-    is_file $LOG || return
+    	is_file $LOG || continue
 
-    if ! grep '^# FAIL: *0$' $LOG &> /dev/null
-    then
-	echo "===== $LOG ====="
-	tail -n 200 $LOG
-	return 2
-    fi
+        if ! grep '^# FAIL: *0$' $LOG &> /dev/null
+        then
+	  echo "===== $LOG ====="
+	  tail -n 200 $LOG
+	  exit 2
+        fi
+     done
 }
 
 function check_check() {
     export -f grep_log
     export -f is_file
-    find . -name "test-suite.log" -exec bash -c 'grep_log "$0"' {} \;
+    find . -name "test-suite.log" | grep_log
 }
 
