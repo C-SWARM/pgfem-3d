@@ -3,6 +3,12 @@
 #ifndef HOMMAT_H
 #define HOMMAT_H
 
+struct Model_parameters;
+#ifndef TYPE_Model_parameters
+#define TYPE_Model_parameters
+typedef struct Model_parameters Model_parameters;
+#endif
+
 /** Structure of material matrices */
 struct HOMMAT{
   /* Elastic stiffness matrix */
@@ -17,6 +23,8 @@ struct HOMMAT{
   int devPotFlag;
   int volPotFlag;
   int mat_id; // material ID
+  
+  Model_parameters *param; // model parameters constitutive model dependent  
 };
 #ifndef TYPE_HOMMAT
 #define TYPE_HOMMAT

@@ -1,6 +1,7 @@
 #include "hommat.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
+#include "constitutive_model.h"
 
 HOMMAT* build_hommat (long i)
      /*
@@ -31,6 +32,7 @@ HOMMAT* build_hommat (long i)
     pom[ii].devPotFlag = -1; /* poisoned */
     pom[ii].volPotFlag = -1; /* poisoned */
     pom[ii].mat_id = -1;
+    pom[ii].param = NULL;
   }
 
   return (pom);
@@ -41,6 +43,15 @@ void destroy_hommat(HOMMAT* hm, long nm)
   for(long i=0; i<nm; i++){
     free(hm[i].M);
     free(hm[i].L);
+
+    if(hm[i].param==NULL)
+      continue;
+      
+    for(int ia = 0; ia < nm; ia++)
+    {
+      delete hm[i].param;
+      hm[i].param = NULL;
+    }    
   }
   free(hm);
 }

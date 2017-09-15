@@ -59,7 +59,6 @@ struct COMMON_MICROSCALE {
   MATGEOM matgeom; /**< !pointer */
   long nhommat;
   HOMMAT *hommat;
-  Model_parameters *param_list;
   Ensight *ensight;
   SUPP supports; /**< !pointer */
   int n_co_props;

@@ -1505,13 +1505,13 @@ int plasticity_model_set_orientations(EPS *eps,
                                       const int ne,
                                       const Element *elem,
                                       const int n_mat,
-                                      const Model_parameters *param_list)
+                                      const HOMMAT *hmat_list)
 {
   int err = 0;
   int crystal_plasticity_included = 0;
   for(int i = 0; i < n_mat; i++)
   {
-    if(param_list[i].type==CRYSTAL_PLASTICITY)
+    if(hmat_list[i].param->type==CRYSTAL_PLASTICITY)
       crystal_plasticity_included++;
   }
 
@@ -1531,9 +1531,9 @@ int plasticity_model_set_orientations(EPS *eps,
 
   for(int i = 0; i < n_mat; i++)
   {
-    if(param_list[i].type==CRYSTAL_PLASTICITY)
+    if(hmat_list[i].param->type==CRYSTAL_PLASTICITY)
     {
-      SLIP_SYSTEM *slip = ((param_list[i].cm_mat)->mat_p)->slip;
+      SLIP_SYSTEM *slip = ((hmat_list[i].param->cm_mat)->mat_p)->slip;
       if(slip->ort_option[0]==2)
       {
         err += plasticity_model_read_orientations(e_ids, angles, elm_ip_map, slip->ort_file_in, myrank, ne);
@@ -1545,29 +1545,29 @@ int plasticity_model_set_orientations(EPS *eps,
   int save_orientations = 0;
   for(int i = 0; i < n_mat; i++)
   {
-    if(param_list[i].type==CRYSTAL_PLASTICITY)
+    if(hmat_list[i].param->type==CRYSTAL_PLASTICITY)
     {
-      SLIP_SYSTEM *slip = ((param_list[i].cm_mat)->mat_p)->slip;
+      SLIP_SYSTEM *slip = ((hmat_list[i].param->cm_mat)->mat_p)->slip;
       switch(slip->ort_option[0])
       {
        case -1:
-        plasticity_model_set_zero_angles(ne, elm_ip_map, param_list[i].mat_id, e_ids, angles);
+        plasticity_model_set_zero_angles(ne, elm_ip_map, hmat_list[i].param->mat_id, e_ids, angles);
         break;
        case 0:
          {
-           err += plasticity_model_generate_random_orientation_element(ne, elm_ip_map, param_list[i].mat_id, e_ids, angles, slip->ort_option[1]);
+           err += plasticity_model_generate_random_orientation_element(ne, elm_ip_map, hmat_list[i].param->mat_id, e_ids, angles, slip->ort_option[1]);
            save_orientations++;
            break;
          }
        case 1:
          {
-           err += plasticity_model_generate_random_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, e_ids, angles);
+           err += plasticity_model_generate_random_orientation_crystal(ne, elm_ip_map, hmat_list[i].param->mat_id, e_ids, angles);
            save_orientations++;
            break;
          }
        case 3:
          {
-           err += plasticity_model_set_given_orientation_crystal(ne, elm_ip_map, param_list[i].mat_id, e_ids, angles, slip->ort_angles);
+           err += plasticity_model_set_given_orientation_crystal(ne, elm_ip_map, hmat_list[i].param->mat_id, e_ids, angles, slip->ort_angles);
            break;
          }
        default:

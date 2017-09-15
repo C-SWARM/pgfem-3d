@@ -481,9 +481,6 @@ int single_scale_main(int argc,char *argv[])
    * may change */
   MPI_Comm mpi_comm = MPI_COMM_WORLD;
 
-  // Constitutive model
-  Model_parameters *param_list = nullptr;
-
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = nullptr;
 
@@ -1009,10 +1006,10 @@ int single_scale_main(int argc,char *argv[])
           char *cm_filename = NULL;
           alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
           FILE *cm_in = PGFEM_fopen(cm_filename, "r");
-          read_model_parameters_list(&param_list, mat.nhommat, mat.hommat, cm_in);
+          read_model_parameters_list(mat.nhommat, mat.hommat, cm_in);
           free(cm_filename);
           fclose(cm_in);
-          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,param_list);
+          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat);
           err += prepare_temporal_field_varialbes(&fv[ia],&grid,1);
         }
         else
@@ -1440,7 +1437,6 @@ int single_scale_main(int argc,char *argv[])
   }
 
   err += destruct_loading_steps(&load, &mp);
-  err += destroy_model_parameters_list(mat.nhommat,param_list);
   err += destruct_material(&mat, &options);
   err += destruct_grid(&grid, &options, &mp);
 
