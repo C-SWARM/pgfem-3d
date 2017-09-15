@@ -50,7 +50,7 @@ void test_crystal_plasticity_single_crystal(void)
   
   double gamma_dot_0 = 1.0;
   double gamma_dot_s = 50.0e+9;
-  double m           = 0.05;  
+  double m           = 0.1;  
   double g0          = 210.0;
   double G0          = 200.0;
   double gs_0        = 330.0;
@@ -59,9 +59,10 @@ void test_crystal_plasticity_single_crystal(void)
   int max_itr_stag      = 100;
   int max_itr_hardening = 5;
   int max_itr_M         = 100;
-  double tol_hardening  = 1.0e-4;
-  double tol_M          = 1.0e-4;
+  double tol_hardening  = 1.0e-6;
+  double tol_M          = 1.0e-6;
   double computer_zero  = 1.0e-15;
+
 
   // create material properties: Elasticity
   MATERIAL_ELASTICITY mat_e;  
@@ -100,7 +101,7 @@ void test_crystal_plasticity_single_crystal(void)
   construct_elasticity(&elast, &mat_e, 1);  
 
   // set variables for integration
-  ttl::Tensor<2,DIM_3,double> M,MI,pFn,pFnp1,pFnp1_I,eFnp1,Fn,Fnp1,L={},sigma,PK2dev,sigma_dev;
+  ttl::Tensor<2,DIM_3,double> M,MI,pFn,pFnp1,pFnp1_I,eFnp1,Fn,Fnp1 = {},sigma,PK2dev,sigma_dev;
   
   pFn   = ttl::identity(i,j);
   pFnp1 = ttl::identity(i,j);
@@ -111,12 +112,7 @@ void test_crystal_plasticity_single_crystal(void)
   double g_n,g_np1;
   g_n = g_np1 = mat_p.g0;
   
-  double dt = 0.001;
-  
-  double d = 1.0;
-  // set velocity gradient  
-  L[0][0] = -d;
-  L[1][1] = L[2][2] = d/2;  
+  double dt = 0.1;
   
   // start integration  
   ttl::Tensor<2,DIM_3,double*> PK2(elast.S);
@@ -128,8 +124,8 @@ void test_crystal_plasticity_single_crystal(void)
     double lambda = 0.0;
     double t = a*dt;
     
-    // compute total deformation gradient using velocity gradient
-    Fnp1_Implicit(Fnp1.data, Fn.data, L.data, dt); 
+    Fnp1[0][0] = 1.0 - t*1.0e-3;
+    Fnp1[1][1] = Fnp1[2][2] = 1.0 + t*0.5*1.0e-3;
     
     staggered_Newton_Rapson(pFnp1.data,M.data, &g_np1, &lambda, 
                             pFn.data, Fn.data,Fnp1.data, 
@@ -280,7 +276,7 @@ int main(int argc,char *argv[])
     for(int a=0; a<1000; a++)
     {
       fscanf(fp_r, "%lf %lf %lf %lf %lf %lf", temp+0, temp+1, temp+2, temp+3, temp+4, temp+5);
-      sigma_r[a] = temp[1];
+      sigma_r[a] = temp[2];
     }
     fclose(fp_r);
   }
@@ -394,7 +390,7 @@ int main(int argc,char *argv[])
       fclose(fp_ss);
 
       // compute error
-      double Err_pt = sqrt((sigma_r[istep] - sigma_eff)*(sigma_r[istep] - sigma_eff))/sigma_r[istep];
+      double Err_pt = sqrt((sigma_r[istep] - PK2_eff)*(sigma_r[istep] - PK2_eff))/sigma_r[istep];
       if(Err_pt > Err_of_stress)
         Err_of_stress = Err_pt;
     }
