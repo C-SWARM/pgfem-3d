@@ -2,34 +2,34 @@ before_script:
  - uname -a
  - df -h
  - module load ompi/3.0.0-gcc-7.2.0
- - module load llvm/5.0.0
+ - module load llvm/5.0.0-gcc-7.2.0
  - source /opt/intel/bin/compilervars.sh -arch intel64 -platform linux
  - source scripts/check_funcs.sh
  - autoreconf -if
 
 stages:
-# - scan
+ - scan
  - check
 
-#scan-build:
-# allow_failure: true
-# tags:
-#  - cswarm
-# stage: scan
-# script:
-#  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 -g `mpicxx --showme:compile`"
-#  - export LDFLAGS="`mpicxx --showme:link` -L/usr/lib64/vtk"
-#  - ./configure CXX=mpicxx
-#                --with-hypre=/opt/hypre_ompi
-#                --with-suitesparse=/opt/SuiteSparse
-#                --with-cnstvm=/opt/Generalizsed_constitutive_model
-#                --with-ttl=/opt/ttl
-#                --enable-tests=no
-#                --enable-vtk=yes
-#                --with-vtk-version=''
-#  - BOUT=/tmp/scan-build-${CI_BUILD_ID}
-#  - scan-build -o /var/www/html/scan-builds make -j 4 | tee $BOUT
-#  - check_scan $BOUT
+scan-build:
+ allow_failure: true
+ tags:
+  - cswarm
+ stage: scan
+ script:
+  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 -g `mpicxx --showme:compile`"
+  - export LDFLAGS="`mpicxx --showme:link` -L/usr/lib64/vtk"
+  - scan-build ./configure
+                --with-hypre=/opt/hypre_ompi
+                --with-suitesparse=/opt/SuiteSparse
+                --with-cnstvm=/opt/Generalizsed_constitutive_model
+                --with-ttl=/opt/ttl
+                --enable-tests=no
+                --enable-vtk=yes
+                --with-vtk-version=''
+  - BOUT=/tmp/scan-build-${CI_BUILD_ID}
+  - scan-build -o /var/www/html/scan-builds make -j 4 | tee $BOUT
+  - check_scan $BOUT
 
 check-build:
  tags:
