@@ -1145,7 +1145,8 @@ int single_scale_main(int argc,char *argv[])
       // set inital plastic deformation
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
       {
-        if(param_list[0].pF != NULL)
+        double *pF = mat.hommat[0].param->pF;
+        if(pF != NULL)
         {
           int cnt_npd = 0;
           int npd = load.sups[ia]->npd;
@@ -1158,13 +1159,13 @@ int single_scale_main(int argc,char *argv[])
             is_npd_set[ic] = 0;
           
           double pFI[9];
-          inv3x3(param_list[0].pF, pFI);
+          inv3x3(pF, pFI);
           if(myrank==0)
           {
             printf("set initial plastic deformation:\npF=[");
-            printf("%e %e %e\n%e %e %e\n%e %e %e]\n", param_list[0].pF[0], param_list[0].pF[1], param_list[0].pF[2]
-                                                    , param_list[0].pF[3], param_list[0].pF[4], param_list[0].pF[5]
-                                                    , param_list[0].pF[6], param_list[0].pF[7], param_list[0].pF[8]);
+            printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
+                                                    , pF[3], pF[4], pF[5]
+                                                    , pF[6], pF[7], pF[8]);
           }
           for(int ic=0; ic<grid.nn; ic++)
           {
