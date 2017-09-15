@@ -375,6 +375,12 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
 {
   int err = 0;
 
+  if(p[model_id] != NULL)
+  {  
+    delete p[model_id];
+    p[model_id] = NULL;
+  }
+  
   switch(model_type)
   {
     case TESTING:
@@ -402,6 +408,9 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
       return err;
   }
 
+  if(p[model_id] != NULL)
+    p[model_id]->set_nulls();
+    
   return err;
 }
 /// Initialize the Model_parameters object. The object may be used
@@ -554,9 +563,8 @@ static int compare_mat_id(const void *a, const void *b)
   return ((const HOMMAT *)a)->mat_id - ((const HOMMAT *)b)->mat_id;
 }
 
-int read_model_parameters_list(Model_parameters **param_list,
-                               const int n_mat,
-                               const HOMMAT *hmat_list,
+int read_model_parameters_list(const int n_mat,
+                               HOMMAT *hmat_list,
                                FILE *in)
 {
   /* see issue #28 */
@@ -580,7 +588,6 @@ int read_model_parameters_list(Model_parameters **param_list,
   double *pF = NULL;
   
   if (n_mat <= 0) return 1;
-  (*param_list) = new Model_parameters[n_mat];
   int *is_set = (int *) calloc(n_mat, sizeof(int));
 
   int num_entries = -1;
@@ -628,17 +635,16 @@ int read_model_parameters_list(Model_parameters **param_list,
           if(model_type==CM_UQCM)
           {
             model_type_uq = 1;
-            param_list[idx]->uqcm = 1;
             err += scan_for_valid_line(in);
             CHECK_SCANF(in, "%d", &model_type);
           }
-          printf("%d %d\n", idx, model_type);
-          err += construct_Model_parameters(param_list, idx, model_type);
-          param_list[idx]->uqcm = model_type_uq;
-          
-          err += param_list[idx]->initialization(hmat_list + idx, model_type);
-          err += param_list[idx]->read_param(in);
-          param_list[idx]->mat_id = key->mat_id;
+  
+          err += construct_Model_parameters(&(hmat_list[idx].param), 0, model_type);
+          hmat_list[idx].param->uqcm = model_type_uq;
+
+          err += hmat_list[idx].param->initialization(hmat_list + idx, model_type);
+          err += hmat_list[idx].param->read_param(in);
+          hmat_list[idx].param->mat_id = key->mat_id;
         }
       }
     }
@@ -680,7 +686,7 @@ int read_model_parameters_list(Model_parameters **param_list,
   assert(sum == n_mat && "require that all model params are set");
 
   for (int ia = 0; ia < n_mat; ia++){
-    ((*param_list)[ia]).pF = pF;
+    hmat_list[ia].param->pF = pF;
   }
 
   free(key);
@@ -688,34 +694,20 @@ int read_model_parameters_list(Model_parameters **param_list,
   return err;
 }
 
-int destroy_model_parameters_list(const int n_mat,
-                                  Model_parameters *param_list)
-{
-  if (param_list == NULL) return 0;
-
-  for(int ia = 0; ia < n_mat; ia++)
-    delete (param_list + ia);
-
-  param_list = NULL;
-  return 0;
-}
-
 int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const Element *elem,
                                 const int n_mat,
-                                const Model_parameters *param_list)
+                                const HOMMAT *hmat_list)
 {
   int err = 0;
   if (ne <= 0) return 1;
-  if(param_list==NULL)
-    return err;
 
   for(int i = 0; i < ne; i++) {
     /* aliases */
     EPS *p_eps = eps + i;
     const Element *p_el = elem + i;
-    const Model_parameters *p_param = param_list + (p_el->mat[2]);
+    const Model_parameters *p_param = hmat_list[p_el->mat[2]].param;
 
     long n_ip = 0;
     int_point(p_el->toe,&n_ip);
@@ -723,7 +715,7 @@ int init_all_constitutive_model(EPS *eps,
       p_eps->model[j].initialization(p_param);
   }
 
-  plasticity_model_set_orientations(eps, ne, elem, n_mat, param_list); // nothing will happen if there is no use of the crystal plasticity model
+  plasticity_model_set_orientations(eps, ne, elem, n_mat, hmat_list); // nothing will happen if there is no use of the crystal plasticity model
   return err;
 }
 

@@ -130,18 +130,28 @@ class Model_parameters
 
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
   ELASTICITY *cm_elast;
-
+  
+  // set members variables to initial values (zeros and NULLs)   
+  void set_nulls(void)
+  {
+    p_hmat            = NULL;
+    mat_id            = -1;
+    uqcm              = 0; 
+    cm3f              = false;
+    cm_mat            = NULL;
+    cm_elast          = NULL;    
+    type              = -1;
+    n_param           = 0;
+    model_param       = NULL;
+    n_param_index     = 0;
+    model_param_index = NULL;    
+  };
 
   /// Construct a Model_parameters object. The object is left in an
   /// invalid state until model_parameters_initialize is called.
   Model_parameters()
   {
-    type              = -1;
-    n_param           = -1;
-    model_param       = NULL;
-    n_param_index     = -1;
-    model_param_index = NULL;
-    cm3f              = false;
+    set_nulls();
   };
 
   /// Destroy a Model_parameters object.
@@ -552,17 +562,9 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
 
 /// Allocate and populate a list of Model_parameters given the number
 /// of materials.
-int read_model_parameters_list(Model_parameters **param_list,
-                               const int n_mat,
-                               const HOMMAT *hmat_list,
+int read_model_parameters_list(const int n_mat,
+                               HOMMAT *hmat_list,
                                FILE *in);
-
-/// Free all of the memory assiciated with the list of model
-/// parameters.
-/// \return non-zero on error.
-int destroy_model_parameters_list(const int n_mat,
-                                  Model_parameters *param_list);
-
 
 /// General interface to a constitutive model.
 ///
@@ -636,7 +638,7 @@ int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const Element *elem,
                                 const int n_mat,
-                                const Model_parameters *param_list);
+                                const HOMMAT *hmat_list);
 /// save state variables
 ///
 /// \param[in, out] fv an object containing all field variables

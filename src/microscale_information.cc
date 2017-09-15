@@ -441,7 +441,6 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   common->matgeom = NULL;
   common->nhommat = 0;
   common->hommat = NULL;
-  common->param_list = NULL;
   common->ensight = NULL;
   common->supports = NULL;
   common->n_co_props = 0;
@@ -577,7 +576,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
       char *cm_filename = NULL;
       alloc_sprintf(&cm_filename,"%s/model_params.in",opts->ipath);
       FILE *cm_in = PGFEM_fopen(cm_filename, "r");
-      read_model_parameters_list(&(common->param_list), common->nhommat,
+      read_model_parameters_list(common->nhommat,
                                  common->hommat, cm_in);
       free(cm_filename);
       fclose(cm_in);
@@ -731,7 +730,6 @@ static void destroy_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   destroy_coel(common->coel,common->nce);
   destroy_matgeom(common->matgeom,common->n_orient);
   destroy_hommat(common->hommat,common->nhommat);
-  destroy_model_parameters_list(common->nhommat, common->param_list);
   delete common->ensight;
   destroy_supp(common->supports);
   destroy_cohesive_props(common->n_co_props,common->co_props);
@@ -823,7 +821,7 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   if (analysis == CM) {
     init_all_constitutive_model(sol->eps, common->ne,
-                                common->elem, common->nhommat, common->param_list);
+                                common->elem, common->nhommat, common->hommat);
   }
 
   /* initialize state variable buffer at macro time (n) */

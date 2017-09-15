@@ -61,7 +61,6 @@ int main(int argc,char *argv[])
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
   ZATELEM *zele_v = NULL;
-  Model_parameters *param_list = NULL;
 
   int in_err = 0;
   int physicsno = 1;
@@ -104,10 +103,10 @@ int main(int argc,char *argv[])
     char *cm_filename = NULL;
     alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
     FILE *cm_in = PGFEM_fopen(cm_filename, "r");
-    read_model_parameters_list(&param_list, nhommat, hommat, cm_in);
+    read_model_parameters_list(nhommat, hommat, cm_in);
     free(cm_filename);
     fclose(cm_in);
-    init_all_constitutive_model(eps,ne,elem,nhommat,param_list);
+    init_all_constitutive_model(eps,ne,elem,nhommat,hommat);
   }
   char filename[1024];
   sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,0,options.ofname,myrank,0);
@@ -161,7 +160,6 @@ int main(int argc,char *argv[])
   destroy_zatelem(zele_v,nle_v);
   destroy_matgeom(matgeom,np);
   destroy_hommat(hommat,nhommat);
-  destroy_model_parameters_list(nhommat,param_list);
   destroy_eps_il(eps,elem,ne,options.analysis_type);
   destroy_supp(sup);
   destroy_elem(elem,ne);

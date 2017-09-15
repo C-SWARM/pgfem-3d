@@ -61,7 +61,6 @@ int main(int argc,char *argv[])
   ZATELEM *zele_s = NULL;
   long nle_v = 0;
   ZATELEM *zele_v = NULL;
-  // Model_parameters *param_list = NULL;
 
   int in_err = 0;
   int physicsno = 1;
