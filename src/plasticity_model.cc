@@ -768,7 +768,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
   const double *tau        = (m->vars_list[0][m->model_id]).Fs[TENSOR_tau].m_pdata;
   const double *gamma_dots = (m->vars_list[0][m->model_id]).Fs[TENSOR_gamma_dot].m_pdata;
 
-  double *Grad_op_ab = new double[DIM_3x3];
+  double Grad_op_ab[DIM_3x3];
   // make successive calls to compute_dMdu for each node/dof
   for (int a = 0; a < nne; a++) {
     for(int b = 0; b < ndofn; b++) {
@@ -779,7 +779,6 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
                                      elast->S, elast->L, g_n, g_np1, tau, gamma_dots, slip.p_sys, CTX->dt);
     }
   }
-  delete Grad_op_ab;
   destruct_slip_system(&slip);
   return err;
 }
@@ -857,7 +856,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   mid_point_rule(&g_npa, &g_n, &g_np1, alpha, 1);
 
   // make successive calls to compute_dMdu for each node/dof
-  double *Grad_op_ab = new double[DIM_3x3];
+  double Grad_op_ab[DIM_3x3];
   for (int a = 0; a < nne; a++) {
     for(int b = 0; b < ndofn; b++) {
       int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,DIM_3,DIM_3);
