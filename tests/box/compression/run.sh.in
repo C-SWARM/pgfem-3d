@@ -42,4 +42,6 @@ echo $cmd
 $cmd
 
 # And check the results.
-numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout
+cmd="numdiff --absolute-tolerance=1.0e-14 --relative-tolerance=1.0e-14 $out $refout"
+echo $cmd
+$cmd
