@@ -61,30 +61,25 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, double *S_in, HOM
 }
 
 void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMAT *hommat, Element *elem,
-                                          double *F_in, double Pn)
+                                          double *F_in, double Pn, double theta)
 {
   Tensor<2,3,double*> F(F_in), S(S_in);
   Tensor<2,3,double> C,CI,devS;
 
   C = F(K,I)*F(K,J);
-  double detF = det(F);
   inv(C,CI);
 
   int mat = elem[e].mat[2];
-  double kappa = hommat[mat].E/(3.*(1.-2.*hommat[mat].nu));
 
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
   Stress(C.data,&hommat[mat],devS.data);
 
   double Up = 0.0;
-  UP(detF,&hommat[mat],&Up);
-  //  printf("%e, %e\n", Pn, kappa*Up);
-  double JPn = detF*Pn;
+  UP(theta,&hommat[mat],&Up);
+  double JPn = theta*Pn;
 
-  //  for(int a = 0; a<9; a++)
-  //    S.m_pdata[a] = devS.m_pdata[a] + JPn*CI.m_pdata[a];
-  S(I,J) = devS(I,J) + kappa*JPn*CI(I,J);
+  S(I,J) = devS(I,J) + JPn*CI(I,J);
 }
 
 void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, double *Jnp1,
@@ -165,15 +160,14 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
         post_processing_compute_stress_disp_ip(&fe,e,S.data,hommat,elem,F.data,Pn);
         break;
        case TF:
-         {
-           fe.elem_shape_function(ip,npres, Np.m_pdata);
-
-           for(int a=1; a<=npres; a++)
-             Pn += Np(a)*P(a);
-
-           post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,Pn);
-           break;
-         }
+       {
+         double theta = eps[e].T[0];
+         fe.elem_shape_function(ip,npres, Np.m_pdata);
+         for(int a=1; a<=npres; a++)
+           Pn += Np(a)*P(a);
+         post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,Pn,theta);
+         break;
+       }
        case CM:   // intended to flow
        case CM3F:
          {
