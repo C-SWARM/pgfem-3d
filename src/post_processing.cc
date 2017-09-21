@@ -109,7 +109,7 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
     total_Lagrangian = 0;
 
   int nsd = 3;
-  Tensor<2,3,double> F,S,LS;
+  Tensor<2,3,double> F,S,LS = {};
 
   double LV = 0.0;
   double GV = 0.0;
@@ -205,7 +205,7 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
     total_Lagrangian = 0;
 
   int nsd = 3;
-  Tensor<2,3,double> F,LF;
+  Tensor<2,3,double> F,LF = {};
 
   double LV = 0.0;
   double GV = 0.0;
@@ -215,14 +215,14 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
 
-    Matrix<double> u(nne*nsd,1,0.0);
+    Matrix<double> u(nne,nsd);
 
     for(int a = 0; a<nne; a++)
     {
       int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        u(a*nsd+b+1) = r[nid*ndofn + b];
+        u(a+1,b+1) = r[nid*ndofn+b];
       }
     }
 
@@ -276,7 +276,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
     total_Lagrangian = 0;
 
   int nsd = 3;
-  Tensor<2,3,double> F,LF;
+  Tensor<2,3,double> F,LF = {};
 
   double LV = 0.0;
   double GV = 0.0;
@@ -286,14 +286,14 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
 
-    Matrix<double> u(nne*nsd,1,0.0);
+    Matrix<double> u(nne,nsd);
 
     for(int a = 0; a<nne; a++)
     {
       int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        u(a*nsd+b+1) = r[nid*ndofn + b];
+        u(a+1,b+1) = r[nid*ndofn+b];
       }
     }
 
@@ -412,14 +412,14 @@ void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
 
-    Matrix<double> u(nne*nsd,1,0.0);
+    Matrix<double> u(nne,nsd);
 
     for(int a = 0; a<nne; a++)
     {
       int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        u(a*nsd+b+1) = r[nid*ndofn + b];
+        u(a+1,b+1) = r[nid*ndofn+b];
       }
     }
 
@@ -490,14 +490,14 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *n
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
 
-    Matrix<double> u(nne*nsd,1,0.0);
+    Matrix<double> u(nne,nsd);
 
     for(int a = 0; a<nne; a++)
     {
       int nid = fe.node_id(a+1);
       for(int b=0; b<nsd; b++)
       {
-        u(a*nsd+b+1) = r[nid*ndofn + b];
+        u(a+1,b+1) = r[nid*ndofn+b];
       }
     }
 
