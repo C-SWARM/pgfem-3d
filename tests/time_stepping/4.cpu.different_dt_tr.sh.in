@@ -31,8 +31,8 @@ output5=${out_dir}_5steps/${name}_${NP}CPU
 
 # cleanup on failure.
 function cleanup {
-    echo "Removing $out $outdir"
-    rm -rf $out_dir *.log *.txt
+    echo "Removing $"
+    rm -rf $out_dir *.txt out_run_3steps.log out_run_5steps.log
 }
 trap cleanup EXIT
 
