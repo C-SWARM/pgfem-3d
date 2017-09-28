@@ -3466,3 +3466,78 @@ double compute_volumes_from_coordinates(double *x,
   return V;
 }
 
+/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically. 
+/// The 1st root is found iteratively using Newton Raphson method, and 2nd and 3rd roots are
+/// computed analytically by solving quadratic equation.
+///
+/// \param[out] *x         computed 3 by 1 array of roots
+/// \param[in]  a          the 1st coefficient of the cubic equation
+/// \param[in]  b          the 2nd coefficient of the cubic equations
+/// \param[in]  c          the 3rd coefficient of the cubic equations
+/// \param[in]  d          the constant of the cubic equations
+/// \param[in]  x0         initial guess of the 1st root. Default is 0
+/// \param[in]  print_cnvg if yes, print convergence(1st root) of each iteration
+void compute_root_of_cubic_euqation(double *x,
+                                    double a,
+                                    double b,
+                                    double c,
+                                    double d,
+                                    double x0,
+                                    bool print_cnvg)
+{
+  double tol = 1.0e-15;
+  
+  double x1 = x0;
+  double f0 = tol;
+  
+  for(int ia=0; ia<10; ia++){
+    double f = a*x1*x1*x1 + b*x1*x1 + c*x1 + d;
+    double df = 3.0*a*x1*x1 + 2.0*b*x1 + c;
+    if(ia==0)
+      f0 = f;
+      
+    double dx = -f/df;
+    x1 = x1 + dx;
+    
+    if(f0<tol*tol)
+      f0 = tol*tol;
+      
+    double error = abs(f/f0);
+    
+    if(print_cnvg)
+      printf("%d: x1 = %e, |%e|%e|\n", ia, x1, f, error);
+
+    if(error<tol)
+      break;
+  }
+  
+  double x2 = (-b - x1*a + sqrt(b*b - 4.0*a*c - 2.0*a*b*x1 - 3.0*a*a*x1*x1))/2.0/a;
+  double x3 = (-b - x1*a - sqrt(b*b - 4.0*a*c - 2.0*a*b*x1 - 3.0*a*a*x1*x1))/2.0/a;
+
+  if(x1 < x2){
+    double temp = x1;
+    x1 = x2;
+    x2 = temp;
+  }
+
+  if(x1 < x3){
+    double temp = x1;
+    x1 = x3;
+    x3 = temp;
+  }
+  
+  if(x2 < x3){
+    double temp = x2;
+    x2 = x3;
+    x3 = temp;
+  }
+  
+  if(print_cnvg){
+    printf("---------------------------------------------\n");
+    printf("soution of (%e)x^3+(%e)x^2+(%e)x+(%e): %e %e %e\n", a, b, c, d, x1, x2, x3);
+    printf("---------------------------------------------\n");
+  }
+  x[0] = x1;
+  x[1] = x2;
+  x[2] = x3;
+}

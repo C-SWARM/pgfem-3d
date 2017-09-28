@@ -721,4 +721,12 @@ double compute_volumes_from_coordinates(double *x,
                                         double *z,
                                         long nne);
 
+/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically. 
+void compute_root_of_cubic_euqation(double *x,
+                                    double a,
+                                    double b,
+                                    double c,
+                                    double d,
+                                    double x0 = 0.0,
+                                    bool print_cnvg = false);
 #endif // #define PGFEM3D_UTILS_H
