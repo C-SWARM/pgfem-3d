@@ -1479,8 +1479,8 @@ int VTK_write_data_P(FILE *out,
     S[4] = sig[i].il[0].o[1];
     S[5] = sig[i].il[0].o[3];
 
-    S[6] = sig[i].il[0].o[3];
-    S[7] = sig[i].il[0].o[4];
+    S[6] = sig[i].il[0].o[4];
+    S[7] = sig[i].il[0].o[3];
     S[8] = sig[i].il[0].o[2];
 
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ndim,ndim,ndim,
@@ -1682,6 +1682,58 @@ int VTK_write_data_HydrostaticStress(FILE *out,
   return err;
 }
 
+
+
+/// write write principal stress 
+/// sigma_1 = I1/3 + 2/3*sqrt(I1^2 - 3*I2)*cos(phi)
+/// sigma_2 = I1/3 + 2/3*sqrt(I1^2 - 3*I2)*cos(phi - 2*pi/3)
+/// sigma_2 = I1/3 + 2/3*sqrt(I1^2 - 3*I2)*cos(phi - 4*pi/3)
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+int VTK_write_data_PrincipalStress(FILE *out,
+                                   Grid *grid,
+                                   const MaterialProperty *mat,
+                                   FieldVariables *FV,
+                                   LoadingSteps *load,
+                                   PRINT_MULTIPHYSICS_RESULT *pmr,
+                                   const PGFem3D_opt *opts)
+{
+  int err = 0;
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  SIG *sig = FV[pmr->mp_id].sig;
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double s11 = sig[ia].il[0].o[0];
+    double s12 = sig[ia].il[0].o[5];
+    double s31 = sig[ia].il[0].o[4];
+    double s22 = sig[ia].il[0].o[1];
+    double s23 = sig[ia].il[0].o[3];
+    double s33 = sig[ia].il[0].o[2];
+    
+    double I1 = s11 + s22 + s33;
+    double I2 = s11*s22 + s22*s33 + s33*s11 - (s12*s12 + s23*s23 + s31*s31);
+    double I3 = s11*s22*s33 - s11*s23*s23 - s22*s31*s31 - s33*s12*s12 + 2.0*s12*s23*s31;
+
+    double s0 = (s11 + s22 + s33)/3.0; // initial guess of s^3 - I1*s^2 + I2*s - I3 = 0     
+    double sigma[3];
+    compute_root_of_cubic_euqation(sigma, 1.0, -I1, I2, -I3, s0);
+          
+    PGFEM_fprintf(out,"%12.12e %12.12e %12.12e\n", sigma[0], sigma[1], sigma[2]);
+  }
+  err += VTK_write_multiphysics_DataArray_footer(out);
+  return err;
+}
+
 /// write Heat Flux
 ///
 /// q = k*grad(T)
@@ -1867,6 +1919,11 @@ int VTK_construct_PMR(Grid *grid,
              pmr[cnt_pmr].write_vtk = VTK_write_data_HydrostaticStress;
              sprintf(pmr[cnt_pmr].variable_name, "HydrostaticStress");
              break;
+            case MECHANICAL_Var_PrincipalStress:
+             pmr[cnt_pmr].m_col    = 3;
+             pmr[cnt_pmr].write_vtk = VTK_write_data_PrincipalStress;
+             sprintf(pmr[cnt_pmr].variable_name, "PrincipalStress");
+             break;             
             default:
              pmr[cnt_pmr].is_point_data = 1;
              pmr[cnt_pmr].m_row         = grid->nn;

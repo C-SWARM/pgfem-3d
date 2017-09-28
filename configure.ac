@@ -11,7 +11,7 @@ AC_INIT([PGFem3D], [PGFEM3D_MAJOR.PGFEM3D_MINOR], [bugs@cswarm.nd.edu])
 # default build.
 # - uncomment if you need C
 # : ${CFLAGS="-O3 -g"}
-: ${CXXFLAGS="-O3 -g"}
+: ${CXXFLAGS="-O3"}
 
 AC_LANG([C++])
 

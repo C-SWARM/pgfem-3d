@@ -23,7 +23,7 @@ output=$outdir/box_${NP}CPU
 # cleanup on failure.
 function cleanup {
     echo "Removing $out $outdir"
-    rm -rf $outdir *.log *.txt
+    rm -rf $outdir *.txt out_run_all.log out_restart.log
 }
 trap cleanup EXIT
 
