@@ -13,22 +13,22 @@
 #include "supp.h"
 
 /** Print the master VTK file (call on only 1 CPU)*/
-void VTK_print_master(char *path,
-                      char *base_name,
+void VTK_print_master(const char *path,
+                      const char *base_name,
                       int time,
                       int nproc,
                       const PGFem3D_opt *opts);
 
 /** Print master VTK file for cohesive elements (call on only 1 CPU)*/
-void VTK_print_cohesive_master(char *path,
-                               char *base_name,
+void VTK_print_cohesive_master(const char *path,
+                               const char *base_name,
                                int time,
                                int nproc,
                                const PGFem3D_opt *opts);
 
 /** Print the individual vtu files */
-void VTK_print_vtu(char *path,
-                   char *base_name,
+void VTK_print_vtu(const char *path,
+                   const char *base_name,
                    int time,
                    int myrank,
                    long ne,
@@ -43,8 +43,8 @@ void VTK_print_vtu(char *path,
                    const int mp_id);
 
 /** Print the individual vtu files for the cohesive elements */
-void VTK_print_cohesive_vtu(char *path,
-                            char *base_name,
+void VTK_print_cohesive_vtu(const char *path,
+                            const char *base_name,
                             int time,
                             int myrank,
                             long nce,

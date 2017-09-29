@@ -14,7 +14,7 @@
 /** read the macroscopic normal and cell thickness (lc) from a file
     called "normal.in" placed in the input directory.
     Format: [lc Nx Ny Nz] */
-int read_interface_macro_normal_lc(char *in_dir,
+int read_interface_macro_normal_lc(const char *in_dir,
                                    SUPP sup);
 
 /** computes the macroscopic jump across the interface. The jump is

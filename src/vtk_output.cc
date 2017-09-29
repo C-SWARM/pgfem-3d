@@ -19,8 +19,8 @@ static constexpr const char *out_dir = "VTK";
 static constexpr const char *step_dir = "STEP_";
 static constexpr int ndim = 3;
 
-void VTK_print_master(char *path,
-                      char *base_name,
+void VTK_print_master(const char *path,
+                      const char *base_name,
                       int time,
                       int nproc,
                       const PGFem3D_opt *opts)
@@ -28,7 +28,7 @@ void VTK_print_master(char *path,
   /* Print the master file wich points to all the data files and
      declares the datatypes */
   char cur_dir = '.';
-  char *ptr_path = path;
+  const char *ptr_path = path;
   char dir_name[500];
 
   const int analysis = opts->analysis_type;
@@ -115,8 +115,8 @@ void VTK_print_master(char *path,
   free(filename);
 }
 
-void VTK_print_cohesive_master(char *path,
-                               char *base_name,
+void VTK_print_cohesive_master(const char *path,
+                               const char *base_name,
                                int time,
                                int nproc,
                                const PGFem3D_opt *opts)
@@ -125,7 +125,7 @@ void VTK_print_cohesive_master(char *path,
      declares the datatypes */
 
   char cur_dir = '.';
-  char *ptr_path = path;
+  const char *ptr_path = path;
   char dir_name[500];
 
   if(ptr_path == NULL) ptr_path = &cur_dir;
@@ -202,8 +202,8 @@ void VTK_print_cohesive_master(char *path,
 }
 
 /****  CURRENTLY ONLY SUPPORT STB ELEMENTS  ****/
-void VTK_print_vtu(char *path,
-                   char *base_name,
+void VTK_print_vtu(const char *path,
+                   const char *base_name,
                    int time,
                    int myrank,
                    long ne,
@@ -218,7 +218,7 @@ void VTK_print_vtu(char *path,
                    const int mp_id)
 {
   char cur_dir = '.';
-  char *ptr_path = path;
+  const char *ptr_path = path;
   char dir_name[500];
   if(ptr_path == NULL) ptr_path = &cur_dir;
   sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
@@ -499,8 +499,8 @@ void VTK_print_vtu(char *path,
 }
 
 
-void VTK_print_cohesive_vtu(char *path,
-                            char *base_name,
+void VTK_print_cohesive_vtu(const char *path,
+                            const char *base_name,
                             int time,
                             int myrank,
                             long nce,
@@ -513,7 +513,7 @@ void VTK_print_cohesive_vtu(char *path,
                             const int mp_id)
 {
   char cur_dir = '.';
-  char *ptr_path = path;
+  const char *ptr_path = path;
   char dir_name[500];
   if(ptr_path == NULL) ptr_path = &cur_dir;
   sprintf(dir_name,"%s/%s/%s%.6d",ptr_path,out_dir,step_dir,time);
@@ -742,8 +742,8 @@ int VTK_get_filename(char *filename,
   const char o_dir[] = "VTK";
   const char s_dir[] = "STEP_";
 
-  char *ptr_path = opts->opath;
-  char *base_name = opts->ofname;
+  const char *ptr_path = opts->opath;
+  const char *base_name = opts->ofname;
 
   char dir_name[1024];
   if(ptr_path == NULL) ptr_path = &c_dir;
@@ -813,7 +813,7 @@ int VTK_write_multiphysics_master_footer(FILE *out,
 {
   int err = 0;
   const char s_dir[] = "STEP_";
-  char *base_name = opts->ofname;
+  const char *base_name = opts->ofname;
   char dir_name[1024];
   char filename[1024];
   /* write piece list */

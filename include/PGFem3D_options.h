@@ -24,6 +24,7 @@ struct PGFem3D_opt {
   int analysis_type;
   double stab;
   int cohesive;
+  static constexpr const int gem = 0;           // generalized fem
   int plc;
   int multi_scale;
   int cm;
@@ -53,10 +54,10 @@ struct PGFem3D_opt {
   char *override_material_props;
 
   /* I/O file names */
-  char *ipath;
-  char *opath;
-  char *ifname;
-  char *ofname;
+  const char *ipath;
+  const char *opath;
+  const char *ifname;
+  const char *ofname;
   double walltime;
 };
 
@@ -85,9 +86,9 @@ void re_parse_command_line(const int myrank,
 /** get start_idx and argc to pass to re_parse_command_line for
     micro and macro option blocks. Set the macro/micro sizes and
     return debug flag if found in any option block */
-void get_macro_micro_option_blocks(const int myrank,
-                                   const int argc,
-                                   /* const */ char **argv,
+void get_macro_micro_option_blocks(int myrank,
+                                   int argc,
+                                   char *argv[],
                                    int *macro_start,
                                    int *macro_argc,
                                    int *micro_start,

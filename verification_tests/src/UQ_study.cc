@@ -14,7 +14,7 @@
 /*****************************************************/
 int single_scale_main(int argc, char **argv);
 
-void copy_filename(char fn_from[], char f_to[])
+void copy_filename(const char *fn_from, char *f_to)
 {
   int c = 0;
 

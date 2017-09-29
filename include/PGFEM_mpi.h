@@ -12,16 +12,16 @@
 
 /** Wrappers for MPI_Abort. Allows for simple change
     throughout code for different abort mechanism */
-#define PGFEM_Comm_code_abort(mpi_comm,code)  MPI_Abort((mpi_comm),(code))
-#define PGFEM_Comm_abort(mpi_comm) PGFEM_Comm_code_abort((mpi_comm),0)
-#define PGFEM_Abort() PGFEM_Comm_code_abort(MPI_COMM_WORLD,0);
+[[noreturn]] void PGFEM_Comm_code_abort(MPI_Comm comm, int code);
+[[noreturn]] void PGFEM_Comm_abort(MPI_Comm comm);
+[[noreturn]] void PGFEM_Abort();
 
 /** Get the rank on MPI_COMM_WORLD for error messages */
-#define PGFEM_Error_rank(myrank) MPI_Comm_rank(MPI_COMM_WORLD,(myrank))
+int PGFEM_Error_rank(int* myrank);
 
 /** Structure for passing around communicators etc. and managing
     macro/micro execution */
-typedef struct PGFEM_mpi_comm{
+struct PGFEM_mpi_comm {
   /* communicators */
   MPI_Comm world;
   MPI_Comm macro;
@@ -46,8 +46,7 @@ typedef struct PGFEM_mpi_comm{
   int valid_micro_all;
   int valid_micro;
   int valid_mm_inter;
-
-} PGFEM_mpi_comm;
+};
 
 /** Initialize PGFEM_mpi_comm to MPI_COMM_WORLD, or whatever is passed
     as comm_world */

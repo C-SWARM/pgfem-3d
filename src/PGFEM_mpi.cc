@@ -1,13 +1,40 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include "PGFEM_mpi.h"
-
-#ifndef ALLOCATION_H
-#include "allocation.h"
-#endif
-
-#ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
-#endif
+#include "allocation.h"
+
+void
+PGFEM_Comm_code_abort(MPI_Comm comm, int code)
+{
+  int init;
+  if (!MPI_Initialized(&init) and init) {
+    MPI_Abort(comm, code);
+  }
+  exit(code);
+}
+
+void
+PGFEM_Comm_abort(MPI_Comm comm)
+{
+  PGFEM_Comm_code_abort(comm, 0);
+}
+
+void
+PGFEM_Abort()
+{
+  PGFEM_Comm_code_abort(MPI_COMM_WORLD, 0);
+}
+
+/** Get the rank on MPI_COMM_WORLD for error messages */
+int
+PGFEM_Error_rank(int* myrank)
+{
+  return MPI_Comm_rank(MPI_COMM_WORLD, myrank);
+}
+
 
 /** Initialize PGFEM_mpi_comm to MPI_COMM_WORLD, or whatever is passed
     as comm_world */

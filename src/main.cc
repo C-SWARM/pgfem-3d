@@ -69,142 +69,40 @@ const constexpr int periodic = 0;
 ///
 /// \param[in] argc number of arguments passed through command line
 /// \param[in] argv arguments passed through command line
-/// \param[in] fv field variables (FieldVariables object)
 /// \param[in] grid mesh info (Grid object)
 /// \param[in] com commuincation info (CommunicationStructure object)
 /// \param[in] load info for loading steps (LoadingSteps object)
-/// \param[in] gem flag for Generalized finite element method
 /// \param[in] opts structure PGFem3D option
-/// \return non-zero on internal error
-int print_PGFem3D_run_info(int argc,char *argv[],
-                           Grid *grid,
-                           CommunicationStructure *com,
-                           LoadingSteps *load,
-                           long gem,
-                           PGFem3D_opt *opts)
+static void print_PGFem3D_run_info(int argc,
+                                  char *argv[],
+                                  const Grid *grid,
+                                  const CommunicationStructure *com,
+                                  const LoadingSteps *load,
+                                  const PGFem3D_opt *opts)
 {
-  int err = 0;
-
   PrintTitleV1();
-  for (int ia = 0; ia < argc; ia++)
-    PGFEM_printf("%s ",argv[ia]);
+  for (int i = 0, e = argc; i < e; ++i) {
+    PGFEM_printf("%s ", argv[i]);
+  }
 
   PGFEM_printf("\n\n");
 
-  switch(opts->analysis_type)
-  {
-   case ELASTIC:
-    PGFEM_printf ("ELASTIC ANALYSIS\n");
-    break;
-   case TP_ELASTO_PLASTIC:
-    PGFEM_printf ("TWO PHASE COMPOSITE SYSTEM : ELASTO-PLASTIC ANALYSIS\n");
-    break;
-   case FS_CRPL:
-    PGFEM_printf ("FINITE STRAIN CRYSTAL ELASTO-PLASTICITY\n");
-    break;
-   case FINITE_STRAIN:
-    if (opts->cohesive == 0) {
-      PGFEM_printf ("FINITE STRAIN ELASTICITY\n");
+  print_interpreted_options(opts);
+
+  if (opts->multi_scale) {
+    if (load->sups[MULTIPHYSICS_MECHANICAL]->npd >= 9) {
+      PGFEM_printf("*** BULK Multiscale Modeling ***\n");
     } else {
-      PGFEM_printf ("FINITE STRAIN ELASTICITY WITH COHESIVE FRACTURE\n");
-    }
-    break;
-   case STABILIZED:
-    if (opts->cohesive == 0 && gem == 0) {
-      PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
-                    opts->stab);
-    } else if( opts->cohesive == 1) {
-      PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION"
-                    " WITH COHESIVE FRACTURE : stb = %12.5e\n",
-                    opts->stab);
-    } else if ( gem == 1) {
-      PGFEM_printf ("GENERALIZED FINITE ELEMENT METHOD\n");
-      PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
-                    opts->stab);
-    }
-    break;
-   case MINI:
-    PGFEM_printf("FINITE STRAIN HYPERELASTICITY W/ MINI ELEMENT\n");
-    break;
-   case MINI_3F:
-    PGFEM_printf("FINITE STRAIN HYPERELASTICITY W/ MINI 3 FIELD ELEMENT\n");
-    break;
-   case DISP:
-    PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
-                 "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
-    break;
-   case TF:
-    PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
-                 "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n");
-    break;
-   case CM:
-   case CM3F:
-     {
-       PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
-       switch(opts->cm)
-       {
-        case UPDATED_LAGRANGIAN:
-         PGFEM_printf("UPDATED LAGRANGIAN\n");
-         break;
-        case TOTAL_LAGRANGIAN:
-         PGFEM_printf("TOTAL LAGRANGIAN\n");
-         break;
-        case MIXED_ANALYSIS_MODE:
-         PGFEM_printf("MIXED ANALYSIS MODE\n");
-         break;
-        default:
-         PGFEM_printf("UPDATED LAGRANGIAN\n");
-         break;
-       }
-       break;
-     }
-   default:
-    PGFEM_printerr("ERROR: unrecognized analysis type!\n");
-    PGFEM_Abort();
-    break;
-  }
-
-  if(opts->multi_scale){
-    if((load->sups[MULTIPHYSICS_MECHANICAL])->npd>= 9){
-      PGFEM_printf("*** BULK Multiscale Modelling ***\n");
-    } else {
-      PGFEM_printf("*** INTERFACE Multiscale Modelling ***\n");
+      PGFEM_printf("*** INTERFACE Multiscale Modeling ***\n");
     }
   }
 
-  PGFEM_printf ("\n");
-  PGFEM_printf ("SolverPackage: ");
-  assert(opts->solverpackage == HYPRE);
-  switch(opts->solver){
-   case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
-   case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
-   case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-   case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
-   case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
-   default:
-    PGFEM_printerr("Unrecognized solver package!\n");
-    PGFEM_Abort();
-    break;
-  }
-
-  PGFEM_printf("Preconditioner: ");
-  switch(opts->precond){
-   case PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
-   case PILUT: PGFEM_printf ("HYPRE - PILUT\n"); break;
-   case EUCLID: PGFEM_printf ("HYPRE - EUCLID\n"); break;
-   case BOOMER: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-   case NONE: PGFEM_printf ("PGFEM3D - NONE\n"); break;
-   case DIAG_SCALE: PGFEM_printf ("PGFEM3D - DIAGONAL SCALE\n"); break;
-   case JACOBI: PGFEM_printf ("PGFEM3D - JACOBI\n"); break;
-  }
-  PGFEM_printf ("\n");
-  PGFEM_printf ("Number of total nodes                    : %ld\n", grid->Gnn);
-  PGFEM_printf ("Number of nodes on domain interfaces     : %ld\n", com->NBN);
-  PGFEM_printf ("Total number of elements                 : %ld\n", grid->Gne);
-  PGFEM_printf ("Number of elems on the COMM interfaces   : %ld\n", grid->Gnbndel);
-  PGFEM_printf ("Total number of bounding (surf) elems    : %d\n",  grid->Gn_be);
-
-  return err;
+  PGFEM_printf("\n");
+  PGFEM_printf("Number of total nodes                    : %ld\n", grid->Gnn);
+  PGFEM_printf("Number of nodes on domain interfaces     : %ld\n", com->NBN);
+  PGFEM_printf("Total number of elements                 : %ld\n", grid->Gne);
+  PGFEM_printf("Number of elems on the COMM interfaces   : %ld\n", grid->Gnbndel);
+  PGFEM_printf("Total number of bounding (surf) elems    : %d\n",  grid->Gn_be);
 }
 
 /// Print PGFem3D run time info
@@ -475,7 +373,6 @@ int single_scale_main(int argc,char *argv[])
   int err = 0;
 
   const constexpr int ndim = 3;
-  const constexpr long gem = 0;
 
   /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
    * may change */
@@ -861,8 +758,8 @@ int single_scale_main(int argc,char *argv[])
     //---->
     if (myrank == 0)
     {
-      if(ia==0) // print onece
-        err += print_PGFem3D_run_info(argc, argv, &grid, &com[ia], &load, gem, &options);
+      if (ia==0) // print onece
+        print_PGFem3D_run_info(argc, argv, &grid, &com[ia], &load, &options);
 
       PGFEM_printf ("---------------------------------------------\n");
       PGFEM_printf ("Physics name: %s\n", mp.physicsname[ia]);

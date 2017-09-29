@@ -9,8 +9,7 @@
 #include <cmath>
 #include <cstring>
 
-int read_interface_macro_normal_lc(char *in_dir,
-                                   SUPP sup)
+int read_interface_macro_normal_lc(const char *in_dir, SUPP sup)
 {
   int err = 0;
   const char *filename = "normal.in";

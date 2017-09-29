@@ -55,12 +55,15 @@ const constexpr int ndim = 3;
 const constexpr long ARC = 1;
 }
 
-int multi_scale_main(int argc, char **argv)
+int multi_scale_main(int argc, char* argv[])
 {
   int err = 0;
   int mp_id = 0;
   /* intitialize MPI */
-  err += MPI_Init(&argc,&argv);
+  if (MPI_Init(&argc, &argv)) {
+    PGFEM_Abort();
+  }
+
   /* initialize PGFEM_io */
   PGFEM_initialize_io(NULL,NULL);
 
@@ -77,7 +80,7 @@ int multi_scale_main(int argc, char **argv)
   /* get macro and micro parts of the command line */
   int rank_world = 0;
   MPI_Comm_rank(MPI_COMM_WORLD,&rank_world);
-  get_macro_micro_option_blocks(rank_world,argc,argv,
+  get_macro_micro_option_blocks(rank_world, argc, argv,
                                 &macro_start,&macro_argc,
                                 &micro_start,&micro_argc,
                                 &nproc_macro,&micro_group_size,

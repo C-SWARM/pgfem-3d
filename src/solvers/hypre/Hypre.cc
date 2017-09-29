@@ -150,19 +150,19 @@ Hypre::createSolver(int type, int maxit, double err, int kdim)
 {
   switch (type) {
    default:
-   case HYPRE_GMRES:
+   case SOLVER_GMRES:
     _solver = new GMRes(_comm, maxit, err, kdim);
     break;
-   case HYPRE_BCG_STAB:
+   case SOLVER_BCG_STAB:
     _solver = new BCGStab(_comm, maxit, err);
     break;
-   case HYPRE_AMG:
+   case SOLVER_AMG:
     _solver = new AMG(_comm, err);
     break;
-   case HYPRE_FLEX:
+   case SOLVER_FLEX:
     _solver = new Flex(_comm, maxit, err, kdim);
     break;
-   case HYPRE_HYBRID:
+   case SOLVER_HYBRID:
     _solver = new Hybrid(_comm, maxit, err, kdim);
     break;
   }
@@ -175,22 +175,22 @@ Hypre::createPreconditioner(int type)
    default:
     _preconditioner = new Preconditioner(_comm);
     break;
-   case PARA_SAILS:
+   case PRECOND_PARA_SAILS:
     _preconditioner = new ParaSails(_comm);
     break;
-   case PILUT:
+   case PRECOND_PILUT:
     _preconditioner = new Pilut(_comm);
     break;
-   case EUCLID:
+   case PRECOND_EUCLID:
     _preconditioner = new Euclid(_comm);
     break;
-   case BOOMER:
+   case PRECOND_BOOMER:
     _preconditioner = new Boomer(_comm);
     break;
-   case DIAG_SCALE:
+   case PRECOND_DIAG_SCALE:
     _preconditioner = new ScaleDiag(_comm);
     break;
-   case JACOBI:
+   case PRECOND_JACOBI:
     _preconditioner = new Jacobi(_comm);
     break;
   }

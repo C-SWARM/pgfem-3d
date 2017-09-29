@@ -30,6 +30,12 @@ static inline void CHECK_SCANF(FILE *stream, Args... args) {
   }
 }
 
+/// Simple utility to convince the compiler to tell us the length of an array.
+template <int N>
+constexpr int size(auto (&)[N]) {
+  return N;
+}
+
 /**
  * Scan the file for a valid line (non-blank and does not start with a
  * '#').  This function may be called multiple times on the same file.

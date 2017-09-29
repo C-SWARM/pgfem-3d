@@ -1,38 +1,65 @@
-/* HEADER */
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
 
 /** This file contains functions to parse the command line and print
     helpful information */
 #include "PGFem3D_options.h"
-#include "allocation.h"
-#include "enumerations.h"
 #include "PGFEM_io.h"
+#include "PGFEM_mpi.h"
+#include "allocation.h"
+#include "constitutive_model.h"
+#include "enumerations.h"
+#include "utils.h"
 #include <getopt.h>
-#include <stdlib.h>
-#include <string.h>
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
 
+namespace {
 /* Generated at http://patorjk.com/software/taag/ */
-static const char *prog_name=
-  " _______    ______   ________                        ______   _______  \n"
-  "/       \\  /      \\ /        |                      /      \\ /       \\ \n"
-  "$$$$$$$  |/$$$$$$  |$$$$$$$$/______   _____  ____  /$$$$$$  |$$$$$$$  |\n"
-  "$$ |__$$ |$$ | _$$/ $$ |__  /      \\ /     \\/    \\ $$ ___$$ |$$ |  $$ |\n"
-  "$$    $$/ $$ |/    |$$    |/$$$$$$  |$$$$$$ $$$$  |  /   $$< $$ |  $$ |\n"
-  "$$$$$$$/  $$ |$$$$ |$$$$$/ $$    $$ |$$ | $$ | $$ | _$$$$$  |$$ |  $$ |\n"
-  "$$ |      $$ \\__$$ |$$ |   $$$$$$$$/ $$ | $$ | $$ |/  \\__$$ |$$ |__$$ |\n"
-  "$$ |      $$    $$/ $$ |   $$       |$$ | $$ | $$ |$$    $$/ $$    $$/ \n"
-  "$$/        $$$$$$/  $$/     $$$$$$$/ $$/  $$/  $$/  $$$$$$/  $$$$$$$/  \n";
+const char *prog_name =
+ " _______    ______   ________                        ______   _______  \n"
+ "/       \\  /      \\ /        |                      /      \\ /       \\ \n"
+ "$$$$$$$  |/$$$$$$  |$$$$$$$$/______   _____  ____  /$$$$$$  |$$$$$$$  |\n"
+ "$$ |__$$ |$$ | _$$/ $$ |__  /      \\ /     \\/    \\ $$ ___$$ |$$ |  $$ |\n"
+ "$$    $$/ $$ |/    |$$    |/$$$$$$  |$$$$$$ $$$$  |  /   $$< $$ |  $$ |\n"
+ "$$$$$$$/  $$ |$$$$ |$$$$$/ $$    $$ |$$ | $$ | $$ | _$$$$$  |$$ |  $$ |\n"
+ "$$ |      $$ \\__$$ |$$ |   $$$$$$$$/ $$ | $$ | $$ |/  \\__$$ |$$ |__$$ |\n"
+ "$$ |      $$    $$/ $$ |   $$       |$$ | $$ | $$ |$$    $$/ $$    $$/ \n"
+ "$$/        $$$$$$/  $$/     $$$$$$$/ $$/  $$/  $$/  $$$$$$/  $$$$$$$/  \n";
 
-static char cur_dir = '.';
+const char cur_dir = '.';
 
-typedef struct long_opt_descr{
-  struct option opt;
+using LongOption = option;
+
+/// An option structure that allows us to associate descriptions with getopt
+/// options.
+struct Option {
+  LongOption opt;
   const char *descr;
   int sc;
-} long_opt_descr;
 
-static const char *opt_list = "AVlh";
+  void print(FILE* out) const {
+    if (sc == 1 && opt.has_arg == no_argument) {
+      /* single character alias & no arg */
+      PGFEM_fprintf(out, "-%s [-%c]\t%s\n", opt.name, opt.val, descr);
+    }
+    else if (sc == 1 && opt.has_arg == required_argument) {
+      /* single character alias & requires arg */
+      PGFEM_fprintf(out, "-%s [-%c] (arg)\t%s\n", opt.name, opt.val, descr);
+    }
+    else if (sc == 0 && opt.has_arg == no_argument) {
+      /* no alias no arg */
+      PGFEM_fprintf(out,"-%s\t%s\n", opt.name, descr);
+    }
+    else if (sc == 0 && opt.has_arg == required_argument) {
+      PGFEM_fprintf(out,"-%s (arg)\t%s\n", opt.name, descr);
+    }
+  }
+};
 
-static const long_opt_descr analysis_opts[] = {
+const Option analysis_opts[] = {
   /* Analysis options */
   {{"cp",no_argument,NULL,'c'},"\tFinite strain crystal plasticity",0},
   {{"fd",no_argument,NULL,'f'},"\tFinite strain elasticity (Quadradic tetras or hexas)",0},
@@ -45,29 +72,29 @@ static const long_opt_descr analysis_opts[] = {
    "\t\t Provides access to CM models",0},
   {{"tf",no_argument,NULL,2},"\tTOTAL Lagrangian displacement-based 3 field finite strains analysis",0},
   {{"cm",required_argument,NULL,2},"Use of constitutive model interface\n"
-                                   "\t\t arg = 0: Updated Lagrangian\n"
-                                   "\t\t arg = 1: Total Lagrangian\n"
-                                   "\t\t arg = 2: Mixed analysis mode",0},
+   "\t\t arg = 0: Updated Lagrangian\n"
+   "\t\t arg = 1: Total Lagrangian\n"
+   "\t\t arg = 2: Mixed analysis mode",0},
   {{"cm3f",required_argument,NULL,2},"Three-field mixed method with constitutive model interface\n"
-                                   "\t\t arg = 0: Updated Lagrangian\n"
-                                   "\t\t arg = 1: Total Lagrangian\n"
-                                   "\t\t arg = 2: Mixed analysis mode",0},                                     
+   "\t\t arg = 0: Updated Lagrangian\n"
+   "\t\t arg = 1: Total Lagrangian\n"
+   "\t\t arg = 2: Mixed analysis mode",0},
   {{"coh",no_argument,NULL,1},"\tCohesive elements",0},
   {{"ms",no_argument,NULL,'m'},("\tINTERFACE or BULK multiscale modeling.\n"
-            "\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
-            "\t\tand a file named \"normal.in\" in the specified\n"
-            "\t\tinput directory containing the macroscopic normal,\n"
-            "\t\tbounding volume, and cell thickness. Format: [V lc Nx Ny Nz]."),0}
+                                "\t\tRequires six (6) or nine (9), respectively, prescribed displacements\n"
+                                "\t\tand a file named \"normal.in\" in the specified\n"
+                                "\t\tinput directory containing the macroscopic normal,\n"
+                                "\t\tbounding volume, and cell thickness. Format: [V lc Nx Ny Nz]."),0}
 };
 
-static const long_opt_descr solver_opts[] = {
+const Option solver_opts[] = {
   /* Solver options */
   {{"gmres",no_argument,NULL,3},"\tUse the HYPRE GMRES solver (default)",0},
   {{"boomer",no_argument,NULL,3},"\tUse the HYPRE BoomerAMG solver (no precond)",0},
   {{"bcgstab",no_argument,NULL,3},"Use the HYPRE BiCGSTAB solver",0},
   {{"flex-gmres",no_argument,NULL,3},"Use the HYPRE FlexGMRES solver",0},
   {{"hybrid",no_argument,NULL,3},"\tUse the HYPRE Hybrid (GMRES) solver\n"
-        "\t\t(adaptively switches preconditioner)",0},
+   "\t\t(adaptively switches preconditioner)",0},
   {{"kdim",required_argument,NULL,3},"Set the Krylov dimension",0},
   {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0},
   {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
@@ -75,7 +102,7 @@ static const long_opt_descr solver_opts[] = {
   {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0}
 };
 
-static const long_opt_descr precond_opts[] = {
+const Option precond_opts[] = {
   /* Preconditioner options */
   {{"pre-euclid",no_argument,NULL,4},"Use the HYPRE Euclid preconditioner (default)",0},
   {{"pre-boomer",no_argument,NULL,4},"Use the HYPRE BoomerAMG preconditioner",0},
@@ -86,24 +113,24 @@ static const long_opt_descr precond_opts[] = {
   {{"pre-none",no_argument,NULL,4},"Do not use a preconditioner",0}
 };
 
-static const long_opt_descr vis_opts[] = {
+const Option vis_opts[] = {
   /* Visualization options */
   {{"vtk",no_argument,NULL,'V'},"Output in VTK format",1},
   {{"ascii",no_argument,NULL,'A'},"Additional output in ASCII format",1},
 };
 
-static const long_opt_descr other_opts[] = {
+const Option other_opts[] = {
   /* Other options */
   {{"ipath",required_argument,NULL,'i'},"Path to input files parent directory",0},
   {{"opath",required_argument,NULL,'o'},"Path to output files parent directory",0},
   {{"override-pre-disp",required_argument,NULL,'O'},("\n\t\tOverride the prescribed displacements in *.in\n"
-        "\t\twith those provided in the given file."),0},
+                                                     "\t\twith those provided in the given file."),0},
   {{"override-solver-file",required_argument,NULL,'O'},("\n\t\tOverride the default solver filename with\n"
-        "\t\tthe provided filename."),0},
+                                                        "\t\tthe provided filename."),0},
   {{"override-material-props",required_argument,NULL,'O'},("\n\t\tOverride the material properties in *.in\n"
                                                            "\t\twith those provided in the given file."),0},
   {{"restart",required_argument,NULL,'r'},("Restart from specified step. Requires original\n"
-        "\t\tinput files and dumped restart files for specified step."),0},
+                                           "\t\tinput files and dumped restart files for specified step."),0},
   {{"max-server-jobs",required_argument,NULL,'S'},("\n\t\tSet the maximum number of jobs allowed on a server (FE2)."),0},
   {{"no-migrate",no_argument,NULL,'N'},("Do not migrate cells between servers (FE2)."),0},
   {{"legacy",no_argument,NULL,'l'},"Read files from legacy format",1},
@@ -112,12 +139,12 @@ static const long_opt_descr other_opts[] = {
   {{"no-compute-reactions",no_argument,NULL,'R'},"\n\t\tNo compute and print reaction forces",0},
   {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0},
   {{"walltime",required_argument,NULL,'w'},("\n\t\tSet Walltime[s] and write restart files nearby this walltime.\n"
-                                           "\t\tDefault is -1.0 (no actions)"),0},
+                                            "\t\tDefault is -1.0 (no actions)"),0},
 };
 
 /* these options may no longer be supported/functional. They are kept
    for documentation purposes only and are ignored if used */
-static const long_opt_descr depricated_opts[] = {
+const Option depricated_opts[] = {
   {{"elixir",no_argument,NULL,'X'},"Output in Elixir format [unsupported, use -V]",1},
   {{"ensight",no_argument,NULL,'E'},"Output in EnSight format [outdated, use -V]",1},
   {{"sm",no_argument,NULL,'s'},"Smooth stress field [unsupported]",1},
@@ -127,73 +154,33 @@ static const long_opt_descr depricated_opts[] = {
   {{"rn",no_argument,NULL,'r'},"\tRenumber degrees of freedom [unsupported]",0},
 };
 
-static const struct option last_opt = {NULL,0,NULL,0};
+const Option null_opts[] = {
+  {{NULL,0,NULL,0},nullptr,0}
+};
 
-static const int n_analysis = sizeof(analysis_opts)/sizeof(long_opt_descr);
-static const int n_solver = sizeof(solver_opts)/sizeof(long_opt_descr);
-static const int n_precond = sizeof(precond_opts)/sizeof(long_opt_descr);
-static const int n_vis = sizeof(vis_opts)/sizeof(long_opt_descr);
-static const int n_other = sizeof(other_opts)/sizeof(long_opt_descr);
-static const int n_depricated = sizeof(depricated_opts)/sizeof(long_opt_descr);
+/// The total number of options that we have defined.
+constexpr const int N_OPTS = {
+  size(analysis_opts) + size(solver_opts) + size(precond_opts) +
+  size(vis_opts) + size(other_opts) + size(depricated_opts) + size(null_opts)
+};
 
-static void print_long_options(FILE* out,
-                               const long_opt_descr *opts,
-                               int n_opt)
-{
-  for(int i=0; i<n_opt; i++){
-    if(opts[i].sc == 1 && opts[i].opt.has_arg == no_argument){
-      /* single character alias & no arg */
-      PGFEM_fprintf(out,"-%s [-%c]\t%s\n",opts[i].opt.name,opts[i].opt.val,
-          opts[i].descr);
-    } else if(opts[i].sc == 1 && opts[i].opt.has_arg == required_argument){
-      /* single character alias & requires arg */
-      PGFEM_fprintf(out,"-%s [-%c] (arg)\t%s\n",opts[i].opt.name,opts[i].opt.val,
-          opts[i].descr);
-    } else if(opts[i].sc == 0 && opts[i].opt.has_arg == no_argument){
-      /* no alias no arg */
-      PGFEM_fprintf(out,"-%s\t%s\n",opts[i].opt.name,opts[i].descr);
-    } else if(opts[i].sc == 0 && opts[i].opt.has_arg == required_argument){
-      PGFEM_fprintf(out,"-%s (arg)\t%s\n",opts[i].opt.name,opts[i].descr);
-    }
-  }
+void initialize(LongOption *A) {
+  for (const auto& o : analysis_opts)   { *A++ = o.opt; }
+  for (const auto& o : solver_opts)     { *A++ = o.opt; }
+  for (const auto& o : precond_opts)    { *A++ = o.opt; }
+  for (const auto& o : vis_opts)        { *A++ = o.opt; }
+  for (const auto& o : other_opts)      { *A++ = o.opt; }
+  for (const auto& o : depricated_opts) { *A++ = o.opt; }
+  for (const auto& o : null_opts)       { *A++ = o.opt; }
 }
-
-static void copy_options(struct option *A)
-{
-  const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
-  int idx = 0;
-  for(int i=0; i<n_analysis; i++){
-    A[i+idx] = analysis_opts[i].opt;
-  }
-  idx += n_analysis;
-  for(int i=0; i<n_solver; i++){
-    A[i+idx] = solver_opts[i].opt;
-  }
-  idx += n_solver;
-  for(int i=0; i<n_precond; i++){
-    A[i+idx] = precond_opts[i].opt;
-  }
-  idx += n_precond;
-  for(int i=0; i<n_vis; i++){
-    A[i+idx] = vis_opts[i].opt;
-  }
-  idx += n_vis;
-  for(int i=0; i<n_other; i++){
-    A[i+idx] = other_opts[i].opt;
-  }
-  A[n_options] = last_opt;
-}
-
-/*====================================================*/
-/*                   END LOCALS                       */
-/*====================================================*/
+} // namespace
 
 void set_default_options(PGFem3D_opt *options)
 {
   /* solver options */
-  options->solverpackage = 1; /* HYPRE */
-  options->solver = HYPRE_GMRES;
-  options->precond = EUCLID;
+  options->solverpackage = HYPRE;
+  options->solver = SOLVER_GMRES;
+  options->precond = PRECOND_EUCLID;
   options->kdim = 500;
   options->maxit = 1000;
   options->solution_scheme_opt[LINE_SEARCH]              = 1;
@@ -221,7 +208,7 @@ void set_default_options(PGFem3D_opt *options)
   options->debug = 0;
   options->me = 0;
   options->restart = -1; /* flag >= 0 used to specify both restart and
-                step to start from */
+                            step to start from */
   options->max_n_jobs = 0;
   options->no_migrate = 0;
 
@@ -242,16 +229,15 @@ void set_default_options(PGFem3D_opt *options)
   options->walltime = -1.0;
 }
 
-void print_options(FILE *out,
-                   const PGFem3D_opt *options)
+void print_options(FILE *out, const PGFem3D_opt *options)
 {
   PGFEM_fprintf(out,"OPTION VALUES:\n");
   PGFEM_fprintf(out,"=== SOLVER OPTIONS ===\n");
-  PGFEM_fprintf(out,"Solver package: %d\n",options->solverpackage);
-  PGFEM_fprintf(out,"Solver:         %d\n",options->solver);
-  PGFEM_fprintf(out,"Preconditioner: %d\n",options->precond);
-  PGFEM_fprintf(out,"Kdim:           %d\n",options->kdim);
-  PGFEM_fprintf(out,"Max It:         %d\n",options->maxit);
+  PGFEM_fprintf(out,"Solver package: %d\n", options->solverpackage);
+  PGFEM_fprintf(out,"Solver:         %d\n", options->solver);
+  PGFEM_fprintf(out,"Preconditioner: %d\n", options->precond);
+  PGFEM_fprintf(out,"Kdim:           %d\n", options->kdim);
+  PGFEM_fprintf(out,"Max It:         %d\n", options->maxit);
   if(options->solution_scheme_opt[LINE_SEARCH])
     PGFEM_fprintf(out,"LINE SEARCH is enabled\n");
   else
@@ -305,17 +291,17 @@ void print_usage(FILE* out)
                 "OPTION_BLK: -[scale]-start [options] "
                 "input output -[scale]-end\n");
   PGFEM_fprintf(out,"\nAnalysis Options:\n");
-  print_long_options(out,analysis_opts,n_analysis);
+  for (const auto& opt : analysis_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nSolver Options:\n");
-  print_long_options(out,solver_opts,n_solver);
+  for (const auto& opt : solver_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nPreconditioner Options:\n");
-  print_long_options(out,precond_opts,n_precond);
+  for (const auto& opt : precond_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nVisuzlization Options:\n");
-  print_long_options(out,vis_opts,n_vis);
+  for (const auto& opt : vis_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nOther Options:\n");
-  print_long_options(out,other_opts,n_other);
+  for (const auto& opt : other_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nDepricated (ignored) Options:\n");
-  print_long_options(out,depricated_opts,n_depricated);
+  for (const auto& opt : depricated_opts) { opt.print(out); }
 } /* print_usage() */
 
 void parse_command_line(const int argc,
@@ -328,91 +314,112 @@ void parse_command_line(const int argc,
 
 void print_interpreted_options(const PGFem3D_opt *opts)
 {
-  switch(opts->analysis_type){
-  case ELASTIC:
-    PGFEM_printf ("ELASTIC ANALYSIS\n");
+  switch (opts->analysis_type) {
+   case ELASTIC:
+    PGFEM_printf("ELASTIC ANALYSIS\n");
     break;
-  case TP_ELASTO_PLASTIC:
-    PGFEM_printf ("TWO PHASE COMPOSITE SYSTEM : ELASTO-PLASTIC ANALYSIS\n");
+   case TP_ELASTO_PLASTIC:
+    PGFEM_printf("TWO PHASE COMPOSITE SYSTEM : ELASTO-PLASTIC ANALYSIS\n");
     break;
-  case FS_CRPL:
-    PGFEM_printf ("FINITE STRAIN CRYSTAL ELASTO-PLASTICITY\n");
+   case FS_CRPL:
+    PGFEM_printf("FINITE STRAIN CRYSTAL ELASTO-PLASTICITY\n");
     break;
-  case FINITE_STRAIN:
+   case FINITE_STRAIN:
     if (opts->cohesive == 0) {
-      PGFEM_printf ("FINITE STRAIN ELASTICITY\n");
+      PGFEM_printf("FINITE STRAIN ELASTICITY\n");
     } else {
-      PGFEM_printf ("FINITE STRAIN ELASTICITY WITH COHESIVE FRACTURE\n");
+      PGFEM_printf("FINITE STRAIN ELASTICITY WITH COHESIVE FRACTURE\n");
     }
     break;
-  case STABILIZED:
-    if (opts->cohesive == 0) {
-      PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
-        opts->stab);
-    } else if( opts->cohesive == 1) {
-      PGFEM_printf ("FINITE STRAIN STABILIZED FORMULATION"
-                    " WITH COHESIVE FRACTURE : stb = %12.5e\n",
+   case STABILIZED:
+    if (opts->cohesive == 0 && opts->gem == 0) {
+      PGFEM_printf("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
+                   opts->stab);
+    }
+    else if (opts->cohesive == 1) {
+      PGFEM_printf("FINITE STRAIN STABILIZED FORMULATION"
+                   " WITH COHESIVE FRACTURE : stb = %12.5e\n",
+                   opts->stab);
+    }
+    else if (opts->gem == 1) {
+      PGFEM_printf("GENERALIZED FINITE ELEMENT METHOD\n");
+      PGFEM_printf("FINITE STRAIN STABILIZED FORMULATION : stb = %12.5e\n",
                     opts->stab);
     }
+    else {
+      PGFEM_Abort();
+    }
     break;
-  case MINI:
+   case MINI:
     PGFEM_printf("FINITE STRAIN HYPERELASTICITY W/ MINI ELEMENT\n");
     break;
-  case MINI_3F:
+   case MINI_3F:
     PGFEM_printf("FINITE STRAIN HYPERELASTICITY W/ MINI 3 FIELD ELEMENT\n");
     break;
-  case DISP:
+   case DISP:
     PGFEM_printf("FINITE STRAIN DAMAGE HYPERELASTICITY:\n"
                  "TOTAL LAGRANGIAN DISPLACEMENT-BASED ELEMENT\n");
     break;
-  case TF:
+   case TF:
+    // @todo this text was in main.cc... don't know which one is correct
+    // PGFEM_printf("FINITE STRAIN TREE FIELDS HYPERELASTICITY:\n"
+    //              "TOTAL LAGRANGIAN TREE FIELDS-BASED ELEMENT\n");
+
     PGFEM_printf("THREE FIELD MIXED METHOD:\n"
                  "TOTAL LAGRANGIAN DISPLACEMENT, PRESSURE, AND VOLUME BASED ELEMENT\n");
     break;
-  case CM:
-    PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE:\n"
-                 "UPDATED LAGRANGIAN, TOTAL LAGRANGIAN, AND MIXED ANALYSIS MODE\n");
-    break;
-
-  case CM3F:
-    PGFEM_printf("THREE-FIELD MIXED METHOD USING CONSTITUTIVE MODEL INTERFACE:\n"
-                 "UPDATED LAGRANGIAN, TOTAL LAGRANGIAN, AND MIXED ANALYSIS MODE\n");
-    break;       
-
-  default:
+   case CM:
+     PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE:\n"
+                  "UPDATED LAGRANGIAN, TOTAL LAGRANGIAN, AND MIXED ANALYSIS MODE\n");
+     break;
+   case CM3F:
+     PGFEM_printf("USE CONSTITUTIVE MODEL INTERFACE: ");
+     switch (opts->cm) {
+      case UPDATED_LAGRANGIAN:
+       PGFEM_printf("UPDATED LAGRANGIAN\n");
+       break;
+      case TOTAL_LAGRANGIAN:
+       PGFEM_printf("TOTAL LAGRANGIAN\n");
+       break;
+      case MIXED_ANALYSIS_MODE:
+       PGFEM_printf("MIXED ANALYSIS MODE\n");
+       break;
+      default:
+       PGFEM_printf("UPDATED LAGRANGIAN\n");
+       break;
+     }
+     break;
+   default:
     PGFEM_printerr("ERROR: unrecognized analysis type!\n");
-    abort();
+    PGFEM_Abort();
     break;
   }
-    PGFEM_printf ("\n");
-    PGFEM_printf ("SolverPackage: ");
-    if (opts->solverpackage == BLOCKSOLVE){
-      PGFEM_printf ("BlockSolve95 no longer supported !!!\n");
-      abort();
-    } else if(opts->solverpackage == HYPRE){
-      switch(opts->solver){
-      case HYPRE_GMRES: PGFEM_printf ("HYPRE - GMRES\n"); break;
-      case HYPRE_BCG_STAB: PGFEM_printf ("HYPRE - BiCGSTAB\n"); break;
-      case HYPRE_AMG: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-      case HYPRE_FLEX: PGFEM_printf ("HYPRE - FlexGMRES\n"); break;
-      case HYPRE_HYBRID: PGFEM_printf ("HYPRE - Hybrid (GMRES)\n"); break;
-      default:
-  PGFEM_printerr("Unrecognized solver package!\n");
-  abort();
-    break;
-      }
-    }
+  PGFEM_printf("\n");
 
-    PGFEM_printf("Preconditioner: ");
-    switch(opts->precond){
-    case PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
-    case PILUT: PGFEM_printf ("HYPRE - PILUT\n"); break;
-    case EUCLID: PGFEM_printf ("HYPRE - EUCLID\n"); break;
-    case BOOMER: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-    case NONE: PGFEM_printf ("PGFEM3D - NONE\n"); break;
-    case DIAG_SCALE: PGFEM_printf ("PGFEM3D - DIAGONAL SCALE\n"); break;
-    case JACOBI: PGFEM_printf ("PGFEM3D - JACOBI\n"); break;
-    }
+  if (opts->solverpackage == BLOCKSOLVE) {
+    PGFEM_printerr("BlockSolve95 no longer supported !!!\n");
+    PGFEM_Abort();
+  }
+
+  if (opts->solver >= SOLVER_MAX) {
+    PGFEM_printerr("Unrecognized solver package!\n");
+    PGFEM_Abort();
+  }
+
+  PGFEM_printf ("SolverPackage: %s - %s\n",
+                SOLVER_PACKAGE_OPTS[opts->solverpackage],
+                SOLVER_OPTS[opts->solver]);
+
+  PGFEM_printf("Preconditioner: ");
+  switch (opts->precond) {
+   case PRECOND_PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
+   case PRECOND_PILUT: PGFEM_printf ("HYPRE - PILUT\n"); break;
+   case PRECOND_EUCLID: PGFEM_printf ("HYPRE - EUCLID\n"); break;
+   case PRECOND_BOOMER: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
+   case PRECOND_NONE: PGFEM_printf ("PGFEM3D - NONE\n"); break;
+   case PRECOND_DIAG_SCALE: PGFEM_printf ("PGFEM3D - DIAGONAL SCALE\n"); break;
+   case PRECOND_JACOBI: PGFEM_printf ("PGFEM3D - JACOBI\n"); break;
+  }
 }
 
 void re_parse_command_line(const int myrank,
@@ -421,82 +428,94 @@ void re_parse_command_line(const int myrank,
                            char **argv,
                            PGFem3D_opt *options)
 {
-  const int n_options = n_analysis + n_solver + n_precond + n_vis + n_other + n_depricated;
-  option *opts = PGFEM_calloc(option, n_options+1);
-  copy_options(opts);
+  // Build the array of options that we need for the getopt API by extracting
+  // them from our Option arrays.
+  LongOption opts[N_OPTS];
+  initialize(opts);
   opterr = 0;
 
   options->cm = -1; //default: no use of constitutive model
 
   /* print command line to parse */
-  if(myrank == 0){
+  if (myrank == 0) {
     PGFEM_printf("*** Parsing options from: ");
-    for(int i=start_idx; i<argc; i++){
-      PGFEM_printf("%s ",argv[i]);
+    for(int i = start_idx, e = argc; i < e; ++i) {
+      PGFEM_printf("%s ", argv[i]);
     }
     PGFEM_printf("***\n");
   }
 
-  int ipath, opath;
-  ipath = opath = 0;
+  int ipath = 0, opath = 0;
 
   /* reset the external variable optind to 1 (do not process the
      initial command) */
   optind = start_idx;
 
   /* parse command line */
-  int opts_idx = 0;
-  int opt = getopt_long_only(argc,argv,opt_list,opts,&opts_idx);
-  while(opt != -1){
-    switch(opt){
-
+  int opt, opts_idx;
+  while ((opt = getopt_long_only(argc, argv, "AVlh", opts, &opts_idx)) != -1)
+  {
+    switch (opt) {
       /* HELP OPTIONS */
-    case '?':
-      if(myrank == 0){
-        PGFEM_printf("Skipping unrecognized option :%s\n",argv[optind-1]);
+     case '?':
+      if (myrank == 0) {
+        PGFEM_printf("Skipping unrecognized option :%s\n", argv[optind-1]);
       }
       break;
-    case 'h':
-      if(myrank == 0){
+     case 'h':
+      if (myrank == 0) {
         print_usage(stdout);
       }
       exit(0);
 
       /* ANALYSIS OPTIONS */
+     case 'c':
       /* Crystal plasticity */
-    case 'c': options->analysis_type = FS_CRPL; break;
+      options->analysis_type = FS_CRPL;
+      break;
+     case 'f':
       /* finite strain elasticity */
-    case 'f': options->analysis_type = FINITE_STRAIN; break;
+      options->analysis_type = FINITE_STRAIN;
+      break;
+     case 0:
       /* finite strain Portevin-Le Chatelier */
-    case 0: options->analysis_type = FS_CRPL; options->plc = 1; break;
-
-    case 1: /* Stabilized */
-      if(strcmp("st",opts[opts_idx].name) == 0){
+      options->analysis_type = FS_CRPL;
+      options->plc = 1;
+      break;
+     case 1:
+      /* Stabilized */
+      if (strcmp("st", opts[opts_idx].name) == 0) {
         options->analysis_type = STABILIZED;
-        options->stab = atof(optarg);
+        options->stab = strtod(optarg, nullptr);
       }
       /* Cohesive */
-      else if(strcmp("coh",opts[opts_idx].name) == 0){
+      else if (strcmp("coh", opts[opts_idx].name) == 0) {
         options->cohesive = 1;
       }
       break;
 
-    case 2: /* New finite strain formulations */
-      if(strcmp("he",opts[opts_idx].name) == 0){
+     case 2: /* New finite strain formulations */
+      if (strcmp("he", opts[opts_idx].name) == 0) {
         options->analysis_type = MINI;
-      } else if(strcmp("he3",opts[opts_idx].name) == 0){
+      }
+      else if (strcmp("he3", opts[opts_idx].name) == 0) {
         options->analysis_type = MINI_3F;
-      } else if(strcmp("disp",opts[opts_idx].name) == 0){
+      }
+      else if(strcmp("disp", opts[opts_idx].name) == 0) {
         options->analysis_type = DISP;
-      } else if(strcmp("tf",opts[opts_idx].name) == 0){
+      }
+      else if(strcmp("tf", opts[opts_idx].name) == 0) {
         options->analysis_type = TF;
-      } else if(strcmp("cm",opts[opts_idx].name) == 0){
+      }
+      else if(strcmp("cm", opts[opts_idx].name) == 0) {
         options->analysis_type = CM;
-        options->cm = atof(optarg);
-      } else if(strcmp("cm3f",opts[opts_idx].name) == 0){
+        options->cm = strtof(optarg, nullptr);
+      }
+      else if(strcmp("cm3f", opts[opts_idx].name) == 0) {
         options->analysis_type = CM3F;
-        options->cm = atof(optarg);        	
-      } else if(strcmp("disp-cm",opts[opts_idx].name) == 0){
+        options->cm = strtof(optarg, nullptr);
+      }
+      else if(strcmp("disp-cm", opts[opts_idx].name) == 0) {
         options->analysis_type = CM;
         options->cm = DISP;
       }
@@ -504,143 +523,144 @@ void re_parse_command_line(const int myrank,
       break;
 
       /* SOLVER OPTIONS */
-    case 3:
-      if(strcmp("gmres",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->solver = HYPRE_GMRES;
-      } else if(strcmp("bcgstab",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->solver = HYPRE_BCG_STAB;
-      } else if(strcmp("boomer",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->solver = HYPRE_AMG;
-      } else if(strcmp("flex-gmres",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->solver = HYPRE_FLEX;
-      } else if(strcmp("hybrid",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->solver = HYPRE_HYBRID;
-      } else if(strcmp("kdim",opts[opts_idx].name) == 0){
-        options->kdim = (int) atof(optarg);
-      } else if(strcmp("maxit",opts[opts_idx].name) == 0){
-        options->maxit = (int) atof(optarg);
-      } else if(strcmp("noLS",opts[opts_idx].name) == 0){
+     case 3:
+      if (strcmp("gmres", opts[opts_idx].name) == 0) {
+        options->solver = SOLVER_GMRES;
+      }
+      else if (strcmp("bcgstab", opts[opts_idx].name) == 0) {
+        options->solver = SOLVER_BCG_STAB;
+      }
+      else if (strcmp("boomer", opts[opts_idx].name) == 0) {
+        options->solver = SOLVER_AMG;
+      }
+      else if (strcmp("flex-gmres", opts[opts_idx].name) == 0) {
+        options->solver = SOLVER_FLEX;
+      }
+      else if (strcmp("hybrid", opts[opts_idx].name) == 0) {
+        options->solver = SOLVER_HYBRID;
+      }
+      else if (strcmp("kdim", opts[opts_idx].name) == 0) {
+        options->kdim = strtol(optarg, nullptr, 10);
+      }
+      else if (strcmp("maxit", opts[opts_idx].name) == 0) {
+        options->maxit = strtol(optarg, nullptr, 10);
+      }
+      else if (strcmp("noLS", opts[opts_idx].name) == 0) {
         options->solution_scheme_opt[LINE_SEARCH] = 0;
-      } else if(strcmp("at",opts[opts_idx].name) == 0){
+      }
+      else if (strcmp("at", opts[opts_idx].name) == 0) {
         options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
-      } else if(strcmp("noCCE",opts[opts_idx].name) == 0){
+      }
+      else if (strcmp("noCCE", opts[opts_idx].name) == 0) {
         options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
       }
       break;
 
       /* PRECOND OPTIONS */
-    case 4:
-      if(strcmp("pre-pilut",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = PILUT;
-      } else if(strcmp("pre-euclid",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = EUCLID;
-      } else if(strcmp("pre-boomer",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = BOOMER;
-      } else if(strcmp("pre-sails",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = PARA_SAILS;
-      } else if(strcmp("pre-diag",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = DIAG_SCALE;
-      } else if(strcmp("pre-jacobi",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = JACOBI;
-      }else if(strcmp("pre-none",opts[opts_idx].name) == 0){
-        options->solverpackage = HYPRE;
-        options->precond = NONE;
+     case 4:
+      if (strcmp("pre-pilut", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_PILUT;
       }
-
+      else if(strcmp("pre-euclid", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_EUCLID;
+      }
+      else if (strcmp("pre-boomer", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_BOOMER;
+      }
+      else if (strcmp("pre-sails", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_PARA_SAILS;
+      }
+      else if (strcmp("pre-diag", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_DIAG_SCALE;
+      }
+      else if (strcmp("pre-jacobi", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_JACOBI;
+      }
+      else if (strcmp("pre-none", opts[opts_idx].name) == 0) {
+        options->precond = PRECOND_NONE;
+      }
       break;
 
       /* VISUALIZATION OPTIONS */
-    case 'V': options->vis_format = VIS_VTK; break;
-    case 'A': options->ascii = 1; break;
+     case 'V': options->vis_format = VIS_VTK; break;
+     case 'A': options->ascii = 1; break;
 
       /* OTHER OPTIONS */
-    case 'i':
+     case 'i':
       options->ipath = optarg;
       ipath = 1;
       break;
 
-    case 'o':
+     case 'o':
       options->opath = optarg;
       opath = 1;
       break;
 
-    case 'O':
-      if(strcmp("override-pre-disp",opts[opts_idx].name) == 0){
-          options->override_pre_disp = 1;
+     case 'O':
+      if (strcmp("override-pre-disp", opts[opts_idx].name) == 0) {
+        options->override_pre_disp = 1;
         options->pre_disp_file = optarg;
-      } else  if(strcmp("override-solver-file",opts[opts_idx].name) == 0){
-          options->override_solver_file = 1;
-          options->solver_file = optarg;
-      } else  if(strcmp("override-material-props",opts[opts_idx].name) == 0){
+      }
+      else if (strcmp("override-solver-file", opts[opts_idx].name) == 0) {
+        options->override_solver_file = 1;
+        options->solver_file = optarg;
+      }
+      else if (strcmp("override-material-props", opts[opts_idx].name) == 0) {
         options->override_material_props = optarg;
       }
       break;
 
-    case 'm':
-      if(strcmp("ms",opts[opts_idx].name) == 0){
-          options->multi_scale = 1;
+     case 'm':
+      if (strcmp("ms", opts[opts_idx].name) == 0) {
+        options->multi_scale = 1;
       }
       break;
 
-    case 'S':
+     case 'S':
       options->max_n_jobs = atoi(optarg);
       break;
 
-    case 'N':
+     case 'N':
       options->no_migrate = 1;
       break;
 
-    case 'l':
+     case 'l':
       options->legacy = 1;
       break;
 
-    case 'r':
+     case 'r':
       options->restart = atoi(optarg);
       break;
 
-    case 9999: /* debug mode */
+     case 9999: /* debug mode */
       options->debug = 1;
       break;
 
-    case 'R':
+     case 'R':
       options->comp_print_reaction = 0;
       break;
 
-    case 'M':
+     case 'M':
       options->comp_print_macro = 0;
       break;
 
-    case 'w':
+     case 'w':
       options->walltime = atoi(optarg);
       break;
 
-    default:
+     default:
       PGFEM_printf("How did I get here???\n");
+      PGFEM_Abort();
       break;
     }
-
-    opt = getopt_long_only(argc,argv,opt_list,opts,&opts_idx);
   }
 
-  if (optind <= argc - 2){
+  if (optind <= argc - 2) {
     options->ifname = argv[argc-2];
     options->ofname = argv[argc-1];
 
-    if(!ipath){/* ipath not given, so get from filename */
-      char *sp;
-      sp = strrchr(argv[argc-2],'/');
-      if(sp != NULL){ /* input files not in current directory */
+    if (!ipath) { /* ipath not given, so get from filename */
+      if (char* sp = strrchr(argv[argc-2],'/')) { /* input files not in current directory */
         *sp = '\0';
         options->ipath = argv[argc-2];
         options->ifname = sp + 1;
@@ -650,34 +670,32 @@ void re_parse_command_line(const int myrank,
       }
     }
 
-   if(!opath){/* ipath not given, so get from filename */
-      char *sp;
-      sp = strrchr(argv[argc-1],'/');
-      if(sp != NULL){ /* input files not in current directory */
+    if (!opath) { /* ipath not given, so get from filename */
+      if (char* sp = strrchr(argv[argc-1],'/')) { /* input files not in current directory */
         *sp = '\0';
         options->opath = argv[argc-1];
         options->ofname = sp + 1;
-      } else {
+      }
+      else {
         options->ofname = argv[argc-1];
         options->opath = &cur_dir;
       }
     }
-
-  } else {
-    if(myrank == 0){
+  }
+  else {
+    if (myrank == 0) {
       PGFEM_printf("ERROR: must provide input and output file names!\n"
-           "Please see usage information below:\n\n");
+                   "Please see usage information below:\n\n");
       print_usage(PGFEM_stdout);
     }
     exit(1);
   }
-
-  free(opts);
 }
 
-void get_macro_micro_option_blocks(const int myrank,
-                                   const int argc,
-                       /* const */ char **argv,
+/* loop through command line and look for markers */
+void get_macro_micro_option_blocks(int myrank,
+                                   int argc,
+                                   char *argv[],
                                    int *macro_start,
                                    int *macro_argc,
                                    int *micro_start,
@@ -686,91 +704,103 @@ void get_macro_micro_option_blocks(const int myrank,
                                    int *micro_group_size,
                                    int *debug)
 {
-  /* loop through command line and look for markers */
-  enum{MACRO_START,
-       MACRO_ARGC,
-       MICRO_START,
-       MICRO_ARGC,
-       MACRO_NPROC,
-       MICRO_SIZE,
-       N_OPT};
-  int *got_opt = static_cast<int*>(calloc(N_OPT,sizeof(int)));
-  for(int i=0; i<argc; i++){
-    const char *arg_str = argv[i];
+  enum {
+    MACRO_START,
+    MACRO_ARGC,
+    MICRO_START,
+    MICRO_ARGC,
+    MACRO_NPROC,
+    MICRO_SIZE,
+    N_OPT
+  };
+
+  int got_opt[N_OPT] = {};
+
+  for (int i = 0, e = argc; i < e; ++i) {
+    const char *arg = argv[i];
 
     /* -debug */
-    if(strcmp(arg_str,"-debug") == 0){ *debug = 1; continue;}
+    if (strcmp(arg,"-debug") == 0) {
+      *debug = 1;
+      continue;
+    }
 
     /* -help */
-    if(strcmp(arg_str,"-help") == 0){
-      if(!myrank) print_usage(PGFEM_stdout);
+    if (strcmp(arg,"-h") == 0 and myrank == 0) {
+      print_usage(PGFEM_stdout);
+      exit(0);
+    }
+
+    if (strcmp(arg,"-help") == 0 and myrank == 0) {
+      print_usage(PGFEM_stdout);
+      exit(0);
+    }
+
+    if (strcmp(arg,"--help") == 0 and myrank == 0) {
+      print_usage(PGFEM_stdout);
       exit(0);
     }
 
     /* -macro-np */
-    if(!strcmp(arg_str,"-macro-np") && !got_opt[MACRO_NPROC]){
+    if (!strcmp(arg,"-macro-np") and !got_opt[MACRO_NPROC]) {
       sscanf(argv[++i],"%d",macro_nproc);
       got_opt[MACRO_NPROC] = 1;
       continue;
     }
 
     /* -micro-group-size */
-    if(!strcmp(arg_str,"-micro-group-size") && !got_opt[MICRO_SIZE]){
+    if (!strcmp(arg,"-micro-group-size") and !got_opt[MICRO_SIZE]) {
       sscanf(argv[++i],"%d",micro_group_size);
       got_opt[MICRO_SIZE] = 1;
       continue;
     }
 
     /* -macro-start */
-    if(!strcmp(arg_str,"-macro-start")
-       && !got_opt[MACRO_START] /* have not set option */
-       && (got_opt[MICRO_START] == got_opt[MICRO_ARGC]) /* not in micro */
-       ){
+    if (!strcmp(arg,"-macro-start")
+        and !got_opt[MACRO_START] /* have not set option */
+        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in micro */
+    {
       got_opt[MACRO_START] = 1;
       *macro_start = i;
       continue;
     }
 
     /* -macro-end */
-    if(!strcmp(arg_str,"-macro-end")
-       && (!got_opt[MACRO_ARGC] && got_opt[MACRO_START]) /* in macro */
-       && (got_opt[MICRO_START] == got_opt[MICRO_ARGC]) /* not in micro */
-       ){
+    if (!strcmp(arg,"-macro-end")
+        and (!got_opt[MACRO_ARGC] && got_opt[MACRO_START]) /* in macro */
+        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in micro */
+    {
       got_opt[MACRO_ARGC] = 1;
       *macro_argc = i - *macro_start;
       continue;
     }
 
     /* -micro-start */
-    if(!strcmp(arg_str,"-micro-start")
-       && !got_opt[MICRO_START] /* have not set option */
-       && (got_opt[MACRO_START] == got_opt[MACRO_ARGC]) /* not in macro */
-       ){
+    if (!strcmp(arg,"-micro-start")
+        and !got_opt[MICRO_START] /* have not set option */
+        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])) /* not in macro */
+    {
       got_opt[MICRO_START] = 1;
       *micro_start = i;
       continue;
     }
 
     /*  -micro-end */
-    if(!strcmp(arg_str,"-micro-end")
-       && (!got_opt[MICRO_ARGC] && got_opt[MICRO_START]) /* in micro */
-       &&(got_opt[MACRO_START] == got_opt[MACRO_ARGC]) /* not in macro */
-       ){
+    if (!strcmp(arg,"-micro-end")
+        and (!got_opt[MICRO_ARGC] && got_opt[MICRO_START]) /* in micro */
+        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])) /* not in macro */
+    {
       got_opt[MICRO_ARGC] = 1;
       *micro_argc = i - *micro_start;
       continue;
     }
-
   } /* end parse command line */
 
-  for(int i=0; i<N_OPT; i++){
-    if(!got_opt[i] && !myrank){
+  for (int i = 0, e = N_OPT; i < e; ++i) {
+    if (!got_opt[i] && !myrank) {
       PGFEM_printf("ERROR parsing macro/micro option blocks!\n");
       print_usage(PGFEM_stdout);
-      abort();
+      PGFEM_Abort();
     }
   }
-
-  /* exit function */
-  free(got_opt);
 }
