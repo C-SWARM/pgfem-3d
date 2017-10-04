@@ -522,6 +522,8 @@ int single_scale_main(int argc,char *argv[])
    case VIS_VTK:
     ensight = new Ensight{};
     break;
+   case VIS_NONE:
+   break;
    default:
     PGFEM_printerr("Unexpected visualization format %d\n", options.vis_format);
     PGFEM_Abort();
