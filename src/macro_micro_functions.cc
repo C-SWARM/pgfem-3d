@@ -349,10 +349,7 @@ int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
     /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mpi_comm); */
 
     /* clean up memory */
-    for(int i=0; i<nproc_macro; i++){
-      if(Lk != NULL) free(Lk[i]);
-      if(receive != NULL) free(receive[i]);
-    }
+    free_stiffmat_comm_buffers(Lk, receive, c->pgfem_comm);
     free(Lk);
     free(receive);
     free(sta_r);

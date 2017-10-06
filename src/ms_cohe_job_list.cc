@@ -344,18 +344,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   macro_solver->resetPreconditioner();
 
   /* clean up memory */
-  if (Lk) {
-    for (int i = 0; i < macro_nproc; ++i) {
-      free(Lk[i]);
-    }
-  }
-
-  if (receive) {
-    for (int i = 0; i < macro_nproc; ++i) {
-      free(receive[i]);
-    }
-  }
-
+  free_stiffmat_comm_buffers(Lk, receive, macro_pgfem_comm);
   free(Lk);
   free(receive);
   free(sta_r);

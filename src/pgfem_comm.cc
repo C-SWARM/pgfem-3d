@@ -98,35 +98,42 @@ int init_and_post_stiffmat_comm(double ***Lk,
   int nproc = 0;
   err += MPI_Comm_rank(mpi_comm,&myrank);
   err += MPI_Comm_size(mpi_comm,&nproc);
-
+  
   /* Allocate buffer for off-process assembly and receive */
   *Lk = PGFEM_calloc(double*, nproc);
   *receive = PGFEM_calloc(double*, nproc);
-  for(int i=0; i<nproc; i++){
-    size_t n_alloc_Lk = 0;
+  for (int i = 0; i < pgfem_comm->Nr; ++i) {
+    /* the current proc to setup receives for */
+    long p = pgfem_comm->Nrr[i];
     size_t n_alloc_recv = 0;
 
-    /* number to allocate for Lk */
-    (*Lk)[i] = NULL;
-    if(myrank == i || pgfem_comm->S[i] == 0){
-      n_alloc_Lk = 1;
-    } else {
-      n_alloc_Lk = pgfem_comm->AS[i];
-    }
-
     /* number to allocate for receive */
-    (*receive)[i] = NULL;
-    if(myrank == i || pgfem_comm->AR[i] == 0){
+    (*receive)[p] = NULL;
+    if (myrank == p || pgfem_comm->AR[p] == 0) {
       n_alloc_recv = 1;
     } else {
-      n_alloc_recv = pgfem_comm->AR[i];
+      n_alloc_recv = pgfem_comm->AR[p];
     }
 
     /* allocate */
-    (*Lk)[i] = PGFEM_calloc(double, n_alloc_Lk);
-    (*receive)[i] = PGFEM_calloc(double, n_alloc_recv);
+    (*receive)[p] = PGFEM_calloc(double, n_alloc_recv);
   }
-
+  
+  for (int i = 0; i < pgfem_comm->Ns; ++i) {
+    long p = pgfem_comm->Nss[i];
+    size_t n_alloc_Lk = 0;
+    
+    /* number to allocate for Lk */
+    (*Lk)[p] = NULL;
+    if (myrank == p || pgfem_comm->S[p] == 0) {
+      n_alloc_Lk = 1;
+    } else {
+      n_alloc_Lk = pgfem_comm->AS[p];
+    }
+    
+    (*Lk)[p] = PGFEM_calloc(double, n_alloc_Lk);
+  }
+  
   /* Allocate Status and Requests */
   *sta_r = NULL;
   *req_r = NULL;
@@ -135,14 +142,32 @@ int init_and_post_stiffmat_comm(double ***Lk,
     *req_r = PGFEM_calloc(MPI_Request, pgfem_comm->Nr);
   }
 
-  /* post the non-blocking receive */
-  for(int i=0; i<pgfem_comm->Nr; i++){
-    size_t idx = pgfem_comm->Nrr[i];
+  /* post the non-blocking receives */
+  for (int i = 0; i < pgfem_comm->Nr; ++i){
+    long idx = pgfem_comm->Nrr[i];
     err += MPI_Irecv((*receive)[idx],pgfem_comm->AR[idx],MPI_DOUBLE,idx,
                      MPI_ANY_TAG,mpi_comm,*req_r + i);
   }
 
   return err;
+}
+
+/** free the send/recv buffers for stiffmat comm **/
+int free_stiffmat_comm_buffers(double **Lk,
+			       double **receive,
+			       const COMMUN pgfem_comm)
+{
+  for (int i = 0; i < pgfem_comm->Ns; ++i) {
+    long p = pgfem_comm->Nss[i];
+    free(Lk[p]);
+  }
+  
+  for (int i = 0; i < pgfem_comm->Nr; ++i) {
+    long p = pgfem_comm->Nrr[i];
+    free(receive[p]);
+  }
+
+  return 0;
 }
 
 
