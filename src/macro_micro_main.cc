@@ -140,7 +140,10 @@ int multi_scale_main(int argc, char* argv[])
     /*====== MICROSCALE =======*/
     re_parse_command_line(myrank, 2, micro_argc, micro_argv, &options);
 
-    const char* fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
+
+    int micro_rank;
+    MPI_Comm_rank(mpi_comm->micro, &micro_rank);
+    const char* fn = Comm_hints_filename(options.ipath, options.ifname, micro_rank);
     com[0].hints = Comm_hints_construct();
     int ch_err = Comm_hints_read_filename(com[0].hints, fn);
 
