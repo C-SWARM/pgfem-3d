@@ -12,7 +12,7 @@ function check_scan() {
     BOUT=$1
     is_file $BOUT || return
     if grep -q -E "[0-9]+ (bug|bugs) found" $BOUT; then
-       DIR=`tail -n 1 $BOUT | egrep -o "[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]"`;
+       DIR=`tail -n 10 $BOUT | grep "scan-view" | egrep -o "[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]+-[0-9]"`;
        echo; echo "View report at https://gitlab-web-cswarm.crc.nd.edu/$DIR";
        return 2;
     fi
