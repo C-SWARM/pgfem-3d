@@ -47,6 +47,7 @@
 #include "three_field_element.h"
 #include "utils.h"
 #include "vtk_output.h"
+#include "set_initial_plastic_deformation_gradient.h"
 #include <cstdlib>
 #include <cassert>
 #include <vector>
@@ -1047,75 +1048,8 @@ int single_scale_main(int argc,char *argv[])
         double *pF = mat.hommat[0].param->pF;
         if(pF != NULL)
         {
-          int cnt_npd = 0;
-          int npd = load.sups[ia]->npd;
-          int *is_npd_set = NULL;
-          
-          if(npd>0)
-            is_npd_set = (int *) malloc(sizeof(int)*npd);
-          
-          for(int ic=0; ic<npd; ic++)
-            is_npd_set[ic] = 0;
-          
-          double pFI[9];
-          inv3x3(pF, pFI);
-          if(myrank==0)
-          {
-            printf("set initial plastic deformation:\npF=[");
-            printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
-                                                    , pF[3], pF[4], pF[5]
-                                                    , pF[6], pF[7], pF[8]);
-          }
-          for(int ic=0; ic<grid.nn; ic++)
-          {
-            double x[3], X[3], u[3];
-            x[0] = grid.node[ic].x1_fd;
-            x[1] = grid.node[ic].x2_fd;
-            x[2] = grid.node[ic].x3_fd;
-            
-            X[0] = pFI[0]*x[0] + pFI[1]*x[1] + pFI[2]*x[2];
-            X[1] = pFI[3]*x[0] + pFI[4]*x[1] + pFI[5]*x[2];
-            X[2] = pFI[6]*x[0] + pFI[7]*x[1] + pFI[8]*x[2];
-            
-            u[0] = x[0] - X[0];
-            u[1] = x[1] - X[1];
-            u[2] = x[2] - X[2];
-            
-            grid.node[ic].x1 = grid.node[ic].x1_fd = X[0];
-            grid.node[ic].x2 = grid.node[ic].x2_fd = X[1];
-            grid.node[ic].x3 = grid.node[ic].x3_fd = X[2];            
-            
-            if(options.restart < 0)
-            {
-              fv[ia].u_n[ic*3+0] = fv[ia].u_nm1[ic*3+0] = u[0];
-              fv[ia].u_n[ic*3+1] = fv[ia].u_nm1[ic*3+1] = u[1];
-              fv[ia].u_n[ic*3+2] = fv[ia].u_nm1[ic*3+2] = u[2];
-            }
-            //printf("x = %e %e %e -> %e %e %e: u = %e %e %e\n", x[0], x[1], x[2],
-            //                                                   X[0], X[1], X[2],
-            //                                                   u[0], u[1], u[2]);
-                          
-            for(int im=0; im<3; im++)
-            {
-              long id = grid.node[ic].id_map[ia].id[im];
-              
-              if(id>0 && options.restart < 0)
-                fv[ia].u_np1[id-1] = u[im];                               
-              
-              if(cnt_npd==npd)
-                continue;
-              
-              if(id<0)
-              {
-                if(is_npd_set[abs(id)-1]==0)
-                { 
-                  (load.sups[ia])->defl[abs(id)-1] = u[im];
-                  is_npd_set[abs(id)-1] = 1;
-                  cnt_npd++;
-                }
-              }
-            }
-          }
+          set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,sol.data()+ia,&load,com.data()+ia,
+                                                    mpi_comm, &options, &mp, ia, myrank, pF);
         }
       }
       

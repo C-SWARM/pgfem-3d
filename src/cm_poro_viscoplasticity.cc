@@ -761,6 +761,9 @@ const
   vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = param[PARAM_pc_0];
   if((m->param)->pF != NULL)
   {
+    double pJ = det3x3((m->param)->pF);
+    double pc = pvp_intf_compute_pc(pJ, param[PARAM_pc_0], (m->param)->cm_mat->mat_pvp);
+    vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = pc;      
     memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
     memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
     memcpy(Fs[TENSOR_Fnp1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
