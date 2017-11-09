@@ -5,14 +5,14 @@
 filebase=box
 NP=4
 
-icpc src/create_dot_st.cc -o create_dot_st.o
+g++ src/create_dot_st.cc -o create_dot_st.o
 ./create_dot_st.o > $filebase\_0.in.st
 ./local_makeset.pl clean
 ./local_makeset.pl -np ${NP}
 \rm -r partitions.${NP}
 cp traction.in $filebase\_${NP}\CPU
 
-icpc src/create_dot_initial.cc -o create_dot_initial.o
+g++ src/create_dot_initial.cc -o create_dot_initial.o
 cp create_dot_initial.o $filebase\_${NP}\CPU
 cd $filebase\_${NP}\CPU
 
