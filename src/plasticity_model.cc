@@ -1294,6 +1294,10 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix<int> &e_ids, Matrix<dou
 
     int ip = e_ids(a+1, 2);
     Constitutive_model *m = &(eps[id].model[ip]);
+    
+    if((m->param)->type!=CRYSTAL_PLASTICITY)
+      continue;
+      
     Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
     double phi   = angles.m_pdata[a*DIM_3+0];     // NOTE: phi = Mat_v(*angles, a+1, 1) is not working, do not know why.
     double theta = angles.m_pdata[a*DIM_3+1];
