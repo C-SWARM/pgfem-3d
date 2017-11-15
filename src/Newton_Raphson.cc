@@ -1390,6 +1390,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
                                              FE2_REBALANCE_NONE);
       double tnp1 = 0;
       set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
+      ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
                                      JOB_NO_COMPUTE_EQUILIBRIUM);
       set_time_macro(tim,NR_t->times,tnp1);
@@ -1542,6 +1543,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
 
         double tnp1 = 0;
         set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
+        ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
         pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
                                        JOB_UPDATE);
         set_time_macro(tim,NR_t->times,tnp1);

@@ -11,6 +11,7 @@
 #include "node.h"
 #include "utils.h"
 #include "vtk_output.h"
+#include "assert.h"
 
 #ifndef NO_VTK_LIB
 #include "PGFem3D_to_VTK.hpp"
