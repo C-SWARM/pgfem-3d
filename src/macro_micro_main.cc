@@ -118,7 +118,7 @@ int multi_scale_main(int argc, char* argv[])
 
   if (mpi_comm->valid_macro) {
     /*=== MACROSCALE ===*/
-    re_parse_command_line(myrank, 2, macro_argc, macro_argv, &options);
+    re_parse_command_line(myrank, 1, macro_argc, macro_argv, &options);
 
     const char* fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
     com[0].hints = Comm_hints_construct();
@@ -138,7 +138,7 @@ int multi_scale_main(int argc, char* argv[])
   }
   else {
     /*====== MICROSCALE =======*/
-    re_parse_command_line(myrank, 2, micro_argc, micro_argv, &options);
+    re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
 
 
     int micro_rank;
