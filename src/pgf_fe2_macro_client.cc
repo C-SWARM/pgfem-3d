@@ -554,7 +554,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
   }
 
 
-  /* post recieves (from the running server) */
+  /* post receives (from the running server) */
   for(int i=0; i<recv->n_comms; i++){
     err += MPI_Irecv(recv->buffer[i],recv->sizes[i],MPI_CHAR,
              recv->procs[i],recv->tags[i],comm,
@@ -674,10 +674,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mpi_comm); */
 
     /* clean up memory */
-    for(int i=0; i<nproc_macro; i++){
-      if(Lk != NULL) free(Lk[i]);
-      if(receive != NULL) free(receive[i]);
-    }
+    free_stiffmat_comm_buffers(Lk, receive, c->pgfem_comm);
     free(Lk);
     free(receive);
     free(sta_r);

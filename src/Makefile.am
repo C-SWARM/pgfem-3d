@@ -164,4 +164,5 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         post_processing.cc \
                         comm_hints.cc \
                         restart.cc \
-                        PGFem3D_data_structure.cc
+                        PGFem3D_data_structure.cc \
+                        set_initial_plastic_deformation_gradient.cc

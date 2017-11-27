@@ -55,6 +55,12 @@ int init_and_post_stiffmat_comm(double ***Lk,
                                 const MPI_Comm mpi_comm,
                                 const COMMUN pgfem_comm);
 
+/** frees the buffers allocated by init_and_post in the pointer arrays
+    but not the arrays themselves **/
+int free_stiffmat_comm_buffers(double **Lk,
+			       double **receive,
+			       const COMMUN pgfem_comm);
+
 /** Send the off-process data for stiffness assembly */
 int send_stiffmat_comm(MPI_Status **sta_s,
                        MPI_Request **req_s,

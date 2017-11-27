@@ -1028,11 +1028,11 @@ int energy_equation_compute_stiffness(Grid *grid,
     fv_m->statv_list = fv_m->temporal->var;
   }
 
-  double **Lk,**recieve;
+  double **Lk,**receive;
   MPI_Status *sta_s,*sta_r;
   MPI_Request *req_s,*req_r;
 
-  err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
+  err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
                                      mpi_comm,com->comm);
 
   Matrix<int> Ddof(com->nproc,1);
@@ -1088,7 +1088,7 @@ int energy_equation_compute_stiffness(Grid *grid,
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,recieve);
+  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,receive);
   err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
 
   if(is_it_couple_w_mechanical>=0)
@@ -1101,17 +1101,13 @@ int energy_equation_compute_stiffness(Grid *grid,
 
   // stiffnes build is completed
   // deallocate memory
-  for(int ia=0; ia<com->nproc; ia++)
-  {
-    free (recieve[ia]);
-    free(Lk[ia]);
-  }
-  free (recieve);
-  free (Lk);
-  free (sta_s);
-  free (sta_r);
-  free (req_s);
-  free (req_r);
+  free_stiffmat_comm_buffers(Lk, receive, com->comm);
+  free(receive);
+  free(Lk);
+  free(sta_s);
+  free(sta_r);
+  free(req_s);
+  free(req_r);
 
   return err;
 }
