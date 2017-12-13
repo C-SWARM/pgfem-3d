@@ -1,0 +1,17 @@
+{
+  "#": "boundary condition description: geom_type, geom_id, flag(u), flag(v), flag(w)",
+  "#": "first 2 will always be there. Additional elements per line are based on the # of degrees of freedom in multiphysics.in",
+  "#": "replace -1 with this value",
+  "replacements": [50],
+  "bc_data": [
+     [1, 1,-1],
+     [1, 2,-1],
+     [1, 5,-1],
+     [1, 6,-1],
+     [2, 1,-1],
+     [2, 5,-1],
+     [2, 9,-1],
+     [2,10,-1],
+     [5, 5,-1]     
+  ]
+}

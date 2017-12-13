@@ -1,0 +1,24 @@
+{
+"number_of_physics": 2,
+"physics_list": [
+  {
+  "#": "0 for momentum equation, 1 for energy equation",
+  "equation_id": 0,
+  "physics_name": "Mechanical",
+  "degree_of_freedom": 3,
+  "number_of_coupled_physics": 0,
+  "number_of_vars_to_print": 3,
+  "vars_to_print": [0,6,11]
+  },
+  {
+  "equation_id": 1,
+  "physics_name": "heat_transfer",
+  "degree_of_freedom": 1,
+  "number_of_coupled_physics": 1,
+  "coupled_physics_ids": [0],
+  "number_of_vars_to_print": 3,
+  "vars_to_print": [0, 1, 2]
+  }
+]
+}
+

@@ -1,1 +1,11 @@
-../multiphysics.in
+2
+0 Mechanical 3
+0 
+3
+0 6 11 
+
+1 heat_transfer 1
+1 0 
+3
+0 1 2 
+
