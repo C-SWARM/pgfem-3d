@@ -9,7 +9,6 @@
 #define MICRO_SERVER_H
 
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
 #include "microscale_information.h"
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
@@ -78,9 +77,9 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
  * processes. This function must be called by ALL micro-scale
  * processes.
  */
-int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
-                   MICROSCALE *micro,
-                   const int mp_id);
+int pgf_FE2_micro_server_START(const pgfem3d::MultiscaleComm *mscom,
+			       MICROSCALE *micro,
+			       const int mp_id);
 
 /**
  * Unpack a server summary (shallow copy) from a buffer and return a

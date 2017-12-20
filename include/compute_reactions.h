@@ -5,7 +5,6 @@
 #ifndef PGFEM3D_COMPUTE_REACTIONS_H
 #define PGFEM3D_COMPUTE_REACTIONS_H
 
-#include "PGFEM_mpi.h"
 #include "crpl.h"
 #include "data_structure.h"
 #include "element.h"
@@ -39,7 +38,7 @@ int compute_reactions(long ne,
                       CRPL *crpl,
                       double dt,
                       double stab,
-                      MPI_Comm mpi_comm,
+		      pgfem3d::CommunicationStructure *com,
                       const int analysis,
                       const int mp_id);
 

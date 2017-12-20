@@ -4,7 +4,6 @@
 #include <math.h>
 #include "mkl_cblas.h"
 
-#include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 #include "quadrature_rules.h"
 #include "cohesive_element_utils.h"
@@ -203,11 +202,9 @@ int integrate_surface(const int nne,
       break;
     default:
     {
-      int myrank = 0;
-      MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-      PGFEM_printerr("[%d] WARNING: unrecognized element type!"
-          " Surface will not be integrated! %s:%s:%d\n",
-          myrank,__func__,__FILE__,__LINE__);
+      PGFEM_printerr("WARNING: unrecognized element type!"
+		     " Surface will not be integrated! %s:%s:%d\n",
+		     __func__,__FILE__,__LINE__);
       break;
     }
   }/* end switch type (nne) */

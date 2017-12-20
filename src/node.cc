@@ -4,10 +4,14 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "node.h"
 #include "allocation.h"
 #include "utils.h"
 #include <cassert>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 Node* build_node(const long nn,
                  const int ndofn)
@@ -78,7 +82,7 @@ long read_nodes (FILE *in,
                  const long nn,
                  Node *node,
                  const int legacy,
-                 MPI_Comm comm)
+                 const CommunicationStructure *com)
 /*
   in   - Input file
   nn   - Number of nodes
@@ -90,8 +94,7 @@ long read_nodes (FILE *in,
   %%%%%%%%%%%%%%%% MODIFIED 7.20.05 %%%%%%%%%%%%%%%
 */
 {
-  int myrank = 0;
-  MPI_Comm_rank(comm,&myrank);
+  int myrank = com->rank;
 
   long Gtnn = 0;
   long tnn = nn;
@@ -155,7 +158,7 @@ long read_nodes (FILE *in,
   }
 
   /* Gather tnn from all domains */
-  MPI_Allreduce(&tnn,&Gtnn,1,MPI_LONG,MPI_SUM,comm);
+  com->net->allreduce(&tnn,&Gtnn,1,NET_DT_LONG,NET_OP_SUM,com->comm);
 
   return Gtnn;
 }

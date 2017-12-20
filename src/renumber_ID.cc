@@ -4,12 +4,9 @@
 
 #include "renumber_ID.h"
 
-void renumber_ID (int ndofn, int nn, Node *node, int *g_order, MPI_Comm comm,
+void renumber_ID (int ndofn, int nn, Node *node, int *g_order, int myrank,
                   const int mp_id)
 {
-  int myrank;
-  MPI_Comm_rank(comm, &myrank);
-
   for (int i = 0, e = nn; i < e; ++i) {
     if (node[i].Dom != myrank) continue;
     for (int k = 0, e = ndofn; k < e; ++k) {

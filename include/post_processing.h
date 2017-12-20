@@ -1,6 +1,7 @@
 #ifndef PGFEM3D_POST_PROCESSING_H
 #define PGFEM3D_POST_PROCESSING_H
 
+#include "pgfem3d/Communication.hpp"
 #include "PGFem3D_options.h"
 #include "eps.h"
 #include "femlib.h"
@@ -14,13 +15,14 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, double *S,
 
 void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat,
                                     long ne, int npres, Node *node, EPS *eps,
-                                    double* r, double *Vnp1, int ndofn, MPI_Comm mpi_comm,
+                                    double* r, double *Vnp1, int ndofn,
+				    const pgfem3d::CommunicationStructure *com,
                                     const PGFem3D_opt *opts);
 
 void post_processing_deformation_gradient(double *GF, Element *elem,
                                           HOMMAT *hommat, long ne, int npres,
                                           Node *node, EPS *eps, double* r,
-                                          int ndofn, MPI_Comm mpi_comm,
+                                          int ndofn, const pgfem3d::CommunicationStructure *com,
                                           const PGFem3D_opt *opts);
 
 void post_processing_deformation_gradient_elastic_part(double *GF,
@@ -29,23 +31,24 @@ void post_processing_deformation_gradient_elastic_part(double *GF,
                                                        long ne, int npres,
                                                        Node *node, EPS *eps,
                                                        double* r, int ndofn,
-                                                       MPI_Comm mpi_comm,
+                                                       const pgfem3d::CommunicationStructure *com,
                                                        const PGFem3D_opt *opts);
 
 void post_processing_plastic_hardness(double *G_gn, Element *elem,
                                       HOMMAT *hommat, long ne, int npres,
                                       Node *node, EPS *eps, double* r,
-                                      int ndofn, MPI_Comm mpi_comm,
+                                      int ndofn, const pgfem3d::CommunicationStructure *com,
                                       const PGFem3D_opt *opts);
 
 void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
                                       long ne, int npres, Node *node, EPS *eps,
-                                      double* r, int ndofn, MPI_Comm mpi_comm,
+                                      double* r, int ndofn,
+				      const pgfem3d::CommunicationStructure *com,
                                       const PGFem3D_opt *opts);
 
 void post_processing_deformed_volume(double *GV, Element *elem, long ne,
                                      Node *node, EPS *eps, double* r, int ndofn,
-                                     MPI_Comm mpi_comm,
+                                     const pgfem3d::CommunicationStructure *com,
                                      const PGFem3D_opt *opts);
 
 #endif // #define PGFEM3D_POST_PROCESSING_H

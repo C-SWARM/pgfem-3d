@@ -24,6 +24,7 @@
 #include "utils.h"
 
 using pgfem3d::Solver;
+using pgfem3d::CommunicationStructure;
 
 long* compute_times_load (FILE *in1,
                           const long nt,
@@ -360,7 +361,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
                                           int mp_id,
-                                          int myrank)
+                                          CommunicationStructure *com)
 {
   int err = 0;
   switch(mp.physics_ids[mp_id])
@@ -376,7 +377,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                        opts,
                                        mp,
                                        mp_id,
-                                       myrank);
+                                       com->rank);
     break;
    case MULTIPHYSICS_THERMAL:
     err += energy_equation_compute_load4pBCs(grid,
@@ -384,7 +385,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                              fv,
                                              sol,
                                              load,
-                                             myrank,
+					     com,
                                              opts,
                                              mp_id,
                                              dt);
@@ -500,17 +501,20 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   CommunicationStructure com;
   {
     communication_structure_initialization(&com);
+
+    com.rank   = c->com->rank;
+    com.nproc  = c->com->nproc;
+    com.comm   = c->com->comm;
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
-    com.comm   = c->pgfem_comm;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
   }
 
   err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv,&sol,&load,
-                                               s->dt,s->crpl,opts,mp,mp_id,myrank);
+                                               s->dt,s->crpl,opts,mp,mp_id,&com);
 
   free(physicsname);
 

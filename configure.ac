@@ -38,6 +38,7 @@ CONFIG_HYPRE([have_hypre=yes])
 CONFIG_SUITESPARSE([have_suitesparse=yes])
 CONFIG_VTK([5.10.1])
 CONFIG_GCM([have_gcm=yes])
+CONFIG_PHOTON([photon])
 CONFIG_TESTS()
 
 AC_ARG_WITH(special-link,
@@ -51,6 +52,14 @@ AS_IF([test "x$special_link" = xyes],
    AC_SUBST([PGFem3D_linker],["$with_special_link"])],
   [AC_SUBST([PGFem3D_linker],['$(CXX)'])])
 
+AS_IF([test "x$have_mpicxx" = xyes],
+  [AC_DEFINE([HAVE_MPI], [1], [MPI support available])]
+)
+
+# set automake conditionals that our network build requires
+AM_CONDITIONAL([HAVE_MPI], [test "x$have_mpicxx" == xyes])
+AM_CONDITIONAL([HAVE_PHOTON], [test "x$have_photon" == xyes])
+
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 dnl LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
 
@@ -61,6 +70,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/solvers/Makefile
                  src/solvers/hypre/Makefile
+		 src/communication/Makefile
                  verification_MMS/Makefile
                  verification_tests/Makefile
                  verification_tests/src/Makefile

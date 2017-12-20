@@ -3,6 +3,7 @@ before_script:
  - df -h
  - module load ompi/3.0.0-gcc-7.2.0
  - module load llvm/5.0.0-gcc-7.2.0
+ - module load photon/1.1
  - source /opt/intel/bin/compilervars.sh -arch intel64 -platform linux
  - source scripts/check_funcs.sh
  - check_gcm
@@ -27,6 +28,7 @@ scan-build:
                 --enable-tests=no
                 --enable-vtk=yes
                 --with-vtk-version=''
+                --enable-photon
   - BOUT=/tmp/scan-build-${CI_BUILD_ID}
   - scan-build -o /var/www/html/scan-builds make -j 4 | tee $BOUT
   - check_scan $BOUT
@@ -45,5 +47,6 @@ check-build:
                 --with-tests-nprocs=4
                 --enable-vtk=yes
                 --with-vtk-version=''
+                --enable-photon
   - make -j 4
   - make -C tests check || check_check

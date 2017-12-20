@@ -7,16 +7,20 @@
 #include "femlib.h"
 #include "MMS.h"
 #include "utils.h"
+#include "pgfem3d/Communication.hpp"
 #include <cmath>
+
+using namespace pgfem3d::net;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, double* r, double *Ph, double *Vh, double t, MPI_Comm mpi_comm, const PGFem3D_opt *opts, const HOMMAT *hommat)
+void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, double* r,
+		      double *Ph, double *Vh, double t,
+		      const pgfem3d::CommunicationStructure *com,
+		      const PGFem3D_opt *opts, const HOMMAT *hommat)
 {
-  int myrank = 0;
-  MPI_Comm_rank (mpi_comm,&myrank);
   int ndofn = 3;
 
   double L2_err[3];
@@ -73,7 +77,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
     dealoc1(nod);
   }
 
-  MPI_Allreduce(L2_err,GL2_err,3,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(L2_err,GL2_err,3,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 }
 
 #endif // #define PGFEM3D_MMS_L2NORM_H

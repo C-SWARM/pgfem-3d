@@ -2,7 +2,6 @@
 #define PGFEM3D_READ_INPUT_FILE_H
 
 #include "Arc_length.h"
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "element.h"
@@ -15,7 +14,7 @@
 /** Function for reading the entire input file. All required space
     is allocated within this function */
 int read_input_file(const PGFem3D_opt *opts,
-                    MPI_Comm comm,
+		    const pgfem3d::CommunicationStructure *com,
                     long *nn,
                     long *Gnn,
                     long *ndofn,
@@ -51,7 +50,7 @@ int read_input_file(const PGFem3D_opt *opts,
 /// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int read_mesh_file(Grid *grid,
@@ -60,7 +59,7 @@ int read_mesh_file(Grid *grid,
                    pgfem3d::Solver *SOL,
                    LoadingSteps *load,
                    const Multiphysics& mp,
-                   MPI_Comm mpi_comm,
+		   const pgfem3d::CommunicationStructure *com,
                    const PGFem3D_opt *opts);
 
 /// Read solver file for time stepping.
@@ -72,7 +71,6 @@ int read_mesh_file(Grid *grid,
 /// \param[out] load object for loading
 /// \param[out] crpl object for lagcy crystal plasticity
 /// \param[in] mp multiphysics object
-/// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -118,7 +116,7 @@ int read_initial_values(Grid *grid,
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
 /// \param[in] tim time step ID
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_and_apply_load_increments(Grid *grid,
@@ -126,8 +124,7 @@ int read_and_apply_load_increments(Grid *grid,
                                    LoadingSteps *load,
                                    const Multiphysics& mp,
                                    long tim,
-                                   MPI_Comm mpi_comm,
-                                   int myrank);
+				   const pgfem3d::CommunicationStructure *com);
 
 /// Read read cohesive elements.
 ///
@@ -135,14 +132,13 @@ int read_and_apply_load_increments(Grid *grid,
 /// \param[out] mat a material object
 /// \param[in] opts structure PGFem3D option
 /// \param[in] ensight object
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_cohesive_elements(Grid *grid,
                            MaterialProperty *mat,
                            const PGFem3D_opt *opts,
                            Ensight *ensight,
-                           MPI_Comm mpi_comm,
-                           int myrank);
+                           const pgfem3d::CommunicationStructure *com);
 
 #endif /* #define PGFEM3D_READ_INPUT_FILE_H */

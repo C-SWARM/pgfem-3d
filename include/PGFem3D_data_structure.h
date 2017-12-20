@@ -17,10 +17,11 @@
 #include "matgeom.h"
 #include "mesh_load.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "state_variables.h"
 #include "pgfem3d/Solver.hpp"
+#include "pgfem3d/Communication.hpp"
+#include "pgfem3d/MultiscaleCommunication.hpp"
 #include <vector>
 
 /// Time stepping struct
@@ -272,20 +273,6 @@ struct LoadingSteps {
   FILE **solver_file; //!< file pointer for reading loads increments
 };
 
-/// struct for the communication
-struct CommunicationStructure {
-  int nproc;         //!< number of mpi processes
-  int *Ap;           //!< n_cols in each owned row of global stiffness matrix
-  int *Ai;           //!< column ids for owned rows of global stiffness matrix
-  long *DomDof;      //!< number of global DOFs on each domain
-  long nbndel;       //!< number of Element on the communication boundary
-  long *bndel;       //!< Element ids on the communication boundary
-  COMMUN comm;       //!< sparse communication structure
-  int GDof;          //!< maximum id of locally owned global DOF
-  long NBN;          //!< Number of nodes on domain interfaces
-  Comm_hints *hints; //!< Comm_hints structure
-};
-
 /// for setting physics ids
 enum MultiphysicsAnalysis {
   MULTIPHYSICS_MECHANICAL,
@@ -351,7 +338,7 @@ int field_varialbe_initialization(FieldVariables *fv);
 /// \return non-zero on internal error
 int construct_field_varialbe(FieldVariables *fv,
                              Grid *grid,
-                             CommunicationStructure *com,
+                             pgfem3d::CommunicationStructure *com,
                              const PGFem3D_opt *opts,
                              const Multiphysics& mp,
                              int myrank,
@@ -447,13 +434,13 @@ int destruct_loading_steps(LoadingSteps *load, const Multiphysics& mp);
 ///
 /// \param[in, out] com an object for communication
 /// \return non-zero on internal error
-int communication_structure_initialization(CommunicationStructure *com);
+int communication_structure_initialization(pgfem3d::CommunicationStructure *com);
 
 /// destruct communication structures
 ///
 /// \param[in, out] com an object for communication
 /// \return non-zero on internal error
-int destruct_communication_structure(CommunicationStructure *com);
+int destruct_communication_structure(pgfem3d::CommunicationStructure *com);
 
 /// initialize multiphysics object
 ///

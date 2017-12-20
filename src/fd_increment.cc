@@ -20,6 +20,12 @@
 
 static constexpr int periodic = 0;
 
+using namespace pgfem3d::net;
+
+namespace {
+  using pgfem3d::CommunicationStructure;
+}
+
 void fd_increment (long ne,
                    long nn,
                    long ndofn,
@@ -39,7 +45,7 @@ void fd_increment (long ne,
                    long nce,
                    COEL *coel,
                    double *pores,
-                   MPI_Comm mpi_comm,
+		   const CommunicationStructure *com,
                    const double VVolume,
                    const PGFem3D_opt *opts,
                    const int mp_id)
@@ -59,9 +65,8 @@ void fd_increment (long ne,
   //       feasible paths, or that the default initializer is adequate. LD
   double volume{}, ai{}, aj{}, ak{}, zet{}, eta{}, ksi{};
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
+  int nproc = com->nproc;
 
   /* 3D */ ndn = 3;
 
@@ -855,7 +860,7 @@ void fd_increment (long ne,
         }
       }
 
-      MPI_Allgather (LPf,54,MPI_DOUBLE,GPf,54,MPI_DOUBLE,mpi_comm);
+      com->net->allgather(LPf,54,NET_DT_DOUBLE,GPf,54,NET_DT_DOUBLE,com->comm);
 
       for (M=0;M<nproc;M++){
         if (M == myrank) continue;
@@ -927,7 +932,7 @@ void fd_increment (long ne,
         }
       }
 
-      MPI_Allgather (LPf,27,MPI_DOUBLE,GPf,27,MPI_DOUBLE,mpi_comm);
+      com->net->allgather(LPf,27,NET_DT_DOUBLE,GPf,27,NET_DT_DOUBLE,com->comm);
 
       for (M=0;M<nproc;M++){
         if (M == myrank) continue;
@@ -970,7 +975,7 @@ void fd_increment (long ne,
       }
     }
 
-    MPI_Allreduce(&EL_e, &GEL_e, 1, MPI_DOUBLE, MPI_SUM, mpi_comm);
+    com->net->allreduce(&EL_e, &GEL_e, 1, NET_DT_DOUBLE, NET_OP_SUM, com->comm);
     if (myrank == 0)
       PGFEM_printf("P:dF = %12.12f || Aver. of Mic. S:dE = %12.12f\n",pom,GEL_e);
   }/* end periodic == 1 */
@@ -986,7 +991,7 @@ void fd_increment (long ne,
     }
   }
 
-  MPI_Allgather (LDp,9,MPI_DOUBLE,GDp,9,MPI_DOUBLE,mpi_comm);
+  com->net->allgather(LDp,9,NET_DT_DOUBLE,GDp,9,NET_DT_DOUBLE,com->comm);
 
   for (M=0;M<nproc;M++){
     if (M == myrank) continue;
@@ -1060,10 +1065,10 @@ void fd_increment (long ne,
 
   PL = T_VOLUME (ne,ndofn,elem,node);
   /* Gather Volume from all domains */
-  MPI_Reduce (&PL,&GVol,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+  com->net->reduce(&PL,&GVol,1,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
 
   if (opts->cohesive == 1) {
-    MPI_Reduce (pores,&Gpores,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+    com->net->reduce(pores,&Gpores,1,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
     *pores = Gpores;
   }
 

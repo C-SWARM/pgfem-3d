@@ -7,17 +7,17 @@
 #ifndef MACRO_MICRO_FUNCTIONS_H
 #define MACRO_MICRO_FUNCTIONS_H
 
+#include "pgfem3d/MultiscaleCommunication.hpp"
 #include "microscale_information.h"
 #include "ms_cohe_job_info.h"
 #include "ms_job_intercomm.h"
 
 struct pgf_FE2_macro_client;
-struct PGFEM_mpi_comm;
 
 /* container for passing through Newton Raphson */
 struct MS_SERVER_CTX{
   struct pgf_FE2_macro_client *client;
-  struct PGFEM_mpi_comm *mpi_comm;
+  pgfem3d::MultiscaleComm *mscom;
   MACROSCALE *macro;
 };
 
@@ -27,14 +27,14 @@ int compute_n_job_and_job_sizes(const COMMON_MACROSCALE *c,
                                 int **job_buff_sizes);
 
 /** Start a microscale server process. Non-blocking collective
-    communication on mpi_comm->mm_inter and mpi_comm->micro */
-int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
+    communication on mscom->mm_inter and mscom->micro */
+int start_microscale_server(const pgfem3d::MultiscaleComm *mscom,
                             const PGFEM_ms_job_intercomm *ic,
                             MICROSCALE *microscale,const int mp_id);
 
 /** compute a microscale job on the master of a microscale work
-    group. Collective communication on mpi_comm->micro. */
-int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
+    group. Collective communication on mscom->micro. */
+int micro_job_master(const pgfem3d::MultiscaleComm *mscom,
                      const int idx,
                      const int buff_size,
                      char *in_buffer,
@@ -45,7 +45,7 @@ int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
 
 /** compute a microscale job on the slaves of a microscale work
     group. Collective communication on mpi_comm->micro */
-int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
+int micro_job_slave(const pgfem3d::MultiscaleComm *mscom,
                     MICROSCALE *micro,const int mp_id);
 
 /** compute a microscale job. Collective communication on
@@ -66,16 +66,16 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
                                   const int job_type,
                                   const double *loc_sol,
                                   MS_COHE_JOB_INFO *job_list,
-                                  PGFEM_server_ctx *send,
-                                  PGFEM_server_ctx *recv);
+                                  pgfem3d::MultiscaleServerContext *send,
+                                  pgfem3d::MultiscaleServerContext *recv);
 
 /** finish the job macroscale job (typically involves assembly to
     tangent/residual). Finalizes non-blocking communication on
     ic->comm. Collective communication on mpi_comm->macro */
 int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
                                    MACROSCALE *macro,
-                                   PGFEM_server_ctx *send,
-                                   PGFEM_server_ctx *recv);
+                                   pgfem3d::MultiscaleServerContext *send,
+                                   pgfem3d::MultiscaleServerContext *recv);
 
 /** See function name. No communication */
 int macroscale_update_job_info(const MACROSCALE *macro,

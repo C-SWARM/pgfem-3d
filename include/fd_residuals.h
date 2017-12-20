@@ -6,7 +6,6 @@
 #ifndef PGFEM3D_FD_RESIDUALS_H
 #define PGFEM3D_FD_RESIDUALS_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
@@ -31,7 +30,7 @@
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communications
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -43,7 +42,7 @@ long fd_residuals_MP(Grid *grid,
                      pgfem3d::Solver *sol,
                      LoadingSteps *load,
                      CRPL *crpl,
-                     MPI_Comm mpi_comm,
+                     const pgfem3d::CommunicationStructure *com,
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
                      int mp_id,
@@ -59,7 +58,7 @@ long fd_residuals_MP(Grid *grid,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -71,7 +70,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 pgfem3d::Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-                                MPI_Comm mpi_comm,
+				const pgfem3d::CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,

@@ -53,6 +53,17 @@ constexpr const char* PRECOND_OPTS[PRECOND_MAX] = {
 };
 
 enum {
+  NETWORK_ISIR,
+  NETWORK_PWC,
+  NETWORK_MAX
+};
+
+constexpr const char* NETWORK_OPTS[NETWORK_MAX] = {
+  [NETWORK_ISIR] = "ISIR",
+  [NETWORK_PWC] = "PWC"
+};
+
+enum {
   BLOCKSOLVE,
   HYPRE,
   MTL,

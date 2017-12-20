@@ -7,6 +7,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "stabilized.h"
 #include "allocation.h"
 #include "cast_macros.h"
@@ -23,6 +24,9 @@
 #include <time.h>
 #include <cstring>
 #include <cmath>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 #ifndef STAB_DEBUG
 #define STAB_DEBUG 0
@@ -1001,7 +1005,7 @@ int st_increment (long ne,
                   long nce,
                   COEL *coel,
                   double *pores,
-                  MPI_Comm mpi_comm,
+		  const CommunicationStructure *com,
                   const int coh,
                   const int mp_id)
 {
@@ -1012,9 +1016,8 @@ int st_increment (long ne,
   FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
+  int nproc = com->nproc;
 
   /************ UNIT CELL APPROACH + GFEM - TOTAL LAGRANGIAN *******/
   if (periodic == 1){
@@ -1130,7 +1133,7 @@ int st_increment (long ne,
       }
     }
 
-    MPI_Allgather (LPf,27,MPI_DOUBLE,GPf,27,MPI_DOUBLE,mpi_comm);
+    com->net->allgather(LPf,27,NET_DT_DOUBLE,GPf,27,NET_DT_DOUBLE,com->comm);
 
     for (M=0;M<nproc;M++){
       if (M == myrank) continue;
@@ -1173,7 +1176,7 @@ int st_increment (long ne,
       }
     }
 
-    MPI_Allreduce(&EL_e,&GEL_e,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(&EL_e,&GEL_e,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     if ( myrank == 0){
       PGFEM_printf("P:dF = %12.12f || Aver. of Mic. S:dE = %12.12f\n",pom,GEL_e);
     }
@@ -1190,7 +1193,7 @@ int st_increment (long ne,
     }
   }
 
-  MPI_Allgather (LPf,9,MPI_DOUBLE,GPf,9,MPI_DOUBLE,mpi_comm);
+  com->net->allgather(LPf,9,NET_DT_DOUBLE,GPf,9,NET_DT_DOUBLE,com->comm);
 
   for (M=0;M<nproc;M++){
     if (M == myrank){
@@ -1265,10 +1268,10 @@ int st_increment (long ne,
 
   PL = T_VOLUME (ne,ndofn-1,elem,node);
   /* Gather Volume from all domains */
-  MPI_Allreduce(&PL,&GPL,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&PL,&GPL,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   if (coh == 1) {
-    MPI_Allreduce(pores,&Gpores,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(pores,&Gpores,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     *pores = Gpores;
   }
 

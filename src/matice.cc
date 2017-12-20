@@ -6,10 +6,14 @@
 #include "matice.h"
 #include <math.h>
 
+#include "pgfem3d/Communication.hpp"
 #include "incl.h"
 #include "resice.h"
 
 #define SIGN(a,b) ((b)<0 ? -fabs(a) : fabs(a))
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 int compare_val_w_key(const void *a,
               const void *b)
@@ -445,22 +449,20 @@ double ss (const double *a, const double *b,const long n)
   return (s);
 }
 
-void nor_vec (double *BS_a,long n,MPI_Comm mpi_comm)
+void nor_vec (double *BS_a,long n,CommunicationStructure *com)
 /*
   Return normalized global vector BS_a
 */
 {
   double nor,tmp;
   long i;
-
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
-
+  int myrank = com->rank;
+  
   tmp = ss (BS_a,BS_a,n);
-  MPI_Allreduce(&tmp,&nor,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&tmp,&nor,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   if (nor<1.0e-20){
     if (myrank == 0) PGFEM_printf ("Zero norm in routine normal\n");
-    PGFEM_Comm_code_abort (mpi_comm,0);
+    PGFEM_Comm_code_abort (com, 0);
   }
 
   tmp = sqrt(nor);

@@ -7,6 +7,7 @@
 #include "Solvers.hpp"
 #include "enumerations.h"
 #include "pgfem3d/Solver.hpp"
+#include "pgfem3d/Communication.hpp"
 #include <fstream>
 #include <iomanip>
 #include <numeric>
@@ -17,6 +18,7 @@
 #define PFEM_HYPRE_DEBUG 0
 #endif
 
+using pgfem3d::PGFEM_Abort;
 using pgfem3d::solvers::SparseSystem;
 using namespace pgfem3d::solvers::hypre;
 

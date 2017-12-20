@@ -3,7 +3,7 @@
 #ifndef COHESIVE_POTENTIALS_H
 #define COHESIVE_POTENTIALS_H
 
-#include "PGFEM_mpi.h"
+#include "pgfem3d/Communication.hpp"
 #include "PGFEM_io.h"
 
   typedef int (*cohesive_fptr)(double *val,
@@ -69,7 +69,7 @@
   int read_cohesive_properties(FILE *in,
                    int *n_mat,
                    cohesive_props **props,
-                   MPI_Comm mpi_comm);
+		   const pgfem3d::CommunicationStructure *com);
 
   /** Properly frees up memory from a list of coheive properties */
   void destroy_cohesive_props(const int n_mat,

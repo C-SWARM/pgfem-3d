@@ -6,13 +6,13 @@
 #ifndef PGFEM3D_STABILIZED_H
 #define PGFEM3D_STABILIZED_H
 
+#include "PGFem3D_data_structure.h"
 #include "cohesive_element.h"
 #include "element.h"
 #include "eps.h"
 #include "hommat.h"
 #include "matgeom.h"
 #include "node.h"
-#include "PGFEM_mpi.h"
 #include "sig.h"
 #include "supp.h"
 
@@ -98,7 +98,7 @@ int st_increment (long ne,
                   long nce,
                   COEL *coel,
                   double *pores,
-                  MPI_Comm mpi_comm,
+		  const pgfem3d::CommunicationStructure *com,
                   const int coh,
                   const int mp_id);
 

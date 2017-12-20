@@ -23,6 +23,31 @@
 #include <assert.h>
 #include <stdio.h>
 
+using namespace pgfem3d;
+
+// dummy multi_scale methods so single scale continues to build
+int multi_scale_main(int argc, char* argv[])
+{
+  return 0;
+}
+
+int pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client*, MICROSCALE*, int*)
+{
+  return 0;
+}
+
+int pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client*, pgfem3d::MultiscaleComm const*, int)
+{
+  return 0;
+}
+
+int pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client*, pgfem3d::MultiscaleComm const*, MICROSCALE const*, int)
+{
+  return 0;
+}
+
+#if 0
+
 static const int ndim = 3;
 
 /*==== STATIC FUNCTION PROTOTYPES ====*/
@@ -269,7 +294,7 @@ int reset_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 {
   int err = 0;
   int myrank = 0;
-  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  err += MPI_Comm_rank((MPI_Comm)micro->common->com->comm,&myrank);
   const int loc_ndof = micro->common->ndofd;
   const int g_ndof = micro->common->DomDof[myrank];
   size_t pos = 0;
@@ -343,7 +368,7 @@ int update_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
   int err = 0;
 
   int myrank = 0;
-  err += MPI_Comm_rank(micro->common->mpi_comm,&myrank);
+  err += MPI_Comm_rank((MPI_Comm)micro->common->com->comm,&myrank);
   const int loc_ndof = micro->common->ndofd;
   size_t pos = 0;
 
@@ -419,8 +444,8 @@ static void initialize_COMMON_MICROSCALE(COMMON_MICROSCALE *common)
   common->Ai = NULL;
 
   /* communication information */
-  common->pgfem_comm = NULL;
-  common->mpi_comm = MPI_COMM_WORLD;
+  common->com = NULL;
+  //common->mpi_comm = MPI_COMM_WORLD;  XXX
   common->nbndel = 0;
   common->bndel = NULL;
   common->ndofd = 0;
@@ -466,7 +491,7 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
   MPI_Comm_size(mpi_comm,&nproc);
   /* initialize the solver information */
   common->SOLVER = nullptr;
-  common->mpi_comm = mpi_comm;
+  common->com->comm = mpi_comm;
   common->maxit_nl = 5;
 
   switch(opts->vis_format){
@@ -645,13 +670,13 @@ static void build_COMMON_MICROSCALE(const PGFem3D_opt *opts,
 
   /* global stiffness pattern and communication structure */
   common->Ap = PGFEM_calloc(int, common->DomDof[myrank]+1);
-  common->pgfem_comm = PGFEM_calloc (COMMUN_1, 1);
-  initialize_commun(common->pgfem_comm);
+  common->com = PGFEM_calloc (CommunicationStructure, 1);
+  //initialize_commun(common->com); XXX
   common->Ai = Psparse_ApAi(nproc,myrank,common->ne,0,common->nn,
                             common->ndofn,common->ndofd,common->elem,
                             NULL,common->node,common->Ap,common->nce,
                             common->coel,common->DomDof,&common->GDof,
-                            common->pgfem_comm,mpi_comm,opts->cohesive,hints,mp_id);
+                            common->com->comm,mpi_comm,opts->cohesive,hints,mp_id);
   pgfem_comm_build_fast_maps(common->pgfem_comm,common->ndofd,
                              common->DomDof[myrank],common->GDof);
 
@@ -1002,3 +1027,5 @@ static void destroy_MICROSCALE_SOLUTION_BUFFERS(void *buffer)
   free(buff->BS_DK);
   free(buff->BS_dR);
 }
+
+#endif

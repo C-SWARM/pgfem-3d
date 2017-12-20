@@ -203,7 +203,8 @@ int residual_with_inertia(FEMLIB *fe,
                           const Multiphysics& mp,
                           int mp_id,
                           double *dts,
-                          double t)
+                          double t,
+			  int myrank)
 {
   int err = 0;
 
@@ -212,8 +213,6 @@ int residual_with_inertia(FEMLIB *fe,
        || opts->analysis_type == CM
        || opts->analysis_type == CM3F))
   {
-    int myrank = 0;
-    MPI_Comm_rank (MPI_COMM_WORLD,&myrank);
     if(myrank==0)
       printf("With inertia is supported only for analysis type = DISP or TF or CM\n");
 

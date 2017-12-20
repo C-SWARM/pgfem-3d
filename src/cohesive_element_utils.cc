@@ -1,7 +1,7 @@
 /* HEADER */
 /** This file contains the utilities for cohesive elements */
+#include "pgfem3d/Communication.hpp"
 #include "cohesive_element_utils.h"
-#include "PGFEM_mpi.h"
 #include <math.h>
 
 #include "PGFEM_io.h"
@@ -9,6 +9,8 @@
 #include "elem3d.h"
 #include "matice.h"
 #include "tensors.h"
+
+using namespace pgfem3d;
 
 static const int ndn = 3;
 

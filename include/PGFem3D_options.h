@@ -9,6 +9,9 @@
 /** Structure containing option parameters to set from the command
     line. */
 struct PGFem3D_opt {
+  /* network option */
+  int network;
+  
   /* solver options */
   int solverpackage; /* HYPRE or BS95 (BS95 is obsolete) */
   int solver;

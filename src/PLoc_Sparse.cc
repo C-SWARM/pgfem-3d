@@ -2,7 +2,6 @@
 #include "PLoc_Sparse.h"
 #include "allocation.h"
 #include "enumerations.h"
-#include "PGFEM_mpi.h"
 #include "utils.h"
 #include <string.h>
 
@@ -10,6 +9,7 @@
 #define PFEM_DEBUG 0
 #endif
 
+using pgfem3d::SparseComm;
 using pgfem3d::solvers::SparseSystem;
 
 void PLoc_Sparse (double **Lk,
@@ -23,7 +23,7 @@ void PLoc_Sparse (double **Lk,
                   long GDof,
                   int myrank,
                   int nproc,
-                  COMMUN comm,
+                  SparseComm *comm,
                   int interior,
                   SparseSystem *system,
                   const int analysis)
@@ -33,7 +33,6 @@ void PLoc_Sparse (double **Lk,
   int nrows = 0;
   int ncols = 0;
   int nsend = 0;
-
 
   int *gDofID, *send, *rows, *cols;
 
@@ -188,7 +187,7 @@ void PLoc_Sparse_rec (double **Lk,
                       long GDof,
                       int myrank,
                       int nproc,
-                      COMMUN comm,
+                      SparseComm *comm,
                       int interior,
                       SparseSystem *system)
 {

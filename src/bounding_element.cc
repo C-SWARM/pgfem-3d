@@ -14,12 +14,10 @@ int read_bounding_elements(FILE *ifile,
                            const int ndof_be,
                            int *nbe,
                            BoundingElement **b_elems,
-                           MPI_Comm mpi_comm)
+                           int myrank)
 {
   int err = 0;
-  int myrank =0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-
+  
   /* read number of bounding elements */
   CHECK_SCANF(ifile,"%d",nbe);
 
@@ -112,13 +110,11 @@ int read_bounding_elements_fname(char *filename,
                                  const int ndof_be,
                                  int *nbe,
                                  BoundingElement **b_elems,
-                                 MPI_Comm mpi_comm)
+				 int myrank)
 {
   int err = 0;
 
   FILE *ifile;
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
 
   /* open file to read */
   if((ifile = fopen(filename,"r")) == NULL){
@@ -134,7 +130,7 @@ int read_bounding_elements_fname(char *filename,
     return err;
   }
 
-  err += read_bounding_elements(ifile,ndof_be,nbe,b_elems,mpi_comm);
+  err += read_bounding_elements(ifile,ndof_be,nbe,b_elems,myrank);
 
   /* close the file */
   fclose(ifile);
@@ -267,10 +263,9 @@ int destroy_bounding_elements(int nbe,
 */
 
 #ifdef BOUNDING_ELEMENT_DRIVER
+
 int main(int argc, char **argv)
 {
-  MPI_Init(&argc,&argv);
-
   int nbe;
   BoundingElement *b_elems;
 
@@ -282,7 +277,5 @@ int main(int argc, char **argv)
 
   /* deallocate the elements */
   destroy_bounding_elements(nbe,b_elems);
-
-  MPI_Finalize();
 }
 #endif

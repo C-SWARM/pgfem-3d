@@ -73,11 +73,13 @@ long perTimestep_EXA_metric = 0;
 long total_EXA_metric = 0;
 long dof_EXA_metric = 0;
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 namespace {
 using pgfem3d::Solver;
 using pgfem3d::solvers::SparseSystem;
-
+  
 /* MINIMAL_OUTPUT prints a summary of the entire function call. For
  * any print_level > MINIMAL_OUTPUT, normal output is used. */
 enum {MINIMAL_OUTPUT,NORMAL_OUTPUT,VERBOSE_OUTPUT};
@@ -105,7 +107,7 @@ struct NR_time_steps {
   double times[3];
   double dt[2];
   int tim;
-};
+ };
 }
 
 /** Set the time vector to contain current dt for microscale */
@@ -141,7 +143,7 @@ static void set_time_macro(const int tim,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -411,7 +413,7 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
@@ -426,7 +428,7 @@ double compute_residuals_for_NR(long *INFO,
                                 Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-                                MPI_Comm mpi_comm,
+				const CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
@@ -434,12 +436,12 @@ double compute_residuals_for_NR(long *INFO,
                                 double *dts,
                                 int updated_deformation)
 {
-  double func_time = -MPI_Wtime();
+  double func_time = -CLOCK();
 
   switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
-    *INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,updated_deformation);
+    *INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,com,opts,mp,mp_id,t,dts,updated_deformation);
     break;
    case MULTIPHYSICS_THERMAL:
     *INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation,dts[DT_NP1]);
@@ -454,7 +456,7 @@ double compute_residuals_for_NR(long *INFO,
     abort();
   }
 
-  func_time += MPI_Wtime();
+  func_time += CLOCK();
   return func_time;
 }
 
@@ -469,7 +471,6 @@ double compute_residuals_for_NR(long *INFO,
 /// \param[in] load object for loading
 /// \param[in] com communication object
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
@@ -484,29 +485,28 @@ double compute_stiffness_for_NR(long *INFO,
                                 FieldVariables *fv,
                                 Solver *sol,
                                 LoadingSteps *load,
-                                CommunicationStructure *com,
+                                const CommunicationStructure *com,
                                 CRPL *crpl,
-                                MPI_Comm mpi_comm,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
                                 double dt,
-                                long iter,
-                                int myrank)
+                                long iter)
 {
-  double func_time = -MPI_Wtime();
+  double func_time = -CLOCK();
   long GInfo;
-
+  int myrank = com->rank;
+  
   if(sol->microscale == NULL) // Null the matrix (if not doing multiscale)
     sol->system->zero();
 
   switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
-    *INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+     *INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,opts,mp,mp_id,dt,iter);
     break;
    case MULTIPHYSICS_THERMAL:
-    *INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,load,com,mpi_comm,myrank,opts,mp_id,dt);
+    *INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,load,com,opts,mp_id,dt);
     break;
    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
    default:
@@ -514,7 +514,7 @@ double compute_stiffness_for_NR(long *INFO,
   }
 
   // if INFO value greater than 0, the previous computation has an error
-  MPI_Allreduce (INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+  com->net->allreduce(INFO,&GInfo,1,NET_DT_LONG,NET_OP_MAX,com->comm);
 
   if(GInfo > 0)
   {
@@ -537,7 +537,7 @@ double compute_stiffness_for_NR(long *INFO,
   // Matrix assmbly
   sol->system->assemble();
 
-  func_time += MPI_Wtime();
+  func_time += CLOCK();
   return func_time;
 }
 
@@ -549,7 +549,7 @@ double compute_stiffness_for_NR(long *INFO,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
@@ -562,7 +562,7 @@ int update_values_for_next_NR(Grid *grid,
                               Solver *sol,
                               LoadingSteps *load,
                               CRPL *crpl,
-                              MPI_Comm mpi_comm,
+                              const CommunicationStructure *com,
                               const double VVolume,
                               const PGFem3D_opt *opts,
                               const Multiphysics& mp,
@@ -587,29 +587,29 @@ int update_values_for_next_NR(Grid *grid,
         case FINITE_STRAIN:
          fd_increment (grid->ne,grid->nn,fv->ndofn,fv->npres,mat->matgeom,mat->hommat,
                        grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
-                       sol->nor_min,crpl,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
+                       sol->nor_min,crpl,dt,grid->nce,grid->coel,&(fv->pores),com,
                        VVolume,opts, mp_id);
          break;
         case STABILIZED:
          st_increment (grid->ne,grid->nn,fv->ndofn,fv->ndofd,mat->matgeom,mat->hommat,
                        grid->element,grid->node,load->sups[mp_id],fv->eps,fv->sig,fv->d_u,fv->u_np1,
-                       sol->nor_min,opts->stab,dt,grid->nce,grid->coel,&(fv->pores),mpi_comm,
+                       sol->nor_min,opts->stab,dt,grid->nce,grid->coel,&(fv->pores),com,
                        opts->cohesive,mp_id);
          break;
         case MINI:
          MINI_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
-                        load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
+                        load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,com,mp_id);
          break;
         case MINI_3F:
          MINI_3f_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,
-                           load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,mpi_comm,mp_id);
+                           load->sups[mp_id],fv->eps,fv->sig,mat->hommat,fv->d_u,com,mp_id);
          break;
         case DISP:
          DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
-                        fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
+                        fv->sig,mat->hommat,fv->d_u,fv->u_np1,com,mp_id);
          break;
         case TF:
-         update_3f_output_variables(grid,mat,fv,load,mp_id,dt,t,mpi_comm);
+         update_3f_output_variables(grid,mat,fv,load,mp_id,dt,t);
          break;
         case CM:
         case CM3F:
@@ -618,7 +618,7 @@ int update_values_for_next_NR(Grid *grid,
             {
              case HYPER_ELASTICITY: case DISP:
               DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
-                             fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
+                             fv->sig,mat->hommat,fv->d_u,fv->u_np1,com,mp_id);
               break;
              case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
               /* updated later... */
@@ -739,7 +739,6 @@ int update_values_for_next_NR(Grid *grid,
 /// \param[in] fv object for field variables
 /// \param[in] sol object for solution scheme
 /// \param[in] com container of communications info
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] tim time step id
 /// \param[in] iter NR iteration id
@@ -749,20 +748,18 @@ int check_energy_norm(double *ENORM,
                       double nor,
                       FieldVariables *fv,
                       Solver *sol,
-                      CommunicationStructure *com,
-                      MPI_Comm mpi_comm,
+                      const CommunicationStructure *com,
                       const PGFem3D_opt *opts,
                       int tim,
-                      int iter,
-                      int myrank)
+                      int iter)
 {
   int is_converged = 0;
-
+  int myrank = com->rank;
   double enorm, Genorm;
   // Compute the energy norm E_norm = abs(R ddu/(R0 ddu0))
-  LToG(fv->dd_u,fv->BS_x,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  LToG(fv->dd_u,fv->BS_x,fv->ndofd,com);
   enorm = ss(fv->BS_f,fv->BS_x,com->DomDof[myrank]);
-  MPI_Allreduce(&enorm,&Genorm,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&enorm,&Genorm,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   if((tim == 0 && iter == 0))
     *ENORM = Genorm;
@@ -858,14 +855,12 @@ void apply_initial_velocity_to_nm1(double *u_nm1,
 /// \param[in] load object for loading
 /// \param[in] com container of communications info
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] times array of times
 ///                  t(n-1) = times[tim-1], t(n) = times[tim], t(n+1) = times[tim+1]
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1), dts[DT_NP1] = t(n+1) - t(n),
-/// \param[in] myrank current process rank
 /// \param[in] tim time step id
 /// \param[in] STEP number of subdivided steps
 /// \param[in] DIV subdivision step id
@@ -884,15 +879,13 @@ long Newton_Raphson_with_LS(double *solve_time,
                             FieldVariables *fv,
                             Solver *sol,
                             LoadingSteps *load,
-                            CommunicationStructure *com,
+                            const CommunicationStructure *com,
                             CRPL *crpl,
-                            MPI_Comm mpi_comm,
                             const PGFem3D_opt *opts,
                             const Multiphysics& mp,
                             int mp_id,
                             double *times,
                             double *dts,
-                            int myrank,
                             int tim,
                             long STEP,
                             long DIV,
@@ -906,7 +899,8 @@ long Newton_Raphson_with_LS(double *solve_time,
   double t = times[tim+1];
 
   int iter = 0;
-
+  int myrank = com->rank;
+  
   double nor, nor2, GNOR;
   nor = nor2 = GNOR = 10.0;
 
@@ -943,8 +937,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     {
       //compute stiffness matrix
       *stiffmat_loc_time += compute_stiffness_for_NR(&INFO,&max_substep,grid,mat,fv,sol,load,com,
-                                                     crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
-
+                                                     crpl,opts,mp,mp_id,dt,iter);
       if(INFO > 0)
       {
         *ART = 1;
@@ -992,12 +985,12 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
 
     /* Transform GLOBAL displacement vector to LOCAL */
-    GToL (fv->BS_x,fv->dd_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    GToL (fv->BS_x, fv->dd_u, fv->ndofd, com);
 
     /* LINE SEARCH */
     double Gss_temp = 0.0;
     double tmp  = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-    MPI_Allreduce(&tmp,&Gss_temp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(&tmp,&Gss_temp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     double LS1 = 1./2.*Gss_temp;
 
     /* Pressure and volume change THETA */
@@ -1036,7 +1029,7 @@ long Newton_Raphson_with_LS(double *solve_time,
 
       /* Gather INFO from all domains */
       // if INFO value greater than 0, the previous computation has an error
-      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+      com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_MAX,com->comm);
       if (GInfo > 0) // if not 0, an error is detected
       {
         INFO = 1;
@@ -1052,11 +1045,11 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
 
     INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-                              mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
+                              mat->hommat,load->sups[mp_id],dt,iter,com,
                               fv->eps,fv->sig,&max_damage,&dissipation,
                               opts->analysis_type,mp_id);
 
-    bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
+    bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,com);
     /* this is not verified and currently active, but fully implemented.
        if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
        {
@@ -1066,7 +1059,7 @@ long Newton_Raphson_with_LS(double *solve_time,
        alpha = 10.0;
        }*/
     // if INFO value greater than 0, the previous computation has an error
-    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+    com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_MAX,com->comm);
     if(GInfo > 0) // if not 0, an error is detected
     {
       INFO = 1;
@@ -1090,15 +1083,15 @@ long Newton_Raphson_with_LS(double *solve_time,
          * print operation from the previous step. These operations
          * are approx. equal for all cells and thus the timing
          * information is not valid for rebalancing purposes. */
-        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                                FE2_REBALANCE_NONE);
       } else {
-        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                                NR_REBALANCE);
       }
       double tnp1 = 0;
       set_time_micro(tim,times,dt,DIV,&tnp1);
-      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                      JOB_COMPUTE_EQUILIBRIUM);
       set_time_macro(tim,times,tnp1);
     }
@@ -1106,10 +1099,10 @@ long Newton_Raphson_with_LS(double *solve_time,
     /* Residuals */
     INFO = 0;
     *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,
-                                                    mpi_comm,opts,mp,mp_id,t,dts, 1);
+                                                    com,opts,mp,mp_id,t,dts, 1);
 
     // if INFO value greater than 0, the previous computation has an error
-    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+    com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_MAX,com->comm);
     if (GInfo > 0)// if not 0, an error is detected
     {
       INFO = 1;
@@ -1140,14 +1133,14 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
 
     /* Transform LOCAL load vector to GLOBAL */
-    LToG (fv->f_u,fv->BS_f_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    LToG (fv->f_u, fv->BS_f_u, fv->ndofd, com);
 
     /* Compute Euclidian norm */
     for (int i=0; i<com->DomDof[myrank]; i++)
       fv->BS_f[i] = fv->BS_RR[i] - fv->BS_f_u[i];
 
     nor  = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-    MPI_Allreduce(&nor,&GNOR,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(&nor,&GNOR,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     nor2 = nor = sqrt(GNOR);
 
     // Reset *NORM if less than convergence tolerance MM 6/27/2012*/
@@ -1174,13 +1167,13 @@ long Newton_Raphson_with_LS(double *solve_time,
     // My Line search
     if (*ART == 0)
     {
-      INFO = LINE_S3_MP(residuals_loc_time,grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
+      INFO = LINE_S3_MP(residuals_loc_time,grid,mat,fv,sol,load,com,crpl,opts,mp,
                         dts,t,mp_id,&nor,&nor2,fv->NORM,LS1,iter,&max_damage,&dissipation,
                         tim,STEP);
 
       // Gather infos
       // if INFO value greater than 0, the previous computation has an error
-      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
+      com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_MAX,com->comm);
       // ERROR in line search
       if (GInfo > 0)
       {
@@ -1243,18 +1236,18 @@ long Newton_Raphson_with_LS(double *solve_time,
       if(opts->analysis_type == MINI){
         MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                          fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                         com->GDof,com->comm,mpi_comm,mp_id);
+                         com->GDof,com,mp_id);
       }
       if(opts->analysis_type == MINI_3F){
         MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                             fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                            com->GDof,com->comm,mpi_comm,mp_id);
+                            com->GDof,com,mp_id);
       }
     }
 
     //EXA metric computation
     long global_ODE_EXA_metric = 0;
-    MPI_Reduce (&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,MPI_LONG,MPI_SUM,0,mpi_comm);
+    com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
     if (myrank == 0){
       if (opts->print_EXA_details)
         PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
@@ -1263,8 +1256,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
     perIter_ODE_EXA_metric = 0;                                 //reset ODE operation counter
     
-    
-    if(check_energy_norm(&ENORM,nor2,fv,sol,com,mpi_comm,opts,tim,iter,myrank))
+    if(check_energy_norm(&ENORM,nor2,fv,sol,com,opts,tim,iter))
     {
       INFO = 0;
       break;
@@ -1318,7 +1310,7 @@ long Newton_Raphson_with_LS(double *solve_time,
       *alpha = (*alpha > element_volume_evolution)? *alpha : element_volume_evolution;
     }
 
-    MPI_Allreduce(MPI_IN_PLACE,alpha,1,MPI_DOUBLE,MPI_MAX,mpi_comm);
+    com->net->allreduce(NET_IN_PLACE,alpha,1,NET_DT_DOUBLE,NET_OP_MAX,com->comm);
     if(myrank == 0)
     {
       PGFEM_printf("Physics based evolution thresh (e.g. damage): %f (wmax: %f)\n"
@@ -1345,7 +1337,7 @@ long Newton_Raphson_with_LS(double *solve_time,
 
     if(myrank == 0)
     {
-      MPI_Reduce(MPI_IN_PLACE,&dissipation,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+      com->net->reduce(NET_IN_PLACE,&dissipation,1,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
       PGFEM_printf("Dissipation (vol weighted) [current] ||"
                    " [integrated] || (dt): %2.8e %2.8e %2.8e\n",
                    dissipation/dt, dissipation,dt);
@@ -1353,7 +1345,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     else
     {
       double tmp = 0;
-      MPI_Reduce(&dissipation,&tmp,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
+      com->net->reduce(&dissipation,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
     }
     sol->last_residual = nor2;
   }
@@ -1382,13 +1374,11 @@ long Newton_Raphson_with_LS(double *solve_time,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] NR_t container of time stepping info
 /// \param[in] mp_id mutiphysics id
-/// \param[in] myrank current process rank
 void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                              double *stiffmat_loc_time, 
                                              double *residuals_loc_time, 
@@ -1403,18 +1393,16 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                              CommunicationStructure *COM,
                                              TimeStepping *time_steps,
                                              CRPL *crpl,
-                                             MPI_Comm mpi_comm,
                                              const double VVolume,
                                              const PGFem3D_opt *opts,
                                              const Multiphysics& mp,
                                              NR_time_steps *NR_t,
-                                             int mp_id,
-                                             int myrank)
+                                             int mp_id)
 {
   *is_NR_converged = 1;
   *alpha = 0.0;
   int iter = 0;
-
+  
   // use pointers for physics[mp_id]
   Solver                 *sol = SOL + mp_id;
   FieldVariables          *fv = FV  + mp_id;
@@ -1422,6 +1410,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
   sol->gama = 0.0;
 
+  int myrank = com->rank;
   long tim = NR_t->tim;
   SUBDIVISION_PARAM sp;
 
@@ -1486,7 +1475,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
     else
     {
       // run subdivision
-      subdivision_scheme(INFO,&sp,&dt,NR_t->times,tim,iter,sol->iter_max,*alpha,mpi_comm);
+      subdivision_scheme(INFO,&sp,&dt,NR_t->times,tim,iter,sol->iter_max,*alpha,com);
 
       // update variables according to the subdivision
       if(sp.reset_variables)
@@ -1523,12 +1512,12 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
          d_r (no displacement increments) for displacement dof
          vector */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-      pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+      pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                              FE2_REBALANCE_NONE);
       double tnp1 = 0;
       set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
       ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
-      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                      JOB_NO_COMPUTE_EQUILIBRIUM);
       set_time_macro(tim,NR_t->times,tnp1);
     }
@@ -1548,7 +1537,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         PGFEM_printf("\nSTEP = %ld :: NS =  %ld || Time %e | dt = %e\n",
                      sp.step_id,sp.step_size,NR_t->times[tim+1],dt);
       }
-      bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
+      bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,com);
       if (periodic == 1)
       {
         long nt = time_steps->nt;
@@ -1587,8 +1576,8 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         /* Residuals */
         nulld (fv->f_u,fv->ndofd);
         INFO = 0;
-        *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                        opts,mp,mp_id,t,dts, 1);
+        *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
+                                                        opts,mp,mp_id,t,dts,1);
 
         for (i=0;i<fv->ndofd;i++){
           fv->f[i] = - fv->f_u[i];
@@ -1612,17 +1601,17 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
                            " for interface multiscale modeling!\n"
                            "Must have at least six (6) prescribed displacements.\n"
                            "Check input and try again.\n",myrank);
-            PGFEM_Comm_code_abort(mpi_comm,0);
+            PGFEM_Comm_code_abort(com, 0);
           }
           nulld (fv->f_u,fv->ndofd);
           vol_damage_int_alg(grid->ne,fv->ndofn,fv->d_u,fv->u_np1,grid->element,grid->node,
-                             mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
+                             mat->hommat,load->sups[mp_id],dt,iter,com,
                              fv->eps,fv->sig,&max_damage,&dissipation,
                              opts->analysis_type,mp_id);
 
           INFO = 0;
-          *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                          opts,mp,mp_id,t,dts, 0);
+          *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
+                                                          opts,mp,mp_id,t,dts,0);
         } else {
           nulld (fv->f_u,fv->ndofd);
         }
@@ -1632,8 +1621,8 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         nulld (fv->f_defl,fv->ndofd);
 
         compute_load_vector_for_prescribed_BC(grid,mat,fv,sol,load,dt,crpl,
-                                              opts,mp,mp_id,myrank);
-
+                                              opts,mp,mp_id,com);
+	
         /* Generate the load and vectors */
         for (i=0;i<fv->ndofd;i++)  {
           fv->f[i] = fv->R[i]/sp.step_size - fv->f_defl[i] - fv->f_u[i];
@@ -1643,10 +1632,10 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       }
 
       /* Transform LOCAL load vector to GLOBAL */
-      LToG (fv->f,fv->BS_f,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+      LToG (fv->f, fv->BS_f, fv->ndofd, com);
 
       /* Transform LOCAL load vector to GLOBAL */
-      LToG (fv->RR,fv->BS_RR,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+      LToG (fv->RR, fv->BS_RR, fv->ndofd, com);
 
       iter = 0;
       double nor, nor2;
@@ -1654,10 +1643,9 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
       // Newton Raphson iteration with Line search
       int ART_temp = ART;
-
       INFO = Newton_Raphson_with_LS(solve_time,stiffmat_loc_time,residuals_loc_time,alpha,
                                     &NOR,&gam,&ART_temp,&iter,grid,mat,fv,sol,load,com,
-                                    crpl,mpi_comm,opts,mp,mp_id,NR_t->times,dts,myrank,
+                                    crpl,opts,mp,mp_id,NR_t->times,dts,
                                     tim,sp.step_size,sp.step_id,&usage,time_steps->tim);
 
       ART = ART_temp;
@@ -1680,13 +1668,13 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
         /* start the microscale jobs */
         MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mpi_comm,
+        pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                                FE2_REBALANCE_NONE);
 
         double tnp1 = 0;
         set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
         ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
-        pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mpi_comm,ctx->macro,
+        pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                        JOB_UPDATE);
         set_time_macro(tim,NR_t->times,tnp1);
       }
@@ -1696,7 +1684,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
       if(sp.step_size>sp.step_id+1)
       {
-        update_values_for_next_NR(grid,mat,fv,sol,load,crpl,mpi_comm,VVolume,opts,mp,NR_t,mp_id);
+        update_values_for_next_NR(grid,mat,fv,sol,load,crpl,com,VVolume,opts,mp,NR_t,mp_id);
         fv->subdivision_factor_n   = fv->subdivision_factor_np1;
       }
 
@@ -1716,24 +1704,24 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         if(opts->analysis_type == MINI){
           MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                            fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                           com->GDof,com->comm,mpi_comm,mp_id);
+                           com->GDof,com,mp_id);
         }
         if(opts->analysis_type == MINI_3F){
           MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                               fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                              com->GDof,com->comm,mpi_comm,mp_id);
+                              com->GDof,com,mp_id);
         }
         INFO = 0;
-        *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                        opts,mp,mp_id,t,dts, 0);
+        *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
+                                                        opts,mp,mp_id,t,dts,0);
 
         for (i=0;i<fv->ndofd;i++) fv->f[i] = fv->RR[i] - fv->f_u[i];
         /* print_array_d(stdout,RR,ndofd,1,ndofd); */
 
-        LToG(fv->f,fv->BS_f,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+        LToG(fv->f, fv->BS_f, fv->ndofd, com);
         nor = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
         double tmp;
-        MPI_Allreduce(&nor,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+        com->net->allreduce(&nor,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
         nor = sqrt (tmp);
 
         if (myrank == 0) PGFEM_printf("NORM NORM = %12.12e\n",nor);
@@ -1758,7 +1746,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       double *res_trac = aloc1(3);
       bounding_element_compute_resulting_traction(grid->n_be,grid->b_elems,grid->element,grid->node,
                                                   fv->eps,fv->sig,fv->ndofd,com->DomDof,
-                                                  com->GDof,com->comm,mpi_comm,
+                                                  com->GDof,com,
                                                   opts->analysis_type,
                                                   res_trac);
       free(res_trac);
@@ -1777,7 +1765,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       if(NR_COMPUTE_REACTIONS && !(load->sups[mp_id])->multi_scale){
         compute_reactions(grid->ne,fv->ndofn,fv->npres,fv->u_np1,grid->node,grid->element,mat->matgeom,
                           mat->hommat,load->sups[mp_id],fv->eps,fv->sig,sol->nor_min,crpl,
-                          dt,opts->stab,mpi_comm,opts->analysis_type,mp_id);
+                          dt,opts->stab,com,opts->analysis_type,mp_id);
       }
       break;
     }
@@ -1801,7 +1789,6 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] t time at t(n+1)
@@ -1819,13 +1806,11 @@ int compute_coupled_physics_residual_norm(double *residuals_loc_time,
                                           CommunicationStructure *COM,
                                           TimeStepping *time_steps,
                                           CRPL *crpl,
-                                          MPI_Comm mpi_comm,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
                                           double t,
                                           double *dts,
-                                          int mp_id,
-                                          int myrank)
+                                          int mp_id)
 {
   int err = 0;
   // use pointers for physics[mp_id]
@@ -1840,18 +1825,21 @@ int compute_coupled_physics_residual_norm(double *residuals_loc_time,
 
   // double dt = dts[DT_NP1];
 
+  int myrank = com->rank;
+  
   for(int ia=0; ia<fv->ndofd; ia++)
     fv->f_u[ia] = 0.0;
 
   sol->run_integration_algorithm = 0; // turn off running integration algorithm
 
   long INFO = 0;
-  *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
+  *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
                                                   opts,mp, mp_id,t,dts, 1);
+  
   sol->run_integration_algorithm = 1; // reset integration algorithm to be active
 
   // Transform LOCAL load vector to GLOBAL
-  LToG(fv->f_u,fv->BS_f_u,myrank,com->nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  LToG(fv->f_u, fv->BS_f_u, fv->ndofd, com);
 
   // Compute Euclidian norm
   for(int i=0;i<com->DomDof[myrank]; i++)
@@ -1861,7 +1849,7 @@ int compute_coupled_physics_residual_norm(double *residuals_loc_time,
   double GNOR = 0.0;
 
   LNOR = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-  MPI_Allreduce(&LNOR,&GNOR,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&LNOR,&GNOR,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   *nor = sqrt(GNOR);
 
   return err;
@@ -1881,9 +1869,6 @@ int save_field_variables_to_temporal(Grid *grid,
                                      const Multiphysics& mp,
                                      int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-
   FieldVariables *fv = FV + mp_id;
 
   int err = 0;
@@ -2094,7 +2079,6 @@ int set_time_step_info_for_NR(TimeStepping *ts,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] NR_time save time step info during previous NR iteration
@@ -2108,18 +2092,19 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
                                        FieldVariables *FV,
                                        Solver *SOL,
                                        LoadingSteps *load,
-                                       CommunicationStructure *COM,
+				       CommunicationStructure *COM,
                                        TimeStepping *time_steps,
                                        CRPL *crpl,
-                                       MPI_Comm mpi_comm,
                                        const PGFem3D_opt *opts,
                                        const Multiphysics& mp,
                                        NR_time_steps *NR_time,
-                                       int mp_id,
-                                       int myrank)
+                                       int mp_id)
 {
   int err = 0;
 
+  CommunicationStructure *com = COM + mp_id;
+  int myrank = com->rank;
+  
   // @todo This variable is set but not used ever. I commented it out as dead
   //       code. This should be reviewed by @cp and eliminated if
   //       appropriate. LD
@@ -2148,9 +2133,9 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     double nor = 0.0;
 
     compute_coupled_physics_residual_norm(residuals_loc_time,&nor,grid,mat,FV,SOL,load,
-                                          COM,time_steps,crpl,mpi_comm,opts,mp,
+                                          COM,time_steps,crpl,opts,mp,
                                           NR_time[cpled_mp_id].times[2],
-                                          NR_time[cpled_mp_id].dt,cpled_mp_id,myrank);
+                                          NR_time[cpled_mp_id].dt,cpled_mp_id);
 
     double Rn_R = fabs(SOL[cpled_mp_id].last_residual - nor)/FV[cpled_mp_id].NORM;
 
@@ -2196,7 +2181,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com->comm COM->COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
@@ -2207,16 +2192,15 @@ int set_0th_residual(std::vector<double> &residuals_time,
                      FieldVariables *FV,
                      Solver *SOL,
                      LoadingSteps *load,
-                     CommunicationStructure *COM,
+		     CommunicationStructure *COM,
                      TimeStepping *time_steps,
                      CRPL *crpl,
-                     MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     const Multiphysics& mp,
-                     int myrank)
+                     const Multiphysics& mp)
 {
   int err = 0;
-
+  int myrank = COM[0].rank;
+  
   if(time_steps->tim>0)
     return err;
 
@@ -2233,8 +2217,8 @@ int set_0th_residual(std::vector<double> &residuals_time,
     NR_time_steps NR_t;
     set_time_step_info_for_NR(time_steps,&NR_t);
     compute_coupled_physics_residual_norm(&residuals_loc_time,&nor,grid,mat,FV,SOL,load,COM,
-                                          time_steps,crpl,mpi_comm,opts,mp,NR_t.times[2],
-                                          NR_t.dt,mp_id,myrank);
+                                          time_steps,crpl,opts,mp,NR_t.times[2],
+                                          NR_t.dt,mp_id);
 
     residuals_time[mp_id] += residuals_loc_time; 
     FV[mp_id].NORM = nor; // set first residual
@@ -2267,9 +2251,7 @@ int set_0th_residual(std::vector<double> &residuals_time,
 /// \param[in] load object for loading
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
-/// \param[in] comm MPI_COMM_WORLD
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
@@ -2288,11 +2270,11 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
                                      CommunicationStructure *COM,
                                      TimeStepping *time_steps,
                                      CRPL *crpl,
-                                     MPI_Comm mpi_comm,
                                      const double VVolume,
                                      const PGFem3D_opt *opts,
                                      const Multiphysics& mp)
 {
+  
   const int print_level = 1;
   *iterno = 0;
   *is_SNR_converged = 1;
@@ -2300,9 +2282,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
   double alpha_single = 0.0; // measure of physics based evolution rate for non-coupled physics
 
   int max_itr = SOL[0].max_NR_staggering; // max. number staggering
-  //MPI rank
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = COM[0].rank;
 
   NR_time_steps *NR_time = (NR_time_steps *) malloc(sizeof(NR_time_steps)*mp.physicsno);
 
@@ -2350,13 +2330,12 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
     double residuals_loc_time = 0.0;
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,is_SNR_converged,&alpha,grid,mat,FV,
-                                            SOL,load,COM,time_steps,crpl,mpi_comm,VVolume,opts,
-                                            mp,NR_time+mp_id,mp_id,myrank);
+                                            SOL,load,COM,time_steps,crpl,VVolume,opts,
+                                            mp,NR_time+mp_id,mp_id);
 
     hypre_time[mp_id] += solve_time;
     stiffmat_time[mp_id] += stiffmat_loc_time;
     residuals_time[mp_id] += residuals_loc_time;
-
 
     alpha_single = (alpha_single > alpha)? alpha_single: alpha;
 
@@ -2481,9 +2460,9 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
           double residuals_loc_time = 0.0;
           perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                                   print_level,is_SNR_converged,&alpha,grid,mat,FV,
-                                                  SOL,load,COM,time_steps,crpl,mpi_comm,VVolume,
-                                                  opts,mp,NR_time+mp_id,mp_id,myrank);
-
+                                                  SOL,load,COM,time_steps,crpl,VVolume,
+                                                  opts,mp,NR_time+mp_id,mp_id);
+	  
           hypre_time[mp_id] += solve_time;
           stiffmat_time[mp_id] += stiffmat_loc_time;
           residuals_time[mp_id] += residuals_loc_time;
@@ -2497,8 +2476,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
 
           residuals_loc_time = 0.0;
           check_convergence_of_NR_staggering(&residuals_loc_time,&is_cnvged,grid,mat,FV,SOL,load,
-                                             COM,time_steps,crpl,mpi_comm,opts,mp,NR_time,
-                                             mp_id,myrank);
+                                             COM,time_steps,crpl,opts,mp,NR_time,mp_id);
 
           residuals_time[mp_id] += residuals_loc_time;
         }
@@ -2580,7 +2558,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
       int tim = NR_time[mp_id].tim;
       time_steps->tns[mp_id] = NR_time[mp_id].times[tim+1] - NR_time[mp_id].dt[DT_NP1];
       update_values_for_next_NR(grid,mat,FV+mp_id,SOL+mp_id,load,
-                                crpl,mpi_comm,VVolume,opts,mp,NR_time+mp_id,mp_id);
+                                crpl,COM+mp_id,VVolume,opts,mp,NR_time+mp_id,mp_id);
     }
   }
 
@@ -2602,7 +2580,6 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
@@ -2617,7 +2594,6 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  CommunicationStructure *COM,
                                  TimeStepping *time_steps,
                                  CRPL *crpl,
-                                 MPI_Comm mpi_comm,
                                  const double VVolume,
                                  const PGFem3D_opt *opts,
                                  const Multiphysics& mp)
@@ -2626,15 +2602,14 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
   double alpha = 0.0;
   int iterno = 0;
 
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
-
+  int myrank = COM[0].rank;
+  
   // if too siff to converge, try pre compute resiudal by perturbing displacement
   // slightly
   if(time_steps->tim==0)
   {
     set_0th_residual(residuals_time,grid,mat,FV,SOL,load,COM,time_steps,crpl,
-                     mpi_comm,opts,mp,myrank);
+                     opts,mp);
   }
   perIter_ODE_EXA_metric = 0;
 
@@ -2656,14 +2631,13 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     double residuals_loc_time = 0.0;
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,&is_NR_cvg,&alpha,grid,mat,FV,SOL,load,
-                                            COM,time_steps,crpl,mpi_comm,VVolume,opts,mp,&NR_t,
-                                            0,myrank);
+                                            COM,time_steps,crpl,VVolume,opts,mp,&NR_t,0);
 
     hypre_time[0] += solve_time;
     stiffmat_time[0] += stiffmat_loc_time;
     residuals_time[0] += residuals_loc_time;
 
-    update_values_for_next_NR(grid,mat,FV,SOL,load,crpl,mpi_comm,VVolume,
+    update_values_for_next_NR(grid,mat,FV,SOL,load,crpl,COM,VVolume,
                               opts,mp,&NR_t,0);
     time_steps->times[time_steps->tim] = time_steps->times[time_steps->tim+1] - NR_t.dt[DT_NP1];
   }
@@ -2722,7 +2696,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     while(1)
     {
       // run subdivision
-      subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,mpi_comm);
+      subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,COM);
   
       for(int ia=0; ia<mp.physicsno; ia++){
         update_load_increments_for_subdivision(&sp,sup_defl[ia],(load->sups[ia])->npd,RRn[ia],R[ia],FV[ia].ndofd);
@@ -2789,7 +2763,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         Multiphysics_Newton_Raphson_sub(hypre_time,stiffmat_time,residuals_time,&iterno,
                                         &is_sub_converged,&alpha,&NR_t_sub,
                                         grid,mat,FV,SOL,load,COM,time_steps,crpl,
-                                        mpi_comm,VVolume,opts,mp);
+                                        VVolume,opts,mp);
    
         if(myrank==0)
           printf(":: Maximum physics based evolution threshold = %f\n", alpha);
@@ -2862,10 +2836,7 @@ double Newton_Raphson_multiscale(const int print_level,
                                  double *pores,
                                  int *n_step)
 {
-  // MPI stuff
-  int nproc,myrank;
-  MPI_Comm_size(c->mpi_comm,&nproc);
-  MPI_Comm_rank(c->mpi_comm,&myrank);
+  int nproc = c->com->nproc;
 
   int mp_id = 0;
 
@@ -2978,7 +2949,7 @@ double Newton_Raphson_multiscale(const int print_level,
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
-    com.comm   = c->pgfem_comm;
+    com.comm   = c->com->comm;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
@@ -3003,7 +2974,7 @@ double Newton_Raphson_multiscale(const int print_level,
 
   NR_time_steps NR_t;
   set_time_step_info_for_NR(&ts,&NR_t);
-
+  
   int is_NR_cvg = 1;
   double alpha = 0;
   double solve_time = 0.0; 
@@ -3011,11 +2982,10 @@ double Newton_Raphson_multiscale(const int print_level,
   double residuals_loc_time = 0.0; 
   perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                           print_level,&is_NR_cvg,&alpha,&grid,&mat,&fv,&sol,
-                                          &load,&com,&ts,s->crpl,c->mpi_comm,c->VVolume,
-                                          opts,mp,&NR_t,mp_id,myrank);
+                                          &load,&com,&ts,s->crpl,c->VVolume,
+                                          opts,mp,&NR_t,mp_id);
 
-
-  update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,c->VVolume,
+  update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->com,c->VVolume,
                             opts,mp,&NR_t,mp_id);
 
   ts.times[ts.tim] = ts.times[ts.tim+1] - NR_t.dt[DT_NP1];

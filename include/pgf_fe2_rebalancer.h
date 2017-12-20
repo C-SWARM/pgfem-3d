@@ -8,7 +8,6 @@
 #define PGF_FE2_REBALANCER_H
 
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
 #include "pgf_fe2_server_rebalance.h"
 
 /**
@@ -25,7 +24,8 @@ enum pgf_FE2_rebalancer_heuristic {
  * Load balancer called on each macroscale process to rebalance the
  * servers. Nominally collective communication on mpi_comm->mm_inter.
  */
-pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
+pgf_FE2_server_rebalance** pgf_FE2_rebalancer(
+			  const pgfem3d::MultiscaleComm *mscom,
                           const size_t total_n_jobs,
                           const size_t max_n_jobs,
                           const int heuristic);

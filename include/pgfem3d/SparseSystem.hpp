@@ -1,8 +1,8 @@
 #ifndef PGFEM3D_SPARSE_SYSTEM_HPP
 #define PGFEM3D_SPARSE_SYSTEM_HPP
 
+#include "pgfem3d/Network.hpp"
 #include "PGFem3D_options.h"
-#include <mpi.h>
 
 /** define the structure for general access to solver information */
 struct SOLVER_INFO {
@@ -17,7 +17,8 @@ class SparseSystem
 {
  public:
 
-  static SparseSystem* Create(const PGFem3D_opt& opts, MPI_Comm comm,
+  static SparseSystem* Create(const PGFem3D_opt& opts,
+			      const pgfem3d::net::PGFem3D_Comm comm,
                               const int Ap[], const int Ai[],
                               const long rowsPerProc[], long maxit, double err);
 

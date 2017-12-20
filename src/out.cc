@@ -4,6 +4,7 @@
 
 #include "out.h"
 
+#include "pgfem3d/Communication.hpp"
 #include "allocation.h"
 #include "cast_macros.h"
 #include "def_grad.h"
@@ -15,6 +16,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <cmath>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 #define MP_ID 0
 static constexpr int periodic = 0;
@@ -568,7 +572,7 @@ void EnSight (char jmeno[500],
           long FNR,
           double lm,
           Ensight *ensight,
-          MPI_Comm mpi_comm,
+          const CommunicationStructure *com,
           const PGFem3D_opt *opts)
 {
   int part1=0,part2,*GNVpint,*shift;
@@ -577,10 +581,9 @@ void EnSight (char jmeno[500],
   char name[500];
   FILE *out,*out1,*out2;
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
-
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  
   X = aloc1 (3); xx = aloc1 (3); u = aloc1 (3);
 
   if (opts->cohesive == 0)  part1 = 1;
@@ -750,14 +753,15 @@ void EnSight (char jmeno[500],
   /* Gather the number of volume properties from domains */
   GNVp = aloc1l (nproc);
   GNVpint = aloc1i (nproc);
-  MPI_Allgather (&ensight->NVp,1,MPI_LONG,GNVp,1,MPI_LONG,mpi_comm);
+  com->net->allgather(&ensight->NVp,1,NET_DT_LONG,GNVp,1,NET_DT_LONG,com->comm);
   GNV = 0;
   for (i=0;i<nproc;i++){ GNV += GNVp[i]; GNVpint[i] = GNVp[i];}
 
   shift = aloc1i (nproc); for (i=1;i<nproc;i++) shift[i] = shift[i-1] + GNVp[i-1];
 
   /* Gather the volumetric property types */
-  GVp = aloc1l (GNV); MPI_Allgatherv (ensight->Vp,ensight->NVp,MPI_LONG,GVp,GNVpint,shift,MPI_LONG,mpi_comm);
+  GVp = aloc1l (GNV);
+  com->net->allgatherv(ensight->Vp,ensight->NVp,NET_DT_LONG,GVp,GNVpint,shift,NET_DT_LONG,com->comm);
 
   property = aloc1l (GNV); for (i=0;i<GNV;i++) property[i] = GVp[i];;
 
@@ -807,13 +811,14 @@ void EnSight (char jmeno[500],
     /* Gather the number of cohesive properties from domains */
     GNVp = aloc1l (nproc);
     GNVpint = aloc1i (nproc);
-    MPI_Allgather (&ensight->NCp,1,MPI_LONG,GNVp,1,MPI_LONG,mpi_comm);
+    com->net->allgather(&ensight->NCp,1,NET_DT_LONG,GNVp,1,NET_DT_LONG,com->comm);
     GNV = 0; for (i=0;i<nproc;i++) {GNV += GNVp[i]; GNVpint[i] = GNVp[i];}
 
     shift = aloc1i (nproc); for (i=1;i<nproc;i++) shift[i] = shift[i-1] + GNVp[i-1];
 
     /* Gather cohesive property types */
-    GVp = aloc1l (GNV); MPI_Allgatherv (ensight->Cp,ensight->NCp,MPI_LONG,GVp,GNVpint,shift,MPI_LONG,mpi_comm);
+    GVp = aloc1l (GNV);
+    com->net->allgatherv(ensight->Cp,ensight->NCp,NET_DT_LONG,GVp,GNVpint,shift,NET_DT_LONG,com->comm);
 
     property = aloc1l (GNV); for (i=0;i<GNV;i++) property[i] = GVp[i];;
 
@@ -1893,7 +1898,7 @@ void EnSight (char jmeno[500],
 }
 
 void ASCII_output(const PGFem3D_opt *opts,
-          MPI_Comm comm,
+	  const CommunicationStructure *com,
           long tim,
           double *times,
           long  Gnn,
@@ -1901,8 +1906,6 @@ void ASCII_output(const PGFem3D_opt *opts,
           long ne,
           long nce,
           long ndofd,
-          long *DomDof,
-          int *Ap,
           long FNR,
           double lm,
           double pores,
@@ -1916,8 +1919,7 @@ void ASCII_output(const PGFem3D_opt *opts,
           SIG *sig_n,
           COEL *coel)
 {
-  int myrank = 0;
-  MPI_Comm_rank(comm,&myrank);
+  int myrank = com->rank;
   struct rusage usage;
 
   /* compute filename and open file */
@@ -1957,10 +1959,10 @@ void ASCII_output(const PGFem3D_opt *opts,
   PGFEM_fprintf (out,"Number of equations                            : %ld\n",
        ndofd);
   PGFEM_fprintf (out,"Number of global degrees of freedom on domain  : %ld\n",
-       DomDof[myrank]);
+       com->DomDof[myrank]);
   PGFEM_fprintf (out,"%s %d\n",
        "Number of elements in the matrix - SPARSE      :",
-       Ap[DomDof[myrank]]);
+       com->Ap[com->DomDof[myrank]]);
   if (FNR == 2 || FNR == 3){
     PGFEM_fprintf (out,
          "Load multiplier level                          : %12.12f\n",

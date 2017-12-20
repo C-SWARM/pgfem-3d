@@ -7,7 +7,7 @@
 #ifndef PGFEM3D_DISP_BASED_ELEM_H
 #define PGFEM3D_DISP_BASED_ELEM_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "bounding_element.h"
 #include "data_structure.h"
 #include "element.h"
@@ -125,7 +125,7 @@ void DISP_increment(const Element *elem,
                     const HOMMAT *hommat,
                     const double *sol_incr,
                     const double *sol,
-                    MPI_Comm mpi_comm,
+		    const pgfem3d::CommunicationStructure *com,
                     const int mp_id);
 
 /** Compute element contributions to macro and mixed tangents in

@@ -5,11 +5,9 @@
 #endif
 
 /* Create nodal distribution array */
-void build_distribution(long *DomDof, int *Dist, MPI_Comm comm)
+void build_distribution(long *DomDof, int *Dist, int nproc)
 {
-  int i,nproc;
-
-  MPI_Comm_size(comm,&nproc);
+  int i;
 
   Dist[0] = 0;
   for(i=1;i<=nproc;i++) Dist[i] = DomDof[i-1] + Dist[i-1];

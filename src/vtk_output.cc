@@ -781,7 +781,7 @@ int VTK_write_multiphysics_header(FILE *out,
 ///
 /// \param[in] out file pointer for writing vtk file
 /// \param[in] opts structure PGFem3D option
-/// \param[in] nproc number of MPI processes
+/// \param[in] nproc number of processes
 /// \param[in] time time step number
 /// \return non-zero on internal error
 int VTK_write_multiphysics_master_footer(FILE *out,
@@ -841,7 +841,7 @@ int VTK_write_multiphysics_DataArray_footer(FILE *out)
 /// \param[in] opts structure PGFem3D option
 /// \param[in] time time step number
 /// \param[in] myrank current process rank
-/// \param[in] nproc number of MPI processes
+/// \param[in] nproc number of processes
 /// \return non-zero on internal error
 int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                                   int datano,
@@ -1679,8 +1679,6 @@ int VTK_write_data_PrincipalStress(FILE *out,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
-  int myrank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   SIG *sig = FV[pmr->mp_id].sig;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);

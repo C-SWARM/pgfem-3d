@@ -4,9 +4,9 @@
 
 /** This file contains functions to parse the command line and print
     helpful information */
+#include "pgfem3d/Communication.hpp"
 #include "PGFem3D_options.h"
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 #include "allocation.h"
 #include "constitutive_model.h"
 #include "enumerations.h"
@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+
+using namespace pgfem3d;
 
 namespace {
 /* Generated at http://patorjk.com/software/taag/ */
@@ -113,6 +115,12 @@ const Option precond_opts[] = {
   {{"pre-none",no_argument,NULL,4},"Do not use a preconditioner",0}
 };
 
+const Option network_opts[] = {
+  /* Network options */
+  {{"isir",no_argument,NULL,5},"Use Isend/Irecv network (MPI) (default)",0},
+  {{"pwc",no_argument,NULL,5},"Use put-with-completion (PWC) network (Photon)",0},
+};
+  
 const Option vis_opts[] = {
   /* Visualization options */
   {{"vtk",no_argument,NULL,'V'},"Output in VTK format",1},
@@ -160,12 +168,13 @@ const Option null_opts[] = {
 
 /// The total number of options that we have defined.
 constexpr const int N_OPTS = {
-  size(analysis_opts) + size(solver_opts) + size(precond_opts) +
+  size(analysis_opts) + size(network_opts) + size(solver_opts) + size(precond_opts) +
   size(vis_opts) + size(other_opts) + size(depricated_opts) + size(null_opts)
 };
 
 void initialize(LongOption *A) {
   for (const auto& o : analysis_opts)   { *A++ = o.opt; }
+  for (const auto& o : network_opts)    { *A++ = o.opt; }
   for (const auto& o : solver_opts)     { *A++ = o.opt; }
   for (const auto& o : precond_opts)    { *A++ = o.opt; }
   for (const auto& o : vis_opts)        { *A++ = o.opt; }
@@ -177,6 +186,9 @@ void initialize(LongOption *A) {
 
 void set_default_options(PGFem3D_opt *options)
 {
+  /* network option */
+  options->network = NETWORK_ISIR;
+  
   /* solver options */
   options->solverpackage = HYPRE;
   options->solver = SOLVER_GMRES;
@@ -194,7 +206,6 @@ void set_default_options(PGFem3D_opt *options)
   options->plc = 0;
   options->multi_scale = 0;
   options->cm = -1;
-
 
   /* visualization options */
   options->vis_format = VIS_NONE; /* no output */
@@ -272,7 +283,8 @@ void print_options(FILE *out, const PGFem3D_opt *options)
   PGFEM_fprintf(out,"Debug:          %d\n",options->debug);
   PGFEM_fprintf(out,"Restart:        %d\n",options->restart);
   PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
-
+  PGFEM_fprintf(out,"Network:        %d\n",options->network);
+  
   PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
   PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
   PGFEM_fprintf(out,"OPath:          %s\n",options->opath);
@@ -293,11 +305,13 @@ void print_usage(FILE* out)
                 "input output -[scale]-end\n");
   PGFEM_fprintf(out,"\nAnalysis Options:\n");
   for (const auto& opt : analysis_opts) { opt.print(out); }
+  PGFEM_fprintf(out,"\nNetwork Options:\n");
+  for (const auto& opt : network_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nSolver Options:\n");
   for (const auto& opt : solver_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nPreconditioner Options:\n");
   for (const auto& opt : precond_opts) { opt.print(out); }
-  PGFEM_fprintf(out,"\nVisuzlization Options:\n");
+  PGFEM_fprintf(out,"\nVisualization Options:\n");
   for (const auto& opt : vis_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nOther Options:\n");
   for (const auto& opt : other_opts) { opt.print(out); }
@@ -407,10 +421,14 @@ void print_interpreted_options(const PGFem3D_opt *opts)
     PGFEM_Abort();
   }
 
+  PGFEM_printf ("Network: %s\n",
+                NETWORK_OPTS[opts->network]);
+  
   PGFEM_printf ("SolverPackage: %s - %s\n",
                 SOLVER_PACKAGE_OPTS[opts->solverpackage],
                 SOLVER_OPTS[opts->solver]);
 
+  
   PGFEM_printf("Preconditioner: ");
   switch (opts->precond) {
    case PRECOND_PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
@@ -582,6 +600,16 @@ void re_parse_command_line(const int myrank,
       }
       break;
 
+      /* NETWORK OPTIONS */
+    case 5:
+      if (strcmp("isir", opts[opts_idx].name) == 0) {
+	options->network = NETWORK_ISIR;
+      }
+      else if(strcmp("pwc", opts[opts_idx].name) == 0) {
+        options->network = NETWORK_PWC;
+      }
+      break;
+      
       /* VISUALIZATION OPTIONS */
      case 'V': options->vis_format = VIS_VTK; break;
      case 'A': options->ascii = 1; break;

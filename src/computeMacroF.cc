@@ -2,10 +2,14 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "computeMacroF.h"
 #include "elem3d.h"
 #include "incl.h"
 #include "utils.h"
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 double* computeMacroF(Element *elem,
                       long ne,
@@ -13,7 +17,7 @@ double* computeMacroF(Element *elem,
                       long nn,
                       EPS *eps,
                       double oVolume,
-                      MPI_Comm mpi_comm)
+                      CommunicationStructure *com)
 {
   long *nod;
   double *F, *gk, *ge, *gz, *w;
@@ -120,8 +124,8 @@ double* computeMacroF(Element *elem,
   GF[0] = GF[1] = GF[2] = 0.0;
   GF[3] = GF[4] = GF[5] = 0.0;
   GF[6] = GF[7] = GF[8] = 0.0;
-
-  MPI_Allreduce(F,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  
+  com->net->allreduce(F,GF,9,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   free(F);
   free(gk);

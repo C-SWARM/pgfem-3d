@@ -135,7 +135,8 @@ int plasticity_model_set_orientations(EPS *eps,
                                       const int ne,
                                       const Element *elem,
                                       const int n_mat,
-                                      const HOMMAT *hmat_list);
+                                      const HOMMAT *hmat_list,
+				      int myrank);
 /** read material properties for plasticity
  * need to provide model_params.in with format as below
  *

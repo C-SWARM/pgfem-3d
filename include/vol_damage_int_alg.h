@@ -1,7 +1,7 @@
 #ifndef PGFEM3D_VOL_DAMAGE_INT_ALG_H
 #define PGFEM3D_VOL_DAMAGE_INT_ALG_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "data_structure.h"
 #include "element.h"
 #include "eps.h"
@@ -21,7 +21,7 @@ int vol_damage_int_alg(const int ne,
                        const SUPP sup,
                        const double dt,
                        const int iter,
-                       const MPI_Comm mpi_comm,
+		       const pgfem3d::CommunicationStructure *com,
                        EPS *eps,
                        SIG *sig,
                        double *max_omega,

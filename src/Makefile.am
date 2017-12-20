@@ -1,4 +1,4 @@
-SUBDIRS = solvers
+SUBDIRS = solvers communication
 
 # There are two targets in this source directory, the PGFem3D application
 # itself, and a convenience library called libgpfem3d.la. The convenience
@@ -25,6 +25,7 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
 
 libpgfem3d_la_LIBADD = \
   $(builddir)/solvers/libsolvers.la \
+  $(builddir)/communication/libcommunication.la \
   $(top_builddir)/FEMLIB/src/libPGFem3D_FEMLIB.la \
   $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
   $(top_builddir)/energy_equation/src/libenergy_equation.la \
@@ -115,7 +116,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         quadrature_rules.cc \
                         integrate_surface.cc \
                         applied_traction.cc \
-                        pgfem_comm.cc \
                         tfa.cc \
                         hommat.cc \
                         sig.cc \
@@ -127,27 +127,11 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         crpl.cc \
                         ensight.cc \
                         read_input_file.cc \
-                        microscale_information.cc \
-                        ms_cohe_job_info.cc \
-                        ms_cohe_job_list.cc \
-                        PGFEM_par_matvec.cc \
-                        compute_ms_cohe_job.cc \
                         PGFEM_io.cc \
-                        PGFEM_mpi.cc \
-                        ms_job_intercomm.cc \
-                        macro_micro_functions.cc \
-                        pgf_fe2_micro_server.cc \
-                        pgf_fe2_job.cc \
-                        pgf_fe2_server_rebalance.cc \
-                        pgf_fe2_rebalancer.cc \
-                        pgf_fe2_macro_client.cc \
-                        pgf_fe2_restart.cc \
-                        pgf_fe2_compute_max_n_jobs.cc \
                         solver_file.cc \
                         condense.cc \
                         three_field_element.cc \
                         femlib.cc \
-                        macro_micro_main.cc \
                         main.cc \
                         dynamics.cc \
                         plasticity_model.cc \
@@ -162,7 +146,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         constitutive_model.cc \
                         constitutive_model_3f.cc \
                         post_processing.cc \
-                        comm_hints.cc \
                         restart.cc \
                         PGFem3D_data_structure.cc \
                         set_initial_plastic_deformation_gradient.cc

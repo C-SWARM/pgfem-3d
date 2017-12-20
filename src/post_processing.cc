@@ -10,6 +10,9 @@
 #include "utils.h"
 #include <ttl/ttl.h>
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 //ttl declarations
 namespace {
 using namespace ttl;
@@ -97,7 +100,8 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
   *Jnp1 = det(Fnp1);
 }
 void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                    double* r, double *Vnp1, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                    double* r, double *Vnp1, int ndofn,
+				    const CommunicationStructure *com, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -168,15 +172,15 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
         LS.data[a] += S.data[a]*fe.detJxW/Jnp1;
     }
   }
-  MPI_Allreduce(LS.data,GS,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(LS.data,GS,9,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+  com->net->allreduce(&LV,&GV,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   for(int a=0; a<9; a++)
     GS[a] = GS[a]/GV;
 }
 
 void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                          double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                          double* r, int ndofn, const CommunicationStructure *com, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -239,15 +243,15 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
     }
   }
 
-  MPI_Allreduce(LF.data,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(LF.data,GF,9,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+  com->net->allreduce(&LV,&GV,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
 }
 
 void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                                       double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                                       double* r, int ndofn, const CommunicationStructure *com, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -312,8 +316,8 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
     }
   }
 
-  MPI_Allreduce(LF.data,GF,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(LF.data,GF,9,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+  com->net->allreduce(&LV,&GV,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   for(int a=0; a<9; a++)
     GF[a] = GF[a]/GV;
@@ -321,7 +325,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
 
 
 void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                      double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                      double* r, int ndofn, const CommunicationStructure *com, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -361,14 +365,14 @@ void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *homma
     }
   }
 
-  MPI_Allreduce(&L_gn,G_gn,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  MPI_Allreduce(&LV,&GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&L_gn,G_gn,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+  com->net->allreduce(&LV,&GV,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   (*G_gn) = (*G_gn)/GV;
 }
 
 void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                      double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                      double* r, int ndofn, const CommunicationStructure *com, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -448,11 +452,12 @@ void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
     }
   }
 
-  MPI_Allreduce(&LE,GE,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&LE,GE,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 }
 
 void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *node, EPS *eps,
-                                     double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                     double* r, int ndofn, const CommunicationStructure *com,
+				     const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -510,5 +515,5 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *n
     }
   }
 
-  MPI_Allreduce(&LV,GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&LV,GV,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 }

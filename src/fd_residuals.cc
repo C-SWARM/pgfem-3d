@@ -32,8 +32,11 @@
 #include <cmath>
 #include <cstring>
 
+using namespace pgfem3d::net;
+
 namespace {
 using pgfem3d::Solver;
+using pgfem3d::CommunicationStructure;
 const constexpr int ndn = 3;
 }
 
@@ -112,7 +115,7 @@ static int fd_res_coel(double *fe,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com communicatio structure
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -126,7 +129,7 @@ static int fd_res_elem_MP(double *be,
                           Solver *sol,
                           LoadingSteps *load,
                           CRPL *crpl,
-                          MPI_Comm mpi_comm,
+			  const CommunicationStructure *com,
                           const PGFem3D_opt *opts,
                           const Multiphysics& mp,
                           int mp_id,
@@ -199,7 +202,7 @@ static int fd_res_elem_MP(double *be,
   double *z = (fe.temp_v).z.m_pdata;
 
   if(include_inertia) {
-    err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
+    err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t,com->rank);
   } else {
     /* Residuals on element */
     switch(opts->analysis_type) {
@@ -280,7 +283,7 @@ static int fd_res_elem_MP(double *be,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com communication structure
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -292,7 +295,7 @@ long fd_residuals_MP(Grid *grid,
                      Solver *sol,
                      LoadingSteps *load,
                      CRPL *crpl,
-                     MPI_Comm mpi_comm,
+		     const CommunicationStructure *com,
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
                      int mp_id,
@@ -321,9 +324,7 @@ long fd_residuals_MP(Grid *grid,
 
   /* decision end*/
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   for (int i=0;i<grid->ne;i++) {
     const int nne = elem[i].toe;
@@ -334,7 +335,7 @@ long fd_residuals_MP(Grid *grid,
     double *fe = aloc1 (ndofe);
 
     err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
-                          mpi_comm, opts, mp, mp_id, t, dts,
+                          com, opts, mp, mp_id, t, dts,
                           include_inertia, updated_deformation);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
@@ -465,7 +466,7 @@ long fd_residuals_MP(Grid *grid,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
@@ -477,7 +478,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-                                MPI_Comm mpi_comm,
+				const CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
@@ -508,7 +509,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
     double *fe = aloc1(ndofe);
 
     err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
-                          mpi_comm, opts, mp, mp_id, t, dts,
+                          com, opts, mp, mp_id, t, dts,
                           include_inertia, updated_deformation);
 
     // Previous may have called integration algorithm. Need to reset
@@ -531,9 +532,12 @@ int fd_res_compute_reactions_MP(Grid *grid,
   }
 
   /* communicate reactions on all domains */
-  int myrank = -1;
-  err += MPI_Comm_rank(mpi_comm, &myrank);
-  err += MPI_Reduce(rxn, RXN, n_rxn, MPI_DOUBLE, MPI_SUM, 0, mpi_comm);
+  int myrank = com->rank;
+  try {
+    com->net->reduce(rxn, RXN, n_rxn, NET_DT_DOUBLE, NET_OP_SUM, 0, com->comm);
+  } catch(...) {
+    err += 1;
+  }
   if (myrank == 0)
   {
     PGFEM_printf("Reactions: (fixed 1 ... n)\n");
@@ -642,7 +646,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mat.matgeom = c->matgeom;
   }
 
-  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,mp,
+  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->com,opts,mp,
                                      0,s->times[s->tim+1],dts);
 
   free(physicsname);

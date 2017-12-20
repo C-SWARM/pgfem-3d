@@ -23,7 +23,8 @@
 #include <cstring>
 #include "three_field_element.h"
 
-using pgfem3d::Solver;
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /// read mechanical part of material properties
 ///
@@ -104,13 +105,10 @@ int read_material_for_Thermal(FILE *fp,
 /// \return non-zero on interal error
 int read_multiphysics_material_properties(MaterialProperty *mat,
                                           const PGFem3D_opt *opts,
-                                          const Multiphysics& mp)
+                                          const Multiphysics& mp,
+					  int myrank)
 {
   int err = 0;
-
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-
   char dirname[1024], fn[1024];
   sprintf(dirname,"%s/Material",opts->ipath);
 
@@ -244,7 +242,7 @@ int interpret_ranges(double *ranges, char str_in[])
 }
 
 int read_input_file(const PGFem3D_opt *opts,
-                    MPI_Comm comm,
+		    const CommunicationStructure *com,
                     long *nn,
                     long *Gnn,
                     long *ndofn,
@@ -272,8 +270,7 @@ int read_input_file(const PGFem3D_opt *opts,
                     char **physicsnames)
 {
   int err = 0;
-  int myrank = 0;
-  MPI_Comm_rank(comm,&myrank);
+  int myrank = com->rank;
 
   /* compute filename and open file */
   char *filename = PGFEM_calloc(char, 500);
@@ -290,7 +287,7 @@ int read_input_file(const PGFem3D_opt *opts,
   (*material) = PGFEM_calloc(Material, *nmat);
   (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
 
-  *Gnn = read_nodes(in,*nn,*node,opts->legacy,comm);
+  *Gnn = read_nodes(in,*nn,*node,opts->legacy,com);
   /* NOTE: Supports assume only ndim supported dofs per node! */
 
   char BC[1024];
@@ -399,7 +396,7 @@ int read_input_file(const PGFem3D_opt *opts,
 /// \param[out] SOL array of solution scheme object
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int read_mesh_file(Grid *grid,
@@ -408,12 +405,11 @@ int read_mesh_file(Grid *grid,
                    Solver *SOL,
                    LoadingSteps *load,
                    const Multiphysics& mp,
-                   MPI_Comm mpi_comm,
+		   const CommunicationStructure *com,
                    const PGFem3D_opt *opts)
 {
   long ndofn;
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   int *fv_ndofn = (int *) malloc(mp.physicsno*sizeof(int));
 
@@ -421,7 +417,7 @@ int read_mesh_file(Grid *grid,
     fv_ndofn[iA] = FV[iA].ndofn;
 
   int err = read_input_file(opts,
-                            mpi_comm,
+                            com,
                             &(grid->nn),
                             &(grid->Gnn),
                             &ndofn,
@@ -450,7 +446,7 @@ int read_mesh_file(Grid *grid,
   free(fv_ndofn);
 
   // read multiphysics material properties
-  err += read_multiphysics_material_properties(mat,opts,mp);
+  err += read_multiphysics_material_properties(mat,opts,mp,myrank);
 
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
@@ -526,7 +522,6 @@ int read_time_steps(FILE *fp, TimeStepping *ts)
 /// \param[out] load object for loading
 /// \param[out] crpl object for lagcy crystal plasticity
 /// \param[in] mp multiphysics object
-/// \param[in] comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
@@ -1187,7 +1182,7 @@ int read_initial_values(Grid *grid,
 /// \param[out] load object for loading
 /// \param[in] mp multiphysics object
 /// \param[in] tim time step ID
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_and_apply_load_increments(Grid *grid,
@@ -1195,11 +1190,11 @@ int read_and_apply_load_increments(Grid *grid,
                                    LoadingSteps *load,
                                    const Multiphysics& mp,
                                    long tim,
-                                   MPI_Comm mpi_comm,
-                                   int myrank)
+				   const CommunicationStructure *com)
 {
   int err = 0;
-
+  int myrank = com->rank;
+  
   //  read nodal prescribed boundary values
   for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
   {
@@ -1211,7 +1206,7 @@ int read_and_apply_load_increments(Grid *grid,
       if (myrank == 0)
         PGFEM_printf ("Incorrect load input for Time = 0\n");
 
-      PGFEM_Comm_code_abort(mpi_comm,0);
+      PGFEM_Comm_code_abort(com, 0);
     }
 
     if(load->tim_load[mp_id][tim] == 1 && tim != 0)
@@ -1248,17 +1243,17 @@ int read_and_apply_load_increments(Grid *grid,
 /// \param[out] mat a material object
 /// \param[in] opts structure PGFem3D option
 /// \param[in] ensight object
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com handle for communication
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_cohesive_elements(Grid *grid,
                            MaterialProperty *mat,
                            const PGFem3D_opt *opts,
                            Ensight *ensight,
-                           MPI_Comm mpi_comm,
-                           int myrank)
+                           const CommunicationStructure *com)
 {
   int err = 0;
+  int myrank = com->rank;
   char in_dat[1024], filename[1024];
 
   sprintf(in_dat,"%s/%s",opts->ipath,opts->ifname);
@@ -1267,7 +1262,7 @@ int read_cohesive_elements(Grid *grid,
   // read cohesive properties
   sprintf(filename,"%s%d.in.co_props",in_dat,myrank);
   fp = fopen(filename,"r");
-  read_cohesive_properties(fp,&(mat->n_co_props),&(mat->co_props),mpi_comm);
+  read_cohesive_properties(fp,&(mat->n_co_props),&(mat->co_props),com);
   fclose(fp);
 
   /* read coheisve elements */
@@ -1301,6 +1296,6 @@ int read_cohesive_elements(Grid *grid,
   fclose (fp);
 
   /* Global number of cohesive elements */
-  MPI_Allreduce(&(grid->nce),&(grid->Gnce),1,MPI_LONG,MPI_SUM,mpi_comm);
+  com->net->allreduce(&(grid->nce),&(grid->Gnce),1,NET_DT_LONG,NET_OP_SUM,com->comm);
   return err;
 }

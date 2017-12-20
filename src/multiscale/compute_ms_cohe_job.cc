@@ -23,6 +23,8 @@
 #include <cmath>
 #include <cstring>
 
+using namespace pgfem3d;
+
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1
 #endif

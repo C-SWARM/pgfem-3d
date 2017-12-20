@@ -6,7 +6,6 @@
 #include "allocation.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
-#include "comm_hints.h"
 #include "constitutive_model.h"
 #include "elem3d.h"
 #include "element.h"
@@ -15,11 +14,12 @@
 #include "hommat.h"
 #include "matgeom.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "utils.h"
 #include "vtk_output.h"
 #include <cassert>
+
+using namespace pgfem3d;
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -504,7 +504,7 @@ int communication_structure_initialization(CommunicationStructure *com)
   com->DomDof = NULL;
   com->nbndel = 0;
   com->bndel  = NULL;
-  com->comm   = NULL;
+  com->comm   = 0;
   com->GDof   = 0;
   com->NBN    = 0;
   com->hints  = NULL;
@@ -524,8 +524,6 @@ int destruct_communication_structure(CommunicationStructure *com)
   if(NULL != com->Ai) free(com->Ai);
   if(NULL != com->DomDof) free(com->DomDof);
   if(NULL != com->bndel)  free(com->bndel);
-  if(NULL != com->comm)   destroy_commun(com->comm ,com->nproc);
-  if(NULL != com->hints)  Comm_hints_destroy(com->hints);
 
   err += communication_structure_initialization(com);
   return err;

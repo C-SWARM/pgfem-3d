@@ -8,7 +8,6 @@
 #define PGF_FE2_JOB_H
 
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
 #include "microscale_information.h"
 
 /**
@@ -143,30 +142,30 @@ int pgf_FE2_job_compare_id(const void *a,
  * if needed. Returns job state on exit.
  */
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-             const PGFEM_mpi_comm *mpi_comm);
+			 const pgfem3d::MultiscaleComm *mscom);
 
 /**
  * Check the job state and compute if possible. Returns job state on
  * exit.
  */
 int pgf_FE2_job_compute(pgf_FE2_job *job,
-            MICROSCALE *micro,
-            const PGFEM_mpi_comm *mpi_comm,
-            const int mp_id);
+			MICROSCALE *micro,
+			const pgfem3d::MultiscaleComm *mscom,
+			const int mp_id);
 
 /**
  * Initiates computing a job on a worker process (non-master).
  */
 void pgf_FE2_job_compute_worker(const size_t job_id,
-                const size_t buffer_len,
-                MICROSCALE *micro,
-                const int mp_id);
+				const size_t buffer_len,
+				MICROSCALE *micro,
+				const int mp_id);
 
 /**
  * Check the job state and reply to the macroscale if
  * possible. Returns job state on exit.*/
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-              const PGFEM_mpi_comm *mpi_comm);
+		      const pgfem3d::MultiscaleComm *mscom);
 
 /**
  * Check the job state and complete if possible. Returns job state on

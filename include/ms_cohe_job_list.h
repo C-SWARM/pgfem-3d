@@ -7,11 +7,11 @@
 #ifndef PGFEM3D_MS_COHE_JOB_LIST_H
 #define PGFEM3D_MS_COHE_JOB_LIST_H
 
-#include "PGFEM_mpi.h"
 #include "cohesive_element.h"
 #include "microscale_information.h"
 #include "ms_cohe_job_info.h"
 #include "node.h"
+#include "pgfem3d/Communication.hpp"
 #include "pgfem3d/Solver.hpp"
 
 /** Create the list of jobs to be performed on the communicator
@@ -44,7 +44,7 @@ int update_group_ms_cohe_job_list(const long nce,
     processes that own the job. Contains communication at macro and
     micro scales */
 int compute_ms_cohe_tan_res(const int compute_micro_eq,
-                            const COMMUN macro_pgfem_comm,
+                            const pgfem3d::CommunicationStructure *com,
                             const MPI_Comm macro_mpi_comm,
                             MS_COHE_JOB_INFO *job_list,
                             pgfem3d::solvers::SparseSystem *macro_solver,

@@ -3,15 +3,17 @@
  * AUTHORS:
  * Matthew Mosby
  */
+#include "pgfem3d/Communication.hpp"
 #include "Hu_Washizu_element.h"
 #include <string.h>
 #include "mkl_cblas.h"
 
-#include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
 #include "utils.h"
 #include "index_macros.h"
+
+using namespace pgfem3d;
 
 #ifndef HW_DEBUG
 #define HW_DEBUG 0

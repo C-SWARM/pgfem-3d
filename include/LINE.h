@@ -1,7 +1,6 @@
 #ifndef PGFEM3D_LINE_H
 #define PGFEM3D_LINE_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
@@ -13,7 +12,6 @@
 #include "hommat.h"
 #include "matgeom.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "supp.h"
 
@@ -26,7 +24,6 @@
 /// \param[in] load object for loading
 /// \param[in] com object array for communications
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] dts time step sizes from t(n-1) to t(n), and t(n) to t(n+1)
@@ -48,9 +45,8 @@ long LINE_S3_MP(double *residuals_loc_time,
                 FieldVariables *fv,
                 pgfem3d::Solver *sol,
                 LoadingSteps *load,
-                CommunicationStructure *com,
+                const pgfem3d::CommunicationStructure *com,
                 CRPL *crpl,
-                MPI_Comm mpi_comm,
                 const PGFem3D_opt *opts,
                 const Multiphysics& mp,
                 double *dts,
@@ -75,7 +71,6 @@ long LINE_S3_MP(double *residuals_loc_time,
 /// \param[in] load object for loading
 /// \param[in] com object array for communications
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] dts time step sizes from t(n-1) to t(n), and t(n) to t(n+1)
@@ -99,9 +94,8 @@ long ALINE_S3_MP(Grid *grid,
                  FieldVariables *fv,
                  pgfem3d::Solver *sol,
                  LoadingSteps *load,
-                 CommunicationStructure *com,
+                 const pgfem3d::CommunicationStructure *com,
                  CRPL *crpl,
-                 MPI_Comm mpi_comm,
                  const PGFem3D_opt *opts,
                  const Multiphysics& mp,
                  double *dts,

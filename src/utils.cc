@@ -2,6 +2,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "utils.h"
 #include "allocation.h"
 #include "elem3d.h"
@@ -20,6 +21,9 @@
 #include <cstdarg>
 #include <cmath>
 #include <time.h>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
@@ -2874,212 +2878,29 @@ void Logarithmic_strain (double **F,
 
 void LToG (const double *f,
            double *Gf,
-           const int myrank,
-           const int nproc,
-           const long ndofd,
-           const long *DomDof,
-           const long GDof,
-           const COMMUN comm,
-           const MPI_Comm mpi_comm)
-/*
-
- */
+	   const long ndofd,
+	   const CommunicationStructure *com)
 {
-  long i,j,KK;
-  double **send,**recieve;
-  MPI_Status *sta_s,*sta_r;
-  MPI_Request *req_s,*req_r;
-
-  /* for (i=0;i<DomDof[myrank];i++) */
-  /*   Gf[i] = 0.0; */
-  nulld(Gf,DomDof[myrank]);
-
-  /* Allocate recieve */
-  send = PGFEM_calloc (double*, nproc);
-  recieve = PGFEM_calloc (double*, nproc);
-  for (i=0;i<nproc;i++) {
-    if (comm->S[i] == 0) KK = 1; else KK = comm->S[i];
-    send[i] = PGFEM_calloc (double, KK);
-    if (comm->R[i] == 0) KK = 1; else KK = comm->R[i];
-    recieve[i] = PGFEM_calloc (double, KK);
-  }
-
-  /* Allocate status and request fields */
-  if (comm->Ns == 0) KK = 1; else KK = comm->Ns;
-  sta_s = PGFEM_calloc (MPI_Status, KK);
-  req_s = PGFEM_calloc (MPI_Request, KK);
-
-  if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
-  sta_r = PGFEM_calloc (MPI_Status, KK);
-  req_r = PGFEM_calloc (MPI_Request, KK);
-
-  if(UTILS_DEBUG){/* debug the send-recieve */
-    for(int i=0; i<nproc; i++){
-      if(myrank == i){
-        for(int j=0; j<nproc; j++){
-          PGFEM_printf("[%d]: sending %ld to %d\n",myrank,comm->S[j],j);
-          PGFEM_printf("[%d]: recieving %ld from %d\n",myrank,comm->R[j],j);
-        }
-      }
-      MPI_Barrier(mpi_comm);
-    }
-    MPI_Barrier(mpi_comm);
-  }
-
-
-  /****************/
-  /* Recieve data */
-  /****************/
-  for (i=0;i<comm->Nr;i++){
-    KK = comm->Nrr[i];
-    MPI_Irecv (recieve[KK],comm->R[KK],MPI_DOUBLE,KK,
-               MPI_ANY_TAG,mpi_comm,&req_r[i]);
-  }
-
-  /*************/
-  /* Send data */
-  /*************/
-  for (i=0;i<comm->Ns;i++){
-    KK = comm->Nss[i];
-    for (j=0;j<comm->S[KK];j++)
-      send[KK][j] = f[comm->SLID[KK][j]];
-
-    MPI_Isend (send[KK],comm->S[KK],MPI_DOUBLE,KK,
-               myrank,mpi_comm,&req_s[i]);
-  }
-
-  pgfem_comm_get_owned_global_dof_values(comm,f,Gf);
-
-  /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Nr,req_r,sta_r);
-
-  for (i=0;i<comm->Nr;i++){
-    KK = comm->Nrr[i];
-    for (j=0;j<comm->R[KK];j++)
-      Gf[comm->RGID[KK][j] - GDof] += recieve[KK][j];
-  }
-
-  MPI_Waitall (comm->Ns,req_s,sta_s);
-  /* Deallocate send and recieve */
-  for (i=0;i<nproc;i++) {
-    free(send[i]);
-    free (recieve[i]);
-  }
-  free(send);
-  free (recieve);
-
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
+  com->spc->LToG(f, Gf, ndofd, com->DomDof, com->GDof);
 }
 
 void GToL (const double *Gr,
-           double *r,
-           const int myrank,
-           const int nproc,
-           const long ndofd,
-           const long *DomDof,
-           const long GDof,
-           const COMMUN comm,
-           const MPI_Comm mpi_comm)
-/*
-
- */
+	   double *r,
+	   const long ndofd,
+	   const CommunicationStructure *com)
 {
-  long i,j,KK;
-  double **send,**recieve;
-  MPI_Status *sta_s,*sta_r;
-  MPI_Request *req_s,*req_r;
-
-  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
-  nulld(r,ndofd);
-
-
-  //  for (i=0;i<ndofd;i++) r[i] = 0.0;
-  nulld(r,ndofd);
-
-  /* Allocate recieve */
-  send = PGFEM_calloc (double*, nproc);
-  recieve = PGFEM_calloc (double*, nproc);
-  for (i=0;i<nproc;i++) {
-    if (comm->R[i] == 0) KK = 1; else KK = comm->R[i];
-    send[i] = PGFEM_calloc (double, KK);
-    if (comm->S[i] == 0) KK = 1; else KK = comm->S[i];
-    recieve[i] = PGFEM_calloc (double, KK);
-  }
-
-  /* Allocate status and request fields */
-  if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
-  sta_s = PGFEM_calloc (MPI_Status, KK);
-  req_s = PGFEM_calloc (MPI_Request, KK);
-
-  if (comm->Ns == 0) KK = 1; else KK = comm->Ns;
-  sta_r = PGFEM_calloc (MPI_Status, KK);
-  req_r = PGFEM_calloc (MPI_Request, KK);
-
-
-  /****************/
-  /* Recieve data */
-  /****************/
-  for (i=0;i<comm->Ns;i++){
-    KK = comm->Nss[i];
-    MPI_Irecv (recieve[KK],comm->S[KK],MPI_DOUBLE,KK,
-               MPI_ANY_TAG,mpi_comm,&req_r[i]);
-  }
-
-  /*************/
-  /* Send data */
-  /*************/
-  for (i=0;i<comm->Nr;i++){
-    KK = comm->Nrr[i];
-    for (j=0;j<comm->R[KK];j++)
-      send[KK][j] = Gr[comm->RGID[KK][j] - GDof];
-
-    MPI_Isend (send[KK],comm->R[KK],MPI_DOUBLE,KK,
-               myrank,mpi_comm,&req_s[i]);
-  }
-
-  pgfem_comm_get_local_dof_values_from_global(comm,Gr,r);
-
-  /* Wait to complete the comunicatins */
-  MPI_Waitall (comm->Ns,req_r,sta_r);
-
-  for (i=0;i<comm->Ns;i++){
-    KK = comm->Nss[i];
-    for (j=0;j<comm->S[KK];j++)
-      r[comm->SLID[KK][j]] = recieve[KK][j];
-  }
-
-  MPI_Waitall (comm->Nr,req_s,sta_s);
-  /* Deallocate send and recieve */
-  for (i=0;i<nproc;i++) {
-    free(send[i]);
-    free (recieve[i]);
-  }
-
-  free(send);
-  free (recieve);
-
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
-
+  com->spc->GToL(Gr, r, ndofd, com->GDof);
 }
 
-MPI_Comm* CreateGraph (int nproc,
-                       int myrank,
-                       long nn,
-                       Node *node,
-                       MPI_Comm mpi_comm)
-/*
-
- */
+PGFem3D_Comm* CreateGraph(int nproc,
+			  int myrank,
+			  long nn,
+			  Node *node,
+			  CommunicationStructure *com)
 {
   int *BN,*displ;
   long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom{},II,*CDom;
-  MPI_Comm *GrComm = NULL;
+  PGFem3D_Comm *GrComm = NULL;
 
   for (i=0;i<nn;i++) if (node[i].Gnn >= 0) NBn++;
 
@@ -3099,7 +2920,7 @@ MPI_Comm* CreateGraph (int nproc,
 
   /* Gather number of domain boundary nodes */
   BN = aloc1i (nproc);
-  MPI_Allgather (&NBn,1,MPI_LONG,BN,1,MPI_LONG,mpi_comm);
+  com->net->allgather(&NBn,1,NET_DT_LONG,BN,1,NET_DT_LONG,com->comm);
 
   for (i=0;i<nproc;i++) TBn += BN[i];
   displ = aloc1i (nproc);
@@ -3107,7 +2928,8 @@ MPI_Comm* CreateGraph (int nproc,
 
   /* Gather nodes on boundaries between domains */
   GNn = aloc1l (TBn);
-  MPI_Allgatherv (hu1,NBn,MPI_LONG,GNn,BN,displ,MPI_LONG,mpi_comm);
+  com->net->allgatherv(hu1,NBn,NET_DT_LONG,GNn,BN,displ,NET_DT_LONG,
+		       com->comm);
 
   for (i=0;i<nproc;i++){
     II = 0;

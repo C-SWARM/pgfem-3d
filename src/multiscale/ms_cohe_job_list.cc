@@ -12,6 +12,7 @@
 #include "quadrature_rules.h"
 #include "utils.h"
 
+using namespace pgfem3d;
 using pgfem3d::solvers::SparseSystem;
 
 static constexpr int ndim = 3;
@@ -241,8 +242,7 @@ int update_group_ms_cohe_job_list(const long nce,
 }/* update_group_ms_cohe_job_list() */
 
 int compute_ms_cohe_tan_res(const int compute_micro_eq,
-                            const COMMUN macro_pgfem_comm,
-                            const MPI_Comm macro_mpi_comm,
+                            const CommunicationStructure *com,
                             MS_COHE_JOB_INFO *job_list,
                             SparseSystem *macro_solver,
                             MICROSCALE *microscale,
@@ -256,12 +256,8 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   const int          analysis = microscale->opts->analysis_type;
 
   /* get MPI ranks */
-  int  macro_rank = 0;
-  int macro_nproc = 0;
-  int  micro_rank = 0;
-  err += MPI_Comm_rank(macro_mpi_comm, &macro_rank);
-  err += MPI_Comm_size(macro_mpi_comm, &macro_nproc);
-  err += MPI_Comm_rank(c->mpi_comm, &micro_rank);
+  int  macro_rank = com->rank;
+  int macro_nproc = com->nproc;
 
   /* redirect the I/O to micro logging */
   PGFEM_redirect_io_micro();
@@ -273,10 +269,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   /* setup the stiffness matrix communication */
   double        **Lk = nullptr;
   double   **receive = nullptr;
-  MPI_Status  *sta_r = nullptr;
-  MPI_Request *req_r = nullptr;
-  err += init_and_post_stiffmat_comm(&Lk, &receive, &req_r, &sta_r,
-                                     macro_mpi_comm, macro_pgfem_comm);
+  com->spc->init_and_post_stiffmat(&Lk, &receive);
 
   /* for each solution, compute job */
   for (int i = 0; i < n_sols; ++i) {
@@ -287,7 +280,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
     if (macro_rank == job->proc_id) {
       PLoc_Sparse(Lk, job->K_00_contrib, nullptr, nullptr, nullptr,
                   job->g_dof_ids, job->ndofe, nullptr, 0,
-                  macro_rank, macro_nproc, macro_pgfem_comm,
+                  macro_rank, macro_nproc, com->spc,
                   0/* interior (t/f) */, macro_solver, analysis);
     }
   }
@@ -296,33 +289,30 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
     in the volumetric elements in stiffmat_fd */
 
   /* send/finalize the communication */
-  MPI_Status  *sta_s = nullptr;
-  MPI_Request *req_s = nullptr;
-  err += send_stiffmat_comm(&sta_s, &req_s, Lk, macro_mpi_comm,
-                            macro_pgfem_comm);
-  err += finalize_stiffmat_comm(sta_s, sta_r, req_s, req_r, macro_pgfem_comm);
+  com->spc->send_stiffmat();
+  com->spc->finalize_stiffmat();
 
   /* assemble to macro tangent on this process */
   {
     int *row_idx = nullptr;
     int   *ncols = nullptr;
     int *col_idx = nullptr;
-    for (int i = 0; i < macro_pgfem_comm->Nr; ++i) {
-      const int proc = macro_pgfem_comm->Nrr[i];
-      const int nrows = macro_pgfem_comm->R[proc];
+    for (int i = 0; i < com->spc->Nr; ++i) {
+      const int proc = com->spc->Nrr[i];
+      const int nrows = com->spc->R[proc];
 
       /* allocate rows and cols to receive */
       row_idx = PGFEM_calloc(int, nrows);
       ncols   = PGFEM_calloc(int, nrows);
-      col_idx = PGFEM_calloc(int, macro_pgfem_comm->AR[proc]);
+      col_idx = PGFEM_calloc(int, com->spc->AR[proc]);
 
       /* get row and column ids */
       int idx = 0;
-      for (int j = 0, e = macro_pgfem_comm->R[proc]; j < e; ++j) {
-        row_idx[j] = macro_pgfem_comm->RGID[proc][j];
-        ncols[j] = macro_pgfem_comm->RAp[proc][j];
+      for (int j = 0, e = com->spc->R[proc]; j < e; ++j) {
+        row_idx[j] = com->spc->RGID[proc][j];
+        ncols[j] = com->spc->RAp[proc][j];
         for (int k = 0, e = ncols[j]; k < e; ++k) {
-          col_idx[idx] = macro_pgfem_comm->RGRId[proc][idx];
+          col_idx[idx] = com->spc->RGRId[proc][idx];
           ++idx;
         }
       }
@@ -342,15 +332,6 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
 
   /* re-initialize macroscale preconditioner */
   macro_solver->resetPreconditioner();
-
-  /* clean up memory */
-  free_stiffmat_comm_buffers(Lk, receive, macro_pgfem_comm);
-  free(Lk);
-  free(receive);
-  free(sta_r);
-  free(req_r);
-  free(sta_s);
-  free(req_s);
 
   /* exit function */
   return err;
@@ -372,8 +353,7 @@ int assemble_ms_cohe_res(const MICROSCALE *micro,
      process only!! */
   for(int i=0, e = micro->idx_map.size; i < e; i++){
     err += assemble_ms_cohe_job_res(i,jobs+i,
-                                    micro->common->mpi_comm,
-                                    macro_mpi_comm,
+                                    com,
                                     macro_loc_res,
                                     mp_id);
   }

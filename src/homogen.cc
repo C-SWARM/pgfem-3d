@@ -7,12 +7,14 @@
 # include "config.h"
 #endif
 
-#include "PGFEM_mpi.h"
+#include "pgfem3d/Communication.hpp"
 #include "enumerations.h"
 #include "homogen.h"
 #include "incl.h"
 #include "matice.h"
 #include <cmath>
+
+using namespace pgfem3d;
 
 void Mat_3D_orthotropic (const long nmat,
                          Material *mater,
@@ -214,7 +216,6 @@ void assign_homogenized_material(const long ne,
   long i;
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
-
 
   for (i=0;i<ne;i++){
     switch(analysis){

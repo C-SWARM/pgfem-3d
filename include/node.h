@@ -1,7 +1,7 @@
 #ifndef PGFEM3D_NODE_H
 #define PGFEM3D_NODE_H
 
-#include "PGFEM_mpi.h"
+#include "pgfem3d/Communication.hpp"
 #include "PGFEM_io.h"
 
 struct NodeIDMap {
@@ -67,7 +67,7 @@ long read_nodes (FILE *in,
                  const long nn,
                  Node *node,
                  const int legacy,
-                 MPI_Comm comm);
+                 const pgfem3d::CommunicationStructure *com);
 
 /** */
 void write_node_fname(const char *filename,

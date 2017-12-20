@@ -1,0 +1,22 @@
+SUBDIRS = 
+noinst_LTLIBRARIES     = libcommunication.la
+
+libcommunication_la_SOURCES  = Communication.cc           \
+			       ISIR_SparseComm.cc         \
+			       PWC_SparseComm.cc          \
+			       MultiscaleCommunication.cc \
+			       Network.cc                 \
+			       Boot.cc
+
+libcommunication_la_CPPFLAGS = -Wall -Werror \
+                               -I$(top_srcdir)/include   \
+                               -I$(top_builddir)/include \
+                               $(LIBGCM_CPPFLAGS)
+
+if HAVE_MPI
+libcommunication_la_SOURCES += mpi/MPINetwork.cc
+endif
+
+if HAVE_PHOTON
+libcommunication_la_SOURCES += photon/PhotonNetwork.cc
+endif

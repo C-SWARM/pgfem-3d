@@ -3,12 +3,15 @@
 /* This file defines the allocation functions which include more
    descriptive debugging messages. Note that long is used in lew of
    size_t so that signs may be checked for error reporting */
+#include "pgfem3d/Communication.hpp"
 #include "allocation.h"
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 #include "utils.h"
 #include <string.h>
 #include <unistd.h>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 #ifdef NDEBUG
 #define DEBUG_PGFEM_ALLOC 0
@@ -325,6 +328,22 @@ void**** PGFEM_CALLOC_4(const long nelem1,
   return val;
 }
 
+/* perform a normal PGFEM calloc plus register the buffer with the network
+   the registration metadata is returned in @param key (optional) */
+void* PGFEM_CALLOC_PIN(const long nelem,
+		       const long size,
+		       Network *net,
+		       Key *key,
+		       const char *function,
+		       const char *file,
+		       const long line)
+{
+  void *a = PGFEM_CALLOC(nelem, size, function, file, line);
+  long sz = (nelem) ? size*nelem : size;
+  net->pin(a, sz, key);
+  return a;
+}
+
 void PGFEM_free2(void **a,
                  const long nelem)
 {
@@ -362,4 +381,10 @@ void PGFEM_free4(void ****a,
     PGFEM_free(a[i]);
   }
   PGFEM_free(a);
+}
+
+/* perform a normal free plus unregister the buffer with the network */
+void PGFEM_free_unpin(void *a, long bytes, Network *net) {
+  net->unpin(a, bytes);
+  free(a);
 }

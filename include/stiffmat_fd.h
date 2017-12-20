@@ -1,7 +1,6 @@
 #ifndef PGFEM3D_STIFFMAT_FD_H
 #define PGFEM3D_STIFFMAT_FD_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
@@ -15,7 +14,6 @@
 #include "macro_micro_functions.h"
 #include "matgeom.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "supp.h"
 #include "pgfem3d/Solver.hpp"
@@ -63,7 +61,6 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] load object for loading
 /// \param[in] com communication object
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
@@ -77,15 +74,13 @@ int stiffmat_fd_MP(Grid *grid,
                    FieldVariables *fv,
                    pgfem3d::Solver *sol,
                    LoadingSteps *load,
-                   CommunicationStructure *com,
+                   const pgfem3d::CommunicationStructure *com,
                    CRPL *crpl,
-                   MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
                    const Multiphysics& mp,
                    int mp_id,
                    double dt,
-                   long iter,
-                   int myrank);
+                   long iter);
 
 /// Multiscale simulation interface to compute stiffness matrix
 ///
@@ -107,12 +102,5 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            long FNR,
                            int myrank,
                            int nproc);
-
-/** Assemble non-local parts as they arrive */
-int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,
-                               MPI_Status *sta_r,
-                               MPI_Request *req_r,
-                               pgfem3d::solvers::SparseSystem *system,
-                               double **recv);
 
 #endif /* #ifndef STIFFMAT_FD_H */

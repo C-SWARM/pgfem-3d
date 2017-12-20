@@ -21,7 +21,8 @@ int read_applied_surface_tractions_fname(char *fname,
                                          int *n_feats,
                                          int **feat_type,
                                          int **feat_id,
-                                         double **loads);
+                                         double **loads,
+					 int myrank);
 
 int read_applied_surface_tractions(FILE *in,
                                    int *n_feats,

@@ -8,7 +8,6 @@
 #ifndef PGFEM3D_MICROSCALE_INFORMATION_H
 #define PGFEM3D_MICROSCALE_INFORMATION_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_options.h"
 #include "cohesive_element.h"
 #include "constitutive_model.h"
@@ -18,7 +17,6 @@
 #include "hommat.h"
 #include "matgeom.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "supp.h"
 #include "pgfem3d/Solver.hpp"
@@ -35,8 +33,7 @@ struct COMMON_MICROSCALE {
   int *Ai;
 
   /* communication information */
-  COMMUN pgfem_comm;
-  MPI_Comm mpi_comm;
+  pgfem3d::CommunicationStructure *com;
   long nbndel; /* no. elements on comm boundary */
   long *bndel; /* bnd elem ids */
   long ndofd; /* dof on dom */
@@ -197,7 +194,7 @@ void initialize_MICROSCALE(MICROSCALE **microscale);
 /** build the full MICROSCALE given by the list of command-line
     style options */
 void build_MICROSCALE(MICROSCALE *microscale,
-                      MPI_Comm mpi_comm,
+		      pgfem3d::net::PGFem3D_Comm comm,
                       const int argc,
                       char **argv,
                       const int mp_id,

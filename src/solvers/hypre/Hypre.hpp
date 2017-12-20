@@ -4,7 +4,6 @@
 #define PGFEM3D_SOLVERS_HYPRE_HYPRE_HPP
 
 #include "incl.h"
-#include "PGFEM_mpi.h"
 #include "PGFem3D_options.h"
 #include "pgfem3d/SparseSystem.hpp"
 #include <HYPRE.h>
@@ -13,6 +12,8 @@
 #include <HYPRE_parcsr_ls.h>
 #include <krylov.h>
 #include <string>
+
+#include <mpi.h> // Hypre bound to MPI for now?
 
 struct SOLVER_INFO;
 

@@ -10,6 +10,10 @@
 #include "post_processing.h"
 #include "read_input_file.h"
 #include "utils.h"
+#include "pgfem3d/Communication.hpp"
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -17,19 +21,9 @@
 
 int main(int argc,char *argv[])
 {
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  int myrank = 0;
-  int nproc = 0;
-
-  /*=== END INITIALIZATION === */
-  MPI_Init (&argc,&argv);
-  MPI_Comm_rank (mpi_comm,&myrank);
-  MPI_Comm_size (mpi_comm,&nproc);
-
-  char processor_name[MPI_MAX_PROCESSOR_NAME];
-  int namelen = 0;
-  MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);
+  Boot *boot = new Boot();
+  int myrank = boot->get_rank();
+  int nproc = boot->get_nproc();
 
   PGFem3D_opt options;
   if (argc <= 2){
@@ -40,6 +34,22 @@ int main(int argc,char *argv[])
   }
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
+  
+  // Create the desired network
+  Network *net = Network::Create(options);
+  
+  CommunicationStructure *com = new CommunicationStructure();
+  com->rank = myrank;
+  com->nproc = nproc;
+  com->boot = boot;
+  com->net = net;
+  com->comm = NET_COMM_WORLD;
+
+  char processor_name[NET_MAX_PROCESSOR_NAME];
+  int namelen = 0;
+  boot->get_processor_name(processor_name, &namelen);
+  
+  PGFEM_initialize_io(NULL,NULL);
 
   long nn = 0;
   long Gnn = 0;
@@ -68,10 +78,11 @@ int main(int argc,char *argv[])
   int ndim = 3;
   int fv_ndofn = ndim;
 
-  in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
+  in_err = read_input_file(&options,com,&nn,&Gnn,&ndofn,
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
-                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,
+			   physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
                    myrank);
@@ -107,7 +118,7 @@ int main(int argc,char *argv[])
     read_model_parameters_list(nhommat, hommat, cm_in);
     free(cm_filename);
     fclose(cm_in);
-    init_all_constitutive_model(eps,ne,elem,nhommat,hommat);
+    init_all_constitutive_model(eps,ne,elem,nhommat,hommat,myrank);
   }
   /////////////////////////////////////////////////////////////////////////////////////
   // read inputs
@@ -132,7 +143,7 @@ int main(int argc,char *argv[])
     read_VTK_file(filename, u);
 
   double *GS = aloc1(9);
-  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,V,ndofn,mpi_comm, &options);
+  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,V,ndofn,com, &options);
 
   if(options.analysis_type==TF)
   {
@@ -158,6 +169,11 @@ int main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize();
+  net->finalize();
+
+  delete com;
+  delete net;
+  delete boot;
+  
   return(0);
 }

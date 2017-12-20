@@ -23,7 +23,6 @@
 #ifndef PGFEM3D_NEWTON_RAPHSON_H
 #define PGFEM3D_NEWTON_RAPHSON_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
@@ -35,7 +34,6 @@
 #include "hommat.h"
 #include "macro_micro_functions.h"
 #include "matgeom.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "solver_file.h"
 #include "supp.h"
@@ -49,26 +47,26 @@
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
-/// \return non-zero on internal error
-double compute_residuals_for_NR(long *INFO, 
-                                Grid *grid,
-                                MaterialProperty *mat,
-                                FieldVariables *fv,
-                                pgfem3d::Solver *sol,
-                                LoadingSteps *load,
-                                CRPL *crpl,
-                                MPI_Comm mpi_comm,
-                                const PGFem3D_opt *opts,
-                                const Multiphysics& mp,
-                                int mp_id,
-                                double t,
-                                double *dts,
-                                int updated_deformation);
+/// \return compute time taken by this function 
+double compute_residuals_for_NR(long *INFO,
+			      Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
+                              pgfem3d::Solver *sol,
+                              LoadingSteps *load,
+                              CRPL *crpl,
+			      const pgfem3d::CommunicationStructure *com,
+                              const PGFem3D_opt *opts,
+                              const Multiphysics& mp,
+                              int mp_id,
+                              double t,
+                              double *dts,
+                              int updated_deformation);
 
 /// Perform Newton Staggered Newton Raphson
 ///
@@ -77,10 +75,9 @@ double compute_residuals_for_NR(long *INFO,
 /// \param[in,out] FV array of field variable object
 /// \param[in] SOL object array for solution scheme
 /// \param[in] load object for loading
-/// \param[in] COM object array for communications
+/// \param[in] com object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
@@ -93,10 +90,9 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  FieldVariables *FV,
                                  pgfem3d::Solver *SOL,
                                  LoadingSteps *load,
-                                 CommunicationStructure *COM,
+                                 pgfem3d::CommunicationStructure *COM,
                                  TimeStepping *time_steps,
                                  CRPL *crpl,
-                                 MPI_Comm mpi_comm,
                                  const double VVolume,
                                  const PGFem3D_opt *opts,
                                  const Multiphysics& mp);

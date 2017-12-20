@@ -4,6 +4,7 @@
 #define _PGFEM_ALLOCATION_H_
 #define ALLOCATION_H
 
+#include "pgfem3d/Network.hpp"
 #include <stdlib.h>
 
 // Help with legacy malloc.
@@ -45,6 +46,14 @@ void**** PGFEM_CALLOC_4(const long nelem1,
     const char *file,
     const long line);
 
+void* PGFEM_CALLOC_PIN(const long nelem,
+    const long size,
+    pgfem3d::net::Network *net,
+    pgfem3d::net::Key *key,
+    const char *function,
+    const char *file,
+    const long line);
+
 void PGFEM_free2(void **a,
     const long nelem);
 
@@ -57,6 +66,9 @@ void PGFEM_free4(void ****a,
     const long nelem2,
     const long nelem3);
 
+void PGFEM_free_unpin(void *a, long bytes, pgfem3d::net::Network *net);
+
+/* define macro wrappers to pass in function/file/line info */
 /* define macro wrappers to pass in function/file/line info */
 #define PGFEM_calloc(T, nelem)                      \
   static_cast<T*>(PGFEM_CALLOC((nelem), sizeof(T),  \
@@ -73,6 +85,10 @@ void PGFEM_free4(void ****a,
 #define PGFEM_calloc4(T, nelem1, nelem2, nelem3, nelem4)                \
   reinterpret_cast<T****>(PGFEM_CALLOC_4((nelem1), (nelem2), (nelem3),  \
           (nelem4), sizeof(T), __func__, __FILE__, __LINE__))
+
+#define PGFEM_calloc_pin(T, nelem, net, key)                            \
+  static_cast<T*>(PGFEM_CALLOC_PIN((nelem), sizeof(T), net, key,	\
+          __func__, __FILE__, __LINE__))
 
 #define PGFEM_free(a) free(a)
 

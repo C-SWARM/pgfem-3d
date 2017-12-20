@@ -7,7 +7,7 @@
 #ifndef PGFEM3D_GENERATE_DOF_IDS_H
 #define PGFEM3D_GENERATE_DOF_IDS_H
 
-#include "PGFEM_mpi.h"
+#include "pgfem3d/Communication.hpp"
 #include "bounding_element.h"
 #include "cohesive_element.h"
 #include "comm_hints.h"
@@ -24,7 +24,7 @@ int generate_local_dof_ids(const int nelem,
                            Element *elems,
                            COEL *coel,
                            BoundingElement *b_elems,
-                           MPI_Comm mpi_comm,
+			   const pgfem3d::CommunicationStructure *com,
                            const int mp_id);
 
 /** Generate the global dof id numbers and return the number of dofs
@@ -37,7 +37,7 @@ int generate_global_dof_ids(const int nelem,
                             Element *elems,
                             COEL *coel,
                             BoundingElement *b_elems,
-                            MPI_Comm mpi_comm,
+			    const pgfem3d::CommunicationStructure *com,
                             const int mp_id);
 
 /** Increment the global dof id numbers based on the number of dofs
@@ -52,7 +52,7 @@ void renumber_global_dof_ids(const int nelem,
                              Element *elems,
                              COEL *coel,
                              BoundingElement *b_elems,
-                             MPI_Comm mpi_comm,
+			     const pgfem3d::CommunicationStructure *com,
                              const int mp_id);
 
 /** Redistributes the degrees of freedom on the boundary and returns
@@ -67,8 +67,7 @@ int distribute_global_dof_ids(const int nelem,
                               Element *elems,
                               COEL *coel,
                               BoundingElement *b_elems,
-                              const Comm_hints *hints,
-                              MPI_Comm mpi_comm,
+			      const pgfem3d::CommunicationStructure *com,
                               const int mp_id);
 
 #endif /* #define PGFEM3D_GENERATE_DOF_IDS_H */

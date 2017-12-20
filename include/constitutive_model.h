@@ -735,7 +735,8 @@ int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const Element *elem,
                                 const int n_mat,
-                                const HOMMAT *hmat_list);
+                                const HOMMAT *hmat_list,
+				int myrank);
 /// save state variables
 ///
 /// \param[in, out] fv an object containing all field variables

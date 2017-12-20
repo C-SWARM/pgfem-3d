@@ -1,7 +1,6 @@
 #ifndef PGFEM3D_RENUMBER_ID_H
 #define PGFEM3D_RENUMBER_ID_H
 
-#include "PGFEM_mpi.h"
 #include "node.h"
 
 /** This function is used after creating the reorder mapping to
@@ -16,7 +15,7 @@ void renumber_ID(int ndofn,
                  int nn,
                  Node *node,
                  int *g_order,
-                 MPI_Comm comm,
+		 int myrank,
                  const int mp_id);
 
 #endif /* #define PGFEM3D_RENUMBER_ID_H */

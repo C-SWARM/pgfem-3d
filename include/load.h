@@ -72,7 +72,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
                                           int mp_id,
-                                          int myrank);
+                                          pgfem3d::CommunicationStructure *com);
 
 /// Multiscale simulation interface to compute load vector due to BCs(Dirichlet)
 ///

@@ -12,6 +12,9 @@
 #include "string.h"
 #include "utils.h"
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
@@ -32,7 +35,7 @@
 
 /**
  * Determine what processors talk to each other and allocate
- * appropriate receive space in comm.
+ * appropriate receive space in comm.  Uses ISIR network pattern.
  *
  * \param[in/out] comm Allocates Nss and Nrr, sets Ns and Nr
  *
@@ -40,19 +43,35 @@
  *
  * Side effects: non-blocking communication between all processes.
  */
-static int determine_comm_pattern(COMMUN comm,
-                                  const MPI_Comm mpi_comm,
-                                  const int *preSend,
-                                  const int *preRecv,
-                                  const int nsend,
-                                  const int nrecv);
+static int determine_comm_pattern_ISIR(CommunicationStructure *com,
+				       const int *preSend,
+				       const int *preRecv,
+				       const int nsend,
+				       const int nrecv);
 
-static int determine_comm_pattern(COMMUN comm,
-                                  const MPI_Comm mpi_comm);
+static int determine_comm_pattern_ISIR(CommunicationStructure *com);
+
+/**
+ * Determine what processors talk to each other and allocate
+ * appropriate receive space in comm.  Uses PWC network pattern.
+ *
+ * \param[in/out] comm Allocates Nss and Nrr, sets Ns and Nr
+ *
+ * \return non-zero on error.
+ *
+ * Side effects: non-blocking communication between all processes.
+ */
+static int determine_comm_pattern_PWC(CommunicationStructure *com,
+				       const int *preSend,
+				       const int *preRecv,
+				       const int nsend,
+				       const int nrecv);
+
+static int determine_comm_pattern_PWC(CommunicationStructure *com);
 
 
 /**
- * Communicate the number of rows/columns.
+ * Communicate the number of rows/columns. Uses ISIR network pattern.
  *
  * \param[in/out] comm Allocates internal space and modifies values
  * \param[out] NRr Returns number of rows to on the domain
@@ -62,17 +81,16 @@ static int determine_comm_pattern(COMMUN comm,
  * \return non-zero on error
  * Side effects: Non-blocking point-to-point communication based on comm
  */
-static int communicate_number_row_col(COMMUN comm,
-                                      long *NRr,
-                                      long **GNRr,
-                                      long **ApRr,
-                                      const long *LG,
-                                      const long *ap,
-                                      long **AA,
-                                      const MPI_Comm mpi_comm);
+static int communicate_number_row_col_ISIR(CommunicationStructure *com,
+					   long *NRr,
+					   long **GNRr,
+					   long **ApRr,
+					   const long *LG,
+					   const long *ap,
+					   long **AA);
 
 /**
- * Communicate all the row/col numbers.
+ * Communicate all the row/col numbers. Uses ISIR network pattern.
  *
  * \param[in,out] comm Allocates internal space and modifies values
  * \param[out] GIDRr Allocates space and initializes values
@@ -81,18 +99,52 @@ static int communicate_number_row_col(COMMUN comm,
  * \return non-zero on error
  * Side-effects: Non-blocking pt2pt communication based on comm
  */
-static int communicate_row_info(COMMUN comm,
-                                long ***GIDRr,
-                                const long NRr,
-                                const long *ApRr,
-                                const long *ap,
-                                long **AA,
-                                long **ID,
-                                const MPI_Comm mpi_comm);
+static int communicate_row_info_ISIR(CommunicationStructure *com,
+				     long ***GIDRr,
+				     const long NRr,
+				     const long *ApRr,
+				     const long *ap,
+				     long **AA,
+				     long **ID);
 
-int* Psparse_ApAi (int nproc,
-                   int myrank,
-                   long ne,
+/**
+ * Communicate the number of rows/columns. Uses PWC network pattern.
+ *
+ * \param[in/out] comm Allocates internal space and modifies values
+ * \param[out] NRr Returns number of rows to on the domain
+ * \param[out] GNRr Allocates space and returns ids of rows that are received
+ * \param[out] ApRr Allocates space and returns column ids of communicated entires.
+ *
+ * \return non-zero on error
+ * Side effects: Non-blocking point-to-point communication based on comm
+ */
+static int communicate_number_row_col_PWC(CommunicationStructure *com,
+					   long *NRr,
+					   long **GNRr,
+					   long **ApRr,
+					   const long *LG,
+					   const long *ap,
+					   long **AA);
+
+/**
+ * Communicate all the row/col numbers. Uses PWC network pattern.
+ *
+ * \param[in,out] comm Allocates internal space and modifies values
+ * \param[out] GIDRr Allocates space and initializes values
+ * \param[in] AA,ID are not modified
+ *
+ * \return non-zero on error
+ * Side-effects: Non-blocking pt2pt communication based on comm
+ */
+static int communicate_row_info_PWC(CommunicationStructure *com,
+				    long ***GIDRr,
+				    const long NRr,
+				    const long *ApRr,
+				    const long *ap,
+				    long **AA,
+				    long **ID);
+
+int* Psparse_ApAi (long ne,
                    long n_be,
                    long nn,
                    long ndofn,
@@ -100,15 +152,10 @@ int* Psparse_ApAi (int nproc,
                    Element *elem,
                    BoundingElement *b_elems,
                    Node *node,
-                   int *Ap,
                    long nce,
                    COEL *coel,
-                   long *DomDof,
-                   int *GDof,
-                   COMMUN comm,
-                   MPI_Comm Comm_Orig,
+		   CommunicationStructure *com,
                    const int cohesive,
-                   const Comm_hints *hints,
                    const int mp_id)
 {
   char jmeno[200];
@@ -119,9 +166,15 @@ int* Psparse_ApAi (int nproc,
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   int *Ddof = NULL;
   int *Ai = NULL;
-  MPI_Status *sta_s=NULL, *sta_r=NULL;
-  MPI_Request *req_s=NULL, *req_r=NULL;
 
+  /* pull necessary info from Communication handle */
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  long *DomDof = com->DomDof;
+  int *GDof = &(com->GDof);
+  int *Ap = com->Ap;
+  
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
     sprintf (jmeno,"%s%d.report","ApAi_",myrank);
     if ((out = fopen(jmeno,"w")) == NULL ){
@@ -149,17 +202,17 @@ int* Psparse_ApAi (int nproc,
   const int *preSend = NULL;
   const int *preRecv = NULL;
 
-  if (hints != NULL){                                                         //check if comm hints were provided
-    nsend = Comm_hints_nrecv(hints);
-    nrecv = Comm_hints_nsend(hints);
-    preSend = Comm_hints_recv_list(hints);                                    //returns hints->recv
-    preRecv = Comm_hints_send_list(hints);
+  if (com->hints != NULL){                                                         //check if comm hints were provided
+    nsend = com->hints->get_nrecv();
+    nrecv = com->hints->get_nsend();
+    preSend = com->hints->get_recv_list();                                    //returns hints->recv
+    preRecv = com->hints->get_send_list();
   }
 
-  comm->S = PGFEM_calloc (long, nproc);                        //amount of rows to send to each processor
-  comm->R = PGFEM_calloc (long, nproc);                        //amount of rows to receive from each processsor
-  comm->AS = PGFEM_calloc (long, nproc);                       //amount to send
-  comm->AR = PGFEM_calloc (long, nproc);                       //amount to recieve
+  comm->S = PGFEM_calloc_pin (long, nproc, com->net, 0);       //amount of rows to send to each processor
+  comm->R = PGFEM_calloc_pin (long, nproc, com->net, 0);       //amount of rows to receive from each processsor
+  comm->AS = PGFEM_calloc_pin (long, nproc, com->net, 0);      //amount to send
+  comm->AR = PGFEM_calloc_pin (long, nproc, com->net, 0);      //amount to recieve
   comm->LG = PGFEM_calloc (long, ndofd);                       //local to global (ndofd)
   comm->GL = PGFEM_calloc (long, DomDof[myrank]);              //global to local
 
@@ -305,7 +358,6 @@ int* Psparse_ApAi (int nproc,
       PGFEM_printerr("[%d]:ERROR comm->LG contains %d duplicate values!\n",
                      myrank,n_dup);
     }
-    /* MPI_Barrier(Comm_Orig); */
     /* if(n_dup) PGFEM_Abort(); */
   }
 
@@ -449,21 +501,44 @@ int* Psparse_ApAi (int nproc,
 
   /* Communicate who I am communicating with
    *============================================= */
-  if (hints == NULL)                                          //checks if comm hints weren't provided
-    determine_comm_pattern(comm,Comm_Orig);
-  else
-    determine_comm_pattern(comm,Comm_Orig, preSend, preRecv, nsend, nrecv);
-
-  /* Communicate how many rows/columns I am sending
-   *============================================= */
-  communicate_number_row_col(comm,&NRr,&GNRr,&ApRr,
-                             LG,ap,AA,Comm_Orig);
-
-  /* Communicate the row/column information
-   *============================================= */
-  communicate_row_info(comm,&GIDRr,NRr,ApRr,
-                       ap,AA,ID,Comm_Orig);
-
+  switch(com->net->type()) {
+  case NET_ISIR:
+    if (com->hints == NULL)                                          //checks if comm hints weren't provided
+      determine_comm_pattern_ISIR(com);
+    else
+      determine_comm_pattern_ISIR(com, preSend, preRecv, nsend, nrecv);
+    
+    /* Communicate how many rows/columns I am sending
+     *============================================= */
+    communicate_number_row_col_ISIR(com,&NRr,&GNRr,&ApRr,
+				    LG,ap,AA);
+    
+    /* Communicate the row/column information
+     *============================================= */
+    communicate_row_info_ISIR(com,&GIDRr,NRr,ApRr,
+			      ap,AA,ID);
+    break;
+  case NET_PWC:
+    if (com->hints == NULL)                                          //checks if comm hints weren't provided
+      determine_comm_pattern_PWC(com);
+    else
+      determine_comm_pattern_PWC(com, preSend, preRecv, nsend, nrecv);
+    
+    /* Communicate how many rows/columns I am sending
+     *============================================= */
+    communicate_number_row_col_PWC(com,&NRr,&GNRr,&ApRr,
+				    LG,ap,AA);
+    
+    /* Communicate the row/column information
+     *============================================= */
+    communicate_row_info_PWC(com,&GIDRr,NRr,ApRr,
+			      ap,AA,ID);
+    break;
+  default:
+    PGFEM_printerr("[%d]ERROR: Unknown network type", com->rank);
+    PGFEM_Abort();
+  }
+    
   /****************************/
   /* END SEND ALL INFORMATION */
   /****************************/
@@ -641,47 +716,47 @@ int* Psparse_ApAi (int nproc,
   dealoc1l (GL);
   dealoc1l (GNRr);
   dealoc1l (ApRr);
-  free (sta_s);
-  free (sta_r);
-  free (req_s);
-  free (req_r);
 
   return (Ai);
 }
 
 
 //If comm hints were provided
-static int determine_comm_pattern(COMMUN comm,
-                                  const MPI_Comm mpi_comm,
-                                  const int *preSend,
-                                  const int *preRecv,
-                                  const int nsend,
-                                  const int nrecv)
+static int determine_comm_pattern_ISIR(CommunicationStructure *com,
+				       const int *preSend,
+				       const int *preRecv,
+				       const int nsend,
+				       const int nrecv)
 {
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);                                              //get my rank again (could be passed)
-  MPI_Comm_size(mpi_comm,&nproc);                                               //get total number of processes (could also be passed)
+  int myrank = com->rank;
+  int nproc = com->nproc;
   //mpi_status contains 3 things: the rank of the sender, tag of the message, and the length of the message
-  MPI_Status t_sta_r;
-  MPI_Status *t_sta_s = NULL;
-  MPI_Request *t_req_s = NULL;
-  MPI_Request *t_req_r = NULL;
+  Status t_sta_r;
+  Status *t_sta_s = NULL;
+  Request *t_req_s = NULL;
+  Request *t_req_r = NULL;
 
+  SparseComm *comm = com->spc;
+  
   if(nproc > 1){
-    t_sta_s = PGFEM_calloc(MPI_Status, nproc-1);
-    t_req_s = PGFEM_calloc(MPI_Request, nrecv);
-    t_req_r = PGFEM_calloc(MPI_Request, nsend);
+    net->allocStatusArray(nproc-1, &t_sta_s);
+    net->allocRequestArray(nproc-1, &t_req_s);
+    net->allocRequestArray(nproc-1, &t_req_r);
   }
 
   int recvFrom;
   int t_count;
   for (int i = 0; i < nsend; i++){                                               //prepares mailboxes to receive from all nodes
     recvFrom = preSend[i];
-    err += MPI_Irecv(&comm->R[recvFrom],1,MPI_LONG,recvFrom,MPI_ANY_TAG,                     //put received info in comm->R
-                     mpi_comm,t_req_r+i);                              //save info of proc from which things came
-
+    try {
+      net->irecv(&comm->R[recvFrom], 1, NET_DT_LONG, recvFrom, NET_ANY_TAG,  //put received info in comm->R
+		      com->comm, t_req_r+i);                              //save info of proc from which things came
+    } catch(...) {
+      err++;
+    }
   }
   //can be changed to smaller comm
   /* Send size to all other processors */
@@ -690,10 +765,14 @@ static int determine_comm_pattern(COMMUN comm,
   for (int i = 0; i < nrecv; i++){                                              //send size to all
 
     int sendTo = preRecv[i];
-    err += MPI_Isend(&comm->S[sendTo],1,MPI_LONG,sendTo,myrank,
-                     mpi_comm,&t_req_s[i]);                                         //t_req_s is required for each non-blocking call
+    try {
+      net->isend(&comm->S[sendTo], 1, NET_DT_LONG, sendTo, myrank,
+		      com->comm, &t_req_s[i]);                                         //t_req_s is required for each non-blocking call
+    } catch(...) {
+      err++;
+    }
 
-    if(comm->S[sendTo] == 0) comm->Ns--;                                            //calculate number of procs that I sent to
+    if (comm->S[sendTo] == 0) comm->Ns--;                                            //calculate number of procs that I sent to
   }
 
   /* Allocate send space and determine the reduced list of procs to
@@ -715,16 +794,20 @@ static int determine_comm_pattern(COMMUN comm,
   while (t_count < nsend) //wait until ive heard back from everyone
   {
     int idx = 0;
-    err +=  MPI_Waitany(nsend,t_req_r,&idx,&t_sta_r);                         //listen for messages
-
-    int source = t_sta_r.MPI_SOURCE;
+    try {
+      net->waitany(nsend, t_req_r, &idx, &t_sta_r);                         //listen for messages
+    } catch(...) {
+      err++;
+    }
+      
+    int source = t_sta_r.NET_SOURCE;
 
     if(comm->R[source]==0)
       comm->Nr--;                                                               //write down how many non-empty letters I received
-
+    
     t_count++;
   }
-  free(t_req_r);
+  delete [] t_req_r;
 
 
   /* Allocate receive space and determine the reduced list of
@@ -741,35 +824,37 @@ static int determine_comm_pattern(COMMUN comm,
   }                                                                             //that I talked to
 
   /* Wait for send communications to finish */
-  err += MPI_Waitall(nrecv,t_req_s,t_sta_s);                                  //wait until all expected messages arrive
-
+  try {
+    net->waitall(nrecv, t_req_s, t_sta_s);                                  //wait until all expected messages arrive
+  } catch(...) {
+    err++;
+  }
 
   /* deallocate */
-  free(t_req_s);
-  free(t_sta_s);
+  delete [] t_req_s;
+  delete [] t_sta_s;
 
   return err;
 }
 
 
 //If comm hints were not provided
-static int determine_comm_pattern(COMMUN comm,
-                                  const MPI_Comm mpi_comm)
+static int determine_comm_pattern_ISIR(CommunicationStructure *com)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
-
-  MPI_Status t_sta_r;
-  MPI_Status *t_sta_s = NULL;
-  MPI_Request *t_req_s = NULL;
-  MPI_Request *t_req_r = NULL;
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
+  Status t_sta_r;
+  Status *t_sta_s = NULL;
+  Request *t_req_s = NULL;
+  Request *t_req_r = NULL;
   if(nproc > 1){
-    t_sta_s = PGFEM_calloc(MPI_Status, nproc-1);
-    t_req_s = PGFEM_calloc(MPI_Request, nproc-1);
-    t_req_r = PGFEM_calloc(MPI_Request, nproc-1);
+    net->allocStatusArray(nproc-1, &t_sta_s);
+    net->allocRequestArray(nproc-1, &t_req_s);
+    net->allocRequestArray(nproc-1, &t_req_r);
   }
 
   /* Post recieves from all otehr processes */
@@ -777,8 +862,12 @@ static int determine_comm_pattern(COMMUN comm,
   for (int i = 0; i < nproc; i++){
     if (i == myrank)
       continue;
-    err += MPI_Irecv(&comm->R[i],1,MPI_LONG,i,MPI_ANY_TAG,
-                     mpi_comm,&t_req_r[t_count]);
+    try {
+      net->irecv(&comm->R[i], 1, NET_DT_LONG, i, NET_ANY_TAG,
+		 com->comm, &t_req_r[t_count]);
+    } catch(...) {
+      err++;
+    }
     t_count++;
   }
 
@@ -786,13 +875,17 @@ static int determine_comm_pattern(COMMUN comm,
   t_count = 0;
   for (int i = 0; i < nproc; i++){
     if (i != myrank){
-      err += MPI_Isend(&comm->S[i],1,MPI_LONG,i,myrank,
-                       mpi_comm,&t_req_s[t_count]);
+      try {
+	net->isend(&comm->S[i], 1, NET_DT_LONG, i, myrank,
+		   com->comm, &t_req_s[t_count]);
+      } catch(...) {
+	err++;
+      }
       t_count++;
       if(comm->S[i] > 0) comm->Ns++;
     }
   }
-
+  
   /* Allocate send space and determine the reduced list of procs to
      send to. */
   {
@@ -811,15 +904,18 @@ static int determine_comm_pattern(COMMUN comm,
   comm->Nr = 0;
   while (t_count < nproc-1){
     int idx = 0;
-    err +=  MPI_Waitany(nproc-1,t_req_r,&idx,&t_sta_r);
-    int source = t_sta_r.MPI_SOURCE;
+    try {
+      net->waitany(nproc-1, t_req_r, &idx, &t_sta_r);
+    } catch(...) {
+      err++;
+    }
+    int source = t_sta_r.NET_SOURCE;
     if (source != myrank && comm->R[source] > 0){
       comm->Nr++;
     }
     t_count++;
   }
-  free(t_req_r);
-
+  delete [] t_req_r;
 
   /* Allocate receive space and determine the reduced list of
      processors to receive from */
@@ -835,30 +931,47 @@ static int determine_comm_pattern(COMMUN comm,
   }
 
   /* Wait for send communications to finish */
-  err += MPI_Waitall(nproc-1,t_req_s,t_sta_s);
-
+  try {
+    net->waitall(nproc-1, t_req_s, t_sta_s);
+  } catch(...) {
+    err++;
+  }
+  
   /* deallocate */
-  free(t_req_s);
-  free(t_sta_s);
-
+  delete [] t_req_s;
+  delete [] t_sta_s;
+  
   return err;
 }
 
-static int communicate_number_row_col(COMMUN comm,
-                                      long *NRr,
-                                      long **GNRr,
-                                      long **ApRr,
-                                      const long *LG,
-                                      const long *ap,
-                                      long **AA,
-                                      const MPI_Comm mpi_comm)
+static int determine_comm_pattern_PWC(CommunicationStructure *com,
+				       const int *preSend,
+				       const int *preRecv,
+				       const int nsend,
+				       const int nrecv)
+{
+  return 0;
+}
+
+static int determine_comm_pattern_PWC(CommunicationStructure *com)
+{
+  return 0;
+}
+
+static int communicate_number_row_col_ISIR(CommunicationStructure *com,
+					   long *NRr,
+					   long **GNRr,
+					   long **ApRr,
+					   const long *LG,
+					   const long *ap,
+					   long **AA)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);                                       //get myrank
-  err += MPI_Comm_size(mpi_comm,&nproc);                                        //get total nprocs (both of these could be passed)
-
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
   /* How many numbers I will send */
   for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to
     comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
@@ -869,11 +982,10 @@ static int communicate_number_row_col(COMMUN comm,
     comm->AR[comm->Nrr[i]] = 2*comm->R[comm->Nrr[i]];                           //number to receive was in comm->R
   }
 
-
-  MPI_Status *sta_s = NULL;                                                     //storing send message info
-  MPI_Status *sta_r = NULL;                                                     //storing receive message info
-  MPI_Request *req_s = NULL;                                                    //required for
-  MPI_Request *req_r = NULL;                                                    //nonblocking comms
+  Status *sta_s = NULL;                                                         //storing send message info
+  Status *sta_r = NULL;                                                         //storing receive message info
+  Request *req_s = NULL;                                                        //required for
+  Request *req_r = NULL;                                                        //nonblocking comms
   long **SEND = NULL;
   long **RECI = NULL;
 
@@ -881,16 +993,16 @@ static int communicate_number_row_col(COMMUN comm,
   {
     long KK = 0;
     if (comm->Ns == 0) KK = 1; else KK = comm->Ns;                              //if number to send is 0 then allocate 1 space
-    sta_s = PGFEM_calloc (MPI_Status, KK);
-    req_s = PGFEM_calloc (MPI_Request, KK);
-
+    net->allocStatusArray(KK, &sta_s);
+    net->allocRequestArray(KK, &req_s);
+    
     if (comm->Nr == 0) KK = 1; else KK = comm->Nr;                              //if number to receive is 0 then allocate 1 space
-    sta_r = PGFEM_calloc (MPI_Status, KK);
-    req_r = PGFEM_calloc (MPI_Request, KK);
+    net->allocStatusArray(KK, &sta_r);
+    net->allocRequestArray(KK, &req_r);
   }
 
-  if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                //similar with SEND
-  if(comm->Nr > 0) RECI = PGFEM_calloc (long*, comm->Nr);                //and RECI
+  if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                       //similar with SEND
+  if(comm->Nr > 0) RECI = PGFEM_calloc (long*, comm->Nr);                       //and RECI
 
   /* =======================================================*/
 
@@ -899,10 +1011,14 @@ static int communicate_number_row_col(COMMUN comm,
     int r_idx = comm->Nrr[i];                                                   //idx is # being received at i
     int n_rec = comm->AR[r_idx];                                                //rec is the amount to receive for idx things
 
-    RECI[i] = PGFEM_calloc(long, n_rec);                                 //create a mailbox big enough for AR
+    RECI[i] = PGFEM_calloc(long, n_rec);                                        //create a mailbox big enough for AR
 
-    err += MPI_Irecv (RECI[i],n_rec,MPI_LONG,r_idx,                             //post mailboxes
-                      MPI_ANY_TAG,mpi_comm,&req_r[i]);
+    try {
+      net->irecv(RECI[i], n_rec, NET_DT_LONG, r_idx,                       //post mailboxes
+		      NET_ANY_TAG, com->comm, &req_r[i]);
+    } catch(...) {
+      err++;
+    }
   }
 
   /* Post sends */
@@ -910,7 +1026,7 @@ static int communicate_number_row_col(COMMUN comm,
     int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
     int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
 
-    SEND[i] = PGFEM_calloc(long, n_send);                                //create envelopes
+    SEND[i] = PGFEM_calloc(long, n_send);                                       //create envelopes
 
     /* populate send buffer */
     for (int j = 0; j < comm->S[s_idx]; j++){
@@ -918,8 +1034,12 @@ static int communicate_number_row_col(COMMUN comm,
       SEND[i][comm->S[s_idx] + j] = ap[AA[s_idx][j]]; /* # columns */           //
     }
 
-    err += MPI_Isend (SEND[i],n_send,MPI_LONG,s_idx,                            //send letters
-                      myrank,mpi_comm,&req_s[i]);
+    try {
+      net->isend(SEND[i], n_send, NET_DT_LONG, s_idx,                      //send letters
+                      myrank, com->comm, &req_s[i]);
+    } catch(...) {
+      err++;
+    }
   }
 
   /* Compute the number of rows to receive */
@@ -949,10 +1069,13 @@ static int communicate_number_row_col(COMMUN comm,
 
   /* CHANGE TO WAIT ANY */
   /* Wait to complete the communications */
-  err += MPI_Waitall (comm->Ns,req_s,sta_s);
-  err += MPI_Waitall (comm->Nr,req_r,sta_r);
-
-
+  try {
+    net->waitall(comm->Ns, req_s, sta_s);
+    net->waitall(comm->Nr, req_r, sta_r);
+  } catch(...) {
+    err++;
+  }
+  
   /* Unpack it */
   int II = 0;
   for (int i = 0; i < comm->Nr; i++){
@@ -967,55 +1090,70 @@ static int communicate_number_row_col(COMMUN comm,
   /* Deallocate */
   dealoc2l(SEND,comm->Ns);
   dealoc2l(RECI,comm->Nr);
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
+  delete [] sta_s;
+  delete [] sta_r;
+  delete [] req_s;
+  delete [] req_r;
 
   return err;
 }
 
-static int communicate_row_info(COMMUN comm,
-                                long ***GIDRr,
-                                const long NRr,
-                                const long *ApRr,
-                                const long *ap,
-                                long **AA,
-                                long **ID,
-                                const MPI_Comm mpi_comm)
+static int communicate_number_row_col_PWC(CommunicationStructure *com,
+					   long *NRr,
+					   long **GNRr,
+					   long **ApRr,
+					   const long *LG,
+					   const long *ap,
+					   long **AA)
+{
+
+  return 0;
+}
+
+static int communicate_row_info_ISIR(CommunicationStructure *com,
+				     long ***GIDRr,
+				     const long NRr,
+				     const long *ApRr,
+				     const long *ap,
+				     long **AA,
+				     long **ID)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  err += MPI_Comm_rank(mpi_comm,&myrank);
-  err += MPI_Comm_size(mpi_comm,&nproc);
-
-  MPI_Status *sta_s = NULL;
-  MPI_Status *sta_r = NULL;
-  MPI_Request *req_s = NULL;
-  MPI_Request *req_r = NULL;
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
+  Status *sta_s = NULL;
+  Status *sta_r = NULL;
+  Request *req_s = NULL;
+  Request *req_r = NULL;
 
   /* Allocate status and request fields */
   {
     int KK = 0;
     if (comm->Ns == 0) KK = 1; else KK = comm->Ns;
-    sta_s = PGFEM_calloc (MPI_Status, KK);
-    req_s = PGFEM_calloc (MPI_Request, KK);
+    net->allocStatusArray(KK, &sta_s);
+    net->allocRequestArray(KK, &req_s);
 
     if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
-    sta_r = PGFEM_calloc (MPI_Status, KK);
-    req_r = PGFEM_calloc (MPI_Request, KK);
+    net->allocStatusArray(KK, &sta_r);
+    net->allocRequestArray(KK, &req_r);
   }
 
   /* clear the number of communication */
   memset(comm->AS,0,nproc*sizeof(long));
   memset(comm->AR,0,nproc*sizeof(long));
 
-  /* post receive  for allocation information*/
+  /* post receive for allocation information*/
   for (int i = 0; i < comm->Nr; i++){
     int r_idx = comm->Nrr[i];
-    err += MPI_Irecv (&comm->AR[r_idx],1,MPI_LONG,
-                      r_idx,MPI_ANY_TAG,mpi_comm,&req_r[i]);
+    try {
+      net->irecv(&comm->AR[r_idx], 1 ,NET_DT_LONG,
+		 r_idx, NET_ANY_TAG, com->comm, &req_r[i]);
+    } catch (...) {
+      err++;
+    }
   }
 
   /* Allocate and compute quantity information to send */
@@ -1038,8 +1176,12 @@ static int communicate_row_info(COMMUN comm,
   /* Send allocation information */
   for (int i = 0; i < comm->Ns; i++){
     int s_idx = comm->Nss[i];
-    err += MPI_Isend (&comm->AS[s_idx],1,MPI_LONG,
-                      s_idx,myrank,mpi_comm,&req_s[i]);
+    try {
+      net->isend(&comm->AS[s_idx], 1 ,NET_DT_LONG,
+		 s_idx, myrank, com->comm, &req_s[i]);
+    } catch(...) {
+      err++;
+    }
   }
 
   comm->SGRId = PGFEM_calloc (long*, nproc);
@@ -1049,8 +1191,12 @@ static int communicate_row_info(COMMUN comm,
   }
 
   /* wait for receives to complete */
-  err += MPI_Waitall(comm->Nr,req_r,sta_r);
-
+  try {
+    net->waitall(comm->Nr, req_r, sta_r);
+  } catch(...) {
+    err++;
+  }
+  
   /* Allocate recieve buffer */
   long **RECI = PGFEM_calloc (long*, nproc);
   for (int i = 0; i < nproc; i++) {
@@ -1059,36 +1205,40 @@ static int communicate_row_info(COMMUN comm,
     RECI[i] = PGFEM_calloc (long, JJ);
   }
 
-  free(sta_r);
-  free(req_r);
+  delete [] sta_r;
+  delete [] req_r;
 
   /* Wait for sends to complete */
-  err += MPI_Waitall(comm->Ns,req_s,sta_s);
+  try {
+    net->waitall(comm->Ns, req_s, sta_s);
+  } catch(...) {
+    err++;
+  }
 
   /* reallocate status and request fields */
-  free(sta_s);
-  free(req_s);
+  delete [] sta_s;
+  delete [] req_s;
   {
     int KK = 0;
     if (comm->Ns == 0) KK = 1; else KK = comm->Ns;
-    sta_s = PGFEM_calloc (MPI_Status, KK);
-    req_s = PGFEM_calloc (MPI_Request, KK);
+    net->allocStatusArray(KK, &sta_s);
+    net->allocRequestArray(KK, &req_s);
 
     if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
-    sta_r = PGFEM_calloc (MPI_Status, KK);
-    req_r = PGFEM_calloc (MPI_Request, KK);
+    net->allocStatusArray(KK, &sta_r);
+    net->allocRequestArray(KK, &req_r);
   }
 
   /* post receive */
   for (int i = 0; i < comm->Nr; i++){
     int KK = comm->Nrr[i];
-    MPI_Irecv (RECI[KK],comm->AR[KK],MPI_LONG,KK,
-               MPI_ANY_TAG,mpi_comm,&req_r[i]);
+    net->irecv(RECI[KK], comm->AR[KK], NET_DT_LONG, KK,
+	       NET_ANY_TAG, com->comm, &req_r[i]);
   }
-
+  
   for (int i = 0; i < comm->Ns; i++){
     int KK = comm->Nss[i];
-
+    
     int II = 0;
     for (int j = 0; j < comm->S[KK]; j++){
       for (int k = 0; k < ap[AA[KK][j]]; k++){
@@ -1097,9 +1247,9 @@ static int communicate_row_info(COMMUN comm,
       }
     }
 
-    MPI_Isend (comm->SGRId[KK],comm->AS[KK],MPI_LONG,KK,
-               myrank,mpi_comm,&req_s[i]);
-
+    net->isend(comm->SGRId[KK], comm->AS[KK], NET_DT_LONG, KK,
+	       myrank, com->comm, &req_s[i]);
+    
   }/* end i < comm->Ns */
 
   /****************/
@@ -1123,8 +1273,8 @@ static int communicate_row_info(COMMUN comm,
 
   /* WAIT ANY and unpack */
   /* Wait to complete the communications */
-  MPI_Waitall (comm->Ns,req_s,sta_s);
-  MPI_Waitall (comm->Nr,req_r,sta_r);
+  net->waitall(comm->Ns, req_s, sta_s);
+  net->waitall(comm->Nr,req_r,sta_r);
 
   /* Unpack ir */
   int JJ = 0;
@@ -1140,12 +1290,25 @@ static int communicate_row_info(COMMUN comm,
     }
   }/* end i < nproc */
 
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
+
+  delete [] sta_s;
+  delete [] sta_r;
+  delete [] req_s;
+  delete [] req_r;
 
   dealoc2l(RECI,nproc);
 
   return err;
+}
+
+static int communicate_row_info_PWC(CommunicationStructure *com,
+				    long ***GIDRr,
+				    const long NRr,
+				    const long *ApRr,
+				    const long *ap,
+				    long **AA,
+				    long **ID)
+{
+
+  return 0;
 }
