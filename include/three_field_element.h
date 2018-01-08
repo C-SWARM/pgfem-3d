@@ -1,6 +1,9 @@
 #ifndef PGFEM3D_THREE_FIELD_ELEMENT_H
 #define PGFEM3D_THREE_FIELD_ELEMENT_H
 
+
+#include "PGFem3D_data_structure.h"
+#include "crpl.h"
 #include "elem3d.h"
 #include "eps.h"
 #include "femlib.h"
@@ -9,21 +12,46 @@
 #include "tensors.h"
 #define N_VOL_TREE_FIELD 1
 
-void resid_w_inertia_Ru_ip(double *fu,
-                           int nne, double *ST, double *F, double *S, double jj, double wt, double Pn);
+using pgfem3d::Solver;
 
-void resid_w_inertia_Rt_ip(double *ft, int nVol, double jj, double wt, double *Nt, double Pn, double Up);
 
-void resid_w_inertia_Rp_ip(double *fp, int npres, double *F, double jj, double wt, double *Np, double Tn);
+/// compute element stiffness matrix in quasi steady state
+///
+/// \param[in]  fe    finite element helper object
+/// \param[out] lk    computed element stiffness matrix
+/// \param[in]  r_e   nodal variabls(displacements) on the current element
+/// \param[in]  grid  a mesh object
+/// \param[in]  mat   a material object
+/// \param[in]  fv    object for field variables
+/// \param[in]  alpha mid point alpha
+/// \param[in]  dt    time step size
+/// \return non-zero on internal error
+int stiffmat_3f_el(FEMLIB *fe,
+                   double *lk,
+                   double *r_e,
+                   Grid *grid,
+                   MaterialProperty *mat,
+                   FieldVariables *fv,
+                   double alpha,
+                   double dt);
 
-void stiffmat_3f_el(double *Ks, const int ii, const int ndofn, const int nne, int npres, int nVol, int nsd,
-                    const double *x, const double *y, const double *z, const Element *elem, const HOMMAT *hommat,
-                    const long *nod, const Node *node, double dt, SIG *sig, EPS *eps, const SUPP sup, double alpha, double *r_e);
-
-void residuals_3f_el(double *f, const int ii, const int ndofn, const int nne, const int npres, const int nVol, const int nsd,
-                     const double *x, const double *y, const double *z,
-                     const Element *elem, const HOMMAT *hommat, const long *nod, const Node *node,
-                     double dt, SIG *sig, EPS *eps,  const SUPP sup, double *r_e);
+/// compute element residual vector in quasi steady state.
+///
+/// \param[in]  fe    finite element helper object
+/// \param[out] lk    computed element stiffness matrix
+/// \param[in]  r_e   nodal variabls(displacements) on the current element
+/// \param[in]  grid  a mesh object
+/// \param[in]  mat   a material object
+/// \param[in]  fv    object for field variables
+/// \param[in]  alpha mid point alpha
+/// \param[in]  dt    time step size
+/// \return non-zero on internal error
+int residuals_3f_el(FEMLIB *fe,
+                    double *f,
+                    double *r_e,
+                    Grid *grid,
+                    MaterialProperty *mat,
+                    FieldVariables *fv);
 
 void residuals_3f_w_inertia_el(double *f,const int ii,
                                const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
@@ -31,10 +59,15 @@ void residuals_3f_w_inertia_el(double *f,const int ii,
                                const Element *elem,const HOMMAT *hommat,const Node *node,
                                const double *dts,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
 
-void update_3f(long ne, long ndofn, long npres, double *d_r, double *r, double *rr,
-               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-               MPI_Comm mpi_comm, const PGFem3D_opt *opts, double alpha, double *r_n, double *r_n_1,
-               const int mp_id);
+int update_3f(Grid *grid,
+              MaterialProperty *mat,
+              FieldVariables *fv,
+              LoadingSteps *load,
+              const PGFem3D_opt *opts,
+              Multiphysics *mp,
+              int mp_id,
+              const double dt,
+              double alpha);              
 
 void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
                                Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,

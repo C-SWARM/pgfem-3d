@@ -132,16 +132,7 @@ int compute_Ktt(FEMLIB *fe,
                 int Vno,
                 double *Nt);
 
-int condense_K_3F_to_1F(double *Ks, int nne, int nsd, int Pno, int Vno,
-                        double *Kuu_in, double *Kut_in, double *Kup_in,
-                        double *Ktu_in, double *Ktt_in, double *Ktp_in,
-                        double *Kpu_in, double *Kpt_in, double *Kpp_in);
-
-int condense_F_3F_to_1F(double *fe, int nne, int nsd, int Pno, int Vno,
-                        double *fu_in, double *ft_in, double *fp_in, 
-                        double *Kut_in, double *Kup_in, double *Ktp_in, double *Ktt_in,double *Kpt_in);
-
-int compute_d_theta_dP(double *d_theta, double *dP, double *du_in, 
+int compute_d_theta_dP(double *d_theta_in, double *dP_in, double *du_in, 
                        int nne, int nsd, int Pno, int Vno,
                        double *fu_in, double *ft_in, double *fp_in, 
                        double *Kpu_in, double *Ktu_in, double *Ktp_in, double *Ktt_in,double *Kpt_in);

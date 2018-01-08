@@ -307,6 +307,7 @@ FEMLIB::elem_shape_function(long ip, int nne, double *N)
 void
 FEMLIB::elem_basis_V(long ip)
 {
+  this->curt_itg_id = ip;
   double ksi_, eta_, zet_, wt;
 
   int itg_id_ip_1 = this->itg_ids(ip, 1);

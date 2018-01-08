@@ -194,8 +194,6 @@ static int fd_res_elem_MP(double *be,
   else
     def_elem (cn,ndofe,f,grid->element,grid->node,r_e,sup,0);
 
-  int nsd = 3;
-
   double *x = (fe.temp_v).x.m_pdata;
   double *y = (fe.temp_v).y.m_pdata;
   double *z = (fe.temp_v).z.m_pdata;
@@ -240,9 +238,12 @@ static int fd_res_elem_MP(double *be,
          double *bf = aloc1(ndofe);
          memset(bf, 0, sizeof(double)*ndofe);
          DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
+         
+         residuals_3f_el(&fe, be, r_e, grid, mat, fv);
 
-         residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
+/*         residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
                          x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
+*/
          for(long a = 0; a<ndofe; a++)
            be[a] += -bf[a];
 

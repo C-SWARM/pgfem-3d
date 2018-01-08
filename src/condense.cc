@@ -308,3 +308,87 @@ void condense_F_out(double *fe, int nne, int nsd, int npres, int nVol,
     condense_Fupt_to_Fup(fe,nne,nsd,npres,nVol, 
                    fu_temp,ft_temp,fp_temp,Kut_temp,Ktt_temp,Kpt_temp);
 }
+
+
+int condense_K_3F_to_1F(double *K, int nne, int nsd, int Pno, int Vno,
+                        double *Kuu_in, double *Kut_in, double *Kup_in,
+                        double *Ktu_in, double *Ktt_in, double *Ktp_in,
+                        double *Kpu_in, double *Kpt_in, double *Kpp_in)                               
+{
+  int err = 0;
+  Matrix<double> Kuu, Kut, Kup;
+  Matrix<double> Ktu, Ktt, Ktp;  
+  Matrix<double> Kpu, Kpt, Kpp;  
+  
+	Kuu.use_reference(nne*nsd, nne*nsd, Kuu_in);
+	Ktu.use_reference(Vno,     nne*nsd, Ktu_in);
+	Kpu.use_reference(Pno,     nne*nsd, Kpu_in);
+	Kut.use_reference(nne*nsd, Vno,     Kut_in);
+	Ktt.use_reference(Vno,     Vno,     Ktt_in);
+	Kpt.use_reference(Pno,     Vno,     Kpt_in);	
+	Kup.use_reference(nne*nsd, Pno,     Kup_in);
+	Ktp.use_reference(Vno,     Pno,     Ktp_in);
+	Kpp.use_reference(Pno,     Pno,     Kpp_in);	
+   
+
+	Matrix<double> KptI(Vno, Pno), KtpI(Pno, Vno), Kuu_add(nne*nsd,nne*nsd);
+	
+	KptI.inv(Kpt);
+	KtpI.inv(Ktp);
+
+  Matrix<double> KupKtpI(nne*nsd,Vno), KupKtpIKtt(nne*nsd,Vno), KptIKpu(Vno,nne*nsd);
+           
+     KupKtpI.prod(Kup,KtpI);
+  KupKtpIKtt.prod(KupKtpI,    Ktt    );  
+     KptIKpu.prod(KptI,       Kpu    );  
+     Kuu_add.prod(KupKtpIKtt, KptIKpu);
+
+  Matrix<double> KupKtpIKtu(nne*nsd,nne*nsd);
+  KupKtpIKtu.prod(KupKtpI, Ktu); 
+  
+  Matrix<double> KutKptIKpu(nne*nsd,nne*nsd);
+  KutKptIKpu.prod(Kut,KptIKpu);
+  
+  for(int a=0; a<nne*nsd*nne*nsd; a++)
+    K[a] = Kuu.m_pdata[a] - KupKtpIKtu.m_pdata[a] + Kuu_add.m_pdata[a] - KutKptIKpu.m_pdata[a];
+    
+  return err;  
+}
+
+int condense_F_3F_to_1F(double *fe, int nne, int nsd, int Pno, int Vno,
+                        double *fu_in, double *ft_in, double *fp_in, 
+                        double *Kut_in, double *Kup_in, double *Ktp_in, double *Ktt_in,double *Kpt_in)
+{
+  int err = 0;
+  
+  Matrix<double> fu,ft,fp;
+	fu.use_reference(nne*nsd, 1, fu_in);	
+	ft.use_reference(Vno,     1, ft_in);	
+	fp.use_reference(Pno,     1, fp_in);	
+	
+  Matrix<double> Kut,Kup,Ktp,Ktt,Kpt;
+  Kut.use_reference(nne*nsd, Vno,  Kut_in);	
+  Kup.use_reference(nne*nsd, Pno,  Kup_in);	
+  Ktp.use_reference(Vno,     Pno,  Ktp_in);
+  Ktt.use_reference(Vno,     Vno,  Ktt_in); 	
+  Kpt.use_reference(Pno,     Vno,  Kpt_in);
+
+	Matrix<double> KptI(Vno,Pno), KtpI(Pno,Vno), fu_add(nne*nsd,1,0.0);
+
+  KtpI.inv(Ktp);
+  KptI.inv(Kpt);
+
+  Matrix<double> KupKtpI(nne*nsd,Vno), KupKtpIKtt(nne*nsd,Vno), KptIFp(Vno,1), KupKtpIFt(nne*nsd,1), KutKptIFp;
+  
+     KupKtpI.prod(Kup,        KtpI  );
+  KupKtpIKtt.prod(KupKtpI,    Ktt   );
+      KptIFp.prod(KptI,       fp    );
+      fu_add.prod(KupKtpIKtt, KptIFp);
+   KupKtpIFt.prod(KupKtpI,    ft);
+   KutKptIFp.prod(Kut,        KptIFp);
+              
+  for(int a=0; a<nne*nsd; a++)
+    fe[a] -=  (-fu.m_pdata[a] - fu_add.m_pdata[a] + KupKtpIFt.m_pdata[a] + KutKptIFp.m_pdata[a]);
+
+  return err;
+}

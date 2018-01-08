@@ -425,9 +425,7 @@ int stiffness_with_inertia(FEMLIB *fe,
    case TF:
     if(0<sol->alpha && sol->alpha<1.0)
     {
-      stiffmat_3f_el(Kuu_K.m_pdata,eid,ndofn,nne,fv->npres,fv->nVol,fe->nsd,x,y,z,
-                     grid->element,mat->hommat,nod,grid->node,dt,
-                     fv->sig,fv->eps,sup,sol->alpha,u.m_pdata);
+      stiffmat_3f_el(fe,Kuu_K.m_pdata,r_e,grid,mat,fv,sol->alpha,dt);
     }
     for(long a = 0; a<ndofe*ndofe; a++)
       Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];

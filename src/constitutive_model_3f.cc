@@ -129,11 +129,10 @@ template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
 template<class T> void Var_Carrier::compute_Lambda(double *Lambda,
                                       T &dM)
 {
-  TensorA<2> M(M_in), pFnp1(pFnp1_in); 
-  Tensor<2> pFnp1I,MI;
-  inv(pFnp1, pFnp1I);
+  TensorA<2> M(M_in); 
+  Tensor<2> MI;
   inv(M,MI);
-  *Lambda = pFnp1I(k,i)*MI(k,j)*dM(i,o)*pFnp1(o,j); 
+  *Lambda = MI(j,i)*dM(i,j); 
 }; 
    
 template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
@@ -146,7 +145,7 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
   
   TensorA<2> Grad_du(Grad_du_in), Grad_tu(Grad_tu_in), dMdu(dMdu_in), Phi_du(Phi_du_in);
   Tensor<2> eFnM = eFn(i,k)*M(k,j);
-  Tensor<2> dMPhiM = dMdu(i,k)*Phi_du(k,l)*M(l,j);
+  Tensor<2> dMPhiM = dMdu(k,i)*Phi_du(k,l)*M(l,j);
   Tensor<2> sdMPhiM;
   symm(dMPhiM, sdMPhiM);
 
@@ -168,7 +167,7 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
         
   Tensor<2> zeta = sGradGrad(i,j) - 2.0/3.0*Grad_tutFrI*sGrad_duFr(i,j)
                  + 2.0/9.0*Grad_tutFrI*Grad_dutFrI*FrFr(i,j)
-                 - 1.0/3.0*GduFrIGtuFrI*FrFr(i,j) - 2.0/3.0*Grad_dutFrI*sGrad_tuFr(i,j);
+                 + 1.0/3.0*GduFrIGtuFrI*FrFr(i,j) - 2.0/3.0*Grad_dutFrI*sGrad_tuFr(i,j);
 
   DPsi = factor*eFnM(k,i)*zeta(k,l)*eFnM(l,j) + 2.0*factor*sdMPhiM(i,j);
 };
@@ -227,7 +226,7 @@ int compute_Rt(FEMLIB *fe,
   int err = 0;
   
   TensorA<2> eSd(vc.eSd_in);
-  double factor = 2.0/3.0*pow(1.0/vc.tJr/vc.tJr/vc.theta_r, 2.0/3.0);
+  double factor = 1.0/3.0*pow(vc.tJr*vc.tJr*vc.theta_r, -1.0/3.0);
   double ZeSd = vc.Z(i,j)*eSd(i,j);
   
   for(int ia=0; ia<Vno; ia++)
@@ -285,7 +284,7 @@ int compute_Kuu(FEMLIB *fe,
           double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) + vc.P*vc.tJr*vc.tJn*Grad_du(i,j)*tFrI(i,j));
 
           const int lk_idx = idx_K(ia,ib,iw,ig,fe->nne,fe->nsd);                      
-          Kuu[lk_idx] += 1.0/vc.Jn*fe->detJxW*(PsiCPsi + pJrJn + DPsi_eSd + Lambda_Psi);
+          Kuu[lk_idx] += 1.0/vc.Jn*fe->detJxW*(PsiCPsi + pJrJn + DPsi_eSd - Lambda_Psi);
         }
       }
     }
@@ -315,7 +314,7 @@ int compute_Kup(FEMLIB *fe,
       for(int iw=0; iw<Pno; iw++)
       {
         int idx_up = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Pno,1);
-        Kup[idx_up] += 1.0/vc.Jn*fe->detJxW*Grad_du(i,j)*tFrI(i,j)*Np[iw];
+        Kup[idx_up] += 1.0/vc.Jn*vc.tJn*vc.tJr*fe->detJxW*Grad_du(j,i)*tFrI(i,j)*Np[iw];
       }
     }
   }
@@ -335,9 +334,7 @@ int compute_Kut(FEMLIB *fe,
   TensorA<4> Ld(vc.Ld_in);
   Tensor<2> tFrI;  
   err += inv(tFr, tFrI);
-         
-  double Jtheta = 2.0/3.0*pow(vc.tJr*vc.tJr*vc.theta_r, -1.0/3.0);
-  
+           
   for(int ia=0; ia<fe->nne; ia++)
   {
     for(int ib=0; ib<fe->nsd; ib++)
@@ -354,14 +351,14 @@ int compute_Kut(FEMLIB *fe,
         TensorA<2> dMdt(dMdt_all + id_wg);
         Tensor<2> MPhidMdt = M(k,i)*Phi_du(k,l)*dMdt(l,j);
         
-        Tensor<2> DPsi = Jtheta*Psi_du(i,j)/vc.factor
-                       + 2.0*vc.factor*0.5*(MPhidMdt(i,j) + MPhidMdt(j,i));
+        Tensor<2> DPsi = 2.0/(3.0*vc.theta_r)*Psi_du(i,j)
+                       + vc.factor*(MPhidMdt(i,j) + MPhidMdt(j,i));
         
         double DPsi_eSd = DPsi(i,j)*eSd(i,j);
         
         Tensor<2> Gamma_tu;
         vc.compute_Gamma(Gamma_tu,dMdt);
-        Tensor<2> DeSd = 0.5*Ld(i,j,k,l)*(Jtheta*vc.Z(k,l) + 2.0*vc.factor*Gamma_tu(k,l));
+        Tensor<2> DeSd = Ld(i,j,k,l)*(1.0/3.0*vc.factor/vc.theta_r*vc.Z(k,l) + vc.factor*Gamma_tu(k,l));
         
         double PsiDeSd = Psi_du(i,j)*DeSd(i,j);
         
@@ -415,8 +412,8 @@ int compute_Ktu(FEMLIB *fe,
         TensorA<2> dMdu(dMdu_all + id_wg);
         vc.compute_Gamma(Gamma_tu,dMdu);
         
-        double DZ_eSd = (2.0*Jtheta/vc.theta_r*Psi_tu(i,j) + 2.0*Jtheta*Gamma_tu(i,j))*eSd(i,j);
-        double ZCPsi = Jtheta*vc.Z(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + Jtheta*Gamma_tu(k,l));
+        double DZ_eSd = (2.0/vc.theta_r*Psi_tu(i,j) + 2.0*Jtheta*Gamma_tu(i,j))*eSd(i,j);
+        double ZCPsi = Jtheta*vc.Z(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + vc.factor*Gamma_tu(k,l));
         double JMdMdu = eJnJM*(vc.d2Ud_theta2*vc.theta_r*eJnJM + vc.dUd_theta)*MI(j,i)*dMdu(i,j);
 
         double Lambda;
@@ -483,7 +480,7 @@ int compute_Ktt(FEMLIB *fe,
       TensorA<2> dMdt(dMdt_all + id_wg);
       Tensor<2> Gamma_tt;
       vc.compute_Gamma(Gamma_tt,dMdt);
-      double ZGamm_eSd = Jtheta*(-1.0/3.0*vc.Z(i,j) + 2.0*Gamma_tt(i,j))*eSd(i,j);
+      double ZGamm_eSd = Jtheta*(-1.0/3.0/vc.theta_r*vc.Z(i,j) + 2.0*Gamma_tt(i,j))*eSd(i,j);
       
       Tensor<2> DeSd = 0.5*Ld(i,j,k,l)*(Jtheta*vc.Z(k,l) + 2.0*vc.factor*Gamma_tt(k,l));
       double ZDeSd = Jtheta*vc.Z(i,j)*DeSd(i,j);
@@ -497,141 +494,54 @@ int compute_Ktt(FEMLIB *fe,
       Lambda_ZeSd += Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
       
       int idx_tt = idx_K_gen(ia,0,iw,0,Vno,1,Vno,1);
-      Ktt[idx_tt] += 1.0/vc.Jn*fe->detJxW*Nt[ia]*Nt[iw]*(ZGamm_eSd + ZDeSd + JUdMdt - Lambda_ZeSd);
+      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*(ZGamm_eSd + ZDeSd + JUdMdt - Lambda_ZeSd);
     }
   }
   return err;
 }
 
-
-int condense_K_3F_to_1F(double *K, int nne, int nsd, int Pno, int Vno,
-                        double *Kuu_in, double *Kut_in, double *Kup_in,
-                        double *Ktu_in, double *Ktt_in, double *Ktp_in,
-                        double *Kpu_in, double *Kpt_in, double *Kpp_in)                               
-{
-  int err = 0;
-  Matrix<double> Kuu, Kut, Kup;
-  Matrix<double> Ktu, Ktt, Ktp;  
-  Matrix<double> Kpu, Kpt, Kpp;  
-  
-	Kuu.use_reference(nne*nsd, nne*nsd, Kuu_in);
-	Ktu.use_reference(Vno,     nne*nsd, Ktu_in);
-	Kpu.use_reference(Pno,     nne*nsd, Kpu_in);
-	Kut.use_reference(nne*nsd, Vno,     Kut_in);
-	Ktt.use_reference(Vno,     Vno,     Ktt_in);
-	Kpt.use_reference(Pno,     Vno,     Kpt_in);	
-	Kup.use_reference(nne*nsd, Pno,     Kup_in);
-	Ktp.use_reference(Vno,     Pno,     Ktp_in);
-	Kpp.use_reference(Pno,     Pno,     Kpp_in);	
-   
-
-	Matrix<double> KptI(Vno, Pno), KtpI(Pno, Vno), Kuu_add(nne*nsd,nne*nsd);
-	
-	KptI.inv(Kpt);
-	KtpI.inv(Ktp);
-
-  Matrix<double> KupKtpI(nne*nsd,Vno), KupKtpIKtt(nne*nsd,Vno), KptIKpu(Vno,nne*nsd);
-           
-     KupKtpI.prod(Kup,KtpI);
-  KupKtpIKtt.prod(KupKtpI,    Ktt    );  
-     KptIKpu.prod(KptI,       Kpu    );  
-     Kuu_add.prod(KupKtpIKtt, KptIKpu);
-
-  Matrix<double> KupKtpIKtu(nne*nsd,nne*nsd);
-  KupKtpIKtu.prod(KupKtpI, Ktu); 
-  
-  Matrix<double> KutKptIKpu(nne*nsd,nne*nsd);
-  KutKptIKpu.prod(Kut,KptIKpu);
-  
-  for(int a=0; a<nne*nsd*nne*nsd; a++)
-    K[a] = Kuu.m_pdata[a] - KupKtpIKtu.m_pdata[a] + Kuu_add.m_pdata[a] - KutKptIKpu.m_pdata[a];
-    
-  return err;  
-}
-
-int condense_F_3F_to_1F(double *fe, int nne, int nsd, int Pno, int Vno,
-                        double *fu_in, double *ft_in, double *fp_in, 
-                        double *Kut_in, double *Kup_in, double *Ktp_in, double *Ktt_in,double *Kpt_in)
-{
-  int err = 0;
-  
-  Matrix<double> fu,ft,fp;
-	fu.use_reference(nne*nsd, 1, fu_in);	
-	ft.use_reference(Vno,     1, ft_in);	
-	fp.use_reference(Pno,     1, fp_in);	
-	
-  Matrix<double> Kut,Kup,Ktp,Ktt,Kpt;
-  Kut.use_reference(nne*nsd, Vno,  Kut_in);	
-  Kup.use_reference(nne*nsd, Pno,  Kup_in);	
-  Ktp.use_reference(Vno,     Pno,  Ktp_in);
-  Ktt.use_reference(Vno,     Vno,  Ktt_in); 	
-  Kpt.use_reference(Pno,     Vno,  Kpt_in);
-
-	Matrix<double> KptI(Vno,Pno), KtpI(Pno,Vno), fu_add(nne*nsd,1,0.0);
-
-  KtpI.inv(Ktp);
-  KptI.inv(Kpt);
-
-  Matrix<double> KupKtpI(nne*nsd,Vno), KupKtpIKtt(nne*nsd,Vno), KptIFp(Vno,1), KupKtpIFt(nne*nsd,1), KutKptIFp;
-  
-     KupKtpI.prod(Kup,        KtpI  );
-  KupKtpIKtt.prod(KupKtpI,    Ktt   );
-      KptIFp.prod(KptI,       fp    );
-      fu_add.prod(KupKtpIKtt, KptIFp);
-   KupKtpIFt.prod(KupKtpI,    ft);
-   KutKptIFp.prod(Kut,        KptIFp);
-              
-  for(int a=0; a<nne*nsd; a++)
-    fe[a] -=  (-fu.m_pdata[a] + fu_add.m_pdata[a] - KupKtpIFt.m_pdata[a] - KutKptIFp.m_pdata[a]);
-
-  return err;
-}
-
-
-int compute_d_theta_dP(double *d_theta, double *dP, double *du_in, 
+int compute_d_theta_dP(double *d_theta_in, double *dP_in, double *du_in, 
                        int nne, int nsd, int Pno, int Vno,
                        double *fu_in, double *ft_in, double *fp_in, 
                        double *Kpu_in, double *Ktu_in, double *Ktp_in, double *Ktt_in,double *Kpt_in)
 {
   int err = 0;
   
-  Matrix<double> du;
+  Matrix<double> d_theta, dP, du,ft,fp,Kpu,Ktu,Ktp,Ktt,Kpt;
   du.use_reference(nne*nsd, 1, du_in);	
-  	
-  Matrix<double> fu,ft,fp;
-	fu.use_reference(nne*nsd, 1, fu_in);	
-	ft.use_reference(Vno,     1, ft_in);	
-	fp.use_reference(Pno,     1, fp_in);
-  
-  Matrix<double> Kpu,Ktu,Ktp,Ktt,Kpt;
+
+  d_theta.use_reference(Vno,1, d_theta_in);
+	     dP.use_reference(Pno,1, dP_in);  	
+
+ 	 ft.use_reference(Vno,       1, ft_in);
+	 fp.use_reference(Pno,       1, fp_in);
   Kpu.use_reference(Pno, nne*nsd, Kpu_in);
   Ktu.use_reference(Vno, nne*nsd, Ktu_in);  
   Ktp.use_reference(Vno,     Pno, Ktp_in);
   Ktt.use_reference(Vno,     Vno, Ktt_in);   
   Kpt.use_reference(Pno,     Vno, Kpt_in);
 
-	Matrix<double> KptI(Vno,Pno), KptIFp(Vno,1), KptIKpu_du(Vno,1);
-  KptI.inv(Kpt);
-  
-  KptIFp.prod(KptI,fp);
-  KptIKpu_du.prod(KptI, Kpu, du);
-              
-  for(int ia=0; ia<Vno; ia++)
-    d_theta[ia] = -KptIFp.m_pdata[ia] - KptIKpu_du.m_pdata[ia];
+	Matrix<double> KptI;
+  KptI.inv(Kpt); 
+
+  Matrix<double> Kpu_du;
+  Kpu_du.prod(Kpu,du);
+  Kpu_du.add(fp);
+
+  d_theta.prod(KptI,Kpu_du);
+  d_theta.prod(-1.0);   
         
-	Matrix<double> KtpI(Pno,Vno), KtpIFt(Pno, 1), KtpIKtu_du(Pno,1);
-	Matrix<double> KtpIKtt_d_theta(Pno, 1);
+	Matrix<double> KtpI, KtpIFt, KtpIKtu_du;
+	Matrix<double> KtpIKtt_d_theta;
   KtpI.inv(Ktp);
   
   KtpIFt.prod(KtpI, ft);
   KtpIKtu_du.prod(KtpI, Ktu,du);
 
-  Matrix<double> d_t;
-  d_t.use_reference(Vno, 1, d_theta);
-  KtpIKtt_d_theta.prod(KtpI, Ktt, d_t);  
+  KtpIKtt_d_theta.prod(KtpI, Ktt, d_theta);  
   
-  for(int ia=0; ia<Pno; ia++)
-    dP[ia] = -KtpIFt.m_pdata[ia] - KtpIKtu_du.m_pdata[ia] - KtpIKtt_d_theta.m_pdata[ia];
+  for(int ia=1; ia<=dP.m_row; ia++)
+    dP(ia) = -KtpIFt(ia) - KtpIKtu_du(ia) - KtpIKtt_d_theta(ia);
     
   return err;
 }

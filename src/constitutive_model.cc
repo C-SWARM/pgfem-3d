@@ -38,6 +38,7 @@
 #include "utils.h"
 #include <ttl/ttl.h>
 #include <algorithm>
+#include "condense.h"
 
 using pgfem3d::Solver;
 
@@ -1844,14 +1845,14 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
   int Vno   = fv->nVol;
   SUPP sup = load->sups[mp_id];
 
-  Matrix<double> u(nne,nsd);
+  Matrix<double> u(nne*nsd, 1);
   Matrix<double> dMdu(DIM_3x3*nne*nsd,1);
   Matrix<double> dMdt(DIM_3x3*Vno,1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-      u(a+1,b+1) = r_e[a*ndofn+b];
+      u.m_pdata[a*nsd+b] = r_e[a*ndofn+b];
   }
 
   Tensor<2,3,double> Fr, Fnp1 = {},pFnp1,
@@ -1916,6 +1917,7 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
 
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *mp = m->param;
+    ELASTICITY *elasticity = mp->cm_elast;
 
     // --> update deformations due to coupled physics
     if(is_it_couple_w_thermal >= 0)
@@ -2015,8 +2017,18 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
     err += mp->compute_dev_tangent(m,ctx,Ld.data);
 
     double dUd_theta, d2Ud_theta2;
-    err += mp->compute_dudj(m,ctx,&dUd_theta);
-    err += mp->compute_d2udj2(m,ctx,&d2Ud_theta2);
+    
+    double eJ = ttl::det(eFn);
+    double MJ = ttl::det(M);
+    double theta_e = theta_r*eJ*MJ;
+    const int hmat_id = (grid->element[eid]).mat[2];
+    const double kappa = mat->hommat[hmat_id].E/(3.*(1.-2.*mat->hommat[hmat_id].nu));
+
+    elasticity->compute_dudj(&dUd_theta, theta_e);
+    elasticity->compute_d2udj2(&d2Ud_theta2, theta_e);
+    dUd_theta = dUd_theta*kappa;
+    d2Ud_theta2 = d2Ud_theta2*kappa;
+
     // <-- update elasticity part
 
     err += mp->destroy_ctx(&ctx);
@@ -2048,13 +2060,27 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
     for(int ib=1; ib<=Pno; ib++)
       Kpu(ib,ia) = Kup(ia,ib);
 
-
   err += condense_K_3F_to_1F(lk, nne, nsd, Pno, Vno,
                              Kuu.m_pdata, Kut.m_pdata, Kup.m_pdata,
                              Ktu.m_pdata, Ktt.m_pdata, Ktp.m_pdata,
                              Kpu.m_pdata, Kpt.m_pdata, NULL);
 
+if(eid==-1)
+{
+  printf("this is running\n");
+Kuu.print("Kuu");
+Kut.print("Kut");
+Kup.print("Kup");
+Ktu.print("Ktu");
+Ktt.print("Ktt");
+Ktp.print("Ktp");
+Kpu.print("Kpu");
+Kpt.print("Kpt");
 
+//  Matrix<double> k;
+//  k.use_reference(nne*nsd,nne*nsd, lk);
+//  k.print("k");
+}
   // check diagonal for zeros/nans
   for (int a = 0; a < nne; a++) {
     for (int b = 0; b < nsd; b++) {
@@ -2590,13 +2616,13 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
   int Vno   = fv->nVol;
   SUPP sup = load->sups[mp_id];
 
-  Matrix<double> u(nne,nsd);
+  Matrix<double> u(nne*nsd, 1);
   Matrix<double> dMdt(DIM_3x3*Vno,1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-      u(a+1,b+1) = r_e[a*ndofn+b];
+      u.m_pdata[a*nsd+b] = r_e[a*ndofn+b]; 
   }
 
   Tensor<2,3,double> Fr, Fnp1 = {},pFnp1,
@@ -2660,6 +2686,7 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
 
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *mp = m->param;
+    ELASTICITY *elasticity = mp->cm_elast;
 
     // --> update deformations due to coupled physics
     if(is_it_couple_w_thermal >= 0)
@@ -2768,9 +2795,19 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
     err += mp->compute_dev_stress(m,ctx,eSd.data);
     err += mp->compute_dev_tangent(m,ctx,Ld.data);
 
+    double eJ = ttl::det(eFn);
+    double MJ = ttl::det(M);
+    double theta_e = theta_r*eJ*MJ;
     double dUd_theta, d2Ud_theta2;
-    err += mp->compute_dudj(m,ctx,&dUd_theta);
-    err += mp->compute_d2udj2(m,ctx,&d2Ud_theta2);
+    const int hmat_id = (grid->element[eid]).mat[2];
+    const double kappa = mat->hommat[hmat_id].E/(3.*(1.-2.*mat->hommat[hmat_id].nu));
+    
+//    double kappa = elasticity->mat->kappa;
+
+    elasticity->compute_dudj(&dUd_theta, theta_e);
+    elasticity->compute_d2udj2(&d2Ud_theta2, theta_e);
+    dUd_theta = dUd_theta*kappa;
+    d2Ud_theta2 = d2Ud_theta2*kappa;
     // <-- update elasticity part
 
     err += mp->destroy_ctx(&ctx);
@@ -2798,15 +2835,30 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
     err += compute_Ktt(fe, Ktt.m_pdata, dMdt.m_pdata, vc, Vno, Nt.m_pdata);
   }
 
-  for(int ia=1; ia<=Vno; ia++)
-    for(int ib=1; ib<=Pno; ib++)
-      Kpt(ib,ia) = Ktp(ia,ib);
+  Kpt.trans(Ktp);
 
   err += condense_F_3F_to_1F(f, nne, nsd, Pno, Vno,
                              Ru.m_pdata, Rt.m_pdata, Rp.m_pdata,
                              Kut.m_pdata, Kup.m_pdata, Ktp.m_pdata, Ktt.m_pdata, Kpt.m_pdata);
 
-
+  int myrank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  if(eid==-1 && myrank==0)
+  {
+    Kut.print("Kut");
+    Kup.print("Kup");
+    Ktp.print("Ktp");
+    Ktt.print("Ktt");
+    Kpt.print("Kpt");
+    u.print("u");
+    Ru.print("Ru");
+    Rt.print("Rt");
+    Rp.print("Rp");
+    Matrix<double> ff;
+    ff.use_reference(nne*nsd, 1, f);
+    ff.print("f");
+    exit(0);
+  }
 
   return err;
 }
@@ -2936,8 +2988,8 @@ int constitutive_model_update_NR(Grid *grid,
     {
       for(int b=0; b<nsd;b++)
       {
-        du(a+1,b+1) = dr.m_pdata[a*ndofn+b];
-        u(a+1,b+1) = r_e.m_pdata[a*ndofn+b];
+        du.m_pdata[a*nsd+b] = dr.m_pdata[a*ndofn+b];
+        u.m_pdata[a*nsd+b] = r_e.m_pdata[a*ndofn+b];
       }
     }
 
@@ -3001,6 +3053,7 @@ int constitutive_model_update_NR(Grid *grid,
 
       // get a shortened pointer for simplified CM function calls
       const Model_parameters *mp = m->param;
+      ELASTICITY *elasticity = mp->cm_elast;
 
       err += mp->get_F(m,Fnp1.data,  2);
       err += mp->get_pF(m,pFnp1.data,2);
@@ -3092,9 +3145,19 @@ int constitutive_model_update_NR(Grid *grid,
       err += mp->compute_dev_stress(m,ctx,eSd.data);
       err += mp->compute_dev_tangent(m,ctx,Ld.data);
 
+      double eJ = ttl::det(eFn);
+      double MJ = ttl::det(M);
+      double theta_e = theta_r*eJ*MJ;
       double dUd_theta, d2Ud_theta2;
-      err += mp->compute_dudj(m,ctx,&dUd_theta);
-      err += mp->compute_d2udj2(m,ctx,&d2Ud_theta2);
+      const int hmat_id = (grid->element[eid]).mat[2];
+      const double kappa = mat->hommat[hmat_id].E/(3.*(1.-2.*mat->hommat[hmat_id].nu));
+    
+//    double kappa = elasticity->mat->kappa;
+
+      elasticity->compute_dudj(&dUd_theta, theta_e);
+      elasticity->compute_d2udj2(&d2Ud_theta2, theta_e);
+      dUd_theta = dUd_theta*kappa;
+      d2Ud_theta2 = d2Ud_theta2*kappa;
       // <-- update elasticity part
 
       err += (m->param)->destroy_ctx(&ctx);
@@ -3114,7 +3177,6 @@ int constitutive_model_update_NR(Grid *grid,
 
       err += compute_Ktu(&fe, Ktu.m_pdata, dMdu.m_pdata, vc, Vno, Nt.m_pdata);
       err += compute_Kup(&fe, Kpu.m_pdata, vc, Pno, Np.m_pdata);
-      err += compute_Ktu(&fe, Ktu.m_pdata, dMdu.m_pdata, vc, Vno, Nt.m_pdata);
       err += compute_Ktp(&fe, Ktp.m_pdata, vc, Vno, Nt.m_pdata, Pno, Np.m_pdata);
       err += compute_Ktt(&fe, Ktt.m_pdata, dMdt.m_pdata, vc, Vno, Nt.m_pdata);
     }

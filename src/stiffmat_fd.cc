@@ -392,7 +392,6 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
     include_inertia = 0;
   }
 
-  int nVol = N_VOL_TREE_FIELD;
   SUPP sup = load->sups[mp_id];
 
   double *x = (fe->temp_v).x.m_pdata;
@@ -421,8 +420,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                               mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
       break;
      case TF:
-      stiffmat_3f_el(lk,eid,fv->ndofn,fe->nne,fv->npres,nVol,grid->nsd,
-                     x,y,z,grid->element,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,-1.0,r_e);
+      stiffmat_3f_el(fe,lk,r_e,grid,mat,fv,-1,dt);
       break;
      case CM:  // intened to flow
      case CM3F:
@@ -523,6 +521,8 @@ static int el_stiffmat_MP(int eid,
   FEMLIB fe;
   if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
     fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,true);
+  else if(opts->analysis_type == TF)
+    fe.initialization(eid,grid->element,grid->node,1,total_Lagrangian);
   else
     fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
