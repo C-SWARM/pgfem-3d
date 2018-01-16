@@ -71,6 +71,8 @@ class ThreeFieldVariables
   Matrix<double> dP, ddP;
   
   ThreeFieldVariables(){is_for_temporal=false;};
+  
+  /// constructor
   void construct(const int ne,
                  const int Vno,
                  const int Pno,
@@ -93,6 +95,10 @@ class ThreeFieldVariables
       ddP.initialization(  ne,Pno,0.0);        
     }
   };
+  
+  /// update variable at n-1 from n
+  ///                 at n from n+1
+  /// and reset increments to zeros
   void update_for_next_time_step(void)
   {
     if(is_for_temporal)
@@ -115,6 +121,8 @@ class ThreeFieldVariables
     }    
   };
   
+  /// update dP and dV (increments) from ddP and ddV(increments of increments)
+  /// \param[in] gamma if not converged smaller gamma will be applied, default = 1.0
   void update_increments_from_NR(double gamma = 1.0)
   {
     if(is_for_temporal)
@@ -133,6 +141,7 @@ class ThreeFieldVariables
     }     
   };
   
+  /// update P_np1 and V_np1 from NR solution
   void update_np1_from_increments(void)
   {
     if(is_for_temporal)
@@ -145,6 +154,7 @@ class ThreeFieldVariables
       P_np1.m_pdata[ia] += dP.m_pdata[ia];
   };
   
+  /// if not converged, return to 0
   void reset(void)
   {
     if(is_for_temporal)
