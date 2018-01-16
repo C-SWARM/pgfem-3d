@@ -200,10 +200,6 @@ static int fd_res_elem_MP(double *be,
 
   if(include_inertia) {
     err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
-
-    /*    err += residuals_w_inertia_el(be,eid,fe.nne,fv->ndofn,fv->npres,fv->nVol,
-          ndofe,r_e,grid->node,elem,mat->hommat,sup,fv->eps,fv->sig,
-          nod,cn,x,y,z,dts,t,opts,sol->alpha,fv->u_n,fv->u_nm1);*/
   } else {
     /* Residuals on element */
     switch(opts->analysis_type) {

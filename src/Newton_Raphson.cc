@@ -296,6 +296,9 @@ int reset_variables_for_NR(Grid *grid,
       break;
      default: break;
     }
+    if(opts->analysis_type == CM3F || opts->analysis_type == TF)
+      fv->tf.reset();
+      
     /* reset damage variables */
     for(int ia=0; ia<grid->ne; ia++)
     {
@@ -560,8 +563,7 @@ int update_values_for_next_NR(Grid *grid,
                         fv->sig,mat->hommat,fv->d_u,fv->u_np1,mpi_comm,mp_id);
          break;
         case TF:
-         update_3f_state_variables(grid->ne,fv->ndofn,fv->npres,fv->d_u,fv->u_np1,grid->node,grid->element,mat->hommat,load->sups[mp_id],fv->eps,fv->sig,
-                                   dt,t,mpi_comm,mp_id);
+         update_3f_output_variables(grid,mat,fv,load,mp_id,dt,t,mpi_comm);
          break;
         case CM:
           {
@@ -603,7 +605,7 @@ int update_values_for_next_NR(Grid *grid,
       {
         fv->u_nm1[a*fv->ndofn + b] = fv->u_n[a*fv->ndofn + b];
         long id = grid->node[a].id_map[mp_id].id[b];
-        if(opts->analysis_type==CM && opts->cm==UPDATED_LAGRANGIAN)
+        if((opts->analysis_type==CM || opts->analysis_type==CM3F) && opts->cm==UPDATED_LAGRANGIAN)
           // Updated Lagrangian
         {
           if(id>0)
@@ -652,23 +654,10 @@ int update_values_for_next_NR(Grid *grid,
       }
     }
 
-    if(opts->analysis_type==TF)
+    if(opts->analysis_type==TF || opts->analysis_type==CM3F)
     {
-      int nVol = 1;
-      for (int e=0;e<grid->ne;e++)
-      {
-        if(fv->npres==1)
-        {
-          fv->eps[e].d_T[2] = fv->eps[e].d_T[1];
-          fv->eps[e].d_T[1] = fv->eps[e].d_T[0];
-
-        }
-        for(int a=0; a<nVol; a++)
-        {
-          fv->eps[e].T[a*3+2] = fv->eps[e].T[a*3+1];
-          fv->eps[e].T[a*3+1] = fv->eps[e].T[a*3+0];
-        }
-      }
+      fv->tf.update_np1_from_increments();  
+      fv->tf.update_for_next_time_step();
     }
   }
   // Update time steps
@@ -912,7 +901,7 @@ long Newton_Raphson_with_LS(double *solve_time,
                             fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
       break;
      case TF:
-        update_3f(grid,mat,fv,load,opts,mp,mp_id,dt,sol->alpha);
+        update_3f_NR(grid,mat,fv,load,opts,mp_id,dt,sol->alpha);
       break;
      case CM3F:
       constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dt, sol->alpha);
@@ -1112,6 +1101,10 @@ long Newton_Raphson_with_LS(double *solve_time,
       fv->d_u[i] += (sol->gama)*fv->dd_u[i];
       fv->dd_u[i] *= sol->gama;
     }
+    
+    if((mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
+       (opts->analysis_type == TF || opts->analysis_type == CM3F))
+       fv->tf.update_increments_from_NR(sol->gama);
 
     if (myrank == 0){
       getrusage (RUSAGE_SELF,usage);
@@ -1607,7 +1600,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
             VTK_print_master(opts->opath,fname,sol->n_step,com->nproc,opts);
           }
           VTK_print_vtu(opts->opath,fname,sol->n_step,myrank,grid->ne,grid->nn,grid->node,
-                        grid->element,load->sups[mp_id],fv->u_np1,fv->sig,fv->eps,opts,mp_id);
+                        grid->element,load->sups[mp_id],fv->u_np1,fv->tf.P_np1.m_pdata,fv->tf.V_np1.m_pdata,fv->sig,fv->eps,opts,mp_id);
         }
       }
 
@@ -1749,6 +1742,21 @@ int save_field_variables_to_temporal(Grid *grid,
 
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
     err += constitutive_model_save_state_vars_to_temporal(FV + mp_id, grid);
+    
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
+  {
+    for(int ia=0; ia<(grid->ne)*(fv->nVol); ia++)
+    {
+      fv->temporal->tf.V_nm1.m_pdata[ia] = fv->tf.V_nm1.m_pdata[ia];
+      fv->temporal->tf.V_n.m_pdata[ia]   = fv->tf.V_n.m_pdata[ia];      
+    }
+    
+    for(int ia=0; ia<(grid->ne)*(fv->npres); ia++)
+    {
+      fv->temporal->tf.P_nm1.m_pdata[ia] = fv->tf.P_nm1.m_pdata[ia];
+      fv->temporal->tf.P_n.m_pdata[ia]   = fv->tf.P_n.m_pdata[ia];
+    }    
+  }    
 
   return err;
 }
@@ -1799,6 +1807,21 @@ int reset_field_variables_using_temporal(Grid *grid,
 
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
     err += constitutive_model_reset_state_using_temporal(FV + mp_id, grid);
+    
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
+  {
+    for(int ia=0; ia<(grid->ne)*(fv->nVol); ia++)
+    {
+      fv->tf.V_nm1.m_pdata[ia] = fv->temporal->tf.V_nm1.m_pdata[ia];
+      fv->tf.V_n.m_pdata[ia] = fv->temporal->tf.V_n.m_pdata[ia];      
+    }
+    
+    for(int ia=0; ia<(grid->ne)*(fv->npres); ia++)
+    {
+      fv->tf.P_nm1.m_pdata[ia] = fv->temporal->tf.P_nm1.m_pdata[ia];
+      fv->tf.P_n.m_pdata[ia] = fv->temporal->tf.P_n.m_pdata[ia];      
+    }    
+  }
 
   return err;
 }
@@ -2257,6 +2280,10 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
               FV[mp_id].f_defl[ib] = 0.0;
               FV[mp_id].f[ib]      = 0.0;
             }
+            
+            if((mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
+              (opts->analysis_type == TF || opts->analysis_type == CM3F))
+              FV[mp_id].tf.reset();
           }
 
           SOL[mp_id].is_subdivided = 0;

@@ -113,42 +113,29 @@ int main(int argc,char *argv[])
 
 
   double *u = aloc1(nn*ndofn);
-  double *P, *V;
+  double *P = NULL;
+  double *V = NULL;
 
   int nVol = 1;
   int npres = 1;
 
   if(options.analysis_type==TF)
   {
-    if(elem[0].toe==10 && ndofn==3)
-    {
-      npres = 1;
-      nVol = 1;
-    }
-
     P = (double *) malloc(sizeof(double)*ne*npres);
     V = (double *) malloc(sizeof(double)*ne*nVol);
     read_VTK_file4TF(filename, u, P, V);
-    for (int e=0;e<ne;e++)
-    {
-      if(npres==1)
-      {
-        eps[e].d_T   = PGFEM_calloc(double, 3);
-        eps[e].d_T[0] = P[e];
-      }
-
-      eps[e].T   = PGFEM_calloc(double, nVol*3);
-      eps[e].T[0] = V[e];
-    }
-
-    free(P);
-    free(V);
   }
   else
     read_VTK_file(filename, u);
 
   double *GS = aloc1(9);
-  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,ndofn,mpi_comm, &options);
+  post_processing_compute_stress(GS,elem,hommat,ne,npres,node,eps,u,V,ndofn,mpi_comm, &options);
+
+  if(options.analysis_type==TF)
+  {
+    free(P);
+    free(V);
+  }
 
   FILE *fp = fopen("stress.out", "w");
   fprintf(fp, "%e\n", GS[1]);

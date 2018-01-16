@@ -910,10 +910,10 @@ int single_scale_main(int argc,char *argv[])
           free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat);
-          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1,&options);
         }
         else
-          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0,&options);
 
         /* alocation of pressure variables */
         switch(options.analysis_type){
@@ -990,40 +990,16 @@ int single_scale_main(int argc,char *argv[])
         build_crystal_plast (grid.ne,grid.element,fv[ia].sig,fv[ia].eps,crpl,
                              options.analysis_type,options.plc);
 
-        /* \/ initialized element varialbes */
-        if(options.analysis_type==TF)
-        {
-          for (int e=0;e<grid.ne;e++)
-          {
-            if(fv[ia].npres==1)
-            {
-              fv[ia].eps[e].d_T = PGFEM_calloc(double, 3);
-              for(int a=0; a<3; a++)
-                fv[ia].eps[e].d_T[a] = 0.0;
-            }
-
-            fv[ia].eps[e].T = PGFEM_calloc(double, (fv[ia].nVol)*3);
-            for(int a=0; a<(fv[ia].nVol)*3; a++)
-              fv[ia].eps[e].T[a] = 1.0;
-          }
-        }
-
-        if(options.analysis_type==CM3F)
-        {
-          fv[ia].Pnp1.initialization(grid.ne,fv[ia].npres,0.0);
-          fv[ia].Pnm1.initialization(grid.ne,fv[ia].npres,0.0);
-          fv[ia].Pn.initialization(  grid.ne,fv[ia].npres,0.0);
-
-          fv[ia].Vnp1.initialization(grid.ne,fv[ia].nVol,1.0);
-          fv[ia].Vnm1.initialization(grid.ne,fv[ia].nVol,1.0);
-          fv[ia].Vn.initialization(  grid.ne,fv[ia].nVol,1.0);
-
-        }
+        // \/ initialized element varialbes
+        if(options.analysis_type==CM3F || options.analysis_type==TF)
+          fv[ia].tf.construct(grid.ne,fv[ia].npres,fv[ia].nVol);
+                   
+        // /\ initialized element varialbes */        
       }
       else
-        err += prepare_temporal_field_varialbes(&fv[ia],&grid,0);
+        err += prepare_temporal_field_varialbes(&fv[ia],&grid,0,&options);
     }
-    /* /\ initialized element varialbes */
+
 
     //----------------------------------------------------------------------
     // set writting output options for Multiphysics
@@ -1341,9 +1317,9 @@ int single_scale_main(int argc,char *argv[])
   {
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL &&
        (options.analysis_type == CM || options.analysis_type == CM3F))
-      err += destory_temporal_field_varialbes(&fv[ia],1);
+      err += destory_temporal_field_varialbes(&fv[ia],1,&options);
     else
-      err += destory_temporal_field_varialbes(&fv[ia],0);
+      err += destory_temporal_field_varialbes(&fv[ia],0,&options);
 
     err += destruct_field_varialbe(&fv[ia], &grid, &options, &mp, ia);
   }

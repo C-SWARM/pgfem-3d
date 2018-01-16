@@ -212,6 +212,8 @@ void VTK_print_vtu(const char *path,
                    Element *elem,
                    SUPP sup,
                    double *r,
+                   double *P,
+                   double *V,
                    SIG *sig,
                    EPS *eps,
                    const PGFem3D_opt *opts,
@@ -234,7 +236,7 @@ void VTK_print_vtu(const char *path,
 #ifndef NO_VTK_LIB
   /* USE VTK LIBRARY FOR OUTPUT */
   void *grid = PGFem3D_to_vtkUnstructuredGrid(nn,ne,node,elem,sup,sig,
-                                              eps,r,opts->analysis_type);
+                                              eps,r,P,V,opts->analysis_type);
   /* ASCII */
   /* PGFem3D_write_vtkUnstructuredGrid(filename,grid,1); */
   /* BINARY */
@@ -291,9 +293,6 @@ void VTK_print_vtu(const char *path,
 
   /* Pressure */
   switch(opts->analysis_type){
-   case TF:
-    if(elem[0].toe==10)
-      break;
    case STABILIZED:
    case MINI:
    case MINI_3F:
@@ -413,27 +412,6 @@ void VTK_print_vtu(const char *path,
     PGFEM_fprintf(out,"%12.12e\n",eps[i].il[0].Y);
   }
   PGFEM_fprintf(out,"</DataArray>\n");
-
-  if(opts->analysis_type==TF && elem[0].toe==10)
-  {
-    /* Pressure */
-    PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Pressure\" format=\"ascii\">\n");
-    for (int i=0; i<ne; i++){
-      PGFEM_fprintf(out,"%12.12e\n",eps[i].d_T[0]);
-    }
-    PGFEM_fprintf(out,"</DataArray>\n");
-  }
-
-  if(opts->analysis_type==TF)
-  {
-    /* Volume */
-    PGFEM_fprintf(out,"<DataArray type=\"Float64\" Name=\"TF_Volume\" format=\"ascii\">\n");
-    for (int i=0; i<ne; i++){
-      PGFEM_fprintf(out,"%12.12e\n",eps[i].T[0]);
-    }
-    PGFEM_fprintf(out,"</DataArray>\n");
-  }
-
 
   /* End Cell data */
   PGFEM_fprintf(out,"</CellData>\n");
@@ -1158,13 +1136,12 @@ int VTK_write_data_Nodal_pressure(FILE *out,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;
-  Element *elem = grid->element;
   Node *node = grid->node;
   int mp_id = pmr->mp_id;
   /* Pressure */
   switch(opts->analysis_type){
    case TF:
-    if(elem[0].toe==10)
+    if(FV[mp_id].npres == 1)
       break;
    case STABILIZED:
    case MINI:
@@ -1177,7 +1154,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
     err += VTK_write_multiphysics_DataArray_footer(out);
     break;
    default:
-    break;
+    break;    
   }
   return err;
 }
@@ -1550,14 +1527,12 @@ int VTK_write_data_ElementPressure(FILE *out,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
-  EPS *eps = FV[pmr->mp_id].eps;
-  Element *elem = grid->element;
 
-  if(opts->analysis_type==TF && elem[0].toe==10)
+  if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
     err += VTK_write_multiphysics_DataArray_header(out, pmr);
-    for (int i=0; i<grid->ne; i++)
-      PGFEM_fprintf(out,"%12.12e\n",eps[i].d_T[0]);
+    for (int ia=1; ia<=grid->ne; ia++)
+      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.P_np1(ia, 1));
 
     err += VTK_write_multiphysics_DataArray_footer(out);
   }
@@ -1587,13 +1562,12 @@ int VTK_write_data_ElementVolume(FILE *out,
                                  const PGFem3D_opt *opts)
 {
   int err = 0;
-  EPS *eps = FV[pmr->mp_id].eps;
-
-  if(opts->analysis_type==TF)
+ 
+  if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
     err += VTK_write_multiphysics_DataArray_header(out, pmr);
-    for (int i=0; i<grid->ne; i++)
-      PGFEM_fprintf(out,"%12.12e\n",eps[i].T[0]);
+    for (int ia=1; ia<=grid->ne; ia++)
+      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.V_np1(ia, 1));
 
     err += VTK_write_multiphysics_DataArray_footer(out);
   }

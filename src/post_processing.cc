@@ -61,7 +61,7 @@ void post_processing_compute_stress_disp_ip(FEMLIB *fe, int e, double *S_in, HOM
 }
 
 void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMAT *hommat, Element *elem,
-                                          double *F_in, double Pn, double theta)
+                                          double *F_in, double theta)
 {
   Tensor<2,3,double*> F(F_in), S(S_in);
   Tensor<2,3,double> C,CI,devS;
@@ -77,7 +77,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMA
 
   double Up = 0.0;
   UP(theta,&hommat[mat],&Up);
-  double JPn = theta*Pn;
+  double JPn = theta*Up;
 
   S(I,J) = devS(I,J) + JPn*CI(I,J);
 }
@@ -96,7 +96,7 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
   *Jnp1 = det(Fnp1);
 }
 void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                                    double* r, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
+                                    double* r, double *Vnp1, int ndofn, MPI_Comm mpi_comm, const PGFem3D_opt *opts)
 
 {
   int total_Lagrangian = 1;
@@ -119,10 +119,9 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
     int nne = fe.nne;
 
-    Matrix<double> Np, u, P;
+    Matrix<double> Np, u;
     Np.initialization(npres,1,0.0);
     u.initialization(nne*nsd,1,0.0);
-    P.initialization(npres,1,0.0);
 
     for(int a = 0; a<nne; a++)
     {
@@ -130,20 +129,6 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
       for(int b=0; b<nsd; b++)
       {
         u(a*nsd+b+1) = r[nid*ndofn + b];
-      }
-    }
-
-    if(opts->analysis_type==TF)
-    {
-      if(npres==1)
-        P(1) = eps[e].d_T[0];
-      else
-      {
-        for(int a = 0; a<nne; a++)
-        {
-          int nid = fe.node_id(a+1);
-          P(a+1) = r[nid*ndofn + 3];
-        }
       }
     }
 
@@ -161,11 +146,9 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
         break;
        case TF:
        {
-         double theta = eps[e].T[0];
+         double theta = Vnp1[e];
          fe.elem_shape_function(ip,npres, Np.m_pdata);
-         for(int a=1; a<=npres; a++)
-           Pn += Np(a)*P(a);
-         post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,Pn,theta);
+         post_processing_compute_stress_3f_ip(&fe,e,S.data,hommat,elem,F.data,theta);
          break;
        }
        case CM:   // intended to flow

@@ -611,7 +611,7 @@ int multi_scale_main(int argc, char* argv[])
 
             VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
                           mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
-                          c->supports,s->r,s->sig_e,s->eps,
+                          c->supports,s->r,NULL,NULL,s->sig_e,s->eps,
                           macro->opts,mp_id);
 
             if (macro->opts->cohesive == 1){

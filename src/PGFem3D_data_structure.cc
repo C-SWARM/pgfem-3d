@@ -295,10 +295,12 @@ int thermal_field_varialbe_initialization(FieldVariablesThermal *fv)
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \param[in] grid an object containing all mesh data
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int prepare_temporal_field_varialbes(FieldVariables *fv,
                                      Grid *grid,
-                                     int is_for_Mechanical)
+                                     int is_for_Mechanical,
+                                     const PGFem3D_opt *opts)
 {
   int err =0;
   fv->temporal = new FieldVariablesTemporal{};
@@ -306,6 +308,9 @@ int prepare_temporal_field_varialbes(FieldVariables *fv,
   fv->temporal->u_nm1 = aloc1(grid->nn*fv->ndofn);
   if(is_for_Mechanical)
   {
+    if(opts->analysis_type==CM3F)
+      fv->temporal->tf.construct(grid->ne, fv->nVol, fv->npres, true);
+
     const Element *elem = grid->element;
 
     int n_state_varialbles = 0;
@@ -345,9 +350,11 @@ int prepare_temporal_field_varialbes(FieldVariables *fv,
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int destory_temporal_field_varialbes(FieldVariables *fv,
-                                     int is_for_Mechanical)
+                                     int is_for_Mechanical,
+                                     const PGFem3D_opt *opts)
 {
   int err =0;
   free(fv->temporal->u_n);

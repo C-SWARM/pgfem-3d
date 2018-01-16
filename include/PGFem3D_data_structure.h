@@ -53,10 +53,118 @@ struct Grid {
   COEL *coel;                //!< list of cohesive elements
 };
 
+/// Variables for three-field mixed method
+class ThreeFieldVariables
+{
+  public:
+  /// volume
+  bool is_for_temporal;
+  Matrix<double> V_np1;
+  Matrix<double> V_nm1;
+  Matrix<double> V_n;
+  Matrix<double> dV, ddV;
+
+  /// pressure
+  Matrix<double> P_np1;
+  Matrix<double> P_nm1;
+  Matrix<double> P_n;
+  Matrix<double> dP, ddP;
+  
+  ThreeFieldVariables(){is_for_temporal=false;};
+  void construct(const int ne,
+                 const int Vno,
+                 const int Pno,
+                 bool is_temporal = false)
+  {    
+    V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
+    V_nm1.initialization(ne,Vno,1.0); // must be initialized to 1.0
+
+    P_nm1.initialization(ne,Pno,0.0);
+    P_n.initialization(  ne,Pno,0.0);
+    
+    if(is_temporal == false)
+    {  
+      V_n.initialization(  ne,Vno,1.0); // must be initialized to 1.0
+      dV.initialization(   ne,Vno,0.0);
+      ddV.initialization(  ne,Vno,0.0);
+      
+      P_np1.initialization(ne,Pno,0.0);
+      dP.initialization(   ne,Pno,0.0);
+      ddP.initialization(  ne,Pno,0.0);        
+    }
+  };
+  void update_for_next_time_step(void)
+  {
+    if(is_for_temporal)
+      return;
+      
+    for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
+    {
+      V_nm1.m_pdata[ia] = V_n.m_pdata[ia];
+      V_n.m_pdata[ia] = V_np1.m_pdata[ia];
+      dV.m_pdata[ia] = 0.0;
+      ddV.m_pdata[ia] = 0.0;
+    }
+
+    for(int ia=0; ia<P_np1.m_row*P_np1.m_col; ia++)
+    {
+      P_nm1.m_pdata[ia] = P_n.m_pdata[ia];
+      P_n.m_pdata[ia] = P_np1.m_pdata[ia];
+      dP.m_pdata[ia] = 0.0;
+      ddP.m_pdata[ia] = 0.0;      
+    }    
+  };
+  
+  void update_increments_from_NR(double gamma = 1.0)
+  {
+    if(is_for_temporal)
+      return;
+      
+    for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
+    {
+      ddV.m_pdata[ia] *= gamma;
+      dV.m_pdata[ia] += ddV.m_pdata[ia];
+    }
+
+    for(int ia=0; ia<P_np1.m_row*P_np1.m_col; ia++)
+    {
+      ddP.m_pdata[ia] *= gamma;
+      dP.m_pdata[ia] += ddP.m_pdata[ia];
+    }     
+  };
+  
+  void update_np1_from_increments(void)
+  {
+    if(is_for_temporal)
+      return;
+      
+    for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
+      V_np1.m_pdata[ia] += dV.m_pdata[ia];
+
+    for(int ia=0; ia<P_np1.m_row*P_np1.m_col; ia++)
+      P_np1.m_pdata[ia] += dP.m_pdata[ia];
+  };
+  
+  void reset(void)
+  {
+    if(is_for_temporal)
+      return;
+      
+    for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
+      ddV.m_pdata[ia] = dV.m_pdata[ia] = 0.0;
+
+    for(int ia=0; ia<P_np1.m_row*P_np1.m_col; ia++)
+      ddP.m_pdata[ia] = dP.m_pdata[ia] = 0.0;
+  };
+};
+
 /// struct for field variables
 struct FieldVariablesTemporal {
   double *u_nm1;           //!< displacement at n-1
   double *u_n;             //!< displacement at n
+
+  ThreeFieldVariables tf;  //!< variables for three-field mixed method
+
   int element_variable_no; //!< number of element variables
   State_variables *var;    //!< object to store element variables
 };
@@ -101,16 +209,8 @@ struct FieldVariables {
   double subdivision_factor_n;        //!< use for linearly map subdivided parameters at t(n)
                                       //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_n
   double subdivision_factor_np1;      //!< use for linearly map subdivided parameters at t(n+1)
-                                      //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
-  /// pressure
-  Matrix<double> Pnp1;
-  Matrix<double> Pnm1;
-  Matrix<double> Pn;
-
-  /// volume
-  Matrix<double> Vnp1;
-  Matrix<double> Vnm1;
-  Matrix<double> Vn;
+                                      //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_np1 
+  ThreeFieldVariables tf;  //!< variables for three-field mixed method
 };
 
 /// struct for field variables
@@ -268,10 +368,12 @@ int thermal_field_varialbe_initialization(FieldVariablesThermal *fv);
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \param[in] grid an object containing all mesh data
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int prepare_temporal_field_varialbes(FieldVariables *fv,
                                      Grid *grid,
-                                     int is_for_Mechanical);
+                                     int is_for_Mechanical,
+                                     const PGFem3D_opt *opts);
 
 /// destory temporal varialbes for staggering Newton Raphson iterations
 ///
@@ -279,9 +381,11 @@ int prepare_temporal_field_varialbes(FieldVariables *fv,
 ///
 /// \param[in, out] fv an object containing all field variables for thermal
 /// \param[in] is_for_Mechanical if yes, prepare constitutive models
+/// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int destory_temporal_field_varialbes(FieldVariables *fv,
-                                     int is_for_Mechanical);
+                                     int is_for_Mechanical,
+                                     const PGFem3D_opt *opts);
 
 /// initialize material properties
 ///

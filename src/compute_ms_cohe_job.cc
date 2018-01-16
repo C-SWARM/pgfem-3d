@@ -834,7 +834,7 @@ static int print_ms_cohe_job(const MS_COHE_JOB_INFO *job,
     }
     VTK_print_vtu(o->opath,ofname,s->p_tim,myrank,c->ne,
                   c->nn,c->node,c->elem,c->supports,
-                  s->r,s->sig_e,s->eps,o,mp_id);
+                  s->r,NULL,NULL,s->sig_e,s->eps,o,mp_id);
 
     if(o->cohesive){
       if(myrank == 0){

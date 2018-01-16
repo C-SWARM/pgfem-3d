@@ -284,10 +284,7 @@ int residual_with_inertia(FEMLIB *fe,
    case TF:
      {
        if(0<(sol->alpha) && (sol->alpha)<1.0)
-       {
-         residuals_3f_w_inertia_el(be,eid,ndofn,nne,fv->npres,fv->nVol,nsd,x,y,z,grid->element,mat->hommat,grid->node,
-                                   dts,fv->sig,fv->eps,sol->alpha,r_n_a,r_n_1_a);
-       }
+         residuals_3f_w_inertia_el(fe,be,r_e,grid,mat,fv,sol,dts,r_n_1_a,r_n_a);
 
        for(long a = 0; a<ndofe; a++)
          be[a] -= f_i[a];

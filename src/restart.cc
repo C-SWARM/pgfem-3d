@@ -503,7 +503,7 @@ int write_restart_mechanical(Grid *grid,
        }
        VTK_print_vtu(rs_path,opts->ofname,stepno,
                      myrank,grid->ne,grid->nn,grid->node,grid->element,load->sups[mp_id],
-                     r_n_dof,fv[mp_id].sig,fv[mp_id].eps,
+                     r_n_dof,fv[mp_id].tf.P_np1.m_pdata, fv[mp_id].tf.V_np1.m_pdata, fv[mp_id].sig,fv[mp_id].eps,
                      opts, mp_id);
        free(r_n_dof);
        break;

@@ -30,6 +30,8 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
                                const SIG *stress,
                                const EPS *strain,
                                const double *dofs,
+                               const double *Pnp1,
+                               const double *Vnp1,                               
                                const int analysis_type)
 {
   int have_pressure = 0;
@@ -60,7 +62,7 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
   if(analysis_type == STABILIZED
      || analysis_type == MINI
      || analysis_type == MINI_3F
-     || (analysis_type == TF && elems[0].toe!=10)){
+     || (analysis_type == TF && (elems[0].toe!=10 || elems[0].toe!=8))){
     have_pressure = 1;
     pressure->SetNumberOfComponents(1);
     pressure->SetNumberOfTuples(nnode);
@@ -150,7 +152,7 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
 
   if(analysis_type==TF)
   {
-    if(elems[0].toe==10)
+    if(elems[0].toe==10 || elems[0].toe==8)
     {
       tf_pressure->SetNumberOfValues(nelems);
       tf_pressure->SetName("TF_Pressure");
@@ -202,10 +204,10 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
 
     if(analysis_type==TF)
     {
-      if(elems[i].toe==10)
-        tf_pressure->SetValue(i, strain[i].d_T[0]);
+      if(elems[i].toe==10 || elems[i].toe==8)
+        tf_pressure->SetValue(i, Pnp1[i]);
 
-      tf_volume->SetValue(i, strain[i].T[0]);
+      tf_volume->SetValue(i, Vnp1[i]);
     }
 
 
@@ -601,6 +603,8 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
                                const SUPP supports,
                                const SIG *stress,
                                const EPS *strain,
+                               const double *Pnp1,
+                               const double *Vnp1,                               
                                const double *dofs,
                                const int analysis_type)
 {

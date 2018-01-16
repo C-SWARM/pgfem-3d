@@ -105,16 +105,18 @@ template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
   A = Grad_beta(k,i)*tFr(k,j);
   symm(A, Asym);
   
-  inv(tFr,tFrI);
-  double Gb_tFrI = Grad_beta(j,i)*tFrI(i,j);
+//  inv(tFr,tFrI);
+//  double Gb_tFrI = Grad_beta(j,i)*tFrI(i,j);
    
-  Phi = eFn(k,i)*(Asym(k,l) - 1.0/3.0*Gb_tFrI*tFr(o,k)*tFr(o,l))*eFn(l,j);
+//  Phi = eFn(k,i)*(Asym(k,l) - 1.0/3.0*Gb_tFrI*tFr(o,k)*tFr(o,l))*eFn(l,j);
+
+  Phi = eFn(k,i)*Asym(k,l)*eFn(l,j);
 };
 
 template<class T1, class T2> void Var_Carrier::compute_Psi(T1 &Psi, T2 &Phi)    
 {
   TensorA<2> M(M_in); 
-  Psi = factor*M(k,i)*Phi(k,l)*M(l,j);
+  Psi = M(k,i)*Phi(k,l)*M(l,j);
 };   
  
 template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
@@ -154,6 +156,10 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
 
   FrFr = tFr(k,i)*tFr(k,j);
   symm(GradGrad, sGradGrad);
+  
+  DPsi = eFnM(k,i)*sGradGrad(k,l)*eFnM(l,j) + 2.0*sdMPhiM(i,j);  
+  
+/*  
   inv(tFr, tFrI);
   double Grad_tutFrI = Grad_tu(j,i)*tFrI(i,j);
   double Grad_dutFrI = Grad_du(j,i)*tFrI(i,j);
@@ -169,7 +175,7 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
                  + 2.0/9.0*Grad_tutFrI*Grad_dutFrI*FrFr(i,j)
                  + 1.0/3.0*GduFrIGtuFrI*FrFr(i,j) - 2.0/3.0*Grad_dutFrI*sGrad_tuFr(i,j);
 
-  DPsi = factor*eFnM(k,i)*zeta(k,l)*eFnM(l,j) + 2.0*factor*sdMPhiM(i,j);
+  DPsi = factor*eFnM(k,i)*zeta(k,l)*eFnM(l,j) + 2.0*factor*sdMPhiM(i,j);*/
 };
 
 int compute_Ru(FEMLIB *fe,
@@ -225,13 +231,9 @@ int compute_Rt(FEMLIB *fe,
 {
   int err = 0;
   
-  TensorA<2> eSd(vc.eSd_in);
-  double factor = 1.0/3.0*pow(vc.tJr*vc.tJr*vc.theta_r, -1.0/3.0);
-  double ZeSd = vc.Z(i,j)*eSd(i,j);
-  
   for(int ia=0; ia<Vno; ia++)
   {
-    Rt[ia] += Nt[ia]*(factor*ZeSd + vc.dUd_theta*vc.eJn*vc.JM 
+    Rt[ia] += Nt[ia]*(vc.dUd_theta*vc.eJn*vc.JM 
                                   - vc.P*vc.theta_n)/vc.Jn*fe->detJxW;
   }  
   return err;
@@ -268,7 +270,7 @@ int compute_Kuu(FEMLIB *fe,
 
           TensorA<2> dMdu(dMdu_all + id_wg);
           vc.compute_Gamma(Gamma_tu,dMdu);
-          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + vc.factor*Gamma_tu(k,l));
+          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + 0.0*vc.factor*Gamma_tu(k,l));
           
           Tensor<2> tFrI;
           err += inv(tFr,tFrI);
@@ -314,13 +316,33 @@ int compute_Kup(FEMLIB *fe,
       for(int iw=0; iw<Pno; iw++)
       {
         int idx_up = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Pno,1);
-        Kup[idx_up] += 1.0/vc.Jn*vc.tJn*vc.tJr*fe->detJxW*Grad_du(j,i)*tFrI(i,j)*Np[iw];
+        Kup[idx_up] += 1.0/vc.Jn*vc.tJn*vc.tJr*fe->detJxW*tFrI(j,i)*Grad_du(i,j)*Np[iw];
       }
     }
   }
   return err;
 }
 
+int compute_Kut_(FEMLIB *fe,
+                double *Kut,
+                double *dMdt_all,
+                Var_Carrier &vc,
+                int Vno,
+                double *Nt)
+{
+  return 0;
+}
+
+
+int compute_Ktu_(FEMLIB *fe,
+                double *Ktu_in,
+                double *dMdt_all,
+                Var_Carrier &vc,
+                int Vno,
+                double *Nt)
+{
+  return 0;
+}                
 int compute_Kut(FEMLIB *fe,
                 double *Kut,
                 double *dMdt_all,
@@ -351,24 +373,16 @@ int compute_Kut(FEMLIB *fe,
         TensorA<2> dMdt(dMdt_all + id_wg);
         Tensor<2> MPhidMdt = M(k,i)*Phi_du(k,l)*dMdt(l,j);
         
-        Tensor<2> DPsi = 2.0/(3.0*vc.theta_r)*Psi_du(i,j)
-                       + vc.factor*(MPhidMdt(i,j) + MPhidMdt(j,i));
+        Tensor<2> DPsi = MPhidMdt(i,j) + MPhidMdt(j,i);
         
-        double DPsi_eSd = DPsi(i,j)*eSd(i,j);
-        
-        Tensor<2> Gamma_tu;
-        vc.compute_Gamma(Gamma_tu,dMdt);
-        Tensor<2> DeSd = Ld(i,j,k,l)*(1.0/3.0*vc.factor/vc.theta_r*vc.Z(k,l) + vc.factor*Gamma_tu(k,l));
-        
-        double PsiDeSd = Psi_du(i,j)*DeSd(i,j);
-        
+        double DPsi_eSd = DPsi(i,j)*eSd(i,j);                
         double Lambda;
         vc.compute_Lambda(&Lambda, dMdt);
         
         double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) 
                           + vc.P*vc.tJr*vc.tJn*Grad_du(j,i)*tFrI(i,j));
         int idx_ut = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Vno,1);
-        Kut[idx_ut] += 1.0/vc.Jn*fe->detJxW*(DPsi_eSd + PsiDeSd - Lambda_Psi)*Nt[iw];
+        Kut[idx_ut] += 1.0/vc.Jn*fe->detJxW*(DPsi_eSd - Lambda_Psi)*Nt[iw];
       }
     }
   }
@@ -391,9 +405,7 @@ int compute_Ktu(FEMLIB *fe,
   err += inv(tFr, tFrI);
   
   Tensor<2> MI;
-  err += inv(M, MI);
-  
-  double Jtheta = 2.0/3.0*pow(vc.tJr*vc.tJr*vc.theta_r, -1.0/3.0);
+  err += inv(M, MI);  
   double eJnJM = vc.eJn*vc.JM;
   
   for(int ia=0; ia<Vno; ia++)
@@ -403,27 +415,16 @@ int compute_Ktu(FEMLIB *fe,
       for(int ig=0; ig<fe->nsd; ig++)
       { 
         const int id_wg = idx_4_gen(iw,ig,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
-
-        TensorA<2> Grad_tu((fe->ST)+id_wg);
-        Tensor<2> Phi_tu, Psi_tu,Gamma_tu;
-        vc.compute_Phi(Phi_tu, Grad_tu.data);
-        vc.compute_Psi(Psi_tu, Phi_tu);
-
         TensorA<2> dMdu(dMdu_all + id_wg);
-        vc.compute_Gamma(Gamma_tu,dMdu);
-        
-        double DZ_eSd = (2.0/vc.theta_r*Psi_tu(i,j) + 2.0*Jtheta*Gamma_tu(i,j))*eSd(i,j);
-        double ZCPsi = Jtheta*vc.Z(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + vc.factor*Gamma_tu(k,l));
         double JMdMdu = eJnJM*(vc.d2Ud_theta2*vc.theta_r*eJnJM + vc.dUd_theta)*MI(j,i)*dMdu(i,j);
 
         double Lambda;
         vc.compute_Lambda(&Lambda, dMdu);        
 
-        double Lmabda_ZeSd = Lambda*Jtheta*vc.Z(i,j)*eSd(i,j);
-        Lmabda_ZeSd += Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);        
+        double Lmabda_ZeSd = Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);        
         
         int idx_tu = idx_K_gen(ia,0,iw,0,Vno,1,fe->nne,fe->nsd);
-        Ktu[idx_tu] += Nt[ia]/vc.Jn*fe->detJxW*(DZ_eSd + ZCPsi + JMdMdu - Lmabda_ZeSd);
+        Ktu[idx_tu] += Nt[ia]/vc.Jn*fe->detJxW*(JMdMdu - Lmabda_ZeSd);
       }
     }
   }
@@ -452,7 +453,26 @@ int compute_Ktp(FEMLIB *fe,
   return err;
 }
 
+
 int compute_Ktt(FEMLIB *fe,
+                double *Ktt,
+                double *dMdt_all,
+                Var_Carrier &vc,
+                int Vno,
+                double *Nt)
+{
+  for(int ia=0; ia<Vno; ia++)
+  {
+    for(int iw=0; iw<Vno; iw++)
+    { 
+      int idx_tt = ia*Vno + iw;
+      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*vc.d2Ud_theta2;
+    }
+  }
+  return 0;  
+}
+
+int compute_Ktt_(FEMLIB *fe,
                 double *Ktt,
                 double *dMdt_all,
                 Var_Carrier &vc,
@@ -480,10 +500,10 @@ int compute_Ktt(FEMLIB *fe,
       TensorA<2> dMdt(dMdt_all + id_wg);
       Tensor<2> Gamma_tt;
       vc.compute_Gamma(Gamma_tt,dMdt);
-      double ZGamm_eSd = Jtheta*(-1.0/3.0/vc.theta_r*vc.Z(i,j) + 2.0*Gamma_tt(i,j))*eSd(i,j);
+      double ZGamm_eSd = 0.5*Jtheta*(-1.0/3.0/vc.theta_r*vc.Z(i,j) + 2.0*Gamma_tt(i,j))*eSd(i,j);
       
       Tensor<2> DeSd = 0.5*Ld(i,j,k,l)*(Jtheta*vc.Z(k,l) + 2.0*vc.factor*Gamma_tt(k,l));
-      double ZDeSd = Jtheta*vc.Z(i,j)*DeSd(i,j);
+      double ZDeSd = 0.5*Jtheta*vc.Z(i,j)*DeSd(i,j);
       double JUdMdt = eJnJM*vc.dUd_theta*MI(j,i)*dMdt(i,j);
       JUdMdt += eJnJM*vc.d2Ud_theta2*vc.theta_r*eJnJM;
       
@@ -491,7 +511,7 @@ int compute_Ktt(FEMLIB *fe,
       vc.compute_Lambda(&Lambda, dMdt);
       
       double Lambda_ZeSd = Lambda*Jtheta*vc.Z(i,j)*eSd(i,j);
-      Lambda_ZeSd += Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
+      Lambda_ZeSd += Lambda*(0.5*vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
       
       int idx_tt = idx_K_gen(ia,0,iw,0,Vno,1,Vno,1);
       Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*(ZGamm_eSd + ZDeSd + JUdMdt - Lambda_ZeSd);

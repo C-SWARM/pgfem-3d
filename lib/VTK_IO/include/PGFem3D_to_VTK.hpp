@@ -21,6 +21,8 @@ void* PGFem3D_to_vtkUnstructuredGrid(const int nnode,
                                      const SIG *stress,
                                      const EPS *strain,
                                      const double *dofs,
+                                     const double *Pnp1,
+                                     const double *Vnp1,                                                                          
                                      const int analysis_type);
 
 void PGFem3D_destroy_vtkUnstructuredGrid(void *grid);

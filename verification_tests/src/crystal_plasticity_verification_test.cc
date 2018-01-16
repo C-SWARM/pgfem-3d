@@ -355,7 +355,7 @@ int main(int argc,char *argv[])
     options.restart = istep;
     read_restart(&grid,&fv,&ts,&load,&options,&mp,tnm1,myrank);
 
-    post_processing_compute_stress(PK2.data,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
+    post_processing_compute_stress(PK2.data,elem,hommat,ne,npres,node,eps,u1,NULL,ndofn,mpi_comm, &options);
     post_processing_deformation_gradient(Feff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
     post_processing_deformation_gradient_elastic_part(eFeff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
     post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);

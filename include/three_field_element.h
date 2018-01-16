@@ -43,8 +43,6 @@ int stiffmat_3f_el(FEMLIB *fe,
 /// \param[in]  grid  a mesh object
 /// \param[in]  mat   a material object
 /// \param[in]  fv    object for field variables
-/// \param[in]  alpha mid point alpha
-/// \param[in]  dt    time step size
 /// \return non-zero on internal error
 int residuals_3f_el(FEMLIB *fe,
                     double *f,
@@ -53,25 +51,67 @@ int residuals_3f_el(FEMLIB *fe,
                     MaterialProperty *mat,
                     FieldVariables *fv);
 
-void residuals_3f_w_inertia_el(double *f,const int ii,
-                               const int ndofn,const int nne,const int npres,const int nVol,const int nsd,
-                               const double *x,const double *y,const double *z,
-                               const Element *elem,const HOMMAT *hommat,const Node *node,
-                               const double *dts,SIG *sig,EPS *eps,double alpha, double *r_n_a, double *r_n_1_a);
+/// compute element residual vector in transient .
+/// Total Lagrangian based three-field mixed method for Hyperelasticity.
+///
+/// \param[in]  fe    finite element helper object
+/// \param[out] f     computed element stiffness matrix
+/// \param[in]  r_e   nodal variabls(displacements) on the current element
+/// \param[in]  grid  a mesh object
+/// \param[in]  mat   a material object
+/// \param[in]  fv    object for field variables
+/// \param[in]  alpha mid point alpha
+/// \param[in]  dt    time step size
+/// \return non-zero on internal error                    
+int residuals_3f_w_inertia_el(FEMLIB *fe,
+                              double *f,
+                              double *r_e,
+                              Grid *grid,
+                              MaterialProperty *mat,
+                              FieldVariables *fv,
+                              Solver *sol,
+                              double *dts,
+                              double *u_nm1,
+                              double *u_npa);
 
-int update_3f(Grid *grid,
-              MaterialProperty *mat,
-              FieldVariables *fv,
-              LoadingSteps *load,
-              const PGFem3D_opt *opts,
-              Multiphysics *mp,
-              int mp_id,
-              const double dt,
-              double alpha);              
+/// Update variables during Newton Raphson iterations
+///
+/// \param[in] grid  a mesh object
+/// \param[in] mat   a material object
+/// \param[in] fv    object for field variables
+/// \param[in] load  object for loading
+/// \param[in] opts  structure PGFem3D option
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt    time step size
+/// \param[in] alpha mid point alpha
+/// \return non-zero on internal error                     
+int update_3f_NR(Grid *grid,
+                 MaterialProperty *mat,
+                 FieldVariables *fv,
+                 LoadingSteps *load,
+                 const PGFem3D_opt *opts,
+                 int mp_id,
+                 const double dt,
+                 double alpha);
 
-void update_3f_state_variables(long ne, long ndofn, long npres, double *d_r, double *r,
-                               Node *node, Element *elem, HOMMAT *hommat, SUPP sup, EPS *eps, SIG *sig, double dt, double t,
-                               MPI_Comm mpi_comm, const int mp_id);
+/// Update variables during Newton Raphson iterations
+///
+/// \param[in] grid  a mesh object
+/// \param[in] mat   a material object
+/// \param[in] fv    object for field variables
+/// \param[in] load  object for loading
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt    time step size
+/// \param[in] t     time
+/// \param[in] mpi_comm MPI_COMM_WORLD
+void update_3f_output_variables(Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                LoadingSteps *load,
+                                const int mp_id,
+                                const double dt,
+                                const double t,
+                                MPI_Comm mpi_comm);
 
 void compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm,int analysis);
