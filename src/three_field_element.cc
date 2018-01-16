@@ -59,6 +59,8 @@ namespace {
   }        
 }
 
+/// Variables at integration point for Total Lagrangian 
+/// and displacement based three field mixed
 class Var_Carrier
 {
   public:
@@ -158,12 +160,6 @@ class Var_Carrier
     };
 };
 
-void print_diff(Matrix<double> &A, Matrix<double> &B)
-{
-  for(int ia=0; ia<A.m_row*A.m_col; ia++)
-    printf("%d: %e %e %e\n", ia, A.m_pdata[ia], B.m_pdata[ia], A.m_pdata[ia] - B.m_pdata[ia]); 
-};
-
 int compute_d_theta_dP_test(Matrix<double> &d_theta,
                             Matrix<double> &dP, 
                             Matrix<double> &du,
@@ -174,8 +170,13 @@ int compute_d_theta_dP_test(Matrix<double> &d_theta,
                             Matrix<double> &Ktp, 
                             Matrix<double> &Ktt, 
                             Matrix<double> &Kpt);
-                            
-              
+
+/// compute stiffness: Kuu at ip
+///
+/// \param[out] Kuu                    computed Kuu part
+/// \param[in]  fe                     fem library object
+/// \param[in]  var                    3f related variable object
+/// \param[in]  dt_alpha_1_minus_alpha coefficient for inertia or qusi-steady state
 void TF_Kuu_ip(Matrix<double> &Kuu,
                FEMLIB *fe,
                Var_Carrier &var,
@@ -230,7 +231,14 @@ void TF_Kuu_ip(Matrix<double> &Kuu,
   
 }
 
-
+/// compute stiffness: Kup at ip
+///
+/// \param[out] Kup                    computed Kup part
+/// \param[in]  fe                     fem library object
+/// \param[in]  var                    3f related variable object
+/// \param[in]  Pno                    number of pressure variables
+/// \param[in]  Np                     shape function for pressure
+/// \param[in]  dt_alpha_1_minus_alpha coefficient for inertia or qusi-steady state
 void TF_Kup_ip(Matrix<double> &Kup,
                FEMLIB *fe,
                Var_Carrier &var,
@@ -256,36 +264,16 @@ void TF_Kup_ip(Matrix<double> &Kup,
   }
 }
 
-void TF_Kup_ip_print(Matrix<double> &Kup,
-               FEMLIB *fe,
-               Var_Carrier &var,
-               const int Pno,
-               Matrix<double> &Np,
-               double dt_alpha_1_minus_alpha)
-{
-  TensorA<2>FI(var.mFI);
-  printf("J = %.17e\n", var.J);
-  printf("%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
-    FI[0][0],FI[0][1],FI[0][2],
-    FI[1][0],FI[1][1],FI[1][2],
-    FI[2][0],FI[2][1],FI[2][2]);
-    
-  for(int ia=0; ia<fe->nne; ia++)
-  {
-    for(int ib=0; ib<fe->nsd; ib++)
-    {
-      const int id_ab = idx_4_gen(ia,ib,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
-      TensorA<2> Grad_du((fe->ST)+id_ab);
-
-      for(int iw=0; iw<Pno; iw++)
-      {
-        int idx_up = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Pno,1);
-        Kup.m_pdata[idx_up] += -dt_alpha_1_minus_alpha*fe->detJxW*var.J*FI(j,i)*Grad_du(i,j)*Np(iw+1);
-      }
-    }
-  }
-}
-
+/// compute stiffness: Kpt at ip
+///
+/// \param[out] Kpt                    computed Kpt part
+/// \param[in]  fe                     fem library object
+/// \param[in]  var                    3f related variable object
+/// \param[in]  Pno                    number of pressure variable
+/// \param[in]  Np                     shape function for pressure
+/// \param[in]  Vno                    number of volume variables
+/// \param[in]  Nt                     shape function for volume
+/// \param[in]  dt_alpha_1_minus_alpha coefficient for inertia or qusi-steady state
 void TF_Kpt_ip(Matrix<double> &Kpt,
                FEMLIB *fe,
                Var_Carrier &var,
@@ -301,12 +289,21 @@ void TF_Kpt_ip(Matrix<double> &Kpt,
       Kpt(ia,ib) += dt_alpha_1_minus_alpha*fe->detJxW*Np(ia)*Nt(ib);
   }
 }
+
+/// compute stiffness: Kpt at ip
+///
+/// \param[out] Kpt                    computed Kpt part
+/// \param[in]  fe                     fem library object
+/// \param[in]  var                    3f related variable object
+/// \param[in]  Vno                    number of volume variables
+/// \param[in]  Nt                     shape function for volume
+/// \param[in]  dt_alpha_1_minus_alpha coefficient for inertia or qusi-steady state
 void TF_Ktt_ip(Matrix<double> &Ktt,
                FEMLIB *fe,
                Var_Carrier &var,               
-               double dt_alpha_1_minus_alpha,
                int Vno,
-               Matrix<double> &Nt)
+               Matrix<double> &Nt,
+               double dt_alpha_1_minus_alpha)
 {
   for(int ia=1; ia<=Vno; ia++)
   {
@@ -317,6 +314,11 @@ void TF_Ktt_ip(Matrix<double> &Ktt,
   }  
 }
 
+/// compute residual: Ru at ip
+///
+/// \param[out] Ru  computed Rt part
+/// \param[in]  fe  fem library object
+/// \param[in]  var 3f related variable object
 void TF_Ru_ip(Matrix<double> &Ru,
               FEMLIB *fe,
               Var_Carrier &var)
@@ -345,6 +347,13 @@ void TF_Ru_ip(Matrix<double> &Ru,
   }    
 }
 
+/// compute residual: Rt at ip
+///
+/// \param[out] Rt  computed Rt part
+/// \param[in]  fe  fem library object
+/// \param[in]  var 3f related variable object
+/// \param[in]  Vno number of volume variables
+/// \param[in]  Nt  shape function for volume
 void TF_Rt_ip(Matrix<double> &Rt,
               FEMLIB *fe,
               Var_Carrier &var,
@@ -355,6 +364,13 @@ void TF_Rt_ip(Matrix<double> &Rt,
     Rt(ia) += fe->detJxW*Nt(ia)*(var.Up - var.P);
 }
 
+/// compute residual: Rp at ip
+///
+/// \param[out] Rp  computed Rp part
+/// \param[in]  fe  fem library object
+/// \param[in]  var 3f related variable object
+/// \param[in]  Pno number of pressure variable
+/// \param[in]  Np  shape function for pressure
 void TF_Rp_ip(Matrix<double> &Rp,
               FEMLIB *fe,
               Var_Carrier &var,
@@ -473,7 +489,7 @@ int stiffmat_3f_el(FEMLIB *fe,
     TF_Kpt_ip(Kpt, fe, var, Pno, Np, Vno, Nt, dt_alpha_1_minus_alpha);
 
     TF_Kuu_ip(Kuu, fe, var, dt_alpha_1_minus_alpha);
-    TF_Ktt_ip(Ktt, fe, var, dt_alpha_1_minus_alpha,Vno,Nt);
+    TF_Ktt_ip(Ktt, fe, var, Vno,Nt, dt_alpha_1_minus_alpha);
   }
   
   Kpu.trans(Kup);
@@ -572,7 +588,7 @@ int residuals_3f_el(FEMLIB *fe,
     
     TF_Kup_ip(Kup, fe, var, Pno, Np, -1.0);
     TF_Kpt_ip(Kpt, fe, var, Pno, Np, Vno, Nt, -1.0);
-    TF_Ktt_ip(Ktt, fe, var, -1.0,Vno,Nt);
+    TF_Ktt_ip(Ktt, fe, var, Vno, Nt, -1.0);
         
     TF_Ru_ip(Ru,fe,var);                  
     TF_Rp_ip(Rp,fe,var,Pno,Np);
@@ -744,7 +760,17 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
                       Kut.m_pdata, Kup.m_pdata, Ktp.m_pdata, Ktt.m_pdata, Kpt.m_pdata);
   return 0;
 } 
-                             
+
+/// compute and update increments of prssure and volume for qusi-steady state
+/// in an element
+///
+/// \param[in]  fe       finite element helper object
+/// \param[in]  grid     a mesh object
+/// \param[in]  material a material object
+/// \param[in]  fv       object for field variables, fv->tf will be updated
+/// \param[in]  r_e      nodal variabls(displacements + pressure (if ndofn = 4)) 
+///                      on the current element
+/// \param[in]  d_u      increments of displacement (updated by NR before calling this function)
 void evaluate_PT_el(FEMLIB *fe,
                     Grid *grid,
                     MaterialProperty *material,
@@ -810,7 +836,7 @@ void evaluate_PT_el(FEMLIB *fe,
 
     TF_Kup_ip(Kpu,fe,var,Pno,Np,-1.0);
     TF_Kpt_ip(Kpt,fe,var,Pno,Np,Vno,Nt,-1.0);
-    TF_Ktt_ip(Ktt,fe,var,-1.0,Vno,Nt);
+    TF_Ktt_ip(Ktt,fe,var,Vno,Nt,-1.0);
     
     TF_Rp_ip(Rp,fe,var,Pno,Np);
     TF_Rt_ip(Rt,fe,var,Vno,Nt);        
@@ -831,6 +857,20 @@ void evaluate_PT_el(FEMLIB *fe,
     fv->tf.ddV(eid+1,ia) = d_theta(ia);
 }
 
+/// compute and update increments of prssure and volume for transient
+/// in an element
+///
+/// \param[in]  fe    finite element helper object
+/// \param[in]  grid  a mesh object
+/// \param[in]  mat   a material object
+/// \param[in]  fv    object for field variables, fv->tf will be updated
+/// \param[in]  r_e   nodal variabls(displacements + pressure (if ndofn = 4)) 
+///                   on the current element
+/// \param[in]  d_u   increments of displacement (updated by NR before calling this function)
+/// \param[in]  u_nma mid-point rule u at n-1+a for displacement
+/// \param[in]  u_npa mid-point rule u at n+a for displacement
+/// \param[in]  dt    time step size
+/// \param[in]  alpha mid point alpha
 void evaluate_PT_w_inertia_el(FEMLIB *fe,
                               Grid *grid,
                               MaterialProperty *mat,
@@ -948,7 +988,7 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
 
     TF_Kup_ip(Kup, fe, var_npa, Pno, Np, dt_alpha_1_minus_alpha);
     TF_Kpt_ip(Kpt, fe, var_npa, Pno, Np, Vno, Nt, dt_alpha_1_minus_alpha);
-    TF_Ktt_ip(Ktt, fe, var_npa, dt_alpha_1_minus_alpha, Vno, Nt);
+    TF_Ktt_ip(Ktt, fe, var_npa, Vno, Nt, dt_alpha_1_minus_alpha);
 
     TF_Rp_ip(Rp_1,fe,var_nm1,Pno,Np);
     TF_Rt_ip(Rt_1,fe,var_nm1,Vno,Nt);
@@ -979,6 +1019,18 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
     fv->tf.ddV(eid+1,ia) = d_theta(ia);
 }
 
+/// compute increments of prssure and volume in an element
+/// \param[out] d_theta computed increment of volume
+/// \param[out] dP      computed increment of pressure
+/// \param[in]  du      increments of displacement (updated by NR before calling this function)
+/// \param[in]  Rt      residual for volume     
+/// \param[in]  Rp      residual for pressure
+/// \param[in]  Kpu     stiffness for pu
+/// \param[in]  Ktu     stiffness for tu
+/// \param[in]  Ktp     stiffness for tp
+/// \param[in]  Ktt     stiffness for tt
+/// \param[in]  Kpt     stiffness for pt
+/// \return non-zero on internal error 
 int compute_d_theta_dP_test(Matrix<double> &d_theta,
                             Matrix<double> &dP, 
                             Matrix<double> &du,
