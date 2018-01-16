@@ -347,6 +347,10 @@ int construct_model_context_with_thermal(void **ctx,
   return err;
 }
 
+/// initialize model parameter
+///
+/// \param[in, out] a Model_parameters, p[model_id] will be initialized
+/// \return non-zeoro on internal error
 int
 Constitutive_model::initialization(const Model_parameters *p)
 {
@@ -468,6 +472,8 @@ Model_parameters::initialization(const HOMMAT *p_hmat, const size_t type)
   return err;
 }
 
+/// destory members in a Model_parameter
+/// \return non-zero on error.
 int
 Model_parameters::finalization()
 {
@@ -532,7 +538,14 @@ Constitutive_model::unpack(const char *buffer, size_t *pos)
 }
 
 
-// compute stiffness tensor
+/// compute PK2 and elasticity tensor
+///
+/// \param[in]  m                 constitutive model object
+/// \param[in]  eF                elastic part of deformation gradient
+/// \param[out] L                 4th order elasticity tensor
+/// \param[out] S                 computed PK2 tensor
+/// \param[in]  compute_stiffness if 0, no compute L (elasticity tensor)
+/// \return     non-zero on error.
 int constitutive_model_default_update_elasticity(const Constitutive_model *m,
                                                  const double *eF,
                                                  double *L,

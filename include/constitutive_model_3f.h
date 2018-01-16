@@ -1,7 +1,5 @@
-/// Define the interface to generalized constitutive models with
-/// their associated data structure(s). The user is responsible for
-/// defining and linking the functions associated with a particular
-/// model. NEED MORE USAGE DETAILS.
+/// Define the functions for computing stiffness matrix
+/// and residulas for constitutive models with three field mixed method.
 /// 
 /// Authors:
 ///  Sangmin Lee, [1], <slee43@nd.edu>
@@ -13,6 +11,8 @@
 #include "femlib.h"
 #include <ttl/ttl.h>
 
+/// Variables at integration point for Updated Lagrangian 
+/// and three field mixed method formulation
 class Var_Carrier
 {
   public:
@@ -75,33 +75,39 @@ class Var_Carrier
                                         double *Phi_du_in);
 };
 
+/// compute residual: Ru at ip
 int compute_Ru(FEMLIB *fe,
                double *Ru,
                Var_Carrier &vc);
 
+/// compute residual: Rp at ip
 int compute_Rp(FEMLIB *fe,
                double *Rp,
                int Pno,
                double *Np,               
                Var_Carrier &vc);
 
+/// compute residual: Rt at ip
 int compute_Rt(FEMLIB *fe,
                double *Rt,
                int Vno,
                double *Nt,               
                Var_Carrier &vc);
-               
+
+/// compute stiffness: Kpt at ip               
 int compute_Kuu(FEMLIB *fe,
                 double *Kuu,
                 double *dMdu_all,
                 Var_Carrier &vc);
 
+/// compute stiffness: Kpt at ip
 int compute_Kup(FEMLIB *fe,
                 double *Kup,
                 Var_Carrier &vc,
                 int Pno,
                 double *Np);
-
+                
+/// compute stiffness: Kpt at ip
 int compute_Kut(FEMLIB *fe,
                 double *Kut,
                 double *dMdt_all,
@@ -109,6 +115,7 @@ int compute_Kut(FEMLIB *fe,
                 int Vno,
                 double *Nt);
 
+/// compute stiffness: Kpt at ip
 int compute_Ktu(FEMLIB *fe,
                 double *Ktu,
                 double *dMdu_all,
@@ -116,7 +123,7 @@ int compute_Ktu(FEMLIB *fe,
                 int Vno,
                 double *Nt);
 
-
+/// compute stiffness: Kpt at ip
 int compute_Ktp(FEMLIB *fe,
                 double *Ktp,
                 Var_Carrier &vc,
@@ -125,6 +132,7 @@ int compute_Ktp(FEMLIB *fe,
                 int Pno,
                 double *Np);
 
+/// compute stiffness: Kpt at ip
 int compute_Ktt(FEMLIB *fe,
                 double *Ktt,
                 double *dMdt_all,
@@ -132,6 +140,7 @@ int compute_Ktt(FEMLIB *fe,
                 int Vno,
                 double *Nt);
 
+/// compute and update increments of prssure and volume for transient
 int compute_d_theta_dP(double *d_theta_in, double *dP_in, double *du_in, 
                        int nne, int nsd, int Pno, int Vno,
                        double *fu_in, double *ft_in, double *fp_in, 

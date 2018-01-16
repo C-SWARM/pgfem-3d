@@ -43,14 +43,23 @@ namespace {
 #define DIM_3x3x3   27
 #define DIM_3x3x3x3 81
 
-#define MAX(a, b) ((a) >= (b)? (a) : (b))
-  
+#define MAX(a, b) ((a) >= (b)? (a) : (b))  
 
+/// compute factor that returns computational to actual
 void Var_Carrier::compute_factor(void)
 {
   factor = pow(theta_r/tJr, 2.0/3.0);
 };
 
+/// set deformation gradients and stress and elasticity Tensors
+/// for later use in the integration loop
+///
+/// \param[in] *tFr   computational Fr
+/// \param[in] *eFn   eF ant t=n  
+/// \param[in] *M     pFr^(-1) 
+/// \param[in] *pFnp1 pF at t = n+1
+/// \param[in] *eSd   PK2
+/// \param[in] *Ld    4th order elasticity tensor
 void Var_Carrier::set_tenosrs(double *tFr,
                               double *eFn,
                               double *M,
@@ -66,7 +75,16 @@ void Var_Carrier::set_tenosrs(double *tFr,
   Ld_in    = Ld;
   compute_Z();
 };
-    
+
+/// set scalar variables for later use in the integration loop
+///
+/// \param[in] theta_r_in     volume variable 
+/// \param[in] theta_n_in     volume variable at t=n   
+/// \param[in] tJn_in,        det(tFn)   
+/// \param[in] Jn_in,         det(Fn)   
+/// \param[in] P_in,          pressure variable   
+/// \param[in] dUd_theta_in,  differential of volumetric potential
+/// \param[in] d2Ud_theta2_in 2nd differential of volumetric potential    
 void Var_Carrier::set_scalars(double theta_r_in,
                               double theta_n_in,
                               double tJn_in,
@@ -90,6 +108,8 @@ void Var_Carrier::set_scalars(double theta_r_in,
   compute_factor();
 };
 
+
+/// compute M^T*eF^T*Fr^T*Fr*eF*M;
 void Var_Carrier::compute_Z(void)
 {
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);    
@@ -97,6 +117,7 @@ void Var_Carrier::compute_Z(void)
   Z = FrFeM(k,i)*FrFeM(k,j);
 };
 
+/// compute eFn^T*symm(Grad_del*tFr)*eFn;
 template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
 {
   TensorA<2> tFr(tFr_in), eFn(eFn_in); 
@@ -104,23 +125,19 @@ template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
   TensorA<2> Grad_beta(Grad_beta_in);
   A = Grad_beta(k,i)*tFr(k,j);
   symm(A, Asym);
-  
-//  inv(tFr,tFrI);
-//  double Gb_tFrI = Grad_beta(j,i)*tFrI(i,j);
-   
-//  Phi = eFn(k,i)*(Asym(k,l) - 1.0/3.0*Gb_tFrI*tFr(o,k)*tFr(o,l))*eFn(l,j);
-
   Phi = eFn(k,i)*Asym(k,l)*eFn(l,j);
 };
 
+/// compute M^T*eFn^T*symm(Grad_del*tFr)*eFn*M;
 template<class T1, class T2> void Var_Carrier::compute_Psi(T1 &Psi, T2 &Phi)    
 {
   TensorA<2> M(M_in); 
   Psi = M(k,i)*Phi(k,l)*M(l,j);
 };   
- 
+
+/// compute symm(dM^T*eF^T*Fr^T*Fr*eF*M) 
 template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
-                                                T2 &dM)
+                                                             T2 &dM)
 {
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in); 
   Tensor<2> tFreFn = tFr(i,k)*eFn(k,j);
@@ -128,15 +145,17 @@ template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
   symm(G,Gamma);
 };
 
+/// compute M^(-T):dM
 template<class T> void Var_Carrier::compute_Lambda(double *Lambda,
-                                      T &dM)
+                                                   T &dM)
 {
   TensorA<2> M(M_in); 
   Tensor<2> MI;
   inv(M,MI);
   *Lambda = MI(j,i)*dM(i,j); 
 }; 
-   
+
+/// compute D{M^T*eFn^T*symm(Grad_del*tFr)*eFn*M}[Grad_tu]   
 template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
                                     double *Grad_du_in,
                                     double *Grad_tu_in,
@@ -158,26 +177,14 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
   symm(GradGrad, sGradGrad);
   
   DPsi = eFnM(k,i)*sGradGrad(k,l)*eFnM(l,j) + 2.0*sdMPhiM(i,j);  
-  
-/*  
-  inv(tFr, tFrI);
-  double Grad_tutFrI = Grad_tu(j,i)*tFrI(i,j);
-  double Grad_dutFrI = Grad_du(j,i)*tFrI(i,j);
-  Grad_duFr = Grad_du(k,i)*tFr(k,j);
-  symm(Grad_duFr,sGrad_duFr);
-
-  Grad_tuFr = Grad_tu(k,i)*tFr(k,j);
-  symm(Grad_tuFr,sGrad_tuFr);
-
-  double GduFrIGtuFrI = Grad_tu(l,i)*tFrI(i,j)*Grad_tu(j,p)*tFrI(p,l);
-        
-  Tensor<2> zeta = sGradGrad(i,j) - 2.0/3.0*Grad_tutFrI*sGrad_duFr(i,j)
-                 + 2.0/9.0*Grad_tutFrI*Grad_dutFrI*FrFr(i,j)
-                 + 1.0/3.0*GduFrIGtuFrI*FrFr(i,j) - 2.0/3.0*Grad_dutFrI*sGrad_tuFr(i,j);
-
-  DPsi = factor*eFnM(k,i)*zeta(k,l)*eFnM(l,j) + 2.0*factor*sdMPhiM(i,j);*/
 };
 
+/// compute residual: Ru at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Ru  computed Ru part
+/// \param[in]  vc 3f related variable object
+/// \return non-zero on internal error
 int compute_Ru(FEMLIB *fe,
                double *Ru,
                Var_Carrier &vc)
@@ -209,6 +216,14 @@ int compute_Ru(FEMLIB *fe,
   return err;
 }
 
+/// compute residual: Rp at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Rp  computed Rp part
+/// \param[in]  Pno number of pressure variable
+/// \param[in]  Np  shape function for pressure
+/// \param[in]  vc 3f related variable object
+/// \return non-zero on internal error
 int compute_Rp(FEMLIB *fe,
                double *Rp,
                int Pno,
@@ -223,6 +238,14 @@ int compute_Rp(FEMLIB *fe,
   return err;
 }
 
+/// compute residual: Rt at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Rt  computed Rt part
+/// \param[in]  Vno number of volume variable
+/// \param[in]  Nt  shape function for volue
+/// \param[in]  vc 3f related variable object
+/// \return non-zero on internal error
 int compute_Rt(FEMLIB *fe,
                double *Rt,
                int Vno,
@@ -239,6 +262,13 @@ int compute_Rt(FEMLIB *fe,
   return err;
 }
 
+/// compute stiffness: Kuu at ip
+///
+/// \param[in]  fe       fem library object
+/// \param[out] Kuu      computed Kuu part
+/// \param[in]  dMdu_all dMdu for all nodes
+/// \param[in]  vc       3f related variable object
+/// \return non-zero on internal error
 int compute_Kuu(FEMLIB *fe,
                 double *Kuu,
                 double *dMdu_all,
@@ -294,6 +324,14 @@ int compute_Kuu(FEMLIB *fe,
   return err;
 }
 
+/// compute stiffness: Kup at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Kup computed Kup part
+/// \param[in]  vc  3f related variable object
+/// \param[in]  Pno number of pressure variables
+/// \param[in]  Np  shape function for pressure
+/// \return non-zero on internal error
 int compute_Kup(FEMLIB *fe,
                 double *Kup,
                 Var_Carrier &vc,
@@ -323,26 +361,15 @@ int compute_Kup(FEMLIB *fe,
   return err;
 }
 
-int compute_Kut_(FEMLIB *fe,
-                double *Kut,
-                double *dMdt_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
-{
-  return 0;
-}
-
-
-int compute_Ktu_(FEMLIB *fe,
-                double *Ktu_in,
-                double *dMdt_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
-{
-  return 0;
-}                
+/// compute stiffness: Kut at ip
+///
+/// \param[in]  fe       fem library object
+/// \param[out] Kut      computed Kut part
+/// \param[in]  dMdu_all dMdu for all nodes
+/// \param[in]  vc       3f related variable object
+/// \param[in]  Vno      number of volume variables
+/// \param[in]  Nt       shape function for volume
+/// \return non-zero on internal error
 int compute_Kut(FEMLIB *fe,
                 double *Kut,
                 double *dMdt_all,
@@ -389,6 +416,15 @@ int compute_Kut(FEMLIB *fe,
   return err;
 }
 
+/// compute stiffness: Ktu at ip
+///
+/// \param[in]  fe       fem library object
+/// \param[out] Ktu      computed Ktu part
+/// \param[in]  dMdu_all dMdu for all nodes
+/// \param[in]  vc       3f related variable object
+/// \param[in]  Vno      number of volume variables
+/// \param[in]  Nt       shape function for volume
+/// \return non-zero on internal error
 int compute_Ktu(FEMLIB *fe,
                 double *Ktu,
                 double *dMdu_all,
@@ -432,6 +468,18 @@ int compute_Ktu(FEMLIB *fe,
 }
 
 
+
+
+/// compute stiffness: Ktp at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Ktp computed Ktp part
+/// \param[in]  vc  3f related variable object
+/// \param[in]  Vno number of volume variables
+/// \param[in]  Nt  shape function for volume
+/// \param[in]  Pno number of pressure variables
+/// \param[in]  Np  shape function for pressure
+/// \return non-zero on internal error
 int compute_Ktp(FEMLIB *fe,
                 double *Ktp,
                 Var_Carrier &vc,
@@ -453,26 +501,15 @@ int compute_Ktp(FEMLIB *fe,
   return err;
 }
 
-
+/// compute stiffness: Ktt at ip
+///
+/// \param[in]  fe  fem library object
+/// \param[out] Ktt computed Ktt part
+/// \param[in]  vc  3f related variable object
+/// \param[in]  Vno number of volume variables
+/// \param[in]  Nt  shape function for volume
+/// \return non-zero on internal error
 int compute_Ktt(FEMLIB *fe,
-                double *Ktt,
-                double *dMdt_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
-{
-  for(int ia=0; ia<Vno; ia++)
-  {
-    for(int iw=0; iw<Vno; iw++)
-    { 
-      int idx_tt = ia*Vno + iw;
-      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*vc.d2Ud_theta2;
-    }
-  }
-  return 0;  
-}
-
-int compute_Ktt_(FEMLIB *fe,
                 double *Ktt,
                 double *dMdt_all,
                 Var_Carrier &vc,
@@ -481,15 +518,10 @@ int compute_Ktt_(FEMLIB *fe,
 {
   int err = 0;
   
-  TensorA<2> tFr(vc.tFr_in), M(vc.M_in), eSd(vc.eSd_in);
-  TensorA<4> Ld(vc.Ld_in);
-  Tensor<2> tFrI;
-  err += inv(tFr, tFrI);
-  
+  TensorA<2> M(vc.M_in);  
   Tensor<2> MI;
   err += inv(M, MI);
          
-  double Jtheta = 2.0/3.0*pow(vc.tJr*vc.tJr*vc.theta_r, -1.0/3.0);
   double eJnJM = vc.eJn*vc.JM;
   
   for(int ia=0; ia<Vno; ia++)
@@ -497,33 +529,54 @@ int compute_Ktt_(FEMLIB *fe,
     for(int iw=0; iw<Vno; iw++)
     {
       const int id_wg = idx_4_gen(iw,0,0,0,Vno,1,fe->nsd,fe->nsd);
-      TensorA<2> dMdt(dMdt_all + id_wg);
-      Tensor<2> Gamma_tt;
-      vc.compute_Gamma(Gamma_tt,dMdt);
-      double ZGamm_eSd = 0.5*Jtheta*(-1.0/3.0/vc.theta_r*vc.Z(i,j) + 2.0*Gamma_tt(i,j))*eSd(i,j);
-      
-      Tensor<2> DeSd = 0.5*Ld(i,j,k,l)*(Jtheta*vc.Z(k,l) + 2.0*vc.factor*Gamma_tt(k,l));
-      double ZDeSd = 0.5*Jtheta*vc.Z(i,j)*DeSd(i,j);
+      TensorA<2> dMdt(dMdt_all + id_wg);      
       double JUdMdt = eJnJM*vc.dUd_theta*MI(j,i)*dMdt(i,j);
-      JUdMdt += eJnJM*vc.d2Ud_theta2*vc.theta_r*eJnJM;
+      JUdMdt += eJnJM*eJnJM*vc.d2Ud_theta2;
       
       double Lambda;
-      vc.compute_Lambda(&Lambda, dMdt);
-      
-      double Lambda_ZeSd = Lambda*Jtheta*vc.Z(i,j)*eSd(i,j);
-      Lambda_ZeSd += Lambda*(0.5*vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
+      vc.compute_Lambda(&Lambda, dMdt);      
+      double Lambda_Up = Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
       
       int idx_tt = idx_K_gen(ia,0,iw,0,Vno,1,Vno,1);
-      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*(ZGamm_eSd + ZDeSd + JUdMdt - Lambda_ZeSd);
+      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*(JUdMdt - Lambda_Up);
     }
   }
   return err;
 }
 
-int compute_d_theta_dP(double *d_theta_in, double *dP_in, double *du_in, 
-                       int nne, int nsd, int Pno, int Vno,
-                       double *fu_in, double *ft_in, double *fp_in, 
-                       double *Kpu_in, double *Ktu_in, double *Ktp_in, double *Ktt_in,double *Kpt_in)
+/// compute increments of prssure and volume
+///
+/// \param[out] *d_theta_in computed volume increments
+/// \param[out] *dP_in      computed pressure increment
+/// \param[in]  *du_in      computed displacement increments from NR
+/// \param[in]  nne         number of nodes in an element
+/// \param[in]  nsd         number of spacial dimensions
+/// \param[in]  Pno         number of pressure variables
+/// \param[in]  Vno         number of volume variables
+/// \param[in]  *fu_in      residuals for displacement
+/// \param[in]  *ft_in      residuals for volume
+/// \param[in]  *fp_in      residuals for pressure
+/// \param[in]  *Kpu_in     stiffness for pu
+/// \param[in]  *Ktu_in     stiffness for tu
+/// \param[in]  *Ktp_in     stiffness for tp
+/// \param[in]  *Ktt_in     stiffness for tt
+/// \param[in]  *Kpt_in     stiffness for pt
+/// \return non-zero on internal error
+int compute_d_theta_dP(double *d_theta_in,
+                       double *dP_in, 
+                       double *du_in, 
+                       int nne, 
+                       int nsd, 
+                       int Pno, 
+                       int Vno,
+                       double *fu_in, 
+                       double *ft_in, 
+                       double *fp_in, 
+                       double *Kpu_in, 
+                       double *Ktu_in, 
+                       double *Ktp_in, 
+                       double *Ktt_in,
+                       double *Kpt_in)
 {
   int err = 0;
   
