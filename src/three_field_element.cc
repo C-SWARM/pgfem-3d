@@ -733,7 +733,7 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
     
     TF_Kup_ip(Kup, fe, var_npa, Pno, Np, dt_alpha_1_minus_alpha);
     TF_Kpt_ip(Kpt, fe, var_npa, Pno, Np, Vno, Nt, dt_alpha_1_minus_alpha);
-    TF_Ktt_ip(Ktt, fe, var_npa, dt_alpha_1_minus_alpha, Vno, Nt);
+    TF_Ktt_ip(Ktt, fe, var_npa, Vno, Nt, dt_alpha_1_minus_alpha);
         
     TF_Ru_ip(Ru_1,fe,var_nm1);
     TF_Rp_ip(Rp_1,fe,var_nm1,Pno,Np);
@@ -1020,6 +1020,7 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
 }
 
 /// compute increments of prssure and volume in an element
+///
 /// \param[out] d_theta computed increment of volume
 /// \param[out] dP      computed increment of pressure
 /// \param[in]  du      increments of displacement (updated by NR before calling this function)
