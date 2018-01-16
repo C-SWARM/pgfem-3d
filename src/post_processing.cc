@@ -70,6 +70,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMA
   inv(C,CI);
 
   int mat = elem[e].mat[2];
+  double kappa = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
 
   devStressFuncPtr Stress = getDevStressFunc(1,&hommat[mat]);
   dUdJFuncPtr UP = getDUdJFunc(1, &hommat[mat]);
@@ -77,7 +78,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMA
 
   double Up = 0.0;
   UP(theta,&hommat[mat],&Up);
-  double JPn = theta*Up;
+  double JPn = kappa*theta*Up;
 
   S(I,J) = devS(I,J) + JPn*CI(I,J);
 }
