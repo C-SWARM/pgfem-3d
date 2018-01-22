@@ -429,17 +429,23 @@ int stiffness_with_inertia(FEMLIB *fe,
 
     break;
    case CM:  // intended to flow
+     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_n.m_pdata,
+                                                      grid,mat,fv,sol,load,crpl,
+                                                      opts,mp,mp_id,dt);
+
+     for(long a = 0; a<ndofe*ndofe; a++)
+       Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
+
+     break;
    case CM3F:
-     {
-       err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,
-                                                        grid,mat,fv,sol,load,crpl,
-                                                        opts,mp,mp_id,dt);
+     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_n.m_pdata,
+                                                      grid,mat,fv,sol,load,crpl,
+                                                      opts,mp,mp_id,dt);
 
-       for(long a = 0; a<ndofe*ndofe; a++)
-         Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
+     for(long a = 0; a<ndofe*ndofe; a++)
+       Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];
 
-       break;
-     }
+     break;     
 
    default:
     printf("Only displacement based element and three field element are supported\n");

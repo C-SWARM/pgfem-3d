@@ -38,15 +38,13 @@ namespace {
   }           
 }
 
-#define DIM_3        3
-#define DIM_3x3      9
-#define DIM_3x3x3   27
-#define DIM_3x3x3x3 81
-
-#define MAX(a, b) ((a) >= (b)? (a) : (b))  
+static constexpr int DIM_3       =  3;
+static constexpr int DIM_3x3     =  9;
+static constexpr int DIM_3x3x3   = 27;
+static constexpr int DIM_3x3x3x3 = 81;
 
 /// compute factor that returns computational to actual
-void Var_Carrier::compute_factor(void)
+void CM_ThreeField::compute_factor(void)
 {
   factor = pow(theta_r/tJr, 2.0/3.0);
 }
@@ -60,12 +58,12 @@ void Var_Carrier::compute_factor(void)
 /// \param[in] *pFnp1 pF at t = n+1
 /// \param[in] *eSd   PK2
 /// \param[in] *Ld    4th order elasticity tensor
-void Var_Carrier::set_tenosrs(double *tFr,
-                              double *eFn,
-                              double *M,
-                              double *pFnp1,
-                              double *eSd,
-                              double *Ld)
+void CM_ThreeField::set_tenosrs(double *tFr,
+                                double *eFn,
+                                double *M,
+                                double *pFnp1,
+                                double *eSd,
+                                double *Ld)
 {
   tFr_in   = tFr;
   eFn_in   = eFn;
@@ -85,13 +83,14 @@ void Var_Carrier::set_tenosrs(double *tFr,
 /// \param[in] P_in,          pressure variable   
 /// \param[in] dUd_theta_in,  differential of volumetric potential
 /// \param[in] d2Ud_theta2_in 2nd differential of volumetric potential    
-void Var_Carrier::set_scalars(double theta_r_in,
-                              double theta_n_in,
-                              double tJn_in,
-                              double Jn_in,
-                              double P_in,
-                              double dUd_theta_in,
-                              double d2Ud_theta2_in)
+void CM_ThreeField::set_scalars(double theta_r_in,
+                                double theta_n_in,
+                                double tJn_in,
+                                double Jn_in,
+                                double P_in,
+                                double dUd_theta_in,
+                                double d2Ud_theta2_in,
+                                double dt_alpha_1_minus_alpha_in)
 {
   theta_r     = theta_r_in;
   theta_n     = theta_n_in;
@@ -100,17 +99,37 @@ void Var_Carrier::set_scalars(double theta_r_in,
   P           = P_in;
   dUd_theta   = dUd_theta_in;
   d2Ud_theta2 = d2Ud_theta2_in;
-  
-  TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);
+
+  TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);  
   eJn = ttl::det(eFn);
   JM  = ttl::det(M);
   tJr = ttl::det(tFr);
+  dt_alpha_1_minus_alpha = dt_alpha_1_minus_alpha_in;
   compute_factor();
 }
 
+/// set fem structure for finite element integration
+///
+/// \param[in] *fe_in  finite element object of element integration
+/// \param[in]  Vno_in number of volume variables                
+/// \param[in]  Pno_in number of pressrue variables              
+/// \param[in] *Nt_in  finite element shape function for volume  
+/// \param[in] *Np_in  finite element shape function for pressure
+void CM_ThreeField::set_femlib(FEMLIB *fe_in,
+                               int     Vno_in,
+                               int     Pno_in,
+                               double *Nt_in,
+                               double *Np_in)
+{
+  fe  = fe_in;
+  Vno = Vno_in;
+  Pno = Pno_in;
+  Nt  = Nt_in;
+  Np  = Np_in;
+};                  
 
 /// compute M^T*eF^T*Fr^T*Fr*eF*M;
-void Var_Carrier::compute_Z(void)
+void CM_ThreeField::compute_Z(void)
 {
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);    
   Tensor<2> FrFeM = tFr(i,k)*eFn(k,l)*M(l,j);
@@ -118,7 +137,7 @@ void Var_Carrier::compute_Z(void)
 }
 
 /// compute eFn^T*symm(Grad_del*tFr)*eFn;
-template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
+template<class T1> void CM_ThreeField::compute_Phi(T1 &Phi, double *Grad_beta_in)
 {
   TensorA<2> tFr(tFr_in), eFn(eFn_in); 
   Tensor<2> A, Asym,tFrI;
@@ -129,14 +148,14 @@ template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
 }
 
 /// compute M^T*eFn^T*symm(Grad_del*tFr)*eFn*M;
-template<class T1, class T2> void Var_Carrier::compute_Psi(T1 &Psi, T2 &Phi)    
+template<class T1, class T2> void CM_ThreeField::compute_Psi(T1 &Psi, T2 &Phi)    
 {
-  TensorA<2> M(M_in); 
+  TensorA<2> M(M_in);
   Psi = M(k,i)*Phi(k,l)*M(l,j);
 }
 
 /// compute symm(dM^T*eF^T*Fr^T*Fr*eF*M) 
-template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
+template<class T1, class T2> void CM_ThreeField::compute_Gamma(T1 &Gamma,
                                                              T2 &dM)
 {
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in); 
@@ -146,24 +165,24 @@ template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
 }
 
 /// compute M^(-T):dM
-template<class T> void Var_Carrier::compute_Lambda(double *Lambda,
+template<class T> void CM_ThreeField::compute_Lambda(double *Lambda,
                                                    T &dM)
 {
-  TensorA<2> M(M_in); 
+  TensorA<2> M(M_in);
   Tensor<2> MI;
   inv(M,MI);
   *Lambda = MI(j,i)*dM(i,j); 
 }
 
 /// compute D{M^T*eFn^T*symm(Grad_del*tFr)*eFn*M}[Grad_tu]   
-template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
+template<class T> void CM_ThreeField::compute_DPsi(T &DPsi,
                                     double *Grad_du_in,
                                     double *Grad_tu_in,
                                     double *dMdu_in,
                                     double *Phi_du_in)
 {
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);
-  
+    
   TensorA<2> Grad_du(Grad_du_in), Grad_tu(Grad_tu_in), dMdu(dMdu_in), Phi_du(Phi_du_in);
   Tensor<2> eFnM = eFn(i,k)*M(k,j);
   Tensor<2> dMPhiM = dMdu(k,i)*Phi_du(k,l)*M(l,j);
@@ -181,18 +200,14 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
 
 /// compute residual: Ru at ip
 ///
-/// \param[in]  fe  fem library object
 /// \param[out] Ru  computed Ru part
-/// \param[in]  vc 3f related variable object
 /// \return non-zero on internal error
-int compute_Ru(FEMLIB *fe,
-               double *Ru,
-               Var_Carrier &vc)
-{  
+int CM_ThreeField::compute_Ru(double *Ru)
+{
   int err = 0;
-  
-  TensorA<2> tFr(vc.tFr_in), eSd(vc.eSd_in);
-  
+
+  TensorA<2> tFr(tFr_in), eSd(eSd_in);
+
   Tensor<2> tFrI;
   err += inv(tFr, tFrI);
 
@@ -204,12 +219,12 @@ int compute_Ru(FEMLIB *fe,
       const int id_ab = idx_4_gen(ia,ib,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
       TensorA<2> Grad_du((fe->ST)+id_ab);
       Tensor<2> Phi, Psi;
-      vc.compute_Phi(Phi, Grad_du.data);
-      vc.compute_Psi(Psi, Phi);
+      compute_Phi(Phi, Grad_du.data);
+      compute_Psi(Psi, Phi);
       
       int Ru_id = ia*fe->nsd + ib;              
       Ru[Ru_id] += (Psi(i,j)*eSd(i,j) + 
-                   vc.P*vc.tJr*vc.tJn*Grad_du(j,i)*tFrI(i,j))/vc.Jn*fe->detJxW;
+                   P*tJr*tJn*Grad_du(j,i)*tFrI(i,j))/Jn*fe->detJxW;
     }
   }
 
@@ -218,22 +233,14 @@ int compute_Ru(FEMLIB *fe,
 
 /// compute residual: Rp at ip
 ///
-/// \param[in]  fe  fem library object
 /// \param[out] Rp  computed Rp part
-/// \param[in]  Pno number of pressure variable
-/// \param[in]  Np  shape function for pressure
-/// \param[in]  vc 3f related variable object
 /// \return non-zero on internal error
-int compute_Rp(FEMLIB *fe,
-               double *Rp,
-               int Pno,
-               double *Np,
-               Var_Carrier &vc)
+int CM_ThreeField::compute_Rp(double *Rp)
 {
   int err = 0;
   
   for(int ia=0; ia<Pno; ia++)
-    Rp[ia] += Np[ia]*(vc.tJr*vc.tJn - vc.theta_r*vc.theta_n)/vc.Jn*fe->detJxW;
+    Rp[ia] += Np[ia]*(tJr*tJn - theta_r*theta_n)/Jn*fe->detJxW;
   
   return err;
 }
@@ -246,38 +253,30 @@ int compute_Rp(FEMLIB *fe,
 /// \param[in]  Nt  shape function for volue
 /// \param[in]  vc 3f related variable object
 /// \return non-zero on internal error
-int compute_Rt(FEMLIB *fe,
-               double *Rt,
-               int Vno,
-               double *Nt,
-               Var_Carrier &vc)
+int CM_ThreeField::compute_Rt(double *Rt)
 {
   int err = 0;
   
   for(int ia=0; ia<Vno; ia++)
   {
-    Rt[ia] += Nt[ia]*(vc.dUd_theta*vc.eJn*vc.JM 
-                                  - vc.P*vc.theta_n)/vc.Jn*fe->detJxW;
+    Rt[ia] += Nt[ia]*(dUd_theta*eJn*JM 
+                                  - P*theta_n)/Jn*fe->detJxW;
   }  
   return err;
 }
 
 /// compute stiffness: Kuu at ip
 ///
-/// \param[in]  fe       fem library object
 /// \param[out] Kuu      computed Kuu part
 /// \param[in]  dMdu_all dMdu for all nodes
-/// \param[in]  vc       3f related variable object
 /// \return non-zero on internal error
-int compute_Kuu(FEMLIB *fe,
-                double *Kuu,
-                double *dMdu_all,
-                Var_Carrier &vc)
+int CM_ThreeField::compute_Kuu(double *Kuu,
+                               double *dMdu_all)
 {
   int err = 0;
   
-  TensorA<2> tFr(vc.tFr_in), eSd(vc.eSd_in), eFn(vc.eFn_in); 
-  TensorA<4> Ld(vc.Ld_in);
+  TensorA<2> tFr(tFr_in), eSd(eSd_in), eFn(eFn_in); 
+  TensorA<4> Ld(Ld_in);  
   for(int ia=0; ia<fe->nne; ia++)
   {
     for(int ib=0; ib<fe->nsd; ib++)
@@ -285,8 +284,8 @@ int compute_Kuu(FEMLIB *fe,
       const int id_ab = idx_4_gen(ia,ib,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
       TensorA<2> Grad_du((fe->ST)+id_ab);
       Tensor<2> Phi_du, Psi_du;
-      vc.compute_Phi(Phi_du, Grad_du.data);
-      vc.compute_Psi(Psi_du, Phi_du);
+      compute_Phi(Phi_du, Grad_du.data);
+      compute_Psi(Psi_du, Phi_du);
 
       for(int iw=0; iw<fe->nne; iw++)
       {
@@ -295,28 +294,28 @@ int compute_Kuu(FEMLIB *fe,
           const int id_wg = idx_4_gen(iw,ig,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
           TensorA<2> Grad_tu((fe->ST)+id_wg);
           Tensor<2> Phi_tu, Psi_tu,Gamma_tu;
-          vc.compute_Phi(Phi_tu, Grad_tu.data);
-          vc.compute_Psi(Psi_tu, Phi_tu);
+          compute_Phi(Phi_tu, Grad_tu.data);
+          compute_Psi(Psi_tu, Phi_tu);
 
           TensorA<2> dMdu(dMdu_all + id_wg);
-          vc.compute_Gamma(Gamma_tu,dMdu);
-          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + 0.0*vc.factor*Gamma_tu(k,l));
+          compute_Gamma(Gamma_tu,dMdu);
+          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + 0.0*factor*Gamma_tu(k,l));
           
           Tensor<2> tFrI;
           err += inv(tFr,tFrI);
           double Grad_du_tFrI = Grad_du(j,i)*tFrI(i,j);
-          double pJrJn = vc.P*vc.tJr*vc.tJn*(Grad_du_tFrI*Grad_tu(j,i)*tFrI(i,j) - Grad_du(j,i)*tFrI(i,k)*Grad_tu(k,l)*tFrI(l,j));
+          double pJrJn = P*tJr*tJn*(Grad_du_tFrI*Grad_tu(j,i)*tFrI(i,j) - Grad_du(j,i)*tFrI(i,k)*Grad_tu(k,l)*tFrI(l,j));
 
           Tensor<2> DPsi;
-          vc.compute_DPsi(DPsi,Grad_du.data,Grad_tu.data,dMdu.data,Phi_du.data);                                                   
+          compute_DPsi(DPsi,Grad_du.data,Grad_tu.data,dMdu.data,Phi_du.data);                                                   
           double DPsi_eSd = DPsi(i,j)*eSd(i,j);
 
           double Lambda;
-          vc.compute_Lambda(&Lambda,dMdu);
-          double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) + vc.P*vc.tJr*vc.tJn*Grad_du(i,j)*tFrI(i,j));
+          compute_Lambda(&Lambda,dMdu);
+          double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) + P*tJr*tJn*Grad_du(i,j)*tFrI(i,j));
 
           const int lk_idx = idx_K(ia,ib,iw,ig,fe->nne,fe->nsd);                      
-          Kuu[lk_idx] += 1.0/vc.Jn*fe->detJxW*(PsiCPsi + pJrJn + DPsi_eSd - Lambda_Psi);
+          Kuu[lk_idx] -= dt_alpha_1_minus_alpha/Jn*fe->detJxW*(PsiCPsi + pJrJn + DPsi_eSd - Lambda_Psi);
         }
       }
     }
@@ -326,21 +325,13 @@ int compute_Kuu(FEMLIB *fe,
 
 /// compute stiffness: Kup at ip
 ///
-/// \param[in]  fe  fem library object
 /// \param[out] Kup computed Kup part
-/// \param[in]  vc  3f related variable object
-/// \param[in]  Pno number of pressure variables
-/// \param[in]  Np  shape function for pressure
 /// \return non-zero on internal error
-int compute_Kup(FEMLIB *fe,
-                double *Kup,
-                Var_Carrier &vc,
-                int Pno,
-                double *Np)
+int CM_ThreeField::compute_Kup(double *Kup)
 {
   int err = 0;
-
-  TensorA<2> tFr(vc.tFr_in);
+  
+  TensorA<2> tFr(tFr_in);
   Tensor<2> tFrI;
   err += inv(tFr, tFrI);
   
@@ -354,7 +345,7 @@ int compute_Kup(FEMLIB *fe,
       for(int iw=0; iw<Pno; iw++)
       {
         int idx_up = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Pno,1);
-        Kup[idx_up] += 1.0/vc.Jn*vc.tJn*vc.tJr*fe->detJxW*tFrI(j,i)*Grad_du(i,j)*Np[iw];
+        Kup[idx_up] -= dt_alpha_1_minus_alpha/Jn*tJn*tJr*fe->detJxW*tFrI(j,i)*Grad_du(i,j)*Np[iw];
       }
     }
   }
@@ -363,24 +354,15 @@ int compute_Kup(FEMLIB *fe,
 
 /// compute stiffness: Kut at ip
 ///
-/// \param[in]  fe       fem library object
 /// \param[out] Kut      computed Kut part
 /// \param[in]  dMdu_all dMdu for all nodes
-/// \param[in]  vc       3f related variable object
-/// \param[in]  Vno      number of volume variables
-/// \param[in]  Nt       shape function for volume
 /// \return non-zero on internal error
-int compute_Kut(FEMLIB *fe,
-                double *Kut,
-                double *dMdt_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
+int CM_ThreeField::compute_Kut(double *Kut,
+                               double *dMdt_all)
 {
   int err = 0;
 
-  TensorA<2> tFr(vc.tFr_in), M(vc.M_in), eSd(vc.eSd_in);
-  TensorA<4> Ld(vc.Ld_in);
+  TensorA<2> tFr(tFr_in), M(M_in), eSd(eSd_in);
   Tensor<2> tFrI;  
   err += inv(tFr, tFrI);
            
@@ -391,8 +373,8 @@ int compute_Kut(FEMLIB *fe,
       const int id_ab = idx_4_gen(ia,ib,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
       TensorA<2> Grad_du((fe->ST)+id_ab);
       Tensor<2> Phi_du, Psi_du;
-      vc.compute_Phi(Phi_du, Grad_du.data);
-      vc.compute_Psi(Psi_du, Phi_du);       
+      compute_Phi(Phi_du, Grad_du.data);
+      compute_Psi(Psi_du, Phi_du);       
                             
       for(int iw=0; iw<Vno; iw++)
       {
@@ -404,12 +386,12 @@ int compute_Kut(FEMLIB *fe,
         
         double DPsi_eSd = DPsi(i,j)*eSd(i,j);                
         double Lambda;
-        vc.compute_Lambda(&Lambda, dMdt);
+        compute_Lambda(&Lambda, dMdt);
         
         double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) 
-                          + vc.P*vc.tJr*vc.tJn*Grad_du(j,i)*tFrI(i,j));
+                          + P*tJr*tJn*Grad_du(j,i)*tFrI(i,j));
         int idx_ut = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Vno,1);
-        Kut[idx_ut] += 1.0/vc.Jn*fe->detJxW*(DPsi_eSd - Lambda_Psi)*Nt[iw];
+        Kut[idx_ut] -= dt_alpha_1_minus_alpha/Jn*fe->detJxW*(DPsi_eSd - Lambda_Psi)*Nt[iw];
       }
     }
   }
@@ -418,31 +400,21 @@ int compute_Kut(FEMLIB *fe,
 
 /// compute stiffness: Ktu at ip
 ///
-/// \param[in]  fe       fem library object
 /// \param[out] Ktu      computed Ktu part
 /// \param[in]  dMdu_all dMdu for all nodes
-/// \param[in]  vc       3f related variable object
-/// \param[in]  Vno      number of volume variables
-/// \param[in]  Nt       shape function for volume
 /// \return non-zero on internal error
-int compute_Ktu(FEMLIB *fe,
-                double *Ktu,
-                double *dMdu_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
+int CM_ThreeField::compute_Ktu(double *Ktu,
+                               double *dMdu_all)
 {
   int err = 0;
 
-  TensorA<2> tFr(vc.tFr_in), M(vc.M_in), eSd(vc.eSd_in);
-  TensorA<4> Ld(vc.Ld_in);
-  
+  TensorA<2> tFr(tFr_in), M(M_in), eSd(eSd_in);
   Tensor<2> tFrI;
   err += inv(tFr, tFrI);
   
   Tensor<2> MI;
   err += inv(M, MI);  
-  double eJnJM = vc.eJn*vc.JM;
+  double eJnJM = eJn*JM;
   
   for(int ia=0; ia<Vno; ia++)
   {
@@ -452,41 +424,26 @@ int compute_Ktu(FEMLIB *fe,
       { 
         const int id_wg = idx_4_gen(iw,ig,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
         TensorA<2> dMdu(dMdu_all + id_wg);
-        double JMdMdu = eJnJM*(vc.d2Ud_theta2*vc.theta_r*eJnJM + vc.dUd_theta)*MI(j,i)*dMdu(i,j);
+        double JMdMdu = eJnJM*(d2Ud_theta2*theta_r*eJnJM + dUd_theta)*MI(j,i)*dMdu(i,j);
 
         double Lambda;
-        vc.compute_Lambda(&Lambda, dMdu);        
+        compute_Lambda(&Lambda, dMdu);        
 
-        double Lmabda_ZeSd = Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);        
+        double Lmabda_ZeSd = Lambda*(dUd_theta*eJnJM - P*theta_n);        
         
         int idx_tu = idx_K_gen(ia,0,iw,0,Vno,1,fe->nne,fe->nsd);
-        Ktu[idx_tu] += Nt[ia]/vc.Jn*fe->detJxW*(JMdMdu - Lmabda_ZeSd);
+        Ktu[idx_tu] -= dt_alpha_1_minus_alpha*Nt[ia]/Jn*fe->detJxW*(JMdMdu - Lmabda_ZeSd);
       }
     }
   }
   return err;
 }
 
-
-
-
 /// compute stiffness: Ktp at ip
 ///
-/// \param[in]  fe  fem library object
 /// \param[out] Ktp computed Ktp part
-/// \param[in]  vc  3f related variable object
-/// \param[in]  Vno number of volume variables
-/// \param[in]  Nt  shape function for volume
-/// \param[in]  Pno number of pressure variables
-/// \param[in]  Np  shape function for pressure
 /// \return non-zero on internal error
-int compute_Ktp(FEMLIB *fe,
-                double *Ktp,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt,
-                int Pno,
-                double *Np)
+int CM_ThreeField::compute_Ktp(double *Ktp)
 {
   int err = 0;  
     
@@ -495,7 +452,7 @@ int compute_Ktp(FEMLIB *fe,
     for(int iw=0; iw<Pno; iw++)
     {
       int idx_tp = idx_K_gen(ia,0,iw,0,Vno,1,Pno,1);
-      Ktp[idx_tp] -= Nt[ia]*Np[iw]/vc.Jn*fe->detJxW*vc.theta_n;
+      Ktp[idx_tp] -= -dt_alpha_1_minus_alpha*Nt[ia]*Np[iw]/Jn*fe->detJxW*theta_n;
     }
   }
   return err;
@@ -503,26 +460,19 @@ int compute_Ktp(FEMLIB *fe,
 
 /// compute stiffness: Ktt at ip
 ///
-/// \param[in]  fe  fem library object
 /// \param[out] Ktt computed Ktt part
-/// \param[in]  vc  3f related variable object
-/// \param[in]  Vno number of volume variables
-/// \param[in]  Nt  shape function for volume
+/// \param[in]  dMdt_all dMdt for all nodes
 /// \return non-zero on internal error
-int compute_Ktt(FEMLIB *fe,
-                double *Ktt,
-                double *dMdt_all,
-                Var_Carrier &vc,
-                int Vno,
-                double *Nt)
+int CM_ThreeField::compute_Ktt(double *Ktt,
+                               double *dMdt_all)
 {
   int err = 0;
   
-  TensorA<2> M(vc.M_in);  
+  TensorA<2> M(M_in);  
   Tensor<2> MI;
   err += inv(M, MI);
          
-  double eJnJM = vc.eJn*vc.JM;
+  double eJnJM = eJn*JM;
   
   for(int ia=0; ia<Vno; ia++)
   {
@@ -530,15 +480,15 @@ int compute_Ktt(FEMLIB *fe,
     {
       const int id_wg = idx_4_gen(iw,0,0,0,Vno,1,fe->nsd,fe->nsd);
       TensorA<2> dMdt(dMdt_all + id_wg);      
-      double JUdMdt = eJnJM*vc.dUd_theta*MI(j,i)*dMdt(i,j);
-      JUdMdt += eJnJM*eJnJM*vc.d2Ud_theta2;
+      double JUdMdt = eJnJM*dUd_theta*MI(j,i)*dMdt(i,j);
+      JUdMdt += eJnJM*eJnJM*d2Ud_theta2;
       
       double Lambda;
-      vc.compute_Lambda(&Lambda, dMdt);      
-      double Lambda_Up = Lambda*(vc.dUd_theta*eJnJM - vc.P*vc.theta_n);
+      compute_Lambda(&Lambda, dMdt);      
+      double Lambda_Up = Lambda*(dUd_theta*eJnJM - P*theta_n);
       
       int idx_tt = idx_K_gen(ia,0,iw,0,Vno,1,Vno,1);
-      Ktt[idx_tt] += fe->detJxW*Nt[ia]*Nt[iw]*(JUdMdt - Lambda_Up);
+      Ktt[idx_tt] -= dt_alpha_1_minus_alpha*fe->detJxW*Nt[ia]*Nt[iw]*(JUdMdt - Lambda_Up);
     }
   }
   return err;

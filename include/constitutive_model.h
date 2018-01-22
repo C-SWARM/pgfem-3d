@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "material_properties.h"
+#include "hyperelasticity.h"
 
 struct EPS;
 struct Element;
@@ -33,9 +34,6 @@ struct HOMMAT;
 #define TYPE_HOMMAT
 typedef struct HOMMAT FEMLIB;
 #endif
-
-
-struct ELASTICITY;
 
 #ifndef PGFEM3D_DEV_TEST
 #define PGFEM3D_DEV_TEST 1
@@ -65,26 +63,6 @@ enum integration_frame {
   MIXED_ANALYSIS_MODE
 };
 
-class Three_field_var
-{
- public:
-  Matrix<double> tFr;
-  double theta_r;
-  double pressure;
-  Three_field_var()
-  {
-    theta_r = 0.0;
-    pressure = 0.0;
-  }
-
-  int set_values(double *tFr_in, double theta_r_in, double P)
-  {
-    tFr.use_reference(3,3,tFr_in);
-    theta_r  = theta_r_in;
-    pressure = P;
-    return 0;
-  };
-};
 
 /// Object for querying/describing the state variables.
 class Model_var_info
@@ -222,6 +200,22 @@ class Model_parameters
                                  const void *ctx,
                                  double *S) const { return 0; };
 
+  /// User defined function to compute deviatroic stress tenosr.
+  ///
+  /// \param[in]     m,   pointer to Constitutive_model object.
+  /// \param[in]     eC,  eC = eF'*eF
+  /// \param[out]    S,   computed deviatroic 2nd order stress tenosr.
+  ///                     that is populated with values from the constitutive model.
+  /// \return non-zero value on internal error that should be handled by the calling function.
+  virtual int compute_dev_stress(const Constitutive_model *m,
+                                 double *eC,
+                                 double *S) 
+  const 
+  {    
+    cm_elast->compute_PK2_dev(eC, cm_elast->mat, S); 
+    return 0; 
+  };
+                                 
   /// User defined function to compute volumetric stress contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
@@ -235,6 +229,19 @@ class Model_parameters
                            const void *ctx,
                            double *value) const { return 0; };
 
+  /// User defined function to compute volumetric stress contributions
+  ///
+  /// \param[in]     m,       pointer to Constitutive_model object.
+  /// \param[in]     theta_e, theta_e = J = det(eF)
+  /// \return computed volumetric stress contribution
+  virtual double compute_dudj(const Constitutive_model *m,
+                              const double theta_e) 
+  const 
+  {
+    double dudj = 0.0;
+    cm_elast->compute_dudj(&dudj, theta_e);  
+    return dudj*(cm_elast->mat->kappa);
+  };
 
   ///User defined function to compute deviatroic stiffness tenosr.
   ///
@@ -250,6 +257,22 @@ class Model_parameters
                                   const void *ctx,
                                   double *L) const { return 0; };
 
+  ///User defined function to compute deviatroic stiffness tenosr.
+  ///
+  /// \param[in]     m,   pointer to Constitutive_model object.
+  /// \param[in]     eC,  eC = eF'*eF
+  /// \param[out]    L,   computed deviatroic 4th order stiffness tenosr.
+  ///                     that is populated with values from the constitutive model.
+  /// \return non-zero value on internal error that should be handled by the calling function.
+  virtual int compute_dev_tangent(const Constitutive_model *m,
+                                  double *eC,
+                                  double *L)
+  const
+  { 
+    cm_elast->compute_tangent_dev(eC, cm_elast->mat, L);
+    return 0; 
+  };
+                                  
   /// User defined function to compute volumetric elasticity contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
@@ -263,6 +286,20 @@ class Model_parameters
                              const void *ctx,
                              double *value) const { return 0; };
 
+  /// User defined function to compute volumetric elasticity contributions
+  ///
+  /// \param[in]     m,     pointer to Constitutive_model object.
+  /// \param[in]     theta_e, theta_e = J = det(eF)
+  /// \return computed volumetric elasticity contribution
+  virtual double compute_d2udj2(const Constitutive_model *m,
+                             double theta_e)
+  const 
+  {
+    double ddudj = 0.0;
+    this->cm_elast->compute_d2udj2(&ddudj, theta_e);  
+    return ddudj*(cm_elast->mat->kappa);    
+  };
+                             
   /// User defined function to compute the elastic algorithmic stiffness tangent
   ///
   /// \param[in]  m,                 pointer to Constitutive_model object.
@@ -277,6 +314,38 @@ class Model_parameters
                                 double *L,
                                 double *S,
                                 const int compute_stiffness) const { return 0; };
+                                
+  /// User defined function to compute the deviatroic part of elastic stiffness tangent
+  ///
+  /// \param[in]  m,                 pointer to Constitutive_model object.
+  /// \param[in]  eF,                elastic deformation gradient
+  /// \param[out] L,                 4th order elasticity tensor
+  /// \param[out] S,                 2nd order PKII tensor
+  /// \param[in]  compute_stiffness, if 1 compute elasticity tensor
+  ///                                   0 no compute elasticity tensor
+  /// \return non-zero on internal error that should be handled by the
+  virtual int update_elasticity_dev(const Constitutive_model *m,
+                                    double *eF,
+                                    double *L,
+                                    double *S,
+                                    const int compute_stiffness = 0) 
+  const
+  {
+    int err = 0;
+    double eC[9];
+    for(int ia=0; ia<3; ia++){
+      for(int ib=0; ib<3; ib++){
+         eC[ia*3 + ib] = 0.0;
+         for(int ic=0; ic<3; ic++)
+           eC[ia*3 + ib] += eF[ic*3 + ia]*eF[ic*3 + ib];
+       }
+     }
+     err += compute_dev_stress(m,eC,S);
+     if(compute_stiffness)
+       err += compute_dev_tangent(m,eC,L);
+             
+     return err; 
+  };
 
   /// User defined function that to update the internally
   /// advance: (n + 1) -> (n) the internal state variables.
@@ -627,6 +696,28 @@ class Constitutive_model
   /// \return        non-zero on error.
   int unpack(const char *buffer,
              size_t *pos);
+
+  /// This function is running integration algorithm such that it modifies
+  /// the internal state to contain the updated values upon exit, i.e.,
+  /// subsequent calls to get_F functions will return the correct
+  /// values without re-integrating the constitutive model.
+  ///
+  /// \param[in] *Fnp1  deformation gradient at t(n+1)
+  /// \param[in] *hFn   thermal part of deformation gradient at t(n)
+  /// \param[in] *hFnp1 thermal part of deformation gradient at t(n+1)
+  /// \param[in] dt                     time step size
+  /// \param[in] alpha                  mid point rule alpha
+  /// \param[in] is_it_couple_w_thermal checking coupling with thermal
+  ///                                   if true: apply thermal expansitions
+  /// \param[in] tf_factor              (theta/J)^(1/3) used for computing true Fnp1  
+  /// \return non-zero on internal error that should be handled by the calling function.
+  int run_integration_algorithm(double *Fnp1, 
+                                double *hFn,
+                                double *hFnp1,
+                                double dt,
+                                double alpha,
+                                int is_it_couple_w_thermal = 0,
+                                double tf_factor = 1.0);
 };
 
 ///
@@ -750,7 +841,8 @@ struct FEMLIB;
 ///
 /// \param[in] fe finite element helper object
 /// \param[out] lk computed element stiffness matrix
-/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] re_np1 nodal variables at t(n+1) in the current element
+/// \param[in] re_n   nodal variables at t(n)   in the current element
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in] fv object for field variables
@@ -764,7 +856,8 @@ struct FEMLIB;
 /// \return non-zero on internal error
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
-                                              double *r_e,
+                                              double *re_np1,
+                                              double *re_n,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,
