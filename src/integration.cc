@@ -703,7 +703,6 @@ long integration_alg (long ne,
             sprintf (str,"%f",nor);
 
             for (N=0;N<3;N++){
-              M = 10;
               M = strcmp(err[N],str);
               if (M == 0) {
                 if(iter == 0 || GAMA == 2)

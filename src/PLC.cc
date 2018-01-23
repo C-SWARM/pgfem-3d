@@ -103,8 +103,11 @@ long PLC_Inaccessible (long ii,
 
       nor = sqrt (R*R)/HAR;
       sprintf (str,"%f",nor);
-      for (N=0;N<3;N++){ M = 10; M = strcmp(err[N],str);
-      if (M == 0) {PGFEM_printf("%ld %ld || Error in PLC_Inaccessible : nor = %s\n",ii,ip,err[N]); return (1);}}
+
+      for (N=0;N<3;N++){
+	M = strcmp(err[N],str);
+	if (M == 0){PGFEM_printf("%ld %ld || Error in PLC_Inaccessible : nor = %s\n",ii,ip,err[N]); return (1);}
+      }/* end for N */
     }/* end while */
   }/* end k < nss */
 

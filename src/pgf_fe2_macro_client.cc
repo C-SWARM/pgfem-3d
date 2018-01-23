@@ -588,7 +588,6 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
                     MACROSCALE *macro,
                     int *max_micro_sub_step)
 {
-  int err = 0;
 
   /* Get aliases from client object etc. */
   PGFEM_server_ctx *send = client->send;
@@ -607,8 +606,8 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
   /* exit early if !*->in_process */
   if(!recv->in_process && !send->in_process) return;
 
-  err += MPI_Comm_rank(c->mpi_comm,&rank_macro);
-  err += MPI_Comm_size(c->mpi_comm,&nproc_macro);
+  MPI_Comm_rank(c->mpi_comm,&rank_macro);
+  MPI_Comm_size(c->mpi_comm,&nproc_macro);
 
   /* if expecting to receive buffers */
   if(recv->in_process){
@@ -617,15 +616,15 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     double **receive = NULL;
     MPI_Request *req_r = NULL;
     MPI_Status *sta_r = NULL;
-    err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
+    init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
                        c->mpi_comm,c->pgfem_comm);
 
     /* assemble jobs as they are received */
     for(int i=0; i<recv->n_comms; i++){
       int idx = 0;
-      err += MPI_Waitany(recv->n_comms,recv->req,&idx,recv->stat);
+      MPI_Waitany(recv->n_comms,recv->req,&idx,recv->stat);
       MS_COHE_JOB_INFO *job = job_list + idx;
-      err += unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
+      unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
                      recv->buffer[idx]);
 
       /* compute the number of micro-sub-steps */
@@ -650,7 +649,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     break;
       case JOB_UPDATE:
     /* update cohesive elements */
-    err += macroscale_update_coel(job,macro);
+    macroscale_update_coel(job,macro);
     break;
       default: /* do nothing */ break;
       }
@@ -659,19 +658,16 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     /* send/finalize communication of the stiffness matrix */
     MPI_Status *sta_s = NULL;
     MPI_Request *req_s = NULL;
-    err += send_stiffmat_comm(&sta_s,&req_s,Lk,c->mpi_comm,c->pgfem_comm);
+    send_stiffmat_comm(&sta_s,&req_s,Lk,c->mpi_comm,c->pgfem_comm);
 
     /* get maximum number of steps from all macro processors */
-    err += MPI_Allreduce(MPI_IN_PLACE,max_micro_sub_step,
+    MPI_Allreduce(MPI_IN_PLACE,max_micro_sub_step,
              1,MPI_INT,MPI_MAX,c->mpi_comm);
 
-    err += assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
+    assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
                       c->SOLVER,receive);
 
-    err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,c->pgfem_comm);
-
-    /* re-initialize preconditioner ? */
-    /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mpi_comm); */
+    finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,c->pgfem_comm);
 
     /* clean up memory */
     free_stiffmat_comm_buffers(Lk, receive, c->pgfem_comm);

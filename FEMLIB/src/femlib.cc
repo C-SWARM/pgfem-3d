@@ -167,6 +167,8 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
                    this->ksi.m_pdata, this->eta.m_pdata, this->zet.m_pdata,
                    this->weights.m_pdata);
        }
+
+       this->itg_ids.initialization(npt_x*npt_y*npt_z, nsd);
        break;
      }
    case HEXAHEDRAL:
@@ -196,12 +198,13 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
          this->zet.m_pdata[ia] = gk[ia];
          this->weights.m_pdata[ia] = w[ia];
        }
+
+       this->itg_ids.initialization(npt_x*npt_y*npt_z, nsd);
        break;
      }
 
   }
 
-  this->itg_ids.initialization(npt_x*npt_y*npt_z, nsd);
 
   long cnt = 0;
   for(int a=1; a<=npt_x; a++)

@@ -102,7 +102,7 @@ static long fallback_GRedist_node(const int nproc,
   qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
 
   /* sort need_buf by Gnn */
-  qsort(need_buf,need,need_buf_elem_size,compare_long);
+  if (need_buf) qsort(need_buf,need,need_buf_elem_size,compare_long);
 
   if (PFEM_DEBUG){
     /* Check global node numbers, should be ordered and contiguous */
@@ -166,7 +166,6 @@ static long comm_hints_GRedist_node(const int nproc,
                                     const MPI_Comm comm,
                                     const long mp_id)
 {
-  int err = 0;
   long owned_gnn = 0;
   long total_gnn = 0;
   int owned_range[2] = {0};
@@ -174,7 +173,7 @@ static long comm_hints_GRedist_node(const int nproc,
   /* get the reduced list of shared global nodes */
   int n_shared = 0;
   const Node *shared = NULL;
-  err += nodes_filter_shared_nodes(nnode, nodes, &n_shared, &shared);
+  nodes_filter_shared_nodes(nnode, nodes, &n_shared, &shared);
 
   /* get the owned Gnn and Gid and pack into a buffer to
      communicate. The buffer stores information in the follwoing
@@ -215,7 +214,7 @@ static long comm_hints_GRedist_node(const int nproc,
   const int *send = Comm_hints_recv_list(hints);
   MPI_Request *req = static_cast<MPI_Request*>(malloc(nsend * sizeof(*req)));
   for (int i = 0; i < nsend; i++) {
-    err += MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
+    MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
                      send[i], GREDIST_TAG, comm, req + i);
   }
 
@@ -236,7 +235,7 @@ static long comm_hints_GRedist_node(const int nproc,
     /* Probe for waiting message */
     for (idx = 0; idx < nrecv; idx++) {
       if (finished[idx]) continue;
-      err += MPI_Iprobe(recv[idx], GREDIST_TAG, comm, &msg_waiting, &stat);
+      MPI_Iprobe(recv[idx], GREDIST_TAG, comm, &msg_waiting, &stat);
       if (msg_waiting) break;
     }
 
@@ -247,13 +246,13 @@ static long comm_hints_GRedist_node(const int nproc,
     /* determine the size of the incomming message and allocate an
        appropriately sized buffer */
     int msg_count = 0;
-    err += MPI_Get_count(&stat, MPI_LONG, &msg_count);
+    MPI_Get_count(&stat, MPI_LONG, &msg_count);
     long *recv_Gnn_Gid = static_cast<long*>(malloc(msg_count * sizeof(*recv_Gnn_Gid)));
 
     /* We want to ensure that we are posting the *identically
        matching* receive, so we use the tag instead of MPI_ANY_TAG */
     MPI_Request breq;
-    err += MPI_Irecv(recv_Gnn_Gid, msg_count, MPI_LONG,
+    MPI_Irecv(recv_Gnn_Gid, msg_count, MPI_LONG,
                      recv[idx], stat.MPI_TAG, comm, &breq);
 
     /* While waiting for communication to complete, find the range of
@@ -267,7 +266,7 @@ static long comm_hints_GRedist_node(const int nproc,
     }
 
     /* complete the receive communication */
-    err += MPI_Wait(&breq, MPI_STATUS_IGNORE);
+    MPI_Wait(&breq, MPI_STATUS_IGNORE);
 
     /*
       Now we loop through the nodes that need information from the
@@ -311,7 +310,7 @@ static long comm_hints_GRedist_node(const int nproc,
   nodes_sort_loc_id(nnode, nodes);
 
   /* complete non-blocking sends */
-  err += MPI_Waitall(nsend, req, MPI_STATUS_IGNORE);
+  MPI_Waitall(nsend, req, MPI_STATUS_IGNORE);
 
   /* cleanup */
   free(owned_Gnn_Gid);

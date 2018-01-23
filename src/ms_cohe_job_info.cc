@@ -179,7 +179,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   {
     int nnode = info->nnode;
     unpack_data(buffer,&info->nnode,&pos,1,sizeof(int));
-    if(nnode != info->nnode) return (err++);
+    if(nnode != info->nnode) return (++err);
   }
 
   /* unpack remaining scalars */

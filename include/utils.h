@@ -31,8 +31,8 @@ static inline void CHECK_SCANF(FILE *stream, Args... args) {
 }
 
 /// Simple utility to convince the compiler to tell us the length of an array.
-template <int N>
-constexpr int size(auto (&)[N]) {
+template <class T, int N>
+constexpr int size(T (&)[N]) {
   return N;
 }
 

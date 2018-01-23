@@ -202,7 +202,6 @@ int* Psparse_ApAi (int nproc,
     ndofc = ndofn;
     for (i=0;i<nce;i++){
 
-      nne = coel[i].toe/2;
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
         nodc[j] = coel[i].nod[j];
@@ -678,7 +677,7 @@ static int determine_comm_pattern(COMMUN comm,
   }
 
   int recvFrom;
-  int t_count = 0;
+  int t_count;
   for (int i = 0; i < nsend; i++){                                               //prepares mailboxes to receive from all nodes
     recvFrom = preSend[i];
     err += MPI_Irecv(&comm->R[recvFrom],1,MPI_LONG,recvFrom,MPI_ANY_TAG,                     //put received info in comm->R
@@ -687,7 +686,6 @@ static int determine_comm_pattern(COMMUN comm,
   }
   //can be changed to smaller comm
   /* Send size to all other processors */
-  t_count = 0;
 
   comm->Ns = nrecv;
   for (int i = 0; i < nrecv; i++){                                              //send size to all
@@ -695,7 +693,6 @@ static int determine_comm_pattern(COMMUN comm,
     int sendTo = preRecv[i];
     err += MPI_Isend(&comm->S[sendTo],1,MPI_LONG,sendTo,myrank,
                      mpi_comm,&t_req_s[i]);                                         //t_req_s is required for each non-blocking call
-    //        t_count++;                                                                //cant end communication without it
 
     if(comm->S[sendTo] == 0) comm->Ns--;                                            //calculate number of procs that I sent to
   }

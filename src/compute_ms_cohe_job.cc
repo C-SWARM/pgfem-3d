@@ -325,7 +325,6 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
                           int *n_step,const int mp_id)
 {
   int err = 0;
-  double time = 0.0;
   double pores = 0.0;
   const int print_level = 0;
   *n_step = 0;
@@ -334,7 +333,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   double *sup_defl = PGFEM_calloc(double, c->supports->npd);
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  time += Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step);
+  Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step);
 
   free(sup_defl);
   return err;

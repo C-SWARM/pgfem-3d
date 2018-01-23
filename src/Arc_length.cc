@@ -232,33 +232,6 @@ double Multiphysics_Arc_length(Grid *grid,
   STEP = 1;
 
  rest:
-  /* /\* Force load stepping for ALL restarts *\/ */
-  /* ART = 0; */
-  /* if (INFO == 1 && ART == 0){ */
-
-  /*   /\* Reset variables *\/ */
-  /*   if (opts->analysis_type == 2 || opts->analysis_type == 3) */
-  /*     res_fini_def (ne,npres,elem,eps,sig_e,crpl); */
-
-  /*   if (opts->analysis_type == 4) */
-  /*     res_stab_def (ne,npres,elem,eps,sig_e,opts->stab); */
-
-  /*   if(opts->analysis_type == 5) /\* P1+B/P1 *\/ */
-  /*     MINI_reset(elem,ne,npres,sig_e); */
-
-  /*   if(opts->analysis_type == 6) /\* P1+B/P1/V1 *\/ */
-  /*     MINI_3f_reset(elem,ne,npres,1,sig_e,eps); */
-
-  /*   for (i=0;i<ndofd;i++) { */
-  /*     fv->dd_u[i] = fv->d_u[i] = arc->D_R[i] = fv->f_defl[i] = fv->f[i] = 0.0; */
-  /*   } */
-
-  /*   if (myrank == 0) PGFEM_printf ("\n** Trying new root selection **\n\n"); */
-
-  /*   ART = 1; */
-  /* } */
-  /* else { */
-  /* if (myrank == 0) PGFEM_printf ("\n** Subdividing **\n\n"); */
   dlm0 = subdiv_arc(INFO, &(time_steps->dt_np1), arc->dt0, &STEP, &DIV,
                     time_steps->tim, time_steps->times, &ST, grid->ne,
                     fv->ndofd, fv->npres, grid->element, crpl, fv->eps, fv->sig,
@@ -341,7 +314,6 @@ double Multiphysics_Arc_length(Grid *grid,
 
     if (BS_nor > 100.*(sol->err) || BS_iter < 0) {
       INFO = 1;
-      ART = 1;
       if (myrank == 0) {
         PGFEM_printf("ERROR in the BSpar_solve : nor = %8.8e || iter = %d\n",
                      BS_nor, BS_iter);
@@ -358,7 +330,6 @@ double Multiphysics_Arc_length(Grid *grid,
           PGFEM_printf("ERROR in the BSpar_solve : nor = %s\n", error[N]);
         }
         INFO = 1;
-        ART = 1;
         goto rest;
       }
     }
@@ -421,7 +392,6 @@ double Multiphysics_Arc_length(Grid *grid,
         PGFEM_printf("*** Arc length too large: Restart with smaller arc ***\n");
       }
       INFO = 1;
-      ART = 1;
       goto rest;
     }
 
@@ -607,7 +577,6 @@ double Multiphysics_Arc_length(Grid *grid,
       /* Check for correct solution */
       if (BS_nor > 100.*(sol->err) || BS_iter < 0) {
         INFO = 1;
-        ART = 1;
         if (myrank == 0) {
           PGFEM_printf("ERROR in the BSpar_solve : nor = %8.8e || iter = %d\n",
                        BS_nor, BS_iter);
@@ -624,7 +593,6 @@ double Multiphysics_Arc_length(Grid *grid,
             PGFEM_printf("ERROR in the BSpar_solve : nor = %s\n", error[N]);
           }
           INFO = 1;
-          ART = 1;
           goto rest;
         }
       }
@@ -657,7 +625,6 @@ double Multiphysics_Arc_length(Grid *grid,
       /* Check for correct solution */
       if (BS_nor > 100.*(sol->err) || BS_iter < 0) {
         INFO = 1;
-        ART = 1;
         if (myrank == 0) {
           PGFEM_printf("ERROR in the BSpar_solve : nor = %8.8e || iter = %d\n",
                        BS_nor, BS_iter);
@@ -674,7 +641,6 @@ double Multiphysics_Arc_length(Grid *grid,
             PGFEM_printf("ERROR in the BSpar_solve : nor = %s\n", error[N]);
           }
           INFO = 1;
-          ART = 1;
           goto rest;
         }
       }
@@ -708,7 +674,6 @@ double Multiphysics_Arc_length(Grid *grid,
             PGFEM_printf("Complex root in ARC-LENGHT method\n");
           }
           INFO = 1;
-          ART = 1;
           goto rest;
         }
       }
@@ -873,9 +838,6 @@ double Multiphysics_Arc_length(Grid *grid,
               PGFEM_printf("Error in the iteration : iter > iter_max\n");
             }
             INFO = 1;
-            if (gam == 0 && arc->ARC == 1) {
-              ART = 1;
-            }
             goto rest;
           }
         }

@@ -521,7 +521,6 @@ int multi_scale_main(int argc, char* argv[])
 
         /* Load multiplier */
         lm += dlm;
-        dlm = 0.0;
 
         /* Total force vector */
         for (int i=0;i<c->ndofd;i++){
