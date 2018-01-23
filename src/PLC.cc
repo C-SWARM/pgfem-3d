@@ -39,7 +39,7 @@ double PLC_diff_g_ga (long ii,
 
   diff = -1.0*dt*crpl[mat].nu*crpl[mat].b*N1/(6.0*sqrt(Rof)) + crpl[mat].fo*exp(-1.*Xi)*N3;
 
-  sprintf (str,"%f",diff); for (N=0;N<3;N++){ M = 10; M = strcmp(err[N],str); if (M == 0) return (0.0);}
+  sprintf (str,"%f",diff); for (N=0;N<3;N++){ M = strcmp(err[N],str); if (M == 0) return (0.0);}
 
   return (diff);
 }

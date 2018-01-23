@@ -1515,7 +1515,6 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
     } //end SUBDIVISION
     if(is_sub_cvg)
     {
-      INFO = 0;
       sp.accellerate = 0;
 
       if(NR_COMPUTE_REACTIONS && !(load->sups[mp_id])->multi_scale){

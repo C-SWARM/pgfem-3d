@@ -475,7 +475,6 @@ int resid_st_elem (long ii,
         /* DO NOT free Fn!!! */
         const double *Fn = NULL;
         if (sup->multi_scale){
-          Fn = identity;
           Jn = 1.0;
         } else {
           Fn = eps[ii].il[ip].F;

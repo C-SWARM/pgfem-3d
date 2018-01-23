@@ -383,6 +383,8 @@ int main(int argc, char **argv)
  exit_main:
   if (err) printf("Caught error, exiting early!\n");
 
+  delete sv;
+
   if(p!=NULL)
     delete p;
     

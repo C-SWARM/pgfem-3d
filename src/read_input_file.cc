@@ -674,7 +674,7 @@ int read_solver_file(TimeStepping *ts,
         load->tim_load[ia] = aloc1l(ts->nt);
     }
   }
-  return 0;
+  return err;
 }
 
 /// Read initial conditions from lagcy format.

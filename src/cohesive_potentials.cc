@@ -42,7 +42,6 @@ int read_cohesive_properties(FILE *in,
   p = (*props);
 
   for(int i=0; i<*n_mat; i++){
-    match = 0;
     do{
       if (fgets(line,len,in) == nullptr) {
         abort();
