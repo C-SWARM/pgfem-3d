@@ -65,8 +65,6 @@ double int_alg_res (double lam,
   long M,N,P,k;
   double **AA,**E,**PP,pom,dij,DD;
 
-  DD = 0.0;
-
   AA = aloc2 (3,3); E = aloc2 (3,3); PP = aloc2 (3,3);
 
   def_grad_inv (CCONST_2(double) UU,AA);
@@ -320,7 +318,7 @@ long int_UU (long ii,
     pom = sqrt (nor + *DD**DD);
 
     sprintf (str,"%f",pom);
-    for (N=0;N<3;N++){M = 10; M = strcmp(err[N],str);
+    for (N=0;N<3;N++){M = strcmp(err[N],str);
       if (M == 0) {if(iter == 0 || GAMA == 2) PGFEM_printf("%ld %ld || Error in the integration algorithm : nor = %s\n",ii,ip,err[N]); INFO = 1; break;}}
     if (INFO == 1) break;
 
@@ -351,7 +349,7 @@ long int_UU (long ii,
       pom = sqrt (nor + *DD**DD);
 
       sprintf (str,"%f",pom);
-      for (N=0;N<3;N++){M = 10; M = strcmp(err[N],str);
+      for (N=0;N<3;N++){M = strcmp(err[N],str);
         if (M == 0) {if(iter == 0 || GAMA == 2) PGFEM_printf("%ld %ld || Error in the integration algorithm : nor = %s\n",ii,ip,err[N]); INFO = 1; break;}}
       if (INFO == 1) break;
 
@@ -416,7 +414,7 @@ long int_HA (long ii,
   }
 
   sprintf (str,"%f",*HAR);
-  for (N=0;N<3;N++){ M = 10; M = strcmp(err[N],str);
+  for (N=0;N<3;N++){ M = strcmp(err[N],str);
     if (M == 0) {PGFEM_printf("%ld %ld || Error in the integration algorithm (Hardening) : nor = %s\n",ii,ip,err[N]); return (1);}}
 
   /* PGFEM_printf ("[%ld][%ld] :: Har = %12.10f || ga = %12.12e : GAMA = %5.5e\n",ii,ip,*HAR,ga,eps[ii].il[ip].GAMA); */

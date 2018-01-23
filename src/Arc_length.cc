@@ -213,7 +213,6 @@ double Multiphysics_Arc_length(Grid *grid,
   /* BOUNDING_ELEMENT *b_elems = NULL; */
 
   TYPE = 1;
-  ERROR = sol->nor_min;
   pdt = time_steps->dt_np1;
 
   switch (opts->analysis_type) {

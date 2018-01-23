@@ -758,7 +758,7 @@ static void update_state_variables_co (COEL *cel, /* ptr to single el */
   for(int i=0;i<II;i++){
     for(int j=0;j<JJ;j++){
       double ksi, eta, ai, aj;
-      ksi = eta = ai = aj = 0.0;
+      eta = ai = aj = 0.0;
 
       /* Coordinates ksi, eta */
       switch(nne){

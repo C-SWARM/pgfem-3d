@@ -199,7 +199,6 @@ long LINE_S3_MP(Grid *grid,
 
     sprintf (str1,"%f",*nor);
     for (N=0;N<3;N++){
-      M = 10;
       M = strcmp(error[N],str1);
 
       if (M == 0){
@@ -353,7 +352,6 @@ long ALINE_S3_MP(Grid *grid,
 
     sprintf (str1,"%f",*DLM);
     for (N=0;N<3;N++){
-      M = 10;
       M = strcmp(error[N],str1);
 
       if (M == 0) {
@@ -427,7 +425,6 @@ long ALINE_S3_MP(Grid *grid,
     *nor /= nor1;
     sprintf (str1,"%f",*nor);
     for (N=0;N<3;N++){
-      M = 10;
       M = strcmp(error[N],str1);
       if (M == 0){
         if (myrank == 0)

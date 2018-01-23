@@ -199,8 +199,6 @@ void read_elem (FILE *in,
     }
   }
 
-  /* reset error  */
-  err = 0;
   for (long i=0;i<ne;i++){
     err = read_assign_elem_material(in,elem);
     if(err){

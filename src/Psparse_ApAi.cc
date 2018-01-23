@@ -265,7 +265,6 @@ int* Psparse_ApAi (int nproc,
   if (cohesive == 1){
     for (i=0;i<nce;i++){
 
-      nne = coel[i].toe/2;
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
         nodc[j] = coel[i].nod[j];

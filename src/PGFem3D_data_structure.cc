@@ -637,7 +637,7 @@ int destruct_multiphysics(Multiphysics *mp)
   if(NULL != mp->physics_ids) free(mp->physics_ids);
   if(NULL != mp->ndim)        free(mp->ndim);
   if(NULL != mp->write_no)    free(mp->write_no);
-  err += multiphysics_initialization(mp);
+  multiphysics_initialization(mp);
   return err = 0;
 }
 
