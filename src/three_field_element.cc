@@ -106,7 +106,7 @@ class Var_Carrier
       Stress = getDevStressFunc(1, e_hommat);
       Stiffness = getMatStiffFunc(1, e_hommat);
 
-    };
+    }
     void set_variables(double theta_in, double P_in, bool compute_elasticity_tenosr = true)
     {
       TensorA<2> F(mF), FI(mFI);
@@ -131,22 +131,22 @@ class Var_Carrier
       double Up = 0.0;
       UP(J, e_hommat, &Up);
       return  kappa*Up;
-    };
+    }
 
     double compute_d2UdJ2(double J)
     {
       double Up = 0.0;
       UPP(J, e_hommat, &Up);
       return kappa*Up;
-    };
+    }
     void compute_PK2(double *C, double *S)
     {
       Stress(C,e_hommat,S);
-    };
+    }
     void compute_L(double *C, double *L)
     {
       Stiffness(C,e_hommat,L);
-    };
+    }
 
     template<class T1, class T2> void compute_A_of_du(T1 &A, T2 &du)
     {
@@ -157,7 +157,7 @@ class Var_Carrier
       Tensor<2> sduTF;
       
       symm(duTF, A);
-    };
+    }
 };
 
 int compute_d_theta_dP_test(Matrix<double> &d_theta,

@@ -49,7 +49,7 @@ namespace {
 void Var_Carrier::compute_factor(void)
 {
   factor = pow(theta_r/tJr, 2.0/3.0);
-};
+}
 
 /// set deformation gradients and stress and elasticity Tensors
 /// for later use in the integration loop
@@ -74,7 +74,7 @@ void Var_Carrier::set_tenosrs(double *tFr,
   eSd_in   = eSd;
   Ld_in    = Ld;
   compute_Z();
-};
+}
 
 /// set scalar variables for later use in the integration loop
 ///
@@ -106,7 +106,7 @@ void Var_Carrier::set_scalars(double theta_r_in,
   JM  = ttl::det(M);
   tJr = ttl::det(tFr);
   compute_factor();
-};
+}
 
 
 /// compute M^T*eF^T*Fr^T*Fr*eF*M;
@@ -115,7 +115,7 @@ void Var_Carrier::compute_Z(void)
   TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);    
   Tensor<2> FrFeM = tFr(i,k)*eFn(k,l)*M(l,j);
   Z = FrFeM(k,i)*FrFeM(k,j);
-};
+}
 
 /// compute eFn^T*symm(Grad_del*tFr)*eFn;
 template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
@@ -126,14 +126,14 @@ template<class T1> void Var_Carrier::compute_Phi(T1 &Phi, double *Grad_beta_in)
   A = Grad_beta(k,i)*tFr(k,j);
   symm(A, Asym);
   Phi = eFn(k,i)*Asym(k,l)*eFn(l,j);
-};
+}
 
 /// compute M^T*eFn^T*symm(Grad_del*tFr)*eFn*M;
 template<class T1, class T2> void Var_Carrier::compute_Psi(T1 &Psi, T2 &Phi)    
 {
   TensorA<2> M(M_in); 
   Psi = M(k,i)*Phi(k,l)*M(l,j);
-};   
+}
 
 /// compute symm(dM^T*eF^T*Fr^T*Fr*eF*M) 
 template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
@@ -143,7 +143,7 @@ template<class T1, class T2> void Var_Carrier::compute_Gamma(T1 &Gamma,
   Tensor<2> tFreFn = tFr(i,k)*eFn(k,j);
   Tensor<2> G = dM(k,i)*tFreFn(l,k)*tFreFn(l,o)*M(o,j);
   symm(G,Gamma);
-};
+}
 
 /// compute M^(-T):dM
 template<class T> void Var_Carrier::compute_Lambda(double *Lambda,
@@ -153,7 +153,7 @@ template<class T> void Var_Carrier::compute_Lambda(double *Lambda,
   Tensor<2> MI;
   inv(M,MI);
   *Lambda = MI(j,i)*dM(i,j); 
-}; 
+}
 
 /// compute D{M^T*eFn^T*symm(Grad_del*tFr)*eFn*M}[Grad_tu]   
 template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
@@ -177,7 +177,7 @@ template<class T> void Var_Carrier::compute_DPsi(T &DPsi,
   symm(GradGrad, sGradGrad);
   
   DPsi = eFnM(k,i)*sGradGrad(k,l)*eFnM(l,j) + 2.0*sdMPhiM(i,j);  
-};
+}
 
 /// compute residual: Ru at ip
 ///
