@@ -126,6 +126,7 @@ int ch_read_props(Constitutive_model *m,
   brace = fgetc(in);
   assert(brace == '{' && "Expect opening brace before CM properties");
   err += p->read_param(in);
+  assert(p != NULL && "Error reading param");
 
   /* initialize cm object */
   err += m->initialization(p);

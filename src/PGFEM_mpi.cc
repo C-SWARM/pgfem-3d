@@ -408,19 +408,19 @@ int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
 
 int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
                  const int idx,
-                 void *buf,
+                 void **buf,
                  int *n_bytes,
                  int *proc,
                  int *tag,
-                 MPI_Request *req)
+                 MPI_Request **req)
 {
   int err = 0;
   if(idx >= ctx->n_comms) return ++err;
-  buf = ctx->buffer[idx];
+  *buf = ctx->buffer[idx];
   *n_bytes = ctx->sizes[idx];
   *proc = ctx->procs[idx];
   *tag = ctx->tags[idx];
-  req = ctx->req + idx;
+  *req = ctx->req + idx;
   return err;
 }
 

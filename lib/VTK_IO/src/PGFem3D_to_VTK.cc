@@ -416,7 +416,8 @@ read_VTK_file(char fn[], double *r)
   double *temp = 0;
   int nelems = 0;
 
-  vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
+  vtkCellData *cData;
+  //vtkCellData *cData = grid->GetCellData(); // store the grid's cell data
   vtkPointData *pData = grid->GetPointData();
   vtkDataArray *vtkData; // used to temporarily store vtk data arrays. CauchyStress, etc.
 

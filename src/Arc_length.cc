@@ -841,8 +841,7 @@ double Multiphysics_Arc_length(Grid *grid,
           }
         }
       } /* end iter > iter_max */
-      iter++;
-      BS_nor = 0.0;
+      ++iter;
     }/* while nor > sol->nor_min */
 
     /* before increment after convergence, check max damage */

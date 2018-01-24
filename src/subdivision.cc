@@ -140,7 +140,6 @@ int subdivision_scheme(int was_NR_ok,
   }
   else
   {
-    accellerate = 0; // reset acceleration flag
     if(step_id == 0) // 1st subdivision
     {
       if(decellerate == 0) // 1st load stepping

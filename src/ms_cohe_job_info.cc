@@ -171,7 +171,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   /* Check that we have enough space in info */
   {
     size_t loc_buffer_len = compute_MS_COHE_JOB_INFO_size(info);
-    if(loc_buffer_len < buffer_len) return (err++);
+    if(loc_buffer_len < buffer_len) return (++err);
   }
 
   size_t pos = 0;

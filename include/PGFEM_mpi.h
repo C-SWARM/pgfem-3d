@@ -153,11 +153,11 @@ int PGFEM_server_ctx_set_tag_at_idx(PGFEM_server_ctx *ctx,
  */
 int PGFEM_server_ctx_get_message(PGFEM_server_ctx *ctx,
                                  const int idx,
-                                 void *buf,
+                                 void **buf,
                                  int *n_bytes,
                                  int *proc,
                                  int *tag,
-                                 MPI_Request *req);
+                                 MPI_Request **req);
 
 /** Destroy a PGFEM_server_ctx object */
 int destroy_PGFEM_server_ctx(PGFEM_server_ctx *ctx);
