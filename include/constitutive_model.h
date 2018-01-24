@@ -903,7 +903,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 ///
 /// \param[in] fe finite element helper object
 /// \param[out] f computed element residual vector
-/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] re_np1 nodal variables at t(n+1) in the current element
+/// \param[in] re_n   nodal variables at t(n)   in the current element
+/// \param[in] re_nm1 nodal variables at t(n+1) in the current element
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in] fv object for field variables
@@ -919,7 +921,9 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
-                                              double *r_e,
+                                              double *re_np1,
+                                              double *re_n,
+                                              double *re_nm1,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,

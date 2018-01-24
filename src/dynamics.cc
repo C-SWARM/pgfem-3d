@@ -297,7 +297,7 @@ int residual_with_inertia(FEMLIB *fe,
      {
        double *f_n   = aloc1(ndofe);
        memset(f_n, 0, sizeof(double)*ndofe);
-       err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
+       err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,r0,r0_,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
 
        for(long a = 0; a<ndofe; a++)
          be[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
