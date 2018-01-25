@@ -78,21 +78,21 @@ class ThreeFieldVariables
                  const int Pno,
                  bool is_temporal = false)
   {    
-    V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
     V_nm1.initialization(ne,Vno,1.0); // must be initialized to 1.0
-
+      V_n.initialization(ne,Vno,1.0); // must be initialized to 1.0
+ 
     P_nm1.initialization(ne,Pno,0.0);
-    P_n.initialization(  ne,Pno,0.0);
+      P_n.initialization(ne,Pno,0.0);
     
     if(is_temporal == false)
     {  
-      V_n.initialization(  ne,Vno,1.0); // must be initialized to 1.0
-      dV.initialization(   ne,Vno,0.0);
-      ddV.initialization(  ne,Vno,0.0);
+      V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
+         dV.initialization(ne,Vno,0.0);
+        ddV.initialization(ne,Vno,0.0);
       
       P_np1.initialization(ne,Pno,0.0);
-      dP.initialization(   ne,Pno,0.0);
-      ddP.initialization(  ne,Pno,0.0);        
+         dP.initialization(ne,Pno,0.0);
+        ddP.initialization(ne,Pno,0.0);        
     }
   };
   
