@@ -842,7 +842,7 @@ struct FEMLIB;
 /// \param[in] fe finite element helper object
 /// \param[out] lk computed element stiffness matrix
 /// \param[in] re_np1 nodal variables at t(n+1) in the current element
-/// \param[in] re_n   nodal variables at t(n)   in the current element
+/// \param[in] re_npa nodal variables at (1-alpha)r(n) + alpha*r(n+1) in the current element
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in] fv object for field variables
@@ -857,7 +857,7 @@ struct FEMLIB;
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
                                               double *re_np1,
-                                              double *re_n,
+                                              double *re_npa,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,
@@ -904,8 +904,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 /// \param[in] fe finite element helper object
 /// \param[out] f computed element residual vector
 /// \param[in] re_np1 nodal variables at t(n+1) in the current element
-/// \param[in] re_n   nodal variables at t(n)   in the current element
-/// \param[in] re_nm1 nodal variables at t(n+1) in the current element
+/// \param[in] re_npa nodal variables at (1-alpha)r(n)   + alpha*r(n+1) in the current element
+/// \param[in] re_nma nodal variables at (1-alpha)r(n-1) + alpha*r(n)   in the current element
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in] fv object for field variables
@@ -922,8 +922,8 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *re_np1,
-                                              double *re_n,
-                                              double *re_nm1,
+                                              double *re_npa,
+                                              double *re_nma,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,
@@ -977,7 +977,7 @@ int constitutive_model_update_NR(Grid *grid,
                                  const PGFem3D_opt *opts,
                                  Multiphysics *mp,
                                  int mp_id,
-                                 const double dt,
+                                 const double *dts,
                                  double alpha);
 
 

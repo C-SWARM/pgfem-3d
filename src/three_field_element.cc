@@ -613,7 +613,10 @@ int residuals_3f_el(FEMLIB *fe,
 /// \param[in]  mat   a material object
 /// \param[in]  fv    object for field variables
 /// \param[in]  alpha mid point alpha
-/// \param[in]  dt    time step size
+/// \param[in]  dts   time step size at t(n), t(n+1); dts[DT_N]   = t(n)   - t(n-1)
+///                                                   dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in]  re_nma nodal variabls(displacements) on the current element: (1-alpha)*u(n-1) + alpha*u(n)
+/// \param[in]  re_npa nodal variabls(displacements) on the current element: (1-alpha)*u(n)   + alpha*u(n+1)
 /// \return non-zero on internal error
 int residuals_3f_w_inertia_el(FEMLIB *fe,
                               double *f,
@@ -622,9 +625,9 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
                               MaterialProperty *mat,
                               FieldVariables *fv,
                               Solver *sol,
-                              double *dts,
-                              double *u_nma,
-                              double *u_npa)
+                              const double *dts,
+                              double *re_nma,
+                              double *re_npa)
 {
 
   int eid = fe->curt_elem_id;
@@ -657,43 +660,44 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
     dt_alpha_2 = -dts[DT_N]*alpha_2;
   }
 
-  Matrix<double> u1(nne*nsd, 1), u2(nne*nsd, 1), P1(Pno, 1), P2(Pno, 1);
+  Matrix<double> u_npa(nne*nsd, 1), u_nma(nne*nsd, 1), Pe_npa(Pno, 1), Pe_nma(Pno, 1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
     {
-      u1.m_pdata[a*nsd+b] = u_nma[a*ndofn+b];
-      u2.m_pdata[a*nsd+b] = u_npa[a*ndofn+b];
+      u_npa.m_pdata[a*nsd+b] = re_npa[a*ndofn+b];
+      u_nma.m_pdata[a*nsd+b] = re_nma[a*ndofn+b];      
     }
 
     if(Pno==nne)
     {
-      P1.m_pdata[a] = u_nma[a*ndofn+nsd];
-      P2.m_pdata[a] = u_npa[a*ndofn+nsd];
+      Pe_npa.m_pdata[a] = re_npa[a*ndofn+nsd];      
+      Pe_nma.m_pdata[a] = re_nma[a*ndofn+nsd];
     }
   }
 
   if(Pno==1)
   {
-    P1(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
-    P2(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
+    Pe_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
             alpha_2*( fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
+    Pe_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
+            
   }
   
-  Var_Carrier var_npa, var_nm1;
+  Var_Carrier var_npa, var_nma;
   var_npa.set_elasticity_functions(mat,grid,eid);
-  var_nm1.set_elasticity_functions(mat,grid,eid);
+  var_nma.set_elasticity_functions(mat,grid,eid);
   
   Matrix<double> Ru(  nne*nsd,1, 0.0);
-  Matrix<double> Ru_1(nne*nsd,1, 0.0);
-  Matrix<double> Ru_2(nne*nsd,1, 0.0);
+  Matrix<double> Ru_npa(nne*nsd,1, 0.0);
+  Matrix<double> Ru_nma(nne*nsd,1, 0.0);
   Matrix<double> Rp(  Pno,    1, 0.0);
-  Matrix<double> Rp_1(Pno,    1, 0.0);
-  Matrix<double> Rp_2(Pno,    1, 0.0);
+  Matrix<double> Rp_npa(Pno,    1, 0.0);
+  Matrix<double> Rp_nma(Pno,    1, 0.0);
   Matrix<double> Rt(  Vno,    1, 0.0);
-  Matrix<double> Rt_1(Vno,    1, 0.0);
-  Matrix<double> Rt_2(Vno,    1, 0.0);
+  Matrix<double> Rt_npa(Vno,    1, 0.0);
+  Matrix<double> Rt_nma(Vno,    1, 0.0);
   Matrix<double> Kut(nne*nsd,Vno, 0.0);
   Matrix<double> Kpt(Pno,    Vno, 0.0);
   Matrix<double> Ktt(Vno,    Vno, 0.0);
@@ -708,51 +712,52 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,u1.m_pdata,var_nm1.mF);
-    fe->update_deformation_gradient(ndofn,u2.m_pdata,var_npa.mF);
+    fe->update_deformation_gradient(ndofn,u_npa.m_pdata,var_npa.mF);
+    fe->update_deformation_gradient(ndofn,u_nma.m_pdata,var_nma.mF);
 
-    double Tn1 = 0.0; // 1: n-1+alpha
-    double Tn2 = 0.0; // 2: n+alpha
-    double Pn1 = 0.0;
-    double Pn2 = 0.0;
+    double Tnma = 0.0; // 1: n-1+alpha
+    double Tnpa = 0.0; // 2: n+alpha
+    double Pnma = 0.0;
+    double Pnpa = 0.0;
 
     for(int ia=1; ia<=Vno; ia++)
     {
-      Tn1 += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));
-      Tn2 += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
+      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
              alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)));
+             
+      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));             
     }
     for(int ia=1; ia<=Pno; ia++)
     {
-      Pn1 += Np(ia)*P1(ia);
-      Pn2 += Np(ia)*P2(ia);
+      Pnpa += Np(ia)*Pe_npa(ia);
+      Pnma += Np(ia)*Pe_nma(ia);
     }
-    
-    var_nm1.set_variables(Tn1, Pn1);
-    var_npa.set_variables(Tn2, Pn2);
+        
+    var_npa.set_variables(Tnpa, Pnpa);
+    var_nma.set_variables(Tnma, Pnma);    
     
     TF_Kup_ip(Kup, fe, var_npa, Pno, Np, dt_alpha_1_minus_alpha);
     TF_Kpt_ip(Kpt, fe, var_npa, Pno, Np, Vno, Nt, dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt, fe, var_npa, Vno, Nt, dt_alpha_1_minus_alpha);
-        
-    TF_Ru_ip(Ru_1,fe,var_nm1);
-    TF_Rp_ip(Rp_1,fe,var_nm1,Pno,Np);
-    TF_Rt_ip(Rt_1,fe,var_nm1,Vno,Nt);
 
-    TF_Ru_ip(Ru_2,fe,var_npa);
-    TF_Rp_ip(Rp_2,fe,var_npa,Pno,Np);
-    TF_Rt_ip(Rt_2,fe,var_npa,Vno,Nt);
+    TF_Ru_ip(Ru_npa,fe,var_npa);
+    TF_Rp_ip(Rp_npa,fe,var_npa,Pno,Np);
+    TF_Rt_ip(Rt_npa,fe,var_npa,Vno,Nt);
+            
+    TF_Ru_ip(Ru_nma,fe,var_nma);
+    TF_Rp_ip(Rp_nma,fe,var_nma,Pno,Np);
+    TF_Rt_ip(Rt_nma,fe,var_nma,Vno,Nt);
   }
   Ktp.trans(Kpt);
 
   for(int a=0; a<nne*nsd; a++)
-    Ru.m_pdata[a] = dt_alpha_1*Ru_2.m_pdata[a] + dt_alpha_2*Ru_1.m_pdata[a];
+    Ru.m_pdata[a] = dt_alpha_1*Ru_npa.m_pdata[a] + dt_alpha_2*Ru_nma.m_pdata[a];
 
   for(int a=0; a<Vno; a++)
-    Rt.m_pdata[a] = dt_alpha_1*Rt_2.m_pdata[a] + dt_alpha_2*Rt_1.m_pdata[a];
+    Rt.m_pdata[a] = dt_alpha_1*Rt_npa.m_pdata[a] + dt_alpha_2*Rt_nma.m_pdata[a];
 
   for(int a=0; a<Pno; a++)
-    Rp.m_pdata[a] = dt_alpha_1*Rp_2.m_pdata[a] + dt_alpha_2*Rp_1.m_pdata[a];
+    Rp.m_pdata[a] = dt_alpha_1*Rp_npa.m_pdata[a] + dt_alpha_2*Rp_nma.m_pdata[a];
 
   Ktp.trans(Kpt);  
   condense_F_3F_to_1F(f, nne, nsd, Pno, Vno,
@@ -860,26 +865,27 @@ void evaluate_PT_el(FEMLIB *fe,
 /// compute and update increments of prssure and volume for transient
 /// in an element
 ///
-/// \param[in]  fe    finite element helper object
-/// \param[in]  grid  a mesh object
-/// \param[in]  mat   a material object
-/// \param[in]  fv    object for field variables, fv->tf will be updated
-/// \param[in]  r_e   nodal variabls(displacements + pressure (if ndofn = 4)) 
-///                   on the current element
-/// \param[in]  d_u   increments of displacement (updated by NR before calling this function)
-/// \param[in]  u_nma mid-point rule u at n-1+a for displacement
-/// \param[in]  u_npa mid-point rule u at n+a for displacement
-/// \param[in]  dt    time step size
-/// \param[in]  alpha mid point alpha
+/// \param[in]  fe     finite element helper object
+/// \param[in]  grid   a mesh object
+/// \param[in]  mat    a material object
+/// \param[in]  fv     object for field variables, fv->tf will be updated
+/// \param[in]  r_e    nodal variabls(displacements + pressure (if ndofn = 4)) 
+///                    on the current element
+/// \param[in]  d_u    increments of displacement (updated by NR before calling this function)
+/// \param[in]  dts   time step size at t(n), t(n+1); dts[DT_N]   = t(n)   - t(n-1)
+///                                                   dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in]  re_nma nodal variabls(displacements) on the current element: (1-alpha)*u(n-1) + alpha*u(n)
+/// \param[in]  re_npa nodal variabls(displacements) on the current element: (1-alpha)*u(n)   + alpha*u(n+1)
+/// \param[in]  alpha  mid point alpha
 void evaluate_PT_w_inertia_el(FEMLIB *fe,
                               Grid *grid,
                               MaterialProperty *mat,
                               FieldVariables *fv,
-                              Matrix<double> &r_e,
+                              Matrix<double> &r_e,                              
                               Matrix<double> &du,
-                              Matrix<double> &u_nma,
-                              Matrix<double> &u_npa,
-                              double dt,
+                              const double *dts,
+                              Matrix<double> &re_nma,
+                              Matrix<double> &re_npa,
                               double alpha)
 {
   int eid = fe->curt_elem_id;
@@ -907,46 +913,47 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
   else
   {
     alpha_1 = 1.0 - alpha;
-    alpha_2 = alpha;
-    dt_alpha_1_minus_alpha = dt*alpha_1*alpha_2;
-    dt_alpha_1 = -dt*alpha_1;
-    dt_alpha_2 = -dt*alpha_2;
+    alpha_2 = alpha;    
+    dt_alpha_1_minus_alpha = dts[DT_NP1]*alpha_1*alpha_2;
+    dt_alpha_1 = -dts[DT_NP1]*alpha_1;
+    dt_alpha_2 = -dts[DT_N]*alpha_2;    
   }
   
-  Matrix<double> u1(nne*nsd, 1), u2(nne*nsd, 1), P1(Pno, 1), P2(Pno, 1);
+  Matrix<double> u_npa(nne*nsd, 1), u_nma(nne*nsd, 1), Pe_npa(Pno, 1), Pe_nma(Pno, 1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
     {
-      u1.m_pdata[a*nsd+b] = u_nma.m_pdata[a*ndofn+b];
-      u2.m_pdata[a*nsd+b] = u_npa.m_pdata[a*ndofn+b];
+      u_npa.m_pdata[a*nsd+b] = re_npa.m_pdata[a*ndofn+b];
+      u_nma.m_pdata[a*nsd+b] = re_nma.m_pdata[a*ndofn+b];
     }
 
     if(Pno==nne)
     {
-      P1.m_pdata[a] = u_nma.m_pdata[a*ndofn+nsd];
-      P2.m_pdata[a] = u_npa.m_pdata[a*ndofn+nsd];
+      Pe_npa.m_pdata[a] = re_npa.m_pdata[a*ndofn+nsd];
+      Pe_nma.m_pdata[a] = re_nma.m_pdata[a*ndofn+nsd];
     }
   }
 
   if(Pno==1)
   {
-    P1(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
-    P2(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
+    Pe_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
             alpha_2*( fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
+    Pe_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
+            
   }
   
-  Var_Carrier var_npa, var_nm1;
+  Var_Carrier var_npa, var_nma;
   var_npa.set_elasticity_functions(mat,grid,eid);
-  var_nm1.set_elasticity_functions(mat,grid,eid);
+  var_nma.set_elasticity_functions(mat,grid,eid);
   
-  Matrix<double> Rp(  Pno,    1, 0.0);
-  Matrix<double> Rp_1(Pno,    1, 0.0);
-  Matrix<double> Rp_2(Pno,    1, 0.0);
-  Matrix<double> Rt(  Vno,    1, 0.0);
-  Matrix<double> Rt_1(Vno,    1, 0.0);
-  Matrix<double> Rt_2(Vno,    1, 0.0);
+  Matrix<double> Rp(    Pno, 1, 0.0);
+  Matrix<double> Rp_npa(Pno, 1, 0.0);
+  Matrix<double> Rp_nma(Pno, 1, 0.0);
+  Matrix<double> Rt(    Vno, 1, 0.0);
+  Matrix<double> Rt_npa(Vno, 1, 0.0);
+  Matrix<double> Rt_nma(Vno, 1, 0.0);
   
   Matrix<double> Ktu(Vno    ,nne*nsd,0.0);
   Matrix<double> Ktt(Vno    ,Vno    ,0.0);
@@ -963,48 +970,48 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,u1.m_pdata,var_nm1.mF);
-    fe->update_deformation_gradient(ndofn,u2.m_pdata,var_npa.mF);
+    fe->update_deformation_gradient(ndofn,u_npa.m_pdata,var_npa.mF);
+    fe->update_deformation_gradient(ndofn,u_nma.m_pdata,var_nma.mF);
 
-    double Tn1 = 0.0; // 1: n-1+alpha
-    double Tn2 = 0.0; // 2: n+alpha
-    double Pn1 = 0.0;
-    double Pn2 = 0.0;
+    double Tnpa = 0.0; // 1: n-1+alpha
+    double Tnma = 0.0; // 2: n+alpha
+    double Pnpa = 0.0;
+    double Pnma = 0.0;
 
     for(int ia=1; ia<=Vno; ia++)
     {
-      Tn1 += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));
-      Tn2 += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
+      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
              alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)));
+      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));             
     }
     for(int ia=1; ia<=Pno; ia++)
     {
-      Pn1 += Np(ia)*P1(ia);
-      Pn2 += Np(ia)*P2(ia);
+      Pnpa += Np(ia)*Pe_npa(ia);
+      Pnma += Np(ia)*Pe_nma(ia);
     }
     
-    var_nm1.set_variables(Tn1, Pn1);
-    var_npa.set_variables(Tn2, Pn2);
+    var_npa.set_variables(Tnpa, Pnpa);
+    var_nma.set_variables(Tnma, Pnma);
 
     TF_Kup_ip(Kup, fe, var_npa, Pno, Np, dt_alpha_1_minus_alpha);
     TF_Kpt_ip(Kpt, fe, var_npa, Pno, Np, Vno, Nt, dt_alpha_1_minus_alpha);
     TF_Ktt_ip(Ktt, fe, var_npa, Vno, Nt, dt_alpha_1_minus_alpha);
 
-    TF_Rp_ip(Rp_1,fe,var_nm1,Pno,Np);
-    TF_Rt_ip(Rt_1,fe,var_nm1,Vno,Nt);
+    TF_Rp_ip(Rp_npa,fe,var_npa,Pno,Np);
+    TF_Rt_ip(Rt_npa,fe,var_npa,Vno,Nt);
 
-    TF_Rp_ip(Rp_2,fe,var_npa,Pno,Np);
-    TF_Rt_ip(Rt_2,fe,var_npa,Vno,Nt);
+    TF_Rp_ip(Rp_nma,fe,var_nma,Pno,Np);
+    TF_Rt_ip(Rt_nma,fe,var_nma,Vno,Nt);
   }
 
   Kpu.trans(Kup);
   Ktp.trans(Kpt);
 
   for(int a=0; a<Vno; a++)
-    Rt.m_pdata[a] = dt_alpha_1*Rt_2.m_pdata[a] + dt_alpha_2*Rt_1.m_pdata[a];
+    Rt.m_pdata[a] = dt_alpha_1*Rt_nma.m_pdata[a] + dt_alpha_2*Rt_npa.m_pdata[a];
 
   for(int a=0; a<Pno; a++)
-    Rp.m_pdata[a] = dt_alpha_1*Rp_2.m_pdata[a] + dt_alpha_2*Rp_1.m_pdata[a];
+    Rp.m_pdata[a] = dt_alpha_1*Rp_nma.m_pdata[a] + dt_alpha_2*Rp_npa.m_pdata[a];
 
   Matrix<double> d_theta(Vno, 1, 0.0), dP(Pno, 1, 0.0);
   
@@ -1088,7 +1095,8 @@ int compute_d_theta_dP_test(Matrix<double> &d_theta,
 /// \param[in,out] fv array of field variable object
 /// \param[in] load object for loading
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
+/// \param[in] dts   time step size at t(n), t(n+1); dts[DT_N]   = t(n)   - t(n-1)
+///                                                  dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] alpha mid point rule alpha
 /// \return non-zero on internal error
 int update_3f_NR(Grid *grid,
@@ -1097,7 +1105,7 @@ int update_3f_NR(Grid *grid,
                  LoadingSteps *load,
                  const PGFem3D_opt *opts,
                  int mp_id,
-                 const double dt,
+                 const double *dts,
                  double alpha)
 {
 
@@ -1128,11 +1136,11 @@ int update_3f_NR(Grid *grid,
     Matrix<long> cn(ndofe,1);
     long *nod = fe.node_id.m_pdata;
 
-    Matrix<double> dr_e(ndofe,1), r_e(ndofe, 1), du(nne*nsd,1), u(nne*nsd, 1);
+    Matrix<double> dr_e(ndofe,1), re_np1(ndofe, 1), du(nne*nsd,1), u(nne*nsd, 1);
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,node,cn.m_pdata,mp_id);
     
     // get the deformation on the element
-    def_elem_total(cn.m_pdata,ndofe,fv->u_np1,fv->d_u,elem,node,sup,r_e.m_pdata);    
+    def_elem_total(cn.m_pdata,ndofe,fv->u_np1,fv->d_u,elem,node,sup,re_np1.m_pdata);    
     def_elem(cn.m_pdata,ndofe,fv->dd_u,elem,node,dr_e.m_pdata,sup,2);
 
     for(int a=0;a<nne;a++)
@@ -1144,23 +1152,23 @@ int update_3f_NR(Grid *grid,
     if(include_inertia && (0<alpha && alpha<1))
     {
       Matrix<double> u_n(ndofe,1), u_nm1(ndofe,1);
-      Matrix<double> u_npa(ndofe,1), u_nma(ndofe,1);
+      Matrix<double> re_npa(ndofe,1), re_nma(ndofe,1);
       
       for (long I=0;I<nne;I++)
       {
         for(long J=0; J<nsd; J++)
         {
-          u_n.m_pdata[I*ndofn + J] =   fv->u_n[nod[I]*ndofn + J];
-          u_nm1.m_pdata[  I*ndofn + J] = fv->u_nm1[nod[I]*ndofn + J];
+            u_n.m_pdata[I*ndofn + J] =   fv->u_n[nod[I]*ndofn + J];
+          u_nm1.m_pdata[I*ndofn + J] = fv->u_nm1[nod[I]*ndofn + J];
         }
       }
 
-      mid_point_rule(u_nma.m_pdata, u_nm1.m_pdata, u_n.m_pdata,  alpha, ndofe);
-      mid_point_rule(u_npa.m_pdata, u_n.m_pdata,   r_e.m_pdata,  alpha, ndofe);      
-      evaluate_PT_w_inertia_el(&fe, grid, mat, fv, r_e, du, u_nma, u_npa, dt, alpha);      
+      mid_point_rule(re_nma.m_pdata, u_nm1.m_pdata, u_n.m_pdata, alpha, ndofe);
+      mid_point_rule(re_npa.m_pdata, u_n.m_pdata,re_np1.m_pdata, alpha, ndofe);      
+      evaluate_PT_w_inertia_el(&fe, grid, mat, fv, re_np1, du, dts, re_nma, re_npa, alpha);      
     }
     else
-      evaluate_PT_el(&fe,grid,mat,fv,r_e,du);
+      evaluate_PT_el(&fe,grid,mat,fv,re_np1,du);
   }
   return 0;  
 }
@@ -1312,4 +1320,75 @@ void update_3f_output_variables(Grid *grid,
       eps[eid].el.o[ia] /=V;
     }
   }                                                        
+}
+
+/// compute and set initial conditions for three field mixed method
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] fv array of field variable object
+/// \return non-zero on internal error
+void compute_3f_initial_conditions(Grid *grid,
+                                   MaterialProperty *mat,
+                                   FieldVariables *fv)
+{
+
+  int total_Lagrangian = 1;  
+  Node *node = grid->node;
+  Element *elem = grid->element;
+
+  int ndofn = fv->ndofn;      
+
+  for (int eid=0;eid<grid->ne;eid++)
+  {
+    FEMLIB fe(eid,elem,node,1,total_Lagrangian);
+    int nne   = fe.nne;
+    int nsd   = fe.nsd;
+    
+    long *nod = fe.node_id.m_pdata;
+
+    Var_Carrier var;
+    var.set_elasticity_functions(mat,grid,eid);    
+
+    Matrix<double> u_nm1(nne*nsd, 1), u_n(nne*nsd, 1);
+    
+    for (long I=0;I<nne;I++){
+      for(long J=0; J<nsd; J++){
+        u_n.m_pdata[I*ndofn + J] =   fv->u_n[nod[I]*ndofn + J];
+        u_nm1.m_pdata[  I*ndofn + J] = fv->u_nm1[nod[I]*ndofn + J];
+      }
+    }
+
+    double J_n    = 0.0;
+    double J_nm1  = 0.0;
+    double Up_n   = 0.0;
+    double Up_nm1 = 0.0;
+    double V = 0.0;
+    for(int ip=1; ip<=fe.nint; ip++)
+    {
+      Tensor<2> Fn;
+      Tensor<2> Fnm1;
+      fe.elem_basis_V(ip);
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u_n.m_pdata,    Fn.data);
+      fe.update_deformation_gradient(nsd,u_nm1.m_pdata,Fnm1.data);
+    
+      double Jip_n   = ttl::det(Fn);
+      double Jip_nm1 = ttl::det(Fnm1);
+        
+      V      += fe.detJxW;
+      J_n    += fe.detJxW*Jip_n;
+      J_nm1  += fe.detJxW*Jip_nm1;
+      Up_n   += fe.detJxW*var.compute_dUdJ(Jip_n);
+      Up_nm1 += fe.detJxW*var.compute_dUdJ(Jip_nm1);      
+    }
+    if(fv->npres == 1)
+    {  
+      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = Up_n/V;
+      fv->tf.P_nm1(eid+1, 1) = Up_nm1/V;
+    }
+    
+    fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = J_n/V;
+    fv->tf.V_nm1(eid+1, 1) = J_nm1/V;
+  }
 }

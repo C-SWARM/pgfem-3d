@@ -297,7 +297,7 @@ int residual_with_inertia(FEMLIB *fe,
      {
        double *f_n   = aloc1(ndofe);
        memset(f_n, 0, sizeof(double)*ndofe);
-       err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,r0,r0_,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
+       err += residuals_el_constitutive_model_w_inertia(fe,f_n,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
 
        for(long a = 0; a<ndofe; a++)
          be[a] = -f_i[a] + f_n[a]; // - (1.0-alpha)*dt and - alpha*dt are included in f_n[a]
@@ -364,10 +364,10 @@ int stiffness_with_inertia(FEMLIB *fe,
   int ndofn = fv->ndofn;
   int ndofe = nne*ndofn;
 
-  Matrix<double> Kuu_K,Kuu_I, u, u_n;
+  Matrix<double> Kuu_K,Kuu_I, u_npa, u_n;
   Kuu_I.initialization(ndofe,ndofe,0.0);
   Kuu_K.initialization(ndofe,ndofe,0.0);
-  u.initialization(ndofe,1,0.0);
+  u_npa.initialization(ndofe,1,0.0);
   u_n.initialization(ndofe,1,0.0);
 
   /* make sure the stiffenss matrix contains all zeros */
@@ -380,7 +380,7 @@ int stiffness_with_inertia(FEMLIB *fe,
       u_n(I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];
   }
 
-  mid_point_rule(u.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe);
+  mid_point_rule(u_npa.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe);
 
   if(opts->analysis_type == DISP ||
      opts->analysis_type == TF   ||
@@ -412,7 +412,7 @@ int stiffness_with_inertia(FEMLIB *fe,
   {
    case DISP:
     err = DISP_stiffmat_el(Kuu_K.m_pdata,eid,ndofn,nne,x,y,z,grid->element,
-                           mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,u.m_pdata,dt);
+                           mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,u_npa.m_pdata,dt);
 
     for(long a = 0; a<ndofe*ndofe; a++)
       Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
@@ -422,14 +422,14 @@ int stiffness_with_inertia(FEMLIB *fe,
    case TF:
     if(0<sol->alpha && sol->alpha<1.0)
     {
-      stiffmat_3f_el(fe,Kuu_K.m_pdata,r_e,grid,mat,fv,sol->alpha,dt);
+      stiffmat_3f_el(fe,Kuu_K.m_pdata,u_npa.m_pdata,grid,mat,fv,sol->alpha,dt);
     }
     for(long a = 0; a<ndofe*ndofe; a++)
       Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];
 
     break;
    case CM:  // intended to flow
-     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_n.m_pdata,
+     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_npa.m_pdata,
                                                       grid,mat,fv,sol,load,crpl,
                                                       opts,mp,mp_id,dt);
 
@@ -438,7 +438,7 @@ int stiffness_with_inertia(FEMLIB *fe,
 
      break;
    case CM3F:
-     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_n.m_pdata,
+     err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_npa.m_pdata,
                                                       grid,mat,fv,sol,load,crpl,
                                                       opts,mp,mp_id,dt);
 
