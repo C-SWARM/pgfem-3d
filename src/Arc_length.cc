@@ -243,7 +243,6 @@ double Multiphysics_Arc_length(Grid *grid,
   dts[DT_NP1] = time_steps->dt_np1;
 
   ART = (periodic == 1) ? 1 : 0;
-  gam = 0;
   if (TYPE == 1) dAL = dlm0;
   /* } */
 
@@ -790,9 +789,6 @@ double Multiphysics_Arc_length(Grid *grid,
           }
           INFO = 1;
           goto rest;
-        }
-        if (gama != 1.0) {
-          gam = 1;
         }
       }
 
