@@ -347,7 +347,9 @@ int multi_scale_main(int argc, char* argv[])
       }
     }
 
-    double hypre_time = 0.0;
+    // initialize hypre time
+    double *hypre_time = new double[mp_id];
+    hypre_time[mp_id] = 0.0;
 
     if (macro->opts->restart >= 0) {
       if (mpi_comm->rank_macro == 0) {
@@ -487,7 +489,7 @@ int multi_scale_main(int argc, char* argv[])
         int n_step = 0;
 
         // perform Newton Raphson iteration
-        hypre_time += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);
+        hypre_time[mp_id] += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);
 
         /* Null global vectors */
         for (int i=0;i<c->ndofd;i++){
@@ -653,6 +655,7 @@ int multi_scale_main(int argc, char* argv[])
 
     /* cleanup */
     free(ctx);
+    delete[] hypre_time;
 
     free(sup_defl);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
