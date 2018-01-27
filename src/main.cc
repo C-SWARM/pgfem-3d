@@ -114,8 +114,10 @@ static void print_PGFem3D_run_info(int argc,
 /// \param[in] usage detailed time info
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int print_PGFem3D_final(double total_time,
-                        double hypre_time,
+int print_PGFem3D_final(Multiphysics *mp,
+                        double startup_time,
+                        double *hypre_time,
+                        double total_time,
                         int myrank)
 {
   int err = 0;
@@ -127,9 +129,13 @@ int print_PGFem3D_final(double total_time,
                myrank, usage.ru_stime.tv_sec, usage.ru_stime.tv_usec,
                usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 
-  PGFEM_printf("Total HYPRE solve time on processor [%d] - %f\n",
-               myrank, hypre_time);
-  PGFEM_printf("Total time (no MPI_Init()) - %f\n",total_time);
+  PGFEM_printf("Startup time               = %f\n", startup_time);
+
+  for(int mp_id = 0; mp_id<mp->physicsno; mp_id++)
+    PGFEM_printf("Hypre solve time for phys%d = %f\n", mp_id, hypre_time[mp_id]);
+
+  PGFEM_printf("Total time (no MPI_Init()) = %f\n",total_time);
+
   return err;
 }
 
@@ -386,7 +392,6 @@ int single_scale_main(int argc,char *argv[])
   double GVolume = 0.0;
   double oVolume = 0.0; // original volume
   double VVolume = 0.0; // deformed volume
-  double hypre_time = 0.0;
 
   /* ***** Set up debug log ***** */
   // FILE *debug_log = NULL;
@@ -421,8 +426,10 @@ int single_scale_main(int argc,char *argv[])
   }
 
   double total_time = 0.0;
+  double startup_time = 0.0;
   /* MPI_Barrier(mpi_comm); */
   total_time -= MPI_Wtime();
+  startup_time -= MPI_Wtime();
 
 #if (MPI_VERSION < 2)
 # define MPI_Comm_set_errhandler MPI_Errhandler_set
@@ -789,6 +796,11 @@ int single_scale_main(int argc,char *argv[])
     }
   }
 
+  // initialize hypre time
+  double *hypre_time = new double[mp.physicsno];
+  for(int mp_id = 0; mp_id<mp.physicsno; mp_id++)
+    hypre_time[mp_id] = 0.0;
+
   {
     // set for surface tractions
     double *nodal_forces = NULL;
@@ -1111,6 +1123,9 @@ int single_scale_main(int argc,char *argv[])
     /*=== BEGIN SOLVE ===*/
     time_steps.dt_np1 = time_steps.times[1] - time_steps.times[0];
 
+    // compute startup time
+    startup_time += MPI_Wtime();
+
     ///////////////////////////////////////////////////////////////////
     // start time stepping
     ///////////////////////////////////////////////////////////////////
@@ -1196,10 +1211,9 @@ int single_scale_main(int argc,char *argv[])
         //---->
         fflush(PGFEM_stdout);
 
-        hypre_time += Multiphysics_Newton_Raphson(&grid, &mat, fv.data(),
-                                                  sol.data(), &load, com.data(),
-                                                  &time_steps, crpl, mpi_comm,
-                                                  VVolume, &options, &mp);
+        Multiphysics_Newton_Raphson(hypre_time, &grid, &mat, fv.data(), sol.data(), 
+                                    &load, com.data(), &time_steps, crpl, mpi_comm,
+                                    VVolume, &options, &mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1346,8 +1360,6 @@ int single_scale_main(int argc,char *argv[])
     }
   }
 
-  err += destruct_multiphysics(&mp);
-
   delete ensight;
   //<---------------------------------------------------------------------
 
@@ -1358,8 +1370,10 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   if (myrank == 0)
-    err += print_PGFem3D_final(total_time, hypre_time, myrank);
+    err += print_PGFem3D_final(&mp, startup_time, hypre_time, total_time, myrank);
 
+  err += destruct_multiphysics(&mp);
+  delete[] hypre_time;
   PGFEM_finalize_io();
 
   int flag_MPI_finalized;

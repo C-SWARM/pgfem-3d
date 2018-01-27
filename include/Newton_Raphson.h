@@ -83,18 +83,19 @@ long compute_residuals_for_NR(Grid *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
-double Multiphysics_Newton_Raphson(Grid *grid,
-                                   MaterialProperty *mat,
-                                   FieldVariables *FV,
-                                   pgfem3d::Solver *SOL,
-                                   LoadingSteps *load,
-                                   CommunicationStructure *COM,
-                                   TimeStepping *time_steps,
-                                   CRPL *crpl,
-                                   MPI_Comm mpi_comm,
-                                   const double VVolume,
-                                   const PGFem3D_opt *opts,
-                                   Multiphysics *mp);
+void Multiphysics_Newton_Raphson(double *hypre_time,
+                                 Grid *grid,
+                                 MaterialProperty *mat,
+                                 FieldVariables *FV,
+                                 pgfem3d::Solver *SOL,
+                                 LoadingSteps *load,
+                                 CommunicationStructure *COM,
+                                 TimeStepping *time_steps,
+                                 CRPL *crpl,
+                                 MPI_Comm mpi_comm,
+                                 const double VVolume,
+                                 const PGFem3D_opt *opts,
+                                 Multiphysics *mp);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///
