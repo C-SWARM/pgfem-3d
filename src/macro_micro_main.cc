@@ -348,7 +348,7 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     // initialize hypre time
-    double *hypre_time = new double[mp_id];
+    double *hypre_time = new double[mp_id + 1];
     hypre_time[mp_id] = 0.0;
 
     if (macro->opts->restart >= 0) {
