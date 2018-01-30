@@ -838,6 +838,8 @@ template <class CM> class ConstitutiveModelIntregrate
           theta_r += (fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia))*Nt(ia);
           theta_n += fv->tf.V_n(  eid+1, ia)*Nt(ia);
         }
+        if(total_Lagrangian)
+          theta_n = 1.0;
         
         Fs.initialization();
         if(is_it_couple_w_thermal>=0)
@@ -845,10 +847,11 @@ template <class CM> class ConstitutiveModelIntregrate
         Fs.update_total_deformation_gradient(fe, fv, sup, u, total_Lagrangian);
         
         Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-        if(cm_method.run_integration_algorithm &&
-           sol_run_integration_algorithm){
+        if(cm_method.run_integration_algorithm && sol_run_integration_algorithm){
+          double tJ = det(Fs.F.np1);
+          double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
           err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                              dt,alpha,is_it_couple_w_thermal);
+                                              dt,alpha,is_it_couple_w_thermal, tf_factor);
         }
         if(err>0)
           return err;
@@ -3180,7 +3183,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);    
 
-
+    double theta     = 0.0;
     double theta_npa = 0.0;
     double theta_nma = 0.0;
     double Pnpa      = 0.0;
@@ -3193,6 +3196,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     } 
     for(int ia=1; ia<=Vno; ia++)
     {
+      theta     += (fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia))*Nt(ia);
       theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) + 
                     alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)))*Nt(ia);
                     
@@ -3219,7 +3223,11 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);    
+    {
+      double tJ = det(Fnp1);
+      double tf_factor = pow(theta/tJ, 1.0/3.0);  
+      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
+    }
 
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
