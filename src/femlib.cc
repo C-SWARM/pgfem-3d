@@ -10,6 +10,7 @@
 #include "allocation.h"
 #include "tensors.h"
 #include "def_grad.h"
+#include <cassert>
 
 #define LINE           1
 #define TRIANGLE       3
@@ -129,7 +130,7 @@ void FEMLIB_initialization(FEMLIB *fe, int e_type, int i_order, int nne)
   Matrix_construct_redim(double,fe->node_coord,nne ,nsd);
   Matrix_construct_redim(long,fe->node_id,nne,1);
 
-  long npt_x, npt_y, npt_z;
+  long npt_x = 0, npt_y = 0, npt_z = 0;
 
   //currently supports for TETRAHEDRON
   switch(e_type)

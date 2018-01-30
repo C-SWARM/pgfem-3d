@@ -1028,7 +1028,7 @@ void stiffmatel (long ii,
 
  */
 {
-  long i,j,k,jj,kk,II,JJ,KK,ndofe,ip;
+  long i,j,k,jj,kk,II=0,JJ=0,KK=0,ndofe,ip;
   // @todo Make sure that these variables are initialized before use. @cp should
   //       review that the default value is reasonable here. LD
   double ksi{}, eta{}, zet{}, aj{}, ai{}, ak{};

@@ -433,9 +433,8 @@ int multi_scale_main(int argc, char* argv[])
 
     /* Prescribed deflection */
     double *sup_defl = NULL;
-    if (c->supports->npd > 0) {
-      sup_defl = PGFEM_calloc(double, c->supports->npd);
-    }
+    assert(c->supports->npd > 0);
+    sup_defl = PGFEM_calloc(double, c->supports->npd);
 
     double pores = 0.0;
     double lm = 0.0;

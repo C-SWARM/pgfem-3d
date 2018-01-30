@@ -5,6 +5,7 @@
 #include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
+#include <cassert>
 
 void
 PGFEM_Comm_code_abort(MPI_Comm comm, int code)
@@ -279,6 +280,7 @@ int PGFEM_comm_info_to_idx_list(const PGFEM_comm_info *info,
     const int buff_start = info->idx[i];
     const int n_buff = info->n_buff[i];
     for(int j=0; j<n_buff; j++){
+      assert(p != NULL && "p can't be null");
       p[idx] = proc;
       s[idx] = info->buff_sizes[buff_start + j];
       idx++;

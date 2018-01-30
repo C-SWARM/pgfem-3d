@@ -19,6 +19,7 @@
 #include "sig.h"
 #include "utils.h"
 #include "vtk_output.h"
+#include <cassert>
 
 /// initialize time stepping variable
 /// assign defaults (zoro for single member varialbes and NULL for member arrays and structs)
@@ -746,6 +747,8 @@ int read_multiphysics_settings(Multiphysics *mp,
         err += scan_for_valid_line(in);
         CHECK_SCANF(in, "%d", mp->write_no+ia);
 
+	assert(mp->write_no[ia] != 0 && "error reading mp->write_no[ia]; mp->write_no[ia] can't be 0");
+
         if(mp->write_no[ia]>0)
         {
           // read from file for writing results
@@ -816,8 +819,10 @@ int read_multiphysics_settings(Multiphysics *mp,
 
       printf("   # of output variables \t= %d", mp->write_no[ia]);
       printf(", ids = ");
-      for(int ib=0; ib<mp->write_no[ia]; ib++)
+      for(int ib=0; ib<mp->write_no[ia]; ib++){
+	assert(mp->write_ids[ia] != NULL && "mp->write_ids[ia] can't be null");
         printf("%d ", mp->write_ids[ia][ib]);
+      }
 
       printf("\n\n");
     }

@@ -2222,6 +2222,11 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
           defl[ia][ib] = (load->sups[ia])->defl[ib];
         }
       }
+      else
+      {
+	sup_defl[ia] = NULL;
+	defl[ia] = NULL;
+      }
 
       R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
       RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
@@ -2352,8 +2357,10 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
       {
         if(*is_SNR_converged == 0)
         {
-          for(int ib=0;ib<npd;ib++)
+          for(int ib=0;ib<npd;ib++){
+	    assert(defl[mp_id] != NULL && "defl[mp_id] can't be null");
             (load->sups[mp_id])->defl[ib] = defl[mp_id][ib];
+	  }
         }
 
         free(sup_defl[mp_id]);
@@ -2470,6 +2477,10 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
       for(int ib=0;ib<npd;ib++)
         sup_defl[ia][ib] = load->sup_defl[ia][ib];
+    }      
+    else
+    {
+      sup_defl[ia] = NULL;
     }
 
     R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
@@ -2510,12 +2521,14 @@ double Multiphysics_Newton_Raphson(Grid *grid,
       {
         for (int ib=0;ib<(load->sups[ia])->npd;ib++)
         {
+	  assert(sup_defl[ia] != NULL && "sup_defl[ia] can't be null");
           load->sup_defl[ia][ib]       = sup_defl[ia][ib]/sp.step_size;
           (load->sups[ia])->defl_d[ib] = sup_defl[ia][ib]/sp.step_size;
         }
 
         for(int ib=0; ib<FV[ia].ndofd; ib++)
         {
+	  assert(R[ia] != NULL && "R[ia] can't be null");
           FV[ia].R[ib]   = R[ia][ib]/sp.step_size;
           FV[ia].RRn[ib] = RRn[ia][ib] + R[ia][ib]/sp.step_size*(sp.step_id+1);
         }
@@ -2550,7 +2563,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
           printf(":: time = (%e, %e, %e)\n", NR_t_sub.times[0], NR_t_sub.times[1], NR_t_sub.times[2]);
         }
       }
-
+    
       // perform sub level (Staggered Newton iteration)
       alpha = 0.0; // always reset evolution threshold
       solve_time += Multiphysics_Newton_Raphson_sub(&iterno,&is_sub_converged,&alpha,&NR_t_sub,
@@ -2594,14 +2607,15 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   time_steps->times[time_steps->tim]   = NR_t.times[NR_t.tim+1] - NR_t.dt[DT_NP1];
   time_steps->times[time_steps->tim+1] = NR_t.times[NR_t.tim+1];
 
-
+  
   // free allocated memory
   for(int ia=0; ia<mp->physicsno; ia++)
   {
     if((load->sups[ia])->npd>0)
       free(sup_defl[ia]);
 
-    free(R[ia]);
+    if(R[ia] != NULL)
+      free(R[ia]);
     free(RRn[ia]);
   }
   free(sup_defl);

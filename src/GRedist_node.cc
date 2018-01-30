@@ -8,6 +8,7 @@
 #include "matice.h"
 #include <cstdlib>
 #include <cstring>
+#include <cassert>
 
 #ifndef NDEBUG
 #define PFEM_DEBUG 1
@@ -94,6 +95,7 @@ static long fallback_GRedist_node(const int nproc,
 
   /* gather the global nodes and their associated global dof ids */
   long *Gnn_Gid = NULL;
+  //assert(NBN > 0 && "NBN must be > 0");
   if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
   MPI_Allgatherv(own_buf,recvcount[myrank],MPI_LONG,
                  Gnn_Gid,recvcount,displ,MPI_LONG,Comm);

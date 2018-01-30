@@ -131,8 +131,10 @@ static void coel_stiffmat(int i, /* coel ID */
 
   def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
   if (iter == 0)
-    for (j=0;j<sup->npd;j++)
+    for (j=0;j<sup->npd;j++){
+      assert(sup_def != NULL && "sup_def can't be null");
       sup->defl_d[j] = sup_def[j];
+    }
 
   if (periodic == 1){/* Periodic */
 
@@ -571,8 +573,10 @@ static int el_stiffmat_MP(int eid,
   /* recover thei increment of applied def on first iter */
   if (iter == 0)
   {
-    for(int j=0; j<sup->npd; j++)
+    for(int j=0; j<sup->npd; j++){
+      assert(sup_def != NULL && "sup_def can't be null");
       sup->defl_d[j] = sup_def[j];
+    }
   }
 
   Matrix<double> lk(ndofe,ndofe,0.0);

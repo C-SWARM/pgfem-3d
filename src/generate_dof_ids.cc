@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
 
 static constexpr int ndn = 3;
 
@@ -683,6 +684,7 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
          && p_be->master_dom == myrank
          && p_be->master_be_id == i){
         long *ptr = &Gdof_on_dom[idx*(ndof_be+1)];
+	assert(ptr != NULL && "ptr can't be null");
         *ptr = i; /* store elem id */
         ptr += 1; /* increment pointer */
         memcpy(ptr,b_elems[i].G_dof_ids,ndof_be*sizeof(long));

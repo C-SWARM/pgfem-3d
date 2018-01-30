@@ -122,7 +122,7 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
   this->node_coord.initialization(nne ,nsd);
   this->node_id.initialization(nne,1);
 
-  long npt_x, npt_y, npt_z;
+  long npt_x = 0, npt_y = 0, npt_z = 0;
 
   //currently supports for TETRAHEDRON
   switch(e_type)
