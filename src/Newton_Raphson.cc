@@ -291,7 +291,8 @@ int reset_variables_for_NR(Grid *grid,
      case MINI_3F:
       MINI_3f_reset(grid->element,grid->ne,fv->npres,4,fv->sig,fv->eps);
       break;
-     case CM:
+     case CM: // intented flow
+     case CM3F: 
       constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
       break;
      default: break;
@@ -566,6 +567,7 @@ int update_values_for_next_NR(Grid *grid,
          update_3f_output_variables(grid,mat,fv,load,mp_id,dt,t,mpi_comm);
          break;
         case CM:
+        case CM3F:
           {
             switch(opts->cm)
             {
@@ -638,7 +640,7 @@ int update_values_for_next_NR(Grid *grid,
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     /* update of internal fv and nodal coordinates */
-    if(opts->analysis_type==CM)
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     {
       switch(opts->cm){
        case UPDATED_LAGRANGIAN:
@@ -1242,7 +1244,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
     {
       // check from constitutive mode
-      if(opts->analysis_type == CM)
+      if(opts->analysis_type == CM || opts->analysis_type == CM3F)
         cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
       else
         *alpha = max_damage/max_damage_per_step;
@@ -1814,7 +1816,7 @@ int save_field_variables_to_temporal(Grid *grid,
     fv->temporal->u_n[ia]   = fv->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_save_state_vars_to_temporal(FV + mp_id, grid);
     
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
@@ -1850,7 +1852,7 @@ int update_temporal_field_variables_np1(Grid *grid,
                                         int mp_id)
 {
   int err = 0;
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_update_np1_state_vars_to_temporal(FV + mp_id, grid);
 
   return err;
@@ -1879,7 +1881,8 @@ int reset_field_variables_using_temporal(Grid *grid,
     fv->u_n[ia]   = fv->temporal->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && 
+    (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_reset_state_using_temporal(FV + mp_id, grid);
     
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
