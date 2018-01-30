@@ -1850,7 +1850,6 @@ int constitutive_model_update_output_variables(Grid *grid,
         inv(pF,pFI);
         inv3x3(hFnp1,hFI.data);
         eF(i,j) = F(i,k)*hFI(k,l)*pFI(l,j);
-        delete T;
       }
       else
         err += func->get_eF(m, eF.data,1);
@@ -1942,6 +1941,8 @@ int constitutive_model_update_output_variables(Grid *grid,
       sig[ie].el.o[ia] = sig[ie].el.o[ia]/volume;
       eps[ie].el.o[ia] = eps[ie].el.o[ia]/volume;
     }
+    if(is_it_couple_w_thermal >=0)
+      delete T;    
   }
 
   return err;
@@ -2178,8 +2179,6 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
       hJ = det(hFnp1);
       //mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, DIM_3x3);
       inv(hFnpa,hFnpa_I);
-      
-      delete T;
     }
 
     err += func->get_pF(m,pFnp1.data,2);
@@ -2229,6 +2228,9 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                     Fr.data,eFnMT.data,eFn.data,M.data,FrTFr.data,eFnM.data,S.data,
                                     L.data,dMdu_all,Jn);
   }
+  
+  if(is_it_couple_w_thermal >=0)
+    delete T;
 
   free(u);
   free(dMdu_all);
@@ -2389,8 +2391,6 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
     }
 
     // compute deformation gradients
@@ -2452,6 +2452,9 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += K.compute_stiffness(cmtf, dMdu, dMdt);
   }
   
+  if(is_it_couple_w_thermal >=0)
+    delete T;
+      
   K.Kpt.trans(K.Ktp);
   K.Kpu.trans(K.Kup);
  
@@ -2635,8 +2638,6 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        hFnp1.data,hFn.data,hFnm1.data);
       hJ = det(hFnp1);
       inv(hFnp1,hFnp1_I);
-      
-      delete T;
     }
 
     // --> update plasticity part
@@ -2751,6 +2752,9 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                     L.data,dMdu_all,Jn);
   }
   free(u);
+
+  if(is_it_couple_w_thermal >=0)
+    delete T;  
 
   /* check diagonal for zeros/nans */
   for (int a = 0; a < nne; a++) {
@@ -2953,8 +2957,6 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1.data);
       hJ = det(hFnp1);
-      
-      delete T;
     }
 
     // perform integration algorithm
@@ -2988,6 +2990,9 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                         alpha, dt_alpha,fe,0);
   }
 
+  if(is_it_couple_w_thermal >=0)
+    delete T;
+    
   if(err==0)
   {
     for(int a=0; a<nne*nsd; a++)
@@ -3181,8 +3186,6 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
     }
     
     if(sup->multi_scale)
@@ -3271,7 +3274,8 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += R_nma.compute_residual(cmtf_nma);    
   }
   
-  
+  if(is_it_couple_w_thermal >=0)
+    delete T;  
 
   if(err==0)
   {
@@ -3469,8 +3473,6 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       inv(hFnp1, hFnp1_I);
       if(total_Lagrangian)
         hFn = delta_ij(i,j);
-
-      delete T;
     }
 
     // --> update plasticity part
@@ -3590,6 +3592,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     Jn = Jn/pJ/hJ;
     err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);
   }
+  
+  if(is_it_couple_w_thermal >=0)
+    delete T;  
 
   free(u);
 
@@ -3829,8 +3834,6 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
     }
 
     // compute deformation gradients
