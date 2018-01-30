@@ -656,8 +656,11 @@ int update_values_for_next_NR(Grid *grid,
 
     if(opts->analysis_type==TF || opts->analysis_type==CM3F)
     {
-      fv->tf.update_np1_from_increments();  
-      fv->tf.update_for_next_time_step();
+      fv->tf.update_np1_from_increments();
+      if(opts->cm == UPDATED_LAGRANGIAN)
+        fv->tf.update_for_next_time_step(true);
+      else
+        fv->tf.update_for_next_time_step();
     }
   }
   // Update time steps
@@ -901,10 +904,10 @@ long Newton_Raphson_with_LS(double *solve_time,
                             fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
       break;
      case TF:
-        update_3f_NR(grid,mat,fv,load,opts,mp_id,dt,sol->alpha);
+        update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
       break;
      case CM3F:
-      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dt, sol->alpha);
+      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
      default:
       break;
     }

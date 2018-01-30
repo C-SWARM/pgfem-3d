@@ -61,7 +61,8 @@ int residuals_3f_el(FEMLIB *fe,
 /// \param[in]  mat   a material object
 /// \param[in]  fv    object for field variables
 /// \param[in]  alpha mid point alpha
-/// \param[in]  dt    time step size
+/// \param[in]  dts   time step size at t(n), t(n+1); dts[DT_N]   = t(n)   - t(n-1)
+///                                                   dts[DT_NP1] = t(n+1) - t(n)
 /// \return non-zero on internal error                    
 int residuals_3f_w_inertia_el(FEMLIB *fe,
                               double *f,
@@ -70,7 +71,7 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
                               MaterialProperty *mat,
                               FieldVariables *fv,
                               Solver *sol,
-                              double *dts,
+                              const double *dts,
                               double *u_nm1,
                               double *u_npa);
 
@@ -82,7 +83,8 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
 /// \param[in] load  object for loading
 /// \param[in] opts  structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt    time step size
+/// \param[in] dts   time step size at t(n), t(n+1); dts[DT_N]   = t(n)   - t(n-1)
+///                                                  dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] alpha mid point alpha
 /// \return non-zero on internal error                     
 int update_3f_NR(Grid *grid,
@@ -91,7 +93,7 @@ int update_3f_NR(Grid *grid,
                  LoadingSteps *load,
                  const PGFem3D_opt *opts,
                  int mp_id,
-                 const double dt,
+                 const double *dts,
                  double alpha);
 
 /// Update variables during Newton Raphson iterations
@@ -112,7 +114,17 @@ void update_3f_output_variables(Grid *grid,
                                 const double dt,
                                 const double t,
                                 MPI_Comm mpi_comm);
-
+                                
+/// compute and set initial conditions for three field mixed method
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] mat a material object
+/// \param[in,out] fv array of field variable object
+/// \return non-zero on internal error
+void compute_3f_initial_conditions(Grid *grid,
+                                   MaterialProperty *mat,
+                                   FieldVariables *fv);
+                                   
 void compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
                     double* r, int ndofn, MPI_Comm mpi_comm,int analysis);
 

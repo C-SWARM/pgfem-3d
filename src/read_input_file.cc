@@ -21,6 +21,7 @@
 #include "restart.h"
 #include "utils.h"
 #include <cstring>
+#include "three_field_element.h"
 
 using pgfem3d::Solver;
 
@@ -950,6 +951,8 @@ int read_initial_for_Mechanical(FILE *fp,
       fv->u_nm1[nid*3+1] = u[1]-dt*v[1];
       fv->u_nm1[nid*3+2] = u[2]-dt*v[2];
     }
+    if(opts->analysis_type == TF || opts->analysis_type == CM3F)    
+      compute_3f_initial_conditions(grid, mat, fv);    
   }
 
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)

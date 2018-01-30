@@ -384,7 +384,9 @@ static int read_restart_mechanical(Grid *grid,
   switch(opts->analysis_type)
   {
    case DISP: // intended to flow
-   case CM:
+   case TF:
+   case CM3F:
+   case CM:   
     err += read_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,rs_path);
     break;
    default:
@@ -522,7 +524,9 @@ int write_restart_mechanical(Grid *grid,
   switch(opts->analysis_type)
   {
    case DISP: // intended to flow
+   case TF:
    case CM:
+   case CM3F:
     err += write_restart_constitutive_model(grid,fv,opts,mp,myrank,mp_id,stepno,rs_path);
     break;
    default:

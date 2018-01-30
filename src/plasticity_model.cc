@@ -147,7 +147,6 @@ typedef struct plasticity_ctx {
   int is_coulpled_with_thermal;
   double *hFn;
   double *hFnp1;
-  Three_field_var tf;
 } plasticity_ctx;
 
 int compute_M(double *M_in,

@@ -78,28 +78,28 @@ class ThreeFieldVariables
                  const int Pno,
                  bool is_temporal = false)
   {    
-    V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
     V_nm1.initialization(ne,Vno,1.0); // must be initialized to 1.0
-
+      V_n.initialization(ne,Vno,1.0); // must be initialized to 1.0
+ 
     P_nm1.initialization(ne,Pno,0.0);
-    P_n.initialization(  ne,Pno,0.0);
+      P_n.initialization(ne,Pno,0.0);
     
     if(is_temporal == false)
     {  
-      V_n.initialization(  ne,Vno,1.0); // must be initialized to 1.0
-      dV.initialization(   ne,Vno,0.0);
-      ddV.initialization(  ne,Vno,0.0);
+      V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
+         dV.initialization(ne,Vno,0.0);
+        ddV.initialization(ne,Vno,0.0);
       
       P_np1.initialization(ne,Pno,0.0);
-      dP.initialization(   ne,Pno,0.0);
-      ddP.initialization(  ne,Pno,0.0);        
+         dP.initialization(ne,Pno,0.0);
+        ddP.initialization(ne,Pno,0.0);        
     }
   };
   
   /// update variable at n-1 from n
   ///                 at n from n+1
   /// and reset increments to zeros
-  void update_for_next_time_step(void)
+  void update_for_next_time_step(bool updated_Lagrangian = false)
   {
     if(is_for_temporal)
       return;
@@ -107,7 +107,11 @@ class ThreeFieldVariables
     for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
     {
       V_nm1.m_pdata[ia] = V_n.m_pdata[ia];
-      V_n.m_pdata[ia] = V_np1.m_pdata[ia];
+      if(updated_Lagrangian)
+        V_n.m_pdata[ia] *= V_np1.m_pdata[ia];
+      else
+        V_n.m_pdata[ia] = V_np1.m_pdata[ia];
+
       dV.m_pdata[ia] = 0.0;
       ddV.m_pdata[ia] = 0.0;
     }
