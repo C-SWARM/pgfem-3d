@@ -140,7 +140,7 @@ class ThreeFieldStiffness
       if(is_for_residual)
       {
         Kut.initialization(nne*nsd,Vno    ,0.0);
-        Ktu.initialization(nne*nsd,Vno    ,0.0);
+        Ktu.initialization(Vno,nne*nsd    ,0.0);
         Kup.initialization(nne*nsd,Pno    ,0.0);
         Ktt.initialization(Vno    ,Vno    ,0.0);
         Ktp.initialization(Vno    ,Pno    ,0.0);
@@ -208,14 +208,14 @@ class ThreeFieldResidual
       int nne = fe->nne;
       if(is_for_PT_update)
       {
-        Rt.initialization(nne*nsd,Vno    ,0.0);
-        Rp.initialization(nne*nsd,Pno    ,0.0);
+        Rt.initialization(Vno,1, 0.0);
+        Rp.initialization(Pno,1, 0.0);
       }
       else
       {
-        Ru.initialization(nne*nsd,nne*nsd,0.0);
-        Rt.initialization(nne*nsd,Vno    ,0.0);
-        Rp.initialization(nne*nsd,Pno    ,0.0);
+        Ru.initialization(nne*nsd,1,0.0);
+        Rt.initialization(Vno,    1, 0.0);
+        Rp.initialization(Pno,    1, 0.0);
       }
     };
     int compute_residual(CM_ThreeField &cm_tf)
