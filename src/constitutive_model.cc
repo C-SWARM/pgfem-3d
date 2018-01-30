@@ -2451,7 +2451,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     
     err += K.compute_stiffness(cmtf, dMdu, dMdt);
   }
-
+  
   K.Kpt.trans(K.Ktp);
   K.Kpu.trans(K.Kup);
  
@@ -3184,23 +3184,27 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
       
       delete T;
     }
+    
+    if(sup->multi_scale)
+      cm_add_macro_F(sup,Fr.data);
+            
+    Fnp1 = Fr(i,j);    
+    
+    // perform integration algorithm
+    if(sol->run_integration_algorithm)
+      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);    
 
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
     err += func->get_pF(m, pFn.data,   1);
     err += func->get_pF(m, pFnm1.data, 0);
     err += func->get_F( m,    Fn.data, 1);
-    err += func->get_F( m,  Fnm1.data, 0);    
-    
-    if(sup->multi_scale)
-      cm_add_macro_F(sup,Fr.data);
-            
-    Fnp1 = Fr(i,j);
-    
+    err += func->get_F( m,  Fnm1.data, 0);
+        
     mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
     mid_point_rule(pFnma.data, pFnm1.data, pFn.data, alpha, DIM_3x3);    
     mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);
+    mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);  
 
     if(is_it_couple_w_thermal>=0)
     {
@@ -3266,6 +3270,8 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += R_npa.compute_residual(cmtf_npa);
     err += R_nma.compute_residual(cmtf_nma);    
   }
+  
+  
 
   if(err==0)
   {
@@ -3274,10 +3280,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
     double dt_alpha = -dts[DT_N]*alpha; 
     for(int ia=0; ia<nne*nsd; ia++)
-    {
-      R.Ru.m_pdata[ia] = f[ia] + dt_1_minus_alpha*R_npa.Ru.m_pdata[ia] +  dt_alpha*R_nma.Ru.m_pdata[ia];
-      f[ia] = 0.0;
-    }
+      R.Ru.m_pdata[ia] = dt_1_minus_alpha*R_npa.Ru.m_pdata[ia] +  dt_alpha*R_nma.Ru.m_pdata[ia];
       
     for(int ia=0; ia<Pno; ia++)
       R.Rp.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rp.m_pdata[ia] +  dt_alpha*R_nma.Rp.m_pdata[ia];
@@ -3934,7 +3937,7 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
                               nne, nsd, Pno, Vno,
                               R.Ru.m_pdata, R.Rt.m_pdata, R.Rp.m_pdata,
                               Kpu.m_pdata, K.Ktu.m_pdata, K.Ktp.m_pdata, K.Ktt.m_pdata, K.Kpt.m_pdata);
-
+  
     for(int ia=1; ia<=Pno; ia++)
       fv->tf.ddP(eid+1,ia) = dP(ia);
 
