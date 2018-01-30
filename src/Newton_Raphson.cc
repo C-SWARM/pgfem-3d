@@ -2566,6 +2566,10 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
       for(int ib=0;ib<npd;ib++)
         sup_defl[ia][ib] = load->sup_defl[ia][ib];
+    }      
+    else
+    {
+      sup_defl[ia] = NULL;
     }
 
     R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
