@@ -880,7 +880,6 @@ long Newton_Raphson_with_LS(double *solve_time,
     for(int ia=0; ia<fv->ndofd; ia++)
       u_nm1.m_pdata[ia] = fv->u_nm1[ia];
         
-    printf("%d:  :set initial velocity\n", myrank);
     apply_initial_velocity_to_nm1(u_nm1.m_pdata, grid, mat, fv, load, opts, mp_id, dts);
   }
       
@@ -1168,7 +1167,6 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
     
     if(master_tim==0 && tim==0 && fv->apply_initial_velocity){
-      printf("%d:  :set initial velocity\n", myrank);
       apply_initial_velocity_to_nm1(u_nm1.m_pdata, grid, mat, fv, load, opts, mp_id, dts);
     }
     
