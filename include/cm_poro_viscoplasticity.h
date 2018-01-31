@@ -29,17 +29,26 @@ class CM_PVP_PARAM: public Model_parameters
   virtual int compute_dudj(const Constitutive_model *m,
                            const void *ctx,
                            double *value) const;
+  virtual double compute_dudj(const Constitutive_model *m,
+                              double theta_e) const;                           
   virtual int compute_dev_tangent(const Constitutive_model *m,
                                   const void *ctx,
                                   double *L) const;
   virtual int compute_d2udj2(const Constitutive_model *m,
                              const void *ctx,
                              double *value) const;
+  virtual double compute_d2udj2(const Constitutive_model *m,
+                                double theta_e) const;                             
   virtual int update_elasticity(const Constitutive_model *m,
                                 const void *ctx,
                                 double *L,
                                 double *S,
                                 const int compute_stiffness) const;
+  virtual int update_elasticity_dev(const Constitutive_model *m,
+                                    double *eF,
+                                    double *L,
+                                    double *S,
+                                    const int compute_stiffness) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,

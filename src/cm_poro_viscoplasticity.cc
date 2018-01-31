@@ -228,6 +228,17 @@ const
   return err;
 }
 
+double CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
+                                    double theta_e)
+const 
+{
+  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
+  double pc = vars[VAR_pc_np1];      
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  
+  return pvp_intf_compute_dudj(theta_e, pc, mat_pvp);           
+}
+
 int CM_PVP_PARAM::compute_dev_tangent(const Constitutive_model *m,
                                       const void *ctx,
                                       double *L)
@@ -254,6 +265,17 @@ const
 //  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
 //  D_Pressure(J,m->param->p_hmat,d2udj2);
   return err;
+}
+
+double CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
+                                    double theta_e)
+const 
+{
+  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
+  double pc = vars[VAR_pc_np1];      
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  
+  return pvp_intf_compute_d2udj2(theta_e, pc, mat_pvp);           
 }
 
 int CM_PVP_PARAM::update_elasticity(const Constitutive_model *m,
@@ -323,7 +345,26 @@ const
   return err;
 }
 
+int CM_PVP_PARAM::update_elasticity_dev(const Constitutive_model *m,
+                                        double *eF,
+                                        double *L_in,
+                                        double *S,
+                                        const int compute_stiffness) 
+const
+{
+  int err = 0;
 
+  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
+  double pc = vars[VAR_pc_np1];      
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  
+  double *L = NULL;
+  if(compute_stiffness)
+    L = L_in;
+  
+  err += pvp_intf_update_elasticity_dev(eF, pc, S, L, mat_pvp, compute_stiffness);           
+  return err; 
+}
 
 int CM_PVP_PARAM::update_state_vars(Constitutive_model *m)
 const
