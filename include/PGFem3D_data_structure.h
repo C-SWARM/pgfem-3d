@@ -185,6 +185,8 @@ struct FieldVariablesTemporal {
 
 /// struct for field variables
 struct FieldVariables {
+  bool   apply_initial_velocity; //!< if true, initial velocity is applied at the first time steps
+                                 //!< Each process can have DIFFERNT value.
   double u0;      //!< reference value of field variables
   long Gndof;     //!< total number of degree freedom
   long ndofn;     //!< number of degree of freedom on a node

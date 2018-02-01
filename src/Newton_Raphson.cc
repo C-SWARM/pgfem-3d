@@ -291,7 +291,8 @@ int reset_variables_for_NR(Grid *grid,
      case MINI_3F:
       MINI_3f_reset(grid->element,grid->ne,fv->npres,4,fv->sig,fv->eps);
       break;
-     case CM:
+     case CM: // intented flow
+     case CM3F: 
       constitutive_model_reset_state(fv->eps, grid->ne, grid->element);
       break;
      default: break;
@@ -566,6 +567,7 @@ int update_values_for_next_NR(Grid *grid,
          update_3f_output_variables(grid,mat,fv,load,mp_id,dt,t,mpi_comm);
          break;
         case CM:
+        case CM3F:
           {
             switch(opts->cm)
             {
@@ -638,7 +640,7 @@ int update_values_for_next_NR(Grid *grid,
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     /* update of internal fv and nodal coordinates */
-    if(opts->analysis_type==CM)
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F)
     {
       switch(opts->cm){
        case UPDATED_LAGRANGIAN:
@@ -746,6 +748,53 @@ int check_energy_norm(double *ENORM,
   return is_converged;
 }
 
+/// Set initial velocity to u(n-1)
+///
+/// \parma[in] u_nm1 saved u(n-1) values
+/// \param[in] grid  a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] load object for loading
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1), dts[DT_NP1] = t(n+1) - t(n),
+void apply_initial_velocity_to_nm1(double *u_nm1,
+                                   Grid *grid,
+                                   MaterialProperty *mat,
+                                   FieldVariables *fv,
+                                   LoadingSteps *load,
+                                   const PGFem3D_opt *opts,
+                                   int mp_id,
+                                   double *dts)
+{
+  return;
+  // this function is not verified and disabled, but will be used
+  // after quick verification test after full implemention of the CM3F with inertia
+  for(int ia=0; ia<grid->nn; ia++){
+    for(long ib = 0; ib<grid->nsd; ib++){
+      long uid = ia*fv->ndofn + ib;
+      long id = grid->node[ia].id_map[mp_id].id[ib];
+      double u_np1;
+      if(id>0)
+        u_np1 = fv->u_np1[id-1] + fv->d_u[id-1];
+      else
+      {
+        if(id==0)
+          u_np1 = fv->u0;
+        else
+          u_np1 = fv->u0 + (load->sups[mp_id])->defl[abs(id)-1] + (load->sups[mp_id])->defl_d[abs(id)-1];
+      }
+      double v0 = (fv->u_n[uid] - u_nm1[uid])/dts[DT_N];
+      double a = (u_np1 -v0*dts[DT_NP1] - fv->u_n[uid])/dts[DT_NP1]/dts[DT_NP1];
+      fv->u_nm1[uid] = a*dts[DT_N]*dts[DT_N] - v0*dts[DT_N] + fv->u_n[uid]; 
+    }        
+  }
+  if(opts->analysis_type == TF || opts->analysis_type == CM3F)    
+    compute_3f_initial_conditions(grid, mat, fv);
+   
+}
+
 /// Actual Newton Raphson scheme with line search
 ///
 /// \parma[out] solve_time time measure of spent for linear solver
@@ -798,7 +847,8 @@ long Newton_Raphson_with_LS(double *solve_time,
                             int tim,
                             long STEP,
                             long DIV,
-                            rusage *usage)
+                            rusage *usage,
+                            long master_tim)
 {
   long INFO = 0;
   *alpha = 0.0;
@@ -822,6 +872,19 @@ long Newton_Raphson_with_LS(double *solve_time,
 
   double max_damage = 0.0;
   double dissipation = 0.0;
+  
+  Matrix<double> u_nm1;
+
+  if(master_tim==0 && tim==0 && fv->apply_initial_velocity)
+  {
+    u_nm1.initialization(fv->ndofd,1,0.0);
+    
+    for(int ia=0; ia<fv->ndofd; ia++)
+      u_nm1.m_pdata[ia] = fv->u_nm1[ia];
+        
+    apply_initial_velocity_to_nm1(u_nm1.m_pdata, grid, mat, fv, load, opts, mp_id, dts);
+  }
+      
 
   while(1) // do until converge
   {
@@ -911,7 +974,7 @@ long Newton_Raphson_with_LS(double *solve_time,
      default:
       break;
     }
-
+    
     /*************************/
     /* INTEGRATION ALGORITHM */
     /*************************/
@@ -1105,6 +1168,12 @@ long Newton_Raphson_with_LS(double *solve_time,
       fv->dd_u[i] *= sol->gama;
     }
     
+    if(master_tim==0 && tim==0 && fv->apply_initial_velocity){
+      apply_initial_velocity_to_nm1(u_nm1.m_pdata, grid, mat, fv, load, opts, mp_id, dts);
+    }
+    
+    
+    
     if((mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
        (opts->analysis_type == TF || opts->analysis_type == CM3F))
        fv->tf.update_increments_from_NR(sol->gama);
@@ -1175,7 +1244,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
     {
       // check from constitutive mode
-      if(opts->analysis_type == CM)
+      if(opts->analysis_type == CM || opts->analysis_type == CM3F)
         cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
       else
         *alpha = max_damage/max_damage_per_step;
@@ -1223,6 +1292,11 @@ long Newton_Raphson_with_LS(double *solve_time,
       MPI_Reduce(&dissipation,&tmp,1,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
     }
     sol->last_residual = nor2;
+  }
+  if(INFO>0 && master_tim==0 && tim==0 && fv->apply_initial_velocity)
+  {
+    for(int ia=0; ia<fv->ndofd; ia++)
+      fv->u_nm1[ia] = u_nm1.m_pdata[ia];    
   }
 
   return INFO;
@@ -1512,7 +1586,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
       int ART_temp = ART;
       INFO = Newton_Raphson_with_LS(&solve_time,alpha,&NOR,&gam,&ART_temp,&iter,
                                     grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
-                                    mp_id,NR_t->times,dts,myrank,tim,sp.step_size,sp.step_id,&usage);
+                                    mp_id,NR_t->times,dts,myrank,tim,sp.step_size,sp.step_id,&usage, time_steps->tim);
       ART = ART_temp;
       if(INFO!=0)
       {
@@ -1742,7 +1816,7 @@ int save_field_variables_to_temporal(Grid *grid,
     fv->temporal->u_n[ia]   = fv->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_save_state_vars_to_temporal(FV + mp_id, grid);
     
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
@@ -1778,7 +1852,7 @@ int update_temporal_field_variables_np1(Grid *grid,
                                         int mp_id)
 {
   int err = 0;
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_update_np1_state_vars_to_temporal(FV + mp_id, grid);
 
   return err;
@@ -1807,7 +1881,8 @@ int reset_field_variables_using_temporal(Grid *grid,
     fv->u_n[ia]   = fv->temporal->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM)
+  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && 
+    (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_reset_state_using_temporal(FV + mp_id, grid);
     
   if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
@@ -2470,9 +2545,16 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
   double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
 
+  gcm::Matrix<bool> apply_V0;
+  if(time_steps->tim==0)    
+    apply_V0.initialization(mp->physicsno, 1, false);
+  
   // start save data
   for(int ia=0; ia<mp->physicsno; ia++)
   {
+    if(time_steps->tim==0) 
+      apply_V0(ia+1) = FV[ia].apply_initial_velocity;
+      
     int npd = (load->sups[ia])->npd;
     if(npd>0)
     {
@@ -2569,6 +2651,12 @@ double Multiphysics_Newton_Raphson(Grid *grid,
     
       // perform sub level (Staggered Newton iteration)
       alpha = 0.0; // always reset evolution threshold
+      
+      if(time_steps->tim==0){          
+        for(int ia=0; ia<mp->physicsno; ia++)
+          FV[ia].apply_initial_velocity = apply_V0(ia+1);
+      }
+      
       solve_time += Multiphysics_Newton_Raphson_sub(&iterno,&is_sub_converged,&alpha,&NR_t_sub,
                                                     grid,mat,FV,SOL,load,COM,time_steps,crpl,
                                                     mpi_comm,VVolume,opts,mp);
@@ -2589,8 +2677,13 @@ double Multiphysics_Newton_Raphson(Grid *grid,
       NR_t.dt[DT_N] = NR_t.dt[DT_NP1];
 
       if(NR_t_sub.tim==0)
+      {
         NR_t_sub.tim=1;
-
+        if(time_steps->tim==0){          
+          for(int ia=0; ia<mp->physicsno; ia++)
+            apply_V0(ia+1) = false;
+        }
+      }
       if(sp.step_size > 2 && sp.step_id == 2)
       {
         is_sub_cvg = 0;

@@ -114,6 +114,7 @@ int destruct_grid(Grid *grid,
 int field_varialbe_initialization(FieldVariables *fv)
 {
   int err = 0;
+  fv->apply_initial_velocity = false;
   fv->u0     = 0.0;
   fv->Gndof  = 0;
   fv->ndofn  = 0;

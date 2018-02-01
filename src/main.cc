@@ -1019,7 +1019,7 @@ int single_scale_main(int argc,char *argv[])
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       // set inital plastic deformation
-      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && options.analysis_type == CM)
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && (options.analysis_type == CM || options.analysis_type == CM3F))
       {
         double *pF = mat.hommat[0].param->pF;
         if(pF != NULL)
