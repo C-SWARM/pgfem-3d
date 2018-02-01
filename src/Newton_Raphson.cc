@@ -2518,6 +2518,8 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   set_time_step_info_for_NR(time_steps,&NR_t);
   set_time_step_info_for_NR(time_steps,&NR_t_sub);
 
+  assert(mp->physicsno > 0 && "Number of physics must be positive");
+
   // if single physics
   //------------------------------------------------------------------------------------------
   if(mp->physicsno==1)
@@ -2552,6 +2554,8 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   // start save data
   for(int ia=0; ia<mp->physicsno; ia++)
   {
+    sup_defl[ia] = NULL;
+
     if(time_steps->tim==0) 
       apply_V0(ia+1) = FV[ia].apply_initial_velocity;
       
@@ -2562,10 +2566,6 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
       for(int ib=0;ib<npd;ib++)
         sup_defl[ia][ib] = load->sup_defl[ia][ib];
-    }      
-    else
-    {
-      sup_defl[ia] = NULL;
     }
 
     R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
