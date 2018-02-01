@@ -1877,6 +1877,8 @@ int constitutive_model_update_output_variables(Grid *grid,
         for(int ia=0; ia<DIM_3x3; ia++)
           F.data[ia] *= factor;
       }
+      else
+        theta = J;
 
       err += func->get_pF(m,pF.data,1);
       inv(pF,pFI);
