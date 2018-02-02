@@ -101,7 +101,8 @@ static long fallback_GRedist_node(const int nproc,
                  Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
 
   /* sort the list of Gnn and their associated Gid by Gnn */
-  qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
+  if (Gnn_Gid != NULL)
+    qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
 
   /* sort need_buf by Gnn */
   if (need_buf) qsort(need_buf,need,need_buf_elem_size,compare_long);
@@ -110,6 +111,7 @@ static long fallback_GRedist_node(const int nproc,
     /* Check global node numbers, should be ordered and contiguous */
     long k = 0;
     for (auto i=0; i<NBN*(ndofn+1); i+=ndofn+1){
+      assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
       if (Gnn_Gid[i] != k){
         PGFEM_printf ("Error in global node numbers (%ld)\n",k);
         //PGFEM_Comm_abort (Comm);
@@ -127,6 +129,7 @@ static long fallback_GRedist_node(const int nproc,
         /* BC overrides periodicity */
         node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
       } else {
+	assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
         node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
       }
     }
@@ -145,7 +148,7 @@ static long fallback_GRedist_node(const int nproc,
   }
 
   free(BN);
-  free(Gnn_Gid);
+  if(NBN > 0) free(Gnn_Gid);
   free(need_buf);
   free(own_buf);
   free(recvcount);

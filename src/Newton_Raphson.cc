@@ -349,8 +349,10 @@ int update_load_increments_for_subdivision(SUBDIVISION_PARAM *sp,
   if(sp->need_to_update_loading)
   {
     double factor = sp->loading_factor;
-    for(int ia=0; ia<npd; ia++)
+    for(int ia=0; ia<npd; ia++){
+      assert(sup_defl != NULL && "sup_defl can't be null");
       sup_defl[ia] = sup_defl[ia] - sup_defl[ia]*factor;
+    }
 
     for(int ia=0; ia<ndofd; ia++)
     {
@@ -2566,10 +2568,6 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
       for(int ib=0;ib<npd;ib++)
         sup_defl[ia][ib] = load->sup_defl[ia][ib];
-    }      
-    else
-    {
-      sup_defl[ia] = NULL;
     }
 
     R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
