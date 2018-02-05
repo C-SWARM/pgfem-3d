@@ -67,11 +67,13 @@ int main(int argc,char *argv[])
   int physicsno = 1;
   int ndim = 3;
   int fv_ndofn = ndim;
-
+  
+  char physicsname[1024] = "Mechanical";
+  char *p = physicsname;
   in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
-                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,&p);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
                    myrank);
@@ -99,27 +101,48 @@ int main(int argc,char *argv[])
 
   // read time steps
   char filename[1024];
+  char in_dat[1024];
+  FILE *fp = NULL;  
   double nor_min;
   long iter_max, npres, FNR, nt;
-  sprintf (filename,"%s/%s%d.in.st",options.ipath,options.ifname,myrank);
-  FILE *in_st = fopen(filename,"r");
-  fscanf (in_st,"%lf %ld %ld %ld",&nor_min,&iter_max,&npres,&FNR);
-  fscanf (in_st,"%ld",&nt);
+  
+  if(options.override_solver_file)
+  {
+    if(myrank == 0)
+      printf("Overriding the default solver file with:\n%s\n", options.solver_file);
+
+    fp = fopen(options.solver_file,"r");
+  }
+  else
+  {
+    // use the default file/filename
+    sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
+    sprintf(filename,"%s%d.in.st",in_dat,myrank);
+    fp = fopen(filename,"r");
+    if(fp==NULL)
+    {
+      sprintf(filename,"%s%d.in.st",in_dat,0);
+      fp = fopen(filename,"r");
+    }
+  }  
+  
+  CHECK_SCANF(fp,"%lf %ld %ld %ld", &nor_min,&iter_max,&npres,&FNR);
+  CHECK_SCANF(fp,"%ld", &nt);
 
   /* Compute times */
   double *times = (double *) malloc((nt+1)*sizeof(double));
   for(int a=0;a<nt+1;a++){
-    fscanf (in_st,"%lf",&times[a]);
+    CHECK_SCANF(fp,"%lf",times+a);
   }
 
   long n_p;
   /* read times for output */
-  fscanf (in_st,"%ld",&n_p);
+  CHECK_SCANF(fp,"%ld",&n_p);
 
   /* Times for printing */
-  long *print = times_print(in_st,nt,n_p);
+  long *print = times_print(fp,nt,n_p);
 
-  fclose(in_st);
+  fclose(fp);
 
   double GL2_err[3];
 
