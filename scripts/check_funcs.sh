@@ -40,16 +40,19 @@ function check_check() {
 
 function check_gcm() {
     GCM="/opt/Generalizsed_constitutive_model"
+    cd ${GCM}
+    
     UPSTREAM=${1:-'@{u}'}
-    LOCAL=$(git -C ${GCM} rev-parse @)
-    REMOTE=$(git -C ${GCM} rev-parse "$UPSTREAM")
-    BASE=$(git -C ${GCM} merge-base @ "$UPSTREAM")
+    LOCAL=$(git rev-parse @)
+    REMOTE=$(git rev-parse "$UPSTREAM")
+    BASE=$(git merge-base @ "$UPSTREAM")
     
     if [ $LOCAL = $REMOTE ]; then
 	echo "Gcm is up-to-date"
     elif [ $LOCAL = $BASE ]; then
 	echo "Updating Gcm..."
 	git -C ${GCM} pull
-	make -j 4 -C ${GCM}
+	make -j 4
     fi
+    cd ${OLDPWD}
 }
