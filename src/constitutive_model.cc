@@ -2990,7 +2990,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);
       
     if(err!=0)
       break;
@@ -3228,7 +3228,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     {
       double tJ = det(Fnp1);
       double tf_factor = pow(theta/tJ, 1.0/3.0);  
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
     }
 
     // compute deformation gradients
@@ -3541,7 +3541,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,is_it_couple_w_thermal);
       
     if(err!=0)
       break;
