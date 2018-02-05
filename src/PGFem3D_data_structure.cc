@@ -748,7 +748,7 @@ int read_multiphysics_settings(Multiphysics *mp,
         err += scan_for_valid_line(in);
         CHECK_SCANF(in, "%d", mp->write_no+ia);
 
-	assert(mp->write_no[ia] != 0 && "error reading mp->write_no[ia]; mp->write_no[ia] can't be 0");
+	assert(mp->write_no[ia] != 0 && mp->write_no[ia] < -1 && "error reading mp->write_no[ia]; mp->write_no[ia] can't be 0 or less than -1");
 
         if(mp->write_no[ia]>0)
         {

@@ -337,12 +337,12 @@ int reset_variables_for_NR(Grid *grid,
 /// \param[in, out] R nodal force
 /// \param[in] ndofd number of degree of freedom in the domain
 /// \return non-zero on internal error
-int update_load_increments_for_subdivision(SUBDIVISION_PARAM *sp,
+int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
                                            double *sup_defl,
-                                           int npd,
+                                           const int npd,
                                            double *RRn,
                                            double *R,
-                                           int ndofd)
+                                           const int ndofd)
 {
   int err = 0;
 
@@ -2709,7 +2709,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   // free allocated memory
   for(int ia=0; ia<mp->physicsno; ia++)
   {
-    if((load->sups[ia])->npd>0)
+    if(sup_defl[ia] != NULL)
       free(sup_defl[ia]);
 
     if(R[ia] != NULL)
