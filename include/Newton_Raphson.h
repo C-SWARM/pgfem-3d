@@ -54,19 +54,20 @@
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \return non-zero on internal error
-long compute_residuals_for_NR(Grid *grid,
-                              MaterialProperty *mat,
-                              FieldVariables *fv,
-                              pgfem3d::Solver *sol,
-                              LoadingSteps *load,
-                              CRPL *crpl,
-                              MPI_Comm mpi_comm,
-                              const PGFem3D_opt *opts,
-                              Multiphysics *mp,
-                              int mp_id,
-                              double t,
-                              double *dts,
-                              int updated_deformation);
+double compute_residuals_for_NR(long *INFO, 
+                                Grid *grid,
+                                MaterialProperty *mat,
+                                FieldVariables *fv,
+                                pgfem3d::Solver *sol,
+                                LoadingSteps *load,
+                                CRPL *crpl,
+                                MPI_Comm mpi_comm,
+                                const PGFem3D_opt *opts,
+                                Multiphysics *mp,
+                                int mp_id,
+                                double t,
+                                double *dts,
+                                int updated_deformation);
 
 /// Perform Newton Staggered Newton Raphson
 ///
@@ -84,6 +85,8 @@ long compute_residuals_for_NR(Grid *grid,
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
 void Multiphysics_Newton_Raphson(double *hypre_time,
+                                 double *stiffmat_time,
+                                 double *residuals_time,
                                  Grid *grid,
                                  MaterialProperty *mat,
                                  FieldVariables *FV,

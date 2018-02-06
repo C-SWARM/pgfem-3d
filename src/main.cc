@@ -110,14 +110,19 @@ static void print_PGFem3D_run_info(int argc,
 /// This will print out how much time takes for the finite element analysis
 ///
 /// \param[in] total_time total simulation time
+/// \param[in] startup_time - time untill it starts the time-steps iterations 
 /// \param[in] hypre_time time took for linear system solver
+/// \param[in] stiffmat_time - A matrix construction time of equ Ax=b 
+/// \param[in] residuals_time - b matrix construction time of equ Ax=b
 /// \param[in] usage detailed time info
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int print_PGFem3D_final(Multiphysics *mp,
+                        double total_time,
                         double startup_time,
                         double *hypre_time,
-                        double total_time,
+                        double *stiffmat_time,
+                        double *residuals_time,
                         int myrank)
 {
   int err = 0;
@@ -125,16 +130,19 @@ int print_PGFem3D_final(Multiphysics *mp,
   getrusage(RUSAGE_SELF, &usage);
   PGFEM_printf("\n");
   PGFEM_printf("Time of analysis on processor [%d] - "
-               " System %ld.%ld, User %ld.%ld.\n",
+               " System %ld.%ld, User %ld.%ld.\n\n",
                myrank, usage.ru_stime.tv_sec, usage.ru_stime.tv_usec,
                usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 
-  PGFEM_printf("Startup time               = %f\n", startup_time);
+  PGFEM_printf("Total time (no MPI_Init()) = %f\n", total_time);
+  PGFEM_printf("Startup time               = %f\n\n", startup_time);
 
   for(int mp_id = 0; mp_id<mp->physicsno; mp_id++)
-    PGFEM_printf("Hypre solve time for phys%d = %f\n", mp_id, hypre_time[mp_id]);
-
-  PGFEM_printf("Total time (no MPI_Init()) = %f\n",total_time);
+  {
+    PGFEM_printf("%s::Hypre solve time          = %f\n", mp->physicsname[mp_id], hypre_time[mp_id]);
+    PGFEM_printf("%s::Stiffmat compute time     = %f\n", mp->physicsname[mp_id], stiffmat_time[mp_id]);
+    PGFEM_printf("%s::Residualsmat compute time = %f\n\n", mp->physicsname[mp_id], residuals_time[mp_id]);
+  }
 
   return err;
 }
@@ -796,10 +804,12 @@ int single_scale_main(int argc,char *argv[])
     }
   }
 
-  // initialize hypre time
+  // initialize hypre, stiffmat, residuals time
   double *hypre_time = new double[mp.physicsno];
+  double *stiffmat_time = new double[mp.physicsno];
+  double *residuals_time = new double[mp.physicsno];
   for(int mp_id = 0; mp_id<mp.physicsno; mp_id++)
-    hypre_time[mp_id] = 0.0;
+    hypre_time[mp_id] = stiffmat_time[mp_id] = residuals_time[mp_id] = 0.0;
 
   {
     // set for surface tractions
@@ -1211,9 +1221,9 @@ int single_scale_main(int argc,char *argv[])
         //---->
         fflush(PGFEM_stdout);
 
-        Multiphysics_Newton_Raphson(hypre_time, &grid, &mat, fv.data(), sol.data(), 
-                                    &load, com.data(), &time_steps, crpl, mpi_comm,
-                                    VVolume, &options, &mp);
+        Multiphysics_Newton_Raphson(hypre_time, stiffmat_time, residuals_time, &grid, 
+                                    &mat, fv.data(), sol.data(), &load, com.data(), 
+                                    &time_steps, crpl, mpi_comm, VVolume, &options, &mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1370,10 +1380,13 @@ int single_scale_main(int argc,char *argv[])
   //----------------------------------------------------------------------
   //---->
   if (myrank == 0)
-    err += print_PGFem3D_final(&mp, startup_time, hypre_time, total_time, myrank);
+    err += print_PGFem3D_final(&mp, total_time, startup_time, hypre_time, stiffmat_time, 
+                               residuals_time, myrank);
 
   err += destruct_multiphysics(&mp);
   delete[] hypre_time;
+  delete[] stiffmat_time;
+  delete[] residuals_time;
   PGFEM_finalize_io();
 
   int flag_MPI_finalized;

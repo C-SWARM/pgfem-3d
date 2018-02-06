@@ -42,7 +42,8 @@
 /// \param[in] tim current time step number
 /// \param[in] STEP subdivision number
 /// \return info id about convergence
-long LINE_S3_MP(Grid *grid,
+long LINE_S3_MP(double *residuals_loc_time,
+                Grid *grid,
                 MaterialProperty *mat,
                 FieldVariables *fv,
                 pgfem3d::Solver *sol,

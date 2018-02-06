@@ -28,6 +28,7 @@ using pgfem3d::Solver;
 
 /// Line search algorithm for multiphysics mode
 ///
+/// \param[in,out] residuals_loc_time - residuals matrix compute time
 /// \param[in] grid a mesh object
 /// \param[in] mat a material object
 /// \param[in,out] fv array of field variable object
@@ -51,7 +52,8 @@ using pgfem3d::Solver;
 /// \param[in] tim current time step number
 /// \param[in] STEP subdivision number
 /// \return info id about convergence
-long LINE_S3_MP(Grid *grid,
+long LINE_S3_MP(double *residuals_loc_time, 
+                Grid *grid,
                 MaterialProperty *mat,
                 FieldVariables *fv,
                 Solver *sol,
@@ -179,8 +181,9 @@ long LINE_S3_MP(Grid *grid,
     }
 
     /* Residuals */
-    compute_residuals_for_NR(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                             mp_id,t,dts, 1);
+    INFO = 0;
+    *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
+                                                    opts,mp,mp_id,t,dts, 1);
 
     /* Compute Euclidian norm */
     for (i=0;i<fv->ndofd;i++)
