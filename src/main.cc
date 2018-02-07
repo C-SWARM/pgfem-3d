@@ -166,7 +166,7 @@ int print_results(Grid *grid,
                   const double oVolume,
                   const double VVolume,
                   const PGFem3D_opt *opts,
-                  Multiphysics *mp,
+                  const Multiphysics& mp,
                   long tim,
                   int myrank)
 {
@@ -178,9 +178,9 @@ int print_results(Grid *grid,
   SUPP sup = NULL;
   int mp_id_M = -1;
 
-  for(int ia = 0; ia<mp->physicsno; ia++)
+  for(int ia = 0; ia<mp.physicsno; ia++)
   {
-    if(mp->physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
+    if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       mp_id_M = ia;
       sol = SOL + mp_id_M;
@@ -256,9 +256,9 @@ int print_results(Grid *grid,
     if(opts->vis_format == VIS_VTK)
     {
       if(myrank == 0)
-        err += VTK_write_multiphysics_master(pmr,mp->total_write_no,opts,tim,myrank,COM[0].nproc);
+        err += VTK_write_multiphysics_master(pmr,mp.total_write_no,opts,tim,myrank,COM[0].nproc);
 
-      err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp->total_write_no,opts,tim,myrank);
+      err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp.total_write_no,opts,tim,myrank);
 
       // print cohesive element results
       if((mp_id_M >= 0) && (opts->cohesive == 1))
@@ -322,7 +322,7 @@ int write_restart_files(Grid *grid,
                         LoadingSteps *load,
                         TimeStepping *time_steps,
                         PGFem3D_opt *opts,
-                        Multiphysics *mp,
+                        const Multiphysics& mp,
                         long tim,
                         MPI_Comm mpi_comm,
                         int myrank,
@@ -455,7 +455,7 @@ int single_scale_main(int argc,char *argv[])
   // Multiphysics setting
   int mp_id_M = -1;
   Multiphysics mp;
-  err += read_multiphysics_settings(&mp,&options,myrank);
+  err += read_multiphysics_settings(mp,&options,myrank);
 
   std::vector<FieldVariables> fv(mp.physicsno);
   std::vector<CommunicationStructure> com(mp.physicsno);
@@ -510,7 +510,7 @@ int single_scale_main(int argc,char *argv[])
 
   LoadingSteps load;
   err += loading_steps_initialization(&load);
-  err += construct_loading_steps(&load, &mp);
+  err += construct_loading_steps(&load, mp);
 
   /* for attaching debugger */
   while (options.debug);
@@ -564,7 +564,7 @@ int single_scale_main(int argc,char *argv[])
   // read main input files ( *.in)
   //----------------------------------------------------------------------
   //---->
-  if (read_mesh_file(&grid, &mat, fv.data(), sol.data(), &load, &mp, mpi_comm,
+  if (read_mesh_file(&grid, &mat, fv.data(), sol.data(), &load, mp, mpi_comm,
                      &options))
   {
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n", myrank);
@@ -844,7 +844,7 @@ int single_scale_main(int argc,char *argv[])
     // saved in order to read loads increments as time is elapsing.
     //----------------------------------------------------------------------
     //---->
-    err += read_solver_file(&time_steps,&mat,fv.data(),sol.data(),&load,crpl,&mp,&options,myrank);
+    err += read_solver_file(&time_steps,&mat,fv.data(),sol.data(),&load,crpl,mp,&options,myrank);
     //<---------------------------------------------------------------------
 
     if(myrank == 0)
@@ -890,7 +890,7 @@ int single_scale_main(int argc,char *argv[])
     /* alocation of the sigma vector */
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      err += construct_field_varialbe(&fv[ia], &grid, &com[ia], &options, &mp, myrank, ia);
+      err += construct_field_varialbe(&fv[ia], &grid, &com[ia], &options, mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       {
         /* push nodal_forces to s->R */
@@ -1006,7 +1006,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     PRINT_MULTIPHYSICS_RESULT *pmr = PGFEM_malloc<PRINT_MULTIPHYSICS_RESULT>(mp.total_write_no);
-    err += VTK_construct_PMR(&grid, fv.data(), &mp, pmr);
+    err += VTK_construct_PMR(&grid, fv.data(), mp, pmr);
     //<---------------------------------------------------------------------
 
 
@@ -1015,7 +1015,7 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     double tnm1[2] = {-1.0,-1.0};
-    err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,&mp,tnm1,myrank);
+    err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       // set inital plastic deformation
@@ -1025,7 +1025,7 @@ int single_scale_main(int argc,char *argv[])
         if(pF != NULL)
         {
           set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,sol.data()+ia,&load,com.data()+ia,
-                                                    mpi_comm, &options, &mp, ia, myrank, pF);
+                                                    mpi_comm, &options, mp, ia, myrank, pF);
         }
       }
       
@@ -1064,7 +1064,7 @@ int single_scale_main(int argc,char *argv[])
       //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
       // of the load vector
       err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
-                                                   &options,&mp,ia,myrank);
+                                                   &options,mp,ia,myrank);
 
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
       {
@@ -1148,7 +1148,7 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R
         //----------------------------------------------------------------------
         //---->
-        err += read_and_apply_load_increments(&grid, fv.data(), &load, &mp, tim, mpi_comm, myrank);
+        err += read_and_apply_load_increments(&grid, fv.data(), &load, mp, tim, mpi_comm, myrank);
 
         if(mp_id_M>=0)
         {
@@ -1199,7 +1199,7 @@ int single_scale_main(int argc,char *argv[])
         hypre_time += Multiphysics_Newton_Raphson(&grid, &mat, fv.data(),
                                                   sol.data(), &load, com.data(),
                                                   &time_steps, crpl, mpi_comm,
-                                                  VVolume, &options, &mp);
+                                                  VVolume, &options, mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1225,7 +1225,7 @@ int single_scale_main(int argc,char *argv[])
                                                &sol[mp_id_M], &load,
                                                &com[mp_id_M], &time_steps,
                                                crpl, mpi_comm, VVolume,
-                                               &options, &mp, 0);
+                                               &options, mp, 0);
 
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
@@ -1245,7 +1245,7 @@ int single_scale_main(int argc,char *argv[])
                                                      fv.data(),
                                                      &load,
                                                      &options,
-                                                     &mp,
+                                                     mp,
                                                      mp_id_M,
                                                      time_steps.dt_np1,
                                                      sol[mp_id_M].alpha);
@@ -1278,11 +1278,11 @@ int single_scale_main(int argc,char *argv[])
       // print simulation results
       err += print_results(&grid, &mat, fv.data(), sol.data(), &load,
                            com.data(), &time_steps, crpl, ensight, pmr,
-                           mpi_comm, oVolume, VVolume, &options, &mp, tim,
+                           mpi_comm, oVolume, VVolume, &options, mp, tim,
                            myrank);
 
       err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
-                                 &mp, tim, mpi_comm, myrank, time_step_start,
+                                 mp, tim, mpi_comm, myrank, time_step_start,
                                  total_time);
 
       if (myrank == 0){
@@ -1321,12 +1321,12 @@ int single_scale_main(int argc,char *argv[])
     else
       err += destory_temporal_field_varialbes(&fv[ia],0,&options);
 
-    err += destruct_field_varialbe(&fv[ia], &grid, &options, &mp, ia);
+    err += destruct_field_varialbe(&fv[ia], &grid, &options, mp, ia);
   }
 
-  err += destruct_loading_steps(&load, &mp);
+  err += destruct_loading_steps(&load, mp);
   err += destruct_material(&mat, &options);
-  err += destruct_grid(&grid, &options, &mp);
+  err += destruct_grid(&grid, &options, mp);
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
@@ -1346,7 +1346,7 @@ int single_scale_main(int argc,char *argv[])
     }
   }
 
-  err += destruct_multiphysics(&mp);
+  err += destruct_multiphysics(mp);
 
   delete ensight;
   //<---------------------------------------------------------------------

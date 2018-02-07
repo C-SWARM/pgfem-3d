@@ -91,12 +91,12 @@ int grid_initialization(Grid *grid)
 /// \return non-zero on internal error
 int destruct_grid(Grid *grid,
                   const PGFem3D_opt *opts,
-                  Multiphysics *mp)
+                  const Multiphysics& mp)
 {
   int err = 0;
   destroy_bounding_elements(grid->n_be,grid->b_elems);
   destroy_elem(grid->element,grid->ne);
-  destroy_node_multi_physics(grid->nn,grid->node, mp->physicsno);
+  destroy_node_multi_physics(grid->nn,grid->node, mp.physicsno);
 
   if(opts->cohesive == 1)
     destroy_coel(grid->coel,grid->nce);
@@ -169,7 +169,7 @@ int construct_field_varialbe(FieldVariables *fv,
                              Grid *grid,
                              CommunicationStructure *com,
                              const PGFem3D_opt *opts,
-                             Multiphysics *mp,
+                             const Multiphysics& mp,
                              int myrank,
                              int mp_id)
 {
@@ -191,7 +191,7 @@ int construct_field_varialbe(FieldVariables *fv,
   fv->BS_f   = aloc1(DomDof_myrank);
   fv->BS_f_u = aloc1(DomDof_myrank);
   fv->BS_RR  = aloc1(DomDof_myrank);
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     if(opts->analysis_type == CM || opts->analysis_type == CM3F)
     {
@@ -232,7 +232,7 @@ int construct_field_varialbe(FieldVariables *fv,
 int destruct_field_varialbe(FieldVariables *fv,
                             Grid *grid,
                             const PGFem3D_opt *opts,
-                            Multiphysics *mp,
+                            const Multiphysics& mp,
                             int mp_id)
 {
   int err = 0;
@@ -255,7 +255,7 @@ int destruct_field_varialbe(FieldVariables *fv,
   if(NULL != fv->fvs)    free(fv->fvs);
 
   destroy_eps_il(fv->eps,grid->element,grid->ne,opts->analysis_type);
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     destroy_sig_il(fv->sig,grid->element,grid->ne,opts->analysis_type);
     if(opts->smoothing == 0)
@@ -446,14 +446,14 @@ int loading_steps_initialization(LoadingSteps *load)
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int construct_loading_steps(LoadingSteps *load, Multiphysics *mp)
+int construct_loading_steps(LoadingSteps *load, const Multiphysics& mp)
 {
   int err = 0;
 
-  load->sups        = (SUPP *)   malloc(sizeof(SUPP)*mp->physicsno);
-  load->sup_defl    = (double **) malloc(sizeof(double *)*mp->physicsno);
-  load->tim_load    = (long **)   malloc(sizeof(long *)*mp->physicsno);
-  load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp->physicsno);
+  load->sups        = (SUPP *)   malloc(sizeof(SUPP)*mp.physicsno);
+  load->sup_defl    = (double **) malloc(sizeof(double *)*mp.physicsno);
+  load->tim_load    = (long **)   malloc(sizeof(long *)*mp.physicsno);
+  load->solver_file = (FILE **)   malloc(sizeof(FILE *)*mp.physicsno);
 
   return err;
 }
@@ -464,7 +464,7 @@ int construct_loading_steps(LoadingSteps *load, Multiphysics *mp)
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_loading_steps(LoadingSteps *load, Multiphysics *mp)
+int destruct_loading_steps(LoadingSteps *load, const Multiphysics& mp)
 {
   int err = 0;
 
@@ -472,7 +472,7 @@ int destruct_loading_steps(LoadingSteps *load, Multiphysics *mp)
   destroy_zatelem(load->zele_s, load->nle_s);
   destroy_zatelem(load->zele_v, load->nle_v);
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     destroy_supp(load->sups[ia]);
     if(NULL != load->tim_load[ia]) free(load->tim_load[ia]);
@@ -536,17 +536,17 @@ int destruct_communication_structure(CommunicationStructure *com)
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int multiphysics_initialization(Multiphysics *mp)
+int multiphysics_initialization(Multiphysics& mp)
 {
   int err = 0;
-  mp->physicsno   = 0;
-  mp->physicsname = NULL;
-  mp->physics_ids = NULL;
-  mp->ndim        = NULL;
-  mp->write_no    = NULL;
-  mp->write_ids   = NULL;
-  mp->coupled_ids = NULL;
-  mp->total_write_no = 0;
+  mp.physicsno   = 0;
+  mp.physicsname = NULL;
+  mp.physics_ids = NULL;
+  mp.ndim        = NULL;
+  mp.write_no    = NULL;
+  mp.write_ids   = NULL;
+  mp.coupled_ids = NULL;
+  mp.total_write_no = 0;
   return err = 0;
 }
 
@@ -557,28 +557,28 @@ int multiphysics_initialization(Multiphysics *mp)
 /// \param[in, out] mp an object for multiphysics stepping
 /// \param[in] physicsno number of physics
 /// \return non-zero on internal error
-int construct_multiphysics(Multiphysics *mp,
+int construct_multiphysics(Multiphysics& mp,
                            int physicsno)
 {
   int err = 0;
-  mp->physicsno   = physicsno;
-  mp->physicsname = (char **) malloc(sizeof(char *)*physicsno);
-  mp->physics_ids = (int*) malloc(sizeof(int)*physicsno);
-  mp->ndim        = (int*) malloc(sizeof(int)*physicsno);
-  mp->write_no    = (int*) malloc(sizeof(int)*physicsno);
-  mp->write_ids   = (int**) malloc(sizeof(int *)*physicsno);
-  mp->coupled_ids = (int**) malloc(sizeof(int *)*physicsno);
+  mp.physicsno   = physicsno;
+  mp.physicsname = (char **) malloc(sizeof(char *)*physicsno);
+  mp.physics_ids = (int*) malloc(sizeof(int)*physicsno);
+  mp.ndim        = (int*) malloc(sizeof(int)*physicsno);
+  mp.write_no    = (int*) malloc(sizeof(int)*physicsno);
+  mp.write_ids   = (int**) malloc(sizeof(int *)*physicsno);
+  mp.coupled_ids = (int**) malloc(sizeof(int *)*physicsno);
 
   for(int ia=0; ia<physicsno; ia++)
   {
-    mp->physicsname[ia] = (char *) malloc(sizeof(char)*1024);
-    mp->physics_ids[ia] = 0;
-    mp->ndim[ia]        = 0;
-    mp->write_no[ia]    = 0;
-    mp->write_ids[ia]   = NULL;
-    mp->coupled_ids[ia] = NULL;
+    mp.physicsname[ia] = (char *) malloc(sizeof(char)*1024);
+    mp.physics_ids[ia] = 0;
+    mp.ndim[ia]        = 0;
+    mp.write_no[ia]    = 0;
+    mp.write_ids[ia]   = NULL;
+    mp.coupled_ids[ia] = NULL;
   }
-  mp->total_write_no  = 0;
+  mp.total_write_no  = 0;
   return err = 0;
 }
 
@@ -591,16 +591,16 @@ int construct_multiphysics(Multiphysics *mp,
 /// \param[in] n_dof number of degree freedom of the physics
 /// \param[in] name physics name
 /// \return non-zero on internal error
-static int set_a_physics(Multiphysics *mp,
+static int set_a_physics(const Multiphysics& mp,
                   int obj_id,
                   int mp_id,
                   int n_dof,
                   const char *name)
 {
   int err = 0;
-  mp->physics_ids[obj_id] = mp_id;
-  mp->ndim[obj_id]        = n_dof;
-  sprintf(mp->physicsname[obj_id], "%s", name);
+  mp.physics_ids[obj_id] = mp_id;
+  mp.ndim[obj_id]        = n_dof;
+  sprintf(mp.physicsname[obj_id], "%s", name);
   return err = 0;
 }
 
@@ -609,36 +609,36 @@ static int set_a_physics(Multiphysics *mp,
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int destruct_multiphysics(Multiphysics *mp)
+int destruct_multiphysics(Multiphysics& mp)
 {
   int err = 0;
-  if(NULL != mp->physicsname)
+  if(NULL != mp.physicsname)
   {
-    for(int ia=0; ia<mp->physicsno; ia++)
-      if(NULL != mp->physicsname[ia]) free(mp->physicsname[ia]);
+    for(int ia=0; ia<mp.physicsno; ia++)
+      if(NULL != mp.physicsname[ia]) free(mp.physicsname[ia]);
 
-    free(mp->physicsname);
+    free(mp.physicsname);
   }
 
-  if(NULL != mp->coupled_ids)
+  if(NULL != mp.coupled_ids)
   {
-    for(int ia=0; ia<mp->physicsno; ia++)
-      if(NULL != mp->coupled_ids[ia])   free(mp->coupled_ids[ia]);
+    for(int ia=0; ia<mp.physicsno; ia++)
+      if(NULL != mp.coupled_ids[ia])   free(mp.coupled_ids[ia]);
 
-    free(mp->coupled_ids);
+    free(mp.coupled_ids);
   }
 
-  if(NULL != mp->write_ids)
+  if(NULL != mp.write_ids)
   {
-    for(int ia=0; ia<  mp->physicsno; ia++)
-      if(NULL != mp->write_ids[ia])   free(mp->write_ids[ia]);
+    for(int ia=0; ia<  mp.physicsno; ia++)
+      if(NULL != mp.write_ids[ia])   free(mp.write_ids[ia]);
 
-    free(mp->write_ids);
+    free(mp.write_ids);
   }
 
-  if(NULL != mp->physics_ids) free(mp->physics_ids);
-  if(NULL != mp->ndim)        free(mp->ndim);
-  if(NULL != mp->write_no)    free(mp->write_no);
+  if(NULL != mp.physics_ids) free(mp.physics_ids);
+  if(NULL != mp.ndim)        free(mp.ndim);
+  if(NULL != mp.write_no)    free(mp.write_no);
   multiphysics_initialization(mp);
   return err = 0;
 }
@@ -692,7 +692,7 @@ int destruct_multiphysics(Multiphysics *mp)
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_multiphysics_settings(Multiphysics *mp,
+int read_multiphysics_settings(Multiphysics& mp,
                                const PGFem3D_opt *opts,
                                int myrank)
 {
@@ -739,51 +739,51 @@ int read_multiphysics_settings(Multiphysics *mp,
         if(n_couple<0)
           n_couple = 0;
 
-        mp->coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));
-        mp->coupled_ids[ia][0] = n_couple;
+        mp.coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));
+        mp.coupled_ids[ia][0] = n_couple;
         for(int ib = 0; ib<n_couple; ib++)
-          CHECK_SCANF(in, "%d", (mp->coupled_ids[ia])+(ib+1));
+          CHECK_SCANF(in, "%d", (mp.coupled_ids[ia])+(ib+1));
 
         // read ids for writing results
         err += scan_for_valid_line(in);
-        CHECK_SCANF(in, "%d", mp->write_no+ia);
+        CHECK_SCANF(in, "%d", mp.write_no+ia);
 
 
-        if(mp->write_no[ia]>0)
+        if(mp.write_no[ia]>0)
         {
           // read from file for writing results
-          mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
+          mp.write_ids[ia] = (int *) malloc(sizeof(int)*(mp.write_no[ia]));
           err += scan_for_valid_line(in);
-          cnt_pmr += mp->write_no[ia];
-          for(int ib=0; ib<mp->write_no[ia]; ib++)
-            CHECK_SCANF(in, "%d", mp->write_ids[ia]+ib);
+          cnt_pmr += mp.write_no[ia];
+          for(int ib=0; ib<mp.write_no[ia]; ib++)
+            CHECK_SCANF(in, "%d", mp.write_ids[ia]+ib);
         }
-        if(mp->write_no[ia]==-1)
+        if(mp.write_no[ia]==-1)
         {
           switch(physics_id)
           {
             case MULTIPHYSICS_MECHANICAL:
-              mp->write_no[ia] = MECHANICAL_Var_NO;
+              mp.write_no[ia] = MECHANICAL_Var_NO;
               break;
             case MULTIPHYSICS_THERMAL:
-              mp->write_no[ia] = Thermal_Var_NO;
+              mp.write_no[ia] = Thermal_Var_NO;
               break;
             case MULTIPHYSICS_CHEMICAL:
-              mp->write_no[ia] = CHEMICAL_Var_NO;
+              mp.write_no[ia] = CHEMICAL_Var_NO;
               break;
             default:
-              mp->write_no[ia] = MECHANICAL_Var_NO;
+              mp.write_no[ia] = MECHANICAL_Var_NO;
           }
 
           // set default : all outputs
-          mp->write_ids[ia] = (int *) malloc(sizeof(int)*(mp->write_no[ia]));
+          mp.write_ids[ia] = (int *) malloc(sizeof(int)*(mp.write_no[ia]));
           err += scan_for_valid_line(in);
-          cnt_pmr += mp->write_no[ia];
-          for(int ib=0; ib<mp->write_no[ia]; ib++)
-            mp->write_ids[ia][ib] = ib;
+          cnt_pmr += mp.write_no[ia];
+          for(int ib=0; ib<mp.write_no[ia]; ib++)
+            mp.write_ids[ia][ib] = ib;
         }
       }
-      mp->total_write_no  = cnt_pmr;
+      mp.total_write_no  = cnt_pmr;
     }
     fclose(in); // close file
   }
@@ -793,35 +793,35 @@ int read_multiphysics_settings(Multiphysics *mp,
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
 
-    mp->coupled_ids[0] = (int *) malloc(sizeof(int));
-    mp->coupled_ids[0][0] = 0;
+    mp.coupled_ids[0] = (int *) malloc(sizeof(int));
+    mp.coupled_ids[0][0] = 0;
 
-    mp->write_no[0] = MECHANICAL_Var_NO;
-    mp->write_ids[0] = (int *) malloc(sizeof(int)*(mp->write_no[0]));
-    for(int ib=0; ib<mp->write_no[0]; ib++)
-      mp->write_ids[0][ib] = ib;
-    mp->total_write_no  = MECHANICAL_Var_NO;
+    mp.write_no[0] = MECHANICAL_Var_NO;
+    mp.write_ids[0] = (int *) malloc(sizeof(int)*(mp.write_no[0]));
+    for(int ib=0; ib<mp.write_no[0]; ib++)
+      mp.write_ids[0][ib] = ib;
+    mp.total_write_no  = MECHANICAL_Var_NO;
   }
   // print multiphysics setting
   if(myrank==0)
   {
-    printf("Total number of physics: %d\n", mp->physicsno);
-    for(int ia=0; ia<mp->physicsno; ia++)
+    printf("Total number of physics: %d\n", mp.physicsno);
+    for(int ia=0; ia<mp.physicsno; ia++)
     {
-      printf("%d. physics name \t\t= %s\n", ia, mp->physicsname[ia]);
-      printf("   # of unknown on node \t= %d\n", mp->ndim[ia]);
-      printf("   # of physics to be coupled \t= %d", mp->coupled_ids[ia][0]);
+      printf("%d. physics name \t\t= %s\n", ia, mp.physicsname[ia]);
+      printf("   # of unknown on node \t= %d\n", mp.ndim[ia]);
+      printf("   # of physics to be coupled \t= %d", mp.coupled_ids[ia][0]);
       printf(", ids = ");
-      for(int ib=0; ib<mp->coupled_ids[ia][0]; ib++)
-        printf("%d ", mp->coupled_ids[ia][ib+1]);
+      for(int ib=0; ib<mp.coupled_ids[ia][0]; ib++)
+        printf("%d ", mp.coupled_ids[ia][ib+1]);
 
       printf("\n");
 
-      printf("   # of output variables \t= %d", mp->write_no[ia]);
+      printf("   # of output variables \t= %d", mp.write_no[ia]);
       printf(", ids = ");
-      for(int ib=0; ib<mp->write_no[ia]; ib++){
-	assert(mp->write_ids[ia] != NULL && "mp->write_ids[ia] can't be null");
-        printf("%d ", mp->write_ids[ia][ib]);
+      for(int ib=0; ib<mp.write_no[ia]; ib++){
+    assert(mp.write_ids[ia] != NULL && "mp.write_ids[ia] can't be null");
+        printf("%d ", mp.write_ids[ia][ib]);
       }
 
       printf("\n\n");

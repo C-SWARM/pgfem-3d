@@ -372,7 +372,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                            LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           Multiphysics *mp,
+                           const Multiphysics& mp,
                            int mp_id,
                            double dt,
                            double lm,
@@ -487,7 +487,7 @@ static int el_stiffmat_MP(int eid,
                           CRPL *crpl,
                           MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
-                          Multiphysics *mp,
+                          const Multiphysics& mp,
                           int mp_id,
                           double dt,
                           long iter,
@@ -672,7 +672,7 @@ int stiffmat_fd_MP(Grid *grid,
                    CRPL *crpl,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
-                   Multiphysics *mp,
+                   const Multiphysics& mp,
                    int mp_id,
                    double dt,
                    long iter,
@@ -954,7 +954,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
-                        c->mpi_comm,opts,&mp,mp_id,s->dt,iter,myrank);
+                        c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank);
 
   free(coupled_ids);
   free(physicsname);

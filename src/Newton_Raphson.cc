@@ -389,7 +389,7 @@ long compute_residuals_for_NR(Grid *grid,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
-                              Multiphysics *mp,
+                              const Multiphysics& mp,
                               int mp_id,
                               double t,
                               double *dts,
@@ -397,7 +397,7 @@ long compute_residuals_for_NR(Grid *grid,
 {
   long INFO;
 
-  switch(mp->physics_ids[mp_id])
+  switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
     INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,updated_deformation);
@@ -407,7 +407,7 @@ long compute_residuals_for_NR(Grid *grid,
     break;
    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
    default:
-    printf("%s is not defined (compute_residuals_for_NR)\n", mp->physicsname[mp_id]);
+    printf("%s is not defined (compute_residuals_for_NR)\n", mp.physicsname[mp_id]);
 
     // @todo This abort() was added because otherwise we're returning an
     //       uninitialized value. If this branch is a valid path then @cp
@@ -446,7 +446,7 @@ long compute_stiffness_for_NR(int *max_substep,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
-                              Multiphysics *mp,
+                              const Multiphysics& mp,
                               int mp_id,
                               double dt,
                               long iter,
@@ -458,7 +458,7 @@ long compute_stiffness_for_NR(int *max_substep,
   if(sol->microscale == NULL) // Null the matrix (if not doing multiscale)
     sol->system->zero();
 
-  switch(mp->physics_ids[mp_id])
+  switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
     INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
@@ -468,7 +468,7 @@ long compute_stiffness_for_NR(int *max_substep,
     break;
    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
    default:
-    printf("%s is not defined (compute_stiffness_for_NR)\n", mp->physicsname[mp_id]);
+    printf("%s is not defined (compute_stiffness_for_NR)\n", mp.physicsname[mp_id]);
   }
 
   // if INFO value greater than 0, the previous computation has an error
@@ -522,7 +522,7 @@ int update_values_for_next_NR(Grid *grid,
                               MPI_Comm mpi_comm,
                               const double VVolume,
                               const PGFem3D_opt *opts,
-                              Multiphysics *mp,
+                              const Multiphysics& mp,
                               NR_time_steps *NR_t,
                               int mp_id)
 {
@@ -530,7 +530,7 @@ int update_values_for_next_NR(Grid *grid,
   double t = NR_t->times[NR_t->tim+1];
   double dt = NR_t->dt[DT_NP1];
 
-  switch(mp->physics_ids[mp_id])
+  switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
      {
@@ -639,7 +639,7 @@ int update_values_for_next_NR(Grid *grid,
     }
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
   {
     /* update of internal fv and nodal coordinates */
     if(opts->analysis_type==CM || opts->analysis_type==CM3F)
@@ -841,7 +841,7 @@ long Newton_Raphson_with_LS(double *solve_time,
                             CRPL *crpl,
                             MPI_Comm mpi_comm,
                             const PGFem3D_opt *opts,
-                            Multiphysics *mp,
+                            const Multiphysics& mp,
                             int mp_id,
                             double *times,
                             double *dts,
@@ -1010,7 +1010,7 @@ long Newton_Raphson_with_LS(double *solve_time,
 
     bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
     /* this is not verified and currently active, but fully implemented.
-       if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+       if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
        {
        double element_volume_evolution = 0.0;
 
@@ -1176,7 +1176,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     
     
     
-    if((mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
+    if((mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
        (opts->analysis_type == TF || opts->analysis_type == CM3F))
        fv->tf.update_increments_from_NR(sol->gama);
 
@@ -1243,7 +1243,7 @@ long Newton_Raphson_with_LS(double *solve_time,
   if(INFO==0)
   {
     // before increment after convergence, check max damage */
-    if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
     {
       // check from constitutive mode
       if(opts->analysis_type == CM || opts->analysis_type == CM3F)
@@ -1339,7 +1339,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
                                                MPI_Comm mpi_comm,
                                                const double VVolume,
                                                const PGFem3D_opt *opts,
-                                               Multiphysics *mp,
+                                               const Multiphysics& mp,
                                                NR_time_steps *NR_t,
                                                int mp_id,
                                                int myrank)
@@ -1412,7 +1412,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
 
     if (INFO == 1 && ART == 0)
     {
-      reset_variables_for_NR(grid, fv, crpl, mp->physics_ids[mp_id], opts);
+      reset_variables_for_NR(grid, fv, crpl, mp.physics_ids[mp_id], opts);
       if(myrank == 0 ) PGFEM_printf("\n** Try without LINE SEARCH **\n\n");
 
       ART = 1;
@@ -1424,7 +1424,7 @@ double perform_Newton_Raphson_with_subdivision(const int print_level,
 
       // update variables according to the subdivision
       if(sp.reset_variables)
-        reset_variables_for_NR(grid, fv, crpl, mp->physics_ids[mp_id], opts);
+        reset_variables_for_NR(grid, fv, crpl, mp.physics_ids[mp_id], opts);
 
       update_load_increments_for_subdivision(&sp,load->sup_defl[mp_id],(load->sups[mp_id])->npd,
                                              fv->RRn,fv->R,fv->ndofd);
@@ -1748,7 +1748,7 @@ int compute_coupled_physics_residual_norm(double *nor,
                                           CRPL *crpl,
                                           MPI_Comm mpi_comm,
                                           const PGFem3D_opt *opts,
-                                          Multiphysics *mp,
+                                          const Multiphysics& mp,
                                           double t,
                                           double *dts,
                                           int mp_id,
@@ -1803,7 +1803,7 @@ int compute_coupled_physics_residual_norm(double *nor,
 int save_field_variables_to_temporal(Grid *grid,
                                      FieldVariables *FV,
                                      const PGFem3D_opt *opts,
-                                     Multiphysics *mp,
+                                     const Multiphysics& mp,
                                      int mp_id)
 {
   int myrank = 0;
@@ -1818,10 +1818,10 @@ int save_field_variables_to_temporal(Grid *grid,
     fv->temporal->u_n[ia]   = fv->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_save_state_vars_to_temporal(FV + mp_id, grid);
     
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
   {
     for(int ia=0; ia<(grid->ne)*(fv->nVol); ia++)
     {
@@ -1850,11 +1850,11 @@ int save_field_variables_to_temporal(Grid *grid,
 int update_temporal_field_variables_np1(Grid *grid,
                                         FieldVariables *FV,
                                         const PGFem3D_opt *opts,
-                                        Multiphysics *mp,
+                                        const Multiphysics& mp,
                                         int mp_id)
 {
   int err = 0;
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_update_np1_state_vars_to_temporal(FV + mp_id, grid);
 
   return err;
@@ -1871,7 +1871,7 @@ int update_temporal_field_variables_np1(Grid *grid,
 int reset_field_variables_using_temporal(Grid *grid,
                                          FieldVariables *FV,
                                          const PGFem3D_opt *opts,
-                                         Multiphysics *mp,
+                                         const Multiphysics& mp,
                                          int mp_id)
 {
   FieldVariables *fv = FV + mp_id;
@@ -1883,11 +1883,11 @@ int reset_field_variables_using_temporal(Grid *grid,
     fv->u_n[ia]   = fv->temporal->u_n[ia];
   }
 
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && 
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && 
     (opts->analysis_type==CM || opts->analysis_type==CM3F))
     err += constitutive_model_reset_state_using_temporal(FV + mp_id, grid);
     
-  if(mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
+  if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL && opts->analysis_type==CM3F)
   {
     for(int ia=0; ia<(grid->ne)*(fv->nVol); ia++)
     {
@@ -1916,7 +1916,7 @@ int reset_field_variables_using_temporal(Grid *grid,
 int reset_mesh_coordinates(Grid *grid,
                            FieldVariables *FV,
                            const PGFem3D_opt *opts,
-                           Multiphysics *mp,
+                           const Multiphysics& mp,
                            int mp_id)
 {
   FieldVariables *fv = FV + mp_id;
@@ -1946,12 +1946,12 @@ int reset_state_field_variables(Grid *grid,
                                 FieldVariables *FV,
                                 Solver *SOL,
                                 const PGFem3D_opt *opts,
-                                Multiphysics *mp,
+                                const Multiphysics& mp,
                                 int mp_id)
 {
   int err = 0;
 
-  if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
+  if(mp.physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
     err += reset_mesh_coordinates(grid,FV,opts,mp,mp_id);
 
   if(SOL[mp_id].is_subdivided)
@@ -2036,7 +2036,7 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
                                        CRPL *crpl,
                                        MPI_Comm mpi_comm,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        NR_time_steps *NR_time,
                                        int mp_id,
                                        int myrank)
@@ -2053,11 +2053,11 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
 
   for(int ib = 0; ib<FV[mp_id].n_coupled; ib++)
   {
-    int cpled_mp_id = mp->coupled_ids[mp_id][ib+1];
+    int cpled_mp_id = mp.coupled_ids[mp_id][ib+1];
     int is_it_dependent_on_physics_mp_id = 0;
     for(int ic=0; ic<FV[cpled_mp_id].n_coupled; ic++)
     {
-      if(mp->coupled_ids[cpled_mp_id][ic+1]==mp_id)
+      if(mp.coupled_ids[cpled_mp_id][ic+1]==mp_id)
       {
         // phsics[cpled_mp_id] is dependent on phsics[mp_id]
         is_it_dependent_on_physics_mp_id = 1;
@@ -2080,7 +2080,7 @@ int check_convergence_of_NR_staggering(int *is_cnvged,
 
     if(myrank==0)
     {
-      printf(":: R(%s): ", mp->physicsname[cpled_mp_id]);
+      printf(":: R(%s): ", mp.physicsname[cpled_mp_id]);
       printf("|R| = %e |R|/|R0| = %e, Rn = %e, Rn-R = %e\n",
              nor, nor/FV[cpled_mp_id].NORM, SOL[cpled_mp_id].last_residual,Rn_R);
     }
@@ -2124,7 +2124,7 @@ int set_0th_residual(Grid *grid,
                      CRPL *crpl,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      int myrank)
 {
   int err = 0;
@@ -2132,7 +2132,7 @@ int set_0th_residual(Grid *grid,
   if(time_steps->tim>0)
     return err;
 
-  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
   {
     if(SOL[mp_id].set_initial_residual==0)
       continue;
@@ -2154,7 +2154,7 @@ int set_0th_residual(Grid *grid,
 
     if(myrank==0)
     {
-      printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp->physicsname[mp_id], nor);
+      printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp.physicsname[mp_id], nor);
       printf("by perturbing the disp. with %e\n", SOL[mp_id].du);
     }
   }
@@ -2196,7 +2196,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
                                        MPI_Comm mpi_comm,
                                        const double VVolume,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp)
+                                       const Multiphysics& mp)
 {
   const int print_level = 1;
   double solve_time = 0.0;
@@ -2210,12 +2210,12 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
   int myrank;
   MPI_Comm_rank(mpi_comm,&myrank);
 
-  NR_time_steps *NR_time = (NR_time_steps *) malloc(sizeof(NR_time_steps)*mp->physicsno);
+  NR_time_steps *NR_time = (NR_time_steps *) malloc(sizeof(NR_time_steps)*mp.physicsno);
 
   int coupled_physics_no = 0;
   int printed_before = 0;
 
-  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
   {
     save_field_variables_to_temporal(grid,FV,opts,mp,mp_id);
 
@@ -2247,7 +2247,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
     if(myrank==0)
     {
       printf("%s\n", line_level_2);
-      printf(":: Newton Raphson iteration for : %s\n", mp->physicsname[mp_id]);
+      printf(":: Newton Raphson iteration for : %s\n", mp.physicsname[mp_id]);
     }
 
     double alpha = 0.0;
@@ -2282,13 +2282,13 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
 
     // Prepare memory for saving load data if subdivided
     // Load will be divided, and applied subsequently while subdivision is stepping.
-    double **sup_defl = (double **) malloc(sizeof(double *)*mp->physicsno);
-    double **defl     = (double **) malloc(sizeof(double *)*mp->physicsno);
-    double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
-    double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
+    double **sup_defl = (double **) malloc(sizeof(double *)*mp.physicsno);
+    double **defl     = (double **) malloc(sizeof(double *)*mp.physicsno);
+    double **R        = (double **) malloc(sizeof(double *)*mp.physicsno);
+    double **RRn      = (double **) malloc(sizeof(double *)*mp.physicsno);
 
     // start save data
-    for(int ia=0; ia<mp->physicsno; ia++)
+    for(int ia=0; ia<mp.physicsno; ia++)
     {
       int npd = (load->sups[ia])->npd;
       if(npd>0)
@@ -2322,7 +2322,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
       int is_cnvged = 1;
 
       double alpha_cpled = 0.0; // measure of physics based evolution rate for non-coupled physics
-      for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+      for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
       {
         if(FV[mp_id].n_coupled >0)
         {
@@ -2330,7 +2330,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
           if(myrank==0)
           {
             printf("%s\n", line_level_2);
-            printf(":: (%d/%d) Newton Raphson iteration for : %s\n", *iterno, max_itr, mp->physicsname[mp_id]);
+            printf(":: (%d/%d) Newton Raphson iteration for : %s\n", *iterno, max_itr, mp.physicsname[mp_id]);
           }
 
           if(*iterno>0)
@@ -2365,7 +2365,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
               FV[mp_id].f[ib]      = 0.0;
             }
             
-            if((mp->physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
+            if((mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) && 
               (opts->analysis_type == TF || opts->analysis_type == CM3F))
               FV[mp_id].tf.reset();
           }
@@ -2391,7 +2391,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
       *alpha_out = (alpha_cpled>alpha_single)? alpha_cpled: alpha_single;
 
       // allways go back to t(n) for next NR
-      for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+      for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
       {
         if(FV[mp_id].n_coupled == 0)
           continue;
@@ -2400,7 +2400,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
         {
           reset_state_field_variables(grid,FV,SOL,opts,mp,mp_id);
           if(myrank==0)
-            printf("NR for %s is subdivied, reset t(n)\n", mp->physicsname[mp_id]);
+            printf("NR for %s is subdivied, reset t(n)\n", mp.physicsname[mp_id]);
         }
       }
 
@@ -2430,7 +2430,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
 
     // if not converged, reset accumulated prescribed boundary values which have been updated during the NR iterations.
     // free allocated memory
-    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
     {
       int npd = (load->sups[mp_id])->npd;
       if(npd>0)
@@ -2459,7 +2459,7 @@ double Multiphysics_Newton_Raphson_sub(int *iterno,
   if(*is_SNR_converged)
   {
     // update final results
-    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
     {
       int tim = NR_time[mp_id].tim;
       time_steps->tns[mp_id] = NR_time[mp_id].times[tim+1] - NR_time[mp_id].dt[DT_NP1];
@@ -2500,7 +2500,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
                                    MPI_Comm mpi_comm,
                                    const double VVolume,
                                    const PGFem3D_opt *opts,
-                                   Multiphysics *mp)
+                                   const Multiphysics& mp)
 {
   const int print_level = 1;
   double solve_time = 0.0;
@@ -2520,11 +2520,11 @@ double Multiphysics_Newton_Raphson(Grid *grid,
   set_time_step_info_for_NR(time_steps,&NR_t);
   set_time_step_info_for_NR(time_steps,&NR_t_sub);
 
-  assert(mp->physicsno > 0 && "Number of physics must be positive");
+  assert(mp.physicsno > 0 && "Number of physics must be positive");
 
   // if single physics
   //------------------------------------------------------------------------------------------
-  if(mp->physicsno==1)
+  if(mp.physicsno==1)
   {
 
     int is_NR_cvg = 1;
@@ -2545,16 +2545,16 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
   // Prepare memory for saving load data if subdivided
   // Load will be divided, and applied subsequently while subdivision is stepping.
-  double **sup_defl = (double **) malloc(sizeof(double *)*mp->physicsno);
-  double **R        = (double **) malloc(sizeof(double *)*mp->physicsno);
-  double **RRn      = (double **) malloc(sizeof(double *)*mp->physicsno);
+  double **sup_defl = (double **) malloc(sizeof(double *)*mp.physicsno);
+  double **R        = (double **) malloc(sizeof(double *)*mp.physicsno);
+  double **RRn      = (double **) malloc(sizeof(double *)*mp.physicsno);
 
   gcm::Matrix<bool> apply_V0;
   if(time_steps->tim==0)    
-    apply_V0.initialization(mp->physicsno, 1, false);
+    apply_V0.initialization(mp.physicsno, 1, false);
   
   // start save data
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     sup_defl[ia] = NULL;
 
@@ -2596,7 +2596,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
     // run subdivision
     subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,mpi_comm);
 
-    for(int ia=0; ia<mp->physicsno; ia++)
+    for(int ia=0; ia<mp.physicsno; ia++)
       update_load_increments_for_subdivision(&sp,sup_defl[ia],(load->sups[ia])->npd,RRn[ia],R[ia],FV[ia].ndofd);
 
     INFO = 0;
@@ -2604,7 +2604,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
     while(sp.step_size > sp.step_id)
     {
-      for(int ia=0; ia<mp->physicsno; ia++)
+      for(int ia=0; ia<mp.physicsno; ia++)
       {
         for (int ib=0;ib<(load->sups[ia])->npd;ib++)
         {
@@ -2655,7 +2655,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
       alpha = 0.0; // always reset evolution threshold
       
       if(time_steps->tim==0){          
-        for(int ia=0; ia<mp->physicsno; ia++)
+        for(int ia=0; ia<mp.physicsno; ia++)
           FV[ia].apply_initial_velocity = apply_V0(ia+1);
       }
       
@@ -2682,7 +2682,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
       {
         NR_t_sub.tim=1;
         if(time_steps->tim==0){          
-          for(int ia=0; ia<mp->physicsno; ia++)
+          for(int ia=0; ia<mp.physicsno; ia++)
             apply_V0(ia+1) = false;
         }
       }
@@ -2707,7 +2707,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
 
   
   // free allocated memory
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     if(sup_defl[ia] != NULL)
       free(sup_defl[ia]);
@@ -2897,10 +2897,10 @@ double Newton_Raphson_multiscale(const int print_level,
   double solve_time = perform_Newton_Raphson_with_subdivision(print_level,&is_NR_cvg,&alpha,
                                                               &grid,&mat,&fv,&sol,&load,&com,&ts,
                                                               s->crpl,c->mpi_comm,c->VVolume,
-                                                              opts,&mp,&NR_t,mp_id,myrank);
+                                                              opts,mp,&NR_t,mp_id,myrank);
 
   update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,c->VVolume,
-                            opts,&mp,&NR_t,mp_id);
+                            opts,mp,&NR_t,mp_id);
 
   ts.times[ts.tim] = ts.times[ts.tim+1] - NR_t.dt[DT_NP1];
   *n_step = sol.n_step;

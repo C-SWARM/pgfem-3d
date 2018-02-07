@@ -104,7 +104,7 @@ int read_material_for_Thermal(FILE *fp,
 /// \return non-zero on interal error
 int read_multiphysics_material_properties(MaterialProperty *mat,
                                           const PGFem3D_opt *opts,
-                                          const Multiphysics *mp)
+                                          const Multiphysics& mp)
 {
   int err = 0;
 
@@ -114,9 +114,9 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
   char dirname[1024], fn[1024];
   sprintf(dirname,"%s/Material",opts->ipath);
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
-    sprintf(fn,"%s/%s.mat",dirname,mp->physicsname[ia]);
+    sprintf(fn,"%s/%s.mat",dirname,mp.physicsname[ia]);
 
     FILE *fp = NULL;
     fp = fopen(fn, "r");
@@ -129,7 +129,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
       continue;
     }
 
-    switch(mp->physics_ids[ia])
+    switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
       err += read_material_for_Mechanical(fp,mat,opts);
@@ -407,7 +407,7 @@ int read_mesh_file(Grid *grid,
                    FieldVariables *FV,
                    Solver *SOL,
                    LoadingSteps *load,
-                   Multiphysics *mp,
+                   const Multiphysics& mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts)
 {
@@ -415,9 +415,9 @@ int read_mesh_file(Grid *grid,
   int myrank = 0;
   MPI_Comm_rank(mpi_comm,&myrank);
 
-  int *fv_ndofn = (int *) malloc(mp->physicsno*sizeof(int));
+  int *fv_ndofn = (int *) malloc(mp.physicsno*sizeof(int));
 
-  for(int iA=0; iA<mp->physicsno; iA++)
+  for(int iA=0; iA<mp.physicsno; iA++)
     fv_ndofn[iA] = FV[iA].ndofn;
 
   int err = read_input_file(opts,
@@ -444,9 +444,9 @@ int read_mesh_file(Grid *grid,
                             &(load->nle_v),
                             &(load->zele_v),
                             fv_ndofn,
-                            mp->physicsno,
-                            mp->ndim,
-                            mp->physicsname);
+                            mp.physicsno,
+                            mp.ndim,
+                            mp.physicsname);
   free(fv_ndofn);
 
   // read multiphysics material properties
@@ -454,7 +454,7 @@ int read_mesh_file(Grid *grid,
 
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
-  for(int iA=0; iA<mp->physicsno; iA++)
+  for(int iA=0; iA<mp.physicsno; iA++)
   {
     SOL[iA].iter_max_sol  = SOL[0].iter_max_sol;
     SOL[iA].err           = SOL[0].err;
@@ -465,7 +465,7 @@ int read_mesh_file(Grid *grid,
   // need to update number of elements that have prescribed BCs (supported)
   for (long ia=0;ia<grid->ne;ia++)
   {
-    for(int iA = 1; iA<mp->physicsno; iA++) // iA = 0 is alreaded accounted in read_elem in read_input_file
+    for(int iA = 1; iA<mp.physicsno; iA++) // iA = 0 is alreaded accounted in read_elem in read_input_file
     {
       const long *nod = grid->element[ia].nod;
       const int nne = grid->element[ia].toe;
@@ -536,7 +536,7 @@ int read_solver_file(TimeStepping *ts,
                      Solver *SOL,
                      LoadingSteps *load,
                      CRPL *crpl,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      const PGFem3D_opt *opts,
                      int myrank)
 {
@@ -582,7 +582,7 @@ int read_solver_file(TimeStepping *ts,
     int physicsno = 0;
     CHECK_SCANF(fp, "%d %d", &physicsno, &(SOL[0].max_NR_staggering));
 
-    if(physicsno != mp->physicsno)
+    if(physicsno != mp.physicsno)
     {
       if(myrank==0)
         printf("ERROR: Number of physics for setting parameters for the solver is not correct. Abort\n");
@@ -592,7 +592,7 @@ int read_solver_file(TimeStepping *ts,
 
     scan_for_valid_line(fp);
 
-    for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+    for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
     {
       SOL[mp_id].FNR = 1;
       if(mp_id>0)
@@ -624,13 +624,13 @@ int read_solver_file(TimeStepping *ts,
   char load_fn[1024];
   sprintf(load_path,"%s/load",opts->ipath);
 
-  ts->tns = aloc1(mp->physicsno);
+  ts->tns = aloc1(mp.physicsno);
   int is_load_exist = 0;
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     ts->tns[ia] = ts->times[0]; // set t(n) for individual physics
 
-    sprintf(load_fn,"%s/%s.load",load_path,mp->physicsname[ia]);
+    sprintf(load_fn,"%s/%s.load",load_path,mp.physicsname[ia]);
     load->solver_file[ia] = NULL;
     load->solver_file[ia] = fopen(load_fn, "r"); // Load increments are needed to be read
     // while time is elapsing.
@@ -664,7 +664,7 @@ int read_solver_file(TimeStepping *ts,
                                // by calling destruction of the LoadingSteps
   }
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
     // if loading is not defined, set default (all zeros)
     if(load->solver_file[ia] == NULL)
@@ -704,7 +704,7 @@ int read_initial_values_lagcy(Grid *grid,
                               LoadingSteps *load,
                               TimeStepping *ts,
                               PGFem3D_opt *opts,
-                              Multiphysics *mp,
+                              const Multiphysics& mp,
                               double *tnm1,
                               int myrank)
 {
@@ -950,13 +950,13 @@ int read_initial_for_Mechanical(FILE *fp,
       fv->u_nm1[nid*3+0] = -dt*v[0];
       fv->u_nm1[nid*3+1] = -dt*v[1];
       fv->u_nm1[nid*3+2] = -dt*v[2];
-      if(fabs(v[0]) > sol->computer_zero || 
+      if(fabs(v[0]) > sol->computer_zero ||
          fabs(v[1]) > sol->computer_zero ||
          fabs(v[2]) > sol->computer_zero)
          fv->apply_initial_velocity = true;
     }
-    if(opts->analysis_type == TF || opts->analysis_type == CM3F)    
-      compute_3f_initial_conditions(grid, mat, fv);    
+    if(opts->analysis_type == TF || opts->analysis_type == CM3F)
+      compute_3f_initial_conditions(grid, mat, fv);
   }
 
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)
@@ -1076,7 +1076,7 @@ int read_initial_values_IC(Grid *grid,
                            LoadingSteps *load,
                            TimeStepping *ts,
                            PGFem3D_opt *opts,
-                           Multiphysics *mp,
+                           const Multiphysics& mp,
                            double *tnm1,
                            int myrank)
 {
@@ -1091,10 +1091,10 @@ int read_initial_values_IC(Grid *grid,
 
   char fn_0[1024], fn[1024];
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
-    sprintf(fn_0,"%s/%s_0.initial",IC,mp->physicsname[ia]);
-    sprintf(fn  ,"%s/%s_%d.initial",IC,mp->physicsname[ia], myrank);
+    sprintf(fn_0,"%s/%s_0.initial",IC,mp.physicsname[ia]);
+    sprintf(fn  ,"%s/%s_%d.initial",IC,mp.physicsname[ia], myrank);
 
     FILE *fp = NULL;
     fp = fopen(fn, "r");
@@ -1110,7 +1110,7 @@ int read_initial_values_IC(Grid *grid,
         continue;
       }
     }
-    switch(mp->physics_ids[ia])
+    switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
       err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
@@ -1151,7 +1151,7 @@ int read_initial_values(Grid *grid,
                         LoadingSteps *load,
                         TimeStepping *ts,
                         PGFem3D_opt *opts,
-                        Multiphysics *mp,
+                        const Multiphysics& mp,
                         double *tnm1,
                         int myrank)
 {
@@ -1193,7 +1193,7 @@ int read_initial_values(Grid *grid,
 int read_and_apply_load_increments(Grid *grid,
                                    FieldVariables *fv,
                                    LoadingSteps *load,
-                                   Multiphysics *mp,
+                                   const Multiphysics& mp,
                                    long tim,
                                    MPI_Comm mpi_comm,
                                    int myrank)
@@ -1201,7 +1201,7 @@ int read_and_apply_load_increments(Grid *grid,
   int err = 0;
 
   //  read nodal prescribed boundary values
-  for(int mp_id=0; mp_id<mp->physicsno; mp_id++)
+  for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
   {
     if(load->solver_file[mp_id]==NULL)
       continue;
@@ -1221,7 +1221,7 @@ int read_and_apply_load_increments(Grid *grid,
         CHECK_SCANF(load->solver_file[mp_id],"%lf",(load->sups[mp_id])->defl_d + ia);
         (load->sup_defl[mp_id])[ia] = load->sups[mp_id]->defl_d[ia];
       }
-      if(mp->physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
+      if(mp.physics_ids[mp_id]==MULTIPHYSICS_MECHANICAL)
       {
         // read nodal load in the subdomain
         read_nodal_load(load->solver_file[mp_id],load->nln,grid->nsd,load->znod);

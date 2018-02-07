@@ -4,7 +4,7 @@
 #include "PGFem3D_data_structure.h"
 #include "pgfem3d/Solver.hpp"
 
-/// compute new geometry by given intial plastic deformation, and 
+/// compute new geometry by given intial plastic deformation, and
 /// set initial plastic deformation gradient in each element.
 int set_initial_plastic_deformation_gradient(Grid *grid,
                                              FieldVariables *fv,
@@ -13,7 +13,7 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
                                              const CommunicationStructure *com,
                                              const MPI_Comm mpi_comm,
                                              const PGFem3D_opt *opts,
-                                             const Multiphysics *mp,
+                                             const Multiphysics& mp,
                                              const int mp_id,
                                              const int myrank,
                                              double *pF);

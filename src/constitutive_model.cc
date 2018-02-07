@@ -302,7 +302,7 @@ class NodalTemerature
                          Grid *grid,
                          FieldVariables *fv,
                          LoadingSteps *load,
-                         Multiphysics *mp,
+                         const Multiphysics& mp,
                          int mp_id,
                          int is_it_couple_w_thermal)
     {
@@ -310,7 +310,7 @@ class NodalTemerature
       T0 = fv_h->u0;
       // get temperature for this element for each nodal point
 
-      int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
+      int mp_cp_id = mp.coupled_ids[mp_id][is_it_couple_w_thermal+1];
       get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id,
                              np1.m_pdata,n.m_pdata,nm1.m_pdata,
                              fv->subdivision_factor_np1,fv->subdivision_factor_n);
@@ -719,7 +719,7 @@ template <class CM> class ConstitutiveModelIntregrate
                      int sol_run_integration_algorithm,
                      LoadingSteps *load,
                      const PGFem3D_opt *opts,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      int mp_id,
                      double dt)
     {
@@ -1768,7 +1768,7 @@ int constitutive_model_update_output_variables(Grid *grid,
                                                FieldVariables *FV,
                                                LoadingSteps *load,
                                                PGFem3D_opt *opts,
-                                               Multiphysics *mp,
+                                               const Multiphysics& mp,
                                                int mp_id,
                                                const double dt,
                                                double alpha)
@@ -2115,7 +2115,7 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  int mp_id,
                                                  double dt)
 {
@@ -2292,7 +2292,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  int mp_id,
                                                  double dt)
 {
@@ -2527,7 +2527,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               int mp_id,
                                               double dt)
 {
@@ -2572,7 +2572,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -2819,7 +2819,7 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -2856,7 +2856,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    Multiphysics *mp,
+                                    const Multiphysics& mp,
                                     int mp_id,
                                     double dt)
 {
@@ -2904,7 +2904,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
                                                  double dt)
@@ -3068,7 +3068,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
                                                  double dt)
@@ -3366,7 +3366,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
                                               double dt)
@@ -3414,7 +3414,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -3658,7 +3658,7 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -3697,7 +3697,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    Multiphysics *mp,
+                                    const Multiphysics& mp,
                                     int mp_id,
                                     double dt)
 {
@@ -3722,7 +3722,7 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
                                               FieldVariables *fv,
                                               LoadingSteps *load,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
                                               double alpha)
@@ -3995,7 +3995,7 @@ int constitutive_model_update_NR(Grid *grid,
                                  FieldVariables *fv,
                                  LoadingSteps *load,
                                  const PGFem3D_opt *opts,
-                                 Multiphysics *mp,
+                                 const Multiphysics& mp,
                                  int mp_id,
                                  const double *dts,
                                  double alpha)

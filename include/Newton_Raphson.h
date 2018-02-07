@@ -62,7 +62,7 @@ long compute_residuals_for_NR(Grid *grid,
                               CRPL *crpl,
                               MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
-                              Multiphysics *mp,
+                              const Multiphysics& mp,
                               int mp_id,
                               double t,
                               double *dts,
@@ -94,7 +94,7 @@ double Multiphysics_Newton_Raphson(Grid *grid,
                                    MPI_Comm mpi_comm,
                                    const double VVolume,
                                    const PGFem3D_opt *opts,
-                                   Multiphysics *mp);
+                                   const Multiphysics& mp);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///

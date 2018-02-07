@@ -69,33 +69,33 @@ class ThreeFieldVariables
   Matrix<double> P_nm1;
   Matrix<double> P_n;
   Matrix<double> dP, ddP;
-  
+
   ThreeFieldVariables(){is_for_temporal=false;};
-  
+
   /// constructor
   void construct(const int ne,
                  const int Vno,
                  const int Pno,
                  bool is_temporal = false)
-  {    
+  {
     V_nm1.initialization(ne,Vno,1.0); // must be initialized to 1.0
       V_n.initialization(ne,Vno,1.0); // must be initialized to 1.0
- 
+
     P_nm1.initialization(ne,Pno,0.0);
       P_n.initialization(ne,Pno,0.0);
-    
+
     if(is_temporal == false)
-    {  
+    {
       V_np1.initialization(ne,Vno,1.0); // must be initialized to 1.0
          dV.initialization(ne,Vno,0.0);
         ddV.initialization(ne,Vno,0.0);
-      
+
       P_np1.initialization(ne,Pno,0.0);
          dP.initialization(ne,Pno,0.0);
-        ddP.initialization(ne,Pno,0.0);        
+        ddP.initialization(ne,Pno,0.0);
     }
   };
-  
+
   /// update variable at n-1 from n
   ///                 at n from n+1
   /// and reset increments to zeros
@@ -103,7 +103,7 @@ class ThreeFieldVariables
   {
     if(is_for_temporal)
       return;
-      
+
     for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
     {
       V_nm1.m_pdata[ia] = V_n.m_pdata[ia];
@@ -121,17 +121,17 @@ class ThreeFieldVariables
       P_nm1.m_pdata[ia] = P_n.m_pdata[ia];
       P_n.m_pdata[ia] = P_np1.m_pdata[ia];
       dP.m_pdata[ia] = 0.0;
-      ddP.m_pdata[ia] = 0.0;      
-    }    
+      ddP.m_pdata[ia] = 0.0;
+    }
   };
-  
+
   /// update dP and dV (increments) from ddP and ddV(increments of increments)
   /// \param[in] gamma if not converged smaller gamma will be applied, default = 1.0
   void update_increments_from_NR(double gamma = 1.0)
   {
     if(is_for_temporal)
       return;
-      
+
     for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
     {
       ddV.m_pdata[ia] *= gamma;
@@ -142,28 +142,28 @@ class ThreeFieldVariables
     {
       ddP.m_pdata[ia] *= gamma;
       dP.m_pdata[ia] += ddP.m_pdata[ia];
-    }     
+    }
   };
-  
+
   /// update P_np1 and V_np1 from NR solution
   void update_np1_from_increments(void)
   {
     if(is_for_temporal)
       return;
-      
+
     for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
       V_np1.m_pdata[ia] += dV.m_pdata[ia];
 
     for(int ia=0; ia<P_np1.m_row*P_np1.m_col; ia++)
       P_np1.m_pdata[ia] += dP.m_pdata[ia];
   };
-  
+
   /// if not converged, return to 0
   void reset(void)
   {
     if(is_for_temporal)
       return;
-      
+
     for(int ia=0; ia<V_np1.m_row*V_np1.m_col; ia++)
       ddV.m_pdata[ia] = dV.m_pdata[ia] = 0.0;
 
@@ -225,7 +225,7 @@ struct FieldVariables {
   double subdivision_factor_n;        //!< use for linearly map subdivided parameters at t(n)
                                       //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_n
   double subdivision_factor_np1;      //!< use for linearly map subdivided parameters at t(n+1)
-                                      //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_np1 
+                                      //!<   v = v_n + (v_np1 - v_n)*subdivision_factor_np1
   ThreeFieldVariables tf;  //!< variables for three-field mixed method
 };
 
@@ -330,7 +330,7 @@ int grid_initialization(Grid *grid);
 /// \return non-zero on internal error
 int destruct_grid(Grid *grid,
                   const PGFem3D_opt *opts,
-                  Multiphysics *mp);
+                  const Multiphysics& mp);
 
 /// initialize field variables
 ///
@@ -352,7 +352,7 @@ int construct_field_varialbe(FieldVariables *fv,
                              Grid *grid,
                              CommunicationStructure *com,
                              const PGFem3D_opt *opts,
-                             Multiphysics *mp,
+                             const Multiphysics& mp,
                              int myrank,
                              int mp_id);
 
@@ -367,7 +367,7 @@ int construct_field_varialbe(FieldVariables *fv,
 int destruct_field_varialbe(FieldVariables *fv,
                             Grid *grid,
                             const PGFem3D_opt *opts,
-                            Multiphysics *mp,
+                            const Multiphysics& mp,
                             int mp_id);
 
 /// initialize field variables thermal part
@@ -433,14 +433,14 @@ int loading_steps_initialization(LoadingSteps *load);
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int construct_loading_steps(LoadingSteps *load, Multiphysics *mp);
+int construct_loading_steps(LoadingSteps *load, const Multiphysics& mp);
 
 /// destruct loading steps object
 ///
 /// \param[in, out] load an object containing boundary increments
 /// \param[in] mp multiphysics object
 /// \return non-zero on internal error
-int destruct_loading_steps(LoadingSteps *load, Multiphysics *mp);
+int destruct_loading_steps(LoadingSteps *load, const Multiphysics& mp);
 
 /// initialize communication structures
 ///
@@ -458,21 +458,21 @@ int destruct_communication_structure(CommunicationStructure *com);
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int multiphysics_initialization(Multiphysics *mp);
+int multiphysics_initialization(Multiphysics& mp);
 
 /// construct multiphysics object
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \param[in] physicsno number of physics
 /// \return non-zero on internal error
-int construct_multiphysics(Multiphysics *mp,
+int construct_multiphysics(Multiphysics& mp,
                            int physicsno);
 
 /// destruct multiphysics object
 ///
 /// \param[in, out] mp an object for multiphysics stepping
 /// \return non-zero on internal error
-int destruct_multiphysics(Multiphysics *mp);
+int destruct_multiphysics(Multiphysics& mp);
 
 /// read and construct multiphysics
 ///
@@ -480,7 +480,7 @@ int destruct_multiphysics(Multiphysics *mp);
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int read_multiphysics_settings(Multiphysics *mp,
+int read_multiphysics_settings(Multiphysics& mp,
                                const PGFem3D_opt *opts,
                                int myrank);
 

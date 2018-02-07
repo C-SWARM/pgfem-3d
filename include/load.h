@@ -70,7 +70,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
-                                          Multiphysics *mp,
+                                          const Multiphysics& mp,
                                           int mp_id,
                                           int myrank);
 
