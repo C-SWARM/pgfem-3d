@@ -5,6 +5,7 @@ before_script:
  - module load llvm/5.0.0-gcc-7.2.0
  - source /opt/intel/bin/compilervars.sh -arch intel64 -platform linux
  - source scripts/check_funcs.sh
+ - check_gcm
  - autoreconf -if
 
 stages:

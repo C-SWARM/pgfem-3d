@@ -56,7 +56,7 @@ int residual_with_inertia(FEMLIB *fe,
                           LoadingSteps *load,
                           CRPL *crpl,
                           const PGFem3D_opt *opts,
-                          Multiphysics *mp,
+                          const Multiphysics& mp,
                           int mp_id,
                           double *dts,
                           double t);
@@ -87,7 +87,7 @@ int stiffness_with_inertia(FEMLIB *fe,
                            LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           Multiphysics *mp,
+                           const Multiphysics& mp,
                            int mp_id,
                            double dt);
 

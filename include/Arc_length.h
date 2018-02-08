@@ -98,7 +98,7 @@ double Multiphysics_Arc_length(Grid *grid,
                                MPI_Comm mpi_comm,
                                const double VVolume,
                                const PGFem3D_opt *opts,
-                               Multiphysics *mp,
+                               const Multiphysics& mp,
                                const int mp_id);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration

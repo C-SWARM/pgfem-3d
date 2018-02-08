@@ -571,7 +571,7 @@ void EnSight (char jmeno[500],
           MPI_Comm mpi_comm,
           const PGFem3D_opt *opts)
 {
-  int part1,part2,*GNVpint,*shift;
+  int part1=0,part2,*GNVpint,*shift;
   long *GNVp,i,j,k,tmp,*property,M,N,tetra4,tetra10,hexa8,*nod,tria3{},quad4{},*GVp,GNV;
   double *X,*xx,*u;
   char name[500];

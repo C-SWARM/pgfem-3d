@@ -1008,10 +1008,10 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
   Ktp.trans(Kpt);
 
   for(int a=0; a<Vno; a++)
-    Rt.m_pdata[a] = dt_alpha_1*Rt_nma.m_pdata[a] + dt_alpha_2*Rt_npa.m_pdata[a];
+    Rt.m_pdata[a] = dt_alpha_1*Rt_npa.m_pdata[a] + dt_alpha_2*Rt_nma.m_pdata[a];
 
   for(int a=0; a<Pno; a++)
-    Rp.m_pdata[a] = dt_alpha_1*Rp_nma.m_pdata[a] + dt_alpha_2*Rp_npa.m_pdata[a];
+    Rp.m_pdata[a] = dt_alpha_1*Rp_npa.m_pdata[a] + dt_alpha_2*Rp_nma.m_pdata[a];
 
   Matrix<double> d_theta(Vno, 1, 0.0), dP(Pno, 1, 0.0);
   

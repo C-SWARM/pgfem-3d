@@ -38,3 +38,21 @@ function check_check() {
     find . -name "test-suite.log" | grep_log
 }
 
+function check_gcm() {
+    GCM="/opt/Generalizsed_constitutive_model"
+    cd ${GCM}
+
+    UPSTREAM=${1:-'@{u}'}
+    LOCAL=$(git rev-parse @{0})
+    REMOTE=$(git rev-parse "$UPSTREAM")
+    BASE=$(git merge-base @{0} "$UPSTREAM")
+
+    if [ $LOCAL = $REMOTE ]; then
+        echo "Gcm is up-to-date"
+    elif [ $LOCAL = $BASE ]; then
+        echo "Updating Gcm..."
+        git pull
+        make -j 4
+    fi
+    cd ${OLDPWD}
+}

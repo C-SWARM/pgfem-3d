@@ -82,7 +82,7 @@ static int read_initial_from_VTK(const PGFem3D_opt *opts,
 int read_time_step_info(FieldVariables *fv,
                         TimeStepping *time_steps,
                         const PGFem3D_opt *opts,
-                        Multiphysics *mp,
+                        const Multiphysics& mp,
                         double *tnm1,
                         int myrank)
 {
@@ -105,11 +105,11 @@ int read_time_step_info(FieldVariables *fv,
     if(myrank==0)
       printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e\n", t[0], t[1], t[2]);
 
-    for(int ia=0; ia<mp->physicsno; ia++)
+    for(int ia=0; ia<mp.physicsno; ia++)
     {
       CHECK_SCANF(fp, "%lf %lf", &(fv[ia].NORM), time_steps->tns+ia);
       if(myrank==0)
-        printf("\t\t%s: NORM = %e, t(n) = %e\n",mp->physicsname[ia], fv[ia].NORM, time_steps->tns[ia]);
+        printf("\t\t%s: NORM = %e, t(n) = %e\n",mp.physicsname[ia], fv[ia].NORM, time_steps->tns[ia]);
     }
     if(myrank==0)
       printf("\n");
@@ -141,7 +141,7 @@ int read_time_step_info(FieldVariables *fv,
 int write_time_step_info(FieldVariables *fv,
                          TimeStepping *time_steps,
                          const PGFem3D_opt *opts,
-                         Multiphysics *mp,
+                         const Multiphysics& mp,
                          int myrank,
                          int stepno)
 {
@@ -167,7 +167,7 @@ int write_time_step_info(FieldVariables *fv,
       else
         fprintf(fp, "0.0 %.17e %.17e ", times[stepno], times[stepno+1]);
 
-      for(int ia=0; ia<mp->physicsno; ia++)
+      for(int ia=0; ia<mp.physicsno; ia++)
         fprintf(fp, "\n%.17e %.17e",fv[ia].NORM, time_steps->tns[ia]);
 
       fprintf(fp, "\n");
@@ -197,7 +197,7 @@ int write_time_step_info(FieldVariables *fv,
 int write_restart_constitutive_model(Grid *grid,
                                      FieldVariables *fv,
                                      const PGFem3D_opt *opts,
-                                     Multiphysics *mp,
+                                     const Multiphysics& mp,
                                      int myrank,
                                      int mp_id,
                                      int stepno,
@@ -283,7 +283,7 @@ int write_restart_constitutive_model(Grid *grid,
 static int read_restart_constitutive_model(Grid *grid,
                                            FieldVariables *fv,
                                            const PGFem3D_opt *opts,
-                                           Multiphysics *mp,
+                                           const Multiphysics& mp,
                                            int myrank,
                                            int mp_id,
                                            char rs_path[1024])
@@ -373,7 +373,7 @@ static int read_restart_mechanical(Grid *grid,
                                    FieldVariables *fv,
                                    LoadingSteps *load,
                                    const PGFem3D_opt *opts,
-                                   Multiphysics *mp,
+                                   const Multiphysics& mp,
                                    double *tnm1,
                                    int myrank,
                                    int mp_id,
@@ -455,7 +455,7 @@ int read_restart(Grid *grid,
                  TimeStepping *time_steps,
                  LoadingSteps *load,
                  const PGFem3D_opt *opts,
-                 Multiphysics *mp,
+                 const Multiphysics& mp,
                  double *tnm1,
                  int myrank)
 {
@@ -463,15 +463,15 @@ int read_restart(Grid *grid,
 
   char rs_path[1024];
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
-    sprintf(rs_path, "%s/restart/%s", opts->opath,mp->physicsname[ia]);
+    sprintf(rs_path, "%s/restart/%s", opts->opath,mp.physicsname[ia]);
     if(make_path(rs_path,DIR_MODE) != 0)
     {
       PGFEM_printf("Directory (%s) not created!\n",rs_path);
       abort();
     }
-    switch(mp->physics_ids[ia])
+    switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
       err += read_restart_mechanical(grid,fv,load,opts,mp,tnm1,myrank,ia,rs_path);
@@ -513,7 +513,7 @@ int write_restart_mechanical(Grid *grid,
                              LoadingSteps *load,
                              TimeStepping *time_steps,
                              const PGFem3D_opt *opts,
-                             Multiphysics *mp,
+                             const Multiphysics& mp,
                              int myrank,
                              int mp_id,
                              int stepno,
@@ -622,7 +622,7 @@ int write_restart(Grid *grid,
                   LoadingSteps *load,
                   TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
-                  Multiphysics *mp,
+                  const Multiphysics& mp,
                   int myrank,
                   int stepno)
 
@@ -631,16 +631,16 @@ int write_restart(Grid *grid,
 
   char rs_path[1024];
 
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
-    sprintf(rs_path, "%s/restart/%s", opts->opath,mp->physicsname[ia]);
+    sprintf(rs_path, "%s/restart/%s", opts->opath,mp.physicsname[ia]);
     if(make_path(rs_path,DIR_MODE) != 0)
     {
       PGFEM_printf("Directory (%s) not created!\n",rs_path);
       abort();
     }
 
-    switch(mp->physics_ids[ia])
+    switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
       err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);

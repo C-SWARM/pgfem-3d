@@ -804,15 +804,16 @@ static void build_MICROSCALE_SOLUTION(MICROSCALE_SOLUTION *sol,
 
   if(analysis == CM)
   {
-    int n_state_varialbles = 0;
+    int n_state_variables = 0;
     for(int eid=0; eid<common->ne; eid++)
     {
       int nne = common->elem[eid].toe;
       long nint = 0;
       int_point(nne,&nint);
-      n_state_varialbles += nint;
+      n_state_variables += nint;
     }
-    sol->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_varialbles);
+    if (n_state_variables > 0)
+      sol->statv_list = (State_variables *) malloc(sizeof(State_variables)*n_state_variables);
   }
 
   sol->eps = build_eps_il(common->ne,common->elem,analysis,&(sol->statv_list));

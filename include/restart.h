@@ -24,7 +24,7 @@ int read_restart(Grid *grid,
                  TimeStepping *time_steps,
                  LoadingSteps *load,
                  const PGFem3D_opt *opts,
-                 Multiphysics *mp,
+                 const Multiphysics& mp,
                  double *tnm1,
                  int myrank);
 
@@ -46,7 +46,7 @@ int write_restart(Grid *grid,
                   LoadingSteps *load,
                   TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
-                  Multiphysics *mp,
+                  const Multiphysics& mp,
                   int stepno,
                   int myrank);
 

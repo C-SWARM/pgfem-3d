@@ -35,6 +35,7 @@ struct pgf_FE2_server_rebalance
 
 static void allocate_workspace(Workspace **wkspc, const size_t n_comm)
 {
+  assert(wkspc != NULL && "wkspc can't be null");
   *wkspc = static_cast<Workspace*>(malloc(sizeof(Workspace)));
   (*wkspc)->count = n_comm;
   (*wkspc)->reqs = static_cast<MPI_Request*>(malloc(n_comm*sizeof(*((*wkspc)->reqs))));

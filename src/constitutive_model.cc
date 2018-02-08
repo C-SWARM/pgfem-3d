@@ -60,29 +60,21 @@ Model_var_info::print_variable_info(FILE *f)
 Model_var_info::~Model_var_info()
 {
   /// deallocate internal memory
-  for (size_t ia=0; ia<this->n_Fs; ia++)
-  {
-    if(this->F_names[ia])
-      delete this->F_names[ia];
+  for (size_t ia=0; ia<this->n_Fs; ia++) {
+    if (this->F_names[ia]) free(this->F_names[ia]);
   }
-  if(this->F_names)
-    delete this->F_names;
+  if(this->F_names) free(this->F_names);
 
-  for(size_t ia=0; ia<this->n_vars; ia++)
-  {
-    if(this->var_names[ia])
-      delete this->var_names[ia];
+  for(size_t ia=0; ia<this->n_vars; ia++) {
+    if (this->var_names[ia]) free(this->var_names[ia]);
   }
-  if(this->var_names)
-    delete this->var_names;
 
-  for(size_t ia=0; ia<this->n_flags; ia++)
-  {
-    if(this->flag_names[ia])
-      delete this->flag_names[ia];
+  if(this->var_names) free(this->var_names);
+
+  for(size_t ia=0; ia<this->n_flags; ia++) {
+    if(this->flag_names[ia]) free(this->flag_names[ia]);
   }
-  if(this->flag_names)
-    delete this->flag_names;
+  if (this->flag_names) free(this->flag_names);
 }
 
 static constexpr int       DIM_3 = 3;
@@ -90,7 +82,7 @@ static constexpr int     DIM_3x3 = 9;
 static constexpr int   DIM_3x3x3 = 27;
 static constexpr int DIM_3x3x3x3 = 81;
 static double I[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
-  
+
 //ttl declarations
 namespace {
   template<int R, int D = 3, class S = double>
@@ -98,25 +90,25 @@ namespace {
 
   template<int R, int D = 3, class S = double *>
   using TensorA = ttl::Tensor<R, D, S>;
-    
+
   static constexpr ttl::Index<'i'> i;
   static constexpr ttl::Index<'j'> j;
   static constexpr ttl::Index<'k'> k;
   static constexpr ttl::Index<'l'> l;
   static constexpr ttl::Index<'o'> o;
   static constexpr ttl::Index<'p'> p;
-  
+
   template<class T1, class T2>
   inline int inv(T1 &A, T2 &AI) {
     int err = inv3x3(A.data, AI.data);
     return err;
   }
-  template<class T1, class T2> 
+  template<class T1, class T2>
   inline int symm(T1 &A, T2 &Asym)
   {
     Asym(i,j) = 0.5*(A(i,j)+A(j,i));
     return 0;
-  }  
+  }
 }
 
 // define identity
@@ -233,7 +225,7 @@ int compute_temperature_at_ip(FEMLIB *fe,
     T     += N[ia]*Tnp1[ia];
     dTnp1 += N[ia]*(Tnp1[ia] - T0);
     dTn   += N[ia]*(Tn[ia]   - T0);
-    dTnm1 += N[ia]*(Tnm1[ia] - T0);    
+    dTnm1 += N[ia]*(Tnm1[ia] - T0);
   }
 
   const int eid = fe->curt_elem_id;
@@ -279,7 +271,7 @@ int construct_model_context(void **ctx,
                             const double alpha,
                             double *eFnpa,
                             int npa);
-                            
+
 int construct_model_context_with_thermal(void **ctx,
                                          const int type,
                                          double *F,
@@ -288,7 +280,7 @@ int construct_model_context_with_thermal(void **ctx,
                                          double *eFnpa,
                                          double *hFn,
                                          double *hFnp1,
-                                         int npa);                            
+                                         int npa);
 
 // Nodal Temerature for transient
 class NodalTemerature
@@ -305,40 +297,40 @@ class NodalTemerature
       np1.initialization(nne, 1, 0.0);
         n.initialization(nne, 1, 0.0);
       nm1.initialization(nne, 1, 0.0);
-    };    
+    };
     void get_temperature(FEMLIB *fe,
                          Grid *grid,
                          FieldVariables *fv,
                          LoadingSteps *load,
-                         Multiphysics *mp,
+                         const Multiphysics& mp,
                          int mp_id,
                          int is_it_couple_w_thermal)
-    {    
+    {
       FieldVariables *fv_h = fv->fvs[is_it_couple_w_thermal];
       T0 = fv_h->u0;
       // get temperature for this element for each nodal point
-  
-      int mp_cp_id = mp->coupled_ids[mp_id][is_it_couple_w_thermal+1];
+
+      int mp_cp_id = mp.coupled_ids[mp_id][is_it_couple_w_thermal+1];
       get_nodal_temperatures(fe, grid, fv_h, load, mp_cp_id,
                              np1.m_pdata,n.m_pdata,nm1.m_pdata,
                              fv->subdivision_factor_np1,fv->subdivision_factor_n);
     };
 };
 
-// deformation gradients for steady state 
+// deformation gradients for steady state
 class DeformationGradient_ss
 {
   public:
     double Jn, Jnp1;
     Tensor<2> n, np1;
-    
+
     DeformationGradient_ss(){ initialization(); };
 
     void initialization(void)
     {
       Jn = Jnp1 = 1.0;
       n   = delta_ij(i,j);
-      np1 = delta_ij(i,j);      
+      np1 = delta_ij(i,j);
     };
     void update_thermal_part(FEMLIB *fe,
                              Grid *grid,
@@ -363,7 +355,7 @@ class DeformationGradient_tr : public DeformationGradient_ss
     Tensor<2> nm1;
     Tensor<2> npa;
     Tensor<2> nma;
-    
+
     DeformationGradient_tr(){ initialization(); };
 
     void initialization(void)
@@ -378,7 +370,7 @@ class DeformationGradient_tr : public DeformationGradient_ss
     void set_npa_nma(double alpha)
     {
       /// F_nma = (1-alpha)*F(n-1) + alpha*F(n)
-      /// F_npa = (1-alpha)*F(n)   + alpha*F(n+1)      
+      /// F_npa = (1-alpha)*F(n)   + alpha*F(n+1)
       nma = (1.0-alpha)*nm1(i,j) + alpha*n(i,j);
       npa = (1.0-alpha)*n(i,j) + alpha*np1(i,j);
     };
@@ -393,7 +385,7 @@ class DeformationGradient_tr : public DeformationGradient_ss
       compute_temperature_at_ip(fe,grid,mat,T.T0,
                                 T.np1.m_pdata,T.n.m_pdata,T.nm1.m_pdata,
                                 np1.data,n.data,nm1.data);
-    };    
+    };
 };
 
 template <class T> class DeformationGradient
@@ -403,7 +395,7 @@ template <class T> class DeformationGradient
     T F, eF, pF;
     T *hF;
     DeformationGradient()
-    { 
+    {
       hF = NULL;
       initialization();
     };
@@ -430,7 +422,7 @@ template <class T> class DeformationGradient
       {
         if(sup->multi_scale)
           cm_add_macro_F(sup,Fr.data);
-    
+
         // Total Lagrangian formulation Fn = 1, Fnp1 = Fr
         F.np1 = Fr(i,j);
       }
@@ -441,14 +433,14 @@ template <class T> class DeformationGradient
           PGFEM_printerr("Multi-scale formulation does not support UL!\n");
           PGFEM_Abort();
         }
-    
+
         int eid = fe->curt_elem_id;
         int ip = fe->curt_itg_id - 1;
-        Constitutive_model *m = (fv->eps[eid]).model + ip;  
+        Constitutive_model *m = (fv->eps[eid]).model + ip;
 
         m->param->get_pF(m, F.n.data, 1);
-        F.np1 = Fr(i,k)*F.n(k,j); // Fn+1 = Fr*Fn        
-      }      
+        F.np1 = Fr(i,k)*F.n(k,j); // Fn+1 = Fr*Fn
+      }
     };
     int compute_deformation_gradient_for_ss(FEMLIB *fe,
                                             FieldVariables *fv,
@@ -459,22 +451,22 @@ template <class T> class DeformationGradient
       int err = 0;
       int eid = fe->curt_elem_id;
       int ip = fe->curt_itg_id - 1;
-    
-      Constitutive_model *m = (fv->eps[eid]).model + ip;  
+
+      Constitutive_model *m = (fv->eps[eid]).model + ip;
       err += m->param->get_pF(m,pF.np1.data,2);
-      
+
       if(total_Lagrangian)
-      {    
+      {
         if(is_it_couple_w_thermal>=0)
         {
-          Tensor<2> pFnp1_I, hFnp1_I;        
+          Tensor<2> pFnp1_I, hFnp1_I;
           err += inv(pF.np1, pFnp1_I);
-          err += inv(hF->np1, hFnp1_I);  
+          err += inv(hF->np1, hFnp1_I);
           M = hFnp1_I(i,k)*pFnp1_I(k,j);
         }
         else
           err += inv(pF.np1,M);
-            
+
         eF.np1 = F.np1(i,k)*M(k,j);
       }
       else
@@ -482,25 +474,25 @@ template <class T> class DeformationGradient
         Tensor<2> pFnp1_I, pFn_I;
         err += m->param->get_pF(m, pF.n.data, 1);
         err += m->param->get_F(m,  F.n.data,  1);
-    
-        err += inv(pF.n, pFn_I);    
+
+        err += inv(pF.n, pFn_I);
         err += inv(pF.np1, pFnp1_I);
-        
+
         if(is_it_couple_w_thermal>=0)
         {
           Tensor<2> hFn_I, hFnp1_I;
           err += inv(hF->n,   hFn_I);
           err += inv(hF->np1, hFnp1_I);
-                  
+
           M = pF.n(i,k)*hF->n(k,l)*hFnp1_I(l,o)*pFnp1_I(o,j);
-          eF.n = F.n(i,k)*hFn_I(k,l)*pFn_I(l,j);               
+          eF.n = F.n(i,k)*hFn_I(k,l)*pFn_I(l,j);
         }
         else
-        {  
+        {
           M = pF.n(i,k)*pFnp1_I(k,j);
           eF.n = F.n(i,k)*pFn_I(k,j);
-        }        
-    
+        }
+
         eF.np1 = Fr(i,k)*eF.n(k,l)*M(l,j);
       }
       return err;
@@ -513,7 +505,7 @@ template <class T> class DeformationGradient
     {
       int err = 0;
       return err;
-    }    
+    }
 };
 
 class Integrate
@@ -526,16 +518,16 @@ class Integrate
     bool run_for_update;
     Integrate(){
       fv = NULL;
-      du = NULL; 
+      du = NULL;
       eid = -1;
-      run_integration_algorithm = false; 
+      run_integration_algorithm = false;
       run_for_update = false;
     };
-    
+
     int inner_loop(Matrix<double> &dMdu,
                    Matrix<double> &dMdt,
                    CM_ThreeField &cm_tf);
-                   
+
     int out_loop(double *out,
                  int nne,
                  int nsd,
@@ -547,25 +539,25 @@ class IntegrateThreeFieldStiffness : public Integrate
 {
   public:
   ThreeFieldStiffness K;
-  
+
   IntegrateThreeFieldStiffness(FEMLIB *fe,
                                int Vno,
                                int Pno)
-  { 
+  {
     fv = NULL;
-    du = NULL; 
+    du = NULL;
     eid = fe->curt_elem_id;
-    run_integration_algorithm = false; 
+    run_integration_algorithm = false;
     run_for_update = false;
-    K.initialization(fe, Vno, Pno); 
+    K.initialization(fe, Vno, Pno);
   };
-  
+
   int inner_loop(Matrix<double> &dMdu,
                  Matrix<double> &dMdt,
                  CM_ThreeField &cm_tf)
   {
     int err = 0;
-    err += K.compute_stiffness(cm_tf, dMdu, dMdt);    
+    err += K.compute_stiffness(cm_tf, dMdu, dMdt);
     return err;
   };
   int out_loop(double *out,
@@ -577,7 +569,7 @@ class IntegrateThreeFieldStiffness : public Integrate
     int err = 0;
     K.Kpt.trans(K.Ktp);
     K.Kpu.trans(K.Kup);
-   
+
     err += condense_K_3F_to_1F(out, nne, nsd, Pno, Vno,
                                K.Kuu.m_pdata, K.Kut.m_pdata, K.Kup.m_pdata,
                                K.Ktu.m_pdata, K.Ktt.m_pdata, K.Ktp.m_pdata,
@@ -589,10 +581,10 @@ class IntegrateThreeFieldStiffness : public Integrate
         if ( !isnormal(out[idx_K(a,b,a,b,nne,nsd)]) ) err++;
       }
     }
-                                     
+
     return err;
   };
-    
+
 };
 
 class IntegrateThreeFieldResidual : public Integrate
@@ -600,7 +592,7 @@ class IntegrateThreeFieldResidual : public Integrate
   public:
   ThreeFieldStiffness K;
   ThreeFieldResidual R;
-  
+
   IntegrateThreeFieldResidual(FEMLIB *fe,
                               int Vno,
                               int Pno)
@@ -608,19 +600,19 @@ class IntegrateThreeFieldResidual : public Integrate
     fv = NULL;
     du = NULL;
     eid = fe->curt_elem_id;
-    run_integration_algorithm = true; 
+    run_integration_algorithm = true;
     run_for_update = false;
     K.initialization(fe, Vno, Pno, true);
     R.initialization(fe, Vno, Pno);
   };
-        
+
   int inner_loop(Matrix<double> &dMdu,
                  Matrix<double> &dMdt,
                  CM_ThreeField &cm_tf)
   {
     int err = 0;
     err += R.compute_residual(cm_tf);
-    err += K.compute_stiffness(cm_tf, dMdu, dMdt);    
+    err += K.compute_stiffness(cm_tf, dMdu, dMdt);
     return err;
   };
   int out_loop(double *out,
@@ -637,36 +629,36 @@ class IntegrateThreeFieldResidual : public Integrate
                                K.Kut.m_pdata, K.Kup.m_pdata, K.Ktp.m_pdata, K.Ktt.m_pdata, K.Kpt.m_pdata);
     return err;
   };
-    
+
 };
 
 class IntegrateThreeFieldUpdate : public Integrate
 {
   public:
-    
+
   ThreeFieldStiffness K;
   ThreeFieldResidual R;
-  
+
   IntegrateThreeFieldUpdate(FEMLIB *fe,
                             int Vno,
                             int Pno)
   {
     fv = NULL;
-    du = NULL; 
+    du = NULL;
     eid = fe->curt_elem_id;
-    run_integration_algorithm = false; 
+    run_integration_algorithm = false;
     run_for_update = true;
     K.initialization(fe, Vno, Pno, true);
     R.initialization(fe, Vno, Pno, true);
   };
-        
+
   int inner_loop(Matrix<double> &dMdu,
                  Matrix<double> &dMdt,
                  CM_ThreeField &cm_tf)
   {
     int err = 0;
     err += R.compute_residual(cm_tf);
-    err += K.compute_stiffness(cm_tf, dMdu, dMdt);    
+    err += K.compute_stiffness(cm_tf, dMdu, dMdt);
     return err;
   };
   int out_loop(double *out,
@@ -676,9 +668,9 @@ class IntegrateThreeFieldUpdate : public Integrate
                int Vno)
   {
     int err = 0;
-    Matrix<double> Kpu(Pno,nne*nsd);    
+    Matrix<double> Kpu(Pno,nne*nsd);
     Kpu.trans(K.Kup);
-    K.Kpt.trans(K.Ktp);  
+    K.Kpt.trans(K.Ktp);
 
     Matrix<double> d_theta(Vno, 1), dP(Pno, 1);
     err += compute_d_theta_dP(d_theta.m_pdata, dP.m_pdata, du,
@@ -694,7 +686,7 @@ class IntegrateThreeFieldUpdate : public Integrate
       fv->tf.ddV(eid+1,ia) = d_theta(ia);
     return err;
   };
-    
+
 };
 
 template <class CM> class ConstitutiveModelIntregrate
@@ -727,20 +719,20 @@ template <class CM> class ConstitutiveModelIntregrate
                      int sol_run_integration_algorithm,
                      LoadingSteps *load,
                      const PGFem3D_opt *opts,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      int mp_id,
                      double dt)
     {
       int err = 0;
       double alpha = -1.0; // if alpha < 0, no inertia
-    
+
       int total_Lagrangian = 1;
       if(opts->cm==UPDATED_LAGRANGIAN)
         total_Lagrangian = 0;
-        
+
       int is_it_couple_w_thermal  = -1;
       int is_it_couple_w_chemical = -1;
-    
+
       for(int ia=0; ia<fv->n_coupled; ia++)
       {
         if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_THERMAL)
@@ -748,7 +740,7 @@ template <class CM> class ConstitutiveModelIntregrate
         if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_CHEMICAL)
           is_it_couple_w_chemical = ia;
       }
-    
+
       int eid = fe->curt_elem_id;
       int nsd = fe->nsd;
       int nne = fe->nne;
@@ -756,31 +748,31 @@ template <class CM> class ConstitutiveModelIntregrate
       int Pno   = fv->npres;
       int Vno   = fv->nVol;
       SUPP sup = load->sups[mp_id];
-    
+
       Matrix<double> u(nne*nsd, 1), P(Pno, 1);
       Matrix<double> dMdu(DIM_3x3*nne*nsd,1);
       Matrix<double> dMdt(DIM_3x3*Vno,1);
-    
+
       for(int a=0;a<nne;a++)
       {
         for(int b=0; b<nsd;b++)
           u.m_pdata[a*nsd+b] = r_e[a*ndofn+b];
-    
+
         if(Pno==nne)
           P.m_pdata[a] = r_e[a*ndofn+nsd];
       }
       if(Pno==1)
-      {  
+      {
         P(1) = fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1);
-      }  
-    
-      DeformationGradient_ss *hF = NULL; 
-      
-      Tensor<2> eSd = {};            
+      }
+
+      DeformationGradient_ss *hF = NULL;
+
+      Tensor<2> eSd = {};
       Tensor<4>  Ld = {};
-    
+
       NodalTemerature *T = NULL;
-    
+
       if(is_it_couple_w_thermal >= 0)
       {
         hF = new DeformationGradient_ss;
@@ -788,25 +780,25 @@ template <class CM> class ConstitutiveModelIntregrate
         T->initialization(fe->nne);
         T->get_temperature(fe, grid, fv, load, mp, mp_id, is_it_couple_w_thermal);
       }
-    
+
       if(is_it_couple_w_chemical >=0)
       {}
-      
+
       DeformationGradient<DeformationGradient_ss> Fs(hF);
-    
+
       CM cm_method(fe, Vno, Pno);
       Matrix<double> du;
       if(cm_method.run_for_update)
       {
         cm_method.fv = fv;
-        
+
         int ndofe = nne*ndofn;
         Matrix<long> cn(ndofe,1);
         long *nod = fe->node_id.m_pdata;
         Matrix<double> dr_e(ndofe,1);
         get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cn.m_pdata,mp_id);
         def_elem(cn.m_pdata,ndofe,fv->dd_u,grid->element,grid->node,dr_e.m_pdata,sup,2);
-                    
+
         du.initialization(nne*nsd, 1, 0.0);
         for(int a=0;a<nne;a++)
         {
@@ -815,110 +807,113 @@ template <class CM> class ConstitutiveModelIntregrate
         }
         cm_method.du = du.m_pdata;
       }
-      
+
       Matrix<double> Nt(Vno,1), Np(Pno,1);
-    
+
       for(int ip = 1; ip<=fe->nint; ip++)
       {
         fe->elem_basis_V(ip);
         fe->update_shape_tensor();
-    
+
         fe->elem_shape_function(ip,Pno, Np.m_pdata);
         fe->elem_shape_function(ip,Vno, Nt.m_pdata);
-    
+
         double theta_r = 0.0;
         double theta_n = 0.0;
         double Pnp1    = 0.0;
-    
+
         for(int ia=1; ia<=Pno; ia++)
           Pnp1 += Np(ia)*P(ia);
-    
+
         for(int ia=1; ia<=Vno; ia++)
         {
           theta_r += (fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia))*Nt(ia);
           theta_n += fv->tf.V_n(  eid+1, ia)*Nt(ia);
         }
-        
+        if(total_Lagrangian)
+          theta_n = 1.0;
+
         Fs.initialization();
         if(is_it_couple_w_thermal>=0)
           Fs.hF->update_thermal_part(fe, grid, mat, fv, *T);
         Fs.update_total_deformation_gradient(fe, fv, sup, u, total_Lagrangian);
-        
+
         Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-        if(cm_method.run_integration_algorithm &&
-           sol_run_integration_algorithm){
+        if(cm_method.run_integration_algorithm && sol_run_integration_algorithm){
+          double tJ = det(Fs.F.np1);
+          double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
           err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                              dt,alpha,is_it_couple_w_thermal);
+                                              dt,alpha,is_it_couple_w_thermal, tf_factor);
         }
         if(err>0)
           return err;
 
-        err += Fs.compute_deformation_gradient_for_ss(fe, fv, total_Lagrangian, 
+        err += Fs.compute_deformation_gradient_for_ss(fe, fv, total_Lagrangian,
                                                       is_it_couple_w_thermal,
-                                                      is_it_couple_w_chemical);        
-    
+                                                      is_it_couple_w_chemical);
+
         // get a shortened pointer for simplified CM function calls
-        const Model_parameters *mp = m->param;    
-        
+        const Model_parameters *mp = m->param;
+
         void *ctx = NULL;
         if(is_it_couple_w_thermal>=0)
           err += construct_model_context_with_thermal(&ctx, m->param->type, Fs.F.np1.data,dt,alpha, NULL,
                                                       hF->n.data,hF->np1.data,-1);
         else
-          err += construct_model_context(&ctx, m->param->type, Fs.F.np1.data,dt,alpha, NULL,-1);    
-    
+          err += construct_model_context(&ctx, m->param->type, Fs.F.np1.data,dt,alpha, NULL,-1);
+
         err += mp->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
         err += mp->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
         err += mp->destroy_ctx(&ctx);
-    
-        // <-- update plasticity part    
+
+        // <-- update plasticity part
         err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, true);
-        
+
         double hJnp1 = 1.0;
         double pJnp1 = det(Fs.pF.np1);
         double eJn   = 1.0;
         double Jn    = 1.0;
         double MJ    = det(Fs.M);
-        
+
         if(is_it_couple_w_thermal>=0)
           hJnp1 = det(hF->np1);
-    
+
         if(!total_Lagrangian)
         {
           eJn = det(Fs.eF.n);
            Jn = det(Fs.F.n);
         }
-    
+
         double tJn = Jn;
         double theta_e = theta_r*eJn*MJ;
-        
+
         double dU  = mp->compute_dudj(  m, theta_e);
         double ddU = mp->compute_d2udj2(m, theta_e);
         // --> update elasticity part
-    
+
         if(err!=0)
           break;
-              
+
         Jn = Jn/pJnp1/hJnp1;
-            
+
         CM_ThreeField cm_tf;
         cm_tf.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
-    
+
         cm_tf.set_tenosrs(Fs.Fr.data, Fs.eF.n.data, Fs.M.data, Fs.pF.np1.data, eSd.data, Ld.data);
         cm_tf.set_scalars(theta_r, theta_n, tJn, Jn, Pnp1, dU, ddU);
-    
+
         err += cm_method.inner_loop(dMdu, dMdt, cm_tf);
       }
-      
+
       if(is_it_couple_w_thermal >= 0){
         delete T;
         delete hF;
-      }  
-      
+      }
+
       err += cm_method.out_loop(out, nne, nsd, Pno, Vno);
 
       return err;
-    }; 
+    };
 };
 
 /// this is a wrapper function for the switch that was copy/pasted
@@ -1047,11 +1042,11 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
   int err = 0;
 
   if(p[model_id] != NULL)
-  {  
+  {
     delete p[model_id];
     p[model_id] = NULL;
   }
-  
+
   switch(model_type)
   {
     case TESTING:
@@ -1081,7 +1076,7 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
 
   if(p[model_id] != NULL)
     p[model_id]->set_nulls();
-    
+
   return err;
 }
 /// Initialize the Model_parameters object. The object may be used
@@ -1206,7 +1201,7 @@ Constitutive_model::unpack(const char *buffer, size_t *pos)
 /// the internal state to contain the updated values upon exit, i.e.,
 /// subsequent calls to get_F functions will return the correct
 /// values without re-integrating the constitutive model.
-/// \param[in] 
+/// \param[in]
 /// \param[in] *Fnp1  deformation gradient at t(n+1)
 /// \param[in] *hFn   thermal part of deformation gradient at t(n)
 /// \param[in] *hFnp1 thermal part of deformation gradient at t(n+1)
@@ -1214,10 +1209,10 @@ Constitutive_model::unpack(const char *buffer, size_t *pos)
 /// \param[in] alpha                  mid point rule alpha
 /// \param[in] is_it_couple_w_thermal checking coupling with thermal
 ///                                   if > 0: apply thermal expansitions. default = 0
-/// \param[in] tf_factor              (theta/J)^(1/3) used for computing true Fnp1. default = 1.0  
+/// \param[in] tf_factor              (theta/J)^(1/3) used for computing true Fnp1. default = 1.0
 /// \return non-zero on internal error that should be handled by the calling function.
-int 
-Constitutive_model::run_integration_algorithm(double *tFnp1_in, 
+int
+Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               double *hFn,
                                               double *hFnp1,
                                               double dt,
@@ -1228,10 +1223,10 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   int err = 0;
   void *ctx = NULL;
   TensorA<2> tFnp1(tFnp1_in);
-  Tensor<2> Fnp1 = tf_factor*tFnp1(i,j);  
+  Tensor<2> Fnp1 = tf_factor*tFnp1(i,j);
   if(is_it_couple_w_thermal>=0)
     err += construct_model_context_with_thermal(&ctx, param->type, Fnp1.data,dt,alpha, NULL,
-                                                 hFn,hFnp1, -1);      
+                                                 hFn,hFnp1, -1);
   else
     err += construct_model_context(&ctx, param->type, Fnp1.data,dt,alpha, NULL,-1);
 
@@ -1303,7 +1298,7 @@ int read_model_parameters_list(const int n_mat,
    */
   int err = 0;
   double *pF = NULL;
-  
+
   if (n_mat <= 0) return 1;
   int *is_set = (int *) calloc(n_mat, sizeof(int));
 
@@ -1342,20 +1337,20 @@ int read_model_parameters_list(const int n_mat,
       /* search for matching pointer in hmat_list (assume unique) */
       p_hmat = static_cast<HOMMAT*>(bsearch(key, hmat_list, n_mat,
                                             sizeof(*hmat_list), compare_mat_id));
-  
+
       /* check for match */
       if (p_hmat != NULL) {
         int idx = p_hmat - hmat_list;
         if (!is_set[idx]) {
           is_set[idx] = 1;
-          // construct and initialize this object        
+          // construct and initialize this object
           if(model_type==CM_UQCM)
           {
             model_type_uq = 1;
             err += scan_for_valid_line(in);
             CHECK_SCANF(in, "%d", &model_type);
           }
-  
+
           err += construct_Model_parameters(&(hmat_list[idx].param), 0, model_type);
           hmat_list[idx].param->uqcm = model_type_uq;
 
@@ -1369,20 +1364,20 @@ int read_model_parameters_list(const int n_mat,
     {
       pF = (double *) malloc(sizeof(double)*9);
       err += scan_for_valid_line(in);
-      int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2, 
+      int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2,
                                                                     pF+3, pF+4, pF+5,
                                                                     pF+6, pF+7, pF+8);
 
       if(match != 9)
-      {   
+      {
         err++;
-        assert(match == 9 && "Did not read expected number of parameters"); 
+        assert(match == 9 && "Did not read expected number of parameters");
       }
 
-      err += scan_for_valid_line(in); 
+      err += scan_for_valid_line(in);
       // not expecting EOF, check and return error if encountered
       if (feof(in)) err ++;
-       assert(!feof(in) && "EOF reached prematurely"); 
+       assert(!feof(in) && "EOF reached prematurely");
     }
 
     /* scan to closing brace and continue on to the next entry */
@@ -1773,13 +1768,13 @@ int constitutive_model_update_output_variables(Grid *grid,
                                                FieldVariables *FV,
                                                LoadingSteps *load,
                                                PGFem3D_opt *opts,
-                                               Multiphysics *mp,
+                                               const Multiphysics& mp,
                                                int mp_id,
                                                const double dt,
                                                double alpha)
 {
   int err = 0;
-  
+
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
@@ -1789,6 +1784,14 @@ int constitutive_model_update_output_variables(Grid *grid,
   EPS *eps = fv->eps;
   Node *node = grid->node;
   Element *elem = grid->element;
+
+  int idx[6];
+  idx[0] = idx_2(0,0); //XX
+  idx[1] = idx_2(1,1); //YY
+  idx[2] = idx_2(2,2); //ZZ
+  idx[3] = idx_2(1,2); //YZ
+  idx[4] = idx_2(0,2); //XZ
+  idx[5] = idx_2(0,1); //XY
 
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
@@ -1804,20 +1807,24 @@ int constitutive_model_update_output_variables(Grid *grid,
   }
 
   /* deformation gradient */
-  Tensor<2> F, eF, pF, S;
+  Tensor<2> F, eF, pF, pFI, eSd, S, S_bar, eC, eCI, sigma, E, b, bI;
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
 
-  for (int ie = 0; ie < grid->ne; ie++)
-  {
-    FEMLIB fe(ie,elem,node,0,total_Lagrangian);
 
-    memset(sig[ie].el.o,0,6*sizeof(double));
-    memset(eps[ie].el.o,0,6*sizeof(double));
-    double volume = 0.0;
+  for (int eid = 0; eid < grid->ne; eid++)
+  {
+    FEMLIB fe(eid,elem,node,0,total_Lagrangian);
+
+    int nne   = fe.nne;
+    int ndofn = fv->ndofn;
+
+    memset(sig[eid].el.o,0,6*sizeof(double));
+    memset(eps[eid].el.o,0,6*sizeof(double));
 
     NodalTemerature *T = NULL;
+    long *nod = fe.node_id.m_pdata;
 
     if(is_it_couple_w_thermal >= 0)
     {
@@ -1828,35 +1835,69 @@ int constitutive_model_update_output_variables(Grid *grid,
 
     if(is_it_couple_w_chemical >= 0){}
 
-    for(int ip=0; ip<fe.nint; ip++)
+    double V = 0.0;
+
+    for(int ip=1; ip<=fe.nint; ip++)
     {
-      fe.elem_basis_V(ip+1);
+      fe.elem_basis_V(ip);
+      V += fe.detJxW;
 
-      Constitutive_model *m = &(eps[ie].model[ip]);
+      Constitutive_model *m = &(eps[eid].model[ip-1]);
       const Model_parameters *func = m->param;
-
       err += func->get_F(m,  F.data,1);
-      err += func->get_pF(m,pF.data,1);
 
-      void *ctx = NULL;
+      double theta = 0.0;
+      double J = det(F);
+      if(opts->analysis_type==CM3F)
+      {
+        int Vno   = fv->nVol;
+        Matrix<double> Nt(Vno, 1, 0.0);
+        fe.elem_shape_function(ip,Vno, Nt.m_pdata);
+        for(int ia=0; ia<Vno; ia++)
+        {
+          double Via = 0;
+          if(Vno==nne){
+            long id = nod[ia]*ndofn + ia;
+            Via = fv->u_n[id];
+          }
+          if(Vno==1)
+            Via = fv->tf.V_n(eid+1, 1);
+
+          theta += Nt(ia+1)*Via;
+        }
+        double factor = pow(theta/J, 1.0/3.0);
+        for(int ia=0; ia<DIM_3x3; ia++)
+          F.data[ia] *= factor;
+      }
+      else
+        theta = J;
+
+      err += func->get_pF(m,pF.data,1);
+      inv(pF,pFI);
+
+      double hJ  = 1.0;
+      double pJ  = det(pF);
+
       if(is_it_couple_w_thermal>=0)
       {
         // compute temperature at the integration point
-        double hFnm1[9],hFn[9],hFnp1[9];
+        double hFnm1[9],hFn[9];
+        Tensor<2> hFnp1;
         err += compute_temperature_at_ip(&fe,grid,mat,T->T0,
                                          T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
-                                         hFnp1,hFn,hFnm1);
-        Tensor<2> pFI,hFI;
-        inv(pF,pFI);
-        inv3x3(hFnp1,hFI.data);
+                                         hFnp1.data,hFn,hFnm1);
+        hJ = det(hFnp1);
+        Tensor<2> hFI;
+        inv(hFnp1, hFI);
         eF(i,j) = F(i,k)*hFI(k,l)*pFI(l,j);
-        delete T;
       }
       else
-        err += func->get_eF(m, eF.data,1);
+        eF(i,j) = F(i,k)*pFI(k, j);
 
-      err += construct_model_context(&ctx, m->param->type, F.data,dt,alpha,eF.data,-1);
-          
+      double theta_e = theta/pJ/hJ;
+      double Up = 0.0;
+
+      S_bar = {};
       if((m->param)->uqcm)
       {
         double *x_ip = (fe.x_ip).m_pdata;
@@ -1865,83 +1906,64 @@ int constitutive_model_update_output_variables(Grid *grid,
         mat_e_in = elast->mat;
         err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
         elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-        err += (m->param)->update_elasticity(m,ctx,NULL,S.data,0);
+
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, false);
+        Up  = func->compute_dudj(m, theta_e);
 
         elast->mat = mat_e_in;
       }
       else
-        err += (m->param)->update_elasticity(m,ctx,NULL,S.data,0);
-
-      err += (m->param)->destroy_ctx(&ctx);
+      {
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, false);
+        Up  = func->compute_dudj(m, theta_e);
+      }
       // <-- update elasticity part
+      eC = eF(k,i)*eF(k,j);
+      inv(eC, eCI);
+      S = S_bar(i,j) + Up*theta_e*eCI(i,j);
 
-      /* get aliases to Matrix data for simpler access */
-      const double *Sd = S.data;
-      const double *eFd = eF.data;
-      const double eJ = det3x3(eFd);
+      // Compute Cauchy stress (theta)^-1 F S F'
+      sigma = 1.0/theta*eF(i,k)*S(k,l)*eF(j,l);
 
-      /* store symmetric part of S (PK2) */
-      sig[ie].il[ip].o[0] = Sd[idx_2(0,0)]; /* XX */
-      sig[ie].il[ip].o[1] = Sd[idx_2(1,1)]; /* YY */
-      sig[ie].il[ip].o[2] = Sd[idx_2(2,2)]; /* ZZ */
-      sig[ie].il[ip].o[3] = Sd[idx_2(1,2)]; /* YZ */
-      sig[ie].il[ip].o[4] = Sd[idx_2(0,2)]; /* XZ */
-      sig[ie].il[ip].o[5] = Sd[idx_2(0,1)]; /* XY */
+      // Elastic Green Lagrange strain
+      E = 0.5*(F(k,i)*F(k,j) - delta_ij(i,j));
+
+      // Compute the logarithmic strain e = 1/2(I - inv(FF'))
+      b = F(i,k)*F(j,k);
+      inv(b, bI);
+      Tensor<2> e = 0.5*(delta_ij(i,j) - bI(i,j));
+
+      for(int ia=0; ia<6; ia++)
+      {
+        int id = idx[ia];
+        sig[eid].il[ip-1].o[ia] = S.data[id];
+        eps[eid].il[ip-1].o[ia] = E.data[id];
+
+        sig[eid].el.o[ia] += fe.detJxW*sigma.data[id];
+
+        // engineering strain
+        if(ia<3)
+          eps[eid].el.o[ia] += fe.detJxW*e.data[id];
+        else
+          eps[eid].el.o[ia] += 2.0*fe.detJxW*e.data[id];
+      }
 
       /* store total deformation */
-      memcpy(eps[ie].il[ip].F, F.data, DIM_3x3 * sizeof(double));
+      memcpy(eps[eid].il[ip-1].F, F.data, DIM_3x3 * sizeof(double));
 
       /* store the hardening parameter */
-      err += func->get_hardening(m, &eps[ie].dam[ip].wn,2);
+      err += func->get_hardening(m, &eps[eid].dam[ip-1].wn,2);
 
       /* compute/store the plastic strain variable */
-      err += func->get_plast_strain_var(m, &eps[ie].dam[ip].Xn);
-
-      /* Compute the Cauchy Stress sigma = 1/eJ eF S eF' */
-      double sigma[DIM_3x3] = {};
-      double temp[DIM_3x3] = {};
-      double temp_I[DIM_3x3] = {};
-      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                  DIM_3,DIM_3,DIM_3, 1.0 / eJ, eFd, DIM_3, Sd, DIM_3,
-                  0.0, temp,DIM_3);
-      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                  DIM_3, DIM_3, DIM_3, 1.0, temp, DIM_3, eFd, DIM_3,
-                  0.0, sigma, DIM_3);
-
-      volume += fe.detJxW;
-
-      /* store symmetric part */
-      sig[ie].el.o[0] += fe.detJxW*sigma[idx_2(0,0)]; /* XX */
-      sig[ie].el.o[1] += fe.detJxW*sigma[idx_2(1,1)]; /* YY */
-      sig[ie].el.o[2] += fe.detJxW*sigma[idx_2(2,2)]; /* ZZ */
-      sig[ie].el.o[3] += fe.detJxW*sigma[idx_2(1,2)]; /* YZ */
-      sig[ie].el.o[4] += fe.detJxW*sigma[idx_2(0,2)]; /* XZ */
-      sig[ie].el.o[5] += fe.detJxW*sigma[idx_2(0,1)]; /* XY */
-
-      /* Compute the logarithmic strain e = 1/2(I - inv(FF'))*/
-      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
-                  DIM_3, DIM_3, DIM_3, 1.0, eFd, DIM_3, eFd, DIM_3,
-                  0.0, temp, DIM_3);
-      err += inv3x3(temp, temp_I);
-      /* e <-- temp is the Euler strain */
-      for(int ia = 0; ia < DIM_3x3; ia++)
-        temp[ia] = 0.5*(delta_ij.data[ia]-temp_I[ia]);
-
-      /* store symmetric part (also Eng. strain) */
-      eps[ie].el.o[0] += fe.detJxW*temp[idx_2(0,0)];
-      eps[ie].el.o[1] += fe.detJxW*temp[idx_2(1,1)];
-      eps[ie].el.o[2] += fe.detJxW*temp[idx_2(2,2)];
-
-      eps[ie].el.o[3] += fe.detJxW*2.0*temp[idx_2(1,2)];
-      eps[ie].el.o[4] += fe.detJxW*2.0*temp[idx_2(0,2)];
-      eps[ie].el.o[5] += fe.detJxW*2.0*temp[idx_2(0,1)];
-
+      err += func->get_plast_strain_var(m, &eps[eid].dam[ip-1].Xn);
     }
     for(int ia=0; ia<6; ia++)
     {
-      sig[ie].el.o[ia] = sig[ie].el.o[ia]/volume;
-      eps[ie].el.o[ia] = eps[ie].el.o[ia]/volume;
+      sig[eid].el.o[ia] = sig[eid].el.o[ia]/V;
+      eps[eid].el.o[ia] = eps[eid].el.o[ia]/V;
     }
+    if(is_it_couple_w_thermal >=0)
+      delete T;
   }
 
   return err;
@@ -2093,7 +2115,7 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  int mp_id,
                                                  double dt)
 {
@@ -2178,8 +2200,6 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
       hJ = det(hFnp1);
       //mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, DIM_3x3);
       inv(hFnpa,hFnpa_I);
-      
-      delete T;
     }
 
     err += func->get_pF(m,pFnp1.data,2);
@@ -2201,10 +2221,10 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);      
+                                                  hFn.data,hFnp1.data,1);
     else
       err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, eFnpa.data,1);
-        
+
     err += m->param->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
 
     // --> update elasticity part
@@ -2229,6 +2249,9 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                     Fr.data,eFnMT.data,eFn.data,M.data,FrTFr.data,eFnM.data,S.data,
                                     L.data,dMdu_all,Jn);
   }
+
+  if(is_it_couple_w_thermal >=0)
+    delete T;
 
   free(u);
   free(dMdu_all);
@@ -2269,7 +2292,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  int mp_id,
                                                  double dt)
 {
@@ -2279,13 +2302,13 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   double alpha_1 = 1.0 - alpha;
   double alpha_2 = alpha;
   double dt_alpha_1_minus_alpha = dt*alpha_1*alpha_2;
-      
+
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
     printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
-    
+
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -2315,27 +2338,27 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   {
     for(int b=0; b<nsd;b++)
       r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
-      
+
     if(Pno==nne)
       P.m_pdata[a] = re_npa[a*ndofn+nsd];
   }
   if(Pno==1)
-  {  
-    P(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
+  {
+    P(1) = alpha_1*fv->tf.P_n(eid+1,1) +
            alpha_2*(fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
-  } 
-    
+  }
+
   // define xFnp1
   Tensor<2>  Fnp1, pFnp1, hFnp1;
-  
+
   // define xFnpa
-  Tensor<2>  Fr_npa, eFnpa = {};
-  
+  Tensor<2>  Fr_npa, eFnpa = {}, pFnpa;
+
   // define xFn
-  Tensor<2> Fn, hFn;
-    
+  Tensor<2> Fn, hFn, pFn;
+
   // define other F and M
-  Tensor<2> Fr, eSd = {}, M; 
+  Tensor<2> Fr, eSd = {}, M_npa;
   Tensor<4> Ld = {};
 
   NodalTemerature *T = NULL;
@@ -2349,21 +2372,21 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   if(is_it_couple_w_chemical >= 0)
   {}
-  
+
   ThreeFieldStiffness K(fe, Vno, Pno);
-  Matrix<double> Nt(Vno,1), Np(Pno,1);  
+  Matrix<double> Nt(Vno,1), Np(Pno,1);
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     double hJnp1 = 1.0;
     double pJnp1 = 1.0;
-    
+
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
-    
+
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
-    fe->elem_shape_function(ip,Vno, Nt.m_pdata);    
+    fe->elem_shape_function(ip,Vno, Nt.m_pdata);
 
 
     double theta_npa = 0.0;
@@ -2371,10 +2394,10 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     for(int ia=1; ia<=Pno; ia++)
       Pnpa += Np(ia)*P(ia);
-      
+
     for(int ia=1; ia<=Vno; ia++)
     {
-      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) + 
+      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) +
                     alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)))*Nt(ia);
     }
     Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
@@ -2389,70 +2412,73 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
     }
 
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
+    err += func->get_pF(m, pFn.data,   1);
     err += func->get_F( m,    Fn.data, 1);
-    
+
     if(sup->multi_scale)
       cm_add_macro_F(sup,Fr.data);
-            
+
     Fnp1 = Fr(i,j);
+    mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
     mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnp1_I, hFnp1_I;        
-      err += inv(pFnp1, pFnp1_I);
-      err += inv(hFnp1, hFnp1_I);  
-      M = hFnp1_I(i,k)*pFnp1_I(k,j);
+      Tensor<2> pFnpa_I, hFnp1_I;
+      err += inv(pFnpa, pFnpa_I);
+      err += inv(hFnp1, hFnp1_I);
+      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
     }
     else
-      err += inv(pFnp1, M);
+      err += inv(pFnpa, M_npa);
 
-    eFnpa = Fr_npa(i,k)*M(k,j);
- 
+    eFnpa = Fr_npa(i,k)*M_npa(k,j);
+
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dt,alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);      
+                                                  hFn.data,hFnp1.data,1);
     else
       err += construct_model_context(&ctx, func->type, Fnp1.data,dt,alpha, eFnpa.data,1);
-        
+
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
     err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
     err += func->destroy_ctx(&ctx);
-    
+
 
     // <-- update plasticity part
     err += func->update_elasticity_dev(m, eFnpa.data, Ld.data, eSd.data, true);
-    
-    double MJ = ttl::det(M);
-    double theta_e = theta_npa*MJ;
-    
-    double dU  = func->compute_dudj(  m, theta_e);
-    double ddU = func->compute_d2udj2(m, theta_e);
+
+    double MJ_npa = ttl::det(M_npa);
+    double theta_e_npa = theta_npa*MJ_npa;
+
+    double dU  = func->compute_dudj(  m, theta_e_npa);
+    double ddU = func->compute_d2udj2(m, theta_e_npa);
     // --> update elasticity part
 
     if(err!=0)
       break;
-      
+
     CM_ThreeField cmtf;
     cmtf.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
     double Jn = 1.0/hJnp1/pJnp1;
-    cmtf.set_tenosrs(Fr_npa.data, delta_ij.data, M.data, pFnp1.data, eSd.data, Ld.data);
+    cmtf.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnp1.data, eSd.data, Ld.data);
     cmtf.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU, ddU, dt_alpha_1_minus_alpha);
-    
+
     err += K.compute_stiffness(cmtf, dMdu, dMdt);
   }
 
+  if(is_it_couple_w_thermal >=0)
+    delete T;
+
   K.Kpt.trans(K.Ktp);
   K.Kpu.trans(K.Kup);
- 
+
   err += condense_K_3F_to_1F(lk, nne, nsd, Pno, Vno,
                              K.Kuu.m_pdata, K.Kut.m_pdata, K.Kup.m_pdata,
                              K.Ktu.m_pdata, K.Ktt.m_pdata, K.Ktp.m_pdata,
@@ -2501,21 +2527,21 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               int mp_id,
                                               double dt)
 {
   int err = 0;
   if(opts->analysis_type==CM)
-    err += stiffness_el_constitutive_model_w_inertia_1f(fe, lk, re_np1, 
-                                                        grid, mat, fv, sol, load, crpl, 
+    err += stiffness_el_constitutive_model_w_inertia_1f(fe, lk, re_np1,
+                                                        grid, mat, fv, sol, load, crpl,
                                                         opts, mp, mp_id, dt);
   if(opts->analysis_type==CM3F)
     err += stiffness_el_constitutive_model_w_inertia_3f(fe, lk,  re_np1, re_npa,
-                                                        grid, mat, fv, sol, load, crpl, 
-                                                        opts, mp, mp_id, dt);  
+                                                        grid, mat, fv, sol, load, crpl,
+                                                        opts, mp, mp_id, dt);
   return err;
-}                                              
+}
 
 /// compute element stiffness matrix in quasi steady state
 ///
@@ -2546,17 +2572,17 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
   int err = 0;
   double alpha = -1.0; // if alpha < 0, no inertia
-  
+
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
-    
+
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -2633,8 +2659,6 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        hFnp1.data,hFn.data,hFnm1.data);
       hJ = det(hFnp1);
       inv(hFnp1,hFnp1_I);
-      
-      delete T;
     }
 
     // --> update plasticity part
@@ -2668,7 +2692,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                                   hFn.data,hFnp1.data,-1);
     else
       err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,-1);
-  
+
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
     err += func->get_pF(m,pFnp1.data,2);
 
@@ -2750,6 +2774,9 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
   }
   free(u);
 
+  if(is_it_couple_w_thermal >=0)
+    delete T;
+
   /* check diagonal for zeros/nans */
   for (int a = 0; a < nne; a++) {
     for (int b = 0; b < nsd; b++) {
@@ -2792,7 +2819,7 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -2829,7 +2856,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    Multiphysics *mp,
+                                    const Multiphysics& mp,
                                     int mp_id,
                                     double dt)
 {
@@ -2877,7 +2904,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
                                                  double dt)
@@ -2951,14 +2978,12 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1.data);
       hJ = det(hFnp1);
-      
-      delete T;
     }
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);
-      
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);
+
     if(err!=0)
       break;
 
@@ -2985,6 +3010,9 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_alpha,fe,0);
   }
+
+  if(is_it_couple_w_thermal >=0)
+    delete T;
 
   if(err==0)
   {
@@ -3032,7 +3060,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  double *f,
                                                  double *re_np1,
                                                  double *re_npa,
-                                                 double *re_nma,                                                 
+                                                 double *re_nma,
                                                  Grid *grid,
                                                  MaterialProperty *mat,
                                                  FieldVariables *fv,
@@ -3040,7 +3068,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  LoadingSteps *load,
                                                  CRPL *crpl,
                                                  const PGFem3D_opt *opts,
-                                                 Multiphysics *mp,
+                                                 const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
                                                  double dt)
@@ -3051,13 +3079,13 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   double alpha_1 = 1.0 - alpha;
   double alpha_2 = alpha;
   double dt_alpha_1_minus_alpha = dt*alpha_1*alpha_2;
-      
+
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
     printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
-    
+
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -3087,37 +3115,37 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   {
     for(int b=0; b<nsd;b++)
       r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
-      
+
     if(Pno==nne)
-    {  
+    {
       P_npa.m_pdata[a] = re_npa[a*ndofn+nsd];
       P_nma.m_pdata[a] = re_nma[a*ndofn+nsd];
     }
   }
   if(Pno==1)
-  {  
-    P_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
+  {
+    P_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) +
                alpha_2*(fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
     P_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
-  } 
-    
+  }
+
   // define xFnp1
   Tensor<2>  Fnp1, pFnp1, hFnp1;
-  
+
   // define xFnpa
-  Tensor<2>  Fr_npa, eFnpa;
-  
+  Tensor<2>  Fr_npa, eFnpa, pFnpa;
+
   // define xFnma
-  Tensor<2> Fr_nma, eFnma;
-  
+  Tensor<2> Fr_nma, eFnma, pFnma;
+
   // define xFn
-  Tensor<2> Fn, hFn;
-  
+  Tensor<2> Fn, hFn, pFn;
+
   // define xFnm1
-  Tensor<2> Fnm1;
-    
+  Tensor<2> Fnm1, pFnm1;
+
   // define other F and M
-  Tensor<2> Fr, S_npa = {}, S_nma = {}, M; 
+  Tensor<2> Fr, S_npa = {}, S_nma = {}, M_npa, M_nma;
   Tensor<4> Ld_npa = {}, Ld_nma;
 
   NodalTemerature *T = NULL;
@@ -3131,25 +3159,25 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   if(is_it_couple_w_chemical >= 0)
   {}
-  
+
   ThreeFieldStiffness K(fe, Vno, Pno, true);
   ThreeFieldResidual R_npa(fe, Vno, Pno), R_nma(fe, Vno, Pno);
-  
-  Matrix<double> Nt(Vno,1), Np(Pno,1);  
+
+  Matrix<double> Nt(Vno,1), Np(Pno,1);
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     double hJnp1 = 1.0;
     double pJnp1 = 1.0;
-    
+
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
-    
+
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
-    fe->elem_shape_function(ip,Vno, Nt.m_pdata);    
+    fe->elem_shape_function(ip,Vno, Nt.m_pdata);
 
-
+    double theta     = 0.0;
     double theta_npa = 0.0;
     double theta_nma = 0.0;
     double Pnpa      = 0.0;
@@ -3158,14 +3186,15 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     for(int ia=1; ia<=Pno; ia++)
     {
       Pnpa += Np(ia)*P_npa(ia);
-      Pnma += Np(ia)*P_nma(ia);      
-    } 
+      Pnma += Np(ia)*P_nma(ia);
+    }
     for(int ia=1; ia<=Vno; ia++)
     {
-      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) + 
+      theta     += (fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia))*Nt(ia);
+      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) +
                     alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)))*Nt(ia);
-                    
-      theta_nma += (alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia))*Nt(ia);                    
+
+      theta_nma += (alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia))*Nt(ia);
     }
     Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
 
@@ -3179,42 +3208,59 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
+    }
+
+    if(sup->multi_scale)
+      cm_add_macro_F(sup,Fr.data);
+
+    Fnp1 = Fr(i,j);
+
+    // perform integration algorithm
+    if(sol->run_integration_algorithm)
+    {
+      double tJ = det(Fnp1);
+      double tf_factor = pow(theta/tJ, 1.0/3.0);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
     }
 
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
+    err += func->get_pF(m, pFn.data,   1);
+    err += func->get_pF(m, pFnm1.data, 0);
     err += func->get_F( m,    Fn.data, 1);
-    err += func->get_F( m,  Fnm1.data, 0);    
-    
-    if(sup->multi_scale)
-      cm_add_macro_F(sup,Fr.data);
-            
-    Fnp1 = Fr(i,j);
+    err += func->get_F( m,  Fnm1.data, 0);
+
+    mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
+    mid_point_rule(pFnma.data, pFnm1.data, pFn.data, alpha, DIM_3x3);
     mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
     mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnp1_I, hFnp1_I;        
-      err += inv(pFnp1, pFnp1_I);
-      err += inv(hFnp1, hFnp1_I);  
-      M = hFnp1_I(i,k)*pFnp1_I(k,j);
+      Tensor<2> pFnpa_I, pFnma_I, hFnp1_I, hFn_I;
+      err += inv(pFnpa, pFnpa_I);
+      err += inv(pFnma, pFnma_I);
+      err += inv(hFnp1, hFnp1_I);
+      err += inv(hFn,   hFn_I);
+      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
+      M_nma = hFn_I(i,k)*pFnma_I(k,j);
     }
     else
-      err += inv(pFnp1, M);
+    {
+      err += inv(pFnpa, M_npa);
+      err += inv(pFnma, M_nma);
+    }
 
-    eFnpa = Fr_npa(i,k)*M(k,j);
-    eFnma = Fr_nma(i,k)*M(k,j);
- 
+    eFnpa = Fr_npa(i,k)*M_npa(k,j);
+    eFnma = Fr_nma(i,k)*M_nma(k,j);
+
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dt,alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);      
+                                                  hFn.data,hFnp1.data,1);
     else
       err += construct_model_context(&ctx, func->type, Fnp1.data,dt,alpha, eFnpa.data,1);
-        
+
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
     err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
     err += func->destroy_ctx(&ctx);
@@ -3222,61 +3268,61 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     // <-- update plasticity part
     err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, true);
     err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, true);
-    
-    double MJ = ttl::det(M);
-    double theta_e_npa = theta_npa*MJ;
-    double theta_e_nma = theta_nma*MJ;    
+
+    double MJ_npa = ttl::det(M_npa);
+    double MJ_nma = ttl::det(M_nma);
+    double theta_e_npa = theta_npa*MJ_npa;
+    double theta_e_nma = theta_nma*MJ_nma;
 
     double dU_npa  = func->compute_dudj(  m, theta_e_npa);
-    double ddU_npa = func->compute_d2udj2(m, theta_e_npa); 
-       
+    double ddU_npa = func->compute_d2udj2(m, theta_e_npa);
+
     double dU_nma  = func->compute_dudj(  m, theta_e_nma);
     double ddU_nma = func->compute_d2udj2(m, theta_e_nma);
     // --> update elasticity part
 
     if(err!=0)
       break;
-      
+
     CM_ThreeField cmtf_npa, cmtf_nma;
     cmtf_npa.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
-    cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);    
+    cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
     double Jn = 1.0/hJnp1/pJnp1;
-    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M.data, pFnp1.data, S_npa.data, Ld_npa.data);
+    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnpa.data, S_npa.data, Ld_npa.data);
     cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
 
+    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M_nma.data, pFnma.data, S_nma.data, Ld_nma.data);
+    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);
 
-    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M.data, pFnp1.data, S_nma.data, Ld_nma.data);
-    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);        
-    
     err += K.compute_stiffness(cmtf_npa, dMdu, dMdt);
     err += R_npa.compute_residual(cmtf_npa);
-    err += R_nma.compute_residual(cmtf_nma);    
+    err += R_nma.compute_residual(cmtf_nma);
   }
+
+  if(is_it_couple_w_thermal >=0)
+    delete T;
 
   if(err==0)
   {
     ThreeFieldResidual R(fe, Vno, Pno);
 
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
-    double dt_alpha = -dts[DT_N]*alpha; 
+    double dt_alpha = -dts[DT_N]*alpha;
     for(int ia=0; ia<nne*nsd; ia++)
-    {
-      R.Ru.m_pdata[ia] = f[ia] + dt_1_minus_alpha*R_npa.Ru.m_pdata[ia] +  dt_alpha*R_nma.Ru.m_pdata[ia];
-      f[ia] = 0.0;
-    }
-      
+      R.Ru.m_pdata[ia] = dt_1_minus_alpha*R_npa.Ru.m_pdata[ia] +  dt_alpha*R_nma.Ru.m_pdata[ia];
+
     for(int ia=0; ia<Pno; ia++)
       R.Rp.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rp.m_pdata[ia] +  dt_alpha*R_nma.Rp.m_pdata[ia];
-      
+
     for(int ia=0; ia<Vno; ia++)
-      R.Rt.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rt.m_pdata[ia] +  dt_alpha*R_nma.Rt.m_pdata[ia];      
+      R.Rt.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rt.m_pdata[ia] +  dt_alpha*R_nma.Rt.m_pdata[ia];
 
     K.Kpt.trans(K.Ktp);
 
     err += condense_F_3F_to_1F(f, nne, nsd, Pno, Vno,
                                R.Ru.m_pdata, R.Rt.m_pdata, R.Rp.m_pdata,
-                               K.Kut.m_pdata, K.Kup.m_pdata, K.Ktp.m_pdata, K.Ktt.m_pdata, K.Kpt.m_pdata);    
+                               K.Kut.m_pdata, K.Kup.m_pdata, K.Ktp.m_pdata, K.Ktt.m_pdata, K.Kpt.m_pdata);
   }
 
   return err;
@@ -3312,7 +3358,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *re_np1,
                                               double *re_npa,
-                                              double *re_nma, 
+                                              double *re_nma,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,
@@ -3320,22 +3366,22 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               LoadingSteps *load,
                                               CRPL *crpl,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
                                               double dt)
 {
   int err = 0;
-  
+
   if(opts->analysis_type==CM)
-    err += residuals_el_constitutive_model_w_inertia_1f(fe, f, re_np1, 
-                                                        grid, mat, fv, sol, load, crpl, 
+    err += residuals_el_constitutive_model_w_inertia_1f(fe, f, re_np1,
+                                                        grid, mat, fv, sol, load, crpl,
                                                         opts, mp, dts, mp_id, dt);
   if(opts->analysis_type==CM3F)
-    err += residuals_el_constitutive_model_w_inertia_3f(fe, f, re_np1, re_npa, re_nma, 
-                                                        grid, mat, fv, sol, load, crpl, 
+    err += residuals_el_constitutive_model_w_inertia_3f(fe, f, re_np1, re_npa, re_nma,
+                                                        grid, mat, fv, sol, load, crpl,
                                                         opts, mp, dts, mp_id, dt);
-  return err;  
+  return err;
 }
 /// compute element residual vector in quasi steady state
 ///
@@ -3368,7 +3414,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
 {
@@ -3377,7 +3423,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
-    
+
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -3417,7 +3463,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     T->initialization(fe->nne);
     T->get_temperature(fe, grid, fv, load, mp, mp_id, is_it_couple_w_thermal);
   }
-  
+
   if(is_it_couple_w_chemical >=0)
   {}
 
@@ -3453,8 +3499,6 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       inv(hFnp1, hFnp1_I);
       if(total_Lagrangian)
         hFn = delta_ij(i,j);
-
-      delete T;
     }
 
     // --> update plasticity part
@@ -3485,12 +3529,12 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       int terr = 0;
       getJacobian(Fnp1.data, eid, &terr);
       err += terr;
-    }     
-    
+    }
+
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,is_it_couple_w_thermal);
-      
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,is_it_couple_w_thermal);
+
     if(err!=0)
       break;
 
@@ -3545,13 +3589,13 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     // <-- update plasticity part
 
     // --> update elasticity part
-    
+
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,
                                                   hFn.data,hFnp1.data,-1);
     else
-      err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,-1);     
+      err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,-1);
     if((m->param)->uqcm)
     {
       double *x_ip = (fe->x_ip).m_pdata;
@@ -3574,6 +3618,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     Jn = Jn/pJ/hJ;
     err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);
   }
+
+  if(is_it_couple_w_thermal >=0)
+    delete T;
 
   free(u);
 
@@ -3611,10 +3658,10 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        LoadingSteps *load,
                                        CRPL *crpl,
                                        const PGFem3D_opt *opts,
-                                       Multiphysics *mp,
+                                       const Multiphysics& mp,
                                        int mp_id,
                                        double dt)
-{                                       
+{
   ConstitutiveModelIntregrate<IntegrateThreeFieldResidual> cm3f_residual;
   return cm3f_residual.integrate_ss(fe,f,r_e,grid,mat,fv,1,load,opts,mp,mp_id,dt);
 }
@@ -3650,7 +3697,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     LoadingSteps *load,
                                     CRPL *crpl,
                                     const PGFem3D_opt *opts,
-                                    Multiphysics *mp,
+                                    const Multiphysics& mp,
                                     int mp_id,
                                     double dt)
 {
@@ -3669,13 +3716,13 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
                                               double *re_np1,
                                               double *re_npa,
                                               double *re_nma,
-                                              double *du,                                                 
+                                              double *du,
                                               Grid *grid,
                                               MaterialProperty *mat,
                                               FieldVariables *fv,
                                               LoadingSteps *load,
                                               const PGFem3D_opt *opts,
-                                              Multiphysics *mp,
+                                              const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
                                               double alpha)
@@ -3685,13 +3732,13 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   double alpha_1 = 1.0 - alpha;
   double alpha_2 = alpha;
   double dt_alpha_1_minus_alpha = dts[DT_NP1]*alpha_1*alpha_2;
-      
+
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
     printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
-    
+
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -3721,37 +3768,37 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   {
     for(int b=0; b<nsd;b++)
       r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
-      
+
     if(Pno==nne)
-    {  
+    {
       P_npa.m_pdata[a] = re_npa[a*ndofn+nsd];
       P_nma.m_pdata[a] = re_nma[a*ndofn+nsd];
     }
   }
   if(Pno==1)
-  {  
-    P_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
+  {
+    P_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) +
                alpha_2*(fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
     P_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
-  } 
-    
+  }
+
   // define xFnp1
   Tensor<2>  Fnp1, pFnp1, hFnp1;
-  
+
   // define xFnpa
-  Tensor<2>  Fr_npa, eFnpa;
-  
+  Tensor<2>  Fr_npa, eFnpa, pFnpa;
+
   // define xFnma
-  Tensor<2> Fr_nma, eFnma;
-  
+  Tensor<2> Fr_nma, eFnma, pFnma;
+
   // define xFn
-  Tensor<2> Fn, hFn;
-  
+  Tensor<2> Fn, hFn, pFn;
+
   // define xFnm1
-  Tensor<2> Fnm1;
-    
+  Tensor<2> Fnm1, pFnm1;
+
   // define other F and M
-  Tensor<2> Fr, S_npa = {}, S_nma = {}, M; 
+  Tensor<2> Fr, S_npa = {}, S_nma = {}, M_npa, M_nma;
   Tensor<4> Ld_npa = {}, Ld_nma;
 
   NodalTemerature *T = NULL;
@@ -3765,23 +3812,23 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
   if(is_it_couple_w_chemical >= 0)
   {}
-  
+
   ThreeFieldStiffness K(fe, Vno, Pno, true);
   ThreeFieldResidual R_npa(fe, Vno, Pno, true), R_nma(fe, Vno, Pno, true);
-  
-  Matrix<double> Nt(Vno,1), Np(Pno,1);  
+
+  Matrix<double> Nt(Vno,1), Np(Pno,1);
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
     double hJnp1 = 1.0;
     double pJnp1 = 1.0;
-    
+
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
-    
+
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
-    fe->elem_shape_function(ip,Vno, Nt.m_pdata);    
+    fe->elem_shape_function(ip,Vno, Nt.m_pdata);
 
 
     double theta_npa = 0.0;
@@ -3792,14 +3839,14 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     for(int ia=1; ia<=Pno; ia++)
     {
       Pnpa += Np(ia)*P_npa(ia);
-      Pnma += Np(ia)*P_nma(ia);      
-    } 
+      Pnma += Np(ia)*P_nma(ia);
+    }
     for(int ia=1; ia<=Vno; ia++)
     {
-      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) + 
+      theta_npa += (alpha_1*fv->tf.V_n(eid+1, ia) +
                     alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)))*Nt(ia);
-                    
-      theta_nma += (alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia))*Nt(ia);                    
+
+      theta_nma += (alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia))*Nt(ia);
     }
     Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
 
@@ -3813,42 +3860,50 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
       hJnp1 = det(hFnp1);
-      
-      delete T;
     }
 
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
+    err += func->get_pF(m, pFn.data,   1);
+    err += func->get_pF(m, pFnm1.data, 0);
     err += func->get_F( m,    Fn.data, 1);
-    err += func->get_F( m,  Fnm1.data, 0);    
-    
+    err += func->get_F( m,  Fnm1.data, 0);
+
     if(sup->multi_scale)
       cm_add_macro_F(sup,Fr.data);
-            
+
     Fnp1 = Fr(i,j);
+    mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
+    mid_point_rule(pFnma.data, pFnm1.data, pFn.data, alpha, DIM_3x3);
     mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
     mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnp1_I, hFnp1_I;        
-      err += inv(pFnp1, pFnp1_I);
-      err += inv(hFnp1, hFnp1_I);  
-      M = hFnp1_I(i,k)*pFnp1_I(k,j);
+      Tensor<2> pFnpa_I, pFnma_I, hFnp1_I, hFn_I;
+      err += inv(pFnpa, pFnpa_I);
+      err += inv(pFnma, pFnma_I);
+      err += inv(hFnp1, hFnp1_I);
+      err += inv(hFn,   hFn_I);
+      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
+      M_nma = hFn_I(i,k)*pFnma_I(k,j);
     }
     else
-      err += inv(pFnp1, M);
+    {
+      err += inv(pFnpa, M_npa);
+      err += inv(pFnma, M_nma);
+    }
 
-    eFnpa = Fr_npa(i,k)*M(k,j);
-    eFnma = Fr_nma(i,k)*M(k,j);
- 
+    eFnpa = Fr_npa(i,k)*M_npa(k,j);
+    eFnma = Fr_nma(i,k)*M_nma(k,j);
+
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dts[DT_NP1],alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);      
+                                                  hFn.data,hFnp1.data,1);
     else
       err += construct_model_context(&ctx, func->type, Fnp1.data,dts[DT_NP1],alpha, eFnpa.data,1);
-        
+
     err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
     err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
     err += func->destroy_ctx(&ctx);
@@ -3856,36 +3911,37 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     // <-- update plasticity part
     err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, true);
     err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, true);
-    
-    double MJ = ttl::det(M);
-    double theta_e_npa = theta_npa*MJ;
-    double theta_e_nma = theta_nma*MJ;    
+
+    double MJ_npa = ttl::det(M_npa);
+    double MJ_nma = ttl::det(M_nma);
+    double theta_e_npa = theta_npa*MJ_npa;
+    double theta_e_nma = theta_nma*MJ_nma;
 
     double dU_npa  = func->compute_dudj(  m, theta_e_npa);
-    double ddU_npa = func->compute_d2udj2(m, theta_e_npa); 
-       
+    double ddU_npa = func->compute_d2udj2(m, theta_e_npa);
+
     double dU_nma  = func->compute_dudj(  m, theta_e_nma);
     double ddU_nma = func->compute_d2udj2(m, theta_e_nma);
     // --> update elasticity part
 
     if(err!=0)
       break;
-      
+
     CM_ThreeField cmtf_npa, cmtf_nma;
     cmtf_npa.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
-    cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);    
+    cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
     double Jn = 1.0/hJnp1/pJnp1;
-    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M.data, pFnp1.data, S_npa.data, Ld_npa.data);
+    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnp1.data, S_npa.data, Ld_npa.data);
     cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
 
 
-    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M.data, pFnp1.data, S_nma.data, Ld_nma.data);
-    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);        
-    
+    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M_nma.data, pFnp1.data, S_nma.data, Ld_nma.data);
+    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);
+
     err += K.compute_stiffness(cmtf_npa, dMdu, dMdt);
     err += R_npa.compute_residual(cmtf_npa);
-    err += R_nma.compute_residual(cmtf_nma);    
+    err += R_nma.compute_residual(cmtf_nma);
   }
 
   if(err==0)
@@ -3893,17 +3949,17 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     ThreeFieldResidual R(fe, Vno, Pno, true);
 
     double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
-    double dt_alpha = -dts[DT_N]*alpha; 
-      
+    double dt_alpha = -dts[DT_N]*alpha;
+
     for(int ia=0; ia<Pno; ia++)
       R.Rp.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rp.m_pdata[ia] +  dt_alpha*R_nma.Rp.m_pdata[ia];
-      
-    for(int ia=0; ia<Vno; ia++)
-      R.Rt.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rt.m_pdata[ia] +  dt_alpha*R_nma.Rt.m_pdata[ia];      
 
-    Matrix<double> Kpu(Pno,nne*nsd);    
+    for(int ia=0; ia<Vno; ia++)
+      R.Rt.m_pdata[ia] = dt_1_minus_alpha*R_npa.Rt.m_pdata[ia] +  dt_alpha*R_nma.Rt.m_pdata[ia];
+
+    Matrix<double> Kpu(Pno,nne*nsd);
     Kpu.trans(K.Kup);
-    K.Kpt.trans(K.Ktp);  
+    K.Kpt.trans(K.Ktp);
 
     Matrix<double> d_theta(Vno, 1), dP(Pno, 1);
     err += compute_d_theta_dP(d_theta.m_pdata, dP.m_pdata, du,
@@ -3939,15 +3995,15 @@ int constitutive_model_update_NR(Grid *grid,
                                  FieldVariables *fv,
                                  LoadingSteps *load,
                                  const PGFem3D_opt *opts,
-                                 Multiphysics *mp,
+                                 const Multiphysics& mp,
                                  int mp_id,
                                  const double *dts,
                                  double alpha)
 {
   int err = 0;
-  
+
   if(opts->analysis_type==CM) // nothing to do for CM model
-    return err;  
+    return err;
 
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
@@ -3971,10 +4027,10 @@ int constitutive_model_update_NR(Grid *grid,
 
     Matrix<double> r_e(ndofe, 1), dr_e(ndofe,1), du(nne*nsd,1), u(nne*nsd, 1);
     get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cn.m_pdata,mp_id);
-        
+
     // get the deformation on the element
     def_elem_total(cn.m_pdata,ndofe,fv->u_np1,fv->d_u,elem,node,sup,r_e.m_pdata);
-    def_elem(cn.m_pdata,ndofe,fv->dd_u,elem,node,dr_e.m_pdata,sup,2);    
+    def_elem(cn.m_pdata,ndofe,fv->dd_u,elem,node,dr_e.m_pdata,sup,2);
 
 
     for(int ia=0;ia<nne;ia++)
@@ -3988,8 +4044,8 @@ int constitutive_model_update_NR(Grid *grid,
     // make a decision to include ineria
     bool include_inertia = true;
     if(fabs(rho)<MIN_DENSITY)
-      include_inertia = false;    
-    
+      include_inertia = false;
+
     if(include_inertia)
     {
       Matrix<double> re_npa(nne*nsd, 1, 0.0), re_nma(nne*nsd, 1, 0.0);
@@ -4002,15 +4058,15 @@ int constitutive_model_update_NR(Grid *grid,
           u_nm1.m_pdata[ia*nsd + ib] = fv->u_nm1[nod[ia]*ndofn + ib];
         }
       }
-      
+
       mid_point_rule(re_nma.m_pdata, u_nm1.m_pdata, u_n.m_pdata, alpha, nne*nsd);
-      mid_point_rule(re_npa.m_pdata,   u_n.m_pdata, r_e.m_pdata, alpha, nne*nsd); 
+      mid_point_rule(re_npa.m_pdata,   u_n.m_pdata, r_e.m_pdata, alpha, nne*nsd);
 
       err += constitutive_model_update_NR_w_inertia_3f(&fe, r_e.m_pdata, re_npa.m_pdata, re_nma.m_pdata, du.m_pdata,
-                                                       grid, mat, fv, load, opts, mp, dts, mp_id, alpha);  
-    }  
+                                                       grid, mat, fv, load, opts, mp, dts, mp_id, alpha);
+    }
     else
-    {  
+    {
       ConstitutiveModelIntregrate<IntegrateThreeFieldUpdate> cm3f_update;
       err += cm3f_update.integrate_ss(&fe,NULL,r_e.m_pdata,grid,mat,fv,0,load,opts,mp,mp_id,dts[DT_NP1]);
     }
@@ -4018,7 +4074,7 @@ int constitutive_model_update_NR(Grid *grid,
 
   return err;
 }
-                                  
+
 
 int cm_write_tensor_restart(FILE *fp, const double *tensor)
 {

@@ -174,7 +174,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
 /// \return non-zero on internal error
 int VTK_construct_PMR(Grid *grid,
                       FieldVariables *FV,
-                      Multiphysics *mp,
+                      const Multiphysics& mp,
                       PRINT_MULTIPHYSICS_RESULT *pmr);
 
 #endif /* #define PGFEM3D_VTK_OUTPUT_H */

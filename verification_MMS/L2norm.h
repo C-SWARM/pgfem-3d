@@ -31,7 +31,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
     long *nod = aloc1l(nne);
     elemnodes(e,nne,nod,elem);
 
-    FEMLIB fe(e,elem,node, 3, 1);
+    FEMLIB fe(e,elem,node, 1, 1);
 
     for(int ip = 1; ip<=fe.nint; ip++)
     {

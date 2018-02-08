@@ -131,8 +131,10 @@ static void coel_stiffmat(int i, /* coel ID */
 
   def_elem (cnL,ndofe,d_r,elem,node,r_e,sup,0);
   if (iter == 0)
-    for (j=0;j<sup->npd;j++)
+    for (j=0;j<sup->npd;j++){
+      assert(sup_def != NULL && "sup_def can't be null");
       sup->defl_d[j] = sup_def[j];
+    }
 
   if (periodic == 1){/* Periodic */
 
@@ -370,7 +372,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                            LoadingSteps *load,
                            CRPL *crpl,
                            const PGFem3D_opt *opts,
-                           Multiphysics *mp,
+                           const Multiphysics& mp,
                            int mp_id,
                            double dt,
                            double lm,
@@ -485,7 +487,7 @@ static int el_stiffmat_MP(int eid,
                           CRPL *crpl,
                           MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
-                          Multiphysics *mp,
+                          const Multiphysics& mp,
                           int mp_id,
                           double dt,
                           long iter,
@@ -571,8 +573,10 @@ static int el_stiffmat_MP(int eid,
   /* recover thei increment of applied def on first iter */
   if (iter == 0)
   {
-    for(int j=0; j<sup->npd; j++)
+    for(int j=0; j<sup->npd; j++){
+      assert(sup_def != NULL && "sup_def can't be null");
       sup->defl_d[j] = sup_def[j];
+    }
   }
 
   Matrix<double> lk(ndofe,ndofe,0.0);
@@ -668,7 +672,7 @@ int stiffmat_fd_MP(Grid *grid,
                    CRPL *crpl,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
-                   Multiphysics *mp,
+                   const Multiphysics& mp,
                    int mp_id,
                    double dt,
                    long iter,
@@ -950,7 +954,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
-                        c->mpi_comm,opts,&mp,mp_id,s->dt,iter,myrank);
+                        c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank);
 
   free(coupled_ids);
   free(physicsname);

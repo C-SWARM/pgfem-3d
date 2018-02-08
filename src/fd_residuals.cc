@@ -128,7 +128,7 @@ static int fd_res_elem_MP(double *be,
                           CRPL *crpl,
                           MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
-                          Multiphysics *mp,
+                          const Multiphysics& mp,
                           int mp_id,
                           double t,
                           double *dts,
@@ -294,7 +294,7 @@ long fd_residuals_MP(Grid *grid,
                      CRPL *crpl,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      int mp_id,
                      double t,
                      double *dts,
@@ -479,7 +479,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 CRPL *crpl,
                                 MPI_Comm mpi_comm,
                                 const PGFem3D_opt *opts,
-                                Multiphysics *mp,
+                                const Multiphysics& mp,
                                 int mp_id,
                                 double t,
                                 double *dts)
@@ -642,7 +642,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mat.matgeom = c->matgeom;
   }
 
-  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,&mp,
+  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,mp,
                                      0,s->times[s->tim+1],dts);
 
   free(coupled_ids);

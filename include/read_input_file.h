@@ -59,7 +59,7 @@ int read_mesh_file(Grid *grid,
                    FieldVariables *FV,
                    pgfem3d::Solver *SOL,
                    LoadingSteps *load,
-                   Multiphysics *mp,
+                   const Multiphysics& mp,
                    MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts);
 
@@ -82,7 +82,7 @@ int read_solver_file(TimeStepping *ts,
                      pgfem3d::Solver *SOL,
                      LoadingSteps *load,
                      CRPL *crpl,
-                     Multiphysics *mp,
+                     const Multiphysics& mp,
                      const PGFem3D_opt *opts,
                      int myrank);
 
@@ -107,7 +107,7 @@ int read_initial_values(Grid *grid,
                         LoadingSteps *load,
                         TimeStepping *ts,
                         PGFem3D_opt *opts,
-                        Multiphysics *mp,
+                        const Multiphysics& mp,
                         double *tnm1,
                         int myrank);
 
@@ -124,7 +124,7 @@ int read_initial_values(Grid *grid,
 int read_and_apply_load_increments(Grid *grid,
                                    FieldVariables *variables,
                                    LoadingSteps *load,
-                                   Multiphysics *mp,
+                                   const Multiphysics& mp,
                                    long tim,
                                    MPI_Comm mpi_comm,
                                    int myrank);

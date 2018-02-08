@@ -106,7 +106,7 @@ int momentum_equation_load4pBCs(Grid *grid,
                                 double dt,
                                 CRPL *crpl,
                                 const PGFem3D_opt *opts,
-                                Multiphysics *mp,
+                                const Multiphysics& mp,
                                 int mp_id,
                                 int myrank)
 {
@@ -358,12 +358,12 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           double dt,
                                           CRPL *crpl,
                                           const PGFem3D_opt *opts,
-                                          Multiphysics *mp,
+                                          const Multiphysics& mp,
                                           int mp_id,
                                           int myrank)
 {
   int err = 0;
-  switch(mp->physics_ids[mp_id])
+  switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
     err += momentum_equation_load4pBCs(grid,
@@ -390,7 +390,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                              dt);
     break;
    default:
-    printf("%s is not supported\n", mp->physicsname[mp_id]);
+    printf("%s is not supported\n", mp.physicsname[mp_id]);
 
   }
   return err;
@@ -511,7 +511,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv,&sol,&load,
-                                               s->dt,s->crpl,opts,&mp,mp_id,myrank);
+                                               s->dt,s->crpl,opts,mp,mp_id,myrank);
 
   free(coupled_ids);
   free(physicsname);

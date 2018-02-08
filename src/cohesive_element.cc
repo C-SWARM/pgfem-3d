@@ -12,6 +12,7 @@
 #include "matice.h"
 #include "utils.h"
 #include <cmath>
+#include <cassert>
 
 static void update_state_variables_co (COEL *cel, /* ptr to single el */
                                        double *x,
@@ -213,6 +214,7 @@ COEL* read_cohe_elem (FILE *in1,
         /* mark nodes on - surface for Ensight (-) */
         if (j < coel[i].toe/2 && Enodes[coel[i].nod[j]] == -1) {
           Enodes[coel[i].nod[j]] = k;
+	  assert(ensight->Sm != NULL && "ensight->Sm can't be null");
           ensight->Sm[k] = coel[i].nod[j];
           ensight->Sp[k] = coel[i].nod[j+coel[i].toe/2];
           k++;

@@ -17,6 +17,7 @@
 #include "tensors.h"
 #include "utils.h"
 #include <cmath>
+#include <cassert>
 
 static constexpr int periodic = 0;
 
@@ -134,26 +135,32 @@ void press_theta (long ne,
     /* deformation on element */
     if (iter != 0){
       for (j=0;j<sup->npd;j++){
+	assert(sup_def != NULL && "sup_def can't be null");
         sup_def[j] = sup->defl_d[j];
         sup->defl_d[j] = 0.0;
       }
     }
     def_elem (cn,nne*ndofn,rr,elem,node,r_r,sup,0);
     if (iter != 0){
-      for (i=0;i<sup->npd;i++)
+      for (i=0;i<sup->npd;i++){
+	assert(sup_def != NULL && "sup_def can't be null");
         sup->defl_d[i] = sup_def[i];
+      }
     }
 
     if (iter == 0){
       for (j=0;j<sup->npd;j++){
+	assert(sup_def != NULL && "sup_def can't be null");
         sup_def[j] = sup->defl_d[j];
         sup->defl_d[j] = 0.0;
       }
     }
     def_elem (cn,nne*ndofn,d_r,elem,node,r_e,sup,0);
     if (iter == 0){
-      for (i=0;i<sup->npd;i++)
+      for (i=0;i<sup->npd;i++){
+	assert(sup_def != NULL && "sup_def can't be null");
         sup->defl_d[i] = sup_def[i];
+      }
     }
 
     ip = 0;

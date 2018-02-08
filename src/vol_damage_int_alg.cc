@@ -213,16 +213,15 @@ int vol_damage_int_alg(const int ne,
           damage *ptrDam = &(eps[elem_id].dam[ip]);
 
           double Ybar = 0.0;
-          double g = 0.0;
           err += get_material_potential(&Ybar,elem_id,ip,nne,kappa,Na,C,J,
                                         dp,eps,sig,ptrMat,0,analysis);
 
-          g = damage_int_alg(ptrDam,Ybar,dt /* ,iter */);
+          damage_int_alg(ptrDam,Ybar,dt /* ,iter */);
 
           if(VD_INT_ALG_DEBUG){
             PGFEM_printerr("[%d] (elem,ip)::(%d,%d) wn+1 || Xn+1 || g\n"
-                           "%1.12e || %1.12e || %1.12e\n",myrank,elem_id,ip,
-                           ptrDam->w,ptrDam->X,g);
+                           "%1.12e || %1.12e\n",myrank,elem_id,ip,
+                           ptrDam->w,ptrDam->X);
           }
 
           /* store max_omega */

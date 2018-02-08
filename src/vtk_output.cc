@@ -1788,18 +1788,18 @@ int VTK_write_data_HeatGeneration(FILE *out,
 /// \return non-zero on internal error
 int VTK_construct_PMR(Grid *grid,
                       FieldVariables *FV,
-                      Multiphysics *mp,
+                      const Multiphysics& mp,
                       PRINT_MULTIPHYSICS_RESULT *pmr)
 {
   int cnt_pmr = 0;
-  for(int ia=0; ia<mp->physicsno; ia++)
+  for(int ia=0; ia<mp.physicsno; ia++)
   {
-    int physics_id = mp->physics_ids[ia];
+    int physics_id = mp.physics_ids[ia];
     switch(physics_id)
     {
      case MULTIPHYSICS_MECHANICAL:
        {
-         for(int ib=0; ib<mp->write_no[ia]; ib++)
+         for(int ib=0; ib<mp.write_no[ia]; ib++)
          {
            pmr[cnt_pmr].is_point_data = 0;
            pmr[cnt_pmr].mp_id      = ia;
@@ -1808,7 +1808,7 @@ int VTK_construct_PMR(Grid *grid,
            pmr[cnt_pmr].m_col      = 1;
            pmr[cnt_pmr].p_data     = NULL;
            sprintf(pmr[cnt_pmr].data_type, "Float64");
-           switch(mp->write_ids[ia][ib])
+           switch(mp.write_ids[ia][ib])
            {
             case MECHANICAL_Var_Displacement:
              pmr[cnt_pmr].is_point_data = 1;
@@ -1913,7 +1913,7 @@ int VTK_construct_PMR(Grid *grid,
        }
      case MULTIPHYSICS_THERMAL:
        {
-         for(int ib=0; ib<mp->write_no[ia]; ib++)
+         for(int ib=0; ib<mp.write_no[ia]; ib++)
          {
            pmr[cnt_pmr].is_point_data = 0;
            pmr[cnt_pmr].mp_id      = ia;
@@ -1923,7 +1923,7 @@ int VTK_construct_PMR(Grid *grid,
            pmr[cnt_pmr].p_data     = NULL;
            sprintf(pmr[cnt_pmr].data_type, "Float64");
 
-           switch(mp->write_ids[ia][ib])
+           switch(mp.write_ids[ia][ib])
            {
             case THERMAL_Var_Temperature:
              pmr[cnt_pmr].is_point_data = 1;
