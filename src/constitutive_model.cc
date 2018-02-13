@@ -2330,14 +2330,17 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   int Vno   = fv->nVol;
   SUPP sup = load->sups[mp_id];
 
-  Matrix<double> r(nne*nsd, 1), u_npa(nne*nsd, 1), P(Pno, 1);
+  Matrix<double> r_np1(nne*nsd, 1), r_npa(nne*nsd, 1), u_npa(nne*nsd, 1), P(Pno, 1);
   Matrix<double> dMdu(DIM_3x3*nne*nsd,1);
   Matrix<double> dMdt(DIM_3x3*Vno,1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-      r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+    {
+      r_np1.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+      r_npa.m_pdata[a*nsd+b] = re_npa[a*ndofn+b];      
+    }
 
     if(Pno==nne)
       P.m_pdata[a] = re_npa[a*ndofn+nsd];
@@ -2383,7 +2386,8 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data);
 
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
@@ -2417,14 +2421,12 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     // compute deformation gradients
     err += func->get_pF(m, pFnp1.data, 2);
     err += func->get_pF(m, pFn.data,   1);
-    err += func->get_F( m,    Fn.data, 1);
 
     if(sup->multi_scale)
       cm_add_macro_F(sup,Fr.data);
 
     Fnp1 = Fr(i,j);
     mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
@@ -3107,14 +3109,18 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   int Vno   = fv->nVol;
   SUPP sup = load->sups[mp_id];
 
-  Matrix<double> r(nne*nsd, 1), P_npa(Pno, 1), P_nma(Pno, 1);
+  Matrix<double> r_np1(nne*nsd, 1), r_npa(nne*nsd, 1), r_nma(nne*nsd, 1), P_npa(Pno, 1), P_nma(Pno, 1);
   Matrix<double> dMdu(DIM_3x3*nne*nsd,1);
   Matrix<double> dMdt(DIM_3x3*Vno,1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-      r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+    {
+      r_np1.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+      r_npa.m_pdata[a*nsd+b] = re_npa[a*ndofn+b];
+      r_nma.m_pdata[a*nsd+b] = re_nma[a*ndofn+b];
+    }
 
     if(Pno==nne)
     {
@@ -3139,10 +3145,10 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   Tensor<2> Fr_nma, eFnma, pFnma;
 
   // define xFn
-  Tensor<2> Fn, hFn, pFn;
+  Tensor<2> hFn, pFn;
 
   // define xFnm1
-  Tensor<2> Fnm1, pFnm1;
+  Tensor<2> pFnm1;
 
   // define other F and M
   Tensor<2> Fr, S_npa = {}, S_nma = {}, M_npa, M_nma;
@@ -3172,7 +3178,9 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data);
+    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma.data);    
 
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
@@ -3227,13 +3235,9 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += func->get_pF(m, pFnp1.data, 2);
     err += func->get_pF(m, pFn.data,   1);
     err += func->get_pF(m, pFnm1.data, 0);
-    err += func->get_F( m,    Fn.data, 1);
-    err += func->get_F( m,  Fnm1.data, 0);
 
     mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
     mid_point_rule(pFnma.data, pFnm1.data, pFn.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
@@ -3423,7 +3427,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
     total_Lagrangian = 0;
-
+    
   int is_it_couple_w_thermal  = -1;
   int is_it_couple_w_chemical = -1;
   // @todo prevent warnings about unused variables, remove once it becomes used.
@@ -3760,14 +3764,18 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   int Vno   = fv->nVol;
   SUPP sup = load->sups[mp_id];
 
-  Matrix<double> r(nne*nsd, 1), P_npa(Pno, 1), P_nma(Pno, 1);
+  Matrix<double> r_np1(nne*nsd, 1), r_npa(nne*nsd, 1), r_nma(nne*nsd, 1), P_npa(Pno, 1), P_nma(Pno, 1);
   Matrix<double> dMdu(DIM_3x3*nne*nsd,1);
   Matrix<double> dMdt(DIM_3x3*Vno,1);
 
   for(int a=0;a<nne;a++)
   {
     for(int b=0; b<nsd;b++)
-      r.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+    {
+      r_np1.m_pdata[a*nsd+b] = re_np1[a*ndofn+b];
+      r_npa.m_pdata[a*nsd+b] = re_npa[a*ndofn+b];
+      r_nma.m_pdata[a*nsd+b] = re_nma[a*ndofn+b];            
+    }
 
     if(Pno==nne)
     {
@@ -3792,10 +3800,10 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   Tensor<2> Fr_nma, eFnma, pFnma;
 
   // define xFn
-  Tensor<2> Fn, hFn, pFn;
+  Tensor<2> hFn, pFn;
 
   // define xFnm1
-  Tensor<2> Fnm1, pFnm1;
+  Tensor<2> pFnm1;
 
   // define other F and M
   Tensor<2> Fr, S_npa = {}, S_nma = {}, M_npa, M_nma;
@@ -3825,7 +3833,9 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,r.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr.data);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data);
+    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma.data);    
 
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
@@ -3866,8 +3876,6 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     err += func->get_pF(m, pFnp1.data, 2);
     err += func->get_pF(m, pFn.data,   1);
     err += func->get_pF(m, pFnm1.data, 0);
-    err += func->get_F( m,    Fn.data, 1);
-    err += func->get_F( m,  Fnm1.data, 0);
 
     if(sup->multi_scale)
       cm_add_macro_F(sup,Fr.data);
@@ -3875,8 +3883,6 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     Fnp1 = Fr(i,j);
     mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
     mid_point_rule(pFnma.data, pFnm1.data, pFn.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_npa.data, Fn.data, Fnp1.data, alpha, DIM_3x3);
-    mid_point_rule(Fr_nma.data, Fnm1.data, Fn.data, alpha, DIM_3x3);
 
     if(is_it_couple_w_thermal>=0)
     {
