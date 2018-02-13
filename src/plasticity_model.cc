@@ -1799,3 +1799,24 @@ int cm3f_plasticity_compute_dM(const Constitutive_model *con,
 
   return err;
 }
+
+int CP_PARAM::set_init_vals(Constitutive_model *m)
+const
+{
+  // inital values are set in the more convoluted
+  // read_constitutive_model_parameters->plasticity_model_read_parameters
+  //   calling sequence
+  
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
+
+  if((m->param)->pF != NULL)
+  {
+    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnm1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFn  ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnp1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+  }    
+  return 0;
+}
