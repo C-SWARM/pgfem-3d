@@ -529,10 +529,12 @@ void update_geometry_for_inital_pF(Grid *grid,
 
 /// Update initial deformation gradients accordingly after updating geometry.
 ///
-/// \param[in]       *grid    mesh object
-/// \param[in]       *fv      object for field variables
+/// \param[in] *grid       mesh object
+/// \param[in] *fv         object for field variables
+/// \param[in] PGFem3D_opt *opts
 void update_element_deformation_gradient(const Grid *grid,
-                                         FieldVariables *fv)
+                                         FieldVariables *fv,
+                                         const PGFem3D_opt *opts)
 {
   int total_Lagrangian = 1;
   int intg_order = 0;
@@ -549,6 +551,9 @@ void update_element_deformation_gradient(const Grid *grid,
       for(int id=0; id<fe.nsd;id++)
         d.m_pdata[ic*fe.nsd+id] = fv->u_n[nid*fv->ndofn + id];
     }
+    
+    double v = 0.0;
+    double theta = 0.0;
 
     for(int ip=0; ip<fe.nint; ip++)
     {
@@ -561,7 +566,13 @@ void update_element_deformation_gradient(const Grid *grid,
       m->param->p_hmat->param->pF = Fnp1;
       m->param->set_init_vals(m);
       m->param->p_hmat->param->pF = tempF;
+      
+      double J = det3x3(Fnp1);
+      v += fe.detJxW;
+      theta += J*fe.detJxW;
     }
+    if(opts->analysis_type == CM3F)
+      fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = fv->tf.V_nm1(eid+1, 1) = theta/v;
   }
 }
 
@@ -621,7 +632,7 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
   update_geometry_for_inital_pF(grid, fv, sol, load, com,
                                 mpi_comm, opts, mp, mp_id, myrank, pFI, bcv.m_pdata);
 
-  update_element_deformation_gradient(grid, fv);
+  update_element_deformation_gradient(grid, fv, opts);
 
   return err;
 }
