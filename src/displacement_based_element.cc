@@ -590,6 +590,13 @@ int DISP_resid_bnd_el(double *R,
 
   int err = 0;
 
+  /* clear contents of R */
+  memset(R,0,ndof_ve*sizeof(double));
+
+  if(DISP_DEBUG_NO_LM){
+    return err;
+  }
+
   /* Get const pointers */
   const BoundingElement *ptr_be = &b_elems[b_el_id];
   const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
@@ -601,13 +608,6 @@ int DISP_resid_bnd_el(double *R,
   const double kappa = hommat_get_kappa(ptrMat);
   const int nne_ve = ptr_ve->toe;
   const int nne_be = ptr_be->nnodes;
-
-  /* clear contents of R */
-  memset(R,0,ndof_ve*sizeof(double));
-
-  if(DISP_DEBUG_NO_LM){
-    return err;
-  }
 
   /* separate the displacement and Lagrange multiplier degrees of
      freedom. The displacements are stored first in order of nodal
@@ -736,21 +736,13 @@ int DISP_stiffmat_bnd_el(double *Ks,
 
   int err = 0;
 
-  /* Get const pointers */
-  const BoundingElement *ptr_be = &b_elems[b_el_id];
-  const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
-  const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
-  const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
-  const long *loc_nod = ptr_be->loc_nodes;
-
-  /* compute constant values */
-  const double kappa = hommat_get_kappa(ptrMat);
-  const int nne_be = ptr_be->nnodes;
-  const int nne_ve = ptr_ve->toe;
-
   /* clear contents of Ks */
   memset(Ks,0,ndof_ve*ndof_ve*sizeof(double));
 
+  /* Get const pointers and value */
+  const BoundingElement *ptr_be = &b_elems[b_el_id];
+  const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
+  const int nne_ve = ptr_ve->toe;
   if(DISP_DEBUG_NO_LM){
     /* set Kll to identity */
     for(int i=nne_ve*ndofn;i<ndof_ve; i++){
@@ -758,6 +750,15 @@ int DISP_stiffmat_bnd_el(double *Ks,
     }
     return err;
   }
+
+  /* Get const pointers */
+  const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
+  const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
+  const long *loc_nod = ptr_be->loc_nodes;
+
+  /* compute constant values */
+  const double kappa = hommat_get_kappa(ptrMat);
+  const int nne_be = ptr_be->nnodes;
 
   /* get the volume element parent coordinates */
   double *KSI = aloc1(nne_ve);

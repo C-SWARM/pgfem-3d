@@ -1401,6 +1401,8 @@ int read_model_parameters_list(const int n_mat,
     hmat_list[ia].param->pF = pF;
   }
 
+  if(pF != NULL) free(pF);
+
   free(key);
   free(is_set);
   return err;

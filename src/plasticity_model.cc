@@ -921,14 +921,13 @@ int CP_PARAM::write_restart(FILE *fp, const Constitutive_model *m)
 int CP_PARAM::read_restart(FILE *fp, Constitutive_model *m)
   const
 {
-  int err = 0;
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
 
   const int N_SYS = ((((m->param)->cm_mat)->mat_p)->slip)->N_SYS;
   for(int a=0; a<N_SYS; a++)

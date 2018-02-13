@@ -687,18 +687,17 @@ const
 int CM_PVP_PARAM::read_restart(FILE *fp, Constitutive_model *m)
 const
 {
-  int err = 0;
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *state_var = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
 
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
-  err += cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
+  cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
                                                         
   fscanf(fp, "%lf %lf\n", state_var+VAR_pc_n, state_var+VAR_pc_nm1);
 
-  err += this->reset_state_vars(m);
+  this->reset_state_vars(m);
   return 0;  
 }
 
