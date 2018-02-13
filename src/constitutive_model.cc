@@ -1362,7 +1362,10 @@ int read_model_parameters_list(const int n_mat,
     }
     else
     {
-      pF = (double *) malloc(sizeof(double)*9);
+
+      if(pF == NULL)  //only allocate on 1st iteration
+	pF = (double *) malloc(sizeof(double)*9);
+
       err += scan_for_valid_line(in);
       int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2,
                                                                     pF+3, pF+4, pF+5,
@@ -1400,8 +1403,6 @@ int read_model_parameters_list(const int n_mat,
   for (int ia = 0; ia < n_mat; ia++){
     hmat_list[ia].param->pF = pF;
   }
-
-  if(pF != NULL) free(pF);
 
   free(key);
   free(is_set);
