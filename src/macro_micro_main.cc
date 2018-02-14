@@ -46,6 +46,7 @@
 #include "vtk_output.h"
 #include <cassert>
 #include <cstdlib>
+#include <vector>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -348,8 +349,7 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     // initialize hypre time
-    double *hypre_time = new double[mp_id + 1];
-    hypre_time[mp_id] = 0.0;
+    std::vector<double> hypre_time(mp_id + 1);
 
     if (macro->opts->restart >= 0) {
       if (mpi_comm->rank_macro == 0) {
@@ -654,7 +654,6 @@ int multi_scale_main(int argc, char* argv[])
 
     /* cleanup */
     free(ctx);
-    delete[] hypre_time;
 
     free(sup_defl);
     destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
