@@ -110,7 +110,7 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
     total_Lagrangian = 0;
 
   int nsd = 3;
-  Tensor<2,3,double> F,S,LS = {};
+  Tensor<2,3,double> F, S = {}, LS = {};
 
   double LV = 0.0;
   double GV = 0.0;
@@ -220,7 +220,7 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
       {
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Tensor<2,3,double> Fnp1;
+        Tensor<2,3,double> Fnp1 = {};
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_F(m,Fnp1.data,1);
         if(!total_Lagrangian)
@@ -291,7 +291,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
       {
         Constitutive_model *m = &(eps[e].model[ip-1]);
         double Jnp1 = 1.0;
-        Tensor<2,3,double> Fnp1, eFnp1;
+        Tensor<2,3,double> Fnp1 = {}, eFnp1 = {};
 
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
         m->param->get_F(m,Fnp1.data,1);
