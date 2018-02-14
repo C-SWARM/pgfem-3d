@@ -83,6 +83,7 @@ class CP_PARAM: public Model_parameters
                            const int ndofn,
                            double *dM_du) const;
   virtual int read_param(FILE *in) const;
+  virtual int set_init_vals(Constitutive_model *m) const;
 };
 
 /**

@@ -2628,7 +2628,9 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       sup_defl[ia] = NULL;
-  
+      R[ia] = NULL;
+      RRn[ia] = NULL;
+        
       if(time_steps->tim==0) 
         apply_V0(ia+1) = FV[ia].apply_initial_velocity;
         
@@ -2640,15 +2642,16 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         for(int ib=0;ib<npd;ib++)
           sup_defl[ia][ib] = load->sup_defl[ia][ib];
       }
-  
-      R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
-      RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
-      for(int ib=0; ib<FV[ia].ndofd; ib++)
-      {
-        R[ia][ib] = FV[ia].R[ib];
-        RRn[ia][ib] = FV[ia].RRn[ib];
+      if (FV[ia].ndofd > 0){
+        R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+        RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+        for(int ib=0; ib<FV[ia].ndofd; ib++)
+        {
+  	R[ia][ib] = FV[ia].R[ib];
+  	RRn[ia][ib] = FV[ia].RRn[ib];
+        }
       }
-    }
+    } //end mp.physicsno loop
   
     SUBDIVISION_PARAM sp;
     sp.step_id = sp.decellerate = sp.accellerate = 0;
@@ -2667,8 +2670,11 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
       // run subdivision
       subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,mpi_comm);
   
-      for(int ia=0; ia<mp.physicsno; ia++)
+      for(int ia=0; ia<mp.physicsno; ia++){
+        assert(R[ia] != NULL && "R[ia] can't be null");
+        assert(RRn[ia] != NULL && "RRn[ia] can't be null");
         update_load_increments_for_subdivision(&sp,sup_defl[ia],(load->sups[ia])->npd,RRn[ia],R[ia],FV[ia].ndofd);
+      }
   
       INFO = 0;
       int is_sub_cvg = 1;
@@ -2683,7 +2689,6 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
             load->sup_defl[ia][ib]       = sup_defl[ia][ib]/sp.step_size;
             (load->sups[ia])->defl_d[ib] = sup_defl[ia][ib]/sp.step_size;
           }
-  
           for(int ib=0; ib<FV[ia].ndofd; ib++)
           {
   	  assert(R[ia] != NULL && "R[ia] can't be null");
@@ -2729,12 +2734,12 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
           for(int ia=0; ia<mp.physicsno; ia++)
             FV[ia].apply_initial_velocity = apply_V0(ia+1);
         }
-        
+       
         Multiphysics_Newton_Raphson_sub(hypre_time,stiffmat_time,residuals_time,&iterno,
                                         &is_sub_converged,&alpha,&NR_t_sub,
                                         grid,mat,FV,SOL,load,COM,time_steps,crpl,
                                         mpi_comm,VVolume,opts,mp);
-                                                      
+   
         if(myrank==0)
           printf(":: Maximum physics based evolution threshold = %f\n", alpha);
   
@@ -2764,7 +2769,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
           is_sub_cvg = 0;
           break; //goto rest;
         }
-      }
+      } //end while(sp.step_size > sp.step_id)
       if(is_sub_cvg)
       {
         NR_t.dt[DT_N] = NR_t.dt[DT_NP1];
@@ -2772,7 +2777,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         break;
       }
   
-    }
+    } //end while(1)
   
     // update final times achieved overall sudivision
     time_steps->times[time_steps->tim]   = NR_t.times[NR_t.tim+1] - NR_t.dt[DT_NP1];
@@ -2792,6 +2797,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     free(sup_defl);
     free(R);
     free(RRn);
+  
   }
 }
 
