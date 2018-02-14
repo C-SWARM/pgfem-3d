@@ -352,7 +352,9 @@ int CP_PARAM::get_var_info(Model_var_info &info)
   sprintf(info.var_names[VAR_g_nm1],      "g_nm1");
 
   info.n_flags = FLAG_end;
-  info.flag_names = (char **) malloc(FLAG_end * sizeof( (info.flag_names) ));
+  info.flag_names = (char **) malloc(FLAG_end * sizeof(char*));  
+  for(int a=0; a<FLAG_end; a++)
+    info.flag_names[a] = (char *)malloc(sizeof(char)*1024);
 
   return 0;
 }
