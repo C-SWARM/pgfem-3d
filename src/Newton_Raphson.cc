@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <cassert>
+#include <vector>
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -2141,7 +2142,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
 /// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int set_0th_residual(double *residuals_time,
+int set_0th_residual(std::vector<double> &residuals_time,
                      Grid *grid,
                      MaterialProperty *mat,
                      FieldVariables *FV,
@@ -2213,9 +2214,9 @@ int set_0th_residual(double *residuals_time,
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-void Multiphysics_Newton_Raphson_sub(double *hypre_time,
-                                     double *stiffmat_time,
-                                     double *residuals_time,
+void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
+                                     std::vector<double> &stiffmat_time,
+                                     std::vector<double> &residuals_time,
                                      int *iterno,
                                      int *is_SNR_converged,
                                      double *alpha_out,
@@ -2546,9 +2547,9 @@ void Multiphysics_Newton_Raphson_sub(double *hypre_time,
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-void Multiphysics_Newton_Raphson(double *hypre_time,
-                                 double *stiffmat_time,
-                                 double *residuals_time,
+void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
+                                 std::vector<double> &stiffmat_time,
+                                 std::vector<double> &residuals_time,
                                  Grid *grid,
                                  MaterialProperty *mat,
                                  FieldVariables *FV,

@@ -120,9 +120,9 @@ static void print_PGFem3D_run_info(int argc,
 int print_PGFem3D_final(const Multiphysics& mp,
                         double total_time,
                         double startup_time,
-                        double *hypre_time,
-                        double *stiffmat_time,
-                        double *residuals_time,
+                        std::vector<double> &hypre_time,
+                        std::vector<double> &stiffmat_time,
+                        std::vector<double> &residuals_time,
                         int myrank)
 {
   int err = 0;
@@ -805,13 +805,12 @@ int single_scale_main(int argc,char *argv[])
   }
 
   // initialize hypre, stiffmat, residuals time
-  double *hypre_time = new double[mp.physicsno];
-  double *stiffmat_time = new double[mp.physicsno];
-  double *residuals_time = new double[mp.physicsno];
-  for(int mp_id = 0; mp_id<mp.physicsno; mp_id++)
-    hypre_time[mp_id] = stiffmat_time[mp_id] = residuals_time[mp_id] = 0.0;
+  std::vector<double> hypre_time(mp.physicsno);
+  std::vector<double> stiffmat_time(mp.physicsno);
+  std::vector<double> residuals_time(mp.physicsno);
 
-  {
+
+  { 
     // set for surface tractions
     double *nodal_forces = NULL;
     SURFACE_TRACTION_ELEM *ste = NULL;
@@ -1385,9 +1384,6 @@ int single_scale_main(int argc,char *argv[])
                                residuals_time, myrank);
 
   err += destruct_multiphysics(mp);
-  delete[] hypre_time;
-  delete[] stiffmat_time;
-  delete[] residuals_time;
   PGFEM_finalize_io();
 
   int flag_MPI_finalized;

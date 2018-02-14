@@ -39,6 +39,7 @@
 #include "sig.h"
 #include "solver_file.h"
 #include "supp.h"
+#include <vector>
 
 /// Compute residuals for Newton Raphson iteration
 ///
@@ -84,9 +85,9 @@ double compute_residuals_for_NR(long *INFO,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \return time spent for this routine
-void Multiphysics_Newton_Raphson(double *hypre_time,
-                                 double *stiffmat_time,
-                                 double *residuals_time,
+void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
+                                 std::vector<double> &stiffmat_time,
+                                 std::vector<double> &residuals_time,
                                  Grid *grid,
                                  MaterialProperty *mat,
                                  FieldVariables *FV,
