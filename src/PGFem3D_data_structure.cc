@@ -544,8 +544,6 @@ int multiphysics_initialization(Multiphysics& mp)
   mp.physics_ids = NULL;
   mp.ndim        = NULL;
   mp.write_no    = NULL;
-  mp.write_ids   = NULL;
-  mp.coupled_ids = NULL;
   mp.total_write_no = 0;
   return err = 0;
 }
@@ -566,8 +564,8 @@ int construct_multiphysics(Multiphysics& mp,
   mp.physics_ids = (int*) malloc(sizeof(int)*physicsno);
   mp.ndim        = (int*) malloc(sizeof(int)*physicsno);
   mp.write_no    = (int*) malloc(sizeof(int)*physicsno);
-  mp.write_ids   = (int**) malloc(sizeof(int *)*physicsno);
-  mp.coupled_ids = (int**) malloc(sizeof(int *)*physicsno);
+  mp.write_ids.resize(physicsno);
+  mp.coupled_ids.resize(physicsno);
 
   for(int ia=0; ia<physicsno; ia++)
   {
@@ -575,8 +573,6 @@ int construct_multiphysics(Multiphysics& mp,
     mp.physics_ids[ia] = 0;
     mp.ndim[ia]        = 0;
     mp.write_no[ia]    = 0;
-    mp.write_ids[ia]   = NULL;
-    mp.coupled_ids[ia] = NULL;
   }
   mp.total_write_no  = 0;
   return err = 0;
@@ -618,22 +614,6 @@ int destruct_multiphysics(Multiphysics& mp)
       if(NULL != mp.physicsname[ia]) free(mp.physicsname[ia]);
 
     free(mp.physicsname);
-  }
-
-  if(NULL != mp.coupled_ids)
-  {
-    for(int ia=0; ia<mp.physicsno; ia++)
-      if(NULL != mp.coupled_ids[ia])   free(mp.coupled_ids[ia]);
-
-    free(mp.coupled_ids);
-  }
-
-  if(NULL != mp.write_ids)
-  {
-    for(int ia=0; ia<  mp.physicsno; ia++)
-      if(NULL != mp.write_ids[ia])   free(mp.write_ids[ia]);
-
-    free(mp.write_ids);
   }
 
   if(NULL != mp.physics_ids) free(mp.physics_ids);
@@ -739,10 +719,10 @@ int read_multiphysics_settings(Multiphysics& mp,
         if(n_couple<0)
           n_couple = 0;
 
-        mp.coupled_ids[ia] = (int *) malloc(sizeof(int)*(n_couple + 1));
+	mp.coupled_ids[ia].resize(n_couple + 1);
         mp.coupled_ids[ia][0] = n_couple;
         for(int ib = 0; ib<n_couple; ib++)
-          CHECK_SCANF(in, "%d", (mp.coupled_ids[ia])+(ib+1));
+          CHECK_SCANF(in, "%d", &(mp.coupled_ids[ia][ib+1]));
 
         // read ids for writing results
         err += scan_for_valid_line(in);
@@ -752,11 +732,11 @@ int read_multiphysics_settings(Multiphysics& mp,
         if(mp.write_no[ia]>0)
         {
           // read from file for writing results
-          mp.write_ids[ia] = (int *) malloc(sizeof(int)*(mp.write_no[ia]));
+	  mp.write_ids[ia].resize(mp.write_no[ia]);
           err += scan_for_valid_line(in);
           cnt_pmr += mp.write_no[ia];
           for(int ib=0; ib<mp.write_no[ia]; ib++)
-            CHECK_SCANF(in, "%d", mp.write_ids[ia]+ib);
+	    CHECK_SCANF(in, "%d", &(mp.write_ids[ia][ib]));
         }
         if(mp.write_no[ia]==-1)
         {
@@ -776,7 +756,7 @@ int read_multiphysics_settings(Multiphysics& mp,
           }
 
           // set default : all outputs
-          mp.write_ids[ia] = (int *) malloc(sizeof(int)*(mp.write_no[ia]));
+	  mp.write_ids[ia].resize(mp.write_no[ia]);
           err += scan_for_valid_line(in);
           cnt_pmr += mp.write_no[ia];
           for(int ib=0; ib<mp.write_no[ia]; ib++)
@@ -793,11 +773,11 @@ int read_multiphysics_settings(Multiphysics& mp,
     err += construct_multiphysics(mp, 1);
     err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
 
-    mp.coupled_ids[0] = (int *) malloc(sizeof(int));
+    mp.coupled_ids[0].resize(1);
     mp.coupled_ids[0][0] = 0;
 
     mp.write_no[0] = MECHANICAL_Var_NO;
-    mp.write_ids[0] = (int *) malloc(sizeof(int)*(mp.write_no[0]));
+    mp.write_ids[0].resize(mp.write_no[0]);
     for(int ib=0; ib<mp.write_no[0]; ib++)
       mp.write_ids[0][ib] = ib;
     mp.total_write_no  = MECHANICAL_Var_NO;
@@ -819,8 +799,9 @@ int read_multiphysics_settings(Multiphysics& mp,
 
       printf("   # of output variables \t= %d", mp.write_no[ia]);
       printf(", ids = ");
+
+      assert((int)mp.write_ids[ia].size() >= mp.write_no[ia] && "attempted mp.write_ids[ia] out of bounds access");
       for(int ib=0; ib<mp.write_no[ia]; ib++){
-    assert(mp.write_ids[ia] != NULL && "mp.write_ids[ia] can't be null");
         printf("%d ", mp.write_ids[ia][ib]);
       }
 

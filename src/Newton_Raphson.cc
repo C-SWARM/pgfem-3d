@@ -2840,14 +2840,14 @@ double Newton_Raphson_multiscale(const int print_level,
   int ndim = c->ndofn;
   int write_no = MECHANICAL_Var_NO;
 
-  int *write_ids = (int *) malloc(sizeof(int)*MECHANICAL_Var_NO);
-  int *coupled_ids = (int *) malloc(sizeof(int));
+  mp.write_ids.resize(MECHANICAL_Var_NO);
+  vector<int> coupled_ids;
   char *physicsname = (char *) malloc(sizeof(char)*1024);
   {
     for(int ia=0; ia<MECHANICAL_Var_NO; ia++)
-      write_ids[ia] = ia;
+      mp.write_ids[ia].push_back(ia); //sets ia as the fist element of each vector
 
-    coupled_ids[0] = 0;
+    coupled_ids.push_back(0);
     sprintf(physicsname, "Mechanical");
 
     mp.physicsno      = 1;
@@ -2855,8 +2855,7 @@ double Newton_Raphson_multiscale(const int print_level,
     mp.physics_ids    = &id;
     mp.ndim           = &ndim;
     mp.write_no       = &write_no;
-    mp.write_ids      = &write_ids;
-    mp.coupled_ids    = &coupled_ids;
+    mp.coupled_ids.push_back(coupled_ids);
     mp.total_write_no = MECHANICAL_Var_NO;
   }
 
@@ -2989,8 +2988,6 @@ double Newton_Raphson_multiscale(const int print_level,
   s->NORM = fv.NORM;
   *pores  = fv.pores;
 
-  free(write_ids);
-  free(coupled_ids);
   free(physicsname);
 
   return solve_time;

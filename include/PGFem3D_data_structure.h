@@ -21,6 +21,7 @@
 #include "sig.h"
 #include "state_variables.h"
 #include "pgfem3d/Solver.hpp"
+#include <vector>
 
 /// Time stepping struct
 /// Has time stepping information
@@ -301,8 +302,8 @@ struct Multiphysics {
   int *ndim;          //!< degree of feedom of the physics
   int *write_no;      //!< number of variables to be written as results
   int total_write_no; //!< total number of variables to be written as results
-  int **write_ids;    //!< index of physical varialbes to be written
-  int **coupled_ids;  //!< coupled physics id
+  std::vector<std::vector<int>> write_ids;    //!< index of physical variables to be written
+  std::vector<std::vector<int>> coupled_ids;  //!< coupled physics id
 };
 
 /// initialize time stepping variable

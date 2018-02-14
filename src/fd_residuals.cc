@@ -566,10 +566,11 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   int id = MULTIPHYSICS_MECHANICAL;
   int ndim = c->ndofn;
   int write_no = 0;
-  int *coupled_ids = (int *) malloc(sizeof(int));
+
+  vector<int> coupled_ids;
   char *physicsname = (char *) malloc(sizeof(char)*1024);
   {
-    coupled_ids[0] = 0;
+    coupled_ids.push_back(0);
     sprintf(physicsname, "Mechanical");
 
     mp.physicsno      = 1;
@@ -577,8 +578,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mp.physics_ids    = &id;
     mp.ndim           = &ndim;
     mp.write_no       = &write_no;
-    mp.write_ids      = NULL;
-    mp.coupled_ids    = &coupled_ids;
+    mp.coupled_ids.push_back(coupled_ids);
     mp.total_write_no = 0;
   }
 
@@ -645,7 +645,6 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,mp,
                                      0,s->times[s->tim+1],dts);
 
-  free(coupled_ids);
   free(physicsname);
 
   return err;

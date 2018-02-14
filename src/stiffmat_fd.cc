@@ -862,10 +862,10 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   int ndim = c->ndofn;
   int write_no = 0;
 
-  int *coupled_ids = (int *) malloc(sizeof(int));
+  vector<int> coupled_ids;
   char *physicsname = (char *) malloc(sizeof(char)*1024);
   {
-    coupled_ids[0] = 0;
+    coupled_ids.push_back(0);
     sprintf(physicsname, "Mechanical");
 
     mp.physicsno      = 1;
@@ -873,8 +873,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
     mp.physics_ids    = &id;
     mp.ndim           = &ndim;
     mp.write_no       = &write_no;
-    mp.write_ids      = NULL;
-    mp.coupled_ids    = &coupled_ids;
+    mp.coupled_ids.push_back(coupled_ids);
     mp.total_write_no = 0;
   }
 
@@ -956,7 +955,6 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
                         c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank);
 
-  free(coupled_ids);
   free(physicsname);
 
   return err;
