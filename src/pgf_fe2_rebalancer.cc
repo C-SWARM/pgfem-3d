@@ -375,10 +375,10 @@ static void new_partition_build(new_partition *np,
   np->n_send = 0;
   np->n_recv = 0;
   np->total_time = 0;
-  const size_t len = max_n_jobs*NEW_PART_JOB_SIZE;
-  np->keep = PGFEM_malloc<size_t>(len);
-  np->send = PGFEM_malloc<size_t>(len);
-  np->recv = PGFEM_malloc<size_t>(len);
+  const size_t len = max_n_jobs*NEW_PART_NUMEL;
+  np->keep = PGFEM_calloc(size_t, len);
+  np->send = PGFEM_calloc(size_t, len);
+  np->recv = PGFEM_calloc(size_t, len);
 }
 
 static void new_partition_destroy(new_partition *np)
