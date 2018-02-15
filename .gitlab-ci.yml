@@ -13,7 +13,6 @@ stages:
  - check
 
 scan-build:
- allow_failure: true
  tags:
   - cswarm
  stage: scan
