@@ -365,6 +365,36 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
   return err;
 }
 
+/// Overloaded variation which takes vector<double> types instead of double pointers
+int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
+                                           vector<double> sup_defl,
+                                           const int npd,
+                                           vector<double> RRn,
+                                           vector<double> R,
+                                           const int ndofd)
+{
+  int err = 0;
+
+  if(sp->need_to_update_loading)
+  {
+    double factor = sp->loading_factor;
+    assert((int)sup_defl.size() >= npd && "sup_defl out of range access");
+    for(int ia=0; ia<npd; ia++){
+      sup_defl[ia] = sup_defl[ia] - sup_defl[ia]*factor;
+    }
+
+    assert((int)RRn.size() >= ndofd && "RRn out of range access");
+    assert((int)R.size() >= ndofd && "R out of range access");
+    for(int ia=0; ia<ndofd; ia++)
+    {
+      RRn[ia] = RRn[ia] + R[ia]*factor;
+      R[ia]   =   R[ia] - R[ia]*factor;
+    }
+  }
+
+  return err;
+}
+
 
 /// Compute residuals for Newton Raphson iteration
 ///
@@ -2616,9 +2646,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
   {
     // Prepare memory for saving load data if subdivided
     // Load will be divided, and applied subsequently while subdivision is stepping.
-    double **sup_defl = (double **) malloc(sizeof(double *)*mp.physicsno);
-    double **R        = (double **) malloc(sizeof(double *)*mp.physicsno);
-    double **RRn      = (double **) malloc(sizeof(double *)*mp.physicsno);
+    vector<vector<double>> sup_defl(mp.physicsno), R(mp.physicsno), RRn(mp.physicsno);
   
     gcm::Matrix<bool> apply_V0;
     if(time_steps->tim==0)    
@@ -2627,28 +2655,24 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     // start save data
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      sup_defl[ia] = NULL;
-      R[ia] = NULL;
-      RRn[ia] = NULL;
-        
       if(time_steps->tim==0) 
         apply_V0(ia+1) = FV[ia].apply_initial_velocity;
         
       int npd = (load->sups[ia])->npd;
       if(npd>0)
       {
-        sup_defl[ia] = (double *) malloc(sizeof(double)*npd);
+        sup_defl[ia].resize(npd);
   
         for(int ib=0;ib<npd;ib++)
           sup_defl[ia][ib] = load->sup_defl[ia][ib];
       }
       if (FV[ia].ndofd > 0){
-        R[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
-        RRn[ia] = (double *) malloc(sizeof(double)*FV[ia].ndofd);
+        R[ia].resize(FV[ia].ndofd);
+        RRn[ia].resize(FV[ia].ndofd);
         for(int ib=0; ib<FV[ia].ndofd; ib++)
         {
-  	R[ia][ib] = FV[ia].R[ib];
-  	RRn[ia][ib] = FV[ia].RRn[ib];
+  	  R[ia][ib] = FV[ia].R[ib];
+  	  RRn[ia][ib] = FV[ia].RRn[ib];
         }
       }
     } //end mp.physicsno loop
@@ -2671,8 +2695,6 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
       subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,mpi_comm);
   
       for(int ia=0; ia<mp.physicsno; ia++){
-        assert(R[ia] != NULL && "R[ia] can't be null");
-        assert(RRn[ia] != NULL && "RRn[ia] can't be null");
         update_load_increments_for_subdivision(&sp,sup_defl[ia],(load->sups[ia])->npd,RRn[ia],R[ia],FV[ia].ndofd);
       }
   
@@ -2683,15 +2705,16 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
       {
         for(int ia=0; ia<mp.physicsno; ia++)
         {
+  	  assert((int)sup_defl[ia].size() >= (load->sups[ia])->npd && "sup_defl[ia] out of range access");
           for (int ib=0;ib<(load->sups[ia])->npd;ib++)
           {
-  	  assert(sup_defl[ia] != NULL && "sup_defl[ia] can't be null");
             load->sup_defl[ia][ib]       = sup_defl[ia][ib]/sp.step_size;
             (load->sups[ia])->defl_d[ib] = sup_defl[ia][ib]/sp.step_size;
           }
+  	  assert((int)R[ia].size() >= FV[ia].ndofd && "R[ia] out of range access");
+  	  assert((int)RRn[ia].size() >= FV[ia].ndofd && "RRn[ia] out of range access");
           for(int ib=0; ib<FV[ia].ndofd; ib++)
           {
-  	  assert(R[ia] != NULL && "R[ia] can't be null");
             FV[ia].R[ib]   = R[ia][ib]/sp.step_size;
             FV[ia].RRn[ib] = RRn[ia][ib] + R[ia][ib]/sp.step_size*(sp.step_id+1);
           }
@@ -2782,22 +2805,6 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     // update final times achieved overall sudivision
     time_steps->times[time_steps->tim]   = NR_t.times[NR_t.tim+1] - NR_t.dt[DT_NP1];
     time_steps->times[time_steps->tim+1] = NR_t.times[NR_t.tim+1];
-  
-    
-    // free allocated memory
-    for(int ia=0; ia<mp.physicsno; ia++)
-    {
-      if(sup_defl[ia] != NULL)
-        free(sup_defl[ia]);
-  
-      if(R[ia] != NULL)
-        free(R[ia]);
-      free(RRn[ia]);
-    }
-    free(sup_defl);
-    free(R);
-    free(RRn);
-  
   }
 }
 
