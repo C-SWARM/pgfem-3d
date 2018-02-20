@@ -1036,11 +1036,12 @@ int single_scale_main(int argc,char *argv[])
     //----------------------------------------------------------------------
     //---->
     double tnm1[2] = {-1.0,-1.0};
-    err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,mp,tnm1,myrank);
+    
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       // set inital plastic deformation
-      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL && (options.analysis_type == CM || options.analysis_type == CM3F))
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL 
+        && (options.analysis_type == CM || options.analysis_type == CM3F))
       {
         double *pF = mat.hommat[0].param->pF;
         if(pF != NULL)
@@ -1049,7 +1050,11 @@ int single_scale_main(int argc,char *argv[])
                                                     mpi_comm, &options, mp, ia, myrank, pF);
         }
       }
-      
+    }    
+        
+    err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,mp,tnm1,myrank);
+    for(int ia=0; ia<mp.physicsno; ia++)
+    {      
       // set temporal variables
       for(int ib=0; ib<grid.nn*fv[ia].ndofn; ib++)
       {
