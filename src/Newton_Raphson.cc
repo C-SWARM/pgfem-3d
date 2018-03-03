@@ -365,12 +365,13 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
   return err;
 }
 
-/// Overloaded variation which takes vector<double> types instead of double pointers
+/// Overloaded aboved function which uses vector<double> types in argument
+/// instead of pointers
 int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
-                                           vector<double> sup_defl,
+                                           vector<double>& sup_defl,
                                            const int npd,
-                                           vector<double> RRn,
-                                           vector<double> R,
+                                           vector<double>& RRn,
+                                           vector<double>& R,
                                            const int ndofd)
 {
   int err = 0;
@@ -378,13 +379,11 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
   if(sp->need_to_update_loading)
   {
     double factor = sp->loading_factor;
-    assert((int)sup_defl.size() >= npd && "sup_defl out of range access");
+    
     for(int ia=0; ia<npd; ia++){
       sup_defl[ia] = sup_defl[ia] - sup_defl[ia]*factor;
     }
 
-    assert((int)RRn.size() >= ndofd && "RRn out of range access");
-    assert((int)R.size() >= ndofd && "R out of range access");
     for(int ia=0; ia<ndofd; ia++)
     {
       RRn[ia] = RRn[ia] + R[ia]*factor;
@@ -2705,14 +2704,12 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
       {
         for(int ia=0; ia<mp.physicsno; ia++)
         {
-  	  assert((int)sup_defl[ia].size() >= (load->sups[ia])->npd && "sup_defl[ia] out of range access");
           for (int ib=0;ib<(load->sups[ia])->npd;ib++)
           {
             load->sup_defl[ia][ib]       = sup_defl[ia][ib]/sp.step_size;
             (load->sups[ia])->defl_d[ib] = sup_defl[ia][ib]/sp.step_size;
           }
-  	  assert((int)R[ia].size() >= FV[ia].ndofd && "R[ia] out of range access");
-  	  assert((int)RRn[ia].size() >= FV[ia].ndofd && "RRn[ia] out of range access");
+  	  
           for(int ib=0; ib<FV[ia].ndofd; ib++)
           {
             FV[ia].R[ib]   = R[ia][ib]/sp.step_size;
