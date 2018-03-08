@@ -1295,6 +1295,10 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix<int> &e_ids, Matrix<dou
     int ip = e_ids(a+1, 2);
     Constitutive_model *m = &(eps[id].model[ip]);
     
+    MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
+    SLIP_SYSTEM *slip = (cm_mat->mat_p)->slip;
+    
+    
     if((m->param)->type!=CRYSTAL_PLASTICITY)
       continue;
       
@@ -1306,29 +1310,51 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix<int> &e_ids, Matrix<dou
     // compute rotation matrix of Euler angles
     // Fs[TENSOR_R] = Az(psi)*Ay(theta)*Ax(phi)
     err += rotation_matrix_of_Euler_angles(Fs[TENSOR_R].m_pdata,
-                                           Ax, Ay, Az, phi, theta, psi);
+                                           Ax, Ay, Az, phi, theta, psi, slip->ort_option[2]);
   }
   return err;
 }
 
+/// return Euler angle type
 int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angles, IP_ID_LIST *elm_ip_map, char *fn_in, int myrank, int ne)
 {
-  int err = 0;
+  int EulerAngleType = 0;
   char fn[1024], line[1024];
+  const char EulerAngleTypeName[] = " EulerAngleType:";
+  int cno0 = strlen(EulerAngleTypeName);
+  
   sprintf(fn, "%s_%d.in", fn_in, myrank);
   FILE *fp = fopen(fn, "r");
   if(fp==NULL)
   {
     printf("fail to read [%s]\n", fn);
     printf("set default onrientation [R=I]\n");
-    return err;
+    return EulerAngleType;
   }
 
+  
   while(fgets(line, 1024, fp)!=NULL)
   {
     if(line[0]=='#')
+    {
+      bool SetEulerAngleType = true;
+      int cno = strlen(line);
+      if(cno>cno0+2)
+      {
+        for(int ia=0; ia<cno0; ia++)
+        {
+          if(line[ia+1]!=EulerAngleTypeName[ia])
+            SetEulerAngleType = false;
+        }
+      }
+      if(SetEulerAngleType)
+      {  
+        sscanf(line+cno0+2, "%d", &EulerAngleType);
+        printf("EulerAngleType: %d\n", EulerAngleType);
+      }
       continue;
-
+    }
+    
     int e, ip;
     double x1, x2, x3;
     sscanf(line, "%d %d %lf %lf %lf", &e, &ip, &x1, &x2, &x3);
@@ -1365,7 +1391,7 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
   }
 
   fclose(fp);
-  return err;
+  return EulerAngleType;
 }
 
 int plasticity_model_generate_random_orientation_element(const int ne, const IP_ID_LIST *elm_ip_map, int mat_id, Matrix<int> &e_ids, Matrix<double> &angles, int diff_ort_at_ip)
@@ -1519,7 +1545,7 @@ int plasticity_model_set_orientations(EPS *eps,
       SLIP_SYSTEM *slip = ((hmat_list[i].param->cm_mat)->mat_p)->slip;
       if(slip->ort_option[0]==2)
       {
-        err += plasticity_model_read_orientations(e_ids, angles, elm_ip_map, slip->ort_file_in, myrank, ne);
+        slip->ort_option[2] = plasticity_model_read_orientations(e_ids, angles, elm_ip_map, slip->ort_file_in, myrank, ne);
         break;
       }
     }
