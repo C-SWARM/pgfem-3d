@@ -71,7 +71,6 @@ void CM_ThreeField::set_tenosrs(double *tFr,
   pFnp1_in = pFnp1;
   eSd_in   = eSd;
   Ld_in    = Ld;
-  compute_Z();
 }
 
 /// set scalar variables for later use in the integration loop
@@ -128,40 +127,22 @@ void CM_ThreeField::set_femlib(FEMLIB *fe_in,
   Np  = Np_in;
 };                  
 
-/// compute M^T*eF^T*Fr^T*Fr*eF*M;
-void CM_ThreeField::compute_Z(void)
-{
-  TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);    
-  Tensor<2> FrFeM = tFr(i,k)*eFn(k,l)*M(l,j);
-  Z = FrFeM(k,i)*FrFeM(k,j);
-}
-
 /// compute eFn^T*symm(Grad_del*tFr)*eFn;
 template<class T1> void CM_ThreeField::compute_Phi(T1 &Phi, double *Grad_beta_in)
 {
   TensorA<2> tFr(tFr_in), eFn(eFn_in); 
-  Tensor<2> A, Asym,tFrI;
+  Tensor<2> A, Asym;
   TensorA<2> Grad_beta(Grad_beta_in);
   A = Grad_beta(k,i)*tFr(k,j);
   symm(A, Asym);
   Phi = eFn(k,i)*Asym(k,l)*eFn(l,j);
 }
 
-/// compute M^T*eFn^T*symm(Grad_del*tFr)*eFn*M;
+/// compute M^T*eFn^T*symm(Grad_del^T*tFr)*eFn*M;
 template<class T1, class T2> void CM_ThreeField::compute_Psi(T1 &Psi, T2 &Phi)    
 {
   TensorA<2> M(M_in);
   Psi = M(k,i)*Phi(k,l)*M(l,j);
-}
-
-/// compute symm(dM^T*eF^T*Fr^T*Fr*eF*M) 
-template<class T1, class T2> void CM_ThreeField::compute_Gamma(T1 &Gamma,
-                                                             T2 &dM)
-{
-  TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in); 
-  Tensor<2> tFreFn = tFr(i,k)*eFn(k,j);
-  Tensor<2> G = dM(k,i)*tFreFn(l,k)*tFreFn(l,o)*M(o,j);
-  symm(G,Gamma);
 }
 
 /// compute M^(-T):dM
@@ -181,7 +162,7 @@ template<class T> void CM_ThreeField::compute_DPsi(T &DPsi,
                                     double *dMdu_in,
                                     double *Phi_du_in)
 {
-  TensorA<2> tFr(tFr_in), M(M_in), eFn(eFn_in);
+  TensorA<2> M(M_in), eFn(eFn_in);
     
   TensorA<2> Grad_du(Grad_du_in), Grad_tu(Grad_tu_in), dMdu(dMdu_in), Phi_du(Phi_du_in);
   Tensor<2> eFnM = eFn(i,k)*M(k,j);
@@ -190,9 +171,8 @@ template<class T> void CM_ThreeField::compute_DPsi(T &DPsi,
   symm(dMPhiM, sdMPhiM);
 
   Tensor<2> GradGrad = Grad_du(k,i)*Grad_tu(k,j);
-  Tensor<2> sGradGrad, tFrI, Grad_duFr, sGrad_duFr, FrFr, Grad_tuFr, sGrad_tuFr;
+  Tensor<2> sGradGrad;
 
-  FrFr = tFr(k,i)*tFr(k,j);
   symm(GradGrad, sGradGrad);
   
   DPsi = eFnM(k,i)*sGradGrad(k,l)*eFnM(l,j) + 2.0*sdMPhiM(i,j);  
@@ -293,13 +273,12 @@ int CM_ThreeField::compute_Kuu(double *Kuu,
         { 
           const int id_wg = idx_4_gen(iw,ig,0,0,fe->nne,fe->nsd,fe->nsd,fe->nsd);
           TensorA<2> Grad_tu((fe->ST)+id_wg);
-          Tensor<2> Phi_tu, Psi_tu,Gamma_tu;
+          Tensor<2> Phi_tu, Psi_tu;
           compute_Phi(Phi_tu, Grad_tu.data);
           compute_Psi(Psi_tu, Phi_tu);
 
           TensorA<2> dMdu(dMdu_all + id_wg);
-          compute_Gamma(Gamma_tu,dMdu);
-          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*(Psi_tu(k,l) + 0.0*factor*Gamma_tu(k,l));
+          double PsiCPsi = Psi_du(i,j)*Ld(i,j,k,l)*Psi_tu(k,l);
           
           Tensor<2> tFrI;
           err += inv(tFr,tFrI);
@@ -312,7 +291,7 @@ int CM_ThreeField::compute_Kuu(double *Kuu,
 
           double Lambda;
           compute_Lambda(&Lambda,dMdu);
-          double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) + P*tJr*tJn*Grad_du(i,j)*tFrI(i,j));
+          double Lambda_Psi = Lambda*(Psi_du(i,j)*eSd(i,j) + P*tJr*tJn*Grad_du(j,i)*tFrI(i,j));
 
           const int lk_idx = idx_K(ia,ib,iw,ig,fe->nne,fe->nsd);                      
           Kuu[lk_idx] -= dt_alpha_1_minus_alpha/Jn*fe->detJxW*(PsiCPsi + pJrJn + DPsi_eSd - Lambda_Psi);
@@ -432,7 +411,7 @@ int CM_ThreeField::compute_Ktu(double *Ktu,
         double Lmabda_ZeSd = Lambda*(dUd_theta*eJnJM - P*theta_n);        
         
         int idx_tu = idx_K_gen(ia,0,iw,0,Vno,1,fe->nne,fe->nsd);
-        Ktu[idx_tu] -= dt_alpha_1_minus_alpha*Nt[ia]/Jn*fe->detJxW*(JMdMdu - Lmabda_ZeSd);
+        Ktu[idx_tu] -= dt_alpha_1_minus_alpha/Jn*Nt[ia]*fe->detJxW*(JMdMdu - Lmabda_ZeSd);
       }
     }
   }
@@ -452,7 +431,7 @@ int CM_ThreeField::compute_Ktp(double *Ktp)
     for(int iw=0; iw<Pno; iw++)
     {
       int idx_tp = idx_K_gen(ia,0,iw,0,Vno,1,Pno,1);
-      Ktp[idx_tp] -= -dt_alpha_1_minus_alpha*Nt[ia]*Np[iw]/Jn*fe->detJxW*theta_n;
+      Ktp[idx_tp] -= -dt_alpha_1_minus_alpha/Jn*Nt[ia]*Np[iw]*fe->detJxW*theta_n;
     }
   }
   return err;
@@ -488,7 +467,7 @@ int CM_ThreeField::compute_Ktt(double *Ktt,
       double Lambda_Up = Lambda*(dUd_theta*eJnJM - P*theta_n);
       
       int idx_tt = idx_K_gen(ia,0,iw,0,Vno,1,Vno,1);
-      Ktt[idx_tt] -= dt_alpha_1_minus_alpha*fe->detJxW*Nt[ia]*Nt[iw]*(JUdMdt - Lambda_Up);
+      Ktt[idx_tt] -= dt_alpha_1_minus_alpha/Jn*fe->detJxW*Nt[ia]*Nt[iw]*(JUdMdt - Lambda_Up);
     }
   }
   return err;

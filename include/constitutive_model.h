@@ -63,7 +63,6 @@ enum integration_frame {
   MIXED_ANALYSIS_MODE
 };
 
-
 /// Object for querying/describing the state variables.
 class Model_var_info
 {
@@ -122,7 +121,8 @@ class Model_parameters
     n_param           = 0;
     model_param       = NULL;
     n_param_index     = 0;
-    model_param_index = NULL;    
+    model_param_index = NULL;
+    pF                = NULL;    
   };
 
   /// Construct a Model_parameters object. The object is left in an
@@ -235,7 +235,9 @@ class Model_parameters
   /// \param[in]     theta_e, theta_e = J = det(eF)
   /// \return computed volumetric stress contribution
   virtual double compute_dudj(const Constitutive_model *m,
-                              const double theta_e) 
+                              const double theta_e,
+                              const int npa,
+                              const double alpha) 
   const 
   {
     double dudj = 0.0;
@@ -292,7 +294,9 @@ class Model_parameters
   /// \param[in]     theta_e, theta_e = J = det(eF)
   /// \return computed volumetric elasticity contribution
   virtual double compute_d2udj2(const Constitutive_model *m,
-                             double theta_e)
+                                double theta_e,
+                                const int npa,
+                                const double alpha)
   const 
   {
     double ddudj = 0.0;
@@ -328,6 +332,8 @@ class Model_parameters
                                     double *eF,
                                     double *L,
                                     double *S,
+                                    const int npa,
+                                    const double alpha,
                                     const int compute_stiffness = 0) 
   const
   {

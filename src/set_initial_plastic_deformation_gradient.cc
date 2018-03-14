@@ -631,7 +631,7 @@ void update_element_deformation_gradient(const Grid *grid,
     {      
       double eJ = theta*one_over_pJ;
       const Model_parameters *mp = fv->eps[eid].model[0].param;
-      double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ);
+      double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ, -1, 0.5);
       fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = fv->tf.V_nm1(eid+1, 1) = theta;
       fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = fv->tf.P_nm1(eid+1, 1) = P;
     }      

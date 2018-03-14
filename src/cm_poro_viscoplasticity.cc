@@ -229,11 +229,24 @@ const
 }
 
 double CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
-                                    double theta_e)
+                                  double theta_e,
+                                  const int npa,
+                                  const double alpha)
 const 
 {
   double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  double pc = vars[VAR_pc_np1];      
+  double pc = vars[VAR_pc_np1];
+  
+  switch(npa)
+  {
+    case 0:
+      mid_point_rule(&pc, vars + VAR_pc_nm1, vars + VAR_pc_n, alpha, 1);
+      break;
+    case 1:  
+      mid_point_rule(&pc, vars + VAR_pc_n, vars + VAR_pc_np1, alpha, 1);
+      break;
+  }
+          
   KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   return pvp_intf_compute_dudj(theta_e, pc, mat_pvp);           
@@ -268,11 +281,24 @@ const
 }
 
 double CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
-                                    double theta_e)
+                                    double theta_e,
+                                    const int npa,
+                                    const double alpha)
 const 
 {
   double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  double pc = vars[VAR_pc_np1];      
+  double pc = vars[VAR_pc_np1]; 
+  
+  switch(npa)
+  {
+    case 0:
+      mid_point_rule(&pc, vars + VAR_pc_nm1, vars + VAR_pc_n, alpha, 1);
+      break;
+    case 1:  
+      mid_point_rule(&pc, vars + VAR_pc_n, vars + VAR_pc_np1, alpha, 1);
+      break;
+  }
+         
   KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   return pvp_intf_compute_d2udj2(theta_e, pc, mat_pvp);           
@@ -349,6 +375,8 @@ int CM_PVP_PARAM::update_elasticity_dev(const Constitutive_model *m,
                                         double *eF,
                                         double *L_in,
                                         double *S,
+                                        const int npa,
+                                        const double alpha,
                                         const int compute_stiffness) 
 const
 {
@@ -356,6 +384,17 @@ const
 
   double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
   double pc = vars[VAR_pc_np1];      
+  
+  switch(npa)
+  {
+    case 0:
+      mid_point_rule(&pc, vars + VAR_pc_nm1, vars + VAR_pc_n, alpha, 1);
+      break;
+    case 1:  
+      mid_point_rule(&pc, vars + VAR_pc_n, vars + VAR_pc_np1, alpha, 1);
+      break;
+  }
+    
   KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   double *L = NULL;

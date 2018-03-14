@@ -841,9 +841,13 @@ template <class CM> class ConstitutiveModelIntregrate
         Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
         if(cm_method.run_integration_algorithm && sol_run_integration_algorithm){
           double tJ = det(Fs.F.np1);
-          double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
-          err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                              dt,alpha,is_it_couple_w_thermal, tf_factor);
+          if(tJ<0)
+            ++err;
+          else{
+            double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
+            err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
+                                                dt,alpha,is_it_couple_w_thermal, tf_factor);
+          }
         }
         if(err>0)
           return err;
@@ -867,7 +871,7 @@ template <class CM> class ConstitutiveModelIntregrate
         err += mp->destroy_ctx(&ctx);
 
         // <-- update plasticity part
-        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, true);
+        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, true);
 
         double hJnp1 = 1.0;
         double pJnp1 = det(Fs.pF.np1);
@@ -887,8 +891,8 @@ template <class CM> class ConstitutiveModelIntregrate
         double tJn = Jn;
         double theta_e = theta_r*eJn*MJ;
 
-        double dU  = mp->compute_dudj(  m, theta_e);
-        double ddU = mp->compute_d2udj2(m, theta_e);
+        double dU  = mp->compute_dudj(  m, theta_e, -1, 0);
+        double ddU = mp->compute_d2udj2(m, theta_e, -1, 0);
         // --> update elasticity part
 
         if(err!=0)
@@ -1297,7 +1301,6 @@ int read_model_parameters_list(const int n_mat,
        re-initialize the object)
    */
   int err = 0;
-  double *pF = NULL;
 
   if (n_mat <= 0) return 1;
   int *is_set = (int *) calloc(n_mat, sizeof(int));
@@ -1339,10 +1342,39 @@ int read_model_parameters_list(const int n_mat,
                                             sizeof(*hmat_list), compare_mat_id));
 
       /* check for match */
-      if (p_hmat != NULL) {
+      if (p_hmat != NULL)
+      {
         int idx = p_hmat - hmat_list;
-        if (!is_set[idx]) {
+        if(is_set[idx])
+        {
+          if(-1 == model_type)
+          {
+            if(hmat_list[idx].param->pF==NULL)
+              hmat_list[idx].param->pF = (double *) malloc(sizeof(double)*DIM_3x3);
+            
+            double *pF = hmat_list[idx].param->pF;
+
+            err += scan_for_valid_line(in);
+            int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2,
+                                                                          pF+3, pF+4, pF+5,
+                                                                          pF+6, pF+7, pF+8);
+
+            if(match != DIM_3x3)
+            {
+              ++err;
+              assert(match == DIM_3x3 && "Did not read expected number of parameters");
+            }
+
+            err += scan_for_valid_line(in);
+            // not expecting EOF, check and return error if encountered
+            if (feof(in)) err ++;
+              assert(!feof(in) && "EOF reached prematurely");
+          }
+        }
+        else{
+
           is_set[idx] = 1;
+          
           // construct and initialize this object
           if(model_type==CM_UQCM)
           {
@@ -1359,28 +1391,6 @@ int read_model_parameters_list(const int n_mat,
           hmat_list[idx].param->mat_id = key->mat_id;
         }
       }
-    }
-    else
-    {
-
-      if(pF == NULL)  //only allocate on 1st iteration
-	pF = (double *) malloc(sizeof(double)*9);
-
-      err += scan_for_valid_line(in);
-      int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2,
-                                                                    pF+3, pF+4, pF+5,
-                                                                    pF+6, pF+7, pF+8);
-
-      if(match != 9)
-      {
-        err++;
-        assert(match == 9 && "Did not read expected number of parameters");
-      }
-
-      err += scan_for_valid_line(in);
-      // not expecting EOF, check and return error if encountered
-      if (feof(in)) err ++;
-       assert(!feof(in) && "EOF reached prematurely");
     }
 
     /* scan to closing brace and continue on to the next entry */
@@ -1399,10 +1409,6 @@ int read_model_parameters_list(const int n_mat,
   }
   if (sum != n_mat) err++;
   assert(sum == n_mat && "require that all model params are set");
-
-  for (int ia = 0; ia < n_mat; ia++){
-    hmat_list[ia].param->pF = pF;
-  }
 
   free(key);
   free(is_set);
@@ -1910,15 +1916,15 @@ int constitutive_model_update_output_variables(Grid *grid,
         err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
         elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
 
-        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, false);
-        Up  = func->compute_dudj(m, theta_e);
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, false);
+        Up  = func->compute_dudj(m, theta_e, -1, 0);
 
         elast->mat = mat_e_in;
       }
       else
       {
-        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, false);
-        Up  = func->compute_dudj(m, theta_e);
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, false);
+        Up  = func->compute_dudj(m, theta_e, -1, 0);
       }
       // <-- update elasticity part
       eC = eF(k,i)*eF(k,j);
@@ -2456,13 +2462,13 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld.data, eSd.data, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld.data, eSd.data, 1, alpha, true);
 
     double MJ_npa = ttl::det(M_npa);
     double theta_e_npa = theta_npa*MJ_npa;
 
-    double dU  = func->compute_dudj(  m, theta_e_npa);
-    double ddU = func->compute_d2udj2(m, theta_e_npa);
+    double dU  = func->compute_dudj(  m, theta_e_npa, 1, alpha);
+    double ddU = func->compute_d2udj2(m, theta_e_npa, 1, alpha);
     // --> update elasticity part
 
     if(err!=0)
@@ -2769,7 +2775,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
 
     err += func->destroy_ctx(&ctx);
     if(err!=0)
-      break;
+      break;      
 
     // start computing tagent
     Jn = Jn/hJ/pJ;
@@ -2829,7 +2835,7 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
                                        double dt)
 {
   ConstitutiveModelIntregrate<IntegrateThreeFieldStiffness> cm3f_stiffness;
-  return cm3f_stiffness.integrate_ss(fe,lk,r_e,grid,mat,fv,0,load,opts,mp,mp_id,dt);
+  return cm3f_stiffness.integrate_ss(fe,lk,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dt);
 }
 
 /// compute element stiffness matrix in quasi steady state
@@ -3230,8 +3236,12 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     if(sol->run_integration_algorithm)
     {
       double tJ = det(Fnp1);
-      double tf_factor = pow(theta/tJ, 1.0/3.0);
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
+      if(tJ<0)
+        ++err;
+      else{
+        double tf_factor = pow(theta/tJ, 1.0/3.0);
+        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
+      }
     }
 
     // compute deformation gradients
@@ -3273,19 +3283,19 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += func->destroy_ctx(&ctx);
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, true);
-    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, true);
+    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, true);
 
     double MJ_npa = ttl::det(M_npa);
     double MJ_nma = ttl::det(M_nma);
     double theta_e_npa = theta_npa*MJ_npa;
     double theta_e_nma = theta_nma*MJ_nma;
 
-    double dU_npa  = func->compute_dudj(  m, theta_e_npa);
-    double ddU_npa = func->compute_d2udj2(m, theta_e_npa);
+    double dU_npa  = func->compute_dudj(  m, theta_e_npa, 1, alpha);
+    double ddU_npa = func->compute_d2udj2(m, theta_e_npa, 1, alpha);
 
-    double dU_nma  = func->compute_dudj(  m, theta_e_nma);
-    double ddU_nma = func->compute_d2udj2(m, theta_e_nma);
+    double dU_nma  = func->compute_dudj(  m, theta_e_nma, 0, alpha);
+    double ddU_nma = func->compute_d2udj2(m, theta_e_nma, 0, alpha);
     // --> update elasticity part
 
     if(err!=0)
@@ -3621,9 +3631,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     if(err!=0)
       break;
 
-
     Jn = Jn/pJ/hJ;
     err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);
+    
   }
 
   if(is_it_couple_w_thermal >=0)
@@ -3670,7 +3680,7 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        double dt)
 {
   ConstitutiveModelIntregrate<IntegrateThreeFieldResidual> cm3f_residual;
-  return cm3f_residual.integrate_ss(fe,f,r_e,grid,mat,fv,1,load,opts,mp,mp_id,dt);
+  return cm3f_residual.integrate_ss(fe,f,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dt);
 }
 
 /// compute element residual vector in quasi steady state
@@ -3918,19 +3928,19 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     err += func->destroy_ctx(&ctx);
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, true);
-    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, true);
+    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, true);
 
     double MJ_npa = ttl::det(M_npa);
     double MJ_nma = ttl::det(M_nma);
     double theta_e_npa = theta_npa*MJ_npa;
     double theta_e_nma = theta_nma*MJ_nma;
 
-    double dU_npa  = func->compute_dudj(  m, theta_e_npa);
-    double ddU_npa = func->compute_d2udj2(m, theta_e_npa);
+    double dU_npa  = func->compute_dudj(  m, theta_e_npa, 1, alpha);
+    double ddU_npa = func->compute_d2udj2(m, theta_e_npa, 1, alpha);
 
-    double dU_nma  = func->compute_dudj(  m, theta_e_nma);
-    double ddU_nma = func->compute_d2udj2(m, theta_e_nma);
+    double dU_nma  = func->compute_dudj(  m, theta_e_nma, 0, alpha);
+    double ddU_nma = func->compute_d2udj2(m, theta_e_nma, 0, alpha);
     // --> update elasticity part
 
     if(err!=0)

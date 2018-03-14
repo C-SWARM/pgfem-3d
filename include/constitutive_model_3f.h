@@ -24,7 +24,6 @@ class CM_ThreeField
     double *Np; // finite element shape function for pressure
     
     double *tFr_in, *eFn_in, *M_in, *pFnp1_in, *eSd_in;
-    ttl::Tensor<2,3,double> Z;
     double *Ld_in;
 
     double tJr, tJn, Jn, theta_r, theta_n, eJn, JM;
@@ -71,7 +70,6 @@ class CM_ThreeField
                     double *Nt_in,
                     double *Np_in);                
         
-    void compute_Z(void);
     template<class T1> void compute_Phi(T1 &Phi, double *Grad_beta_in);
     template<class T1, class T2> void compute_Psi(T1 &Psi, T2 &Phi);
     template<class T1, class T2> void compute_Gamma(T1 &Gamma,
