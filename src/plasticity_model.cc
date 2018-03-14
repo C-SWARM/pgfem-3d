@@ -1833,17 +1833,24 @@ const
   // inital values are set in the more convoluted
   // read_constitutive_model_parameters->plasticity_model_read_parameters
   //   calling sequence
-  
+
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
 
   if((m->param)->pF != NULL)
   {
-    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFnm1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFn  ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFnp1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
-  }    
+    double pF[DIM_3x3];
+    double pJ = det3x3((m->param)->pF);
+    pJ = pow(pJ, 1.0/3.0);
+
+    for(int ia=0; ia<DIM_3x3; ia++)
+      pF[ia] = (m->param)->pF[ia]/pJ;
+
+    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fn   ].m_pdata, pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnm1].m_pdata, pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFn  ].m_pdata, pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnp1].m_pdata, pF, sizeof(double)*DIM_3x3);
+  }  
   return 0;
 }

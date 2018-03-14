@@ -242,6 +242,7 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
 ///
 /// \param[in]       *grid    mesh object
 /// \param[in]       *fv      object for field variables
+/// \param[in]       *mat     a material object
 /// \param[in, out]  *sol     object for solution scheme
 /// \param[in]       *load    object for loading
 /// \param[in]       *com     communication object
@@ -255,6 +256,7 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
 /// \return non-zero on internal error
 int compute_LHS_and_RHS_of_pK(const Grid *grid,
                               const FieldVariables *fv,
+                              const MaterialProperty *mat,
                               Solver *sol,
                               const LoadingSteps *load,
                               const CommunicationStructure *com,
@@ -263,14 +265,17 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
                               const Multiphysics& mp,
                               const int mp_id,
                               const int myrank,
-                              double *f,
-                              double *pF)
+                              double *f)
 {
   int err = 0;
   int total_Lagrangian  = 1;
   int intg_order        = 0;
   int do_assemble       = 1; // udate stiffness matrix
 
+  double I[9] = {1.0,0.0,0.0,
+                 0.0,1.0,0.0,
+                 0.0,0.0,1.0};
+                 
   Matrix<double> f_disp(fv->ndofd, 1, 0.0);
 
   // arbitrary values for elastic deformation, will not effect on results.
@@ -302,13 +307,22 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
     // construct finite element library
     // it provide element wise integration info
     // such as basis function, weights, ...
+    
+    double pFI[9];
+    memcpy(pFI,I,sizeof(double)*9);
+
+    const int mat_id = grid->element[eid].mat[2];
+    double *pF = mat->hommat[mat_id].param->pF;
+    if(pF!=NULL)
+      inv3x3(pF, pFI);
+    
     FEMLIB fe(com->bndel[eid],grid->element,grid->node,intg_order,total_Lagrangian);
 
     // do volume integration at an element
     int interior = 0;
     err += compute_LHS_RHS_pK_elem(&fe,Lk,grid,fv,sol,load,com,Ddof.m_pdata,
                                    myrank,interior,opts,
-                                   mp_id,do_assemble,f,f_disp.m_pdata,D,pF);
+                                   mp_id,do_assemble,f,f_disp.m_pdata,D,pFI);
 
     if(err != 0)
       break;
@@ -330,6 +344,18 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
 
     if(is_it_in==0)
       continue;
+      
+      
+    double pFI[9];
+    memcpy(pFI,I,sizeof(double)*9);
+
+    const int mat_id = grid->element[eid].mat[2];
+    double *pF = mat->hommat[mat_id].param->pF;
+    if(pF!=NULL)
+    {
+      double pFI[9];
+      inv3x3(pF, pFI);
+    }      
 
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
@@ -338,7 +364,7 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
 
     err += compute_LHS_RHS_pK_elem(&fe,Lk,grid,fv,sol,load,com,Ddof.m_pdata,
                                    myrank,interior,opts,
-                                   mp_id,do_assemble,f,f_disp.m_pdata,D,pF);
+                                   mp_id,do_assemble,f,f_disp.m_pdata,D,pFI);
 
     if(err != 0)
       break;
@@ -371,51 +397,75 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
 /// Compute maximum boundary values due to given deformation gradient.
 ///
 /// \param[out] *bcv_in  computed maximum bc values
-/// \param[in]  *pF      given deformation gradient
 /// \param[in]  *grid    mesh object
+/// \param[in]  *mat     a material object
 /// \param[in]  *fv      object for field variables
 /// \param[in]  *load    object for loading
+/// \param[in]  *com     communication object
 /// \param[in]  mpi_comm MPI_COMM_WORLD
 /// \param[in]  myrank   current process rank
 /// \param[in]  mp_id    mutiphysics id
 void compute_maximum_BC_values(double *bcv_in,
-                               const double *pF,
                                const Grid *grid,
+                               const MaterialProperty *mat,
                                const FieldVariables *fv,
                                const LoadingSteps *load,
+                               const CommunicationStructure *com,
                                const MPI_Comm mpi_comm,
                                const int mp_id,
                                const int myrank)
 {
   int npd = load->sups[mp_id]->npd;
-  int ndn = load->sups[mp_id]->ndn;
   Matrix<double> bcv, max_disp(npd, 1, 1.0e-15), Max_disp(npd, 1), Min_disp(npd, 1);
 
   bcv.use_reference(npd, 1, bcv_in);
-
-  for(int ib=0; ib<ndn; ib++)
+  
+  for(int eid=0; eid<com->nbndel; eid++)
   {
-    int nid = load->sups[mp_id]->lnpd[ib];
-    double x[3], X[3], u[3];
-    x[0] = grid->node[nid].x1_fd;
-    x[1] = grid->node[nid].x2_fd;
-    x[2] = grid->node[nid].x3_fd;
+    // construct finite element library
+    // it provide element wise integration info
+    // such as basis function, weights, ...
+    
+    const int mat_id = grid->element[eid].mat[2];
+    double *pF = mat->hommat[mat_id].param->pF;
+    if(pF==NULL)
+      continue;
+      
+    double pFI[9];
+    inv3x3(pF, pFI);    
+    
+    FEMLIB fe(com->bndel[eid],grid->element,grid->node,1,1);
 
-    X[0] = pF[0]*x[0] + pF[1]*x[1] + pF[2]*x[2];
-    X[1] = pF[3]*x[0] + pF[4]*x[1] + pF[5]*x[2];
-    X[2] = pF[6]*x[0] + pF[7]*x[1] + pF[8]*x[2];
+    long *nod  = fe.node_id.m_pdata;
+    int ndofn  = fv->ndofn;
+    int nne    = fe.nne;
+    int nsd    = fe.nsd;
+    long ndofe = nne*ndofn;
+  
+    Matrix<long> cnL(ndofe, 1);
+    get_dof_ids_on_elem_nodes(0,nne,ndofn,nod,grid->node,cnL.m_pdata,mp_id);
+    
+    for(int ia=0; ia<nne; ia++){  
+      for(int ib=0; ib<nsd; ib++){
+        int id = cnL.m_pdata[ia*ndofn + ib];
+        if( id >= 0)
+          continue;
+          
+        double x[3], X[3], u[3];
+        x[0] = fe.node_coord(ia+1,1); 
+        x[1] = fe.node_coord(ia+1,2);
+        x[2] = fe.node_coord(ia+1,3);
 
-    u[0] = X[0] - x[0];
-    u[1] = X[1] - x[1];
-    u[2] = X[2] - x[2];
-
-    for(int ic=0; ic<grid->nsd; ic++)
-    {
-      long id = grid->node[nid].id_map[mp_id].id[ic];
-      if(id<0)
-      {
-        if(fabs(max_disp(abs(id)))<fabs(u[ic]))
-          max_disp(abs(id)) = u[ic];
+        X[0] = pFI[0]*x[0] + pFI[1]*x[1] + pFI[2]*x[2];
+        X[1] = pFI[3]*x[0] + pFI[4]*x[1] + pFI[5]*x[2];
+        X[2] = pFI[6]*x[0] + pFI[7]*x[1] + pFI[8]*x[2];
+        
+        u[0] = X[0] - x[0];
+        u[1] = X[1] - x[1];
+        u[2] = X[2] - x[2];
+        
+        if(fabs(max_disp(abs(id)))<fabs(u[ib]))
+          max_disp(abs(id)) = u[ib];
       }
     }
   }
@@ -437,6 +487,7 @@ void compute_maximum_BC_values(double *bcv_in,
 ///
 /// \param[in, out]  *grid    mesh object
 /// \param[in]       *fv      object for field variables
+/// \param[in]       *mat     a material object
 /// \param[in, out]  *sol     object for solution scheme
 /// \param[in, out]  *load    object for loading
 /// \param[in]       *com     communication object
@@ -445,10 +496,10 @@ void compute_maximum_BC_values(double *bcv_in,
 /// \param[in]       *mp      mutiphysics object
 /// \param[in]       mp_id    mutiphysics id
 /// \param[in]       myrank   current process rank
-/// \param[in]       *pF      given plastic deformation gradient
 /// \param[out]      *bcv     prescribed boundary values due to initial plastic deformation
 void update_geometry_for_inital_pF(Grid *grid,
                                    const FieldVariables *fv,
+                                   const MaterialProperty *mat,
                                    Solver *sol,
                                    LoadingSteps *load,
                                    const CommunicationStructure *com,
@@ -457,7 +508,6 @@ void update_geometry_for_inital_pF(Grid *grid,
                                    const Multiphysics& mp,
                                    const int mp_id,
                                    const int myrank,
-                                   double *pF,
                                    const double *bcv)
 {
   int npd = load->sups[mp_id]->npd;
@@ -471,8 +521,8 @@ void update_geometry_for_inital_pF(Grid *grid,
 
   sol->system->zero();
 
-  compute_LHS_and_RHS_of_pK(grid,fv,sol,load,com,
-                            mpi_comm, opts, mp, mp_id, myrank, lF.m_pdata, pF);
+  compute_LHS_and_RHS_of_pK(grid,fv,mat,sol,load,com,
+                            mpi_comm, opts, mp, mp_id, myrank, lF.m_pdata);
 
   LToG(lF.m_pdata,GF.m_pdata,myrank,com->nproc,
        fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
@@ -554,7 +604,8 @@ void update_element_deformation_gradient(const Grid *grid,
     
     double v = 0.0;
     double theta = 0.0;
-
+    double one_over_pJ = 0.0;
+    Matrix<double> pJ(fe.nint, 1, 0.0);
     for(int ip=0; ip<fe.nint; ip++)
     {
       double Fnp1[9];
@@ -570,9 +621,20 @@ void update_element_deformation_gradient(const Grid *grid,
       double J = det3x3(Fnp1);
       v += fe.detJxW;
       theta += J*fe.detJxW;
+      one_over_pJ += 1.0/J*fe.detJxW;
+      pJ(ip+1) = J;
     }
+    theta       /= v;
+    one_over_pJ /= v;
+    
     if(opts->analysis_type == CM3F)
-      fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = fv->tf.V_nm1(eid+1, 1) = theta/v;
+    {      
+      double eJ = theta*one_over_pJ;
+      const Model_parameters *mp = fv->eps[eid].model[0].param;
+      double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ);
+      fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = fv->tf.V_nm1(eid+1, 1) = theta;
+      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = fv->tf.P_nm1(eid+1, 1) = P;
+    }      
   }
 }
 
@@ -582,6 +644,7 @@ void update_element_deformation_gradient(const Grid *grid,
 ///
 /// \param[in, out]  *grid    mesh object
 /// \param[in]       *fv      object for field variables
+/// \param[in]       *mat     a material object
 /// \param[in]       *sol     object for solution scheme
 /// \param[in, out]  *load    object for loading
 /// \param[in]       *com     communication object
@@ -594,6 +657,7 @@ void update_element_deformation_gradient(const Grid *grid,
 /// \return non-zero on internal error
 int set_initial_plastic_deformation_gradient(Grid *grid,
                                              FieldVariables *fv,
+                                             MaterialProperty *mat,                                             
                                              pgfem3d::Solver *sol,
                                              LoadingSteps *load,
                                              const CommunicationStructure *com,
@@ -601,17 +665,27 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
                                              const PGFem3D_opt *opts,
                                              const Multiphysics& mp,
                                              const int mp_id,
-                                             const int myrank,
-                                             double *pF)
+                                             const int myrank)
 {
   int err = 0;
-
-  double pFI[9];
-  inv3x3(pF, pFI);
+  
+  int G_do_intialization = 0;
+  int L_do_intialization = 0;
+  
+  for(int ia=0; ia<mat->nhommat; ia++){
+    if(NULL != mat->hommat[ia].param->pF){
+      L_do_intialization = 1;
+      break;
+    }
+  }
+  
+  MPI_Allreduce(&L_do_intialization,&G_do_intialization,1,MPI_INT,MPI_SUM,mpi_comm);
+  if(G_do_intialization==0)
+    return 0;
 
   int npd = load->sups[mp_id]->npd;
   Matrix<double> bcv(npd, 1, 0.0);
-  compute_maximum_BC_values(bcv.m_pdata, pFI, grid, fv, load, mpi_comm, mp_id, myrank);
+  compute_maximum_BC_values(bcv.m_pdata, grid, mat, fv, load, com, mpi_comm, mp_id, myrank);
 
   // print setting
   if(myrank==0)
@@ -621,16 +695,24 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
       printf("(%d)=%e ", ia, bcv(ia));
 
     printf("\n");
-    printf("set initial plastic deformation:\npF=[");
-    printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
-                                            , pF[3], pF[4], pF[5]
-                                            , pF[6], pF[7], pF[8]);
+
+    for(int ia=0; ia<mat->nhommat; ia++)
+    {
+      double *pF = mat->hommat[ia].param->pF;
+      if(NULL == pF)
+        continue;
+
+      printf("set initial plastic deformation for homat[%d]:\npF=[", ia);
+      printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
+                                              , pF[3], pF[4], pF[5]
+                                              , pF[6], pF[7], pF[8]);
+    }
   }
 
   // Going back to pFI configuration to have initial pF when BC is applied.
   // So, use pFI
-  update_geometry_for_inital_pF(grid, fv, sol, load, com,
-                                mpi_comm, opts, mp, mp_id, myrank, pFI, bcv.m_pdata);
+  update_geometry_for_inital_pF(grid, fv, mat, sol, load, com,
+                                mpi_comm, opts, mp, mp_id, myrank, bcv.m_pdata);
 
   update_element_deformation_gradient(grid, fv, opts);
 

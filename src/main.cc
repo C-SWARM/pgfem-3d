@@ -1043,12 +1043,8 @@ int single_scale_main(int argc,char *argv[])
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL 
         && (options.analysis_type == CM || options.analysis_type == CM3F))
       {
-        double *pF = mat.hommat[0].param->pF;
-        if(pF != NULL)
-        {
-          set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,sol.data()+ia,&load,com.data()+ia,
-                                                    mpi_comm, &options, mp, ia, myrank, pF);
-        }
+        set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,&mat,sol.data()+ia,&load,com.data()+ia,
+                                                 mpi_comm, &options, mp, ia, myrank);
       }
     }    
         
