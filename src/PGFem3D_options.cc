@@ -140,6 +140,7 @@ const Option other_opts[] = {
   {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0},
   {{"walltime",required_argument,NULL,'w'},("\n\t\tSet Walltime[s] and write restart files nearby this walltime.\n"
                                             "\t\tDefault is -1.0 (no actions)"),0},
+  {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0}
 };
 
 /* these options may no longer be supported/functional. They are kept
@@ -221,6 +222,7 @@ void set_default_options(PGFem3D_opt *options)
   options->comp_print_reaction = 1;
   options->comp_print_macro = 1;
   options->print_EXA_details = false;
+  options->comp_print_max_pressure = false;
 
   /* I/O file names */
   options->ipath = NULL;
@@ -643,6 +645,10 @@ void re_parse_command_line(const int myrank,
 
      case 'M':
       options->comp_print_macro = 0;
+      break;
+     
+     case 'P':
+      options->comp_print_max_pressure = true;
       break;
 
      case 'w':

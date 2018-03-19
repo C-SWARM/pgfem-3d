@@ -9,6 +9,7 @@
 #include "enumerations.h"
 #include "utils.h"
 #include <ttl/ttl.h>
+#include "PGFem3D_data_structure.h"
 
 //ttl declarations
 namespace {
@@ -511,4 +512,77 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *n
   }
 
   MPI_Allreduce(&LV,GV,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+}
+
+/// Compute and print maximum element pressure.
+/// Each process compute maximum pressure for each material and gather 
+/// all maximum pressure and print maximum pressure with coodinates where
+/// maximum pressure measured.
+///
+/// \param[in] grid     an object containing all mesh info
+/// \param[in] mat      a material object
+/// \param[in] fv       object for field variables
+/// \param[in] com      communication object
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] myrank   process rank
+void post_processing_max_pressure(const Grid &grid,
+                                  const MaterialProperty &mat,
+                                  const CommunicationStructure &com,
+                                  const FieldVariables &fv,
+                                  const MPI_Comm mpi_comm,
+                                  const int myrank)
+{
+  Matrix<double> LP(com.nproc, mat.nmat, 0.0);
+  Matrix<double> GP(com.nproc, mat.nmat, 0.0);
+  Matrix<int> eid(mat.nmat, 1, 0);
+  
+  for(int ia=0; ia<grid.ne; ia++)
+  {
+    int mat_id = (grid.element[ia]).mat[0] + 1;
+    double P = (fv.sig[ia].el.o[0] + fv.sig[ia].el.o[1] + fv.sig[ia].el.o[2])/3.0;
+    
+    if(fabs(LP(myrank+1, mat_id)) < fabs(P))
+    {  
+        LP(myrank+1, mat_id) = P;
+        eid(mat_id) = ia;
+    }
+  }
+  
+  MPI_Allreduce(LP.m_pdata,GP.m_pdata,com.nproc*mat.nmat,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  
+  Matrix<bool> have_max(mat.nmat, 1, true);
+  for(int ia=1; ia<=com.nproc; ia++)
+  {
+    if(ia==(myrank+1))
+      continue;
+    
+    for(int ib=1; ib<=mat.nmat; ib++)
+    {    
+      if(fabs(GP(ia, ib)) > fabs(LP(myrank+1, ib)))
+        have_max(ib) = false;
+    }
+  }
+  
+  for(int ia=1; ia<=mat.nmat; ia++)
+  {  
+    if(have_max(ia))
+    {
+      FEMLIB fe(eid(ia), grid.element, grid.node, 0,1);
+      double x[3];
+      x[0] = x[1] = x[2] = 0.0;
+    
+      for(int ib=1; ib<=fe.nne; ib++)
+      {
+        for(int ic=1; ic<=3; ic++)
+          x[ic-1] += fe.node_coord(ib, ic);
+      }
+    
+      x[0] /= fe.nne;
+      x[1] /= fe.nne;
+      x[2] /= fe.nne;
+                          
+      printf("max. pressure for (mat=%d): %e at process = %d, element = %d (xyz = %e, %e, %e)\n", 
+              ia-1, LP(myrank+1, ia), myrank, eid(ia), x[0], x[1], x[2]);
+    }
+  }
 }
