@@ -311,7 +311,7 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
     double pFI[9];
     memcpy(pFI,I,sizeof(double)*9);
 
-    const int mat_id = grid->element[eid].mat[2];
+    const int mat_id = grid->element[com->bndel[eid]].mat[2];
     double *pF = mat->hommat[mat_id].param->pF;
     if(pF!=NULL)
       inv3x3(pF, pFI);
@@ -352,10 +352,7 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
     const int mat_id = grid->element[eid].mat[2];
     double *pF = mat->hommat[mat_id].param->pF;
     if(pF!=NULL)
-    {
-      double pFI[9];
       inv3x3(pF, pFI);
-    }      
 
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
@@ -415,17 +412,23 @@ void compute_maximum_BC_values(double *bcv_in,
                                const int mp_id,
                                const int myrank)
 {
-  int npd = load->sups[mp_id]->npd;
+  SUPP sup = load->sups[mp_id];
+  int npd = sup->npd;
+
   Matrix<double> bcv, max_disp(npd, 1, 1.0e-15), Max_disp(npd, 1), Min_disp(npd, 1);
 
   bcv.use_reference(npd, 1, bcv_in);
-  
-  for(int eid=0; eid<com->nbndel; eid++)
+
+  const int ne = sup->nde;
+  const long *el_id = sup->lepd;
+
+  for(int iA=0; iA<ne; iA++)
   {
     // construct finite element library
     // it provide element wise integration info
     // such as basis function, weights, ...
     
+    long eid = el_id[iA];
     const int mat_id = grid->element[eid].mat[2];
     double *pF = mat->hommat[mat_id].param->pF;
     if(pF==NULL)
@@ -434,7 +437,7 @@ void compute_maximum_BC_values(double *bcv_in,
     double pFI[9];
     inv3x3(pF, pFI);    
     
-    FEMLIB fe(com->bndel[eid],grid->element,grid->node,1,1);
+    FEMLIB fe(eid,grid->element,grid->node,1,1);
 
     long *nod  = fe.node_id.m_pdata;
     int ndofn  = fv->ndofn;
@@ -515,8 +518,8 @@ void update_geometry_for_inital_pF(Grid *grid,
     (load->sups[mp_id])->defl[ia] = bcv[ia];
 
   Matrix<double> lF(fv->ndofd, 1, 0.0);
-  Matrix<double> GF(fv->ndofd, 1, 0.0);
-  Matrix<double>  U(fv->ndofd, 1, 0.0);
+  Matrix<double> GF(com->DomDof[myrank], 1, 0.0);
+  Matrix<double>  U(com->DomDof[myrank], 1, 0.0);
   SOLVER_INFO s_info;
 
   sol->system->zero();
