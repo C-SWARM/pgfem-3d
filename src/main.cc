@@ -150,41 +150,17 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// Prints number of ODEs
 /// This will compute and output the total number of ODEs for the mechanical physics
 ///
-/// \param[in] grid a mesh object
-/// \param[in] mp_id_M multiphysics id of mechanical physics
+/// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
-void print_ODEs(const Grid *grid, const FieldVariables *fv, const int mp_id_M, const MPI_Comm mpi_comm, const int myrank)
+void print_EXA_metric(const int local_EXA_metric, const MPI_Comm mpi_comm, const int myrank)
 {
-  /* compute number of ODEs */
-  const Element *elem = grid->element;
-  int ODE_local_num;
-  
-  if(mp_id_M >= 0){
-    ODE_local_num = 0;
-    for(int eid = 0; eid < grid->ne; ++eid){ // loop through elements
-      long nint = 1;
-      int_point(elem[eid].toe, &nint);
-      for (int ip = 0; ip < nint; ip++){    // loop through integration points
-        Constitutive_model *m = &(fv[mp_id_M].eps[eid].model[ip]);
-        assert(m != NULL && "m can't be NULL in the mechanical model");
-        switch(m->param->type){
-          case (CRYSTAL_PLASTICITY):        // fallthrough
-          case (POROVISCO_PLASTICITY):
-            ODE_local_num += 10;
-            break;
-          case (HYPER_ELASTICITY):          // fallthrough
-          default:                          // J2_PLASTICITY_DAMAGE, BPA_PLASTICITY, ...
-            break;                          // no ODEs
-        }
-      }
-    }
-    /* print total number of ODEs for each physics */
-    int ODE_global_num;
-    MPI_Reduce (&ODE_local_num,&ODE_global_num,1,MPI_INT,MPI_SUM,0,mpi_comm);
+    /* print total EXA_metrics */
+    int global_EXA_metric;
+    MPI_Reduce (&local_EXA_metric,&global_EXA_metric,1,MPI_INT,MPI_SUM,0,mpi_comm);
     if (myrank == 0)
-      PGFEM_printf("Physics %d's number of ODEs: %d\n", mp_id_M, ODE_global_num);
-  }
+      PGFEM_printf("Total number of ODE computations: %d\n", global_EXA_metric);
+
 }
 
 /// print simulation results
@@ -222,7 +198,8 @@ int print_results(Grid *grid,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
                   long tim,
-                  int myrank)
+                  int myrank,
+                  int &EXA_metric)
 {
   int err = 0;
 
@@ -262,7 +239,7 @@ int print_results(Grid *grid,
 
       sol->run_integration_algorithm = 0;
       err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
-                                         mp_id_M,time_steps->times[tim+1],dts);
+                                         mp_id_M,time_steps->times[tim+1],dts,EXA_metric);
       sol->run_integration_algorithm = 1;
     }
 
@@ -475,6 +452,7 @@ int single_scale_main(int argc,char *argv[])
 
   double total_time = 0.0;
   double startup_time = 0.0;
+  int EXA_metric = 0;
   /* MPI_Barrier(mpi_comm); */
   total_time -= MPI_Wtime();
   startup_time -= MPI_Wtime();
@@ -1126,7 +1104,7 @@ int single_scale_main(int argc,char *argv[])
       //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
       // of the load vector
       err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
-                                                   &options,mp,ia,myrank);
+                                                   &options,mp,ia,myrank,EXA_metric);
 
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
       {
@@ -1169,10 +1147,6 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf ("oVolume = %12.12f\n",oVolume);
     }
     VVolume = oVolume;
-    
-
-    /* compute number of ODEs */
-    print_ODEs(&grid, fv.data(), mp_id_M, mpi_comm, myrank);
     
 
     /*=== BEGIN SOLVE ===*/
@@ -1268,7 +1242,7 @@ int single_scale_main(int argc,char *argv[])
 
         Multiphysics_Newton_Raphson(hypre_time, stiffmat_time, residuals_time, &grid, 
                                     &mat, fv.data(), sol.data(), &load, com.data(), 
-                                    &time_steps, crpl, mpi_comm, VVolume, &options, mp);
+                                    &time_steps, crpl, mpi_comm, VVolume, &options, mp, EXA_metric);
 
 
         for(int ia = 0; ia<mp.physicsno; ia++)
@@ -1295,7 +1269,7 @@ int single_scale_main(int argc,char *argv[])
                                                &sol[mp_id_M], &load,
                                                &com[mp_id_M], &time_steps,
                                                crpl, mpi_comm, VVolume,
-                                               &options, mp, 0);
+                                               &options, mp, 0, EXA_metric);
 
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
@@ -1349,7 +1323,7 @@ int single_scale_main(int argc,char *argv[])
       err += print_results(&grid, &mat, fv.data(), sol.data(), &load,
                            com.data(), &time_steps, crpl, ensight, pmr,
                            mpi_comm, oVolume, VVolume, &options, mp, tim,
-                           myrank);
+                           myrank, EXA_metric);
 
       err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
                                  mp, tim, mpi_comm, myrank, time_step_start,
@@ -1417,6 +1391,10 @@ int single_scale_main(int argc,char *argv[])
   }
 
   delete ensight;
+
+  /* print EXA_metrics */
+  print_EXA_metric(EXA_metric, mpi_comm, myrank);
+    
   //<---------------------------------------------------------------------
 
   total_time += MPI_Wtime(); // measure time spent

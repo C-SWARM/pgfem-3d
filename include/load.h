@@ -72,7 +72,8 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
                                           int mp_id,
-                                          int myrank);
+                                          int myrank,
+                                          int &EXA_metric);
 
 /// Multiscale simulation interface to compute load vector due to BCs(Dirichlet)
 ///
@@ -88,6 +89,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
                                                      MACROSCALE_SOLUTION *s,
                                                      const PGFem3D_opt *opts,
                                                      double nor_min,
-                                                     int myrank);
+                                                     int myrank,
+                                                     int &EXA_metric);
 
 #endif // #define PGFEM3D_LOAD_H

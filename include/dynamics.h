@@ -45,6 +45,7 @@ struct FEMLIB;
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] t current time
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int residual_with_inertia(FEMLIB *fe,
                           double *be,
@@ -59,7 +60,8 @@ int residual_with_inertia(FEMLIB *fe,
                           const Multiphysics& mp,
                           int mp_id,
                           double *dts,
-                          double t);
+                          double t,
+                          int &EXA_metric);
 
 /// compute element stiffness matrix in transient
 ///
@@ -76,6 +78,7 @@ int residual_with_inertia(FEMLIB *fe,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffness_with_inertia(FEMLIB *fe,
                            double *Ks,
@@ -89,6 +92,7 @@ int stiffness_with_inertia(FEMLIB *fe,
                            const PGFem3D_opt *opts,
                            const Multiphysics& mp,
                            int mp_id,
-                           double dt);
+                           double dt,
+                           int &EXA_metric);
 
 #endif /* #define PGFEM3D_DYNAMICS_H */

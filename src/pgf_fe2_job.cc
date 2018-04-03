@@ -176,7 +176,8 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 void pgf_FE2_job_compute_worker(const size_t job_id,
                 const size_t buffer_len,
                 MICROSCALE *micro,
-                const int mp_id)
+                const int mp_id,
+                int &EXA_metric)
 {
   /* allocate and receive job buffer */
   char *buf = static_cast<char*>(malloc(buffer_len));
@@ -185,7 +186,7 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
   /* determine solution index from job id and compute */
   int idx = sol_idx_map_id_get_idx(&(micro->idx_map),job_id);
   int exit_server = 0; /* unused in this implementation */
-  microscale_compute_job(idx,buffer_len,buf,micro,&exit_server,mp_id);
+  microscale_compute_job(idx,buffer_len,buf,micro,&exit_server,mp_id,EXA_metric);
   assert(exit_server == 0);
   free(buf);
 }
@@ -193,7 +194,8 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
 int pgf_FE2_job_compute(pgf_FE2_job *job,
             MICROSCALE *micro,
             const PGFEM_mpi_comm *mpi_comm,
-            const int mp_id)
+            const int mp_id,
+            int &EXA_metric)
 {
   /* return immediately if not ready to compute */
   if(job->state != FE2_STATE_COMPUTE_READY) return job->state;
@@ -217,7 +219,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   assert(idx >= 0);
   int exit_server = 0; /* unused in this implementation */
   microscale_compute_job(idx,meta[1],job->comm_buf->buffer,
-             micro,&exit_server,mp_id);
+             micro,&exit_server,mp_id,EXA_metric);
   assert(exit_server == 0);
 
   /* increment state and post communication to macroscale */

@@ -97,6 +97,7 @@ void load_vec_node (double *f,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal erro
 int momentum_equation_load4pBCs(Grid *grid,
                                 MaterialProperty *mat,
@@ -108,7 +109,8 @@ int momentum_equation_load4pBCs(Grid *grid,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
-                                int myrank)
+                                int myrank,
+                                int &EXA_metric)
 {
   int err = 0;
   double *be = NULL;
@@ -170,7 +172,7 @@ int momentum_equation_load4pBCs(Grid *grid,
     Matrix<double> lk(ndofe,ndofe,0.0);
 
     err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
-                                  crpl,opts,mp,mp_id,dt,lm,be,r_e);
+                                  crpl,opts,mp,mp_id,dt,lm,be,r_e,EXA_metric);
 
     /* get the disp increment from BC */
     {
@@ -349,6 +351,7 @@ int momentum_equation_load4pBCs(Grid *grid,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           MaterialProperty *mat,
@@ -360,7 +363,8 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
                                           int mp_id,
-                                          int myrank)
+                                          int myrank,
+                                          int &EXA_metric)
 {
   int err = 0;
   switch(mp.physics_ids[mp_id])
@@ -376,7 +380,8 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                        opts,
                                        mp,
                                        mp_id,
-                                       myrank);
+                                       myrank,
+                                       EXA_metric);
     break;
    case MULTIPHYSICS_THERMAL:
     err += energy_equation_compute_load4pBCs(grid,
@@ -405,12 +410,14 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] nor_min nonlinear convergence tolerance
 /// \param[in] myrank current process rank
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
                                                      MACROSCALE_SOLUTION *s,
                                                      const PGFem3D_opt *opts,
                                                      double nor_min,
-                                                     int myrank)
+                                                     int myrank,
+                                                     int &EXA_metric)
 {
   int err = 0;
   int mp_id = 0;
@@ -510,7 +517,7 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv,&sol,&load,
-                                               s->dt,s->crpl,opts,mp,mp_id,myrank);
+                                               s->dt,s->crpl,opts,mp,mp_id,myrank,EXA_metric);
 
   free(physicsname);
 

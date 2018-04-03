@@ -36,6 +36,7 @@
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 long fd_residuals_MP(Grid *grid,
                      MaterialProperty *mat,
@@ -49,7 +50,8 @@ long fd_residuals_MP(Grid *grid,
                      int mp_id,
                      double t,
                      double *dts,
-                     int updated_deformation);
+                     int updated_deformation,
+                     int &EXA_metric);
 
 /// compute the reaction force for multiphysics mode
 ///
@@ -64,6 +66,7 @@ long fd_residuals_MP(Grid *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int fd_res_compute_reactions_MP(Grid *grid,
                                 MaterialProperty *mat,
@@ -76,7 +79,8 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 const Multiphysics& mp,
                                 int mp_id,
                                 double t,
-                                double *dts);
+                                double *dts,
+                                int &EXA_metric);
 
 /// Multiscale simulation interface computing reaction forces
 ///
@@ -85,11 +89,13 @@ int fd_res_compute_reactions_MP(Grid *grid,
 /// \param[in] solver_file structure for storing/updating the data
 /// \param[in] opts structure PGFem3D option
 /// \param[in] dts time step sizes at n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         MACROSCALE_SOLUTION *s,
                                         SOLVER_FILE *solver_file,
                                         const PGFem3D_opt *opts,
-                                        double *dts);
+                                        double *dts,
+                                        int &EXA_metric);
 
 #endif /* #define PGFEM3D_FD_RESIDUALS_H */

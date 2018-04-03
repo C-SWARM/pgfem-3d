@@ -189,6 +189,7 @@ void DISP_resid_w_inertia_el(double *f,
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] t current time
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int residual_with_inertia(FEMLIB *fe,
                           double *be,
@@ -203,7 +204,8 @@ int residual_with_inertia(FEMLIB *fe,
                           const Multiphysics& mp,
                           int mp_id,
                           double *dts,
-                          double t)
+                          double t,
+                          int &EXA_metric)
 {
   int err = 0;
 
@@ -268,10 +270,10 @@ int residual_with_inertia(FEMLIB *fe,
        double *f_n_1_a = aloc1(ndofe);
 
        err +=  DISP_resid_el(f_n_1_a,eid,ndofn,nne,x,y,z,grid->element,
-                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_1_a, dts[DT_N]);
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_1_a, dts[DT_N], EXA_metric);
 
        err +=  DISP_resid_el(f_n_a,eid,ndofn,nne,x,y,z,grid->element,
-                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_a, dts[DT_NP1]);
+                             mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_n_a, dts[DT_NP1], EXA_metric);
 
        for(long a = 0; a<ndofe; a++)
          be[a] = -f_i[a] - (1.0-(sol->alpha))*dts[DT_NP1]*f_n_a[a] - (sol->alpha)*dts[DT_N]*f_n_1_a[a];
@@ -295,7 +297,7 @@ int residual_with_inertia(FEMLIB *fe,
    case CM:   //intended to flow
    case CM3F:
      {
-       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
+       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1],EXA_metric);
 
        for(long a = 0; a<ndofe; a++)
          be[a] -= f_i[a]; // - (1.0-alpha)*dt and - alpha*dt are included in be[a]
@@ -335,6 +337,7 @@ int residual_with_inertia(FEMLIB *fe,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffness_with_inertia(FEMLIB *fe,
                            double *Ks,
@@ -348,7 +351,8 @@ int stiffness_with_inertia(FEMLIB *fe,
                            const PGFem3D_opt *opts,
                            const Multiphysics& mp,
                            int mp_id,
-                           double dt)
+                           double dt,
+                           int &EXA_metric)
 {
 
   int err = 0;
@@ -428,7 +432,7 @@ int stiffness_with_inertia(FEMLIB *fe,
    case CM:  // intended to flow
      err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_npa.m_pdata,
                                                       grid,mat,fv,sol,load,crpl,
-                                                      opts,mp,mp_id,dt);
+                                                      opts,mp,mp_id,dt,EXA_metric);
 
      for(long a = 0; a<ndofe*ndofe; a++)
        Ks[a] = -Kuu_I.m_pdata[a]-(sol->alpha)*(1.0-(sol->alpha))*dt*Kuu_K.m_pdata[a];
@@ -437,7 +441,7 @@ int stiffness_with_inertia(FEMLIB *fe,
    case CM3F:
      err += stiffness_el_constitutive_model_w_inertia(fe,Kuu_K.m_pdata,r_e,u_npa.m_pdata,
                                                       grid,mat,fv,sol,load,crpl,
-                                                      opts,mp,mp_id,dt);
+                                                      opts,mp,mp_id,dt,EXA_metric);
 
      for(long a = 0; a<ndofe*ndofe; a++)
        Ks[a] = -Kuu_I.m_pdata[a] + Kuu_K.m_pdata[a];

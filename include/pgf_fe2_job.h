@@ -152,7 +152,8 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 int pgf_FE2_job_compute(pgf_FE2_job *job,
             MICROSCALE *micro,
             const PGFEM_mpi_comm *mpi_comm,
-            const int mp_id);
+            const int mp_id,
+            int &EXA_metric);
 
 /**
  * Initiates computing a job on a worker process (non-master).
@@ -160,7 +161,8 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 void pgf_FE2_job_compute_worker(const size_t job_id,
                 const size_t buffer_len,
                 MICROSCALE *micro,
-                const int mp_id);
+                const int mp_id,
+                int &EXA_metric);
 
 /**
  * Check the job state and reply to the macroscale if

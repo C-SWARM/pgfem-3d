@@ -54,6 +54,7 @@
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 double compute_residuals_for_NR(long *INFO, 
                                 Grid *grid,
@@ -68,7 +69,8 @@ double compute_residuals_for_NR(long *INFO,
                                 int mp_id,
                                 double t,
                                 double *dts,
-                                int updated_deformation);
+                                int updated_deformation,
+                                int &EXA_metric);
 
 /// Perform Newton Staggered Newton Raphson
 ///
@@ -84,6 +86,7 @@ double compute_residuals_for_NR(long *INFO,
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return time spent for this routine
 void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  std::vector<double> &stiffmat_time,
@@ -99,7 +102,8 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  MPI_Comm mpi_comm,
                                  const double VVolume,
                                  const PGFem3D_opt *opts,
-                                 const Multiphysics& mp);
+                                 const Multiphysics& mp,
+                                 int &EXA_metric);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///
@@ -112,6 +116,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
 /// \param[in] sup_defl Prescribed deflection
 /// \param[out] pores opening volume of failed cohesive interfaces
 /// \param[out] n_step the number of nonlinear steps taken to solve the given increment
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
                                  COMMON_MACROSCALE *c,
@@ -121,6 +126,7 @@ double Newton_Raphson_multiscale(const int print_level,
                                  const PGFem3D_opt *opts,
                                  double *sup_defl,
                                  double *pores,
-                                 int *n_step);
+                                 int *n_step,
+                                 int &EXA_metric);
 
 #endif /* #define PGFEM3D_NEWTON_RAPHSON_H */

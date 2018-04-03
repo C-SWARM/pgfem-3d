@@ -150,11 +150,12 @@ int main(int argc, char **argv)
   double F[9] = {0};
   void *ctx = NULL;
   const int n_step = 20;
+  int EXA_metric = 0;
   for (int i = 0; i < n_step; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat.nu, F);
     err += j2d_plasticity_model_ctx_build(&ctx, F, dt);
-    err += m.param->integration_algorithm(&m, ctx);
+    err += m.param->integration_algorithm(&m, ctx, EXA_metric);
     err += m.param->update_state_vars(&m);
     //err += write_data_point(stdout,ctx,&m,t);
     err += write_data_point(out,ctx,&m,t);

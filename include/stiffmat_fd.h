@@ -37,6 +37,7 @@
 /// \param[in] lm Load multiplier level in Arc Length scheme
 /// \param[in] be tangential load vector when periodic and solution scheme is Arc Length
 /// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
@@ -52,7 +53,8 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                            double dt,
                            double lm,
                            double *be,
-                           double *r_e);
+                           double *r_e,
+                           int &EXA_metric);
 
 /// Compute stiffnes
 ///
@@ -71,6 +73,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] dt time step
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffmat_fd_MP(Grid *grid,
                    MaterialProperty *mat,
@@ -85,7 +88,8 @@ int stiffmat_fd_MP(Grid *grid,
                    int mp_id,
                    double dt,
                    long iter,
-                   int myrank);
+                   int myrank,
+                   int &EXA_metric);
 
 /// Multiscale simulation interface to compute stiffness matrix
 ///
@@ -98,6 +102,7 @@ int stiffmat_fd_MP(Grid *grid,
 ///                   0: only compute stiffnes at the 1st iteration
 /// \param[in] myrank current process rank
 /// \param[in] nproc   number of total process
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            MACROSCALE_SOLUTION *s,
@@ -106,7 +111,8 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            double nor_min,
                            long FNR,
                            int myrank,
-                           int nproc);
+                           int nproc,
+                           int &EXA_metric);
 
 /** Assemble non-local parts as they arrive */
 int assemble_nonlocal_stiffmat(const COMMUN pgfem_comm,

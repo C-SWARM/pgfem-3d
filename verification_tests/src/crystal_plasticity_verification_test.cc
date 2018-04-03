@@ -62,6 +62,7 @@ void test_crystal_plasticity_single_crystal(void)
   double tol_hardening  = 1.0e-6;
   double tol_M          = 1.0e-6;
   double computer_zero  = 1.0e-15;
+  int EXA_metric = 0;
 
 
   // create material properties: Elasticity
@@ -129,7 +130,7 @@ void test_crystal_plasticity_single_crystal(void)
 
     staggered_Newton_Rapson(pFnp1.data,M.data, &g_np1, &lambda,
                             pFn.data, Fn.data,Fnp1.data,
-                            g_n, dt, &mat, &elast, &solver_info);
+                            g_n, dt, &mat, &elast, &solver_info, EXA_metric);
 
     pFn = pFnp1(i,j);
     Fn  = Fnp1(i,j);

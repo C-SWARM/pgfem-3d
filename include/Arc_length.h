@@ -86,6 +86,7 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return load multiplier
 double Multiphysics_Arc_length(Grid *grid,
                                MaterialProperty *mat,
@@ -99,7 +100,8 @@ double Multiphysics_Arc_length(Grid *grid,
                                const double VVolume,
                                const PGFem3D_opt *opts,
                                const Multiphysics& mp,
-                               const int mp_id);
+                               const int mp_id,
+                               int &EXA_metric);
 
 /// Multiscale simulation interface to perform Newton Raphson iteration
 ///
@@ -123,6 +125,7 @@ double Multiphysics_Arc_length(Grid *grid,
 /// \param[in,out] ITT Arc Lengh parameter
 /// \param[in,out] DAL Arc Lengh parameter
 /// \param[in] sup_defl Prescribed deflection
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return load multiplier
 double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              MACROSCALE_SOLUTION *s,
@@ -138,6 +141,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              long ARC,
                              long *ITT,
                              double *DAL,
-                             double *sup_defl);
+                             double *sup_defl,
+                             int &EXA_metric);
 
 #endif // #define PGFEM3D_ARC_LENGTH_H

@@ -101,11 +101,12 @@ static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
 static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
                            MICROSCALE *micro,
                            const PGFEM_mpi_comm *mpi_comm,
-                           const int mp_id)
+                           const int mp_id,
+                           int &EXA_metric)
 {
   pgf_FE2_job *__restrict jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
-    pgf_FE2_job_compute(jobs + i,micro,mpi_comm,mp_id);
+    pgf_FE2_job_compute(jobs + i,micro,mpi_comm,mp_id,EXA_metric);
   }
 }
 
@@ -321,7 +322,8 @@ pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
 static int
 pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
                             MICROSCALE *micro,
-                            const int mp_id)
+                            const int mp_id,
+                            int &EXA_metric)
 {
   int err = 0;
   int exit_server = 0;
@@ -362,7 +364,7 @@ pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
      completed and update their state appropriately. */
 
       /* compute the jobs that are ready. Posts sends */
-      pgf_FE2_micro_server_compute_ready(server,micro,mpi_comm,mp_id);
+      pgf_FE2_micro_server_compute_ready(server,micro,mpi_comm,mp_id,EXA_metric);
 
     }
 
@@ -382,7 +384,8 @@ pgf_FE2_micro_server_master(const PGFEM_mpi_comm *mpi_comm,
  */
 static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
                        MICROSCALE *micro,
-                       const int mp_id)
+                       const int mp_id,
+                       int &EXA_metric)
 {
   int err = 0;
   int exit_server = 0;
@@ -424,7 +427,7 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
       break;
 
     default: /* valid job, compute work */
-      pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id);
+      pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,EXA_metric);
       break;
     }
   }
@@ -434,14 +437,15 @@ static int pgf_FE2_micro_server_worker(const PGFEM_mpi_comm *mpi_comm,
 
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
                    MICROSCALE *micro,
-                   const int mp_id)
+                   const int mp_id,
+                   int &EXA_metric)
 {
   int err = 0;
   assert(mpi_comm->valid_micro);
   if(mpi_comm->valid_mm_inter){
-   err += pgf_FE2_micro_server_master(mpi_comm,micro,mp_id);
+   err += pgf_FE2_micro_server_master(mpi_comm,micro,mp_id,EXA_metric);
   } else {
-    err += pgf_FE2_micro_server_worker(mpi_comm,micro,mp_id);
+    err += pgf_FE2_micro_server_worker(mpi_comm,micro,mp_id,EXA_metric);
   }
   return err;
 }

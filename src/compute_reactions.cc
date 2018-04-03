@@ -37,7 +37,8 @@ int compute_reactions(long ne,
                       double stab,
                       MPI_Comm mpi_comm,
                       const int analysis,
-                      const int mp_id)
+                      const int mp_id,
+                      int &EXA_metric)
 {
   int err = 0;
 
@@ -119,7 +120,7 @@ int compute_reactions(long ne,
            def_elem (cn,ndofe,r,elem,node,r_en,sup,1);
            vvplus(r_e,r_en,ndofe);
            err =  DISP_resid_el(fe,elem_id,ndofn,nne,x,y,z,elem,
-                                hommat,nod,node,eps,sig,sup,r_e,dt);
+                                hommat,nod,node,eps,sig,sup,r_e,dt,EXA_metric);
            free(r_en);
          }
          break;

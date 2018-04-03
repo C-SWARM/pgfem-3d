@@ -117,6 +117,7 @@ static int fd_res_coel(double *fe,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 static int fd_res_elem_MP(double *be,
                           const int eid,
@@ -133,7 +134,8 @@ static int fd_res_elem_MP(double *be,
                           double t,
                           double *dts,
                           int include_inertia,
-                          int updated_deformation)
+                          int updated_deformation,
+                          int &EXA_metric)
 {
   int err = 0;
   int intg_order = 0;
@@ -199,7 +201,7 @@ static int fd_res_elem_MP(double *be,
   double *z = (fe.temp_v).z.m_pdata;
 
   if(include_inertia) {
-    err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
+    err += residual_with_inertia(&fe,be,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t,EXA_metric);
   } else {
     /* Residuals on element */
     switch(opts->analysis_type) {
@@ -222,7 +224,7 @@ static int fd_res_elem_MP(double *be,
          DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
 
          err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
-                              mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
+                              mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt,EXA_metric);
          for(long a = 0; a<ndofe; a++)
            be[a] += -bf[a];
 
@@ -249,7 +251,7 @@ static int fd_res_elem_MP(double *be,
      case CM:  // intented to flow
      case CM3F:
       err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
-                                             opts,mp,mp_id,dt);
+                                             opts,mp,mp_id,dt,EXA_metric);
       break;
      default:
       err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,
@@ -285,6 +287,7 @@ static int fd_res_elem_MP(double *be,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 long fd_residuals_MP(Grid *grid,
                      MaterialProperty *mat,
@@ -298,7 +301,8 @@ long fd_residuals_MP(Grid *grid,
                      int mp_id,
                      double t,
                      double *dts,
-                     int updated_deformation)
+                     int updated_deformation,
+                     int &EXA_metric)
 {
   int err = 0;
   Element *elem = grid->element;
@@ -335,7 +339,7 @@ long fd_residuals_MP(Grid *grid,
 
     err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
                           mpi_comm, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation);
+                          include_inertia, updated_deformation, EXA_metric);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
 
@@ -470,6 +474,7 @@ long fd_residuals_MP(Grid *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] t time
 /// \param[in] dts time step sizes at n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int fd_res_compute_reactions_MP(Grid *grid,
                                 MaterialProperty *mat,
@@ -482,7 +487,8 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 const Multiphysics& mp,
                                 int mp_id,
                                 double t,
-                                double *dts)
+                                double *dts,
+                                int &EXA_metric)
 {
   int err = 0;
 
@@ -509,7 +515,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
 
     err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
                           mpi_comm, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation);
+                          include_inertia, updated_deformation, EXA_metric);
 
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we
@@ -552,12 +558,14 @@ int fd_res_compute_reactions_MP(Grid *grid,
 /// \param[in] solver_file structure for storing/updating the data
 /// \param[in] opts structure PGFem3D option
 /// \param[in] dts time step sizes at n, and n+1
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
                                         MACROSCALE_SOLUTION *s,
                                         SOLVER_FILE *solver_file,
                                         const PGFem3D_opt *opts,
-                                        double *dts)
+                                        double *dts,
+                                        int &EXA_metric)
 {
   int err = 0;
 
@@ -643,7 +651,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,opts,mp,
-                                     0,s->times[s->tim+1],dts);
+                                     0,s->times[s->tim+1],dts,EXA_metric);
 
   free(physicsname);
 

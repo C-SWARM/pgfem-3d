@@ -21,7 +21,8 @@ class CP_PARAM: public Model_parameters
   virtual int model_dependent_finalization(void);
 
   virtual int integration_algorithm(Constitutive_model *m,
-                                    const void *usr_ctx) const;
+                                    const void *usr_ctx,
+                                    int &EXA_metric) const;
   virtual int compute_dev_stress(const Constitutive_model *m,
                                  const void *ctx,
                                  double *S) const;

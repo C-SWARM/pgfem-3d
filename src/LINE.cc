@@ -51,6 +51,7 @@ using pgfem3d::Solver;
 /// \param[in] dissipation volume weighted dissipation
 /// \param[in] tim current time step number
 /// \param[in] STEP subdivision number
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return info id about convergence
 long LINE_S3_MP(double *residuals_loc_time, 
                 Grid *grid,
@@ -74,7 +75,8 @@ long LINE_S3_MP(double *residuals_loc_time,
                 double *max_damage,
                 double *dissipation,
                 long tim,
-                long STEP)
+                long STEP,
+                int &EXA_metric)
 {
   long i,N,M,INFO,GInfo;
   double LS2,slope,tmplam,rhs1,rhs2,AL{},a,b,f2{},disc,scale,nor3;
@@ -183,7 +185,7 @@ long LINE_S3_MP(double *residuals_loc_time,
     /* Residuals */
     INFO = 0;
     *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                    opts,mp,mp_id,t,dts, 1);
+                                                    opts,mp,mp_id,t,dts, 1,EXA_metric);
 
     /* Compute Euclidian norm */
     for (i=0;i<fv->ndofd;i++)
@@ -252,6 +254,7 @@ long LINE_S3_MP(double *residuals_loc_time,
 /// \param[out] gama line search parameter
 /// \param[in] dlm Arc Length parameter
 /// \param[in] dAL Arc Length parameter
+/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return info id about convergence
 long ALINE_S3_MP(Grid *grid,
                  MaterialProperty *mat,
@@ -277,7 +280,8 @@ long ALINE_S3_MP(Grid *grid,
                  double *DLM,
                  double *gama,
                  double dlm,
-                 double dAL)
+                 double dAL,
+                 int &EXA_metric)
 {
   ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dt = dts[DT_NP1];
@@ -411,7 +415,7 @@ long ALINE_S3_MP(Grid *grid,
     }
 
     /* Residuals */
-    fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,1);
+    fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,1,EXA_metric);
 
 
     /* Compute Euclidean norm */
