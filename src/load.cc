@@ -407,8 +407,8 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
 /// \param[in] nor_min nonlinear convergence tolerance
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
-                                                     MACROSCALE_SOLUTION *s,
+int compute_load_vector_for_prescribed_BC_multiscale(MultiscaleCommon *c,
+                                                     MULTISCALE_SOLUTION *s,
                                                      const PGFem3D_opt *opts,
                                                      double nor_min,
                                                      int myrank)
@@ -501,16 +501,17 @@ int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
   CommunicationStructure com;
   {
     communication_structure_initialization(&com);
-
-    com.rank   = c->com->rank;
-    com.nproc  = c->com->nproc;
-    com.comm   = c->com->comm;
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
+    com.boot   = c->boot;
+    com.net    = c->net;
+    com.comm   = c->comm;
+    com.rank   = c->rank;
+    com.nproc  = c->nproc;
   }
 
   err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv,&sol,&load,

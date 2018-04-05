@@ -41,15 +41,25 @@ typedef void* op_t;
   
 #ifdef HAVE_MPI
 // MPI compatibility
+#define NET_ANY_SOURCE    MPI_ANY_SOURCE
 #define NET_ANY_TAG       MPI_ANY_TAG
 #define NET_WAIT_ANY      MPI_WAIT_ANY
 #define NET_BOTTOM        MPI_BOTTOM
 #define NET_IN_PLACE      MPI_IN_PLACE
+#define NET_UNDEFINED     MPI_UNDEFINED
+#define NET_COMM_NULL     MPI_COMM_NULL
+#define NET_COMM_SELF     MPI_COMM_SELF
+#define NET_REQUEST_NULL  MPI_REQUEST_NULL
 #else
+#define NET_ANY_SOURCE    (-1)
 #define NET_ANY_TAG       (-1)
 #define NET_WAIT_ANY      ((void*) 0)
 #define NET_BOTTOM        ((void*) 0)
 #define NET_IN_PLACE      ((void*) 1)
+#define NET_UNDEFINED     ((void*) 0)
+#define NET_COMM_NULL     ((void*) 0)
+#define NET_COMM_SELF     ((void*) 0)
+#define NET_REQUEST_NULL  ((void*) 0)
 #endif
 
 #define NET_STATUS_IGNORE ((pgfem3d::net::Status*) 0)
@@ -136,16 +146,20 @@ public:
   virtual void finalize() = 0;
   virtual void abort(PGFem3D_Comm comm, int code) = 0;
 
-  virtual int get_rank(PGFem3D_Comm comm) = 0;
-  virtual int get_nproc(PGFem3D_Comm comm) = 0;
-  
   virtual void allocRequestArray(int count, Request *rary[]) = 0;
   virtual void allocStatusArray(int count, Status *sary[]) = 0;
+
+  virtual void comm_rank(PGFem3D_Comm comm, int *rank) = 0;
+  virtual void comm_size(PGFem3D_Comm comm, int *size) = 0;
+  virtual void comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm) = 0;
+  virtual void comm_free(PGFem3D_Comm *comm) = 0;
+  virtual void comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm) = 0;
   
   virtual void pin(const void *addr, const size_t bytes, Key *key) = 0;
   virtual void unpin(const void *addr, const size_t bytes) = 0;
-
+  
   virtual void barrier(PGFem3D_Comm comm) = 0;
+  virtual void bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm) = 0;
   virtual void reduce(const void *in, void *out, int count, datatype_t dt, op_t op,
 		      int root, PGFem3D_Comm comm) = 0;
   virtual void gather(const void *in, int scount, datatype_t sdt, void *out,
@@ -165,6 +179,10 @@ public:
 		     PGFem3D_Comm comm, Request *request) = 0;
   virtual void irecv(void *buf, int count, datatype_t dt,
 		     int source, int tag, PGFem3D_Comm comm, Request *request) = 0;
+  virtual void send(const void *buf, int count, datatype_t dt, int dest, int tag,
+		    PGFem3D_Comm comm) = 0;
+  virtual void recv(void *buf, int count, datatype_t dt,
+		    int source, int tag, PGFem3D_Comm comm, Status *status) = 0;
   virtual void wait(Request *req, Status *status) = 0;
   virtual void waitall(int count, Request *requests,
 		       Status *statuses) = 0;
@@ -175,7 +193,10 @@ public:
 			Status *statuses) = 0;
   virtual void iprobe(int source, int tag, PGFem3D_Comm comm, int *flag,
 		      Status *status) = 0;
+  virtual void probe(int source, int tag, PGFem3D_Comm comm, Status *status) = 0;
+  virtual void test(Request *req, int *flag, Status *status) = 0;
   virtual void get_status_count(const Status *status, datatype_t dt, int *count) = 0;
+  virtual void cancel(Request *request) = 0;
 };
 
 class PWCNetwork : public Network {

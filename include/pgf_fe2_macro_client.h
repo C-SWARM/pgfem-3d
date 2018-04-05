@@ -7,8 +7,8 @@
 #ifndef PGF_FE2_MACRO_CLIENT_H
 #define PGF_FE2_MACRO_CLIENT_H
 
+#include "pgfem3d/Network.hpp"
 #include <stdlib.h>
-#include "microscale_information.h"
 #include "pgf_fe2_rebalancer.h"
 
 /* fully encapsulate the client */
@@ -17,7 +17,8 @@ struct pgf_FE2_macro_client;
 /**
  * Initialize a handle to a client.
  */
-void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client);
+void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client,
+			       pgfem3d::net::Network *n);
 
 /**
  * Destroy a client object. Returns NULL for the client handle.
@@ -32,7 +33,7 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
  */
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 					  const int n_jobs_max,
-					  const MACROSCALE *macro,
+					  const pgfem3d::Macroscale *macro,
 					  const pgfem3d::MultiscaleComm *mscom,
 					  const int mp_id);
 
@@ -61,7 +62,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
  */
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 		    const pgfem3d::MultiscaleComm *mscom,
-                    const MACROSCALE *macro,
+		    const pgfem3d::Macroscale *macro,
                     const int job_type);
 
 /**
@@ -69,7 +70,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
  * of sub-steps taken at the microscale.
  */
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
-                    MACROSCALE *macro,
+		    pgfem3d::Macroscale *macro,
                     int *max_micro_sub_step);
 
 /**

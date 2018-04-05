@@ -48,6 +48,8 @@ using pgfem3d::SparseComm;
 using pgfem3d::Solver;
 using pgfem3d::solvers::SparseSystem;
 using pgfem3d::CommunicationStructure;
+using pgfem3d::MultiscaleCommon;
+using pgfem3d::MULTISCALE_SOLUTION;
   
 const constexpr int periodic = 0;
 const constexpr int ndn = 3;
@@ -840,8 +842,8 @@ int stiffmat_fd_MP(Grid *grid,
 /// \param[in] myrank current process rank
 /// \param[in] nproc   number of total process
 /// \return non-zero on internal error
-int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
-                           MACROSCALE_SOLUTION *s,
+int stiffmat_fd_multiscale(MultiscaleCommon *c,
+                           MULTISCALE_SOLUTION *s,
                            const PGFem3D_opt *opts,
                            long iter,
                            double nor_min,
@@ -938,15 +940,18 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   CommunicationStructure com;
   {
     communication_structure_initialization(&com);
-    com.rank   = myrank;
-    com.nproc  = nproc;
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
-    com.comm   = c->com->comm;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
+    com.boot   = c->boot;
+    com.net    = c->net;
+    com.comm   = c->comm;
+    com.rank   = c->rank;
+    com.nproc  = c->nproc;
+    com.spc    = c->spc;
   }
 
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,

@@ -2,7 +2,7 @@
 #define PGFEM3D_MULTISCALE_COMMUNICATION_H
 
 /// @brief This file defines the multiscale communication abstractions
-#include "pgfem3d/Network.hpp"
+#include "pgfem3d/Communication.hpp"
 #include <cstdio>
 
 namespace pgfem3d {
@@ -10,6 +10,13 @@ namespace pgfem3d {
 // The Multiscale Communicator abstraction
 class MultiscaleComm {
 public:
+  MultiscaleComm(const net::PGFem3D_Comm comm_world,
+		 net::Network *n);
+  ~MultiscaleComm();
+
+  void MM_split(const int macro_nproc,
+		const int micro_group_size);
+  
   /* communicators */
   net::PGFem3D_Comm world;
   net::PGFem3D_Comm macro;
@@ -34,6 +41,9 @@ public:
   int valid_micro_all;
   int valid_micro;
   int valid_mm_inter;
+  
+private:
+  net::Network *net;  // handle to the active network
 };
   
 class MultiscaleCommInfo {
@@ -43,14 +53,16 @@ public:
   
   /** expand this objectinto a list of communications
       to carry out */
-  int to_idx_list(int *n_comms,
-		  int **procs,
-		  int **sizes);
-  
-  /** compute the number of communications in this object */
-  int get_n_comms(int *n_comms);
-  
+  void to_idx_list(int *n_comms,
+		   int **procs,
+		   int **sizes);
+    
 private:
+  void get_n_comms(int *n_comms) {
+    if (n_proc == 0) *n_comms = 0;
+    else *n_comms = idx[n_proc];
+  }
+  
   int n_proc;      /**< number of procs to comm with */
   int *proc;       /**< proc ids to comm with [n_proc] */
   int *idx;        /**< partial sum to index into buff_size [n_proc] */
@@ -60,50 +72,63 @@ private:
 
 class MultiscaleServerContext {
 public:
-  MultiscaleServerContext(const int n_comm, const int *buf_sizes);
+  MultiscaleServerContext(net::Network *n);
   ~MultiscaleServerContext();
+
+  void initialize(const int n_comm, const int *buf_sizes);
+  void initialize(pgfem3d::MultiscaleCommInfo *minfo);
   
   /**
    * Return the indices for communication associated with tag
-   * (messages with MPI_ANY_TAG match any tag). The number of matches
+   * (messages with NET_ANY_TAG match any tag). The number of matches
    * and their indices are returned in count and indices
    * respectively. Note, indices should be an array at least as large
    * as the number of cummunications described by ctx.
    */
-  int get_idx_from_tag(const int tag,
-		       int *count,
-		       int *indices);
+  void get_idx_from_tag(const int tag,
+			int *count,
+			int *indices);
+  
   
   /**
    * Set the processor id for the message described at index idx.
    */
-  int set_proc_at_idx(const int proc,
-		      const int idx);
+  void set_proc_at_idx(const int proc,
+		       const int idx);
   
   /**
    * Set the tag for the message described at index idx.
    */
-  int set_tag_at_idx(const int tag,
-		     const int idx);
+  void set_tag_at_idx(const int tag,
+		      const int idx);
   
   /**
    * Get message info from server context at index. Note that the
    * buffer may be modified through the returned pointer.
    */
-  int get_message(const int idx,
-		  void *buf,
-		  int *n_bytes,
-		  int *proc,
-		  int *tag);
-  
-private:
+  void get_message(const int idx,
+		   void *buf,
+		   int *n_bytes,
+		   int *proc,
+		   int *tag,
+		   net::Request **r);
+
+  // XXX should encapsulate all the send/recv functionality in the class
+  // to protect these vars
   int n_comms; /**< How many communications */
+  int *tags; /**< tag (default NET_ANY_TAG) */
+  char **buffer; /**< buffer for communication */
   int *procs; /**< where they are going */
   int *sizes; /**< how big the messages are (in bytes) */
-  int *tags; /**< tag (default MPI_ANY_TAG) */
-  char **buffer; /**< buffer for communication */
   int in_process; /**< flag for if communication is in process */
+
+  net::Request *req;
+  net::Status *stat;
+
+private:
+  net::Network *net;
 };
-}
+
+} //end namespace pgfem3d
   
 #endif

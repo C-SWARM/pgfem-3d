@@ -33,9 +33,9 @@ namespace pgfem3d {
     
     net = n;
     comm = c;
-    
-    myrank = n->get_rank(c);
-    nproc = n->get_nproc(c);
+
+    n->comm_rank(c, &myrank);
+    n->comm_size(c, &nproc);
     
     sta_r = NULL;
     sta_s = NULL;

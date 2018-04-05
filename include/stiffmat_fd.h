@@ -94,8 +94,8 @@ int stiffmat_fd_MP(Grid *grid,
 /// \param[in] myrank current process rank
 /// \param[in] nproc   number of total process
 /// \return non-zero on internal error
-int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
-                           MACROSCALE_SOLUTION *s,
+int stiffmat_fd_multiscale(pgfem3d::MultiscaleCommon *c,
+                           pgfem3d::MULTISCALE_SOLUTION *s,
                            const PGFem3D_opt *opts,
                            long iter,
                            double nor_min,

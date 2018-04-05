@@ -22,12 +22,13 @@ enum pgf_FE2_rebalancer_heuristic {
 
 /**
  * Load balancer called on each macroscale process to rebalance the
- * servers. Nominally collective communication on mpi_comm->mm_inter.
+ * servers. Nominally collective communication on mscom->mm_inter.
  */
 pgf_FE2_server_rebalance** pgf_FE2_rebalancer(
+			  pgfem3d::net::Network *n,
 			  const pgfem3d::MultiscaleComm *mscom,
-                          const size_t total_n_jobs,
-                          const size_t max_n_jobs,
+			  const size_t total_n_jobs,
+			  const size_t max_n_jobs,
                           const int heuristic);
 
 /* The following is REALLY ugly, but I don't want to mess with it

@@ -7,8 +7,7 @@
 #ifndef PGF_FE2_COMPUTE_MAX_N_JOBS_H
 #define PGF_FE2_COMPUTE_MAX_N_JOBS_H
 
-#include "microscale_information.h"
-#include "PGFEM_mpi.h"
+#include "pgfem3d/MultiscaleCommon.hpp"
 
 /**
  * Compute the maximum number of jobs to allow on a single server.
@@ -22,12 +21,14 @@
  *
  * Communication on mpi_comm->world.
  * \param[in] macro Macroscale domain (=NULL for servers).
- * \param[in] mpi_comm FE2 MPI communicators
+ * \param[in] micro Microscale domain (=NULL for macro)
+ * \param[in] mscom Multiscale communicator structure
  * \param[out] max_n_jobs
  * \return non-zero on internal error
  */
-int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
-                   const PGFEM_mpi_comm *mpi_comm,
-                   int *max_n_jobs);
+int pgf_FE2_compute_max_n_jobs(const pgfem3d::Macroscale *macro,
+			       const pgfem3d::Microscale *micro,
+			       const pgfem3d::MultiscaleComm *mscom,
+			       int *max_n_jobs);
 
 #endif /* #ifndef  */

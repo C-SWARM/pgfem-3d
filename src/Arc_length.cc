@@ -54,6 +54,8 @@ using namespace pgfem3d::net;
 
 namespace {
   using pgfem3d::CommunicationStructure;
+  using pgfem3d::MultiscaleCommon;
+  using pgfem3d::MULTISCALE_SOLUTION;
 }
 
 /// initialize arc length variable object
@@ -1072,8 +1074,8 @@ double Multiphysics_Arc_length(Grid *grid,
 /// \param[in,out] DAL Arc Lengh parameter
 /// \param[in] sup_defl Prescribed deflection
 /// \return load multiplier
-double Arc_length_multiscale(COMMON_MACROSCALE *c,
-                             MACROSCALE_SOLUTION *s,
+double Arc_length_multiscale(MultiscaleCommon *c,
+                             MULTISCALE_SOLUTION *s,
                              SOLVER_FILE *solver_file,
                              const PGFem3D_opt *opts,
                              double *pores,
@@ -1215,8 +1217,11 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
-    com.spc    = c->com->spc;
-    com.comm   = c->com->comm;
+    com.boot   = c->boot;
+    com.net    = c->net;
+    com.comm   = c->comm;
+    com.rank   = c->rank;
+    com.nproc  = c->nproc;
   }
 
   /// initialize and define time stepping variable

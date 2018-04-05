@@ -110,8 +110,8 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
 /// \param[out] n_step the number of nonlinear steps taken to solve the given increment
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
-                                 COMMON_MACROSCALE *c,
-                                 MACROSCALE_SOLUTION *s,
+                                 pgfem3d::MultiscaleCommon *c,
+                                 pgfem3d::MULTISCALE_SOLUTION *s,
                                  SOLVER_FILE *solver_file,
                                  MS_SERVER_CTX *ctx,
                                  const PGFem3D_opt *opts,

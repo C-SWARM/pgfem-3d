@@ -8,7 +8,6 @@
 
 #include "bounding_element.h"
 #include "cohesive_element.h"
-#include "comm_hints.h"
 #include "data_structure.h"
 #include "element.h"
 #include "pgfem3d/Communication.hpp"

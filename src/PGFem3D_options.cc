@@ -298,7 +298,7 @@ void print_usage(FILE* out)
 {
   PGFEM_fprintf(out,"%s\n",prog_name);
   PGFEM_fprintf(out,"SS_USAGE: mpirun -np [NP] PGFem3D -SS [options] input output\n");
-  PGFEM_fprintf(out,"MS_USAGE: mpirun -np [NP] PGFem3D -MS "
+  PGFEM_fprintf(out,"MS_USAGE: mpirun -np [NP] PGFem3D -MS [network] "
                 "-macro-np [P] -micro-group-size [S] "
                 "[macro OPTION_BLK] [micro OPTION_BLK]\n"
                 "OPTION_BLK: -[scale]-start [options] "

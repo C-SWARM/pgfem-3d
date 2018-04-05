@@ -1,4 +1,4 @@
-SUBDIRS = solvers communication
+SUBDIRS = solvers multiscale communication
 
 # There are two targets in this source directory, the PGFem3D application
 # itself, and a convenience library called libgpfem3d.la. The convenience
@@ -25,6 +25,7 @@ AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
 
 libpgfem3d_la_LIBADD = \
   $(builddir)/solvers/libsolvers.la \
+  $(builddir)/multiscale/libmultiscale.la \
   $(builddir)/communication/libcommunication.la \
   $(top_builddir)/FEMLIB/src/libPGFem3D_FEMLIB.la \
   $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \

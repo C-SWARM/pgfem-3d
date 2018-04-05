@@ -85,8 +85,8 @@ int fd_res_compute_reactions_MP(Grid *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] dts time step sizes at n, and n+1
 /// \return non-zero on internal error
-int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
-                                        MACROSCALE_SOLUTION *s,
+int fd_res_compute_reactions_multiscale(pgfem3d::MultiscaleCommon *c,
+                                        pgfem3d::MULTISCALE_SOLUTION *s,
                                         SOLVER_FILE *solver_file,
                                         const PGFem3D_opt *opts,
                                         double *dts);

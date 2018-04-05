@@ -2140,7 +2140,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     double Rn_R = fabs(SOL[cpled_mp_id].last_residual - nor)/FV[cpled_mp_id].NORM;
 
     long global_ODE_EXA_metric = 0;
-    MPI_Reduce (&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,MPI_LONG,MPI_SUM,0,mpi_comm);
+    com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
     if(myrank==0)
     {
       printf(":: R(%s): ", mp.physicsname[cpled_mp_id]);
@@ -2827,8 +2827,8 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
 /// \param[out] n_step the number of nonlinear steps taken to solve the given increment
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
-                                 COMMON_MACROSCALE *c,
-                                 MACROSCALE_SOLUTION *s,
+                                 MultiscaleCommon *c,
+                                 MULTISCALE_SOLUTION *s,
                                  SOLVER_FILE *solver_file,
                                  MS_SERVER_CTX *ctx,
                                  const PGFem3D_opt *opts,
@@ -2836,8 +2836,6 @@ double Newton_Raphson_multiscale(const int print_level,
                                  double *pores,
                                  int *n_step)
 {
-  int nproc = c->com->nproc;
-
   int mp_id = 0;
 
   // initialize and define multiphysics
@@ -2945,14 +2943,18 @@ double Newton_Raphson_multiscale(const int print_level,
   CommunicationStructure com;
   {
     communication_structure_initialization(&com);
-    com.nproc  = nproc;
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
-    com.comm   = c->com->comm;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
+    com.boot   = c->boot;
+    com.net    = c->net;
+    com.comm   = c->comm;
+    com.rank   = c->rank;
+    com.nproc  = c->nproc;
+    com.spc    = c->spc;
   }
 
   /// initialize and define time stepping variable
@@ -2985,7 +2987,7 @@ double Newton_Raphson_multiscale(const int print_level,
                                           &load,&com,&ts,s->crpl,c->VVolume,
                                           opts,mp,&NR_t,mp_id);
 
-  update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->com,c->VVolume,
+  update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,&com,c->VVolume,
                             opts,mp,&NR_t,mp_id);
 
   ts.times[ts.tim] = ts.times[ts.tim+1] - NR_t.dt[DT_NP1];

@@ -25,13 +25,17 @@ public:
   void finalize();
   void abort(PGFem3D_Comm comm, int code);
 
-  int get_rank(PGFem3D_Comm comm);
-  int get_nproc(PGFem3D_Comm comm);
-  
   void allocRequestArray(int count, Request *rary[]);
   void allocStatusArray(int count, Status *sary[]);
-  
+
+  void comm_rank(PGFem3D_Comm comm, int *rank);
+  void comm_size(PGFem3D_Comm comm, int *size);
+  void comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm);
+  void comm_free(PGFem3D_Comm *comm);
+  void comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm);
+
   void barrier(PGFem3D_Comm comm);
+  void bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm);
   void reduce(const void *in, void *out, int count, datatype_t dt, op_t op,
 	      int root, PGFem3D_Comm comm);
   void gather(const void *in, int scount, datatype_t sdt, void *out,
@@ -51,6 +55,10 @@ public:
 	     PGFem3D_Comm comm, Request *request);
   void irecv(void *buf, int count, datatype_t dt,
 	     int source, int tag, PGFem3D_Comm comm, Request *request);
+  void send(const void *buf, int count, datatype_t dt, int dest, int tag,
+	    PGFem3D_Comm comm);
+  void recv(void *buf, int count, datatype_t dt,
+	    int source, int tag, PGFem3D_Comm comm, Status *status);
   void wait(Request *req, Status *status);
   void waitall(int count, Request *requests, Status *statuses);
   void waitany(int count, Request *requests, int *indx, Status *status);
@@ -58,7 +66,10 @@ public:
 		int array_of_indices[], Status *statuses);
   void iprobe(int source, int tag, PGFem3D_Comm comm, int *flag,
 	      Status *status);
+  void probe(int source, int tag, PGFem3D_Comm comm, Status *status);
+  void test(Request *req, int *flag, Status *status);
   void get_status_count(const Status *status, datatype_t dt, int *count);
+  void cancel(Request *request);
 
 private:
   static void Check(int rc) {

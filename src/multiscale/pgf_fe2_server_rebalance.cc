@@ -12,6 +12,9 @@
 #include "pgf_fe2_restart.h"
 #include <assert.h>
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 /**
  * Internal data structure
  */
@@ -19,7 +22,7 @@ namespace {
 struct Workspace {
   size_t count = 0;
   char **buffers = nullptr;
-  MPI_Request *reqs = nullptr;
+  Request *reqs = nullptr;
 };
 }
 
@@ -33,26 +36,28 @@ struct pgf_FE2_server_rebalance
   Workspace *recv_wkspc;
 };
 
-static void allocate_workspace(Workspace **wkspc, const size_t n_comm)
+static void allocate_workspace(Workspace **wkspc, const size_t n_comm,
+			       const Microscale *micro)
 {
   assert(wkspc != NULL && "wkspc can't be null");
   *wkspc = static_cast<Workspace*>(malloc(sizeof(Workspace)));
   (*wkspc)->count = n_comm;
-  (*wkspc)->reqs = static_cast<MPI_Request*>(malloc(n_comm*sizeof(*((*wkspc)->reqs))));
   (*wkspc)->buffers = static_cast<char**>(malloc(n_comm*sizeof(*((*wkspc)->buffers))));
+  micro->net->allocRequestArray(n_comm, &(*wkspc)->reqs);
 }
 
 static void destroy_workspace(Workspace *wkspc)
 {
   if(wkspc == NULL) return;
   free(wkspc->buffers);
-  free(wkspc->reqs);
+  delete [] wkspc->reqs;
 }
 
 static void allocate_recv_workspace(pgf_FE2_server_rebalance *t,
-                    const size_t n_recv)
+				    const Microscale *micro,
+				    const size_t n_recv)
 {
-  allocate_workspace(&(t->recv_wkspc),n_recv);
+  allocate_workspace(&(t->recv_wkspc),n_recv,micro);
 }
 
 static void destroy_recv_workspace(pgf_FE2_server_rebalance *t)
@@ -63,10 +68,11 @@ static void destroy_recv_workspace(pgf_FE2_server_rebalance *t)
 }
 
 static void allocate_send_workspace(pgf_FE2_server_rebalance *t,
-                    const size_t n_send,
-                    const size_t buff_size)
+				    const Microscale *micro,
+				    const size_t n_send,
+				    const size_t buff_size)
 {
-  allocate_workspace(&(t->send_wkspc),n_send);
+  allocate_workspace(&(t->send_wkspc),n_send,micro);
   for(size_t i=0; i<n_send; i++){
     t->send_wkspc->buffers[i] = static_cast<char*>(malloc(buff_size));
   }
@@ -241,17 +247,19 @@ static int dbg_cmp_int(const void *a, const void *b)
 /** Verify that the id's on the microscale servers are unique */
 static int debug_keep_id(const int n_keep,
                          const int *keep_id,
-                         const PGFEM_mpi_comm *mpi_comm)
+			 Network *n,
+                         const MultiscaleComm *mscom)
 {
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(n);
   int err = 0;
   int n_servers = -1;
-  err += MPI_Comm_size(mpi_comm->worker_inter,&n_servers);
-
+  net->comm_size(mscom->worker_inter,&n_servers);
+  
   /* get n_keep from each proc on worker_inter */
   int *counts = PGFEM_calloc(int, n_servers);
   int *displ = PGFEM_calloc(int, n_servers + 1);
-  err += MPI_Allgather(&n_keep,1,MPI_INT,counts,1,MPI_INT,
-              mpi_comm->worker_inter);
+  net->allgather(&n_keep,1,NET_DT_INT,counts,1,NET_DT_INT,
+		 mscom->worker_inter);
 
   /* allocate buffer for all keep_id */
   int total_n_keep = counts[0];
@@ -263,26 +271,26 @@ static int debug_keep_id(const int n_keep,
   int *all_keep_id = PGFEM_calloc(int, total_n_keep);
 
   /* Gather keep_id from all procs */
-  err += MPI_Allgatherv(keep_id,n_keep,MPI_INT,all_keep_id,counts,
-            displ,MPI_INT,mpi_comm->worker_inter);
-
+  net->allgatherv(keep_id,n_keep,NET_DT_INT,all_keep_id,counts,
+		  displ,NET_DT_INT,mscom->worker_inter);
+  
   /* sort array */
   qsort(all_keep_id,total_n_keep,sizeof(*all_keep_id),dbg_cmp_int);
 
   /* linear search for duplicates on master of server 0 */
-  if(mpi_comm->server_id == 0 && mpi_comm->rank_micro == 0){
+  if(mscom->server_id == 0 && mscom->rank_micro == 0){
     for(int i = 0; i < n_keep - 1; i++){
       if(all_keep_id[i] == all_keep_id[i+1]){
-    PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
-    assert(0); /* Cause abort on duplicate. Requires investigation */
-    err ++;
+	PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
+	assert(0); /* Cause abort on duplicate. Requires investigation */
+	err ++;
       }
     }
   }
-
+  
   /* brodcast error value to slaves */
-  MPI_Bcast(&err,1,MPI_INT,0,mpi_comm->worker_inter); /* between eq. procs */
-  MPI_Bcast(&err,1,MPI_INT,0,mpi_comm->micro); /* master to slaves */
+  net->bcast(&err,1,NET_DT_INT,0,mscom->worker_inter); /* between eq. procs */
+  net->bcast(&err,1,NET_DT_INT,0,mscom->micro); /* master to slaves */
 
   free(counts);
   free(displ);
@@ -292,9 +300,10 @@ static int debug_keep_id(const int n_keep,
 
 int
 pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-                                       const PGFEM_mpi_comm *mpi_comm,
-                                       MICROSCALE *micro)
+                                       const MultiscaleComm *mscom,
+                                       Microscale *micro)
 {
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
   static int sol_id_initialized = 0;
   int err = 0;
 
@@ -309,7 +318,7 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     const int *keep_id = pgf_FE2_server_rebalance_keep_buf(t);
 
 #ifndef NDEBUG
-    err += debug_keep_id(n_keep,keep_id,mpi_comm);
+    err += debug_keep_id(n_keep,keep_id,micro->net,mscom);
 #endif
 
     /* set first n_keep ids to match tags */
@@ -326,7 +335,7 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     if(micro->opts->restart >= 0){
       const size_t step = micro->opts->restart;
       for(int i=0; i<n_keep; i++){
-    err += pgf_FE2_restart_read_micro(micro,step,keep_id[i]);
+	err += pgf_FE2_restart_read_micro(micro,step,keep_id[i]);
       }
       /* turn off restart at the microscale */
       micro->opts->restart = -1;
@@ -342,7 +351,7 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
   const int *send_to = pgf_FE2_server_rebalance_send_dest(t);
 
   /* allocate file local buffer for send */
-  allocate_send_workspace(t,n_send,buff_size);
+  allocate_send_workspace(t,micro,n_send,buff_size);
 
   /* copy and send information */
   for(int i=0; i<n_send; i++){
@@ -355,19 +364,19 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     memcpy(dest,src,buff_size);
 
     /* post non-blocking send of the data */
-    err += MPI_Isend(t->send_wkspc->buffers[i],
-             buff_size, MPI_CHAR,
-             send_to[i], send_id[i],
-             mpi_comm->worker_inter,
-             &(t->send_wkspc->reqs[i]));
+    net->isend(t->send_wkspc->buffers[i],
+	       buff_size, NET_DT_CHAR,
+	       send_to[i], send_id[i],
+	       mscom->worker_inter,
+	       &(t->send_wkspc->reqs[i]));
   }
-
+  
   const int n_recv = pgf_FE2_server_rebalance_n_recv(t);
   const int *recv_id = pgf_FE2_server_rebalance_recv_buf(t);
   const int *recv_from = pgf_FE2_server_rebalance_recv_src(t);
 
   /* allocate file local buffer for recv */
-  allocate_recv_workspace(t,n_recv);
+  allocate_recv_workspace(t,micro,n_recv);
 
   /* set workspace buffers to point to solution space and post receives */
   for(int i=0; i<n_recv; i++){
@@ -376,31 +385,33 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 
     /* set workspace buffer to _point_ to the state at n buffer */
     t->recv_wkspc->buffers[i] = micro->sol[sol_idx].packed_state_var_n;
-
+    
     /* post non-blocking receive of the data */
-    err += MPI_Irecv(t->recv_wkspc->buffers[i],
-             buff_size,MPI_CHAR,
-             recv_from[i], recv_id[i],
-             mpi_comm->worker_inter,
-             &(t->recv_wkspc->reqs[i]));
+    net->irecv(t->recv_wkspc->buffers[i],
+	       buff_size,NET_DT_CHAR,
+	       recv_from[i], recv_id[i],
+	       mscom->worker_inter,
+	       &(t->recv_wkspc->reqs[i]));
   }
-
+  
   return err;
 }
 
 int
 pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-                                           const PGFEM_mpi_comm *mpi_comm)
+                                           const MultiscaleComm *mscom,
+					   const Microscale *micro)
 {
   int err = 0;
-
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
+  
   /* complete sends. Use waitsome to aid in splitting up later */
   {
     int outcount = 0;
     int *idx = PGFEM_calloc(int, t->send_wkspc->count);
-    while(outcount != MPI_UNDEFINED){
-      err += MPI_Waitsome(t->send_wkspc->count,t->send_wkspc->reqs,
-              &outcount,idx,MPI_STATUS_IGNORE);
+    while(outcount != NET_UNDEFINED){
+      net->waitsome(t->send_wkspc->count,t->send_wkspc->reqs,
+		    &outcount,idx,NET_STATUS_IGNORE);
     }
     free(idx);
   }
@@ -410,9 +421,9 @@ pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
   {
     int outcount = 0;
     int *idx = PGFEM_calloc(int, t->recv_wkspc->count);
-    while(outcount != MPI_UNDEFINED){
-      err += MPI_Waitsome(t->recv_wkspc->count,t->recv_wkspc->reqs,
-              &outcount,idx,MPI_STATUS_IGNORE);
+    while(outcount != NET_UNDEFINED){
+      net->waitsome(t->recv_wkspc->count,t->recv_wkspc->reqs,
+		    &outcount,idx,NET_STATUS_IGNORE);
     }
     free(idx);
   }
@@ -421,6 +432,6 @@ pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
 
   /* barrier to ensure that transfer comm is complete on all procs in
      the server. */
-  MPI_Barrier(mpi_comm->micro);
+  net->barrier(mscom->micro);
   return err;
 }

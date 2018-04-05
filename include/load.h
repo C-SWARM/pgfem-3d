@@ -6,6 +6,8 @@
 #ifndef PGFEM3D_LOAD_H
 #define PGFEM3D_LOAD_H
 
+#include "pgfem3d/MultiscaleCommon.hpp"
+#include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
 #include "cohesive_element.h"
@@ -20,6 +22,8 @@
 #include "node.h"
 #include "sig.h"
 #include "supp.h"
+
+using namespace pgfem3d;
 
 /**
  * \brief Get the list of times to increment the load from the file.
@@ -84,8 +88,8 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
 /// \param[in] nor_min nonlinear convergence tolerance
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
-int compute_load_vector_for_prescribed_BC_multiscale(COMMON_MACROSCALE *c,
-                                                     MACROSCALE_SOLUTION *s,
+int compute_load_vector_for_prescribed_BC_multiscale(pgfem3d::MultiscaleCommon *c,
+                                                     pgfem3d::MULTISCALE_SOLUTION *s,
                                                      const PGFem3D_opt *opts,
                                                      double nor_min,
                                                      int myrank);

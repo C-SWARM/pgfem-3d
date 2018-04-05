@@ -70,6 +70,7 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/solvers/Makefile
                  src/solvers/hypre/Makefile
+		 src/multiscale/Makefile
 		 src/communication/Makefile
                  verification_MMS/Makefile
                  verification_tests/Makefile

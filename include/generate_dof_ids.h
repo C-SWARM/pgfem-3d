@@ -10,7 +10,6 @@
 #include "pgfem3d/Communication.hpp"
 #include "bounding_element.h"
 #include "cohesive_element.h"
-#include "comm_hints.h"
 #include "element.h"
 #include "node.h"
 

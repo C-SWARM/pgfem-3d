@@ -14,11 +14,11 @@ static int create_ms_job_intercomm_micro(const int nproc_macro,
 static int create_ms_job_intercomm_macro(const int n_jobs,
                      const int *job_buff_sizes,
                      PGFEM_ms_job_intercomm *ic,
-                     MPI_Comm macro_comm);
+                     PGFem3D_Comm macro_comm);
 
 /*==== API FUNCTION DEFINITIONS ====*/
 int create_PGFEM_ms_job_intercomm(const int nproc_macro,
-                  const PGFEM_mpi_comm *comm,
+                  const MultiscaleComm *mscom,
                   const int n_jobs,
                   const int *job_buff_sizes,
                   PGFEM_ms_job_intercomm **intercomm)
@@ -156,7 +156,7 @@ static int create_ms_job_intercomm_micro(const int nproc_macro,
 static int create_ms_job_intercomm_macro(const int n_jobs,
                      const int *job_buff_sizes,
                      PGFEM_ms_job_intercomm *ic,
-                     MPI_Comm macro_comm)
+                     PGFem3D_Comm macro_comm)
 {
   int err = 0;
   int nproc_macro = 0;

@@ -50,20 +50,6 @@ void MPINetwork::abort(PGFem3D_Comm comm, int code)
   Check(MPI_Abort(static_cast<MPI_Comm>(comm), code));
 }
 
-int MPINetwork::get_rank(PGFem3D_Comm comm)
-{
-  int rank;
-  Check(MPI_Comm_rank(static_cast<MPI_Comm>(comm), &rank));
-  return rank;
-}
-
-int MPINetwork::get_nproc(PGFem3D_Comm comm)
-{
-  int nproc;
-  Check(MPI_Comm_size(static_cast<MPI_Comm>(comm), &nproc));
-  return nproc;
-}
-
 void MPINetwork::allocRequestArray(int count, Request *rary[])
 {
   if (!count) {
@@ -97,10 +83,42 @@ void MPINetwork::allocStatusArray(int count, Status *sary[])
   }
   *sary = s;
 }
-  
+
+void MPINetwork::comm_rank(PGFem3D_Comm comm, int *rank)
+{
+  Check(MPI_Comm_rank(static_cast<MPI_Comm>(comm), rank));
+}
+
+void MPINetwork::comm_size(PGFem3D_Comm comm, int *size)
+{
+  Check(MPI_Comm_size(static_cast<MPI_Comm>(comm), size));
+}
+
+void MPINetwork::comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm)
+{
+  Check(MPI_Comm_split(static_cast<MPI_Comm>(comm), color, key,
+		       static_cast<MPI_Comm*>(ncomm)));
+}
+
+void MPINetwork::comm_free(PGFem3D_Comm *comm)
+{
+  Check(MPI_Comm_free(static_cast<MPI_Comm*>(comm)));
+}
+
+void MPINetwork::comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm)
+{
+  Check(MPI_Comm_dup(static_cast<MPI_Comm>(comm),
+		     static_cast<MPI_Comm*>(ncomm)));
+}
+
 void MPINetwork::barrier(PGFem3D_Comm comm)
 {  
   Check(MPI_Barrier(static_cast<MPI_Comm>(comm)));
+}
+
+void MPINetwork::bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm)
+{
+  Check(MPI_Bcast(in, count, dt, root, static_cast<MPI_Comm>(comm)));
 }
 
 void MPINetwork::reduce(const void *in, void *out, int count, datatype_t dt, op_t op,
@@ -155,6 +173,20 @@ void MPINetwork::irecv(void *buf, int count, datatype_t dt,
 		  tag, static_cast<MPI_Comm>(comm), ConvertRequest(request)));
 }
 
+void MPINetwork::send(const void *buf, int count, datatype_t dt, int dest, int tag,
+		      PGFem3D_Comm comm)
+{
+  Check(MPI_Send(buf, count, static_cast<MPI_Datatype>(dt), dest, tag,
+		 static_cast<MPI_Comm>(comm)));
+}
+    
+void MPINetwork::recv(void *buf, int count, datatype_t dt,
+		      int source, int tag, PGFem3D_Comm comm, Status *status)
+{
+  Check(MPI_Recv(buf, count, static_cast<MPI_Datatype>(dt), source,
+		 tag, static_cast<MPI_Comm>(comm), ConvertStatus(status)));
+}
+
 void MPINetwork::wait(Request *request, Status *status)
 {
   Check(MPI_Wait(ConvertRequest(request),
@@ -171,10 +203,12 @@ void MPINetwork::waitany(int count, Request *requests, int *indx,
 			 Status *status)
 {
   Check(MPI_Waitany(count, ConvertRequest(requests), indx, ConvertStatus(status)));
-  MPI_Status *stat = (MPI_Status*)status->getData();
-  status->NET_SOURCE = stat->MPI_SOURCE;
-  status->NET_TAG = stat->MPI_TAG;
-  status->NET_ERROR = stat->MPI_ERROR;
+  if (!(status == NET_STATUS_IGNORE)) {
+    MPI_Status *stat = (MPI_Status*)status->getData();
+    status->NET_SOURCE = stat->MPI_SOURCE;
+    status->NET_TAG = stat->MPI_TAG;
+    status->NET_ERROR = stat->MPI_ERROR;
+  }
 }
 
 void MPINetwork::waitsome(int incount, Request *requests, int *outcount,
@@ -200,8 +234,28 @@ void MPINetwork::iprobe(int source, int tag, PGFem3D_Comm comm, int *flag,
   }
 }
 
+void MPINetwork::probe(int source, int tag, PGFem3D_Comm comm, Status *status)
+{
+  Check(MPI_Probe(source, tag, static_cast<MPI_Comm>(comm),
+		  ConvertStatus(status)));
+  MPI_Status *stat = (MPI_Status*)status->getData();
+  status->NET_SOURCE = stat->MPI_SOURCE;
+  status->NET_TAG = stat->MPI_TAG;
+  status->NET_ERROR = stat->MPI_ERROR;
+}
+
+void MPINetwork::test(Request *req, int *flag, Status *status)
+{
+  Check(MPI_Test(ConvertRequest(req), flag, ConvertStatus(status)));
+}
+
 void MPINetwork::get_status_count(const Status *status, datatype_t dt, int *count)
 {
   Check(MPI_Get_count(ConvertStatus((Status*)status), static_cast<MPI_Datatype>(dt),
 		      count));
+}
+
+void MPINetwork::cancel(Request *request)
+{
+
 }

@@ -9,7 +9,6 @@
 #define MICRO_SERVER_H
 
 #include <stdlib.h>
-#include "microscale_information.h"
 #include "pgf_fe2_job.h"
 #include "pgf_fe2_server_rebalance.h"
 
@@ -78,7 +77,7 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
  * processes.
  */
 int pgf_FE2_micro_server_START(const pgfem3d::MultiscaleComm *mscom,
-			       MICROSCALE *micro,
+			       pgfem3d::Microscale *micro,
 			       const int mp_id);
 
 /**

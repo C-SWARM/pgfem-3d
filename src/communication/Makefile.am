@@ -4,7 +4,9 @@ noinst_LTLIBRARIES     = libcommunication.la
 libcommunication_la_SOURCES  = Communication.cc           \
 			       ISIR_SparseComm.cc         \
 			       PWC_SparseComm.cc          \
-			       MultiscaleCommunication.cc \
+			       MultiscaleComm.cc          \
+			       MultiscaleCommInfo.cc      \
+			       MultiscaleServerContext.cc \
 			       Network.cc                 \
 			       Boot.cc
 

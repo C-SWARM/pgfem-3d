@@ -28,7 +28,6 @@
 #include "macro_micro_functions.h"
 #include "matice.h"
 #include "matrix_printing.h"
-#include "microscale_information.h"
 #include "ms_cohe_job_list.h"
 #include "out.h"
 #include "pgf_fe2_macro_client.h"
@@ -51,6 +50,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 namespace {
 const constexpr int ndim = 3;
 const constexpr long ARC = 1;
@@ -60,11 +62,10 @@ int multi_scale_main(int argc, char* argv[])
 {
   int err = 0;
   int mp_id = 0;
-  /* intitialize MPI */
-  if (MPI_Init(&argc, &argv)) {
-    PGFEM_Abort();
-  }
 
+  // Start the Boot class to get our PMI info
+  Boot *boot = new Boot();
+  
   /* initialize PGFEM_io */
   PGFEM_initialize_io(NULL,NULL);
 
@@ -79,16 +80,35 @@ int multi_scale_main(int argc, char* argv[])
   int debug = 0;
 
   /* get macro and micro parts of the command line */
-  int rank_world = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank_world);
-  get_macro_micro_option_blocks(rank_world, argc, argv,
+  int myrank = boot->get_rank();
+  get_macro_micro_option_blocks(myrank, argc, argv,
                                 &macro_start,&macro_argc,
                                 &micro_start,&micro_argc,
                                 &nproc_macro,&micro_group_size,
                                 &debug);
 
-  macro_argv = argv + macro_start;
+  /*=== Parse the command line for global options ===*/
+  PGFem3D_opt options;
+  set_default_options(&options);
+  /*
+  printf("argc: %d, macro_argc: %d, micro_argc: %d\n", argc, macro_argc, micro_argc);
+  if (macro_argc+micro_argc > argc) {
+    if (argc <= 2) {
+      if (myrank == 0) {
+	print_usage(stdout);
+      }
+      exit(0);
+    }
+    re_parse_command_line(myrank, 1, 1, argv, &options);
+  }
 
+  if (myrank == 0) {
+    print_options(stdout, &options);
+  }
+  */  
+
+  /* re-adjust for macro/micro options */
+  macro_argv = argv + macro_start;
   /* ensure that the microscale gets -ms option. Replace
      '-micro-start' with '-ms' and increment micro_argc */
   micro_argv = argv + micro_start - 1;
@@ -96,97 +116,101 @@ int multi_scale_main(int argc, char* argv[])
   sprintf(micro_argv[1],"-ms");
 
   while(debug);
+  
+  // Create the desired network
+  Network *net = pgfem3d::net::Network::Create(options);
 
-  PGFEM_mpi_comm *mpi_comm = PGFEM_calloc(PGFEM_mpi_comm, 1);
-  err += initialize_PGFEM_mpi_comm(MPI_COMM_WORLD,mpi_comm);
+  // Create the multiscale communicator object
+  MultiscaleComm *mscom = new MultiscaleComm(NET_COMM_WORLD, net);
 
-  if(mpi_comm->rank_world == 0){
+  if (myrank == 0) {
     PGFEM_printf("=== COUPLED MULTISCALE ANALYSIS ===\n\n");
   }
 
-  err += PGFEM_mpi_comm_MM_split(nproc_macro,micro_group_size,mpi_comm);
-
-
+  // split multiscale communicators
+  mscom->MM_split(nproc_macro, micro_group_size);
+  
   /*=== READ COMM HINTS ===*/
   //allocate memory
   CommunicationStructure *com = new CommunicationStructure{};
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-  PGFem3D_opt options;
-  MACROSCALE *macro = NULL;
-  MICROSCALE *micro = NULL;
+  Macroscale *macro = NULL;
+  Microscale *micro = NULL;
+  
   //load comm hints, macro/micro class, macro/micro filenames
-
-  if (mpi_comm->valid_macro) {
+  if (mscom->valid_macro) {
     /*=== MACROSCALE ===*/
+    macro = new Macroscale();
     re_parse_command_line(myrank, 1, macro_argc, macro_argv, &options);
-
-    const char* fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
-    com[0].hints = Comm_hints_construct();
-    int ch_err = Comm_hints_read_filename(com[0].hints, fn);
-
-    initialize_MACROSCALE(&macro);
-    build_MACROSCALE(macro,mpi_comm->macro,macro_argc,macro_argv,mp_id,com[mp_id].hints);
-    if (ch_err) {
-      Comm_hints_destroy(com[0].hints);
-      com[0].hints = NULL;
+    
+    int macro_rank;
+    net->comm_rank(mscom->macro, &macro_rank);
+    com->hints = new CommHints(options.ipath, options.ifname, myrank);
+    try {
+      (com->hints)->read_filename(NULL);
+    } catch(...) {
       if (myrank == 0) {
         PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
                        "Proceeding using fallback functions.\n");
       }
     }
 
+    // prepare macro communication
+    com->rank = macro_rank;
+    com->nproc = nproc_macro;
+    com->boot = boot;
+    com->net = net;
+    com->comm = mscom->macro; // MS communicators in mscom
+
+    macro->initialize(macro_argc, macro_argv, com, mp_id);
   }
   else {
     /*====== MICROSCALE =======*/
+    micro = new Microscale();
     re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
 
-
     int micro_rank;
-    MPI_Comm_rank(mpi_comm->micro, &micro_rank);
-    const char* fn = Comm_hints_filename(options.ipath, options.ifname, micro_rank);
-    com[0].hints = Comm_hints_construct();
-    int ch_err = Comm_hints_read_filename(com[0].hints, fn);
-
-    initialize_MICROSCALE(&micro);
-    build_MICROSCALE(micro, mpi_comm->micro, micro_argc, micro_argv, mp_id,
-                     com[mp_id].hints);
-
-    if (ch_err) {
-      Comm_hints_destroy(com[0].hints);
-      com[0].hints = NULL;
+    net->comm_rank(mscom->micro, &micro_rank);
+    com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
+    try {
+      (com->hints)->read_filename(NULL);
+    } catch(...) {
       if (myrank == 0) {
         PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
                        "Proceeding using fallback functions.\n");
       }
     }
 
-  }
+    // prepare micro communication
+    com->rank = micro_rank;
+    com->nproc = micro_group_size;
+    com->boot = boot;
+    com->net = net;
+    com->comm = mscom->micro; // MS communicators in mscom
 
+    micro->initialize(micro_argc, micro_argv, com, mp_id);
+  }
+  
   /*=== INITIALIZE SCALES ===*/
-  if (mpi_comm->valid_macro) {/*=== MACROSCALE ===*/
-    initialize_MACROSCALE(&macro);
-    build_MACROSCALE(macro, mpi_comm->macro, macro_argc, macro_argv, mp_id,
-                     com[mp_id].hints);
-    build_MACROSCALE_solution(macro);
+  if (mscom->valid_macro) {/*=== MACROSCALE ===*/
+    macro->build_solutions(1);  // only 1 for macroscale
+    // XXX not sure why this is done twice
+    macro->initialize(macro_argc, macro_argv, com, mp_id); 
   }
-  else if (mpi_comm->valid_micro) {/*=== MICROSCALE ===*/
+  else if (mscom->valid_micro) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
-    initialize_MICROSCALE(&micro);
-
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
       /* no output */
       PGFEM_redirect_io_null();
-      parse_command_line(micro_argc, micro_argv, mpi_comm->rank_micro,
+      parse_command_line(micro_argc, micro_argv, mscom->rank_micro,
                          micro->opts);
       PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
          filename */
-      int nproc_world = 0;
-      MPI_Comm_size(mpi_comm->world,&nproc_world);
-      int group_id = mpi_comm->rank_micro_all/micro_group_size;
+      int nproc_world;
+      net->comm_size(mscom->world, &nproc_world);
+      int group_id = mscom->rank_micro_all/micro_group_size;
       int dir_len = snprintf(NULL,0,"%s/log",micro->opts->opath)+1;
       char *dir_name = PGFEM_calloc(char, dir_len);
       sprintf(dir_name,"%s/log",micro->opts->opath);
@@ -204,53 +228,54 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     /*=== BUILD MICROSCALE ===*/
-    build_MICROSCALE(micro, mpi_comm->micro, micro_argc, micro_argv, mp_id,
-                     com[mp_id].hints);
+    // XXX not sure why this is done twice
+    micro->initialize(micro_argc, micro_argv, com, mp_id);
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
-                   mpi_comm->rank_world,__func__,__FILE__,__LINE__);
+                   mscom->rank_world,__func__,__FILE__,__LINE__);
     PGFEM_Abort();
   }
 
   int n_jobs_max = -1;
-  err += pgf_FE2_compute_max_n_jobs(macro,mpi_comm,&n_jobs_max);
+  err += pgf_FE2_compute_max_n_jobs(macro, micro, mscom, &n_jobs_max);
 
   /*=== build the macroscacle clients ===*/
   pgf_FE2_macro_client *client = NULL;
 
   /*=== Build MICROSCALE server and solutions ===*/
-  if (mpi_comm->valid_micro) {
+  if (mscom->valid_micro) {
     /* allocate space for maximum number of jobs to be computed. */
-    build_MICROSCALE_solutions(n_jobs_max,micro);
+    micro->build_solutions(n_jobs_max);
 
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */
-    err += pgf_FE2_micro_server_START(mpi_comm,micro,mp_id);
+    err += pgf_FE2_micro_server_START(mscom, micro, mp_id);
 
     /* destroy the microscale */
-    destroy_MICROSCALE(micro);
+    delete micro;
 
   } else { /*=== MACROSCALE ===*/
     /* initialize the client */
-    pgf_FE2_macro_client_init(&client);
+    pgf_FE2_macro_client_init(&client, net);
 
     /* create the list of jobs */
-    pgf_FE2_macro_client_create_job_list(client,n_jobs_max,macro,mpi_comm,mp_id);
-
+    pgf_FE2_macro_client_create_job_list(client, n_jobs_max, macro,
+					 mscom, mp_id);
+    
     /* determine the initial job assignment*/
-    pgf_FE2_macro_client_assign_initial_servers(client,mpi_comm);
+    pgf_FE2_macro_client_assign_initial_servers(client, mscom);
 
-    COMMON_MACROSCALE *c = macro->common;
-    MACROSCALE_SOLUTION *s = macro->sol;
+    MultiscaleCommon *c = macro;
+    MULTISCALE_SOLUTION *s = macro->sol;
     int nproc_macro = 0;
     char filename[500];
-    MPI_Comm_size(mpi_comm->macro,&nproc_macro);
-
+    net->comm_size(mscom->macro, &nproc_macro);
+    
     /* Create a context for passing stuff to Newton Raphson */
     MS_SERVER_CTX *ctx = PGFEM_calloc(MS_SERVER_CTX, 1);
     ctx->client = client;
-    ctx->mpi_comm = mpi_comm;
+    ctx->mscom = mscom;
     ctx->macro = macro;
 
     /*=== COMPUTE APPLIED FORCES ON MARKED SURFACES ===*/
@@ -266,7 +291,8 @@ int multi_scale_main(int argc, char* argv[])
       alloc_sprintf(&trac_fname,"%s/traction.in",macro->opts->ipath);
 
       read_applied_surface_tractions_fname(trac_fname,&n_feats,
-                                           &feat_type,&feat_id,&loads);
+                                           &feat_type,&feat_id,&loads,
+					   myrank);
 
       generate_applied_surface_traction_list(c->ne,c->elem,
                                              n_feats,feat_type,
@@ -282,10 +308,10 @@ int multi_scale_main(int argc, char* argv[])
       for(int i=0; i<c->ndofd; i++){
         tmp_sum += nodal_forces[i];
       }
-      MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
-                    MPI_SUM,mpi_comm->macro);
+      net->allreduce(NET_IN_PLACE, &tmp_sum, 1, NET_DT_DOUBLE,
+		     NET_OP_SUM, mscom->macro);
 
-      if(mpi_comm->rank_macro == 0){
+      if(mscom->rank_macro == 0){
         PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
       }
 
@@ -294,7 +320,7 @@ int multi_scale_main(int argc, char* argv[])
       free(loads);
       free(trac_fname);
     }
-
+    
     /* push nodal_forces to s->R */
     vvplus  (s->R,nodal_forces,c->ndofd);
 
@@ -302,7 +328,7 @@ int multi_scale_main(int argc, char* argv[])
     /*=== READ SOLVER FILE ===*/
     SOLVER_FILE *solver_file = NULL;
     if (macro->opts->override_solver_file) {
-      if (mpi_comm->rank_macro == 0) {
+      if (mscom->rank_macro == 0) {
         PGFEM_printf("Overriding the default solver file with:\n%s\n",
                      macro->opts->solver_file);
       }
@@ -311,7 +337,7 @@ int multi_scale_main(int argc, char* argv[])
       /* use the default file/filename */
       char *filename = NULL;
       alloc_sprintf (&filename,"%s/%s%d.in.st",macro->opts->ipath,
-                     macro->opts->ifname,mpi_comm->rank_macro);
+                     macro->opts->ifname,mscom->rank_macro);
       solver_file_open(filename, &solver_file);
       free(filename);
     }
@@ -327,7 +353,7 @@ int multi_scale_main(int argc, char* argv[])
                                          sizeof(*(s->times))));
 
     /* Nonlinear solver */
-    if (mpi_comm->rank_macro == 0) {
+    if (mscom->rank_macro == 0) {
       switch (solver_file->nonlin_method) {
        case NEWTON_METHOD:
         PGFEM_printf ("\nNONLINEAR SOLVER : NEWTON-RAPHSON METHOD\n");
@@ -352,7 +378,7 @@ int multi_scale_main(int argc, char* argv[])
     std::vector<double> hypre_time(mp_id + 1);
 
     if (macro->opts->restart >= 0) {
-      if (mpi_comm->rank_macro == 0) {
+      if (mscom->rank_macro == 0) {
         PGFEM_printf("Restarting from step %d\n\n",macro->opts->restart);
       }
 
@@ -361,11 +387,11 @@ int multi_scale_main(int argc, char* argv[])
                                c->supports->npd,c->supports->defl_d);
 
       /* read restart files and set current equilibrium state */
-      pgf_FE2_restart_read_macro(macro,macro->opts->restart,mp_id);
+      pgf_FE2_restart_read_macro(macro, macro->opts->restart, mp_id);
       s->tim = macro->opts->restart;
 
       /* send a job to compute the first tangent */
-      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+      pgf_FE2_macro_client_send_jobs(client, mscom, macro,
                                      JOB_NO_COMPUTE_EQUILIBRIUM);
 
       /* turn off restart at the macroscale */
@@ -379,9 +405,9 @@ int multi_scale_main(int argc, char* argv[])
           compute_resultant_force(n_feats,n_sur_trac_elem,
                                   ste,c->node,c->elem,
                                   s->sig_e,s->eps,sur_forces);
-          MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
-                        MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
-          if(mpi_comm->rank_macro == 0){
+          net->allreduce(NET_IN_PLACE, sur_forces, n_feats*ndim,
+			 NET_DT_DOUBLE, NET_OP_SUM, mscom->macro);
+          if(mscom->rank_macro == 0){
             PGFEM_printf("RESTART: Forces on marked features:\n");
             print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
                           n_feats,ndim);
@@ -397,21 +423,22 @@ int multi_scale_main(int argc, char* argv[])
       /* not restarting, need to compute initial load/RHS */
 
       /* send signal to microscale to compute initial tangent */
-      pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,
+      pgf_FE2_macro_client_send_jobs(client, mscom, macro,
                                      JOB_NO_COMPUTE_EQUILIBRIUM);
 
       /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
           of the load vector  */
       s->dt = s->times[s->tim + 1] - s->times[s->tim];
       if (s->dt == 0.0){
-        if (mpi_comm->rank_macro == 0){
+        if (mscom->rank_macro == 0){
           PGFEM_printf("Incorrect dt\n");
         }
         PGFEM_Abort();
       }
 
-      compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,solver_file->nonlin_tol,
-                                                       mpi_comm->rank_macro);
+      compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,
+						       solver_file->nonlin_tol,
+                                                       mscom->rank_macro);
 
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -428,9 +455,7 @@ int multi_scale_main(int argc, char* argv[])
       vvminus (s->f,s->f_defl,c->ndofd);
 
       /* Transform LOCAL load vector to GLOBAL */
-      LToG (s->R,s->BS_R,mpi_comm->rank_macro,nproc_macro,
-            c->ndofd,c->DomDof,c->GDof,c->pgfem_comm,
-            c->mpi_comm);
+      LToG (s->R, s->BS_R, c->ndofd, c);
     }
 
     /* Prescribed deflection */
@@ -455,13 +480,13 @@ int multi_scale_main(int argc, char* argv[])
     while (solver_file->n_step > (unsigned)s->tim) {
       s->dt = dt0 = s->times[s->tim+1] - s->times[s->tim];
       if (s->dt <= 0.0){
-        if (mpi_comm->rank_macro == 0) {
+        if (mscom->rank_macro == 0) {
           PGFEM_printf("Incorrect dt\n");
         }
         PGFEM_Abort();
       }
 
-      if (mpi_comm->rank_macro == 0) {
+      if (mscom->rank_macro == 0) {
         PGFEM_printf("\nFinite deformations time step %ld) "
                      " Time %f | dt = %10.10f\n",
                      s->tim,s->times[s->tim+1],s->dt);
@@ -480,7 +505,7 @@ int multi_scale_main(int argc, char* argv[])
         /* copy the load increment */
         memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-        if (mpi_comm->rank_macro == 0 && load_err){
+        if (mscom->rank_macro == 0 && load_err){
           PGFEM_printf ("Incorrect load input for Time = 0\n");
           PGFEM_Abort();
         }
@@ -541,9 +566,9 @@ int multi_scale_main(int argc, char* argv[])
           compute_resultant_force(n_feats,n_sur_trac_elem,
                                   ste,c->node,c->elem,
                                   s->sig_e,s->eps,sur_forces);
-          MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
-                        MPI_DOUBLE,MPI_SUM,mpi_comm->macro);
-          if(mpi_comm->rank_macro == 0){
+          net->allreduce(NET_IN_PLACE,sur_forces,n_feats*ndim,
+			 NET_DT_DOUBLE,NET_OP_SUM,mscom->macro);
+          if(mscom->rank_macro == 0){
             PGFEM_printf("Forces on marked features:\n");
             print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
                           n_feats,ndim);
@@ -566,11 +591,11 @@ int multi_scale_main(int argc, char* argv[])
       if (solver_file->print_steps[s->tim] == 1){
 
         /* do not transfer data between servers */
-        pgf_FE2_macro_client_rebalance_servers(client,mpi_comm,
+        pgf_FE2_macro_client_rebalance_servers(client,mscom,
                                                FE2_REBALANCE_NONE);
 
         /* Send print jobs */
-        pgf_FE2_macro_client_send_jobs(client,mpi_comm,macro,JOB_PRINT);
+        pgf_FE2_macro_client_send_jobs(client,mscom,macro,JOB_PRINT);
 
         if (macro->opts->vis_format != VIS_NONE ) {
 
@@ -578,9 +603,9 @@ int multi_scale_main(int argc, char* argv[])
            * *NOT* VTK ASCII format */
           if(macro->opts->ascii){
             int Gnn = 0;
-            ASCII_output(macro->opts,c->mpi_comm,s->tim,s->times,
+            ASCII_output(macro->opts,c,s->tim,s->times,
                          Gnn,c->nn,c->ne,c->nce,c->ndofd,
-                         c->DomDof,c->Ap,solver_file->nonlin_method,
+			 solver_file->nonlin_method,
                          lm,pores,c->VVolume,
                          c->node,c->elem,c->supports,
                          s->r,s->eps,s->sig_e,s->sig_n,c->coel);
@@ -589,7 +614,7 @@ int multi_scale_main(int argc, char* argv[])
           switch(macro->opts->vis_format){
            case VIS_ELIXIR:/* Print to elix file */
             sprintf (filename,"%s/%s_%d.elx%d",macro->opts->opath,
-                     macro->opts->ofname,mpi_comm->rank_macro,s->tim);
+                     macro->opts->ofname,mscom->rank_macro,s->tim);
             elixir (filename,c->nn,c->ne,ndim,c->node,c->elem,
                     c->supports,s->r,s->sig_e,s->sig_n,s->eps,
                     macro->opts->smoothing,c->nce,c->coel,macro->opts);
@@ -600,29 +625,29 @@ int multi_scale_main(int argc, char* argv[])
             EnSight (filename,s->tim,solver_file->n_step,c->nn,c->ne,ndim,c->node,
                      c->elem,c->supports,s->r,s->sig_e,s->sig_n,s->eps,
                      macro->opts->smoothing,c->nce,c->coel,
-                     solver_file->nonlin_method,lm,c->ensight,c->mpi_comm,
+                     solver_file->nonlin_method,lm,c->ensight,c,
                      macro->opts);
             break;
            case VIS_VTK:/* Print to VTK files */
-            if(mpi_comm->rank_macro == 0){
+            if(mscom->rank_macro == 0){
               VTK_print_master(macro->opts->opath,macro->opts->ofname,
                                s->tim,nproc_macro,macro->opts);
             }
 
             VTK_print_vtu(macro->opts->opath,macro->opts->ofname,s->tim,
-                          mpi_comm->rank_macro,c->ne,c->nn,c->node,c->elem,
+                          mscom->rank_macro,c->ne,c->nn,c->node,c->elem,
                           c->supports,s->r,NULL,NULL,s->sig_e,s->eps,
                           macro->opts,mp_id);
 
             if (macro->opts->cohesive == 1){
-              if(mpi_comm->rank_macro == 0){
+              if(mscom->rank_macro == 0){
                 VTK_print_cohesive_master(macro->opts->opath,
                                           macro->opts->ofname,
                                           s->tim,nproc_macro,macro->opts);
               }
 
               VTK_print_cohesive_vtu(macro->opts->opath,macro->opts->ofname,
-                                     s->tim,mpi_comm->rank_macro,c->nce,c->node,
+                                     s->tim,mscom->rank_macro,c->nce,c->node,
                                      c->coel,c->supports,s->r,c->ensight,
                                      macro->opts,mp_id);
             }
@@ -640,7 +665,7 @@ int multi_scale_main(int argc, char* argv[])
         pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
       }/* end output */
 
-      if (mpi_comm->rank_macro == 0){
+      if (mscom->rank_macro == 0){
         PGFEM_printf("\n");
         PGFEM_printf("*********************************************\n");
         PGFEM_printf("*********************************************\n");
@@ -650,7 +675,7 @@ int multi_scale_main(int argc, char* argv[])
     }/* end while */
 
     /*=== SEND EXIT SIGNAL TO MICROSCALE SERVER ===*/
-    pgf_FE2_macro_client_send_exit(client,mpi_comm);
+    pgf_FE2_macro_client_send_exit(client,mscom);
 
     /* cleanup */
     free(ctx);
@@ -662,27 +687,30 @@ int multi_scale_main(int argc, char* argv[])
     pgf_FE2_macro_client_destroy(client);
 
     /* destroy the macroscale */
-    destroy_MACROSCALE(macro);
+    delete macro;
   } /*=== END OF COMPUTATIONS ===*/
 
   /*=== PRINT TIME OF ANALYSIS ===*/
-  if(mpi_comm->rank_world == 0){
+  if (mscom->rank_world == 0){
     struct rusage usage;
     getrusage (RUSAGE_SELF, &usage);
     PGFEM_printf ("\n");
     PGFEM_printf ("Time of analysis on processor [%d] - "
                   " System %ld.%ld, User %ld.%ld.\n",
-                  mpi_comm->rank_world,usage.ru_stime.tv_sec,
+                  mscom->rank_world,usage.ru_stime.tv_sec,
                   usage.ru_stime.tv_usec,
                   usage.ru_utime.tv_sec,usage.ru_utime.tv_usec);
   }
 
-  /* destroy the PGFEM communicator */
-  err += destroy_PGFEM_mpi_comm(mpi_comm);
-  free(mpi_comm);
-  delete com;
-  /* finalize and exit */
   err += PGFEM_finalize_io();
-  err += MPI_Finalize();
+  
+  delete mscom;
+  delete com;
+
+  net->finalize();
+  
+  delete net;
+  delete boot;
+  /* finalize and exit */
   return err;
 }

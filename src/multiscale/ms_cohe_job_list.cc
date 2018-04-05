@@ -13,6 +13,7 @@
 #include "utils.h"
 
 using namespace pgfem3d;
+using namespace pgfem3d::net;
 using pgfem3d::solvers::SparseSystem;
 
 static constexpr int ndim = 3;
@@ -47,9 +48,9 @@ static int create_local_ms_cohe_job_list(const long nce,
                                          const Node *node,
                                          const int group_id,
                                          const long n_jobs,
-                                         const MPI_Comm macro_mpi_comm,
                                          MS_COHE_JOB_INFO *job_list,
                                          int *local_buffer_size,
+					 int myrank_macro,
                                          const int mp_id);
 
 /** update the local job list displacement jumps */
@@ -71,7 +72,8 @@ static int compute_loc_job_list_metadata(const long nce,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,
-                                         MPI_Comm ms_comm);
+					 Network *net,
+                                         PGFem3D_Comm ms_comm);
 
 /** Distribute the job list to all procs on the communicator. Contains
     collective communication on ms_comm */
@@ -79,27 +81,31 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
                                               const int start_id,
                                               /* const */ int buff_size,
                                               const long *n_job_dom,
-                                              MPI_Comm ms_comm);
+					      Network *net,
+                                              PGFem3D_Comm ms_comm);
 
 /*==== API FUNCTION DEFINITIONS ====*/
 
 int create_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
                                   const Node *node,
-                                  const MPI_Comm macro_mpi_comm,
-                                  const MPI_Comm ms_comm,
+                                  const PGFem3D_Comm macro_comm,
+                                  const PGFem3D_Comm ms_comm,
                                   const int group_id,
                                   long *Gn_jobs,
                                   long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
+				  Network *net,
                                   const int mp_id)
 {
   int err = 0;
   int myrank = 0;
+  int macro_rank = 0;
   int nproc = 0;
-  MPI_Comm_rank(ms_comm,&myrank);
-  MPI_Comm_size(ms_comm,&nproc);
-
+  net->comm_rank(ms_comm,&myrank);
+  net->comm_size(ms_comm,&nproc);
+  net->comm_rank(macro_comm,&macro_rank);
+  
   int *buff_sizes = NULL;
   int *buff_starts = NULL;
   char *buffer = NULL;
@@ -107,7 +113,7 @@ int create_group_ms_cohe_job_list(const long nce,
 
   *job_list = NULL;
   err += compute_loc_job_list_metadata(nce,coel,node,n_job_dom,
-                                       Gn_jobs,&job_id_start,ms_comm);
+                                       Gn_jobs,&job_id_start,net,ms_comm);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -122,16 +128,16 @@ int create_group_ms_cohe_job_list(const long nce,
   buff_sizes[myrank] = 0;
   err += create_local_ms_cohe_job_list(nce,coel,node,group_id,
                                        (*n_job_dom)[myrank],
-                                       macro_mpi_comm,
                                        *job_list + job_id_start,
-                                       &buff_sizes[myrank],mp_id);
+                                       &buff_sizes[myrank],macro_rank,
+				       mp_id);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
   /* compute size of global buffer */
   buff_starts = PGFEM_calloc(int, nproc);
-  MPI_Allgather(MPI_IN_PLACE,1,MPI_INT,buff_sizes,1,MPI_INT,ms_comm);
+  net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes,1,NET_DT_INT,ms_comm);
   {
     size_t g_buff_size = 0;
     for(int i=0; i<nproc; i++){
@@ -153,9 +159,9 @@ int create_group_ms_cohe_job_list(const long nce,
   }
 
   /* gather on all processes in group */
-  err += MPI_Allgatherv(MPI_IN_PLACE,buff_sizes[myrank],MPI_CHAR,
-                        buffer,buff_sizes,buff_starts,MPI_CHAR,ms_comm);
-
+  net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
+		  buffer,buff_sizes,buff_starts,NET_DT_CHAR,ms_comm);
+  
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
@@ -200,14 +206,15 @@ int update_group_ms_cohe_job_list(const long nce,
                                   const Node *node,
                                   const SUPP sup,
                                   const double *sol,
-                                  MPI_Comm ms_comm,
+				  Network *net,
+                                  PGFem3D_Comm ms_comm,
                                   MS_COHE_JOB_INFO *job_list)
 {
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  MPI_Comm_rank(ms_comm,&myrank);
-  MPI_Comm_size(ms_comm,&nproc);
+  net->comm_rank(ms_comm,&myrank);
+  net->comm_size(ms_comm,&nproc);
 
 
   long *n_job_dom = NULL;
@@ -215,7 +222,7 @@ int update_group_ms_cohe_job_list(const long nce,
   long start_id = 0;
   int buff_size = 0;
   err += compute_loc_job_list_metadata(nce,coel,node,&n_job_dom,
-                                       &Gn_jobs,&start_id,ms_comm);
+                                       &Gn_jobs,&start_id,net,ms_comm);
 
   /* check error status/zero jobs */
   if(check_warning(err,myrank) || Gn_jobs <= 0) goto exit_function;
@@ -231,7 +238,7 @@ int update_group_ms_cohe_job_list(const long nce,
   /* distribute the job list */
   err += distribute_group_ms_cohe_job_list(job_list,
                                            start_id,buff_size,
-                                           n_job_dom,ms_comm);
+                                           n_job_dom,net,ms_comm);
   /* check error status */
   if(check_warning(err,myrank));
 
@@ -245,12 +252,12 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
                             const CommunicationStructure *com,
                             MS_COHE_JOB_INFO *job_list,
                             SparseSystem *macro_solver,
-                            MICROSCALE *microscale,
+                            Microscale *microscale,
                             const int mp_id)
 {
   int err = 0;
 
-  COMMON_MICROSCALE        *c = microscale->common;
+  MultiscaleCommon         *c = microscale;
   SparseSystem  *micro_solver = c->SOLVER;
   const int            n_sols = microscale->idx_map.size;
   const int          analysis = microscale->opts->analysis_type;
@@ -269,7 +276,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   /* setup the stiffness matrix communication */
   double        **Lk = nullptr;
   double   **receive = nullptr;
-  com->spc->init_and_post_stiffmat(&Lk, &receive);
+  com->spc->post_stiffmat(&Lk, &receive);
 
   /* for each solution, compute job */
   for (int i = 0; i < n_sols; ++i) {
@@ -337,14 +344,16 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   return err;
 }/* compute_ms_cohe_tan_res() */
 
-int assemble_ms_cohe_res(const MICROSCALE *micro,
+int assemble_ms_cohe_res(const Microscale *micro,
                          const MS_COHE_JOB_INFO *jobs,
-                         const MPI_Comm macro_mpi_comm,
+                         const PGFem3D_Comm macro_mpi_comm,
                          double *macro_loc_res,
                          const int mp_id)
 {
   int err = 0;
-
+  int macro_rank;
+  micro->net->comm_rank(macro_mpi_comm, &macro_rank);
+  
   /* redirect I/O to microscale */
   PGFEM_redirect_io_micro();
 
@@ -353,7 +362,8 @@ int assemble_ms_cohe_res(const MICROSCALE *micro,
      process only!! */
   for(int i=0, e = micro->idx_map.size; i < e; i++){
     err += assemble_ms_cohe_job_res(i,jobs+i,
-                                    com,
+                                    micro->rank,
+				    macro_rank,
                                     macro_loc_res,
                                     mp_id);
   }
@@ -402,14 +412,12 @@ static int create_local_ms_cohe_job_list(const long nce,
                                          const Node *node,
                                          const int group_id,
                                          const long n_jobs,
-                                         const MPI_Comm macro_mpi_comm,
                                          MS_COHE_JOB_INFO *job_list,
                                          int *local_buffer_size,
+					 int myrank_macro,
                                          const int mp_id)
 {
   int err = 0;
-  int myrank_macro = 0;
-  MPI_Comm_rank(macro_mpi_comm,&myrank_macro);
   /* exit early if there are no jobs on this domain */
   if(n_jobs <= 0)return err;
 
@@ -613,18 +621,19 @@ static int compute_loc_job_list_metadata(const long nce,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,
-                                         MPI_Comm ms_comm)
+					 Network *net,
+                                         PGFem3D_Comm ms_comm)
 {
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  MPI_Comm_rank(ms_comm,&myrank);
-  MPI_Comm_size(ms_comm,&nproc);
+  net->comm_rank(ms_comm,&myrank);
+  net->comm_size(ms_comm,&nproc);
 
   *n_job_dom = PGFEM_calloc(long, nproc);
   err += compute_local_ms_cohe_n_jobs(nce,coel,node,*n_job_dom + myrank);
-  err += MPI_Allgather(MPI_IN_PLACE,1,MPI_LONG,
-                       *n_job_dom,1,MPI_LONG,ms_comm);
+  net->allgather(NET_IN_PLACE,1,NET_DT_LONG,
+		 *n_job_dom,1,NET_DT_LONG,ms_comm);
 
   *Gn_job = 0;
   for(int i=0; i<nproc; i++){
@@ -644,13 +653,14 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
                                               const int start_id,
                                               /* const */ int buff_size,
                                               const long *n_job_dom,
-                                              MPI_Comm ms_comm)
+					      Network *net,
+                                              PGFem3D_Comm ms_comm)
 {
   int err = 0;
   int myrank = 0;
   int nproc = 0;
-  MPI_Comm_rank(ms_comm,&myrank);
-  MPI_Comm_size(ms_comm,&nproc);
+  net->comm_rank(ms_comm,&myrank);
+  net->comm_size(ms_comm,&nproc);
 
   /* exit early if no communication is required */
   if(nproc <= 1) return err;
@@ -659,9 +669,9 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
   int *buff_sizes = PGFEM_calloc(int, nproc);
   int *buff_starts = PGFEM_calloc(int, nproc);
 
-  err += MPI_Allgather(&buff_size,1,MPI_INT,
-                       buff_sizes,1,MPI_INT,ms_comm);
-
+  net->allgather(&buff_size,1,NET_DT_INT,
+		 buff_sizes,1,NET_DT_INT,ms_comm);
+  
   /* compute total buffer size and starts */
   size_t g_buff_size = 0;
   for(int i=0; i<nproc; i++){
@@ -682,9 +692,9 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
   }
 
   /* gather buffer on all procs */
-  err += MPI_Allgatherv(MPI_IN_PLACE,buff_sizes[myrank],MPI_CHAR,
-                        buffer,buff_sizes,buff_starts,MPI_CHAR,ms_comm);
-
+  net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
+		  buffer,buff_sizes,buff_starts,NET_DT_CHAR,ms_comm);
+  
   /* unpack data from other processes */
   int loc_start = 0;
   for(int i=0; i<nproc; i++){

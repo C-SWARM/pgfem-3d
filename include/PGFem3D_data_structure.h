@@ -9,7 +9,6 @@
 
 #include "bounding_element.h"
 #include "cohesive_element.h"
-#include "comm_hints.h"
 #include "element.h"
 #include "eps.h"
 #include "hommat.h"
@@ -21,7 +20,7 @@
 #include "state_variables.h"
 #include "pgfem3d/Solver.hpp"
 #include "pgfem3d/Communication.hpp"
-#include "pgfem3d/MultiscaleCommunication.hpp"
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include <vector>
 
 /// Time stepping struct

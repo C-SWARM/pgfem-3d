@@ -119,8 +119,8 @@ double Multiphysics_Arc_length(Grid *grid,
 /// \param[in,out] DAL Arc Lengh parameter
 /// \param[in] sup_defl Prescribed deflection
 /// \return load multiplier
-double Arc_length_multiscale(COMMON_MACROSCALE *c,
-                             MACROSCALE_SOLUTION *s,
+double Arc_length_multiscale(pgfem3d::MultiscaleCommon *c,
+                             pgfem3d::MULTISCALE_SOLUTION *s,
                              SOLVER_FILE *solver_file,
                              const PGFem3D_opt *opts,
                              double *pores,

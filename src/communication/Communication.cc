@@ -5,12 +5,12 @@
  * 2018, Ezra Kissel, Indiana Univerity, ezkissel [at] indiana.edu
  */
 
+#include "pgfem3d/Communication.hpp"
 #include "ISIR_SparseComm.hpp"
 #include "PWC_SparseComm.hpp"
 #include "allocation.h"
 #include "utils.h"
 #include "PGFEM_io.h"
-#include "pgfem3d/Communication.hpp"
 #include <errno.h>
 #include <cerrno>
 #include <system_error>
@@ -103,6 +103,8 @@ namespace pgfem3d {
   
   SparseComm* SparseComm::Create(net::Network *n, net::PGFem3D_Comm c)
   {
+    int myrank;
+    n->comm_rank(c, &myrank);
     switch (n->type()) {
     case NET_ISIR:
       return new pgfem3d::ISIR_SparseComm(dynamic_cast<ISIRNetwork*>(n), c);
@@ -111,7 +113,7 @@ namespace pgfem3d {
       return new pgfem3d::PWC_SparseComm(dynamic_cast<PWCNetwork*>(n), c);
       break;
     default:
-      PGFEM_printerr("[%d]ERROR: Unknown network type", n->get_rank(c));
+      PGFEM_printerr("[%d]ERROR: Unknown network type", myrank);
       PGFEM_Abort();
     }
   }

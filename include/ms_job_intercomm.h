@@ -8,8 +8,8 @@
 /** Job intercommunicator structure */
 typedef struct PGFEM_ms_job_intercomm{
   pgfem3d::net::PGFem3D_Comm comm;
-  pgfem3d::MultiscaleComm *send_info;
-  pgfem3d::MultiscaleComm *recv_info;
+  pgfem3d::MultiscaleCommInfo *send_info;
+  pgfem3d::MultiscaleCommInfo *recv_info;
 } PGFEM_ms_job_intercomm;
 
 /** create a job intercommunicator structure */

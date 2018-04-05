@@ -18,7 +18,7 @@ scan-build:
   - cswarm
  stage: scan
  script:
-  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 -g `mpicxx --showme:compile`"
+  - export CXXFLAGS="-Wall -std=c++14 -fpermissive -O0 `mpicxx --showme:compile`"
   - export LDFLAGS="`mpicxx --showme:link` -L/usr/lib64/vtk"
   - scan-build ./configure
                 --with-hypre=/opt/hypre_ompi
@@ -38,6 +38,7 @@ check-build:
   - cswarm
  stage: check
  script:
+  - export CXXFLAGS="-O3"
   - export LDFLAGS="-L/usr/lib64/vtk"
   - ./configure --with-hypre=/opt/hypre_ompi
                 --with-suitesparse=/opt/SuiteSparse

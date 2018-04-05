@@ -25,14 +25,18 @@ public:
   int initialized();
   void finalize();
   void abort(PGFem3D_Comm comm, int code);
-
-  int get_rank(PGFem3D_Comm comm);
-  int get_nproc(PGFem3D_Comm comm);
   
   void allocRequestArray(int count, Request *rary[]);
   void allocStatusArray(int count, Status *sary[]);
+
+  void comm_rank(PGFem3D_Comm comm, int *rank);
+  void comm_size(PGFem3D_Comm comm, int *size);
+  void comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm);
+  void comm_free(PGFem3D_Comm *comm);
+  void comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm);
   
   void barrier(PGFem3D_Comm comm);
+  void bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm);
   void reduce(const void *in, void *out, int count, datatype_t dt, op_t op,
 	     int root, PGFem3D_Comm comm);
   void gather(const void *in, int scount, datatype_t sdt, void *out,

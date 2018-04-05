@@ -69,14 +69,15 @@ static void destroy_off_proc_entries(off_proc_entries *info);
 
 /*=== COMM_CTX ===*/
 typedef struct comm_ctx{
-  MPI_Request *r_req;
-  MPI_Request *s_req;
-  MPI_Status *r_stat;
-  MPI_Status *s_stat;
+  Request *r_req;
+  Request *s_req;
+  Status *r_stat;
+  Status *s_stat;
 } comm_ctx;
 static int build_comm_ctx(const int n_send,
-              const int n_recv,
-              comm_ctx *COMM);
+			  const int n_recv,
+			  comm_ctx *COMM,
+			  Network *net);
 static void destroy_comm_ctx(comm_ctx *COMM);
 
 /*=== LOC UTILS ===*/
@@ -149,6 +150,8 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   int myrank = com->rank;
   int nproc = com->nproc;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
   if(myrank == 0) LOG_MSG("Entering initialization.");
 
   /* allocate the object and get alias */
@@ -159,11 +162,12 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* copy over necessary Communication values */
   m->com->rank = myrank;
   m->com->nproc = nproc;
+  m->com->net = com->net;
   
   /* set internal variables */
   /* duplicate communicator to get unique context. Allows simultaneous
      assembly of multiple matrices without comm errors */
-  MPI_Comm_dup((MPI_Comm)com->comm,(MPI_Comm*)&(m->com->comm));
+  net->comm_dup(com->comm,&(m->com->comm));
   m->assembled = 0;
   m->add_values = 0;
   m->n_rows = n_rows;
@@ -182,19 +186,19 @@ int initialize_PGFEM_par_matrix(const int n_rows,
 
   /* post receive of information */
   int *r_off_proc_rows = PGFEM_calloc(int, nproc);
-  MPI_Request *r_req = NULL;
-  MPI_Status *r_stat = NULL;
+  Request *r_req = NULL;
+  Status *r_stat = NULL;
 
   if(myrank == 0) LOG_MSG("\tPosting non-blocking receives.");
   if(nproc > 1){
-    r_req = PGFEM_calloc(MPI_Request, nproc-1);
-    r_stat = PGFEM_calloc(MPI_Status, nproc-1);
+    net->allocRequestArray(nproc-1, &r_req);
+    net->allocStatusArray(nproc-1, &r_stat);
     {
       int req_idx = 0;
       for(int i=0; i<nproc; i++){
 	if(i == myrank) continue;
-	MPI_Irecv(&r_off_proc_rows[i],1,MPI_INT,i,MPI_ANY_TAG,
-		  (MPI_Comm)m->com->comm,&r_req[req_idx]);
+	net->irecv(&r_off_proc_rows[i],1,NET_DT_INT,i,NET_ANY_TAG,
+		   m->com->comm,&r_req[req_idx]);
 	req_idx++;
       }
     }
@@ -202,8 +206,8 @@ int initialize_PGFEM_par_matrix(const int n_rows,
 
   /* gather n_own_rows on all processes and compute the idx_starts */
   m->n_own_rows[myrank] = n_own_rows;
-  com->net->allgather(NET_IN_PLACE,1,NET_DT_INT,m->n_own_rows,
-		      1,NET_DT_INT,m->com->comm);
+  net->allgather(NET_IN_PLACE,1,NET_DT_INT,m->n_own_rows,
+		 1,NET_DT_INT,m->com->comm);
   m->idx_starts[0] = 0;
   for(int i=1; i<=nproc; i++){
     m->idx_starts[i] = m->idx_starts[i-1] + m->n_own_rows[i-1];
@@ -254,16 +258,16 @@ int initialize_PGFEM_par_matrix(const int n_rows,
 
   /* broadcast how much I am sending to everyone */
   if(myrank == 0) LOG_MSG("\tPost non-blocking sends.");
-  MPI_Request *s_req = NULL;
-  MPI_Status *s_stat = NULL;
+  Request *s_req = NULL;
+  Status *s_stat = NULL;
   if(nproc > 1){
-    s_req = PGFEM_calloc(MPI_Request, nproc-1);
-    s_stat = PGFEM_calloc(MPI_Status, nproc-1);
+    net->allocRequestArray(nproc-1, &s_req);
+    net->allocStatusArray(nproc-1, &s_stat);
     int req_idx = 0;
     for(int i=0; i<nproc; i++){
       if(i == myrank) continue;
-      MPI_Isend(s_off_proc_rows + i,1,MPI_INT,i,i /*tag*/,
-		(MPI_Comm)m->com->comm,&s_req[req_idx]);
+      net->isend(s_off_proc_rows + i,1,NET_DT_INT,i,i /*tag*/,
+		 m->com->comm,&s_req[req_idx]);
       req_idx++;
     }
   }
@@ -299,15 +303,15 @@ int initialize_PGFEM_par_matrix(const int n_rows,
 
   /* wait for communication to finish */
   if(nproc > 1){
-    MPI_Waitall(nproc-1,r_req,r_stat);
-    MPI_Waitall(nproc-1,s_req,s_stat);
+    net->waitall(nproc-1,r_req,r_stat);
+    net->waitall(nproc-1,s_req,s_stat);
   }
 
   /* free and reset requests and statuses */
-  free(r_req); r_req = NULL;
-  free(s_req); s_req = NULL;
-  free(r_stat); r_stat = NULL;
-  free(s_stat); s_stat = NULL;
+  delete [] r_req; r_req = NULL;
+  delete [] s_req; s_req = NULL;
+  delete [] r_stat; r_stat = NULL;
+  delete [] s_stat; s_stat = NULL;
 
   /* build recv_info and r_rows */
   if(myrank == 0) LOG_MSG("\tBuild off-proc recv data.");
@@ -330,52 +334,52 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* communicate local row ids for off-proc entries */
   if(myrank == 0) LOG_MSG("\tCommunicate off-process row ids (nonblocking).");
   if(send_info->nproc > 0){
-    s_req = PGFEM_calloc(MPI_Request, send_info->nproc);
-    s_stat = PGFEM_calloc(MPI_Status, send_info->nproc);
+    net->allocRequestArray(send_info->nproc, &s_req);
+    net->allocStatusArray(send_info->nproc, &s_stat);
   }else{
     PGFEM_printerr("[%d]WARNING: no send_info in %s!\n",myrank,__func__);
   }
 
   if(recv_info->nproc > 0){
-    r_req = PGFEM_calloc(MPI_Request, recv_info->nproc);
-    r_stat = PGFEM_calloc(MPI_Status, recv_info->nproc);
+    net->allocRequestArray(recv_info->nproc, &r_req);
+    net->allocStatusArray(recv_info->nproc, &r_stat);
   }else{
     PGFEM_printerr("[%d]WARNING: no recv_info in %s!\n",myrank,__func__);
   }
 
   /* post receive */
   for(int i=0; i<recv_info->nproc; i++){
-    MPI_Irecv(r_rows[i].row_loc_ids,recv_info->n_info[i],MPI_INT,
-	      recv_info->proc[i],MPI_ANY_TAG,(MPI_Comm)m->com->comm,&r_req[i]);
+    net->irecv(r_rows[i].row_loc_ids,recv_info->n_info[i],NET_DT_INT,
+	       recv_info->proc[i],NET_ANY_TAG,m->com->comm,&r_req[i]);
   }
 
   /* post send */
   for(int i=0; i<send_info->nproc; i++){
-    MPI_Isend(s_rows[i].row_loc_ids,send_info->n_info[i],MPI_INT,
-	      send_info->proc[i],i /*tag*/,(MPI_Comm)m->com->comm,&s_req[i]);
+    net->isend(s_rows[i].row_loc_ids,send_info->n_info[i],NET_DT_INT,
+	       send_info->proc[i],i /*tag*/,m->com->comm,&s_req[i]);
   }
 
   /* complete communication */
   if(myrank == 0) LOG_MSG("\tWait all II.");
-  MPI_Waitall(recv_info->nproc,r_req,r_stat);
+  net->waitall(recv_info->nproc,r_req,r_stat);
   if(LOGGING){
     PGFEM_printerr("\t\t[%d] Finished RECV II\n",myrank);
-    com->net->barrier(m->com->comm);
+    net->barrier(m->com->comm);
     if(myrank == 0) LOG_MSG("\t\tFinished Receives.");
   }
-  MPI_Waitall(send_info->nproc,s_req,s_stat);
+  net->waitall(send_info->nproc,s_req,s_stat);
 
   if(myrank == 0) LOG_MSG("\tBarrier II.");
   if(LOGGING){
     PGFEM_printerr("\t\t[%d] Finished Comm II\n",myrank);
-    com->net->barrier(m->com->comm);
+    net->barrier(m->com->comm);
   }
 
   /* deallocate local arrays/structures */
-  free(r_req);
-  free(s_req);
-  free(r_stat);
-  free(s_stat);
+  delete [] r_req;
+  delete [] s_req;
+  delete [] r_stat;
+  delete [] s_stat;
   destroy_entries(n_entries,e);
   free(s_off_proc_rows);
   free(r_off_proc_rows);
@@ -411,7 +415,7 @@ void destroy_PGFEM_par_matrix(PGFEM_par_matrix *mat)
     destroy_comm_info(r);
 
     /* destroy duplicated communicator */
-    MPI_Comm_free((MPI_Comm*)&(mat->com->comm));
+    mat->com->net->comm_free(&(mat->com->comm));
     delete mat->com;
   }
   free(mat);
@@ -610,31 +614,33 @@ int PGFEM_par_matrix_zero_values(PGFEM_par_matrix *mat)
 }
 
 int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
-                    PGFEM_par_matrix_comm *comm)
+				    PGFEM_par_matrix_comm *comm)
 {
   int err = 0;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(mat->com->net);
+  
   /* allocate a communication context */
   *comm = PGFEM_calloc(comm_ctx, 1);
   comm_info *send = (comm_info *) mat->send_info;
   comm_info *recv = (comm_info *) mat->recv_info;
   comm_ctx *COMM = (comm_ctx*) *comm;
-  build_comm_ctx(send->nproc,recv->nproc,COMM);
+  build_comm_ctx(send->nproc,recv->nproc,COMM,mat->com->net);
 
   /* post the recieves */
   off_proc_entries *r_rows = (off_proc_entries*) mat->r_rows;
   for(int i=0; i<recv->nproc; i++){
     int len = recv->n_info[i]*mat->n_cols;
-    MPI_Irecv(r_rows[i].data,len,MPI_DOUBLE,recv->proc[i],
-	      MPI_ANY_TAG,(MPI_Comm)mat->com->comm,&COMM->r_req[i]);
+    net->irecv(r_rows[i].data,len,NET_DT_DOUBLE,recv->proc[i],
+	       NET_ANY_TAG,mat->com->comm,&COMM->r_req[i]);
   }
 
   /* post the sends */
   off_proc_entries *s_rows = (off_proc_entries*) mat->s_rows;
   for(int i=0; i<send->nproc; i++){
     int len = send->n_info[i]*mat->n_cols;
-    MPI_Isend(s_rows[i].data,len,MPI_DOUBLE,send->proc[i],
-	      i /*tag*/,(MPI_Comm)mat->com->comm,&COMM->s_req[i]);
+    net->isend(s_rows[i].data,len,NET_DT_DOUBLE,send->proc[i],
+	       i /*tag*/,mat->com->comm,&COMM->s_req[i]);
   }
 
   return err;
@@ -648,10 +654,12 @@ int PGFEM_par_matrix_end_assembly(PGFEM_par_matrix *mat,
   comm_info *send = (comm_info *) mat->send_info;
   comm_info *recv = (comm_info *) mat->recv_info;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(mat->com->net);
+  
   /* finish communication */
-  MPI_Waitall(recv->nproc,COMM->r_req,COMM->r_stat);
-  MPI_Waitall(send->nproc,COMM->s_req,COMM->s_stat);
-
+  net->waitall(recv->nproc,COMM->r_req,COMM->r_stat);
+  net->waitall(send->nproc,COMM->s_req,COMM->s_stat);
+  
   if(mat->add_values){
     err += add_assemble_matrix(mat);
   } else {
@@ -918,22 +926,23 @@ static void destroy_off_proc_entries(off_proc_entries *info)
 }
 
 static int build_comm_ctx(const int n_send,
-              const int n_recv,
-              comm_ctx *COMM)
+			  const int n_recv,
+			  comm_ctx *COMM,
+			  Network *net)
 {
   int err = 0;
   COMM->r_req = NULL;
   COMM->r_stat = NULL;
   if(n_recv > 0){
-    COMM->r_req = PGFEM_calloc(MPI_Request, n_recv);
-    COMM->r_stat = PGFEM_calloc(MPI_Status, n_recv);
+    net->allocRequestArray(n_recv, &COMM->r_req);
+    net->allocStatusArray(n_recv, &COMM->r_stat);
   }
 
   COMM->s_req = NULL;
   COMM->s_stat = NULL;
   if(n_send > 0){
-    COMM->s_req = PGFEM_calloc(MPI_Request, n_send);
-    COMM->s_stat = PGFEM_calloc(MPI_Status, n_send);
+    net->allocRequestArray(n_send, &COMM->s_req);
+    net->allocStatusArray(n_send, &COMM->s_stat);
   }
   return err;
 }
@@ -941,10 +950,10 @@ static int build_comm_ctx(const int n_send,
 static void destroy_comm_ctx(comm_ctx *COMM)
 {
   if(COMM != NULL){
-    free(COMM->r_req);
-    free(COMM->s_req);
-    free(COMM->r_stat);
-    free(COMM->s_stat);
+    delete [] COMM->r_req;
+    delete [] COMM->s_req;
+    delete [] COMM->r_stat;
+    delete [] COMM->s_stat;
   }
   free(COMM);
   COMM = NULL;

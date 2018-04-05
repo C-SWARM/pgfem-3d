@@ -86,21 +86,33 @@ void PhotonNetwork::abort(PGFem3D_Comm comm, int code)
 {
 }
 
-int PhotonNetwork::get_rank(PGFem3D_Comm comm)
-{
-  return cfg.address;
-}
-
-int PhotonNetwork::get_nproc(PGFem3D_Comm comm)
-{
-  return cfg.nproc;
-}
-
 void PhotonNetwork::allocRequestArray(int count, Request *rary[])
 {
 }
 
 void PhotonNetwork::allocStatusArray(int count, Status *sary[])
+{
+}
+
+void PhotonNetwork::comm_rank(PGFem3D_Comm comm, int *rank)
+{
+  *rank = cfg.address;
+}
+
+void PhotonNetwork::comm_size(PGFem3D_Comm comm, int *size)
+{
+  *size = cfg.nproc;
+}
+
+void PhotonNetwork::comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm)
+{
+}
+
+void PhotonNetwork::comm_free(PGFem3D_Comm *comm)
+{
+}
+
+void PhotonNetwork::comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm)
 {
 }
 
@@ -111,6 +123,15 @@ void PhotonNetwork::barrier(PGFem3D_Comm comm)
 			       (photon_cid){0}, &req, PHOTON_REQ_PWC_NO_LCE));
   Check(photon_collective_join(req, NULL, NULL, 0, 0, photon_datatype_null,
 			       photon_datatype_null, 0, PHOTON_OP_NULL));
+}
+
+void PhotonNetwork::bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm)
+{
+  photon_rid req;
+  Check(photon_collective_init(static_cast<photonComm>(comm), PHOTON_COLL_BCAST,
+			       (photon_cid){0}, &req, PHOTON_REQ_PWC_NO_LCE));
+  Check(photon_collective_join(req, (void*)in, NULL, count, count, dt, dt, root,
+			       PHOTON_OP_NULL));
 }
 
 void PhotonNetwork::reduce(const void *in, void *out, int count, datatype_t dt, op_t op,

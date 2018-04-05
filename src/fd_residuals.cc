@@ -37,6 +37,8 @@ using namespace pgfem3d::net;
 namespace {
 using pgfem3d::Solver;
 using pgfem3d::CommunicationStructure;
+using pgfem3d::MultiscaleCommon;
+using pgfem3d::MULTISCALE_SOLUTION;
 const constexpr int ndn = 3;
 }
 
@@ -557,8 +559,8 @@ int fd_res_compute_reactions_MP(Grid *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] dts time step sizes at n, and n+1
 /// \return non-zero on internal error
-int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
-                                        MACROSCALE_SOLUTION *s,
+int fd_res_compute_reactions_multiscale(MultiscaleCommon *c,
+                                        MULTISCALE_SOLUTION *s,
                                         SOLVER_FILE *solver_file,
                                         const PGFem3D_opt *opts,
                                         double *dts)
@@ -646,7 +648,7 @@ int fd_res_compute_reactions_multiscale(COMMON_MACROSCALE *c,
     mat.matgeom = c->matgeom;
   }
 
-  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c->com,opts,mp,
+  err += fd_res_compute_reactions_MP(&grid,&mat,&fv,&sol,&load,s->crpl,c,opts,mp,
                                      0,s->times[s->tim+1],dts);
 
   free(physicsname);

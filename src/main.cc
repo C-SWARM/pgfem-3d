@@ -157,17 +157,16 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// Currently, this will output the total number of ODEs operations
 ///
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com Communication Structure
 /// \param[in] myrank current process rank
-void print_EXA_metrics(const MPI_Comm mpi_comm, 
+void print_EXA_metrics(const CommunicationStructure *com,
                        const int myrank,
                        std::vector<double> hypre_time,
                        std::vector<double> residuals_time,
                        double total_time,
                        const PGFem3D_opt *opts)
 {
-  int MPI_process_number;
-  MPI_Comm_size(mpi_comm, &MPI_process_number);
+  int nprocs = com->nproc;
   
   if (myrank == 0){
     double total_residual_time = 0.0;   //residual time across all physics
@@ -187,11 +186,11 @@ void print_EXA_metrics(const MPI_Comm mpi_comm,
       PGFEM_printf("Total Residual time: %f\n", total_residual_time);
       PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
       PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
-      PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+      PGFEM_printf("Total number of processes: %d\n", nprocs);
       PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
     }
     
-    double EXA_Denominator = total_time * MPI_process_number;
+    double EXA_Denominator = total_time * nprocs;
     PGFEM_printf("\nFinal EXA metric: %f\n\n", EXA_Numerator/EXA_Denominator);
   }
 }
@@ -1425,7 +1424,7 @@ int single_scale_main(int argc,char *argv[])
                                residuals_time, myrank);
 
   /* print EXA_metrics */
-  print_EXA_metrics(mpi_comm, myrank, hypre_time, residuals_time, total_time, &options);
+  print_EXA_metrics(com0, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();
