@@ -42,6 +42,7 @@ function check_gcm() {
     GCM="/opt/Generalizsed_constitutive_model"
     cd ${GCM}
 
+    git remote update
     UPSTREAM=${1:-'@{u}'}
     LOCAL=$(git rev-parse @{0})
     REMOTE=$(git rev-parse "$UPSTREAM")
