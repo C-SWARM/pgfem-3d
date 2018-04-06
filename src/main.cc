@@ -147,46 +147,6 @@ int print_PGFem3D_final(const Multiphysics& mp,
   return err;
 }
 
-/// Prints number of ODEs
-/// This will compute and output the total number of ODEs for the mechanical physics
-///
-/// \param[in] grid a mesh object
-/// \param[in] mp_id_M multiphysics id of mechanical physics
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank current process rank
-void print_ODEs(const Grid *grid, const FieldVariables *fv, const int mp_id_M, const MPI_Comm mpi_comm, const int myrank)
-{
-  /* compute number of ODEs */
-  const Element *elem = grid->element;
-  int ODE_local_num;
-  
-  if(mp_id_M >= 0){
-    ODE_local_num = 0;
-    for(int eid = 0; eid < grid->ne; ++eid){ // loop through elements
-      long nint = 1;
-      int_point(elem[eid].toe, &nint);
-      for (int ip = 0; ip < nint; ip++){    // loop through integration points
-        Constitutive_model *m = &(fv[mp_id_M].eps[eid].model[ip]);
-        assert(m != NULL && "m can't be NULL in the mechanical model");
-        switch(m->param->type){
-          case (CRYSTAL_PLASTICITY):        // fallthrough
-          case (POROVISCO_PLASTICITY):
-            ODE_local_num += 10;
-            break;
-          case (HYPER_ELASTICITY):          // fallthrough
-          default:                          // J2_PLASTICITY_DAMAGE, BPA_PLASTICITY, ...
-            break;                          // no ODEs
-        }
-      }
-    }
-    /* print total number of ODEs for each physics */
-    int ODE_global_num;
-    MPI_Reduce (&ODE_local_num,&ODE_global_num,1,MPI_INT,MPI_SUM,0,mpi_comm);
-    if (myrank == 0)
-      PGFEM_printf("Physics %d's number of ODEs: %d\n", mp_id_M, ODE_global_num);
-  }
-}
-
 /// print simulation results
 /// output format is VTK so that this function calls VTK_IO library
 ///
@@ -1170,9 +1130,36 @@ int single_scale_main(int argc,char *argv[])
     }
     VVolume = oVolume;
     
-
+    
     /* compute number of ODEs */
-    print_ODEs(&grid, fv.data(), mp_id_M, mpi_comm, myrank);
+    const Element *elem = grid.element;
+    int ODE_local_num;
+    
+    for(int ia=0; ia<mp.physicsno; ia++){
+      ODE_local_num = 0;
+      for(int eid=0; eid<grid.ne; ++eid){     // loop through elements
+        long nint = 1;
+        int_point(elem[eid].toe, &nint);
+        for (int ip = 0; ip < nint; ip++){    // loop through integration points
+          Constitutive_model *m = &(fv[ia].eps[eid].model[ip]);
+          if (m == NULL) break;
+          switch(m->param->type){
+            case (CRYSTAL_PLASTICITY):        // fallthrough
+            case (POROVISCO_PLASTICITY):
+              ODE_local_num += 10;
+              break;
+            case (HYPER_ELASTICITY):          // fallthrough
+            default:                          // J2_PLASTICITY_DAMAGE, BPA_PLASTICITY, ...
+              break;                          // no ODEs
+          }
+        }
+      }
+      /* print total number of ODEs for each physics */
+      int ODE_global_num;
+      MPI_Reduce (&ODE_local_num,&ODE_global_num,1,MPI_INT,MPI_SUM,0,mpi_comm);
+      if (myrank == 0)
+        PGFEM_printf("Physics %d's number of ODEs: %d\n", ia, ODE_global_num);
+    }
     
 
     /*=== BEGIN SOLVE ===*/
