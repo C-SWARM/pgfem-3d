@@ -58,8 +58,7 @@ int DISP_resid_el(double *R,
                   const SIG *sig,
                   const SUPP sup,
                   const double *disp,
-                  const double dt,
-                  int &EXA_metric);
+                  const double dt);
 
 /** Compute the residual on a boundary element (Lagrange multiplier
     formulation) */

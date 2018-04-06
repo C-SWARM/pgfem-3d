@@ -77,7 +77,6 @@ int multi_scale_main(int argc, char* argv[])
   int micro_argc = 0;
   char **micro_argv = NULL;
   int debug = 0;
-  int EXA_metric = 0;
 
   /* get macro and micro parts of the command line */
   int rank_world = 0;
@@ -227,7 +226,7 @@ int multi_scale_main(int argc, char* argv[])
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */
-    err += pgf_FE2_micro_server_START(mpi_comm,micro,mp_id,EXA_metric);
+    err += pgf_FE2_micro_server_START(mpi_comm,micro,mp_id);
 
     /* destroy the microscale */
     destroy_MICROSCALE(micro);
@@ -412,7 +411,7 @@ int multi_scale_main(int argc, char* argv[])
       }
 
       compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,solver_file->nonlin_tol,
-                                                       mpi_comm->rank_macro,EXA_metric);
+                                                       mpi_comm->rank_macro);
 
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -489,7 +488,7 @@ int multi_scale_main(int argc, char* argv[])
         int n_step = 0;
 
         // perform Newton Raphson iteration
-        hypre_time[mp_id] += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step,EXA_metric);
+        hypre_time[mp_id] += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);
 
         /* Null global vectors */
         for (int i=0;i<c->ndofd;i++){
@@ -519,7 +518,7 @@ int multi_scale_main(int argc, char* argv[])
 
         dlm = Arc_length_multiscale(c,s,solver_file,macro->opts,
                                     &pores,dt0,lm,&DET,&dlm0,&DLM,&AT,
-                                    ARC,&ITT,&dAL,sup_defl,EXA_metric);
+                                    ARC,&ITT,&dAL,sup_defl);
 
         /* Load multiplier */
         lm += dlm;
@@ -562,7 +561,7 @@ int multi_scale_main(int argc, char* argv[])
 
       dts[DT_NP1] = s->times[s->tim+1] - s->times[s->tim];
 
-      fd_res_compute_reactions_multiscale(c,s,solver_file,macro->opts,dts,EXA_metric);
+      fd_res_compute_reactions_multiscale(c,s,solver_file,macro->opts,dts);
 
       if (solver_file->print_steps[s->tim] == 1){
 

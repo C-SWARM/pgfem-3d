@@ -365,9 +365,8 @@ int main(int argc, char **argv)
   double F0[tensor] = {0};
   double jumpu[tensor] = {0};
   void *ctx = NULL;
-  int EXA_metric = 0;
   if (err) goto exit_main;
-  
+
   for (int i = 0; i < nstep; i++) {
     /* compute the current deformation */
     compute_jumpu(i, opt->du, opt->dir, jumpu);
@@ -376,7 +375,7 @@ int main(int argc, char **argv)
     /* run the integration algorithm */
     assert(p != NULL && "p can't be null");
     err += construct_model_context(&ctx, p->type, F0, opt->dt, alpha,NULL,-1);
-    err += p->integration_algorithm(&m, ctx, EXA_metric);
+    err += p->integration_algorithm(&m, ctx);
     err += p->update_state_vars(&m);
     err += ch_output_ts(&m, jumpu, opt->normal, F0, opt->dt, out);
     err += p->destroy_ctx(&ctx);

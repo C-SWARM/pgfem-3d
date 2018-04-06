@@ -362,7 +362,6 @@ static int bnd_el_stiffmat(int belem_id,
 /// \param[in] lm Load multiplier level in Arc Length scheme
 /// \param[in] be tangential load vector when periodic and solution scheme is Arc Length
 /// \param[in] r_e nodal variabls(displacements) on the current element
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int el_compute_stiffmat_MP(FEMLIB *fe,
                            double *lk,
@@ -378,8 +377,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
                            double dt,
                            double lm,
                            double *be,
-                           double *r_e,
-                           int &EXA_metric)
+                           double *r_e)
 {
   int err = 0;
   int eid = fe->curt_elem_id;
@@ -403,7 +401,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
   double *z = (fe->temp_v).z.m_pdata;
 
   if(include_inertia)
-    err += stiffness_with_inertia(fe,lk,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dt,EXA_metric);
+    err += stiffness_with_inertia(fe,lk,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dt);
   else
   {
     switch(opts->analysis_type){
@@ -429,7 +427,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
      case CM:  // intened to flow
      case CM3F:
       err += stiffness_el_constitutive_model(fe,lk,r_e,grid,mat,fv,sol,load,crpl,
-                                             opts,mp,mp_id,dt,EXA_metric);
+                                             opts,mp,mp_id,dt);
 
       break;
      default:
@@ -493,8 +491,7 @@ static int el_stiffmat_MP(int eid,
                           int mp_id,
                           double dt,
                           long iter,
-                          int myrank,
-                          int &EXA_metric)
+                          int myrank)
 {
   int err = 0;
   double lm = 0.0;
@@ -585,7 +582,7 @@ static int el_stiffmat_MP(int eid,
   Matrix<double> lk(ndofe,ndofe,0.0);
 
   err += el_compute_stiffmat_MP(&fe,lk.m_pdata,grid,mat,fv,sol,load,
-                                crpl,opts,mp,mp_id,dt,lm,be,r_e,EXA_metric);
+                                crpl,opts,mp,mp_id,dt,lm,be,r_e);
 
   if (PFEM_DEBUG){
     char filename[50];
@@ -679,8 +676,7 @@ int stiffmat_fd_MP(Grid *grid,
                    int mp_id,
                    double dt,
                    long iter,
-                   int myrank,
-                   int &EXA_metric)
+                   int myrank)
 {
   int err = 0;
   // if 0, update only stiffness
@@ -702,7 +698,7 @@ int stiffmat_fd_MP(Grid *grid,
   for(int eid=0; eid<com->nbndel; eid++)
   {
     err += el_stiffmat_MP(com->bndel[eid],Lk,Ddof.m_pdata,0,grid,mat,fv,sol,load,com,crpl,
-                          mpi_comm,opts,mp,mp_id,dt,iter,myrank,EXA_metric);
+                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 
     if(err != 0)
       break;
@@ -811,7 +807,7 @@ int stiffmat_fd_MP(Grid *grid,
 
     // do volume integration at an element
     err += el_stiffmat_MP(eid,Lk,Ddof.m_pdata,1,grid,mat,fv,sol,load,com,crpl,
-                          mpi_comm,opts,mp,mp_id,dt,iter,myrank,EXA_metric);
+                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 
     if(err != 0)
       break;
@@ -847,7 +843,6 @@ int stiffmat_fd_MP(Grid *grid,
 ///                   0: only compute stiffnes at the 1st iteration
 /// \param[in] myrank current process rank
 /// \param[in] nproc   number of total process
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            MACROSCALE_SOLUTION *s,
@@ -856,8 +851,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
                            double nor_min,
                            long FNR,
                            int myrank,
-                           int nproc,
-                           int &EXA_metric)
+                           int nproc)
 {
   int err = 0;
   int mp_id = 0;
@@ -959,7 +953,7 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   }
 
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
-                        c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank,EXA_metric);
+                        c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank);
 
   free(physicsname);
 

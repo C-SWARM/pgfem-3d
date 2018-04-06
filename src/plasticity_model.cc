@@ -1196,8 +1196,7 @@ int CP_PARAM::destroy_ctx(void **ctx)
 }
 
 int CP_PARAM::integration_algorithm(Constitutive_model *m,
-                                    const void *ctx,
-                                    int &EXA_metric)
+                                    const void *ctx)
   const
 {
   int err = 0;
@@ -1244,16 +1243,16 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
                                                M.data, &g_np1, &L_np1,
                                                pFn.data, Fn.data, Fnp1.data,
                                                CTX->hFn, CTX->hFnp1,
-                                               g_n, dt, cm_mat, elasticity, &solver_info, EXA_metric);
+                                               g_n, dt, cm_mat, elasticity, &solver_info);
   }
   else
   {
     err += staggered_Newton_Rapson(pFnp1.data,
                                    M.data, &g_np1, &L_np1,
                                    pFn.data, Fn.data, Fnp1.data,
-                                   g_n, dt, cm_mat, elasticity, &solver_info, EXA_metric);
+                                   g_n, dt, cm_mat, elasticity, &solver_info);
   }
-  
+
   // update compute values from integration algorithm
   state_var[VAR_g_np1] =  g_np1;
   state_var[VAR_L_np1] =  L_np1;

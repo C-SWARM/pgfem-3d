@@ -80,8 +80,7 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
  */
 int pgf_FE2_micro_server_START(const PGFEM_mpi_comm *mpi_comm,
                    MICROSCALE *micro,
-                   const int mp_id,
-                   int &EXA_metric);
+                   const int mp_id);
 
 /**
  * Unpack a server summary (shallow copy) from a buffer and return a

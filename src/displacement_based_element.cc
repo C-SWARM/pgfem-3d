@@ -473,8 +473,7 @@ int DISP_resid_el(double *R,
                   const SIG *sig,
                   const SUPP sup,
                   const double *disp,
-                  const double dt,
-                  int &EXA_metric)
+                  const double dt)
 {
   int err = 0;
   const int mat = elem[ii].mat[2];
@@ -538,7 +537,7 @@ int DISP_resid_el(double *R,
           ptrDam = &empty_damage;
           void *ctx = NULL;
           construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5, NULL,-1);
-          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx, EXA_metric);
+          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx);
           err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
                                            F, dt, 0);
           eps[ii].model[ip].param->destroy_ctx(&ctx);

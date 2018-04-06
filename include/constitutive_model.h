@@ -182,11 +182,9 @@ class Model_parameters
   ///                     controls execution of the user-defined integration algorithm. This
   ///                     is the mechanism for passing model-specific information into the
   ///                     general function interface.
-  /// \param[out] EXA_metric, exascale metric counter for total number of integration iterations
   /// \return non-zero on internal error that should be handled by the calling function.
   virtual int integration_algorithm(Constitutive_model *m,
-                                    const void *usr_ctx,
-                                    int &EXA_metric) const { return 0; };
+                                    const void *usr_ctx) const { return 0; };
 
   /// User defined function to compute deviatroic stress tenosr.
   ///
@@ -225,7 +223,7 @@ class Model_parameters
   ///                       controls execution of the user-defined function. This is the
   ///                       mechanism for passing model-specific information into the general
   ///                       function interface.
-  /// \param[outƒ]    value, computed value (passed by reference)
+  /// \param[out]    value, computed value (passed by reference)
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dudj(const Constitutive_model *m,
                            const void *ctx,
@@ -715,7 +713,6 @@ class Constitutive_model
   /// \param[in] *hFnp1 thermal part of deformation gradient at t(n+1)
   /// \param[in] dt                     time step size
   /// \param[in] alpha                  mid point rule alpha
-  /// \param[out] EXA_metric exascale metric counter for total number of integration iterations
   /// \param[in] is_it_couple_w_thermal checking coupling with thermal
   ///                                   if true: apply thermal expansitions
   /// \param[in] tf_factor              (theta/J)^(1/3) used for computing true Fnp1  
@@ -725,7 +722,6 @@ class Constitutive_model
                                 double *hFnp1,
                                 double dt,
                                 double alpha,
-                                int &EXA_metric,
                                 int is_it_couple_w_thermal = 0,
                                 double tf_factor = 1.0);
 };
@@ -863,7 +859,6 @@ struct FEMLIB;
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *lk,
@@ -878,8 +873,7 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const PGFem3D_opt *opts,
                                               const Multiphysics& mp,
                                               int mp_id,
-                                              double dt,
-                                              int &EXA_metric);
+                                              double dt);
 
 /// compute element stiffness matrix in quasi steady state
 ///
@@ -896,7 +890,6 @@ int stiffness_el_constitutive_model_w_inertia(FEMLIB *fe,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double *lk,
@@ -910,8 +903,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     const Multiphysics& mp,
                                     int mp_id,
-                                    double dt,
-                                    int &EXA_metric);
+                                    double dt);
 
 /// compute element residual vector in transient
 ///
@@ -932,7 +924,6 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
@@ -949,8 +940,7 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
-                                              double dt,
-                                              int &EXA_metric);
+                                              double dt);
 
 /// compute element residual vector in quasi steady state
 ///
@@ -967,7 +957,6 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
@@ -981,8 +970,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     const Multiphysics& mp,
                                     int mp_id,
-                                    double dt,
-                                    int &EXA_metric); 
+                                    double dt); 
                                     
 int cm_write_tensor_restart(FILE *fp, const double *tensor);
 
@@ -996,8 +984,7 @@ int constitutive_model_update_NR(Grid *grid,
                                  const Multiphysics& mp,
                                  int mp_id,
                                  const double *dts,
-                                 double alpha,
-                                 int &EXA_metric);
+                                 double alpha);
 
 
 #endif // #define PGFEM3D_CONSTITUTIVE_MODEL_H

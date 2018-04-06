@@ -30,7 +30,7 @@ int compute_n_job_and_job_sizes(const COMMON_MACROSCALE *c,
     communication on mpi_comm->mm_inter and mpi_comm->micro */
 int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
                             const PGFEM_ms_job_intercomm *ic,
-                            MICROSCALE *microscale,const int mp_id,int &EXA_metric);
+                            MICROSCALE *microscale,const int mp_id);
 
 /** compute a microscale job on the master of a microscale work
     group. Collective communication on mpi_comm->micro. */
@@ -41,13 +41,12 @@ int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
                      char *out_buffer,
                      MICROSCALE *micro,
                      int *exit_server,
-                     const int mp_id,
-                     int &EXA_metric);
+                     const int mp_id);
 
 /** compute a microscale job on the slaves of a microscale work
     group. Collective communication on mpi_comm->micro */
 int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
-                    MICROSCALE *micro,const int mp_id,int &EXA_metric);
+                    MICROSCALE *micro,const int mp_id);
 
 /** compute a microscale job. Collective communication on
     micro->common->mpi_comm. */
@@ -56,8 +55,7 @@ int microscale_compute_job(const int idx,      /**< sol/job id */
                            char *buffer,       /**< buffer of job info */
                            MICROSCALE *micro,
                            int *exit_server,
-                           const int mp_id,
-                           int &EXA_metric);
+                           const int mp_id);
 
 
 /** start computing struff for the macroscale --> initializes and

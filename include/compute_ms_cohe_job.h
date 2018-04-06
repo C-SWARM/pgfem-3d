@@ -11,8 +11,7 @@
 int compute_ms_cohe_job(const int job_id,
                         MS_COHE_JOB_INFO *p_job,
                         MICROSCALE *microscale,
-                        const int mp_id,
-                        int &EXA_metric);
+                        const int mp_id);
 
 /** Assemble the macroscale cohesive residual to the local vector on
     the owning domain. NO COMMUNICATION */

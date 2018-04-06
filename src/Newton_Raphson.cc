@@ -411,7 +411,6 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
 /// \param[in] t time
 /// \param[in] dts time step sizes a n, and n+1
 /// \param[in] updated_deformation if 1, compute resiual on updated deformation
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return compute time taken by this function 
 double compute_residuals_for_NR(long *INFO, 
                                 Grid *grid,
@@ -426,15 +425,14 @@ double compute_residuals_for_NR(long *INFO,
                                 int mp_id,
                                 double t,
                                 double *dts,
-                                int updated_deformation,
-                                int &EXA_metric)
+                                int updated_deformation)
 {
   double func_time = -MPI_Wtime();
 
   switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
-    *INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,updated_deformation,EXA_metric);
+    *INFO = fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,updated_deformation);
     break;
    case MULTIPHYSICS_THERMAL:
     *INFO = energy_equation_compute_residuals(grid,mat,fv,load,mp_id,updated_deformation,dts[DT_NP1]);
@@ -471,7 +469,6 @@ double compute_residuals_for_NR(long *INFO,
 /// \param[in] dt time step
 /// \param[in] iter number of Newton Raphson interataions
 /// \param[in] myrank current process rank
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return compute time taken by this function 
 double compute_stiffness_for_NR(long *INFO, 
                                 int *max_substep,
@@ -488,8 +485,7 @@ double compute_stiffness_for_NR(long *INFO,
                                 int mp_id,
                                 double dt,
                                 long iter,
-                                int myrank,
-                                int &EXA_metric)
+                                int myrank)
 {
   double func_time = -MPI_Wtime();
   long GInfo;
@@ -500,7 +496,7 @@ double compute_stiffness_for_NR(long *INFO,
   switch(mp.physics_ids[mp_id])
   {
    case MULTIPHYSICS_MECHANICAL:
-    *INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank,EXA_metric);
+    *INFO = stiffmat_fd_MP(grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
     break;
    case MULTIPHYSICS_THERMAL:
     *INFO = energy_equation_compute_stiffness(grid,mat,fv,sol,load,com,mpi_comm,myrank,opts,mp_id,dt);
@@ -867,7 +863,6 @@ void apply_initial_velocity_to_nm1(double *u_nm1,
 /// \param[in] STEP number of subdivided steps
 /// \param[in] DIV subdivision step id
 /// \param[in, out] usage struct to get resource usage
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 long Newton_Raphson_with_LS(double *solve_time,
                             double *stiffmat_loc_time,
@@ -895,8 +890,7 @@ long Newton_Raphson_with_LS(double *solve_time,
                             long STEP,
                             long DIV,
                             rusage *usage,
-                            long master_tim,
-                            int &EXA_metric)
+                            long master_tim)
 {
   long INFO = 0;
   *alpha = 0.0;
@@ -942,7 +936,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     {
       //compute stiffness matrix
       *stiffmat_loc_time += compute_stiffness_for_NR(&INFO,&max_substep,grid,mat,fv,sol,load,com,
-                                                     crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank,EXA_metric);
+                                                     crpl,mpi_comm,opts,mp,mp_id,dt,iter,myrank);
 
       if(INFO > 0)
       {
@@ -1019,7 +1013,7 @@ long Newton_Raphson_with_LS(double *solve_time,
         update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
       break;
      case CM3F:
-      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha, EXA_metric);
+      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
      default:
       break;
     }
@@ -1105,7 +1099,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     /* Residuals */
     INFO = 0;
     *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,
-                                                    mpi_comm,opts,mp,mp_id,t,dts, 1,EXA_metric);
+                                                    mpi_comm,opts,mp,mp_id,t,dts, 1);
 
     // if INFO value greater than 0, the previous computation has an error
     MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_MAX,mpi_comm);
@@ -1175,7 +1169,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     {
       INFO = LINE_S3_MP(residuals_loc_time,grid,mat,fv,sol,load,com,crpl,mpi_comm,opts,mp,
                         dts,t,mp_id,&nor,&nor2,fv->NORM,LS1,iter,&max_damage,&dissipation,
-                        tim,STEP,EXA_metric);
+                        tim,STEP);
 
       // Gather infos
       // if INFO value greater than 0, the previous computation has an error
@@ -1375,7 +1369,6 @@ long Newton_Raphson_with_LS(double *solve_time,
 /// \param[in] NR_t container of time stepping info
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                              double *stiffmat_loc_time, 
                                              double *residuals_loc_time, 
@@ -1396,8 +1389,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                              const Multiphysics& mp,
                                              NR_time_steps *NR_t,
                                              int mp_id,
-                                             int myrank,
-                                             int &EXA_metric)
+                                             int myrank)
 {
   *is_NR_converged = 1;
   *alpha = 0.0;
@@ -1576,7 +1568,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         nulld (fv->f_u,fv->ndofd);
         INFO = 0;
         *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                        opts,mp,mp_id,t,dts, 1,EXA_metric);
+                                                        opts,mp,mp_id,t,dts, 1);
 
         for (i=0;i<fv->ndofd;i++){
           fv->f[i] = - fv->f_u[i];
@@ -1610,7 +1602,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
           INFO = 0;
           *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                          opts,mp,mp_id,t,dts, 0,EXA_metric);
+                                                          opts,mp,mp_id,t,dts, 0);
         } else {
           nulld (fv->f_u,fv->ndofd);
         }
@@ -1620,7 +1612,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         nulld (fv->f_defl,fv->ndofd);
 
         compute_load_vector_for_prescribed_BC(grid,mat,fv,sol,load,dt,crpl,
-                                              opts,mp,mp_id,myrank,EXA_metric);
+                                              opts,mp,mp_id,myrank);
 
         /* Generate the load and vectors */
         for (i=0;i<fv->ndofd;i++)  {
@@ -1646,7 +1638,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       INFO = Newton_Raphson_with_LS(solve_time,stiffmat_loc_time,residuals_loc_time,alpha,
                                     &NOR,&gam,&ART_temp,&iter,grid,mat,fv,sol,load,com,
                                     crpl,mpi_comm,opts,mp,mp_id,NR_t->times,dts,myrank,
-                                    tim,sp.step_size,sp.step_id,&usage,time_steps->tim,EXA_metric);
+                                    tim,sp.step_size,sp.step_id,&usage,time_steps->tim);
 
       ART = ART_temp;
       if(INFO!=0)
@@ -1713,7 +1705,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         }
         INFO = 0;
         *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                        opts,mp,mp_id,t,dts, 0,EXA_metric);
+                                                        opts,mp,mp_id,t,dts, 0);
 
         for (i=0;i<fv->ndofd;i++) fv->f[i] = fv->RR[i] - fv->f_u[i];
         /* print_array_d(stdout,RR,ndofd,1,ndofd); */
@@ -1796,7 +1788,6 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 /// \param[in] dts time step sizes a n, and n+1
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int compute_coupled_physics_residual_norm(double *residuals_loc_time,
                                           double *nor,
@@ -1814,8 +1805,7 @@ int compute_coupled_physics_residual_norm(double *residuals_loc_time,
                                           double t,
                                           double *dts,
                                           int mp_id,
-                                          int myrank,
-                                          int &EXA_metric)
+                                          int myrank)
 {
   int err = 0;
   // use pointers for physics[mp_id]
@@ -1837,7 +1827,7 @@ int compute_coupled_physics_residual_norm(double *residuals_loc_time,
 
   long INFO = 0;
   *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
-                                                  opts,mp, mp_id,t,dts, 1,EXA_metric);
+                                                  opts,mp, mp_id,t,dts, 1);
   sol->run_integration_algorithm = 1; // reset integration algorithm to be active
 
   // Transform LOCAL load vector to GLOBAL
@@ -2090,7 +2080,6 @@ int set_time_step_info_for_NR(TimeStepping *ts,
 /// \param[in] NR_time save time step info during previous NR iteration
 /// \param[in] mp_id mutiphysics id
 /// \param[in] myrank current process rank
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int check_convergence_of_NR_staggering(double *residuals_loc_time,
                                        int *is_cnvged,
@@ -2107,8 +2096,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
                                        const Multiphysics& mp,
                                        NR_time_steps *NR_time,
                                        int mp_id,
-                                       int myrank,
-                                       int &EXA_metric)
+                                       int myrank)
 {
   int err = 0;
 
@@ -2142,7 +2130,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     compute_coupled_physics_residual_norm(residuals_loc_time,&nor,grid,mat,FV,SOL,load,
                                           COM,time_steps,crpl,mpi_comm,opts,mp,
                                           NR_time[cpled_mp_id].times[2],
-                                          NR_time[cpled_mp_id].dt,cpled_mp_id,myrank,EXA_metric);
+                                          NR_time[cpled_mp_id].dt,cpled_mp_id,myrank);
 
     double Rn_R = fabs(SOL[cpled_mp_id].last_residual - nor)/FV[cpled_mp_id].NORM;
 
@@ -2182,7 +2170,6 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return non-zero on internal error
 int set_0th_residual(std::vector<double> &residuals_time,
                      Grid *grid,
@@ -2196,8 +2183,7 @@ int set_0th_residual(std::vector<double> &residuals_time,
                      MPI_Comm mpi_comm,
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
-                     int myrank,
-                     int &EXA_metric)
+                     int myrank)
 {
   int err = 0;
 
@@ -2218,7 +2204,7 @@ int set_0th_residual(std::vector<double> &residuals_time,
     set_time_step_info_for_NR(time_steps,&NR_t);
     compute_coupled_physics_residual_norm(&residuals_loc_time,&nor,grid,mat,FV,SOL,load,COM,
                                           time_steps,crpl,mpi_comm,opts,mp,NR_t.times[2],
-                                          NR_t.dt,mp_id,myrank,EXA_metric);
+                                          NR_t.dt,mp_id,myrank);
 
     residuals_time[mp_id] += residuals_loc_time; 
     FV[mp_id].NORM = nor; // set first residual
@@ -2257,7 +2243,6 @@ int set_0th_residual(std::vector<double> &residuals_time,
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
                                      std::vector<double> &stiffmat_time,
                                      std::vector<double> &residuals_time,
@@ -2276,8 +2261,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
                                      MPI_Comm mpi_comm,
                                      const double VVolume,
                                      const PGFem3D_opt *opts,
-                                     const Multiphysics& mp,
-                                     int &EXA_metric)
+                                     const Multiphysics& mp)
 {
   const int print_level = 1;
   *iterno = 0;
@@ -2337,7 +2321,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,is_SNR_converged,&alpha,grid,mat,FV,
                                             SOL,load,COM,time_steps,crpl,mpi_comm,VVolume,opts,
-                                            mp,NR_time+mp_id,mp_id,myrank,EXA_metric);
+                                            mp,NR_time+mp_id,mp_id,myrank);
 
     hypre_time[mp_id] += solve_time;
     stiffmat_time[mp_id] += stiffmat_loc_time;
@@ -2468,7 +2452,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
           perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                                   print_level,is_SNR_converged,&alpha,grid,mat,FV,
                                                   SOL,load,COM,time_steps,crpl,mpi_comm,VVolume,
-                                                  opts,mp,NR_time+mp_id,mp_id,myrank,EXA_metric);
+                                                  opts,mp,NR_time+mp_id,mp_id,myrank);
 
           hypre_time[mp_id] += solve_time;
           stiffmat_time[mp_id] += stiffmat_loc_time;
@@ -2484,7 +2468,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
           residuals_loc_time = 0.0;
           check_convergence_of_NR_staggering(&residuals_loc_time,&is_cnvged,grid,mat,FV,SOL,load,
                                              COM,time_steps,crpl,mpi_comm,opts,mp,NR_time,
-                                             mp_id,myrank,EXA_metric);
+                                             mp_id,myrank);
 
           residuals_time[mp_id] += residuals_loc_time;
         }
@@ -2592,7 +2576,6 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  std::vector<double> &stiffmat_time,
                                  std::vector<double> &residuals_time,
@@ -2607,8 +2590,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                  MPI_Comm mpi_comm,
                                  const double VVolume,
                                  const PGFem3D_opt *opts,
-                                 const Multiphysics& mp,
-                                 int &EXA_metric)
+                                 const Multiphysics& mp)
 {
   const int print_level = 1;
   double alpha = 0.0;
@@ -2622,7 +2604,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
   if(time_steps->tim==0)
   {
     set_0th_residual(residuals_time,grid,mat,FV,SOL,load,COM,time_steps,crpl,
-                     mpi_comm,opts,mp,myrank,EXA_metric);
+                     mpi_comm,opts,mp,myrank);
   }
 
   NR_time_steps NR_t;
@@ -2644,7 +2626,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,&is_NR_cvg,&alpha,grid,mat,FV,SOL,load,
                                             COM,time_steps,crpl,mpi_comm,VVolume,opts,mp,&NR_t,
-                                            0,myrank,EXA_metric);
+                                            0,myrank);
 
     hypre_time[0] += solve_time;
     stiffmat_time[0] += stiffmat_loc_time;
@@ -2776,7 +2758,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         Multiphysics_Newton_Raphson_sub(hypre_time,stiffmat_time,residuals_time,&iterno,
                                         &is_sub_converged,&alpha,&NR_t_sub,
                                         grid,mat,FV,SOL,load,COM,time_steps,crpl,
-                                        mpi_comm,VVolume,opts,mp,EXA_metric);
+                                        mpi_comm,VVolume,opts,mp);
    
         if(myrank==0)
           printf(":: Maximum physics based evolution threshold = %f\n", alpha);
@@ -2838,7 +2820,6 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
 /// \param[in] sup_defl Prescribed deflection
 /// \param[out] pores opening volume of failed cohesive interfaces
 /// \param[out] n_step the number of nonlinear steps taken to solve the given increment
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return time spent in linear solver (seconds).
 double Newton_Raphson_multiscale(const int print_level,
                                  COMMON_MACROSCALE *c,
@@ -2848,8 +2829,7 @@ double Newton_Raphson_multiscale(const int print_level,
                                  const PGFem3D_opt *opts,
                                  double *sup_defl,
                                  double *pores,
-                                 int *n_step,
-                                 int &EXA_metric)
+                                 int *n_step)
 {
   // MPI stuff
   int nproc,myrank;
@@ -3001,7 +2981,7 @@ double Newton_Raphson_multiscale(const int print_level,
   perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                           print_level,&is_NR_cvg,&alpha,&grid,&mat,&fv,&sol,
                                           &load,&com,&ts,s->crpl,c->mpi_comm,c->VVolume,
-                                          opts,mp,&NR_t,mp_id,myrank,EXA_metric);
+                                          opts,mp,&NR_t,mp_id,myrank);
 
 
   update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,c->VVolume,

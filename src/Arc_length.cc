@@ -155,7 +155,6 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc)
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return load multiplier
 double Multiphysics_Arc_length(Grid *grid,
                                MaterialProperty *mat,
@@ -169,8 +168,7 @@ double Multiphysics_Arc_length(Grid *grid,
                                const double VVolume,
                                const PGFem3D_opt *opts,
                                const Multiphysics& mp,
-                               const int mp_id,
-                               int &EXA_metric)
+                               const int mp_id)
 {
   ARC_LENGTH_VARIABLES *arc = sol->arc;
   double dALMAX = (time_steps->dt_np1) / (arc->dt0) * (arc->dALMAX);
@@ -282,7 +280,7 @@ double Multiphysics_Arc_length(Grid *grid,
     sol->system->zero();
 
     stiffmat_fd_MP(grid, mat, fv, sol, load, com, crpl, mpi_comm, opts, mp,
-                   mp_id, time_steps->dt_np1, iter, myrank, EXA_metric);
+                   mp_id, time_steps->dt_np1, iter, myrank);
 
     /* Assemble the matrix */
     sol->system->assemble();
@@ -460,7 +458,7 @@ double Multiphysics_Arc_length(Grid *grid,
 
     /* Residuals */
     fd_residuals_MP(grid, mat, fv, sol, load, crpl, mpi_comm, opts, mp, mp_id,
-                    t, dts, 0, EXA_metric);
+                    t, dts, 0);
 
     /* Compute Euclidian norm */
     for (int i = 0, e = fv->ndofd; i < e; ++i) {
@@ -546,7 +544,7 @@ double Multiphysics_Arc_length(Grid *grid,
       sol->system->zero();
 
       stiffmat_fd_MP(grid, mat, fv, sol, load, com, crpl, mpi_comm, opts, mp,
-                     mp_id, time_steps->dt_np1, iter, myrank, EXA_metric);
+                     mp_id, time_steps->dt_np1, iter, myrank);
 
       /* Assemble the matrix */
       sol->system->assemble();
@@ -747,7 +745,7 @@ double Multiphysics_Arc_length(Grid *grid,
 
       /* Residuals */
       fd_residuals_MP(grid, mat, fv, sol, load, crpl, mpi_comm, opts, mp, mp_id,
-                      t, dts, 1, EXA_metric);
+                      t, dts, 1);
 
       /* Compute Euclidean norm */
       for (int i = 0, e = fv->ndofd; i < e; ++i) {
@@ -781,7 +779,7 @@ double Multiphysics_Arc_length(Grid *grid,
         INFO = ALINE_S3_MP(grid, mat, fv, sol, load, com, crpl, mpi_comm, opts,
                            mp, dts, mp_id, &nor, &nor2, nor1, LS1, iter,
                            &max_damage, &dissipation, time_steps->tim, STEP,
-                           &DLM, &gama, dlm, dAL, EXA_metric);
+                           &DLM, &gama, dlm, dAL);
 
         /* Gather INFO from all domains */
         MPI_Allreduce(&INFO, &GInfo, 1, MPI_LONG, MPI_BOR, mpi_comm);
@@ -967,7 +965,7 @@ double Multiphysics_Arc_length(Grid *grid,
         fv->d_u[i] = 0.0;
       }
       fd_residuals_MP(grid, mat, fv, sol, load, crpl, mpi_comm, opts, mp, mp_id,
-                      t, dts, 0, EXA_metric);
+                      t, dts, 0);
       for (int i = 0, e = fv->ndofd; i < e; ++i) {
         fv->f[i] = (arc->lm)*(fv->R[i]) - fv->f_u[i];
       }
@@ -1083,7 +1081,6 @@ double Multiphysics_Arc_length(Grid *grid,
 /// \param[in,out] ITT Arc Lengh parameter
 /// \param[in,out] DAL Arc Lengh parameter
 /// \param[in] sup_defl Prescribed deflection
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return load multiplier
 double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              MACROSCALE_SOLUTION *s,
@@ -1099,8 +1096,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
                              long ARC,
                              long *ITT,
                              double *DAL,
-                             double *sup_defl,
-                             int &EXA_metric)
+                             double *sup_defl)
 {
   // initialize and define multiphysics
   Multiphysics mp;
@@ -1246,7 +1242,7 @@ double Arc_length_multiscale(COMMON_MACROSCALE *c,
 
   double dlm = Multiphysics_Arc_length(&grid, &mat, &fv, &sol, &load, &com, &ts,
                                        s->crpl, c->mpi_comm, c->VVolume, opts,
-                                       mp, 0, EXA_metric);
+                                       mp, 0);
 
   s->NORM = fv.NORM;
   *pores  = fv.pores;

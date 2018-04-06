@@ -36,8 +36,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
                           MICROSCALE_SOLUTION *s,
                           const PGFem3D_opt *opts,
                           int *n_step,
-                          const int mp_id,
-                          int &EXA_metric);
+                          const int mp_id);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -58,8 +57,7 @@ static int initialize_ms_cohe_job_mixed_tangents
 static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
                                              MICROSCALE_SOLUTION *s,
                                              PGFem3D_opt *o,
-                                             const int mp_id,
-                                             int &EXA_metric);
+                                             const int mp_id);
 
 /** Compute all of the microscale terms for the macroscale tangent and
     residual. The mixed tangents are assembled and the cohesive
@@ -158,8 +156,7 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
 int compute_ms_cohe_job(const int job_id,
                         MS_COHE_JOB_INFO *p_job,
                         MICROSCALE *microscale,
-                        const int mp_id,
-                        int &EXA_metric)
+                        const int mp_id)
 {
   int err = 0;
   const int print_level = 1;
@@ -206,7 +203,7 @@ int compute_ms_cohe_job(const int job_id,
     }
 
     /* compute the microscale equilibrium. */
-    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, EXA_metric);
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id);
 
     /*=== INTENTIONAL DROP THROUGH ===*/
    case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -217,7 +214,7 @@ int compute_ms_cohe_job(const int job_id,
 
       if(JOB_LOGGING && myrank == 0) PGFEM_printf("=== MICROSCALE TANGENT ===\n");
       /*  compute the equilibriated microscale tangent */
-      err += ms_cohe_job_compute_micro_tangent(common,sol,microscale->opts,mp_id,EXA_metric);
+      err += ms_cohe_job_compute_micro_tangent(common,sol,microscale->opts,mp_id);
       if(myrank == 0) PGFEM_printf("\n");
 
       static int init_mixed = 0;
@@ -325,7 +322,7 @@ int assemble_ms_cohe_job_res(const int job_id,
 static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
                           MICROSCALE_SOLUTION *s,
                           const PGFem3D_opt *opts,
-                          int *n_step,const int mp_id, int &EXA_metric)
+                          int *n_step,const int mp_id)
 {
   int err = 0;
   double pores = 0.0;
@@ -336,7 +333,7 @@ static int ms_cohe_job_nr(COMMON_MICROSCALE *c,
   double *sup_defl = PGFEM_calloc(double, c->supports->npd);
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step,EXA_metric);
+  Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step);
 
   free(sup_defl);
   return err;
@@ -423,8 +420,7 @@ static int initialize_ms_cohe_job_mixed_tangents
 static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
                                              MICROSCALE_SOLUTION *s,
                                              PGFem3D_opt *o,
-                                             const int mp_id,
-                                             int &EXA_metric)
+                                             const int mp_id)
 {
   int err = 0;
   int myrank = 0;
@@ -436,7 +432,7 @@ static int ms_cohe_job_compute_micro_tangent(COMMON_MICROSCALE *c,
   /* reset the microscale tangent to zeros */
   c->SOLVER->zero();
 
-  err += stiffmat_fd_multiscale(c,s,o,0,nor_min,0,myrank,nproc,EXA_metric);
+  err += stiffmat_fd_multiscale(c,s,o,0,nor_min,0,myrank,nproc);
 
   /* finalize the microscale tangent matrix assembly */
   c->SOLVER->assemble();

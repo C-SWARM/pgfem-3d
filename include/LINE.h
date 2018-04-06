@@ -41,7 +41,6 @@
 /// \param[in] dissipation volume weighted dissipation
 /// \param[in] tim current time step number
 /// \param[in] STEP subdivision number
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return info id about convergence
 long LINE_S3_MP(double *residuals_loc_time,
                 Grid *grid,
@@ -65,8 +64,7 @@ long LINE_S3_MP(double *residuals_loc_time,
                 double *max_damage,
                 double *dissipation,
                 long tim,
-                long STEP,
-                int &EXA_metric);
+                long STEP);
 
 /// Line search algorithm for Arc Length
 ///
@@ -95,7 +93,6 @@ long LINE_S3_MP(double *residuals_loc_time,
 /// \param[out] gama line search parameter
 /// \param[in] dlm Arc Length parameter
 /// \param[in] dAL Arc Length parameter
-/// \param[out] EXA_metric exascale metric counter for total number of integration iterations
 /// \return info id about convergence
 long ALINE_S3_MP(Grid *grid,
                  MaterialProperty *mat,
@@ -121,7 +118,6 @@ long ALINE_S3_MP(Grid *grid,
                  double *DLM,
                  double *gama,
                  double dlm,
-                 double dAL,
-                 int &EXA_metric);
+                 double dAL);
 
 #endif /* #define PGFEM3D_LINE_H */

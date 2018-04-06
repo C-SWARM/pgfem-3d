@@ -140,13 +140,12 @@ int main(int argc, char **argv)
   double F[9] = {};
   void *ctx = NULL;
   int conv = 0;
-  int EXA_metric = 0;
 
   for (int i = 0; i < nstep; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat.nu,F);
     err += plasticity_model_BPA_ctx_build(&ctx,F,dt);
-    conv = m.param->integration_algorithm(&m,ctx,EXA_metric);
+    conv = m.param->integration_algorithm(&m,ctx);
     assert(conv >= 0);
      if(conv < 0) { 
        printf("\t DID NOT CONVERGE, RESTARTING\n\n");
