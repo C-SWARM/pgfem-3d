@@ -1129,38 +1129,6 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf ("oVolume = %12.12f\n",oVolume);
     }
     VVolume = oVolume;
-    
-    
-    /* compute number of ODEs */
-    const Element *elem = grid.element;
-    int ODE_local_num;
-    
-    for(int ia=0; ia<mp.physicsno; ia++){
-      ODE_local_num = 0;
-      for(int eid=0; eid<grid.ne; ++eid){     // loop through elements
-        long nint = 1;
-        int_point(elem[eid].toe, &nint);
-        for (int ip = 0; ip < nint; ip++){    // loop through integration points
-          Constitutive_model *m = &(fv[ia].eps[eid].model[ip]);
-          if (m == NULL) break;
-          switch(m->param->type){
-            case (CRYSTAL_PLASTICITY):        // fallthrough
-            case (POROVISCO_PLASTICITY):
-              ODE_local_num += 10;
-              break;
-            case (HYPER_ELASTICITY):          // fallthrough
-            default:                          // J2_PLASTICITY_DAMAGE, BPA_PLASTICITY, ...
-              break;                          // no ODEs
-          }
-        }
-      }
-      /* print total number of ODEs for each physics */
-      int ODE_global_num;
-      MPI_Reduce (&ODE_local_num,&ODE_global_num,1,MPI_INT,MPI_SUM,0,mpi_comm);
-      if (myrank == 0)
-        PGFEM_printf("Physics %d's number of ODEs: %d\n", ia, ODE_global_num);
-    }
-    
 
     /*=== BEGIN SOLVE ===*/
     time_steps.dt_np1 = time_steps.times[1] - time_steps.times[0];
