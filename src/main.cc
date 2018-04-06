@@ -55,6 +55,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "crystal_plasticity_integration.h"
+
 namespace {
 using namespace pgfem3d;
 const constexpr int periodic = 0;
@@ -146,6 +148,23 @@ int print_PGFem3D_final(const Multiphysics& mp,
 
   return err;
 }
+
+/// Prints exascale metrics
+/// Currently, this will output the total number of ODEs operations
+///
+/// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
+/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] myrank current process rank
+void print_EXA_metric(const MPI_Comm mpi_comm, const int myrank)
+{
+  /* print total EXA_metrics */
+  int global_EXA_metric;
+  MPI_Reduce (&EXA_metric,&global_EXA_metric,1,MPI_INT,MPI_SUM,0,mpi_comm);
+  
+  if (myrank == 0)
+    PGFEM_printf("Total number of ODE computations: %d\n", global_EXA_metric);
+}
+
 
 /// print simulation results
 /// output format is VTK so that this function calls VTK_IO library
@@ -1372,6 +1391,10 @@ int single_scale_main(int argc,char *argv[])
   }
 
   delete ensight;
+  
+  /* print EXA_metrics */
+  print_EXA_metric(mpi_comm, myrank);
+
   //<---------------------------------------------------------------------
 
   total_time += MPI_Wtime(); // measure time spent
