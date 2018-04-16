@@ -193,45 +193,11 @@ double pc_npa(const Constitutive_model *m,
   return pc;
 }              
 
-template <class T1, class T2>
-void fush_Fs_to_pF(Constitutive_model *m,
-                   T1 &Fnp1,
-                   T1 &Fn,
-                   T1 &pFnp1,
-                   T1 &pFn,
-                   const T2 &pF0) 
-{
-  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  T2 oFnp1 (Fs[TENSOR_Fnp1 ].m_pdata); 
-  T2 oFn   (Fs[TENSOR_Fn   ].m_pdata);
-  T2 opFnp1(Fs[TENSOR_pFnp1].m_pdata);
-  T2 opFn  (Fs[TENSOR_pFn  ].m_pdata);
-  
-  Fnp1  =  oFnp1(i,k)*pF0(k, j);
-  Fn    =    oFn(i,k)*pF0(k, j);
-  pFnp1 = opFnp1(i,k)*pF0(k, j);
-  pFn   =   opFn(i,k)*pF0(k, j);  
-}
-
-template <class T1, class T2>
-void fushback_pF_to_Fs(Constitutive_model *m,
-                       const T1 &pFnp1,
-                       const T2 &pF0) 
-{
-  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  T2 opFnp1(Fs[TENSOR_pFnp1].m_pdata);
-  T1 pF0I;
-  inv(pF0, pF0I);
-  
-  opFnp1 = pFnp1(i,k)*pF0I(k, j);
-}
-
 int CM_PVP_PARAM::integration_algorithm(Constitutive_model *m,
                                         const void *ctx)
 const
 {
   int err = 0;
-  
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
 
   const double dt = CTX->dt;
@@ -241,25 +207,14 @@ const
   memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
   KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
   
-  Tensor<2> Fnp1, Fn, pFn, pFnp1;
-  double I[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
-  double *pF0_data = I;
-  
-  if((m->param)->pF != NULL)
-    pF0_data = (m->param)->pF;
-    
-  TensorA<2> pF0(pF0_data);
-  fush_Fs_to_pF(m, Fnp1, Fn, pFn, pFnp1, pF0); 
-   
-  err += pvp_intf_perform_integration_algorithm(Fnp1.data,
-                                                Fn.data,
-                                                pFnp1.data,
-                                                pFn.data,
+  err += pvp_intf_perform_integration_algorithm(Fs[TENSOR_Fnp1].m_pdata,
+                                                Fs[TENSOR_Fn].m_pdata,
+                                                Fs[TENSOR_pFnp1].m_pdata,
+                                                Fs[TENSOR_pFn].m_pdata,
                                                 vars+VAR_pc_np1,
                                                 vars[VAR_pc_n],
                                                 mat_pvp,
-                                                dt);
-  fushback_pF_to_Fs(m, pFnp1, pF0);
+                                                dt);                                                                                                  
   return err;
 }
 
@@ -840,9 +795,39 @@ const
   // read_constitutive_model_parameters->plasticity_model_read_parameters
   //   calling sequence
   
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double *param      = (m->param)->model_param;
-  double *vars       = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;  
+  double *vars       = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
+  double pJ   = param[PARAM_pJ];
+  
+  double pF11 = pow(pJ, 1.0/3.0);
+  double F0[9] = {0.0,0.0,0.0,
+                  0.0,0.0,0.0,
+                  0.0,0.0,0.0};
+  F0[0] = F0[4] = F0[8] =  pF11;
+
   vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = param[PARAM_pc_0];
+  if((m->param)->pF != NULL)
+  {
+    double pJ = det3x3((m->param)->pF);
+    double pc = pvp_intf_compute_pc(pJ, param[PARAM_pc_0], (m->param)->cm_mat->mat_pvp);
+    vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = pc;      
+    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnm1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFn  ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnp1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+  }
+  else
+  {
+    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, F0, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fn   ].m_pdata, F0, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, F0, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnm1].m_pdata, F0, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFn  ].m_pdata, F0, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnp1].m_pdata, F0, sizeof(double)*DIM_3x3);
+  }    
   return 0;
 }
 
