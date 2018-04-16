@@ -658,7 +658,7 @@ void update_element_deformation_gradient(const Grid *grid,
 /// \param[in]       myrank   current process rank
 /// \param[in]       *pF      given plastic deformation gradient
 /// \return non-zero on internal error
-int set_initial_plastic_deformation_gradient(Grid *grid,
+int set_initial_plastic_deformation_gradient_(Grid *grid,
                                              FieldVariables *fv,
                                              MaterialProperty *mat,                                             
                                              pgfem3d::Solver *sol,
@@ -720,4 +720,57 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
   update_element_deformation_gradient(grid, fv, opts);
 
   return err;
+}
+
+/// Compute boundary values and displacement due to given initial plastic deformation gradient(inverse of pF), and
+/// set initial values such that when total deformation gradient is computed, initial condition is imposed to have
+/// conditions as F = pF, and eF = 1.
+///
+/// \param[in, out]  *grid    mesh object
+/// \param[in]       *fv      object for field variables
+/// \param[in]       *mat     a material object
+/// \param[in]       *sol     object for solution scheme
+/// \param[in, out]  *load    object for loading
+/// \param[in]       *com     communication object
+/// \param[in]       mpi_comm MPI_COMM_WORLD
+/// \param[in]       *opts    structure PGFem3D option
+/// \param[in]       *mp      mutiphysics object
+/// \param[in]       mp_id    mutiphysics id
+/// \param[in]       myrank   current process rank
+/// \param[in]       *pF      given plastic deformation gradient
+/// \return non-zero on internal error
+int set_initial_plastic_deformation_gradient(Grid *grid,
+                                             FieldVariables *fv,
+                                             MaterialProperty *mat,                                             
+                                             pgfem3d::Solver *sol,
+                                             LoadingSteps *load,
+                                             const CommunicationStructure *com,
+                                             const MPI_Comm mpi_comm,
+                                             const PGFem3D_opt *opts,
+                                             const Multiphysics& mp,
+                                             const int mp_id,
+                                             const int myrank)
+{
+  int total_Lagrangian = 1;
+  int intg_order = 0;
+
+  for(int eid=0; eid<grid->ne; eid++)
+  {
+    FEMLIB fe;
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
+
+    for(int ip=0; ip<fe.nint; ip++)
+    {
+      Constitutive_model *m = &(fv->eps[eid].model[ip]);
+      m->param->set_init_vals(m);
+    }
+    if(opts->analysis_type == CM3F)
+    {      
+      double eJ = 1.0;
+      const Model_parameters *mp = fv->eps[eid].model[0].param;
+      double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ, -1, 0.5);
+      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = fv->tf.P_nm1(eid+1, 1) = P;
+    }      
+  }
+  return 0;
 }
