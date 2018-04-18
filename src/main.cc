@@ -57,6 +57,8 @@
 
 #include "crystal_plasticity_integration.h"
 
+long totalDegreesOfFreedom_Exa_metric = 0;
+
 namespace {
 using namespace pgfem3d;
 const constexpr int periodic = 0;
@@ -155,14 +157,25 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
-void print_EXA_metric(const MPI_Comm mpi_comm, const int myrank)
+void print_EXA_metrics(const MPI_Comm mpi_comm, const int myrank, double total_time)
 {
   /* print total EXA_metrics */
-  int global_EXA_metric;
-  MPI_Reduce (&EXA_metric,&global_EXA_metric,1,MPI_INT,MPI_SUM,0,mpi_comm);
+  int global_ODE_EXA_metric;
+  MPI_Reduce (&ODE_ops_EXA_metric,&global_ODE_EXA_metric,1,MPI_INT,MPI_SUM,0,mpi_comm);
   
-  if (myrank == 0)
-    PGFEM_printf("Total number of ODE computations: %d\n", global_EXA_metric);
+  int MPI_process_number;
+  MPI_Comm_size(mpi_comm, &MPI_process_number);
+  
+  if (myrank == 0){
+    PGFEM_printf("Total number of degrees of freedom: %d\n", totalDegreesOfFreedom_Exa_metric);
+    PGFEM_printf("Total number of ODE computations: %d\n", global_ODE_EXA_metric);
+    PGFEM_printf("Total number of solver iterations: %d\n", solverIter_EXA_metric);
+    PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+    
+    double final_EXA_metric = ((totalDegreesOfFreedom_Exa_metric + global_ODE_EXA_metric) * 
+                                  solverIter_EXA_metric) / (total_time * MPI_process_number);
+    PGFEM_printf("\nFinal EXA metric: %f\n\n", final_EXA_metric);
+  }
 }
 
 
@@ -765,6 +778,8 @@ int single_scale_main(int argc,char *argv[])
       if(ia==0)
         grid.Gne += DomNe[ib];
     }
+    
+    totalDegreesOfFreedom_Exa_metric += fv[ia].Gndof;
 
     renumber_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,com[ia].DomDof,grid.node,
                             grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
@@ -1391,10 +1406,6 @@ int single_scale_main(int argc,char *argv[])
   }
 
   delete ensight;
-  
-  /* print EXA_metrics */
-  print_EXA_metric(mpi_comm, myrank);
-
   //<---------------------------------------------------------------------
 
   total_time += MPI_Wtime(); // measure time spent
@@ -1406,6 +1417,9 @@ int single_scale_main(int argc,char *argv[])
   if (myrank == 0)
     err += print_PGFem3D_final(mp, total_time, startup_time, hypre_time, stiffmat_time, 
                                residuals_time, myrank);
+
+  /* print EXA_metrics */
+  print_EXA_metrics(mpi_comm, myrank, total_time);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();

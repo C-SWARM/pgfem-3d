@@ -67,6 +67,9 @@
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
 
+
+long solverIter_EXA_metric = 0;
+
 namespace {
 using pgfem3d::Solver;
 using pgfem3d::solvers::SparseSystem;
@@ -964,6 +967,7 @@ long Newton_Raphson_with_LS(double *solve_time,
 
     double BS_nor = s_info.res_norm;
     int BS_iter   = s_info.n_iter;
+    solverIter_EXA_metric += BS_iter;
 
     // Check for correct solution
     if (!isfinite(BS_nor))
