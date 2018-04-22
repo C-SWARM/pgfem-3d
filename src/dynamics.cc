@@ -79,7 +79,8 @@ void DISP_resid_body_force_el(double *f,
   dealoc1(bf);
 }
 
-void DISP_resid_w_inertia_el(double *f,
+void DISP_resid_w_inertia_el(FEMLIB *fe,
+                             double *f,
                              const int ii,
                              const int ndofn,
                              const int nne,
@@ -98,7 +99,6 @@ void DISP_resid_w_inertia_el(double *f,
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
 
-  FEMLIB fe(ii, elem, node, INTG_ORDER,1);
   Matrix<double> du(3,1);
 
   double *bf0, *bf1, *bf2, *bf_n1a, *bf;
@@ -108,9 +108,9 @@ void DISP_resid_w_inertia_el(double *f,
   bf_n1a = aloc1(ndofn);
   bf     = aloc1(ndofn);
 
-  for(int ip = 1; ip<=fe.nint; ip++)
+  for(int ip = 1; ip<=fe->nint; ip++)
   {
-    fe.elem_basis_V(ip);
+    fe->elem_basis_V(ip);
 
     du.set_values(0.0);
     double X[3];
@@ -124,13 +124,13 @@ void DISP_resid_w_inertia_el(double *f,
 
     for(long a = 0; a<nne; a++)
     {
-      X[0] += fe.N(a+1)*x[a];
-      X[1] += fe.N(a+1)*y[a];
-      X[2] += fe.N(a+1)*z[a];
+      X[0] += fe->N(a+1)*x[a];
+      X[1] += fe->N(a+1)*y[a];
+      X[2] += fe->N(a+1)*z[a];
       for(long b = 0; b<3; b++)
       {
         long id = a*ndofn + b;
-        du(b+1) += fe.N(a+1)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
+        du(b+1) += fe->N(a+1)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
       }
     }
 
@@ -153,9 +153,9 @@ void DISP_resid_w_inertia_el(double *f,
       for(long b=0; b<3; b++)
       {
         long id = a*ndofn + b;
-        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe.N(a+1)*du(b+1)*fe.detJxW;
-        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe.N(a+1)*fe.detJxW;
-        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe.N(a+1)*fe.detJxW;
+        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe->N(a+1)*du(b+1)*fe->detJxW;
+        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe->N(a+1)*fe->detJxW;
+        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe->N(a+1)*fe->detJxW;
       }
     }
   }
@@ -258,7 +258,7 @@ int residual_with_inertia(FEMLIB *fe,
   SUPP sup = load->sups[mp_id];
 
 
-  DISP_resid_w_inertia_el(f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha);
+  DISP_resid_w_inertia_el(fe,f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha);
 
   switch(opts->analysis_type)
   {

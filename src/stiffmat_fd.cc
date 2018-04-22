@@ -521,12 +521,20 @@ static int el_stiffmat_MP(int eid,
 
   // set FEMLIB
   FEMLIB fe;
-  if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,true);
-  else if(opts->analysis_type == TF)
-    fe.initialization(eid,grid->element,grid->node,1,total_Lagrangian);
+  if(opts->analysis_type == CM || opts->analysis_type == CM3F)
+  {
+    Constitutive_model *m = (fv->eps[eid]).model;
+    double *pFI = m->param->pFI;
+    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,pFI);
+  }
   else
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
+  {
+    if (opts->analysis_type == MINI || opts->analysis_type == MINI_3F)
+      fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,NULL,true);
+    else
+      fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian,NULL);
+  }
+
 
   long *nod = (fe.node_id).m_pdata; // list of node ids in this element
 

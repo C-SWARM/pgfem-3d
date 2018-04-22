@@ -99,7 +99,7 @@ class Model_parameters
 {
  public:
   /** Pointer to isotropic material props */
-  double *pF;
+  double *pF, *pFI;
   const HOMMAT *p_hmat;
   int mat_id; // Global material id, mat_id may not be the same as the hommat id
   int uqcm;   // UQ study through constitutive model 0: no, or yes
@@ -122,7 +122,8 @@ class Model_parameters
     model_param       = NULL;
     n_param_index     = 0;
     model_param_index = NULL;
-    pF                = NULL;    
+    pF                = NULL;
+    pFI               = NULL;
   };
 
   /// Construct a Model_parameters object. The object is left in an

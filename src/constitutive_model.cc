@@ -280,20 +280,7 @@ int construct_model_context_with_thermal(void **ctx,
                                          double *eFnpa,
                                          double *hFn,
                                          double *hFnp1,
-                                         int npa);
-
-void compute_FpF0(Tensor<2>& Fnp1, 
-                  Tensor<2>& F,
-                  double *pF0)
-{
-  if(pF0 != NULL)
-  {
-    TensorA<2> pF(pF0);
-    Fnp1(i, j) = F(i,k)*pF(k,j);
-  }
-  else
-    Fnp1(i,j) = F(i,j);
-}                                                           
+                                         int npa);                                                           
 
 // Nodal Temerature for transient
 class NodalTemerature
@@ -432,16 +419,15 @@ template <class T> class DeformationGradient
       int eid = fe->curt_elem_id;
       int ip = fe->curt_itg_id - 1;
       Constitutive_model *m = (fv->eps[eid]).model + ip;      
-      fe->update_deformation_gradient(fv->ndofn,u.m_pdata,Fr.data);
+      fe->update_deformation_gradient(fv->ndofn,u.m_pdata,Fr.data,(m->param)->pFI);
 
-      Tensor<2> F_temp;
       if(total_Lagrangian)
       {
         if(sup->multi_scale)
           cm_add_macro_F(sup,Fr.data);
 
         // Total Lagrangian formulation Fn = 1, Fnp1 = Fr
-        F_temp = Fr(i,j);
+        F.np1 = Fr(i,j);
       }
       else
       {
@@ -451,9 +437,8 @@ template <class T> class DeformationGradient
           PGFEM_Abort();
         }
         m->param->get_pF(m, F.n.data, 1);
-        F_temp = Fr(i,k)*F.n(k,j); // Fn+1 = Fr*Fn
+        F.np1 = Fr(i,k)*F.n(k,j); // Fn+1 = Fr*Fn
       }
-      compute_FpF0(F.np1, F_temp, (m->param)->pF);
     };
     int compute_deformation_gradient_for_ss(FEMLIB *fe,
                                             FieldVariables *fv,
@@ -1363,14 +1348,18 @@ int read_model_parameters_list(const int n_mat,
           if(-1 == model_type)
           {
             if(hmat_list[idx].param->pF==NULL)
-              hmat_list[idx].param->pF = (double *) malloc(sizeof(double)*DIM_3x3);
-            
-            double *pF = hmat_list[idx].param->pF;
-
+            {
+              hmat_list[idx].param->pF  = (double *) malloc(sizeof(double)*DIM_3x3);
+              hmat_list[idx].param->pFI = (double *) malloc(sizeof(double)*DIM_3x3);
+            }
+            double *pF  = hmat_list[idx].param->pF;
+            double *pFI = hmat_list[idx].param->pFI; 
             err += scan_for_valid_line(in);
             int match = fscanf(in, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", pF+0, pF+1, pF+2,
                                                                           pF+3, pF+4, pF+5,
                                                                           pF+6, pF+7, pF+8);
+            TensorA<2> pF0(pF), pF0I(pFI);
+            inv(pF0, pF0I);
 
             if(match != DIM_3x3)
             {
@@ -1836,9 +1825,11 @@ int constitutive_model_update_output_variables(Grid *grid,
 
 
   for (int eid = 0; eid < grid->ne; eid++)
-  {
-    FEMLIB fe(eid,elem,node,0,total_Lagrangian);
-
+  { 
+    FEMLIB fe;   
+    Constitutive_model *m = (fv->eps[eid]).model;
+    fe.initialization(eid,elem,node,0,total_Lagrangian,m->param->pFI);
+        
     int nne   = fe.nne;
     int ndofn = fv->ndofn;
 
@@ -2204,10 +2195,8 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     
-    Tensor<2> F_temp;
-    fe->update_deformation_gradient(ndofn,u,F_temp.data);
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-    compute_FpF0(Fnp1, F_temp, (m->param)->pF);
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);    
+    fe->update_deformation_gradient(ndofn,u,Fnp1.data,(m->param)->pFI);
 
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *func = m->param;
@@ -2413,13 +2402,9 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     
     Tensor<2> Fr_temp, Fr_npa_temp;
     
-    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr_temp.data);
-    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa_temp.data);
-
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-
-    compute_FpF0(Fr,     Fr_temp,     (m->param)->pF);
-    compute_FpF0(Fr_npa, Fr_npa_temp, (m->param)->pF);    
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);        
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr.data,(m->param)->pFI);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data,(m->param)->pFI);
 
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
@@ -2676,9 +2661,8 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,u,Fr.data);
-
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);    
+    fe->update_deformation_gradient(ndofn,u,Fr.data,(m->param)->pFI);
 
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *func = m->param;
@@ -2695,7 +2679,6 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
       inv(hFnp1,hFnp1_I);
     }
 
-    Tensor<2> F_temp;
     // --> update plasticity part
     if(total_Lagrangian)
     {
@@ -2704,7 +2687,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
 
       // Total Lagrangian formulation Fn = 1, Fnp1 = Fr
       eFn = delta_ij(i,j);
-      F_temp = Fr(i,j);
+      Fnp1 = Fr(i,j);
       hFn = delta_ij(i,j);
     }
     else
@@ -2717,12 +2700,10 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
 
       Tensor<2> Fn;
       err += m->param->get_F(m, Fn.data,1);
-      F_temp = Fr(i,k)*Fn(k,j); // Fn+1 = Fr*Fn
+      Fnp1 = Fr(i,k)*Fn(k,j); // Fn+1 = Fr*Fn
       Jn = det(Fn);
     }
     
-    compute_FpF0(Fnp1, F_temp, (m->param)->pF);    
-
     void *ctx = NULL;
     if(is_it_couple_w_thermal>=0)
       err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,
@@ -3006,10 +2987,8 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     
-    Tensor<2> F_temp;
-    fe->update_deformation_gradient(ndofn,u,F_temp.data);
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-    compute_FpF0(Fnp1, F_temp, (m->param)->pF);
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);    
+    fe->update_deformation_gradient(ndofn,u,Fnp1.data,(m->param)->pFI);
 
     if(is_it_couple_w_thermal >= 0)
     {
@@ -3217,15 +3196,11 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     fe->update_shape_tensor();
     
     Tensor<2> Fr_temp, Fr_npa_temp, Fr_nma_temp;
-    
-    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr_temp.data);
-    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa_temp.data);
-    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma_temp.data);    
 
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-    compute_FpF0(Fr,         Fr_temp, (m->param)->pF);
-    compute_FpF0(Fr_npa, Fr_npa_temp, (m->param)->pF);
-    compute_FpF0(Fr_nma, Fr_nma_temp, (m->param)->pF);
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);    
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,    Fr.data,(m->param)->pFI);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data,(m->param)->pFI);
+    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma.data,(m->param)->pFI);    
     
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);
@@ -3532,9 +3507,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
-    fe->update_deformation_gradient(ndofn,u,Fr.data);
 
-    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
+    Constitutive_model *m = &(fv->eps[eid].model[ip-1]);    
+    fe->update_deformation_gradient(ndofn,u,Fr.data,(m->param)->pFI);
 
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *func = m->param;
@@ -3553,7 +3528,6 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
         hFn = delta_ij(i,j);
     }
 
-    Tensor<2> F_temp;
     // --> update plasticity part
     if(total_Lagrangian)
     {
@@ -3562,7 +3536,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       }
 
       // TOTAL LAGRANGIAN FORMULATION Fn = 1, Fnp1 = Fr
-      F_temp(i,j) = Fr(i,j);
+      Fnp1 = Fr(i,j);
     }
     else
     {
@@ -3573,10 +3547,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
       Tensor<2> Fn;
       err += m->param->get_F(m, Fn.data,1);
-      F_temp = Fr(i,k)*Fn(k,j);  // compute Fnp1 = Fr*Fn
+      Fnp1 = Fr(i,k)*Fn(k,j);  // compute Fnp1 = Fr*Fn
       Jn = det(Fn);
     }
-    compute_FpF0(Fnp1, F_temp, (m->param)->pF);
 
     {
       /* check that deformation is invertible -> J > 0 */
@@ -3886,14 +3859,10 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     
     Tensor<2> Fr_temp, Fr_npa_temp, Fr_nma_temp;
     
-    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr_temp.data);
-    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa_temp.data);
-    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma_temp.data);    
-
     Constitutive_model *m = &(fv->eps[eid].model[ip-1]);
-    compute_FpF0(Fr,         Fr_temp, (m->param)->pF);
-    compute_FpF0(Fr_npa, Fr_npa_temp, (m->param)->pF);
-    compute_FpF0(Fr_nma, Fr_nma_temp, (m->param)->pF);        
+    fe->update_deformation_gradient(ndofn,r_np1.m_pdata,Fr.data,(m->param)->pFI);
+    fe->update_deformation_gradient(ndofn,r_npa.m_pdata,Fr_npa.data,(m->param)->pFI);
+    fe->update_deformation_gradient(ndofn,r_nma.m_pdata,Fr_nma.data,(m->param)->pFI);    
 
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
     fe->elem_shape_function(ip,Vno, Nt.m_pdata);

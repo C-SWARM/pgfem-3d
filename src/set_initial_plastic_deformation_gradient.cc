@@ -594,8 +594,7 @@ void update_element_deformation_gradient(const Grid *grid,
 
   for(int eid=0; eid<grid->ne; eid++)
   {
-    FEMLIB fe;
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
     Matrix<double> d(fe.nne*fe.nsd, 1,0.0);
     for(int ic=0; ic<fe.nne; ic++)
@@ -645,7 +644,7 @@ void update_element_deformation_gradient(const Grid *grid,
 /// set initial values such that when total deformation gradient is computed, initial condition is imposed to have
 /// conditions as F = pF, and eF = 1.
 ///
-/// \param[in, out]  *grid    mesh object
+/// \param[in, out]  *grid    mesh objectn
 /// \param[in]       *fv      object for field variables
 /// \param[in]       *mat     a material object
 /// \param[in]       *sol     object for solution scheme
@@ -756,8 +755,7 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
 
   for(int eid=0; eid<grid->ne; eid++)
   {
-    FEMLIB fe;
-    fe.initialization(eid,grid->element,grid->node,intg_order,total_Lagrangian);
+    FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
     for(int ip=0; ip<fe.nint; ip++)
     {

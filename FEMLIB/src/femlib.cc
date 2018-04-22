@@ -245,6 +245,7 @@ FEMLIB::initialization(int e,
                        const Node *node,
                        int i_order,
                        int is_total,
+                       double *pF0I,
                        bool add_bubble)
 {
   int nne = elem[e].toe;
@@ -259,13 +260,31 @@ FEMLIB::initialization(int e,
   elemnodes(e,nne,nod,elem);
 
   this->temp_v.set_variable_size(nne_t, nne);
-
+  
   double *x = (this->temp_v).x.m_pdata; // no memory is allocated
   double *y = (this->temp_v).y.m_pdata;
   double *z = (this->temp_v).z.m_pdata;
 
   if(is_total)
-    nodecoord_total(nne,nod,node,x,y,z);
+  {
+    if(pF0I != NULL)
+    {
+      this->u0.initialization(nne_t, 3, 0.0);
+      Matrix<double> X(nne_t, 1), Y(nne_t, 1), Z(nne_t, 1);
+      nodecoord_total(nne,nod,node,X.m_pdata,Y.m_pdata,Z.m_pdata);
+      for(int ia=1; ia<=nne; ia++)
+      {
+        this->u0(ia,1) = X(ia) - (pF0I[0]*X(ia) + pF0I[1]*Y(ia) + pF0I[2]*Z(ia));
+        this->u0(ia,2) = Y(ia) - (pF0I[3]*X(ia) + pF0I[4]*Y(ia) + pF0I[5]*Z(ia));
+        this->u0(ia,3) = Z(ia) - (pF0I[6]*X(ia) + pF0I[7]*Y(ia) + pF0I[8]*Z(ia));
+        (this->temp_v).x(ia) = X(ia) - this->u0(ia, 1);
+        (this->temp_v).y(ia) = Y(ia) - this->u0(ia, 2);
+        (this->temp_v).z(ia) = Z(ia) - this->u0(ia, 3);
+      }
+    }
+    else
+      nodecoord_total(nne,nod,node,x,y,z);
+  }
   else
     nodecoord_updated(nne,nod,node,x,y,z);
 
@@ -375,6 +394,24 @@ FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F)
   def_grad_get(this->nne,ndofn,CONST_4(double) this->ST_tensor,u,F_mat);
   mat2array(F,CONST_2(double) F_mat,3,3);
   dealoc2(F_mat,3);
+}
+
+void
+FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F, double *pF0I)
+{
+  if(pF0I==NULL)
+    this->update_deformation_gradient(ndofn, u, F);
+  else
+  {
+    Matrix<double> r_e(ndofn*this->nne, 1, 0.0);          
+    for(int ia=0; ia<this->nne; ia++)
+    {
+      r_e.m_pdata[ia*ndofn+0] = u[ia*ndofn+0] + this->u0(ia+1,1);
+      r_e.m_pdata[ia*ndofn+1] = u[ia*ndofn+1] + this->u0(ia+1,2);
+      r_e.m_pdata[ia*ndofn+2] = u[ia*ndofn+2] + this->u0(ia+1,3);
+    }
+    this->update_deformation_gradient(ndofn, r_e.m_pdata, F);
+  }
 }
 
 double

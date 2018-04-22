@@ -29,6 +29,7 @@ class FEMLIB
   gcm::Matrix<double> ksi, eta, zet, weights;
   gcm::Matrix<int> itg_ids;
   gcm::Matrix<long> node_id;
+  gcm::Matrix<double> u0;
 
   long intg_order;
 
@@ -55,7 +56,7 @@ class FEMLIB
          int is_total,
          bool add_bubble = false)
   {
-    initialization(e,elem,node,i_order,is_total, add_bubble);
+    initialization(e,elem,node,i_order,is_total, NULL, add_bubble);
   };
 
   ~FEMLIB();
@@ -73,6 +74,7 @@ class FEMLIB
                       const Node *node,
                       int i_order,
                       int is_total,
+                      double *pF0I,
                       bool add_bubble = false);
 
   void elem_shape_function(long ip,
@@ -83,6 +85,10 @@ class FEMLIB
   void update_deformation_gradient(const int ndofn,
                                    double *u,
                                    double *F);
+  void update_deformation_gradient(const int ndofn, 
+                                   double *u, 
+                                   double *F,
+                                   double *pF0I);                                   
   double elem_volume(void);
 };
 
