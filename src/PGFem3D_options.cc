@@ -220,6 +220,7 @@ void set_default_options(PGFem3D_opt *options)
   options->override_material_props = NULL;
   options->comp_print_reaction = 1;
   options->comp_print_macro = 1;
+  options->print_EXA_details = false;
 
   /* I/O file names */
   options->ipath = NULL;

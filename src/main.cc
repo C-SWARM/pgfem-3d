@@ -57,8 +57,6 @@
 
 #include "crystal_plasticity_integration.h"
 
-long totalDegreesOfFreedom_Exa_metric = 0;
-
 namespace {
 using namespace pgfem3d;
 const constexpr int periodic = 0;
@@ -157,24 +155,40 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
 /// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] myrank current process rank
-void print_EXA_metrics(const MPI_Comm mpi_comm, const int myrank, double total_time)
+void print_EXA_metrics(const MPI_Comm mpi_comm, 
+                       const int myrank,
+                       std::vector<double> hypre_time,
+                       std::vector<double> residuals_time,
+                       double total_time,
+                       const PGFem3D_opt *opts)
 {
-  /* print total EXA_metrics */
-  int global_ODE_EXA_metric;
-  MPI_Reduce (&ODE_ops_EXA_metric,&global_ODE_EXA_metric,1,MPI_INT,MPI_SUM,0,mpi_comm);
-  
   int MPI_process_number;
   MPI_Comm_size(mpi_comm, &MPI_process_number);
   
   if (myrank == 0){
-    PGFEM_printf("Total number of degrees of freedom: %d\n", totalDegreesOfFreedom_Exa_metric);
-    PGFEM_printf("Total number of ODE computations: %d\n", global_ODE_EXA_metric);
-    PGFEM_printf("Total number of solver iterations: %d\n", solverIter_EXA_metric);
-    PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+    double total_residual_time = 0.0;   //residual time across all physics
+    for (auto& n : residuals_time)
+      total_residual_time += n;
+      
+    double total_hypre_time = 0.0;      //hypre time across all physics
+    for (auto& n : hypre_time)
+      total_hypre_time += n;
+      
+    double total_combined_time = total_residual_time + total_hypre_time;
     
-    double final_EXA_metric = ((totalDegreesOfFreedom_Exa_metric + global_ODE_EXA_metric) * 
-                                  solverIter_EXA_metric) / (total_time * MPI_process_number);
-    PGFEM_printf("\nFinal EXA metric: %f\n\n", final_EXA_metric);
+    if (opts->print_EXA_details){
+      PGFEM_printf("Total Residual time: %f\n", total_residual_time);
+      PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
+      PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
+      PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+    }
+    
+    double EXA_Numerator = (total_residual_time / total_combined_time) * total_EXA_metric + 
+                              (total_hypre_time / total_combined_time) * dof_EXA_metric;
+    //PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
+    
+    double EXA_Denominator = total_time * MPI_process_number;
+    PGFEM_printf("\nFinal EXA metric: %f\n\n", EXA_Numerator/EXA_Denominator);
   }
 }
 
@@ -755,7 +769,6 @@ int single_scale_main(int argc,char *argv[])
   if (myrank == 0 && PFEM_DEBUG)
     PGFEM_printf(" Done.\nRedistributing information...");
 
-
   for(int ia=0; ia<mp.physicsno; ia++)
   {
     fv[ia].ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
@@ -778,8 +791,6 @@ int single_scale_main(int argc,char *argv[])
       if(ia==0)
         grid.Gne += DomNe[ib];
     }
-    
-    totalDegreesOfFreedom_Exa_metric += fv[ia].Gndof;
 
     renumber_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,com[ia].DomDof,grid.node,
                             grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
@@ -1345,7 +1356,8 @@ int single_scale_main(int argc,char *argv[])
                                  total_time);
 
       if (myrank == 0){
-        PGFEM_printf("\n");
+        total_EXA_metric += perTimestep_EXA_metric;    //accumulate the numerator for the EXA metric equation per timestep
+        perTimestep_EXA_metric = 0;                    //reset EXA metric accumulator
         PGFEM_printf("*********************************************\n");
         PGFEM_printf("*********************************************\n");
       }
@@ -1419,7 +1431,7 @@ int single_scale_main(int argc,char *argv[])
                                residuals_time, myrank);
 
   /* print EXA_metrics */
-  print_EXA_metrics(mpi_comm, myrank, total_time);
+  print_EXA_metrics(mpi_comm, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();

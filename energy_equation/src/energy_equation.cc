@@ -22,6 +22,8 @@
 #include <ttl/ttl.h>
 #include <cmath>
 
+#include "crystal_plasticity_integration.h"
+
 namespace {
 using namespace gcm;
 using namespace ttl;
@@ -565,6 +567,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
   for(int ip = 1; ip<=fe->nint; ip++)
   {
+  
+    ++perIter_ODE_EXA_metric;      //count the total number of integration points for the EXA metric (No ODEs, so 1 is used for each operation)
+  
     double Q = 0.0;
     // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);

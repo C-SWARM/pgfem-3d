@@ -12,6 +12,8 @@
 #include <ttl/ttl.h>
 #include "utils.h"
 
+#include "crystal_plasticity_integration.h"
+
 #define DIM_3        3
 #define DIM_3x3      9
 #define DIM_3x3x3   27
@@ -79,6 +81,8 @@ int HE_PARAM::integration_algorithm(Constitutive_model *m,
 const
 {
   int err = 0;
+  ++perIter_ODE_EXA_metric;      //accumulate the EXA metric for hyperelastic model (1 per integration point)
+  
   auto CTX = (none_ctx *) ctx;
   memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*CTX->F));
   return err;

@@ -45,6 +45,7 @@ struct PGFem3D_opt {
   int no_migrate;
   int comp_print_reaction; // compute and print reaction forces
   int comp_print_macro;    // compute and print macro values (GF, GP, GS)
+  bool print_EXA_details;  // output more detailed information about the EXA metric
 
   /* input overrides */
   int override_pre_disp;

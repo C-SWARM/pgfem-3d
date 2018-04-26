@@ -43,6 +43,8 @@
 #include <cassert>
 #include <vector>
 
+#include "crystal_plasticity_integration.h"
+
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
 #endif
@@ -67,8 +69,10 @@
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
 
+long perTimestep_EXA_metric = 0;
+long total_EXA_metric = 0;
+long dof_EXA_metric = 0;
 
-long solverIter_EXA_metric = 0;
 
 namespace {
 using pgfem3d::Solver;
@@ -967,7 +971,6 @@ long Newton_Raphson_with_LS(double *solve_time,
 
     double BS_nor = s_info.res_norm;
     int BS_iter   = s_info.n_iter;
-    solverIter_EXA_metric += BS_iter;
 
     // Check for correct solution
     if (!isfinite(BS_nor))
@@ -1249,6 +1252,18 @@ long Newton_Raphson_with_LS(double *solve_time,
       }
     }
 
+    //EXA metric computation
+    long global_ODE_EXA_metric = 0;
+    MPI_Reduce (&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,MPI_LONG,MPI_SUM,0,mpi_comm);
+    if (myrank == 0){
+      if (opts->print_EXA_details)
+        PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
+      perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
+      dof_EXA_metric += fv->Gndof;
+    }
+    perIter_ODE_EXA_metric = 0;                                 //reset ODE operation counter
+    
+    
     if(check_energy_norm(&ENORM,nor2,fv,sol,com,mpi_comm,opts,tim,iter,myrank))
     {
       INFO = 0;
@@ -1277,12 +1292,13 @@ long Newton_Raphson_with_LS(double *solve_time,
         }
       }
     } /* end iter > iter_max */
-
+    
     if(nor <= sol->nor_min || nor2 <= sol->computer_zero)
       break;
 
     iter++;
     *NR_itr_no = iter;
+
 
   }/* end while nor > nor_min */
 
@@ -2138,15 +2154,26 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
 
     double Rn_R = fabs(SOL[cpled_mp_id].last_residual - nor)/FV[cpled_mp_id].NORM;
 
+    long global_ODE_EXA_metric = 0;
+    MPI_Reduce (&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,MPI_LONG,MPI_SUM,0,mpi_comm);
     if(myrank==0)
     {
       printf(":: R(%s): ", mp.physicsname[cpled_mp_id]);
       printf("|R| = %e |R|/|R0| = %e, Rn = %e, Rn-R = %e\n",
              nor, nor/FV[cpled_mp_id].NORM, SOL[cpled_mp_id].last_residual,Rn_R);
+             
+      //EXA metric computation
+      if (opts->print_EXA_details)
+        PGFEM_printf ("Convergence ODE operations: (%ld)\n", global_ODE_EXA_metric);
+      perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics for the convergence check
     }
+    perIter_ODE_EXA_metric = 0;
+    
+    
     if(nor/FV[cpled_mp_id].NORM>SOL[cpled_mp_id].nor_min && Rn_R > SOL[cpled_mp_id].nor_min)
       *is_cnvged = 0;
   }
+  //exa
   return err;
 }
 
@@ -2610,6 +2637,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     set_0th_residual(residuals_time,grid,mat,FV,SOL,load,COM,time_steps,crpl,
                      mpi_comm,opts,mp,myrank);
   }
+  perIter_ODE_EXA_metric = 0;
 
   NR_time_steps NR_t;
   NR_time_steps NR_t_sub;
