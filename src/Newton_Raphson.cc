@@ -2173,6 +2173,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     if(nor/FV[cpled_mp_id].NORM>SOL[cpled_mp_id].nor_min && Rn_R > SOL[cpled_mp_id].nor_min)
       *is_cnvged = 0;
   }
+  //exa
   return err;
 }
 
