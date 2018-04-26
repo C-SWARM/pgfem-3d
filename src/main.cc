@@ -176,16 +176,16 @@ void print_EXA_metrics(const MPI_Comm mpi_comm,
       
     double total_combined_time = total_residual_time + total_hypre_time;
     
+    double EXA_Numerator = (total_residual_time / total_combined_time) * total_EXA_metric + 
+                              (total_hypre_time / total_combined_time) * dof_EXA_metric;
+                              
     if (opts->print_EXA_details){
       PGFEM_printf("Total Residual time: %f\n", total_residual_time);
       PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
       PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
       PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+      PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
     }
-    
-    double EXA_Numerator = (total_residual_time / total_combined_time) * total_EXA_metric + 
-                              (total_hypre_time / total_combined_time) * dof_EXA_metric;
-    //PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
     
     double EXA_Denominator = total_time * MPI_process_number;
     PGFEM_printf("\nFinal EXA metric: %f\n\n", EXA_Numerator/EXA_Denominator);
