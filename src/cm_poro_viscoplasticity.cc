@@ -37,7 +37,7 @@
 #define DIM_3x3x3   27
 #define DIM_3x3x3x3 81
 
-#define MAX_D_ALPHA 0.005
+#define MAX_D_ALPHA 0.0002
 
 
 static const int FLAG_end = 0;
@@ -406,8 +406,26 @@ int CM_PVP_PARAM::get_subdiv_param(const Constitutive_model *m,
 const
 {
   int err = 0;  
-  double alpha = 0.0;
-  *subdiv_param = alpha/MAX_D_ALPHA;
+
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  
+  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  
+  double gamma_d = 0.0;
+  double gamma_v = 0.0;  
+  pvp_intf_compute_gammas(gamma_d,
+                          gamma_v,
+                          Fs[TENSOR_Fnp1 ].m_pdata,
+                          Fs[TENSOR_Fn   ].m_pdata,
+                          Fs[TENSOR_pFnp1].m_pdata,
+                          Fs[TENSOR_pFn  ].m_pdata,
+                          state_var[VAR_pc_np1],
+                          state_var[VAR_pc_n],
+                          mat_pvp);
+
+  double alpha = (fabs(gamma_d)>fabs(gamma_d))?fabs(gamma_d):fabs(gamma_v);
+  *subdiv_param = dt*alpha/MAX_D_ALPHA;
   return err;
 }
 
@@ -673,6 +691,17 @@ const
   assert(err == 0);
   return err;  
 }
+
+int CM_PVP_PARAM::get_plast_strain_var(const Constitutive_model *m,
+                                       double *var)
+const 
+{
+  int err = 0;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
+  *var = det3x3(Fs[TENSOR_pFn].m_pdata);
+  return err;  
+}
+
 
 int CM_PVP_PARAM::write_restart(FILE *fp, const Constitutive_model *m)
 const

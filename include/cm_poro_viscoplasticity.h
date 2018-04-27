@@ -81,9 +81,7 @@ class CM_PVP_PARAM: public Model_parameters
                             double *var,
                             const int stepno) const;
   virtual int get_plast_strain_var(const Constitutive_model *m,
-                                   double *lam_p)
-  const { return cm_get_lam_p(m, lam_p);};
-                              
+                                   double *lam_p) const;                              
   virtual int get_subdiv_param(const Constitutive_model *m,
                                double *var,
                                const double t) const;
