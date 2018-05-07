@@ -47,7 +47,6 @@ struct PGFem3D_opt {
   int comp_print_macro;    // compute and print macro values (GF, GP, GS)
   bool print_EXA_details;  // output more detailed information about the EXA metric
   bool comp_print_max_pressure; // compute and print maximum element pressure together with coordinate
-  bool print_EXA_details;  // output more detailed information about the EXA metric
 
   /* input overrides */
   int override_pre_disp;
