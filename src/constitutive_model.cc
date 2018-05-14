@@ -1818,7 +1818,7 @@ int constitutive_model_update_output_variables(Grid *grid,
   }
 
   /* deformation gradient */
-  Tensor<2> F, eF, pF, pFI, eSd, S, S_bar, eC, eCI, sigma, E, b, bI;
+  Tensor<2> F, FI, eF, pF, pFI, eSd, eS, S, S_bar, eC, eCI, sigma, E, b, bI;
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
@@ -1884,6 +1884,8 @@ int constitutive_model_update_output_variables(Grid *grid,
       }
       else
         theta = J;
+        
+      inv(F, FI);        
 
       err += func->get_pF(m,pF.data,1);
       inv(pF,pFI);
@@ -1933,10 +1935,13 @@ int constitutive_model_update_output_variables(Grid *grid,
       // <-- update elasticity part
       eC = eF(k,i)*eF(k,j);
       inv(eC, eCI);
-      S = S_bar(i,j) + Up*theta_e*eCI(i,j);
+      eS = S_bar(i,j) + Up*theta_e*eCI(i,j);
 
       // Compute Cauchy stress (theta)^-1 F S F'
-      sigma = 1.0/theta*eF(i,k)*S(k,l)*eF(j,l);
+      sigma(i,j) = 1.0/theta_e*eF(i,k)*eS(k,l)*eF(j,l);
+      
+      // compute PKII
+      S(i,j) = theta*FI(i,k)*sigma(k,l)*FI(j,l);
 
       // Elastic Green Lagrange strain
       E = 0.5*(F(k,i)*F(k,j) - delta_ij(i,j));
