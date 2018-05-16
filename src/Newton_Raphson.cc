@@ -3019,7 +3019,10 @@ double Newton_Raphson_multiscale(const int print_level,
   update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,c->mpi_comm,c->VVolume,
                             opts,mp,&NR_t,mp_id);
 
-  ts.times[ts.tim] = ts.times[ts.tim+1] - NR_t.dt[DT_NP1];
+
+    ts.times[ts.tim]     = NR_t.times[NR_t.tim + 1] - NR_t.dt[DT_NP1];
+    ts.times[ts.tim + 1] = NR_t.times[NR_t.tim + 1];
+
   *n_step = sol.n_step;
   s->NORM = fv.NORM;
   *pores  = fv.pores;
