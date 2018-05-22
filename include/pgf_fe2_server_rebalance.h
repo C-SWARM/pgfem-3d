@@ -8,9 +8,8 @@
 #ifndef PGF_FE2_SERVER_REBALANCE_H
 #define PGF_FE2_SERVER_REBALANCE_H
 
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
-#include "microscale_information.h"
 
 /**
  * Structure for handling information about how a server is to be
@@ -104,14 +103,15 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
  * receive.
  */
 int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-                       const PGFEM_mpi_comm *mpi_comm,
-                       MICROSCALE *micro);
+					   const pgfem3d::MultiscaleComm *mscom,
+					   pgfem3d::Microscale *micro);
 /**
  * Finalizes exchange communications and releases internal
  * buffers. Need to extend this functionality to overlap with further
  * computation.
  */
 int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-                           const PGFEM_mpi_comm *mpi_comm);
+					       const pgfem3d::MultiscaleComm *mscom,
+					       const pgfem3d::Microscale *micro);
 
 #endif

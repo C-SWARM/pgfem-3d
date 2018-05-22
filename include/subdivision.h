@@ -3,7 +3,7 @@
 #ifndef PGFEM3D_SUBDIVISION_H
 #define PGFEM3D_SUBDIVISION_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "crpl.h"
 #include "data_structure.h"
 #include "element.h"
@@ -43,7 +43,7 @@ int subdivision_scheme(int was_NR_ok,
                        int iter,
                        int max_iter,
                        double alpha,
-                       MPI_Comm mpi_comm);
+                       const pgfem3d::CommunicationStructure *com);
 
 double subdiv_arc (long INFO,
                    double *dt,
@@ -80,7 +80,7 @@ double subdiv_arc (long INFO,
                    long iter,
                    long iter_max,
                    long TYPE,
-                   MPI_Comm mpi_comm,
+                   const pgfem3d::CommunicationStructure *com,
                    const int analysis);
 
 #endif /* #define PGFEM3D_SUBDIVISION_H */

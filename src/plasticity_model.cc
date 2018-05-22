@@ -1514,7 +1514,8 @@ int plasticity_model_set_orientations(EPS *eps,
                                       const int ne,
                                       const Element *elem,
                                       const int n_mat,
-                                      const HOMMAT *hmat_list)
+                                      const HOMMAT *hmat_list,
+				      int myrank)
 {
   int err = 0;
   int crystal_plasticity_included = 0;
@@ -1526,10 +1527,6 @@ int plasticity_model_set_orientations(EPS *eps,
 
   if(crystal_plasticity_included==0)
     return err;
-
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  int myrank = 0;
-  MPI_Comm_rank (mpi_comm,&myrank);
 
   // build element ip ids that will be used to assign element orientation
   IP_ID_LIST *elm_ip_map = new IP_ID_LIST[ne];

@@ -1,9 +1,9 @@
 /* HEADER */
+#include "pgfem3d/Communication.hpp"
 #include "two_field_element.h"
 #include <stdlib.h>
 #include <string.h>
 #include "mkl_cblas.h"
-#include "PGFEM_mpi.h"
 
 #ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
@@ -24,6 +24,8 @@
 #ifndef UL_DEBUG
 #define UL_DEBUG 0
 #endif
+
+using namespace pgfem3d;
 
 static const int ndn = 3;
 

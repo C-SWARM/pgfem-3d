@@ -35,8 +35,6 @@ int energy_equation_compute_residuals(Grid *grid,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] com object for communications
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
@@ -46,9 +44,7 @@ int energy_equation_compute_stiffness(Grid *grid,
                                       FieldVariables *fv,
                                       pgfem3d::Solver *sol,
                                       LoadingSteps *load,
-                                      CommunicationStructure *com,
-                                      MPI_Comm mpi_comm,
-                                      int myrank,
+                                      const pgfem3d::CommunicationStructure *com,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt);
@@ -60,8 +56,7 @@ int energy_equation_compute_stiffness(Grid *grid,
 /// \param[in,out] fv field variable object
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank current process rank
+/// \param[in] com object for communications
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
@@ -71,7 +66,7 @@ int energy_equation_compute_load4pBCs(Grid *grid,
                                       FieldVariables *fv,
                                       pgfem3d::Solver *sol,
                                       LoadingSteps *load,
-                                      int myrank,
+				      const pgfem3d::CommunicationStructure *com,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt);

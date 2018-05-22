@@ -1,8 +1,7 @@
 #ifndef PGFEM3D_GREDIST_NODE_H
 #define PGFEM3D_GREDIST_NODE_H
 
-#include "PGFEM_mpi.h"
-#include "comm_hints.h"
+#include "pgfem3d/Communication.hpp"
 #include "node.h"
 
 /** Redistributes the degrees of freedom on the boundary nodes and
@@ -12,8 +11,7 @@ long GRedist_node (const int nproc,
                    const long nn,
                    const long ndofn,
                    Node *node,
-                   const Comm_hints *hints,
-                   const MPI_Comm Comm,
+		   const pgfem3d::CommunicationStructure *com,
                    const int mp_id);
 
 #endif /* #define PGFEM3D_GREDIST_NODE_H */

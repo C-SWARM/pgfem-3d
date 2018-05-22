@@ -38,6 +38,9 @@
 #define DISP_DEBUG_NO_LM 1
 #endif
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 //ttl declarations
 namespace {
 using namespace ttl;
@@ -1050,7 +1053,7 @@ void DISP_increment(const Element *elem,
                     const HOMMAT *hommat,
                     const double *sol_incr,
                     const double *sol,
-                    MPI_Comm mpi_comm,
+		    const CommunicationStructure *com,
                     const int mp_id)
 {
   /* for each element */
@@ -1135,11 +1138,10 @@ void DISP_increment(const Element *elem,
   }
 
   double PL, GPL;
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
   PL = T_VOLUME (nelem,ndn,elem,node);
   /* Gather Volume from all domains */
-  MPI_Allreduce(&PL,&GPL,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&PL,&GPL,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   if (myrank == 0) {
     PGFEM_printf ("AFTER DEF - VOLUME = %12.12f\n",GPL);
   }

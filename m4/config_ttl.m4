@@ -7,6 +7,7 @@ AC_DEFUN([CONFIG_TTL], [
 
  old_CPPFLAGS=$CPPFLAGS
  CPPFLAGS="$CPPFLAGS $ttl_include"
+ CFLAGS="$CFLAGS $ttl_include"
  AC_CHECK_HEADER(ttl/ttl.h, [], [AC_MSG_ERROR(Failed to find ttl.h)])
  CPPFLAGS=$old_CPPFLAGS
 

@@ -6,6 +6,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "compute_reactions.h"
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
@@ -19,6 +20,9 @@
 #include "resid_on_elem.h"
 #include "stabilized.h"
 #include "utils.h"
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 int compute_reactions(long ne,
                       long ndofn,
@@ -35,7 +39,7 @@ int compute_reactions(long ne,
                       CRPL *crpl,
                       double dt,
                       double stab,
-                      MPI_Comm mpi_comm,
+                      CommunicationStructure *com,
                       const int analysis,
                       const int mp_id)
 {
@@ -44,9 +48,8 @@ int compute_reactions(long ne,
   if(sup->npd > 0){
     double *rxn = aloc1(sup->npd);
 
-    int myrank,nproc;
-    MPI_Comm_size(mpi_comm,&nproc);
-    MPI_Comm_rank(mpi_comm,&myrank);
+    int myrank;
+    myrank = com->rank;
 
     for (int i=0;i<sup->nde;i++){
       const int elem_id = sup->lepd[i];
@@ -154,8 +157,8 @@ int compute_reactions(long ne,
     }/* for each element in list */
 
     double *Grxn = aloc1(sup->npd);
-    MPI_Reduce(rxn,Grxn,sup->npd,MPI_DOUBLE,MPI_SUM,0,mpi_comm);
-
+    com->net->reduce(rxn,Grxn,sup->npd,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
+		     
     if(myrank == 0){
       printf("Reactions: ");
       print_array_d(stdout,Grxn,sup->npd,1,sup->npd);
@@ -167,3 +170,4 @@ int compute_reactions(long ne,
 
   return err;
 }
+

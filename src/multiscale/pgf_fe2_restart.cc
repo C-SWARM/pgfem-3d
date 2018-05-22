@@ -10,11 +10,9 @@
  */
 
 #include "pgf_fe2_restart.h"
-#include "microscale_information.h"
 #include "gen_path.h"
 #include "utils.h"
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 
 #include "enumerations.h"
 
@@ -27,6 +25,9 @@
 
 #include <stdio.h>
 #include <assert.h>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /**
  * Generate the restart path string and ensure that the path exists,
@@ -70,11 +71,10 @@ static int generate_restart_fname(const char *opath,
   return err;
 }
 
-int pgf_FE2_restart_print_macro(MACROSCALE *macro)
+int pgf_FE2_restart_print_macro(Macroscale *macro)
 {
   int err = 0;
-  int rank = 0;
-  MPI_Comm_rank(macro->common->mpi_comm,&rank);
+  int rank = macro->rank;
 
   /* update dt from any macroscale subdivision. */
   {
@@ -87,21 +87,21 @@ int pgf_FE2_restart_print_macro(MACROSCALE *macro)
      state vector for updating/resetting the solution at the
      macroscale. To populate the state vector with current values we
      need to call update_M*CROSCALE_SOLUTION */
-  err += update_MICROSCALE_SOLUTION(macro->sol,macro);
+  err += update_MULTISCALE_SOLUTION(macro->sol,macro);
 
   /* generate the restart filename and write the file */
   char *restart_fname = NULL;
   err += generate_restart_fname(macro->opts->opath,rank,0,
 				macro->sol->tim,&restart_fname);
   FILE *out = PGFEM_fopen(restart_fname,"w");
-  err += dump_MICROSCALE_SOLUTION_state(macro->sol,out);
+  err += dump_MULTISCALE_SOLUTION_state(macro->sol,out);
   PGFEM_fclose(out);
   free(restart_fname);
 
   return err;
 }
 
-int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
+int pgf_FE2_restart_print_micro(const Microscale *micro,
 				const size_t cell_id)
 {
   int err = 0;
@@ -112,11 +112,10 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
   assert(idx >= 0);
 
   /* get the MPI rank on the microscale communicator */
-  int rank = 0;
-  MPI_Comm_rank(micro->common->mpi_comm,&rank);
+  int rank = micro->rank;
 
   /* alias to the correct solution */
-  const MICROSCALE_SOLUTION *s = micro->sol + idx;
+  const MULTISCALE_SOLUTION *s = micro->sol + idx;
 
   /* generate the restart filename and write the file */
   char *restart_fname = NULL;
@@ -126,40 +125,39 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
   PGFEM_printf("name of the file is %s \n",restart_fname);
 
   FILE *out = PGFEM_fopen(restart_fname,"w");
-  err += dump_MICROSCALE_SOLUTION_state(s,out);
+  err += dump_MULTISCALE_SOLUTION_state(s,out);
   PGFEM_fclose(out);
   free(restart_fname);
 
   return err;
 }
 
-int pgf_FE2_restart_read_macro(MACROSCALE *macro,
+int pgf_FE2_restart_read_macro(Macroscale *macro,
 			       const size_t step,
 			       const int mp_id)
 {
   int err = 0;
 
   /* get rank on macroscale communicator */
-  int rank = 0;
-  MPI_Comm_rank(macro->common->mpi_comm,&rank);
+  int rank = macro->rank;
 
   /* generate the restart filename and read the file */
   char *restart_fname = NULL;
   err += generate_restart_fname(macro->opts->opath,rank,0,
 				step,&restart_fname);
   FILE *in = PGFEM_fopen(restart_fname,"r");
-  err += read_MICROSCALE_SOLUTION_state(macro->sol,in);
+  err += read_MULTISCALE_SOLUTION_state(macro->sol,in);
   PGFEM_fclose(in);
   free(restart_fname);
 
   /* need to reset the M*CROSCALE_SOLUTION because current
      implementation of the FE2 solver does not typically use the
      packed vector at the macroscale. */
-  reset_MICROSCALE_SOLUTION(macro->sol,macro);
+  reset_MULTISCALE_SOLUTION(macro->sol,macro);
 
   /* aliases */
-  COMMON_MACROSCALE *c = macro->common;
-  MACROSCALE_SOLUTION *s = macro->sol;
+  MultiscaleCommon *c = macro;
+  MULTISCALE_SOLUTION *s = macro->sol;
 
   /* set time increment to be consistent w/ previous solve for
      substeping */
@@ -183,26 +181,26 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   case FINITE_STRAIN:
     fd_increment (c->ne,c->nn,c->ndofn,c->npres,c->matgeom,c->hommat,
 		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
-		  nor_min,s->crpl,s->dt,c->nce,c->coel,&pores,c->mpi_comm,
+		  nor_min,s->crpl,s->dt,c->nce,c->coel,&pores,c,
 		  c->VVolume,macro->opts,mp_id);
     break;
   case STABILIZED:
     st_increment (c->ne,c->nn,c->ndofn,c->ndofd,c->matgeom,c->hommat,
 		  c->elem,c->node,c->supports,s->eps,s->sig_e,s->d_r,s->r,
 		  nor_min,macro->opts->stab,s->dt,c->nce,c->coel,&pores,
-		  c->mpi_comm,macro->opts->cohesive,mp_id);
+		  c,macro->opts->cohesive,mp_id);
     break;
   case MINI:
     MINI_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
-		   c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm,mp_id);
+		   c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c,mp_id);
     break;
   case MINI_3F:
     MINI_3f_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,
-		      c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c->mpi_comm,mp_id);
+		      c->supports,s->eps,s->sig_e,c->hommat,s->d_r,c,mp_id);
     break;
   case DISP:
     DISP_increment(c->elem,c->ne,c->node,c->nn,c->ndofn,c->supports,s->eps,
-		   s->sig_e,c->hommat,s->d_r,s->r,c->mpi_comm,mp_id);
+		   s->sig_e,c->hommat,s->d_r,s->r,c,mp_id);
     break;
   default: break;
   }
@@ -218,7 +216,7 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
   return err;
 }
 
-int pgf_FE2_restart_read_micro(MICROSCALE *micro,
+int pgf_FE2_restart_read_micro(Microscale *micro,
 			       const size_t step,
 			       const size_t cell_id)
 {
@@ -228,11 +226,10 @@ int pgf_FE2_restart_read_micro(MICROSCALE *micro,
   int idx = -1; /* poison value */
   idx = sol_idx_map_id_get_idx(&(micro->idx_map),cell_id);
   assert(idx >= 0);
-  MICROSCALE_SOLUTION *s = micro->sol + idx; /* alias */
-
+  MULTISCALE_SOLUTION *s = micro->sol + idx; /* alias */
+  
   /* get rank on microscale communicator */
-  int rank = 0;
-  MPI_Comm_rank(micro->common->mpi_comm,&rank);
+  int rank = micro->rank;
 
   /* generate the restart filename and read the file */
   char *restart_fname = NULL;
@@ -246,7 +243,7 @@ int pgf_FE2_restart_read_micro(MICROSCALE *micro,
 #endif
 
   FILE *in = PGFEM_fopen(restart_fname,"r");
-  err += read_MICROSCALE_SOLUTION_state(s,in);
+  err += read_MULTISCALE_SOLUTION_state(s,in);
   PGFEM_fclose(in);
   free(restart_fname);
 

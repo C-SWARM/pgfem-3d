@@ -1,7 +1,7 @@
 #ifndef PGFEM3D_FD_INCREMENT_H
 #define PGFEM3D_FD_INCREMENT_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "cohesive_element.h"
 #include "crpl.h"
@@ -34,7 +34,7 @@ void fd_increment (long ne,
                    long nce,
                    COEL *coel,
                    double *pores,
-                   MPI_Comm mpi_comm,
+		   const pgfem3d::CommunicationStructure *com,
                    const double VVolume,
                    const PGFem3D_opt *opts,
                    const int mp_id);

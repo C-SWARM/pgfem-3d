@@ -12,20 +12,8 @@
 #ifndef PGF_FE2_RESTART_H
 #define PGF_FE2_RESTART_H
 
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include <stdlib.h> /* for size_t */
-
-
-/* pre-declare MICROSCALE and MACROSCALE */
-struct MICROSCALE;
-#ifndef TYPEDEF_MICROSCALE
-#define TYPEDEF_MICROSCALE
-typedef struct MICROSCALE MICROSCALE;
-#endif
-
-#ifndef TYPEDEF_MACROSCALE
-#define TYPEDEF_MACROSCALE
-typedef MICROSCALE MACROSCALE;
-#endif
 
 /**
  * Print a restart file for the macroscale domain.
@@ -34,15 +22,15 @@ typedef MICROSCALE MACROSCALE;
  * necessary under the current implementation of the FE2 solver at the
  * macroscale. \return non-zero on error.
  */
-int pgf_FE2_restart_print_macro(MACROSCALE *macro);
+int pgf_FE2_restart_print_macro(pgfem3d::Macroscale *macro);
 
 /**
  * Print a restart file for the microscale domain.
  *
  * \return non-zero on error.
  */
-int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
-                const size_t cell_id);
+int pgf_FE2_restart_print_micro(const pgfem3d::Microscale *micro,
+				const size_t cell_id);
 
 /**
  * Read a restart file for the macroscale domain and reset the
@@ -50,9 +38,9 @@ int pgf_FE2_restart_print_micro(const MICROSCALE *micro,
  *
  * \return non-zero on error.
  */
-int pgf_FE2_restart_read_macro(MACROSCALE *macro,
-                   const size_t step,
-                   const int mp_id);
+int pgf_FE2_restart_read_macro(pgfem3d::Macroscale *macro,
+			       const size_t step,
+			       const int mp_id);
 
 /**
  * Read a restart file for a microscale domain and reset the
@@ -60,8 +48,8 @@ int pgf_FE2_restart_read_macro(MACROSCALE *macro,
  *
  * \return non-zero on error.
  */
-int pgf_FE2_restart_read_micro(MICROSCALE *micro,
-                   const size_t step,
-                   const size_t cell_id);
+int pgf_FE2_restart_read_micro(pgfem3d::Microscale *micro,
+			       const size_t step,
+			       const size_t cell_id);
 
 #endif /* #ifndef  */

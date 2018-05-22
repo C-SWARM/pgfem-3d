@@ -1,7 +1,6 @@
 #ifndef PGFEM3D_ARC_LENGTH_H
 #define PGFEM3D_ARC_LENGTH_H
 
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "PGFem3D_options.h"
 #include "bounding_element.h"
@@ -13,7 +12,6 @@
 #include "hommat.h"
 #include "macro_micro_functions.h"
 #include "matgeom.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "solver_file.h"
 #include "supp.h"
@@ -66,8 +64,7 @@ int arc_length_variable_initialization(ARC_LENGTH_VARIABLES *arc);
 /// \return non-zero on internal error
 int construct_arc_length_variable(ARC_LENGTH_VARIABLES *arc,
                                   FieldVariables *fv,
-                                  CommunicationStructure *com,
-                                  int myrank);
+                                  const pgfem3d::CommunicationStructure *com);
 
 int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 
@@ -79,9 +76,8 @@ int destruct_arc_length_variable(ARC_LENGTH_VARIABLES *arc);
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] time_steps object for time stepping
-/// \param[in] comm MPI_COMM_WORLD
+/// \param[in] com an object for communication
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
@@ -92,10 +88,9 @@ double Multiphysics_Arc_length(Grid *grid,
                                FieldVariables *variables,
                                pgfem3d::Solver *sol,
                                LoadingSteps *load,
-                               CommunicationStructure *com,
+                               const pgfem3d::CommunicationStructure *com,
                                TimeStepping *time_steps,
                                CRPL *crpl,
-                               MPI_Comm mpi_comm,
                                const double VVolume,
                                const PGFem3D_opt *opts,
                                const Multiphysics& mp,
@@ -124,8 +119,8 @@ double Multiphysics_Arc_length(Grid *grid,
 /// \param[in,out] DAL Arc Lengh parameter
 /// \param[in] sup_defl Prescribed deflection
 /// \return load multiplier
-double Arc_length_multiscale(COMMON_MACROSCALE *c,
-                             MACROSCALE_SOLUTION *s,
+double Arc_length_multiscale(pgfem3d::MultiscaleCommon *c,
+                             pgfem3d::MULTISCALE_SOLUTION *s,
                              SOLVER_FILE *solver_file,
                              const PGFem3D_opt *opts,
                              double *pores,

@@ -13,7 +13,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
 
 struct SOLVER_FILE {
   FILE *file; /**< file to read data from */

@@ -18,19 +18,19 @@
 
 #define GREDIST_TAG 999
 
-/**
- * Original implementation of GRedist_node
- */
-static long fallback_GRedist_node(const int nproc,
-                                  const int myrank,
-                                  const long nn,
-                                  const long ndofn,
-                                  Node *node,
-                                  const MPI_Comm Comm,
-                                  const long mp_id)
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
+static long fallback_GRedist_node_ISIR(const int nproc,
+				       const int myrank,
+				       const long nn,
+				       const long ndofn,
+				       Node *node,
+				       const CommunicationStructure *com,
+				       const long mp_id)
 {
   long NBN = 0; /* return value */
-
+  
   long GN = 0;
   long need = 0;
   for (int i=0;i<nn;i++){
@@ -79,7 +79,7 @@ static long fallback_GRedist_node(const int nproc,
 
   /* Gather number of boundary nodes owned by each domain */
   long *BN = aloc1l (nproc);
-  MPI_Allgather (&GN,1,MPI_LONG,BN,1,MPI_LONG,Comm);
+  com->net->allgather(&GN,1,NET_DT_LONG,BN,1,NET_DT_LONG,com->comm);
 
   /* Compute recvcount and displ arrays */
   int *recvcount = PGFEM_calloc(int,nproc);
@@ -97,8 +97,8 @@ static long fallback_GRedist_node(const int nproc,
   long *Gnn_Gid = NULL;
   //assert(NBN > 0 && "NBN must be > 0");
   if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
-  MPI_Allgatherv(own_buf,recvcount[myrank],MPI_LONG,
-                 Gnn_Gid,recvcount,displ,MPI_LONG,Comm);
+  com->net->allgatherv(own_buf,recvcount[myrank],NET_DT_LONG,
+		       Gnn_Gid,recvcount,displ,NET_DT_LONG,com->comm);
 
   /* sort the list of Gnn and their associated Gid by Gnn */
   if (Gnn_Gid != NULL)
@@ -157,20 +157,58 @@ static long fallback_GRedist_node(const int nproc,
   return (NBN);
 }
 
+static long fallback_GRedist_node_PWC(const int nproc,
+				      const int myrank,
+				      const long nn,
+				      const long ndofn,
+				      Node *node,
+				      const CommunicationStructure *com,
+				      const long mp_id)
+{
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  (void)net;
+  return 0;
+}
+
+/**
+ * Original implementation of GRedist_node
+ */
+static long fallback_GRedist_node(const int nproc,
+                                  const int myrank,
+                                  const long nn,
+                                  const long ndofn,
+                                  Node *node,
+                                  const CommunicationStructure *com,
+                                  const long mp_id)
+{
+  switch (com->net->type()) {
+  case NET_ISIR:
+    return fallback_GRedist_node_ISIR(nproc, myrank, nn, ndofn, node, com, mp_id);
+    break;
+  case NET_PWC:
+    return fallback_GRedist_node_PWC(nproc, myrank, nn, ndofn, node, com, mp_id);
+    break;
+  default:
+    PGFEM_Abort();    
+  }
+  return 1;
+}
+
 /**
  * New implementation of GRedist_node that avoids global communication
  *
  * \return total number of global nodes
  */
-static long comm_hints_GRedist_node(const int nproc,
-                                    const int myrank,
-                                    const long nnode,
-                                    const long ndofn,
-                                    Node *nodes,
-                                    const Comm_hints *hints,
-                                    const MPI_Comm comm,
-                                    const long mp_id)
+static long comm_hints_GRedist_node_ISIR(const int nproc,
+					 const int myrank,
+					 const long nnode,
+					 const long ndofn,
+					 Node *nodes,
+					 const CommunicationStructure *com,
+					 const long mp_id)
 {
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
   long owned_gnn = 0;
   long total_gnn = 0;
   int owned_range[2] = {0};
@@ -215,32 +253,33 @@ static long comm_hints_GRedist_node(const int nproc,
      the communication hints -- NOTE: This is a SCATTER
      operation. ***Therefore, we use the receive hints to post
      sends.*** */
-  const int nsend = Comm_hints_nrecv(hints);
-  const int *send = Comm_hints_recv_list(hints);
-  MPI_Request *req = static_cast<MPI_Request*>(malloc(nsend * sizeof(*req)));
+  const int nsend = com->hints->get_nrecv();
+  const int *send = com->hints->get_recv_list();
+  Request *req;
+  net->allocRequestArray(nsend, &req);
   for (int i = 0; i < nsend; i++) {
-    MPI_Isend(owned_Gnn_Gid, len_owned_Gnn_Gid, MPI_LONG,
-                     send[i], GREDIST_TAG, comm, req + i);
+    net->isend(owned_Gnn_Gid, len_owned_Gnn_Gid, NET_DT_LONG,
+		    send[i], GREDIST_TAG, com->comm, &req[i]);
   }
 
   /* reduce the total number of boundary nodes */
-  MPI_Allreduce(&owned_gnn, &total_gnn, 1, MPI_LONG, MPI_SUM, comm);
+  net->allreduce(&owned_gnn, &total_gnn, 1, NET_DT_LONG, NET_OP_SUM, com->comm);
 
   /* busy loop: Probe for message, post matching receive, do work --
      NOTE: This is a SCATTER operation. ***Therefore, we use the send
      hints to post receives.*** */
-  const int nrecv = Comm_hints_nsend(hints);
-  const int *recv = Comm_hints_send_list(hints);
+  const int nrecv = com->hints->get_nsend();
+  const int *recv = com->hints->get_send_list();
   int *finished = static_cast<int*>(calloc(nrecv, sizeof(*finished)));
   int remaining = nrecv;
   while (remaining > 0) {
     int idx = 0;
     int msg_waiting = 0;
-    MPI_Status stat;
+    Status stat;
     /* Probe for waiting message */
     for (idx = 0; idx < nrecv; idx++) {
       if (finished[idx]) continue;
-      MPI_Iprobe(recv[idx], GREDIST_TAG, comm, &msg_waiting, &stat);
+      net->iprobe(recv[idx], GREDIST_TAG, com->comm, &msg_waiting, &stat);
       if (msg_waiting) break;
     }
 
@@ -251,14 +290,14 @@ static long comm_hints_GRedist_node(const int nproc,
     /* determine the size of the incomming message and allocate an
        appropriately sized buffer */
     int msg_count = 0;
-    MPI_Get_count(&stat, MPI_LONG, &msg_count);
+    net->get_status_count(&stat, NET_DT_LONG, &msg_count);
     long *recv_Gnn_Gid = static_cast<long*>(malloc(msg_count * sizeof(*recv_Gnn_Gid)));
 
     /* We want to ensure that we are posting the *identically
-       matching* receive, so we use the tag instead of MPI_ANY_TAG */
-    MPI_Request breq;
-    MPI_Irecv(recv_Gnn_Gid, msg_count, MPI_LONG,
-                     recv[idx], stat.MPI_TAG, comm, &breq);
+       matching* receive, so we use an explicit tag */
+    Request breq;
+    net->irecv(recv_Gnn_Gid, msg_count, NET_DT_LONG,
+	       recv[idx], stat.NET_TAG, com->comm, &breq);
 
     /* While waiting for communication to complete, find the range of
        nodes we need to work on that are owned by the current
@@ -271,8 +310,8 @@ static long comm_hints_GRedist_node(const int nproc,
     }
 
     /* complete the receive communication */
-    MPI_Wait(&breq, MPI_STATUS_IGNORE);
-
+    net->wait(&breq, NET_STATUS_IGNORE);
+    
     /*
       Now we loop through the nodes that need information from the
       other domain and search for matches. We take advantage of the
@@ -315,13 +354,50 @@ static long comm_hints_GRedist_node(const int nproc,
   nodes_sort_loc_id(nnode, nodes);
 
   /* complete non-blocking sends */
-  MPI_Waitall(nsend, req, MPI_STATUS_IGNORE);
+  net->waitall(nsend, req, NET_STATUS_IGNORE);
 
   /* cleanup */
   free(owned_Gnn_Gid);
   free(finished);
-  free(req);
+  delete [] req;
   return total_gnn;
+}
+
+static long comm_hints_GRedist_node_PWC(const int nproc,
+					const int myrank,
+					const long nnode,
+					const long ndofn,
+					Node *nodes,
+					const CommunicationStructure *com,
+					const long mp_id)
+{
+  return 0;
+}
+  
+/**
+ * New implementation of GRedist_node that avoids global communication
+ *
+ * \return total number of global nodes
+ */
+static long comm_hints_GRedist_node(const int nproc,
+                                    const int myrank,
+                                    const long nnode,
+                                    const long ndofn,
+                                    Node *nodes,
+				    const CommunicationStructure *com,
+                                    const long mp_id)
+{
+  switch (com->net->type()) {
+  case NET_ISIR:
+    return comm_hints_GRedist_node_ISIR(nproc, myrank, nnode, ndofn, nodes, com, mp_id);
+    break;
+  case NET_PWC:
+    return comm_hints_GRedist_node_PWC(nproc, myrank, nnode, ndofn, nodes, com, mp_id);
+    break;
+  default:
+    PGFEM_Abort();    
+  }
+  return 1;
 }
 
 long GRedist_node (const int nproc,
@@ -329,10 +405,9 @@ long GRedist_node (const int nproc,
                    const long nn,
                    const long ndofn,
                    Node *node,
-                   const Comm_hints *hints,
-                   const MPI_Comm Comm,
+		   const CommunicationStructure *com,
                    const int mp_id)
 {
-  if (!hints) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, Comm, mp_id);
-  else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, hints, Comm, mp_id);
+  if (!(com->hints)) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, com, mp_id);
+  else return comm_hints_GRedist_node(nproc, myrank, nn, ndofn, node, com, mp_id);
 }

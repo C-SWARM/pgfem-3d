@@ -12,11 +12,13 @@
 #include "pgf_fe2_rebalancer.h"
 #include "pgf_fe2_server_rebalance.h"
 #include "pgf_fe2_micro_server.h"
-#include "PGFEM_mpi.h"
 #include "PGFEM_io.h"
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /* turn on/off adaptive rebalancing print statements */
 static const int LOGGING = 1;
@@ -251,34 +253,40 @@ void rebalance_partitions_greedy(const size_t n_parts,
   /* ... */
 }
 
-pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
-                         const size_t total_n_jobs,
-                         const size_t max_n_jobs,
-                         const int heuristic)
+pgf_FE2_server_rebalance**
+pgf_FE2_rebalancer(Network *n,
+		   const MultiscaleComm *mscom,
+		   const size_t total_n_jobs,
+		   const size_t max_n_jobs,
+		   const int heuristic)
 {
+  /* ISIR version */
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(n);
   /* get rank and number of macro and micro porcs. */
   int n_macro_proc = 0;
   int n_micro_proc = 0;
-  MPI_Comm_size(mpi_comm->mm_inter,&n_micro_proc);
-  MPI_Comm_size(mpi_comm->macro,&n_macro_proc);
+  net->comm_size(mscom->mm_inter, &n_micro_proc);
+  net->comm_size(mscom->macro, &n_macro_proc);
   n_micro_proc -= n_macro_proc;
 
   char **buf = PGFEM_malloc<char*>(n_micro_proc);
-  MPI_Status stat;
-  MPI_Request *req = PGFEM_malloc<MPI_Request>(n_micro_proc);
+  Status stat;
+  Request *req;
+  net->allocRequestArray(n_micro_proc, &req);
+
   /* probe for communication, allocate and post matching receives. */
   /* Can improve asynchrony here with some work. */
   for(int i=0; i<n_micro_proc; i++){
     int src = i + n_macro_proc;
-    MPI_Probe(src,FE2_MICRO_SERVER_REBALANCE,
-          mpi_comm->mm_inter,&stat);
+    net->probe(src,FE2_MICRO_SERVER_REBALANCE,
+		       mscom->mm_inter,&stat);
     int count = 0;
-    MPI_Get_count(&stat,MPI_CHAR,&count);
+    net->get_status_count(&stat,NET_DT_CHAR,&count);
     buf[i] = PGFEM_malloc<char>(count);
-    MPI_Irecv(buf[i],count,MPI_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
-          mpi_comm->mm_inter,req + i);
+    net->irecv(buf[i],count,NET_DT_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
+		       mscom->mm_inter,req + i);
   }
-
+  
   /* build some helper data structures */
   pgf_FE2_micro_server *server = NULL;
   auto *all_stats = PGFEM_malloc<pgf_FE2_micro_server_stats>(n_micro_proc);
@@ -288,12 +296,12 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
   for(int i=0; i<n_micro_proc; i++){
     new_partition_build(parts + i,max_n_jobs);
   }
-
+  
   /* receive buffers and unpack into data structure */
   int n_finished = 0;
   while(n_finished < n_micro_proc){
     int idx = 0;
-    MPI_Waitany(n_micro_proc,req,&idx,MPI_STATUS_IGNORE);
+    net->waitany(n_micro_proc,req,&idx,NET_STATUS_IGNORE);
     pgf_FE2_micro_server_unpack_summary(&server,buf[idx]);
 
     /* copy the server stats */
@@ -320,9 +328,9 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
       /* push unbalanced server totals into array */
       double *orig_totals = PGFEM_malloc<double>(n_micro_proc);
       for(int i=0; i<n_micro_proc; i++){
-    orig_totals[i] = all_stats[i].total;
+	orig_totals[i] = all_stats[i].total;
       }
-
+      
       /* adaptively rebalance */
       rebalance_partitions_adaptive(n_micro_proc,orig_totals,all_parts,parts);
       free(orig_totals);
@@ -347,12 +355,12 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(const PGFEM_mpi_comm *mpi_comm,
     /* pgf_FE2_server_rebalance_destroy(rb+i); */
   }
   free(buf);
-  free(req);
   free(parts);
   /* free(rb); */
   new_partition_destroy(all_parts);
   free(all_parts);
   free(all_stats);
+  delete [] req;
   return rb;
 }
 

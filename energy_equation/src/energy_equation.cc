@@ -27,9 +27,11 @@
 namespace {
 using namespace gcm;
 using namespace ttl;
+using namespace pgfem3d;
 
 using pgfem3d::Solver;
-
+using pgfem3d::CommunicationStructure;
+  
 const constexpr int DIM_3 = 3;
 const constexpr int DIM_3x3 = 9;
 const constexpr int DIM_3x3x3 = 27;
@@ -319,9 +321,6 @@ int compute_mechanical_heat_gen(double *Qe,
   int err = 0;
   int compute_stiffness = 1;
 
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-
   double hJ = 0.0;
   double pJ = 0.0;
 
@@ -538,9 +537,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   const Tensor<2,3,const double*> k0 = thermal.k;
   Tensor<2,3,double>               k = k0(I,J);
 
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-
   double cp = thermal.cp;
 
   double dt = 1.0; // for the quasi steady state
@@ -756,7 +752,6 @@ int energy_equation_compute_residuals(Grid *grid,
 /// \param[in] load object for loading
 /// \param[in] com object for communications
 /// \param[in] Ddof number of degree of freedoms accumulated through processes
-/// \param[in] myrank current process rank
 /// \param[in] interior indentifier to distinguish element in interior or
 ///             communication boundary
 /// \param[in] opts structure of PGFem3D options
@@ -776,9 +771,8 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            FieldVariables *fv,
                                            Solver *sol,
                                            LoadingSteps *load,
-                                           CommunicationStructure *com,
+                                           const CommunicationStructure *com,
                                            int *Ddof,
-                                           int myrank,
                                            int interior,
                                            const PGFem3D_opt *opts,
                                            int mp_id,
@@ -919,9 +913,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                 com->Ap,
                 cnL.m_pdata,cnG.m_pdata,ndofe,Ddof,
                 com->GDof,
-                myrank,
+                com->rank,
                 com->nproc,
-                com->comm,
+                com->spc,
                 interior,
                 sol->system,
                 opts->analysis_type);
@@ -975,8 +969,6 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
 /// \param[in] com object for communications
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank current process rank
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
@@ -986,9 +978,7 @@ int energy_equation_compute_stiffness(Grid *grid,
                                       FieldVariables *fv,
                                       Solver *sol,
                                       LoadingSteps *load,
-                                      CommunicationStructure *com,
-                                      MPI_Comm mpi_comm,
-                                      int myrank,
+                                      const CommunicationStructure *com,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt)
@@ -1034,11 +1024,11 @@ int energy_equation_compute_stiffness(Grid *grid,
   }
 
   double **Lk,**receive;
-  MPI_Status *sta_s,*sta_r;
-  MPI_Request *req_s,*req_r;
-
-  err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
-                                     mpi_comm,com->comm);
+  try {
+    com->spc->post_stiffmat(&Lk, &receive);
+  } catch(...) {
+    err++;
+  }
 
   Matrix<int> Ddof(com->nproc,1);
 
@@ -1056,20 +1046,24 @@ int energy_equation_compute_stiffness(Grid *grid,
     // do volume integration at an element
     int interior = 0;
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
-                                                  myrank,interior,opts,mp_id,
+                                                  interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
 
     if(err != 0)
       break;
   }
-  err += send_stiffmat_comm(&sta_s,&req_s,Lk,mpi_comm,com->comm);
+  try {
+    com->spc->send_stiffmat();
+  } catch(...) {
+    err++;
+  }
 
   int skip = 0;
   int idx  = 0;
 
   for(int eid=0; eid<grid->ne; eid++)
   {
-    int is_it_in = is_element_interior(eid,&idx,&skip,com->nbndel,com->bndel,myrank);
+    int is_it_in = is_element_interior(eid,&idx,&skip,com->nbndel,com->bndel,com->rank);
 
     if(is_it_in==-1)
     {
@@ -1086,15 +1080,19 @@ int energy_equation_compute_stiffness(Grid *grid,
     int interior = 1;
 
     err += energy_equation_compute_stiffness_elem(&fe,Lk,grid,mat,fv,sol,load,com,Ddof.m_pdata,
-                                                  myrank,interior,opts,mp_id,
+                                                  interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
 
     if(err != 0)
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,receive);
-  err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
+  try {
+    com->spc->assemble_nonlocal_stiffmat(sol->system);
+    com->spc->finalize_stiffmat();
+  } catch(...) {
+    err++;
+  }
 
   if(is_it_couple_w_mechanical>=0)
   {
@@ -1103,16 +1101,6 @@ int energy_equation_compute_stiffness(Grid *grid,
     fv_m->u_nm1 = u_nm1;
     fv_m->statv_list = statv_list;
   }
-
-  // stiffnes build is completed
-  // deallocate memory
-  free_stiffmat_comm_buffers(Lk, receive, com->comm);
-  free(receive);
-  free(Lk);
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
 
   return err;
 }
@@ -1131,8 +1119,7 @@ int energy_equation_compute_stiffness(Grid *grid,
 /// \param[in,out] fv field variable object
 /// \param[in] sol object for solution scheme
 /// \param[in] load object for loading
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank current process rank
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
@@ -1142,7 +1129,7 @@ int energy_equation_compute_load4pBCs(Grid *grid,
                                       FieldVariables *fv,
                                       Solver *sol,
                                       LoadingSteps *load,
-                                      int myrank,
+				      const CommunicationStructure *com,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt)
@@ -1193,8 +1180,8 @@ int energy_equation_compute_load4pBCs(Grid *grid,
     FEMLIB fe(eid,grid->element,grid->node,intg_order,total_Lagrangian);
 
     // do volume integration at an element
-    err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,NULL,NULL,
-                                                  myrank,interior,opts,mp_id,
+    err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,com,NULL,
+						  interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
     if(err != 0)
       break;
@@ -1267,9 +1254,6 @@ int update_thermal_flux4print(Grid *grid,
   {
     // compute for chemical
   }
-
-  int myrank = 0;
-  MPI_Comm_rank (MPI_COMM_WORLD,&myrank);
 
   for(int eid=0; eid<grid->ne; eid++)
   {

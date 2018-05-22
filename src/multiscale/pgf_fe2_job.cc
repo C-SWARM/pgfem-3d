@@ -10,6 +10,9 @@
 #include <limits.h>
 #include <assert.h>
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 /*** FE2_job_comm_buf ***/
 void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf)
 {
@@ -132,32 +135,35 @@ int pgf_FE2_job_decode_id_proc(const int id)
 }
 
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-             const PGFEM_mpi_comm *mpi_comm)
+			 const MultiscaleComm *mscom,
+			 const Microscale *micro)
 {
   /* Already have the info to compute, return state */
   if(job->state != FE2_STATE_NEED_INFO_REBALANCE
      && job->state != FE2_STATE_NEED_INFO) return job->state;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
+  
   /* probe for message based on job id */
   size_t proc = 0;
   size_t elem = 0;
   size_t int_pt = 0;
-  MPI_Status status;
+  Status status;
   int msg_waiting = 0;
   pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
-  MPI_Iprobe(proc,job->id,mpi_comm->mm_inter,&msg_waiting,&status);
-
+  net->iprobe(proc,job->id,mscom->mm_inter,&msg_waiting,&status);
+  
   /* if there is a message, allocate the comm_buf and post the
      matching receive. */
   if(msg_waiting){
     int len = 0;
-    MPI_Get_count(&status,MPI_CHAR,&len);
+    net->get_status_count(&status,NET_DT_CHAR,&len);
     pgf_FE2_job_comm_buf_build(job->comm_buf,len);
 
     /* post blocking receive since we can't move on until we get it
        and the message is for sure there. */
-    MPI_Recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
-         MPI_CHAR,proc,job->id,mpi_comm->mm_inter,&status);
+    net->recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
+	      NET_DT_CHAR,proc,job->id,mscom->mm_inter,&status);
 
     /* update the job state */
     switch(job->state){
@@ -174,14 +180,14 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 }
 
 void pgf_FE2_job_compute_worker(const size_t job_id,
-                const size_t buffer_len,
-                MICROSCALE *micro,
-                const int mp_id)
+				const size_t buffer_len,
+				Microscale *micro,
+				const int mp_id)
 {
   /* allocate and receive job buffer */
   char *buf = static_cast<char*>(malloc(buffer_len));
-  MPI_Bcast(buf,buffer_len,MPI_CHAR,0,micro->common->mpi_comm);
-
+  micro->net->bcast(buf,buffer_len,NET_DT_CHAR,0,micro->comm);
+  
   /* determine solution index from job id and compute */
   int idx = sol_idx_map_id_get_idx(&(micro->idx_map),job_id);
   int exit_server = 0; /* unused in this implementation */
@@ -191,9 +197,9 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
 }
 
 int pgf_FE2_job_compute(pgf_FE2_job *job,
-            MICROSCALE *micro,
-            const PGFEM_mpi_comm *mpi_comm,
-            const int mp_id)
+			Microscale *micro,
+			const MultiscaleComm *mscom,
+			const int mp_id)
 {
   /* return immediately if not ready to compute */
   if(job->state != FE2_STATE_COMPUTE_READY) return job->state;
@@ -203,21 +209,21 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   time(&start);
 
   /* broadcast information to the microscale */
-  assert(mpi_comm->rank_micro == 0);
+  assert(mscom->rank_micro == 0);
   static const int n_meta = 2;
   size_t meta[n_meta];
   meta[0] = job->id;
   meta[1] = job->comm_buf->buffer_len;
-  MPI_Bcast(meta,n_meta,MPI_LONG,0,micro->common->mpi_comm);
-  MPI_Bcast(job->comm_buf->buffer,meta[1],MPI_CHAR,0,
-        micro->common->mpi_comm);
+  micro->net->bcast(meta,n_meta,NET_DT_LONG,0,micro->comm);
+  micro->net->bcast(job->comm_buf->buffer,meta[1],NET_DT_CHAR,0,
+		    micro->comm);
 
   /* determine solution index from job id and compute */
   int idx = sol_idx_map_id_get_idx(&(micro->idx_map),meta[0]);
   assert(idx >= 0);
   int exit_server = 0; /* unused in this implementation */
   microscale_compute_job(idx,meta[1],job->comm_buf->buffer,
-             micro,&exit_server,mp_id);
+			 micro,&exit_server,mp_id);
   assert(exit_server == 0);
 
   /* increment state and post communication to macroscale */
@@ -227,39 +233,45 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   time(&finish);
   job->time = difftime(finish,start) + 1;
 
-  return pgf_FE2_job_reply(job,mpi_comm);
+  return pgf_FE2_job_reply(job,mscom,micro);
 }
 
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-              const PGFEM_mpi_comm *mpi_comm)
+		      const MultiscaleComm *mscom,
+		      const Microscale *micro)
 {
   /* return immediately if not ready to reply */
   if(job->state != FE2_STATE_REPLY_READY) return job->state;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
+  
   /* post non-blocking send of information to the macroscale */
   size_t proc = 0, elem = 0, int_pt = 0;
   pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
-  MPI_Isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
-        MPI_CHAR,proc,job->id,mpi_comm->mm_inter,
-        &(job->comm_buf->request));
-
+  net->isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
+	     NET_DT_CHAR,proc,job->id,mscom->mm_inter,
+	     &(job->comm_buf->request));
+  
   job->state = FE2_STATE_REPLY;
   return job->state;
 }
 
-int pgf_FE2_job_complete(pgf_FE2_job *job)
+int pgf_FE2_job_complete(pgf_FE2_job *job,
+			 const Microscale *micro)
 {
   /* return immediately if reply not in progress */
   if(job->state != FE2_STATE_REPLY) return job->state;
 
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
+  
   int finished = 0;
-  MPI_Test(&(job->comm_buf->request),&finished,MPI_STATUS_IGNORE);
+  net->test(&(job->comm_buf->request),&finished,NET_STATUS_IGNORE);
   if(finished){
     /* destroy the comm_buffer rendering it unusable for erroneous
        further communication. */
     pgf_FE2_job_comm_buf_destroy(job->comm_buf);
     job->state = FE2_STATE_DONE;
   }
-
+  
   return job->state;
 }

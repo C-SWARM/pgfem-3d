@@ -19,17 +19,13 @@ int read_applied_surface_tractions_fname(char *fname,
                                          int *n_feats,
                                          int **feat_type,
                                          int **feat_id,
-                                         double **loads)
+                                         double **loads,
+					 int myrank)
 {
   int err = 0;
   FILE *in = fopen(fname,"r");
   if(in == NULL)
   {
-    MPI_Comm mpi_comm = MPI_COMM_WORLD;
-    int myrank = 0;
-
-    MPI_Comm_rank (mpi_comm,&myrank);
-
     if(myrank==0)
       printf("Fail to open file [%s]. Zero traction is applied.\n", fname);
     return err;

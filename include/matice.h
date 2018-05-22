@@ -8,8 +8,8 @@
 #ifndef MATICE_H
 #define MATICE_H
 
+#include "pgfem3d/Communication.hpp"
 #include "data_structure.h"
-#include "PGFEM_mpi.h"
 
 struct VAL_W_KEY {
   int val;
@@ -150,8 +150,8 @@ double ss (const double *a,
        const long n);
 
 void nor_vec (double *BS_a,
-          long n,
-          MPI_Comm mpi_comm);
+	      long n,
+	      pgfem3d::CommunicationStructure *com);
 
 void nor_vec_serial (double *a,
              long n,

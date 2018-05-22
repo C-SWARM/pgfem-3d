@@ -2,6 +2,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "bounding_element_utils.h"
 #include "cohesive_element_utils.h"
 #include "enumerations.h"
@@ -13,6 +14,9 @@
 #include "transform_coordinates.h"
 #include "utils.h"
 #include <cmath>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 #ifndef DEBUG_BE_UTILS
 #define DEBUG_BE_UTILS 0
@@ -118,18 +122,17 @@ int bounding_element_reverse_mapping(const int n_be,
   return err;
 }
 
-int bounding_element_communicate_damage(const int n_be,
-                                        BoundingElement *b_elems,
-                                        const int ne,
-                                        const EPS *eps,
-                                        const MPI_Comm mpi_comm)
+static int _bounding_element_communicate_damage_ISIR(const int n_be,
+						     BoundingElement *b_elems,
+						     const int ne,
+						     const EPS *eps,
+						     const CommunicationStructure *com)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
-
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
+  
   /* no bounding elements on domain, return without doing anything. */
   if(n_be == 0){
     return err;
@@ -204,26 +207,32 @@ int bounding_element_communicate_damage(const int n_be,
   }
 
   /*==================================*/
-  /*       post send and recieve      */
+  /*  x     post send and recieve      */
   /*==================================*/
-  MPI_Status *sta_s = PGFEM_calloc(MPI_Status, 2*n_proc_comm);
-  MPI_Status *sta_r = PGFEM_calloc(MPI_Status, 2*n_proc_comm);
-  MPI_Request *req_s = PGFEM_calloc(MPI_Request, 2*n_proc_comm);
-  MPI_Request *req_r = PGFEM_calloc(MPI_Request, 2*n_proc_comm);
+  Status *sta_s;
+  Status *sta_r;
+  Request *req_s;
+  Request *req_r;
+
+  net->allocStatusArray(2*n_proc_comm, &sta_s);
+  net->allocStatusArray(2*n_proc_comm, &sta_r);
+  net->allocRequestArray(2*n_proc_comm, &req_s);
+  net->allocRequestArray(2*n_proc_comm, &req_r);
+  
   int count = 0;
   for(int i=0; i<nproc; i++){
     if(n_SR[i] > 0 && i != myrank){
       /* post receives */
-      MPI_Irecv(receive_id[i],n_SR[i],MPI_INT,i,
-                MPI_ANY_TAG,mpi_comm,&req_r[2*count+0]);
-      MPI_Irecv(receive_val[i],n_SR[i],MPI_DOUBLE,i,
-                MPI_ANY_TAG,mpi_comm,&req_r[2*count+1]);
+      net->irecv(receive_id[i], n_SR[i], NET_DT_INT, i,
+		      NET_ANY_TAG, com->comm, &req_r[2*count+0]);
+      net->irecv(receive_val[i], n_SR[i], NET_DT_DOUBLE, i,
+		      NET_ANY_TAG, com->comm, &req_r[2*count+1]);
 
       /* post sends */
-      MPI_Isend(send_id[i],n_SR[i],MPI_INT,i,
-                MPI_ANY_TAG,mpi_comm,&req_s[2*count+0]);
-      MPI_Isend(send_val[i],n_SR[i],MPI_DOUBLE,i,
-                MPI_ANY_TAG,mpi_comm,&req_s[2*count+1]);
+      net->isend(send_id[i], n_SR[i], NET_DT_INT, i,
+		      NET_ANY_TAG, com->comm, &req_s[2*count+0]);
+      net->isend(send_val[i], n_SR[i], NET_DT_DOUBLE, i,
+		      NET_ANY_TAG, com->comm, &req_s[2*count+1]);
       count++;
     }
   }
@@ -250,8 +259,8 @@ int bounding_element_communicate_damage(const int n_be,
   /*==================================*/
   /*       Finish communication       */
   /*==================================*/
-  MPI_Waitall(2*n_proc_comm,req_s,sta_s);
-  MPI_Waitall(2*n_proc_comm,req_r,sta_r);
+  net->waitall(2*n_proc_comm, req_s, sta_s);
+  net->waitall(2*n_proc_comm, req_r, sta_r);
 
   for(int i=0; i<nproc; i++){
     if(n_SR[i] > 0 && i != myrank){
@@ -291,13 +300,41 @@ int bounding_element_communicate_damage(const int n_be,
   free(receive_val);
   free(send_id);
   free(send_val);
-
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
+  
+  delete [] sta_s;
+  delete [] sta_r;
+  delete [] req_s;
+  delete [] req_r;
 
   return err;
+}
+
+static int _bounding_element_communicate_damage_PWC(const int n_be,
+						    BoundingElement *b_elems,
+						    const int ne,
+						    const EPS *eps,
+						    const CommunicationStructure *com)
+{
+  return _bounding_element_communicate_damage_ISIR(n_be, b_elems, ne, eps, com);
+}
+
+int bounding_element_communicate_damage(const int n_be,
+                                        BoundingElement *b_elems,
+                                        const int ne,
+                                        const EPS *eps,
+                                        const CommunicationStructure *com)
+{
+  switch(com->net->type()) {
+  case NET_ISIR:
+    return _bounding_element_communicate_damage_ISIR(n_be, b_elems, ne, eps, com);
+    break;
+  case NET_PWC:
+    return _bounding_element_communicate_damage_PWC(n_be, b_elems, ne, eps, com);
+    break;
+  default:
+    PGFEM_Abort();
+  }
+  return 1;
 }
 
 int bounding_element_compute_resulting_traction(const int n_be,
@@ -309,21 +346,17 @@ int bounding_element_compute_resulting_traction(const int n_be,
                                                 const int ndofd,
                                                 const long *DomDof,
                                                 const int GDof,
-                                                const COMMUN comm,
-                                                const MPI_Comm mpi_comm,
+						const CommunicationStructure *com,
                                                 const int analysis,
                                                 double *res_trac)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
+  int myrank = com->rank;
 
   /* Check that bounding elements exist and we should proceed,
      otehrwise exit early */
   int g_be = n_be;
-  MPI_Allreduce(MPI_IN_PLACE,&g_be,1,MPI_INT,MPI_SUM,mpi_comm);
+  com->net->allreduce(NET_IN_PLACE,&g_be,1,NET_DT_INT,NET_OP_SUM,com->comm);
   if(g_be <= 0){
     return err;
   }
@@ -431,11 +464,11 @@ int bounding_element_compute_resulting_traction(const int n_be,
   }/* for each be on local domain */
 
   /* sum up tractions on all domains */
-  MPI_Allreduce(MPI_IN_PLACE,res_trac,3,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(NET_IN_PLACE,res_trac,3,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   /* get GLOBAL trac/trac_sgn */
-  LToG(L_trac,G_trac,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
-  LToG(L_trac_sgn,G_trac_sgn,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+  LToG(L_trac,G_trac,ndofd,com);
+  LToG(L_trac_sgn,G_trac_sgn,ndofd,com);
 
   /* compute norms */
   double *norms = aloc1(3);
@@ -443,7 +476,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
     norms[0] += G_trac[i]*G_trac[i];
     norms[1] += G_trac_sgn[i]*G_trac_sgn[i];
   }
-  MPI_Allreduce(MPI_IN_PLACE,norms,2,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(NET_IN_PLACE,norms,2,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   norms[0] = sqrt(norms[0]);
   norms[1] = sqrt(norms[1]);
   norms[2] = 2.*norms[0]/norms[1];
@@ -473,16 +506,14 @@ int compute_block_permutation(const int n_be,
                               const Element *elems,
                               const Node *nodes,
                               const long *DomDof,
-                              const MPI_Comm mpi_comm,
+			      const CommunicationStructure *com,
                               long *perm,
                               const int mp_id)
 {
   int err = 0;
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
-
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  
   /* compute bounds of owned rows. These are stored as global
      variables, but I am trying to phase them out... */
   int l_bound = 0;
@@ -545,14 +576,14 @@ int compute_block_permutation(const int n_be,
   /* sort global array. Implement parallel sorting algorithm in the
      future, but for now we will just gather and sort locally */
   int *g_dof_ids = aloc1i(2*n_dof);
-  MPI_Allreduce(dof_ids,g_dof_ids,2*n_dof,MPI_INT,MPI_MAX,mpi_comm);
+  com->net->allreduce(dof_ids,g_dof_ids,2*n_dof,NET_DT_INT,NET_OP_MAX,com->comm);
   if(myrank == 0){
-    MPI_Reduce(MPI_IN_PLACE,&n_bnd_u_dofs,1,MPI_INT,MPI_SUM,0,mpi_comm);
-    MPI_Reduce(MPI_IN_PLACE,&n_lm_dofs,1,MPI_INT,MPI_SUM,0,mpi_comm);
+    com->net->reduce(NET_IN_PLACE,&n_bnd_u_dofs,1,NET_DT_INT,NET_OP_SUM,0,com->comm);
+    com->net->reduce(NET_IN_PLACE,&n_lm_dofs,1,NET_DT_INT,NET_OP_SUM,0,com->comm);
   } else {
     int tmp = 0;
-    MPI_Reduce(&n_bnd_u_dofs,&tmp,1,MPI_INT,MPI_SUM,0,mpi_comm);
-    MPI_Reduce(&n_lm_dofs,&tmp,1,MPI_INT,MPI_SUM,0,mpi_comm);
+    com->net->reduce(&n_bnd_u_dofs,&tmp,1,NET_DT_INT,NET_OP_SUM,0,com->comm);
+    com->net->reduce(&n_lm_dofs,&tmp,1,NET_DT_INT,NET_OP_SUM,0,com->comm);
   }
   qsort(g_dof_ids,n_dof,2*sizeof(int),compare_int);
 

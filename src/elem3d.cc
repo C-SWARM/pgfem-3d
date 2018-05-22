@@ -17,6 +17,8 @@
 #define NO_BUBBLE 0
 #endif
 
+using namespace pgfem3d;
+
 void int_point (const long nne,
                 long *II)
 /*

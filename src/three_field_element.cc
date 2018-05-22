@@ -1183,15 +1183,13 @@ int update_3f_NR(Grid *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt    time step size
 /// \param[in] t     time
-/// \param[in] mpi_comm MPI_COMM_WORLD
 void update_3f_output_variables(Grid *grid,
                                 MaterialProperty *mat,
                                 FieldVariables *fv,
                                 LoadingSteps *load,
                                 const int mp_id,
                                 const double dt,
-                                const double t,
-                                MPI_Comm mpi_comm)
+                                const double t)
 {
   int ndofn = fv->ndofn;
   int Pno   = fv->npres;

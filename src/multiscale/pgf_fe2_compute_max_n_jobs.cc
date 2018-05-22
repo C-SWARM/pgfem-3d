@@ -4,13 +4,18 @@
  *  Matthew Mosby, University of Notre Dame <mmosby1[at]nd.edu>
  */
 
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include "pgf_fe2_compute_max_n_jobs.h"
 #include "PGFEM_io.h"
 #include <assert.h>
 #include <math.h>
 
-int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
-			       const PGFEM_mpi_comm *mpi_comm,
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
+int pgf_FE2_compute_max_n_jobs(const Macroscale *macro,
+			       const Microscale *micro,
+			       const MultiscaleComm *mscom,
 			       int *max_n_jobs)
 {
   int err = 0;
@@ -18,7 +23,7 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
   if ( macro == NULL ){ /* microscale server(s) */
 
     /* Matching call to Bcast from Macroscale */
-    err += MPI_Bcast(max_n_jobs,1,MPI_INT,0,mpi_comm->world);
+    micro->net->bcast(max_n_jobs, 1, NET_DT_INT, 0, mscom->world);
     assert(*max_n_jobs > 0);
 
   } else { /* Macroscale */
@@ -27,20 +32,20 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
     int rank = -1;
     int n_macro = -1;
     int n_server = -1;
-    err += MPI_Comm_rank(mpi_comm->world,&rank);
-    err += MPI_Comm_size(mpi_comm->mm_inter,&n_server);
-    err += MPI_Comm_size(mpi_comm->macro,&n_macro);
+    macro->net->comm_rank(mscom->world, &rank);
+    macro->net->comm_size(mscom->mm_inter, &n_server);
+    macro->net->comm_size(mscom->macro, &n_macro);
     n_server -= n_macro;
     assert(n_server > 0);
 
     /* Get number of cohesive elements on macro domain */
-    int total_macro_nce = macro->common->nce;
+    int total_macro_nce = macro->nce;
 
     if(rank == 0){
-      /* We use MPI_Reduce rather than MPI_Allreduce since we will
-	 call MPI_Bcast from rank 0 anyway. */
-      err += MPI_Reduce(MPI_IN_PLACE,&total_macro_nce,1,
-			MPI_INT,MPI_SUM,0,mpi_comm->macro);
+      /* We use Reduce rather than Allreduce since we will
+	 call Bcast from rank 0 anyway. */
+      macro->net->reduce(NET_IN_PLACE, &total_macro_nce, 1,
+			 NET_DT_INT, NET_OP_SUM, 0, mscom->macro);
 
       /* compute minimum number of jobs */
       int min_n_jobs = total_macro_nce / n_server;
@@ -65,12 +70,12 @@ int pgf_FE2_compute_max_n_jobs(const MACROSCALE *macro,
     } else {
       /* recv buffer for reduce. Contents invalid after Reduce */
       int junk = -1;
-      err += MPI_Reduce(&total_macro_nce,&junk,1,
-			MPI_INT,MPI_SUM,0,mpi_comm->macro);
+      macro->net->reduce(&total_macro_nce, &junk, 1,
+			 NET_DT_INT, NET_OP_SUM, 0, mscom->macro);
     }
 
     /* broadcacst on macroscale processes in world communicator */
-    err += MPI_Bcast(max_n_jobs,1,MPI_INT,0,mpi_comm->world);
+    macro->net->bcast(max_n_jobs, 1, NET_DT_INT, 0, mscom->world);
   }
   return err;
 }

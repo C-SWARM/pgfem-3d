@@ -15,7 +15,6 @@
 #include "bounding_element.h"
 #include "bounding_element_utils.h"
 #include "build_distribution.h"
-#include "comm_hints.h"
 #include "computeMacroF.h"
 #include "computeMacroS.h"
 #include "constitutive_model.h"
@@ -48,6 +47,9 @@
 #include "utils.h"
 #include "vtk_output.h"
 #include "set_initial_plastic_deformation_gradient.h"
+#include "pgfem3d/Communication.hpp"
+#include "pgfem3d/Boot.hpp"
+
 #include <cstdlib>
 #include <cassert>
 #include <vector>
@@ -57,9 +59,11 @@
 
 #include "crystal_plasticity_integration.h"
 
-namespace {
 using namespace pgfem3d;
-const constexpr int periodic = 0;
+using namespace pgfem3d::net;
+
+namespace {
+  const constexpr int periodic = 0;
 }
 
 /*****************************************************/
@@ -136,7 +140,7 @@ int print_PGFem3D_final(const Multiphysics& mp,
                myrank, usage.ru_stime.tv_sec, usage.ru_stime.tv_usec,
                usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
 
-  PGFEM_printf("Total time (no MPI_Init()) = %f\n", total_time);
+  PGFEM_printf("Total time (no Network Init) = %f\n", total_time);
   PGFEM_printf("Startup time               = %f\n\n", startup_time);
 
   for(int mp_id = 0; mp_id<mp.physicsno; mp_id++)
@@ -153,17 +157,16 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// Currently, this will output the total number of ODEs operations
 ///
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com Communication Structure
 /// \param[in] myrank current process rank
-void print_EXA_metrics(const MPI_Comm mpi_comm, 
+void print_EXA_metrics(const CommunicationStructure *com,
                        const int myrank,
                        std::vector<double> hypre_time,
                        std::vector<double> residuals_time,
                        double total_time,
                        const PGFem3D_opt *opts)
 {
-  int MPI_process_number;
-  MPI_Comm_size(mpi_comm, &MPI_process_number);
+  int nprocs = com->nproc;
   
   if (myrank == 0){
     double total_residual_time = 0.0;   //residual time across all physics
@@ -183,11 +186,11 @@ void print_EXA_metrics(const MPI_Comm mpi_comm,
       PGFEM_printf("Total Residual time: %f\n", total_residual_time);
       PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
       PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
-      PGFEM_printf("Total number of MPI processes: %d\n", MPI_process_number);
+      PGFEM_printf("Total number of processes: %d\n", nprocs);
       PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
     }
     
-    double EXA_Denominator = total_time * MPI_process_number;
+    double EXA_Denominator = total_time * nprocs;
     PGFEM_printf("\nFinal EXA metric: %f\n\n", EXA_Numerator/EXA_Denominator);
   }
 }
@@ -204,13 +207,12 @@ void print_EXA_metrics(const MPI_Comm mpi_comm,
 /// \param[in] COM object array for communications
 /// \param[in] time_steps object for time stepping
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] VVolume original volume of the domain
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
 /// \param[in] tim current time step number
-/// \param[in] myrank current process rank
+/// \param[in] myrank this process rank
 /// \return non-zero on internal error
 int print_results(Grid *grid,
                   MaterialProperty *mat,
@@ -222,13 +224,12 @@ int print_results(Grid *grid,
                   CRPL *crpl,
                   Ensight *ensight,
                   PRINT_MULTIPHYSICS_RESULT *pmr,
-                  MPI_Comm mpi_comm,
                   const double oVolume,
                   const double VVolume,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
                   long tim,
-                  int myrank)
+		  int myrank)
 {
   int err = 0;
 
@@ -239,7 +240,7 @@ int print_results(Grid *grid,
   int mp_id_M = -1;
 
   for(int ia = 0; ia<mp.physicsno; ia++)
-  {
+    {
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       mp_id_M = ia;
@@ -267,7 +268,7 @@ int print_results(Grid *grid,
       dts[DT_NP1] = time_steps->times[tim+1] - time_steps->times[tim];
 
       sol->run_integration_algorithm = 0;
-      err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,
+      err += fd_res_compute_reactions_MP(grid,mat,fv,sol,load,crpl,com,opts,mp,
                                          mp_id_M,time_steps->times[tim+1],dts);
       sol->run_integration_algorithm = 1;
     }
@@ -275,9 +276,9 @@ int print_results(Grid *grid,
     if(opts->comp_print_macro)
     {
       /* Calculate macro deformation gradient */
-      double *GF = computeMacroF(grid->element,grid->ne,grid->node,grid->nn,fv->eps,oVolume,mpi_comm);
-      double *GS = computeMacroS(grid->element,grid->ne,grid->node,grid->nn,fv->sig,oVolume,mpi_comm);
-      double *GP = computeMacroP(grid->element,grid->ne,grid->node,grid->nn,fv->sig,fv->eps,oVolume,mpi_comm);
+      double *GF = computeMacroF(grid->element,grid->ne,grid->node,grid->nn,fv->eps,oVolume,com);
+      double *GS = computeMacroS(grid->element,grid->ne,grid->node,grid->nn,fv->sig,oVolume,com);
+      double *GP = computeMacroP(grid->element,grid->ne,grid->node,grid->nn,fv->sig,fv->eps,oVolume,com);
 
       /* print GF & GS to file */
       if(myrank==0)
@@ -308,15 +309,15 @@ int print_results(Grid *grid,
   {
     if(opts->ascii && mp_id_M >= 0)
     {
-      ASCII_output(opts,mpi_comm,tim,time_steps->times,grid->Gnn,grid->nn,grid->ne,grid->nce,fv->ndofd,
-                   com->DomDof,com->Ap,sol->FNR,sol->arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
+      ASCII_output(opts,com,tim,time_steps->times,grid->Gnn,grid->nn,grid->ne,grid->nce,fv->ndofd,
+                   sol->FNR,sol->arc->lm,fv->pores,VVolume,grid->node,grid->element,sup,
                    fv->u_np1,fv->eps,fv->sig,fv->sig_n,grid->coel);
     } /* End ASCII output */
 
     if(opts->vis_format == VIS_VTK)
     {
       if(myrank == 0)
-        err += VTK_write_multiphysics_master(pmr,mp.total_write_no,opts,tim,myrank,COM[0].nproc);
+        err += VTK_write_multiphysics_master(pmr,mp.total_write_no,opts,tim,myrank,com->nproc);
 
       err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp.total_write_no,opts,tim,myrank);
 
@@ -346,7 +347,7 @@ int print_results(Grid *grid,
           sprintf (filename,"%s",out_dat);
           EnSight (filename,tim,time_steps->nt,grid->nn,grid->ne,grid->nsd,grid->node,grid->element,sup,
                    fv->u_np1,fv->sig,fv->sig_n,fv->eps,opts->smoothing,grid->nce,grid->coel,
-                   /*nge,geel,ngn,gnod,*/sol->FNR,sol->arc->lm,ensight,mpi_comm,
+                   /*nge,geel,ngn,gnod,*/sol->FNR,sol->arc->lm,ensight,com,
                    opts);
           break;
          case VIS_VTK:/* Print to VTK files */
@@ -372,7 +373,7 @@ int print_results(Grid *grid,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] tim current time step number
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] phcomm PHCOMM_WORLD
 /// \param[in] myrank current process rank
 /// \param[in] time_step_start time measure when time stepping starts for step tim
 /// \param[in] time_0 time measure when simulation starts
@@ -384,13 +385,13 @@ int write_restart_files(Grid *grid,
                         PGFem3D_opt *opts,
                         const Multiphysics& mp,
                         long tim,
-                        MPI_Comm mpi_comm,
-                        int myrank,
+			CommunicationStructure *com,
                         double time_step_start,
                         double time_0)
 {
   int err = 0;
-
+  int myrank = com->rank;
+  
   int write_restart_global = 0;
   if(time_steps->print[tim] == 1)
     write_restart_global = 1;
@@ -400,15 +401,15 @@ int write_restart_files(Grid *grid,
     {
       // Make decesion to write restart when time is close to walltime
       // even if tim is not check point
-      double time_step_end = MPI_Wtime();
+      double time_step_end = CLOCK();
       double time_taken = time_step_end - time_step_start;
-
+      
       int write_restart_local  = 0;
 
       if(opts->walltime - time_taken*3.0 < (time_step_end + time_0))
         write_restart_local = 1;
-
-      MPI_Allreduce (&write_restart_local,&write_restart_global,1,MPI_INT,MPI_MAX,mpi_comm);
+      
+      com->net->allreduce(&write_restart_local,&write_restart_global,1,NET_DT_INT,NET_OP_MAX,com->comm);
       if(write_restart_global>0)
       {
         if(myrank==0)
@@ -435,10 +436,6 @@ int single_scale_main(int argc,char *argv[])
 
   const constexpr int ndim = 3;
 
-  /* Create MPI communicator. Currently aliased to MPI_COMM_WORLD but
-   * may change */
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-
   /* CRYSTAL PLASTICITY */
   CRPL *crpl = nullptr;
 
@@ -453,47 +450,10 @@ int single_scale_main(int argc,char *argv[])
   // debug_log = stdout;
   /* debug_log = stderr; */
 
-  /*=== END INITIALIZATION === */
-
-  int initialized = 1;
-  if (MPI_Initialized(&initialized)) {
-    PGFEM_Abort();
-  }
-  if (!initialized and MPI_Init(&argc, &argv)) {
-    PGFEM_Abort();
-  }
-
-  int myrank = 0;
-  if (MPI_Comm_rank(mpi_comm, &myrank)) {
-    PGFEM_Abort();
-  }
-
-  int nproc = 0;
-  if (MPI_Comm_size(mpi_comm, &nproc)) {
-    PGFEM_Abort();
-  }
-
-  PGFEM_initialize_io(NULL, NULL);
-
-  if (myrank == 0) {
-    PGFEM_printf("=== SINGLE SCALE ANALYSIS ===\n\n");
-  }
-
-  double total_time = 0.0;
-  double startup_time = 0.0;
-  /* MPI_Barrier(mpi_comm); */
-  total_time -= MPI_Wtime();
-  startup_time -= MPI_Wtime();
-
-#if (MPI_VERSION < 2)
-# define MPI_Comm_set_errhandler MPI_Errhandler_set
-#endif
-
-  MPI_Comm_set_errhandler(mpi_comm, MPI_ERRORS_ARE_FATAL);
-
-  if (myrank == 0) {
-    PGFEM_printf("\n\nInitializing PFEM3d\n\n");
-  }
+  // Start the Boot class to get our PMI info
+  Boot *boot = new Boot();
+  int myrank = boot->get_rank();
+  int nproc = boot->get_nproc();
 
   /*=== Parse the command line for options ===*/
   PGFem3D_opt options;
@@ -508,7 +468,22 @@ int single_scale_main(int argc,char *argv[])
   if (myrank == 0) {
     print_options(stdout, &options);
   }
+  
+  PGFEM_initialize_io(NULL, NULL);
 
+  if (myrank == 0) {
+    PGFEM_printf("=== SINGLE SCALE ANALYSIS ===\n\n");
+  }
+
+  double total_time = 0.0;
+  double startup_time = 0.0;
+  total_time -= CLOCK();
+  startup_time -= CLOCK();
+  
+  if (myrank == 0) {
+    PGFEM_printf("\n\nInitializing PFEM3d\n\n");
+  }
+  
   //----------------------------------------------------------------------
   // create and initialization of PGFem3D objects
   //----------------------------------------------------------------------
@@ -518,6 +493,9 @@ int single_scale_main(int argc,char *argv[])
   Multiphysics mp;
   err += read_multiphysics_settings(mp,&options,myrank);
 
+  // Create the desired network
+  Network *net = pgfem3d::net::Network::Create(options);
+  
   std::vector<FieldVariables> fv(mp.physicsno);
   std::vector<CommunicationStructure> com(mp.physicsno);
 
@@ -555,11 +533,18 @@ int single_scale_main(int argc,char *argv[])
       fv[ia].fvs[ib] = &fv[mp_cp_id];
     }
 
+    // rework this initialization
     err += communication_structure_initialization(&com[ia]);
-
+    com[ia].rank = myrank;
     com[ia].nproc = nproc;
+    com[ia].boot = boot;
+    com[ia].net = net;
+    com[ia].comm = NET_COMM_WORLD;
   }
 
+  /* handle to the first MP CommunicationStructure */
+  CommunicationStructure *com0 = &com[0];
+  
   TimeStepping time_steps;
   err += time_stepping_initialization(&time_steps);
 
@@ -613,7 +598,7 @@ int single_scale_main(int argc,char *argv[])
                    "Please check input and try again.\n\n",options.opath);
       print_usage(stdout);
     }
-    PGFEM_Comm_code_abort(mpi_comm,-1);
+    PGFEM_Comm_code_abort(com0, -1);
   }
 
 
@@ -625,7 +610,8 @@ int single_scale_main(int argc,char *argv[])
   // read main input files ( *.in)
   //----------------------------------------------------------------------
   //---->
-  if (read_mesh_file(&grid, &mat, fv.data(), sol.data(), &load, mp, mpi_comm,
+
+  if (read_mesh_file(&grid, &mat, fv.data(), sol.data(), &load, mp, com0,
                      &options))
   {
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n", myrank);
@@ -633,27 +619,31 @@ int single_scale_main(int argc,char *argv[])
   }
   //<---------------------------------------------------------------------
 
+  
   /*=== READ COMM HINTS ===*/
   {
-    char *fn = Comm_hints_filename(options.ipath, options.ifname, myrank);
-    com[0].hints = Comm_hints_construct();
-    int ch_err = Comm_hints_read_filename(com[0].hints, fn);
-    MPI_Allreduce(MPI_IN_PLACE, &ch_err, 1, MPI_INT, MPI_SUM, mpi_comm);
+    com0->hints = new CommHints(options.ipath, options.ifname, myrank);
+    int ch_err = 0;
+    try {
+      (com0->hints)->read_filename(NULL);
+    } catch(...) {
+      ch_err = 1;
+      net->allreduce(NET_IN_PLACE, &ch_err, 1, NET_DT_INT, NET_OP_SUM, com0->comm);
+    }
     if (ch_err) {
-      Comm_hints_destroy(com[0].hints);
-      com[0].hints = NULL;
+      delete com0->hints;
+      com0->hints = NULL;
       if (myrank == 0) {
         PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
                        "Proceeding using fallback functions.\n");
       }
     }
-    free(fn);
   }
-
-  // use commuincation hints build at 0 for other physics (>0)
+  
+  // use communication hints build at 0 for other physics (>0)
   // memory will be deallocated once by checking is it NULL
   for(int ia=1; ia<mp.physicsno; ia++)
-    com[ia].hints = com[0].hints;
+    com[ia].hints = com0->hints;
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
@@ -692,7 +682,7 @@ int single_scale_main(int argc,char *argv[])
   {
     char bnd_file[500];
     snprintf(bnd_file, sizeof(bnd_file), "%s/%s%d.in.bnd", options.ipath, options.ifname, myrank);
-    read_bounding_elements_fname(bnd_file, 3, &(grid.n_be), &(grid.b_elems), mpi_comm);
+    read_bounding_elements_fname(bnd_file, 3, &(grid.n_be), &(grid.b_elems), myrank);
     bounding_element_set_local_ids(grid.n_be, grid.b_elems, grid.element);
     bounding_element_reverse_mapping(grid.n_be, grid.b_elems, grid.element);
   }
@@ -705,8 +695,8 @@ int single_scale_main(int argc,char *argv[])
 
   /* list of elements on the COMMUNICATION boundary */
   //build for 0
-  com[0].nbndel = 0;
-  com[0].bndel = list_boundary_el(grid.ne,grid.element,grid.nn,grid.node,myrank,&(com[0].nbndel));
+  com0->nbndel = 0;
+  com0->bndel = list_boundary_el(grid.ne,grid.element,grid.nn,grid.node,myrank,&(com0->nbndel));
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
@@ -735,36 +725,36 @@ int single_scale_main(int argc,char *argv[])
     // memory will be deallocated once by checking is it NULL
     if(ia>0)
     {
-      com[ia].bndel  = com[0].bndel;
-      com[ia].nbndel = com[0].nbndel;
+      com[ia].bndel  = com0->bndel;
+      com[ia].nbndel = com0->nbndel;
     }
 
     // Create Graph for communication
-    // GrComm = CreateGraph(nproc,myrank,nn,node);
+    // GrComm = CreateGraph(nproc,myrank,nn,node,&com[ia]);
     com[ia].DomDof = aloc1l(com[ia].nproc);
 
   }
 
-  long *DomNe = aloc1l(com[0].nproc);
-  long *DomNn = aloc1l(com[0].nproc);
+  long *DomNe = aloc1l(com0->nproc);
+  long *DomNn = aloc1l(com0->nproc);
   DomNe[myrank] = grid.ne;
   DomNn[myrank] = grid.nn;
 
   // Read cohesive elements
   if(options.cohesive == 1)
-    err += read_cohesive_elements(&grid,&mat, &options, ensight, mpi_comm, myrank);
+    err += read_cohesive_elements(&grid,&mat, &options, ensight, com0);
 
   /* Gather number of element from all domains */
-  MPI_Gather (&(grid.ne),1,MPI_LONG,DomNe,1,MPI_LONG,0,mpi_comm);
+  net->gather(&(grid.ne),1,NET_DT_LONG,DomNe,1,NET_DT_LONG,0,com0->comm);
 
   /* Total number of boundary elements */
-  MPI_Reduce(&(com[0].nbndel),&(grid.Gnbndel),1,MPI_LONG,MPI_SUM,0,mpi_comm);
+  net->reduce(&(com0->nbndel),&(grid.Gnbndel),1,NET_DT_LONG,NET_OP_SUM,0,com0->comm);
 
   /* Total number of bounding elements */
-  MPI_Reduce(&(grid.n_be),&(grid.Gn_be),1,MPI_INT,MPI_SUM,0,mpi_comm);
+  net->reduce(&(grid.n_be),&(grid.Gn_be),1,NET_DT_INT,NET_OP_SUM,0,com0->comm);
 
   /* Gather number of nodes from all domains */
-  MPI_Gather (&(grid.nn),1,MPI_LONG,DomNn,1,MPI_LONG,0,mpi_comm);
+  net->gather(&(grid.nn),1,NET_DT_LONG,DomNn,1,NET_DT_LONG,0,com0->comm);
 
   if (myrank == 0 && PFEM_DEBUG)
     PGFEM_printf(" Done.\nRedistributing information...");
@@ -772,18 +762,17 @@ int single_scale_main(int argc,char *argv[])
   for(int ia=0; ia<mp.physicsno; ia++)
   {
     fv[ia].ndofd = generate_local_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
-                                          grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
+                                          grid.element,grid.coel,grid.b_elems,&com[ia],ia);
 
     com[ia].DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
-                                                     grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
+                                                     grid.element,grid.coel,grid.b_elems,&com[ia],ia);
     // Gather degrees of freedom from all domains
-    MPI_Allgather(MPI_IN_PLACE,1,MPI_LONG,com[ia].DomDof,1,MPI_LONG,mpi_comm);
-
+    com[ia].net->allgather(NET_IN_PLACE,1,NET_DT_LONG,com[ia].DomDof,1,NET_DT_LONG,com[ia].comm);
+    
     // Make integer copy of DomDof.  May eventually switch everything to
     // integer since 64 bit
     int *dist = aloc1i(com[ia].nproc+1);
-    // build_dist(DomDof,dist,nproc);
-    build_distribution(com[ia].DomDof,dist,mpi_comm);
+    build_distribution(com[ia].DomDof,dist,com[ia].nproc);
 
     for(long ib=0;ib<com[ia].nproc;ib++)
     {
@@ -791,30 +780,32 @@ int single_scale_main(int argc,char *argv[])
       if(ia==0)
         grid.Gne += DomNe[ib];
     }
-
+    
     renumber_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,com[ia].DomDof,grid.node,
-                            grid.element,grid.coel,grid.b_elems,mpi_comm,ia);
+                            grid.element,grid.coel,grid.b_elems,&com[ia],ia);
     com[ia].NBN = distribute_global_dof_ids(grid.ne,grid.nce,grid.n_be,grid.nn,fv[ia].ndofn,ndim,grid.node,
-                                            grid.element,grid.coel,grid.b_elems, com[ia].hints, mpi_comm,ia);
-
+                                            grid.element,grid.coel,grid.b_elems,&com[ia],ia);
+ 
     // ALlocate Ap, Ai
     com[ia].Ap = aloc1i(com[ia].DomDof[myrank]+1);
-    com[ia].comm  = PGFEM_calloc (COMMUN_1, 1);
-    initialize_commun(com[ia].comm );
+    com[ia].spc = pgfem3d::SparseComm::Create(com[ia].net, com[ia].comm);
+    
+    com[ia].Ai = Psparse_ApAi(grid.ne,grid.n_be,grid.nn,fv[ia].ndofn,fv[ia].ndofd,
+                              grid.element,grid.b_elems,grid.node,grid.nce,grid.coel,
+			      &com[ia],options.cohesive,ia);
 
-    com[ia].Ai = Psparse_ApAi(com[ia].nproc,myrank,grid.ne,grid.n_be,grid.nn,fv[ia].ndofn,fv[ia].ndofd,
-                              grid.element,grid.b_elems,grid.node,com[ia].Ap,grid.nce,grid.coel,com[ia].DomDof,
-                              &(com[ia].GDof),com[ia].comm ,mpi_comm,options.cohesive,com[ia].hints,ia);
-    pgfem_comm_build_fast_maps(com[ia].comm ,fv[ia].ndofd,com[ia].DomDof[myrank],com[ia].GDof);
-
+    // initialize SparseComm buffers after pattern determined
+    com[ia].spc->initialize();
+    com[ia].spc->build_fast_maps(fv[ia].ndofd,com[ia].DomDof[myrank],com[ia].GDof);
+    
     // Total number of nonzeros and skyline
     int APP  = 0;
     long sky = 0;
-    MPI_Reduce (&(com[ia].Ap[com[ia].DomDof[myrank]]),&APP,1,MPI_INT,MPI_SUM,0,mpi_comm);
+    com[ia].net->reduce(&(com[ia].Ap[com[ia].DomDof[myrank]]),&APP,1,NET_DT_INT,NET_OP_SUM,0,com[ia].comm);
     long temp_int = skyline((int) com[ia].DomDof[myrank],com[ia].Ap,com[ia].Ai,dist[myrank]);
-
-    MPI_Reduce (&temp_int,&sky,1,MPI_INT,MPI_SUM,0,mpi_comm);
-
+    
+    com[ia].net->reduce(&temp_int,&sky,1,NET_DT_INT,NET_OP_SUM,0,com[ia].comm);
+    
     //----------------------------------------------------------------------
     // print simulation setting info
     //----------------------------------------------------------------------
@@ -873,8 +864,8 @@ int single_scale_main(int argc,char *argv[])
       char *trac_fname = NULL;
       alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
 
-      read_applied_surface_tractions_fname(trac_fname,&n_feats,
-                                           &feat_type,&feat_id,&loads);
+      read_applied_surface_tractions_fname(trac_fname,&n_feats,&feat_type,
+					   &feat_id,&loads,myrank);
 
       generate_applied_surface_traction_list(grid.ne,grid.element,
                                              n_feats,feat_type,
@@ -891,11 +882,10 @@ int single_scale_main(int argc,char *argv[])
         tmp_sum += nodal_forces[i];
       }
 
-      MPI_Allreduce(MPI_IN_PLACE,&tmp_sum,1,MPI_DOUBLE,
-                    MPI_SUM,mpi_comm);
+      net->allreduce(NET_IN_PLACE,&tmp_sum,1,NET_DT_DOUBLE,NET_OP_SUM,com0->comm);
 
       if(myrank == 0){
-        PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
+        PGFEM_printf("Total load from surface tractions: %.8e\n\n", tmp_sum);
       }
 
       free(feat_type);
@@ -945,7 +935,7 @@ int single_scale_main(int argc,char *argv[])
 
     /* Sparse INITIALIZATION ROUTINES */
     for (int ia = 0, e = mp.physicsno; ia < e; ++ia) {
-      sol[ia].system = pgfem3d::solvers::SparseSystem::Create(options, mpi_comm,
+      sol[ia].system = pgfem3d::solvers::SparseSystem::Create(options, com[ia].comm,
                                                               com[ia].Ap,
                                                               com[ia].Ai,
                                                               com[ia].DomDof,
@@ -975,7 +965,7 @@ int single_scale_main(int argc,char *argv[])
           read_model_parameters_list(mat.nhommat, mat.hommat, cm_in);
           free(cm_filename);
           fclose(cm_in);
-          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat);
+          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat,myrank);
           err += prepare_temporal_field_varialbes(&fv[ia],&grid,1,&options);
         }
         else
@@ -1085,14 +1075,18 @@ int single_scale_main(int argc,char *argv[])
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       // set inital plastic deformation
-      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL 
-        && (options.analysis_type == CM || options.analysis_type == CM3F))
+      if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL
+	 && (options.analysis_type == CM || options.analysis_type == CM3F))
       {
-        set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,&mat,sol.data()+ia,&load,com.data()+ia,
-                                                 mpi_comm, &options, mp, ia, myrank);
+        double *pF = mat.hommat[0].param->pF;
+        if(pF != NULL)
+	{
+          set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,&mat,sol.data()+ia,&load,
+						   com.data()+ia, &options, mp, ia);
+	}
       }
-    }    
-        
+    }
+    
     err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)
     {      
@@ -1112,7 +1106,7 @@ int single_scale_main(int argc,char *argv[])
       if (myrank == 0){
         PGFEM_printf("Incorrect dt\n");
       }
-      PGFEM_Comm_code_abort(mpi_comm,0);
+      PGFEM_Comm_code_abort(com0, 0);
     }
 
     for(int ia=0; ia<mp.physicsno; ia++)
@@ -1131,7 +1125,7 @@ int single_scale_main(int argc,char *argv[])
       //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
       // of the load vector
       err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
-                                                   &options,mp,ia,myrank);
+                                                   &options,mp,ia,&com[ia]);
 
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
       {
@@ -1152,9 +1146,9 @@ int single_scale_main(int argc,char *argv[])
       // set extra variables for arc lengh
       if(sol[ia].FNR == 2 || sol[ia].FNR == 3)
       {
-        err += construct_arc_length_variable(sol[ia].arc, &fv[ia], &com[ia], myrank);
+        err += construct_arc_length_variable(sol[ia].arc, &fv[ia], &com[ia]);
         // Transform LOCAL load vector to GLOBAL
-        LToG (fv[ia].R,sol[ia].arc->BS_R,myrank,com[ia].nproc,fv[ia].ndofd,com[ia].DomDof,com[ia].GDof,com[ia].comm ,mpi_comm);
+        LToG (fv[ia].R,sol[ia].arc->BS_R,fv[ia].ndofd,&com[ia]);
         sol[ia].arc->dt0 = time_steps.dt_np1;
         sol[ia].arc->DAL = sol[ia].arc->DLM0 = sol[ia].arc->dAL0;
       }
@@ -1169,7 +1163,8 @@ int single_scale_main(int argc,char *argv[])
     /* compute un-deformed volume */
     oVolume = 0;
     GVolume = T_VOLUME (grid.ne,ndim,grid.element,grid.node);
-    MPI_Allreduce (&GVolume,&oVolume,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    
+    net->allreduce(&GVolume,&oVolume,1,NET_DT_DOUBLE,NET_OP_SUM,com0->comm);
     if (myrank == 0){
       PGFEM_printf ("oVolume = %12.12f\n",oVolume);
     }
@@ -1179,14 +1174,14 @@ int single_scale_main(int argc,char *argv[])
     time_steps.dt_np1 = time_steps.times[1] - time_steps.times[0];
 
     // compute startup time
-    startup_time += MPI_Wtime();
+    startup_time += CLOCK();
 
     ///////////////////////////////////////////////////////////////////
     // start time stepping
     ///////////////////////////////////////////////////////////////////
     while (time_steps.nt > tim)
     {
-      double time_step_start = MPI_Wtime();
+      double time_step_start = CLOCK();
 
       if(tim>options.restart)
       {
@@ -1197,7 +1192,7 @@ int single_scale_main(int argc,char *argv[])
         {
           if(myrank == 0)
             PGFEM_printf("Incorrect dt\n");
-          PGFEM_Comm_code_abort(mpi_comm,0);
+          PGFEM_Comm_code_abort(com0, 0);
         }
 
         if(myrank==0)
@@ -1218,8 +1213,8 @@ int single_scale_main(int argc,char *argv[])
         // push nodal_forces to s->R
         //----------------------------------------------------------------------
         //---->
-        err += read_and_apply_load_increments(&grid, fv.data(), &load, mp, tim, mpi_comm, myrank);
-
+        err += read_and_apply_load_increments(&grid, fv.data(), &load, mp, tim, com0);
+	
         if(mp_id_M>=0)
         {
           if(load.tim_load[mp_id_M][tim] == 1 && tim != 0)
@@ -1268,8 +1263,7 @@ int single_scale_main(int argc,char *argv[])
 
         Multiphysics_Newton_Raphson(hypre_time, stiffmat_time, residuals_time, &grid, 
                                     &mat, fv.data(), sol.data(), &load, com.data(), 
-                                    &time_steps, crpl, mpi_comm, VVolume, &options, mp);
-
+                                    &time_steps, crpl, VVolume, &options, mp);
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1294,9 +1288,8 @@ int single_scale_main(int argc,char *argv[])
           double dlm = Multiphysics_Arc_length(&grid, &mat, &fv[mp_id_M],
                                                &sol[mp_id_M], &load,
                                                &com[mp_id_M], &time_steps,
-                                               crpl, mpi_comm, VVolume,
-                                               &options, mp, 0);
-
+                                               crpl, VVolume, &options, mp, 0);
+	  
           /* Load multiplier */
           sol[mp_id_M].arc->lm += dlm;
 
@@ -1332,11 +1325,11 @@ int single_scale_main(int argc,char *argv[])
             compute_resultant_force(n_feats,n_sur_trac_elem,
                                     ste,grid.node,grid.element,
                                     fv[mp_id_M].sig,fv[mp_id_M].eps,sur_forces);
-            MPI_Allreduce(MPI_IN_PLACE,sur_forces,n_feats*ndim,
-                          MPI_DOUBLE,MPI_SUM,mpi_comm);
+            com[mp_id_M].net->allreduce(NET_IN_PLACE,sur_forces,n_feats*ndim,
+					NET_DT_DOUBLE,NET_OP_SUM,com[mp_id_M].comm);
             if(myrank == 0){
               PGFEM_printf("Forces on marked features:\n");
-              print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
+              print_array_d(PGFEM_stdout, sur_forces, n_feats*ndim,
                             n_feats,ndim);
               fflush(PGFEM_stdout);
             }
@@ -1350,12 +1343,10 @@ int single_scale_main(int argc,char *argv[])
       // print simulation results
       err += print_results(&grid, &mat, fv.data(), sol.data(), &load,
                            com.data(), &time_steps, crpl, ensight, pmr,
-                           mpi_comm, oVolume, VVolume, &options, mp, tim,
-                           myrank);
+                           oVolume, VVolume, &options, mp, tim, myrank);
 
       err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
-                                 mp, tim, mpi_comm, myrank, time_step_start,
-                                 total_time);
+                                 mp, tim, com0, time_step_start, total_time);
 
       if (myrank == 0){
         total_EXA_metric += perTimestep_EXA_metric;    //accumulate the numerator for the EXA metric equation per timestep
@@ -1381,9 +1372,11 @@ int single_scale_main(int argc,char *argv[])
   //---->
   for(int ia=0; ia<mp.physicsno; ia++) {
     delete sol[ia].system;
+    delete com[ia].spc;
   }
 
-
+  delete com0->hints;
+  
   err += destruct_time_stepping(&time_steps);
 
   for(int ia=0; ia<mp.physicsno; ia++)
@@ -1422,7 +1415,7 @@ int single_scale_main(int argc,char *argv[])
   delete ensight;
   //<---------------------------------------------------------------------
 
-  total_time += MPI_Wtime(); // measure time spent
+  total_time += CLOCK(); // measure time spent
 
   //----------------------------------------------------------------------
   // print time of analysis and finalize
@@ -1433,20 +1426,17 @@ int single_scale_main(int argc,char *argv[])
                                residuals_time, myrank);
 
   /* print EXA_metrics */
-  print_EXA_metrics(mpi_comm, myrank, hypre_time, residuals_time, total_time, &options);
+  print_EXA_metrics(com0, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();
 
-  int flag_MPI_finalized;
-  MPI_Finalized(&flag_MPI_finalized);
-  if(!flag_MPI_finalized)
-  {
-    if(myrank==0)
-      printf("MPI finalizing\n");
+  // finalize the network
+  net->finalize();
 
-    MPI_Finalize();
-  }
+  delete net;
+  delete boot;
+  
   //<---------------------------------------------------------------------
 
   return err;

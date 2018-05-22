@@ -1,6 +1,5 @@
 #include "read_cryst_plast.h"
 #include "allocation.h"
-#include "PGFEM_mpi.h"
 #include "utils.h"
 
 void read_cryst_plast (FILE *in1,

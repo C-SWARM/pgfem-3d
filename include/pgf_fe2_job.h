@@ -7,9 +7,8 @@
 #ifndef PGF_FE2_JOB_H
 #define PGF_FE2_JOB_H
 
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include <stdlib.h>
-#include "PGFEM_mpi.h"
-#include "microscale_information.h"
 
 /**
  * Structure for maintaining communication information related to a
@@ -18,8 +17,8 @@
 struct pgf_FE2_job_comm_buf{
   size_t buffer_len;                       /**< length of the buffer in bytes */
   char *buffer;
-  MPI_Request request;
-  MPI_Status status;
+  pgfem3d::net::Request request;
+  pgfem3d::net::Status status;
 };
 
 /**
@@ -143,35 +142,38 @@ int pgf_FE2_job_compare_id(const void *a,
  * if needed. Returns job state on exit.
  */
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-             const PGFEM_mpi_comm *mpi_comm);
+			 const pgfem3d::MultiscaleComm *mscom,
+			 const pgfem3d::Microscale *micro);
 
 /**
  * Check the job state and compute if possible. Returns job state on
  * exit.
  */
 int pgf_FE2_job_compute(pgf_FE2_job *job,
-            MICROSCALE *micro,
-            const PGFEM_mpi_comm *mpi_comm,
-            const int mp_id);
+			pgfem3d::Microscale *micro,
+			const pgfem3d::MultiscaleComm *mscom,
+			const int mp_id);
 
 /**
  * Initiates computing a job on a worker process (non-master).
  */
 void pgf_FE2_job_compute_worker(const size_t job_id,
-                const size_t buffer_len,
-                MICROSCALE *micro,
-                const int mp_id);
+				const size_t buffer_len,
+				pgfem3d::Microscale *micro,
+				const int mp_id);
 
 /**
  * Check the job state and reply to the macroscale if
  * possible. Returns job state on exit.*/
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-              const PGFEM_mpi_comm *mpi_comm);
+		      const pgfem3d::MultiscaleComm *mscom,
+		      const pgfem3d::Microscale *micro);
 
 /**
  * Check the job state and complete if possible. Returns job state on
  * exit.
  */
-int pgf_FE2_job_complete(pgf_FE2_job *job);
+int pgf_FE2_job_complete(pgf_FE2_job *job,
+			 const pgfem3d::Microscale *micro);
 
 #endif

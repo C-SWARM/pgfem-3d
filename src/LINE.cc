@@ -21,9 +21,12 @@
 #include <cmath>
 #include <cstring>
 
+using namespace pgfem3d::net;
+
 namespace {
 const constexpr int periodic = 0;
 using pgfem3d::Solver;
+using pgfem3d::CommunicationStructure;
 }
 
 /// Line search algorithm for multiphysics mode
@@ -36,7 +39,7 @@ using pgfem3d::Solver;
 /// \param[in] load object for loading
 /// \param[in] com object array for communications
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
+/// \param[in] com object for communication
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] dts time step sizes from t(n-1) to t(n), and t(n) to t(n+1)
@@ -58,9 +61,8 @@ long LINE_S3_MP(double *residuals_loc_time,
                 FieldVariables *fv,
                 Solver *sol,
                 LoadingSteps *load,
-                CommunicationStructure *com,
+                const CommunicationStructure *com,
                 CRPL *crpl,
-                MPI_Comm mpi_comm,
                 const PGFem3D_opt *opts,
                 const Multiphysics& mp,
                 double *dts,
@@ -82,9 +84,7 @@ long LINE_S3_MP(double *residuals_loc_time,
   char str1[500];
   double dt = dts[DT_NP1];
 
-  int myrank,nproc;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
+  int myrank = com->rank;
 
   scale = LS1; LS1 /= scale;
 
@@ -93,7 +93,7 @@ long LINE_S3_MP(double *residuals_loc_time,
   /* Compute norm LS2 = 1./2. * ss (f,f,ndofd)/scale; */
   nor3 = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
   /* Gather residual nor from Domains */
-  MPI_Allreduce (&nor3,&LS2,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&nor3,&LS2,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   LS2 *= 1./(2.*scale);
 
   sol->gama = 1.0;
@@ -150,7 +150,7 @@ long LINE_S3_MP(double *residuals_loc_time,
                               fv->sig,tim,iter,dt,sol->nor_min,STEP,1,opts,mp_id);
 
       /* Gather INFO from all domains */
-      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+      com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_BOR,com->comm);
       if (GInfo == 1) {
         INFO = 1;
         return (1);
@@ -164,13 +164,13 @@ long LINE_S3_MP(double *residuals_loc_time,
     }
 
     INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-                              mat->hommat,load->sups[mp_id],dt,iter,mpi_comm,
+                              mat->hommat,load->sups[mp_id],dt,iter,com,
                               fv->eps,fv->sig,max_damage,dissipation,
                               opts->analysis_type,mp_id);
 
-    bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,mpi_comm);
+    bounding_element_communicate_damage(grid->n_be,grid->b_elems,grid->ne,fv->eps,com);
 
-    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+    com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_BOR,com->comm);
     if (GInfo == 1) {
       if(myrank == 0){
         PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
@@ -182,7 +182,7 @@ long LINE_S3_MP(double *residuals_loc_time,
 
     /* Residuals */
     INFO = 0;
-    *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,mpi_comm,
+    *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
                                                     opts,mp,mp_id,t,dts, 1);
 
     /* Compute Euclidian norm */
@@ -190,12 +190,12 @@ long LINE_S3_MP(double *residuals_loc_time,
       fv->f[i] = fv->RR[i] - fv->f_u[i];
 
     /* Local to global transformation */
-    LToG(fv->f,fv->BS_f,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    LToG(fv->f, fv->BS_f, fv->ndofd, com);
 
     nor3 = ss (fv->BS_f,fv->BS_f,com->DomDof[myrank]);
 
     /* Gather residual nor from Domains */
-    MPI_Allreduce(&nor3,nor,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(&nor3,nor,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     nor3 = *nor;
     *nor = *nor2 = sqrt(nor3);
     *nor /= nor1;
@@ -234,7 +234,6 @@ long LINE_S3_MP(double *residuals_loc_time,
 /// \param[in] load object for loading
 /// \param[in] com object array for communications
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] dts time step sizes from t(n-1) to t(n), and t(n) to t(n+1)
@@ -258,9 +257,8 @@ long ALINE_S3_MP(Grid *grid,
                  FieldVariables *fv,
                  Solver *sol,
                  LoadingSteps *load,
-                 CommunicationStructure *com,
+                 const CommunicationStructure *com,
                  CRPL *crpl,
-                 MPI_Comm mpi_comm,
                  const PGFem3D_opt *opts,
                  const Multiphysics& mp,
                  double *dts,
@@ -288,15 +286,13 @@ long ALINE_S3_MP(Grid *grid,
   const char *error[]={"inf","-inf","nan"};
   char str1[500];
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   scale = LS1;
   LS1 /= scale;
   slope = -2.*LS1;
   tmp = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-  MPI_Allreduce(&tmp,&LS2,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&tmp,&LS2,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   LS2 *= 1./(2.*scale);
 
   *gama = 1.0;
@@ -347,11 +343,11 @@ long ALINE_S3_MP(Grid *grid,
     /* dlam */
     if (arc->ARC == 0){
       *DLM = D_lam_ALM (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_R,arc->BS_DK,
-                        dlm,dAL,com->DomDof,mpi_comm);
+                        dlm,dAL,com->DomDof,com);
     }
     if (arc->ARC == 1)
       *DLM = D_lam_ALM4 (fv->ndofd,fv->BS_f,arc->BS_d_r,arc->BS_D_R,arc->BS_DK,dlm,
-                         dAL,com->DomDof,mpi_comm);
+                         dAL,com->DomDof,com);
 
     sprintf (str1,"%f",*DLM);
     for (N=0;N<3;N++){
@@ -371,7 +367,7 @@ long ALINE_S3_MP(Grid *grid,
     if (periodic == 1) macroscopic_load_AL (fv->eps[0].type,arc->lm  +dlm+*DLM,fv->eps);
 
     /* Global to local transformation */
-    GToL(arc->BS_D_R,arc->D_R,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    GToL(arc->BS_D_R, arc->D_R, fv->ndofd, com);
 
     /*************************/
     /* INTEGRATION ALGORITHM */
@@ -382,7 +378,7 @@ long ALINE_S3_MP(Grid *grid,
                             tim,iter,dt,sol->nor_min,STEP,0,opts,mp_id);
 
       /* Gather INFO from all domains */
-      MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+      com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_BOR,com->comm);
       if (GInfo == 1) {
         INFO = 1;
         return (1);
@@ -396,11 +392,11 @@ long ALINE_S3_MP(Grid *grid,
     }
 
     INFO = vol_damage_int_alg(grid->ne,fv->ndofn,fv->f,fv->u_np1,grid->element,grid->node,
-                              mat->hommat,load->sups[mp_id] ,dt,iter,mpi_comm,
+                              mat->hommat,load->sups[mp_id] ,dt,iter,com,
                               fv->eps,fv->sig ,max_damage,dissipation,
                               opts->analysis_type,mp_id);
 
-    MPI_Allreduce (&INFO,&GInfo,1,MPI_LONG,MPI_BOR,mpi_comm);
+    com->net->allreduce(&INFO,&GInfo,1,NET_DT_LONG,NET_OP_BOR,com->comm);
     if (GInfo == 1) {
       if(myrank == 0){
         PGFEM_printf("Inverted element detected (vol_damage_int_alg).\n"
@@ -411,7 +407,7 @@ long ALINE_S3_MP(Grid *grid,
     }
 
     /* Residuals */
-    fd_residuals_MP(grid,mat,fv,sol,load,crpl,mpi_comm,opts,mp,mp_id,t,dts,1);
+    fd_residuals_MP(grid,mat,fv,sol,load,crpl,com,opts,mp,mp_id,t,dts,1);
 
 
     /* Compute Euclidean norm */
@@ -419,10 +415,10 @@ long ALINE_S3_MP(Grid *grid,
       fv->f[i] = (arc->lm   + dlm + *DLM)*(fv->R[i]) - fv->f_u[i];
 
     /* L -> G : f */
-    LToG(fv->f,fv->BS_f,myrank,nproc,fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+    LToG(fv->f, fv->BS_f, fv->ndofd, com);
 
     *nor = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
-    MPI_Allreduce(nor,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+    com->net->allreduce(nor,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
     *nor = *nor2 = sqrt (tmp);
     *nor /= nor1;

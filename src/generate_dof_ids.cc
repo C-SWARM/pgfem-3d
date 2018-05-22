@@ -2,6 +2,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "generate_dof_ids.h"
 #include "GRedist_node.h"
 #include "PGFEM_io.h"
@@ -11,6 +12,9 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 static constexpr int ndn = 3;
 
@@ -23,7 +27,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           Node *nodes,
                                           Element *elems,
                                           BoundingElement *b_elems,
-                                          MPI_Comm mpi_comm,
+                                          const CommunicationStructure *com,
                                           const int mp_id);
 
 static int generate_local_dof_ids_on_coel(const int nnode,
@@ -33,7 +37,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
                                           int *visited_node_dof,
                                           Node *nodes,
                                           COEL *coel,
-                                          MPI_Comm mpi_comm,
+                                          const CommunicationStructure *com,
                                           const int mp_id);
 
 static int generate_global_dof_ids_on_elem(const int ndofn,
@@ -43,7 +47,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            Node *nodes,
                                            Element *elems,
                                            BoundingElement *b_elems,
-                                           MPI_Comm mpi_comm,
+                                           const CommunicationStructure *com,
                                            const int mp_id);
 
 static int generate_global_dof_ids_on_coel(const int ndofn,
@@ -52,14 +56,14 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
                                            int *visited_node_dof,
                                            Node *nodes,
                                            COEL *coel,
-                                           MPI_Comm mpi_comm,
+                                           const CommunicationStructure *com,
                                            const int mp_id);
 
 static void distribute_global_dof_ids_on_bounding_elements
 (const int n_belem,
  const int ndof_be,
  BoundingElement *b_elems,
- MPI_Comm mpi_comm);
+ const CommunicationStructure *com);
 
 /*=== API FUNCTIONS ===*/
 int generate_local_dof_ids(const int nelem,
@@ -70,11 +74,10 @@ int generate_local_dof_ids(const int nelem,
                            Element *elems,
                            COEL *coel,
                            BoundingElement *b_elems,
-                           MPI_Comm mpi_comm,
+                           const CommunicationStructure *com,
                            const int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   /* set periodicity */
   for(int i=0; i<nnode; i++){
@@ -101,7 +104,7 @@ int generate_local_dof_ids(const int nelem,
     ndof += generate_local_dof_ids_on_elem(nnode,ndofn,ndof,
                                            i,visited_node_dof,
                                            nodes,elems,b_elems,
-                                           mpi_comm,mp_id);
+                                           com,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -111,7 +114,7 @@ int generate_local_dof_ids(const int nelem,
   for(int i=0; i<ncoel; i++){
     ndof += generate_local_dof_ids_on_coel(nnode,ndofn,ndof,
                                            i,visited_node_dof,
-                                           nodes,coel,mpi_comm,mp_id);
+                                           nodes,coel,com,mp_id);
   }
 
   /* some periodic nodes may not actually be a part of an element,
@@ -175,7 +178,7 @@ int generate_global_dof_ids(const int nelem,
                             Element *elems,
                             COEL *coel,
                             BoundingElement *b_elems,
-                            MPI_Comm mpi_comm,
+                            const CommunicationStructure *com,
                             const int mp_id)
 {
   int *visited_node_dof = PGFEM_calloc(int, nnode*ndofn);
@@ -184,7 +187,7 @@ int generate_global_dof_ids(const int nelem,
   for(int i=0; i<nelem; i++){
     ndof += generate_global_dof_ids_on_elem(ndofn,ndof,i,visited_node_dof,
                                             nodes,elems,b_elems,
-                                            mpi_comm,mp_id);
+                                            com,mp_id);
   }
 
   /* Nodes on cohesive elements may not be counted if the cohesive
@@ -193,13 +196,12 @@ int generate_global_dof_ids(const int nelem,
      the element. See similar note in Psparse_ApAi*/
   for(int i=0; i<ncoel; i++){
     ndof += generate_global_dof_ids_on_coel(ndofn,ndof,i,visited_node_dof,
-                                            nodes,coel,mpi_comm,mp_id);
+                                            nodes,coel,com,mp_id);
   }
 
   /* sanity check */
 #ifndef NDEBUG
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
   for(int i=0; i<ndofn*nnode; i++){
     if(!visited_node_dof[i]){
       PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
@@ -226,13 +228,10 @@ void renumber_global_dof_ids(const int nelem,
                              Element *elems,
                              COEL *coel,
                              BoundingElement *b_elems,
-                             MPI_Comm mpi_comm,
+                             const CommunicationStructure *com,
                              const int mp_id)
 {
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
+  int myrank = com->rank;
 
   /* compute how much to add to each Gdof id */
   long dof_id_adder = 0;
@@ -283,25 +282,22 @@ int distribute_global_dof_ids(const int nelem,
                               Element *elems,
                               COEL *coel,
                               BoundingElement *b_elems,
-                              const Comm_hints *hints,
-                              MPI_Comm mpi_comm,
+                              const CommunicationStructure *com,
                               const int mp_id)
 {
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
+  int myrank = com->rank;
+  int nproc = com->nproc;
 
   /* Distrubute the global dofs on the nodes and return the number of
      communication boundary nodes */
   int n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
-                                 ndofn, nodes, hints, mpi_comm,mp_id);
+                                 ndofn, nodes, com, mp_id);
 
   /* Under current formulation, element dofs are always owned by the
      current domain and no communication is required. */
 
   distribute_global_dof_ids_on_bounding_elements(n_belem,ndof_be,
-                                                 b_elems,mpi_comm);
+                                                 b_elems,com);
 
   return n_bnd_nodes;
 } /* distribute_global_dof_ids */
@@ -315,11 +311,10 @@ static int generate_local_dof_ids_on_elem(const int nnode,
                                           Node *nodes,
                                           Element *elems,
                                           BoundingElement *b_elems,
-                                          MPI_Comm mpi_comm,
+                                          const CommunicationStructure *com,
                                           const int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   Element *ptr_elem = &elems[elem_id];
   const long *elem_nod = ptr_elem->nod;
@@ -423,12 +418,9 @@ static int generate_local_dof_ids_on_coel(const int nnode,
                                           int *visited_node_dof,
                                           Node *nodes,
                                           COEL *coel,
-                                          MPI_Comm mpi_comm,
+                                          const CommunicationStructure *com,
                                           const int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-
   COEL *ptr_coel = &coel[coel_id];
   const long *elem_nod = ptr_coel->nod;
   const int nne = ptr_coel->toe;
@@ -482,11 +474,10 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
                                            Node *nodes,
                                            Element *elems,
                                            BoundingElement *b_elems,
-                                           MPI_Comm mpi_comm,
+                                           const CommunicationStructure *com,
                                            const int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   int id_adder = 0;
   Element *ptr_elem = &elems[elem_id];
@@ -589,11 +580,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
                                            int *visited_node_dof,
                                            Node *nodes,
                                            COEL *coel,
-                                           MPI_Comm mpi_comm,
+                                           const CommunicationStructure *com,
                                            const int mp_id)
 {
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   int id_adder = 0;
   COEL *ptr_coel = &coel[coel_id];
@@ -645,12 +635,10 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
 static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
                                                            const int ndof_be,
                                                            BoundingElement *b_elems,
-                                                           MPI_Comm mpi_comm)
+                                                           const CommunicationStructure *com)
 {
-  int myrank = 0;
-  int nproc = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
-  MPI_Comm_size(mpi_comm,&nproc);
+  int myrank = com->rank;
+  int nproc = com->nproc;
 
   /* get number of global elems/dofs */
   int n_Gbelem_on_dom = 0;
@@ -694,7 +682,7 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   }
 
   /* compute number of global dofs from all domains */
-  MPI_Allgather(&n_Gbelem_on_dom,1,MPI_INT,NG_bel,1,MPI_INT,mpi_comm);
+  com->net->allgather(&n_Gbelem_on_dom,1,NET_DT_INT,NG_bel,1,NET_DT_INT,com->comm);
   int n_Gbelem_on_all_dom = 0;
   int *allgatherv_disp = PGFEM_calloc(int, nproc);
   int *allgatherv_count = PGFEM_calloc(int, nproc);
@@ -707,8 +695,8 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
   long *Gdof_on_all_dom = NULL;
   if(n_Gdof_on_all_dom > 0){
     PGFEM_calloc(long, n_Gdof_on_all_dom);
-    MPI_Allgatherv(Gdof_on_dom,n_Gdof_on_dom,MPI_LONG,Gdof_on_all_dom,
-                   allgatherv_count,allgatherv_disp,MPI_LONG,mpi_comm);
+    com->net->allgatherv(Gdof_on_dom,n_Gdof_on_dom,NET_DT_LONG,Gdof_on_all_dom,
+			 allgatherv_count,allgatherv_disp,NET_DT_LONG,com->comm);
   }
 
   /* Now I have the global dofs from all domains. NOTE:

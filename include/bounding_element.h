@@ -2,7 +2,6 @@
 #define PGFEM3D_BOUNDING_ELEMENT_H
 
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 
 /** Define the bounding element type */
 struct BoundingElement {
@@ -33,7 +32,7 @@ int read_bounding_elements(FILE *ifile,
                            const int ndof_be,
                            int *nbe,
                            BoundingElement **b_elems,
-                           MPI_Comm mpi_comm);
+                           int myrank);
 
 /** read the bounding element information from a file with provided
     filename */
@@ -41,7 +40,7 @@ int read_bounding_elements_fname(char *filename,
                                  const int ndof_be,
                                  int *nbe,
                                  BoundingElement **b_elems,
-                                 MPI_Comm mpi_comm);
+                                 int myrank);
 
 /** Write the bounding element information to a file. */
 int write_bounding_elements(FILE *ofile,

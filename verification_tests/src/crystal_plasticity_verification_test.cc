@@ -22,6 +22,8 @@
 #define DIM_3       3
 
 using namespace ttl;
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 namespace {
   const constexpr Index<'i'> i;
@@ -159,18 +161,10 @@ void test_crystal_plasticity_single_crystal(void)
 
 int main(int argc,char *argv[])
 {
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  int myrank = 0;
-  int nproc = 0;
-  /*=== END INITIALIZATION === */
-  MPI_Init (&argc,&argv);
-  MPI_Comm_rank (mpi_comm,&myrank);
-  MPI_Comm_size (mpi_comm,&nproc);
+  Boot *boot = new Boot();
+  int myrank = boot->get_rank();
+  int nproc = boot->get_nproc();
 
-  char processor_name[MPI_MAX_PROCESSOR_NAME];
-  int namelen = 0;
-  MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);
   PGFem3D_opt options;
   if (argc <= 2){
     if(myrank == 0){
@@ -178,9 +172,24 @@ int main(int argc,char *argv[])
     }
     exit(0);
   }
-
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
+  
+  // Create the desired network
+  Network *net = Network::Create(options);
+  
+  CommunicationStructure *com = new CommunicationStructure();
+  com->rank = myrank;
+  com->nproc = nproc;
+  com->boot = boot;
+  com->net = net;
+  com->comm = NET_COMM_WORLD;
+
+  char processor_name[NET_MAX_PROCESSOR_NAME];
+  int namelen = 0;
+  boot->get_processor_name(processor_name, &namelen);
+  
+  PGFEM_initialize_io(NULL,NULL);
 
   long nn = 0;
   long Gnn = 0;
@@ -209,10 +218,11 @@ int main(int argc,char *argv[])
   int ndim = 3;
   int fv_ndofn = ndim;
 
-  in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
+  in_err = read_input_file(&options,com,&nn,&Gnn,&ndofn,
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
-                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,NULL);
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,
+			   physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
                    myrank);
@@ -260,7 +270,7 @@ int main(int argc,char *argv[])
     read_model_parameters_list(nhommat, hommat, cm_in);
     free(cm_filename);
     fclose(cm_in);
-    init_all_constitutive_model(eps,ne,elem,nhommat,hommat);
+    init_all_constitutive_model(eps,ne,elem,nhommat,hommat,myrank);
   }
 
 
@@ -355,10 +365,10 @@ int main(int argc,char *argv[])
     options.restart = istep;
     read_restart(&grid,&fv,&ts,&load,&options,mp,tnm1,myrank);
 
-    post_processing_compute_stress(PK2.data,elem,hommat,ne,npres,node,eps,u1,NULL,ndofn,mpi_comm, &options);
-    post_processing_deformation_gradient(Feff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
-    post_processing_deformation_gradient_elastic_part(eFeff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
-    post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,u1,ndofn,mpi_comm, &options);
+    post_processing_compute_stress(PK2.data,elem,hommat,ne,npres,node,eps,u1,NULL,ndofn,com,&options);
+    post_processing_deformation_gradient(Feff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,com,&options);
+    post_processing_deformation_gradient_elastic_part(eFeff.data,elem,hommat,ne,npres,node,eps,u1,ndofn,com,&options);
+    post_processing_plastic_hardness(&G_gn,elem,hommat,ne,npres,node,eps,u1,ndofn,com,&options);
 
     if(myrank==0)
     {
@@ -420,7 +430,11 @@ int main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize();
+  net->finalize();
+
+  delete com;
+  delete net;
+  delete boot;
 
   return(0);
 }

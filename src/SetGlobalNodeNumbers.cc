@@ -12,11 +12,13 @@
 #include "PGFEM_io.h"
 #include "allocation.h"
 
-void SetGlobalNodeNumbers(int nNodesDom, Node *node, MPI_Comm comm)
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
+void SetGlobalNodeNumbers(int nNodesDom, Node *node, CommunicationStructure *com)
 {
-  int myrank,nproc;
-  MPI_Comm_size(comm,&nproc);
-  MPI_Comm_rank(comm,&myrank);
+  int myrank = com->rank;
+  int nproc = com->nproc;
 
   /* iterators */
   int i,j,k;
@@ -41,9 +43,9 @@ void SetGlobalNodeNumbers(int nNodesDom, Node *node, MPI_Comm comm)
   int *nodeMappingPtr = PGFEM_calloc (int, nproc+1);
   int *nodeMappingCnt = PGFEM_calloc (int, nproc);
 
-  MPI_Allgather(&nOwn,1,MPI_INT,&distNode[1],1,MPI_INT,comm);
-  MPI_Allgather(&nGlobalOwn,1,MPI_INT,&nodeMappingPtr[1],1,MPI_INT,comm);
-
+  com->net->allgather(&nOwn,1,NET_DT_INT,&distNode[1],1,NET_DT_INT,com->comm);
+  com->net->allgather(&nGlobalOwn,1,NET_DT_INT,&nodeMappingPtr[1],1,NET_DT_INT,com->comm);
+  
   for(i=1; i<=nproc; i++){
     distNode[i] += distNode[i-1];
     nodeMappingCnt[i-1] = nodeMappingPtr[i];
@@ -91,11 +93,11 @@ void SetGlobalNodeNumbers(int nNodesDom, Node *node, MPI_Comm comm)
     j++;
   }
 
-  MPI_Allgatherv(&boundaryNodeMapping[nodeMappingPtr[myrank]],
-                 nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
-                 MPI_INT,boundaryNodeMapping,nodeMappingCnt,
-                 nodeMappingPtr,MPI_INT,comm);
-
+  com->net->allgatherv(&boundaryNodeMapping[nodeMappingPtr[myrank]],
+		       nodeMappingPtr[myrank+1]-nodeMappingPtr[myrank],
+		       NET_DT_INT,boundaryNodeMapping,nodeMappingCnt,
+		       nodeMappingPtr,NET_DT_INT,com->comm);
+  
   /* Loop through the boundary nodes and update global numbers */
   int domain, oldGnn, newGnn{};
   for(i=0; i<nGlobalNeed; i++){

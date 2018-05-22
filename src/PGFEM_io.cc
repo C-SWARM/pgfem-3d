@@ -1,11 +1,13 @@
+#include "pgfem3d/Communication.hpp"
 #include "PGFEM_io.h"
 #include <string.h>
 #include <stdarg.h>
-#include "PGFEM_mpi.h"
 
 #ifndef ALLOCATION_H
 #include "allocation.h"
 #endif
+
+using namespace pgfem3d;
 
 /* FILE pointers for macro and micro output */
 FILE *PGFEM_macro_stdout = NULL;

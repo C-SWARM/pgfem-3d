@@ -10,13 +10,16 @@
 #include <mkl_cblas.h>
 #include <cstring>
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 double* computeMacroS(Element *elem,
                       long ne,
                       Node *node,
                       long nn,
                       SIG *sig,
                       double oVolume,
-                      MPI_Comm mpi_comm)
+                      CommunicationStructure *com)
 {
   long *nod;
   double  *S, *gk, *ge, *gz, *w;
@@ -110,7 +113,7 @@ double* computeMacroS(Element *elem,
 
   GS[0] = GS[1] = GS[2] = GS[3] = GS[4] = GS[5] = 0.0;
 
-  MPI_Allreduce(S,GS,6,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(S,GS,6,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   free(S);
   free(gk);
@@ -128,7 +131,7 @@ double* computeMacroP(Element *elem,
                       SIG *sig,
                       EPS *eps,
                       double oVolume,
-                      MPI_Comm mpi_comm)
+                      CommunicationStructure *com)
 {
   long *nod;
   double  *S, *P, *gk, *ge, *gz, *w;
@@ -219,7 +222,7 @@ double* computeMacroP(Element *elem,
   double *GS;
   GS = aloc1(9);
 
-  MPI_Allreduce(P,GS,9,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(P,GS,9,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
 
   free(S);
   free(P);

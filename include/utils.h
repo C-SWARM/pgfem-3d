@@ -4,7 +4,7 @@
 #ifndef PGFEM3D_UTILS_H
 #define PGFEM3D_UTILS_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "bounding_element.h"
 #include "data_structure.h"
 #include "element.h"
@@ -12,7 +12,6 @@
 #include "material.h"
 #include "matgeom.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include <cstdio>
 
@@ -34,6 +33,13 @@ static inline void CHECK_SCANF(FILE *stream, Args... args) {
 template <class T, int N>
 constexpr int size(T (&)[N]) {
   return N;
+}
+
+/// Simple clock macro to get the current time as a double
+static inline double CLOCK() {
+  timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec + ts.tv_nsec/1e9;
 }
 
 /**
@@ -335,13 +341,8 @@ long* times_print (FILE *in1,
  */
 void LToG (const double *f,
            double *Gf,
-           const int myrank,
-           const int nproc,
-           const long ndofd,
-           const long *DomDof,
-           const long GDof,
-           const COMMUN comm,
-           const MPI_Comm mpi_comm);
+	   const long ndofd,
+	   const pgfem3d::CommunicationStructure *com);
 
 /**
  * Get the local part (r) of the global data (Gr).
@@ -353,19 +354,15 @@ void LToG (const double *f,
  */
 void GToL (const double *Gr,
            double *r,
-           const int myrank,
-           const int nproc,
-           const long ndofd,
-           const long *DomDof,
-           const long GDof,
-           const COMMUN comm,
-           const MPI_Comm mpi_comm);
+	   const long ndofd,
+	   const pgfem3d::CommunicationStructure *com);
 
-MPI_Comm* CreateGraph (int nproc,
-                       int myrank,
-                       long nn,
-                       Node *node,
-                       MPI_Comm mpi_comm);
+pgfem3d::net::PGFem3D_Comm*
+CreateGraph (int nproc,
+	     int myrank,
+	     long nn,
+	     Node *node,
+	     pgfem3d::net::PGFem3D_Comm comm);
 
 /** Pause for t seconds */
 void pause_time(int t);

@@ -11,8 +11,8 @@
 #include "PLoc_Sparse.h"
 #include "utils.h"
 
-using pgfem3d::Solver;
-
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /// Fill the B matrix, size of B have to be created before call this function.
 ///
@@ -186,7 +186,7 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
                 com->GDof,
                 myrank,
                 com->nproc,
-                com->comm,
+                com->spc,
                 interior,
                 sol->system,
                 opts->analysis_type);
@@ -246,7 +246,6 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
 /// \param[in, out]  *sol     object for solution scheme
 /// \param[in]       *load    object for loading
 /// \param[in]       *com     communication object
-/// \param[in]       mpi_comm MPI_COMM_WORLD
 /// \param[in]       *opts    structure PGFem3D option
 /// \param[in]       *mp      mutiphysics object
 /// \param[in]       mp_id    mutiphysics id
@@ -260,7 +259,6 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
                               Solver *sol,
                               const LoadingSteps *load,
                               const CommunicationStructure *com,
-                              const MPI_Comm mpi_comm,
                               const PGFem3D_opt *opts,
                               const Multiphysics& mp,
                               const int mp_id,
@@ -290,12 +288,8 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
   D(4,4) = D(5,5) = D(6,6) = mu;
 
   double **Lk,**recieve;
-  MPI_Status *sta_s,*sta_r;
-  MPI_Request *req_s,*req_r;
-
-  err += init_and_post_stiffmat_comm(&Lk,&recieve,&req_r,&sta_r,
-                                     mpi_comm,com->comm);
-
+  com->spc->post_stiffmat(&Lk,&recieve);
+  
   Matrix<int> Ddof(com->nproc,1);
 
   Ddof.m_pdata[0] = com->DomDof[0];
@@ -327,11 +321,11 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
     if(err != 0)
       break;
   }
-  err += send_stiffmat_comm(&sta_s,&req_s,Lk,mpi_comm,com->comm);
-
+  com->spc->send_stiffmat();
+  
   int skip = 0;
   int idx  = 0;
-
+  
   for(int eid=0; eid<grid->ne; eid++)
   {
     int is_it_in = is_element_interior(eid,&idx,&skip,com->nbndel,com->bndel,myrank);
@@ -367,26 +361,12 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,recieve);
-  err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
-  sol->system->assemble();
-
+  com->spc->assemble_nonlocal_stiffmat(sol->system);
+  com->spc->finalize_stiffmat();
+  sol->system->assemble(); 
+  
   for(int ia=0; ia<fv->ndofd; ia++)
     f[ia] -= f_disp.m_pdata[ia];
-
-  // stiffnes build is completed
-  // deallocate memory
-  for(int ia=0; ia<com->nproc; ia++)
-  {
-    free(recieve[ia]);
-    free(Lk[ia]);
-  }
-  free(recieve);
-  free(Lk);
-  free(sta_s);
-  free(sta_r);
-  free(req_s);
-  free(req_r);
 
   return err;
 }
@@ -399,18 +379,14 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
 /// \param[in]  *fv      object for field variables
 /// \param[in]  *load    object for loading
 /// \param[in]  *com     communication object
-/// \param[in]  mpi_comm MPI_COMM_WORLD
-/// \param[in]  myrank   current process rank
 /// \param[in]  mp_id    mutiphysics id
 void compute_maximum_BC_values(double *bcv_in,
                                const Grid *grid,
                                const MaterialProperty *mat,
                                const FieldVariables *fv,
                                const LoadingSteps *load,
-                               const CommunicationStructure *com,
-                               const MPI_Comm mpi_comm,
-                               const int mp_id,
-                               const int myrank)
+			       const CommunicationStructure *com,
+                               const int mp_id)
 {
   SUPP sup = load->sups[mp_id];
   int npd = sup->npd;
@@ -473,9 +449,9 @@ void compute_maximum_BC_values(double *bcv_in,
     }
   }
 
-  MPI_Allreduce(max_disp.m_pdata,Max_disp.m_pdata,npd,MPI_DOUBLE,MPI_MAX,mpi_comm);
-  MPI_Allreduce(max_disp.m_pdata,Min_disp.m_pdata,npd,MPI_DOUBLE,MPI_MIN,mpi_comm);
-
+  com->net->allreduce(max_disp.m_pdata,Max_disp.m_pdata,npd,NET_DT_DOUBLE,NET_OP_MAX,com->comm);
+  com->net->allreduce(max_disp.m_pdata,Min_disp.m_pdata,npd,NET_DT_DOUBLE,NET_OP_MIN,com->comm);
+    
   for(int ib=1; ib<=npd; ib++)
   {
     bcv(ib) = Max_disp(ib);
@@ -494,11 +470,10 @@ void compute_maximum_BC_values(double *bcv_in,
 /// \param[in, out]  *sol     object for solution scheme
 /// \param[in, out]  *load    object for loading
 /// \param[in]       *com     communication object
-/// \param[in]       mpi_comm MPI_COMM_WORLD
 /// \param[in]       *opts    structure PGFem3D option
 /// \param[in]       *mp      mutiphysics object
 /// \param[in]       mp_id    mutiphysics id
-/// \param[in]       myrank   current process rank
+/// \param[in]       *pF      given plastic deformation gradient
 /// \param[out]      *bcv     prescribed boundary values due to initial plastic deformation
 void update_geometry_for_inital_pF(Grid *grid,
                                    const FieldVariables *fv,
@@ -506,13 +481,12 @@ void update_geometry_for_inital_pF(Grid *grid,
                                    Solver *sol,
                                    LoadingSteps *load,
                                    const CommunicationStructure *com,
-                                   const MPI_Comm mpi_comm,
                                    const PGFem3D_opt *opts,
                                    const Multiphysics& mp,
                                    const int mp_id,
-                                   const int myrank,
                                    const double *bcv)
 {
+  int myrank = com->rank;
   int npd = load->sups[mp_id]->npd;
   for(int ia=0; ia<npd; ia++)
     (load->sups[mp_id])->defl[ia] = bcv[ia];
@@ -525,20 +499,17 @@ void update_geometry_for_inital_pF(Grid *grid,
   sol->system->zero();
 
   compute_LHS_and_RHS_of_pK(grid,fv,mat,sol,load,com,
-                            mpi_comm, opts, mp, mp_id, myrank, lF.m_pdata);
+			    opts, mp, mp_id, myrank, lF.m_pdata);
 
-  LToG(lF.m_pdata,GF.m_pdata,myrank,com->nproc,
-       fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  LToG(lF.m_pdata,GF.m_pdata,fv->ndofd,com);
 
   double hypre_time = sol->system->solveSystem(opts, GF.m_pdata, U.m_pdata, 0, 0,
                                                com->DomDof, &s_info);
-
+  
   if(myrank == 0)
     printf("time = %e: solver: nor = %8.8e || iter = %d\n",hypre_time,s_info.res_norm,s_info.n_iter);
 
-
-  GToL(U.m_pdata,fv->u_np1,myrank,com->nproc,
-       fv->ndofd,com->DomDof,com->GDof,com->comm,mpi_comm);
+  GToL(U.m_pdata,fv->u_np1,fv->ndofd,com);
 
   sol->system->zero();
 
@@ -650,7 +621,6 @@ void update_element_deformation_gradient(const Grid *grid,
 /// \param[in]       *sol     object for solution scheme
 /// \param[in, out]  *load    object for loading
 /// \param[in]       *com     communication object
-/// \param[in]       mpi_comm MPI_COMM_WORLD
 /// \param[in]       *opts    structure PGFem3D option
 /// \param[in]       *mp      mutiphysics object
 /// \param[in]       mp_id    mutiphysics id
@@ -663,14 +633,12 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
                                              pgfem3d::Solver *sol,
                                              LoadingSteps *load,
                                              const CommunicationStructure *com,
-                                             const MPI_Comm mpi_comm,
                                              const PGFem3D_opt *opts,
                                              const Multiphysics& mp,
-                                             const int mp_id,
-                                             const int myrank)
+                                             const int mp_id)
 {
   int err = 0;
-  
+  int myrank = com->rank;
   int G_do_intialization = 0;
   int L_do_intialization = 0;
   
@@ -681,15 +649,16 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
     }
   }
   
-  MPI_Allreduce(&L_do_intialization,&G_do_intialization,1,MPI_INT,MPI_SUM,mpi_comm);
+  com->net->allreduce(&L_do_intialization, &G_do_intialization, 1, NET_DT_INT,
+		      NET_OP_SUM,com->comm);
   if(G_do_intialization==0)
     return 0;
 
   int npd = load->sups[mp_id]->npd;
   Matrix<double> bcv(npd, 1, 0.0);
-  compute_maximum_BC_values(bcv.m_pdata, grid, mat, fv, load, com, mpi_comm, mp_id, myrank);
+  compute_maximum_BC_values(bcv.m_pdata, grid, mat, fv, load, com, mp_id);
 
-  // print setting
+  // print setting 
   if(myrank==0)
   {
     printf("maximum displacement to be set for updating initial geometry: ");
@@ -714,8 +683,8 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
   // Going back to pFI configuration to have initial pF when BC is applied.
   // So, use pFI
   update_geometry_for_inital_pF(grid, fv, mat, sol, load, com,
-                                mpi_comm, opts, mp, mp_id, myrank, bcv.m_pdata);
-
+                                opts, mp, mp_id, bcv.m_pdata);
+  
   update_element_deformation_gradient(grid, fv, opts);
 
   return err;

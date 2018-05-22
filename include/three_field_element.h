@@ -105,16 +105,14 @@ int update_3f_NR(Grid *grid,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt    time step size
 /// \param[in] t     time
-/// \param[in] mpi_comm MPI_COMM_WORLD
 void update_3f_output_variables(Grid *grid,
                                 MaterialProperty *mat,
                                 FieldVariables *fv,
                                 LoadingSteps *load,
                                 const int mp_id,
                                 const double dt,
-                                const double t,
-                                MPI_Comm mpi_comm);
-                                
+                                const double t);
+  
 /// compute and set initial conditions for three field mixed method
 ///
 /// \param[in] grid an object containing all mesh info
@@ -125,7 +123,4 @@ void compute_3f_initial_conditions(Grid *grid,
                                    MaterialProperty *mat,
                                    FieldVariables *fv);
                                    
-void compute_stress(double *GS, Element *elem, HOMMAT *hommat, long ne, int npres, Node *node, EPS *eps,
-                    double* r, int ndofn, MPI_Comm mpi_comm,int analysis);
-
 #endif // #define PGFEM3D_THREE_FIELD_ELEMENT_H

@@ -2,7 +2,7 @@
 # include "config.h"
 #endif
 
-#include "PGFEM_mpi.h"
+#include "pgfem3d/Communication.hpp"
 #include "allocation.h"
 #include "in.h"
 #include "utils.h"
@@ -12,6 +12,8 @@
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
 #endif
+
+using namespace pgfem3d;
 
 /// read Dirichlet boundary conditions on nodes
 ///

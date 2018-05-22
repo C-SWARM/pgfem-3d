@@ -9,26 +9,20 @@
 #include "post_processing.h"
 #include "read_input_file.h"
 #include "utils.h"
+#include "pgfem3d/Communication.hpp"
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
 
 int main(int argc,char *argv[])
-{
-  MPI_Comm mpi_comm = MPI_COMM_WORLD;
-  int myrank = 0;
-  int nproc = 0;
-
-  /*=== END INITIALIZATION === */
-  MPI_Init (&argc,&argv);
-  MPI_Comm_rank (mpi_comm,&myrank);
-  MPI_Comm_size (mpi_comm,&nproc);
-
-  char processor_name[MPI_MAX_PROCESSOR_NAME];
-  int namelen = 0;
-  MPI_Get_processor_name (processor_name,&namelen);
-  PGFEM_initialize_io(NULL,NULL);
+{  
+  Boot *boot = new Boot();
+  int myrank = boot->get_rank();
+  int nproc = boot->get_nproc();
 
   PGFem3D_opt options;
   if (argc <= 2){
@@ -39,6 +33,21 @@ int main(int argc,char *argv[])
   }
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
+  
+  // Create the desired network
+  Network *net = Network::Create(options);
+  
+  CommunicationStructure *com = new CommunicationStructure();
+  com->rank = myrank;
+  com->nproc = nproc;
+  com->net = net;
+  com->comm = NET_COMM_WORLD;
+
+  char processor_name[NET_MAX_PROCESSOR_NAME];
+  int namelen = 0;
+  boot->get_processor_name(processor_name, &namelen);
+  
+  PGFEM_initialize_io(NULL,NULL);
 
   long nn = 0;
   long Gnn = 0;
@@ -70,10 +79,11 @@ int main(int argc,char *argv[])
   
   char physicsname[1024] = "Mechanical";
   char *p = physicsname;
-  in_err = read_input_file(&options,mpi_comm,&nn,&Gnn,&ndofn,
+  in_err = read_input_file(&options,com,&nn,&Gnn,&ndofn,
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
-                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,physicsno,&ndim,&p);
+                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,
+			   physicsno,&ndim,&p);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
                    myrank);
@@ -164,7 +174,7 @@ int main(int argc,char *argv[])
 
   /////////////////////////////////////////////////////////////////////////////////////
   // compute errors
-  compute_L2_error(GL2_err, elem, ne, node, u, Ph, Vh, times[tim+1], mpi_comm, &options, hommat);
+  compute_L2_error(GL2_err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat);
   if(myrank==0)
   {
     FILE *f = fopen("error.txt", "w");
@@ -189,6 +199,11 @@ int main(int argc,char *argv[])
 
   /*=== FINALIZE AND EXIT ===*/
   PGFEM_finalize_io();
-  MPI_Finalize();
+  net->finalize();
+
+  delete com;
+  delete net;
+  delete boot;
+  
   return(0);
 }

@@ -4,8 +4,8 @@
 #define PLOC_SPARSE_H
 
 #include "data_structure.h"
-#include "pgfem_comm.h"
 #include "pgfem3d/Solver.hpp"
+#include "pgfem3d/Communication.hpp"
 
 /**
  * Sparse nonsymmetric row storage format.
@@ -27,9 +27,9 @@ void PLoc_Sparse (double **Lk,
                   long ndofe,
                   int *Ddof, /**< UNUSED */
                   long GDof, /**< UNUSED */
-                  int myrank,
-                  int nproc,
-                  COMMUN comm,
+		  int myrank,
+		  int nproc,
+                  pgfem3d::SparseComm *comm,
                   int interior,
                   pgfem3d::solvers::SparseSystem *system,
                   const int analysis);
@@ -45,9 +45,9 @@ void PLoc_Sparse_rec (double **Lk,
                       long ncol,
                       int *Ddof,
                       long GDof,
-                      int myrank,
-                      int nproc,
-                      COMMUN comm,
+		      int myrank,
+		      int nproc,
+		      pgfem3d::SparseComm *comm,
                       int interior,
                       pgfem3d::solvers::SparseSystem *system);
 

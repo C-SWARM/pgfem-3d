@@ -6,6 +6,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "MINI_element.h"
 #include "PGFEM_io.h"
 #include "allocation.h"
@@ -25,6 +26,9 @@
 #include <cassert>
 #include <cstring>
 #include <cmath>
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /* need to update to new_potentials for consistencey. requires change to
    1D pointers */
@@ -1451,7 +1455,7 @@ void MINI_increment(Element *elem,
                     SIG *sig,
                     const HOMMAT *hommat,
                     const double *sol,
-                    const MPI_Comm mpi_comm,
+                    const CommunicationStructure *com,
                     const int mp_id)
 {
   const int ndn = 3;
@@ -1518,12 +1522,11 @@ void MINI_increment(Element *elem,
     }
   }/* end ii < nn */
 
-  int myrank = 0;
+  int myrank = com->rank;
   double PL, GPL;
-  MPI_Comm_rank(mpi_comm,&myrank);
   PL = T_VOLUME (nelem,ndofn-1,elem,node);
   /* Gather Volume from all domains */
-  MPI_Allreduce(&PL,&GPL,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&PL,&GPL,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   if (myrank == 0) {
     PGFEM_printf ("AFTER DEF - VOLUME = %12.12f\n",GPL);
   }
@@ -1542,15 +1545,12 @@ void MINI_check_resid(const int ndofn,
                       const long *DomDof,
                       const int ndofd,
                       const int GDof,
-                      const COMMUN comm,
-                      const MPI_Comm mpi_comm,
+                      const CommunicationStructure *com,
                       const int mp_id)
 {
 
   /* compute the norm of the residauls for each variable */
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
   const int ndn = 3;
 
   int count; /* ALWAYS reset before use */
@@ -1837,22 +1837,22 @@ void MINI_check_resid(const int ndofn,
 
   /*=== Norm of Ru ===*/
   for (int i=0;i<ndofd;i++) f[i] = RR[i] - f_u[i];
-  LToG(f,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+  LToG(f,BS_f,ndofd,com);
   normal = cblas_ddot(DomDof[myrank],BS_f,1,BS_f,1);
-  MPI_Allreduce(&normal,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&normal,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   normal = sqrt (tmp);
   if (myrank == 0) PGFEM_printf("NORM Ru = %12.12e\n",normal);
   memset(BS_f,0,DomDof[myrank]*sizeof(double));
 
   /*=== Norm of Rp ===*/
-  LToG(f_p,BS_f,myrank,nproc,ndofd,DomDof,GDof,comm,mpi_comm);
+  LToG(f_p,BS_f,ndofd,com);
   normal = cblas_ddot(DomDof[myrank],BS_f,1,BS_f,1);
-  MPI_Allreduce(&normal,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&normal,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   normal = sqrt (tmp);
   if (myrank == 0) PGFEM_printf("NORM Rp = %12.12e\n",normal);
 
   /*=== Norm of Rt ===*/
-  MPI_Allreduce(&nrB,&tmp,1,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(&nrB,&tmp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   normal = sqrt (tmp);
   if (myrank == 0) PGFEM_printf("NORM Rt = %12.12e\n",normal);
 

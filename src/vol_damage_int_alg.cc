@@ -23,6 +23,10 @@
 #define VD_INT_ALG_DEBUG 0
 #endif
 
+namespace {
+  using pgfem3d::CommunicationStructure;
+}
+
 static int integration_help(const int elem_id,
                             const int ip,
                             const int nne,
@@ -75,7 +79,7 @@ int vol_damage_int_alg(const int ne,
                        const SUPP sup,
                        const double dt,
                        const int iter,
-                       const MPI_Comm mpi_comm,
+		       const CommunicationStructure *com,
                        EPS *eps,
                        SIG *sig,
                        double *max_omega,
@@ -85,9 +89,6 @@ int vol_damage_int_alg(const int ne,
 {
   const int ndn = 3;
   int err = 0;
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
 
   double *F = PGFEM_calloc(double, ndn*ndn);
   double *C = PGFEM_calloc(double, ndn*ndn);
@@ -219,6 +220,7 @@ int vol_damage_int_alg(const int ne,
           damage_int_alg(ptrDam,Ybar,dt /* ,iter */);
 
           if(VD_INT_ALG_DEBUG){
+	    int myrank = com->rank;
             PGFEM_printerr("[%d] (elem,ip)::(%d,%d) wn+1 || Xn+1 || g\n"
                            "%1.12e || %1.12e\n",myrank,elem_id,ip,
                            ptrDam->w,ptrDam->X);

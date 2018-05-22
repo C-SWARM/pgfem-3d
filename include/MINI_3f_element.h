@@ -8,13 +8,12 @@
 #ifndef PGFEM3D_MINI_3F_ELEMENT_H
 #define PGFEM3D_MINI_3F_ELEMENT_H
 
-#include "PGFEM_mpi.h"
+#include "PGFem3D_data_structure.h"
 #include "data_structure.h"
 #include "element.h"
 #include "eps.h"
 #include "hommat.h"
 #include "node.h"
-#include "pgfem_comm.h"
 #include "sig.h"
 #include "supp.h"
 
@@ -109,7 +108,7 @@ void MINI_3f_increment(Element *elem,
                        SIG *sig,
                        const HOMMAT *hommat,
                        const double *sol,
-                       const MPI_Comm mpi_comm,
+		       const pgfem3d::CommunicationStructure *com,
                        const int mp_id);
 
 void MINI_3f_check_resid(const int ndofn,
@@ -125,8 +124,7 @@ void MINI_3f_check_resid(const int ndofn,
                          const long *DomDof,
                          const int ndofd,
                          const int GDof,
-                         const COMMUN comm,
-                         const MPI_Comm mpi_comm,
+			 const pgfem3d::CommunicationStructure *com,
                          const int mp_id);
 
 #endif // #define PGFEM3D_MINI_3F_ELEMENT_H

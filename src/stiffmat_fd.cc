@@ -41,10 +41,16 @@
 #define PFEM_DEBUG 0
 #endif
 
+using namespace pgfem3d::net;
+
 namespace {
+using pgfem3d::SparseComm;
 using pgfem3d::Solver;
 using pgfem3d::solvers::SparseSystem;
-
+using pgfem3d::CommunicationStructure;
+using pgfem3d::MultiscaleCommon;
+using pgfem3d::MULTISCALE_SOLUTION;
+  
 const constexpr int periodic = 0;
 const constexpr int ndn = 3;
 }
@@ -75,7 +81,7 @@ static void coel_stiffmat(int i, /* coel ID */
                           int nproc,
                           long *DomDof,
                           long GDof,
-                          COMMUN comm,
+                          SparseComm *comm,
                           int *Ddof,
                           int interior,
                           const int analysis,
@@ -244,7 +250,7 @@ static int bnd_el_stiffmat(int belem_id,
                            int myrank,
                            int nproc,
                            long GDof,
-                           COMMUN comm,
+                           SparseComm *comm,
                            int *Ddof,
                            int interior,
                            const int analysis,
@@ -440,10 +446,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 
   if(err>0)
   {
-    int myrank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD,&myrank);
-
-    printf("Error is detected: rank= %d, eid = %d\n",myrank, eid);
+    printf("Error is detected: eid = %d\n", eid);
   }
   return err;
 }
@@ -466,7 +469,6 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] load object for loading
 /// \param[in] com communication object
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
@@ -483,20 +485,19 @@ static int el_stiffmat_MP(int eid,
                           FieldVariables *fv,
                           Solver *sol,
                           LoadingSteps *load,
-                          CommunicationStructure *com,
+                          const CommunicationStructure *com,
                           CRPL *crpl,
-                          MPI_Comm mpi_comm,
                           const PGFem3D_opt *opts,
                           const Multiphysics& mp,
                           int mp_id,
                           double dt,
-                          long iter,
-                          int myrank)
+                          long iter)
 {
   int err = 0;
   double lm = 0.0;
   int intg_order = 0;
-
+  int myrank = com->rank;
+  
   SUPP sup = load->sups[mp_id];
 
   // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
@@ -633,7 +634,7 @@ static int el_stiffmat_MP(int eid,
 
   // Assembly
   PLoc_Sparse (Lk,lk.m_pdata,com->Ai,com->Ap,cnL,cnG,ndofe,Ddof,com->GDof,
-               myrank,com->nproc,com->comm,interior,sol->system,opts->analysis_type);
+               myrank,com->nproc,com->spc,interior,sol->system,opts->analysis_type);
 
   //  dealocation
   free (cnL);
@@ -662,7 +663,6 @@ static int el_stiffmat_MP(int eid,
 /// \param[in] load object for loading
 /// \param[in] com communication object
 /// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] mpi_comm MPI_COMM_WORLD
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
@@ -676,26 +676,26 @@ int stiffmat_fd_MP(Grid *grid,
                    FieldVariables *fv,
                    Solver *sol,
                    LoadingSteps *load,
-                   CommunicationStructure *com,
+                   const CommunicationStructure *com,
                    CRPL *crpl,
-                   MPI_Comm mpi_comm,
                    const PGFem3D_opt *opts,
                    const Multiphysics& mp,
                    int mp_id,
                    double dt,
-                   long iter,
-                   int myrank)
+                   long iter)
 {
+  int myrank = com->rank;
   int err = 0;
   // if 0, update only stiffness
   double lm = 0.0;
-
+  
   double **Lk,**receive;
-  MPI_Status *sta_s,*sta_r;
-  MPI_Request *req_s,*req_r;
 
-  err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
-                                     mpi_comm,com->comm);
+  try {
+    com->spc->post_stiffmat(&Lk,&receive);
+  } catch(...) {
+    err++;
+  }
 
   Matrix<int> Ddof(com->nproc,1);
 
@@ -706,7 +706,7 @@ int stiffmat_fd_MP(Grid *grid,
   for(int eid=0; eid<com->nbndel; eid++)
   {
     err += el_stiffmat_MP(com->bndel[eid],Lk,Ddof.m_pdata,0,grid,mat,fv,sol,load,com,crpl,
-                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+			  opts,mp,mp_id,dt,iter);
 
     if(err != 0)
       break;
@@ -727,8 +727,8 @@ int stiffmat_fd_MP(Grid *grid,
       {
         coel_stiffmat(eid,Lk,com->Ap,com->Ai,ndofc,grid->element,grid->node,fv->eps,
                       fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,dt,crpl,
-                      opts->stab,grid->coel,0,0,fv->f_u,myrank,com->nproc,com->DomDof,
-                      com->GDof,com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system, mp_id);
+                      opts->stab,grid->coel,0,0,fv->f_u,com->rank,com->nproc,com->DomDof,
+                      com->GDof,com->spc,Ddof.m_pdata,0,opts->analysis_type,sol->system, mp_id);
       }
     }
   }
@@ -749,8 +749,8 @@ int stiffmat_fd_MP(Grid *grid,
     for(int eid=0; eid<grid->n_be; eid++){
       err += bnd_el_stiffmat(eid,Lk,com->Ap,com->Ai,fv->ndofn,grid->element,grid->b_elems,grid->node,mat->hommat,
                              mat->matgeom,fv->sig,fv->eps,fv->d_u,fv->u_np1,fv->npres,load->sups[mp_id],iter,sol->nor_min,
-                             dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,myrank,com->nproc,com->GDof,
-                             com->comm,Ddof.m_pdata,0,opts->analysis_type,sol->system,mp_id);
+                             dt,crpl,opts->stab,sol->FNR,lm,fv->f_u,com->rank,com->nproc,com->GDof,
+                             com->spc,Ddof.m_pdata,0,opts->analysis_type,sol->system,mp_id);
 
       // If there is an error, complete exit the loop
       if(err != 0)
@@ -780,10 +780,10 @@ int stiffmat_fd_MP(Grid *grid,
     out = fopen(ofile,"a");
     for(int send_proc=0; send_proc<com->nproc; send_proc++)
     {
-      if(send_proc==myrank || (com->comm)->S[send_proc] ==0)
+      if(send_proc==myrank || (com->spc)->S[send_proc] ==0)
         continue;
 
-      for(int n_data=0; n_data<(com->comm)->AS[send_proc]; n_data++)
+      for(int n_data=0; n_data<(com->spc)->AS[send_proc]; n_data++)
       {
         PGFEM_fprintf(out,"%12.12e ",Lk[send_proc][n_data]);
       }
@@ -794,7 +794,11 @@ int stiffmat_fd_MP(Grid *grid,
   }
 
   /// SEND BOUNDARY AND COEL
-  err += send_stiffmat_comm(&sta_s,&req_s,Lk,mpi_comm,com->comm);
+  try {
+    com->spc->send_stiffmat();
+  } catch(...) {
+    err++;
+  }
 
   int skip = 0;
   int idx  = 0;
@@ -815,24 +819,18 @@ int stiffmat_fd_MP(Grid *grid,
 
     // do volume integration at an element
     err += el_stiffmat_MP(eid,Lk,Ddof.m_pdata,1,grid,mat,fv,sol,load,com,crpl,
-                          mpi_comm,opts,mp,mp_id,dt,iter,myrank);
+                          opts,mp,mp_id,dt,iter);
 
     if(err != 0)
       break;
   }
 
-  err += assemble_nonlocal_stiffmat(com->comm,sta_r,req_r,sol->system,receive);
-  err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,com->comm);
-
-  // stiffnes build is completed
-  // deallocate memory
-  free_stiffmat_comm_buffers(Lk, receive, com->comm);
-  free (receive);
-  free (Lk);
-  free (sta_s);
-  free (sta_r);
-  free (req_s);
-  free (req_r);
+  try {
+    com->spc->assemble_nonlocal_stiffmat(sol->system);
+    com->spc->finalize_stiffmat();
+  } catch(...) {
+    err++;
+  }
 
   return err;
 }
@@ -852,8 +850,8 @@ int stiffmat_fd_MP(Grid *grid,
 /// \param[in] myrank current process rank
 /// \param[in] nproc   number of total process
 /// \return non-zero on internal error
-int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
-                           MACROSCALE_SOLUTION *s,
+int stiffmat_fd_multiscale(MultiscaleCommon *c,
+                           MULTISCALE_SOLUTION *s,
                            const PGFem3D_opt *opts,
                            long iter,
                            double nor_min,
@@ -950,18 +948,22 @@ int stiffmat_fd_multiscale(COMMON_MACROSCALE *c,
   CommunicationStructure com;
   {
     communication_structure_initialization(&com);
-    com.nproc  = nproc;
     com.Ap     = c->Ap;
     com.Ai     = c->Ai;
     com.DomDof = c->DomDof;
-    com.comm   = c->pgfem_comm;
     com.GDof   = c->GDof;
     com.nbndel = c->nbndel;
     com.bndel  = c->bndel;
+    com.boot   = c->boot;
+    com.net    = c->net;
+    com.comm   = c->comm;
+    com.rank   = c->rank;
+    com.nproc  = c->nproc;
+    com.spc    = c->spc;
   }
 
   err += stiffmat_fd_MP(&grid,&mat,&fv,&sol,&load,&com,s->crpl,
-                        c->mpi_comm,opts,mp,mp_id,s->dt,iter,myrank);
+                        opts,mp,mp_id,s->dt,iter);
 
   free(physicsname);
 

@@ -7,9 +7,12 @@
 #include "cohesive_element_utils.h"
 #include "stiffmat_fd.h"
 
+using namespace pgfem3d;
+using namespace pgfem3d::net;
+
 static const int ndim = 3;
 
-int compute_n_job_and_job_sizes(const COMMON_MACROSCALE *c,
+int compute_n_job_and_job_sizes(const MultiscaleCommon *c,
                 int *n_jobs,
                 int **job_buff_sizes)
 {
@@ -41,31 +44,30 @@ int compute_n_job_and_job_sizes(const COMMON_MACROSCALE *c,
   return err;
 }
 
-int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
+int start_microscale_server(const MultiscaleComm *mscom,
                 const PGFEM_ms_job_intercomm *ic,
-                MICROSCALE *microscale,
+                Microscale *microscale,
                 const int mp_id)
 {
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(microscale->net);
   int err = 0;
   /* error check */
-  if(!mpi_comm->valid_micro) return ++err;
-  if(mpi_comm->valid_mm_inter && ic == NULL) return ++err;
+  if(!mscom->valid_micro) return ++err;
+  if(mscom->valid_mm_inter && ic == NULL) return ++err;
 
   /* begin serving */
-  if(mpi_comm->valid_mm_inter){
+  if(mscom->valid_mm_inter){
     /* set up server contexts */
-    PGFEM_server_ctx *send = PGFEM_calloc(PGFEM_server_ctx, 1);
-    PGFEM_server_ctx *recv = PGFEM_calloc(PGFEM_server_ctx, 1);
-    err += initialize_PGFEM_server_ctx(send);
-    err += initialize_PGFEM_server_ctx(recv);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(ic->send_info,send);
-    err += build_PGFEM_server_ctx_from_PGFEM_comm_info(ic->recv_info,recv);
+    MultiscaleServerContext *send = new MultiscaleServerContext(net);
+    MultiscaleServerContext *recv = new MultiscaleServerContext(net);
+    send->initialize(ic->send_info);
+    recv->initialize(ic->recv_info);
 
     /* post receives */
     for(int i=0; i<recv->n_comms; i++){
-      err += MPI_Irecv(recv->buffer[i],recv->sizes[i],MPI_CHAR,
-               recv->procs[i],MPI_ANY_TAG,ic->comm,
-               &(recv->req[i]));
+      net->irecv(recv->buffer[i],recv->sizes[i],NET_DT_CHAR,
+		 recv->procs[i],NET_ANY_TAG,ic->comm,
+		 &(recv->req[i]));
     }
 
     /* server loop */
@@ -73,105 +75,102 @@ int start_microscale_server(const PGFEM_mpi_comm *mpi_comm,
     while(!exit_server){
       int idx = 0;
       /* wait for ANY job to show up */
-      err += MPI_Waitany(recv->n_comms,recv->req,
-             &idx,recv->stat);
+      net->waitany(recv->n_comms,recv->req,
+		   &idx,recv->stat);
 
       /* got job, compute job */
-      err += micro_job_master(mpi_comm,idx,recv->sizes[idx],
-                  recv->buffer[idx],send->buffer[idx],
-                  microscale,&exit_server,mp_id);
+      err += micro_job_master(mscom,idx,recv->sizes[idx],
+			      recv->buffer[idx],send->buffer[idx],
+			      microscale,&exit_server,mp_id);
 
       /* wait for any previous send of this process to complete. May
      need to do some status checking here to avoid blocking in the
      future */
-      err += MPI_Wait(&(send->req[idx]),&(send->stat[idx]));
+      net->wait(&(send->req[idx]),&(send->stat[idx]));
 
       /* post send of job */
-      err += MPI_Isend(send->buffer[idx],send->sizes[idx],MPI_CHAR,
-               send->procs[idx],idx /*tag*/,ic->comm,
-               &(send->req[idx]));
+      net->isend(send->buffer[idx],send->sizes[idx],NET_DT_CHAR,
+		 send->procs[idx],idx /*tag*/,ic->comm,
+		 &(send->req[idx]));
 
       /* post recv for next job */
-      err += MPI_Irecv(recv->buffer[idx],recv->sizes[idx],MPI_CHAR,
-               recv->procs[idx],MPI_ANY_TAG,ic->comm,
-               &(recv->req[idx]));
+      net->irecv(recv->buffer[idx],recv->sizes[idx],NET_DT_CHAR,
+		 recv->procs[idx],NET_ANY_TAG,ic->comm,
+		 &(recv->req[idx]));
     }
 
     /* cancel any pending communication */
     for(int i=0; i<recv->n_comms; i++){
-      err += MPI_Cancel(&(recv->req[i]));
+      net->cancel(&(recv->req[i]));
     }
     for(int i=0; i<send->n_comms; i++){
-      if(send->req[i] != MPI_REQUEST_NULL){
-    err += MPI_Cancel(&(send->req[i]));
+      if(send->req[i].getData() != NULL) {
+	net->cancel(&(send->req[i]));
       }
     }
-    MPI_Waitall(recv->n_comms,recv->req,MPI_STATUS_IGNORE);
-    MPI_Waitall(send->n_comms,send->req,MPI_STATUS_IGNORE);
+    net->waitall(recv->n_comms,recv->req,NET_STATUS_IGNORE);
+    net->waitall(send->n_comms,send->req,NET_STATUS_IGNORE);
 
     /* cleanup */
-    err += destroy_PGFEM_server_ctx(send);
-    err += destroy_PGFEM_server_ctx(recv);
-    free(send);
-    free(recv);
-
+    delete send;
+    delete recv;
   } else {
-   err += micro_job_slave(mpi_comm,microscale,mp_id);
+    err += micro_job_slave(mscom,microscale,mp_id);
   }
 
   return err;
 }
 
-int micro_job_master(const PGFEM_mpi_comm *mpi_comm,
-             const int idx,
-             const int buff_size,
-             char *in_buffer,
-             char *out_buffer,
-             MICROSCALE *micro,
-             int *exit_server,
-             const int mp_id)
+int micro_job_master(const MultiscaleComm *mscom,
+		     const int idx,
+		     const int buff_size,
+		     char *in_buffer,
+		     char *out_buffer,
+		     Microscale *micro,
+		     int *exit_server,
+		     const int mp_id)
 {
   int err = 0;
   /* exit if not master on microscale */
-  if(!mpi_comm->valid_micro || mpi_comm->rank_micro != 0) return ++err;
+  if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
 
   /* broadcast job information */
   int job_init_info[2] = {0,0};
   job_init_info[0] = idx;
   job_init_info[1] = buff_size;
-  err += MPI_Bcast(job_init_info,2,MPI_INT,0,mpi_comm->micro);
-  err += MPI_Bcast(in_buffer,buff_size,MPI_CHAR,0,mpi_comm->micro);
+  micro->net->bcast(job_init_info,2,NET_DT_INT,0,mscom->micro);
+  micro->net->bcast(in_buffer,buff_size,NET_DT_CHAR,0,mscom->micro);
 
   /* copy the in buffer to the out buffer */
   memcpy(out_buffer,in_buffer,buff_size*sizeof(char));
 
   /* compute the job */
   err += microscale_compute_job(idx,buff_size,
-                out_buffer,micro,
-                exit_server,mp_id);
+				out_buffer,micro,
+				exit_server,mp_id);
   return err;
 }
 
-int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
-            MICROSCALE *micro,const int mp_id)
+int micro_job_slave(const MultiscaleComm *mscom,
+		    Microscale *micro,const int mp_id)
 {
   int err = 0;
   int exit_server = 0;
 
   /* exit if not slave on microscale */
-  if(!mpi_comm->valid_micro && mpi_comm->rank_micro <= 0) return ++err;
+  if(!mscom->valid_micro && mscom->rank_micro <= 0) return ++err;
 
   while(!exit_server){
     /* get job information from master */
     int job_init_info[2] = {0,0};
-    err += MPI_Bcast(job_init_info,2,MPI_INT,0,mpi_comm->micro);
+    micro->net->bcast(job_init_info,2,NET_DT_INT,0,mscom->micro);
     char *buffer = PGFEM_calloc(char, job_init_info[1]);
-    err += MPI_Bcast(buffer,job_init_info[1],MPI_CHAR,0,mpi_comm->micro);
-
+    micro->net->bcast(buffer,job_init_info[1],NET_DT_CHAR,0,mscom->micro);
+    
     /* compute the job */
     err += microscale_compute_job(job_init_info[0],
-                  job_init_info[1],
-                  buffer,micro,&exit_server,mp_id);
+				  job_init_info[1],
+				  buffer,micro,&exit_server,mp_id);
 
     /* cleanup */
     free(buffer);
@@ -182,7 +181,7 @@ int micro_job_slave(const PGFEM_mpi_comm *mpi_comm,
 int microscale_compute_job(const int idx,
                const int buff_len,
                char *buffer,
-               MICROSCALE *micro,
+               Microscale *micro,
                int *exit_server,
                const int mp_id)
 {
@@ -211,16 +210,17 @@ int microscale_compute_job(const int idx,
   return err;
 }
 
-/******** Main MACROSCALE interface functions *********/
+/******** Main Macroscale interface functions *********/
 int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
-                  const MACROSCALE *macro,
-                  const int job_type,
-                  const double *loc_sol,
-                  MS_COHE_JOB_INFO *job_list,
-                  PGFEM_server_ctx *send,
-                  PGFEM_server_ctx *recv)
+				  const Macroscale *macro,
+				  const int job_type,
+				  const double *loc_sol,
+				  MS_COHE_JOB_INFO *job_list,
+				  MultiscaleServerContext *send,
+				  MultiscaleServerContext *recv)
 {
   int err = 0;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(macro->net);
   /* check that things are allocated and return controll */
   if(ic == NULL || macro == NULL) return ++err;
 
@@ -228,13 +228,13 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
      incremented as this should only occur by a logical/programming
      error. Note that buffers may be overwritten. If the communication
      is completed but the flags have not been reset to 0, the
-     MPI_Wait* commands should return immediately */
+     NET_Wait* commands should return immediately */
   if(send->in_process || recv->in_process){
     PGFEM_printerr("WARNING: communication in progress!(%s:%s:%d)\n",
            __func__,__FILE__,__LINE__);
     err++;
-    err += MPI_Waitall(recv->n_comms,recv->req,recv->stat);
-    err += MPI_Waitall(send->n_comms,send->req,send->stat);
+    net->waitall(recv->n_comms,recv->req,recv->stat);
+    net->waitall(send->n_comms,send->req,send->stat);
     recv->in_process = 0;
     send->in_process = 0;
   }
@@ -242,9 +242,9 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
 
   /* post recieves (from the running server) */
   for(int i=0; i<recv->n_comms; i++){
-    err += MPI_Irecv(recv->buffer[i],recv->sizes[i],MPI_CHAR,
-             recv->procs[i],MPI_ANY_TAG,ic->comm,
-             &(recv->req[i]));
+    net->irecv(recv->buffer[i],recv->sizes[i],NET_DT_CHAR,
+	       recv->procs[i],NET_ANY_TAG,ic->comm,
+	       &(recv->req[i]));
   }
 
   for(int i=0; i<send->n_comms; i++){
@@ -256,9 +256,9 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
                  send->buffer[i]);
 
     /* post the send (to the running server) */
-    err += MPI_Isend(send->buffer[i],send->sizes[i],MPI_CHAR,
-             send->procs[i],i /*tag*/,ic->comm,
-             &(send->req[i]));
+    net->isend(send->buffer[i],send->sizes[i],NET_DT_CHAR,
+	       send->procs[i],i /*tag*/,ic->comm,
+	       &(send->req[i]));
   }
 
   /* set in_process flags to true (1) */
@@ -268,7 +268,7 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
   /* cancel communication if JOB_EXIT */
   if(job_type == JOB_EXIT){
     for(int i=0; i<recv->n_comms; i++){
-      err += MPI_Cancel(&(recv->req[i]));
+      net->cancel(&(recv->req[i]));
     }
     /* have canceled the communication, not in_process */
     recv->in_process = 0;
@@ -277,85 +277,66 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
 }
 
 int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
-                   MACROSCALE *macro,
-                   PGFEM_server_ctx *send,
-                   PGFEM_server_ctx *recv)
+				   Macroscale *macro,
+				   MultiscaleServerContext *send,
+				   MultiscaleServerContext *recv)
 {
   int err = 0;
-  COMMON_MACROSCALE *c = macro->common;
-  MACROSCALE_SOLUTION *s = macro->sol;
-  int rank_macro = 0;
-  int nproc_macro = 0;
+  ISIRNetwork *net = static_cast<ISIRNetwork*>(macro->net);
+  MultiscaleCommon *c = macro;
+  MULTISCALE_SOLUTION *s = macro->sol;
+  int rank_macro = macro->rank;
+  int nproc_macro = macro->nproc;
 
   /* exit early if !*->in_process */
   if(!recv->in_process && !send->in_process) return err;
-
-  err += MPI_Comm_rank(c->mpi_comm,&rank_macro);
-  err += MPI_Comm_size(c->mpi_comm,&nproc_macro);
-
+  
   /* if expecting to receive buffers */
   if(recv->in_process){
     /* set up the stiffness matrix communication */
     double **Lk = NULL;
     double **receive = NULL;
-    MPI_Request *req_r = NULL;
-    MPI_Status *sta_r = NULL;
-    err += init_and_post_stiffmat_comm(&Lk,&receive,&req_r,&sta_r,
-                       c->mpi_comm,c->pgfem_comm);
-
+    c->spc->post_stiffmat(&Lk,&receive);
+    
     /* assemble jobs as they are received */
     for(int i=0; i<recv->n_comms; i++){
       int idx = 0;
-      err += MPI_Waitany(recv->n_comms,recv->req,&idx,recv->stat);
+      net->waitany(recv->n_comms,recv->req,&idx,recv->stat);
       MS_COHE_JOB_INFO *job = job_list + idx;
       err += unpack_MS_COHE_JOB_INFO(job,recv->sizes[idx],
-                     recv->buffer[idx]);
-
+				     recv->buffer[idx]);
+      
       /* finish jobs based on job_type */
       switch(job->job_type){
       case JOB_COMPUTE_EQUILIBRIUM:
-    /* assemble residual (local) */
-    for(int j=0; j<job->ndofe; j++){
-      int dof_id = job->loc_dof_ids[j] - 1;
-      if(dof_id < 0) continue; /* boundary condition */
-      s->f_u[dof_id] += job->traction_res[j];
-    }
-    /*** Deliberate drop through ***/
+	/* assemble residual (local) */
+	for(int j=0; j<job->ndofe; j++){
+	  int dof_id = job->loc_dof_ids[j] - 1;
+	  if(dof_id < 0) continue; /* boundary condition */
+	  s->f_u[dof_id] += job->traction_res[j];
+	}
+	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
-    /* assemble tangent to local and off-proc buffers */
-    PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
-            job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
-            c->pgfem_comm,0,c->SOLVER,macro->opts->analysis_type);
-    break;
+	/* assemble tangent to local and off-proc buffers */
+	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
+		    c->spc,0,c->SOLVER,macro->opts->analysis_type);
+	break;
       case JOB_UPDATE:
-    /* update cohesive elements */
-    err += macroscale_update_coel(job,macro);
-    break;
+	/* update cohesive elements */
+	err += macroscale_update_coel(job,macro);
+	break;
       default: /* do nothing */ break;
       }
     }
-
+    
     /* send/finalize communication of the stiffness matrix */
-    MPI_Status *sta_s = NULL;
-    MPI_Request *req_s = NULL;
-    err += send_stiffmat_comm(&sta_s,&req_s,Lk,c->mpi_comm,c->pgfem_comm);
-
-    err += assemble_nonlocal_stiffmat(c->pgfem_comm,sta_r,req_r,
-                      c->SOLVER,receive);
-
-    err += finalize_stiffmat_comm(sta_s,sta_r,req_s,req_r,c->pgfem_comm);
-
+    c->spc->send_stiffmat();
+    c->spc->assemble_nonlocal_stiffmat(c->SOLVER);
+    c->spc->finalize_stiffmat();
+    
     /* re-initialize preconditioner ? */
-    /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mpi_comm); */
-
-    /* clean up memory */
-    free_stiffmat_comm_buffers(Lk, receive, c->pgfem_comm);
-    free(Lk);
-    free(receive);
-    free(sta_r);
-    free(req_r);
-    free(sta_s);
-    free(req_s);
+    /* err += PGFEM_HYPRE_create_preconditioner(c->SOLVER,c->mscom); */
 
     /* set in_process to false (0) */
     recv->in_process = 0;
@@ -363,21 +344,21 @@ int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
 
   /* wait for any pending send communication to finish */
   if(send->in_process){
-    MPI_Waitall(send->n_comms,send->req,send->stat);
+    net->waitall(send->n_comms,send->req,send->stat);
     send->in_process = 0;
   }
-
+  
   return err;
 }
 
-int macroscale_update_job_info(const MACROSCALE *macro,
+int macroscale_update_job_info(const Macroscale *macro,
                    const int job_type,
                    const double *loc_sol,
                    MS_COHE_JOB_INFO *job)
 {
   int err = 0;
-  const COMMON_MACROSCALE *c = macro->common;
-  const MACROSCALE_SOLUTION *s = macro->sol;
+  const MultiscaleCommon *c = macro;
+  const MULTISCALE_SOLUTION *s = macro->sol;
   const COEL *cel = c->coel + job->elem_id;
   const int nne = cel->toe;
   const int nne_2D = nne/2;
@@ -446,10 +427,10 @@ int macroscale_update_job_info(const MACROSCALE *macro,
 }
 
 int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
-               MACROSCALE *macro)
+               Macroscale *macro)
 {
   int err = 0;
-  COEL *coel = macro->common->coel + job->elem_id;
+  COEL *coel = macro->coel + job->elem_id;
 
   /* set traction for output */
   memcpy(coel->ti,job->traction_n,ndim*sizeof(double));

@@ -2,11 +2,13 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "element.h"
-#include "PGFEM_mpi.h"
 #include "allocation.h"
 #include "enumerations.h"
 #include "utils.h"
+
+using namespace pgfem3d;
 
 Element* build_elem (FILE *in,
                      const long ne,

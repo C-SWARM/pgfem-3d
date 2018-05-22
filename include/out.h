@@ -2,7 +2,6 @@
 #define PGFEM3D_OUT_H
 
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 #include "PGFem3D_options.h"
 #include "cohesive_element.h"
 #include "element.h"
@@ -11,6 +10,7 @@
 #include "node.h"
 #include "sig.h"
 #include "supp.h"
+#include "pgfem3d/Communication.hpp"
 
 void logo (FILE *out);
 
@@ -99,20 +99,18 @@ void EnSight (char jmeno[500],
               */long FNR,
               double lm,
               Ensight *ensight,
-              MPI_Comm mpi_comm,
+	      const pgfem3d::CommunicationStructure *com,
               const PGFem3D_opt *opts);
 
 void ASCII_output(const PGFem3D_opt *opts,
-                  MPI_Comm comm,
+		  const pgfem3d::CommunicationStructure *com,
                   long tim,
                   double *times,
-                  long  Gnn,
+                  long Gnn,
                   long nn,
                   long ne,
                   long nce,
                   long ndofd,
-                  long *DomDof,
-                  int *Ap,
                   long FNR,
                   double lm,
                   double pores,

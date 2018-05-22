@@ -2,8 +2,8 @@
 #define BOOMER_AMG_INTERFACE_H
 
 #include "data_structure.h"
-#include "PGFEM_mpi.h"
 #include <krylov.h>
+#include <mpi.h>
 
 namespace pgfem3d {
 namespace solvers {

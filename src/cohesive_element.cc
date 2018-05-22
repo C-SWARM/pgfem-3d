@@ -2,8 +2,8 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "cohesive_element.h"
-#include "PGFEM_mpi.h"
 #include "allocation.h"
 #include "cohesive_element_utils.h"
 #include "enumerations.h"
@@ -13,6 +13,8 @@
 #include "utils.h"
 #include <cmath>
 #include <cassert>
+
+using namespace pgfem3d;
 
 static void update_state_variables_co (COEL *cel, /* ptr to single el */
                                        double *x,

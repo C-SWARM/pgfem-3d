@@ -59,7 +59,8 @@ int residual_with_inertia(FEMLIB *fe,
                           const Multiphysics& mp,
                           int mp_id,
                           double *dts,
-                          double t);
+                          double t,
+			  int myrank);
 
 /// compute element stiffness matrix in transient
 ///

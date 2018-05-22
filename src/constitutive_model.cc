@@ -11,7 +11,6 @@
 #endif
 
 #include "PGFEM_io.h"
-#include "PGFEM_mpi.h"
 #include "PGFem3D_data_structure.h"
 #include "allocation.h"
 #include "constitutive_model.h"
@@ -41,7 +40,7 @@
 #include "condense.h"
 #include "new_potentials.h"
 
-using pgfem3d::Solver;
+using namespace pgfem3d;
 
 int
 Model_var_info::print_variable_info(FILE *f)
@@ -1421,7 +1420,8 @@ int init_all_constitutive_model(EPS *eps,
                                 const int ne,
                                 const Element *elem,
                                 const int n_mat,
-                                const HOMMAT *hmat_list)
+                                const HOMMAT *hmat_list,
+				int myrank)
 {
   int err = 0;
   if (ne <= 0) return 1;
@@ -1438,7 +1438,7 @@ int init_all_constitutive_model(EPS *eps,
       p_eps->model[j].initialization(p_param);
   }
 
-  plasticity_model_set_orientations(eps, ne, elem, n_mat, hmat_list); // nothing will happen if there is no use of the crystal plasticity model
+  plasticity_model_set_orientations(eps, ne, elem, n_mat, hmat_list, myrank); // nothing will happen if there is no use of the crystal plasticity model
   return err;
 }
 

@@ -1,6 +1,7 @@
 /* HEADER */
 /* This file contains the cohesive potentials */
 
+#include "pgfem3d/Communication.hpp"
 #include "cohesive_potentials.h"
 #include <math.h>
 #include <string.h>
@@ -9,6 +10,8 @@
 #include "index_macros.h"
 #include "cohesive_element_utils.h"
 
+using namespace pgfem3d;
+
 static const double max_hy_term = 25;
 static const int ndim = 3;
 static const double pi = 3.14159265358979323846;
@@ -16,11 +19,10 @@ static const double pi = 3.14159265358979323846;
 int read_cohesive_properties(FILE *in,
                  int *n_mat,
                  cohesive_props **props,
-                 MPI_Comm mpi_comm)
+      	         const CommunicationStructure *com)
 {
   int err = 0;
-  int myrank = 0;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   int len = 500;
   char *line = PGFEM_calloc(char, len);

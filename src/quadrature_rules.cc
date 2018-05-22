@@ -1,9 +1,6 @@
 /* HEADER */
+#include "pgfem3d/Communication.hpp"
 #include "quadrature_rules.h"
-
-#ifndef PGFEM_MPI_H
-#include "PGFEM_mpi.h"
-#endif
 
 #ifndef PGFEM_IO_H
 #include "PGFEM_io.h"
@@ -12,6 +9,8 @@
 #ifndef ALLOCATION_H
 #include "allocation.h"
 #endif
+
+using namespace pgfem3d;
 
 /* REFERENCES:
    [1] T.J.R. Hughes, "The Finite Element Method", Dover, 2000

@@ -9,9 +9,11 @@
 # include "config.h"
 #endif
 
-#include "comm_hints.h"
+#include "pgfem3d/Communication.hpp"
 #include <stdio.h>
 #include <stdlib.h>
+
+using namespace pgfem3d;
 
 static void print_test_comm_hints_file(const char *fn)
 {
@@ -27,19 +29,26 @@ static void print_test_comm_hints_file(const char *fn)
 
 int main(int argc, char **argv)
 {
-  int err = 0;
-  char *filename = Comm_hints_filename("./", "test_", 0);
+  CommHints *hints;
+  hints = new CommHints("./", "test", 0);
+  char *filename = hints->get_filename();
   print_test_comm_hints_file(filename);
 
-  Comm_hints *hints = Comm_hints_construct();
-  err += Comm_hints_read_filename(hints, filename);
-  Comm_hints_nsend(hints);
-  Comm_hints_nrecv(hints);
-  Comm_hints_send_list(hints);
-  Comm_hints_recv_list(hints);
-  err += Comm_hints_write(hints, stdout);
-  err += Comm_hints_destroy(hints);
-  err -= remove(filename); /* returns -1 on error */
-  free(filename);
-  return err;
+  delete hints;
+  
+  hints = new CommHints();
+  try {
+    hints->read_filename(filename);
+    hints->get_nsend();
+    hints->get_nrecv();
+    hints->get_send_list();
+    hints->get_recv_list();
+    hints->write(stdout);
+  } catch (int e) {
+    return e;
+  }
+
+  delete hints;
+  
+  return 0;
 }

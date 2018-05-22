@@ -2,6 +2,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/Communication.hpp"
 #include "subdivision.h"
 #include "MINI_element.h"
 #include "MINI_3f_element.h"
@@ -17,6 +18,9 @@
 static constexpr int MAX_STEP = 10000;
 static constexpr double MIN_D_TIME = 1.0e-15;
 static constexpr int periodic = 0;
+
+using namespace pgfem3d;
+using namespace pgfem3d::net;
 
 /// determine time step size based on the previous time step convergence history
 /// and physics based evolution rate.
@@ -38,7 +42,7 @@ int subdivision_scheme(int was_NR_ok,
                        int iter,
                        int max_iter,
                        double alpha,
-                       MPI_Comm mpi_comm)
+                       const CommunicationStructure *com)
 {
   int err = 0;
 
@@ -58,8 +62,7 @@ int subdivision_scheme(int was_NR_ok,
 
   double nor,gama{};
 
-  int myrank;
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   if(was_NR_ok == 0) // Step converged
   {
@@ -217,7 +220,7 @@ int subdivision_scheme(int was_NR_ok,
     {
       if(myrank == 0)
         PGFEM_printf ("Error in Subdivision routine\n");
-      PGFEM_Comm_code_abort (mpi_comm,i);
+      PGFEM_Comm_code_abort (com,i);
     }
   }
 
@@ -269,7 +272,7 @@ double subdiv_arc (long INFO,
                    long iter,
                    long iter_max,
                    long TYPE,
-                   MPI_Comm mpi_comm,
+		   const CommunicationStructure *com,
                    const int analysis)
 {
   long i;
@@ -277,9 +280,7 @@ double subdiv_arc (long INFO,
 
   static int last_it  = 1;
 
-  int myrank,nproc;
-  MPI_Comm_size(mpi_comm,&nproc);
-  MPI_Comm_rank(mpi_comm,&myrank);
+  int myrank = com->rank;
 
   DLM0 = 0.0;
 
@@ -476,7 +477,8 @@ double subdiv_arc (long INFO,
       if (gama < nor_min && (*dt/dt0)*dAL0 < nor_min*nor_min) {
         if (myrank == 0)
           PGFEM_printf ("Error in Subdivision rutine\n");
-        PGFEM_Comm_code_abort(mpi_comm,0); }
+        PGFEM_Comm_code_abort(com, 0);
+      }
     }/* end INFO = 1 */
 
     DLM0 = (*dt/dt0)*dAL0;
@@ -556,7 +558,7 @@ double subdiv_arc (long INFO,
       if (DLM0 < nor_min*nor_min) {
         if (myrank == 0)
           PGFEM_printf ("Error in Subdivision rutine\n");
-        PGFEM_Comm_code_abort(mpi_comm,0);
+        PGFEM_Comm_code_abort(com, 0);
       }
     }/* end INFO = 1 */
 
