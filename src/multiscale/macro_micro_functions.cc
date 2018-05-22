@@ -104,7 +104,7 @@ int start_microscale_server(const MultiscaleComm *mscom,
       net->cancel(&(recv->req[i]));
     }
     for(int i=0; i<send->n_comms; i++){
-      if(send->req[i].getData() != NET_REQUEST_NULL) {
+      if(send->req[i].getData() != NULL) {
 	net->cancel(&(send->req[i]));
       }
     }

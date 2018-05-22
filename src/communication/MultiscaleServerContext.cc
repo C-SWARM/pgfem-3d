@@ -71,7 +71,7 @@ namespace pgfem3d {
       for(int i=0; i<n_comms; i++){
 	tags[i] = NET_ANY_TAG;
 	buffer[i] = PGFEM_calloc(char, sizes[i]);
-	req[i].setData(NET_REQUEST_NULL);
+	req[i].setData(NULL);
       }
     }
   }
