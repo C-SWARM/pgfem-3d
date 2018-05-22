@@ -7,7 +7,7 @@
 /// set initial plastic deformation gradient in each element.
 int set_initial_plastic_deformation_gradient(Grid *grid,
                                              FieldVariables *fv,
-                                             MaterialProperty *mat,                                             
+                                             MaterialProperty *mat,
                                              pgfem3d::Solver *sol,
                                              LoadingSteps *load,
                                              const pgfem3d::CommunicationStructure *com,

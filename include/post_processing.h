@@ -55,9 +55,7 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne,
 /// compute and print maximum element pressure
 void post_processing_max_pressure(const Grid &grid,
                                   const MaterialProperty &mat,
-                                  const CommunicationStructure &com,
-                                  const FieldVariables &fv,
-                                  const MPI_Comm mpi_comm,
-                                  const int myrank);
+                                  const pgfem3d::CommunicationStructure *com,
+                                  const FieldVariables &fv);
 
 #endif // #define PGFEM3D_POST_PROCESSING_H

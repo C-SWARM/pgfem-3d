@@ -528,17 +528,15 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *n
 /// \param[in] mat      a material object
 /// \param[in] fv       object for field variables
 /// \param[in] com      communication object
-/// \param[in] mpi_comm MPI_COMM_WORLD
-/// \param[in] myrank   process rank
 void post_processing_max_pressure(const Grid &grid,
                                   const MaterialProperty &mat,
-                                  const CommunicationStructure &com,
-                                  const FieldVariables &fv,
-                                  const MPI_Comm mpi_comm,
-                                  const int myrank)
+                                  const CommunicationStructure *com,
+                                  const FieldVariables &fv)
 {
-  Matrix<double> LP(com.nproc, mat.nmat, 0.0);
-  Matrix<double> GP(com.nproc, mat.nmat, 0.0);
+  int myrank = com->rank;
+  
+  Matrix<double> LP(com->nproc, mat.nmat, 0.0);
+  Matrix<double> GP(com->nproc, mat.nmat, 0.0);
   Matrix<int> eid(mat.nmat, 1, 0);
   
   for(int ia=0; ia<grid.ne; ia++)
@@ -553,10 +551,10 @@ void post_processing_max_pressure(const Grid &grid,
     }
   }
   
-  MPI_Allreduce(LP.m_pdata,GP.m_pdata,com.nproc*mat.nmat,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  com->net->allreduce(LP.m_pdata,GP.m_pdata,com->nproc*mat.nmat,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   
   Matrix<bool> have_max(mat.nmat, 1, true);
-  for(int ia=1; ia<=com.nproc; ia++)
+  for(int ia=1; ia<=com->nproc; ia++)
   {
     if(ia==(myrank+1))
       continue;

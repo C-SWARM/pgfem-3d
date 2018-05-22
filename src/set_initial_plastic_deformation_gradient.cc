@@ -704,8 +704,6 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
 /// \param[in]       *opts    structure PGFem3D option
 /// \param[in]       *mp      mutiphysics object
 /// \param[in]       mp_id    mutiphysics id
-/// \param[in]       myrank   current process rank
-/// \param[in]       *pF      given plastic deformation gradient
 /// \return non-zero on internal error
 int set_initial_plastic_deformation_gradient(Grid *grid,
                                              FieldVariables *fv,
@@ -713,12 +711,9 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
                                              pgfem3d::Solver *sol,
                                              LoadingSteps *load,
                                              const CommunicationStructure *com,
-                                             const MPI_Comm mpi_comm,
                                              const PGFem3D_opt *opts,
                                              const Multiphysics& mp,
-                                             const int mp_id,
-                                             const int myrank)
-{
+                                             const int mp_id){
   int total_Lagrangian = 1;
   int intg_order = 0;
 

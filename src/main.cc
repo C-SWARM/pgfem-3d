@@ -1337,7 +1337,7 @@ int single_scale_main(int argc,char *argv[])
           free(sur_forces);
         }
         if(options.comp_print_max_pressure)
-          post_processing_max_pressure(grid,mat,com[mp_id_M], fv[mp_id_M], mpi_comm, myrank);        
+          post_processing_max_pressure(grid, mat, &com[mp_id_M], fv[mp_id_M]);
       }
 
       // print simulation results
