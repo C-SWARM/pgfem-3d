@@ -182,7 +182,7 @@ void print_EXA_metrics(const CommunicationStructure *com,
     double EXA_Numerator = (total_residual_time / total_combined_time) * total_EXA_metric + 
                               (total_hypre_time / total_combined_time) * dof_EXA_metric;
                               
-    if (opts->print_EXA_details){
+    if (opts->print_EXA == 2){
       PGFEM_printf("Total Residual time: %f\n", total_residual_time);
       PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
       PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
@@ -1426,7 +1426,8 @@ int single_scale_main(int argc,char *argv[])
                                residuals_time, myrank);
 
   /* print EXA_metrics */
-  print_EXA_metrics(com0, myrank, hypre_time, residuals_time, total_time, &options);
+  if (options.print_EXA)
+    print_EXA_metrics(com0, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();

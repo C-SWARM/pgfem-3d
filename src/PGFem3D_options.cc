@@ -148,6 +148,8 @@ const Option other_opts[] = {
   {{"no-compute-macro",no_argument,NULL,'M'},"\n\t\tNo compute and print macro values (GF,GS,GP)",0},
   {{"walltime",required_argument,NULL,'w'},("\n\t\tSet Walltime[s] and write restart files nearby this walltime.\n"
                                             "\t\tDefault is -1.0 (no actions)"),0},
+  {{"exa-metric",no_argument,NULL,'x'},"\n\t\tPrint exascale metric information.\n",0},
+  {{"exa-debug",no_argument,NULL,'x'+9999},"\n\t\tPrint more detailed exascale metric information.\n",0},
   {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0}
 };
 
@@ -232,7 +234,7 @@ void set_default_options(PGFem3D_opt *options)
   options->override_material_props = NULL;
   options->comp_print_reaction = 1;
   options->comp_print_macro = 1;
-  options->print_EXA_details = false;
+  options->print_EXA = 0;
   options->comp_print_max_pressure = false;
 
   /* I/O file names */
@@ -286,6 +288,7 @@ void print_options(FILE *out, const PGFem3D_opt *options)
   PGFEM_fprintf(out,"Restart:        %d\n",options->restart);
   PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
   PGFEM_fprintf(out,"Network:        %d\n",options->network);
+  PGFEM_fprintf(out,"Exascale:        %d\n",options->print_EXA);
   
   PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
   PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
@@ -675,6 +678,14 @@ void re_parse_command_line(const int myrank,
       options->comp_print_macro = 0;
       break;
      
+     case 'x':
+      options->print_EXA = 1;
+      break;
+      
+     case 'x'+9999:
+      options->print_EXA = 2;
+      break;
+      
      case 'P':
       options->comp_print_max_pressure = true;
       break;

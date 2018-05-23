@@ -1246,13 +1246,15 @@ long Newton_Raphson_with_LS(double *solve_time,
     }
 
     //EXA metric computation
-    long global_ODE_EXA_metric = 0;
-    com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
-    if (myrank == 0){
-      if (opts->print_EXA_details)
-        PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
-      perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
-      dof_EXA_metric += fv->Gndof;
+    if (opts->print_EXA){
+      long global_ODE_EXA_metric = 0;
+      com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
+      if (myrank == 0){
+        if (opts->print_EXA == 2)
+          PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
+        perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
+        dof_EXA_metric += fv->Gndof;
+      }
     }
     perIter_ODE_EXA_metric = 0;                                 //reset ODE operation counter
     
@@ -2148,7 +2150,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
              nor, nor/FV[cpled_mp_id].NORM, SOL[cpled_mp_id].last_residual,Rn_R);
              
       //EXA metric computation
-      if (opts->print_EXA_details)
+      if (opts->print_EXA == 2)
         PGFEM_printf ("Convergence ODE operations: (%ld)\n", global_ODE_EXA_metric);
       perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics for the convergence check
     }
@@ -2158,7 +2160,6 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     if(nor/FV[cpled_mp_id].NORM>SOL[cpled_mp_id].nor_min && Rn_R > SOL[cpled_mp_id].nor_min)
       *is_cnvged = 0;
   }
-  //exa
   return err;
 }
 
