@@ -110,7 +110,7 @@ int main(int argc,char *argv[])
   eps = build_eps_il(ne,elem,options.analysis_type,NULL);
 
   // read time steps
-  char filename[1024];
+  char filename[2048];
   char in_dat[1024];
   FILE *fp = NULL;  
   double nor_min;

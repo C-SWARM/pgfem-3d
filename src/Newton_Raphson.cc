@@ -1427,7 +1427,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
   fv->subdivision_factor_n   = 0.0;
   fv->subdivision_factor_np1 = 1.0;
 
-  long i, j, INFO, gam;
+  long i, j, INFO, gam = 0;
   int ART;
   double NOR=10.0;
   struct rusage usage;

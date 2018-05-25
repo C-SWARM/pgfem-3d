@@ -1929,10 +1929,13 @@ void ASCII_output(const PGFem3D_opt *opts,
     /* could not create, default dir name current directory */
     sprintf(filename,".");
   }
-  sprintf (filename,"%s/%s_%d.out%ld",
+  
+  char *filename2 = PGFEM_calloc(char, 500);  //prevents gcc 8.1 warning
+  sprintf (filename2,"%s/%s_%d.out%ld",
        filename,opts->ofname,myrank,tim);
-  FILE *out = PGFEM_fopen(filename,"w");
+  FILE *out = PGFEM_fopen(filename2,"w");
   free(filename);
+  free(filename2);
 
   /*=== START WRITING ===*/
   logo (out);

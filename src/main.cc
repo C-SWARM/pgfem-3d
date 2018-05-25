@@ -252,7 +252,7 @@ int print_results(Grid *grid,
   }
 
   // output file name
-  char filename[500],out_dat[500];
+  char filename[1000],out_dat[500];
   sprintf(out_dat,"%s/%s",opts->opath,opts->ofname);
 
   if(mp_id_M >= 0)

@@ -1596,7 +1596,7 @@ int plasticity_model_set_orientations(EPS *eps,
     }
 
     // write crystal orientations
-    char fn_orientation[1024];
+    char fn_orientation[2048];
     sprintf(fn_orientation, "%s/orientation_%d.in", default_ort_dir, myrank);
     FILE *fp_ort = fopen(fn_orientation, "w");
     fprintf(fp_ort, "# Element (crystal) orientations are generated randomly\n");

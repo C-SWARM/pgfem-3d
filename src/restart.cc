@@ -32,7 +32,7 @@ static int read_initial_from_VTK(const PGFem3D_opt *opts,
                                  const char *rs_path)
 {
   int err = 0;
-  char filename[1024];
+  char filename[2048];
   int stepno = opts->restart;
 
   sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",rs_path,stepno,opts->ofname,myrank,stepno);
@@ -583,7 +583,7 @@ int write_restart_thermal(Grid *grid,
     abort();
   }
 
-  char filename[1024];
+  char filename[2048];
   sprintf(filename,"%s/%s_%d_%d.res",restart_path,opts->ofname,myrank, stepno);
   FILE *fp = fopen(filename,"w");
 

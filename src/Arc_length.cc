@@ -195,7 +195,7 @@ double Multiphysics_Arc_length(Grid *grid,
     "nan"
   };
 
-  char str1[500], jmeno[50];
+  char str1[500], jmeno[600];
   FILE *out;
   struct rusage usage;
 

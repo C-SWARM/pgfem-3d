@@ -793,7 +793,7 @@ int VTK_write_multiphysics_master_footer(FILE *out,
   const char s_dir[] = "STEP_";
   const char *base_name = opts->ofname;
   char dir_name[1024];
-  char filename[1024];
+  char filename[2048];
   /* write piece list */
   sprintf(dir_name,"%s%.6d",s_dir,time);
   for (int ia=0; ia< nproc; ia++){
@@ -851,7 +851,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                                   int nproc)
 {
   int err = 0;
-  char filename[1024];
+  char filename[2048];
   int is_it_master = 1;
 
   err += VTK_get_filename(filename,opts,time,myrank,is_it_master);
@@ -1001,7 +1001,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
                                int myrank)
 {
   int err = 0;
-  char filename[1024];
+  char filename[2048];
   int is_it_master = 0;
   err += VTK_get_filename(filename, opts, time, myrank, 0);
 

@@ -109,7 +109,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
 					  int myrank)
 {
   int err = 0;
-  char dirname[1024], fn[1024];
+  char dirname[1024], fn[2048];
   sprintf(dirname,"%s/Material",opts->ipath);
 
   for(int ia=0; ia<mp.physicsno; ia++)
@@ -312,8 +312,8 @@ int read_input_file(const PGFem3D_opt *opts,
       CHECK_SCANF(in, "%lf", &v);
 
     // read boundary conditions if BC diretory exists
-    char fn_bc[1024];
-    char fn_bcv[1024];
+    char fn_bc[2048];
+    char fn_bcv[2048];
 
     for(int ia=0; ia<physicsno; ia++)
     {
@@ -539,7 +539,7 @@ int read_solver_file(TimeStepping *ts,
   // READ SOLVER FILE
   // override the default solver file with one specified
   // at commandline
-  char filename[1024];
+  char filename[2048];
   char in_dat[1024];
   FILE *fp = NULL;
   if(opts->override_solver_file)
@@ -616,7 +616,7 @@ int read_solver_file(TimeStepping *ts,
 
   // loading history exists in load directory
   char load_path[1024];
-  char load_fn[1024];
+  char load_fn[2048];
   sprintf(load_path,"%s/load",opts->ipath);
 
   ts->tns = aloc1(mp.physicsno);
@@ -1084,7 +1084,7 @@ int read_initial_values_IC(Grid *grid,
   char IC[1024];
   sprintf(IC,"%s/IC",opts->ipath);
 
-  char fn_0[1024], fn[1024];
+  char fn_0[2048], fn[2048];
 
   for(int ia=0; ia<mp.physicsno; ia++)
   {
@@ -1254,7 +1254,7 @@ int read_cohesive_elements(Grid *grid,
 {
   int err = 0;
   int myrank = com->rank;
-  char in_dat[1024], filename[1024];
+  char in_dat[1024], filename[2048];
 
   sprintf(in_dat,"%s/%s",opts->ipath,opts->ifname);
 

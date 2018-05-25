@@ -67,8 +67,8 @@ int change_material_properties(int argc, char **argv, char *filename_out)
     set_default_options(&options);
     re_parse_command_line(myrank,2,argc,argv,&options);
     char filename[1024];
-    char filename_symbol[1024];
-    char filename_header[1024];
+    char filename_symbol[2048];
+    char filename_header[2048];
     char system_cmd[32768];
     char system_cmd_meshing[2048];
 
@@ -120,6 +120,8 @@ int change_material_properties(int argc, char **argv, char *filename_out)
     int mat_id = 0; // if mat_id==0: Al
                     // if mat_id==1: Ni
 
+    
+    char system_cmd2[33768];  //prevents gcc 8.1 warning
     for(int a=0; a<grainno; a++)
     {
       if(a==ngl[lid]+cnt)
@@ -144,13 +146,14 @@ int change_material_properties(int argc, char **argv, char *filename_out)
       double C01 = 0.5*mu;
       // double C10 = 0.0;
 
-      sprintf(system_cmd, "%s %e %e 0.0 %e 0.0 0.0 0.25 0.0 0.0 1.0 1.0 1.0 1.7e+03 1 2\\n", system_cmd, E, C01, mu);
+      sprintf(system_cmd2, "%s %e %e 0.0 %e 0.0 0.0 0.25 0.0 0.0 1.0 1.0 1.0 1.7e+03 1 2\\n", system_cmd, E, C01, mu);
     }
 
-    sprintf(system_cmd, "%s|\" %s > %s", system_cmd, filename_symbol, filename_header);
+    char system_cmd3[40000];  //prevents gcc 8.1 warning
+    sprintf(system_cmd3, "%s|\" %s > %s", system_cmd2, filename_symbol, filename_header);
     //printf("[%s] is performed\n",  system_cmd);
 
-    system(system_cmd);
+    system(system_cmd3);
 
     sprintf(system_cmd_meshing, "cd %s/..; ls; ./gen_meshes.pl -f %s -np %d", options.ipath, filename, nprocs);
     system(system_cmd_meshing);

@@ -23,7 +23,11 @@ namespace pgfem3d {
 		       const int rank)
   {
     const char format[] = "%s/%scomm_hints_%d.in";
-    int nchar = snprintf(filestr, 0, format, ipath, basefname, rank);
+    
+    char *tempstr = PGFEM_malloc<char>(1);  //temporary ptr allocation to prevent gcc 8.1 warning
+    int nchar = snprintf(tempstr, 0, format, ipath, basefname, rank);
+    free(tempstr);
+    
     filestr = PGFEM_malloc<char>(nchar + 1);
     sprintf(filestr, format, ipath, basefname, rank);
 
