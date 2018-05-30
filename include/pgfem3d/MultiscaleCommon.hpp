@@ -11,8 +11,23 @@
 #include "matgeom.h"
 #include "node.h"
 #include "supp.h"
+#include "PGFem3D_data_structure.h"
+#include <vector>
+
 
 namespace pgfem3d {
+/*
+struct Multiphysics {
+  int physicsno;      //!< number of physics
+  char **physicsname; //!< physics names
+  int *physics_ids;   //!< physics ids
+  int *ndim;          //!< degree of feedom of the physics
+  int *write_no;      //!< number of variables to be written as results
+  int total_write_no; //!< total number of variables to be written as results
+  std::vector<std::vector<int>> write_ids;    //!< index of physical variables to be written
+  std::vector<std::vector<int>> coupled_ids;  //!< coupled physics id
+};
+*/
 
 /** This is the structure of microscale information that is
     identical for all microstructures. */
@@ -24,7 +39,8 @@ public:
   void initialize(const int argc,
 		  char **argv,
 		  const CommunicationStructure *com,
-		  const int mp_id);
+		  const int mp_id,
+      Multiphysics& mp);
 
   /** build n solutions to compute on the scale */
   void build_solutions(const int n_solutions);
@@ -57,7 +73,6 @@ public:
   SUPP supports;   /**< !pointer */
   int n_co_props;
   cohesive_props *co_props;
-
   /* mixed tangent matrices. */
   void *K_01;
   void *K_10;
@@ -71,7 +86,8 @@ public:
   
 private:
   void build_common(const CommunicationStructure *com,
-		    const int mp_id);
+		    const int mp_id,
+        Multiphysics& mp);
   void destroy_common();
 };
 

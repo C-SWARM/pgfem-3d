@@ -1,4 +1,6 @@
 #include "pgfem3d/MultiscaleCommunication.hpp"
+#include "pgfem3d/MultiscaleSolution.hpp"
+#include "pgfem3d/MultiscaleCommon.hpp"
 #include "allocation.h"
 #include "constitutive_model.h"
 #include "elem3d.h"

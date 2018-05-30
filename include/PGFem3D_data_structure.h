@@ -20,7 +20,7 @@
 #include "state_variables.h"
 #include "pgfem3d/Solver.hpp"
 #include "pgfem3d/Communication.hpp"
-#include "pgfem3d/MultiscaleCommon.hpp"
+//#include "pgfem3d/MultiscaleCommon.hpp"
 #include <vector>
 
 /// Time stepping struct
