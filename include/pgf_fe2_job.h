@@ -17,8 +17,8 @@
 struct pgf_FE2_job_comm_buf{
   size_t buffer_len;                       /**< length of the buffer in bytes */
   char *buffer;
-  pgfem3d::net::Request request;
-  pgfem3d::net::Status status;
+  pgfem3d::net::Request *request;
+  pgfem3d::net::Status *status;
 };
 
 /**

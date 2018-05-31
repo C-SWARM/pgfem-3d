@@ -1,5 +1,6 @@
 #include "pgfem3d/Network.hpp"
 
+#include <cstring>
 #include <stdexcept>
 #include <mpi.h>
 
@@ -85,6 +86,7 @@ private:
       req = (MPI_Request*)calloc(1, sizeof(MPI_Request));
       r->setData(req);
       r->setAlloc(true);
+      r->setIDX(0);
     }
     else {
       req = (MPI_Request*)r->getData();
@@ -102,6 +104,7 @@ private:
       stat = (MPI_Status*)calloc(1, sizeof(MPI_Status));
       s->setData(stat);
       s->setAlloc(true);
+      s->setIDX(0);
     }
     else {
       stat = (MPI_Status*)s->getData();

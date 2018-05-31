@@ -769,7 +769,7 @@ int read_multiphysics_settings(Multiphysics& mp,
   if(physicsno<=0)
   {
     err += construct_multiphysics(mp, 1);
-    err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "mechanical");
+    err += set_a_physics(mp, 0, MULTIPHYSICS_MECHANICAL, 3, "Mechanical");
 
     mp.coupled_ids[0].resize(1);
     mp.coupled_ids[0][0] = 0;
