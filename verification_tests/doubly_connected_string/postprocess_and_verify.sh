@@ -11,5 +11,5 @@ cp frequency.ref $data_dir/.
 
 cd $data_dir 
 ./read_out.sh
-octave bind_files.m
-octave analyze_and_compare.m 
+matlab bind_files.m
+matlab analyze_and_compare.m 
