@@ -49,6 +49,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "pgfem3d/MultiscaleCommon.hpp"
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -117,6 +118,15 @@ int multi_scale_main(int argc, char* argv[])
 
   while(debug);
   
+  //----------------------------------------------------------------------
+  //  // create and initialization of PGFem3D objects
+  //    //----------------------------------------------------------------------
+  //      //---->
+       // Multiphysics setting
+  Multiphysics mp;
+  err += read_multiphysics_settings(mp,&options,myrank);
+              
+
   // Create the desired network
   Network *net = pgfem3d::net::Network::Create(options);
 
@@ -161,7 +171,7 @@ int multi_scale_main(int argc, char* argv[])
     com->net = net;
     com->comm = mscom->macro; // MS communicators in mscom
 
-    macro->initialize(macro_argc, macro_argv, com, mp_id);
+    macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
   }
   else {
     /*====== MICROSCALE =======*/
@@ -187,14 +197,14 @@ int multi_scale_main(int argc, char* argv[])
     com->net = net;
     com->comm = mscom->micro; // MS communicators in mscom
 
-    micro->initialize(micro_argc, micro_argv, com, mp_id);
+    micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
   }
   
   /*=== INITIALIZE SCALES ===*/
   if (mscom->valid_macro) {/*=== MACROSCALE ===*/
     macro->build_solutions(1);  // only 1 for macroscale
     // XXX not sure why this is done twice
-    macro->initialize(macro_argc, macro_argv, com, mp_id); 
+    macro->initialize(macro_argc, macro_argv, com, mp_id,mp); 
   }
   else if (mscom->valid_micro) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
@@ -229,7 +239,7 @@ int multi_scale_main(int argc, char* argv[])
 
     /*=== BUILD MICROSCALE ===*/
     // XXX not sure why this is done twice
-    micro->initialize(micro_argc, micro_argv, com, mp_id);
+    micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
                    mscom->rank_world,__func__,__FILE__,__LINE__);

@@ -214,11 +214,8 @@ void MPINetwork::waitany(int count, Request *requests, int *indx,
 void MPINetwork::waitsome(int incount, Request *requests, int *outcount,
 			  int array_of_indices[], Status *statuses)
 {
-  MPI_Status *stat = 0;
   Check(MPI_Waitsome(incount, ConvertRequest(requests),
-		     outcount, array_of_indices, stat));
-  if (*outcount && stat)
-    ConvertStatus(*outcount, stat, statuses);
+		     outcount, array_of_indices, ConvertStatus(statuses)));
 }
 
 void MPINetwork::iprobe(int source, int tag, PGFem3D_Comm comm, int *flag,

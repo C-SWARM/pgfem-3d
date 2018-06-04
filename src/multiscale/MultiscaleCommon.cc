@@ -103,7 +103,8 @@ void MultiscaleCommon::build_solutions(const int n_solutions)
 void MultiscaleCommon::initialize(const int argc,
 				  char **argv,
 				  const CommunicationStructure *com,
-				  const int mp_id)
+				  const int mp_id,
+          Multiphysics& mp)
 {
   int myrank = com->rank;
   /* parse the command-line-style options */
@@ -140,12 +141,13 @@ void MultiscaleCommon::initialize(const int argc,
   }
   
   /*=== BUILD COMMON ===*/
-  build_common(com, mp_id);
+  build_common(com, mp_id,mp);
   supports->multi_scale = opts->multi_scale;
 }
 
 void MultiscaleCommon::build_common(const CommunicationStructure *com,
-				    const int mp_id)
+				    const int mp_id,
+            Multiphysics& mp)
 {
   // save initial communication properties from parent com
   rank = com->rank;    // my rank
@@ -207,7 +209,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
                           &n_orient,&node,
                           &elem,&mater,&matgeom,
                           &supports,&nln,&znod,&nle_s,&zele_s,
-                          &nle_v,&zele_v, &fv_ndofn,physicsno,&ndim, NULL);
+                          &nle_v,&zele_v, &fv_ndofn,physicsno,&ndim, mp.physicsname);
 
     /* error reading file(s) */
     if(err){

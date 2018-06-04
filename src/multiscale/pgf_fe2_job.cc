@@ -18,6 +18,8 @@ void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf)
 {
   buf->buffer_len = 0;
   buf->buffer = NULL;
+  buf->request = new Request;
+  buf->status = new Status;
 }
 
 void pgf_FE2_job_comm_buf_build(pgf_FE2_job_comm_buf *buf,
@@ -32,6 +34,8 @@ void pgf_FE2_job_comm_buf_destroy(pgf_FE2_job_comm_buf *buf)
   free(buf->buffer);
   buf->buffer = NULL;
   buf->buffer_len = 0;
+  //delete buf->request;
+  //delete buf->status;
 }
 
 /*** FE2_job ***/
@@ -94,7 +98,7 @@ void pgf_FE2_job_set_state(pgf_FE2_job *job,
 
 void pgf_FE2_job_destroy(pgf_FE2_job *job)
 {
-  if(job->comm_buf != NULL){
+  if (job->comm_buf != NULL){
     pgf_FE2_job_comm_buf_destroy(job->comm_buf);
   }
   free(job->comm_buf);
@@ -250,7 +254,7 @@ int pgf_FE2_job_reply(pgf_FE2_job *job,
   pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
   net->isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
 	     NET_DT_CHAR,proc,job->id,mscom->mm_inter,
-	     &(job->comm_buf->request));
+	     job->comm_buf->request);
   
   job->state = FE2_STATE_REPLY;
   return job->state;
@@ -265,7 +269,7 @@ int pgf_FE2_job_complete(pgf_FE2_job *job,
   ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
   
   int finished = 0;
-  net->test(&(job->comm_buf->request),&finished,NET_STATUS_IGNORE);
+  net->test(job->comm_buf->request,&finished,NET_STATUS_IGNORE);
   if(finished){
     /* destroy the comm_buffer rendering it unusable for erroneous
        further communication. */
