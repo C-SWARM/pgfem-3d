@@ -110,24 +110,6 @@ struct NR_time_steps {
  };
 }
 
-/** Set the time vector to contain current dt for microscale */
-static void set_time_micro(const int tim,
-                           double *times,
-                           const double dt,
-                           const long DIV,
-                           double *time_np1)
-{
-  *time_np1 = times[tim+1];
-  times[tim + 1] = times[tim] + dt;
-}
-
-/** Reset the time vector to normal state */
-static void set_time_macro(const int tim,
-                           double *times,
-                           const double time_np1)
-{
-  times[tim + 1] = time_np1;
-}
 
 /// check element evolutions
 ///
@@ -1089,11 +1071,43 @@ long Newton_Raphson_with_LS(double *solve_time,
         pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                                NR_REBALANCE);
       }
-      double tnp1 = 0;
-      set_time_micro(tim,times,dt,DIV,&tnp1);
+    
+      unsigned int i;
+      double temp_defl[9];
+      double newDt;
+      //dt0 is the size of a full (nondivided) step
+      double dt0 = times[tim+1] - times[0];      
+
+      //if it is the start of a subdivision group, make sure to record that first number
+      //t(n+1) = t(n)' + (T (n+1) -t'(n)) * (step + 1)/NS
+      //we need tn' to stay constant at whatever it was at step = 0
+      if (DIV == 0) {
+        if (tim > 0) {
+         ctx->macro->sol->times[ctx->macro->sol->tim - 1]  = ctx->macro->sol->times[ctx->macro->sol->tim];
+        }
+      }
+      //if there is no subdivision, then dt is straightforward. Otherwise, it needs to be calculated
+      if (STEP > 0) {
+        double dtFactor =  (times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP));
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor;
+        newDt = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor - ctx->macro->sol->times[ctx->macro->sol->tim];
+      } else {
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim] + dt;
+        newDt = dt;
+      }
+      //once we know the size of the particular step, we can use it to scale grad u
+      for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+        temp_defl[i] = load->sup_defl[mp_id][i];
+        load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
+      }
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                      JOB_COMPUTE_EQUILIBRIUM);
-      set_time_macro(tim,times,tnp1);
+      //gradU needs to be put back afterwards
+      for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+       load->sup_defl[mp_id][i] = temp_defl[i];
+      }
+
+
     }
 
     /* Residuals */
@@ -1319,7 +1333,11 @@ long Newton_Raphson_with_LS(double *solve_time,
                    "Microscale subdivision alpha_ms: %f (max_substep: %d)\n",
                    *alpha,max_damage_per_step,alpha_ms,max_n_micro_substep);
     }
-
+    //after the solution is found, that time should be recorded
+    if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
+      MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
+      ctx->macro->sol->times[ctx->macro->sol->tim] = ctx->macro->sol->times[ctx->macro->sol->tim + 1];
+    }
     if(*alpha > alpha_restart || alpha_ms > alpha_restart_ms)
     {
       if(myrank == 0)
@@ -1516,12 +1534,20 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
       pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                              FE2_REBALANCE_NONE);
-      double tnp1 = 0;
-      set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
-      ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
+
+      unsigned int i = 0;
+      double temp_defl[9];
+      for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+        temp_defl[i] = load->sup_defl[mp_id][i];
+        load->sup_defl[mp_id][i] = (dt/(NR_t->times[NR_t->tim + 1] - NR_t->times[NR_t->tim]))*load->sup_defl[mp_id][i];
+      }
+      ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                      JOB_NO_COMPUTE_EQUILIBRIUM);
-      set_time_macro(tim,NR_t->times,tnp1);
+
+      for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+       load->sup_defl[mp_id][i] = temp_defl[i];
+      }
     }
 
     /* reset the error flag */
@@ -1672,13 +1698,19 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
         pgf_FE2_macro_client_rebalance_servers(ctx->client,ctx->mscom,
                                                FE2_REBALANCE_NONE);
+        unsigned int i;
+        double temp_defl[9];
+        for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+          temp_defl[i] = load->sup_defl[mp_id][i];
+          load->sup_defl[mp_id][i] = dt/(NR_t->times[NR_t->tim + 1] - NR_t->times[NR_t->tim])*load->sup_defl[mp_id][i];
+        }
+        ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
 
-        double tnp1 = 0;
-        set_time_micro(tim,NR_t->times,dt,sp.step_id,&tnp1);
-        ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim+1];
         pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                        JOB_UPDATE);
-        set_time_macro(tim,NR_t->times,tnp1);
+        for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
+         load->sup_defl[mp_id][i] = temp_defl[i];
+        }
       }
 
       // update converged values and apply increments
@@ -2984,6 +3016,8 @@ double Newton_Raphson_multiscale(const int print_level,
   double solve_time = 0.0; 
   double stiffmat_loc_time = 0.0; 
   double residuals_loc_time = 0.0; 
+  //record the start of the full timestep
+  NR_t.times[0] =  ts.times[ts.tim];
   perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                           print_level,&is_NR_cvg,&alpha,&grid,&mat,&fv,&sol,
                                           &load,&com,&ts,s->crpl,c->VVolume,
@@ -2991,10 +3025,9 @@ double Newton_Raphson_multiscale(const int print_level,
 
   update_values_for_next_NR(&grid,&mat,&fv,&sol,&load,s->crpl,&com,c->VVolume,
                             opts,mp,&NR_t,mp_id);
-
-
-    ts.times[ts.tim]     = NR_t.times[NR_t.tim + 1] - NR_t.dt[DT_NP1];
-    ts.times[ts.tim + 1] = NR_t.times[NR_t.tim + 1];
+  //put everything back
+  ts.times[ts.tim]     = NR_t.times[NR_t.tim + 1] - NR_t.dt[DT_NP1];
+  ts.times[ts.tim + 1] = NR_t.times[NR_t.tim + 1];
 
   *n_step = sol.n_step;
   s->NORM = fv.NORM;
