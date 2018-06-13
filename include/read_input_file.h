@@ -141,4 +141,9 @@ int read_cohesive_elements(Grid *grid,
                            Ensight *ensight,
                            const pgfem3d::CommunicationStructure *com);
 
+//read micro simulation methods
+void read_simulation_methods(char *filenameMS, PGFem3D_opt *opts);
+
+
+
 #endif /* #define PGFEM3D_READ_INPUT_FILE_H */
