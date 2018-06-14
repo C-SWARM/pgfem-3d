@@ -147,7 +147,7 @@ int print_PGFem3D_final(const Multiphysics& mp,
   {
     PGFEM_printf("%s::Hypre solve time          = %f\n", mp.physicsname[mp_id], hypre_time[mp_id]);
     PGFEM_printf("%s::Stiffmat compute time     = %f\n", mp.physicsname[mp_id], stiffmat_time[mp_id]);
-    PGFEM_printf("%s::Residualsmat compute time = %f\n\n", mp.physicsname[mp_id], residuals_time[mp_id]);
+    PGFEM_printf("%s::Residualvec compute time  = %f\n\n", mp.physicsname[mp_id], residuals_time[mp_id]);
   }
 
   return err;

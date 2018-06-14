@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include <xmmintrin.h>
 
 namespace {
 const constexpr int          DIM_3 = 3;
@@ -582,6 +583,20 @@ int CP_PARAM::compute_d2udj2(const Constitutive_model *m,
   return err;
 }
 
+/// If drdtau is denormal it is set to zero. Any double precision number (64 bits)
+/// is considered as denormal if it is smaller than ±2.23×10^−308 
+/// https://software.intel.com/en-us/node/523328 
+inline double compute_drdtau(const double gamma_dot_0,
+                             const double mm,
+                             const double g_np1,
+                             const double tau)
+{
+  _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+
+  double drdtau = gamma_dot_0/mm/g_np1*pow(fabs(tau/g_np1), 1.0/mm - 1.0);
+  return drdtau;
+}
+
 int plasticity_compute_dMdu(const Constitutive_model *con,
                             double *dMdu_in,
                             double *Grad_du_in,
@@ -659,7 +674,7 @@ int plasticity_compute_dMdu(const Constitutive_model *con,
 
   for(int a = 0; a<N_SYS; a++)
   {
-    double drdtau = gamma_dot_0/mm/g_np1*pow(fabs(tau[a]/g_np1), 1.0/mm - 1.0);
+    double drdtau = compute_drdtau(gamma_dot_0, mm, g_np1, tau[a]);
     double drdg   = -drdtau*tau[a]/g_np1;
 
     double R2_a = ((gamma_dots[a] < 0) ? -1.0 : 1.0)*drdtau;
