@@ -50,6 +50,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "pgfem3d/MultiscaleCommon.hpp"
+#include "read_input_file.h"
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -80,17 +81,18 @@ int multi_scale_main(int argc, char* argv[])
   char **micro_argv = NULL;
   int debug = 0;
 
+  PGFem3D_opt options;
+  set_default_options(&options);
+
   /* get macro and micro parts of the command line */
   int myrank = boot->get_rank();
   get_macro_micro_option_blocks(myrank, argc, argv,
                                 &macro_start,&macro_argc,
                                 &micro_start,&micro_argc,
                                 &nproc_macro,&micro_group_size,
-                                &debug);
+                                &debug,&options);
 
   /*=== Parse the command line for global options ===*/
-  PGFem3D_opt options;
-  set_default_options(&options);
   /*
   printf("argc: %d, macro_argc: %d, micro_argc: %d\n", argc, macro_argc, micro_argc);
   if (macro_argc+micro_argc > argc) {
@@ -210,6 +212,13 @@ int multi_scale_main(int argc, char* argv[])
     PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
+      if (options.custom_micro == 1) {
+        char filenameMS[1024];
+        char in_dat[1024];
+        sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
+        sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
+        read_simulation_methods(filenameMS,micro->opts);
+      }
       /* no output */
       PGFEM_redirect_io_null();
       parse_command_line(micro_argc, micro_argv, mscom->rank_micro,
@@ -256,6 +265,8 @@ int multi_scale_main(int argc, char* argv[])
   if (mscom->valid_micro) {
     /* allocate space for maximum number of jobs to be computed. */
     micro->build_solutions(n_jobs_max);
+
+    micro->opts->custom_micro = options.custom_micro;
 
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via

@@ -1537,9 +1537,27 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
       unsigned int i = 0;
       double temp_defl[9];
+      double newDt;
+      double dt0 = NR_t->times[tim+1] - NR_t->times[0];
+      int DIV = sp.step_id;
+      int STEP = sp.step_size;
+      if (DIV == 0) {
+        if (tim > 0) {
+         ctx->macro->sol->times[ctx->macro->sol->tim - 1]  = ctx->macro->sol->times[ctx->macro->sol->tim];
+        }
+      }
+      if (STEP > 0) {
+        double dtFactor =  (NR_t->times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP));
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor;
+        newDt = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor - ctx->macro->sol->times[ctx->macro->sol->tim];
+      } else {
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim] + dt;
+        newDt = dt;
+      }
+
       for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
         temp_defl[i] = load->sup_defl[mp_id][i];
-        load->sup_defl[mp_id][i] = (dt/(NR_t->times[NR_t->tim + 1] - NR_t->times[NR_t->tim]))*load->sup_defl[mp_id][i];
+        load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
       }
       ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
@@ -1700,9 +1718,28 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                                FE2_REBALANCE_NONE);
         unsigned int i;
         double temp_defl[9];
+        double newDt;
+        double dt0 = NR_t->times[tim+1] - NR_t->times[0];
+      int DIV = sp.step_id;
+      int STEP = sp.step_size;
+      if (DIV == 0) {
+        if (tim > 0) {
+         ctx->macro->sol->times[ctx->macro->sol->tim - 1]  = ctx->macro->sol->times[ctx->macro->sol->tim];
+        }
+      }
+      if (STEP > 0) {
+        double dtFactor =  (NR_t->times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP));
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor;
+        newDt = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor - ctx->macro->sol->times[ctx->macro->sol->tim];
+      } else {
+        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim] + dt;
+        newDt = dt;
+      }
+
+
         for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
           temp_defl[i] = load->sup_defl[mp_id][i];
-          load->sup_defl[mp_id][i] = dt/(NR_t->times[NR_t->tim + 1] - NR_t->times[NR_t->tim])*load->sup_defl[mp_id][i];
+          load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
         }
         ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
 

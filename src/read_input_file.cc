@@ -1126,6 +1126,28 @@ int read_initial_values_IC(Grid *grid,
 
 
 
+void read_simulation_methods(char *filenameMS, PGFem3D_opt *opts) {
+    int Nt,Ne,t,e,temp;
+
+  FILE *fpms;
+    fpms = fopen(filenameMS,"r");
+  if(fpms == NULL)
+  {
+      printf("Failed to open file [%s]. \n", filenameMS);
+  }
+  fscanf(fpms,"%d",&Ne);                                    //number of cohesive elements
+  fscanf(fpms,"%d",&Nt);                                    //number of time steps
+  opts->methods = (int*) PGFEM_calloc (int,Nt*Ne);
+      for(t = 0; t < Nt; t++) {
+        for(e = 0; e < Ne; e++) {
+          fscanf(fpms,"%d",&temp);
+          opts->methods[e + Ne*t] = temp;
+        }
+      }
+    fclose(fpms);
+}
+
+
 /// Read initial conditions.
 ///
 /// \param[in] grid a mesh object

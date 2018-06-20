@@ -31,6 +31,9 @@ struct PGFem3D_opt {
   int plc;
   int multi_scale;
   int cm;
+  int custom_micro;       //if micro will contain taylor method
+  int *methods;           //which micro cells contain taylor method
+
 
   /* visualization options */
   int vis_format; /* gr2 */
@@ -100,7 +103,8 @@ void get_macro_micro_option_blocks(int myrank,
                                    int *micro_argc,
                                    int *macro_nproc,
                                    int *micro_group_size,
-                                   int *debug);
+                                   int *debug,
+                                    PGFem3D_opt *options);
 
 /** Print a summary of the solution method */
 void print_interpreted_options(const PGFem3D_opt *opts);
