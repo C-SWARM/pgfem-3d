@@ -1,13 +1,10 @@
-
 /// Define poro-visco plasticity model functions for the constitutive model interface
 /// 
 /// Authors:
 /// Sangmin Lee, [1], <slee43@nd.edu>
-/// Alberto Salvadori, [1], <asalvad2@nd.edu>
 /// 
 /// [1] University of Notre Dame, Notre Dame, IN
 
-//#include <ttl/ttl.h>
 #include "cm_poro_viscoplasticity.h"
 
 #include "plasticity_model.h"
@@ -28,9 +25,7 @@
 #include <iomanip>
 #include <time.h>
 #include <ttl/ttl.h>
-
-#include "KMS-IJSS2017.h"
-#include "pvp_interface.h"
+#include"poro_visco_plasticity.h"
 
 #define DIM_3        3
 #define DIM_3x3      9
@@ -205,16 +200,18 @@ const
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   
   memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
   
-  err += pvp_intf_perform_integration_algorithm(Fs[TENSOR_Fnp1].m_pdata,
-                                                Fs[TENSOR_Fn].m_pdata,
-                                                Fs[TENSOR_pFnp1].m_pdata,
-                                                Fs[TENSOR_pFn].m_pdata,
-                                                vars+VAR_pc_np1,
-                                                vars[VAR_pc_n],
-                                                mat_pvp,
-                                                dt);                                                                                                  
+  err += poro_visco_plasticity_integration_algorithm(mat_pvp,
+                                                     solver_info,
+                                                     Fs[TENSOR_Fnp1].m_pdata,
+                                                     Fs[TENSOR_Fn].m_pdata,
+                                                     Fs[TENSOR_pFnp1].m_pdata,
+                                                     Fs[TENSOR_pFn].m_pdata,
+                                                     vars+VAR_pc_np1,
+                                                     vars[VAR_pc_n],
+                                                     dt);
   return err;
 }
 
@@ -254,8 +251,8 @@ double CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
 const 
 {
   double pc = pc_npa(m, npa, alpha);
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;      
-  return pvp_intf_compute_dudj(theta_e, pc, mat_pvp);           
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;      
+  return poro_visco_plasticity_intf_compute_dudj(theta_e, pc, mat_pvp);           
 }
 
 int CM_PVP_PARAM::compute_dev_tangent(const Constitutive_model *m,
@@ -293,8 +290,8 @@ double CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
 const 
 {
   double pc = pc_npa(m, npa, alpha);  
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
-  return pvp_intf_compute_d2udj2(theta_e, pc, mat_pvp);           
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  return poro_visco_plasticity_intf_compute_d2udj2(theta_e, pc, mat_pvp);           
 }
 
 int CM_PVP_PARAM::update_elasticity(const Constitutive_model *m,
@@ -307,7 +304,7 @@ const
   int err = 0;
   auto ctx = (poro_viscoplasticity_ctx *) ctx_in;
   double pc = pc_npa(m, ctx->npa, ctx->alpha);      
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   double *L = NULL;
   if(compute_stiffness)
@@ -315,12 +312,8 @@ const
   
   if(ctx->eFnpa)
   {
-    err += pvp_intf_update_elasticity(ctx->eFnpa, 
-                                      pc, 
-                                      S, 
-                                      L, 
-                                      mat_pvp,
-                                      compute_stiffness);
+    poro_visco_plasticity_update_elasticity(S, L, mat_pvp, 
+                                            ctx->eFnpa, pc, compute_stiffness);
   }    
   else
   {
@@ -341,12 +334,8 @@ const
     else
       eF = Fnp1(i,k)*pFnp1_I(k,j);
     
-    err += pvp_intf_update_elasticity(eF.data, 
-                                      pc, 
-                                      S, 
-                                      L, 
-                                      mat_pvp,
-                                      compute_stiffness);
+    poro_visco_plasticity_update_elasticity(S, L, mat_pvp,
+                                            eF.data, pc, compute_stiffness);
   }     
   return err;
 }
@@ -362,13 +351,13 @@ const
 {
   int err = 0;
   double pc = pc_npa(m, npa, alpha);
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   double *L = NULL;
   if(compute_stiffness)
     L = L_in;
   
-  err += pvp_intf_update_elasticity_dev(eF, pc, S, L, mat_pvp, compute_stiffness);           
+  poro_visco_plasticity_update_elasticity_dev(S, L, mat_pvp, eF, pc, compute_stiffness);           
   return err; 
 }
 
@@ -409,20 +398,23 @@ const
 
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  GcmSolverInfo *solver_info = m->param->gcm_solver_info;
   
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
   
   double gamma_d = 0.0;
   double gamma_v = 0.0;  
-  pvp_intf_compute_gammas(gamma_d,
-                          gamma_v,
-                          Fs[TENSOR_Fnp1 ].m_pdata,
-                          Fs[TENSOR_Fn   ].m_pdata,
-                          Fs[TENSOR_pFnp1].m_pdata,
-                          Fs[TENSOR_pFn  ].m_pdata,
-                          state_var[VAR_pc_np1],
-                          state_var[VAR_pc_n],
-                          mat_pvp);
+  poro_visco_plasticity_intf_compute_gammas(gamma_d,
+                                            gamma_v,
+                                            Fs[TENSOR_Fnp1 ].m_pdata,
+                                            Fs[TENSOR_Fn   ].m_pdata,
+                                            Fs[TENSOR_pFnp1].m_pdata,
+                                            Fs[TENSOR_pFn  ].m_pdata,
+                                            state_var[VAR_pc_np1],
+                                            state_var[VAR_pc_n],
+                                            dt,
+                                            mat_pvp,
+                                            solver_info);
 
   double alpha = (fabs(gamma_d)>fabs(gamma_d))?fabs(gamma_d):fabs(gamma_v);
   *subdiv_param = dt*alpha/MAX_D_ALPHA;
@@ -770,49 +762,18 @@ const
   const double dt = CTX->dt;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
   
-  double dMdF_in[DIM_3x3x3x3];
-  Matrix<double> dMdF;
-  
-  err += pvp_intf_compute_dMdF(dMdF_in,
-                               Fs[TENSOR_Fnp1].m_pdata,
-                               Fs[TENSOR_Fn].m_pdata,
-                               Fs[TENSOR_pFnp1].m_pdata,
-                               Fs[TENSOR_pFn].m_pdata,
-                               vars[VAR_pc_np1],
-                               vars[VAR_pc_n],
-                               mat_pvp,
-                               dt);
-
-  dMdF.use_reference(DIM_3x3x3x3, 1, dMdF_in);
-
-  Matrix<double> dMdu_ab;
-//  double *Grad_op_ab = new double[DIM_3x3];
-    
-  for (int a = 0; a<nne; a++)
-  {
-    for(int b = 0; b<nsd; b++)
-    {
-      int idx_ab = idx_4_gen(a,b,0,0,nne,nsd,DIM_3,DIM_3);
-      dMdu_ab.use_reference(DIM_3,DIM_3, dM_du + idx_ab);
- //     memcpy(Grad_op_ab,Grad_op+idx_ab,DIM_3x3*sizeof(double));
-      
-      for(int w = 1; w<=DIM_3; w++)
-      {
-        for(int x = 1; x<=DIM_3; x++)
-        {
-          dMdu_ab(w,x) = 0.0;
-/*          for(int y = 1; y<=DIM_3; y++)
-          {
-            for(int z = 1; z<=DIM_3; z++)
-              Mat_v(dMdu_ab,w,x) += Tns4_v(dMdF,w,x,y,z)*Mat_v(Grad_op_ab,y,z);
-          }
-*/          
-        }
-      }
-    }
-  }        
+  poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
+                                     Fs[TENSOR_Fnp1].m_pdata,
+                                     Fs[TENSOR_Fn].m_pdata,
+                                     Fs[TENSOR_pFnp1].m_pdata,
+                                     Fs[TENSOR_pFn].m_pdata,
+                                     vars[VAR_pc_np1],
+                                     vars[VAR_pc_n],
+                                     dt, nne, nsd);
+                                     
   return err;
 }
 
@@ -839,7 +800,10 @@ const
   if((m->param)->pF != NULL)
   {
     double pJ = det3x3((m->param)->pF);
-    double pc = pvp_intf_compute_pc(pJ, param[PARAM_pc_0], (m->param)->cm_mat->mat_pvp);
+    MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+    GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
+    
+    double pc = poro_visco_plasticity_compute_pc(pJ, param[PARAM_pc_0], mat_pvp, solver_info);
     vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = pc;      
     memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
     memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
@@ -901,28 +865,27 @@ const
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
 
-  bool usingSmoothMacauleyBrackets = true;  
-  this->cm_mat->mat_pvp = new KMS_IJSS2017_Parameters;
-  (this->cm_mat->mat_pvp)->set_parameters(param[PARAM_yf_M],
-                                         param[PARAM_yf_alpha],
-                                         param[PARAM_flr_m],
-                                         param[PARAM_flr_gamma0],
-                                         param[PARAM_hr_a1],
-                                         param[PARAM_hr_a2],
-                                         param[PARAM_hr_Lambda1],
-                                         param[PARAM_hr_Lambda2],
-                                         param[PARAM_c_inf],
-                                         param[PARAM_c_Gamma],
-                                         param[PARAM_d_B],
-                                         param[PARAM_d_pcb],
-                                         param[PARAM_mu_0],
-                                         param[PARAM_mu_1],
-                                         param[PARAM_K_p0],
-                                         param[PARAM_K_kappa],
-                                         param[PARAM_pl_n],
-                                         param[PARAM_cf_g0],
-                                         param[PARAM_cf_pcinf],
-                                         usingSmoothMacauleyBrackets);
+  this->cm_mat->mat_pvp = new MaterialPoroViscoPlasticity;
+  set_properties_poro_visco_plasticity(this->cm_mat->mat_pvp,
+                                       param[PARAM_yf_M],
+                                       param[PARAM_yf_alpha],
+                                       param[PARAM_flr_m],
+                                       param[PARAM_flr_gamma0],
+                                       param[PARAM_hr_a1],
+                                       param[PARAM_hr_a2],
+                                       param[PARAM_hr_Lambda1],
+                                       param[PARAM_hr_Lambda2],
+                                       param[PARAM_c_inf],
+                                       param[PARAM_c_Gamma],
+                                       param[PARAM_d_B],
+                                       param[PARAM_d_pcb],
+                                       param[PARAM_mu_0],
+                                       param[PARAM_mu_1],
+                                       param[PARAM_K_p0],
+                                       param[PARAM_K_kappa],
+                                       param[PARAM_pl_n],
+                                       param[PARAM_cf_g0],
+                                       param[PARAM_cf_pcinf]);
   
   return err;
 }
@@ -945,58 +908,5 @@ int CM_PVP_PARAM::model_dependent_finalization(void)
 {
   int err = 0;
   delete (this->cm_mat)->mat_pvp;  
-  return err;
-}
-
-int test_cm_poro_viscoplasticity_model(Constitutive_model *m)
-{
-  int err = 0;
-  // simulation parameters
-  double dt = 0.01;
-  double strainrate = -0.005;
-  int stepno = 13200;
-
-  double *param = (m->param)->model_param;
-  
-  KMS_IJSS2017_Parameters *mat_pvp = (m->param)->cm_mat->mat_pvp;
-  
-  double p0 = param[PARAM_K_p0];
-  double h  = pvp_intf_hardening_law(p0, mat_pvp);
-  double HardLawJp0Coeff = pow(exp(h), 1.0/3.0);
-
-  double Fnp1[9], Fn[9], pFnp1[9], pFn[9];
-  double  F0[9] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-  double   I[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};                  
-  double Sh2[9] = {0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};                
-
-  F0[0] = F0[4] = F0[8] =  HardLawJp0Coeff;
-                 
-  double pc_n, pc_np1;
-  pc_n = pc_np1 = p0;
-  
-  memcpy(pFn,   F0, sizeof(double)*DIM_3x3);
-  memcpy(pFnp1, F0, sizeof(double)*DIM_3x3);
-  memcpy( Fn,    I, sizeof(double)*DIM_3x3);
-  memcpy( Fnp1,  I, sizeof(double)*DIM_3x3);   
-  
-  
-  double t = 0;
-  for(int iA=1; iA<=stepno; iA++)
-  {
-    t += dt;
-    // update total deformation gradient
-    double lambdac = (t > 46.0) ?strainrate * 46.0*sin(46.0*M_PI/66.0):strainrate*t*sin(t*M_PI/66.0);
-    double lambdas = (t > 42.6) ? ( 42.6 - t ) * strainrate : 0.0;
-                   
-    for(int ia=0; ia<9; ia++)
-      Fnp1[ia] = F0[ia] + lambdac*I[ia] + lambdas*Sh2[ia];    
-
-    err += pvp_intf_perform_integration_algorithm(Fnp1,Fn,pFnp1,pFn,&pc_np1,pc_n,mat_pvp,dt);
-
-    memcpy(pFn,pFnp1,sizeof(double)*DIM_3x3);
-    memcpy( Fn, Fnp1,sizeof(double)*DIM_3x3);
-    pc_n = pc_np1;
-  }
-    
   return err;
 }

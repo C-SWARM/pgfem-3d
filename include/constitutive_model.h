@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "material_properties.h"
 #include "hyperelasticity.h"
+#include "GcmSolverInfo.h"
 
 struct EPS;
 struct Element;
@@ -107,6 +108,7 @@ class Model_parameters
 
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
   ELASTICITY *cm_elast;
+  GcmSolverInfo *gcm_solver_info;
   
   // set members variables to initial values (zeros and NULLs)   
   void set_nulls(void)
@@ -116,7 +118,8 @@ class Model_parameters
     uqcm              = 0; 
     cm3f              = false;
     cm_mat            = NULL;
-    cm_elast          = NULL;    
+    cm_elast          = NULL;
+    gcm_solver_info   = NULL;   
     type              = -1;
     n_param           = 0;
     model_param       = NULL;
