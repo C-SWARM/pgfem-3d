@@ -1,0 +1,22 @@
+{
+  "Newton_Raphson_tolerance": 1.0e-5,
+  "Newton_Raphson_max_num_of_iterations": 5,
+  "order_of_elements": 0,
+  "number_of_spatial_dimensions": 3,
+  "solver_max_num_of_iterations": 5000,
+  "solver_num_of_Krylov_subspaces": 3000,
+  "solver_tolerance": 1.0e-5,
+  "absolute_tolerance": 1.0e-15,
+  "pressure_num": 0,
+
+  "multiphysics_staggering_method":
+  {
+    "maximum_num_of_staggering": 5,
+    "solution_scheme": 0
+  },
+  "nonlinear_solution_method": {    
+        "tolerance": 1.0e-5,
+        "max_num_of_iterations": 5
+  }
+}
+

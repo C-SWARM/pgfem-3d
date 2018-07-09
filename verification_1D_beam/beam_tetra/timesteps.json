@@ -1,0 +1,7 @@
+{
+  "number_of_time_steps": 6000,
+  "time_steps": "0.0:0.15:0.000025",
+  "number_of_steps_to_print": 300,
+  "list_of_steps_to_print": "39:5999:20"
+}
+

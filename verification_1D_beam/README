@@ -1,0 +1,16 @@
+#1 make parallelized files
+
+" ./local_makeset.pl -np [NCPU] [El_SIZE] [EL_ORDER] "
+
+" [NCPU]    : the number of CPU "
+" [EL_SIZE] : element size "
+" [EL_ORDER]: element order; 1 (linear) 2 (quadratic) "
+
+don't forget "module load gcc intel"
+
+#2 submit the job
+" qsub run.sh [NCPU] [El_SIZE] [EL_ORDER] [Method/#] "
+
+" [Method/#] : the solver method; disp, cm 1, cm3f 1 " 
+
+
