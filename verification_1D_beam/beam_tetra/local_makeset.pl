@@ -25,7 +25,7 @@ $el_order = $ARGV[2];
 
 # t3d/ t3d2psifel/ con3d++ options
 $t3d_options = "-d $el_size -k $el_order -r 1 -p 8"; #'-\$ -X';
-$decomposition_options = '-sp';
+$decomposition_options = '-nt 12 -sp';
 $convert_options = '-v -HumanReadable'; #'-pr 200.0 200.0 200.0';
 
 # path settings
@@ -49,7 +49,6 @@ if ( !(-e "$filebase.out.periodic") && ($convert_options =~ /pr/) ) { &do_error(
       print "Meshing data set.\n\n";
       
       system "$t3d_path -i $filebase.t3d -o $filebase.out $t3d_options";
-      system "cp $filebase.out $filebase.out ";
     }
     
     $dir = "$filebase"."_$nproc" . "CPU";

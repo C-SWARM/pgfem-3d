@@ -1,16 +1,26 @@
-#1 make parallelized files
-
+#1 Input of the parallelized file
+" module load gcc intel "
 " ./local_makeset.pl -np [NCPU] [El_SIZE] [EL_ORDER] "
 
 " [NCPU]    : the number of CPU "
 " [EL_SIZE] : element size "
 " [EL_ORDER]: element order; 1 (linear) 2 (quadratic) "
 
-don't forget "module load gcc intel"
 
-#2 submit the job
+
+#2 Input of the script file
 " qsub run.sh [NCPU] [El_SIZE] [EL_ORDER] [Method/#] "
 
+" [NCPU]    : the number of CPU "
+" [EL_SIZE] : element size "
+" [EL_ORDER]: element order; 1 (linear) 2 (quadratic) "
 " [Method/#] : the solver method; disp, cm 1, cm3f 1 " 
 
+#3 FFT part - MATLAB
+L = numel(time);
+Fs = 1/(time(end) - time(end-1));
+NFFT = 2^nextpow2(L); % Next power of 2 from length of y
+Y = fft(dispdata,NFFT)/L;
+f = Fs/2*linspace(0,1,NFFT/2+1)';
+z = 2*abs(Y(1:NFFT/2+1));
 

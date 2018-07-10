@@ -27,13 +27,12 @@ module load pgfem3d/mvapich2-2.2-gcc-7.1.0-mlx-develop
 
 setenv TEST_DIR $PWD
 setenv name beam
-setenv exe /afs/crc.nd.edu/user/s/skim43/PGFem3D_tutorial/pgfem_3d/build_develop/bin/PGFem3D
 setenv opts "-SS -${method} ${numb} -restart -1 -noLS -no-compute-macro -maxit 5000 -kdim 3000 -V"
 
 setenv input ${method}_${name}_${NP}CPU/${name}_
 setenv output ${TEST_DIR}/out_${method}S${el_size}O${el_order}/${name}_
 
-setenv run "mpirun -np $NP $exe  $opts $input $output"
+setenv run "mpirun -np $NP PGFem3D  $opts $input $output"
 
 echo $run
 $run
