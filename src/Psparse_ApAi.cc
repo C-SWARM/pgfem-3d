@@ -950,11 +950,136 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
 				       const int nsend,
 				       const int nrecv)
 {
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  CID lid = 0xcafebabe;
+  
+  // send the local S value to each pre-determined rank
+  for (int p = 0; p < nrecv; p++) {
+    int sendTo = preRecv[p];
+    CID rid = (CID)comm->S[sendTo];
+    net->pwc(sendTo, 0, 0, 0, lid, rid);
+  }
+  
+  /* Allocate send space and determine the reduced list of procs to
+     send to. */
+  {
+    long KK = 0;
+    if (comm->Ns == 0) KK = 1; else  KK = comm->Ns;
+    comm->Nss = PGFEM_calloc (long, KK);
+  }
+
+  int t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->S[i] > 0)
+      comm->Nss[t_count++] = i;
+  }
+
+  // wait for local PWC completions from above
+  net->wait_n_id(nrecv, lid);
+  
+  // Process received message as they arrive
+  t_count = 0;
+  comm->Nr = nsend;
+  while (t_count < nsend) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int p = stat.NET_SOURCE;
+      // the long values exchanged are encoded in the PWC RIDs
+      comm->R[p] = (long)val;
+      if (comm->R[p] == 0){
+	comm->Nr--;
+      }
+      t_count++;
+    }
+  }
+
+  /* Allocate receive space and determine the reduced list of
+     processors to receive from */
+  {
+    long KK = 0;
+    if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
+    comm->Nrr = PGFEM_calloc (long, KK);
+  }
+
+  t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->R[i] > 0)
+      comm->Nrr[t_count++] = i;
+  }
+  
   return 0;
 }
 
 static int determine_comm_pattern_PWC(CommunicationStructure *com)
 {
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  CID lid = 0xcafebabe;
+  
+  // send the local S[p] value to each associated rank
+  for (int p = 0; p < nproc; p++) {
+    if (p == myrank) continue;
+    CID rid = (CID)comm->S[p];
+    net->pwc(p, 0, 0, 0, lid, rid);
+  }
+  
+  /* Allocate send space and determine the reduced list of procs to
+     send to. */
+  {
+    long KK = 0;
+    if (comm->Ns == 0) KK = 1; else  KK = comm->Ns;
+    comm->Nss = PGFEM_calloc (long, KK);
+  }
+
+  int t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->S[i] > 0)
+      comm->Nss[t_count++] = i;
+  }
+
+  // wait for local PWC completions from above
+  net->wait_n_id(nproc-1, lid);
+  
+  // Process received message as they arrive
+  t_count = 0;
+  while (t_count < nproc-1) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int p = stat.NET_SOURCE;
+      // the long values exchanged are encoded in the PWC RIDs
+      comm->R[p] = (long)val;
+      if (p != myrank && comm->R[p] > 0){
+	comm->Nr++;
+      }
+      t_count++;
+    }
+  }
+
+  /* Allocate receive space and determine the reduced list of
+     processors to receive from */
+  {
+    long KK = 0;
+    if (comm->Nr == 0) KK = 1; else KK = comm->Nr;
+    comm->Nrr = PGFEM_calloc (long, KK);
+  }
+
+  t_count = 0;
+  for (int i = 0; i < nproc; i++){
+    if (i != myrank && comm->R[i] > 0)
+      comm->Nrr[t_count++] = i;
+  }
+  
   return 0;
 }
 

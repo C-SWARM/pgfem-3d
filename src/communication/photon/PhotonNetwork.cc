@@ -62,10 +62,15 @@ PhotonNetwork::PhotonNetwork()
   op_bor = static_cast<op_t>(photon_op_bor);
 
   NET_COMM_WORLD = static_cast<PGFem3D_Comm>(PHOTON_COMM_WORLD);
+
+  // Allocate workspace
+  assert(cfg.nproc);
+  wbuf = new Buffer[cfg.nproc];
 }
 
 PhotonNetwork::~PhotonNetwork()
 {
+  delete [] wbuf;
 }
 
 int PhotonNetwork::type() const {

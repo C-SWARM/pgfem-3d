@@ -59,6 +59,9 @@ public:
   void progress(int *flag, CID *comp, Status *status, void (*cb)(CID));
   void wait_n(int count);
   void wait_n_id(int count, const CID& id);
+
+  // Workspace for tracking remote buffer metadata
+  Buffer *wbuf;
   
 private:
   static void Check(int rc) {
