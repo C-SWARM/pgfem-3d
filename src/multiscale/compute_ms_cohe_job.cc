@@ -152,6 +152,21 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
   return cell_failure_detected;
 }
 
+//Frobenius of the deflection matrix
+int find_norm(MultiscaleCommon *c, MULTISCALE_SOLUTION *s,int myrank) {
+  int i;
+  double sum = 0;
+  int high_norm = 0;
+  for (i = 0; i < 9 ; i++) {
+    sum += c->supports->defl[i]*c->supports->defl[i];
+  }
+  sum = sqrt(sum);
+  if (sum > 0.0001) {
+    high_norm = 1;
+  }
+
+return high_norm;
+}
 
 
 //defl = gradU, so U = x - X 
@@ -196,6 +211,7 @@ int compute_ms_cohe_job(const int job_id,
 {
   int err = 0;
   const int print_level = 1;
+  int high_norm;
   MultiscaleCommon *common = microscale;
   MULTISCALE_SOLUTION *sol = microscale->sol + job_id;
 
@@ -241,11 +257,18 @@ int compute_ms_cohe_job(const int job_id,
 
 //1 -> nr
 //0 -> tm
-      PGFEM_printf("\n custom micro option:  %d \n) ",microscale->opts->custom_micro);
-
+    if(microscale->opts->auto_micro) {
+      high_norm = find_norm(common,sol,myrank);
+      if(high_norm) {
+        err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id);
+      } else {
+        ms_cohe_job_tm(common,sol,myrank);
+      }
+    }
+//1 -> nr
+////0 -> tm
     if(microscale->opts->custom_micro) {
       int simulation_method = microscale->opts->methods[p_job->elem_id + common->nce*0]; // using 0th time step for now
-      PGFEM_printf("simulation method was %d \n",simulation_method);
 
       if (simulation_method){
         err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //nr = Newton Raphson
@@ -255,7 +278,6 @@ int compute_ms_cohe_job(const int job_id,
     } else {
       err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //always newton raphson (full pde)
     }
-
 
 
     /*=== INTENTIONAL DROP THROUGH ===*/

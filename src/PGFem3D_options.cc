@@ -244,6 +244,7 @@ void set_default_options(PGFem3D_opt *options)
   options->ofname = NULL;
   options->walltime = -1.0;
   options->custom_micro = 0; //default no taylor methods
+  options->auto_micro = 0;
 }
 
 void print_options(FILE *out, const PGFem3D_opt *options)
@@ -848,6 +849,10 @@ void get_macro_micro_option_blocks(int myrank,
         PGFEM_printf("\texpecting custom micro-scale simulation method file (.msm) \n");
       }
     }
+    if (strcmp("-auto_micro",arg) == 0) {
+      options->auto_micro = 1;
+    }
+
 
   } /* end parse command line */
 

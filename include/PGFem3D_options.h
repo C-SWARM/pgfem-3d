@@ -32,6 +32,7 @@ struct PGFem3D_opt {
   int multi_scale;
   int cm;
   int custom_micro;       //if micro will contain taylor method
+  int auto_micro;
   int *methods;           //which micro cells contain taylor method
 
 
