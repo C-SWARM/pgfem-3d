@@ -390,8 +390,8 @@ void VTK_print_vtu(const char *path,
       S[4] = sig[i].il[0].o[1];
       S[5] = sig[i].il[0].o[3];
 
-      S[6] = sig[i].il[0].o[3];
-      S[7] = sig[i].il[0].o[4];
+      S[6] = sig[i].il[0].o[4];
+      S[7] = sig[i].il[0].o[3];
       S[8] = sig[i].il[0].o[2];
 
       cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,ndim,ndim,ndim,
@@ -1161,7 +1161,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
 
 /// write Cauchy Stress for Mechanical part
 ///
-/// s(1,1), s(2,2), s(3,3), s(2,3), s(1,3),  s(1,2) components will be written
+/// s(1,1), s(2,2), s(3,3), s(1,2), s(2,3), s(1,3) components will be written
 /// This function is used indirectly through function pointer in pmr->write_vtk
 ///
 /// \param[in] out file pointer for writing vtk file
@@ -1196,7 +1196,7 @@ int VTK_write_data_CauchyStress(FILE *out,
 
 /// write Euler Strain for Mechanical part
 ///
-/// e(1,1), e(2,2), e(3,3), e(2,3), e(1,3),  e(1,2) components will be written
+/// e(1,1), e(2,2), e(3,3), e(1,2), e(2,3), e(1,3) components will be written
 /// This function is used indirectly through function pointer in pmr->write_vtk
 ///
 /// \param[in] out file pointer for writing vtk file
