@@ -267,7 +267,7 @@ int multi_scale_main(int argc, char* argv[])
     micro->build_solutions(n_jobs_max);
 
     micro->opts->custom_micro = options.custom_micro;
-
+    micro->opts->auto_micro = options.auto_micro;
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */

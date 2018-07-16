@@ -154,14 +154,22 @@ static int update_job_information(MS_COHE_JOB_INFO *job)
 
 //Frobenius of the deflection matrix
 int find_norm(MultiscaleCommon *c, MULTISCALE_SOLUTION *s,int myrank) {
-  int i;
+  int i,j;
   double sum = 0;
   int high_norm = 0;
-  for (i = 0; i < 9 ; i++) {
-    sum += c->supports->defl[i]*c->supports->defl[i];
+  for (i = 0; i < 3 ; i++) {
+    for(j = 0; j < 3; j++) {
+      if(i==j) {
+        sum += (1 + c->supports->defl[i + 3*j])*(1 + c->supports->defl[i + 3*j]);
+      } else {
+        sum += c->supports->defl[i + 3*j]*c->supports->defl[i + 3*j];
+      }
+    }
   }
+
   sum = sqrt(sum);
-  if (sum > 0.0001) {
+
+  if (sum > 2.01 || sum < 1.65 ) {
     high_norm = 1;
   }
 
