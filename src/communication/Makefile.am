@@ -13,7 +13,8 @@ libcommunication_la_SOURCES  = Communication.cc           \
 libcommunication_la_CPPFLAGS = -Wall -Werror \
                                -I$(top_srcdir)/include   \
                                -I$(top_builddir)/include \
-                               $(LIBGCM_CPPFLAGS)
+                               $(LIBGCM_CPPFLAGS)        \
+                               $(LAPACK_INCLUDE)
 
 if HAVE_MPI
 libcommunication_la_SOURCES += mpi/MPINetwork.cc
