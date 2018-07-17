@@ -78,7 +78,7 @@ class CP_PARAM: public Model_parameters
   virtual int destroy_ctx(void **ctx) const;
   virtual int compute_dMdu(const Constitutive_model *m,
                            const void *ctx,
-                           const double *Grad_op,
+                           double *Grad_op,
                            const int nne,
                            const int ndofn,
                            double *dM_du) const;

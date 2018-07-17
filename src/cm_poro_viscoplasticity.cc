@@ -200,18 +200,21 @@ const
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   
   memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
-  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
-  GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
-  
-  err += poro_visco_plasticity_integration_algorithm(mat_pvp,
-                                                     solver_info,
-                                                     Fs[TENSOR_Fnp1].m_pdata,
-                                                     Fs[TENSOR_Fn].m_pdata,
-                                                     Fs[TENSOR_pFnp1].m_pdata,
-                                                     Fs[TENSOR_pFn].m_pdata,
-                                                     vars+VAR_pc_np1,
-                                                     vars[VAR_pc_n],
-                                                     dt);
+
+  GcmPvpIntegrator integrator;
+  integrator.mat = (m->param)->cm_mat->mat_pvp;
+  integrator.solver_info = (m->param)->gcm_solver_info;
+  integrator.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
+                         Fs[TENSOR_Fn].m_pdata,
+                         Fs[TENSOR_Fnm1].m_pdata,                         
+                         Fs[TENSOR_pFnp1].m_pdata,
+                         Fs[TENSOR_pFn].m_pdata,
+                         CTX->hFnp1,
+                         CTX->hFn);
+  integrator.pc_np1 = vars+VAR_pc_np1;
+  integrator.pc_n   = vars[VAR_pc_n];
+  err += integrator.run_integration_algorithm(dt, dt);
+
   return err;
 }
 
@@ -335,7 +338,7 @@ const
       eF = Fnp1(i,k)*pFnp1_I(k,j);
     
     poro_visco_plasticity_update_elasticity(S, L, mat_pvp,
-                                            eF.data, pc, compute_stiffness);
+                                            eF.data, pc, compute_stiffness);                                           
   }     
   return err;
 }
@@ -751,12 +754,15 @@ const
 
 int CM_PVP_PARAM::compute_dMdu(const Constitutive_model *m,
                                const void *ctx,
-                               const double *Grad_op,
+                               double *Grad_op,
                                const int nne,
                                const int nsd,
                                double *dM_du)
 const
 {
+  for(int ia=0; ia<nne*nsd*DIM_3x3; ia++)
+    dM_du[ia] = 0.0;
+  
   int err = 0;
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
   const double dt = CTX->dt;
@@ -764,7 +770,7 @@ const
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
   GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
-  
+    
   poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
                                      Fs[TENSOR_Fnp1].m_pdata,
                                      Fs[TENSOR_Fn].m_pdata,
@@ -849,11 +855,22 @@ const
    match += fscanf(in, "%lf", param + PARAM_NO-4 + ia);
   
   err += scan_for_valid_line(in);
+  
   match += fscanf(in, "%d %d %d %lf %lf", param_idx + PARAM_max_itr_stag,
                                           param_idx + PARAM_max_itr_M,
                                           param_idx + PARAM_max_subdivision,
                                           param     + PARAM_tol,
                                           param     + PARAM_computer_zero);
+
+
+  set_gcm_solver_info(this->gcm_solver_info, 
+                      param_idx[PARAM_max_itr_stag],
+                      param_idx[PARAM_max_itr_M],
+                      param_idx[PARAM_max_itr_M],
+                      param[PARAM_tol],
+                      param[PARAM_tol],
+                      param[PARAM_computer_zero]);
+                                                
   if(match != (PARAM_NO + PARAM_INX_NO))
   {   
     err++;
@@ -899,7 +916,8 @@ int CM_PVP_PARAM::model_dependent_initialization(void)
   this->n_param           = PARAM_NO;
   this->model_param       = new double[PARAM_NO]();
   this->n_param_index     = PARAM_INX_NO;
-  this->model_param_index = new int [PARAM_INX_NO]();  
+  this->model_param_index = new int [PARAM_INX_NO]();
+  this->gcm_solver_info   = new GcmSolverInfo;  
   
   return err;
 }
@@ -907,6 +925,7 @@ int CM_PVP_PARAM::model_dependent_initialization(void)
 int CM_PVP_PARAM::model_dependent_finalization(void)
 {
   int err = 0;
-  delete (this->cm_mat)->mat_pvp;  
+  delete (this->cm_mat)->mat_pvp;
+  delete this->gcm_solver_info;
   return err;
 }

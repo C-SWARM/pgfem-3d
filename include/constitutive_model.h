@@ -541,7 +541,7 @@ class Model_parameters
   /// \return non-zero on internal error
   virtual int compute_dMdu(const Constitutive_model *m,
                            const void *ctx,
-                           const double *Grad_op,
+                           double *Grad_op,
                            const int nne,
                            const int ndofn,
                            double *dM_du)
