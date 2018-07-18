@@ -12,6 +12,10 @@
 #include "string.h"
 #include "utils.h"
 
+#ifdef HAVE_PHOTON
+#include "communication/photon/PhotonNetwork.hpp"
+#endif
+
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -1236,12 +1240,12 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 }
 
 static int communicate_row_info_ISIR(CommunicationStructure *com,
-				     long ***GIDRr,
-				     const long NRr,
-				     const long *ApRr,
-				     const long *ap,
-				     long **AA,
-				     long **ID)
+				    long ***GIDRr,
+				    const long NRr,
+				    const long *ApRr,
+				    const long *ap,
+				    long **AA,
+				    long **ID)
 {
   int err = 0;
   int myrank = com->rank;
@@ -1423,17 +1427,174 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
 
   dealoc2l(RECI,nproc);
 
-  return err;
+  return 0;
 }
 
 static int communicate_row_info_PWC(CommunicationStructure *com,
-				    long ***GIDRr,
-				    const long NRr,
-				    const long *ApRr,
-				    const long *ap,
-				    long **AA,
-				    long **ID)
+				     long ***GIDRr,
+				     const long NRr,
+				     const long *ApRr,
+				     const long *ap,
+				     long **AA,
+				     long **ID)
 {
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  pwc::PhotonNetwork *net = static_cast<pwc::PhotonNetwork*>(com->net);
+  CID lid = 0xcafebabe;
+
+  /* clear the number of communication */
+  memset(comm->AS,0,nproc*sizeof(long));
+  memset(comm->AR,0,nproc*sizeof(long));
+
+  /* Allocate and compute quantity information to send */
+  comm->SAp = PGFEM_calloc (long*, nproc);
+  for (int i = 0; i < comm->Ns; i++) {
+    int idx = comm->Nss[i];
+    comm->SAp[idx] = PGFEM_calloc (long, comm->S[idx]);
+  }
+
+  for (int i = 0; i < nproc;i++){
+    if (i != myrank){
+      int ncols = 0;
+      for (int j = 0; j < comm->S[i]; j++){
+        ncols += comm->SAp[i][j] = ap[AA[i][j]];
+      }
+      comm->AS[i] = ncols;
+    }
+  }
+  
+  /* Send allocation information */
+  for (int i = 0; i < comm->Ns; i++){
+    int s_idx = comm->Nss[i];
+    CID rid = (CID)comm->AS[s_idx];
+    net->pwc(s_idx, 0, 0, 0, lid, rid);
+  }
+
+  comm->SGRId = PGFEM_calloc (long*, nproc);
+  Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
+  for (int i = 0; i < comm->Ns; i++){
+    int KK = comm-> Nss[i];
+    comm->SGRId[KK] = PGFEM_calloc (long, comm->AS[KK]);
+    comm->SGRId[KK] = static_cast<long*>(PGFEM_CALLOC_PIN (comm->AS[KK],
+				sizeof(long), net, &sbuffers[i].key,
+                                __func__, __FILE__, __LINE__));
+    sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
+    sbuffers[KK].size = sizeof(long)*comm->AS[KK];
+    //net->pin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size, &rbuffers[KK].key);
+  }
+
+  /* wait for local PWC completions from above */
+  net->wait_n_id(comm->Ns, lid);
+ 
+  int t_count = 0;
+  while (t_count < comm->Nr) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int p = stat.NET_SOURCE;
+      // the long values exchanged are encoded in the PWC RIDs
+      comm->AR[p] = (long)val;
+      t_count++;
+    }
+  }
+ 
+  /* Allocate recieve buffer */
+  long **RECI = PGFEM_calloc (long*, nproc);
+  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
+  for (int i = 0; i < nproc; i++) {
+    int JJ = 0;
+    if (comm->AR[i] == 0) JJ = 1; else JJ = comm->AR[i];
+    RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (JJ,
+				sizeof(long), net, &rbuffers[i].key,
+				__func__, __FILE__, __LINE__));
+    rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
+    rbuffers[i].size = sizeof(long)*JJ;
+    //net->pin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size, &rbuffers[i].key);
+  }
+
+  /* Exchange receive buffers */
+  for (int i = 0; i < nproc; i++) {
+    net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
+	net->wbuf, sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+  }
+
+  /* Send data with pwc */
+  for (int i = 0; i < comm->Ns; i++){
+    int KK = comm->Nss[i];
+    
+    int II = 0;
+    for (int j = 0; j < comm->S[KK]; j++){
+      for (int k = 0; k < ap[AA[KK][j]]; k++){
+        comm->SGRId[KK][II] = ID[AA[KK][j]][k];
+        II++;
+      }
+    }
+    CID rid = (CID)comm->AS[KK];
+    net->pwc(KK, sbuffers[KK].size, &sbuffers[KK], &net->wbuf[KK], lid, rid);
+  }/* end i < comm->Ns */
+
+  /****************/
+  /* Recieve data */
+  /****************/
+  {
+    int KK = 0;
+    if (NRr == 0) KK = 1; else KK = NRr;
+    *GIDRr = PGFEM_calloc (long*, KK);
+  }
+
+  for (int i = 0; i < NRr; i++){
+    (*GIDRr)[i]= PGFEM_calloc (long, ApRr[i]);
+  }
+
+  comm->RGRId = PGFEM_calloc (long*, nproc);
+  for (int i = 0; i < comm->Nr; i++) {
+    int KK = comm->Nrr[i];
+    comm->RGRId[KK] = PGFEM_calloc (long, comm->AR[KK]);
+  }
+
+  /* WAIT ANY and unpack */
+  /* Wait to complete the communications */
+  net->wait_n_id(comm->Ns, lid);
+
+  int JJ = 0;
+  t_count = 0;
+  while (t_count < comm->Nr) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int KK = stat.NET_SOURCE;
+      int II = 0;
+      for (int j = 0; j < comm->R[KK]; j++){
+        /* Below is a fix to pass the static analyzer.
+           We should probably use an exception handler instead. */
+        for (int k = 0; ApRr != nullptr && k < *(ApRr+JJ); k++){
+          (*GIDRr)[JJ][k] = comm->RGRId[KK][II] = RECI[KK][II];
+          II++;
+        }
+        JJ++;
+      }
+      t_count++;
+    }
+  }
+
+  for (int i = 0; i < nproc; i++) {
+    net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
+  }
+
+  for (int i = 0; i < comm->Ns; i++){
+    int KK = comm->Nss[i];
+    net->unpin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size);
+  }
+
+  dealoc1l(rbuffers);
+  dealoc1l(sbuffers);
+  dealoc2l(RECI,nproc);
 
   return 0;
 }
