@@ -1235,6 +1235,135 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 					   const long *ap,
 					   long **AA)
 {
+  int nproc = com->nproc;
+  SparseComm *comm = com->spc;
+  pwc::PhotonNetwork *net = static_cast<pwc::PhotonNetwork*>(com->net);
+  CID lid = 0xcafebabe;
+
+  /* How many numbers I will send */
+  for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to
+    comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
+  }
+
+  /* How many numbers I will receive */
+  for(int i = 0; i < comm->Nr; i++){                                            //loop over number to receive
+    comm->AR[comm->Nrr[i]] = 2*comm->R[comm->Nrr[i]];                           //number to receive was in comm->R
+  }
+
+  long **SEND = NULL;
+  long **RECI = NULL;
+
+  if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                       //similar with SEND
+  if(comm->Nr > 0) RECI = PGFEM_calloc (long*, comm->Nr);                       //and RECI
+
+  /* =======================================================*/
+
+  // A temp array to record the mapping from r_idx to i for later use
+  int *r_map = PGFEM_calloc (int, nproc);
+
+  /* Allocate recieve buffer */
+  Buffer *rbuffers = NULL;
+  if(comm->Nr > 0) rbuffers = PGFEM_calloc (Buffer, comm->Nr);
+  for (int i = 0; i < comm->Nr; i++) {
+    int r_idx = comm->Nrr[i];
+    r_map[r_idx] = i;
+    int n_rec = comm->AR[r_idx];
+    RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_rec,
+				sizeof(long), net, &rbuffers[i].key,
+				__func__, __FILE__, __LINE__));
+    rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
+    rbuffers[i].size = sizeof(long)*n_rec;
+
+    /* Exchange receive buffers */
+    net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
+        net->wbuf, sizeof(Buffer), NET_DT_BYTE, r_idx, com->comm);
+  }
+
+  /* Post sends */
+  Buffer *sbuffers = NULL;
+  if(comm->Ns > 0) sbuffers = PGFEM_calloc (Buffer, comm->Ns);
+  for (int i = 0; i < comm->Ns; i++){
+    int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
+    int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
+
+    SEND[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_send,
+				sizeof(long), net, &sbuffers[i].key,
+                                __func__, __FILE__, __LINE__));
+    sbuffers[i].addr = reinterpret_cast<uintptr_t> (SEND[i]);
+    sbuffers[i].size = sizeof(long)*n_send;
+
+    /* populate send buffer */
+    for (int j = 0; j < comm->S[s_idx]; j++){
+      SEND[i][j] = LG[AA[s_idx][j]]; /* global? row id */                       //write letters
+      SEND[i][comm->S[s_idx] + j] = ap[AA[s_idx][j]]; /* # columns */           //
+    }
+
+    CID rid = (CID)n_send;
+    net->pwc(s_idx, sbuffers[i].size, &sbuffers[i], &net->wbuf[s_idx], lid, rid);
+  }
+
+  /* Compute the number of rows to receive */
+  {
+    long n_rows_recv = 0;
+    for (int i = 0; i < comm->Nr;i++)
+      n_rows_recv += comm->R[comm->Nrr[i]];
+
+    *NRr = n_rows_recv;
+    if(n_rows_recv > 0){
+      *GNRr = aloc1l (n_rows_recv);
+      *ApRr = aloc1l (n_rows_recv);
+    }
+  }
+
+  /* THIS IS BAD! RGID/RAp should only be comm->Nr long, however
+     propagating this fix is not trivial */
+  comm->RGID = PGFEM_calloc (long*, nproc);
+  comm->RAp = PGFEM_calloc (long*, nproc);
+
+  for (int i = 0; i < comm->Nr; i++) {
+    int KK = comm->Nrr[i];
+    comm->RGID[KK] = PGFEM_calloc (long, comm->R[KK]);
+    comm->RAp[KK] = PGFEM_calloc (long, comm->R[KK]);
+  }
+
+
+  /* CHANGE TO WAIT ANY */
+  /* Wait to complete the communications */
+  net->wait_n_id(comm->Ns, lid);
+  
+  /* Unpack it */
+  int II = 0;
+  int t_count = 0;
+  while (t_count < comm->Nr) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int KK = stat.NET_SOURCE;
+      for (int j = 0; *GNRr != nullptr && j < comm->R[KK]; j++) {
+        (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[r_map[KK]][j];
+        (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[r_map[KK]][comm->R[KK]+j];
+      }
+      II += comm->R[KK];
+    }
+    t_count++;
+  }
+
+  /* Deallocate */
+  for (int i = 0; i < comm->Nr; i++) {
+    net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
+  }
+
+  for (int i = 0; i < comm->Ns; i++){
+    net->unpin(reinterpret_cast<void *> (sbuffers[i].addr), sbuffers[i].size);
+  }
+
+  dealoc1l(rbuffers);
+  dealoc1l(sbuffers);
+  dealoc1l(r_map);
+  dealoc2l(SEND,comm->Ns);
+  dealoc2l(RECI,comm->Nr);
 
   return 0;
 }
