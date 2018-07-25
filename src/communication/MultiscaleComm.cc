@@ -17,7 +17,8 @@ namespace pgfem3d {
     micro_all = world;
     micro = world;
     mm_inter = world;
-    
+    micro_1 = world;
+    micro_2 = world;   
     /* store rank */
     n->comm_rank(comm_world, &myrank);
     rank_world = myrank;
@@ -59,7 +60,9 @@ namespace pgfem3d {
   }
   
   void MultiscaleComm::MM_split(const int macro_nproc,
-				const int micro_group_size)
+				const int micro_group_size,
+        const int micro2_group_size,
+        const int full_micro_np)
   {
     int nproc_world = 0;
     net->comm_size(world, &nproc_world);
@@ -75,7 +78,7 @@ namespace pgfem3d {
 	PGFEM_Abort();
       }
     }
-    
+    //NET is typically MPI 
     /* split into macro and micro communicators */
     {
       const int macro_color = (rank_world < macro_nproc) ? 1 : NET_UNDEFINED;
@@ -84,6 +87,18 @@ namespace pgfem3d {
       const int micro_color = (rank_world < macro_nproc) ? NET_UNDEFINED : 1;
       net->comm_split(world, micro_color, rank_world, &micro_all);
     }
+
+    // split micro into micro 1 and 2
+    {
+      const int micro1_color = (rank_world < macro_nproc + full_micro_np) ? 1 : 2;
+      net->comm_split(micro_all,micro1_color, micro_all, &micro_1);
+
+      const int micro2_color = (rank_world < macro_nproc + full_micro_np) ? 2 : 1;
+      net->comm_split(micro_all,micro2_color, micro_all, &micro_2);
+      
+    }
+    
+
     
     /* get ranks on new communicators */
     if (macro == NET_COMM_NULL) {
@@ -99,40 +114,89 @@ namespace pgfem3d {
     } else {
       net->comm_rank(micro_all, &rank_micro_all);
     }
-    
-    /* split micro communicator into work groups */
-    if (valid_micro_all && micro_group_size > 0) {
+   
+    if (micro_1 == NET_COMM_NULL) {
+      valid_micro_1 = 0;
+      rank_micro_1 = NET_UNDEFINED;
+    } else {
+      net->comm_rank(micro_1, &rank_micro_1);
+    }
+
+    if (micro_2 == NET_COMM_NULL) {
+      valid_micro_2 = 0;
+      rank_micro_2 = NET_UNDEFINED;
+    } else {
+      net->comm_rank(micro_2, &rank_micro_2);
+    }
+
+
+ 
+    /* split micro 1 communicator into work groups */
+    if (valid_micro_1 && micro_group_size > 0) {
       int color = NET_UNDEFINED;
       /* integer division for group id */
-      if (rank_micro_all != NET_UNDEFINED){
-	color = rank_micro_all / micro_group_size;
+      if (rank_micro_1 != NET_UNDEFINED){
+        color = rank_micro_1 / micro_group_size;
       }
-      net->comm_split(micro_all, color, rank_micro_all, &micro);
-      net->comm_rank(micro, &rank_micro);
-      
+      net->comm_split(micro_1, color, rank_micro_1, &micro);
+      net->comm_rank(micro, &rank_micro_1);
+
       /*Create inter-micro communicators between equivalent procs on
 	different microstructures. This allows direct communication
 	between workers using the rank as the server id. Split
 	micro_all communicator by rank in micro using rank_micro as the
 	color and rank_micro_all as the key. */
-      net->comm_split(micro_all, rank_micro, rank_micro_all, &worker_inter);
+      net->comm_split(micro_1, rank_micro_1, rank_micro_all, &worker_inter);
       net->comm_rank(worker_inter, &server_id);
     } else {
       micro = NET_COMM_NULL;
       valid_micro = 0;
       rank_micro = NET_UNDEFINED;
     }
+
+
+    /* split micro 2 communicator into work groups */
+    if (valid_micro_2 && micro2_group_size > 0) {
+      int color = NET_UNDEFINED;
+      /* integer division for group id */
+      if (rank_micro_2 != NET_UNDEFINED){
+        color = rank_micro_2 / micro2_group_size;
+      }
+      net->comm_split(micro_2, color, rank_micro_2, &micro2);
+      net->comm_rank(micro2, &rank_micro_2);
+
+      /*Create inter-micro communicators between equivalent procs on
+    different microstructures. This allows direct communication
+    between workers using the rank as the server id. Split
+    micro_all communicator by rank in micro using rank_micro as the
+    color and rank_micro_all as the key. */
+      net->comm_split(micro_2, rank_micro_2, rank_micro_all, &worker_inter_2);
+      net->comm_rank(worker_inter_2, &server_id);
+    } else {
+      micro = NET_COMM_NULL;
+      valid_micro = 0;
+      rank_micro = NET_UNDEFINED;
+    }
+
     
     /* create the micro-macro intercommunicator */
     {
       int color = NET_UNDEFINED;
-      if(rank_macro != NET_UNDEFINED
-	 || rank_micro == 0){
-	color = 1;
+      if(rank_macro != NET_UNDEFINED || rank_micro_1 == 0){
+      	color = 1;
       }
       net->comm_split(world, color, rank_world, &mm_inter);
     }
     
+    /* create the micro2-macro intercommunicator */
+    {
+      int color = NET_UNDEFINED;
+      if(rank_macro != NET_UNDEFINED || rank_micro_2 == 0){
+        color = 1;
+      }
+      net->comm_split(world, color, rank_world, &mm_inter2);
+    }
+
     /* get rank on new communicator */
     if (mm_inter == NET_COMM_NULL) {
       valid_mm_inter = 0;
@@ -140,6 +204,14 @@ namespace pgfem3d {
     } else {
       net->comm_rank(mm_inter, &rank_mm_inter);
     }
+    /* get rank on new communicator */
+    if (mm_inter2 == NET_COMM_NULL) {
+      valid_mm_inter = 0;
+      rank_mm_inter = NET_UNDEFINED;
+    } else {
+      net->comm_rank(mm_inter2, &rank_mm_inter);
+    }
+
   }
   
 } // end namespace pgfem3d

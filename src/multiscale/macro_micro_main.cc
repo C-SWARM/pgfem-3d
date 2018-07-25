@@ -72,13 +72,19 @@ int multi_scale_main(int argc, char* argv[])
   PGFEM_initialize_io(NULL,NULL);
 
   int nproc_macro = 0;
+  int full_micro_np = 0;
   int micro_group_size = 0;
+  int micro2_group_size = 0;
   int macro_start = 0;
   int macro_argc = 0;
   char **macro_argv = NULL;
   int micro_start = 0;
   int micro_argc = 0;
   char **micro_argv = NULL;
+  int micro2_start = 0;
+  int micro2_argc = 0;
+  char **micro2_argv = NULL;
+
   int debug = 0;
 
   PGFem3D_opt options;
@@ -88,8 +94,8 @@ int multi_scale_main(int argc, char* argv[])
   int myrank = boot->get_rank();
   get_macro_micro_option_blocks(myrank, argc, argv,
                                 &macro_start,&macro_argc,
-                                &micro_start,&micro_argc,
-                                &nproc_macro,&micro_group_size,
+                                &micro_start,&micro2_start,&micro_argc,&micro2_argc,
+                                &nproc_macro,&micro_group_size,&micro2_group_size,&full_micro_np,
                                 &debug,&options);
 
   /*=== Parse the command line for global options ===*/
@@ -116,8 +122,10 @@ int multi_scale_main(int argc, char* argv[])
      '-micro-start' with '-ms' and increment micro_argc */
   micro_argv = argv + micro_start - 1;
   micro_argc++;
+  micro2_argv = argv + micro2_start - 1;
+  micro2_argc++;
   sprintf(micro_argv[1],"-ms");
-
+  sprintf(micro2_argv[1],"-ms");
   while(debug);
   
   //----------------------------------------------------------------------
@@ -140,7 +148,7 @@ int multi_scale_main(int argc, char* argv[])
   }
 
   // split multiscale communicators
-  mscom->MM_split(nproc_macro, micro_group_size);
+  mscom->MM_split(nproc_macro, micro_group_size,micro2_group_size,full_micro_np);
   
   /*=== READ COMM HINTS ===*/
   //allocate memory

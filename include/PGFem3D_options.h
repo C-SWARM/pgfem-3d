@@ -101,9 +101,13 @@ void get_macro_micro_option_blocks(int myrank,
                                    int *macro_start,
                                    int *macro_argc,
                                    int *micro_start,
+                                   int *micro2_start,
                                    int *micro_argc,
+                                   int *micro2_argc,
                                    int *macro_nproc,
                                    int *micro_group_size,
+                                   int *micro2_group_size,
+                                   int *full_micro_np,
                                    int *debug,
                                     PGFem3D_opt *options);
 
