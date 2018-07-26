@@ -959,12 +959,15 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebabe;
+
+  comm->Ns = nrecv;
   
   // send the local S value to each pre-determined rank
   for (int p = 0; p < nrecv; p++) {
     int sendTo = preRecv[p];
     CID rid = (CID)comm->S[sendTo];
     net->pwc(sendTo, 0, 0, 0, lid, rid);
+    if (comm->S[sendTo] == 0) comm->Ns--;
   }
   
   /* Allocate send space and determine the reduced list of procs to
@@ -1033,6 +1036,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
     if (p == myrank) continue;
     CID rid = (CID)comm->S[p];
     net->pwc(p, 0, 0, 0, lid, rid);
+    if(comm->S[p] > 0) comm->Ns++;
   }
   
   /* Allocate send space and determine the reduced list of procs to
@@ -1254,43 +1258,40 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   long **RECI = NULL;
 
   if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                       //similar with SEND
-  if(comm->Nr > 0) RECI = PGFEM_calloc (long*, comm->Nr);                       //and RECI
+  RECI = PGFEM_calloc (long*, nproc);                       //and RECI
 
   /* =======================================================*/
 
-  // A temp array to record the mapping from r_idx to i for later use
-  int *r_map = PGFEM_calloc (int, nproc);
-
   /* Allocate recieve buffer */
-  Buffer *rbuffers = NULL;
-  if(comm->Nr > 0) rbuffers = PGFEM_calloc (Buffer, comm->Nr);
-  for (int i = 0; i < comm->Nr; i++) {
-    int r_idx = comm->Nrr[i];
-    r_map[r_idx] = i;
-    int n_rec = comm->AR[r_idx];
+  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
+  for (int i = 0; i < nproc; i++) {
+    int n_rec = 0;
+    if (comm->AR[i] == 0) n_rec = 1; else n_rec = comm->AR[i];
+
     RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_rec,
 				sizeof(long), net, &rbuffers[i].key,
 				__func__, __FILE__, __LINE__));
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*n_rec;
+  }
 
-    /* Exchange receive buffers */
+  /* Exchange receive buffers */
+  for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-        net->wbuf, sizeof(Buffer), NET_DT_BYTE, r_idx, com->comm);
+        net->wbuf, sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* Post sends */
-  Buffer *sbuffers = NULL;
-  if(comm->Ns > 0) sbuffers = PGFEM_calloc (Buffer, comm->Ns);
+  Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
   for (int i = 0; i < comm->Ns; i++){
     int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
     int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
 
     SEND[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_send,
-				sizeof(long), net, &sbuffers[i].key,
+				sizeof(long), net, &sbuffers[s_idx].key,
                                 __func__, __FILE__, __LINE__));
-    sbuffers[i].addr = reinterpret_cast<uintptr_t> (SEND[i]);
-    sbuffers[i].size = sizeof(long)*n_send;
+    sbuffers[s_idx].addr = reinterpret_cast<uintptr_t> (SEND[i]);
+    sbuffers[s_idx].size = sizeof(long)*n_send;
 
     /* populate send buffer */
     for (int j = 0; j < comm->S[s_idx]; j++){
@@ -1299,7 +1300,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     }
 
     CID rid = (CID)n_send;
-    net->pwc(s_idx, sbuffers[i].size, &sbuffers[i], &net->wbuf[s_idx], lid, rid);
+    net->pwc(s_idx, sbuffers[s_idx].size, &sbuffers[s_idx], &net->wbuf[s_idx], lid, rid);
   }
 
   /* Compute the number of rows to receive */
@@ -1326,13 +1327,10 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     comm->RAp[KK] = PGFEM_calloc (long, comm->R[KK]);
   }
 
-
-  /* CHANGE TO WAIT ANY */
   /* Wait to complete the communications */
   net->wait_n_id(comm->Ns, lid);
   
   /* Unpack it */
-  int II = 0;
   int t_count = 0;
   while (t_count < comm->Nr) {
     int flag;
@@ -1340,30 +1338,36 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     Status stat;
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
-      int KK = stat.NET_SOURCE;
-      for (int j = 0; *GNRr != nullptr && j < comm->R[KK]; j++) {
-        (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[r_map[KK]][j];
-        (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[r_map[KK]][comm->R[KK]+j];
-      }
-      II += comm->R[KK];
+      t_count++;
     }
-    t_count++;
   }
 
+  int II = 0;
+  for (int i = 0; i < comm->Nr; i++){
+    int KK = comm->Nrr[i];
+    for (int j = 0; j < comm->R[KK]; j++) {
+      (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[KK][j];
+      (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[KK][comm->R[KK]+j];
+    }
+    II += comm->R[KK];
+  }
+  
+  net->barrier(com->comm);
+
   /* Deallocate */
-  for (int i = 0; i < comm->Nr; i++) {
+  for (int i = 0; i < nproc; i++) {
     net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
   }
 
   for (int i = 0; i < comm->Ns; i++){
-    net->unpin(reinterpret_cast<void *> (sbuffers[i].addr), sbuffers[i].size);
+    int s_idx = comm->Nss[i];
+    net->unpin(reinterpret_cast<void *> (sbuffers[s_idx].addr), sbuffers[s_idx].size);
   }
 
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
-  dealoc1l(r_map);
   dealoc2l(SEND,comm->Ns);
-  dealoc2l(RECI,comm->Nr);
+  dealoc2l(RECI,nproc);
 
   return 0;
 }
@@ -1605,13 +1609,12 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
   for (int i = 0; i < comm->Ns; i++){
     int KK = comm-> Nss[i];
-    comm->SGRId[KK] = PGFEM_calloc (long, comm->AS[KK]);
     comm->SGRId[KK] = static_cast<long*>(PGFEM_CALLOC_PIN (comm->AS[KK],
-				sizeof(long), net, &sbuffers[i].key,
+				sizeof(long), net, &sbuffers[KK].key,
                                 __func__, __FILE__, __LINE__));
     sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
-    //net->pin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size, &rbuffers[KK].key);
+    //net->pin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size, &sbuffers[KK].key);
   }
 
   /* wait for local PWC completions from above */
@@ -1640,6 +1643,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (JJ,
 				sizeof(long), net, &rbuffers[i].key,
 				__func__, __FILE__, __LINE__));
+    //RECI[i] = PGFEM_calloc (long, JJ);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
     //net->pin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size, &rbuffers[i].key);
@@ -1689,7 +1693,6 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   /* Wait to complete the communications */
   net->wait_n_id(comm->Ns, lid);
 
-  int JJ = 0;
   t_count = 0;
   while (t_count < comm->Nr) {
     int flag;
@@ -1697,21 +1700,24 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     Status stat;
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
-      int KK = stat.NET_SOURCE;
-      int II = 0;
-      for (int j = 0; j < comm->R[KK]; j++){
-        /* Below is a fix to pass the static analyzer.
-           We should probably use an exception handler instead. */
-        for (int k = 0; ApRr != nullptr && k < *(ApRr+JJ); k++){
-          (*GIDRr)[JJ][k] = comm->RGRId[KK][II] = RECI[KK][II];
-          II++;
-        }
-        JJ++;
-      }
       t_count++;
     }
   }
 
+  int JJ = 0;
+  for (int i = 0; i < comm->Nr;i ++){
+    int KK = comm->Nrr[i];
+    int II = 0;
+    for (int j = 0; j < comm->R[KK]; j++){
+      for (int k = 0; k < ApRr[JJ]; k++){
+        (*GIDRr)[JJ][k] = comm->RGRId[KK][II] = RECI[KK][II];
+        II++;
+      }
+      JJ++;
+    }
+  }
+
+  //net->barrier(com->comm);
   for (int i = 0; i < nproc; i++) {
     net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
   }
