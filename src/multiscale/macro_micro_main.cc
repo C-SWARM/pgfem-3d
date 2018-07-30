@@ -172,8 +172,10 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->macro; // MS communicators in mscom
-
+      PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
+      PGFEM_redirect_io_macro();
+
   }
   else {
     /*====== MICROSCALE =======*/
@@ -198,8 +200,10 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->micro; // MS communicators in mscom
-
+      PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
+      PGFEM_redirect_io_micro();
+
   }
   
   /*=== INITIALIZE SCALES ===*/
