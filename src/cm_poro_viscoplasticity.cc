@@ -763,23 +763,41 @@ const
   for(int ia=0; ia<nne*nsd*DIM_3x3; ia++)
     dM_du[ia] = 0.0;
   
-  int err = 0;
+  int err = 0;  
   auto CTX = (poro_viscoplasticity_ctx *) ctx;
   const double dt = CTX->dt;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
   GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
+
+  if(CTX->alpha<0){
+    poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
+                                       CTX->F,
+                                       Fs[TENSOR_Fn].m_pdata,
+                                       Fs[TENSOR_pFnp1].m_pdata,
+                                       Fs[TENSOR_pFn].m_pdata,
+                                       vars[VAR_pc_np1],
+                                       vars[VAR_pc_n],
+                                       dt, nne, nsd);
+  } else{
+    double I[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+    double pc_npa = 0.0;
     
-  poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
-                                     Fs[TENSOR_Fnp1].m_pdata,
-                                     Fs[TENSOR_Fn].m_pdata,
-                                     Fs[TENSOR_pFnp1].m_pdata,
-                                     Fs[TENSOR_pFn].m_pdata,
-                                     vars[VAR_pc_np1],
-                                     vars[VAR_pc_n],
-                                     dt, nne, nsd);
-                                     
+    Tensor<2> Fnpa,pFnpa,hFnpa;
+
+    mid_point_rule(Fnpa.data,  Fs[TENSOR_Fn].m_pdata,  CTX->F,                   CTX->alpha, DIM_3x3);
+    mid_point_rule(pFnpa.data, Fs[TENSOR_pFn].m_pdata, Fs[TENSOR_pFnp1].m_pdata, CTX->alpha, DIM_3x3);
+    mid_point_rule(&pc_npa,    vars+VAR_pc_n,          vars+VAR_pc_np1,          CTX->alpha, 1);
+            
+    if(CTX->is_coulpled_with_thermal)
+      mid_point_rule(hFnpa.data, CTX->hFn, CTX->hFnp1, CTX->alpha, DIM_3x3);
+    
+    poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
+                                       Fnpa.data,I,pFnpa.data,I,pc_npa,vars[VAR_pc_n],
+                                       dt, nne, nsd);
+  }
+  
   return err;
 }
 
