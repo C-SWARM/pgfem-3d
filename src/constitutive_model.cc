@@ -1234,6 +1234,7 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   err += param->integration_algorithm(this,ctx); // perform integration algorithm
   err += param->destroy_ctx(&ctx);
   return err;
+  
 }
 
 /// compute PK2 and elasticity tensor
@@ -1650,6 +1651,9 @@ int compute_stiffness_matrix(double *lk,
   TensorA<2> eFnM(eFnM_in);
   TensorA<2> S(S_in);
   TensorA<4> L(L_in);
+  Tensor<2> MI;
+  
+  inv(M,MI);
 
   Tensor<2> MTeFnT_sAA_eFn, MTeFnT_sAA_eFnM,
             sBB,sCC, dCdu;
@@ -1661,8 +1665,8 @@ int compute_stiffness_matrix(double *lk,
       const int id_ab = idx_4_gen(a,b,0,0,nne,nsd,nsd,nsd);
       TensorA<2> ST_ab((fe->ST)+id_ab);
 
-      Tensor<2> AA =  Fr(k,i).to(i,k)*ST_ab(k,j);
-      Tensor<2> sAA = 0.5*(AA(i,j) + AA(j,i).to(i,j));
+      Tensor<2> AA =  Fr(k,i)*ST_ab(k,j);
+      Tensor<2> sAA = 0.5*(AA(i,j) + AA(j,i));
 
       MTeFnT_sAA_eFn(i,j) = eFnMT(i,k) * sAA(k,l) * eFn(l,j);
       MTeFnT_sAA_eFnM(i,j) = MTeFnT_sAA_eFn(i,k) * M(k,j);
@@ -1676,16 +1680,16 @@ int compute_stiffness_matrix(double *lk,
 
           TensorA<2> dMdu(dMdu_all + id_wg);
 
-          Tensor<2> BB =  Fr(k,i).to(i,k) * ST_wg(k,j);
-          Tensor<2> sBB = 0.5 * (BB(i,j) + BB(j,i).to(i,j));
+          Tensor<2> BB =  Fr(k,i)*ST_wg(k,j);
+          Tensor<2> sBB = 0.5 * (BB(i,j) + BB(j,i));
 
-          Tensor<2> CC =  ST_ab(k,i).to(i,k) * ST_wg(k,j);
-          sCC = 0.5 * (CC(i,j) + CC(j,i).to(i,j));
+          Tensor<2> CC =  ST_ab(k,i) * ST_wg(k,j);
+          sCC = 0.5 * (CC(i,j) + CC(j,i));
 
           // compute dCdu
           Tensor<2> MTeFnT_FrTFreFndMdu = eFnMT(i,k)*FrTFr(k,l)*eFn(l,o)*dMdu(o,j);
           dCdu(i,j) = 0.5 * (MTeFnT_FrTFreFndMdu(i,j)
-                                    + MTeFnT_FrTFreFndMdu(j,i).to(i,j)) + eFnMT(i,k)*sBB(k,l)*eFnM(l,j);
+                                    + MTeFnT_FrTFreFndMdu(j,i)) + eFnMT(i,k)*sBB(k,l)*eFnM(l,j);
 
 
           // compute MTeFnT_sAA_eFnM:L:dCdu
@@ -1701,12 +1705,17 @@ int compute_stiffness_matrix(double *lk,
           // compute MTeFnT_sAA_eFndMdu
           Tensor<2> MTeFnT_sAA_eFndMdu = MTeFnT_sAA_eFn(i,k) * dMdu(k,j);
           // compute MTeFnT_sAA_eFndMdu:S
-            double sMTeFnT_sAA_eFndMdu_S = 0.5*(MTeFnT_sAA_eFndMdu(i,j)
-                                                       + MTeFnT_sAA_eFndMdu(j,i).to(i,j))* S(i,j);
-
+          double sMTeFnT_sAA_eFndMdu_S = 0.5*(MTeFnT_sAA_eFndMdu(i,j)
+                                                       + MTeFnT_sAA_eFndMdu(j,i))* S(i,j);
+                                                       
+          double MTeFnT_sAA_eFnMS = MTeFnT_sAA_eFnM(i,j)*S(i,j);
+          double DpJ = -MI(j,i)*dMdu(i,j);
           const int lk_idx = idx_K(a,b,w,g,nne,nsd);
 
-          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu + 2.0*sMTeFnT_sAA_eFndMdu_S + MTeFnT_sCC_eFnM_S);
+          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu 
+                                           + 2.0*sMTeFnT_sAA_eFndMdu_S
+                                           + MTeFnT_sCC_eFnM_S
+                                           + DpJ*MTeFnT_sAA_eFnMS);
         }
       }
     }
@@ -3647,8 +3656,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       break;
 
     Jn = Jn/pJ/hJ;
-    err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);
-    
+    err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);    
   }
 
   if(is_it_couple_w_thermal >=0)
