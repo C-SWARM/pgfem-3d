@@ -155,6 +155,7 @@ int multi_scale_main(int argc, char* argv[])
   CommunicationStructure *com = new CommunicationStructure{};
   Macroscale *macro = NULL;
   Microscale *micro = NULL;
+  Microscale *micro2= NULL;
   
   //load comm hints, macro/micro class, macro/micro filenames
   if (mscom->valid_macro) {
@@ -182,8 +183,7 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->macro; // MS communicators in mscom
 
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
-  }
-  else {
+  } else if(mscom->valid_micro_1) {
     /*====== MICROSCALE =======*/
     micro = new Microscale();
     re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
@@ -200,7 +200,6 @@ int multi_scale_main(int argc, char* argv[])
       }
     }
 
-    // prepare micro communication
     com->rank = micro_rank;
     com->nproc = micro_group_size;
     com->boot = boot;
@@ -208,15 +207,39 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->micro; // MS communicators in mscom
 
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
+  } else if(mscom->valid_micro_2) {
+    /*====== MICROSCALE =======*/
+    micro2 = new Microscale();
+    re_parse_command_line(myrank, 1, micro2_argc, micro2_argv, &options);
+
+    int micro_rank;
+    net->comm_rank(mscom->micro2, &micro_rank);
+    com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
+    try {
+      (com->hints)->read_filename(NULL);
+    } catch(...) {
+      if (myrank == 0) {
+        PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
+                       "Proceeding using fallback functions.\n");
+      }
+    }
+
+    com->rank = micro_rank;
+    com->nproc = micro2_group_size;
+    com->boot = boot;
+    com->net = net;
+    com->comm = mscom->micro; // MS communicators in mscom
+
+    micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
   }
   
   /*=== INITIALIZE SCALES ===*/
   if (mscom->valid_macro) {/*=== MACROSCALE ===*/
     macro->build_solutions(1);  // only 1 for macroscale
-    // XXX not sure why this is done twice
+    // done twice to undo dependancy loop 
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp); 
   }
-  else if (mscom->valid_micro) {/*=== MICROSCALE ===*/
+  else if (mscom->valid_micro_1) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
@@ -255,10 +278,49 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     /*=== BUILD MICROSCALE ===*/
-    // XXX not sure why this is done twice
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
+  } else if (mscom->valid_micro_2) {/*=== MICROSCALE ===*/
+    PGFEM_redirect_io_micro();
+    /*=== REDIRECT MICROSCALE I/O ===*/
+    {
+      if (options.custom_micro == 1) {
+        char filenameMS[1024];
+        char in_dat[1024];
+        sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
+        sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
+        read_simulation_methods(filenameMS,micro2->opts);
+      }
+      /* no output */
+      PGFEM_redirect_io_null();
+      parse_command_line(micro2_argc, micro2_argv, mscom->rank_micro,
+                         micro2->opts);
+      PGFEM_redirect_io_micro();
+
+      /* create the directory for log output and set logging
+ *          filename */
+      int nproc_world;
+      net->comm_size(mscom->world, &nproc_world);
+      int group_id = mscom->rank_micro_all/micro_group_size;
+      int dir_len = snprintf(NULL,0,"%s/log",micro2->opts->opath)+1;
+      char *dir_name = PGFEM_calloc(char, dir_len);
+      sprintf(dir_name,"%s/log",micro2->opts->opath);
+      make_path(dir_name,DIR_MODE);
+      dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
+      char *fname = PGFEM_calloc(char, dir_len);
+      sprintf(fname,"%s/group_%05d",dir_name,group_id);
+
+      /* reinitialize I/O */
+      PGFEM_finalize_io();
+      PGFEM_initialize_io(NULL,fname);
+      PGFEM_redirect_io_micro();
+      free(dir_name);
+      free(fname);
+    }
+
+    /*=== BUILD MICROSCALE ===*/
+       micro->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
   } else {
-    PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
+    PGFEM_printerr("[%d]ERROR: neither macro or microscale or microscale 2!\n%s:%s:%d",
                    mscom->rank_world,__func__,__FILE__,__LINE__);
     PGFEM_Abort();
   }
@@ -270,7 +332,7 @@ int multi_scale_main(int argc, char* argv[])
   pgf_FE2_macro_client *client = NULL;
 
   /*=== Build MICROSCALE server and solutions ===*/
-  if (mscom->valid_micro) {
+  if (mscom->valid_micro_1) {
     /* allocate space for maximum number of jobs to be computed. */
     micro->build_solutions(n_jobs_max);
 
@@ -283,6 +345,17 @@ int multi_scale_main(int argc, char* argv[])
 
     /* destroy the microscale */
     delete micro;
+
+  } else if (mscom->valid_micro_2) {
+    /* allocate space for maximum number of jobs to be computed. */
+    micro2->build_solutions(n_jobs_max);
+
+    micro2->opts->custom_micro = options.custom_micro;
+    micro2->opts->auto_micro = options.auto_micro;
+    err += pgf_FE2_micro_server_START(mscom, micro2, mp_id);
+
+    /* destroy the microscale */
+    delete micro2;
 
   } else { /*=== MACROSCALE ===*/
     /* initialize the client */
