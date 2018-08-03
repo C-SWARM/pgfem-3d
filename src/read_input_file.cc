@@ -942,9 +942,9 @@ int read_initial_for_Mechanical(FILE *fp,
       fv->u_n[nid*3+0] = u[0];
       fv->u_n[nid*3+1] = u[1];
       fv->u_n[nid*3+2] = u[2];
-      fv->u_nm1[nid*3+0] = -dt*v[0];
-      fv->u_nm1[nid*3+1] = -dt*v[1];
-      fv->u_nm1[nid*3+2] = -dt*v[2];
+      fv[mp_id].u_nm1[nid*3+0] = u[0]-dt*v[0];
+      fv[mp_id].u_nm1[nid*3+1] = u[1]-dt*v[1];
+      fv[mp_id].u_nm1[nid*3+2] = u[2]-dt*v[2];
       if(fabs(v[0]) > sol->computer_zero ||
          fabs(v[1]) > sol->computer_zero ||
          fabs(v[2]) > sol->computer_zero)
