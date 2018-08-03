@@ -96,9 +96,9 @@ static void print_array(const int len,
             const double *a)
 {
   for(int i=0; i<len; i++){
-    printf("%f ",a[i]);
+    PGFEM_printf("%f ",a[i]);
   }
-  printf("\n");
+  PGFEM_printf("\n");
 }
 
 int main()
@@ -144,20 +144,20 @@ int main()
   cblas_dscal(3,1./cblas_dnrm2(3,e2,1),e2,1);
 
   /* print coords */
-  printf("x || y || z\n");
+  PGFEM_printf("x || y || z\n");
   print_array(n_pts,x);
   print_array(n_pts,y);
   print_array(n_pts,z);
 
   /* print basis */
-  printf("e1 || e2 || n\n");
+  PGFEM_printf("e1 || e2 || n\n");
   print_array(3,e1);
   print_array(3,e2);
   print_array(3,n);
 
   transform_coordinates(n_pts,x,y,z,e1,e2,n,0,tx,ty,tz);
 
-  printf("tx || ty || tz\n");
+  PGFEM_printf("tx || ty || tz\n");
   print_array(n_pts,tx);
   print_array(n_pts,ty);
   print_array(n_pts,tz);
@@ -168,7 +168,7 @@ int main()
 
   transform_coordinates(n_pts,tx,ty,tz,e1,e2,n,1,x,y,z);
 
-  printf("x || y || z\n");
+  PGFEM_printf("x || y || z\n");
   print_array(n_pts,x);
   print_array(n_pts,y);
   print_array(n_pts,z);

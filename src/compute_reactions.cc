@@ -160,7 +160,7 @@ int compute_reactions(long ne,
     com->net->reduce(rxn,Grxn,sup->npd,NET_DT_DOUBLE,NET_OP_SUM,0,com->comm);
 		     
     if(myrank == 0){
-      printf("Reactions: ");
+      PGFEM_printf("Reactions: ");
       print_array_d(stdout,Grxn,sup->npd,1,sup->npd);
     }
 

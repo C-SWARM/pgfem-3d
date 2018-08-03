@@ -3327,7 +3327,7 @@ void compute_root_of_cubic_euqation(double *x,
     double error = abs(f/f0);
     
     if(print_cnvg)
-      printf("%d: x1 = %e, |%e|%e|\n", ia, x1, f, error);
+      PGFEM_printf("%d: x1 = %e, |%e|%e|\n", ia, x1, f, error);
 
     if(error<tol)
       break;
@@ -3355,9 +3355,9 @@ void compute_root_of_cubic_euqation(double *x,
   }
   
   if(print_cnvg){
-    printf("---------------------------------------------\n");
-    printf("soution of (%e)x^3+(%e)x^2+(%e)x+(%e): %e %e %e\n", a, b, c, d, x1, x2, x3);
-    printf("---------------------------------------------\n");
+    PGFEM_printf("---------------------------------------------\n");
+    PGFEM_printf("soution of (%e)x^3+(%e)x^2+(%e)x+(%e): %e %e %e\n", a, b, c, d, x1, x2, x3);
+    PGFEM_printf("---------------------------------------------\n");
   }
   x[0] = x1;
   x[1] = x2;

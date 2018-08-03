@@ -122,7 +122,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
     if(fp==NULL)
     {
       if(myrank==0)
-        printf("No [%s] exists.\n", fn);
+        PGFEM_printf("No [%s] exists.\n", fn);
 
       continue;
     }
@@ -157,7 +157,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
   if(fp == NULL)
   {
     if(myrank==0)
-      printf("No [%s] exists. \nDensity is set to zero.\n", fn);
+      PGFEM_printf("No [%s] exists. \nDensity is set to zero.\n", fn);
 
     return err;
   }
@@ -175,7 +175,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
   if(match != mat->nmat)
   {
     if(myrank==0)
-      printf("Material density is not read as many as number of materials.\n");
+      PGFEM_printf("Material density is not read as many as number of materials.\n");
 
     PGFEM_Abort();
   }
@@ -185,7 +185,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
     {
       (mat->hommat[ia]).density = d[(mat->hommat[ia]).mat_id];
       if(myrank==0)
-        printf("Density(%d), %e\n", ia, (mat->hommat[ia]).density);
+        PGFEM_printf("Density(%d), %e\n", ia, (mat->hommat[ia]).density);
     }
   }
   return err;
@@ -296,7 +296,7 @@ int read_input_file(const PGFem3D_opt *opts,
   if(is_directory_exist(BC))
   {
     if(myrank==0)
-      printf("BC exists skip BC from filebase_*.in instead read boundary conditions from BC\n");
+      PGFEM_printf("BC exists skip BC from filebase_*.in instead read boundary conditions from BC\n");
 
     // skip reading support from lagacy inputs
     int nbc; // temporal, don't need here
@@ -329,7 +329,7 @@ int read_input_file(const PGFem3D_opt *opts,
       fp = fopen(fn_bcv, "r");
       if(fp==NULL)
       {
-        printf("ERROR: Cannot open %s file. Exit.\n", fn_bcv);
+        PGFEM_printf("ERROR: Cannot open %s file. Exit.\n", fn_bcv);
         PGFEM_Abort();
       }
       err += read_Dirichlet_BCs_values(fp,*nn,ndim[ia],*node,sup[ia],ia);
@@ -545,7 +545,7 @@ int read_solver_file(TimeStepping *ts,
   if(opts->override_solver_file)
   {
     if(myrank == 0)
-      printf("Overriding the default solver file with:\n%s\n", opts->solver_file);
+      PGFEM_printf("Overriding the default solver file with:\n%s\n", opts->solver_file);
 
     fp = fopen(opts->solver_file,"r");
   }
@@ -580,7 +580,7 @@ int read_solver_file(TimeStepping *ts,
     if(physicsno != mp.physicsno)
     {
       if(myrank==0)
-        printf("ERROR: Number of physics for setting parameters for the solver is not correct. Abort\n");
+        PGFEM_printf("ERROR: Number of physics for setting parameters for the solver is not correct. Abort\n");
 
       PGFEM_Abort();
     }
@@ -744,7 +744,7 @@ int read_initial_values_lagcy(Grid *grid,
   {
     read_initial_file = 0;
     if(myrank==0)
-      printf("Fail to open file [%s]. Quasi steady state\n", filename);
+      PGFEM_printf("Fail to open file [%s]. Quasi steady state\n", filename);
   }
   else
   {
@@ -753,8 +753,8 @@ int read_initial_values_lagcy(Grid *grid,
       opts->cm = TOTAL_LAGRANGIAN;
       if(myrank==0)
       {
-        printf("Updated Lagrangian is currently unavailable with inertia.\n");
-        printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
+        PGFEM_printf("Updated Lagrangian is currently unavailable with inertia.\n");
+        PGFEM_printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
       }
     }
   }
@@ -804,7 +804,7 @@ int read_initial_values_lagcy(Grid *grid,
     {
       (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
       if(myrank==0)
-        printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
+        PGFEM_printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
     }
 
     free(rho);
@@ -887,8 +887,8 @@ int read_initial_for_Mechanical(FILE *fp,
     opts->cm = TOTAL_LAGRANGIAN;
     if(myrank==0)
     {
-      printf("Updated Lagrangian is currently unavailable with inertia.\n");
-      printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
+      PGFEM_printf("Updated Lagrangian is currently unavailable with inertia.\n");
+      PGFEM_printf("Forced to Total Lagrangian (-cm = %d)\n", TOTAL_LAGRANGIAN);
     }
   }
 
@@ -923,7 +923,7 @@ int read_initial_for_Mechanical(FILE *fp,
   {
     (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
     if(myrank==0)
-      printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
+      PGFEM_printf("Density(%d), %e\n", ia, rho[(mat->hommat[ia]).mat_id]);
   }
 
   free(rho);
@@ -1013,7 +1013,7 @@ int read_initial_for_Thermal(FILE *fp,
     sscanf(line, "%lf", &T0);
     fv->u0 = T0; // set reference temperature
     if(myrank==0)
-      printf("Default initial temperature: %e\n", T0);
+      PGFEM_printf("Default initial temperature: %e\n", T0);
 
     break;
   }
@@ -1100,7 +1100,7 @@ int read_initial_values_IC(Grid *grid,
       if(fp==NULL)
       {
         if(myrank==0)
-          printf("No [%s] exists. Use default ICs.\n", fn_0);
+          PGFEM_printf("No [%s] exists. Use default ICs.\n", fn_0);
 
         continue;
       }
@@ -1133,7 +1133,7 @@ void read_simulation_methods(char *filenameMS, PGFem3D_opt *opts) {
     fpms = fopen(filenameMS,"r");
   if(fpms == NULL)
   {
-      printf("Failed to open file [%s]. \n", filenameMS);
+      PGFEM_printf("Failed to open file [%s]. \n", filenameMS);
   }
   fscanf(fpms,"%d",&Ne);                                    //number of cohesive elements
   fscanf(fpms,"%d",&Nt);                                    //number of time steps
@@ -1179,13 +1179,13 @@ int read_initial_values(Grid *grid,
   if(is_directory_exist(IC))
   {
     if(myrank==0)
-      printf("IC directory exists, read initial conditions from IC\n");
+      PGFEM_printf("IC directory exists, read initial conditions from IC\n");
     err += read_initial_values_IC(grid,mat,FV,SOL,load,ts,opts,mp,tnm1,myrank);
   }
   else
   {
     if(myrank==0)
-      printf("No IC directory exists, read inital conditions from *.initial\n");
+      PGFEM_printf("No IC directory exists, read inital conditions from *.initial\n");
 
     err += read_initial_values_lagcy(grid,mat,FV+0,SOL+0,load,ts,opts,mp,tnm1,myrank);
   }

@@ -2332,7 +2332,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
-    printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
+    PGFEM_printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
 
@@ -3114,7 +3114,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
-    printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
+    PGFEM_printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
 
@@ -3775,7 +3775,7 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
-    printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
+    PGFEM_printf("Constitutive model with inertia are not supported for updated Lagrangian \n");
     abort();
   }
 

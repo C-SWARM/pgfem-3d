@@ -584,7 +584,7 @@ int CP_PARAM::compute_d2udj2(const Constitutive_model *m,
 }
 
 /// If drdtau is denormal it is set to zero. Any double precision number (64 bits)
-/// is considered as denormal if it is smaller than Â±2.23Ã—10^âˆ’308 
+/// is considered as denormal if it is smaller than ±2.23×10^308 
 /// https://software.intel.com/en-us/node/523328 
 inline double compute_drdtau(const double gamma_dot_0,
                              const double mm,
@@ -1354,8 +1354,8 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
   FILE *fp = fopen(fn, "r");
   if(fp==NULL)
   {
-    printf("fail to read [%s]\n", fn);
-    printf("set default onrientation [R=I]\n");
+    PGFEM_printf("fail to read [%s]\n", fn);
+    PGFEM_printf("set default onrientation [R=I]\n");
     return EulerAngleType;
   }
 
@@ -1377,7 +1377,7 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
       if(SetEulerAngleType)
       {  
         sscanf(line+cno0+2, "%d", &EulerAngleType);
-        printf("EulerAngleType: %d\n", EulerAngleType);
+        PGFEM_printf("EulerAngleType: %d\n", EulerAngleType);
       }
       continue;
     }

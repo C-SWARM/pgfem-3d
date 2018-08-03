@@ -507,7 +507,7 @@ void update_geometry_for_inital_pF(Grid *grid,
                                                com->DomDof, &s_info);
   
   if(myrank == 0)
-    printf("time = %e: solver: nor = %8.8e || iter = %d\n",hypre_time,s_info.res_norm,s_info.n_iter);
+    PGFEM_printf("time = %e: solver: nor = %8.8e || iter = %d\n",hypre_time,s_info.res_norm,s_info.n_iter);
 
   GToL(U.m_pdata,fv->u_np1,fv->ndofd,com);
 
@@ -661,11 +661,11 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
   // print setting 
   if(myrank==0)
   {
-    printf("maximum displacement to be set for updating initial geometry: ");
+    PGFEM_printf("maximum displacement to be set for updating initial geometry: ");
     for(int ia=1; ia<=npd; ia++)
-      printf("(%d)=%e ", ia, bcv(ia));
+      PGFEM_printf("(%d)=%e ", ia, bcv(ia));
 
-    printf("\n");
+    PGFEM_printf("\n");
 
     for(int ia=0; ia<mat->nhommat; ia++)
     {
@@ -673,10 +673,10 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
       if(NULL == pF)
         continue;
 
-      printf("set initial plastic deformation for homat[%d]:\npF=[", ia);
-      printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
-                                              , pF[3], pF[4], pF[5]
-                                              , pF[6], pF[7], pF[8]);
+      PGFEM_printf("set initial plastic deformation for homat[%d]:\npF=[", ia);
+      PGFEM_printf("%e %e %e\n%e %e %e\n%e %e %e]\n", pF[0], pF[1], pF[2]
+                                                    , pF[3], pF[4], pF[5]
+                                                    , pF[6], pF[7], pF[8]);
     }
   }
 

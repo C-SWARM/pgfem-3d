@@ -584,8 +584,8 @@ void post_processing_max_pressure(const Grid &grid,
       x[1] /= fe.nne;
       x[2] /= fe.nne;
                           
-      printf("max. pressure for (mat=%d): %e at process = %d, element = %d (xyz = %e, %e, %e)\n", 
-              ia-1, LP(myrank+1, ia), myrank, eid(ia), x[0], x[1], x[2]);
+      PGFEM_printf("max. pressure for (mat=%d): %e at process = %d, element = %d (xyz = %e, %e, %e)\n", 
+                    ia-1, LP(myrank+1, ia), myrank, eid(ia), x[0], x[1], x[2]);
     }
   }
 }

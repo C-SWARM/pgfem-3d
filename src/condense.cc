@@ -73,7 +73,7 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
   
   if(0)
     { 
-      printf("-------------------------------------\n");	     
+      PGFEM_printf("-------------------------------------\n");	     
       Kup.print("Kup");
       Ktp.print("Ktp");
       ft.print("ft");
@@ -81,7 +81,7 @@ void condense_Fupt_to_Fu(double *fe, int nne, int nsd, int npres, int nVol,
       Kpt.print("Kpt"); 
       fp.print("fp"); 
       fu_add.print("fu");	  	  
-      printf("-------------------------------------\n");	 
+      PGFEM_printf("-------------------------------------\n");	 
       
     }  
   
@@ -167,7 +167,7 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
   
   if(0)
     { 
-      printf("-------------------------------------\n");
+      PGFEM_printf("-------------------------------------\n");
       Kuu.print("Kuu");	  
       Kup.print("Kup");
       Ktp.print("Ktp");
@@ -175,7 +175,7 @@ void condense_Kupt_to_Ku(double *Ks, int nne, int nsd, int npres, int nVol,
       Kpt.print("Kpt");	  	  
       Kpu.print("Kpu");	  	  	  
       Kuu_add.print("Kuu_add");	  	  	  	  
-      printf("-------------------------------------\n");
+      PGFEM_printf("-------------------------------------\n");
     }  
   
   for(int a=0; a<nne*nsd*nne*nsd; a++)
@@ -271,7 +271,7 @@ void condense_K_out(double *Ks, int nne, int nsd, int npres, int nVol,
   
   if(npres!=1 && npres!=4)
   {
-    printf("codensing with pressure # %d is not supported\n", npres);
+    PGFEM_printf("codensing with pressure # %d is not supported\n", npres);
     exit(0);
   }
 }

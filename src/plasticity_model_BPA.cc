@@ -1069,7 +1069,7 @@ int BPA_int_alg(Constitutive_model *m,
       err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
       norm = cblas_dnrm2(tan_row,RES,1);
       if (BPA_PRINT_LEVEL > 0) {
-        printf("\tR1 = %6e (%d)\n", norm, iter);
+        PGFEM_printf("\tR1 = %6e (%d)\n", norm, iter);
         /* print_array_d(stdout, RES, tan_row, 1, tan_row); */
       }
       iter++;
@@ -1099,7 +1099,7 @@ int BPA_int_alg(Constitutive_model *m,
     norm = cblas_dnrm2(tan_row,RES,1);
     /* output of the iterative procedure */
     if (BPA_PRINT_LEVEL > 0) {
-      printf("[%d] R = %6e (%d) || RWp = %6e\n", iterWp, norm, iter - 1, normWp);
+      PGFEM_printf("[%d] R = %6e (%d) || RWp = %6e\n", iterWp, norm, iter - 1, normWp);
     }
     iterWp++;
   }

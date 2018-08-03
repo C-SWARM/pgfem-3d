@@ -214,7 +214,7 @@ int residual_with_inertia(FEMLIB *fe,
        || opts->analysis_type == CM3F))
   {
     if(myrank==0)
-      printf("With inertia is supported only for analysis type = DISP or TF or CM\n");
+      PGFEM_printf("With inertia is supported only for analysis type = DISP or TF or CM\n");
 
     return err;
   }
@@ -302,7 +302,7 @@ int residual_with_inertia(FEMLIB *fe,
        break;
      }
    default:
-    printf("Only displacement based element and three field element are supported\n");
+    PGFEM_printf("Only displacement based element and three field element are supported\n");
     break;
   }
 
@@ -444,7 +444,7 @@ int stiffness_with_inertia(FEMLIB *fe,
      break;     
 
    default:
-    printf("Only displacement based element and three field element are supported\n");
+    PGFEM_printf("Only displacement based element and three field element are supported\n");
     break;
   }
   return err;
