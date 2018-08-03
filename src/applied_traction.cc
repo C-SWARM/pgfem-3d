@@ -14,20 +14,21 @@
 #include "integrate_surface.h"
 #include "utils.h"
 #include <cstring>
+#include "constitutive_model.h"
 
 int read_applied_surface_tractions_fname(char *fname,
                                          int *n_feats,
                                          int **feat_type,
                                          int **feat_id,
                                          double **loads,
-					 int myrank)
+                                         int myrank)
 {
   int err = 0;
   FILE *in = fopen(fname,"r");
   if(in == NULL)
   {
     if(myrank==0)
-      printf("Fail to open file [%s]. Zero traction is applied.\n", fname);
+      PGFEM_printf("Fail to open file [%s]. Zero traction is applied.\n", fname);
     return err;
   }
   err = read_applied_surface_tractions(in,n_feats,feat_type,feat_id,loads);
@@ -188,7 +189,8 @@ int compute_applied_traction_res(const int ndofn,
                                  const SURFACE_TRACTION_ELEM *ste,
                                  const int n_feats,
                                  const double *loads,
-                                 double *res,
+                                 const EPS *eps,                                 
+                                 double *res,                                 
                                  const int mp_id)
 {
   int err = 0;
@@ -199,13 +201,39 @@ int compute_applied_traction_res(const int ndofn,
     const Element *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
+    
+    if(nne_3D==10)
+      int_order = 2;
+      
+    double *pF0I = NULL;
+    Constitutive_model *m = (eps[pste->elem_id]).model + 0;
+    
+    if(m != NULL)
+      pF0I = (m->param)->pFI;
 
+    /* get 3D nodal coordinates */
     double *x = PGFEM_calloc(double, nne_3D);
     double *y = PGFEM_calloc(double, nne_3D);
     double *z = PGFEM_calloc(double, nne_3D);
-    nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);
-    if(nne_3D==10)
-      int_order = 2;
+    
+    if(pF0I != NULL)
+    {
+      double *X = PGFEM_calloc(double, nne_3D);
+      double *Y = PGFEM_calloc(double, nne_3D);      
+      double *Z = PGFEM_calloc(double, nne_3D);
+            
+      nodecoord_total(nne_3D,nod_3D,nodes,X,Y,Z);
+      for(int ia=0; ia<nne_3D; ia++)
+      {
+        x[ia] = pF0I[0]*X[ia] + pF0I[1]*Y[ia] + pF0I[2]*Z[ia];
+        y[ia] = pF0I[3]*X[ia] + pF0I[4]*Y[ia] + pF0I[5]*Z[ia];
+        z[ia] = pF0I[6]*X[ia] + pF0I[7]*Y[ia] + pF0I[8]*Z[ia];
+      }
+      
+      free(X); free(Y); free(Z);
+    }
+    else
+      nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);      
 
     const int ndofe = get_ndof_on_elem_nodes(nne_3D,nod_3D,nodes,ndofn);
     long *cn = PGFEM_calloc(long, ndofe);
@@ -314,14 +342,39 @@ int compute_resultant_force(const int n_feats,
     const Element *el = &elem[pste->elem_id];
     const long *nod_3D = el->nod;
     const int nne_3D = el->toe;
+        
     if(nne_3D==10)
       int_order = 2;
+    
+    double *pF0I = NULL;
+    Constitutive_model *m = (eps[pste->elem_id]).model + 0;
+    
+    if(m != NULL)
+      pF0I = (m->param)->pFI;
 
     /* get 3D nodal coordinates */
     double *x = PGFEM_calloc(double, nne_3D);
     double *y = PGFEM_calloc(double, nne_3D);
     double *z = PGFEM_calloc(double, nne_3D);
-    nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);
+    
+    if(pF0I != NULL)
+    {
+      double *X = PGFEM_calloc(double, nne_3D);
+      double *Y = PGFEM_calloc(double, nne_3D);      
+      double *Z = PGFEM_calloc(double, nne_3D);
+            
+      nodecoord_total(nne_3D,nod_3D,nodes,X,Y,Z);
+      for(int ia=0; ia<nne_3D; ia++)
+      {
+        x[ia] = pF0I[0]*X[ia] + pF0I[1]*Y[ia] + pF0I[2]*Z[ia];
+        y[ia] = pF0I[3]*X[ia] + pF0I[4]*Y[ia] + pF0I[5]*Z[ia];
+        z[ia] = pF0I[6]*X[ia] + pF0I[7]*Y[ia] + pF0I[8]*Z[ia];
+      }
+      
+      free(X); free(Y); free(Z);
+    }
+    else
+      nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);
 
     /* for each marked face on the element */
     for(int j=0; j<pste->n_faces; j++){
