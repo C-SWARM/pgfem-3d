@@ -132,7 +132,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         solver_file.cc \
                         condense.cc \
                         three_field_element.cc \
-                        femlib.cc \
                         main.cc \
                         dynamics.cc \
                         plasticity_model.cc \
