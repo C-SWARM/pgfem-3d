@@ -446,7 +446,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 
   if(err>0)
   {
-    printf("Error is detected: eid = %d\n", eid);
+    PGFEM_printf("Error is detected: eid = %d\n", eid);
   }
   return err;
 }

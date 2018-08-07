@@ -181,9 +181,12 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->macro; // MS communicators in mscom
-
+      PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
   } else if(mscom->valid_micro_1) {
+      PGFEM_redirect_io_macro();
+  }
+  else {
     /*====== MICROSCALE =======*/
     micro = new Microscale();
     re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
@@ -205,7 +208,7 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->micro; // MS communicators in mscom
-
+      PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
   } else if(mscom->valid_micro_2) {
     /*====== MICROSCALE =======*/
@@ -231,6 +234,8 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->micro; // MS communicators in mscom
 
     micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
+      PGFEM_redirect_io_micro();
+
   }
   
   /*=== INITIALIZE SCALES ===*/
@@ -413,7 +418,7 @@ int multi_scale_main(int argc, char* argv[])
 
       compute_applied_traction_res(c->ndofn,c->node,c->elem,
                                    n_sur_trac_elem,ste,
-                                   n_feats,loads,
+                                   n_feats,loads,s->eps,
                                    nodal_forces,mp_id);
 
       double tmp_sum = 0.0;

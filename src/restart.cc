@@ -103,23 +103,23 @@ int read_time_step_info(FieldVariables *fv,
     tnm1[1] = t[1];
 
     if(myrank==0)
-      printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e\n", t[0], t[1], t[2]);
+      PGFEM_printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e\n", t[0], t[1], t[2]);
 
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       CHECK_SCANF(fp, "%lf %lf", &(fv[ia].NORM), time_steps->tns+ia);
       if(myrank==0)
-        printf("\t\t%s: NORM = %e, t(n) = %e\n",mp.physicsname[ia], fv[ia].NORM, time_steps->tns[ia]);
+        PGFEM_printf("\t\t%s: NORM = %e, t(n) = %e\n",mp.physicsname[ia], fv[ia].NORM, time_steps->tns[ia]);
     }
     if(myrank==0)
-      printf("\n");
+      PGFEM_printf("\n");
 
     fclose(fp);
   }
   else
   {
     if(myrank==0)
-      printf("WARNING: cannot read time steps info [%s] \n", fn);
+      PGFEM_printf("WARNING: cannot read time steps info [%s] \n", fn);
   }
   return err;
 }
@@ -157,8 +157,8 @@ int write_time_step_info(FieldVariables *fv,
     FILE *fp = fopen(fn, "w");
     if(fp==NULL)
     {
-      printf("Cannot create a file [%s]\n", fn);
-      printf("Anyway continue ...\n");
+      PGFEM_printf("Cannot create a file [%s]\n", fn);
+      PGFEM_printf("Anyway continue ...\n");
     }
     else
     {
@@ -220,7 +220,7 @@ int write_restart_constitutive_model(Grid *grid,
 
   if(fp == NULL)
   {
-    printf("Fail to open file [%s]. finishing\n", filename);
+    PGFEM_printf("Fail to open file [%s]. finishing\n", filename);
     exit(0);
   }
 
@@ -297,7 +297,7 @@ static int read_restart_constitutive_model(Grid *grid,
 
   if(fp == NULL)
   {
-    printf("Fail to open file [%s]. finishing\n", filename);
+    PGFEM_printf("Fail to open file [%s]. finishing\n", filename);
     exit(0);
   }
 
@@ -318,7 +318,7 @@ static int read_restart_constitutive_model(Grid *grid,
       CHECK_SCANF(fp, "%ld", &n_ip_read);
       if(n_ip!=n_ip_read)
       {
-        printf("Error: restart file has wrong integration number (PN: %d, elem: %d)\n", myrank, e);
+        PGFEM_printf("Error: restart file has wrong integration number (PN: %d, elem: %d)\n", myrank, e);
         return -1;
       }
       for (int ip = 0; ip < n_ip; ip++)
@@ -424,7 +424,7 @@ int read_restart_thermal(Grid *grid,
 
   if(fp == NULL)
   {
-    printf("Fail to open file [%s]. finishing\n", filename);
+    PGFEM_printf("Fail to open file [%s]. finishing\n", filename);
     exit(0);
   }
 
@@ -589,7 +589,7 @@ int write_restart_thermal(Grid *grid,
 
   if(fp == NULL)
   {
-    printf("Fail to open file [%s]. finishing\n", filename);
+    PGFEM_printf("Fail to open file [%s]. finishing\n", filename);
     exit(0);
   }
 

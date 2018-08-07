@@ -414,8 +414,8 @@ int write_restart_files(Grid *grid,
       {
         if(myrank==0)
         {
-          printf("INFO: write restart file since PGFem3D is about to done.(walltime = %f[s], now = %f[s], time taken = %f[s])\n",
-                 opts->walltime, time_step_end + time_0, time_taken);
+          PGFEM_printf("INFO: write restart file since PGFem3D is about to done.(walltime = %f[s], now = %f[s], time taken = %f[s])\n",
+                        opts->walltime, time_step_end + time_0, time_taken);
         }
 
         opts->walltime = -1.0;
@@ -847,53 +847,6 @@ int single_scale_main(int argc,char *argv[])
 
 
   { 
-    // set for surface tractions
-    double *nodal_forces = NULL;
-    SURFACE_TRACTION_ELEM *ste = NULL;
-    int n_feats = 0;
-    int n_sur_trac_elem = 0;
-
-    if(mp_id_M >=0)
-    {
-      nodal_forces = PGFEM_calloc(double, fv[mp_id_M].ndofd);
-
-      int *feat_type = NULL;
-      int *feat_id = NULL;
-      double *loads = NULL;
-
-      char *trac_fname = NULL;
-      alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
-
-      read_applied_surface_tractions_fname(trac_fname,&n_feats,&feat_type,
-					   &feat_id,&loads,myrank);
-
-      generate_applied_surface_traction_list(grid.ne,grid.element,
-                                             n_feats,feat_type,
-                                             feat_id,&n_sur_trac_elem,
-                                             &ste);
-
-      compute_applied_traction_res(fv[mp_id_M].ndofn,grid.node,grid.element,
-                                   n_sur_trac_elem,ste,
-                                   n_feats,loads,
-                                   nodal_forces, mp_id_M);
-
-      double tmp_sum = 0.0;
-      for(int i=0; i<fv[mp_id_M].ndofd; i++){
-        tmp_sum += nodal_forces[i];
-      }
-
-      net->allreduce(NET_IN_PLACE,&tmp_sum,1,NET_DT_DOUBLE,NET_OP_SUM,com0->comm);
-
-      if(myrank == 0){
-        PGFEM_printf("Total load from surface tractions: %.8e\n\n", tmp_sum);
-      }
-
-      free(feat_type);
-      free(feat_id);
-      free(loads);
-      free(trac_fname);
-    }
-
     //----------------------------------------------------------------------
     // read solver file ( *.in.st)
     // file pointer (solver file) will not be freed and
@@ -949,9 +902,6 @@ int single_scale_main(int argc,char *argv[])
       err += construct_field_varialbe(&fv[ia], &grid, &com[ia], &options, mp, myrank, ia);
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL) // only mechanical part
       {
-        /* push nodal_forces to s->R */
-        vvplus(fv[ia].R,nodal_forces,fv[ia].ndofd);
-
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
@@ -1076,16 +1026,66 @@ int single_scale_main(int argc,char *argv[])
     {
       // set inital plastic deformation
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL
-	 && (options.analysis_type == CM || options.analysis_type == CM3F))
+	       && (options.analysis_type == CM || options.analysis_type == CM3F))
       {
         double *pF = mat.hommat[0].param->pF;
         if(pF != NULL)
-	{
+        {
           set_initial_plastic_deformation_gradient(&grid,fv.data()+ia,&mat,sol.data()+ia,&load,
 						   com.data()+ia, &options, mp, ia);
-	}
+				}
       }
     }
+    
+    // set for surface tractions
+    double *nodal_forces = NULL;
+    SURFACE_TRACTION_ELEM *ste = NULL;
+    int n_feats = 0;
+    int n_sur_trac_elem = 0;
+
+    if(mp_id_M >=0)
+    {
+      nodal_forces = PGFEM_calloc(double, fv[mp_id_M].ndofd);
+
+      int *feat_type = NULL;
+      int *feat_id = NULL;
+      double *loads = NULL;
+
+      char *trac_fname = NULL;
+      alloc_sprintf(&trac_fname,"%s/traction.in",options.ipath);
+
+      read_applied_surface_tractions_fname(trac_fname,&n_feats,&feat_type,
+					   &feat_id,&loads,myrank);
+
+      generate_applied_surface_traction_list(grid.ne,grid.element,
+                                             n_feats,feat_type,
+                                             feat_id,&n_sur_trac_elem,
+                                             &ste);
+
+      compute_applied_traction_res(fv[mp_id_M].ndofn,grid.node,grid.element,
+                                   n_sur_trac_elem,ste,
+                                   n_feats,loads,fv[mp_id_M].eps,
+                                   nodal_forces, mp_id_M);
+
+      double tmp_sum = 0.0;
+      for(int i=0; i<fv[mp_id_M].ndofd; i++){
+        tmp_sum += nodal_forces[i];
+      }
+
+      net->allreduce(NET_IN_PLACE,&tmp_sum,1,NET_DT_DOUBLE,NET_OP_SUM,com0->comm);
+
+      if(myrank == 0){
+        PGFEM_printf("Total load from surface tractions: %.8e\n\n", tmp_sum);
+      }
+
+      free(feat_type);
+      free(feat_id);
+      free(loads);
+      free(trac_fname);
+      
+      /* push nodal_forces to s->R */
+      vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
+    }    
     
     err += read_initial_values(&grid,&mat,fv.data(),sol.data(),&load,&time_steps,&options,mp,tnm1,myrank);
     for(int ia=0; ia<mp.physicsno; ia++)

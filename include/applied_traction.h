@@ -51,6 +51,7 @@ int compute_applied_traction_res(const int ndofn,
                                  const SURFACE_TRACTION_ELEM *ste,
                                  const int n_feats,
                                  const double *loads,
+                                 const EPS *eps,
                                  double *res,
                                  const int mp_id);
 

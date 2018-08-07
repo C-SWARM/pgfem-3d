@@ -584,7 +584,7 @@ int CP_PARAM::compute_d2udj2(const Constitutive_model *m,
 }
 
 /// If drdtau is denormal it is set to zero. Any double precision number (64 bits)
-/// is considered as denormal if it is smaller than Â±2.23Ã—10^âˆ’308 
+/// is considered as denormal if it is smaller than ±2.23×10^308 
 /// https://software.intel.com/en-us/node/523328 
 inline double compute_drdtau(const double gamma_dot_0,
                              const double mm,
@@ -890,7 +890,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
 
 int CP_PARAM::compute_dMdu(const Constitutive_model *m,
                            const void *ctx,
-                           const double *Grad_op,
+                           double *Grad_op,
                            const int nne,
                            const int ndofn,
                            double *dM_du)
@@ -1221,7 +1221,7 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   const double dt = CTX->dt;
   double *param     = (m->param)->model_param;
   int    *param_idx = (m->param)->model_param_index;
-
+    
   CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
   set_crystal_plasticity_solver_info(&solver_info,param_idx[PARAM_max_itr_stag],
                                      param_idx[PARAM_max_itr_hardening],
@@ -1237,7 +1237,7 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   double g_np1 = state_var[VAR_g_np1];
   double L_np1 = state_var[VAR_L_np1];
 
-  Tensor<2> M,eFnp1,C,pFnp1_I;
+  Tensor<2> eFnp1,C,pFnp1_I;
   TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), pFn(Fs[TENSOR_pFn].m_pdata),
   Fn( Fs[TENSOR_Fn].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
 
@@ -1250,12 +1250,24 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   construct_slip_system(&slip,slip_in->unit_cell);
   rotate_crystal_orientation(&slip, Fs[TENSOR_R].m_pdata, slip_in);
   (cm_mat->mat_p)->slip = &slip;
+  
+  
+//  GcmCpIntegrator gcm_cp;
+/*  gcm_cp.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
+                     Fs[TENSOR_Fn].m_pdata,
+                     Fs[TENSOR_Fnm1].m_pdata,
+                     Fs[TENSOR_pFnp1].m_pdata,
+                     Fs[TENSOR_pFn].m_pdata,
+                     CTX->hFnp1,
+                     CTX->hFn);
+                     
+  */
 
   // perform integration algorithm for the crystal plasticity
   if(CTX->is_coulpled_with_thermal)
   {
     err += staggered_Newton_Rapson_generalized(pFnp1.data,
-                                               M.data, &g_np1, &L_np1,
+                                               &g_np1, &L_np1,
                                                pFn.data, Fn.data, Fnp1.data,
                                                CTX->hFn, CTX->hFnp1,
                                                g_n, dt, cm_mat, elasticity, &solver_info);
@@ -1263,7 +1275,7 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   else
   {
     err += staggered_Newton_Rapson(pFnp1.data,
-                                   M.data, &g_np1, &L_np1,
+                                   &g_np1, &L_np1,
                                    pFn.data, Fn.data, Fnp1.data,
                                    g_n, dt, cm_mat, elasticity, &solver_info);
   }
@@ -1342,8 +1354,8 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
   FILE *fp = fopen(fn, "r");
   if(fp==NULL)
   {
-    printf("fail to read [%s]\n", fn);
-    printf("set default onrientation [R=I]\n");
+    PGFEM_printf("fail to read [%s]\n", fn);
+    PGFEM_printf("set default onrientation [R=I]\n");
     return EulerAngleType;
   }
 
@@ -1365,7 +1377,7 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
       if(SetEulerAngleType)
       {  
         sscanf(line+cno0+2, "%d", &EulerAngleType);
-        printf("EulerAngleType: %d\n", EulerAngleType);
+        PGFEM_printf("EulerAngleType: %d\n", EulerAngleType);
       }
       continue;
     }

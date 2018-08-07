@@ -430,7 +430,7 @@ double compute_residuals_for_NR(long *INFO,
     break;
    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
    default:
-    printf("%s is not defined (compute_residuals_for_NR)\n", mp.physicsname[mp_id]);
+    PGFEM_printf("%s is not defined (compute_residuals_for_NR)\n", mp.physicsname[mp_id]);
 
     // @todo This abort() was added because otherwise we're returning an
     //       uninitialized value. If this branch is a valid path then @cp
@@ -492,7 +492,7 @@ double compute_stiffness_for_NR(long *INFO,
     break;
    case MULTIPHYSICS_CHEMICAL: //intented flow, not yet been implemented
    default:
-    printf("%s is not defined (compute_stiffness_for_NR)\n", mp.physicsname[mp_id]);
+    PGFEM_printf("%s is not defined (compute_stiffness_for_NR)\n", mp.physicsname[mp_id]);
   }
 
   // if INFO value greater than 0, the previous computation has an error
@@ -1482,7 +1482,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
     {
       ART = 1;
       if(myrank==0)
-        printf("Imposed to use NO Line search [INFO = %ld, ART = %d]\n", INFO, ART);
+        PGFEM_printf("Imposed to use NO Line search [INFO = %ld, ART = %d]\n", INFO, ART);
     }
 
     if (INFO == 1 && ART == 0)
@@ -1510,7 +1510,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       if(sp.step_size>sol->max_subdivision && sol->max_subdivision > 0)
       {
         if(myrank==0)
-          printf("maximum subdivision no = %d, requested = %d\n", sol->max_subdivision, sp.step_size);
+          PGFEM_printf("maximum subdivision no = %d, requested = %d\n", sol->max_subdivision, sp.step_size);
 
         *is_NR_converged = 0;
         break;
@@ -1576,7 +1576,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
     {
       fv->subdivision_factor_np1 = (NR_t->times[tim] + dt*(sp.step_id+1) - tn_0)/dt0;
       if(myrank==-1)
-        printf(":: subdivision fators : t(n) = %e , t(n+1) = %e\n", fv->subdivision_factor_n, fv->subdivision_factor_np1);
+        PGFEM_printf(":: subdivision fators : t(n) = %e , t(n+1) = %e\n", fv->subdivision_factor_n, fv->subdivision_factor_np1);
 
       if (sp.is_subdivided && myrank == 0 )
       {
@@ -2214,8 +2214,8 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
     com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
     if(myrank==0)
     {
-      printf(":: R(%s): ", mp.physicsname[cpled_mp_id]);
-      printf("|R| = %e |R|/|R0| = %e, Rn = %e, Rn-R = %e\n",
+      PGFEM_printf(":: R(%s): ", mp.physicsname[cpled_mp_id]);
+      PGFEM_printf("|R| = %e |R|/|R0| = %e, Rn = %e, Rn-R = %e\n",
              nor, nor/FV[cpled_mp_id].NORM, SOL[cpled_mp_id].last_residual,Rn_R);
              
       //EXA metric computation
@@ -2299,8 +2299,8 @@ int set_0th_residual(std::vector<double> &residuals_time,
 
     if(myrank==0)
     {
-      printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp.physicsname[mp_id], nor);
-      printf("by perturbing the disp. with %e\n", SOL[mp_id].du);
+      PGFEM_printf("INFO. The first residual for the physics, %s, is computed as %e\n", mp.physicsname[mp_id], nor);
+      PGFEM_printf("by perturbing the disp. with %e\n", SOL[mp_id].du);
     }
   }
   return err;
@@ -2383,16 +2383,16 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
     {
       if(myrank==0)
       {
-        printf("%s\n", line_level_1);
-        printf(":: Do Newton Raphson for independent physics first\n");
+        PGFEM_printf("%s\n", line_level_1);
+        PGFEM_printf(":: Do Newton Raphson for independent physics first\n");
       }
       printed_before = 1;
     }
 
     if(myrank==0)
     {
-      printf("%s\n", line_level_2);
-      printf(":: Newton Raphson iteration for : %s\n", mp.physicsname[mp_id]);
+      PGFEM_printf("%s\n", line_level_2);
+      PGFEM_printf(":: Newton Raphson iteration for : %s\n", mp.physicsname[mp_id]);
     }
 
     double alpha = 0.0;
@@ -2414,7 +2414,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
     {
       reset_state_field_variables(grid,FV,SOL,opts,mp,mp_id);
       if(myrank==0)
-        printf("NR is subdivied, reset t(n)\n");
+        PGFEM_printf("NR is subdivied, reset t(n)\n");
     }
 
     if(*is_SNR_converged==0)
@@ -2429,8 +2429,8 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
     //print Staggered Newton Raphson iteration
     if(myrank==0)
     {
-      printf("%s\n", line_level_1);
-      printf(":: Staggered Newton Raphson iteration starts for dependent physics \n");
+      PGFEM_printf("%s\n", line_level_1);
+      PGFEM_printf(":: Staggered Newton Raphson iteration starts for dependent physics \n");
     }
 
     // Prepare memory for saving load data if subdivided
@@ -2482,8 +2482,8 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
           //print current physics name
           if(myrank==0)
           {
-            printf("%s\n", line_level_2);
-            printf(":: (%d/%d) Newton Raphson iteration for : %s\n", *iterno, max_itr, mp.physicsname[mp_id]);
+            PGFEM_printf("%s\n", line_level_2);
+            PGFEM_printf(":: (%d/%d) Newton Raphson iteration for : %s\n", *iterno, max_itr, mp.physicsname[mp_id]);
           }
 
           if(*iterno>0)
@@ -2565,7 +2565,7 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
         {
           reset_state_field_variables(grid,FV,SOL,opts,mp,mp_id);
           if(myrank==0)
-            printf("NR for %s is subdivied, reset t(n)\n", mp.physicsname[mp_id]);
+            PGFEM_printf("NR for %s is subdivied, reset t(n)\n", mp.physicsname[mp_id]);
         }
       }
 
@@ -2581,8 +2581,8 @@ void Multiphysics_Newton_Raphson_sub(std::vector<double> &hypre_time,
         {
           if(myrank==0)
           {
-            printf("%s\n", line_level_1);
-            printf(":: Staggered Newton Raphson is converged. Done.\n");
+            PGFEM_printf("%s\n", line_level_1);
+            PGFEM_printf(":: Staggered Newton Raphson is converged. Done.\n");
           }
           break;
         }
@@ -2817,9 +2817,9 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         {
           if(myrank==0)
           {
-            printf("%s\n", line_level_0);
-            printf(":: (%ld:%d/%d) Muliphysics Newton Raphson \n", time_steps->tim,sp.step_id, sp.step_size);
-            printf(":: time = (%e, %e, %e)\n", NR_t_sub.times[0], NR_t_sub.times[1], NR_t_sub.times[2]);
+            PGFEM_printf("%s\n", line_level_0);
+            PGFEM_printf(":: (%ld:%d/%d) Muliphysics Newton Raphson \n", time_steps->tim,sp.step_id, sp.step_size);
+            PGFEM_printf(":: time = (%e, %e, %e)\n", NR_t_sub.times[0], NR_t_sub.times[1], NR_t_sub.times[2]);
           }
         }
       
@@ -2837,7 +2837,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
                                         VVolume,opts,mp);
    
         if(myrank==0)
-          printf(":: Maximum physics based evolution threshold = %f\n", alpha);
+          PGFEM_printf(":: Maximum physics based evolution threshold = %f\n", alpha);
   
         // check convergence
         if(!is_sub_converged)

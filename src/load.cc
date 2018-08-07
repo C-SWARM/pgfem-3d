@@ -400,7 +400,7 @@ int compute_load_vector_for_prescribed_BC(Grid *grid,
                                              dt);
     break;
    default:
-    printf("%s is not supported\n", mp.physicsname[mp_id]);
+    PGFEM_printf("%s is not supported\n", mp.physicsname[mp_id]);
 
   }
   return err;

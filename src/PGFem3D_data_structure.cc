@@ -686,8 +686,8 @@ int read_multiphysics_settings(Multiphysics& mp,
   {
     if(myrank==0)
     {
-      printf("no [%s/multiphysics.in] is provided\n", opts->ipath);
-      printf("Use default setting (Mechanical only).\n");
+      PGFEM_printf("no [%s/multiphysics.in] is provided\n", opts->ipath);
+      PGFEM_printf("Use default setting (Mechanical only).\n");
     }
   }
   else
@@ -783,27 +783,27 @@ int read_multiphysics_settings(Multiphysics& mp,
   // print multiphysics setting
   if(myrank==0)
   {
-    printf("Total number of physics: %d\n", mp.physicsno);
+    PGFEM_printf("Total number of physics: %d\n", mp.physicsno);
     for(int ia=0; ia<mp.physicsno; ia++)
     {
-      printf("%d. physics name \t\t= %s\n", ia, mp.physicsname[ia]);
-      printf("   # of unknown on node \t= %d\n", mp.ndim[ia]);
-      printf("   # of physics to be coupled \t= %d", mp.coupled_ids[ia][0]);
-      printf(", ids = ");
+      PGFEM_printf("%d. physics name \t\t= %s\n", ia, mp.physicsname[ia]);
+      PGFEM_printf("   # of unknown on node \t= %d\n", mp.ndim[ia]);
+      PGFEM_printf("   # of physics to be coupled \t= %d", mp.coupled_ids[ia][0]);
+      PGFEM_printf(", ids = ");
       for(int ib=0; ib<mp.coupled_ids[ia][0]; ib++)
-        printf("%d ", mp.coupled_ids[ia][ib+1]);
+        PGFEM_printf("%d ", mp.coupled_ids[ia][ib+1]);
 
-      printf("\n");
+      PGFEM_printf("\n");
 
-      printf("   # of output variables \t= %d", mp.write_no[ia]);
-      printf(", ids = ");
+      PGFEM_printf("   # of output variables \t= %d", mp.write_no[ia]);
+      PGFEM_printf(", ids = ");
 
       assert((int)mp.write_ids[ia].size() >= mp.write_no[ia] && "attempted mp.write_ids[ia] out of bounds access");
       for(int ib=0; ib<mp.write_no[ia]; ib++){
-        printf("%d ", mp.write_ids[ia][ib]);
+        PGFEM_printf("%d ", mp.write_ids[ia][ib]);
       }
 
-      printf("\n\n");
+      PGFEM_printf("\n\n");
     }
   }
   return err;
