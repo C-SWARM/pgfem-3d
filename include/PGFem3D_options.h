@@ -34,7 +34,7 @@ struct PGFem3D_opt {
   int custom_micro;       //if micro will contain taylor method
   int auto_micro;
   int *methods;           //which micro cells contain taylor method
-
+  int reduced_order;      //whether or not a micro server will be reduced order
 
   /* visualization options */
   int vis_format; /* gr2 */
