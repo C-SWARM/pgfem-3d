@@ -17,9 +17,9 @@ namespace pgfem3d {
     micro_all = world;
     micro = world;
     mm_inter = world;
-    mm_inter_2 = world;
+    mm_inter_ROM = world;
     micro_1 = world;
-    micro_2 = world;   
+    micro_ROM = world;   
     /* store rank */
     n->comm_rank(comm_world, &myrank);
     rank_world = myrank;
@@ -33,7 +33,7 @@ namespace pgfem3d {
     valid_micro_all = 1;
     valid_micro = 1;
     valid_mm_inter = 1;
-    valid_mm_inter_2 = 1;
+    valid_mm_inter_ROM = 1;
     /* save network handle */
     net = n;
   }
@@ -59,15 +59,15 @@ namespace pgfem3d {
       net->comm_free(&mm_inter);
     }
 
-    if(valid_mm_inter_2){
-      net->comm_free(&mm_inter_2);
+    if(valid_mm_inter_ROM){
+      net->comm_free(&mm_inter_ROM);
     }
 
   }
   
   void MultiscaleComm::MM_split(const int macro_nproc,
 				const int micro_group_size,
-        const int micro2_group_size,
+        const int micro_ROM_group_size,
         const int full_micro_np)
   {
     int nproc_world = 0;
@@ -99,8 +99,8 @@ namespace pgfem3d {
       const int micro1_color = (rank_world < macro_nproc + full_micro_np) ? 1 : 2;
       net->comm_split(micro_all,micro1_color, micro_all, &micro_1);
 
-      const int micro2_color = (rank_world < macro_nproc + full_micro_np) ? 2 : 1;
-      net->comm_split(micro_all,micro2_color, micro_all, &micro_2);
+      const int micro_ROM_color = (rank_world < macro_nproc + full_micro_np) ? 2 : 1;
+      net->comm_split(micro_all,micro_ROM_color, micro_all, &micro_ROM);
       
     }
     
@@ -128,11 +128,11 @@ namespace pgfem3d {
       net->comm_rank(micro_1, &rank_micro_1);
     }
 
-    if (micro_2 == NET_COMM_NULL) {
-      valid_micro_2 = 0;
-      rank_micro_2 = NET_UNDEFINED;
+    if (micro_ROM == NET_COMM_NULL) {
+      valid_micro_ROM = 0;
+      rank_micro_ROM = NET_UNDEFINED;
     } else {
-      net->comm_rank(micro_2, &rank_micro_2);
+      net->comm_rank(micro_ROM, &rank_micro_ROM);
     }
 
 
@@ -162,22 +162,22 @@ namespace pgfem3d {
 
 
     /* split micro 2 communicator into work groups */
-    if (valid_micro_2 && micro2_group_size > 0) {
+    if (valid_micro_ROM && micro_ROM_group_size > 0) {
       int color = NET_UNDEFINED;
       /* integer division for group id */
-      if (rank_micro_2 != NET_UNDEFINED){
-        color = rank_micro_2 / micro2_group_size;
+      if (rank_micro_ROM != NET_UNDEFINED){
+        color = rank_micro_ROM / micro_ROM_group_size;
       }
-      net->comm_split(micro_2, color, rank_micro_2, &micro2);
-      net->comm_rank(micro2, &rank_micro_2);
+      net->comm_split(micro_ROM, color, rank_micro_ROM, &micro_ROM);
+      net->comm_rank(micro_ROM, &rank_micro_ROM);
 
       /*Create inter-micro communicators between equivalent procs on
     different microstructures. This allows direct communication
     between workers using the rank as the server id. Split
     micro_all communicator by rank in micro using rank_micro as the
     color and rank_micro_all as the key. */
-      net->comm_split(micro_2, rank_micro_2, rank_micro_all, &worker_inter_2);
-      net->comm_rank(worker_inter_2, &server_id);
+      net->comm_split(micro_ROM, rank_micro_ROM, rank_micro_all, &worker_inter_ROM);
+      net->comm_rank(worker_inter_ROM, &server_id);
     } else {
       micro = NET_COMM_NULL;
       valid_micro = 0;
@@ -197,10 +197,10 @@ namespace pgfem3d {
     /* create the micro2-macro intercommunicator */
     {
       int color = NET_UNDEFINED;
-      if(rank_macro != NET_UNDEFINED || rank_micro_2 == 0){
+      if(rank_macro != NET_UNDEFINED || rank_micro_ROM == 0){
         color = 1;
       }
-      net->comm_split(world, color, rank_world, &mm_inter_2);
+      net->comm_split(world, color, rank_world, &mm_inter_ROM);
     }
 
     /* get rank on new communicator */
@@ -211,11 +211,11 @@ namespace pgfem3d {
       net->comm_rank(mm_inter, &rank_mm_inter);
     }
     /* get rank on new communicator */
-    if (mm_inter_2 == NET_COMM_NULL) {
-      valid_mm_inter_2 = 0;
-      rank_mm_inter_2 = NET_UNDEFINED;
+    if (mm_inter_ROM == NET_COMM_NULL) {
+      valid_mm_inter_ROM = 0;
+      rank_mm_inter_ROM = NET_UNDEFINED;
     } else {
-      net->comm_rank(mm_inter_2, &rank_mm_inter_2);
+      net->comm_rank(mm_inter_ROM, &rank_mm_inter_ROM);
     }
 
   }

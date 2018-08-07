@@ -184,9 +184,6 @@ int multi_scale_main(int argc, char* argv[])
       PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
   } else if(mscom->valid_micro_1) {
-      PGFEM_redirect_io_macro();
-  }
-  else {
     /*====== MICROSCALE =======*/
     micro = new Microscale();
     re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
@@ -203,6 +200,7 @@ int multi_scale_main(int argc, char* argv[])
       }
     }
 
+
     com->rank = micro_rank;
     com->nproc = micro_group_size;
     com->boot = boot;
@@ -210,13 +208,13 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->micro; // MS communicators in mscom
       PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
-  } else if(mscom->valid_micro_2) {
+  } else if(mscom->valid_micro_ROM) {
     /*====== MICROSCALE =======*/
     micro2 = new Microscale();
     re_parse_command_line(myrank, 1, micro2_argc, micro2_argv, &options);
 
     int micro_rank;
-    net->comm_rank(mscom->micro2, &micro_rank);
+    net->comm_rank(mscom->micro_ROM, &micro_rank);
     com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
     try {
       (com->hints)->read_filename(NULL);
@@ -293,7 +291,7 @@ int multi_scale_main(int argc, char* argv[])
     /*=== BUILD MICROSCALE ===*/
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
     micro->opts->reduced_order = 0;
-  } else if (mscom->valid_micro_2) {/*=== MICROSCALE ===*/
+  } else if (mscom->valid_micro_ROM) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
@@ -361,7 +359,7 @@ int multi_scale_main(int argc, char* argv[])
     /* destroy the microscale */
     delete micro;
 
-  } else if (mscom->valid_micro_2) {
+  } else if (mscom->valid_micro_ROM) {
     /* allocate space for maximum number of jobs to be computed. */
     micro2->build_solutions(n_jobs_max);
 
