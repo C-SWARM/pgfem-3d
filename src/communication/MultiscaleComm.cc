@@ -17,6 +17,7 @@ namespace pgfem3d {
     micro_all = world;
     micro = world;
     mm_inter = world;
+    mm_inter_2 = world;
     micro_1 = world;
     micro_2 = world;   
     /* store rank */
@@ -32,7 +33,7 @@ namespace pgfem3d {
     valid_micro_all = 1;
     valid_micro = 1;
     valid_mm_inter = 1;
-
+    valid_mm_inter_2 = 1;
     /* save network handle */
     net = n;
   }
@@ -57,6 +58,11 @@ namespace pgfem3d {
     if(valid_mm_inter){
       net->comm_free(&mm_inter);
     }
+
+    if(valid_mm_inter_2){
+      net->comm_free(&mm_inter_2);
+    }
+
   }
   
   void MultiscaleComm::MM_split(const int macro_nproc,
@@ -194,7 +200,7 @@ namespace pgfem3d {
       if(rank_macro != NET_UNDEFINED || rank_micro_2 == 0){
         color = 1;
       }
-      net->comm_split(world, color, rank_world, &mm_inter2);
+      net->comm_split(world, color, rank_world, &mm_inter_2);
     }
 
     /* get rank on new communicator */
@@ -205,11 +211,11 @@ namespace pgfem3d {
       net->comm_rank(mm_inter, &rank_mm_inter);
     }
     /* get rank on new communicator */
-    if (mm_inter2 == NET_COMM_NULL) {
-      valid_mm_inter = 0;
-      rank_mm_inter = NET_UNDEFINED;
+    if (mm_inter_2 == NET_COMM_NULL) {
+      valid_mm_inter_2 = 0;
+      rank_mm_inter_2 = NET_UNDEFINED;
     } else {
-      net->comm_rank(mm_inter2, &rank_mm_inter);
+      net->comm_rank(mm_inter_2, &rank_mm_inter_2);
     }
 
   }

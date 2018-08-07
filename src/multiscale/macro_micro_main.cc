@@ -235,9 +235,17 @@ int multi_scale_main(int argc, char* argv[])
   
   /*=== INITIALIZE SCALES ===*/
   if (mscom->valid_macro) {/*=== MACROSCALE ===*/
+      if (options.custom_micro == 1) { //macro needs to know what micro cells are taylor/pde
+        char filenameMS[1024];
+        char in_dat[1024];
+        sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
+        sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
+        read_simulation_methods(filenameMS,macro->opts);
+      }
     macro->build_solutions(1);  // only 1 for macroscale
-    // done twice to undo dependancy loop 
+    // done twice to bootstrap dependancy loop 
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp); 
+    macro->opts->custom_micro = options.custom_micro;
   }
   else if (mscom->valid_micro_1) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
@@ -279,6 +287,7 @@ int multi_scale_main(int argc, char* argv[])
 
     /*=== BUILD MICROSCALE ===*/
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
+    micro->opts->reduced_order = 0;
   } else if (mscom->valid_micro_2) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
@@ -318,7 +327,8 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     /*=== BUILD MICROSCALE ===*/
-       micro->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
+    micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
+    micro2->opts->reduced_order = 1;
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale or microscale 2!\n%s:%s:%d",
                    mscom->rank_world,__func__,__FILE__,__LINE__);
@@ -341,7 +351,7 @@ int multi_scale_main(int argc, char* argv[])
     /* start the microscale servers. This function does not exit until
        a signal is passed from the macroscale via
        pgf_FE2_macro_client_send_exit */
-    err += pgf_FE2_micro_server_START(mscom, micro, mp_id);
+    err += pgf_FE2_micro_server_START(mscom, micro, mp_id);//everything micro 1 basically happens here
 
     /* destroy the microscale */
     delete micro;
@@ -352,7 +362,7 @@ int multi_scale_main(int argc, char* argv[])
 
     micro2->opts->custom_micro = options.custom_micro;
     micro2->opts->auto_micro = options.auto_micro;
-    err += pgf_FE2_micro_server_START(mscom, micro2, mp_id);
+    err += pgf_FE2_micro_server_START(mscom, micro2, mp_id);//everything micro 2 basically happens here
 
     /* destroy the microscale */
     delete micro2;
