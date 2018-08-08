@@ -17,17 +17,18 @@
     'ms_comm'. Returns the number of jobs on 'ms_comm' (Gnjobs), the
     number of jobs for each process on 'ms_comm' (n_job_dom), and
     the allocated list of jobs. */
-int create_group_ms_cohe_job_list(const long nce,
+int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
                                   const COEL *coel,
                                   const Node *node,
                                   const pgfem3d::net::PGFem3D_Comm macro_mpi_comm,
                                   const pgfem3d::net::PGFem3D_Comm ms_comm,
                                   const int group_id,
-                                  long *Gn_jobs,
                                   long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
-				  pgfem3d::net::Network *net,
+                                  MS_COHE_JOB_INFO **job_list_ROM,
+                                  pgfem3d::net::Network *net,
                                   const int mp_id);
+
 
 /** Update the displacement jump for each job in the list. This is
     the ONLY thing that is updated */

@@ -68,7 +68,8 @@ struct pgf_FE2_macro_client{
   size_t n_jobs_max;      /* maximum number of jobs on each server */
   size_t n_server;        /* number of servers */
   size_t n_server_ROM;      //number of micro 2 servers
-  MS_COHE_JOB_INFO *jobs; /* macroscale job(s) */
+  MS_COHE_JOB_INFO *jobs; /* macroscale job(s) (pde)*/
+  MS_COHE_JOB_INFO *jobs_ROM; /* macroscale job(s) (rom)*/
 
   /* communication buffers */
   MultiscaleServerContext *send;
@@ -354,6 +355,7 @@ void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client,
   (*client)->n_server = 0;
   (*client)->n_server_ROM = 0;
   (*client)->jobs = NULL;
+  (*client)->jobs_ROM = NULL;
 
   /* should be done by PGFEM_server_ctx init function... */
   (*client)->send = new MultiscaleServerContext(n);
@@ -445,23 +447,19 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   client->n_jobs_loc_ROM = jobs_ROM;
 
   long Gn_jobs = 0;
-  long *n_job_dom = NULL;
-  create_group_ms_cohe_job_list(c->nce,c->coel,c->node,
+  long *n_job_dom = NULL;//why is this created outside and not inside, if its destroyed right after?
+  create_group_ms_cohe_job_list(pde_jobs,jobs_ROM,c->coel,c->node,
 				mscom->macro,NET_COMM_SELF,
-				0,&Gn_jobs,&n_job_dom,
-				&(client->jobs),c->net,mp_id);
-  /* error check */
-  assert(Gn_jobs >= 0);
-  assert(Gn_jobs == n_jobs);
-
+				0,&n_job_dom,
+				&(client->jobs),&(client->jobs_ROM),c->net,mp_id);
   /* free unused memory */
   free(n_job_dom);
 
   /* compute total number of jobs and set maximum number of jobs per
      server */
-  client->net->allreduce(NET_IN_PLACE,&Gn_jobs,1,NET_DT_LONG,
-			 NET_OP_SUM,mscom->macro);
-  client->n_jobs_glob = Gn_jobs;
+//  client->net->allreduce(NET_IN_PLACE,&Gn_jobs,1,NET_DT_LONG,
+//			 NET_OP_SUM,mscom->macro);
+  client->n_jobs_glob = pde_jobs;
   client->n_jobs_max = n_jobs_max;
   client->n_jobs_glob_ROM = jobs_ROM;//just one macro server for now
 
