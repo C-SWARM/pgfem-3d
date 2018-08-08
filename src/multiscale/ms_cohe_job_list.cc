@@ -86,15 +86,15 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
 
 /*==== API FUNCTION DEFINITIONS ====*/
 
-int create_group_ms_cohe_job_list(const long nce,
+int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
                                   const COEL *coel,
                                   const Node *node,
                                   const PGFem3D_Comm macro_comm,
                                   const PGFem3D_Comm ms_comm,
                                   const int group_id,
-                                  long *Gn_jobs,
                                   long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
+                                  MS_COHE_JOB_INFO **job_list_ROM,
 				  Network *net,
                                   const int mp_id)
 {
@@ -108,12 +108,19 @@ int create_group_ms_cohe_job_list(const long nce,
   
   int *buff_sizes = NULL;
   int *buff_starts = NULL;
+  int *buff_starts_ROM = NULL;
   char *buffer = NULL;
+  char *buffer_ROM = NULL;
   long job_id_start = 0;
+  long job_id_start_ROM = 0;
 
   *job_list = NULL;
-  err += compute_loc_job_list_metadata(nce,coel,node,n_job_dom,
+  long *Gn_jobs = NULL;
+  err += compute_loc_job_list_metadata(pde_jobs,coel,node,n_job_dom,
                                        Gn_jobs,&job_id_start,net,ms_comm);
+  long **n_job_dom_ROM = NULL;
+  err += compute_loc_job_list_metadata(jobs_ROM,coel,node,n_job_dom_ROM,             // compute a rom list
+                                       Gn_jobs,&job_id_start_ROM,net,ms_comm);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -126,17 +133,24 @@ int create_group_ms_cohe_job_list(const long nce,
 
   buff_sizes = PGFEM_calloc(int, nproc);
   buff_sizes[myrank] = 0;
-  err += create_local_ms_cohe_job_list(nce,coel,node,group_id,
+  err += create_local_ms_cohe_job_list(pde_jobs,coel,node,group_id,
                                        (*n_job_dom)[myrank],
                                        *job_list + job_id_start,
                                        &buff_sizes[myrank],macro_rank,
 				       mp_id);
+
+  err += create_local_ms_cohe_job_list(jobs_ROM,coel,node,group_id,
+                                       (*n_job_dom_ROM)[myrank],
+                                       *job_list_ROM + job_id_start_ROM,
+                                       &buff_sizes[myrank],macro_rank,
+               mp_id);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
   /* compute size of global buffer */
   buff_starts = PGFEM_calloc(int, nproc);
+  buff_starts_ROM = PGFEM_calloc(int,nproc);
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes,1,NET_DT_INT,ms_comm);
   {
     size_t g_buff_size = 0;
@@ -145,10 +159,11 @@ int create_group_ms_cohe_job_list(const long nce,
       g_buff_size += buff_sizes[i];
     }
     buffer = PGFEM_calloc(char, g_buff_size);
+    buffer_ROM = PGFEM_calloc(char, g_buff_size);
   }
 
   /* pack the local job info */
-  {
+  {//pde
     size_t pos = buff_starts[myrank];
     for(long i=0; i<(*n_job_dom)[myrank]; i++){
       MS_COHE_JOB_INFO *info = *job_list + job_id_start + i;
@@ -158,10 +173,24 @@ int create_group_ms_cohe_job_list(const long nce,
     }
   }
 
+  {//rom
+    size_t pos = buff_starts_ROM[myrank];
+    for(long i=0; i<(*n_job_dom_ROM)[myrank]; i++){
+      MS_COHE_JOB_INFO *info = *job_list_ROM + job_id_start_ROM + i;
+      size_t len = compute_MS_COHE_JOB_INFO_size(info);
+      err += pack_MS_COHE_JOB_INFO(info,len,buffer_ROM+pos);
+      pos += len;
+    }
+  }
+
+
   /* gather on all processes in group */
   net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
 		  buffer,buff_sizes,buff_starts,NET_DT_CHAR,ms_comm);
   
+  net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
+      buffer_ROM,buff_sizes,buff_starts_ROM,NET_DT_CHAR,ms_comm);
+
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
@@ -169,11 +198,15 @@ int create_group_ms_cohe_job_list(const long nce,
   for(int i=0; i<nproc; i++){
     /* compute start */
     if(i == 0) job_id_start = 0;
-    else job_id_start += (*n_job_dom)[i-1];
+    else { 
+      job_id_start += (*n_job_dom)[i-1];
+      job_id_start_ROM += (*n_job_dom)[i-1];  
+    }
 
     if(i == myrank)continue;
 
     size_t pos = buff_starts[i];
+    size_t pos_ROM = buff_starts_ROM[i];
     for(long j=0; j<(*n_job_dom)[i]; j++){
       MS_COHE_JOB_INFO *info = *job_list + job_id_start + j;
       /* peek the number of nodes from the buffer at pos */
@@ -188,6 +221,21 @@ int create_group_ms_cohe_job_list(const long nce,
       pos += len_job;
       buff_sizes[i] -= len_job;
     }
+    for(long j=0; j<(*n_job_dom_ROM)[i]; j++){
+      MS_COHE_JOB_INFO *info = *job_list_ROM + job_id_start_ROM + j;
+      /* peek the number of nodes from the buffer at pos */
+      {
+        int nnode = 0;
+        size_t tmp = 0;
+        unpack_data(buffer_ROM+pos_ROM,&nnode,&tmp,1,sizeof(int));
+        err += build_MS_COHE_JOB_INFO(info,nnode);
+      }
+      size_t len_job = compute_MS_COHE_JOB_INFO_size(info);
+      err += unpack_MS_COHE_JOB_INFO(info,len_job,buffer_ROM+pos_ROM);
+      pos += len_job;
+      buff_sizes[i] -= len_job;
+    }
+
     if(buff_sizes[i] != 0) err++;
 
     /* check error status */
@@ -198,6 +246,7 @@ int create_group_ms_cohe_job_list(const long nce,
   free(buffer);
   free(buff_sizes);
   free(buff_starts);
+  free(n_job_dom_ROM);
   return err;
 } /* create_group_ms_cohe_job_list() */
 

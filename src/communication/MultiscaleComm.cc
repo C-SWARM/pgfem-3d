@@ -15,7 +15,6 @@ namespace pgfem3d {
     n->comm_dup(comm_world, &world);
     macro = world;
     micro_all = world;
-    micro = world;
     mm_inter = world;
     mm_inter_ROM = world;
     micro_1 = world;
@@ -144,8 +143,8 @@ namespace pgfem3d {
       if (rank_micro_1 != NET_UNDEFINED){
         color = rank_micro_1 / micro_group_size;
       }
-      net->comm_split(micro_1, color, rank_micro_1, &micro);
-      net->comm_rank(micro, &rank_micro_1);
+      net->comm_split(micro_1, color, rank_micro_1, &micro_1);
+      net->comm_rank(micro_1, &rank_micro_1);
 
       /*Create inter-micro communicators between equivalent procs on
 	different microstructures. This allows direct communication
