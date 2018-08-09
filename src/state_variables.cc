@@ -96,3 +96,121 @@ int State_variables::state_variables_unpack(const char *buffer,
 
   return err;
 }
+
+int
+Model_var_info::print_variable_info(FILE *f)
+{
+  int err = 0;
+  fprintf(f,"F names: ");
+  for(int i = 0, e = this->n_Fs; i < e; i++) fprintf(f,"%s ",this->F_names[i]);
+  fprintf(f,"\nVar names: ");
+  for(int i = 0, e = this->n_vars; i < e; i++) fprintf(f,"%s ",this->var_names[i]);
+  fprintf(f,"\nFlag names: ");
+  for(int i = 0, e = this->n_flags; i < e; i++) fprintf(f,"%s ",this->flag_names[i]);
+  fprintf(f,"\n");
+  return err;
+}
+
+Model_var_info::~Model_var_info()
+{
+  /// deallocate internal memory
+  for (size_t ia=0; ia<this->n_Fs; ia++) {
+    if (this->F_names[ia]) free(this->F_names[ia]);
+  }
+  if(this->F_names) free(this->F_names);
+
+  for(size_t ia=0; ia<this->n_vars; ia++) {
+    if (this->var_names[ia]) free(this->var_names[ia]);
+  }
+
+  if(this->var_names) free(this->var_names);
+
+  for(size_t ia=0; ia<this->n_flags; ia++) {
+    if(this->flag_names[ia]) free(this->flag_names[ia]);
+  }
+  if (this->flag_names) free(this->flag_names);
+}
+
+/// Set constitutive model information such as variable names.
+/// This function can be used in each constitutive model to set name for variables,
+/// tensors, and flags 
+/// \param[in] info    Object for storing state variables at an integration point
+/// \param[in] Vars_no number of variabls
+/// \param[in] Vars    container of variable names
+/// \param[in] Tens_no number of tensors
+/// \param[in] Tens    container of tensor names
+/// \param[in] Flag_no number of flags
+/// \param[in] Flag    container of flag names
+/// \return non-zero on internal error
+int constitutive_model_info(Model_var_info &info,
+                            const int Vars_no, const CMVariableNames *Vars,
+                            const int Tens_no, const CMVariableNames *Tens,
+                            const int Flag_no, const CMVariableNames *Flag)
+{
+  int err = 0;
+  int test_size = 1024;
+  // make sure I don't leak memory
+  
+  // set variable names    
+  info.n_vars = Vars_no;
+  info.var_names = (char **)malloc(sizeof(char*)*Vars_no);
+  if(info.var_names == NULL){    
+    ++err;
+    return err;
+  }
+    
+  for(int a=0; a<Vars_no; a++){
+    info.var_names[a] = (char *)malloc(sizeof(char)*test_size);
+    if(info.var_names[a] == NULL)
+      ++err;
+  }
+
+  if(err>0)
+    return err;
+  
+  // set tensor names  
+  for(int a=0; a<Vars_no; a++)
+    sprintf(info.var_names[a], Vars[a].name);
+
+  info.n_Fs = Tens_no;
+  info.F_names = (char **)malloc(sizeof(char*)*Tens_no);
+  if(info.F_names==NULL){
+    ++err;
+    return err;
+  }
+  
+  for(int a=0; a<Tens_no; a++){
+    info.F_names[a] = (char *)malloc(sizeof(char)*test_size);
+    if(info.F_names[a] == NULL)
+      ++err;
+  }
+  
+  if(err>0)
+    return err;
+  
+  for(int a=0; a<Tens_no; a++)
+    sprintf(info.F_names[a], Tens[a].name);
+    
+    
+  // set flag names  
+  info.n_flags = Flag_no;
+  info.flag_names = (char **)malloc(sizeof(char*)*Flag_no);
+  if(info.flag_names == NULL){
+    ++err;
+    return err;
+  }
+  
+  for(int a=0; a<Flag_no; a++){
+    info.flag_names[a] = (char *)malloc(sizeof(char)*test_size);
+    if(info.flag_names[a]==NULL)
+      ++err;
+  }
+
+  if(err>0)
+    return err;
+    
+  for(int a=0; a<Flag_no; a++)
+    sprintf(info.flag_names[a], Flag[a].name);
+
+  return err;  
+} 

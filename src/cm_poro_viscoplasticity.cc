@@ -344,11 +344,12 @@ const
 }
 
 int CM_PVP_PARAM::update_elasticity_dev(const Constitutive_model *m,
-                                        double *eF,
+                                        double *eFnpa,
                                         double *L_in,
                                         double *S,
                                         const int npa,
                                         const double alpha,
+                                        const double dt,
                                         const int compute_stiffness) 
 const
 {
@@ -360,7 +361,7 @@ const
   if(compute_stiffness)
     L = L_in;
   
-  poro_visco_plasticity_update_elasticity_dev(S, L, mat_pvp, eF, pc, compute_stiffness);           
+  poro_visco_plasticity_update_elasticity_dev(S, L, mat_pvp, eFnpa, pc, compute_stiffness);           
   return err; 
 }
 
@@ -427,36 +428,24 @@ const
 int CM_PVP_PARAM::get_var_info(Model_var_info &info)
 const 
 {
-  int Fno = TENSOR_end;
-  
-  info.n_Fs = Fno;
-  info.F_names = (char **)malloc(sizeof(char*)*Fno);
-  for(int a=0; a<Fno; a++)
-    info.F_names[a] = (char *)malloc(sizeof(char)*1024);
+  const CMVariableNames variable_names[] = {{VAR_pc_n  , "pc_n"  },
+                                            {VAR_pc_np1, "pc_np1"},
+                                            {VAR_pc_nm1, "pc_nm1"}
+                                           };
 
-  sprintf(info.F_names[TENSOR_Fn],    "Fn");
-  sprintf(info.F_names[TENSOR_pFn],   "pFn");
-  sprintf(info.F_names[TENSOR_Fnp1],  "Fnp1");
-  sprintf(info.F_names[TENSOR_pFnp1], "pFnp1");
-  sprintf(info.F_names[TENSOR_Fnm1],  "Fnm1");
-  sprintf(info.F_names[TENSOR_pFnm1], "pFnm1");
-  
-  int varno = VAR_end;
-  info.n_vars = varno;
-  info.var_names = (char **)malloc(sizeof(char*)*varno);
-  for(int a=0; a<varno; a++)
-    info.var_names[a] = (char *)malloc(sizeof(char)*1024);
-  
-  sprintf(info.var_names[VAR_pc_n],   "pc_n");
-  sprintf(info.var_names[VAR_pc_np1], "pc_np1");
-  sprintf(info.var_names[VAR_pc_nm1], "pc_nm1");
+  const CMVariableNames tensor_names[] = {{TENSOR_Fn   , "Fn"   }, 
+                                          {TENSOR_pFn  , "pFn"  },  
+                                          {TENSOR_Fnp1 , "Fnp1" }, 
+                                          {TENSOR_pFnp1, "pFnp1"},
+                                          {TENSOR_Fnm1 , "Fnm1" }, 
+                                          {TENSOR_pFnm1, "pFnm1"},
+                                         };
 
-  info.n_flags = FLAG_end;
-  info.flag_names = (char **) malloc(FLAG_end * sizeof(char*));  
-  for(int a=0; a<FLAG_end; a++)
-    info.flag_names[a] = (char *)malloc(sizeof(char)*1024);
-
-  return 0;
+  const CMVariableNames flag_names[] = {};                                       
+  int err = constitutive_model_info(info, VAR_end,    variable_names,
+                                          TENSOR_end, tensor_names,
+                                          FLAG_end,   flag_names);
+  return err;
 }
 
 int CM_PVP_PARAM::get_pF(const Constitutive_model *m,

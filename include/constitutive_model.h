@@ -49,9 +49,9 @@ enum model_type {
   BPA_PLASTICITY,
   ISO_VISCOUS_DAMAGE,
   J2_PLASTICITY_DAMAGE,
-  POROVISCO_PLASTICITY,  
+  POROVISCO_PLASTICITY,
+  ISO_VISCOUS_SPLIT_DAMAGE,
   NUM_MODELS,
-  ISO_VISCOUS_SPLIT_DAMAGE = 97,
   J2_PLASTICITY_SPLIT_DAMAGE = 98,   
   TESTING=99,
   CM_UQCM=100
@@ -62,37 +62,6 @@ enum integration_frame {
   UPDATED_LAGRANGIAN,
   TOTAL_LAGRANGIAN,
   MIXED_ANALYSIS_MODE
-};
-
-/// Object for querying/describing the state variables.
-class Model_var_info
-{
- public:
-
-  char **F_names;
-  char **var_names;
-  char **flag_names;
-  size_t n_Fs;
-  size_t n_vars;
-  size_t n_flags;
-
-  /// construct a Model_var_info object.
-  Model_var_info()
-  {
-    F_names    = NULL;
-    var_names  = NULL;
-    flag_names = NULL;
-    n_Fs    = 0;
-    n_vars  = 0;
-    n_flags = 0;
-  };
-
-  /// destroy a Model_var_info object. Assumes full control of all
-  /// internal pointers.
-  ~Model_var_info();
-
-  /// Print the object to the specified file.
-  int print_variable_info(FILE *f);
 };
 
 /// Pre-declare the Model_parameters structure
@@ -326,18 +295,22 @@ class Model_parameters
   /// User defined function to compute the deviatroic part of elastic stiffness tangent
   ///
   /// \param[in]  m,                 pointer to Constitutive_model object.
-  /// \param[in]  eF,                elastic deformation gradient
+  /// \param[in]  eFnpa,             elastic deformation gradient
   /// \param[out] L,                 4th order elasticity tensor
   /// \param[out] S,                 2nd order PKII tensor
+  /// \param[in]  npa,               mid point index (1 + alpha)
+  /// \param[in]  alpha,             mid point alpha
+  /// \param[in]  dt,                time step size
   /// \param[in]  compute_stiffness, if 1 compute elasticity tensor
   ///                                   0 no compute elasticity tensor
   /// \return non-zero on internal error that should be handled by the
   virtual int update_elasticity_dev(const Constitutive_model *m,
-                                    double *eF,
+                                    double *eFnpa,
                                     double *L,
                                     double *S,
                                     const int npa,
                                     const double alpha,
+                                    const double dt,
                                     const int compute_stiffness = 0) 
   const
   {
@@ -347,7 +320,7 @@ class Model_parameters
       for(int ib=0; ib<3; ib++){
          eC[ia*3 + ib] = 0.0;
          for(int ic=0; ic<3; ic++)
-           eC[ia*3 + ib] += eF[ic*3 + ia]*eF[ic*3 + ib];
+           eC[ia*3 + ib] += eFnpa[ic*3 + ia]*eFnpa[ic*3 + ib];
        }
      }
      err += compute_dev_stress(m,eC,S);
@@ -990,6 +963,5 @@ int constitutive_model_update_NR(Grid *grid,
                                  int mp_id,
                                  const double *dts,
                                  double alpha);
-
 
 #endif // #define PGFEM3D_CONSTITUTIVE_MODEL_H

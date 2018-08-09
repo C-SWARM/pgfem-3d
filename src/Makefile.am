@@ -138,6 +138,7 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         plasticity_model_none.cc \
                         plasticity_model_BPA.cc \
                         cm_iso_viscous_damage.cc \
+                        cm_iso_viscous_damage_split.cc \
                         cm_j2_plasticity.cc \
                         cm_placeholder_functions.cc \
                         cm_uqcm.cc \

@@ -20,6 +20,7 @@
 #include "cm_j2_plasticity.h"
 #include "cm_uqcm.h"
 #include "cm_poro_viscoplasticity.h"
+#include "cm_iso_viscous_damage_split.h"
 #include "dynamics.h"
 #include "hommat.h"
 #include "supp.h"
@@ -41,40 +42,6 @@
 #include "new_potentials.h"
 
 using namespace pgfem3d;
-
-int
-Model_var_info::print_variable_info(FILE *f)
-{
-  int err = 0;
-  fprintf(f,"F names: ");
-  for(int i = 0, e = this->n_Fs; i < e; i++) fprintf(f,"%s ",this->F_names[i]);
-  fprintf(f,"\nVar names: ");
-  for(int i = 0, e = this->n_vars; i < e; i++) fprintf(f,"%s ",this->var_names[i]);
-  fprintf(f,"\nFlag names: ");
-  for(int i = 0, e = this->n_flags; i < e; i++) fprintf(f,"%s ",this->flag_names[i]);
-  fprintf(f,"\n");
-  return err;
-}
-
-Model_var_info::~Model_var_info()
-{
-  /// deallocate internal memory
-  for (size_t ia=0; ia<this->n_Fs; ia++) {
-    if (this->F_names[ia]) free(this->F_names[ia]);
-  }
-  if(this->F_names) free(this->F_names);
-
-  for(size_t ia=0; ia<this->n_vars; ia++) {
-    if (this->var_names[ia]) free(this->var_names[ia]);
-  }
-
-  if(this->var_names) free(this->var_names);
-
-  for(size_t ia=0; ia<this->n_flags; ia++) {
-    if(this->flag_names[ia]) free(this->flag_names[ia]);
-  }
-  if (this->flag_names) free(this->flag_names);
-}
 
 static constexpr int       DIM_3 = 3;
 static constexpr int     DIM_3x3 = 9;
@@ -868,7 +835,7 @@ template <class CM> class ConstitutiveModelIntregrate
         err += mp->destroy_ctx(&ctx);
 
         // <-- update plasticity part
-        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, true);
+        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, dt, 1);
 
         double hJnp1 = 1.0;
         double pJnp1 = det(Fs.pF.np1);
@@ -950,6 +917,9 @@ int construct_model_context(void **ctx,
   case POROVISCO_PLASTICITY:
     err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
     break;
+  case ISO_VISCOUS_SPLIT_DAMAGE:
+    err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -999,6 +969,9 @@ int construct_model_context_with_thermal(void **ctx,
   case POROVISCO_PLASTICITY:
     err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
     break;
+  case ISO_VISCOUS_SPLIT_DAMAGE:
+    err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
+    break;  
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -1069,6 +1042,9 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
     case POROVISCO_PLASTICITY:
       p[model_id] = new CM_PVP_PARAM;
       break;
+    case ISO_VISCOUS_SPLIT_DAMAGE:
+      p[model_id] = new CM_IVDS_PARAM;
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);
       err++;
@@ -1101,6 +1077,7 @@ Model_parameters::initialization(const HOMMAT *p_hmat, const size_t type)
     case ISO_VISCOUS_DAMAGE:
     case J2_PLASTICITY_DAMAGE:
     case POROVISCO_PLASTICITY:
+    case ISO_VISCOUS_SPLIT_DAMAGE:
       break; // no action
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
@@ -1931,14 +1908,14 @@ int constitutive_model_update_output_variables(Grid *grid,
         err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
         elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
 
-        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, false);
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, dt, 0);
         Up  = func->compute_dudj(m, theta_e, -1, 0);
 
         elast->mat = mat_e_in;
       }
       else
       {
-        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, false);
+        err += func->update_elasticity_dev(m, eF.data, NULL, S_bar.data, -1, 0, dt, 0);
         Up  = func->compute_dudj(m, theta_e, -1, 0);
       }
       // <-- update elasticity part
@@ -2484,7 +2461,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld.data, eSd.data, 1, alpha, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld.data, eSd.data, 1, alpha, dt, 1);
 
     double MJ_npa = ttl::det(M_npa);
     double theta_e_npa = theta_npa*MJ_npa;
@@ -3307,8 +3284,8 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     err += func->destroy_ctx(&ctx);
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, true);
-    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, dts[DT_NP1], 1);
+    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, dts[DT_N],   1);
 
     double MJ_npa = ttl::det(M_npa);
     double MJ_nma = ttl::det(M_nma);
@@ -3954,8 +3931,8 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     err += func->destroy_ctx(&ctx);
 
     // <-- update plasticity part
-    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, true);
-    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, true);
+    err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, dts[DT_NP1], 1);
+    err += func->update_elasticity_dev(m, eFnma.data, Ld_nma.data, S_nma.data, 0, alpha, dts[DT_N],   1);
 
     double MJ_npa = ttl::det(M_npa);
     double MJ_nma = ttl::det(M_nma);
@@ -4140,3 +4117,4 @@ int cm_read_tensor_restart(FILE *fp, double *tensor)
          &tensor[6], &tensor[7], &tensor[8]);
   return err;
 }
+

@@ -81,4 +81,46 @@ class State_variables
                              size_t *pos);
 };
 
+/// Object for querying/describing the state variables.
+class Model_var_info
+{
+ public:
+
+  char **F_names;
+  char **var_names;
+  char **flag_names;
+  size_t n_Fs;
+  size_t n_vars;
+  size_t n_flags;
+
+  /// construct a Model_var_info object.
+  Model_var_info()
+  {
+    F_names    = NULL;
+    var_names  = NULL;
+    flag_names = NULL;
+    n_Fs    = 0;
+    n_vars  = 0;
+    n_flags = 0;
+  };
+
+  /// destroy a Model_var_info object. Assumes full control of all
+  /// internal pointers.
+  ~Model_var_info();
+
+  /// Print the object to the specified file.
+  int print_variable_info(FILE *f);
+};
+
+/// set constitutive model information such as variable names.
+typedef struct {
+  int id;
+  char name[1024];
+} CMVariableNames;
+ 
+int constitutive_model_info(Model_var_info &info,
+                            const int Vars_no, const CMVariableNames *Vars,
+                            const int Tens_no, const CMVariableNames *Tens,
+                            const int Flag_no, const CMVariableNames *Flag);
+
 #endif
