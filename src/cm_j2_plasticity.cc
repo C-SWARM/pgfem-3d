@@ -35,6 +35,7 @@
 #include <math.h>
 #include <string.h> 
 #include <assert.h>
+#include "continuum_damage_model.h"
 
 /* Define constant dimensions. Note cannot use `static const` with
    initialization list */
@@ -210,6 +211,10 @@ const
   /* not expecting EOF, check and return error if encountered */
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
+  
+  this->cm_mat->mat_d = new MATERIAL_CONTINUUM_DAMAGE;
+  set_damage_parameters(this->cm_mat->mat_d, param[p1],  param[p2],
+                              param[Yin], param[mu], param[ome_max]);  
 
   return err;
 }
@@ -433,9 +438,10 @@ const
   /* damage integration algorithm */
   double Y0 = 0.0;
   err += j2d_compute_Y0(cm_hmat(m), bbar, J, param[G], &Y0);
-  err += ivd_public_int_alg(&vars[w], &vars[X], &vars[H], &cm_flags(m)[damaged],
-                            vars[wn], vars[Xn], ctx->dt, Y0, param[mu],
-                            param[ome_max], param[p1], param[p2], param[Yin]);
+  err += continuum_damage_integration_alg_public((this->cm_mat)->mat_d,this->cm_elast,
+                                                  vars+w, vars+X, vars+H, &cm_flags(m)[damaged],                                          
+                                                  vars[wn], vars[Xn], ctx->dt, param[Yin]);  
+  
   return err;
 }
 
@@ -937,8 +943,7 @@ const
   /* no subdivision scheme yet... */
 
   /* compute the damage subdivision parameter */
-  double damage_param = 0.0;
-  err += ivd_public_subdiv_param(cm_vars(m)[wn], cm_vars(m)[w], &damage_param);
+  double damage_param = compute_subdiv_param(cm_vars(m)[wn], cm_vars(m)[w]);
 
   /* return the maximum subdivision parameter */
   *subdiv_param = (plast_param >= damage_param)? plast_param : damage_param;
@@ -992,4 +997,11 @@ int j2d_plasticity_model_ctx_build(void **ctx,
   CTX->dt = dt;
   *ctx = CTX;
   return 0;
+}
+
+int CM_J2P_PARAM::model_dependent_finalization(void)
+{
+  int err = 0;
+  delete (this->cm_mat)->mat_d;
+  return err;
 }

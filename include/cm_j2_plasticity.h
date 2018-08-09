@@ -25,6 +25,7 @@ class CM_J2P_PARAM: public Model_parameters
   public:
 
   virtual int model_dependent_initialization(void);
+  virtual int model_dependent_finalization(void);
 
   virtual int integration_algorithm(Constitutive_model *m,
                                     const void *usr_ctx) const;
