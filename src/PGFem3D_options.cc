@@ -117,8 +117,8 @@ const Option precond_opts[] = {
 
 const Option network_opts[] = {
   /* Network options */
-  {{"isir",no_argument,NULL,5},"Use Isend/Irecv network (MPI) (default)",0},
-  {{"pwc",no_argument,NULL,5},"Use put-with-completion (PWC) network (Photon)",0},
+  {{"isir",no_argument,NULL,5},"\tUse Isend/Irecv network (MPI) (default)",0},
+  {{"pwc",no_argument,NULL,5},"\tUse put-with-completion (PWC) network (Photon)",0},
 };
   
 const Option vis_opts[] = {
@@ -312,6 +312,10 @@ void print_usage(FILE* out)
                 "input output -[scale]-end\n");
   PGFEM_fprintf(out,"\nAnalysis Options:\n");
   for (const auto& opt : analysis_opts) { opt.print(out); }
+
+  PGFEM_fprintf(out,"\nConstitutive Models:\n");  
+  print_constitutive_model_info(out);
+  
   PGFEM_fprintf(out,"\nNetwork Options:\n");
   for (const auto& opt : network_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nSolver Options:\n");

@@ -77,6 +77,23 @@ namespace {
   }
 }
 
+/// print constitutive model interface infomation
+void print_constitutive_model_info(FILE *out)
+{
+  const CMVariableNames variable_names[] = {{HYPER_ELASTICITY,         "Hyper Elasticity         "},        
+                                            {CRYSTAL_PLASTICITY,       "Crystal Plasticity       "},      
+                                            {BPA_PLASTICITY,           "BPA Plasticity           "},          
+                                            {ISO_VISCOUS_DAMAGE,       "Iso Viscous Damage       "},      
+                                            {J2_PLASTICITY_DAMAGE,     "J2 Plasticity with Damage"},    
+                                            {POROVISCO_PLASTICITY,     "Poro Visco Plasticity    "},    
+                                            {ISO_VISCOUS_SPLIT_DAMAGE, "Splited Iso Viscous Dmage"}
+                                          };
+
+  for(int ia=0; ia<NUM_MODELS; ++ia)
+    PGFEM_fprintf(out, "\t\t%s %d\n", variable_names[ia].name, variable_names[ia].id);
+}
+
+
 // define identity
 static TensorA<2> delta_ij(I);
 

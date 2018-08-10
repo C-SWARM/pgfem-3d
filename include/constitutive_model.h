@@ -64,6 +64,9 @@ enum integration_frame {
   MIXED_ANALYSIS_MODE
 };
 
+/// print constitutive model interface infomation
+void print_constitutive_model_info(FILE *out);
+
 /// Pre-declare the Model_parameters structure
 class Model_parameters
 {
