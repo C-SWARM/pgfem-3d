@@ -172,20 +172,9 @@ double pc_npa(const Constitutive_model *m,
               const int npa,
               const double alpha)
 {
-  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  double pc = vars[VAR_pc_np1];
-  
-  switch(npa)
-  {
-    case 0:
-      mid_point_rule(&pc, vars + VAR_pc_nm1, vars + VAR_pc_n, alpha, 1);
-      break;
-    case 1:  
-      mid_point_rule(&pc, vars + VAR_pc_n, vars + VAR_pc_np1, alpha, 1);
-      break;
-  }
-  
-  return pc;
+
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->compute_state_vars_npa(VAR_pc_nm1, VAR_pc_n, VAR_pc_np1, npa, alpha);
 }              
 
 int CM_PVP_PARAM::integration_algorithm(Constitutive_model *m,

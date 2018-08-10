@@ -150,49 +150,28 @@ int iso_viscous_damage_model_ctx_build(void **ctx,
   return err;
 }
 
-double ivd_compute_npa(const int id_nm1,
-                       const int id_n,
-                       const int id_np1,
-                       double *vars,
-                       const int npa,
-                       const double alpha)
-{
-  double value_npa = vars[id_np1];
-  switch(npa)
-  {
-    case 0:
-      mid_point_rule(&value_npa, vars + id_nm1, vars + id_n, alpha, 1);
-      break;
-    case 1:  
-      mid_point_rule(&value_npa, vars + id_n, vars + id_np1, alpha, 1);
-      break;
-  }
-  return value_npa;
-}                     
-
-
 double ivd_compute_w_npa(const Constitutive_model *m,
                          const int npa,
                          const double alpha)
 {
-  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  return ivd_compute_npa(VAR_w_nm1, VAR_w_n, VAR_w_np1, vars, npa, alpha);
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->compute_state_vars_npa(VAR_w_nm1, VAR_w_n, VAR_w_np1, npa, alpha);
 }
 
 double ivd_compute_H_npa(const Constitutive_model *m,
                          const int npa,
                          const double alpha)
 {
-  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  return ivd_compute_npa(VAR_H_nm1, VAR_H_n, VAR_H_np1, vars, npa, alpha);
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->compute_state_vars_npa(VAR_H_nm1, VAR_H_n, VAR_H_np1, npa, alpha);
 }
 
 double ivd_compute_X_npa(const Constitutive_model *m,
                          const int npa,
                          const double alpha)
 {
-  double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;  
-  return ivd_compute_npa(VAR_X_nm1, VAR_X_n, VAR_X_np1, vars, npa, alpha);
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->compute_state_vars_npa(VAR_X_nm1, VAR_X_n, VAR_X_np1, npa, alpha);
 }
 
 int determine_damaged_npa(const Constitutive_model *m,
@@ -392,13 +371,13 @@ const
 }
 
 int CM_IVD_PARAM::update_elasticity_dev(const Constitutive_model *m,
-                                         double *eFnpa,
-                                         double *L,
-                                         double *S,
-                                         const int npa,
-                                         const double alpha,
-                                         const double dt,
-                                         const int compute_stiffness)  
+                                        double *eFnpa,
+                                        double *L,
+                                        double *S,
+                                        const int npa,
+                                        const double alpha,
+                                        const double dt,
+                                        const int compute_stiffness)  
 const
 {
   int err = 0;
@@ -406,7 +385,6 @@ const
   //double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   //int *flags = m->vars_list[0][m->model_id].flags;
 
-  // integration algorithm
   ELASTICITY *elasticity = this->cm_elast;
   MATERIAL_CONTINUUM_DAMAGE *mat_d = this->cm_mat->mat_d;
   
@@ -548,6 +526,14 @@ int IVD_get_F(const Constitutive_model *m,
 }
 
 int CM_IVD_PARAM::get_F(const Constitutive_model *m,
+                        double *F,
+                        const int stepno)
+const
+{
+  return IVD_get_F(m,F,stepno);
+}
+
+int CM_IVD_PARAM::get_eF(const Constitutive_model *m,
                          double *F,
                          const int stepno)
 const
@@ -555,17 +541,9 @@ const
   return IVD_get_F(m,F,stepno);
 }
 
-int CM_IVD_PARAM::get_eF(const Constitutive_model *m,
-                          double *F,
-                          const int stepno)
-const
-{
-  return IVD_get_F(m,F,stepno);
-}
-
 int CM_IVD_PARAM::get_pF(const Constitutive_model *m,
-                          double *F,
-                          const int stepno)
+                         double *F,
+                         const int stepno)
 const 
 {
   F[0] = F[4] = F[8] = 1.0;
@@ -575,9 +553,9 @@ const
 }
 
 int CM_IVD_PARAM::get_eF_of_hF(const Constitutive_model *m,
-                                double *eF_in,
-                                double *hFI_in,
-                                const int stepno)
+                               double *eF_in,
+                               double *hFI_in,
+                               const int stepno)
 const
 {
   int err = 0;
@@ -614,7 +592,7 @@ const
 }
 
 int CM_IVD_PARAM::reset_state_vars_using_temporal(const Constitutive_model *m, 
-                                                   State_variables *var)
+                                                  State_variables *var)
 const
 {
   int err = 0;
@@ -647,7 +625,7 @@ const
 
 
 int CM_IVD_PARAM::update_np1_state_vars_to_temporal(const Constitutive_model *m, 
-                                                     State_variables *var)
+                                                    State_variables *var)
 const
 {
   int err = 0;
@@ -671,7 +649,7 @@ const
 }
 
 int CM_IVD_PARAM::save_state_vars_to_temporal(const Constitutive_model *m, 
-                                               State_variables *var)
+                                              State_variables *var)
 const
 {
   int err = 0;
@@ -699,8 +677,8 @@ const
 
 
 int CM_IVD_PARAM::get_hardening(const Constitutive_model *m,
-                                 double *var,
-                                 const int stepno)
+                                double *var,
+                                const int stepno)
 const
 {
   int err = 0;
@@ -725,7 +703,7 @@ const
 }
 
 int CM_IVD_PARAM::get_plast_strain_var(const Constitutive_model *m,
-                                        double *chi)
+                                       double *chi)
 const                                   
 {
   double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
@@ -734,7 +712,7 @@ const
 }
 
 int CM_IVD_PARAM::write_restart(FILE *out, 
-                                 const Constitutive_model *m)
+                                const Constitutive_model *m)
 const
 {
   int err = 0;

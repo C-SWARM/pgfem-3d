@@ -97,6 +97,34 @@ int State_variables::state_variables_unpack(const char *buffer,
   return err;
 }
 
+/// compute mid-point value of state variables
+///
+/// \param[in] id_nm1 id of state variable at t(n-1)
+/// \param[in] id_n   id of state variable at t(n)
+/// \param[in] id_np1 id of state variable at t(n+1)
+/// \param[in] npa    if npa = 0: returns (1-alpha)*value(id_nm1) + alpha*value(id_n)
+///                      npa = 1: returns (1-alpha)*value(id_n)   + alpha*value(id_np1)
+/// \param[in] alpha  mid-point alpha
+/// \return    mid-point value of the state variable
+double State_variables::compute_state_vars_npa(const int id_nm1,
+                                               const int id_n,
+                                               const int id_np1,
+                                               const int npa,
+                                               const double alpha){
+  double *vars = this->state_vars[0].m_pdata;
+  double value_npa = vars[id_np1];
+  switch(npa)
+  {
+    case 0:
+      mid_point_rule(&value_npa, vars + id_nm1, vars + id_n, alpha, 1);
+      break;
+    case 1:  
+      mid_point_rule(&value_npa, vars + id_n, vars + id_np1, alpha, 1);
+      break;
+  }
+  return value_npa;
+}
+
 int
 Model_var_info::print_variable_info(FILE *f)
 {

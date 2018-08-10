@@ -10,13 +10,13 @@
 ///  Sangmin Lee, University of Notre Dame, <slee43@nd.edu>
 
 #pragma once
-#ifndef CM_ISO_VISCOUS_DAMAGE_H
+#ifndef CM_ISO_VISCOUS_DAMAGE_split_H
 #define CM_ISO_VISCOUS_DAMAGE_H
 
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
 
-class CM_IVD_PARAM: public Model_parameters
+class CM_IVDS_PARAM: public Model_parameters
 {
   public:
 
@@ -98,17 +98,25 @@ class CM_IVD_PARAM: public Model_parameters
   virtual int set_init_vals(Constitutive_model *m) const;
 };
 
+/**
+ * Initialize the Model_parameters object for this particular model.
+ *
+ * \param[in,out] p - pointer to a Model_parameters object
+ * \return non-zero on internal error
+ */
+static inline int iso_viscous_damage_model_initialize(Model_parameters *p) {
+  return 0;
+}
 
 /// Construct and initialize the model context for calling functions
 /// through the constitutive modeling interface.
-int iso_viscous_damage_model_ctx_build(void **ctx,
-                                       double *F,
-                                       const double dt,
-                                       const double alpha,
-                                       double *eFnpa,
-                                       double *hFn,
-                                       double *hFnp1,
-                                       const int is_coulpled_with_thermal,
-                                       const int npa);
-
+int iso_viscous_damage_model_split_ctx_build(void **ctx,
+                                             double *F,
+                                             const double dt,
+                                             const double alpha,
+                                             double *eFnpa,
+                                             double *hFn,
+                                             double *hFnp1,
+                                             const int is_coulpled_with_thermal,
+                                             const int npa);
 #endif

@@ -79,6 +79,13 @@ class State_variables
                            size_t *pos);
   int state_variables_unpack(const char *buffer,
                              size_t *pos);
+
+  /// compute mid-point value of state variables                             
+  double compute_state_vars_npa(const int id_nm1,
+                                const int id_n,
+                                const int id_np1,
+                                const int npa,
+                                const double alpha);
 };
 
 /// Object for querying/describing the state variables.
