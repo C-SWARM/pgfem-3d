@@ -1003,10 +1003,13 @@ const
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
   
-  this->cm_mat->mat_d = new MATERIAL_CONTINUUM_DAMAGE;
+  this->cm_mat->mat_d   = new MATERIAL_CONTINUUM_DAMAGE;
   set_damage_parameters(this->cm_mat->mat_d, param[PARAM_P1],  param[PARAM_P2],
                               param[PARAM_Yin], param[PARAM_mu], param[PARAM_w_max]);  
 
+  this->cm_mat->mat_J2p = new MATERIAL_J2_PLASTICITY;
+  set_J2_plasticity_parameters(this->cm_mat->mat_J2p, 
+                               param[PARAM_hp], param[PARAM_beta], param[PARAM_k0]);  
   return err;
 }
 
