@@ -28,6 +28,12 @@
 #include <cstdlib>
 #include <cassert>
 
+enum{PARAM_mu, 
+     PARAM_w_max, 
+     PARAM_P1, 
+     PARAM_P2, 
+     PARAM_Yin};
+
 static void hommat_assign_values(HOMMAT *p_hmat)
 {
   /* parameter values from Mosby and Matous, MSMSE (2015) */
@@ -52,43 +58,11 @@ static void hommat_assign_values(HOMMAT *p_hmat)
 static void param_assign_values(double *param)
 {
   /* parameter values from Mosby and Matous, MSMSE (2015) */
-  param[0] = 100.0; /* mu */
-  param[1] = 8.0;   /* p1 */
-  param[2] = 2.5;   /* p2 */
-  param[3] = 0.15;  /* Yin */
-}
-
-static int compute_stress(double * __restrict sig,
-                          const Constitutive_model *m,
-                          const void *ctx)
-{
-  int err = 0;
-  double p = 0;
-  const double kappa = hommat_get_kappa(m->param->p_hmat);
-  err += m->param->compute_dudj(m,ctx,&p);
-  p *= kappa;
-  Matrix<double> S(3,3);
-  err += m->param->compute_dev_stress(m,ctx,S.m_pdata);
-
-  /* push stress forward */
-  const double *Fe = m->vars_list[0][m->model_id].Fs[0].m_pdata;
-  const double J = det3x3(Fe);
-  memset(sig,0,9*sizeof(*sig));
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
-        for (int l = 0; l < 3; l++) {
-          sig[idx_2(i,j)] += Fe[idx_2(i,k)] * S.m_pdata[idx_2(k,l)] * Fe[idx_2(j,l)] / J;
-        }
-      }
-    }
-  }
-
-  sig[0] += p;
-  sig[4] += p;
-  sig[8] += p;
-
-  return err;
+  param[PARAM_mu]    = 100.0; // mu
+  param[PARAM_w_max] = 1.0;   // omega_max
+  param[PARAM_P1]    = 8.0;   // p1
+  param[PARAM_P2]    = 2.5;   // p2
+  param[PARAM_Yin]   = 0.15;  // Yin
 }
 
 static void get_F(const double t,
@@ -109,7 +83,7 @@ static int write_data_point(FILE *f,
 {
   int err = 0;
   double sig[9] = {};
-  err += compute_stress(sig,m,ctx);
+  err += m->param->update_elasticity(m, ctx, NULL, sig, 0);
   fprintf(f,"%e\t%e\n", t,sig[8]);
   return err;
 }
@@ -129,7 +103,14 @@ int main(int argc, char **argv)
    // initialize values   
   hommat_assign_values(&mat);  
   err += p.initialization(&mat, BPA_PLASTICITY);
+    
   param_assign_values(p.model_param);
+  MATERIAL_CONTINUUM_DAMAGE mat_d;        
+  set_damage_parameters(&mat_d, p.model_param[PARAM_P1],  p.model_param[PARAM_P2],
+                                p.model_param[PARAM_Yin], p.model_param[PARAM_mu], 
+                                p.model_param[PARAM_w_max]);
+  p.cm_mat->mat_d = &mat_d;
+  
   err += m.initialization(&p);
   
   // get the model info
