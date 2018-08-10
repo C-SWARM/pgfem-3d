@@ -24,9 +24,25 @@
 #include <cstdlib>
 #include <cassert>
 
+enum {PARAM_G, 
+      PARAM_nu, 
+      PARAM_beta, 
+      PARAM_hp, 
+      PARAM_k0,
+      PARAM_mu, 
+      PARAM_w_max, 
+      PARAM_P1, 
+      PARAM_P2, 
+      PARAM_Yin,
+      PARAM_da,
+      PARAM_db,
+      PARAM_va,
+      PARAM_vb,
+      PARAM_NO};
+
 static void hommat_assign_values(HOMMAT *p_hmat)
 {
-  /* parameter values from Mosby and Matous, MSMSE (2015) */
+  // parameter values from Mosby and Matous, MSMSE (2015) 
   p_hmat->m01 = 0.0;
   p_hmat->E = 0.0;
   p_hmat->G = 6.0;
@@ -35,7 +51,7 @@ static void hommat_assign_values(HOMMAT *p_hmat)
   p_hmat->devPotFlag = -1;
   p_hmat->volPotFlag = 2;
 
-  /* unused */
+  // unused 
   p_hmat->M = NULL;
   p_hmat->L = NULL;
   p_hmat->density = 0.0;
@@ -48,55 +64,24 @@ static void hommat_assign_values(HOMMAT *p_hmat)
 static void param_assign_values(double *param,
                                 const HOMMAT *p_hmat)
 {
-  /* elastic props */
-  param[0] = p_hmat->G; /* G - reset from HOMMAT */
-  param[1] = p_hmat->nu; /* nu - reset from HOMMAT */
+  // elastic props 
+  param[PARAM_G]  = p_hmat->G; // G - reset from HOMMAT 
+  param[PARAM_nu] = p_hmat->nu; // nu - reset from HOMMAT 
 
-  /* plastic props */
-  param[2] = 0.0; /* beta */
-  param[3] = 3.0e2; /* hp */
-  param[4] = 0.5; /* k0 */
+  // plastic props 
+  param[PARAM_beta] = 0.0; // beta 
+  param[PARAM_hp]   = 3.0e2; // hp 
+  param[PARAM_k0]   = 0.5; // k0 
 
-  /* damage props */
-  param[5] = 0.0; /* mu */
-  param[6] = 0.0; /* p1 */
-  param[7] = 0.0; /* p2 */
-  param[8] = 0.0; /* Yin */
+  // damage props 
+  param[PARAM_mu]    = 0.0; // mu 
+  param[PARAM_w_max] = 1.0;
+  param[PARAM_P1]    = 0.0; // p1 
+  param[PARAM_P2]    = 0.0; // p2 
+  param[PARAM_Yin]   = 0.0; // Yin  
 
 }
 
-static int compute_stress(double * __restrict sig,
-                          const Constitutive_model *m,
-                          const void *ctx)
-{
-  int err = 0;
-  double p = 0;
-  const double kappa = hommat_get_kappa(m->param->p_hmat);
-  err += m->param->compute_dudj(m,ctx,&p);
-  p *= kappa;
-  Matrix<double> S(3,3);
-  err += m->param->compute_dev_stress(m,ctx,S.m_pdata);
-
-  /* push stress forward */
-  const double *Fe = m->vars_list[0][m->model_id].Fs[0].m_pdata;
-  const double J = det3x3(Fe);
-  memset(sig,0,9*sizeof(*sig));
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      for (int k = 0; k < 3; k++) {
-        for (int l = 0; l < 3; l++) {
-          sig[idx_2(i,j)] += Fe[idx_2(i,k)] * S.m_pdata[idx_2(k,l)] * Fe[idx_2(j,l)] / J;
-        }
-      }
-    }
-  }
-
-  sig[0] += p;
-  sig[4] += p;
-  sig[8] += p;
-
-  return err;
-}
 
 static void get_F(const double t,
                   const double nu,
@@ -116,8 +101,8 @@ static int write_data_point(FILE *f,
 {
   int err = 0;
   double sig[9] = {};
-  err += compute_stress(sig,m,ctx);
-  double J = det3x3(m->vars_list[0][m->model_id].Fs[0].m_pdata);
+  double J = det3x3(m->vars_list[0][m->model_id].Fs[1].m_pdata);
+  err += m->param->update_elasticity(m, ctx, NULL, sig, 0);  
   fprintf(f,"%e\t%e\t%e\n", t, sig[8], J);
   return err;
 }
@@ -135,9 +120,24 @@ int main(int argc, char **argv)
   m.vars_list = &sv;
 
    // initialize values   
-  hommat_assign_values(&mat);  
-  err += p.initialization(&mat, BPA_PLASTICITY);
-  param_assign_values(p.model_param, &mat);
+  hommat_assign_values(&mat);
+  err += p.initialization(&mat, J2_PLASTICITY_DAMAGE);
+
+  param_assign_values(p.model_param, &mat);    
+  MATERIAL_CONTINUUM_DAMAGE mat_d;        
+  set_damage_parameters(&mat_d, p.model_param[PARAM_P1],  p.model_param[PARAM_P2],
+                                p.model_param[PARAM_Yin], p.model_param[PARAM_mu], 
+                                p.model_param[PARAM_w_max]);
+
+  MATERIAL_J2_PLASTICITY mat_J2p;
+  set_J2_plasticity_parameters(&mat_J2p, 
+                               p.model_param[PARAM_hp], 
+                               p.model_param[PARAM_beta], 
+                               p.model_param[PARAM_k0]);                                  
+
+  p.cm_mat->mat_d = &mat_d;
+  p.cm_mat->mat_J2p = &mat_J2p;
+  
   err += m.initialization(&p);
   
   // get the model info

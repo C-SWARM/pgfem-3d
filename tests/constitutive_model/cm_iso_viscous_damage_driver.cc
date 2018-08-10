@@ -102,7 +102,7 @@ int main(int argc, char **argv)
   
    // initialize values   
   hommat_assign_values(&mat);  
-  err += p.initialization(&mat, BPA_PLASTICITY);
+  err += p.initialization(&mat, ISO_VISCOUS_DAMAGE);
     
   param_assign_values(p.model_param);
   MATERIAL_CONTINUUM_DAMAGE mat_d;        
