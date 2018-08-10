@@ -929,7 +929,7 @@ int construct_model_context(void **ctx,
     err += iso_viscous_damage_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
     break;
   case J2_PLASTICITY_DAMAGE:
-    err += j2d_plasticity_model_ctx_build(ctx, F, dt);
+    err += j2d_plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
     break;
   case POROVISCO_PLASTICITY:
     err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
@@ -985,7 +985,10 @@ int construct_model_context_with_thermal(void **ctx,
     break;
   case ISO_VISCOUS_DAMAGE:
     err += iso_viscous_damage_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;    
+    break;
+  case J2_PLASTICITY_DAMAGE:
+    err += j2d_plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
+    break;
   case POROVISCO_PLASTICITY:
     err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
     break;

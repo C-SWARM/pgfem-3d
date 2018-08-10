@@ -153,7 +153,7 @@ int main(int argc, char **argv)
   for (int i = 0; i < n_step; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat.nu, F);
-    err += j2d_plasticity_model_ctx_build(&ctx, F, dt);
+    err += j2d_plasticity_model_ctx_build(&ctx, F, dt,-1.0, NULL, NULL, NULL, 0, -1);;
     err += m.param->integration_algorithm(&m, ctx);
     err += m.param->update_state_vars(&m);
     //err += write_data_point(stdout,ctx,&m,t);

@@ -125,6 +125,53 @@ double State_variables::compute_state_vars_npa(const int id_nm1,
   return value_npa;
 }
 
+/// compute mid-point value of Fs
+///
+/// \param[out] F      mid point value of F
+/// \param[in]  id_nm1 id of state variable at t(n-1)
+/// \param[in]  id_n   id of state variable at t(n)
+/// \param[in]  id_np1 id of state variable at t(n+1)
+/// \param[in]  npa    if npa = 0: returns (1-alpha)*value(id_nm1) + alpha*value(id_n)
+///                      npa = 1: returns (1-alpha)*value(id_n)   + alpha*value(id_np1)
+/// \param[in] alpha  mid-point alpha
+/// \return    non-zero with internal error
+int State_variables::compute_Fs_npa(double *F,
+                                    const int id_nm1,
+                                    const int id_n,
+                                    const int id_np1,
+                                    const int npa,
+                                    const double alpha){
+  int err = 0;
+  Matrix<double> *Fs = this->Fs;
+  int m_x_n = (Fs[id_n].m_row)*(Fs[id_n].m_col);  
+  memcpy(F, Fs[id_np1].m_pdata, sizeof(double)*m_x_n);
+
+  switch(npa)
+  {
+    case 0:
+    {
+      int m = (Fs[id_nm1].m_row)*(Fs[id_nm1].m_col);
+      if(m != m_x_n){
+        ++err;
+        break;
+      }        
+      mid_point_rule(F, Fs[id_nm1].m_pdata, Fs[id_n].m_pdata, alpha, m_x_n);
+      break;
+    }
+    case 1:
+    {
+      int m = (Fs[id_np1].m_row)*(Fs[id_np1].m_col);
+      if(m != m_x_n){
+        ++err;
+        break;
+      }       
+      mid_point_rule(F, Fs[id_n].m_pdata, Fs[id_np1].m_pdata, alpha, m_x_n);
+      break;
+    }
+  }
+  return err;
+}
+
 int
 Model_var_info::print_variable_info(FILE *f)
 {

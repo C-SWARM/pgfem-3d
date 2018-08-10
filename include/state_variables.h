@@ -86,6 +86,13 @@ class State_variables
                                 const int id_np1,
                                 const int npa,
                                 const double alpha);
+  /// compute mid-point value of Fs                            
+  int compute_Fs_npa(double *F,
+                     const int id_nm1,
+                     const int id_n,
+                     const int id_np1,
+                     const int npa,
+                     const double alpha);                                
 };
 
 /// Object for querying/describing the state variables.
