@@ -213,7 +213,7 @@ int determine_damaged_npa(const Constitutive_model *m,
 }
 
 int CM_IVD_PARAM::integration_algorithm(Constitutive_model *m,
-                                         const void *ctx)
+                                        const void *ctx)
 const
 {
   
@@ -244,16 +244,16 @@ const
 }
 
 int CM_IVD_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                      const void *ctx,
-                                      double *stress)
+                                     const void *ctx,
+                                     double *stress)
 const
 {
   return 0;
 }
 
 int CM_IVD_PARAM::compute_dudj(const Constitutive_model *m,
-                                const void *ctx,
-                                double *dudj)
+                               const void *ctx,
+                               double *dudj)
 const
 {
   int err = 0;
@@ -270,9 +270,9 @@ const
 }
 
 double CM_IVD_PARAM::compute_dudj(const Constitutive_model *m,
-                                   double theta_e,
-                                   const int npa,
-                                   const double alpha)
+                                  double theta_e,
+                                  const int npa,
+                                  const double alpha)
 const 
 {
   double w_npa = ivd_compute_w_npa(m,npa,alpha);
@@ -281,16 +281,16 @@ const
 }
 
 int CM_IVD_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                       const void *ctx,
-                                       double *L)
+                                      const void *ctx,
+                                      double *L)
 const
 {
   return 0;
 }
 
 int CM_IVD_PARAM::compute_d2udj2(const Constitutive_model *m,
-                                  const void *ctx,
-                                  double *d2udj2)
+                                 const void *ctx,
+                                 double *d2udj2)
 const
 {
   int err = 0;
@@ -307,9 +307,9 @@ const
 }
 
 double CM_IVD_PARAM::compute_d2udj2(const Constitutive_model *m,
-                                     double theta_e,
-                                     const int npa,
-                                     const double alpha)
+                                    double theta_e,
+                                    const int npa,
+                                    const double alpha)
 const 
 {
   double w_npa = ivd_compute_w_npa(m,npa,alpha);
@@ -318,10 +318,10 @@ const
 }
 
 int CM_IVD_PARAM::update_elasticity(const Constitutive_model *m,
-                                     const void *ctx_in,
-                                     double *L,
-                                     double *S,
-                                     const int compute_stiffness)
+                                    const void *ctx_in,
+                                    double *L,
+                                    double *S,
+                                    const int compute_stiffness)
 const
 {
   int err = 0;
@@ -330,7 +330,6 @@ const
   //double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   //int *flags = m->vars_list[0][m->model_id].flags;
 
-  // integration algorithm
   ELASTICITY *elasticity = this->cm_elast;
   MATERIAL_CONTINUUM_DAMAGE *mat_d = this->cm_mat->mat_d;
   
