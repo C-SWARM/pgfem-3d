@@ -101,7 +101,7 @@ struct pgf_FE2_macro_client{
  * Determine the communication pattern between macroscale clients and
  * microscale servers.
  *
- * Only the domians with multiscale elements actually exchange
+ * Only the domains with multiscale elements actually exchange
  * information w/ microscale servers (other than broadcasting which
  * rebalancing information). This function determines for the
  * macroscale the location of cells on the servers after rebalancing
@@ -490,6 +490,15 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
       client->send->set_tag_at_idx(tag, i);
       client->recv->set_tag_at_idx(tag, i);
     }
+    j = client->jobs_ROM;
+    for(int i=0; i<((int)client->n_jobs_loc_ROM); i++){
+      const int tag = pgf_FE2_job_compute_encoded_id(j[i].proc_id,
+                 j[i].elem_id,
+                 j[i].int_pt);
+
+      client->send_ROM->set_tag_at_idx(tag, i);
+      client->recv_ROM->set_tag_at_idx(tag, i);
+    }
   }
   /* final cleanup */
   free(job_buf_sizes);
@@ -502,17 +511,28 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   int nproc_macro = 0;
   const int rank = mscom->rank_macro;
   client->net->comm_size(mscom->macro, &nproc_macro);
-  int *__restrict n_jobs = PGFEM_malloc<int>(nproc_macro);
+  int *__restrict n_jobs = PGFEM_malloc<int>(nproc_macro);//maybe nproc_macro is the maximum number of jobs there can be?
+  int *__restrict n_jobs_ROM = PGFEM_malloc<int>(nproc_macro);
   int *__restrict displ = PGFEM_malloc<int>(nproc_macro);
   int *__restrict id = PGFEM_malloc<int>(client->n_jobs_glob);
   int *__restrict proc = PGFEM_malloc<int>(client->n_jobs_glob);
   int *__restrict time = PGFEM_malloc<int>(client->n_jobs_glob);
 
+  int *__restrict id_ROM = PGFEM_malloc<int>(client->n_jobs_glob_ROM);
+  int *__restrict proc_ROM = PGFEM_malloc<int>(client->n_jobs_glob_ROM);
+  int *__restrict time_ROM = PGFEM_malloc<int>(client->n_jobs_glob_ROM);
+
+
+  /*gather number of jobs given out by each macro*/
   n_jobs[rank] = client->n_jobs_loc;
+  n_jobs_ROM[rank] = client->n_jobs_loc_ROM;
   client->net->allgather(NET_IN_PLACE,1,NET_DT_INT,n_jobs,1,NET_DT_INT,
 			 mscom->macro);
+  client->net->allgather(NET_IN_PLACE,1,NET_DT_INT,n_jobs_ROM,1,NET_DT_INT,
+       mscom->macro);
 
-  /* compute partial sum for displ and set proc_id and time */ // spread out jobs among macro servers evenly
+
+  /* compute partial sum for displ and set proc_id and time*/
   displ[0] = 0;
   const size_t max_proc = client->n_server;
   size_t proc_id = 0;
@@ -531,32 +551,73 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
     }
   }
 
+  /* compute partial sum for displ and set proc_id and time for rom*/
+  displ[0] = 0;
+  const size_t max_proc_ROM = client->n_server_ROM;
+  proc_id = 0;
+  for(int i=0; i<n_jobs_ROM[0]; i++){
+    proc_ROM[i] = proc_id++;
+    if(proc_id >= max_proc_ROM) proc_id = 0;
+    time_ROM[i] = 1;
+  }
+  for(int i=1; i<nproc_macro; i++){
+    displ[i] = displ[i-1] + n_jobs[i-1];
+    const int start = displ[i];
+    for(int j=0; j<n_jobs_ROM[i]; j++){
+      proc_ROM[start + j] = proc_id++;
+      if(proc_id >= max_proc_ROM) proc_id = 0;
+      time_ROM[start + j] = 1;
+    }
+  }
+
+
+
   /* set job ids */
   const int start = displ[rank];
   memcpy(id+start,client->send->tags,client->send->n_comms*sizeof(*id));
+  memcpy(id_ROM+start,client->send_ROM->tags,client->send_ROM->n_comms*sizeof(*id_ROM));
 
   /* get job ids from other procs */
   client->net->allgatherv(NET_IN_PLACE,n_jobs[rank],NET_DT_INT,
 			  id,n_jobs,displ,NET_DT_INT,mscom->macro);
+  client->net->allgatherv(NET_IN_PLACE,n_jobs_ROM[rank],NET_DT_INT,
+        id_ROM,n_jobs_ROM,displ,NET_DT_INT,mscom->macro);
 
   void *all_part = NULL;
   void *parts = NULL;
-
+  void *all_part_ROM = NULL;
+  void *parts_ROM = NULL;
+  /*fill job list (all_parts) with job info*/
   new_partition_build_set_keep(&all_part,client->n_jobs_glob,
                    client->n_jobs_glob,id,time,proc);
   new_partitions_void(&parts,client->n_server,client->n_jobs_max);
+
+  /*fill job info for ROM */
+  new_partition_build_set_keep(&all_part_ROM,client->n_jobs_glob_ROM,
+                   client->n_jobs_glob_ROM,id_ROM,time_ROM,proc_ROM);
+  new_partitions_void(&parts_ROM,client->n_server_ROM,client->n_jobs_max);
+
 
   /* partition the jobs using the greedy algorithm. Since everything
      has the same weight, amounts to round robin assignment. */
   rebalance_partitions_greedy(client->n_server,all_part,parts);
 
+  rebalance_partitions_greedy(client->n_server_ROM,all_part_ROM,parts_ROM);
+
+
   /* push partitions into structure I will send */
   auto rb = PGFEM_calloc(pgf_FE2_server_rebalance *, client->n_server);
+  auto rb_ROM = PGFEM_calloc(pgf_FE2_server_rebalance *, client->n_server_ROM);
+
   new_partitions_void_to_pgf_FE2_server_rebalance(client->n_server,parts,rb);
+  new_partitions_void_to_pgf_FE2_server_rebalance(client->n_server_ROM,parts_ROM,rb_ROM);
 
   /* cleanup */
   new_partition_destroy_void(all_part);
   new_partitions_destroy_void(parts,client->n_server);
+
+  new_partition_destroy_void(all_part_ROM);
+  new_partitions_destroy_void(parts_ROM,client->n_server_ROM);
 
   /* Update server context (who I am sending to)*/
   pgf_FE2_macro_client_update_send_recv(client,rb,nproc_macro);
