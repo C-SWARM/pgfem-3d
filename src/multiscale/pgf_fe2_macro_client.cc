@@ -87,7 +87,7 @@ struct pgf_FE2_macro_client{
     Request *req;
   } bcast;
 
-  struct BCAST_ROM{ //there is probably a better way to do this
+  struct BCAST_ROM : BCAST{ //there is probably a better way to do this
     size_t active;
     size_t n_comm;
     int *ranks;
@@ -116,24 +116,32 @@ struct pgf_FE2_macro_client{
  */
 static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
                          pgf_FE2_server_rebalance **rb_list,
-                         const size_t nproc_macro)
+                         const size_t nproc_macro, int micro_model) //1 = pde, 2 = taylor
 {
   int err = 0;
   assert(nproc_macro > 0);
+    auto recv = client->recv; //default do nothing
+    auto send = client->send; //if ROM, then overwrite
+    auto n_server = client->n_server;
 
+  if (micro_model == 2) {//will eventually be replaced by an array
+    recv = client->recv_ROM;
+    send = client->send_ROM;
+    n_server = client->n_server_ROM;
+  }
   /*
    * Get number of communications (number of multiscale elements on
    * domain). Can exit early if there are no multiscale elements,
    * i.e., no required communication.
    */
-  const size_t s_tags_nel = client->send->n_comms;
+  const size_t s_tags_nel = send->n_comms;
   if(s_tags_nel == 0) return err;
 
   /* push information into tuple workspace {tag, idx, server} */
   const size_t len = 3;
   int *s_tags = PGFEM_malloc<int>(s_tags_nel*len);
   for(size_t i = 0; i < s_tags_nel; i++){
-    s_tags[i*len] = client->send->tags[i];
+    s_tags[i*len] = send->tags[i];
     s_tags[i*len + 1] = i;
     s_tags[i*len + 2] = 0; /* nproc_macro always > 0 */
   }
@@ -146,7 +154,7 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
    * after rebalancing (kept + received).
    */
   unsigned n_client_matched = 0;
-  for(size_t i = 0, e = client->n_server; i<e; i++){
+  for(size_t i = 0, e = n_server; i<e; i++){
     const size_t n_keep = pgf_FE2_server_rebalance_n_keep((rb_list[i]));
     const size_t n_recv = pgf_FE2_server_rebalance_n_recv((rb_list[i]));
     const int *k = pgf_FE2_server_rebalance_keep_buf((rb_list[i]));
@@ -208,12 +216,20 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
     const int proc = s_tags[i*len + 2];
 
     /* error checking. Compiled out with NDEBUG */
-    assert(client->send->tags[idx] == tag);
-    assert(client->recv->tags[idx] == tag);
+    assert(send->tags[idx] == tag);
+    assert(recv->tags[idx] == tag);
+
 
     /* set procs for send and recv */
+  if (micro_model == 1) {//will eventually be replaced by an array
     client->send->set_proc_at_idx(proc,idx);
     client->recv->set_proc_at_idx(proc,idx);
+  } else { //micro model == ROM
+    client->send_ROM->set_proc_at_idx(proc,idx);
+    client->recv_ROM->set_proc_at_idx(proc,idx);
+  }
+
+
   }
 
   free(s_tags);
@@ -307,14 +323,24 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
  */
 static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *client,
                                pgf_FE2_server_rebalance **rb_list,
-			       const MultiscaleComm *mscom)
+			       const MultiscaleComm *mscom,int micro_model)
 {
   int err = 0;
+   
+   auto n_server = client->n_server;
+   auto bcast = client->bcast;
+   auto mm_inter = mscom->mm_inter;
+
+  if (micro_model == 2) {//will eventually be replaced by an array
+    n_server = client->n_server_ROM;
+    bcast = client->bcast_ROM;
+    mm_inter = mscom->mm_inter_ROM;
+  }
 
   /* get aliases */
-  const size_t n_send = client->bcast.n_comm;
-  const int *ranks = client->bcast.ranks;
-  Request *req = client->bcast.req;
+  const size_t n_send = bcast.n_comm;
+  const int *ranks = bcast.ranks;
+  Request *req = bcast.req;
   ISIRNetwork *net = static_cast<ISIRNetwork*>(client->net);
   
   /* should put request et al. in local buffer for overlay of
@@ -324,23 +350,24 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
   net->comm_size(mscom->macro, &nproc_macro);
 
   client->bcast.active = 1;
-
+  client->bcast_ROM.active = 1;
   /* hold addresses of rebal buffers to send */
   void **buffs = PGFEM_calloc(void*, n_send);
 
   for(size_t i = 0; i < n_send; i++){
     size_t idx = rank + i*nproc_macro;
-    assert(idx < client->n_server);
+    assert(idx < n_server);
     size_t len = pgf_FE2_server_rebalance_n_bytes(rb_list[idx]);
     buffs[i] = pgf_FE2_server_rebalance_buff(rb_list[idx]);
     net->isend(buffs[i],len,NET_DT_CHAR,ranks[i],
 	       FE2_MICRO_SERVER_REBALANCE,
-	       mscom->mm_inter,req+i);
+	       mm_inter,req+i);
   }
 
   net->waitall(n_send,req,NET_STATUS_IGNORE);
   free(buffs);
   client->bcast.active = 0;
+  client->bcast_ROM.active = 0;
 
   return err;
 }
@@ -620,10 +647,13 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
   new_partitions_destroy_void(parts_ROM,client->n_server_ROM);
 
   /* Update server context (who I am sending to)*/
-  pgf_FE2_macro_client_update_send_recv(client,rb,nproc_macro);
+  pgf_FE2_macro_client_update_send_recv(client,rb,nproc_macro,1);//full pde micros
+  pgf_FE2_macro_client_update_send_recv(client,rb_ROM,nproc_macro,2);//taylor model micros
+
 
   /* Broadcast the rebalancing information to the servers */
-  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb,mscom);
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb,mscom,1);//full pde micros
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_ROM,mscom,2);//taylor model micros
 
   /* final cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
@@ -647,10 +677,10 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 							  heuristic);
 
   /* update the server context (send/recv) */
-  pgf_FE2_macro_client_update_send_recv(client,rb_list,nproc_macro);
+  pgf_FE2_macro_client_update_send_recv(client,rb_list,nproc_macro,1);
 
   /* Broadcast rebalancing info to servers */
-  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_list,mscom);
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_list,mscom,1);
 
   /* cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
@@ -662,18 +692,26 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
                     const MultiscaleComm *mscom,
                     const Macroscale *macro,
-                    const int job_type)
+                    const int job_type,
+                    const int micro_model)
 {
   int err = 0;
   /* see start_macroscale_compute_jobs */
+    MultiscaleServerContext *recv = client->recv;
+    MultiscaleServerContext *send = client->send;
+    MS_COHE_JOB_INFO *job_list = client->jobs;
+    PGFem3D_Comm comm = mscom->mm_inter;
 
-  /* Get aliases from client object etc. */
-  MultiscaleServerContext *send = client->send;
-  MultiscaleServerContext *recv = client->recv;
-  MS_COHE_JOB_INFO *job_list = client->jobs;
+  if (micro_model == 2) {//will eventually be replaced by an array
+
+    recv = client->recv_ROM;
+    send = client->send_ROM;
+    job_list = client->jobs_ROM;
+    comm = mscom->mm_inter_ROM;
+  }
+
 
   ISIRNetwork *net = static_cast<ISIRNetwork*>(client->net);
-  PGFem3D_Comm comm = mscom->mm_inter;
   /* Wait to complete any pending communcication. The error flag is
      incremented as this should only occur by a logical/programming
      error. Note that buffers may be overwritten. If the communication
