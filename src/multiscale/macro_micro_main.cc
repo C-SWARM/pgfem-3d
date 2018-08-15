@@ -507,7 +507,10 @@ int multi_scale_main(int argc, char* argv[])
 
       /* send a job to compute the first tangent */
       pgf_FE2_macro_client_send_jobs(client, mscom, macro,
-                                     JOB_NO_COMPUTE_EQUILIBRIUM);
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,1);//pde
+      pgf_FE2_macro_client_send_jobs(client, mscom, macro,
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,2);//ROM
+
 
       /* turn off restart at the macroscale */
       macro->opts->restart = -1;
@@ -539,7 +542,9 @@ int multi_scale_main(int argc, char* argv[])
 
       /* send signal to microscale to compute initial tangent */
       pgf_FE2_macro_client_send_jobs(client, mscom, macro,
-                                     JOB_NO_COMPUTE_EQUILIBRIUM);
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,1);
+      pgf_FE2_macro_client_send_jobs(client, mscom, macro,
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,2);
 
       /*  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
           of the load vector  */
@@ -552,8 +557,7 @@ int multi_scale_main(int argc, char* argv[])
       }
 
       compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,
-						       solver_file->nonlin_tol,
-                                                       mscom->rank_macro);
+						       solver_file->nonlin_tol, mscom->rank_macro);
 
       /*=== do not support node/surf loads ===*/
       /* /\*  NODE - generation of the load vector  *\/ */
@@ -710,7 +714,8 @@ int multi_scale_main(int argc, char* argv[])
                                                FE2_REBALANCE_NONE);
 
         /* Send print jobs */
-        pgf_FE2_macro_client_send_jobs(client,mscom,macro,JOB_PRINT);
+        pgf_FE2_macro_client_send_jobs(client,mscom,macro,JOB_PRINT,1);
+        pgf_FE2_macro_client_send_jobs(client,mscom,macro,JOB_PRINT,2);
 
         if (macro->opts->vis_format != VIS_NONE ) {
 

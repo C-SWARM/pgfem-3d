@@ -63,7 +63,8 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 		    const pgfem3d::MultiscaleComm *mscom,
 		    const pgfem3d::Macroscale *macro,
-                    const int job_type);
+                    const int job_type,
+        const int micro_model);
 
 /**
  * Receive finished jobs from the servers. Returns the maximum number
