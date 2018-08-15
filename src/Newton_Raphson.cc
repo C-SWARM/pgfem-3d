@@ -1101,7 +1101,10 @@ long Newton_Raphson_with_LS(double *solve_time,
         load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
       }
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_COMPUTE_EQUILIBRIUM);
+                                     JOB_COMPUTE_EQUILIBRIUM,1);
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
+                                     JOB_COMPUTE_EQUILIBRIUM,2);
+
       //gradU needs to be put back afterwards
       for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
        load->sup_defl[mp_id][i] = temp_defl[i];
@@ -1561,7 +1564,9 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       }
       ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_NO_COMPUTE_EQUILIBRIUM);
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,1);
+      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
+                                     JOB_NO_COMPUTE_EQUILIBRIUM,2);
 
       for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
        load->sup_defl[mp_id][i] = temp_defl[i];
@@ -1744,7 +1749,10 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
 
         pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                       JOB_UPDATE);
+                                       JOB_UPDATE,1);
+        pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
+                                       JOB_UPDATE,2);
+
         for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
          load->sup_defl[mp_id][i] = temp_defl[i];
         }
