@@ -87,6 +87,9 @@ namespace pgfem3d {
     
     free(fast_LG_map);
     free(fast_GL_map);
+
+    dealoc1l(send);
+    dealoc1l(recv);
   }
   
   void ISIR_SparseComm::initialize()

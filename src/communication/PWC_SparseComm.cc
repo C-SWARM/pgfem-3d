@@ -80,6 +80,23 @@ namespace pgfem3d {
     
     free(fast_LG_map);
     free(fast_GL_map);
+
+    PGFEM_free_unpin(backing_s, (total_ssz) ? sizeof(double) * total_ssz : sizeof(double), net);
+    PGFEM_free_unpin(backing_lg_S, (total_lg_ssz) ? sizeof(double) * total_lg_ssz : sizeof(double), net);
+    PGFEM_free_unpin(backing_r, (total_rsz) ? sizeof(double) * total_rsz : sizeof(double), net);
+    PGFEM_free_unpin(backing_lg_R, (total_lg_rsz) ? sizeof(double) * total_lg_rsz : sizeof(double), net);
+
+    dealoc1l(send);
+    dealoc1l(recv);
+    dealoc1l(local_s);
+    dealoc1l(local_r);
+    dealoc1l(remote);    
+    dealoc1l(lg_S);
+    dealoc1l(lg_R);
+    dealoc1l(local_lg_S);
+    dealoc1l(local_lg_R); 
+    dealoc1l(remote_lg_S);
+    dealoc1l(remote_lg_R);
   }
 
   void PWC_SparseComm::exchange(Buffer *in, Buffer *out, long nsend,
