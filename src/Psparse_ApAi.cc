@@ -213,10 +213,10 @@ int* Psparse_ApAi (long ne,
     preRecv = com->hints->get_send_list();
   }
 
-  comm->S = PGFEM_calloc_pin (long, nproc, com->net, 0);       //amount of rows to send to each processor
-  comm->R = PGFEM_calloc_pin (long, nproc, com->net, 0);       //amount of rows to receive from each processsor
-  comm->AS = PGFEM_calloc_pin (long, nproc, com->net, 0);      //amount to send
-  comm->AR = PGFEM_calloc_pin (long, nproc, com->net, 0);      //amount to recieve
+  comm->S = PGFEM_calloc (long, nproc);       //amount of rows to send to each processor
+  comm->R = PGFEM_calloc (long, nproc);       //amount of rows to receive from each processsor
+  comm->AS = PGFEM_calloc (long, nproc);      //amount to send
+  comm->AR = PGFEM_calloc (long, nproc);      //amount to recieve
   comm->LG = PGFEM_calloc (long, ndofd);                       //local to global (ndofd)
   comm->GL = PGFEM_calloc (long, DomDof[myrank]);              //global to local
 
@@ -1268,9 +1268,8 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     int n_rec = 0;
     if (comm->AR[i] == 0) n_rec = 1; else n_rec = comm->AR[i];
 
-    RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_rec,
-				sizeof(long), net, &rbuffers[i].key,
-				__func__, __FILE__, __LINE__));
+    RECI[i] = PGFEM_calloc_pin (long, n_rec,
+				net, &rbuffers[i].key);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*n_rec;
   }
@@ -1287,9 +1286,8 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
     int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
 
-    SEND[i] = static_cast<long*>(PGFEM_CALLOC_PIN (n_send,
-				sizeof(long), net, &sbuffers[s_idx].key,
-                                __func__, __FILE__, __LINE__));
+    SEND[i] = PGFEM_calloc_pin (long, n_send,
+				net, &sbuffers[s_idx].key);
     sbuffers[s_idx].addr = reinterpret_cast<uintptr_t> (SEND[i]);
     sbuffers[s_idx].size = sizeof(long)*n_send;
 
@@ -1609,9 +1607,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
   for (int i = 0; i < comm->Ns; i++){
     int KK = comm-> Nss[i];
-    comm->SGRId[KK] = static_cast<long*>(PGFEM_CALLOC_PIN (comm->AS[KK],
-				sizeof(long), net, &sbuffers[KK].key,
-                                __func__, __FILE__, __LINE__));
+    comm->SGRId[KK] = PGFEM_calloc_pin (long, comm->AS[KK],
+				        net, &sbuffers[KK].key);
     sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
     //net->pin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size, &sbuffers[KK].key);
@@ -1640,9 +1637,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   for (int i = 0; i < nproc; i++) {
     int JJ = 0;
     if (comm->AR[i] == 0) JJ = 1; else JJ = comm->AR[i];
-    RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (JJ,
-				sizeof(long), net, &rbuffers[i].key,
-				__func__, __FILE__, __LINE__));
+    RECI[i] = PGFEM_calloc_pin (long, JJ,
+				net, &rbuffers[i].key);
     //RECI[i] = PGFEM_calloc (long, JJ);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
