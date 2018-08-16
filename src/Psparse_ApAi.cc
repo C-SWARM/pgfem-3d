@@ -1319,8 +1319,11 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   comm->RGID = PGFEM_calloc (long*, nproc);
   comm->RAp = PGFEM_calloc (long*, nproc);
 
+  int *Nr_idx = PGFEM_calloc (int, nproc);
+
   for (int i = 0; i < comm->Nr; i++) {
     int KK = comm->Nrr[i];
+    Nr_idx[KK] = i;
     comm->RGID[KK] = PGFEM_calloc (long, comm->R[KK]);
     comm->RAp[KK] = PGFEM_calloc (long, comm->R[KK]);
   }
@@ -1336,18 +1339,17 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     Status stat;
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
+      int KK = stat.NET_SOURCE;
+      int II = 0;
+      for (int i = 0; i < Nr_idx[KK]; i++)
+        //for (int j = 0; j < comm->R[comm->Nrr[i]]; j++)
+        II += comm->R[comm->Nrr[i]];
+      for (int j = 0; j < comm->R[KK]; j++){
+        (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[KK][j];
+        (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[KK][comm->R[KK]+j];
+      }
       t_count++;
     }
-  }
-
-  int II = 0;
-  for (int i = 0; i < comm->Nr; i++){
-    int KK = comm->Nrr[i];
-    for (int j = 0; j < comm->R[KK]; j++) {
-      (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[KK][j];
-      (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[KK][comm->R[KK]+j];
-    }
-    II += comm->R[KK];
   }
   
   net->barrier(com->comm);
@@ -1366,6 +1368,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   dealoc1l(sbuffers);
   dealoc2l(SEND,comm->Ns);
   dealoc2l(RECI,nproc);
+  dealoc1i(Nr_idx);
 
   return 0;
 }
@@ -1680,8 +1683,10 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   }
 
   comm->RGRId = PGFEM_calloc (long*, nproc);
+  int *Nr_idx = PGFEM_calloc (int, nproc);
   for (int i = 0; i < comm->Nr; i++) {
     int KK = comm->Nrr[i];
+    Nr_idx[KK] = i;
     comm->RGRId[KK] = PGFEM_calloc (long, comm->AR[KK]);
   }
 
@@ -1696,20 +1701,20 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     Status stat;
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
-      t_count++;
-    }
-  }
-
-  int JJ = 0;
-  for (int i = 0; i < comm->Nr;i ++){
-    int KK = comm->Nrr[i];
-    int II = 0;
-    for (int j = 0; j < comm->R[KK]; j++){
-      for (int k = 0; k < ApRr[JJ]; k++){
-        (*GIDRr)[JJ][k] = comm->RGRId[KK][II] = RECI[KK][II];
-        II++;
+      int KK = stat.NET_SOURCE;
+      int JJ = 0;
+      for (int i = 0; i < Nr_idx[KK]; i++)
+        for (int j = 0; j < comm->R[comm->Nrr[i]]; j++)
+          JJ++;
+      int II = 0;
+      for (int j = 0; j < comm->R[KK]; j++){
+        for (int k = 0; k < ApRr[JJ]; k++){
+          (*GIDRr)[JJ][k] = comm->RGRId[KK][II] = RECI[KK][II];
+          II++;
+        }
+        JJ++;
       }
-      JJ++;
+      t_count++;
     }
   }
 
@@ -1726,6 +1731,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
   dealoc2l(RECI,nproc);
+  dealoc1i(Nr_idx);
 
   return 0;
 }
