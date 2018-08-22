@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
   if(options.override_solver_file)
   {
     if(myrank == 0)
-      printf("Overriding the default solver file with:\n%s\n", options.solver_file);
+      PGFEM_printf("Overriding the default solver file with:\n%s\n", options.solver_file);
 
     fp = fopen(options.solver_file,"r");
   }
@@ -154,36 +154,45 @@ int main(int argc,char *argv[])
 
   fclose(fp);
 
-  double GL2_err[3];
-
-  int tim = nt+1;
-  while(print[tim]!=1)
-  {
-    tim--;
-  }
-
-  /////////////////////////////////////////////////////////////////////////////////////
-  // read inputs
+  const int error_no = 3;
+  double sum_err[error_no] = {};
+  
   double *u = aloc1(nn*ndofn);
   double *Ph = aloc1(ne);
   double *Vh = aloc1(ne);
 
-  sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
+  FILE *f = NULL;
+  if(myrank==0)
+    f = fopen("error.txt", "w");
 
-  read_VTK_file4TF(filename, u,Ph,Vh);
+  for(int tim=0; tim<nt; tim++){
+    if(print[tim]){
+      double err[error_no] = {};
+      sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
+      read_VTK_file4TF(filename, u,Ph,Vh);
 
-  /////////////////////////////////////////////////////////////////////////////////////
-  // compute errors
-  compute_L2_error(GL2_err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat);
+      compute_L2_error(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat);
+
+      if(myrank==0)
+      {
+        PGFEM_printf("error = %e, %e, %e\n", sqrt(err[0]), sqrt(err[1]), sqrt(err[2]));
+        PGFEM_fprintf(f, "%e %e %e\n", sqrt(err[0]), sqrt(err[1]), sqrt(err[2]));
+      }
+      for(int ib=0; ib<error_no; ib++)
+        sum_err[ib] += err[ib];
+    }
+  }
+
   if(myrank==0)
   {
-    FILE *f = fopen("error.txt", "w");
-    printf("time step = %d, time = %e\n", tim, times[tim+1]);
-    printf("error = %e, %e, %e\n", sqrt(GL2_err[0]), sqrt(GL2_err[1]), sqrt(GL2_err[2]));
-    fprintf(f , "%e, %e, %e\n", sqrt(GL2_err[0]), sqrt(GL2_err[1]), sqrt(GL2_err[2]));
+    PGFEM_printf("total error = %e, %e, %e\n", sqrt(sum_err[0]), sqrt(sum_err[1]), sqrt(sum_err[2]));
+    PGFEM_fprintf(f, "%e %e %e\n", sqrt(sum_err[0]), sqrt(sum_err[1]), sqrt(sum_err[2]));
+    fclose(f);
   }
 
   free(u);
+  free(Ph);
+  free(Vh);
   free(times);
   free(print);
 
