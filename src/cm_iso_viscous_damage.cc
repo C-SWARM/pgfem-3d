@@ -86,10 +86,6 @@ namespace {
         PARAM_P1, 
         PARAM_P2, 
         PARAM_Yin,
-        PARAM_da,
-        PARAM_db,
-        PARAM_va,
-        PARAM_vb, 
         PARAM_NO};
   // private context structure 
   typedef struct {
@@ -804,9 +800,9 @@ const
   int err = 0;
   // get pointer to parameter data
   double *param     = this->model_param;
-  int    *param_idx = this->model_param_index;
+  //int    *param_idx = this->model_param_index;
   assert(param     != NULL); // check the pointer
-  assert(param_idx != NULL); // check the pointer
+  //assert(param_idx != NULL); // check the pointer
 
   // scan to non-blank/comment line 
   err += scan_for_valid_line(in);
@@ -814,10 +810,10 @@ const
   // READ PROPERTIES IN ALPHABETICAL ORDER 
   int match = fscanf(in, "%lf %lf %lf %lf %lf",
                      param + PARAM_mu, param + PARAM_w_max, param + PARAM_P1,
-                     param + PARAM_P2, param + PARAM_Yin);
-                     
+                     param + PARAM_P2, param + PARAM_Yin);                     
+
   if (match != PARAM_NO) err++;
-  assert(match == PARAM_NO && "Did not read expected number of parameters");
+    assert(match == PARAM_NO && "Did not read expected number of parameters");
 
   // PARAM_w_max in [0, 1) 
   if (param[PARAM_w_max] >= 1.0) param[PARAM_w_max] = DAMAGE_THRESH;
