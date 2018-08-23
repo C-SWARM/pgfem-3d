@@ -463,13 +463,11 @@ void re_parse_command_line(const int myrank,
   options->cm = -1; //default: no use of constitutive model
 
   /* print command line to parse */
-  if (myrank == 0) {
-    PGFEM_printf("*** Parsing options from: ");
+    PGFEM_printf("*** rank %d is parsing options from: ",myrank);
     for(int i = start_idx, e = argc; i < e; ++i) {
       PGFEM_printf("%s ", argv[i]);
     }
     PGFEM_printf("***\n");
-  }
 
   int ipath = 0, opath = 0;
 
@@ -909,8 +907,8 @@ void get_macro_micro_option_blocks(int myrank,
   } /* end parse command line */
 
   for (int i = 0, e = N_OPT; i < e; ++i) {
-    if (!got_opt[i] && !myrank) {
-      PGFEM_printf("ERROR parsing macro/micro option blocks!\n");
+    if (!got_opt[i] && myrank == 0) {
+      PGFEM_printf("ERROR parsing macro/micro option blocks, look at option %d?\n",i);
       print_usage(PGFEM_stdout);
       PGFEM_Abort();
     }

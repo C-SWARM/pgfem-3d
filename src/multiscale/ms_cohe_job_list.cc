@@ -92,7 +92,7 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
                                   const PGFem3D_Comm macro_comm,
                                   const PGFem3D_Comm ms_comm,
                                   const int group_id,
-                                  long **n_job_dom,
+                                  long **n_job_dom,long **n_job_dom_ROM,
                                   MS_COHE_JOB_INFO **job_list,
                                   MS_COHE_JOB_INFO **job_list_ROM,
 				  Network *net,
@@ -107,6 +107,7 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
   net->comm_rank(macro_comm,&macro_rank);
   
   int *buff_sizes = NULL;
+  int *buff_sizes_ROM = NULL;
   int *buff_starts = NULL;
   int *buff_starts_ROM = NULL;
   char *buffer = NULL;
@@ -115,12 +116,15 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
   long job_id_start_ROM = 0;
 
   *job_list = NULL;
-  long *Gn_jobs = NULL;
+  *job_list_ROM = NULL;
+  long jobs_ptee = pde_jobs;
+  long *Gn_jobs = &jobs_ptee;
+  long jobs_ptee_ROM = jobs_ROM;
+  long *Gn_jobs_ROM = &jobs_ptee_ROM;
   err += compute_loc_job_list_metadata(pde_jobs,coel,node,n_job_dom,
                                        Gn_jobs,&job_id_start,net,ms_comm);
-  long **n_job_dom_ROM = NULL;
   err += compute_loc_job_list_metadata(jobs_ROM,coel,node,n_job_dom_ROM,             // compute a rom list
-                                       Gn_jobs,&job_id_start_ROM,net,ms_comm);
+                                       Gn_jobs_ROM,&job_id_start_ROM,net,ms_comm);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -130,9 +134,11 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
 
   /* allocate list */
   *job_list = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs);
-
+  *job_list_ROM = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs_ROM);
   buff_sizes = PGFEM_calloc(int, nproc);
+  buff_sizes_ROM = PGFEM_calloc(int, nproc);
   buff_sizes[myrank] = 0;
+  buff_sizes_ROM[myrank] = 0;
   err += create_local_ms_cohe_job_list(pde_jobs,coel,node,group_id,
                                        (*n_job_dom)[myrank],
                                        *job_list + job_id_start,
@@ -142,7 +148,7 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
   err += create_local_ms_cohe_job_list(jobs_ROM,coel,node,group_id,
                                        (*n_job_dom_ROM)[myrank],
                                        *job_list_ROM + job_id_start_ROM,
-                                       &buff_sizes[myrank],macro_rank,
+                                       &buff_sizes_ROM[myrank],macro_rank,
                mp_id);
 
   /* check error status */
@@ -152,14 +158,18 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
   buff_starts = PGFEM_calloc(int, nproc);
   buff_starts_ROM = PGFEM_calloc(int,nproc);
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes,1,NET_DT_INT,ms_comm);
+  net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes_ROM,1,NET_DT_INT,ms_comm);
   {
     size_t g_buff_size = 0;
+    size_t g_buff_size_ROM = 0;
     for(int i=0; i<nproc; i++){
       buff_starts[i] = g_buff_size;
+      buff_starts_ROM[i] = g_buff_size_ROM;
       g_buff_size += buff_sizes[i];
+      g_buff_size_ROM += buff_sizes_ROM[i];
     }
     buffer = PGFEM_calloc(char, g_buff_size);
-    buffer_ROM = PGFEM_calloc(char, g_buff_size);
+    buffer_ROM = PGFEM_calloc(char, g_buff_size_ROM);
   }
 
   /* pack the local job info */
@@ -244,9 +254,10 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
 
  exit_function:
   free(buffer);
+  free(buffer_ROM);
   free(buff_sizes);
   free(buff_starts);
-  free(n_job_dom_ROM);
+  free(buff_starts_ROM);
   return err;
 } /* create_group_ms_cohe_job_list() */
 

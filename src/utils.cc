@@ -235,6 +235,17 @@ void pack_data(const void *src,
   *pos += n_el*size;
 }
 
+void pack_data(const char *src,
+               std::string buffer,
+               size_t *pos,
+               const size_t n_el,
+               const size_t size)
+{
+  for (size_t i = 0; i < n_el*size; ++i)
+    buffer[*pos + i] = src[i];
+  *pos += n_el*size;
+}
+
 void unpack_data(const char *buffer,
                  void *dest,
                  size_t *pos,

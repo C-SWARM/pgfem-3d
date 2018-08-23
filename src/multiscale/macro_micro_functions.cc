@@ -52,7 +52,7 @@ int start_microscale_server(const MultiscaleComm *mscom,
   ISIRNetwork *net = static_cast<ISIRNetwork*>(microscale->net);
   int err = 0;
   /* error check */
-  if(!mscom->valid_micro) return ++err;
+  if(!mscom->valid_micro_1) return ++err;
   if(mscom->valid_mm_inter && ic == NULL) return ++err;
 
   /* begin serving */
@@ -132,7 +132,7 @@ int micro_job_master(const MultiscaleComm *mscom,
 {
   int err = 0;
   /* exit if not master on microscale */
-  if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
+  if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
 
   /* broadcast job information */
   int job_init_info[2] = {0,0};
@@ -158,7 +158,7 @@ int micro_job_slave(const MultiscaleComm *mscom,
   int exit_server = 0;
 
   /* exit if not slave on microscale */
-  if(!mscom->valid_micro && mscom->rank_micro <= 0) return ++err;
+  if(!mscom->valid_micro_1 && mscom->rank_micro <= 0) return ++err;
 
   while(!exit_server){
     /* get job information from master */

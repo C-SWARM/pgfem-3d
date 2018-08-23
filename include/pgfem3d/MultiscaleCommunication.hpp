@@ -24,7 +24,6 @@ public:
   net::PGFem3D_Comm micro;
   net::PGFem3D_Comm mm_inter;
   net::PGFem3D_Comm mm_inter_ROM;
-  net::PGFem3D_Comm micro_1;
   net::PGFem3D_Comm micro_ROM; //full micro 2 group
 //  net::PGFem3D_Comm micro_ROM; //work groups within micro 2
   net::PGFem3D_Comm worker_inter; /* equivalent workers on different

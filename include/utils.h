@@ -153,6 +153,12 @@ void pack_data(const void *src,
                const size_t n_el,
                const size_t size);
 
+void pack_data(const char *src,
+               std::string buffer,
+               size_t *pos,
+               const size_t n_el,
+               const size_t size);
+
 /** Unpack data from contiguous array of char. pos is incremented to
     point to the next extraction point in buffer */
 void unpack_data(const char *buffer,
