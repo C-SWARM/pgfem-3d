@@ -558,7 +558,6 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   /* wait for local PWC completions from above 
      receive the size of recv buffer*/
   const int nrecv = com->hints->get_nsend();
-  const int *recv = com->hints->get_send_list();
   long *len_recv_Gnn_Gid = PGFEM_calloc (long, nproc);
   for (int i = 0; i < nproc; i++) {
     len_recv_Gnn_Gid[i] = -1;
@@ -624,9 +623,6 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     Status stat;
     /* Probe for finished message */
     net->probe(&flag, &val, &stat, 0);
-
-    int idx = 0;
-
     /* if we didn't find a message waiting, then restart the busy
        loop */
     if (flag) {
@@ -638,9 +634,9 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
          nodes we need to work on that are owned by the current
          domain */
       int range[2] = {0};
-      if (nodes_get_shared_idx_range(n_shared, shared, recv[idx], range)) {
+      if (nodes_get_shared_idx_range(n_shared, shared, source, range)) {
         PGFEM_printerr("ERROR: got bad hints on proc [%d] for proc [%d]! No matching nodes\n",
-                       myrank, recv[idx]);
+                       myrank, source);
         PGFEM_Abort();
       }
 

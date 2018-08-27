@@ -190,7 +190,7 @@ void initialize(LongOption *A) {
 void set_default_options(PGFem3D_opt *options)
 {
   /* network option */
-  options->network = NETWORK_ISIR;
+  options->network = NETWORK_ENV;
   
   /* solver options */
   options->solverpackage = HYPRE;
@@ -793,6 +793,16 @@ void get_macro_micro_option_blocks(int myrank,
       print_usage(PGFEM_stdout);
       exit(0);
     }
+
+    /* -isir or -pwc*/
+    if (strcmp(arg, "-isir") == 0) {
+      options->network = NETWORK_ISIR;
+    }
+
+    if(strcmp(arg, "-pwc") == 0) {
+      options->network = NETWORK_PWC;
+    }
+
 
     /* -macro-np */
     if (!strcmp(arg,"-macro-np") and !got_opt[MACRO_NPROC]) {

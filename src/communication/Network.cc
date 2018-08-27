@@ -6,6 +6,8 @@
 #include "pgfem3d/Communication.hpp"
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
+#include <cstdlib>
 
 #ifdef HAVE_PHOTON
 #include "photon/PhotonNetwork.hpp"
@@ -66,6 +68,27 @@ Network::Create(const PGFem3D_opt& opts)
     PGFEM_printerr("[%d]ERROR: PWC Network not available in this build\n", myrank);
     PGFEM_Abort();
 #endif
+    break;
+  case NETWORK_ENV:
+    char* network_type;
+    network_type = std::getenv("PGFEM3D_NET");
+    if (network_type != nullptr && strcmp(network_type, "pwc") == 0) {
+      PGFEM_printf("[%d] Trying to use PWC Network from env\n", myrank);
+#ifdef HAVE_PHOTON
+      return new pwc::PhotonNetwork();
+#else
+      PGFEM_printerr("[%d]ERROR: PWC Network not available in this build\n", myrank);
+      PGFEM_Abort();
+#endif
+    } else {
+      PGFEM_printf("[%d] Trying to use ISIR Network by default\n", myrank);
+#ifdef HAVE_MPI
+      return new isir::MPINetwork();
+#else
+      PGFEM_printerr("[%d]ERROR: ISIR Network not available in this build\n", myrank);
+      PGFEM_Abort();
+#endif
+    }
     break;
   default:
     PGFEM_printerr("[%d]ERROR: Unknown network type\n", myrank);

@@ -50,7 +50,7 @@ trap cleanup EXIT
 mkdir $out
 
 # run the simulation
-cmd="mpirun -np $total_nproc $pgfem -MS -macro-np $macro_nproc -micro-group-size $micro_nproc $macro_opt_block $micro_opt_block"
+cmd="mpirun -np $total_nproc $pgfem -MS -isir -macro-np $macro_nproc -micro-group-size $micro_nproc $macro_opt_block $micro_opt_block"
 echo $cmd
 $cmd |& tee $log
 
