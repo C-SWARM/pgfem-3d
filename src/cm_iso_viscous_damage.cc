@@ -496,37 +496,22 @@ const
   return err;
 }
 
-int IVD_get_F(const Constitutive_model *m,
-              double *F,
-              const int stepno)
-{
-  int err = 0;
-  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  switch(stepno)
-  {
-    case 0: // n-1
-      memcpy(F,Fs[TENSOR_Fnm1].m_pdata,DIM_3x3*sizeof(double));
-      break;
-    case 1: // n
-      memcpy(F,Fs[TENSOR_Fn].m_pdata,  DIM_3x3*sizeof(double));
-      break;
-    case 2: // n+1
-      memcpy(F,Fs[TENSOR_Fnp1].m_pdata,DIM_3x3*sizeof(double));
-      break;
-    default:
-      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
-      err++;
-  }
-  assert(err == 0);
-  return err;
-}
-
 int CM_IVD_PARAM::get_F(const Constitutive_model *m,
                         double *F,
                         const int stepno)
 const
 {
-  return IVD_get_F(m,F,stepno);
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->get_F(F, TENSOR_Fnm1, TENSOR_Fn, TENSOR_Fnp1, stepno);
+}
+
+int CM_IVD_PARAM::set_F(const Constitutive_model *m,
+                        double *F,
+                        const int stepno)
+const
+{
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->set_F(F, TENSOR_Fnm1, TENSOR_Fn, TENSOR_Fnp1, stepno);
 }
 
 int CM_IVD_PARAM::get_eF(const Constitutive_model *m,
@@ -534,7 +519,8 @@ int CM_IVD_PARAM::get_eF(const Constitutive_model *m,
                          const int stepno)
 const
 {
-  return IVD_get_F(m,F,stepno);
+  State_variables *sv = m->vars_list[0] + m->model_id;
+  return sv->get_F(F, TENSOR_Fnm1, TENSOR_Fn, TENSOR_Fnp1, stepno);
 }
 
 int CM_IVD_PARAM::get_pF(const Constitutive_model *m,

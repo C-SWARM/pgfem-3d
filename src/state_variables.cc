@@ -128,9 +128,9 @@ double State_variables::compute_state_vars_npa(const int id_nm1,
 /// compute mid-point value of Fs
 ///
 /// \param[out] F      mid point value of F
-/// \param[in]  id_nm1 id of state variable at t(n-1)
-/// \param[in]  id_n   id of state variable at t(n)
-/// \param[in]  id_np1 id of state variable at t(n+1)
+/// \param[in]  id_nm1 id of F at t(n-1)
+/// \param[in]  id_n   id of F at t(n)
+/// \param[in]  id_np1 id of F at t(n+1)
 /// \param[in]  npa    if npa = 0: returns (1-alpha)*value(id_nm1) + alpha*value(id_n)
 ///                      npa = 1: returns (1-alpha)*value(id_n)   + alpha*value(id_np1)
 /// \param[in] alpha  mid-point alpha
@@ -170,6 +170,84 @@ int State_variables::compute_Fs_npa(double *F,
     }
   }
   return err;
+}
+
+/// get value of Fs[id]
+///
+/// \param[out] F      value of Fs[id]
+/// \param[in]  id_nm1 id of Fs at t(n-1)
+/// \param[in]  id_n   id of Fs at t(n)
+/// \param[in]  id_np1 id of Fs at t(n+1)
+/// \param[in]  stepno id of Fs to get
+///                    if stepno = 0: Fs(n-1)
+///                    if stepno = 1: Fs(n)
+///                    if stepno = 2: Fs(n+1)
+/// \return    non-zero with internal error
+int State_variables::get_F(double *F,
+                           const int id_nm1,
+                           const int id_n,
+                           const int id_np1,  
+                           const int stepno){
+  int err = 0;
+  Matrix<double> *Fs = this->Fs;
+  int m_x_n = (Fs[stepno].m_row)*(Fs[stepno].m_col);
+  
+  switch(stepno)
+  {
+    case 0: // n-1
+      memcpy(F, Fs[id_nm1].m_pdata, m_x_n*sizeof(double));
+      break;
+    case 1: // n
+      memcpy(F, Fs[id_n].m_pdata,   m_x_n*sizeof(double));
+      break;
+    case 2: // n+1
+      memcpy(F, Fs[id_np1].m_pdata, m_x_n*sizeof(double));
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  return err;
+}
+
+/// compute mid-point value of Fs
+///
+/// \param[in] F      value ot set Fs[id]
+/// \param[in] id_nm1 id of Fs at t(n-1)
+/// \param[in] id_n   id of Fs at t(n)
+/// \param[in] id_np1 id of Fs at t(n+1)
+/// \param[in] id     id of Fs to set
+/// \param[in] stepno id of Fs to get
+///                   if stepno = 0: Fs(n-1)
+///                   if stepno = 1: Fs(n)
+///                   if stepno = 2: Fs(n+1)
+/// \return    non-zero with internal error
+int State_variables::set_F(double *F,
+                           const int id_nm1,
+                           const int id_n,
+                           const int id_np1,
+                           const int stepno){
+  int err = 0;
+  Matrix<double> *Fs = this->Fs;
+  int m_x_n = (Fs[stepno].m_row)*(Fs[stepno].m_col);
+  
+  switch(stepno)
+  {
+    case 0: // n-1
+      memcpy(Fs[id_nm1].m_pdata, F, m_x_n*sizeof(double));
+      break;
+    case 1: // n
+      memcpy(Fs[id_n].m_pdata,   F, m_x_n*sizeof(double));
+      break;
+    case 2: // n+1
+      memcpy(Fs[id_np1].m_pdata, F, m_x_n*sizeof(double));
+      break;
+    default:
+      PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
+      err++;
+  }
+  return err;
+
 }
 
 int

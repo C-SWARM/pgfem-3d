@@ -68,6 +68,9 @@ class CM_PVP_PARAM: public Model_parameters
   virtual int get_F(const Constitutive_model *m, 
                     double *F,
                     const int stepno) const;
+  virtual int set_F(const Constitutive_model *m,
+                    double *F,
+                    const int stepno) const;
   virtual int get_pF(const Constitutive_model *m, 
                      double *F, 
                      const int stepno) const;

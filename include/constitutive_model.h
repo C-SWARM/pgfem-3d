@@ -384,15 +384,26 @@ class Model_parameters
   /// User defined function to return the total deformation.
   ///
   /// \param[in]  m,      constant reference to a Constitiutive_model object.
-  /// \param[out] F,      reference to Matrix object that contains the
-  ///                     deformation gradient upon exit.
+  /// \param[out] F,      total deformation gradient of at t(step)
   /// \param[in]  stepno, time step id 0: n-1
-  ///                                 1: n
-  ///                                 2: n+1
+  ///                                  1: n
+  ///                                  2: n+1
   /// \return non-zero on internal error
   virtual int get_F(const Constitutive_model *m,
                     double *F,
                     const int stepno) const { return 0; };
+                    
+  /// User defined function to set the total deformation.
+  ///
+  /// \param[in]  m,      constant reference to a Constitiutive_model object.
+  /// \param[in]  F,      values to set toal deformation gradient
+  /// \param[in]  stepno, time step id 0: n-1
+  ///                                  1: n
+  ///                                  2: n+1
+  /// \return non-zero on internal error
+  virtual int set_F(const Constitutive_model *m,
+                    double *F,
+                    const int stepno) const { return 0; };                    
 
   /// User defined function to return the plastic part deformation.
   ///

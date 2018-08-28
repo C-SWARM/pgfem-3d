@@ -92,7 +92,20 @@ class State_variables
                      const int id_n,
                      const int id_np1,
                      const int npa,
-                     const double alpha);                                
+                     const double alpha);
+  /// get Fs[id]
+  int get_F(double *F,
+            const int id_nm1,
+            const int id_n,
+            const int id_np1,  
+            const int stepno);
+            
+  /// set F to Fs[id]            
+  int set_F(double *F,
+            const int id_nm1,
+            const int id_n,
+            const int id_np1,  
+            const int stepno);
 };
 
 /// Object for querying/describing the state variables.
