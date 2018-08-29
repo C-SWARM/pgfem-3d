@@ -957,8 +957,8 @@ int read_initial_for_Mechanical(FILE *fp,
     if(opts->analysis_type == TF)
       compute_3f_initial_conditions(grid, mat, fv);
 
-    if(opts->analysis_type == CM3F)
-      compute_cm3f_initial_conditions(grid, mat, fv, load, mp, mp_id);
+    if(opts->analysis_type == CM3F || opts->analysis_type == CM3F)
+      compute_cm_initial_conditions(grid, mat, fv, load, mp, mp_id, opts->analysis_type);
   }
 
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)

@@ -4149,13 +4149,15 @@ int cm_read_tensor_restart(FILE *fp, double *tensor)
 /// \param[in] load  object for loading
 /// \param[in] mp    mutiphysics object
 /// \param[in] mp_id mutiphysics id
+/// \param[in] analysis_type type of analysis such as cm, cm3f
 /// \return non-zero on internal error
-void compute_cm3f_initial_conditions(Grid *grid,
-                                     const MaterialProperty *mat,
-                                     FieldVariables *fv,                                     
-                                     LoadingSteps *load,
-                                     const Multiphysics &mp,
-                                     const int mp_id){
+void compute_cm_initial_conditions(Grid *grid,
+                                   const MaterialProperty *mat,
+                                   FieldVariables *fv,                                     
+                                   LoadingSteps *load,
+                                   const Multiphysics &mp,
+                                   const int mp_id,
+                                   const int analysis_type){
 
   const int total_Lagrangian = 1;
   const int intg_order = 0;
@@ -4213,12 +4215,20 @@ void compute_cm3f_initial_conditions(Grid *grid,
 
       const Model_parameters *func =eps[eid].model[ip-1].param;
 
-      Tensor<2> Fn, Fnm1, eFnm1, eFn, pFnm1, pFn, pFnm1I, pFnI;
+      Tensor<2> Fn, Fnm1;
       
       fe.update_shape_tensor();
       fe.update_deformation_gradient(nsd,u_n.m_pdata,    Fn.data);
       fe.update_deformation_gradient(nsd,u_nm1.m_pdata,Fnm1.data);
       
+      func->set_F(m, Fn.data, 1);
+      func->set_F(m, Fnm1.data, 0);
+      
+      if(analysis_type == CM)
+        continue;
+      
+      Tensor<2> eFnm1, eFn, pFnm1, pFn, pFnm1I, pFnI;
+        
       func->get_pF(m,pFn.data,  1);
       func->get_pF(m,pFnm1.data,0);
       
@@ -4250,17 +4260,15 @@ void compute_cm3f_initial_conditions(Grid *grid,
       eJ_nm1 += fe.detJxW*eJip_nm1;
       Up_n   += fe.detJxW*func->compute_dudj(m, eJip_n,   -1, 0);
       Up_nm1 += fe.detJxW*func->compute_dudj(m, eJip_nm1, -1, 0);
-      
-      func->set_F(m, Fn.data, 1);
-      func->set_F(m, Fnm1.data, 0);
     }
-    if(fv->npres == 1)
-    {  
-      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = Up_n/V;
-      fv->tf.P_nm1(eid+1, 1) = Up_nm1/V;
-    }
+    if(analysis_type == CM3F){
+      if(fv->npres == 1){
+        fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = Up_n/V;
+        fv->tf.P_nm1(eid+1, 1) = Up_nm1/V;
+      }
     
-    fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = eJ_n/V;
-    fv->tf.V_nm1(eid+1, 1) = eJ_nm1/V;
+      fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = eJ_n/V;
+      fv->tf.V_nm1(eid+1, 1) = eJ_nm1/V;
+    }
   }
 }
