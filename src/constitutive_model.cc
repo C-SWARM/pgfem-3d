@@ -4141,3 +4141,126 @@ int cm_read_tensor_restart(FILE *fp, double *tensor)
   return err;
 }
 
+/// compute and set initial conditions for three field mixed method
+///
+/// \param[in] grid  an object containing all mesh info
+/// \param[in] mat   a material object
+/// \param[in,out]   fv array of field variable object
+/// \param[in] load  object for loading
+/// \param[in] mp    mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \return non-zero on internal error
+void compute_cm3f_initial_conditions(Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *fv,                                     
+                                     LoadingSteps *load,
+                                     const Multiphysics &mp,
+                                     const int mp_id){
+
+  const int total_Lagrangian = 1;
+  const int intg_order = 0;
+     
+  EPS *eps = fv->eps;
+  Node *node = grid->node;
+  Element *elem = grid->element;
+  
+  int is_it_couple_w_thermal  = -1;
+
+  for(int ia=0; ia<fv->n_coupled; ia++){
+    if(fv->coupled_physics_ids[ia] == MULTIPHYSICS_THERMAL)
+      is_it_couple_w_thermal = ia;
+  }    
+
+  int ndofn = fv->ndofn;      
+
+  for (int eid=0;eid<grid->ne;eid++)
+  {
+    FEMLIB fe;
+    Constitutive_model *m = (fv->eps[eid]).model;
+    fe.initialization(eid,elem,node,intg_order,total_Lagrangian,m->param->pFI);
+    
+    int nne   = fe.nne;
+    int nsd   = fe.nsd;
+    
+    NodalTemerature *T = NULL;
+    long *nod = fe.node_id.m_pdata;
+
+    if(is_it_couple_w_thermal >= 0)
+    {
+      T = new NodalTemerature;
+      T->initialization(fe.nne);
+      T->get_temperature(&fe, grid, fv, load, mp, mp_id, is_it_couple_w_thermal);
+    }    
+
+    Matrix<double> u_nm1(nne*nsd, 1), u_n(nne*nsd, 1);
+    
+    for (long I=0;I<nne;I++){
+      for(long J=0; J<nsd; J++){
+        u_n.m_pdata[I*ndofn + J] =   fv->u_n[nod[I]*ndofn + J];
+        u_nm1.m_pdata[  I*ndofn + J] = fv->u_nm1[nod[I]*ndofn + J];
+      }
+    }
+
+    double eJ_n    = 0.0;
+    double eJ_nm1  = 0.0;
+    double Up_n   = 0.0;
+    double Up_nm1 = 0.0;
+    double V = 0.0;
+    
+    for(int ip=1; ip<=fe.nint; ip++){
+
+      fe.elem_basis_V(ip);
+
+      const Model_parameters *func =eps[eid].model[ip-1].param;
+
+      Tensor<2> Fn, Fnm1, eFnm1, eFn, pFnm1, pFn, pFnm1I, pFnI;
+      
+      fe.update_shape_tensor();
+      fe.update_deformation_gradient(nsd,u_n.m_pdata,    Fn.data);
+      fe.update_deformation_gradient(nsd,u_nm1.m_pdata,Fnm1.data);
+      
+      func->get_pF(m,pFn.data,  1);
+      func->get_pF(m,pFnm1.data,0);
+      
+      inv(pFn,   pFnI);
+      inv(pFnm1, pFnm1I);          
+      
+      if(is_it_couple_w_thermal>=0){
+        // compute temperature at the integration point
+        double hFnp1[9];
+        Tensor<2> hFn, hFnI, hFnm1, hFnm1I;
+        compute_temperature_at_ip(&fe,grid,mat,T->T0,
+                                         T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
+                                         hFnp1,hFn.data,hFnm1.data);
+        inv(hFn,   hFnI);
+        inv(hFnm1, hFnm1I);        
+        eFn(i,j)   = Fn(i,k)*hFnI(k,l)*pFnI(l,j);
+        eFnm1(i,j) = Fnm1(i,k)*hFnm1I(k,l)*pFnm1I(l,j);        
+      }
+      else{
+        eFn(i,j) = Fn(i,k)*pFnI(k, j);
+        eFnm1(i,j) = Fnm1(i,k)*pFnm1I(k, j);        
+      }
+                  
+      double eJip_n   = ttl::det(eFn);
+      double eJip_nm1 = ttl::det(eFnm1);
+        
+      V      += fe.detJxW;
+      eJ_n   += fe.detJxW*eJip_n;
+      eJ_nm1 += fe.detJxW*eJip_nm1;
+      Up_n   += fe.detJxW*func->compute_dudj(m, eJip_n,   -1, 0);
+      Up_nm1 += fe.detJxW*func->compute_dudj(m, eJip_nm1, -1, 0);
+      
+      func->set_F(m, Fn.data, 1);
+      func->set_F(m, Fnm1.data, 0);
+    }
+    if(fv->npres == 1)
+    {  
+      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = Up_n/V;
+      fv->tf.P_nm1(eid+1, 1) = Up_nm1/V;
+    }
+    
+    fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = eJ_n/V;
+    fv->tf.V_nm1(eid+1, 1) = eJ_nm1/V;
+  }
+}

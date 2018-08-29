@@ -978,4 +978,11 @@ int constitutive_model_update_NR(Grid *grid,
                                  const double *dts,
                                  double alpha);
 
+/// compute and set initial conditions for three field mixed method
+void compute_cm3f_initial_conditions(Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *fv,
+                                     LoadingSteps *load,
+                                     const Multiphysics &mp,
+                                     const int mp_id);
 #endif // #define PGFEM3D_CONSTITUTIVE_MODEL_H

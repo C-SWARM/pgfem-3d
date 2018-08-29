@@ -863,8 +863,10 @@ int read_initial_values_lagcy(Grid *grid,
 /// \param[in] mat a material object
 /// \param[in, out] fv object for field variables
 /// \param[in] sol object for solution scheme
+/// \param[out] load object for loading
 /// \param[out] ts object for time stepping
 /// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
 /// \param[in] mp_id mutiphysics id
 /// \return non-zero on internal error
@@ -873,8 +875,10 @@ int read_initial_for_Mechanical(FILE *fp,
                                 MaterialProperty *mat,
                                 FieldVariables *fv,
                                 Solver *sol,
+                                LoadingSteps *load,
                                 TimeStepping *ts,
                                 PGFem3D_opt *opts,
+                                const Multiphysics& mp,
                                 int myrank,
                                 int mp_id)
 {
@@ -950,8 +954,11 @@ int read_initial_for_Mechanical(FILE *fp,
          fabs(v[2]) > sol->computer_zero)
          fv->apply_initial_velocity = true;
     }
-    if(opts->analysis_type == TF || opts->analysis_type == CM3F)
+    if(opts->analysis_type == TF)
       compute_3f_initial_conditions(grid, mat, fv);
+
+    if(opts->analysis_type == CM3F)
+      compute_cm3f_initial_conditions(grid, mat, fv, load, mp, mp_id);
   }
 
   for(long idx_a = 0; idx_a<grid->nn; idx_a++)
@@ -1108,7 +1115,7 @@ int read_initial_values_IC(Grid *grid,
     switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
-      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,load,ts,opts,mp,myrank,ia);
       break;
      case MULTIPHYSICS_THERMAL:
       err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
