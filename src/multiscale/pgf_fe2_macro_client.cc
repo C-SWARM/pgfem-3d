@@ -680,19 +680,29 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 							  mscom,
 							  client->n_jobs_glob,
 							  client->n_jobs_max,
-							  heuristic);
+							  heuristic,1);
+  pgf_FE2_server_rebalance **rb_list_ROM = pgf_FE2_rebalancer(client->net,
+                mscom,
+                client->n_jobs_glob_ROM,
+                client->n_jobs_max,
+                heuristic,2);
+
 
   /* update the server context (send/recv) */
   pgf_FE2_macro_client_update_send_recv(client,rb_list,nproc_macro,1);
+  pgf_FE2_macro_client_update_send_recv(client,rb_list_ROM,nproc_macro,2);
 
   /* Broadcast rebalancing info to servers */
   pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_list,mscom,1);
+  pgf_FE2_macro_client_bcast_rebal_to_servers(client,rb_list_ROM,mscom,2);
 
   /* cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
     pgf_FE2_server_rebalance_destroy(rb_list[i]);
+    pgf_FE2_server_rebalance_destroy(rb_list_ROM[i]);
   }
   free(rb_list);
+  free(rb_list_ROM);
 }
 
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
@@ -703,10 +713,10 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 {
   int err = 0;
   /* see start_macroscale_compute_jobs */
-    MultiscaleServerContext *recv = client->recv;
-    MultiscaleServerContext *send = client->send;
-    MS_COHE_JOB_INFO *job_list = client->jobs;
-    PGFem3D_Comm comm = mscom->mm_inter;
+    MultiscaleServerContext *recv;
+    MultiscaleServerContext *send;
+    MS_COHE_JOB_INFO *job_list;
+    PGFem3D_Comm comm;;
 
   if (micro_model == 2) {//will eventually be replaced by an array
 
@@ -714,6 +724,11 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
     send = client->send_ROM;
     job_list = client->jobs_ROM;
     comm = mscom->mm_inter_ROM;
+  } else {
+    recv = client->recv;
+    send = client->send;
+    job_list = client->jobs;
+    comm = mscom->mm_inter;
   }
 
 
@@ -765,12 +780,25 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 				    Macroscale *macro,
-				    int *max_micro_sub_step)
+				    int *max_micro_sub_step,
+              int micro_model)
 {
   /* Get aliases from client object etc. */
-  MultiscaleServerContext *send = client->send;
-  MultiscaleServerContext *recv = client->recv;
-  MS_COHE_JOB_INFO *job_list = client->jobs;
+  MultiscaleServerContext *recv;
+  MultiscaleServerContext *send;
+  MS_COHE_JOB_INFO *job_list;
+
+  if (micro_model == 2) {//will eventually be replaced by an array
+
+    recv = client->recv_ROM;
+    send = client->send_ROM;
+    job_list = client->jobs_ROM;
+  } else {
+    recv = client->recv;
+    send = client->send;
+    job_list = client->jobs;
+  }
+
 
   /* reset the max number of steps */
   *max_micro_sub_step = 0;

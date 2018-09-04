@@ -110,7 +110,11 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
 {
   pgf_FE2_job *__restrict jobs = server->jobs; /* alias */
   for(size_t i=0, n=server->n_jobs; i<n; i++){
-    pgf_FE2_job_compute(jobs + i,micro,mscom,mp_id);
+    if (mscom->valid_micro_1) {
+      pgf_FE2_job_compute(jobs + i,micro,mscom,mp_id,1);
+    } else { //ROM
+      pgf_FE2_job_compute(jobs + i,micro,mscom,mp_id,2);
+    }
   }
 }
 
@@ -183,8 +187,13 @@ static void pgf_FE2_micro_server_start_cycle(const MultiscaleComm *mscom,
 #ifndef NDEBUG
   int n_micro_proc = 0;
   int n_macro_proc = 0;
-  net->comm_size(mscom->worker_inter,&n_micro_proc);
-  net->comm_size(mscom->mm_inter,&n_macro_proc);
+  if (mscom->valid_mm_inter) {
+    net->comm_size(mscom->worker_inter,&n_micro_proc);
+    net->comm_size(mscom->mm_inter,&n_macro_proc);
+  } else {
+    net->comm_size(mscom->worker_inter_ROM,&n_micro_proc);
+    net->comm_size(mscom->mm_inter_ROM,&n_macro_proc);
+  }
   n_macro_proc -= n_micro_proc;
   assert(stat.NET_SOURCE < n_macro_proc);
 #endif
@@ -198,14 +207,24 @@ static void pgf_FE2_micro_server_start_cycle(const MultiscaleComm *mscom,
 
   /* post non-blocking receive matching the probed message */
   Request req;
-  net->irecv(buf,buf_len,NET_DT_CHAR,
+  if (mscom->valid_mm_inter) {
+    net->irecv(buf,buf_len,NET_DT_CHAR,
 		    stat.NET_SOURCE,stat.NET_TAG,
 		    mscom->mm_inter,&req);
+  } else {
+    net->irecv(buf,buf_len,NET_DT_CHAR,
+        stat.NET_SOURCE,stat.NET_TAG,
+        mscom->mm_inter_ROM,&req);
+  }
+
 
   /* broadcast information to workers !!Signature must match that in
      worker busy loop!!*/
-  net->bcast(info,n_info,NET_DT_LONG,0,mscom->micro);
-
+  if (mscom->valid_mm_inter) {
+    net->bcast(info,n_info,NET_DT_LONG,0,mscom->micro);
+  } else {
+    net->bcast(info,n_info,NET_DT_LONG,0,mscom->micro_ROM);
+  }
   /* complete communication w/ macroscale */
   net->wait(&req,NET_STATUS_IGNORE);
 
@@ -221,8 +240,11 @@ static void pgf_FE2_micro_server_start_cycle(const MultiscaleComm *mscom,
  case FE2_MICRO_SERVER_REBALANCE:
     /* broadcast information to microscale (could change to
        non-blocking?) */
-   net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro);
-   
+  if (mscom->valid_mm_inter) {
+    net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro);
+  } else {
+    net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro_ROM);
+  }  
    /* build rebalance */
    pgf_FE2_server_rebalance_build_from_buffer(rebal,(void**) &buf);
    
@@ -303,8 +325,14 @@ static void pgf_FE2_micro_server_finish_cycle(const MultiscaleComm *mscom,
   ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
   int n_micro_proc = 0;
   int n_macro_proc = 0;
-  net->comm_size(mscom->worker_inter,&n_micro_proc);
-  net->comm_size(mscom->mm_inter,&n_macro_proc);
+  if (mscom->valid_micro_1) {
+    net->comm_size(mscom->worker_inter,&n_micro_proc);
+    net->comm_size(mscom->mm_inter,&n_macro_proc);
+  } else {
+    net->comm_size(mscom->worker_inter_ROM,&n_micro_proc);
+    net->comm_size(mscom->mm_inter_ROM,&n_macro_proc);
+  }
+
   n_macro_proc -= n_micro_proc;
 
   Request *req;
@@ -313,10 +341,16 @@ static void pgf_FE2_micro_server_finish_cycle(const MultiscaleComm *mscom,
   char *buf = NULL;
   size_t buf_len = 0;
   pgf_FE2_micro_server_pack_summary(server,&buf_len,&buf);
-
-  for (int i=0; i<n_macro_proc; i++) {
-    net->isend(buf, buf_len, NET_DT_CHAR, i, FE2_MICRO_SERVER_REBALANCE,
+  if (mscom->valid_micro_1) {
+    for (int i=0; i<n_macro_proc; i++) {
+      net->isend(buf, buf_len, NET_DT_CHAR, i, FE2_MICRO_SERVER_REBALANCE,
 		      mscom->mm_inter, req+i);
+    }
+  } else {
+    for (int i=0; i<n_macro_proc; i++) {
+      net->isend(buf, buf_len, NET_DT_CHAR, i, FE2_MICRO_SERVER_REBALANCE,
+          mscom->mm_inter_ROM, req+i);
+    }
   }
 
   net->waitall(n_macro_proc,req,NET_STATUS_IGNORE);
@@ -408,7 +442,8 @@ pgf_FE2_micro_server_master(const MultiscaleComm *mscom,
  */
 static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
 				       Microscale *micro,
-				       const int mp_id)
+				       const int mp_id,
+               int micro_model)
 {
   int err = 0;
   int exit_server = 0;
@@ -433,8 +468,11 @@ static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
 	pgf_FE2_server_rebalance *rebal = NULL;
 	
 	/* get information from MASTER */
-	micro->net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro);
-	
+  if (mscom->valid_micro_1) {
+	  micro->net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro);
+	} else {
+    micro->net->bcast(buf,buf_len,NET_DT_CHAR,0,mscom->micro_ROM);// should it also be bcast_ROM?
+  }
 	/* build rebalancing data structure */
 	pgf_FE2_server_rebalance_build_from_buffer(&rebal,(void**) &buf);
 	
@@ -450,7 +488,11 @@ static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
       break;
       
     default: /* valid job, compute work */
-        pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id);
+        if (mscom->valid_micro_1) {
+          pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,1);
+        } else { //ROM
+          pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,2);
+        }
       break;
     }
   }
@@ -467,7 +509,11 @@ int pgf_FE2_micro_server_START(const MultiscaleComm *mscom,
   if (mscom->valid_mm_inter || mscom->valid_mm_inter_ROM){
    err += pgf_FE2_micro_server_master(mscom,micro,mp_id);  
   } else {
-    err += pgf_FE2_micro_server_worker(mscom,micro,mp_id);
+    if (mscom->valid_micro_1) {
+      err += pgf_FE2_micro_server_worker(mscom,micro,mp_id,1);
+    } else { //ROM
+      err += pgf_FE2_micro_server_worker(mscom,micro,mp_id,2);
+    }
   }
   return err;
 }

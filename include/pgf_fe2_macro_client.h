@@ -72,7 +72,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
  */
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 		    pgfem3d::Macroscale *macro,
-                    int *max_micro_sub_step);
+                    int *max_micro_sub_step,int micro_model);
 
 /**
  * Send signal to servers to exit.

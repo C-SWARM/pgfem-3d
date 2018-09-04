@@ -316,7 +316,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
                             const int mp_id)
 {
   int err = 0;
-
+  int micro_model = 1;//unused code
   MultiscaleCommon         *c = microscale;
   SparseSystem  *micro_solver = c->SOLVER;
   const int            n_sols = microscale->idx_map.size;
@@ -341,7 +341,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
   /* for each solution, compute job */
   for (int i = 0; i < n_sols; ++i) {
     MS_COHE_JOB_INFO *job = job_list + i;
-    err += compute_ms_cohe_job(i, job, microscale, mp_id);
+    err += compute_ms_cohe_job(i, job, microscale, mp_id,micro_model);
 
     /* assemble tangent if owning process */
     if (macro_rank == job->proc_id) {
