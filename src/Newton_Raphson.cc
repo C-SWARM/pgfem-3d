@@ -513,7 +513,8 @@ double compute_stiffness_for_NR(long *INFO,
   {
     // complete any jobs before assembly
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep);
+    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep,1);
+    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep,2);
   }
 
   // Matrix assmbly
@@ -1133,7 +1134,8 @@ long Newton_Raphson_with_LS(double *solve_time,
     if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
       /* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,1);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,2);
 
       /* determine substep factor */
       alpha_ms = ((double) max_substep) / max_n_micro_substep;
@@ -1773,7 +1775,8 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         /* start the microscale jobs */
         int max_substep = 0;
         MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
+        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,1);
+        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,2);
       }
 
       /************* TEST THE UPDATE FROM N TO N+1  *************/

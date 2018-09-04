@@ -132,8 +132,13 @@ int micro_job_master(const MultiscaleComm *mscom,
 {
   int err = 0;
   /* exit if not master on microscale */
+<<<<<<< HEAD
   if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
 
+=======
+ int micro_model = 1;//this is unused code anyways
+ if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
+>>>>>>> fixed all mpi/memory errors. beginning tests
   /* broadcast job information */
   int job_init_info[2] = {0,0};
   job_init_info[0] = idx;
@@ -147,7 +152,7 @@ int micro_job_master(const MultiscaleComm *mscom,
   /* compute the job */
   err += microscale_compute_job(idx,buff_size,
 				out_buffer,micro,
-				exit_server,mp_id);
+				exit_server,mp_id,micro_model);
   return err;
 }
 
@@ -156,7 +161,7 @@ int micro_job_slave(const MultiscaleComm *mscom,
 {
   int err = 0;
   int exit_server = 0;
-
+  int micro_model = 1;//this is unused code anyways
   /* exit if not slave on microscale */
   if(!mscom->valid_micro && mscom->rank_micro <= 0) return ++err;
 
@@ -170,7 +175,7 @@ int micro_job_slave(const MultiscaleComm *mscom,
     /* compute the job */
     err += microscale_compute_job(job_init_info[0],
 				  job_init_info[1],
-				  buffer,micro,&exit_server,mp_id);
+				  buffer,micro,&exit_server,mp_id,micro_model);
 
     /* cleanup */
     free(buffer);
@@ -183,7 +188,8 @@ int microscale_compute_job(const int idx,
                char *buffer,
                Microscale *micro,
                int *exit_server,
-               const int mp_id)
+               const int mp_id,
+                int micro_model)
 {
   int err = 0;
 
@@ -199,7 +205,7 @@ int microscale_compute_job(const int idx,
   }
 
   /* compute the job */
-  err += compute_ms_cohe_job(idx,job,micro,mp_id);
+  err += compute_ms_cohe_job(idx,job,micro,mp_id,micro_model);
 
   /* pack the job back into buffer */
   err += pack_MS_COHE_JOB_INFO(job,buff_len,buffer);

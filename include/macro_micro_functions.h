@@ -54,7 +54,8 @@ int microscale_compute_job(const int idx,      /**< sol/job id */
                            char *buffer,       /**< buffer of job info */
                            pgfem3d::Microscale *micro,
                            int *exit_server,
-                           const int mp_id);
+                           const int mp_id,
+                           int micro_method);
 
 
 /** start computing struff for the macroscale --> initializes and
