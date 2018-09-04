@@ -29,7 +29,7 @@ pgf_FE2_server_rebalance** pgf_FE2_rebalancer(
 			  const pgfem3d::MultiscaleComm *mscom,
 			  const size_t total_n_jobs,
 			  const size_t max_n_jobs,
-                          const int heuristic);
+                          const int heuristic, int micro_model);
 
 /* The following is REALLY ugly, but I don't want to mess with it
 right now, I just want it to work and be externally callable. Will fix

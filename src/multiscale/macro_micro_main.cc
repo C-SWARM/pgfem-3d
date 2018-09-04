@@ -233,7 +233,10 @@ int multi_scale_main(int argc, char* argv[])
     com->nproc = micro2_group_size;
     com->boot = boot;
     com->net = net;
-    com->comm = mscom->micro; // MS communicators in mscom
+    com->comm = mscom->micro_ROM; // MS communicators in mscom
+
+    micro_ROM->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
+      PGFEM_redirect_io_micro();
 
     micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
   }
@@ -265,9 +268,10 @@ int multi_scale_main(int argc, char* argv[])
       }
       /* no output */
       PGFEM_redirect_io_null();
-      parse_command_line(micro_argc, micro_argv, mscom->rank_micro,
+      parse_command_line(micro_argc, micro_argv, mscom->rank_micro_1,
                          micro->opts);
-      PGFEM_redirect_io_micro();
+
+      //PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
          filename */
@@ -306,8 +310,9 @@ int multi_scale_main(int argc, char* argv[])
       }
       /* no output */
       PGFEM_redirect_io_null();
-      parse_command_line(micro2_argc, micro2_argv, mscom->rank_micro,
-                         micro2->opts);
+      parse_command_line(micro2_argc, micro2_argv, mscom->rank_micro_ROM,
+                         micro_ROM->opts);
+
       PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
@@ -349,7 +354,14 @@ int multi_scale_main(int argc, char* argv[])
   /*=== Build MICROSCALE server and solutions ===*/
   if (mscom->valid_micro_1) {
     /* allocate space for maximum number of jobs to be computed. */
-    micro->build_solutions(n_jobs_max);
+    int i;
+    int pde_jobs = 0;
+    int n_jobs_max = micro->opts->nce_micro_all;  
+    for (i = 0; i < n_jobs_max ; i++ ) {
+      if (micro->opts->methods[i] == 1) { pde_jobs++;}
+    }
+
+    micro->build_solutions(pde_jobs);
 
     micro->opts->custom_micro = options.custom_micro;
     micro->opts->auto_micro = options.auto_micro;
@@ -363,7 +375,14 @@ int multi_scale_main(int argc, char* argv[])
 
   } else if (mscom->valid_micro_ROM) {
     /* allocate space for maximum number of jobs to be computed. */
-    micro2->build_solutions(n_jobs_max);
+    int i;
+    int jobs_ROM = 0;
+    int n_jobs_max = micro_ROM->opts->nce_micro_all;
+    for (i = 0; i < n_jobs_max ; i++ ) {
+      if (micro_ROM->opts->methods[i] == 0) { jobs_ROM++;}
+    }
+
+    micro_ROM->build_solutions(jobs_ROM);
 
     micro2->opts->custom_micro = options.custom_micro;
     micro2->opts->auto_micro = options.auto_micro;
@@ -784,7 +803,8 @@ int multi_scale_main(int argc, char* argv[])
 
         /* complete communication cycle w/ microscale */
         int junk = 0;
-        pgf_FE2_macro_client_recv_jobs(client,macro,&junk);
+        pgf_FE2_macro_client_recv_jobs(client,macro,&junk,1);//for micro 1
+        pgf_FE2_macro_client_recv_jobs(client,macro,&junk,2);//for micro ROM 
       }/* end output */
 
       if (mscom->rank_macro == 0){

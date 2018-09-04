@@ -215,7 +215,8 @@ void ms_cohe_job_tm(MultiscaleCommon *c, MULTISCALE_SOLUTION *s,int myrank) {
 int compute_ms_cohe_job(const int job_id,
                         MS_COHE_JOB_INFO *p_job,
                         Microscale *microscale,
-                        const int mp_id)
+                        const int mp_id,
+                        int micro_model)
 {
   int err = 0;
   const int print_level = 1;
@@ -226,8 +227,13 @@ int compute_ms_cohe_job(const int job_id,
   int myrank = 0;
   microscale->net->comm_rank(common->comm,&myrank);
   if(myrank == 0){
-    PGFEM_printf("=== Microscale cell %d of %d ===\n",
-                 job_id+1,microscale->idx_map.size);
+    if(micro_model == 1) {
+      PGFEM_printf("=== Microscale cell %d of %d for micro type 1 ===\n",
+                   job_id+1,microscale->idx_map.size);
+    } else { //ROM
+      PGFEM_printf("=== Microscale cell %d of %d for micro type 2 ===\n",
+                   job_id+1,microscale->idx_map.size);
+    }
   }
 
   /* switch set up job */
