@@ -958,7 +958,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
 
   comm->Ns = nrecv;
   
-  // send the local S value to each pre-determined rank
+  /* send the local S value to each pre-determined rank */
   for (int p = 0; p < nrecv; p++) {
     int sendTo = preRecv[p];
     CID rid = (CID)comm->S[sendTo];
@@ -980,10 +980,10 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
       comm->Nss[t_count++] = i;
   }
 
-  // wait for local PWC completions from above
+  /* wait for local PWC completions from above */
   net->wait_n_id(nrecv, lid);
   
-  // Process received message as they arrive
+  /* Process received message as they arrive */
   t_count = 0;
   comm->Nr = nsend;
   while (t_count < nsend) {
@@ -993,7 +993,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
       int p = stat.NET_SOURCE;
-      // the long values exchanged are encoded in the PWC RIDs
+      /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (comm->R[p] == 0){
 	comm->Nr--;
@@ -1027,7 +1027,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebabe;
   
-  // send the local S[p] value to each associated rank
+  /* send the local S[p] value to each associated rank */
   for (int p = 0; p < nproc; p++) {
     if (p == myrank) continue;
     CID rid = (CID)comm->S[p];
@@ -1049,10 +1049,10 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
       comm->Nss[t_count++] = i;
   }
 
-  // wait for local PWC completions from above
+  /* wait for local PWC completions from above */
   net->wait_n_id(nproc-1, lid);
   
-  // Process received message as they arrive
+  /* Process received message as they arrive */
   t_count = 0;
   while (t_count < nproc-1) {
     int flag;
@@ -1061,7 +1061,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
       int p = stat.NET_SOURCE;
-      // the long values exchanged are encoded in the PWC RIDs
+      /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (p != myrank && comm->R[p] > 0){
 	comm->Nr++;
@@ -1254,7 +1254,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   long **RECI = NULL;
 
   if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                       //similar with SEND
-  RECI = PGFEM_calloc (long*, nproc);                       //and RECI
+  RECI = PGFEM_calloc (long*, nproc);                                           //and RECI
 
   /* =======================================================*/
 
@@ -1338,7 +1338,6 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
       int KK = stat.NET_SOURCE;
       int II = 0;
       for (int i = 0; i < Nr_idx[KK]; i++)
-        //for (int j = 0; j < comm->R[comm->Nrr[i]]; j++)
         II += comm->R[comm->Nrr[i]];
       for (int j = 0; j < comm->R[KK]; j++){
         (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[KK][j];
@@ -1610,7 +1609,6 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
 				        net, &sbuffers[KK].key);
     sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
-    //net->pin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size, &sbuffers[KK].key);
   }
 
   /* wait for local PWC completions from above */
@@ -1624,7 +1622,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
       int p = stat.NET_SOURCE;
-      // the long values exchanged are encoded in the PWC RIDs
+      /* the long values exchanged are encoded in the PWC RIDs */
       comm->AR[p] = (long)val;
       t_count++;
     }
@@ -1638,10 +1636,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     if (comm->AR[i] == 0) JJ = 1; else JJ = comm->AR[i];
     RECI[i] = PGFEM_calloc_pin (long, JJ,
 				net, &rbuffers[i].key);
-    //RECI[i] = PGFEM_calloc (long, JJ);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
-    //net->pin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size, &rbuffers[i].key);
   }
 
   /* Exchange receive buffers */
@@ -1714,7 +1710,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     }
   }
 
-  //net->barrier(com->comm);
+  net->barrier(com->comm);
+  
   for (int i = 0; i < nproc; i++) {
     net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
   }

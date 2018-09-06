@@ -231,7 +231,6 @@ static long fallback_GRedist_node_PWC(const int nproc,
 
   /* gather the global nodes and their associated global dof ids */
   long *Gnn_Gid = NULL;
-  //assert(NBN > 0 && "NBN must be > 0");
   if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
   com->net->allgatherv(own_buf,recvcount[myrank],NET_DT_LONG,
 		       Gnn_Gid,recvcount,displ,NET_DT_LONG,com->comm);
@@ -569,7 +568,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     net->probe(&flag, &val, &stat, 0);
     if (flag) {
       int p = stat.NET_SOURCE;
-      // the long values exchanged are encoded in the PWC RIDs
+      /* the long values exchanged are encoded in the PWC RIDs */
       len_recv_Gnn_Gid[p] = (long)val;
       t_count++;
     }
