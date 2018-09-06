@@ -315,7 +315,216 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
 						    const EPS *eps,
 						    const CommunicationStructure *com)
 {
-  return _bounding_element_communicate_damage_ISIR(n_be, b_elems, ne, eps, com);
+  int err = 0;
+  int myrank = com->rank;
+  int nproc = com->nproc;
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  CID lid = 0xcafebabe;  
+
+  /* no bounding elements on domain, return without doing anything. */
+  if(n_be == 0){
+    return err;
+  }
+
+  /* loop through the boundary elements and determine how many to send
+     to each process. The number sent to each process is also the
+     number to recieve from each process since the master-slave
+     relationship is one-to-one. */
+  int *n_SR = PGFEM_calloc(int, nproc);
+  /* src_dest tells where to send stuff to and where it came
+     from: dest_dom dest_id src_id (src_id is always local) */
+  const int n_sd = 3;
+  int *src_dest = PGFEM_calloc(int, n_be*n_sd);
+  for(int src_id=0; src_id<n_be; src_id++){
+    const BoundingElement *pbe = &b_elems[src_id];
+    if(pbe->master){
+      src_dest[src_id*n_sd + 0] = pbe->slave_dom;
+      src_dest[src_id*n_sd + 1] = pbe->slave_be_id;
+      src_dest[src_id*n_sd + 2] = src_id;
+      n_SR[pbe->slave_dom]++;
+    } else {
+      src_dest[src_id*n_sd + 0] = pbe->master_dom;
+      src_dest[src_id*n_sd + 1] = pbe->master_be_id;
+      src_dest[src_id*n_sd + 2] = src_id;
+      n_SR[pbe->master_dom]++;
+    }
+  }
+
+  /* sort src_dest by dest_dom */
+  qsort(src_dest,n_be,n_sd*sizeof(int),compare_int);
+
+  int **receive_id = PGFEM_calloc(int*, nproc);
+  int **send_id = PGFEM_calloc(int*, nproc);
+  double **receive_val = PGFEM_calloc(double*, nproc);
+  double **send_val = PGFEM_calloc(double*, nproc);
+
+  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc*2);
+  Buffer *sbuffers = PGFEM_calloc (Buffer, nproc*2);
+
+  int *p_src_dest = &src_dest[0];
+  int n_proc_comm = 0;
+  for(int i=0; i<nproc; i++){
+    const int n_val = n_SR[i];
+    if(n_val > 0){ /* I will send & recieve from this process */
+      /* allocate space to recieve */
+      receive_id[i] = PGFEM_calloc_pin(int, n_val, net, &rbuffers[2*i].key);
+      receive_val[i] = PGFEM_calloc_pin(double, n_val, net, &rbuffers[2*i+1].key);
+
+      rbuffers[2*i].addr = reinterpret_cast<uintptr_t> (receive_id[i]);
+      rbuffers[2*i].size = sizeof(int) * n_val;
+
+      rbuffers[2*i+1].addr = reinterpret_cast<uintptr_t> (receive_val[i]);
+      rbuffers[2*i+1].size = sizeof(double) * n_val;
+
+      /* allocate and populate stuff to send */
+      send_id[i] = PGFEM_calloc_pin(int, n_val, net, &sbuffers[2*i].key);
+      send_val[i] = PGFEM_calloc_pin(double, n_val, net, &sbuffers[2*i+1].key);
+
+      sbuffers[2*i].addr = reinterpret_cast<uintptr_t> (send_id[i]);
+      sbuffers[2*i].size = sizeof(int) * n_val;
+
+      sbuffers[2*i+1].addr = reinterpret_cast<uintptr_t> (send_val[i]);
+      sbuffers[2*i+1].size = sizeof(double) * n_val;
+
+      int *p_send_id = send_id[i];
+      double *p_send_val = send_val[i];
+
+      for(int j=0; j<n_val; j++){
+        p_send_id[j] = p_src_dest[1];
+        const int ve_id = b_elems[p_src_dest[2]].vol_elem_id;
+        p_send_val[j] = eps[ve_id].dam[0].w;
+        p_src_dest += n_sd;
+      }
+
+      n_proc_comm++;
+    } else {
+      receive_id[i] = NULL;
+      receive_val[i] = NULL;
+
+      rbuffers[2*i].addr = 0;
+      rbuffers[2*i].size = 0;
+      rbuffers[2*i+1].addr = 0;
+      rbuffers[2*i+1].size = 0;
+
+      send_id[i] = NULL;
+      send_val[i] = NULL;
+
+      sbuffers[2*i].addr = 0;
+      sbuffers[2*i].size = 0;
+      sbuffers[2*i+1].addr = 0;
+      sbuffers[2*i+1].size = 0;
+    }
+  }
+
+  /* Exchange receive buffers */
+  for (int i = 0; i < nproc; i++) {
+    net->gather(&rbuffers[2*i], sizeof(Buffer)*2, NET_DT_BYTE,
+	net->getbuffer(), sizeof(Buffer)*2, NET_DT_BYTE, i, com->comm);
+  }
+
+  /* remove myrank from number of comm procs */
+  if(n_SR[myrank] > 0){
+    n_proc_comm--;
+  }
+
+  /*==================================*/
+  /*  x     post send and recieve      */
+  /*==================================*/
+  int num_send = 0;
+  for(int i=0; i<nproc; i++){
+    if(n_SR[i] > 0 && i != myrank){
+      /* send with pwc */
+      CID rid = (CID)n_SR[i];
+      net->pwc(i, sbuffers[2*i].size, &sbuffers[2*i], &net->getbuffer()[2*i], lid, rid);
+      net->pwc(i, sbuffers[2*i+1].size, &sbuffers[2*i+1], &net->getbuffer()[2*i+1], lid, rid);
+      num_send += 2;
+    }
+  }
+
+  /*==================================*/
+  /*       local computations         */
+  /*==================================*/
+  if(n_SR[myrank] > 0){ /* have local elements */
+    p_src_dest = src_dest;
+    int pos = 0;
+    while(*p_src_dest != myrank
+          && pos < n_be*n_sd){
+      pos+= n_sd;
+      p_src_dest += n_sd;
+    }
+
+    for(int i=0; i<n_SR[myrank]; i++){
+      BoundingElement *p_dest_be = &b_elems[p_src_dest[1]];
+      const BoundingElement *p_src_be = &b_elems[p_src_dest[2]];
+      p_src_dest += n_sd;
+      p_dest_be->other_val = eps[p_src_be->vol_elem_id].dam[0].w;
+    }
+  }
+
+  /*==================================*/
+  /*       Finish communication       */
+  /*==================================*/
+  net->wait_n_id(num_send, lid);
+
+  int t_count = 0;
+  while (t_count < num_send) {
+    int flag;
+    CID val;
+    Status stat;
+    net->probe(&flag, &val, &stat, 0);
+    if (flag) {
+      int p = stat.NET_SOURCE;
+      for(int j=0; j<n_SR[p]; j++){
+        BoundingElement *p_dest_be = &b_elems[receive_id[p][j]];
+        p_dest_be->other_val = receive_val[p][j];
+      }
+      t_count++;
+    }
+  }
+
+  net->barrier(com->comm);
+
+  /* debug, print communication */
+  static int repeat = 0;
+  if(DEBUG_BE_UTILS && !repeat){
+    FILE *out;
+    char fname[100];
+    sprintf(fname,"%s_%05d.log",__func__,myrank);
+    out = fopen(fname,"w");
+    PGFEM_fprintf(out,"=== src_dest structure ===\n");
+    for(int i=0; i<n_be; i++){
+      PGFEM_fprintf(out,"dest dom: %3d || dest id: %5d || src id: %5d\n",
+                    src_dest[i*n_sd],src_dest[i*n_sd+1],src_dest[i*n_sd+2]);
+    }
+    fclose(out);
+  }
+  repeat++;
+
+  for (int i = 0; i < 2 * nproc; i++) {
+    if(rbuffers[i].addr != 0)
+      net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
+    if(sbuffers[i].addr != 0)
+      net->unpin(reinterpret_cast<void *> (sbuffers[i].addr), sbuffers[i].size);
+  }
+
+  dealoc1l(rbuffers);
+  dealoc1l(sbuffers);
+
+  free(n_SR);
+  free(src_dest);
+
+  for(int i=0; i<nproc; i++){
+    free(receive_id[i]);
+    free(receive_val[i]);
+    free(send_id[i]);
+    free(send_val[i]);
+  }
+  free(receive_id);
+  free(receive_val);
+  free(send_id);
+  free(send_val);
+
+  return err;
 }
 
 int bounding_element_communicate_damage(const int n_be,
