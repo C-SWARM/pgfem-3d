@@ -10,10 +10,6 @@
 #include <cstring>
 #include <cassert>
 
-#ifdef HAVE_PHOTON
-#include "communication/photon/PhotonNetwork.hpp"
-#endif
-
 #ifndef NDEBUG
 #define PFEM_DEBUG 1
 #else
@@ -498,7 +494,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
 					const CommunicationStructure *com,
 					const long mp_id)
 {
-  pwc::PhotonNetwork *net = static_cast<pwc::PhotonNetwork*>(com->net);
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebeee;
 
   long owned_gnn = 0;
@@ -595,7 +591,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   /* exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-	net->wbuf, sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+	net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* initialize communication of the owned node information based on
@@ -604,7 +600,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
      sends.*** */
   for (int i = 0; i < nsend; i++) {
     CID rid = (CID)len_owned_Gnn_Gid;
-    net->pwc(send[i], sbuffer.size, &sbuffer, &net->wbuf[send[i]], lid, rid);
+    net->pwc(send[i], sbuffer.size, &sbuffer, &net->getbuffer()[send[i]], lid, rid);
   }
 
   /* reduce the total number of boundary nodes */

@@ -12,10 +12,6 @@
 #include "string.h"
 #include "utils.h"
 
-#ifdef HAVE_PHOTON
-#include "communication/photon/PhotonNetwork.hpp"
-#endif
-
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -1241,7 +1237,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 {
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
-  pwc::PhotonNetwork *net = static_cast<pwc::PhotonNetwork*>(com->net);
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebabe;
 
   /* How many numbers I will send */
@@ -1277,7 +1273,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-        net->wbuf, sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+        net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* Post sends */
@@ -1298,7 +1294,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     }
 
     CID rid = (CID)n_send;
-    net->pwc(s_idx, sbuffers[s_idx].size, &sbuffers[s_idx], &net->wbuf[s_idx], lid, rid);
+    net->pwc(s_idx, sbuffers[s_idx].size, &sbuffers[s_idx], &net->getbuffer()[s_idx], lid, rid);
   }
 
   /* Compute the number of rows to receive */
@@ -1575,7 +1571,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   int myrank = com->rank;
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
-  pwc::PhotonNetwork *net = static_cast<pwc::PhotonNetwork*>(com->net);
+  PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebabe;
 
   /* clear the number of communication */
@@ -1651,7 +1647,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-	net->wbuf, sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+	net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* Send data with pwc */
@@ -1666,7 +1662,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
       }
     }
     CID rid = (CID)comm->AS[KK];
-    net->pwc(KK, sbuffers[KK].size, &sbuffers[KK], &net->wbuf[KK], lid, rid);
+    net->pwc(KK, sbuffers[KK].size, &sbuffers[KK], &net->getbuffer()[KK], lid, rid);
   }/* end i < comm->Ns */
 
   /****************/

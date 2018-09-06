@@ -321,3 +321,8 @@ void PhotonNetwork::wait_n_id(int count, const CID& id)
       --count;
   } while (count);
 }
+
+Buffer *PhotonNetwork::getbuffer()
+{
+  return wbuf;
+}
