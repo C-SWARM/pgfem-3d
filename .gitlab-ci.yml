@@ -50,4 +50,5 @@ check-build:
                 --with-vtk-version=''
                 --enable-photon
   - make -j 4
+  - make -C tests check || check_check
   - PGFEM3D_NET=pwc make -C tests check || check_check
