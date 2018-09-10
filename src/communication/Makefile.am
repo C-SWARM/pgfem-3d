@@ -16,7 +16,7 @@ libcommunication_la_CPPFLAGS = -Wall -Werror \
                                $(LIBGCM_CPPFLAGS)        \
                                $(LAPACK_INCLUDE)
 
-if HAVE_MPI
+if HAVE_PGFEM_MPI
 libcommunication_la_SOURCES += mpi/MPINetwork.cc
 endif
 

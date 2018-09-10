@@ -277,7 +277,7 @@ double Multiphysics_Arc_length(Grid *grid,
       nulld(fv->R, fv->ndofd);
     }
 
-    assert(opts->solverpackage == HYPRE);
+    assert(opts->solverpackage == HYPRE || opts->solverpackage == TRILINOS);
 
     /* Null the matrix */
     sol->system->zero();
@@ -537,7 +537,7 @@ double Multiphysics_Arc_length(Grid *grid,
       /* Null the residual vector */
       nulld(fv->f_u, fv->ndofd);
 
-      assert(opts->solverpackage == HYPRE);
+      assert(opts->solverpackage == HYPRE || opts->solverpackage == TRILINOS);
       /* Null the matrix */
       sol->system->zero();
 

@@ -21,7 +21,7 @@
 #
 #   When MPI is found, ACTION-IF-FOUND will be executed, if MPI is not found
 #   (or MPI-WANTED-TEST fails) ACTION-IF-NOT-FOUND is executed. If
-#   ACTION-IF-FOUND is not set, the macro will define HAVE_MPI.
+#   ACTION-IF-FOUND is not set, the macro will define HAVE_PGFEM_MPI.
 #
 #   The following example demonstrates usage of the macro:
 #
@@ -126,7 +126,7 @@ extern "C" { void MPI_Init(); }
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 AS_IF([test x"$_ax_prog_cxx_mpi_mpi_found" = xyes], [
-        ifelse([$2],,[AC_DEFINE(HAVE_MPI,1,[Define if you have the MPI library.])],[$2])
+        ifelse([$2],,[AC_DEFINE(HAVE_PGFEM_MPI,1,[Define if you have the MPI library.])],[$2])
         :
 ],[
         $3

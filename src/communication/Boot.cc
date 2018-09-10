@@ -26,7 +26,7 @@ Boot::Boot(net_boot_t type) {
   switch (_type) {
   case NET_BOOT_MPI:
     {
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
       int init;
       if (MPI_Initialized(&init)) {
 	throw PGFEM_printerr("MPI initialization failed\n");
@@ -82,7 +82,7 @@ Boot::Boot(net_boot_t type) {
 Boot::~Boot() {
   switch (_type) {
   case NET_BOOT_MPI: {
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
     int fin;
     if (MPI_Finalized(&fin)) {
       PGFEM_printerr("MPI finalize failed\n");

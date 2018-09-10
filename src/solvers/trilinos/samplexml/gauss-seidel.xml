@@ -1,0 +1,10 @@
+<ParameterList name="Ifpack2">
+  
+  <!--<Parameter name="fact: absolute threshold" type="double" value=".0001"/>-->
+  <!--<Parameter name="fact: relative threshold" type="double" value="3"/>-->
+  <Parameter name="Preconditioner" type="string" value="RELAXATION"/>
+  <Parameter name="relaxation: type" type="string" value="Gauss-Seidel"/>
+  <Parameter name="relaxation: fix tiny diagonal entries" type="bool" value="true"/>
+  <!--<Parameter name="fact: drop tolerance" type="double" value="1e-9"/> -->
+</ParameterList>
+      

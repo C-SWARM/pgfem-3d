@@ -10,7 +10,7 @@
 #include <cstdio>
 #include <cstdint>
 
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
 #include <mpi.h>
 #endif
 
@@ -28,7 +28,7 @@ enum net_codes_t {
   NET_RESOURCE
 };
 
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
 // MPI compatibility
 typedef MPI_Comm PGFem3D_Comm;
 typedef MPI_Datatype datatype_t;
@@ -39,7 +39,7 @@ typedef void* datatype_t;
 typedef void* op_t;
 #endif
   
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
 // MPI compatibility
 #define NET_ANY_SOURCE    MPI_ANY_SOURCE
 #define NET_ANY_TAG       MPI_ANY_TAG

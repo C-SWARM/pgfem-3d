@@ -39,6 +39,8 @@ enum {
   PRECOND_NONE,
   PRECOND_DIAG_SCALE,
   PRECOND_JACOBI,
+  PRECOND_IFPACK2,
+  PRECOND_MUELU,
   PRECOND_MAX
 };
 
@@ -49,7 +51,9 @@ constexpr const char* PRECOND_OPTS[PRECOND_MAX] = {
   [PRECOND_BOOMER]     = "BOOMER",
   [PRECOND_NONE]       = "NONE",
   [PRECOND_DIAG_SCALE] = "DIAG_SCALE",
-  [PRECOND_JACOBI]     = "JACOBI"
+  [PRECOND_JACOBI]     = "JACOBI",
+  [PRECOND_IFPACK2]    = "IFPACK2",
+  [PRECOND_MUELU]      = "MUELU"
 };
 
 enum {
@@ -69,13 +73,15 @@ enum {
   BLOCKSOLVE,
   HYPRE,
   MTL,
+  TRILINOS,
   SOLVER_PACKAGE_MAX
 };
 
 constexpr const char* SOLVER_PACKAGE_OPTS[SOLVER_PACKAGE_MAX] = {
   [BLOCKSOLVE] = "BLOCKSOLVE",
   [HYPRE] = "HYPRE",
-  [MTL] = "MTL"
+  [MTL] = "MTL",
+  [TRILINOS]= "TRILINOS"
 };
 
 enum {

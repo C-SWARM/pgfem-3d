@@ -1,0 +1,19 @@
+<!-- xml file with default options for ILU(k)-->
+<ParameterList name="IFPACK2">
+  
+  <Parameter name="Preconditioner" type="string" value="RILUK"/>
+
+  <!-- level of fill in factorization: default 0 -->
+  <Parameter name="fact: iluk level-of-fill" type="int" value="1.0"/>
+  
+  <!-- value added to diagonal before factorization to improve stability: default 0 -->
+  <Parameter name="fact: absolute threshold" type="double" value="0.0"/>
+
+  <!-- value to scale diagonal before factorization to improve stability: default 1 -->
+  <Parameter name="fact: relative threshold" type="double" value="1.0"/>
+  
+  <!-- diagonal compensation value: default 0-->
+  <Parameter name="fact: relax value" type="double" value="0.0"/>
+
+</ParameterList>
+      

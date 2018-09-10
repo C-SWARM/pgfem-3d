@@ -1,0 +1,19 @@
+<!-- xml file with default options for ILUT-->
+<ParameterList name="IFPACK2">
+  
+  <Parameter name="Preconditioner" type="string" value="ILUT"/>
+
+  <!-- each row of factor will have at most lof*nnz(A)/2n entries: default 1 -->
+  <Parameter name="fact: ilut level-of-fill" type="double" value="1.0"/>
+  
+  <!-- value added to diagonal before factorization to improve stability: default 0 -->
+  <Parameter name="fact: absolute threshold" type="double" value="0.0"/>
+
+  <!-- value to scale diagonal before factorization to improve stability: default 1 -->
+  <Parameter name="fact: relative threshold" type="double" value="1.0"/>
+  
+  <!-- threshold for dropping entries during factorization: default 0-->
+  <Parameter name="fact: drop tolerance" type="double" value="0.0"/>
+
+</ParameterList>
+      

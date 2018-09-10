@@ -9,7 +9,7 @@
 #include <cassert>
 #include <cstring>
 
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
 #include <mpi.h>
 #endif
 

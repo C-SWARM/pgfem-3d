@@ -67,6 +67,7 @@ struct PGFem3D_opt {
   const char *opath;
   const char *ifname;
   const char *ofname;
+  const char *trilxml;
   double walltime;
 };
 

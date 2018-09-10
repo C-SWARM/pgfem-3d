@@ -13,7 +13,7 @@
 #include "photon/PhotonNetwork.hpp"
 #endif
 
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
 #include "mpi/MPINetwork.hpp"
 #endif
 
@@ -54,7 +54,7 @@ Network::Create(const PGFem3D_opt& opts)
   
   switch (opts.network) {
   case NETWORK_ISIR:
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
     return new isir::MPINetwork();
 #else
     PGFEM_printerr("[%d]ERROR: ISIR Network not available in this build\n", myrank);

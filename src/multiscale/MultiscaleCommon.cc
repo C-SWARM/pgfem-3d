@@ -111,9 +111,9 @@ void MultiscaleCommon::initialize(const int argc,
   parse_command_line(argc, argv, myrank, opts);
   
   /* error check the command line */
-  if (opts->solverpackage != HYPRE){
+  if (opts->solverpackage != HYPRE && opts->solverpackage != TRILINOS){
     if(myrank == 0)
-      PGFEM_printerr("ERROR: only the HYPRE solver are supported!"
+      PGFEM_printerr("ERROR: only the HYPRE and TRILINOS solvers are supported!"
                      "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(com, 0);
   }

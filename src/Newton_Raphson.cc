@@ -890,7 +890,7 @@ long Newton_Raphson_with_LS(double *solve_time,
   const int NR_REBALANCE = (opts->no_migrate)? FE2_REBALANCE_NONE : FE2_REBALANCE_ADAPTIVE;
 
   if(sol->FNR == 1 || sol->FNR == 0)
-    assert(opts->solverpackage == HYPRE);
+    assert(opts->solverpackage == HYPRE || opts->solverpackage == TRILINOS);
 
   double alpha_ms = 0.0;
   double ENORM = 1.0;

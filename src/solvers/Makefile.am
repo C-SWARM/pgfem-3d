@@ -1,4 +1,4 @@
-SUBDIRS = hypre
+SUBDIRS = hypre trilinos
 noinst_LTLIBRARIES     = libsolvers.la
 libsolvers_la_SOURCES  = Solver.cc SparseSystem.cc
 libsolvers_la_CPPFLAGS = -Wall -Werror \
@@ -7,4 +7,4 @@ libsolvers_la_CPPFLAGS = -Wall -Werror \
                          $(LIBGCM_CPPFLAGS) \
                          $(LAPACK_INCLUDE) \
                          $(HYPRE_INCLUDE)
-libsolvers_la_LIBADD   = hypre/libhypre.la 
+libsolvers_la_LIBADD   = hypre/libhypre.la trilinos/libtrilinos.la

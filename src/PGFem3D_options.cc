@@ -91,6 +91,8 @@ const Option analysis_opts[] = {
 
 const Option solver_opts[] = {
   /* Solver options */
+  {{"hypre",no_argument,NULL,3}, "\tUse the HYPRE package",0},
+  {{"trilinos",no_argument,NULL,3}, "\tUse the TRILINOS package",0},
   {{"gmres",no_argument,NULL,3},"\tUse the HYPRE GMRES solver (default)",0},
   {{"boomer",no_argument,NULL,3},"\tUse the HYPRE BoomerAMG solver (no precond)",0},
   {{"bcgstab",no_argument,NULL,3},"Use the HYPRE BiCGSTAB solver",0},
@@ -112,7 +114,9 @@ const Option precond_opts[] = {
   {{"pre-sails",no_argument,NULL,4},"Use the HYPRE ParaSAILS preconditioner",0},
   {{"pre-diag",no_argument,NULL,4},"Use the custom diagonal scaling preconditioner",0},
   {{"pre-jacobi",no_argument,NULL,4},"Use the Jacobi scaling preconditioner",0},
-  {{"pre-none",no_argument,NULL,4},"Do not use a preconditioner",0}
+  {{"pre-none",no_argument,NULL,4},"Do not use a preconditioner",0},
+  {{"pre-ifpack2",no_argument,NULL,4},"Use the Ifpack2 preconditioner",0},
+  {{"pre-muelu",no_argument,NULL,4},"Use the Muelu preconditioner",0}
 };
 
 const Option network_opts[] = {
@@ -150,7 +154,8 @@ const Option other_opts[] = {
                                             "\t\tDefault is -1.0 (no actions)"),0},
   {{"exa-metric",no_argument,NULL,'x'},"\n\t\tPrint exascale metric information.\n",0},
   {{"exa-debug",no_argument,NULL,'x'+9999},"\n\t\tPrint more detailed exascale metric information.\n",0},
-  {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0}
+  {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0},
+  {{"trilxml",required_argument,NULL,'t'},"Path to xml file containing Trilinos preconditioner settings.\n"}
 };
 
 /* these options may no longer be supported/functional. They are kept
@@ -442,13 +447,15 @@ void print_interpreted_options(const PGFem3D_opt *opts)
   
   PGFEM_printf("Preconditioner: ");
   switch (opts->precond) {
-   case PRECOND_PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
-   case PRECOND_PILUT: PGFEM_printf ("HYPRE - PILUT\n"); break;
-   case PRECOND_EUCLID: PGFEM_printf ("HYPRE - EUCLID\n"); break;
-   case PRECOND_BOOMER: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
-   case PRECOND_NONE: PGFEM_printf ("PGFEM3D - NONE\n"); break;
-   case PRECOND_DIAG_SCALE: PGFEM_printf ("PGFEM3D - DIAGONAL SCALE\n"); break;
-   case PRECOND_JACOBI: PGFEM_printf ("PGFEM3D - JACOBI\n"); break;
+  case PRECOND_PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
+  case PRECOND_PILUT: PGFEM_printf ("HYPRE - PILUT\n"); break;
+  case PRECOND_EUCLID: PGFEM_printf ("HYPRE - EUCLID\n"); break;
+  case PRECOND_BOOMER: PGFEM_printf ("HYPRE - BoomerAMG\n"); break;
+  case PRECOND_NONE: PGFEM_printf ("PGFEM3D - NONE\n"); break;
+  case PRECOND_DIAG_SCALE: PGFEM_printf ("PGFEM3D - DIAGONAL SCALE\n"); break;
+  case PRECOND_JACOBI: PGFEM_printf ("PGFEM3D - JACOBI\n"); break;
+  case PRECOND_IFPACK2: PGFEM_printf ("PGFEM3D - IFPACK2\n"); break;
+  case PRECOND_MUELU: PGFEM_printf ("PGFEM3D - MUELU\n"); break;
   }
 }
 
@@ -554,6 +561,12 @@ void re_parse_command_line(const int myrank,
 
       /* SOLVER OPTIONS */
      case 3:
+      if (strcmp("hypre", opts[opts_idx].name) == 0) {
+	options->solverpackage = HYPRE;
+      }
+      if (strcmp("trilinos", opts[opts_idx].name) == 0) {
+	options->solverpackage = TRILINOS;
+      }
       if (strcmp("gmres", opts[opts_idx].name) == 0) {
         options->solver = SOLVER_GMRES;
       }
@@ -608,6 +621,12 @@ void re_parse_command_line(const int myrank,
       }
       else if (strcmp("pre-none", opts[opts_idx].name) == 0) {
         options->precond = PRECOND_NONE;
+      }
+      else if (strcmp("pre-ifpack2", opts[opts_idx].name) == 0) {
+	options->precond = PRECOND_IFPACK2;
+      }
+      else if (strcmp("pre-muelu", opts[opts_idx].name) == 0) {
+	options->precond = PRECOND_MUELU;
       }
       break;
 
@@ -700,6 +719,10 @@ void re_parse_command_line(const int myrank,
       options->walltime = atoi(optarg);
       break;
 
+     case 't':
+      options->trilxml = optarg;
+      break;
+      
      default:
       PGFEM_printf("How did I get here???\n");
       PGFEM_Abort();
