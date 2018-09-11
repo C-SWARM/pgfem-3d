@@ -1,8 +1,8 @@
 noinst_PROGRAMS = PGFem3D \
                   verification_tf_MMS
 
-PGFem3D_SOURCES             = super_main.cc dynamics.cc MMS.cc
-verification_tf_MMS_SOURCES = verification_tf_MMS.cc dynamics.cc MMS.cc
+PGFem3D_SOURCES             = super_main.cc dynamics.cc MMS.cc MMS_HE.cc
+verification_tf_MMS_SOURCES = verification_tf_MMS.cc dynamics.cc MMS.cc MMS_HE.cc
 
 AM_CPPFLAGS = -Wall -Werror \
               -DVERIFICATION_USING_MMS=1 \

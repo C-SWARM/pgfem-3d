@@ -16,7 +16,7 @@ using pgfem3d::Solver;
 #ifndef VERIFICATION_USING_MMS
 #define INTG_ORDER 0
 
-void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z)
+void MMS_body_force(double *b, const HOMMAT  *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm)
 {
   b[0] = 0.0;
   b[1] = 0.0;
@@ -37,11 +37,17 @@ void DISP_resid_body_force_el(double *f,
                               const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
-                              const Node *node, double dt, double t)
+                              const Node *node,
+                              double dt, 
+                              double t,
+                              ELASTICITY *elast,
+                              bool is4cm)
 {
   const int mat = elem[ii].mat[2];
   // double rho = hommat[mat].density;
   int ndofe = nne*ndofn;
+
+  
 
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
@@ -65,7 +71,7 @@ void DISP_resid_body_force_el(double *f,
       X[2] += fe.N(a+1)*z[a];
     }
 
-    MMS_body_force(bf, &hommat[mat], t,  X[0], X[1], X[2]);
+    MMS_body_force(bf, &hommat[mat], elast, t,  X[0], X[1], X[2], is4cm);
 
     for(long a = 0; a<nne; a++)
     {
@@ -90,7 +96,9 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
                              const Element *elem,
                              const HOMMAT *hommat,
                              const Node *node, const double *dts, double t,
-                             double *r_2, double* r_1, double *r_0, double alpha)
+                             double *r_2, double* r_1, double *r_0, double alpha,
+                             ELASTICITY *elast,
+                             const bool is4cm)
 {
   const int mat = elem[ii].mat[2];
   double rho = hommat[mat].density;
@@ -138,12 +146,12 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
     double t0 = t - dts[DT_NP1] - dts[DT_N];
 
     //    if(t0>=0)
-    MMS_body_force(bf0, &hommat[mat], t0, X[0], X[1], X[2]);
+    MMS_body_force(bf0, &hommat[mat], elast, t0, X[0], X[1], X[2], is4cm);
 
     //    if(t1>=0)
-    MMS_body_force(bf1, &hommat[mat], t1, X[0], X[1], X[2]);
+    MMS_body_force(bf1, &hommat[mat], elast, t1, X[0], X[1], X[2], is4cm);
 
-    MMS_body_force(bf2, &hommat[mat], t,  X[0], X[1], X[2]);
+    MMS_body_force(bf2, &hommat[mat], elast, t,  X[0], X[1], X[2], is4cm);
 
     mid_point_rule(bf_n1a, bf0, bf1, alpha, ndofn);
     mid_point_rule(bf, bf1, bf2, alpha, ndofn);
@@ -204,7 +212,7 @@ int residual_with_inertia(FEMLIB *fe,
                           int mp_id,
                           double *dts,
                           double t,
-			  int myrank)
+                          int myrank)
 {
   int err = 0;
 
@@ -256,8 +264,15 @@ int residual_with_inertia(FEMLIB *fe,
   double *z = (fe->temp_v).z.m_pdata;
   SUPP sup = load->sups[mp_id];
 
-
-  DISP_resid_w_inertia_el(fe,f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha);
+  bool is4cm = false; 
+  ELASTICITY *elast = NULL;
+  
+  if(opts->analysis_type == CM || opts->analysis_type == CM3F){
+    elast = (fv->eps[eid].model[0].param)->cm_elast;
+    if(fv->eps[eid].model[0].param->type == MANUFACTURED_SOLUTIONS)
+      is4cm = true;
+  }
+  DISP_resid_w_inertia_el(fe,f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha, elast, is4cm);
 
   switch(opts->analysis_type)
   {

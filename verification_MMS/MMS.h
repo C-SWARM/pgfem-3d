@@ -6,6 +6,8 @@
 #include "hommat.h"
 #endif
 
+#include "hyperelasticity.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -14,10 +16,10 @@
 #include "elem3d.h"
 #endif
 
-void MMS_displacement(double *u, double t, double X, double Y, double Z);
-void MMS_initial_velocity(double *v, double X, double Y, double Z);
-void MMS_pressure_volume(double *P, double *V, HOMMAT const * hommat, double t, double X, double Y, double Z);
+void MMS_displacement(double *u, double t, double X, double Y, double Z, const bool is4cm);
+void MMS_initial_velocity(double *v, double X, double Y, double Z, const bool is4cm);
+void MMS_pressure_volume(double *P, double *V, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
 
-void MMS_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z);
+void MMS_body_force(double *b, HOMMAT const * hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
 
 #endif

@@ -19,18 +19,33 @@ using namespace pgfem3d::net;
 void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, double* r,
 		      double *Ph, double *Vh, double t,
 		      const pgfem3d::CommunicationStructure *com,
-		      const PGFem3D_opt *opts, const HOMMAT *hommat)
+		      const PGFem3D_opt *opts, const HOMMAT *hommat,
+		      const bool is4cm)
 {
   int ndofn = 3;
 
   double L2_err[3];
   L2_err[0] =  L2_err[1] =  L2_err[2] = 0.0;
   GL2_err[0] = GL2_err[1] = GL2_err[2]= 0.0;
-
+  
   for(long e = 0; e<ne; e++)
   {
 
     const int mat = elem[e].mat[2];
+
+    ELASTICITY elast;
+    MATERIAL_ELASTICITY mat_e;
+
+    set_properties_using_E_and_nu(&mat_e,hommat[mat].E,hommat[mat].nu);
+    mat_e.m01   = hommat[mat].m01;
+    mat_e.m10   = hommat[mat].m10;
+    mat_e.G     = hommat[mat].G;
+    mat_e.kappa = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
+    mat_e.devPotFlag = hommat[mat].devPotFlag;
+    mat_e.volPotFlag = hommat[mat].volPotFlag;
+
+    construct_elasticity(&elast, &mat_e, 1);
+    
     long nne = elem[e].toe;
     long *nod = aloc1l(nne);
     elemnodes(e,nne,nod,elem);
@@ -46,7 +61,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
       double y_ip = fe.x_ip(2);
       double z_ip = fe.x_ip(3);
 
-      MMS_displacement(u, t, x_ip, y_ip, z_ip);
+      MMS_displacement(u, t, x_ip, y_ip, z_ip, is4cm);
 
       uh[0] = uh[1] = uh[2] = 0.0;
       for(long a = 1; a<=nne; a++)
@@ -62,7 +77,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
       double V = 0;
       if(opts->analysis_type==TF)
       {
-        MMS_pressure_volume(&P, &V, &hommat[mat], t, x_ip, y_ip, z_ip);
+        MMS_pressure_volume(&P, &V, hommat+mat, &elast, t, x_ip, y_ip, z_ip, is4cm);
       }
 
       du[0] = u[0] - uh[0];

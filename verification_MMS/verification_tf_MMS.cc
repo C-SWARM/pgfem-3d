@@ -10,6 +10,7 @@
 #include "read_input_file.h"
 #include "utils.h"
 #include "pgfem3d/Communication.hpp"
+#include "constitutive_model.h"
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -161,6 +162,28 @@ int main(int argc,char *argv[])
   double *Ph = aloc1(ne);
   double *Vh = aloc1(ne);
 
+  bool is4cm = false;
+  
+  if(options.analysis_type == CM || options.analysis_type == CM3F){
+    char cm_filename[2048];
+    sprintf(cm_filename, "%s/model_params.in", options.ipath);
+    FILE *cm_in = PGFEM_fopen(cm_filename, "r"); 
+              
+    int num_entries = -1;
+    in_err += scan_for_valid_line(cm_in);
+    CHECK_SCANF(cm_in, "%d", &num_entries);
+
+    int mat_id = 0;
+    int model_type = -1;
+    err += scan_for_valid_line(cm_in);
+
+    CHECK_SCANF(cm_in, "%d %d", &mat_id, &model_type);
+    fclose(cm_in);
+    
+    if(model_type == MANUFACTURED_SOLUTIONS)
+      is4cm = true;
+  }       
+  
   FILE *f = NULL;
   if(myrank==0)
     f = fopen("error.txt", "w");
@@ -171,7 +194,7 @@ int main(int argc,char *argv[])
       sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
       read_VTK_file4TF(filename, u,Ph,Vh);
 
-      compute_L2_error(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat);
+      compute_L2_error(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat, is4cm);
 
       if(myrank==0)
       {

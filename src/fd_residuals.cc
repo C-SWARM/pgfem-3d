@@ -234,7 +234,6 @@ static int fd_res_elem_MP(double *be,
        {
          double *bf = aloc1(ndofe);
          memset(bf, 0, sizeof(double)*ndofe);
-         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
 
          err =  DISP_resid_el(be,eid,fv->ndofn,fe.nne,x,y,z,elem,
                               mat->hommat,nod,grid->node,fv->eps,fv->sig,sup,r_e,dt);
@@ -248,7 +247,6 @@ static int fd_res_elem_MP(double *be,
        {
          double *bf = aloc1(ndofe);
          memset(bf, 0, sizeof(double)*ndofe);
-         DISP_resid_body_force_el(bf,eid,fv->ndofn,fe.nne,x,y,z,elem,mat->hommat,grid->node,dt,t);
          
          residuals_3f_el(&fe, be, r_e, grid, mat, fv);
 

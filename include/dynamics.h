@@ -10,6 +10,7 @@
 #include "node.h"
 #include "sig.h"
 #include "supp.h"
+#include "hyperelasticity.h"
 
 const constexpr double MIN_DENSITY = 1.0e-16;
 const constexpr int         DT_NP1 = 0;
@@ -24,7 +25,11 @@ void DISP_resid_body_force_el(double *f,
                               const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
-                              const Node *node, double dt, double t);
+                              const Node *node, 
+                              double dt, 
+                              double t,
+                              ELASTICITY *elast,
+                              bool is4cm);
 
 struct FEMLIB;
 

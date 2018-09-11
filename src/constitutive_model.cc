@@ -21,6 +21,7 @@
 #include "cm_uqcm.h"
 #include "cm_poro_viscoplasticity.h"
 #include "cm_iso_viscous_damage_split.h"
+#include "cm_MMS.h"
 #include "dynamics.h"
 #include "hommat.h"
 #include "supp.h"
@@ -86,7 +87,8 @@ void print_constitutive_model_info(FILE *out)
                                             {ISO_VISCOUS_DAMAGE,       "Iso Viscous Damage       "},      
                                             {J2_PLASTICITY_DAMAGE,     "J2 Plasticity with Damage"},    
                                             {POROVISCO_PLASTICITY,     "Poro Visco Plasticity    "},    
-                                            {ISO_VISCOUS_SPLIT_DAMAGE, "Splited Iso Viscous Dmage"}
+                                            {ISO_VISCOUS_SPLIT_DAMAGE, "Splited Iso Viscous Dmage"},
+                                            {MANUFACTURED_SOLUTIONS,   "Method of Manufactured Solutions"}
                                           };
 
   for(int ia=0; ia<NUM_MODELS; ++ia)
@@ -937,6 +939,10 @@ int construct_model_context(void **ctx,
   case ISO_VISCOUS_SPLIT_DAMAGE:
     err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
     break;
+  case MANUFACTURED_SOLUTIONS:
+    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, NULL, NULL, 0);
+    //err += cm_mms_ctx_build();
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -994,7 +1000,11 @@ int construct_model_context_with_thermal(void **ctx,
     break;
   case ISO_VISCOUS_SPLIT_DAMAGE:
     err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;  
+    break;
+  case MANUFACTURED_SOLUTIONS:
+    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, hFn, hFnp1, 1);
+    //err += cm_mms_ctx_build();
+    break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -1068,6 +1078,11 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
     case ISO_VISCOUS_SPLIT_DAMAGE:
       p[model_id] = new CM_IVDS_PARAM;
       break;
+  case MANUFACTURED_SOLUTIONS:
+      p[model_id] = new HE_PARAM;
+    //  p[model_id] = new CM_MMS_PARAM;
+    //err += cm_mms_ctx_build();
+    break;      
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);
       err++;
@@ -1101,6 +1116,7 @@ Model_parameters::initialization(const HOMMAT *p_hmat, const size_t type)
     case J2_PLASTICITY_DAMAGE:
     case POROVISCO_PLASTICITY:
     case ISO_VISCOUS_SPLIT_DAMAGE:
+    case MANUFACTURED_SOLUTIONS:
       break; // no action
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
