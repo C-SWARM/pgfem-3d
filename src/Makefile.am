@@ -143,6 +143,7 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         cm_placeholder_functions.cc \
                         cm_uqcm.cc \
                         cm_poro_viscoplasticity.cc \
+                        cm_MMS.cc \
                         state_variables.cc \
                         constitutive_model.cc \
                         constitutive_model_3f.cc \
