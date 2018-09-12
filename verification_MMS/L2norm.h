@@ -77,7 +77,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
       double V = 0;
       if(opts->analysis_type==TF)
       {
-        MMS_pressure_volume(&P, &V, hommat+mat, &elast, t, x_ip, y_ip, z_ip, is4cm);
+        MMS_pressure_volume(&P, &V, &elast, t, x_ip, y_ip, z_ip, is4cm);
       }
 
       du[0] = u[0] - uh[0];

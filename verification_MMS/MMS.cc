@@ -21,10 +21,8 @@
 
 void MMS_HE_displacement(double *u, double t, double X, double Y, double Z);
 void MMS_HE_initial_velocity(double *v, double X, double Y, double Z);
-void MMS_HE_pressure_volume(double *P, double *V, HOMMAT const * hommat, double t, double X, double Y, double Z);
-
-void MMS_HE_body_force(double *b, HOMMAT const * hommat, double t, double X, double Y, double Z);
-
+void MMS_HE_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, double X, double Y, double Z);
+void MMS_HE_body_force(double *b, HOMMAT const * hommat, ELASTICITY *elast, double t, double X, double Y, double Z);
 
 void MMS_displacement(double *u, double t, double X, double Y, double Z, const bool is4cm){
   if(is4cm)
@@ -40,16 +38,16 @@ void MMS_initial_velocity(double *v, double X, double Y, double Z, const bool is
     MMS_HE_initial_velocity(v, X, Y, Z);
   
 }
-void MMS_pressure_volume(double *P, double *V, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
+void MMS_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
   if(is4cm)
     MMS4cm_pressure_volume(P, V, elast, t, X, Y, Z);
   else
-    MMS_HE_pressure_volume(P, V, hommat, t, X, Y, Z);
+    MMS_HE_pressure_volume(P, V, elast, t, X, Y, Z);
 }
 
 void MMS_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
   if(is4cm)
     MMS4cm_body_force(b, hommat, elast, t, X, Y, Z);
   else
-    MMS_HE_body_force(b, hommat, t, X, Y, Z);
+    MMS_HE_body_force(b, hommat, elast, t, X, Y, Z);
 }

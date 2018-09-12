@@ -18,8 +18,8 @@
 
 void MMS_displacement(double *u, double t, double X, double Y, double Z, const bool is4cm);
 void MMS_initial_velocity(double *v, double X, double Y, double Z, const bool is4cm);
-void MMS_pressure_volume(double *P, double *V, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
+void MMS_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
 
-void MMS_body_force(double *b, HOMMAT const * hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
+void MMS_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm);
 
 #endif
