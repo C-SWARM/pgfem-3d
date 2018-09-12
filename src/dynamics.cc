@@ -309,7 +309,7 @@ int residual_with_inertia(FEMLIB *fe,
    case CM:   //intended to flow
    case CM3F:
      {
-       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1]);
+       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1],t);
 
        for(long a = 0; a<ndofe; a++)
          be[a] -= f_i[a]; // - (1.0-alpha)*dt and - alpha*dt are included in be[a]

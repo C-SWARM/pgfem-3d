@@ -101,16 +101,24 @@ typedef struct cm_mms_ctx {
   int npa;  
 } cm_mms_ctx;
 
-
+/// Construct and initialize the poro-viscoplasticity model context 
+/// for calling functions through the constitutive modeling interface
+/// 
+/// \param[in,out] ctx - handle to an opaque model context object.
+/// \param[in] F The total deformation gradient.
+/// \param[in] alpha mid-point alpha
+/// \param[in] eFnpa elastic deformation gradient at t = n + alpha
+/// \param[in] npa   mid-point rule
+/// \param[in] x     coordinate. x = x[0], y = x[1], z = x[2]
+/// \param[in] t     time
+/// \return non-zero on internal error.
 int cm_mms_ctx_build(void **ctx,
                      double *F,
-                     const double t,
-                     const double x,
-                     const double y,
-                     const double z,
                      const double alpha,
                      double *eFnpa,
-                     const int npa)
+                     const int npa,
+                     const double *x,
+                     const double t)
 {
   int err = 0;
   cm_mms_ctx *t_ctx = (cm_mms_ctx *) malloc(sizeof(cm_mms_ctx));
@@ -123,9 +131,9 @@ int cm_mms_ctx_build(void **ctx,
   t_ctx->npa   = npa;  
   
   t_ctx->t  = t;
-  t_ctx->x  = x;
-  t_ctx->y  = y;
-  t_ctx->z  = z;
+  t_ctx->x  = x[0];
+  t_ctx->y  = x[1];
+  t_ctx->z  = x[2];
   t_ctx->alpha = alpha;
 
   /* assign handle */

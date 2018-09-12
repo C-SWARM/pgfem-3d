@@ -51,8 +51,8 @@ enum model_type {
   J2_PLASTICITY_DAMAGE,
   POROVISCO_PLASTICITY,
   ISO_VISCOUS_SPLIT_DAMAGE,
+  MANUFACTURED_SOLUTIONS,
   NUM_MODELS,
-  MANUFACTURED_SOLUTIONS = 97,
   J2_PLASTICITY_SPLIT_DAMAGE = 98,   
   TESTING=99,
   CM_UQCM=100
@@ -714,6 +714,8 @@ class Constitutive_model
                                 double *hFnp1,
                                 double dt,
                                 double alpha,
+                                const double *x,
+                                const double t,                              
                                 int is_it_couple_w_thermal = 0,
                                 double tf_factor = 1.0);
 };
@@ -917,6 +919,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
@@ -933,7 +936,8 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
-                                              double dt);
+                                              double dt,
+                                              const double t);
 
 /// compute element residual vector in quasi steady state
 ///

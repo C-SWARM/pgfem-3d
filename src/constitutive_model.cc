@@ -88,7 +88,7 @@ void print_constitutive_model_info(FILE *out)
                                             {J2_PLASTICITY_DAMAGE,     "J2 Plasticity with Damage"},    
                                             {POROVISCO_PLASTICITY,     "Poro Visco Plasticity    "},    
                                             {ISO_VISCOUS_SPLIT_DAMAGE, "Splited Iso Viscous Dmage"},
-                                            {MANUFACTURED_SOLUTIONS,   "Method of Manufactured Solutions"}
+                                            {MANUFACTURED_SOLUTIONS,   "Method of Manufactured Solutions (use only for MMS study)"}
                                           };
 
   for(int ia=0; ia<NUM_MODELS; ++ia)
@@ -829,7 +829,7 @@ template <class CM> class ConstitutiveModelIntregrate
           else{
             double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
             err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                                dt,alpha,is_it_couple_w_thermal, tf_factor);
+                                                dt,alpha,fe->x_ip.m_pdata, 0.0, is_it_couple_w_thermal, tf_factor);
           }
         }
         if(err>0)
@@ -940,9 +940,11 @@ int construct_model_context(void **ctx,
     err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
     break;
   case MANUFACTURED_SOLUTIONS:
-    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, NULL, NULL, 0);
-    //err += cm_mms_ctx_build();
+  {
+    double x[3] = {};
+    err += cm_mms_ctx_build(ctx, F, alpha, eFnpa, npa, x, 0);
     break;
+  }
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
     err++;
@@ -1000,10 +1002,6 @@ int construct_model_context_with_thermal(void **ctx,
     break;
   case ISO_VISCOUS_SPLIT_DAMAGE:
     err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;
-  case MANUFACTURED_SOLUTIONS:
-    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, hFn, hFnp1, 1);
-    //err += cm_mms_ctx_build();
     break;
   default:
     PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
@@ -1079,9 +1077,7 @@ int construct_Model_parameters(Model_parameters **p, int model_id, int model_typ
       p[model_id] = new CM_IVDS_PARAM;
       break;
   case MANUFACTURED_SOLUTIONS:
-      p[model_id] = new HE_PARAM;
-    //  p[model_id] = new CM_MMS_PARAM;
-    //err += cm_mms_ctx_build();
+      p[model_id] = new CM_MMS_PARAM;
     break;      
     default:
       PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",model_type);
@@ -1234,6 +1230,8 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               double *hFnp1,
                                               double dt,
                                               double alpha,
+                                              const double *x,
+                                              const double t,                                              
                                               int is_it_couple_w_thermal,
                                               double tf_factor)
 {
@@ -1244,9 +1242,12 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   if(is_it_couple_w_thermal>=0)
     err += construct_model_context_with_thermal(&ctx, param->type, Fnp1.data,dt,alpha, NULL,
                                                  hFn,hFnp1, -1);
-  else
-    err += construct_model_context(&ctx, param->type, Fnp1.data,dt,alpha, NULL,-1);
-
+  else{
+    if(param->type == MANUFACTURED_SOLUTIONS)
+      err += cm_mms_ctx_build(&ctx, Fnp1.data, alpha, NULL, -1, x, t);
+    else
+      err += construct_model_context(&ctx, param->type, Fnp1.data,dt,alpha, NULL,-1);
+  }
   err += param->integration_algorithm(this,ctx); // perform integration algorithm
   err += param->destroy_ctx(&ctx);
   return err;
@@ -2941,6 +2942,7 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  double *f,
@@ -2955,7 +2957,8 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
-                                                 double dt)
+                                                 double dt,
+                                                 const double t)
 {
   int err = 0;
   double alpha = sol->alpha;
@@ -3030,7 +3033,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal);
 
     if(err!=0)
       break;
@@ -3103,6 +3106,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  double *f,
@@ -3119,7 +3123,8 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
-                                                 double dt)
+                                                 double dt,
+                                                 const double t)
 {
   int err = 0;
   double alpha = sol->alpha;
@@ -3280,7 +3285,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
         ++err;
       else{
         double tf_factor = pow(theta/tJ, 1.0/3.0);
-        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,is_it_couple_w_thermal, tf_factor);
+        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal, tf_factor);
       }
     }
 
@@ -3410,6 +3415,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
+/// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
@@ -3426,18 +3432,19 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
-                                              double dt)
+                                              const double dt,
+                                              const double t)
 {
   int err = 0;
 
   if(opts->analysis_type==CM)
     err += residuals_el_constitutive_model_w_inertia_1f(fe, f, re_np1,
                                                         grid, mat, fv, sol, load, crpl,
-                                                        opts, mp, dts, mp_id, dt);
+                                                        opts, mp, dts, mp_id, dt, t);
   if(opts->analysis_type==CM3F)
     err += residuals_el_constitutive_model_w_inertia_3f(fe, f, re_np1, re_npa, re_nma,
                                                         grid, mat, fv, sol, load, crpl,
-                                                        opts, mp, dts, mp_id, dt);
+                                                        opts, mp, dts, mp_id, dt, t);
   return err;
 }
 /// compute element residual vector in quasi steady state
@@ -3590,7 +3597,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,fe->x_ip.m_pdata,0.0,is_it_couple_w_thermal);
 
     if(err!=0)
       break;

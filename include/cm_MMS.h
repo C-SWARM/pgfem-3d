@@ -68,25 +68,13 @@ class CM_MMS_PARAM: public Model_parameters
  
 /// Construct and initialize the poro-viscoplasticity model context 
 /// for calling functions through the constitutive modeling interface
-/// 
-/// \param[in,out] ctx - handle to an opaque model context object.
-/// \param[in] F The total deformation gradient.
-/// \param[in] dt time increment
-/// \param[in] alpha mid-point alpha
-/// \param[in] eFnpa elastic deformation gradient at t = n + alpha
-/// \param[in] hFn thermal part deformation gradient at t = n
-/// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
-/// \param[in] is_coulpled_with_thermal flag for coupling with thermal
-/// \return non-zero on internal error.
 int cm_mms_ctx_build(void **ctx,
                      double *F,
-                     const double t,
-                     const double x,
-                     const double y,
-                     const double z,
                      const double alpha,
                      double *eFnpa,
-                     const int npa);
+                     const int npa,
+                     const double *x,
+                     const double t);
                      
 void MMS4cm_displacement(double *u, double t, double X, double Y, double Z);
 void MMS4cm_velocity(double *v, double t, double X, double Y, double Z);
