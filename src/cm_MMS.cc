@@ -11,7 +11,7 @@
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
 #include "new_potentials.h"
-#include "data_structure_c.h"
+#include "utils.h"
 #include "elem3d.h"
 #include "gen_path.h"
 #include <string.h>
