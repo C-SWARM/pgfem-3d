@@ -33,6 +33,10 @@ libpgfem3d_la_LIBADD = \
   $(LIBGCM_LIBADD) \
   $(VTK_LDFLAGS) $(VTK_LIBS)
 
+if HAVE_TRILINOS
+libpgfem3d_la_LIBADD += $(TRILINOS_LIBADD)
+endif
+
 libpgfem3d_la_SOURCES = ALM.cc \
                         Arc_length.cc \
                         GRedist_node.cc \

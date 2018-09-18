@@ -10,37 +10,34 @@
 #include <string>
 
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
-#include <MueLu.hpp>
-#include <MueLu_TpetraOperator.hpp>
-#include <MueLu_HierarchyManager.hpp>
-#include <MueLu_XpetraOperator_decl.hpp>
-#include <MueLu_ParameterListInterpreter_decl.hpp>
-#include <Tpetra_CrsMatrix.hpp>
-#include <Xpetra_CrsMatrix.hpp>
-#include <Kokkos_DefaultNode.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_DefaultMpiComm.hpp>
 #include <Teuchos_ParameterList.hpp>
+#include <Kokkos_DefaultNode.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
 #include <BelosConfigDefs.hpp>
 #include <BelosTpetraAdapter.hpp>
+
 #include <Ifpack2_Factory.hpp>
 #include <Ifpack2_Preconditioner.hpp>
+
+#include <MueLu.hpp>
+#include <MueLu_TpetraOperator.hpp>
+#include <MueLu_CreateTpetraPreconditioner.hpp>
 
 
 typedef double                                                 ST;
 typedef Tpetra::CrsMatrix<ST,int,int>                  TCrsMatrix;
 typedef Tpetra::RowMatrix<ST,int,int>                  TRowMatrix;
 typedef KokkosClassic::DefaultNode::DefaultNodeType          Node;
-typedef Xpetra::CrsMatrix<ST,int,int,Node>         CrsMatrixClass;
-typedef Xpetra::TpetraCrsMatrix<ST,int,int,Node>               MA;
-typedef Xpetra::CrsMatrixWrap<ST,int,int,Node> CrsMatrixWrapClass;
-typedef Xpetra::Matrix<ST,int,int,Node>               MatrixClass;
 typedef Tpetra::Map<int,int,Node>                             Map;
 typedef Tpetra::MultiVector<ST,int>                            MV;
 typedef Tpetra::Operator<ST,int>                               OP;
 typedef Ifpack2::Preconditioner<ST,int,int>             prec_type;
+typedef Teuchos::OrdinalTraits<Tpetra::global_size_t> OT;
 
 struct SOLVER_INFO;
 
@@ -50,7 +47,7 @@ struct SOLVER_INFO;
 namespace pgfem3d {
 namespace solvers {
 namespace trilinos {
-  //class OURPREC : public Ifpack2::Preconditioner<ST,int,int>, public Ifpack2::Details::CanChangeMatrix<TCrsMatrix> {}; 
+
 struct TrilinosWrap;
 struct TrilinosWrap : public SparseSystem
 {
@@ -131,7 +128,8 @@ struct TrilinosWrap : public SparseSystem
   /** solve using the TRILINOS environment */
   int solve(SOLVER_INFO *info);
 
-  // Teuchos::RCP is the reference counting smart pointer used throughout Trilinos
+  // Teuchos::RCP is the reference counting smart pointer used throughout
+  // Trilinos.
   
   // The linear system data (Ax=b)
   Teuchos::RCP<TCrsMatrix> _localk;               //!< The local matrix handle
@@ -142,23 +140,21 @@ struct TrilinosWrap : public SparseSystem
   // Belos linear problem and solver manager
   Teuchos::RCP<Belos::LinearProblem<ST,MV,OP> > _problem;
   Teuchos::RCP<Belos::SolverManager<ST,MV,OP> >  _solver;
-
-  // MueLu multilevel hierarchy and factory
-  Teuchos::RCP<MueLu::Hierarchy<ST,int,int,Node> >                   _H;
-  Teuchos::RCP<MueLu::HierarchyManager<ST,int,int,Node> > _mueLuFactory;
   
   // Trilinos parameter lists
   Teuchos::RCP<Teuchos::ParameterList>  _belosList;
   Teuchos::RCP<Teuchos::ParameterList> _ifpackList;
   Teuchos::RCP<Teuchos::ParameterList>  _mueluList;
 
-  //Ifpack2 Preconditioner
-  Teuchos::RCP<prec_type > _ifpackprec;
+  // Ifpack2 Preconditioner
+  Teuchos::RCP<prec_type> _ifpackprec;
 
-  //Preconditioner operator for either Ifpack2 or MueLu
+  // MueLu Preconditioner
+  Teuchos::RCP<MueLu::TpetraOperator<ST,int,int> > _mueluprec;
+  
+  // Preconditioner operator for either Ifpack2 or MueLu
   Teuchos::RCP<OP> _preconditioner;
-  
-  
+
   // Sparse matrix data relevant to the distribution of data.
   const MPI_Comm _comm;                         //!<
   const int * const _Ai;                        //!< reference to column array
@@ -169,7 +165,7 @@ struct TrilinosWrap : public SparseSystem
   int _ilower = 0;                              //!< Row lower bound
   int _iupper = 0;                              //!< Row upper bound
 
-  int prectype;
+  int _prectype;
   std::string _ifpacktype;
 }; // struct Trilinos
 } // namespace trilinos

@@ -61,6 +61,11 @@ AS_IF([test "x$have_mpicxx" = xyes],
 AM_CONDITIONAL([HAVE_PGFEM_MPI], [test "x$have_mpicxx" == xyes])
 AM_CONDITIONAL([HAVE_PHOTON], [test "x$have_photon" == xyes])
 
+AS_IF([test "x$have_trilinos" = xyes],
+	    [AC_DEFINE([HAVE_TRILINOS], [1], [Trilinos solvers avaiable])])
+
+ AM_CONDITIONAL([HAVE_TRILINOS], [test "x$have_trilinos" == xyes])
+
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 dnl LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
 
