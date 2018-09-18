@@ -82,7 +82,7 @@ Network::Create(const PGFem3D_opt& opts)
 #endif
     } else {
       PGFEM_printf("[%d] Trying to use ISIR Network by default\n", myrank);
-#ifdef HAVE_MPI
+#ifdef HAVE_PGFEM_MPI
       return new isir::MPINetwork();
 #else
       PGFEM_printerr("[%d]ERROR: ISIR Network not available in this build\n", myrank);
