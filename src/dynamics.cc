@@ -103,6 +103,22 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
   const int mat = elem[ii].mat[2];
   double rho = hommat[mat].density;
   int ndofe = nne*ndofn;
+  
+  #ifdef VERIFICATION_USING_MMS
+    if(!is4cm){
+      MATERIAL_ELASTICITY mat_e;
+      elast = new ELASTICITY;
+      set_properties_using_E_and_nu(&mat_e,hommat[mat].E,hommat[mat].nu);
+      mat_e.m01 = hommat[mat].m01;
+      mat_e.m10 = hommat[mat].m10;
+      mat_e.G   = hommat[mat].G;
+      mat_e.kappa      = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
+      mat_e.devPotFlag = hommat[mat].devPotFlag;
+      mat_e.volPotFlag = hommat[mat].volPotFlag;
+
+      construct_elasticity(elast, &mat_e, 1);
+    }
+  #endif    
 
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
@@ -167,7 +183,12 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
       }
     }
   }
-
+  
+  #ifdef VERIFICATION_USING_MMS
+    if(!is4cm)
+      destruct_elasticity(elast);
+  #endif   
+    
   dealoc1(bf0);
   dealoc1(bf1);
   dealoc1(bf2);

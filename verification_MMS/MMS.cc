@@ -25,6 +25,9 @@ void MMS_HE_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, d
 void MMS_HE_body_force(double *b, HOMMAT const * hommat, ELASTICITY *elast, double t, double X, double Y, double Z);
 
 void MMS_displacement(double *u, double t, double X, double Y, double Z, const bool is4cm){
+  if(t<0.0)
+    u[0] = u[1] = u[2] = 0.0;
+    
   if(is4cm)
     MMS4cm_displacement(u, t, X, Y, Z);
   else
@@ -46,6 +49,8 @@ void MMS_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, doub
 }
 
 void MMS_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
+  if(t<0.0)
+    b[0] = b[1] = b[2] = 0.0;
   if(is4cm)
     MMS4cm_body_force(b, hommat, elast, t, X, Y, Z);
   else
