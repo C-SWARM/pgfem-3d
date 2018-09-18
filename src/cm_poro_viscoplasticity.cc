@@ -11,13 +11,12 @@
 #include "constitutive_model.h"
 #include "cm_placeholder_functions.h"
 #include "new_potentials.h"
-#include "data_structure_c.h"
 #include "elem3d.h"
 #include "gen_path.h"
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-
+#include "utils.h"
 #include "material_properties.h"
 #include "hyperelasticity.h"
 
@@ -33,7 +32,6 @@
 #define DIM_3x3x3x3 81
 
 #define MAX_D_ALPHA 0.0002
-
 
 static const int FLAG_end = 0;
 

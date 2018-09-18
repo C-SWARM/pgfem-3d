@@ -2731,7 +2731,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     for(int ia=0; ia<mp.physicsno; ia++)
     {
       if(time_steps->tim==0) 
-        apply_V0(ia+1) = FV[ia].apply_initial_velocity;
+        apply_V0(ia) = FV[ia].apply_initial_velocity;
         
       int npd = (load->sups[ia])->npd;
       if(npd>0)
@@ -2828,7 +2828,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
         
         if(time_steps->tim==0){          
           for(int ia=0; ia<mp.physicsno; ia++)
-            FV[ia].apply_initial_velocity = apply_V0(ia+1);
+            FV[ia].apply_initial_velocity = apply_V0(ia);
         }
        
         Multiphysics_Newton_Raphson_sub(hypre_time,stiffmat_time,residuals_time,&iterno,
@@ -2857,7 +2857,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
           NR_t_sub.tim=1;
           if(time_steps->tim==0){          
             for(int ia=0; ia<mp.physicsno; ia++)
-              apply_V0(ia+1) = false;
+              apply_V0(ia) = false;
           }
         }
         if(sp.step_size > 2 && sp.step_id == 2)

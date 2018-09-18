@@ -339,7 +339,7 @@ int compute_mechanical_heat_gen(double *Qe,
   hFnI  = inverse(hFn);
 
   // 2. obtain deformation gradient from mechanical part
-  Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+  Constitutive_model *m = &(fv_m->eps[eid].model[ip]);
   //Model_parameters *func = m->param;
   ELASTICITY *elast = (m->param)->cm_elast;
 
@@ -559,9 +559,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   get_temperature_elem(cnL.m_pdata,ndofe,fv->u_np1,du,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
 
   for(int ia=0; ia<fe->nne; ia++)
-    Tn(ia+1) = fv->u_n[nod[ia]];
+    Tn(ia) = fv->u_n[nod[ia]];
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
   
     ++perIter_ODE_EXA_metric;      //count the total number of integration points for the EXA metric (No ODEs, so 1 is used for each operation)
@@ -577,7 +577,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     double deltaT_n   = 0.0;
 
     // compute varialbes at the integration point
-    for(int ia=1; ia<=fe->nne; ia++)
+    for(int ia=0; ia<fe->nne; ia++)
     {
       Temp += fe->N(ia)*Tnp1(ia);
       dT   += fe->N(ia)*(Tnp1(ia)-Tn(ia));
@@ -594,7 +594,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
       double Qp = 0.0;
 
       Tensor<2,3,double> F;
-      Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+      Constitutive_model *m = &(fv_m->eps[eid].model[ip]);
       const Model_parameters *func = m->param;
       err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
 
@@ -620,14 +620,14 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     q.set_values(0.0);
 
     // compute heat flux
-    for(int ia=1; ia<=fe->nne; ia++)
+    for(int ia=0; ia<fe->nne; ia++)
     {
       // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
       // q = [nsd, 1] = k*dN'*T
-      for(int ib=1; ib<=grid->nsd; ib++)
+      for(int ib=0; ib<grid->nsd; ib++)
       {
-        for(int ic=1; ic<=grid->nsd; ic++) {
-          q(ib) += k(ib-1,ic-1)      // NB: TTL does not support 1-based indices
+        for(int ic=0; ic<grid->nsd; ic++) {
+          q(ib) += k(ib,ic)      // NB: TTL does not support 1-based indices
                    *fe->dN(ia,ic)*Tnp1(ia);
         }
       }
@@ -636,11 +636,11 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     // R = rho*cp*dT + dt*grad.q - dt*Q = 0;
     // rho = rho_0/Jn
     // Q = Q_0/Jn;
-    for(int ia=1; ia<=fe->nne; ia++)
+    for(int ia=0; ia<fe->nne; ia++)
     {
-      fi[ia-1] += fe->N(ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW)/Jn;
-      for(int ib=1; ib<=grid->nsd; ib++)
-        fi[ia-1] += dt*fe->dN(ia,ib)*q(ib)*(fe->detJxW)/Jn;
+      fi[ia] += fe->N(ia)*(rho_0*cp*dT - dt*Q)*(fe->detJxW)/Jn;
+      for(int ib=0; ib<grid->nsd; ib++)
+        fi[ia] += dt*fe->dN(ia,ib)*q(ib)*(fe->detJxW)/Jn;
     }
   }
 
@@ -833,9 +833,9 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   get_temperature_elem(cnL.m_pdata,ndofe,fv->u_np1,fv->f,grid->element,grid->node,sup,Tnp1.m_pdata,fv->u0);
 
   for(int ia=0; ia<fe->nne; ia++)
-    Tn(ia+1) = fv->u_n[nod[ia]];
+    Tn(ia) = fv->u_n[nod[ia]];
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);
@@ -847,7 +847,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
     double deltaT_n   = 0.0;
 
     // compute varialbes at the integration point
-    for(int ia=1; ia<=fe->nne; ia++)
+    for(int ia=0; ia<fe->nne; ia++)
     {
       Temp += fe->N(ia)*Tnp1(ia);
       dT   += fe->N(ia)*(Tnp1(ia)-Tn(ia));
@@ -865,7 +865,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
       double Qp = 0.0;
 
       Tensor<2,3,double> F = {};
-      Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+      Constitutive_model *m = &(fv_m->eps[eid].model[ip]);
       const Model_parameters *func = m->param;
       err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
 
@@ -889,16 +889,16 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
 
     // R = rho_0*cp*(Tnp1-Tn) + dt*grad.q - dt*Q = 0;
     // DR = rho_0*cp*dT + dt*D[grad.q]dT - dt*D[Q]dT = 0;
-    for(int ia=1; ia<=fe->nne; ia++)
+    for(int ia=0; ia<fe->nne; ia++)
     {
-      for(int ib=1; ib<=fe->nne; ib++)
+      for(int ib=0; ib<fe->nne; ib++)
       {
         lk(ia,ib) += (rho_0*cp - dt*DQ)*fe->N(ia)*fe->N(ib)*(fe->detJxW)/Jn;
-        for(int im = 1; im<=grid->nsd; im++)
+        for(int im = 0; im<grid->nsd; im++)
         {
-          for(int in = 1; in<=grid->nsd; in++)
+          for(int in = 0; in<grid->nsd; in++)
             lk(ia,ib) += dt*fe->dN(ia,in)*
-                         k(in-1, im-1) // NB: TTL does not support 1-based indices
+                         k(in, im) // NB: TTL does not support 1-based indices
                          *fe->dN(ib,im)*(fe->detJxW)/Jn;
         }
       }
@@ -1279,7 +1279,7 @@ int update_thermal_flux4print(Grid *grid,
 
     // do integration point loop
     double volume = 0.0;
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
@@ -1290,12 +1290,12 @@ int update_thermal_flux4print(Grid *grid,
       double deltaT_n   = 0.0;
 
       // compute values at the integration point
-      for(int ia=1; ia<=fe.nne; ia++)
+      for(int ia=0; ia<fe.nne; ia++)
       {
-        Temp += fe.N(ia,1)*Tnp1(ia,1);
-        dT   += fe.N(ia,1)*(Tnp1(ia,1)-Tn(ia,1));
-        deltaT_np1 += fe.N(ia,1)*(Tnp1(ia,1) - fv->u0);
-        deltaT_n   += fe.N(ia,1)*(Tn(  ia,1) - fv->u0);
+        Temp += fe.N(ia)*Tnp1(ia);
+        dT   += fe.N(ia)*(Tnp1(ia)-Tn(ia));
+        deltaT_np1 += fe.N(ia)*(Tnp1(ia) - fv->u0);
+        deltaT_n   += fe.N(ia)*(Tn(  ia) - fv->u0);
       }
 
       // compute heat sources
@@ -1309,7 +1309,7 @@ int update_thermal_flux4print(Grid *grid,
         int compute_tangent = 0;
 
         Tensor<2,3,double> F;
-        Constitutive_model *m = &(fv_m->eps[eid].model[ip-1]);
+        Constitutive_model *m = &(fv_m->eps[eid].model[ip]);
         const Model_parameters *func = m->param;
         err += func->get_F(m,F.data,1);        // this brings  F(t(n+1))
 
@@ -1335,23 +1335,23 @@ int update_thermal_flux4print(Grid *grid,
       q.set_values(0.0);
 
       // compute heat flux
-      for(int ia=1; ia<=fe.nne; ia++)
+      for(int ia=0; ia<fe.nne; ia++)
       {
         // k = [nsd, nsd], dN = [nne, nsd], Tnp1  = [nne, 1],
         // q = [nsd, 1] = k*dN'*T
-        for(int ib=1; ib<=grid->nsd; ib++)
+        for(int ib=0; ib<grid->nsd; ib++)
         {
-          for(int ic=1; ic<=grid->nsd; ic++) {
-            q(ib) -= k(ib-1, ic-1)   // NB: TTL does not support 1-based indices
+          for(int ic=0; ic<grid->nsd; ic++) {
+            q(ib) -= k(ib, ic)   // NB: TTL does not support 1-based indices
                      *fe.dN(ia,ic)*Tnp1(ia);
           }
         }
       }
 
       // save the values
-      fv->eps[eid].el.o[0] += fe.detJxW*q(1);
-      fv->eps[eid].el.o[1] += fe.detJxW*q(2);
-      fv->eps[eid].el.o[2] += fe.detJxW*q(3);
+      fv->eps[eid].el.o[0] += fe.detJxW*q(0);
+      fv->eps[eid].el.o[1] += fe.detJxW*q(1);
+      fv->eps[eid].el.o[2] += fe.detJxW*q(2);
       fv->eps[eid].el.o[3] += fe.detJxW*Qe/Jn;
       fv->eps[eid].el.o[4] += fe.detJxW*Qp/Jn;
       volume += fe.detJxW;

@@ -191,7 +191,7 @@ void TF_Kuu_ip(Matrix<double> &Kuu,
   {
     for(int ib=0; ib<nsd; ib++)
     {
-      int id_ab = ia*nsd + ib + 1;
+      int id_ab = ia*nsd + ib;
       TensorA<2> Grad_du(fe->ST + idx_4_gen(ia,ib,0,0,nne,nsd,nsd,nsd));
       Tensor<2> A_ab;
       var.compute_A_of_du(A_ab, Grad_du);
@@ -201,7 +201,7 @@ void TF_Kuu_ip(Matrix<double> &Kuu,
       {
         for(int ig=0; ig<nsd; ig++)
         { 
-          int id_wg = iw*nsd + ig + 1;
+          int id_wg = iw*nsd + ig;
           TensorA<2> Grad_tu(fe->ST + idx_4_gen(iw,ig,0,0,nne,nsd,nsd,nsd));
 
           // eq. 1
@@ -258,7 +258,7 @@ void TF_Kup_ip(Matrix<double> &Kup,
       for(int iw=0; iw<Pno; iw++)
       {
         int idx_up = idx_K_gen(ia,ib,iw,0,fe->nne,fe->nsd,Pno,1);
-        Kup.m_pdata[idx_up] += -dt_alpha_1_minus_alpha*fe->detJxW*var.J*FI(j,i)*Grad_du(i,j)*Np(iw+1);
+        Kup.m_pdata[idx_up] += -dt_alpha_1_minus_alpha*fe->detJxW*var.J*FI(j,i)*Grad_du(i,j)*Np(iw);
       }
     }
   }
@@ -283,9 +283,9 @@ void TF_Kpt_ip(Matrix<double> &Kpt,
                Matrix<double> &Nt,
                double dt_alpha_1_minus_alpha)
 {
-  for(int ia=1; ia<=Pno; ia++)
+  for(int ia=0; ia<Pno; ia++)
   {
-    for(int ib=1; ib<=Vno; ib++)
+    for(int ib=0; ib<Vno; ib++)
       Kpt(ia,ib) += dt_alpha_1_minus_alpha*fe->detJxW*Np(ia)*Nt(ib);
   }
 }
@@ -305,9 +305,9 @@ void TF_Ktt_ip(Matrix<double> &Ktt,
                Matrix<double> &Nt,
                double dt_alpha_1_minus_alpha)
 {
-  for(int ia=1; ia<=Vno; ia++)
+  for(int ia=0; ia<Vno; ia++)
   {
-    for(int iw=1; iw<=Vno; iw++)
+    for(int iw=0; iw<Vno; iw++)
     { 
       Ktt(ia,iw) += -dt_alpha_1_minus_alpha*fe->detJxW*Nt(ia)*Nt(iw)*var.Upp;
     }
@@ -360,7 +360,7 @@ void TF_Rt_ip(Matrix<double> &Rt,
               int Vno,
               Matrix<double> &Nt)
 {
-  for(int ia=1; ia<=Vno; ia++)
+  for(int ia=0; ia<Vno; ia++)
     Rt(ia) += fe->detJxW*Nt(ia)*(var.Up - var.P);
 }
 
@@ -377,7 +377,7 @@ void TF_Rp_ip(Matrix<double> &Rp,
               int Pno,
               Matrix<double> &Np)
 {
-  for(int ia=1; ia<=Pno; ia++)
+  for(int ia=0; ia<Pno; ia++)
     Rp(ia) += fe->detJxW*Np(ia)*(var.J - var.theta);
 }              
 
@@ -455,15 +455,15 @@ int stiffmat_3f_el(FEMLIB *fe,
   }
   if(Pno==1)
   {  
-    P(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
-           alpha_2*(fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
+    P(1) = alpha_1*fv->tf.P_n(eid,0) + 
+           alpha_2*(fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0));
   }  
   memset(lk,0,ndofe*ndofe*sizeof(double)); 
    
   Matrix<double> Np(Pno,1,0.0);
   Matrix<double> Nt(Vno,1,0.0);  
        
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
@@ -475,12 +475,12 @@ int stiffmat_3f_el(FEMLIB *fe,
     double Tn = 0.0;
     double Pn = 0.0;
 
-    for(int ia=1; ia<=Vno; ia++)
+    for(int ia=0; ia<Vno; ia++)
     {
-      Tn += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
-            alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)));
+      Tn += Nt(ia)*(alpha_1*fv->tf.V_n(eid, ia) + 
+            alpha_2*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia)));
     }
-    for(int ia=1; ia<=Pno; ia++)
+    for(int ia=0; ia<Pno; ia++)
       Pn += Np(ia)*P(ia);
       
     var.set_variables(Tn, Pn);      
@@ -559,14 +559,14 @@ int residuals_3f_el(FEMLIB *fe,
       P.m_pdata[a] = r_e[a*ndofn+nsd];
   }
   if(Pno==1)
-    P.m_pdata[0] = fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1);
+    P.m_pdata[0] = fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0);
     
   memset(f,0,ndofe*sizeof(double)); 
    
   Matrix<double> Np(Pno,1,0.0);
   Matrix<double> Nt(Vno,1,0.0);  
        
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
@@ -578,10 +578,10 @@ int residuals_3f_el(FEMLIB *fe,
     double Tn = 0.0;
     double Pn = 0.0;
 
-    for(int ia=1; ia<=Vno; ia++)
-      Tn += Nt(ia)*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia));
+    for(int ia=0; ia<Vno; ia++)
+      Tn += Nt(ia)*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia));
 
-    for(int ia=1; ia<=Pno; ia++)
+    for(int ia=0; ia<Pno; ia++)
       Pn += Np(ia)*P(ia);
       
     var.set_variables(Tn, Pn);      
@@ -679,9 +679,9 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
 
   if(Pno==1)
   {
-    Pe_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
-            alpha_2*( fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
-    Pe_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
+    Pe_npa(0) = alpha_1*fv->tf.P_n(eid,0) + 
+            alpha_2*( fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0));
+    Pe_nma(0) = alpha_1*fv->tf.P_nm1(eid,0) + alpha_2*fv->tf.P_n(eid,0);
             
   }
   
@@ -706,7 +706,7 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
 
   Matrix<double> Np(Pno,1,0.0), Nt(Vno, 1,0.0);
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
@@ -720,14 +720,14 @@ int residuals_3f_w_inertia_el(FEMLIB *fe,
     double Pnma = 0.0;
     double Pnpa = 0.0;
 
-    for(int ia=1; ia<=Vno; ia++)
+    for(int ia=0; ia<Vno; ia++)
     {
-      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
-             alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)));
+      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid, ia) + 
+             alpha_2*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia)));
              
-      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));             
+      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid, ia) + alpha_2*fv->tf.V_n(eid, ia));             
     }
-    for(int ia=1; ia<=Pno; ia++)
+    for(int ia=0; ia<Pno; ia++)
     {
       Pnpa += Np(ia)*Pe_npa(ia);
       Pnma += Np(ia)*Pe_nma(ia);
@@ -805,7 +805,7 @@ void evaluate_PT_el(FEMLIB *fe,
       P.m_pdata[a] = r_e.m_pdata[a*ndofn+nsd];
   }
   if(Pno==1)
-    P.m_pdata[0] = fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1);
+    P.m_pdata[0] = fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0);
 
   Matrix<double> Rp(Pno, 1, 0.0), Rt(Vno,  1, 0.0);
 
@@ -817,7 +817,7 @@ void evaluate_PT_el(FEMLIB *fe,
 
   Matrix<double> Np(Pno,1,0.0), Nt(Vno, 1,0.0);
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
     fe->elem_shape_function(ip,Pno,Np.m_pdata);
@@ -828,10 +828,10 @@ void evaluate_PT_el(FEMLIB *fe,
     double Tn = 0.0;
     double Pn = 0.0;
     
-    for(int ia=1; ia<=Vno; ia++)
-      Tn += Nt(ia)*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia));
+    for(int ia=0; ia<Vno; ia++)
+      Tn += Nt(ia)*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia));
 
-    for(int ia=1; ia<=Pno; ia++)
+    for(int ia=0; ia<Pno; ia++)
       Pn += Np(ia)*P(ia);
 
     var.set_variables(Tn, Pn);
@@ -855,11 +855,11 @@ void evaluate_PT_el(FEMLIB *fe,
   compute_d_theta_dP_test(d_theta,dP, 
                             du,Rt,Rp,Kpu,Ktu,Ktp,Ktt,Kpt);
 
-  for(int ia=1; ia<=Pno; ia++)
-    fv->tf.ddP(eid+1,ia) = dP(ia);
+  for(int ia=0; ia<Pno; ia++)
+    fv->tf.ddP(eid,ia) = dP(ia);
 
-  for(int ia=1; ia<=Vno; ia++)
-    fv->tf.ddV(eid+1,ia) = d_theta(ia);
+  for(int ia=0; ia<Vno; ia++)
+    fv->tf.ddV(eid,ia) = d_theta(ia);
 }
 
 /// compute and update increments of prssure and volume for transient
@@ -938,9 +938,9 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
 
   if(Pno==1)
   {
-    Pe_npa(1) = alpha_1*fv->tf.P_n(eid+1,1) + 
-            alpha_2*( fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1));
-    Pe_nma(1) = alpha_1*fv->tf.P_nm1(eid+1,1) + alpha_2*fv->tf.P_n(eid+1,1);
+    Pe_npa(0) = alpha_1*fv->tf.P_n(eid,0) + 
+            alpha_2*( fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0));
+    Pe_nma(0) = alpha_1*fv->tf.P_nm1(eid,0) + alpha_2*fv->tf.P_n(eid,0);
             
   }
   
@@ -964,7 +964,7 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
 
   Matrix<double> Np(Pno,1,0.0),Nt(Vno, 1,0.0);
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
     fe->elem_shape_function(ip,Pno, Np.m_pdata);
@@ -978,13 +978,13 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
     double Pnpa = 0.0;
     double Pnma = 0.0;
 
-    for(int ia=1; ia<=Vno; ia++)
+    for(int ia=0; ia<Vno; ia++)
     {
-      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid+1, ia) + 
-             alpha_2*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia)));
-      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid+1, ia) + alpha_2*fv->tf.V_n(eid+1, ia));             
+      Tnpa += Nt(ia)*(alpha_1*fv->tf.V_n(eid, ia) + 
+             alpha_2*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia)));
+      Tnma += Nt(ia)*(alpha_1*fv->tf.V_nm1(eid, ia) + alpha_2*fv->tf.V_n(eid, ia));             
     }
-    for(int ia=1; ia<=Pno; ia++)
+    for(int ia=0; ia<Pno; ia++)
     {
       Pnpa += Np(ia)*Pe_npa(ia);
       Pnma += Np(ia)*Pe_nma(ia);
@@ -1019,11 +1019,11 @@ void evaluate_PT_w_inertia_el(FEMLIB *fe,
                           du,Rt,Rp,Kpu,Ktu,Ktp,Ktt,Kpt);
 
 
-  for(int ia=1; ia<=Pno; ia++)
-    fv->tf.ddP(eid+1,ia) = dP(ia);
+  for(int ia=0; ia<Pno; ia++)
+    fv->tf.ddP(eid,ia) = dP(ia);
 
-  for(int ia=1; ia<=Vno; ia++)
-    fv->tf.ddV(eid+1,ia) = d_theta(ia);
+  for(int ia=0; ia<Vno; ia++)
+    fv->tf.ddV(eid,ia) = d_theta(ia);
 }
 
 /// compute increments of prssure and volume in an element
@@ -1052,7 +1052,7 @@ int compute_d_theta_dP_test(Matrix<double> &d_theta,
 {
   int err = 0;
     	  
-	Matrix<double> KptI;
+  Matrix<double> KptI;
   KptI.inv(Kpt);
 
 
@@ -1071,8 +1071,8 @@ int compute_d_theta_dP_test(Matrix<double> &d_theta,
   d_theta.prod(-1.0);   
 
         
-	Matrix<double> KtpI, KtpIFt, KtpIKtu_du;
-	Matrix<double> KtpIKtt_d_theta;
+  Matrix<double> KtpI, KtpIFt, KtpIKtu_du;
+  Matrix<double> KtpIKtt_d_theta;
   KtpI.inv(Ktp);
   
   KtpIFt.prod(KtpI, Rt);
@@ -1080,7 +1080,7 @@ int compute_d_theta_dP_test(Matrix<double> &d_theta,
 
   KtpIKtt_d_theta.prod(KtpI, Ktt, d_theta);  
   
-  for(int ia=1; ia<=dP.m_row; ia++)
+  for(int ia=0; ia<dP.m_row; ia++)
     dP(ia) = -KtpIFt(ia) - KtpIKtu_du(ia) - KtpIKtt_d_theta(ia);
     
   return err;
@@ -1246,12 +1246,12 @@ void update_3f_output_variables(Grid *grid,
         P.m_pdata[a] = r_e.m_pdata[a*ndofn+nsd];
     }
     if(Pno==1)
-      P.m_pdata[0] = fv->tf.P_np1(eid+1,1) + fv->tf.dP(eid+1,1);
+      P.m_pdata[0] = fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0);
       
     Matrix<double> Np(Pno,1,0.0), Nt(Vno, 1,0.0);
     
     double V = 0.0;
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.elem_shape_function(ip,Pno,Np.m_pdata);
@@ -1264,10 +1264,10 @@ void update_3f_output_variables(Grid *grid,
       double Tn = 0.0;
       double Pn = 0.0;
 
-      for(int ia=1; ia<=Vno; ia++)
-        Tn += Nt(ia)*(fv->tf.V_np1(eid+1, ia) + fv->tf.dV(eid+1, ia));
+      for(int ia=0; ia<Vno; ia++)
+        Tn += Nt(ia)*(fv->tf.V_np1(eid, ia) + fv->tf.dV(eid, ia));
 
-      for(int ia=1; ia<=Pno; ia++)
+      for(int ia=0; ia<Pno; ia++)
         Pn += Np(ia)*P(ia);
         
       var.set_variables(Tn, Pn);
@@ -1299,8 +1299,8 @@ void update_3f_output_variables(Grid *grid,
       for(int ia=0; ia<6; ia++)
       {
         int id = idx[ia];
-        sig[eid].il[ip-1].o[ia] = S.data[id];
-        eps[eid].il[ip-1].o[ia] = E.data[id];
+        sig[eid].il[ip].o[ia] = S.data[id];
+        eps[eid].il[ip].o[ia] = E.data[id];
 
         sig[eid].el.o[ia] += fe.detJxW*sigma.data[id];
         
@@ -1362,7 +1362,7 @@ void compute_3f_initial_conditions(Grid *grid,
     double Up_n   = 0.0;
     double Up_nm1 = 0.0;
     double V = 0.0;
-    for(int ip=1; ip<=fe.nint; ip++)
+    for(int ip=0; ip<fe.nint; ip++)
     {
       Tensor<2> Fn;
       Tensor<2> Fnm1;
@@ -1382,12 +1382,12 @@ void compute_3f_initial_conditions(Grid *grid,
     }
     if(fv->npres == 1)
     {  
-      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = Up_n/V;
-      fv->tf.P_nm1(eid+1, 1) = Up_nm1/V;
+      fv->tf.P_np1(eid, 0) = fv->tf.P_n(eid, 0) = Up_n/V;
+      fv->tf.P_nm1(eid, 0) = Up_nm1/V;
     }
     
-    fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = J_n/V;
-    fv->tf.V_nm1(eid+1, 1) = J_nm1/V;
+    fv->tf.V_np1(eid, 0) = fv->tf.V_n(eid, 0) = J_n/V;
+    fv->tf.V_nm1(eid, 0) = J_nm1/V;
   }
 }
 

@@ -14,7 +14,6 @@
 
 #include "allocation.h"
 #include "constitutive_model.h"
-#include "data_structure_c.h"
 #include "hommat.h"
 #include "index_macros.h"
 #include "utils.h"

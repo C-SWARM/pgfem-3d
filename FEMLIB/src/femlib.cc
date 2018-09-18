@@ -11,6 +11,7 @@
 #include "tensors.h"
 #include "utils.h"
 
+
 static const constexpr int          LINE = 1;
 static const constexpr int      TRIANGLE = 3;
 static const constexpr int QUADRILATERAL = 4;
@@ -207,16 +208,16 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
 
 
   long cnt = 0;
-  for(int a=1; a<=npt_x; a++)
+  for(int a=0; a<npt_x; a++)
   {
-    for(int b=1; b<=npt_y; b++)
+    for(int b=0; b<npt_y; b++)
     {
-      for(int c=1; c<=npt_z; c++)
+      for(int c=0; c<npt_z; c++)
       {
-        cnt++;
-        this->itg_ids(cnt, 1) = a;
-        this->itg_ids(cnt, 2) = b;
-        this->itg_ids(cnt, 3) = c;
+        this->itg_ids(cnt, 0) = a;
+        this->itg_ids(cnt, 1) = b;
+        this->itg_ids(cnt, 2) = c;
+        ++cnt;
       }
     }
   }
@@ -272,14 +273,14 @@ FEMLIB::initialization(int e,
       this->u0.initialization(nne_t, 3, 0.0);
       Matrix<double> X(nne_t, 1), Y(nne_t, 1), Z(nne_t, 1);
       nodecoord_total(nne,nod,node,X.m_pdata,Y.m_pdata,Z.m_pdata);
-      for(int ia=1; ia<=nne; ia++)
+      for(int ia=0; ia<nne; ia++)
       {
-        this->u0(ia,1) = X(ia) - (pF0I[0]*X(ia) + pF0I[1]*Y(ia) + pF0I[2]*Z(ia));
-        this->u0(ia,2) = Y(ia) - (pF0I[3]*X(ia) + pF0I[4]*Y(ia) + pF0I[5]*Z(ia));
-        this->u0(ia,3) = Z(ia) - (pF0I[6]*X(ia) + pF0I[7]*Y(ia) + pF0I[8]*Z(ia));
-        (this->temp_v).x(ia) = X(ia) - this->u0(ia, 1);
-        (this->temp_v).y(ia) = Y(ia) - this->u0(ia, 2);
-        (this->temp_v).z(ia) = Z(ia) - this->u0(ia, 3);
+        this->u0(ia,0) = X(ia) - (pF0I[0]*X(ia) + pF0I[1]*Y(ia) + pF0I[2]*Z(ia));
+        this->u0(ia,1) = Y(ia) - (pF0I[3]*X(ia) + pF0I[4]*Y(ia) + pF0I[5]*Z(ia));
+        this->u0(ia,2) = Z(ia) - (pF0I[6]*X(ia) + pF0I[7]*Y(ia) + pF0I[8]*Z(ia));
+        (this->temp_v).x(ia) = X(ia) - this->u0(ia, 0);
+        (this->temp_v).y(ia) = Y(ia) - this->u0(ia, 1);
+        (this->temp_v).z(ia) = Z(ia) - this->u0(ia, 2);
       }
     }
     else
@@ -293,9 +294,9 @@ FEMLIB::initialization(int e,
 
   for(int a=0; a<nne; a++)
   {
-    this->node_coord(a+1, 1) = x[a];
-    this->node_coord(a+1, 2) = y[a];
-    this->node_coord(a+1, 3) = z[a];
+    this->node_coord(a, 0) = x[a];
+    this->node_coord(a, 1) = y[a];
+    this->node_coord(a, 2) = z[a];
   }
 
   this->curt_elem_id = e;
@@ -306,21 +307,21 @@ FEMLIB::elem_shape_function(long ip, int nne, double *N)
 {
   double ksi_, eta_, zet_;
 
-  int itg_id_ip_1 = this->itg_ids(ip, 1);
-  int itg_id_ip_2 = this->itg_ids(ip, 2);
-  int itg_id_ip_3 = this->itg_ids(ip, 3);
+  int itg_id_ip_1 = this->itg_ids(ip, 0);
+  int itg_id_ip_2 = this->itg_ids(ip, 1);
+  int itg_id_ip_3 = this->itg_ids(ip, 2);
 
   if(this->elem_type == HEXAHEDRAL)
   {// hexahedron
-    ksi_ = this->ksi(itg_id_ip_1, 1);
-    eta_ = this->eta(itg_id_ip_2, 1);
-    zet_ = this->zet(itg_id_ip_3, 1);
+    ksi_ = this->ksi(itg_id_ip_1);
+    eta_ = this->eta(itg_id_ip_2);
+    zet_ = this->zet(itg_id_ip_3);
   }
   else
   { // tetrahedron type
-    ksi_ = this->ksi(itg_id_ip_3, 1);
-    eta_ = this->eta(itg_id_ip_3, 1);
-    zet_ = this->zet(itg_id_ip_3, 1);
+    ksi_ = this->ksi(itg_id_ip_3);
+    eta_ = this->eta(itg_id_ip_3);
+    zet_ = this->zet(itg_id_ip_3);
   }
 
   shape_func(ksi_, eta_, zet_, nne, N);
@@ -332,24 +333,24 @@ FEMLIB::elem_basis_V(long ip)
   this->curt_itg_id = ip;
   double ksi_, eta_, zet_, wt;
 
-  int itg_id_ip_1 = this->itg_ids(ip, 1);
-  int itg_id_ip_2 = this->itg_ids(ip, 2);
-  int itg_id_ip_3 = this->itg_ids(ip, 3);
+  int itg_id_ip_1 = this->itg_ids(ip, 0);
+  int itg_id_ip_2 = this->itg_ids(ip, 1);
+  int itg_id_ip_3 = this->itg_ids(ip, 2);
 
   if(this->elem_type == HEXAHEDRAL)
   {// hexahedron
-    ksi_ = this->ksi(itg_id_ip_1, 1);
-    eta_ = this->eta(itg_id_ip_2, 1);
-    zet_ = this->zet(itg_id_ip_3, 1);
+    ksi_ = this->ksi(itg_id_ip_1);
+    eta_ = this->eta(itg_id_ip_2);
+    zet_ = this->zet(itg_id_ip_3);
 
-    wt = this->weights(itg_id_ip_1, 1)*this->weights(itg_id_ip_2, 1)*this->weights(itg_id_ip_3, 1);
+    wt = this->weights(itg_id_ip_1)*this->weights(itg_id_ip_2)*this->weights(itg_id_ip_3);
   }
   else
   { // tetrahedron type
-    ksi_ = this->ksi(itg_id_ip_3, 1);
-    eta_ = this->eta(itg_id_ip_3, 1);
-    zet_ = this->zet(itg_id_ip_3, 1);
-    wt = this->weights(itg_id_ip_3, 1);
+    ksi_ = this->ksi(itg_id_ip_3);
+    eta_ = this->eta(itg_id_ip_3);
+    zet_ = this->zet(itg_id_ip_3);
+    wt = this->weights(itg_id_ip_3);
   }
 
   this->temp_v.ksi_ip = ksi_;
@@ -364,15 +365,15 @@ FEMLIB::elem_basis_V(long ip)
                      this->temp_v.N_x.m_pdata, this->temp_v.N_y.m_pdata, this->temp_v.N_z.m_pdata);
 
   this->x_ip.set_values(0.0);
-  for(int a = 1; a<=this->nne; a++)
+  for(int a = 0; a<this->nne; a++)
   {
-    this->dN(a, 1) = this->temp_v.N_x(a, 1);
-    this->dN(a, 2) = this->temp_v.N_y(a, 1);
-    this->dN(a, 3) = this->temp_v.N_z(a, 1);
+    this->dN(a, 0) = this->temp_v.N_x(a);
+    this->dN(a, 1) = this->temp_v.N_y(a);
+    this->dN(a, 2) = this->temp_v.N_z(a);
 
-    this->x_ip(1,1) += this->N(a,1)*this->node_coord(a,1);
-    this->x_ip(2,1) += this->N(a,1)*this->node_coord(a,2);
-    this->x_ip(3,1) += this->N(a,1)*this->node_coord(a,3);
+    this->x_ip(0) += this->N(a)*this->node_coord(a,0);
+    this->x_ip(1) += this->N(a)*this->node_coord(a,1);
+    this->x_ip(2) += this->N(a)*this->node_coord(a,2);
   }
   this->detJxW = this->detJ*wt;
 }
@@ -406,9 +407,9 @@ FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F, doubl
     Matrix<double> r_e(ndofn*this->nne, 1, 0.0);          
     for(int ia=0; ia<this->nne; ia++)
     {
-      r_e.m_pdata[ia*ndofn+0] = u[ia*ndofn+0] + this->u0(ia+1,1);
-      r_e.m_pdata[ia*ndofn+1] = u[ia*ndofn+1] + this->u0(ia+1,2);
-      r_e.m_pdata[ia*ndofn+2] = u[ia*ndofn+2] + this->u0(ia+1,3);
+      r_e.m_pdata[ia*ndofn+0] = u[ia*ndofn+0] + this->u0(ia,0);
+      r_e.m_pdata[ia*ndofn+1] = u[ia*ndofn+1] + this->u0(ia,1);
+      r_e.m_pdata[ia*ndofn+2] = u[ia*ndofn+2] + this->u0(ia,2);
     }
     this->update_deformation_gradient(ndofn, r_e.m_pdata, F);
   }

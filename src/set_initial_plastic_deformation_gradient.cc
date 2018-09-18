@@ -24,15 +24,16 @@ void get_B(Matrix<double> &B,
            const int a)
 {
   B.set_values(0.0);
+  B(0, 0) = dN(a, 0);
   B(1, 1) = dN(a, 1);
   B(2, 2) = dN(a, 2);
-  B(3, 3) = dN(a, 3);
-  B(4, 2) = dN(a, 3);
-  B(4, 3) = dN(a, 2);
-  B(5, 1) = dN(a, 3);
-  B(5, 3) = dN(a, 1);
-  B(6, 1) = dN(a, 2);
-  B(6, 2) = dN(a, 1);
+  B(3, 1) = dN(a, 2);
+  B(3, 2) = dN(a, 1);
+  B(4, 0) = dN(a, 2);
+  B(4, 2) = dN(a, 0);
+  B(5, 0) = dN(a, 1);
+  B(5, 1) = dN(a, 0);
+
 }
 
 /// Fill the transposed B matrix, size of B have to be created before call this function.
@@ -45,15 +46,15 @@ void get_BT(Matrix<double> &B,
             const int a)
 {
   B.set_values(0.0);
+  B(0, 0) = dN(a, 0);
   B(1, 1) = dN(a, 1);
   B(2, 2) = dN(a, 2);
-  B(3, 3) = dN(a, 3);
-  B(2, 4) = dN(a, 3);
-  B(3, 4) = dN(a, 2);
-  B(1, 5) = dN(a, 3);
-  B(3, 5) = dN(a, 1);
-  B(1, 6) = dN(a, 2);
-  B(2, 6) = dN(a, 1);
+  B(1, 3) = dN(a, 2);
+  B(2, 3) = dN(a, 1);
+  B(0, 4) = dN(a, 2);
+  B(2, 4) = dN(a, 0);
+  B(0, 5) = dN(a, 1);
+  B(1, 5) = dN(a, 0);
 }
 
 /// Compute element level left and right hand side matrix and vector
@@ -130,26 +131,26 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
   du.sub(x);
 
   Matrix<double> BaT(3,6,0.0), Bb(6,3,0.0), BaTD(3,6,0.0), BaTDBb(3,3);
-  for(int ip = 1; ip<=nint; ip++)
+  for(int ip = 0; ip<nint; ip++)
   {
     // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);
 
-    for(int na = 1; na<=nne; na++)
+    for(int na = 0; na<nne; na++)
     {
       get_BT(BaT, fe->dN, na);
       BaTD.prod(BaT, D);
-      for(int nb = 1; nb<=nne; nb++)
+      for(int nb = 0; nb<nne; nb++)
       {
         get_B(Bb, fe->dN, nb);
         BaTDBb.prod(BaTD, Bb);
 
-        for(int ia = 1; ia<=nsd; ia++)
+        for(int ia = 0; ia<nsd; ia++)
         {
-          int p = nsd*(na-1)+ia;
-          for(int ja = 1; ja<=nsd; ja++)
+          int p = nsd*na+ia;
+          for(int ja = 0; ja<nsd; ja++)
           {
-            int q = nsd*(nb-1)+ja;
+            int q = nsd*nb+ja;
             lk(p,q) += BaTDBb(ia, ja)*fe->detJxW;
           }
         }
@@ -158,10 +159,10 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
   }
 
 
-  for(int ia=1; ia<=nne; ia++)
+  for(int ia=0; ia<nne; ia++)
   {
-    for(int ib=1; ib<=nsd; ib++)
-      u((ia-1)*nsd+ib) = du(ib, ia);
+    for(int ib=0; ib<nsd; ib++)
+      u(ia*nsd+ib) = du(ib, ia);
   }
 
   fi.prod(lk, u);
@@ -283,9 +284,9 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
 
   double lambda = E*nu/(1.0+nu)/(1.0-2.0*nu);
   double mu     = E/2.0/(1.0+nu);
-  D(1,1) = D(2,2) = D(3,3) = lambda + 2.0*mu;
-  D(1,2) = D(1,3) = D(2,1) = D(2,3) = D(3,1) = D(3,2) = lambda;
-  D(4,4) = D(5,5) = D(6,6) = mu;
+  D(0,0) = D(1,1) = D(2,2) = lambda + 2.0*mu;
+  D(0,1) = D(0,2) = D(1,0) = D(1,2) = D(2,0) = D(2,1) = lambda;
+  D(3,3) = D(4,4) = D(5,5) = mu;
 
   double **Lk,**recieve;
   com->spc->post_stiffmat(&Lk,&recieve);
@@ -431,9 +432,9 @@ void compute_maximum_BC_values(double *bcv_in,
           continue;
           
         double x[3], X[3], u[3];
-        x[0] = fe.node_coord(ia+1,1); 
-        x[1] = fe.node_coord(ia+1,2);
-        x[2] = fe.node_coord(ia+1,3);
+        x[0] = fe.node_coord(ia,0); 
+        x[1] = fe.node_coord(ia,1);
+        x[2] = fe.node_coord(ia,2);
 
         X[0] = pFI[0]*x[0] + pFI[1]*x[1] + pFI[2]*x[2];
         X[1] = pFI[3]*x[0] + pFI[4]*x[1] + pFI[5]*x[2];
@@ -452,7 +453,7 @@ void compute_maximum_BC_values(double *bcv_in,
   com->net->allreduce(max_disp.m_pdata,Max_disp.m_pdata,npd,NET_DT_DOUBLE,NET_OP_MAX,com->comm);
   com->net->allreduce(max_disp.m_pdata,Min_disp.m_pdata,npd,NET_DT_DOUBLE,NET_OP_MIN,com->comm);
     
-  for(int ib=1; ib<=npd; ib++)
+  for(int ib=0; ib<npd; ib++)
   {
     bcv(ib) = Max_disp(ib);
     if(fabs(Max_disp(ib))<fabs(Min_disp(ib)))
@@ -582,7 +583,7 @@ void update_element_deformation_gradient(const Grid *grid,
     for(int ip=0; ip<fe.nint; ip++)
     {
       double Fnp1[9];
-      fe.elem_basis_V(ip+1);
+      fe.elem_basis_V(ip);
       fe.update_shape_tensor();
       fe.update_deformation_gradient(fe.nsd,d.m_pdata,Fnp1);
       Constitutive_model *m = &(fv->eps[eid].model[ip]);
@@ -595,7 +596,7 @@ void update_element_deformation_gradient(const Grid *grid,
       v += fe.detJxW;
       theta += J*fe.detJxW;
       one_over_pJ += 1.0/J*fe.detJxW;
-      pJ(ip+1) = J;
+      pJ(ip) = J;
     }
     theta       /= v;
     one_over_pJ /= v;
@@ -605,8 +606,8 @@ void update_element_deformation_gradient(const Grid *grid,
       double eJ = theta*one_over_pJ;
       const Model_parameters *mp = fv->eps[eid].model[0].param;
       double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ, -1, 0.5);
-      fv->tf.V_np1(eid+1, 1) = fv->tf.V_n(eid+1, 1) = fv->tf.V_nm1(eid+1, 1) = theta;
-      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = fv->tf.P_nm1(eid+1, 1) = P;
+      fv->tf.V_np1(eid, 0) = fv->tf.V_n(eid, 0) = fv->tf.V_nm1(eid, 0) = theta;
+      fv->tf.P_np1(eid, 0) = fv->tf.P_n(eid, 0) = fv->tf.P_nm1(eid, 0) = P;
     }      
   }
 }
@@ -662,7 +663,7 @@ int set_initial_plastic_deformation_gradient_(Grid *grid,
   if(myrank==0)
   {
     PGFEM_printf("maximum displacement to be set for updating initial geometry: ");
-    for(int ia=1; ia<=npd; ia++)
+    for(int ia=0; ia<npd; ia++)
       PGFEM_printf("(%d)=%e ", ia, bcv(ia));
 
     PGFEM_printf("\n");
@@ -731,7 +732,7 @@ int set_initial_plastic_deformation_gradient(Grid *grid,
       double eJ = 1.0;
       const Model_parameters *mp = fv->eps[eid].model[0].param;
       double P = mp->compute_dudj(fv->eps[eid].model + 0, eJ, -1, 0.5);
-      fv->tf.P_np1(eid+1, 1) = fv->tf.P_n(eid+1, 1) = fv->tf.P_nm1(eid+1, 1) = P;
+      fv->tf.P_np1(eid, 0) = fv->tf.P_n(eid, 0) = fv->tf.P_nm1(eid, 0) = P;
     }      
   }
   return 0;

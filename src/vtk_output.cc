@@ -1531,8 +1531,8 @@ int VTK_write_data_ElementPressure(FILE *out,
   if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
     err += VTK_write_multiphysics_DataArray_header(out, pmr);
-    for (int ia=1; ia<=grid->ne; ia++)
-      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.P_np1(ia, 1));
+    for (int ia=0; ia<grid->ne; ia++)
+      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.P_np1(ia, 0));
 
     err += VTK_write_multiphysics_DataArray_footer(out);
   }
@@ -1566,8 +1566,8 @@ int VTK_write_data_ElementVolume(FILE *out,
   if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
     err += VTK_write_multiphysics_DataArray_header(out, pmr);
-    for (int ia=1; ia<=grid->ne; ia++)
-      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.V_np1(ia, 1));
+    for (int ia=0; ia<grid->ne; ia++)
+      PGFEM_fprintf(out,"%12.12e\n",FV[pmr->mp_id].tf.V_np1(ia, 0));
 
     err += VTK_write_multiphysics_DataArray_footer(out);
   }
@@ -1610,7 +1610,7 @@ int VTK_write_data_Density(FILE *out,
 
     for(int ip=0; ip<fe.nint; ip++)
     {
-      fe.elem_basis_V(ip+1);
+      fe.elem_basis_V(ip);
 
       const double *F = eps[i].il[ip].F;
       double J = det3x3(F);

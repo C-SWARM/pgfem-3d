@@ -10,7 +10,6 @@
 #include "state_variables.h"
 #include "utils.h"
 
-
 int State_variables::initialization(const size_t n_Fs,
                                     const size_t n_vars,
                                     const size_t n_flags)
@@ -22,7 +21,7 @@ int State_variables::initialization(const size_t n_Fs,
   for(size_t i = 0; i < n_Fs; i++)
   {
     this->Fs[i].initialization(3,3);
-    this->Fs[i](1,1) = this->Fs[i](2,2) = this->Fs[i](3,3) = 1.0;
+    this->Fs[i](0,0) = this->Fs[i](1,1) = this->Fs[i](2,2) = 1.0;
   }
 
   /* state variables is column vector */

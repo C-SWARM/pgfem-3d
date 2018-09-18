@@ -251,13 +251,13 @@ int write_restart_constitutive_model(Grid *grid,
   // write for three field mixed method
   if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
-    for(int eid = 1; eid <= grid->ne; eid++)
+    for(int eid = 0; eid < grid->ne; eid++)
     {
-      for(int ia=1; ia<=fv[mp_id].nVol; ia++)
+      for(int ia=0; ia<fv[mp_id].nVol; ia++)
         fprintf(fp, "%.17e %.17e ", fv[mp_id].tf.V_n(eid, ia), fv[mp_id].tf.V_nm1(eid, ia));
       fprintf(fp, "\n");
       
-      for(int ia=1; ia<=fv[mp_id].npres; ia++)
+      for(int ia=0; ia<fv[mp_id].npres; ia++)
         fprintf(fp, "%.17e %.17e ", fv[mp_id].tf.P_n(eid, ia), fv[mp_id].tf.P_nm1(eid, ia));
       fprintf(fp, "\n");        
     }
@@ -333,15 +333,15 @@ static int read_restart_constitutive_model(Grid *grid,
   double P[2], V[2];
   if(opts->analysis_type==TF || opts->analysis_type==CM3F)
   {
-    for(int eid = 1; eid <= grid->ne; eid++)
+    for(int eid = 0; eid < grid->ne; eid++)
     {
-      for(int ia=1; ia<=fv[mp_id].nVol; ia++)
+      for(int ia=0; ia<fv[mp_id].nVol; ia++)
       {
         CHECK_SCANF(fp, "%lf %lf", V+0, V+1);
         fv[mp_id].tf.V_np1(eid, ia) = fv[mp_id].tf.V_n(eid, ia) = V[0];
         fv[mp_id].tf.V_nm1(eid, ia) = V[1];
       }      
-      for(int ia=1; ia<=fv[mp_id].npres; ia++)
+      for(int ia=0; ia<fv[mp_id].npres; ia++)
       {
         CHECK_SCANF(fp, "%lf %lf", P+0, P+1);
         fv[mp_id].tf.P_np1(eid, ia) = fv[mp_id].tf.P_n(eid, ia) = P[0];

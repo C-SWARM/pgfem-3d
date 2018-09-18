@@ -513,17 +513,17 @@ int compute_d_theta_dP(double *d_theta_in,
   du.use_reference(nne*nsd, 1, du_in);	
 
   d_theta.use_reference(Vno,1, d_theta_in);
-	     dP.use_reference(Pno,1, dP_in);  	
+  dP.use_reference(Pno,1, dP_in);  	
 
- 	 ft.use_reference(Vno,       1, ft_in);
-	 fp.use_reference(Pno,       1, fp_in);
+  ft.use_reference(Vno,       1, ft_in);
+  fp.use_reference(Pno,       1, fp_in);
   Kpu.use_reference(Pno, nne*nsd, Kpu_in);
   Ktu.use_reference(Vno, nne*nsd, Ktu_in);  
   Ktp.use_reference(Vno,     Pno, Ktp_in);
   Ktt.use_reference(Vno,     Vno, Ktt_in);   
   Kpt.use_reference(Pno,     Vno, Kpt_in);
 
-	Matrix<double> KptI;
+  Matrix<double> KptI;
   KptI.inv(Kpt); 
 
   Matrix<double> Kpu_du;
@@ -533,8 +533,8 @@ int compute_d_theta_dP(double *d_theta_in,
   d_theta.prod(KptI,Kpu_du);
   d_theta.prod(-1.0);   
         
-	Matrix<double> KtpI, KtpIFt, KtpIKtu_du;
-	Matrix<double> KtpIKtt_d_theta;
+  Matrix<double> KtpI, KtpIFt, KtpIKtu_du;
+  Matrix<double> KtpIKtt_d_theta;
   KtpI.inv(Ktp);
   
   KtpIFt.prod(KtpI, ft);
@@ -542,7 +542,7 @@ int compute_d_theta_dP(double *d_theta_in,
 
   KtpIKtt_d_theta.prod(KtpI, Ktt, d_theta);  
   
-  for(int ia=1; ia<=dP.m_row; ia++)
+  for(int ia=0; ia<dP.m_row; ia++)
     dP(ia) = -KtpIFt(ia) - KtpIKtu_du(ia) - KtpIKtt_d_theta(ia);
     
   return err;

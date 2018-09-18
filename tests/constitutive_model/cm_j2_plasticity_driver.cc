@@ -17,8 +17,8 @@
 #include "allocation.h"
 #include "cm_j2_plasticity.h"
 #include "constitutive_model.h"
-#include "data_structure_c.h"
 #include "hommat.h"
+#include "utils.h"
 #include "index_macros.h"
 #include <cstdio>
 #include <cstdlib>

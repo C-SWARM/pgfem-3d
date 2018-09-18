@@ -56,7 +56,7 @@ void DISP_resid_body_force_el(double *f,
 
   double *bf = aloc1(ndofn);
 
-  for(int ip = 1; ip<=fe.nint; ip++)
+  for(int ip = 0; ip<fe.nint; ip++)
   {
     fe.elem_basis_V(ip);
     double X[3];
@@ -66,9 +66,9 @@ void DISP_resid_body_force_el(double *f,
 
     for(long a = 0; a<nne; a++)
     {
-      X[0] += fe.N(a+1)*x[a];
-      X[1] += fe.N(a+1)*y[a];
-      X[2] += fe.N(a+1)*z[a];
+      X[0] += fe.N(a)*x[a];
+      X[1] += fe.N(a)*y[a];
+      X[2] += fe.N(a)*z[a];
     }
 
     MMS_body_force(bf, &hommat[mat], elast, t,  X[0], X[1], X[2], is4cm);
@@ -78,7 +78,7 @@ void DISP_resid_body_force_el(double *f,
       for(long b=0; b<3; b++)
       {
         long id = a*ndofn + b;
-        f[id] += bf[b]*fe.N(a+1)*fe.detJxW;
+        f[id] += bf[b]*fe.N(a)*fe.detJxW;
       }
     }
   }
@@ -132,7 +132,7 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
   bf_n1a = aloc1(ndofn);
   bf     = aloc1(ndofn);
 
-  for(int ip = 1; ip<=fe->nint; ip++)
+  for(int ip = 0; ip<fe->nint; ip++)
   {
     fe->elem_basis_V(ip);
 
@@ -148,13 +148,13 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
 
     for(long a = 0; a<nne; a++)
     {
-      X[0] += fe->N(a+1)*x[a];
-      X[1] += fe->N(a+1)*y[a];
-      X[2] += fe->N(a+1)*z[a];
+      X[0] += fe->N(a)*x[a];
+      X[1] += fe->N(a)*y[a];
+      X[2] += fe->N(a)*z[a];
       for(long b = 0; b<3; b++)
       {
         long id = a*ndofn + b;
-        du(b+1) += fe->N(a+1)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
+        du(b) += fe->N(a)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
       }
     }
 
@@ -177,9 +177,9 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
       for(long b=0; b<3; b++)
       {
         long id = a*ndofn + b;
-        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe->N(a+1)*du(b+1)*fe->detJxW;
-        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe->N(a+1)*fe->detJxW;
-        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe->N(a+1)*fe->detJxW;
+        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe->N(a)*du(b)*fe->detJxW;
+        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe->N(a)*fe->detJxW;
+        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe->N(a)*fe->detJxW;
       }
     }
   }
@@ -409,7 +409,7 @@ int stiffness_with_inertia(FEMLIB *fe,
   for (long I=0;I<nne;I++)
   {
     for(long J=0; J<ndofn; J++)
-      u_n(I*ndofn+J+1,1) = fv->u_n[nod[I]*ndofn + J];
+      u_n(I*ndofn+J,0) = fv->u_n[nod[I]*ndofn + J];
   }
 
   mid_point_rule(u_npa.m_pdata, u_n.m_pdata, r_e, sol->alpha, ndofe);
@@ -419,7 +419,7 @@ int stiffness_with_inertia(FEMLIB *fe,
      opts->analysis_type == CM   ||
      opts->analysis_type == CM3F)
   {
-    for(int ip = 1; ip<=fe->nint; ip++)
+    for(int ip = 0; ip<fe->nint; ip++)
     {
       fe->elem_basis_V(ip);
 
@@ -427,8 +427,8 @@ int stiffness_with_inertia(FEMLIB *fe,
       {
         for(long c=0; c<nne; c++)
         {
-          for(long b=1; b<=ndofn; b++)
-            Kuu_I(a*ndofn+b,c*ndofn+b) += rho/dt*fe->N(a+1)*fe->N(c+1)*fe->detJxW;
+          for(long b=0; b<ndofn; b++)
+            Kuu_I(a*ndofn+b,c*ndofn+b) += rho/dt*fe->N(a)*fe->N(c)*fe->detJxW;
         }
       }
     }

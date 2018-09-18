@@ -92,7 +92,7 @@ void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, dou
 {
   int compute_stiffness = 0;
 
-  Constitutive_model *m = &(eps[e].model[ip-1]);
+  Constitutive_model *m = &(eps[e].model[ip]);
   Tensor<2,3,double> Fnp1, eFnp1;
   m->param->get_F(m,Fnp1.data,1);
   m->param->get_eF(m,eFnp1.data,1);
@@ -131,14 +131,14 @@ void post_processing_compute_stress(double *GS, Element *elem, HOMMAT *hommat, l
 
     for(int a = 0; a<nne; a++)
     {
-      int nid = fe.node_id(a+1);
+      int nid = fe.node_id(a);
       for(int b=0; b<nsd; b++)
       {
-        u(a*nsd+b+1) = r[nid*ndofn + b];
+        u(a*nsd+b) = r[nid*ndofn + b];
       }
     }
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
@@ -208,14 +208,14 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
 
     for(int a = 0; a<nne; a++)
     {
-      int nid = fe.node_id(a+1);
+      int nid = fe.node_id(a);
       for(int b=0; b<nsd; b++)
       {
-        u(a+1,b+1) = r[nid*ndofn+b];
+        u(a,b) = r[nid*ndofn+b];
       }
     }
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
@@ -223,7 +223,7 @@ void post_processing_deformation_gradient(double *GF, Element *elem, HOMMAT *hom
 
       if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       {
-        Constitutive_model *m = &(eps[e].model[ip-1]);
+        Constitutive_model *m = &(eps[e].model[ip]);
         double Jnp1 = 1.0;
         Tensor<2,3,double> Fnp1 = {};
         /* after update (i.e., converged step) the *Fn = *Fnp1 */
@@ -279,14 +279,14 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
 
     for(int a = 0; a<nne; a++)
     {
-      int nid = fe.node_id(a+1);
+      int nid = fe.node_id(a);
       for(int b=0; b<nsd; b++)
       {
-        u(a+1,b+1) = r[nid*ndofn+b];
+        u(a,b) = r[nid*ndofn+b];
       }
     }
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
@@ -294,7 +294,7 @@ void post_processing_deformation_gradient_elastic_part(double *GF, Element *elem
 
       if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       {
-        Constitutive_model *m = &(eps[e].model[ip-1]);
+        Constitutive_model *m = &(eps[e].model[ip]);
         double Jnp1 = 1.0;
         Tensor<2,3,double> Fnp1 = {}, eFnp1 = {};
 
@@ -347,12 +347,12 @@ void post_processing_plastic_hardness(double *G_gn, Element *elem, HOMMAT *homma
   {
     FEMLIB fe(e, elem, node, intg_order,total_Lagrangian);
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
 
-      Constitutive_model *m = &(eps[e].model[ip-1]);
+      Constitutive_model *m = &(eps[e].model[ip]);
       double g_n = 0.0;
       m->param->get_hardening(m,&g_n,2);
 
@@ -405,14 +405,14 @@ void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
 
     for(int a = 0; a<nne; a++)
     {
-      int nid = fe.node_id(a+1);
+      int nid = fe.node_id(a);
       for(int b=0; b<nsd; b++)
       {
-        u(a+1,b+1) = r[nid*ndofn+b];
+        u(a,b) = r[nid*ndofn+b];
       }
     }
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
@@ -420,7 +420,7 @@ void post_processing_potential_energy(double *GE, Element *elem, HOMMAT *hommat,
 
       if(opts->analysis_type==CM || opts->analysis_type==CM3F)
       {
-        Constitutive_model *m = &(eps[e].model[ip-1]);
+        Constitutive_model *m = &(eps[e].model[ip]);
         double Jnp1 = 1.0;
         Tensor<2,3,double> Fnp1, eFnp1;
 
@@ -484,21 +484,21 @@ void post_processing_deformed_volume(double *GV, Element *elem, long ne, Node *n
 
     for(int a = 0; a<nne; a++)
     {
-      int nid = fe.node_id(a+1);
+      int nid = fe.node_id(a);
       for(int b=0; b<nsd; b++)
       {
-        u(a+1,b+1) = r[nid*ndofn+b];
+        u(a,b) = r[nid*ndofn+b];
       }
     }
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       fe.update_shape_tensor();
 
       if(opts->analysis_type==CM && opts->cm==CRYSTAL_PLASTICITY)
       {
-        Constitutive_model *m = &(eps[e].model[ip-1]);
+        Constitutive_model *m = &(eps[e].model[ip]);
         double Jnp1 = 1.0;
         Tensor<2,3,double> Fnp1;
 
@@ -541,12 +541,12 @@ void post_processing_max_pressure(const Grid &grid,
   
   for(int ia=0; ia<grid.ne; ia++)
   {
-    int mat_id = (grid.element[ia]).mat[0] + 1;
+    int mat_id = (grid.element[ia]).mat[0];
     double P = (fv.sig[ia].el.o[0] + fv.sig[ia].el.o[1] + fv.sig[ia].el.o[2])/3.0;
     
-    if(fabs(LP(myrank+1, mat_id)) < fabs(P))
+    if(fabs(LP(myrank, mat_id)) < fabs(P))
     {  
-        LP(myrank+1, mat_id) = P;
+        LP(myrank, mat_id) = P;
         eid(mat_id) = ia;
     }
   }
@@ -554,19 +554,19 @@ void post_processing_max_pressure(const Grid &grid,
   com->net->allreduce(LP.m_pdata,GP.m_pdata,com->nproc*mat.nmat,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
   
   Matrix<bool> have_max(mat.nmat, 1, true);
-  for(int ia=1; ia<=com->nproc; ia++)
+  for(int ia=0; ia<com->nproc; ia++)
   {
-    if(ia==(myrank+1))
+    if(ia==myrank)
       continue;
     
-    for(int ib=1; ib<=mat.nmat; ib++)
+    for(int ib=0; ib<mat.nmat; ib++)
     {    
-      if(fabs(GP(ia, ib)) > fabs(LP(myrank+1, ib)))
+      if(fabs(GP(ia, ib)) > fabs(LP(myrank, ib)))
         have_max(ib) = false;
     }
   }
   
-  for(int ia=1; ia<=mat.nmat; ia++)
+  for(int ia=0; ia<mat.nmat; ia++)
   {  
     if(have_max(ia))
     {
@@ -574,10 +574,10 @@ void post_processing_max_pressure(const Grid &grid,
       double x[3];
       x[0] = x[1] = x[2] = 0.0;
     
-      for(int ib=1; ib<=fe.nne; ib++)
+      for(int ib=0; ib<fe.nne; ib++)
       {
-        for(int ic=1; ic<=3; ic++)
-          x[ic-1] += fe.node_coord(ib, ic);
+        for(int ic=0; ic<3; ic++)
+          x[ic] += fe.node_coord(ib, ic);
       }
     
       x[0] /= fe.nne;
@@ -585,7 +585,7 @@ void post_processing_max_pressure(const Grid &grid,
       x[2] /= fe.nne;
                           
       PGFEM_printf("max. pressure for (mat=%d): %e at process = %d, element = %d (xyz = %e, %e, %e)\n", 
-                    ia-1, LP(myrank+1, ia), myrank, eid(ia), x[0], x[1], x[2]);
+                    ia, LP(myrank, ia), myrank, eid(ia), x[0], x[1], x[2]);
     }
   }
 }

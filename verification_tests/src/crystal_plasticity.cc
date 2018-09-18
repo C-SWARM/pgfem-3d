@@ -122,8 +122,8 @@ int main(int argc,char *argv[])
 
     Matrix<double> L;
     L.initialization(3,3,0.0);
-    L(1,1) = -1.001;
-    L(2,2) = L(3,3) = 0.4998;
+    L(0.0) = -1.001;
+    L(1,1) = L(2,2) = 0.4998;
 
     constitutive_model_test(hommat, L.m_pdata, -1); // user defined L
 

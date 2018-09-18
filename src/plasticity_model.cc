@@ -129,7 +129,7 @@ int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, EPS *eps, con
     elm_ip_map[a].n_ip = n_ip;
     elm_ip_map[a].mat_id = elem[a].mat[0];
 
-    for(int b=1; b<=n_ip; b++)
+    for(int b=0; b<n_ip; b++)
     {
       elm_ip_map[a].ip_ids(b) = cnt;
       cnt++;
@@ -1307,11 +1307,11 @@ int plasticity_model_construct_rotation(EPS *eps, Matrix<int> &e_ids, Matrix<dou
 
   for(int a=0; a<e_ids.m_row; a++)
   {
-    int id = e_ids(a+1, 1);
+    int id = e_ids(a, 0);
     if(id<0)
       continue;
 
-    int ip = e_ids(a+1, 2);
+    int ip = e_ids(a, 1);
     Constitutive_model *m = &(eps[id].model[ip]);
     
     MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
@@ -1390,22 +1390,22 @@ int plasticity_model_read_orientations(Matrix<int> &e_ids, Matrix<double> &angle
         for(int b=0; b<n_ip; b++)
         {
           int ip_id = elm_ip_map[a].ip_ids.m_pdata[b];
-          e_ids(ip_id+1, 1) = a;  // +1 is needed because ip_id starts from 0
-          e_ids(ip_id+1, 2) = b;
-          angles(ip_id+1, 1) = x1;
-          angles(ip_id+1, 2) = x2;
-          angles(ip_id+1, 3) = x3;
+          e_ids(ip_id, 0) = a;  // +1 is needed because ip_id starts from 0
+          e_ids(ip_id, 1) = b;
+          angles(ip_id, 0) = x1;
+          angles(ip_id, 1) = x2;
+          angles(ip_id, 2) = x3;
         }
       }
     }
     else
     {
       int ip_id = elm_ip_map[e].ip_ids.m_pdata[ip];
-      e_ids(ip_id+1, 1) = e;  // +1 is needed because ip_id starts from 0
-      e_ids(ip_id+1, 2) = ip;
-      angles(ip_id+1, 1) = x1;
-      angles(ip_id+1, 2) = x2;
-      angles(ip_id+1, 3) = x3;
+      e_ids(ip_id, 0) = e;  // +1 is needed because ip_id starts from 0
+      e_ids(ip_id, 1) = ip;
+      angles(ip_id, 0) = x1;
+      angles(ip_id, 1) = x2;
+      angles(ip_id, 2) = x3;
     }
   }
 
@@ -1442,11 +1442,11 @@ int plasticity_model_generate_random_orientation_element(const int ne, const IP_
         theta = temp[1];
         psi = temp[2];
       }
-      angles(ip_id+1,1) = phi;
-      angles(ip_id+1,2) = theta;
-      angles(ip_id+1,3) = psi;
-      e_ids(ip_id+1,1) = a;
-      e_ids(ip_id+1,2) = ip;
+      angles(ip_id,0) = phi;
+      angles(ip_id,1) = theta;
+      angles(ip_id,2) = psi;
+      e_ids(ip_id,0) = a;
+      e_ids(ip_id,1) = ip;
     }
   }
   free(angle_temp);
@@ -1470,11 +1470,11 @@ int plasticity_model_generate_random_orientation_crystal(const int ne, const IP_
     for(int ip=0; ip<n_ip; ip++)
     {
       int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];
-      angles(ip_id+1,1) = temp[0];
-      angles(ip_id+1,2) = temp[1];
-      angles(ip_id+1,3) = temp[2];
-      e_ids(ip_id+1,1) = a;
-      e_ids(ip_id+1,2) = ip;
+      angles(ip_id,0) = temp[0];
+      angles(ip_id,1) = temp[1];
+      angles(ip_id,2) = temp[2];
+      e_ids(ip_id,0) = a;
+      e_ids(ip_id,1) = ip;
     }
   }
   return err;
@@ -1494,11 +1494,11 @@ int plasticity_model_set_given_orientation_crystal(const int ne, const IP_ID_LIS
     for(int ip=0; ip<n_ip; ip++)
     {
       int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];
-      angles(ip_id+1,1) = angle_in[0];
-      angles(ip_id+1,2) = angle_in[1];
-      angles(ip_id+1,3) = angle_in[2];
-      e_ids(ip_id+1,1) = a;
-      e_ids(ip_id+1,2) = ip;
+      angles(ip_id,0) = angle_in[0];
+      angles(ip_id,1) = angle_in[1];
+      angles(ip_id,2) = angle_in[2];
+      e_ids(ip_id,0) = a;
+      e_ids(ip_id,1) = ip;
     }
   }
   return err;
@@ -1519,11 +1519,11 @@ int plasticity_model_set_zero_angles(const int ne, const IP_ID_LIST *elm_ip_map,
     {
       int ip_id = elm_ip_map[a].ip_ids.m_pdata[ip];
 
-      angles(ip_id+1,1) = 0.0;
-      angles(ip_id+1,2) = 0.0;
-      angles(ip_id+1,3) = 0.0;
-      e_ids(ip_id+1,1) = a;
-      e_ids(ip_id+1,2) = ip;
+      angles(ip_id,0) = 0.0;
+      angles(ip_id,1) = 0.0;
+      angles(ip_id,2) = 0.0;
+      e_ids(ip_id,0) = a;
+      e_ids(ip_id,1) = ip;
     }
   }
   return err;
@@ -1620,12 +1620,12 @@ int plasticity_model_set_orientations(EPS *eps,
     FILE *fp_ort = fopen(fn_orientation, "w");
     fprintf(fp_ort, "# Element (crystal) orientations are generated randomly\n");
     fprintf(fp_ort, "# element_ID, Integration_point_ID, phi [radian], theta [radian], psi [radian]\n");
-    for(int a=1; a<=e_ids.m_row; a++)
+    for(int a=0; a<e_ids.m_row; a++)
     {
-      if(e_ids(a, 1)<0)
+      if(e_ids(a, 0)<0)
         continue;
 
-      fprintf(fp_ort, "%d %d %e %e %e\n", e_ids(a,1), e_ids(a,2), angles(a,1), angles(a,2), angles(a,3));
+      fprintf(fp_ort, "%d %d %e %e %e\n", e_ids(a,0), e_ids(a,1), angles(a,0), angles(a,1), angles(a,2));
     }
     fclose(fp_ort);
   }
