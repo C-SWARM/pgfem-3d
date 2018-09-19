@@ -52,21 +52,21 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
 
     FEMLIB fe(e,elem,node, 1, 1);
 
-    for(int ip = 1; ip<=fe.nint; ip++)
+    for(int ip = 0; ip<fe.nint; ip++)
     {
       fe.elem_basis_V(ip);
       double u[3], uh[3], du[3];
 
-      double x_ip = fe.x_ip(1);
-      double y_ip = fe.x_ip(2);
-      double z_ip = fe.x_ip(3);
+      double x_ip = fe.x_ip(0);
+      double y_ip = fe.x_ip(1);
+      double z_ip = fe.x_ip(2);
 
       MMS_displacement(u, t, x_ip, y_ip, z_ip, is4cm);
 
       uh[0] = uh[1] = uh[2] = 0.0;
-      for(long a = 1; a<=nne; a++)
+      for(long a = 0; a<nne; a++)
       {
-        long nid = nod[a-1];
+        long nid = nod[a];
 
         uh[0] += fe.N(a)*r[nid*ndofn + 0];
         uh[1] += fe.N(a)*r[nid*ndofn + 1];

@@ -121,6 +121,7 @@ class Model_parameters
       case ISO_VISCOUS_DAMAGE:
       case J2_PLASTICITY_DAMAGE:
       case POROVISCO_PLASTICITY:
+      case MANUFACTURED_SOLUTIONS:
         break; // no action
       default:
         PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
