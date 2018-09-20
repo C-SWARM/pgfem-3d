@@ -75,7 +75,7 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
 
       double P = 0;
       double V = 0;
-      if(opts->analysis_type==TF)
+      if(opts->analysis_type==TF || opts->analysis_type==CM3F)
       {
         MMS_pressure_volume(&P, &V, &elast, t, x_ip, y_ip, z_ip, is4cm);
       }
