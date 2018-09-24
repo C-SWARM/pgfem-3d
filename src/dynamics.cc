@@ -185,8 +185,10 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
   }
   
   #ifdef VERIFICATION_USING_MMS
-    if(!is4cm)
+    if(!is4cm){
       destruct_elasticity(elast);
+      delete elast;
+    }
   #endif   
     
   dealoc1(bf0);
