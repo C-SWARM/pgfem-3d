@@ -2396,7 +2396,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   }
 
   // define xFnp1
-  Tensor<2>  Fnp1, pFnp1, hFnp1;
+  Tensor<2>  Fnp1, pFnp1, hFnp1, hFnpa;
 
   // define xFnpa
   Tensor<2>  Fr_npa, eFnpa = {}, pFnpa;
@@ -2425,8 +2425,7 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-    double hJnp1 = 1.0;
-    double pJnp1 = 1.0;
+    double hJnpa = 1.0;
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
@@ -2463,7 +2462,8 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T->T0,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
-      hJnp1 = det(hFnp1);
+      mid_point_rule(hFnpa.data, hFn.data , hFnp1.data, alpha, DIM_3x3);
+      hJnpa = det(hFnpa);
     }
 
     // compute deformation gradients
@@ -2478,10 +2478,10 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnpa_I, hFnp1_I;
+      Tensor<2> pFnpa_I, hFnpa_I;
       err += inv(pFnpa, pFnpa_I);
-      err += inv(hFnp1, hFnp1_I);
-      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
+      err += inv(hFnpa, hFnpa_I);
+      M_npa = hFnpa_I(i,k)*pFnpa_I(k,j);
     }
     else
       err += inv(pFnpa, M_npa);
@@ -2516,9 +2516,10 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     CM_ThreeField cmtf;
     cmtf.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
-    double Jn = 1.0/hJnp1/pJnp1;
-    cmtf.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnp1.data, eSd.data, Ld.data);
-    cmtf.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU, ddU, dt_alpha_1_minus_alpha);
+    double pJnpa = det(pFnpa);
+    double Jnpa = 1.0/hJnpa/pJnpa;
+    cmtf.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnpa.data, eSd.data, Ld.data);
+    cmtf.set_scalars(theta_npa, 1.0, 1.0, Jnpa, Pnpa, dU, ddU, dt_alpha_1_minus_alpha);
 
     err += K.compute_stiffness(cmtf, dMdu, dMdt);
   }
@@ -3187,7 +3188,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   }
 
   // define xFnp1
-  Tensor<2>  Fnp1, pFnp1, hFnp1;
+  Tensor<2>  Fnp1, pFnp1, hFnpa, hFnp1;
 
   // define xFnpa
   Tensor<2>  Fr_npa, eFnpa, pFnpa;
@@ -3196,7 +3197,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
   Tensor<2> Fr_nma, eFnma, pFnma;
 
   // define xFn
-  Tensor<2> hFn, pFn;
+  Tensor<2> hFnma, pFn, hFn;
 
   // define xFnm1
   Tensor<2> pFnm1;
@@ -3224,8 +3225,8 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-    double hJnp1 = 1.0;
-    double pJnp1 = 1.0;
+    double hJnpa = 1.0;
+    double hJnma = 1.0;
 
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
@@ -3269,7 +3270,10 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T->T0,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
-      hJnp1 = det(hFnp1);
+      mid_point_rule(hFnpa.data, hFn.data , hFnp1.data, alpha, DIM_3x3);
+      mid_point_rule(hFnma.data, hFnm1    , hFn.data  , alpha, DIM_3x3);
+      hJnpa = det(hFnpa);
+      hJnma = det(hFnma);
     }
 
     if(sup->multi_scale)
@@ -3299,13 +3303,13 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnpa_I, pFnma_I, hFnp1_I, hFn_I;
+      Tensor<2> pFnpa_I, pFnma_I, hFnpa_I, hFnma_I;
       err += inv(pFnpa, pFnpa_I);
       err += inv(pFnma, pFnma_I);
-      err += inv(hFnp1, hFnp1_I);
-      err += inv(hFn,   hFn_I);
-      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
-      M_nma = hFn_I(i,k)*pFnma_I(k,j);
+      err += inv(hFnpa, hFnpa_I);
+      err += inv(hFnma, hFnma_I);
+      M_npa = hFnpa_I(i,k)*pFnpa_I(k,j);
+      M_nma = hFnma_I(i,k)*pFnma_I(k,j);
     }
     else
     {
@@ -3350,12 +3354,16 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     cmtf_npa.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
     cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
-    double Jn = 1.0/hJnp1/pJnp1;
-    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnpa.data, S_npa.data, Ld_npa.data);
-    cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
+    double pJnpa = det(pFnpa);
+    double Jnpa = 1.0/hJnpa/pJnpa;
 
+    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnpa.data, S_npa.data, Ld_npa.data);
+    cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jnpa, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
+
+    double pJnma = det(pFnma);
+    double Jnma = 1.0/hJnma/pJnma;
     cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M_nma.data, pFnma.data, S_nma.data, Ld_nma.data);
-    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);
+    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jnma, Pnma, dU_nma, ddU_nma);
 
     err += K.compute_stiffness(cmtf_npa, dMdu, dMdt);
     err += R_npa.compute_residual(cmtf_npa);
@@ -3850,7 +3858,7 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   }
 
   // define xFnp1
-  Tensor<2>  Fnp1, pFnp1, hFnp1;
+  Tensor<2>  Fnp1, pFnp1, hFnp1, hFnpa;
 
   // define xFnpa
   Tensor<2>  Fr_npa, eFnpa, pFnpa;
@@ -3859,7 +3867,7 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
   Tensor<2> Fr_nma, eFnma, pFnma;
 
   // define xFn
-  Tensor<2> hFn, pFn;
+  Tensor<2> hFn, pFn, hFnma;
 
   // define xFnm1
   Tensor<2> pFnm1;
@@ -3887,9 +3895,9 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-    double hJnp1 = 1.0;
-    double pJnp1 = 1.0;
-
+    double hJnpa = 1.0;
+    double hJnma = 1.0;
+    
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     
@@ -3927,11 +3935,15 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
     if(is_it_couple_w_thermal >= 0)
     {
+      
       double hFnm1[DIM_3x3];
       err += compute_temperature_at_ip(fe,grid,mat,T->T0,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
-      hJnp1 = det(hFnp1);
+      mid_point_rule(hFnpa.data, hFn.data , hFnp1.data, alpha, DIM_3x3);
+      mid_point_rule(hFnma.data, hFnm1    , hFn.data  , alpha, DIM_3x3);
+      hJnpa = det(hFnpa);
+      hJnma = det(hFnma);
     }
 
     // compute deformation gradients
@@ -3948,13 +3960,13 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
 
     if(is_it_couple_w_thermal>=0)
     {
-      Tensor<2> pFnpa_I, pFnma_I, hFnp1_I, hFn_I;
+      Tensor<2> pFnpa_I, pFnma_I, hFnpa_I, hFnma_I;
       err += inv(pFnpa, pFnpa_I);
       err += inv(pFnma, pFnma_I);
-      err += inv(hFnp1, hFnp1_I);
-      err += inv(hFn,   hFn_I);
-      M_npa = hFnp1_I(i,k)*pFnpa_I(k,j);
-      M_nma = hFn_I(i,k)*pFnma_I(k,j);
+      err += inv(hFnpa, hFnpa_I);
+      err += inv(hFnma, hFnma_I);
+      M_npa = hFnpa_I(i,k)*pFnpa_I(k,j);
+      M_nma = hFnma_I(i,k)*pFnma_I(k,j);
     }
     else
     {
@@ -3999,13 +4011,15 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     cmtf_npa.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
     cmtf_nma.set_femlib(fe,Vno,Pno,Nt.m_pdata,Np.m_pdata);
 
-    double Jn = 1.0/hJnp1/pJnp1;
-    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnp1.data, S_npa.data, Ld_npa.data);
-    cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jn, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
+    double pJnpa = det(pFnpa);
+    double Jnpa = 1.0/hJnpa/pJnpa;
+    cmtf_npa.set_tenosrs(Fr_npa.data, delta_ij.data, M_npa.data, pFnpa.data, S_npa.data, Ld_npa.data);
+    cmtf_npa.set_scalars(theta_npa, 1.0, 1.0, Jnpa, Pnpa, dU_npa, ddU_npa, dt_alpha_1_minus_alpha);
 
-
-    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M_nma.data, pFnp1.data, S_nma.data, Ld_nma.data);
-    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jn, Pnma, dU_nma, ddU_nma);
+    double pJnma = det(pFnma);
+    double Jnma = 1.0/hJnma/pJnma;
+    cmtf_nma.set_tenosrs(Fr_nma.data, delta_ij.data, M_nma.data, pFnma.data, S_nma.data, Ld_nma.data);
+    cmtf_nma.set_scalars(theta_nma, 1.0, 1.0, Jnma, Pnma, dU_nma, ddU_nma);
 
     err += K.compute_stiffness(cmtf_npa, dMdu, dMdt);
     err += R_npa.compute_residual(cmtf_npa);
