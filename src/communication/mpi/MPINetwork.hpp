@@ -1,3 +1,8 @@
+// -------------------------------------------------------------------*- C++ -*-
+// -----------------------------------------------------------------------------
+#ifndef PGFEM3D_COMMUNICATION_MPINETWORK_HPP
+#define PGFEM3D_COMMUNICATION_MPINETWORK_HPP
+
 #include "pgfem3d/Network.hpp"
 
 #include <cstring>
@@ -120,3 +125,5 @@ private:
 }
 }
 }
+
+#endif
