@@ -1,8 +1,18 @@
-#include "pgfem3d/Network.hpp"
+// -------------------------------------------------------------------*- C++ -*-
+// -----------------------------------------------------------------------------
+#ifndef PGFEM3D_COMMUNICATION_PHOTONNETWORK_HPP
+#define PGFEM3D_COMMUNICATION_PHOTONNETWORK_HPP
 
+#include "pgfem3d/Network.hpp"
+#ifdef HAVE_PGFEM_MPI
+#define HAVE_MPI
+#include <photon.h>
+#undef HAVE_MPI
+#else
+#include <photon.h>
+#endif
 
 #include <stdexcept>
-#include "photon.h"
 
 using pgfem3d::net::Network;
 using pgfem3d::net::PGFem3D_Comm;
@@ -78,3 +88,5 @@ private:
 }
 }
 }
+
+#endif
