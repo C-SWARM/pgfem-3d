@@ -32,9 +32,6 @@ void DISP_resid_body_force_el(double *f,
                               const int ii,
                               const int ndofn,
                               const int nne,
-                              const double *x,
-                              const double *y,
-                              const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
                               const Node *node,
@@ -47,52 +44,35 @@ void DISP_resid_body_force_el(double *f,
   // double rho = hommat[mat].density;
   int ndofe = nne*ndofn;
 
-  
 
   /* make sure the f vector contains all zeros */
   memset(f,0,ndofe*sizeof(double));
 
   FEMLIB fe(ii, elem, node, INTG_ORDER,1);
 
-  double *bf = aloc1(ndofn);
-
+  Matrix<double> bf(ndofn, 1, 0.0);
+  
   for(int ip = 0; ip<fe.nint; ip++)
   {
     fe.elem_basis_V(ip);
-    double X[3];
-    X[0] = X[1] = X[2] = 0.0;
-
-    memset(bf,0,ndofn*sizeof(double));
-
-    for(long a = 0; a<nne; a++)
-    {
-      X[0] += fe.N(a)*x[a];
-      X[1] += fe.N(a)*y[a];
-      X[2] += fe.N(a)*z[a];
-    }
-
-    MMS_body_force(bf, &hommat[mat], elast, t,  X[0], X[1], X[2], is4cm);
+    bf.set_values(0.0);
+    MMS_body_force(bf.m_pdata, &hommat[mat], elast, t,  fe.x_ip(0), fe.x_ip(1), fe.x_ip(2), is4cm);
 
     for(long a = 0; a<nne; a++)
     {
       for(long b=0; b<3; b++)
       {
         long id = a*ndofn + b;
-        f[id] += bf[b]*fe.N(a)*fe.detJxW;
+        f[id] += bf(b)*fe.N(a)*fe.detJxW;
       }
     }
   }
-  dealoc1(bf);
 }
 
-void DISP_resid_w_inertia_el(FEMLIB *fe,
-                             double *f,
+void DISP_resid_w_inertia_el(double *f,
                              const int ii,
                              const int ndofn,
                              const int nne,
-                             const double *x,
-                             const double *y,
-                             const double *z,
                              const Element *elem,
                              const HOMMAT *hommat,
                              const Node *node, const double *dts, double t,
@@ -125,36 +105,23 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
 
   Matrix<double> du(3,1);
 
-  double *bf0, *bf1, *bf2, *bf_n1a, *bf;
-  bf0 = aloc1(ndofn);
-  bf1 = aloc1(ndofn);
-  bf2 = aloc1(ndofn);
-  bf_n1a = aloc1(ndofn);
-  bf     = aloc1(ndofn);
+  Matrix<double> bf0(ndofn, 1, 0.0), bf1(ndofn, 1, 0.0), bf2(ndofn, 1, 0.0);
+  Matrix<double> bf_npa(ndofn, 1, 0.0), bf_nma(ndofn, 1, 0.0); 
+    
+  FEMLIB fe(ii, elem, node, INTG_ORDER,1);
 
-  for(int ip = 0; ip<fe->nint; ip++)
+  for(int ip = 0; ip<fe.nint; ++ip)
   {
-    fe->elem_basis_V(ip);
+    fe.elem_basis_V(ip);
 
-    du.set_values(0.0);
-    double X[3];
-    X[0] = X[1] = X[2] = 0.0;
+    du.set_values(0.0);       
+    for(int ia=0; ia<ndofn; ++ia)
+      bf0(ia) = bf1(ia) = bf2(ia) = bf_npa(ia) = bf_nma(ia) = 0.0;   
 
-    memset(bf0,   0,ndofn*sizeof(double));
-    memset(bf1,   0,ndofn*sizeof(double));
-    memset(bf2,   0,ndofn*sizeof(double));
-    memset(bf_n1a,0,ndofn*sizeof(double));
-    memset(bf,    0,ndofn*sizeof(double));
-
-    for(long a = 0; a<nne; a++)
-    {
-      X[0] += fe->N(a)*x[a];
-      X[1] += fe->N(a)*y[a];
-      X[2] += fe->N(a)*z[a];
-      for(long b = 0; b<3; b++)
-      {
+    for(long a = 0; a<nne; a++){
+      for(long b = 0; b<3; b++){
         long id = a*ndofn + b;
-        du(b) += fe->N(a)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
+        du(b) += fe.N(a)*(dts[DT_N]*r_2[id]-(dts[DT_NP1]+dts[DT_N])*r_1[id]+dts[DT_NP1]*r_0[id]);
       }
     }
 
@@ -162,24 +129,24 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
     double t0 = t - dts[DT_NP1] - dts[DT_N];
 
     //    if(t0>=0)
-    MMS_body_force(bf0, &hommat[mat], elast, t0, X[0], X[1], X[2], is4cm);
+    MMS_body_force(bf0.m_pdata, &hommat[mat], elast, t0, fe.x_ip(0), fe.x_ip(1), fe.x_ip(2), is4cm);
 
     //    if(t1>=0)
-    MMS_body_force(bf1, &hommat[mat], elast, t1, X[0], X[1], X[2], is4cm);
+    MMS_body_force(bf1.m_pdata, &hommat[mat], elast, t1, fe.x_ip(0), fe.x_ip(1), fe.x_ip(2), is4cm);
 
-    MMS_body_force(bf2, &hommat[mat], elast, t,  X[0], X[1], X[2], is4cm);
+    MMS_body_force(bf2.m_pdata, &hommat[mat], elast, t,  fe.x_ip(0), fe.x_ip(1), fe.x_ip(2), is4cm);
 
-    mid_point_rule(bf_n1a, bf0, bf1, alpha, ndofn);
-    mid_point_rule(bf, bf1, bf2, alpha, ndofn);
+    mid_point_rule(bf_npa.m_pdata, bf1.m_pdata, bf2.m_pdata, alpha, ndofn);
+    mid_point_rule(bf_nma.m_pdata, bf0.m_pdata, bf1.m_pdata, alpha, ndofn);    
 
     for(long a = 0; a<nne; a++)
     {
       for(long b=0; b<3; b++)
       {
         long id = a*ndofn + b;
-        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe->N(a)*du(b)*fe->detJxW;
-        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf[b]*fe->N(a)*fe->detJxW;
-        f[id] -= alpha*dts[DT_N]*bf_n1a[b]*fe->N(a)*fe->detJxW;
+        f[id] += rho/dts[DT_NP1]/dts[DT_N]*fe.N(a)*du(b)*fe.detJxW;
+        f[id] -= (1.0-alpha)*dts[DT_NP1]*bf_npa(b)*fe.N(a)*fe.detJxW;
+        f[id] -=       alpha*dts[DT_N  ]*bf_nma(b)*fe.N(a)*fe.detJxW;
       }
     }
   }
@@ -190,12 +157,6 @@ void DISP_resid_w_inertia_el(FEMLIB *fe,
       delete elast;
     }
   #endif   
-    
-  dealoc1(bf0);
-  dealoc1(bf1);
-  dealoc1(bf2);
-  dealoc1(bf_n1a);
-  dealoc1(bf);
 }
 
 /// compute element residual vector in transient
@@ -295,7 +256,7 @@ int residual_with_inertia(FEMLIB *fe,
     if(fv->eps[eid].model[0].param->type == MANUFACTURED_SOLUTIONS)
       is4cm = true;
   }
-  DISP_resid_w_inertia_el(fe,f_i,eid,ndofn,nne,x,y,z,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha, elast, is4cm);
+  DISP_resid_w_inertia_el(f_i,eid,ndofn,nne,grid->element,mat->hommat,grid->node,dts,t,r_e, r0, r0_, sol->alpha, elast, is4cm);
 
   switch(opts->analysis_type)
   {

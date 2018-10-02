@@ -455,7 +455,7 @@ int stiffmat_3f_el(FEMLIB *fe,
   }
   if(Pno==1)
   {  
-    P(1) = alpha_1*fv->tf.P_n(eid,0) + 
+    P(0) = alpha_1*fv->tf.P_n(eid,0) + 
            alpha_2*(fv->tf.P_np1(eid,0) + fv->tf.dP(eid,0));
   }  
   memset(lk,0,ndofe*ndofe*sizeof(double)); 

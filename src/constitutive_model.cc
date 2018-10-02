@@ -1641,7 +1641,7 @@ int constitutive_model_test(const HOMMAT *hmat, double *L_in, int Print_results)
 /// \param[in] S 2nd order tensor S
 /// \param[in] L 4th order elasticity tensor L
 /// \param[in] dMdu_all list of 2nd order dMdu tensors
-/// \param[in] Jn det(Fn)
+/// \param[in] one_over_Jn det(Fn)
 /// \return non-zero on internal error
 int compute_stiffness_matrix(double *lk,
                              const FEMLIB *fe,
@@ -1654,7 +1654,7 @@ int compute_stiffness_matrix(double *lk,
                              double *S_in,
                              double *L_in,
                              double *dMdu_all,
-                             const double Jn)
+                             const double one_over_Jn)
 {
   int err = 0;
   const int nne = fe->nne;
@@ -1729,7 +1729,7 @@ int compute_stiffness_matrix(double *lk,
           double DpJ = -MI(j,i)*dMdu(i,j);
           const int lk_idx = idx_K(a,b,w,g,nne,nsd);
 
-          lk[lk_idx] += 1.0/Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu 
+          lk[lk_idx] += one_over_Jn*fe->detJxW*(MTeFnT_sAA_eFnM_L_dCdu 
                                            + 2.0*sMTeFnT_sAA_eFndMdu_S
                                            + MTeFnT_sCC_eFnM_S
                                            + DpJ*MTeFnT_sAA_eFnMS);
@@ -1749,7 +1749,7 @@ int compute_stiffness_matrix(double *lk,
 /// \param[in] eFnMT 2nd order tensor (eFn*M)'
 /// \param[in] eFnM 2nd order tensor eFn*M
 /// \param[in] S 2nd order tensor S
-/// \param[in] Jn det(Fn)
+/// \param[in] one_over_Jn det(Fn)
 /// \return non-zero on internal error
 int compute_residual_vector(double *f,
                             const FEMLIB *fe,
@@ -1757,7 +1757,7 @@ int compute_residual_vector(double *f,
                             double *eFnMT_in,
                             double *eFnM_in,
                             double *S_in,
-                            const double Jn)
+                            const double one_over_Jn)
 {
   int err = 0;
   const int nne = fe->nne;
@@ -1780,7 +1780,7 @@ int compute_residual_vector(double *f,
       double MTeFnT_sAA_eFnM_S = eFnMT(i,k)*sAA(k,l)*eFnM(l,j)*S(i,j);
 
       int fe_id = a*nsd + b;
-      f[fe_id] += 1.0/Jn*fe->detJxW*MTeFnT_sAA_eFnM_S;
+      f[fe_id] += one_over_Jn*fe->detJxW*MTeFnT_sAA_eFnM_S;
     }
   }
 
@@ -2064,10 +2064,12 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
   int compute_stiffness = 0;
 
   mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, nsd*nsd);
-  hFnpa = hFnp1(i,j);
-//  mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, nsd*nsd);
+  mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, nsd*nsd);
   mid_point_rule( Fnpa.data,  Fn.data,  Fnp1.data, alpha, nsd*nsd);
 
+  double hJnpa = 1.0;
+  double pJnpa = det(pFnpa);
+    
   if(is_it_couple_w_thermal>=0)
   {
     Tensor<2> hFnpa_I;
@@ -2075,6 +2077,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
     err += inv(hFnpa, hFnpa_I);
     err += inv(pFnpa, pFnpa_I);
     M = hFnpa_I(i,k)*pFnpa_I(k,j);
+    hJnpa = det(hFnpa);
   }
   else
     err += inv(pFnpa, M);
@@ -2099,7 +2102,8 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
   if(err==0)
   {
     double Jn = 1.0;
-    err += compute_residual_vector(f,fe,Fnpa.data,MT.data,M.data,S.data,Jn/dt_alpha_1_minus_alpha);
+    double one_over_Jn = dt_alpha_1_minus_alpha*hJnpa*pJnpa/Jn;
+    err += compute_residual_vector(f,fe,Fnpa.data,MT.data,M.data,S.data,one_over_Jn);
   }
 
   return err;
@@ -2198,7 +2202,7 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
   }
 
   Tensor<2> Fn,Fr,Fnp1,pFn,pFnp1,S = {},eFnpa = {},pFnpa,pFnpa_I,
-            eFn,M = {},eFnM,eFnMT,FrTFr = {},hFnp1,hFn,hFnpa,hFnpa_I;
+            eFn,M = {},eFnM,eFnMT,FrTFr = {},hFnp1,hFn,hFnpa_I;
 
   Tensor<4,3,double> L;
 
@@ -2218,11 +2222,6 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-
-    double Jn = 1.0; // det(F2[Fn], Jn);
-    double hJ = 1.0;
-    double pJ = 1.0;
-
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     
@@ -2232,30 +2231,27 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     // get a shortened pointer for simplified CM function calls
     const Model_parameters *func = m->param;
 
+    double hJnpa = 1.0;
     hFnpa_I = delta_ij(i,j);
     if(is_it_couple_w_thermal >= 0)
     {
+      Tensor<2> hFnpa;
       double hFnm1[9];
       err += compute_temperature_at_ip(fe,grid,mat,T->T0,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1);
 
-      hFnpa = hFnp1(i,j);
-      hJ = det(hFnp1);
-      //mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, DIM_3x3);
+      mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, DIM_3x3);
+      hJnpa = det(hFnpa);
       inv(hFnpa,hFnpa_I);
     }
 
     err += func->get_pF(m,pFnp1.data,2);
-    pJ = det(pFnp1);
-
     err += func->get_pF(m,pFn.data,1);
     err += func->get_F(m,  Fn.data,1);
 
-
     mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, DIM_3x3);
-    mid_point_rule(   Fr.data,  Fn.data,  Fnp1.data, alpha, DIM_3x3);
-
+    mid_point_rule(   Fr.data,  Fn.data,  Fnp1.data, alpha, DIM_3x3);    
     err += inv(pFnpa, pFnpa_I);
 
     M = hFnpa_I(i,k)*pFnpa_I(k,j);
@@ -2288,10 +2284,11 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     eFnM = M(i,j);
     eFnMT(j,i) = M(i,j).to(j,i);
 
-    Jn = Jn/pJ/hJ;
+    double Jn = 1.0; // det(F2[Fn], Jn);    
+    double pJnpa = det(pFnpa);
     err += compute_stiffness_matrix(lk,fe,
                                     Fr.data,eFnMT.data,eFn.data,M.data,FrTFr.data,eFnM.data,S.data,
-                                    L.data,dMdu_all,Jn);
+                                    L.data,dMdu_all,hJnpa*pJnpa/Jn);
   }
 
   if(is_it_couple_w_thermal >=0)
@@ -2817,10 +2814,9 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
       break;      
 
     // start computing tagent
-    Jn = Jn/hJ/pJ;
     err += compute_stiffness_matrix(lk,fe,
                                     Fr.data,eFnMT.data,eFn.data,M.data,FrTFr.data,eFnM.data,S.data,
-                                    L.data,dMdu_all,Jn);
+                                    L.data,dMdu_all,hJ*pJ/Jn);
   }
   free(u);
 
@@ -3015,9 +3011,6 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-    double hJ = 1.0;
-    double pJ = 1.0;
-
     fe->elem_basis_V(ip);
     fe->update_shape_tensor();
     
@@ -3029,7 +3022,6 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
       err += compute_temperature_at_ip(fe,grid,mat,T->T0,
                                        T->np1.m_pdata,T->n.m_pdata,T->nm1.m_pdata,
                                        hFnp1.data,hFn.data,hFnm1.data);
-      hJ = det(hFnp1);
     }
 
     // perform integration algorithm
@@ -3045,16 +3037,14 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     err += m->param->get_F(m,     Fn.data,1);
     err += m->param->get_F(m,   Fnm1.data,0);
 
-    pJ = det(pFnp1);
-
-    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha)*pJ*hJ;
+    double dt_1_minus_alpha = -dts[DT_NP1]*(1.0-alpha);
     err += residuals_el_constitutive_model_n_plus_alpha(f_npa,m,eid,ndofn,
                                                         pFnp1.data,pFn.data,Fnp1.data,Fn.data,
                                                         hFnp1.data,hFn.data,
                                                         is_it_couple_w_thermal,
                                                         alpha, dt_1_minus_alpha,fe,1);
 
-    double dt_alpha = -dts[DT_N]*alpha*pJ*hJ;
+    double dt_alpha = -dts[DT_N]*alpha;
 
     err += residuals_el_constitutive_model_n_plus_alpha(f_nm1pa,m,eid,ndofn,
                                                         pFn.data,pFnm1.data,Fn.data,Fnm1.data,
@@ -3686,8 +3676,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     if(err!=0)
       break;
 
-    Jn = Jn/pJ/hJ;
-    err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,Jn);    
+    err += compute_residual_vector(f,fe,Fr.data,eFnMT.data,eFnM.data,S.data,hJ*pJ/Jn);    
   }
 
   if(is_it_couple_w_thermal >=0)
