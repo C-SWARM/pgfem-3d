@@ -535,12 +535,12 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     }
     owned_Gnn_Gid[idx++] = shared[i].Gnn;
     memcpy(owned_Gnn_Gid + idx, shared[i].id_map[mp_id].Gid, ndofn * sizeof(*owned_Gnn_Gid));
+  
+    /* pin send buffer */
+    sbuffer.addr = reinterpret_cast<uintptr_t> (owned_Gnn_Gid);
+    sbuffer.size = len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid);
+    net->pin(reinterpret_cast<void *>(sbuffer.addr), sbuffer.size, &sbuffer.key);
   }  
-
-  /* pin send buffer */
-  sbuffer.addr = reinterpret_cast<uintptr_t> (owned_Gnn_Gid);
-  sbuffer.size = len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid);
-  net->pin(reinterpret_cast<void *>(sbuffer.addr), sbuffer.size, &sbuffer.key);
 
   /* Send allocation information */
   const int nsend = com->hints->get_nrecv();
@@ -580,9 +580,8 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   for (int i = 0; i < nproc; i++) {
     long JJ = 0;
     if (len_recv_Gnn_Gid[i] <= 0) JJ = 1; else JJ = len_recv_Gnn_Gid[i];
-    RECI[i] = static_cast<long*>(PGFEM_CALLOC_PIN (JJ,
-				sizeof(long), net, &rbuffers[i].key,
-				__func__, __FILE__, __LINE__));
+    RECI[i] = PGFEM_calloc_pin (long, JJ,
+				net, &rbuffers[i].key);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
   }
