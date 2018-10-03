@@ -205,6 +205,12 @@ void PhotonNetwork::pin(const void *addr, const size_t bytes, Key *key)
 
 void PhotonNetwork::unpin(const void *addr, const size_t bytes)
 {
+  if (addr == NULL || bytes == 0) {
+    int myrank;
+    PGFEM_Error_rank(&myrank);
+    PGFEM_printf("%d is ignoring attempt to unpin null or 0 bytes\n", myrank);
+    return;
+  }
   Check(photon_unregister_buffer((void*)addr, bytes));
 }
 

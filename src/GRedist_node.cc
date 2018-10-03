@@ -517,6 +517,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   long *owned_Gnn_Gid = NULL;
   int len_owned_Gnn_Gid = 0;
   Buffer sbuffer;
+  bool sbuffer_pinned = false;
   if (!nodes_get_shared_idx_range(n_shared, shared, myrank, owned_range)) {
     owned_gnn = owned_range[1] - owned_range[0];
     len_owned_Gnn_Gid = owned_gnn * (ndofn + 1);
@@ -540,6 +541,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     sbuffer.addr = reinterpret_cast<uintptr_t> (owned_Gnn_Gid);
     sbuffer.size = len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid);
     net->pin(reinterpret_cast<void *>(sbuffer.addr), sbuffer.size, &sbuffer.key);
+    sbuffer_pinned = true;
   }  
 
   /* Send allocation information */
@@ -673,7 +675,8 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   nodes_sort_loc_id(nnode, nodes);
 
   /* cleanup */
-  net->unpin(reinterpret_cast<void *> (sbuffer.addr), sbuffer.size);
+  if(sbuffer_pinned)
+    net->unpin(reinterpret_cast<void *> (sbuffer.addr), sbuffer.size);
   for (int i = 0; i < nproc; i++) {
     net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
   }
