@@ -188,6 +188,12 @@ void PhotonNetwork::allgatherv(const void *in, int scount, datatype_t sdt,
 
 void PhotonNetwork::pin(const void *addr, const size_t bytes, Key *key)
 {
+  if (addr == NULL || bytes == 0) {
+    int myrank;
+    PGFEM_Error_rank(&myrank);
+    PGFEM_printf("%d is ignoring attempt to pin null or 0 bytes\n", myrank);
+    return;
+  }
   Check(photon_register_buffer((void*)addr, bytes));
   if (key) {
     const struct photon_buffer_priv_t *priv;
