@@ -24,7 +24,7 @@ void MMS_body_force(double *b, const HOMMAT  *hommat, ELASTICITY *elast, double 
 }
 
 #else
-#define INTG_ORDER 1
+#define INTG_ORDER 0
 #include "../verification_MMS/MMS.h"
 #endif
 
