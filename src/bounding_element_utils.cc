@@ -416,10 +416,13 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
     }
   }
 
+  /* Allocate local write buffers */  
+  Buffer *wbuffers = new Buffer[2 * nproc];
+
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[2*i], sizeof(Buffer)*2, NET_DT_BYTE,
-	net->getbuffer(), sizeof(Buffer)*2, NET_DT_BYTE, i, com->comm);
+	wbuffers, sizeof(Buffer)*2, NET_DT_BYTE, i, com->comm);
   }
 
   /* remove myrank from number of comm procs */
@@ -435,8 +438,8 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
     if(n_SR[i] > 0 && i != myrank){
       /* send with pwc */
       CID rid = (CID)n_SR[i];
-      net->pwc(i, sbuffers[2*i].size, &sbuffers[2*i], &net->getbuffer()[2*i], lid, rid);
-      net->pwc(i, sbuffers[2*i+1].size, &sbuffers[2*i+1], &net->getbuffer()[2*i+1], lid, rid);
+      net->pwc(i, sbuffers[2*i].size, &sbuffers[2*i], &wbuffers[2*i], lid, rid);
+      net->pwc(i, sbuffers[2*i+1].size, &sbuffers[2*i+1], &wbuffers[2*i+1], lid, rid);
       num_send += 2;
     }
   }
@@ -509,6 +512,8 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
 
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
+
+  delete [] wbuffers;
 
   free(n_SR);
   free(src_dest);
