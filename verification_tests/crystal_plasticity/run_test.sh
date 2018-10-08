@@ -5,10 +5,11 @@ NP=8
 filebase=box
 
 if [ $# -lt 1 ]; then
-  echo "usage: ./run_test.sh [test_name] [gen_mesh]"
-  echo "       [test_name] : test_name = tension or compression"
-  echo "       [gen_mesh]  : if gen_mesh = 1: cleanup everything and re-generate mesh and run the test"
+  echo "usage: ./run_test.sh [test_name] [gen_mesh] [transport_type]"
+  echo "       [test_name]      : test_name = tension or compression"
+  echo "       [gen_mesh]       : if gen_mesh = 1: cleanup everything and re-generate mesh and run the test"
   echo "                           otherwise: run the test"
+  echo "       [transport_type] : mpi or photon communication backend"
   exit 1
 fi
 
@@ -21,6 +22,7 @@ if [ $# -lt 2 ]; then
 else
   test_name=$1
   gen_mesh=$2
+  transport_type=$3
 fi
 
 ##########################################
@@ -51,5 +53,5 @@ OUTDIR=${test_name}/${filebase}_${NP}CPU
 output=${OUTDIR}/${filebase}
 
 override="-override-solver-file ${filebase}_0.in.st_${test_name}"
-opts="-SS -cm 1 -noLS -noCCE -no-compute-macro -maxit 3000 -kdim 1000 -V ${override}"
+opts="-SS ${transport_type} -cm 1 -noLS -noCCE -no-compute-macro -maxit 3000 -kdim 1000 -V ${override}"
 mpirun -np $NP $exe $opts $input $output
