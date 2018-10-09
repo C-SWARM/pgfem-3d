@@ -5,11 +5,12 @@ output_dir=out
 
 # define constant for running PGFem3D
 
-if [ $# -lt 3 ]; then
-  echo "usage: ./run_PGFem3D.sh [file_base] [NP] [task]"
+if [ $# -lt 4 ]; then
+  echo "usage: ./run_PGFem3D.sh [file_base] [NP] [task] [network]"
   echo "       [file_base] : filebase name"
   echo "       [NP]        : number of process"
   echo "       [task]      : task name"
+  echo "       [network] : -isir or -pwc"
   exit 1
 fi
 
@@ -17,6 +18,7 @@ fi
 filebase=$1
 NP=$2
 task=$3
+network=$4
 
 # run simulations
 #branch=master
@@ -29,7 +31,7 @@ input=${IN_DIR}/${filebase}_
 OUTDIR=$output_dir/mesh_cnvg/${task}/${filebase}_${NP}CPU
 output=${OUTDIR}/${filebase}
 
-opts="-SS -cm 1 -noLS -no-compute-macro -noCCE -maxit 3000 -kdim 1000 -V ${override}"
+opts="-SS -cm 1 -noLS -no-compute-macro -noCCE -maxit 3000 -kdim 1000 -V ${override} ${network}"
 
 time_start=`date`
 echo "============================================================="
