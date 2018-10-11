@@ -27,7 +27,8 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
                                   MS_COHE_JOB_INFO **job_list,
                                   MS_COHE_JOB_INFO **job_list_ROM,
                                   pgfem3d::net::Network *net,
-                                  const int mp_id);
+                                  const int mp_id,
+                                  const PGFem3D_opt *opts);
 
 
 /** Update the displacement jump for each job in the list. This is
