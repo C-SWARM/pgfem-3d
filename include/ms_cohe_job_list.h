@@ -23,7 +23,11 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM,
                                   const pgfem3d::net::PGFem3D_Comm macro_mpi_comm,
                                   const pgfem3d::net::PGFem3D_Comm ms_comm,
                                   const int group_id,
+<<<<<<< HEAD
                                   long **n_job_dom,
+=======
+                                  long **n_job_dom, long **n_job_dom_ROM,
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
                                   MS_COHE_JOB_INFO **job_list,
                                   MS_COHE_JOB_INFO **job_list_ROM,
                                   pgfem3d::net::Network *net,

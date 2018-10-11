@@ -1151,6 +1151,7 @@ void read_simulation_methods(char *filenameMS, PGFem3D_opt *opts) {
           opts->methods[e + Ne*t] = temp;
         }
       }
+    opts->nce_micro_all = Ne;
     fclose(fpms);
 }
 

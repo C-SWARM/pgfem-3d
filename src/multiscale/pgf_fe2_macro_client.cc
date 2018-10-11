@@ -268,17 +268,26 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
 
   /* determine what ranks (in mm_inter) this domain is responsible
      for broadcasting info to. */
-  if((unsigned)nproc_macro >= n_server) n_comm = 1;
-  else {
+  if((unsigned)nproc_macro >= n_server) {
+    n_comm = 1;
+    n_comm_ROM = 1; 
+  } else {
     n_comm = n_server/nproc_macro;
     unsigned rem = n_server % nproc_macro;
     if(rem > 0 && rem > rank) n_comm++;
+<<<<<<< HEAD
 
     n_comm_ROM = n_server_ROM/nproc_macro;
     rem = n_server_ROM % nproc_macro;
     if(rem > 0 && rem > rank) n_comm_ROM++;
   }
+=======
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
+    n_comm_ROM = n_server_ROM/nproc_macro;
+    rem = n_server_ROM % nproc_macro;
+    if(rem > 0 && rem > rank) n_comm_ROM++;
+  }
   /* allocate/populate client->bcast */
   client->bcast.n_comm = n_comm;
   client->bcast.ranks = PGFEM_malloc<int>(n_comm);
@@ -333,7 +342,15 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
 
   if (micro_model == 2) {//will eventually be replaced by an array
     n_server = client->n_server_ROM;
+<<<<<<< HEAD
     bcast = client->bcast_ROM;
+=======
+    bcast.active = client->bcast_ROM.active;
+    bcast.n_comm = client->bcast_ROM.n_comm;
+    bcast.ranks  = client->bcast_ROM.ranks;
+    bcast.req    = client->bcast_ROM.req;
+
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
     mm_inter = mscom->mm_inter_ROM;
   }
 
@@ -387,6 +404,8 @@ void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client,
   /* should be done by PGFEM_server_ctx init function... */
   (*client)->send = new MultiscaleServerContext(n);
   (*client)->recv = new MultiscaleServerContext(n);
+  (*client)->send_ROM = new MultiscaleServerContext(n);
+  (*client)->recv_ROM = new MultiscaleServerContext(n);
 
   /* bcast */
   (*client)->bcast.active = 0;
@@ -411,7 +430,8 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
 {
   delete client->send;
   delete client->recv;
-
+  delete client->send_ROM;
+  delete client->recv_ROM;
   ISIRNetwork *net = static_cast<ISIRNetwork*>(client->net);
   
   for(int i=0,e=client->n_jobs_loc; i<e; i++){
@@ -468,6 +488,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   int pde_jobs = 0;
   int *job_buf_sizes = NULL;
   compute_n_job_and_job_sizes(c,&n_jobs,&job_buf_sizes);
+<<<<<<< HEAD
   find_job_sizes_from_map(macro,&jobs_ROM, &pde_jobs); 
 
   client->n_jobs_loc = pde_jobs;
@@ -484,8 +505,28 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 				0,&n_job_dom, &n_job_dom_ROM,
 				&(client->jobs),&(client->jobs_ROM),c->net,mp_id,macro->opts);
 >>>>>>> more 2-comm changes, getting ready for rebase
+=======
+  int i;//  find_job_sizes_from_map 
+  for (i = 0; i < macro->nce ; i++ ) {
+    if (macro->opts->methods[i] == 1) { pde_jobs++;}
+    else {jobs_ROM++;}
+  }
+
+  client->n_jobs_loc = pde_jobs;
+  client->n_jobs_loc_ROM = jobs_ROM;
+
+  long *n_job_dom = NULL;//why is this created outside and not inside, if its destroyed right after?
+  long *n_job_dom_ROM = NULL;//probably due to some double pointer magic 
+  create_group_ms_cohe_job_list(pde_jobs,jobs_ROM,c->coel,c->node,
+				mscom->macro,NET_COMM_SELF,
+				0,&n_job_dom, &n_job_dom_ROM,
+				&(client->jobs),&(client->jobs_ROM),c->net,mp_id,macro->opts);
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* free unused memory */
   free(n_job_dom);
+  free(n_job_dom_ROM);
+  long Gn_jobs = pde_jobs;
+//  long Gn_jobs_ROM = jobs_ROM;
 
   /* compute total number of jobs and set maximum number of jobs per
      server */
@@ -514,7 +555,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   /* set tags for jobs */
   {
     const MS_COHE_JOB_INFO *j = client->jobs;
-    for(int i=0; i<n_jobs; i++){
+    for(int i=0; i<pde_jobs; i++){
       const int tag = pgf_FE2_job_compute_encoded_id(j[i].proc_id,
 						     j[i].elem_id,
 						     j[i].int_pt);
@@ -562,8 +603,13 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 			 mscom->macro);
   client->net->allgather(NET_IN_PLACE,1,NET_DT_INT,n_jobs_ROM,1,NET_DT_INT,
        mscom->macro);
+<<<<<<< HEAD
 
 
+=======
+
+
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* compute partial sum for displ and set proc_id and time*/
   displ[0] = 0;
   const size_t max_proc = client->n_server;

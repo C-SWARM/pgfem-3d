@@ -52,7 +52,7 @@ int start_microscale_server(const MultiscaleComm *mscom,//deprecated
   ISIRNetwork *net = static_cast<ISIRNetwork*>(microscale->net);
   int err = 0;
   /* error check */
-  if(!mscom->valid_micro) return ++err;
+  if(!mscom->valid_micro_1) return ++err;
   if(mscom->valid_mm_inter && ic == NULL) return ++err;
 
   /* begin serving */
@@ -133,12 +133,17 @@ int micro_job_master(const MultiscaleComm *mscom, //deprecated
   int err = 0;
   /* exit if not master on microscale */
 <<<<<<< HEAD
+<<<<<<< HEAD
   if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
 
 =======
  int micro_model = 1;//this is unused code anyways
  if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
 >>>>>>> fixed all mpi/memory errors. beginning tests
+=======
+ int micro_model = 1;//this is unused code anyways
+ if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* broadcast job information */
   int job_init_info[2] = {0,0};
   job_init_info[0] = idx;
@@ -163,7 +168,7 @@ int micro_job_slave(const MultiscaleComm *mscom, //deprecated
   int exit_server = 0;
   int micro_model = 1;//this is unused code anyways
   /* exit if not slave on microscale */
-  if(!mscom->valid_micro && mscom->rank_micro <= 0) return ++err;
+  if(!mscom->valid_micro_1 && mscom->rank_micro <= 0) return ++err;
 
   while(!exit_server){
     /* get job information from master */

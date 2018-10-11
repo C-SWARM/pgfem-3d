@@ -82,6 +82,7 @@
                 const size_t buffer_len,
                 char *buffer);
 
+
   /** unpack the buffer into a job. NOTE: the job must be the same
       size (nnodes) */
   int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,

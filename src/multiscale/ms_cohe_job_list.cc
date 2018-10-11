@@ -94,7 +94,11 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
                                   const PGFem3D_Comm macro_comm,
                                   const PGFem3D_Comm ms_comm,
                                   const int group_id,
+<<<<<<< HEAD
                                   long **n_job_dom,
+=======
+                                  long **n_job_dom,long **n_job_dom_ROM,
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
                                   MS_COHE_JOB_INFO **job_list,
                                   MS_COHE_JOB_INFO **job_list_ROM,
 				  Network *net,
@@ -110,6 +114,7 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
   net->comm_rank(macro_comm,&macro_rank);
   int *micro_methods; 
   int *buff_sizes = NULL;
+  int *buff_sizes_ROM = NULL;
   int *buff_starts = NULL;
   int *buff_starts_ROM = NULL;
   char *buffer = NULL;
@@ -118,12 +123,24 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
   long job_id_start_ROM = 0;
 
   *job_list = NULL;
+<<<<<<< HEAD
   long *Gn_jobs = NULL;
   err += compute_loc_job_list_metadata(pde_jobs,coel,node,n_job_dom,
                                        Gn_jobs,&job_id_start,net,ms_comm);
   long **n_job_dom_ROM = NULL;
   err += compute_loc_job_list_metadata(jobs_ROM,coel,node,n_job_dom_ROM,             // compute a rom list
                                        Gn_jobs,&job_id_start_ROM,net,ms_comm);
+=======
+  *job_list_ROM = NULL;
+  long jobs_ptee = pde_jobs;
+  long *Gn_jobs = &jobs_ptee;
+  long jobs_ptee_ROM = jobs_ROM;
+  long *Gn_jobs_ROM = &jobs_ptee_ROM;
+  err += compute_loc_job_list_metadata(pde_jobs,coel,node,n_job_dom,
+                                       Gn_jobs,&job_id_start,net,ms_comm);
+  err += compute_loc_job_list_metadata(jobs_ROM,coel,node,n_job_dom_ROM,             // compute a rom list
+                                       Gn_jobs_ROM,&job_id_start_ROM,net,ms_comm);
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -133,14 +150,20 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
 
   /* allocate list */
   *job_list = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs);
-
+  *job_list_ROM = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs_ROM);
   buff_sizes = PGFEM_calloc(int, nproc);
+  buff_sizes_ROM = PGFEM_calloc(int, nproc);
   buff_sizes[myrank] = 0;
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
   buff_sizes_ROM[myrank] = 0;
   micro_methods = opts->methods;
 >>>>>>> more 2-comm changes, getting ready for rebase
+=======
+  buff_sizes_ROM[myrank] = 0;
+  micro_methods = opts->methods;
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   err += create_local_ms_cohe_job_list(pde_jobs,coel,node,group_id,
                                        (*n_job_dom)[myrank],
                                        *job_list + job_id_start,
@@ -151,12 +174,17 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
                                        (*n_job_dom_ROM)[myrank],
                                        *job_list_ROM + job_id_start_ROM,
 <<<<<<< HEAD
+<<<<<<< HEAD
                                        &buff_sizes[myrank],macro_rank,
                mp_id);
 =======
                                        &buff_sizes_ROM[myrank],macro_rank,
                mp_id,micro_methods,0);
 >>>>>>> more 2-comm changes, getting ready for rebase
+=======
+                                       &buff_sizes_ROM[myrank],macro_rank,
+               mp_id,micro_methods,0);
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -166,19 +194,32 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
   buff_starts_ROM = PGFEM_calloc(int,nproc);
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes,1,NET_DT_INT,ms_comm);
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes_ROM,1,NET_DT_INT,ms_comm);
   if(check_warning(err,myrank)) goto exit_function;
 
 >>>>>>> more 2-comm changes, getting ready for rebase
+=======
+  net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes_ROM,1,NET_DT_INT,ms_comm);
+  if(check_warning(err,myrank)) goto exit_function;
+
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   {
     size_t g_buff_size = 0;
+    size_t g_buff_size_ROM = 0;
     for(int i=0; i<nproc; i++){
       buff_starts[i] = g_buff_size;
+      buff_starts_ROM[i] = g_buff_size_ROM;
       g_buff_size += buff_sizes[i];
+      g_buff_size_ROM += buff_sizes_ROM[i];
     }
     buffer = PGFEM_calloc(char, g_buff_size);
+<<<<<<< HEAD
     buffer_ROM = PGFEM_calloc(char, g_buff_size);
+=======
+    buffer_ROM = PGFEM_calloc(char, g_buff_size_ROM);
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   }
   if(check_warning(err,myrank)) goto exit_function;
 
@@ -266,9 +307,14 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
 
  exit_function:
   free(buffer);
+  free(buffer_ROM);
   free(buff_sizes);
   free(buff_starts);
+<<<<<<< HEAD
   free(n_job_dom_ROM);
+=======
+  free(buff_starts_ROM);
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   return err;
 } /* create_group_ms_cohe_job_list() */
 

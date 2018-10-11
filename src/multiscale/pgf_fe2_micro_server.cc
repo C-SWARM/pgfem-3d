@@ -129,16 +129,29 @@ static void pgf_FE2_micro_server_probe_start(const MultiscaleComm *mscom,
   ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
   int msg_waiting = 0;
   while (1){
-
-    /* exit */
-    net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_EXIT,
-		mscom->mm_inter,&msg_waiting,stat);
-    if(msg_waiting) break;
+    if (mscom->valid_mm_inter){
+      /* exit */
+      net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_EXIT,
+		  mscom->mm_inter,&msg_waiting,stat);
+      if(msg_waiting) break;
     
-    /* rebalance */
-    net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_REBALANCE,
-		mscom->mm_inter,&msg_waiting,stat);
-    if(msg_waiting) break;
+      /* rebalance */
+      net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_REBALANCE,
+  		mscom->mm_inter,&msg_waiting,stat);
+      if(msg_waiting) break;
+    }
+
+    if (mscom->valid_mm_inter_ROM){
+      /* exit */
+      net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_EXIT,
+      mscom->mm_inter_ROM,&msg_waiting,stat);
+      if(msg_waiting) break;
+
+      /* rebalance */
+      net->iprobe(NET_ANY_SOURCE,FE2_MICRO_SERVER_REBALANCE,
+      mscom->mm_inter_ROM,&msg_waiting,stat);
+      if(msg_waiting) break;
+    }
 
     /* other ... */
   }
@@ -476,14 +489,20 @@ static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
       
     default: /* valid job, compute work */
 <<<<<<< HEAD
+<<<<<<< HEAD
       pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id);
 =======
+=======
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
         if (mscom->valid_micro_1) {
           pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,1);
         } else { //ROM
           pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,2);
         }
+<<<<<<< HEAD
 >>>>>>> fixed all mpi/memory errors. beginning tests
+=======
+>>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
       break;
     }
   }
@@ -496,9 +515,9 @@ int pgf_FE2_micro_server_START(const MultiscaleComm *mscom,
 			       const int mp_id)
 {
   int err = 0;
-  assert(mscom->valid_micro);
-  if (mscom->valid_mm_inter){
-   err += pgf_FE2_micro_server_master(mscom,micro,mp_id);
+//  assert(mscom->valid_micro);
+  if (mscom->valid_mm_inter || mscom->valid_mm_inter_ROM){
+   err += pgf_FE2_micro_server_master(mscom,micro,mp_id);  
   } else {
     if (mscom->valid_micro_1) {
       err += pgf_FE2_micro_server_worker(mscom,micro,mp_id,1);
