@@ -155,11 +155,7 @@ int multi_scale_main(int argc, char* argv[])
   CommunicationStructure *com = new CommunicationStructure{};
   Macroscale *macro = NULL;
   Microscale *micro = NULL;
-<<<<<<< HEAD
-  Microscale *micro2= NULL;
-=======
   Microscale *micro_ROM= NULL;
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   
   //load comm hints, macro/micro class, macro/micro filenames
   if (mscom->valid_macro) {
@@ -187,11 +183,8 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->macro; // MS communicators in mscom
 //      PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
-<<<<<<< HEAD
 //      PGFEM_redirect_io_macro();
 
-=======
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   } else if(mscom->valid_micro_1) {
     /*====== MICROSCALE =======*/
     micro = new Microscale();
@@ -217,21 +210,11 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->micro; // MS communicators in mscom
 //      PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
-<<<<<<< HEAD
-//      PGFEM_redirect_io_micro();
-
-  } else if(mscom->valid_micro_ROM) {
-    /*====== MICROSCALE =======*/
-    micro2 = new Microscale();
-    re_parse_command_line(myrank, 1, micro2_argc, micro2_argv, &options);
-
-=======
   } else if(mscom->valid_micro_ROM) {
     /*====== MICROSCALE =======*/
     micro_ROM = new Microscale();
     re_parse_command_line(myrank, 1, micro2_argc, micro2_argv, &options);
     PGFEM_printf("my micro 2 rank is %d \n",myrank);
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
     int micro_rank;
     net->comm_rank(mscom->micro_ROM, &micro_rank);
     com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
@@ -249,17 +232,11 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->micro_ROM; // MS communicators in mscom
-<<<<<<< HEAD
-=======
 
-    micro_ROM->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
-//      PGFEM_redirect_io_micro();
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
     micro_ROM->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
 //      PGFEM_redirect_io_micro();
 
-    micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
   }
   
   /*=== INITIALIZE SCALES ===*/
@@ -327,11 +304,7 @@ int multi_scale_main(int argc, char* argv[])
         char in_dat[1024];
         sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
         sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
-<<<<<<< HEAD
-        read_simulation_methods(filenameMS,micro2->opts);
-=======
         read_simulation_methods(filenameMS,micro_ROM->opts);
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
       }
       /* no output */
 //      PGFEM_redirect_io_null();
@@ -345,15 +318,9 @@ int multi_scale_main(int argc, char* argv[])
       int nproc_world;
       net->comm_size(mscom->world, &nproc_world);
       int group_id = mscom->rank_micro_all/micro_group_size;
-<<<<<<< HEAD
-      int dir_len = snprintf(NULL,0,"%s/log",micro2->opts->opath)+1;
-      char *dir_name = PGFEM_calloc(char, dir_len);
-      sprintf(dir_name,"%s/log",micro2->opts->opath);
-=======
       int dir_len = snprintf(NULL,0,"%s/log",micro_ROM->opts->opath)+1;
       char *dir_name = PGFEM_calloc(char, dir_len);
       sprintf(dir_name,"%s/log",micro_ROM->opts->opath);
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
       make_path(dir_name,DIR_MODE);
       dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
       char *fname = PGFEM_calloc(char, dir_len);
@@ -368,13 +335,8 @@ int multi_scale_main(int argc, char* argv[])
     }
 
     /*=== BUILD MICROSCALE ===*/
-<<<<<<< HEAD
-    micro2->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
-    micro2->opts->reduced_order = 1;
-=======
     micro_ROM->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
     micro_ROM->opts->reduced_order = 1;
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   } else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale or microscale 2!\n%s:%s:%d",
                    mscom->rank_world,__func__,__FILE__,__LINE__);
@@ -421,21 +383,12 @@ int multi_scale_main(int argc, char* argv[])
 
     micro_ROM->build_solutions(jobs_ROM);
 
-<<<<<<< HEAD
-    micro2->opts->custom_micro = options.custom_micro;
-    micro2->opts->auto_micro = options.auto_micro;
-    err += pgf_FE2_micro_server_START(mscom, micro2, mp_id);//everything micro 2 basically happens here
-
-    /* destroy the microscale */
-    delete micro2;
-=======
     micro_ROM->opts->custom_micro = options.custom_micro;
     micro_ROM->opts->auto_micro = options.auto_micro;
     err += pgf_FE2_micro_server_START(mscom, micro_ROM, mp_id);//everything micro 2 basically happens here
 
     /* destroy the microscale */
     delete micro_ROM;
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
   } else { /*=== MACROSCALE ===*/
     int n_jobs_max = macro->nce;//shouldnt mess with the rebalancing
