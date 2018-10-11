@@ -219,6 +219,19 @@ namespace pgfem3d {
 
     // No recv post with one-sided Photon/PWC
   }
+  void PWC_SparseComm::print_stiffmat()
+  {
+    /*print stiffness matrix */
+    PGFEM_printf("stiffmat : \n");
+    for(int i = 0; i < Ns; i++) {
+      size_t idx = Nss[i];
+      for(int j = 0; j < AS[idx]; j++) {
+        PGFEM_printf("%lf ",send[idx][j]);
+      }
+      PGFEM_printf("\n");
+    }
+  }
+
 
   void PWC_SparseComm::send_stiffmat()
   {

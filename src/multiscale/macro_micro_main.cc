@@ -181,7 +181,7 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->macro; // MS communicators in mscom
-      PGFEM_redirect_io_null();
+//      PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
   } else if(mscom->valid_micro_1) {
     /*====== MICROSCALE =======*/
@@ -206,7 +206,7 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->micro; // MS communicators in mscom
-      PGFEM_redirect_io_null();
+//      PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
   } else if(mscom->valid_micro_ROM) {
     /*====== MICROSCALE =======*/
@@ -232,7 +232,7 @@ int multi_scale_main(int argc, char* argv[])
     com->comm = mscom->micro_ROM; // MS communicators in mscom
 
     micro_ROM->initialize(micro2_argc, micro2_argv, com, mp_id,mp);
-      PGFEM_redirect_io_micro();
+//      PGFEM_redirect_io_micro();
 
   }
   
@@ -251,7 +251,7 @@ int multi_scale_main(int argc, char* argv[])
     macro->opts->custom_micro = options.custom_micro;
   }
   else if (mscom->valid_micro_1) {/*=== MICROSCALE ===*/
-    PGFEM_redirect_io_micro();
+//    PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
       if (options.custom_micro == 1) {
@@ -262,11 +262,11 @@ int multi_scale_main(int argc, char* argv[])
         read_simulation_methods(filenameMS,micro->opts);
       }
       /* no output */
-      PGFEM_redirect_io_null();
+//      PGFEM_redirect_io_null();
       parse_command_line(micro_argc, micro_argv, mscom->rank_micro_1,
                          micro->opts);
 
-      PGFEM_redirect_io_micro();
+//      PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
          filename */
@@ -284,7 +284,7 @@ int multi_scale_main(int argc, char* argv[])
       /* reinitialize I/O */
       PGFEM_finalize_io();
       PGFEM_initialize_io(NULL,fname);
-      PGFEM_redirect_io_micro();
+//      PGFEM_redirect_io_micro();
       free(dir_name);
       free(fname);
     }
@@ -293,7 +293,7 @@ int multi_scale_main(int argc, char* argv[])
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
     micro->opts->reduced_order = 0;
   } else if (mscom->valid_micro_ROM) {/*=== MICROSCALE ===*/
-    PGFEM_redirect_io_micro();
+//    PGFEM_redirect_io_micro();
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
       if (options.custom_micro == 1) {
@@ -304,11 +304,11 @@ int multi_scale_main(int argc, char* argv[])
         read_simulation_methods(filenameMS,micro_ROM->opts);
       }
       /* no output */
-      PGFEM_redirect_io_null();
+//      PGFEM_redirect_io_null();
       parse_command_line(micro2_argc, micro2_argv, mscom->rank_micro_ROM,
                          micro_ROM->opts);
 
-      PGFEM_redirect_io_micro();
+//      PGFEM_redirect_io_micro();
 
       /* create the directory for log output and set logging
  *          filename */
@@ -326,7 +326,7 @@ int multi_scale_main(int argc, char* argv[])
       /* reinitialize I/O */
       PGFEM_finalize_io();
       PGFEM_initialize_io(NULL,fname);
-      PGFEM_redirect_io_micro();
+//      PGFEM_redirect_io_micro();
       free(dir_name);
       free(fname);
     }
@@ -800,6 +800,7 @@ int multi_scale_main(int argc, char* argv[])
         assert(re_err == 0);
 
         /* complete communication cycle w/ microscale */
+
         int junk = 0;
         pgf_FE2_macro_client_recv_jobs(client,macro,&junk,1);//for micro 1
         pgf_FE2_macro_client_recv_jobs(client,macro,&junk,2);//for micro ROM 
