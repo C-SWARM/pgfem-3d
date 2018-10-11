@@ -62,16 +62,19 @@ compare_second_int(const void *a, const void *b)
 /* fully define the macro client structure */
 struct pgf_FE2_macro_client{
   size_t n_jobs_loc;      /* how many jobs are on THIS macro-domain */
+  size_t n_jobs_loc_ROM;
   size_t n_jobs_glob;     /* how many jobs are on ALL macro-domains */
+  size_t n_jobs_glob_ROM;
   size_t n_jobs_max;      /* maximum number of jobs on each server */
   size_t n_server;        /* number of servers */
-  size_t n_server_2;      //number of micro 2 servers
+  size_t n_server_ROM;      //number of micro 2 servers
   MS_COHE_JOB_INFO *jobs; /* macroscale job(s) */
 
   /* communication buffers */
   MultiscaleServerContext *send;
   MultiscaleServerContext *recv;
-
+  MultiscaleServerContext *send_ROM;
+  MultiscaleServerContext *recv_ROM;
   /* for broadcasting */
   /* When using this datastructure to communicate with servers, set
      active to true before 1st communication and set to 0 after
@@ -82,7 +85,14 @@ struct pgf_FE2_macro_client{
     int *ranks;
     Request *req;
   } bcast;
-  
+
+  struct BCAST_ROM{ //there is probably a better way to do this
+    size_t active;
+    size_t n_comm;
+    int *ranks;
+    Request *req;
+  } bcast_ROM;
+ 
   Network *net; // handle to the network
 };
 
@@ -227,6 +237,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   if(rank >= n_server) return err;
 
   int n_comm = 0;
+  int n_comm_ROM = 0;
   int nproc_macro = 0;
   int nproc_inter = 0;
   int nproc_inter_ROM = 0;
@@ -247,7 +258,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
     if(rem > 0 && rem > rank) n_comm++;
 
     n_comm_ROM = n_server_ROM/nproc_macro;
-    unsigned rem = n_server_ROM % nproc_macro;
+    rem = n_server_ROM % nproc_macro;
     if(rem > 0 && rem > rank) n_comm_ROM++;
   }
 
@@ -281,7 +292,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
   assert(client->bcast.ranks[n_comm - 1] < nproc_inter);
 
   /* check max rank for validity */
-  assert(client->bcast.ranks_ROM[n_comm_ROM - 1] < nproc_inter_ROM);//may not be necessary if no 2nd micro
+  assert(client->bcast_ROM.ranks[n_comm_ROM - 1] < nproc_inter_ROM);//may not be necessary if no 2nd micro
 
   return err;
 }
@@ -393,11 +404,11 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
   client = NULL;
 }
 
-void find_job_sizes_from_map(Macroscale *macro,int *ROM_jobs, int *pde_jobs) {
+void find_job_sizes_from_map(const Macroscale *macro,int *jobs_ROM, int *pde_jobs) {
   int i;
   for (i = 0; i < macro->nce ; i++ ) { 
     if (macro->opts->methods[i] == 1) { pde_jobs++;}
-    else {ROM_jobs++;}
+    else {jobs_ROM++;}
   }
 
 }
@@ -415,7 +426,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
     int n_proc_inter_ROM = 0;
     client->net->comm_size(mscom->macro, &n_proc_macro);
     client->net->comm_size(mscom->mm_inter, &n_proc_inter);
-    client->net->comm_size(mscom->mm_inter_2, &n_proc_inter_ROM);
+    client->net->comm_size(mscom->mm_inter_ROM, &n_proc_inter_ROM);
     client->n_server = n_proc_inter - n_proc_macro;
     client->n_server_ROM= n_proc_inter_ROM - n_proc_macro;
   }
@@ -424,13 +435,14 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 
   /* get number of jobs and buffer sizes. */
   int n_jobs = 0;
-  int n_jobs_ROM = 0;
+  int jobs_ROM = 0;
+  int pde_jobs = 0;
   int *job_buf_sizes = NULL;
   compute_n_job_and_job_sizes(c,&n_jobs,&job_buf_sizes);
-  find_job_sizes_from_map(macro,&ROM_jobs, &pde_jobs) 
+  find_job_sizes_from_map(macro,&jobs_ROM, &pde_jobs); 
 
   client->n_jobs_loc = pde_jobs;
-  client->n_jobs_loc_ROM = ROM_jobs;
+  client->n_jobs_loc_ROM = jobs_ROM;
 
   long Gn_jobs = 0;
   long *n_job_dom = NULL;
@@ -451,7 +463,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 			 NET_OP_SUM,mscom->macro);
   client->n_jobs_glob = Gn_jobs;
   client->n_jobs_max = n_jobs_max;
-  client->n_jobs_glob_ROM = ROM_jobs;//just one macro server for now
+  client->n_jobs_glob_ROM = jobs_ROM;//just one macro server for now
 
   /* make sure sufficient resources to compute solution */
   if(client->n_server * client->n_jobs_max < (size_t)Gn_jobs){
