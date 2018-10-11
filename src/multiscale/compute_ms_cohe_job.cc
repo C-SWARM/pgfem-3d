@@ -222,7 +222,7 @@ int compute_ms_cohe_job(const int job_id,
   const int print_level = 1;
   int high_norm;
   MultiscaleCommon *common = microscale;
-  MULTISCALE_SOLUTION *sol = microscale->sol + job_id;
+  MULTISCALE_SOLUTION *sol = microscale->sol + job_id;//where some? microscale solutions are held
 
   int myrank = 0;
   microscale->net->comm_rank(common->comm,&myrank);
@@ -282,11 +282,10 @@ int compute_ms_cohe_job(const int job_id,
 //1 -> nr
 ////0 -> tm
     if(microscale->opts->custom_micro) {
-      int simulation_method = microscale->opts->methods[p_job->elem_id + common->nce*0]; // using 0th time step for now
 
-      if (simulation_method){
+      if (micro_model == 1){
         err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //nr = Newton Raphson
-      } else {
+      } else {//ROM
         ms_cohe_job_tm(common,sol,myrank); //tm = Taylor model
       }
     } else {

@@ -12,6 +12,7 @@ public:
   void initialize();
   void post_stiffmat(double ***Lk, double ***receive);
   void send_stiffmat();
+  void print_stiffmat();
   void finalize_stiffmat();
   void assemble_nonlocal_stiffmat(pgfem3d::solvers::SparseSystem* system);
 

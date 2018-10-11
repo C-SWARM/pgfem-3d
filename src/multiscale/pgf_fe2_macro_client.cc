@@ -477,8 +477,13 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   long *n_job_dom = NULL;//why is this created outside and not inside, if its destroyed right after?
   create_group_ms_cohe_job_list(pde_jobs,jobs_ROM,c->coel,c->node,
 				mscom->macro,NET_COMM_SELF,
+<<<<<<< HEAD
 				0,&n_job_dom,
 				&(client->jobs),&(client->jobs_ROM),c->net,mp_id);
+=======
+				0,&n_job_dom, &n_job_dom_ROM,
+				&(client->jobs),&(client->jobs_ROM),c->net,mp_id,macro->opts);
+>>>>>>> more 2-comm changes, getting ready for rebase
   /* free unused memory */
   free(n_job_dom);
 
@@ -755,8 +760,11 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
        send the *increment* of the solution (f = d_r + rr) since the
        cohesive elements are implemented assuming updated formulation
        of the displacement field (u_n computed from coordinates) */
-    err += macroscale_update_job_info(macro,job_type,macro->sol->f,job_list+i);
-
+    if (micro_model == 2) {
+      err += macroscale_update_job_info(macro,job_type,macro->sol->f,job_list+i);
+    } else {
+      err += macroscale_update_job_info(macro,job_type,macro->sol->f,job_list+i);
+    }
     /* pack the job info into the buffer to send */
     err += pack_MS_COHE_JOB_INFO(job_list + i,send->sizes[i],
                  send->buffer[i]);
@@ -775,15 +783,13 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
 void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 				    Macroscale *macro,
 				    int *max_micro_sub_step,
-              int micro_model)
+            int micro_model)
 {
   /* Get aliases from client object etc. */
   MultiscaleServerContext *recv;
   MultiscaleServerContext *send;
   MS_COHE_JOB_INFO *job_list;
-
   if (micro_model == 2) {//will eventually be replaced by an array
-
     recv = client->recv_ROM;
     send = client->send_ROM;
     job_list = client->jobs_ROM;
@@ -792,7 +798,6 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
     send = client->send;
     job_list = client->jobs;
   }
-
 
   /* reset the max number of steps */
   *max_micro_sub_step = 0;
@@ -833,30 +838,35 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
       switch(job->job_type){
       case JOB_COMPUTE_EQUILIBRIUM:
 	/* assemble residual (local) */
-	for(int j=0; j<job->ndofe; j++){
-	  int dof_id = job->loc_dof_ids[j] - 1;
-	  if(dof_id < 0) continue; /* boundary condition */
-	  s->f_u[dof_id] += job->traction_res[j];
-	}
+    	  for(int j=0; j<job->ndofe; j++){
+	        int dof_id = job->loc_dof_ids[j] - 1;
+	        if(dof_id < 0) continue; /* boundary condition */
+	          s->f_u[dof_id] += job->traction_res[j];
+	        }
 	
 	/*** Deliberate drop through ***/
       case JOB_NO_COMPUTE_EQUILIBRIUM:
 	/* assemble tangent to local and off-proc buffers */
-	PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
+	      PLoc_Sparse(Lk,job->K_00_contrib,NULL,NULL,NULL,job->g_dof_ids,
 		    job->ndofe,NULL,c->GDof,rank_macro,nproc_macro,
 		    c->spc,0,c->SOLVER,c->opts->analysis_type);
-	break;
+	      break;
       case JOB_UPDATE:
 	/* update cohesive elements */
-	macroscale_update_coel(job,macro);
-	break;
+
+        if (micro_model == 2) {//ROM
+  	      macroscale_update_coel(job,macro);
+        } else {  //pde
+          macroscale_update_coel(job,macro);
+        }
+    	break;
       default: /* do nothing */ break;
       }
     }
 
     /* send/finalize communication of the stiffness matrix */
     c->spc->send_stiffmat();
-
+//    c->spc->print_stiffmat();
     /* get maximum number of steps from all macro processors */
     net->allreduce(NET_IN_PLACE,max_micro_sub_step,
 		   1,NET_DT_INT,NET_OP_MAX,c->comm);
@@ -894,5 +904,21 @@ void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
   /* wait for exit code to be received */
   net->waitall(n_send,req,NET_STATUS_IGNORE);
   client->bcast.active = 0;
+
+  const size_t n_send_ROM = client->bcast_ROM.n_comm;
+  const int *ranks_ROM = client->bcast_ROM.ranks;
+  Request *req_ROM = client->bcast_ROM.req;
+
+  client->bcast_ROM.active = 1;
+  void *empty_ROM = NULL;
+  for(size_t i=0; i<n_send_ROM; i++){
+    net->isend(empty_ROM,0,NET_DT_CHAR,ranks_ROM[i],FE2_MICRO_SERVER_EXIT,
+         mscom->mm_inter_ROM,req_ROM + i);
+  }
+
+  /* wait for exit code to be received */
+  net->waitall(n_send_ROM,req,NET_STATUS_IGNORE);
+  client->bcast_ROM.active = 0;
+
 }
 
