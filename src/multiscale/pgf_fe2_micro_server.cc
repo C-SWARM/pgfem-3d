@@ -488,21 +488,11 @@ static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
       break;
       
     default: /* valid job, compute work */
-<<<<<<< HEAD
-<<<<<<< HEAD
-      pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id);
-=======
-=======
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
         if (mscom->valid_micro_1) {
           pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,1);
         } else { //ROM
           pgf_FE2_job_compute_worker(info[0],info[1],micro,mp_id,2);
         }
-<<<<<<< HEAD
->>>>>>> fixed all mpi/memory errors. beginning tests
-=======
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
       break;
     }
   }

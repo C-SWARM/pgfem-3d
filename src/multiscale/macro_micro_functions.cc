@@ -132,18 +132,8 @@ int micro_job_master(const MultiscaleComm *mscom, //deprecated
 {
   int err = 0;
   /* exit if not master on microscale */
-<<<<<<< HEAD
-<<<<<<< HEAD
-  if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
-
-=======
  int micro_model = 1;//this is unused code anyways
  if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
->>>>>>> fixed all mpi/memory errors. beginning tests
-=======
- int micro_model = 1;//this is unused code anyways
- if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* broadcast job information */
   int job_init_info[2] = {0,0};
   job_init_info[0] = idx;

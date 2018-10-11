@@ -35,12 +35,8 @@ struct PGFem3D_opt {
   int auto_micro;
   int *methods;           //which micro cells contain taylor method
   int reduced_order;      //whether or not a micro server will be reduced order
-<<<<<<< HEAD
-
-=======
   int nce_micro_all;
   int nce_micro_ROM;
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* visualization options */
   int vis_format; /* gr2 */
   int ascii;

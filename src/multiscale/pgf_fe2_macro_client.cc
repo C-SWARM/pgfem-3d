@@ -275,14 +275,6 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
     n_comm = n_server/nproc_macro;
     unsigned rem = n_server % nproc_macro;
     if(rem > 0 && rem > rank) n_comm++;
-<<<<<<< HEAD
-
-    n_comm_ROM = n_server_ROM/nproc_macro;
-    rem = n_server_ROM % nproc_macro;
-    if(rem > 0 && rem > rank) n_comm_ROM++;
-  }
-=======
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
 
     n_comm_ROM = n_server_ROM/nproc_macro;
     rem = n_server_ROM % nproc_macro;
@@ -342,15 +334,11 @@ static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *cli
 
   if (micro_model == 2) {//will eventually be replaced by an array
     n_server = client->n_server_ROM;
-<<<<<<< HEAD
-    bcast = client->bcast_ROM;
-=======
     bcast.active = client->bcast_ROM.active;
     bcast.n_comm = client->bcast_ROM.n_comm;
     bcast.ranks  = client->bcast_ROM.ranks;
     bcast.req    = client->bcast_ROM.req;
 
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
     mm_inter = mscom->mm_inter_ROM;
   }
 
@@ -488,24 +476,6 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   int pde_jobs = 0;
   int *job_buf_sizes = NULL;
   compute_n_job_and_job_sizes(c,&n_jobs,&job_buf_sizes);
-<<<<<<< HEAD
-  find_job_sizes_from_map(macro,&jobs_ROM, &pde_jobs); 
-
-  client->n_jobs_loc = pde_jobs;
-  client->n_jobs_loc_ROM = jobs_ROM;
-
-  long Gn_jobs = 0;
-  long *n_job_dom = NULL;//why is this created outside and not inside, if its destroyed right after?
-  create_group_ms_cohe_job_list(pde_jobs,jobs_ROM,c->coel,c->node,
-				mscom->macro,NET_COMM_SELF,
-<<<<<<< HEAD
-				0,&n_job_dom,
-				&(client->jobs),&(client->jobs_ROM),c->net,mp_id);
-=======
-				0,&n_job_dom, &n_job_dom_ROM,
-				&(client->jobs),&(client->jobs_ROM),c->net,mp_id,macro->opts);
->>>>>>> more 2-comm changes, getting ready for rebase
-=======
   int i;//  find_job_sizes_from_map 
   for (i = 0; i < macro->nce ; i++ ) {
     if (macro->opts->methods[i] == 1) { pde_jobs++;}
@@ -521,7 +491,6 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 				mscom->macro,NET_COMM_SELF,
 				0,&n_job_dom, &n_job_dom_ROM,
 				&(client->jobs),&(client->jobs_ROM),c->net,mp_id,macro->opts);
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* free unused memory */
   free(n_job_dom);
   free(n_job_dom_ROM);
@@ -603,13 +572,6 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 			 mscom->macro);
   client->net->allgather(NET_IN_PLACE,1,NET_DT_INT,n_jobs_ROM,1,NET_DT_INT,
        mscom->macro);
-<<<<<<< HEAD
-
-
-=======
-
-
->>>>>>> 56768dcd05fd9525ebaf1db9f08b1889daef65bf
   /* compute partial sum for displ and set proc_id and time*/
   displ[0] = 0;
   const size_t max_proc = client->n_server;

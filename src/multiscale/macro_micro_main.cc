@@ -242,7 +242,7 @@ int multi_scale_main(int argc, char* argv[])
   /*=== INITIALIZE SCALES ===*/
   if (mscom->valid_macro) {/*=== MACROSCALE ===*/
       if (options.custom_micro == 1) { //macro needs to know what micro cells are taylor/pde
-        char filenameMS[1024];
+        char filenameMS[2048];
         char in_dat[1024];
         sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
         sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
@@ -258,7 +258,7 @@ int multi_scale_main(int argc, char* argv[])
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
       if (options.custom_micro == 1) {
-        char filenameMS[1024];
+        char filenameMS[2048];
         char in_dat[1024];
         sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
         //sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
@@ -300,7 +300,7 @@ int multi_scale_main(int argc, char* argv[])
     /*=== REDIRECT MICROSCALE I/O ===*/
     {
       if (options.custom_micro == 1) {
-        char filenameMS[1024];
+        char filenameMS[2048];
         char in_dat[1024];
         sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
         sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
