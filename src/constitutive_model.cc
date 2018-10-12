@@ -4088,7 +4088,10 @@ int constitutive_model_update_NR(Grid *grid,
 
   for (int eid = 0; eid < grid->ne; eid++)
   {
-    FEMLIB fe(eid,elem,node,0,total_Lagrangian);
+    FEMLIB fe;
+    Constitutive_model *m = (fv->eps[eid]).model;
+    fe.initialization(eid,elem,node,0,total_Lagrangian,m->param->pFI);
+        
     int nsd   = fe.nsd;
     int nne   = fe.nne;
     int ndofe = nne*ndofn;
