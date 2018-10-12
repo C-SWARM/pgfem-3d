@@ -4187,7 +4187,6 @@ void compute_cm_initial_conditions(Grid *grid,
                                    const Multiphysics &mp,
                                    const int mp_id,
                                    const int analysis_type){
-
   const int total_Lagrangian = 1;
   const int intg_order = 0;
      
@@ -4283,10 +4282,13 @@ void compute_cm_initial_conditions(Grid *grid,
                   
       double eJip_n   = ttl::det(eFn);
       double eJip_nm1 = ttl::det(eFnm1);
+
+      double Jip_n   = ttl::det(Fn);
+      double Jip_nm1 = ttl::det(Fnm1);        
         
       V      += fe.detJxW;
-      eJ_n   += fe.detJxW*eJip_n;
-      eJ_nm1 += fe.detJxW*eJip_nm1;
+      eJ_n   += fe.detJxW*Jip_n;
+      eJ_nm1 += fe.detJxW*Jip_nm1;
       Up_n   += fe.detJxW*func->compute_dudj(m, eJip_n,   -1, 0);
       Up_nm1 += fe.detJxW*func->compute_dudj(m, eJip_nm1, -1, 0);
     }
