@@ -1122,11 +1122,6 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
-      //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
-      // of the load vector
-      err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
-                                                   &options,mp,ia,&com[ia]);
-
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
       {
 
@@ -1202,6 +1197,15 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
+      if(tim==options.restart+1){
+        for(int ia=0; ia<mp.physicsno; ia++){           
+          //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
+          // of the load vector
+          err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
+                                                     &options,mp,ia,&com[ia]);
+        }
+      }
+
       /*=== NEWTON RAPHSON ===*/
       if(sol[0].FNR == 0 || sol[0].FNR == 1)
       {
@@ -1253,7 +1257,6 @@ int single_scale_main(int argc,char *argv[])
           if(tim>=2)                         // if options.restart==1: tim = 2
             time_steps.times[tim-2] = tnm1[0];
         }
-
 
         //----------------------------------------------------------------------
         // Perform Newton Raphson interation
