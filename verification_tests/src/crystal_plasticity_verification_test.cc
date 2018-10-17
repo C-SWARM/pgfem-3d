@@ -88,13 +88,13 @@ void test_crystal_plasticity_single_crystal(void)
   set_properties_constitutive_model(&mat,&mat_e,&mat_p);
 
   // create solver info: criteria for numerical iterations
-  CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
-  set_crystal_plasticity_solver_info(&solver_info,max_itr_stag,
-                                                  max_itr_hardening,
-                                                  max_itr_M,
-                                                  tol_hardening,
-                                                  tol_M,
-                                                  computer_zero);
+  GcmSolverInfo solver_info;
+  set_gcm_solver_info(&solver_info,max_itr_stag,
+                      max_itr_hardening,
+                      max_itr_M,
+                      tol_hardening,
+                      tol_M,
+                      computer_zero);
   //print_crystal_plasticity_solver_info(&solver_info); // <= this is optional
 
   // create elasticity object for integration
@@ -103,42 +103,59 @@ void test_crystal_plasticity_single_crystal(void)
   construct_elasticity(&elast, &mat_e, 1);
 
   // set variables for integration
-  ttl::Tensor<2,DIM_3,double> pFn,pFnp1,pFnp1_I,eFnp1,Fn,Fnp1 = {},sigma,PK2dev,sigma_dev;
+  ttl::Tensor<2,DIM_3,double> pFn,pFnp1,pFnp1_I,eFnp1,Fnm1,Fn,Fnp1 = {},sigma,PK2dev,sigma_dev;
 
   pFn   = ttl::identity(i,j);
   pFnp1 = ttl::identity(i,j);
   eFnp1 = ttl::identity(i,j);
+  Fnm1  = ttl::identity(i,j);
   Fn    = ttl::identity(i,j);
   Fnp1  = ttl::identity(i,j);
 
-  double g_n,g_np1;
-  g_n = g_np1 = mat_p.g0;
-
+  double g_np1;
+  double lambda = 0.0;
   double dt = 0.1;
 
   // start integration
   ttl::Tensor<2,DIM_3,double*> PK2(elast.S);
 
   FILE *fp = fopen("single_crystal_results.txt", "w");
+  
+  double hF[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
 
+  GcmCpIntegrator integrator;
+  
+  integrator.mat         = &mat;
+  integrator.elasticity  = &elast;
+  integrator.solver_info = &solver_info; 
+    
+  integrator.set_tensors(Fnp1.data,
+                         Fn.data,
+                         Fnm1.data,
+                         pFnp1.data,
+                         pFn.data,
+                         hF,hF); 
+
+  integrator.gnp1   = &g_np1;
+  integrator.lambda = &lambda;
+  integrator.gn     = g_np1 = mat_p.g0;
+  
   for(int a = 1; a<=1000; a++)
   {
-    double lambda = 0.0;
+    lambda = 0.0;
     double t = a*dt;
 
     Fnp1[0][0] = 1.0 - t*1.0e-3;
     Fnp1[1][1] = Fnp1[2][2] = 1.0 + t*0.5*1.0e-3;
 
-    staggered_Newton_Rapson(pFnp1.data, &g_np1, &lambda,
-                            pFn.data, Fn.data,Fnp1.data,
-                            g_n, dt, &mat, &elast, &solver_info);
+    integrator.run_integration_algorithm(dt, dt);
 
     pFn = pFnp1(i,j);
     Fn  = Fnp1(i,j);
     inv(pFnp1,pFnp1_I);
     eFnp1 = Fnp1(i,k)*pFnp1_I(k,j);
 
-    g_n = g_np1;
+    integrator.gn = g_np1;
 
 
     // print result at time t
