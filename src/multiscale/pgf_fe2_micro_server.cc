@@ -339,8 +339,9 @@ static void pgf_FE2_micro_server_finish_cycle(const MultiscaleComm *mscom,
           mscom->mm_inter_ROM, req+i);
     }
   }
-
   net->waitall(n_macro_proc,req,NET_STATUS_IGNORE);
+
+//  net->waitall(1,req,NET_STATUS_IGNORE);
   free(buf);
   delete [] req;
 }
