@@ -1035,6 +1035,7 @@ int CP_PARAM::read_param(FILE *in)
 
   if(read_solver_info)
   {
+    
     match = fscanf(in, "%d %d %d %d %lf %lf %lf",
                    param_idx + PARAM_max_itr_stag,
                    param_idx + PARAM_max_itr_hardening,
@@ -1045,6 +1046,15 @@ int CP_PARAM::read_param(FILE *in)
                    param     + PARAM_computer_zero);
     if (match != 7) err++;
     assert(match == 7 && "Did not read expected number of parameters");
+    
+    set_gcm_solver_info(this->gcm_solver_info, 
+                        param_idx[PARAM_max_itr_stag],
+                        param_idx[PARAM_max_itr_hardening],
+                        param_idx[PARAM_max_itr_M],
+                        param[PARAM_tol_hardening],
+                        param[PARAM_tol_M],
+                        param[PARAM_computer_zero],
+                        param[PARAM_max_subdivision]);    
   }
   else // use default
   {
@@ -1139,6 +1149,7 @@ int CP_PARAM::model_dependent_initialization(void)
   this->model_param       = new double[PARAM_NO]();
   this->n_param_index     = PARAM_INX_NO;
   this->model_param_index = new int [PARAM_INX_NO]();
+  this->gcm_solver_info   = new GcmSolverInfo; 
   return 0;
 }
 
@@ -1148,6 +1159,7 @@ int CP_PARAM::model_dependent_finalization(void)
   destruct_slip_system(((this->cm_mat)->mat_p)->slip);
   free(((this->cm_mat)->mat_p)->slip);
   free((this->cm_mat)->mat_p);
+  delete this->gcm_solver_info;
   return err;
 }
 
@@ -1211,71 +1223,52 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
 
   const double dt = CTX->dt;
-  double *param     = (m->param)->model_param;
-  int    *param_idx = (m->param)->model_param_index;
     
-  CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
-  set_crystal_plasticity_solver_info(&solver_info,param_idx[PARAM_max_itr_stag],
-                                     param_idx[PARAM_max_itr_hardening],
-                                     param_idx[PARAM_max_itr_M],
-                                     param[PARAM_tol_hardening],
-                                     param[PARAM_tol_M],
-                                     param[PARAM_computer_zero]);
-  solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
-
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  double g_n   = state_var[VAR_g_n];
-  double g_np1 = state_var[VAR_g_np1];
-  double L_np1 = state_var[VAR_L_np1];
 
   Tensor<2> eFnp1,C,pFnp1_I;
-  TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), pFn(Fs[TENSOR_pFn].m_pdata),
-  Fn( Fs[TENSOR_Fn].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
+  TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
 
+
+  // get shorthand
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
-  ELASTICITY *elasticity = (m->param)->cm_elast;
+  ELASTICITY *elasticity              = (m->param)->cm_elast;
 
-  // compute slip system and rotate orientation
+  // compute slip system and rotate orientation  
   SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;
   SLIP_SYSTEM slip;
   construct_slip_system(&slip,slip_in->unit_cell);
   rotate_crystal_orientation(&slip, Fs[TENSOR_R].m_pdata, slip_in);
   (cm_mat->mat_p)->slip = &slip;
+    
+  GcmCpIntegrator integrator;
   
-  
-//  GcmCpIntegrator gcm_cp;
-/*  gcm_cp.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
-                     Fs[TENSOR_Fn].m_pdata,
-                     Fs[TENSOR_Fnm1].m_pdata,
-                     Fs[TENSOR_pFnp1].m_pdata,
-                     Fs[TENSOR_pFn].m_pdata,
-                     CTX->hFnp1,
-                     CTX->hFn);
-                     
-  */
+  integrator.mat         = (m->param)->cm_mat;
+  integrator.elasticity  = (m->param)->cm_elast;
+  integrator.solver_info = (m->param)->gcm_solver_info;
 
+  double I[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};  
+  double *hFnp1 = I, *hFn = I;
+  if(CTX->is_coulpled_with_thermal){
+    hFnp1 = CTX->hFnp1;
+    hFn   = CTX->hFn;
+  }
+  
+  integrator.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
+                         Fs[TENSOR_Fn].m_pdata,
+                         Fs[TENSOR_Fnm1].m_pdata,
+                         Fs[TENSOR_pFnp1].m_pdata,
+                         Fs[TENSOR_pFn].m_pdata,
+                         hFnp1,
+                         hFn);
+
+  integrator.gnp1   = state_var + VAR_g_np1;
+  integrator.lambda = state_var + VAR_L_np1;
+  integrator.gn     = state_var[VAR_g_n];
+  
   // perform integration algorithm for the crystal plasticity
-  if(CTX->is_coulpled_with_thermal)
-  {
-    err += staggered_Newton_Rapson_generalized(pFnp1.data,
-                                               &g_np1, &L_np1,
-                                               pFn.data, Fn.data, Fnp1.data,
-                                               CTX->hFn, CTX->hFnp1,
-                                               g_n, dt, cm_mat, elasticity, &solver_info);
-  }
-  else
-  {
-    err += staggered_Newton_Rapson(pFnp1.data,
-                                   &g_np1, &L_np1,
-                                   pFn.data, Fn.data, Fnp1.data,
-                                   g_n, dt, cm_mat, elasticity, &solver_info);
-  }
-
-  // update compute values from integration algorithm
-  state_var[VAR_g_np1] =  g_np1;
-  state_var[VAR_L_np1] =  L_np1;
-
+  err += integrator.run_integration_algorithm(dt, dt);
   err += inv(pFnp1,pFnp1_I);
 
   if(CTX->is_coulpled_with_thermal)
@@ -1289,6 +1282,8 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
     eFnp1 = Fnp1(i,k)*pFnp1_I(k,j);
 
   C = eFnp1(k,i)*eFnp1(k,j);
+  
+  double g_np1 = state_var[VAR_g_np1];
 
   elasticity->update_elasticity(elasticity,eFnp1.data, 0);
   err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,C.data, elasticity->S, &slip);
