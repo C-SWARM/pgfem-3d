@@ -706,8 +706,11 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
   /* cleanup */
   for(size_t i=0, e=client->n_server; i<e; i++){
     pgf_FE2_server_rebalance_destroy(rb_list[i]);
+  }
+  for(size_t i=0, e=client->n_server_ROM; i<e; i++){
     pgf_FE2_server_rebalance_destroy(rb_list_ROM[i]);
   }
+
   free(rb_list);
   free(rb_list_ROM);
 }
