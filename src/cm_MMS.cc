@@ -85,20 +85,7 @@ enum tensor_names {
   TENSOR_pFnm1,
   TENSOR_end
 };
-
-/// Private structure for use exclusively with this model and
-// associated functions.
-typedef struct cm_mms_ctx {
-  double *F;
-  double t;
-  double x;
-  double y;
-  double z;
-  double alpha; // mid point alpha
-  double *eFnpa;
-  int is_coulpled_with_thermal;
-  int npa;  
-} cm_mms_ctx;            
+          
 
 void MMS4cm_pF(double *pF, 
                const double t, 
@@ -108,19 +95,17 @@ void MMS4cm_pF(double *pF,
                const double *c);
 
 int CM_MMS_PARAM::integration_algorithm(Constitutive_model *m,
-                                        CM_Ctx &cm_ctx)
+                                        CM_Ctx &cm_ctx,
+                                        const double *x,
+                                        const double t)
 const
 {
   int err = 0;
 
-  const double t = cm_ctx.t;
-  const double x = cm_ctx.x;
-  const double y = cm_ctx.y;
-  const double z = cm_ctx.z;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   
   double c[6] = {10.0, 0.5, 1000.0, 1.0, 0.7, -50.0};
-  MMS4cm_pF(Fs[TENSOR_pFnp1].m_pdata, t, x, y, z, c);
+  MMS4cm_pF(Fs[TENSOR_pFnp1].m_pdata, t, x[0], x[1], x[2], c);
   
   memcpy(Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3*sizeof(double));
   return err;

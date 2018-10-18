@@ -19,7 +19,9 @@ class CM_MMS_PARAM: public Model_parameters
   public:
 
   virtual int integration_algorithm(Constitutive_model *m,
-                                    CM_Ctx &cm_ctx) const;
+                                    CM_Ctx &cm_ctx,
+                                    const double *x,
+                                    const double t) const;
   virtual int update_elasticity(const Constitutive_model *m,
                                 CM_Ctx &cm_ctx,
                                 double *L,

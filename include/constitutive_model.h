@@ -262,7 +262,14 @@ class Model_parameters
   ///                       controls execution of the user-defined integration algorithm. This
   ///                       is the mechanism for passing model-specific information into the
   ///                       general function interface.
+  /// \param[in]     x      material point coordinates, should be 3x1 vector
+  /// \param[in]     t      time
   /// \return non-zero on internal error that should be handled by the calling function.
+  virtual int integration_algorithm(Constitutive_model *m,
+                                    CM_Ctx &cm_ctx,
+                                    const double *x,
+                                    const double t) const { return 0; };
+                                    
   virtual int integration_algorithm(Constitutive_model *m,
                                     CM_Ctx &cm_ctx) const { return 0; };
 

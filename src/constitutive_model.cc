@@ -1110,14 +1110,16 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   TensorA<2> tFnp1(tFnp1_in);
   Tensor<2> Fnp1 = tf_factor*tFnp1(i,j);
 
-  if(param->type == MANUFACTURED_SOLUTIONS){
-  }
-  else{
-    CM_Ctx cm_ctx;
-    cm_ctx.set_tensors_ss(Fnp1.data,hFn,hFnp1,is_it_couple_w_thermal>=0);
-    cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
+  CM_Ctx cm_ctx;
+  cm_ctx.set_tensors_ss(Fnp1.data,hFn,hFnp1,is_it_couple_w_thermal>=0);
+  cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
+
+ // perform integration algorithm  
+  if(param->type == MANUFACTURED_SOLUTIONS)
+    err += param->integration_algorithm(this,cm_ctx, x, t);
+  else
     err += param->integration_algorithm(this,cm_ctx); // perform integration algorithm
-  }
+    
   return err;  
 }
 
