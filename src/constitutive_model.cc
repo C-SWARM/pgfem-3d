@@ -7,7 +7,7 @@
  *  [1] - University of Notre Dame, Notre Dame, IN
  */
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+#include "config.h"
 #endif
 
 #include "PGFEM_io.h"
@@ -686,7 +686,8 @@ template <class CM> class ConstitutiveModelIntregrate
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
                      int mp_id,
-                     double dt)
+                     const double *dts,
+                     const double t = 0.0)
     {
       int err = 0;
       double alpha = -1.0; // if alpha < 0, no inertia
@@ -811,7 +812,7 @@ template <class CM> class ConstitutiveModelIntregrate
           else{
             double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
             err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                                dt,alpha,fe->x_ip.m_pdata, 0.0, is_it_couple_w_thermal, tf_factor);
+                                                dts,alpha,fe->x_ip.m_pdata, t, is_it_couple_w_thermal, tf_factor);
           }
         }
         if(err>0)
@@ -826,13 +827,13 @@ template <class CM> class ConstitutiveModelIntregrate
 
         CM_Ctx cm_ctx;
         cm_ctx.set_tensors_ss(Fs.F.np1.data,hF->n.data,hF->np1.data,is_it_couple_w_thermal>=0);
-        cm_ctx.set_time_steps_ss(dt,dt);
+        cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
 
         err += mp->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
         err += mp->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
 
         // <-- update plasticity part
-        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, dt, 1);
+        err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, dts[DT_NP1], 1);
 
         double hJnp1 = 1.0;
         double pJnp1 = det(Fs.pF.np1);
@@ -1087,7 +1088,8 @@ Constitutive_model::unpack(const char *buffer, size_t *pos)
 /// \param[in] *Fnp1  deformation gradient at t(n+1)
 /// \param[in] *hFn   thermal part of deformation gradient at t(n)
 /// \param[in] *hFnp1 thermal part of deformation gradient at t(n+1)
-/// \param[in] dt                     time step size
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] alpha                  mid point rule alpha
 /// \param[in] is_it_couple_w_thermal checking coupling with thermal
 ///                                   if > 0: apply thermal expansitions. default = 0
@@ -1097,7 +1099,7 @@ int
 Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               double *hFn,
                                               double *hFnp1,
-                                              double dt,
+                                              const double *dts,
                                               double alpha,
                                               const double *x,
                                               const double t,                                              
@@ -1113,7 +1115,7 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   else{
     CM_Ctx cm_ctx;
     cm_ctx.set_tensors_ss(Fnp1.data,hFn,hFnp1,is_it_couple_w_thermal>=0);
-    cm_ctx.set_time_steps_ss(dt,dt);
+    cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
     err += param->integration_algorithm(this,cm_ctx); // perform integration algorithm
   }
   return err;  
@@ -2724,8 +2726,12 @@ int stiffness_el_constitutive_model_3f(FEMLIB *fe,
                                        int mp_id,
                                        double dt)
 {
+  double dts[2];
+  dts[DT_N] = dt;  
+  dts[DT_NP1] = dt;
+
   ConstitutiveModelIntregrate<IntegrateThreeFieldStiffness> cm3f_stiffness;
-  return cm3f_stiffness.integrate_ss(fe,lk,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dt);
+  return cm3f_stiffness.integrate_ss(fe,lk,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dts);
 }
 
 /// compute element stiffness matrix in quasi steady state
@@ -2793,7 +2799,6 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
 /// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
@@ -2809,7 +2814,6 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
                                                  const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
-                                                 double dt,
                                                  const double t)
 {
   int err = 0;
@@ -2881,7 +2885,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal);
 
     if(err!=0)
       break;
@@ -2951,7 +2955,6 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
 /// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
@@ -2969,7 +2972,6 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
                                                  const Multiphysics& mp,
                                                  const double *dts,
                                                  int mp_id,
-                                                 double dt,
                                                  const double t)
 {
   int err = 0;
@@ -2977,7 +2979,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
   double alpha_1 = 1.0 - alpha;
   double alpha_2 = alpha;
-  double dt_alpha_1_minus_alpha = dt*alpha_1*alpha_2;
+  double dt_alpha_1_minus_alpha = dts[DT_NP1]*alpha_1*alpha_2;
 
   if(opts->cm==UPDATED_LAGRANGIAN)
   {
@@ -3134,7 +3136,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
         ++err;
       else{
         double tf_factor = pow(theta/tJ, 1.0/3.0);
-        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts[DT_NP1],alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal, tf_factor);
+        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal, tf_factor);
       }
     }
 
@@ -3168,7 +3170,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     int npa = 1;
     CM_Ctx cm_ctx;
     cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
-    cm_ctx.set_time_steps(dt,dt,alpha,npa);
+    cm_ctx.set_time_steps(dts[DT_NP1],dts[DT_N],alpha,npa);
 
     err += func->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
     err += func->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
@@ -3264,7 +3266,6 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 /// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
 ///                                                dts[DT_NP1] = t(n+1) - t(n)
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
 /// \param[in] t  time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
@@ -3282,7 +3283,6 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
-                                              const double dt,
                                               const double t)
 {
   int err = 0;
@@ -3290,11 +3290,11 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
   if(opts->analysis_type==CM)
     err += residuals_el_constitutive_model_w_inertia_1f(fe, f, re_np1,
                                                         grid, mat, fv, sol, load, crpl,
-                                                        opts, mp, dts, mp_id, dt, t);
+                                                        opts, mp, dts, mp_id, t);
   if(opts->analysis_type==CM3F)
     err += residuals_el_constitutive_model_w_inertia_3f(fe, f, re_np1, re_npa, re_nma,
                                                         grid, mat, fv, sol, load, crpl,
-                                                        opts, mp, dts, mp_id, dt, t);
+                                                        opts, mp, dts, mp_id, t);
   return err;
 }
 /// compute element residual vector in quasi steady state
@@ -3316,7 +3316,9 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] t time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_1f(FEMLIB *fe,
                                        double *f,
@@ -3330,7 +3332,8 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
                                        const PGFem3D_opt *opts,
                                        const Multiphysics& mp,
                                        int mp_id,
-                                       double dt)
+                                       const double *dts,
+                                       const double t)
 {
   int err = 0;
   double alpha = -1.0; // if alpha < 0, no inertia
@@ -3447,7 +3450,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dt,alpha,fe->x_ip.m_pdata,0.0,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,0.0,is_it_couple_w_thermal);
 
     if(err!=0)
       break;
@@ -3506,7 +3509,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     CM_Ctx cm_ctx;
     cm_ctx.set_tensors_ss(Fnp1.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
-    cm_ctx.set_time_steps_ss(dt,dt);
+    cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
 
     if((m->param)->uqcm)
     {
@@ -3555,7 +3558,9 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] t time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        double *f,
@@ -3569,10 +3574,11 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
                                        const PGFem3D_opt *opts,
                                        const Multiphysics& mp,
                                        int mp_id,
-                                       double dt)
+                                       const double *dts,
+                                       const double t)
 {
   ConstitutiveModelIntregrate<IntegrateThreeFieldResidual> cm3f_residual;
-  return cm3f_residual.integrate_ss(fe,f,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dt);
+  return cm3f_residual.integrate_ss(fe,f,r_e,grid,mat,fv,sol->run_integration_algorithm,load,opts,mp,mp_id,dts);
 }
 
 /// compute element residual vector in quasi steady state
@@ -3594,7 +3600,9 @@ int residuals_el_constitutive_model_3f(FEMLIB *fe,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] mp mutiphysics object
 /// \param[in] mp_id mutiphysics id
-/// \param[in] dt time step size
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] t time
 /// \return non-zero on internal error
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
@@ -3608,15 +3616,16 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     const Multiphysics& mp,
                                     int mp_id,
-                                    double dt)
+                                    const double *dts,
+                                    const double t)
 {
   int err = 0;
 
   if(opts->analysis_type==CM)
-    err += residuals_el_constitutive_model_1f(fe,f,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dt);
+    err += residuals_el_constitutive_model_1f(fe,f,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
 
   if(opts->analysis_type==CM3F)
-    err += residuals_el_constitutive_model_3f(fe,f,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dt);
+    err += residuals_el_constitutive_model_3f(fe,f,r_e,grid,mat,fv,sol,load,crpl,opts,mp,mp_id,dts,t);
 
   return err;
 }
@@ -3918,7 +3927,7 @@ int constitutive_model_update_NR(Grid *grid,
                                  double alpha)
 {
   int err = 0;
-
+  
   if(opts->analysis_type==CM) // nothing to do for CM model
     return err;
 
@@ -3988,7 +3997,7 @@ int constitutive_model_update_NR(Grid *grid,
     else
     {
       ConstitutiveModelIntregrate<IntegrateThreeFieldUpdate> cm3f_update;
-      err += cm3f_update.integrate_ss(&fe,NULL,r_e.m_pdata,grid,mat,fv,0,load,opts,mp,mp_id,dts[DT_NP1]);
+      err += cm3f_update.integrate_ss(&fe,NULL,r_e.m_pdata,grid,mat,fv,0,load,opts,mp,mp_id,dts);
     }
   }
 

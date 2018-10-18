@@ -1,5 +1,5 @@
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+#include "config.h"
 #endif
 
 #include "MINI_element.h"
@@ -131,7 +131,7 @@ static int fd_res_elem_MP(double *be,
                           Solver *sol,
                           LoadingSteps *load,
                           CRPL *crpl,
-			  const CommunicationStructure *com,
+                          const CommunicationStructure *com,
                           const PGFem3D_opt *opts,
                           const Multiphysics& mp,
                           int mp_id,
@@ -250,9 +250,6 @@ static int fd_res_elem_MP(double *be,
          
          residuals_3f_el(&fe, be, r_e, grid, mat, fv);
 
-/*         residuals_3f_el(be,eid,fv->ndofn,fe.nne,fv->npres,fv->nVol,nsd,
-                         x,y,z,elem,mat->hommat,nod,grid->node,dt,fv->sig,fv->eps,sup,r_e);
-*/
          for(long a = 0; a<ndofe; a++)
            be[a] += -bf[a];
 
@@ -262,7 +259,7 @@ static int fd_res_elem_MP(double *be,
      case CM:  // intented to flow
      case CM3F:
       err += residuals_el_constitutive_model(&fe,be,r_e,grid,mat,fv,sol,load,crpl,
-                                             opts,mp,mp_id,dt);
+                                             opts,mp,mp_id,dts,t);
       break;
      default:
       err = resid_on_elem (eid,fv->ndofn,fe.nne,nod,elem,grid->node,mat->matgeom,

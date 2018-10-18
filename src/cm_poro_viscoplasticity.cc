@@ -133,7 +133,6 @@ const
 {
   int err = 0;
 
-  const double dt = cm_ctx.dt;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   
@@ -151,7 +150,7 @@ const
                          cm_ctx.hFn);
   integrator.pc_np1 = vars+VAR_pc_np1;
   integrator.pc_n   = vars[VAR_pc_n];
-  err += integrator.run_integration_algorithm(dt, dt);
+  err += integrator.run_integration_algorithm(cm_ctx.dtn, cm_ctx.dt);
 
   return err;
 }

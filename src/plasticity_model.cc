@@ -1149,8 +1149,6 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
 {
   int err = 0;
   memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3 * sizeof(*(cm_ctx.F)));
-
-  const double dt = cm_ctx.dt;
     
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
@@ -1196,7 +1194,7 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   integrator.gn     = state_var[VAR_g_n];
   
   // perform integration algorithm for the crystal plasticity
-  err += integrator.run_integration_algorithm(dt, dt);
+  err += integrator.run_integration_algorithm(cm_ctx.dtn, cm_ctx.dt);
   err += inv(pFnp1,pFnp1_I);
 
   if(cm_ctx.is_coulpled_with_thermal)
