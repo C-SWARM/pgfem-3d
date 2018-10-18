@@ -249,24 +249,6 @@ static void cm_add_macro_F(const SUPP sup,
   for (int i = 0; i < DIM_3x3; i++) F[i] += F0[i];
 }
 
-int construct_model_context(void **ctx,
-                            const int type,
-                            double *F,
-                            const double dt,
-                            const double alpha,
-                            double *eFnpa,
-                            int npa);
-
-int construct_model_context_with_thermal(void **ctx,
-                                         const int type,
-                                         double *F,
-                                         const double dt,
-                                         const double alpha,
-                                         double *eFnpa,
-                                         double *hFn,
-                                         double *hFnp1,
-                                         int npa);                                                           
-
 // Nodal Temerature for transient
 class NodalTemerature
 {
@@ -842,16 +824,12 @@ template <class CM> class ConstitutiveModelIntregrate
         // get a shortened pointer for simplified CM function calls
         const Model_parameters *mp = m->param;
 
-        void *ctx = NULL;
-        if(is_it_couple_w_thermal>=0)
-          err += construct_model_context_with_thermal(&ctx, m->param->type, Fs.F.np1.data,dt,alpha, NULL,
-                                                      hF->n.data,hF->np1.data,-1);
-        else
-          err += construct_model_context(&ctx, m->param->type, Fs.F.np1.data,dt,alpha, NULL,-1);
+        CM_Ctx cm_ctx;
+        cm_ctx.set_tensors_ss(Fs.F.np1.data,hF->n.data,hF->np1.data,is_it_couple_w_thermal>=0);
+        cm_ctx.set_time_steps_ss(dt,dt);
 
-        err += mp->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
-        err += mp->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
-        err += mp->destroy_ctx(&ctx);
+        err += mp->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
+        err += mp->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
 
         // <-- update plasticity part
         err += mp->update_elasticity_dev(m, Fs.eF.np1.data, Ld.data, eSd.data, -1, 0, dt, 1);
@@ -902,115 +880,6 @@ template <class CM> class ConstitutiveModelIntregrate
       return err;
     };
 };
-
-/// this is a wrapper function for the switch that was copy/pasted
-/// everywhere. It is no big deal to keep adding to this private
-/// function's argument list. Just put everything any model might need
-/// and the switch will handle what is actually used.
-int construct_model_context(void **ctx,
-                            const int type,
-                            double *F,
-                            const double dt,
-                            const double alpha,
-                            double *eFnpa,
-                            int npa)
-{
-  int err = 0;
-  switch(type) {
-  case TESTING:
-  case HYPER_ELASTICITY:
-    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, NULL, NULL, 0);
-    break;
-  case CRYSTAL_PLASTICITY:
-    err += plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0);
-    break;
-  case BPA_PLASTICITY:
-    err += plasticity_model_BPA_ctx_build(ctx, F, dt);
-    break;
-  case ISO_VISCOUS_DAMAGE:
-    err += iso_viscous_damage_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
-    break;
-  case J2_PLASTICITY_DAMAGE:
-    err += j2d_plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
-    break;
-  case POROVISCO_PLASTICITY:
-    err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
-    break;
-  case ISO_VISCOUS_SPLIT_DAMAGE:
-    err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, NULL, NULL, 0,npa);
-    break;
-  case MANUFACTURED_SOLUTIONS:
-  {
-    double x[3] = {};
-    err += cm_mms_ctx_build(ctx, F, alpha, eFnpa, npa, x, 0);
-    break;
-  }
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
-    err++;
-    break;
-  }
-  assert (err == 0);
-  return err;
-}
-
-/// constructor of constitutive model context
-///
-/// this is a wrapper function for the switch that was copy/pasted
-/// everywhere for the coupled problem. Keep add function's argument list to this private.
-/// In adding more constitutive model, just put everything any
-/// and the switch will handle what is actually used.
-///
-/// \param[out] ctx  constructed context based on the model type
-/// \param[in] type  constitutive model type
-/// \param[in] F     total deformation gradient
-/// \param[in] dt    time step size
-/// \param[in] alpha mid point alpha
-/// \param[in] eFnpa mid point elastic part of deformation gradient
-/// \param[in] hFn   thermal part of deformation gradient at t(n)
-/// \param[in] hFnp1 thermal part of deformation gradient at t(n+1)
-/// \param[in] npa   mid point rule: if npa==0: v_npa = (1-alpha)*v(n-1) + alpha*v(n)
-///                                  if npa==1: v_npa = (1-alpha)*v(n)   + alpha*v(n+1)
-/// \return non-zeoro on internal error
-int construct_model_context_with_thermal(void **ctx,
-                                         const int type,
-                                         double *F,
-                                         const double dt,
-                                         const double alpha,
-                                         double *eFnpa,
-                                         double *hFn,
-                                         double *hFnp1,
-                                         int npa)
-{
-  int err = 0;
-  switch(type) {
-  case TESTING:
-  case HYPER_ELASTICITY:
-    err += plasticity_model_none_ctx_build(ctx, F, eFnpa, hFn, hFnp1, 1);
-    break;
-  case CRYSTAL_PLASTICITY:
-    err += plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1);
-    break;
-  case ISO_VISCOUS_DAMAGE:
-    err += iso_viscous_damage_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;
-  case J2_PLASTICITY_DAMAGE:
-    err += j2d_plasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;
-  case POROVISCO_PLASTICITY:
-    err += poro_viscoplasticity_model_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;
-  case ISO_VISCOUS_SPLIT_DAMAGE:
-    err += iso_viscous_damage_model_split_ctx_build(ctx, F, dt,alpha, eFnpa, hFn, hFnp1, 1,npa);
-    break;
-  default:
-    PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n", type);
-    err++;
-    break;
-  }
-  assert (err == 0);
-  return err;
-}
 
 /// initialize model parameter
 ///
@@ -1236,22 +1105,18 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               double tf_factor)
 {
   int err = 0;
-  void *ctx = NULL;
   TensorA<2> tFnp1(tFnp1_in);
   Tensor<2> Fnp1 = tf_factor*tFnp1(i,j);
-  if(is_it_couple_w_thermal>=0)
-    err += construct_model_context_with_thermal(&ctx, param->type, Fnp1.data,dt,alpha, NULL,
-                                                 hFn,hFnp1, -1);
-  else{
-    if(param->type == MANUFACTURED_SOLUTIONS)
-      err += cm_mms_ctx_build(&ctx, Fnp1.data, alpha, NULL, -1, x, t);
-    else
-      err += construct_model_context(&ctx, param->type, Fnp1.data,dt,alpha, NULL,-1);
+
+  if(param->type == MANUFACTURED_SOLUTIONS){
   }
-  err += param->integration_algorithm(this,ctx); // perform integration algorithm
-  err += param->destroy_ctx(&ctx);
-  return err;
-  
+  else{
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(Fnp1.data,hFn,hFnp1,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps_ss(dt,dt);
+    err += param->integration_algorithm(this,cm_ctx); // perform integration algorithm
+  }
+  return err;  
 }
 
 /// compute PK2 and elasticity tensor
@@ -2053,6 +1918,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
 {
   // Total Lagrangian based
   int err = 0;
+  double dt = 0.0;
   const int nsd = fe->nsd;
 
   Tensor<2> M = {},eFnpa = {},pFnpa,pFnpa_I,hFnpa,Fnpa,S = {},MT;
@@ -2093,11 +1959,11 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
     err += terr;
   }
 
-  void *ctx;
-
-  err += construct_model_context(&ctx, m->param->type, Fnp1.data,0.0,alpha,eFnpa.data,npa);
-  err += (m->param)->update_elasticity(m,ctx,NULL,S.data,compute_stiffness);
-  err += m->param->destroy_ctx(&ctx);
+  CM_Ctx cm_ctx;
+  cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+  cm_ctx.set_time_steps(dt,dt,alpha,npa);    
+    
+  err += (m->param)->update_elasticity(m,cm_ctx,NULL,S.data,compute_stiffness);
 
   if(err==0)
   {
@@ -2258,22 +2124,19 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
     eFnpa = Fr(i,k)*M(k,j);
     FrTFr = Fr(k,i)*Fr(k,j);
 
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);
-    else
-      err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, eFnpa.data,1);
-
-    err += m->param->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
+    int npa = 1;
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps(dt,dt,alpha,npa);
+    
+    err += m->param->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu_all);
 
     // --> update elasticity part
     memset(L.data, 0, sizeof(double)*DIM_3x3x3x3);
     memset(S.data, 0, sizeof(double)*DIM_3x3);
 
-    err += (m->param)->update_elasticity(m,ctx,L.data,S.data,compute_stiffness);
+    err += (m->param)->update_elasticity(m,cm_ctx,L.data,S.data,compute_stiffness);
     // <-- update elasticity part
-    err += m->param->destroy_ctx(&ctx);
 
     if(err!=0)
       break;
@@ -2485,16 +2348,13 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
 
     eFnpa = Fr_npa(i,k)*M_npa(k,j);
 
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dt,alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);
-    else
-      err += construct_model_context(&ctx, func->type, Fnp1.data,dt,alpha, eFnpa.data,1);
+    int npa = 1;
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps(dt,dt,alpha,npa);
 
-    err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
-    err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
-    err += func->destroy_ctx(&ctx);
+    err += func->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
+    err += func->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
 
 
     // <-- update plasticity part
@@ -2625,7 +2485,6 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
                                        double dt)
 {
   int err = 0;
-  double alpha = -1.0; // if alpha < 0, no inertia
 
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
@@ -2733,14 +2592,11 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
       Jn = det(Fn);
     }
     
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,
-                                                  hFn.data,hFnp1.data,-1);
-    else
-      err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,-1);
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(Fnp1.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps_ss(dt,dt);
 
-    err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu_all);
+    err += func->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu_all);
     err += func->get_pF(m,pFnp1.data,2);
 
     pJ = det(pFnp1);
@@ -2802,14 +2658,13 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
       mat_e_in = elast->mat;
       err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
       elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,L.data,S.data,compute_stiffness);
+      err += (m->param)->update_elasticity(m,cm_ctx,L.data,S.data,compute_stiffness);
       elast->mat = mat_e_in;
     }
     else
-      err += (m->param)->update_elasticity(m,ctx,L.data,S.data,compute_stiffness);
+      err += (m->param)->update_elasticity(m,cm_ctx,L.data,S.data,compute_stiffness);
     // <-- update elasticity part
 
-    err += func->destroy_ctx(&ctx);
     if(err!=0)
       break;      
 
@@ -3310,16 +3165,13 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     eFnpa = Fr_npa(i,k)*M_npa(k,j);
     eFnma = Fr_nma(i,k)*M_nma(k,j);
 
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dt,alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);
-    else
-      err += construct_model_context(&ctx, func->type, Fnp1.data,dt,alpha, eFnpa.data,1);
+    int npa = 1;
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps(dt,dt,alpha,npa);
 
-    err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
-    err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
-    err += func->destroy_ctx(&ctx);
+    err += func->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
+    err += func->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
 
     // <-- update plasticity part
     err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, dts[DT_NP1], 1);
@@ -3652,12 +3504,10 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     // --> update elasticity part
 
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,
-                                                  hFn.data,hFnp1.data,-1);
-    else
-      err += construct_model_context(&ctx, m->param->type, Fnp1.data,dt,alpha, NULL,-1);
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(Fnp1.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps_ss(dt,dt);
+
     if((m->param)->uqcm)
     {
       double *x_ip = (fe->x_ip).m_pdata;
@@ -3665,13 +3515,12 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
       mat_e_in = elast->mat;
       err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
       elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
-      err += (m->param)->update_elasticity(m,ctx,NULL,S.data,compute_stiffness);
+      err += (m->param)->update_elasticity(m,cm_ctx,NULL,S.data,compute_stiffness);
       elast->mat = mat_e_in;
     }
     else
-      err += (m->param)->update_elasticity(m,ctx,NULL,S.data,compute_stiffness);
+      err += (m->param)->update_elasticity(m,cm_ctx,NULL,S.data,compute_stiffness);
     // <-- update elasticity part
-    err += m->param->destroy_ctx(&ctx);
 
     if(err!=0)
       break;
@@ -3966,16 +3815,13 @@ int constitutive_model_update_NR_w_inertia_3f(FEMLIB *fe,
     eFnpa = Fr_npa(i,k)*M_npa(k,j);
     eFnma = Fr_nma(i,k)*M_nma(k,j);
 
-    void *ctx = NULL;
-    if(is_it_couple_w_thermal>=0)
-      err += construct_model_context_with_thermal(&ctx, func->type, Fnp1.data,dts[DT_NP1],alpha,eFnpa.data,
-                                                  hFn.data,hFnp1.data,1);
-    else
-      err += construct_model_context(&ctx, func->type, Fnp1.data,dts[DT_NP1],alpha, eFnpa.data,1);
+    int npa = 1;
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
+    cm_ctx.set_time_steps(dts[DT_NP1],dts[DT_N],alpha,npa);
 
-    err += func->compute_dMdu(m, ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
-    err += func->compute_dMdt(m, ctx, fe->ST, Vno, dMdt.m_pdata);
-    err += func->destroy_ctx(&ctx);
+    err += func->compute_dMdu(m, cm_ctx, fe->ST, nne, ndofn, dMdu.m_pdata);
+    err += func->compute_dMdt(m, cm_ctx, fe->ST, Vno, dMdt.m_pdata);
 
     // <-- update plasticity part
     err += func->update_elasticity_dev(m, eFnpa.data, Ld_npa.data, S_npa.data, 1, alpha, dts[DT_NP1], 1);

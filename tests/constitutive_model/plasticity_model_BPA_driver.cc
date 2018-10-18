@@ -57,16 +57,16 @@ void get_F(const double t,
 
 int compute_stress(double * __restrict sig,
                    const Constitutive_model *m,
-                   const void *ctx)
+                   CM_Ctx &cm_ctx)
 {
   int err = 0;
   const HOMMAT *mat = m->param->p_hmat;
   const double kappa = (2* mat->G * (1 + mat->nu)) / (3 * (1 - 2 * mat->nu));
   double p = 0;
-  m->param->compute_dudj(m,ctx,&p);
+  m->param->compute_dudj(m,cm_ctx,&p);
   p *= kappa;
   Matrix<double> S(3,3,0.0);
-  m->param->compute_dev_stress(m,ctx,S.m_pdata);
+  m->param->compute_dev_stress(m,cm_ctx,S.m_pdata);
 
   /* push stress forward */
   const double *Fe = m->vars_list[0][m->model_id].Fs[0].m_pdata;
@@ -88,13 +88,13 @@ int compute_stress(double * __restrict sig,
 }
 
 int write_data_point(FILE *f,
-                     const void *ctx,
+                     CM_Ctx &cm_ctx,
                      const Constitutive_model *m,
                      const double t)
 {
   int err = 0;
   double sig[9] = {};
-  err += compute_stress(sig,m,ctx);
+  err += compute_stress(sig,m,cm_ctx);
   fprintf(f,"%e\t%e\t%e\n",t,-sig[8],m->vars_list[0][m->model_id].state_vars->m_pdata[0]);
   return err;
 }
@@ -138,27 +138,28 @@ int main(int argc, char **argv)
   const int nstep = 100;
   double t = dt;
   double F[9] = {};
-  void *ctx = NULL;
   int conv = 0;
 
   for (int i = 0; i < nstep; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat.nu,F);
-    err += plasticity_model_BPA_ctx_build(&ctx,F,dt);
-    conv = m.param->integration_algorithm(&m,ctx);
+    
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(F);
+    cm_ctx.set_time_steps_ss(dt);      
+    
+    conv = m.param->integration_algorithm(&m,cm_ctx);
     assert(conv >= 0);
      if(conv < 0) { 
        printf("\t DID NOT CONVERGE, RESTARTING\n\n");
        dt /= 2;
        t -= dt;
        err += m.param->update_state_vars(&m);
-       err += m.param->destroy_ctx(&ctx);
        i--;
        continue;
      } else err += conv;
     err += m.param->update_state_vars(&m);
-    err += write_data_point(out,ctx,&m,t);
-    err += m.param->destroy_ctx(&ctx);
+    err += write_data_point(out,cm_ctx,&m,t);
     printf("\n");
     t += dt;
   }

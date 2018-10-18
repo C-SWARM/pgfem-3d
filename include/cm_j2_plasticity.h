@@ -35,29 +35,29 @@ class CM_J2P_PARAM: public Model_parameters
   virtual int model_dependent_finalization(void);
 
   virtual int integration_algorithm(Constitutive_model *m,
-                                    const void *usr_ctx) const;
+                                    CM_Ctx &cm_ctx) const;
   virtual int compute_dev_stress(const Constitutive_model *m,
-                                 const void *ctx,
+                                 CM_Ctx &cm_ctx,
                                  double *S) const;
   virtual int compute_dudj(const Constitutive_model *m,
-                           const void *ctx,
+                           CM_Ctx &cm_ctx,
                            double *value) const;
   virtual double compute_dudj(const Constitutive_model *m,
                               double theta_e,
                               const int npa,
                               const double alpha) const;                           
   virtual int compute_dev_tangent(const Constitutive_model *m,
-                                  const void *ctx,
+                                  CM_Ctx &cm_ctx,
                                   double *L) const;
   virtual int compute_d2udj2(const Constitutive_model *m,
-                             const void *ctx,
+                             CM_Ctx &cm_ctx,
                              double *value) const;
   virtual double compute_d2udj2(const Constitutive_model *m,
                                 double theta_e,
                                 const int npa,
                                 const double alpha) const;                             
   virtual int update_elasticity(const Constitutive_model *m,
-                                const void *ctx,
+                                CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
                                 const int compute_stiffness) const;
@@ -107,21 +107,8 @@ class CM_J2P_PARAM: public Model_parameters
                             const Constitutive_model *m) const;
   virtual int read_restart(FILE *fp,
                            Constitutive_model *m) const;
-  virtual int destroy_ctx(void **ctx) const;
   virtual int read_param(FILE *in) const;
   virtual int set_init_vals(Constitutive_model *m) const;
 };
-
-// Construct and initialize the model context for calling functions
-// through the constitutive modeling interface.
-int j2d_plasticity_model_ctx_build(void **ctx,
-                                   double *F,
-                                   const double dt,
-                                   const double alpha,
-                                   double *eFnpa,
-                                   double *hFn,
-                                   double *hFnp1,
-                                   const int is_coulpled_with_thermal,
-                                   const int npa);
 
 #endif

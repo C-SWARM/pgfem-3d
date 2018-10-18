@@ -98,47 +98,7 @@ typedef struct cm_mms_ctx {
   double *eFnpa;
   int is_coulpled_with_thermal;
   int npa;  
-} cm_mms_ctx;
-
-/// Construct and initialize the poro-viscoplasticity model context 
-/// for calling functions through the constitutive modeling interface
-/// 
-/// \param[in,out] ctx - handle to an opaque model context object.
-/// \param[in] F The total deformation gradient.
-/// \param[in] alpha mid-point alpha
-/// \param[in] eFnpa elastic deformation gradient at t = n + alpha
-/// \param[in] npa   mid-point rule
-/// \param[in] x     coordinate. x = x[0], y = x[1], z = x[2]
-/// \param[in] t     time
-/// \return non-zero on internal error.
-int cm_mms_ctx_build(void **ctx,
-                     double *F,
-                     const double alpha,
-                     double *eFnpa,
-                     const int npa,
-                     const double *x,
-                     const double t)
-{
-  int err = 0;
-  cm_mms_ctx *t_ctx = (cm_mms_ctx *) malloc(sizeof(cm_mms_ctx));
-
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-
-  t_ctx->F = F;
-  t_ctx->eFnpa = eFnpa;
-  t_ctx->npa   = npa;  
-  
-  t_ctx->t  = t;
-  t_ctx->x  = x[0];
-  t_ctx->y  = x[1];
-  t_ctx->z  = x[2];
-  t_ctx->alpha = alpha;
-
-  /* assign handle */
-  *ctx = t_ctx;
-  return err;
-}            
+} cm_mms_ctx;            
 
 void MMS4cm_pF(double *pF, 
                const double t, 
@@ -148,41 +108,39 @@ void MMS4cm_pF(double *pF,
                const double *c);
 
 int CM_MMS_PARAM::integration_algorithm(Constitutive_model *m,
-                                        const void *ctx)
+                                        CM_Ctx &cm_ctx)
 const
 {
   int err = 0;
-  auto CTX = (cm_mms_ctx *) ctx;
 
-  const double t = CTX->t;
-  const double x = CTX->x;
-  const double y = CTX->y;
-  const double z = CTX->z;
+  const double t = cm_ctx.t;
+  const double x = cm_ctx.x;
+  const double y = cm_ctx.y;
+  const double z = cm_ctx.z;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   
   double c[6] = {10.0, 0.5, 1000.0, 1.0, 0.7, -50.0};
   MMS4cm_pF(Fs[TENSOR_pFnp1].m_pdata, t, x, y, z, c);
   
-  memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
+  memcpy(Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3*sizeof(double));
   return err;
 }
 
 int CM_MMS_PARAM::update_elasticity(const Constitutive_model *m,
-                                    const void *ctx_in,
+                                    CM_Ctx &cm_ctx,
                                     double *L_in,
                                     double *S,
                                     const int compute_stiffness)
 const
 {
   int err = 0;
-  auto ctx = (cm_mms_ctx *) ctx_in;
   
   double *L = NULL;
   if(compute_stiffness)
     L = L_in;
   
-  if(ctx->eFnpa)
-    err += constitutive_model_default_update_elasticity(m, ctx->eFnpa, L, S, compute_stiffness);
+  if(cm_ctx.eFnpa)
+    err += constitutive_model_default_update_elasticity(m, cm_ctx.eFnpa, L, S, compute_stiffness);
   else
   {
     // shorthand of deformation gradients
@@ -452,25 +410,8 @@ const
   return 0;  
 }
 
-int CM_MMS_PARAM::destroy_ctx(void **ctx)
-const
-{
-  int err = 0;
-  cm_mms_ctx *t_ctx = (cm_mms_ctx *) *ctx;
-  /* invalidate handle */
-  *ctx = NULL;
-
-  // no memory was created
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-
-  free(t_ctx);
-  return err;
-}
-
-
 int CM_MMS_PARAM::compute_dMdu(const Constitutive_model *m,
-                               const void *ctx,
+                               CM_Ctx &cm_ctx,
                                double *Grad_op,
                                const int nne,
                                const int nsd,

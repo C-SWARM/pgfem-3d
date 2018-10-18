@@ -538,12 +538,13 @@ int DISP_resid_el(double *R,
           get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
         } else {
           ptrDam = &empty_damage;
-          void *ctx = NULL;
-          construct_model_context(&ctx, eps[ii].model[ip].param->type, F, dt, 0.5, NULL,-1);
-          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], ctx);
+          CM_Ctx cm_ctx;
+          cm_ctx.set_tensors_ss(F);
+          cm_ctx.set_time_steps_ss(dt,dt);              
+          
+          eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], cm_ctx);
           err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
                                            F, dt, 0);
-          eps[ii].model[ip].param->destroy_ctx(&ctx);
         }
         disp_based_resid_at_ip(R,nne,ST,F,Sbar,ptrDam,jj,wt);
         ip++;

@@ -59,16 +59,6 @@ namespace {
   static constexpr ttl::Index<'n'> n;
 }
 
-/// Private structure for use exclusively with this model and
-/// associated functions.
-typedef struct none_ctx {
-  double *F;
-  double *eFnpa;
-  int is_coulpled_with_thermal;
-  double *hFn;
-  double *hFnp1;
-} none_ctx;
-
 static void he_compute_C(double *C_in,
                          double *F_in)
 {
@@ -77,68 +67,63 @@ static void he_compute_C(double *C_in,
 }
 
 int HE_PARAM::integration_algorithm(Constitutive_model *m,
-                                    const void *ctx)
+                                    CM_Ctx &cm_ctx)
 const
 {
   int err = 0;
   ++perIter_ODE_EXA_metric;      //accumulate the EXA metric for hyperelastic model (1 per integration point)
   
-  auto CTX = (none_ctx *) ctx;
-  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*CTX->F));
+  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3 * sizeof(*cm_ctx.F));
   return err;
 }
 
 int HE_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                 const void *ctx,
+                                 CM_Ctx &cm_ctx,
                                  double *stress)
 const
 {
   int err = 0;
-  auto CTX = (none_ctx *) ctx;
   devStressFuncPtr Stress = getDevStressFunc(-1,m->param->p_hmat);
   double C[DIM_3x3] = {};  
-  he_compute_C(C,CTX->F);
+  he_compute_C(C,cm_ctx.F);
   Stress(C,m->param->p_hmat,stress);
   return err;
 }
 
 int HE_PARAM::compute_dudj(const Constitutive_model *m,
-                           const void *ctx,
+                           CM_Ctx &cm_ctx,
                            double *dudj)
 const
 {
   int err = 0;
-  auto CTX = (none_ctx *) ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
-  TensorA<2> F(CTX->F);
+  TensorA<2> F(cm_ctx.F);
   const double J = ttl::det(F);
   Pressure(J,m->param->p_hmat,dudj);
   return err;
 }
 
 int HE_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                  const void *ctx,
+                                  CM_Ctx &cm_ctx,
                                   double *L)
 const
 {
   int err = 0;
-  auto CTX = (none_ctx *) ctx;
   matStiffFuncPtr Tangent = getMatStiffFunc(-1,m->param->p_hmat);
   double C[DIM_3x3] = {};
-  he_compute_C(C,CTX->F);
+  he_compute_C(C,cm_ctx.F);
   Tangent(C,m->param->p_hmat,L);
   return err;
 }
 
 int HE_PARAM::compute_d2udj2(const Constitutive_model *m,
-                             const void *ctx,
+                             CM_Ctx &cm_ctx,
                              double *d2udj2)
 const
 {
   int err = 0;
-  auto CTX = (none_ctx *) ctx;
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
-  TensorA<2> F(CTX->F);
+  TensorA<2> F(cm_ctx.F);
   const double J = ttl::det(F);
   D_Pressure(J,m->param->p_hmat,d2udj2);
   return err;
@@ -342,29 +327,28 @@ const
 }
 
 int HE_PARAM::update_elasticity(const Constitutive_model *m,
-                                const void *ctx_in,
+                                CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
                                 const int compute_stiffness)
 const
 {
   int err = 0;
-  auto ctx = (none_ctx *) ctx_in;
 
   // if transient cases,
   // get_eF is not working because eF needs to be updated using mid-point alpha
   // below checks whether to use get_eF or give eFnpa in ctx
 
-  if(ctx->eFnpa)
-    err += constitutive_model_default_update_elasticity(m, ctx->eFnpa, L, S, compute_stiffness);  
+  if(cm_ctx.eFnpa)
+    err += constitutive_model_default_update_elasticity(m, cm_ctx.eFnpa, L, S, compute_stiffness);  
   else
   {
   	Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs; 
     
-    if(ctx->is_coulpled_with_thermal)
+    if(cm_ctx.is_coulpled_with_thermal)
     {
       Tensor<2> hFnp1_I, eF;    
-      TensorA<2> Fnp1(Fs[TENSOR_Fnp1].m_pdata), hFnp1(ctx->hFnp1);  
+      TensorA<2> Fnp1(Fs[TENSOR_Fnp1].m_pdata), hFnp1(cm_ctx.hFnp1);  
       err += inv(hFnp1, hFnp1_I);
       eF = Fnp1(i,k)*hFnp1_I(k,j);
 
@@ -374,55 +358,5 @@ const
       err += constitutive_model_default_update_elasticity(m, Fs[TENSOR_Fnp1].m_pdata, L, S, compute_stiffness);
   }
 
-  return err;
-}
-
-int plasticity_model_none_ctx_build(void **ctx,
-                                    double *F,
-                                    double *eFnpa,
-                                    double *hFn,
-                                    double *hFnp1,
-                                    const int is_coulpled_with_thermal)
-{
-  int err = 0;
-  none_ctx *t_ctx = (none_ctx *) malloc(sizeof(none_ctx));
-
-  /* assign internal pointers. NOTE: We are copying the pointer NOT
-     the value. No additional memory is allocated. */
-
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-  t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL;
-
-  t_ctx->F = F;
-  t_ctx->eFnpa = eFnpa;
-
-  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
-  t_ctx->hFn  = hFn;
-  t_ctx->hFnp1= hFnp1;
-
-  /* assign handle */
-  *ctx = t_ctx;
-  return err;
-}
-
-int HE_PARAM::destroy_ctx(void **ctx)
-const
-{
-  int err = 0;
-  none_ctx *t_ctx = (none_ctx *)*ctx;
-  /* invalidate handle */
-  *ctx = NULL;
-
-  /* we do not control memory for internal pointers */
-
-  // no memory was created
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-  t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL;
-
-  free(t_ctx);
   return err;
 }
