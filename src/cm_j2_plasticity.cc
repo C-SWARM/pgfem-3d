@@ -158,7 +158,7 @@ int J2d_determine_damaged_npa(const Constitutive_model *m,
 }
 
 // Y = G/2 *(tr(bbar) - 3) + kU 
-double j2d_compute_Y0(ELASTICITY *elast,
+double j2d_compute_Y0(HyperElasticity *elast,
                       double *F_in)
 {
   Tensor<2> bbar;
@@ -229,7 +229,7 @@ const
   
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *dudj = damage_compute_dudj(elasticity, eJ, vars[VAR_w_np1]);
   
   return err;
@@ -242,7 +242,7 @@ double CM_J2P_PARAM::compute_dudj(const Constitutive_model *m,
 const 
 {
   double w_npa = j2d_compute_w_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_dudj(elasticity, theta_e, w_npa);          
 }
 
@@ -265,7 +265,7 @@ const
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
   // scale by damage variable 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *d2udj2 = damage_compute_d2udj2(elasticity, eJ, vars[VAR_w_np1]);
   
   return err;
@@ -278,7 +278,7 @@ double CM_J2P_PARAM::compute_d2udj2(const Constitutive_model *m,
 const 
 {
   double w_npa = j2d_compute_w_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_d2udj2(elasticity, theta_e, w_npa);           
 }
 
@@ -286,14 +286,14 @@ int CM_J2P_PARAM::update_elasticity(const Constitutive_model *m,
                                     CM_Ctx &cm_ctx,
                                     double *L_in,
                                     double *S,
-                                    const int compute_stiffness)
+                                    const bool compute_stiffness)
 const
 {
   int err = 0;
   
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   
   double *S_tmp = elasticity->S;
   double *L_tmp = elasticity->L;
@@ -386,13 +386,13 @@ int CM_J2P_PARAM::update_elasticity_dev(const Constitutive_model *m,
                                         const int npa,
                                         const double alpha,
                                         const double dt,
-                                        const int compute_stiffness)  
+                                        const bool compute_stiffness)  
 const
 {
   int err = 0;  
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
     
   double *S_tmp = elasticity->S;
   double *L_tmp = elasticity->L;

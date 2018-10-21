@@ -17,7 +17,28 @@
 class CM_PVP_PARAM: public Model_parameters
 {
   public:
-
+    
+  PvpElasticity *pvp_elast;
+  
+  void set_nulls(void)
+  {
+    p_hmat            = NULL;
+    mat_id            = -1;
+    uqcm              = 0; 
+    cm3f              = false;
+    cm_mat            = NULL;
+    cm_elast          = NULL;
+    pvp_elast         = NULL;
+    gcm_solver_info   = NULL;   
+    type              = -1;
+    n_param           = 0;
+    model_param       = NULL;
+    n_param_index     = 0;
+    model_param_index = NULL;
+    pF                = NULL;
+    pFI               = NULL;
+  };
+  
   virtual int model_dependent_initialization(void);
   virtual int model_dependent_finalization(void);
 
@@ -47,7 +68,7 @@ class CM_PVP_PARAM: public Model_parameters
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const;
+                                const bool compute_stiffness) const;
   virtual int update_elasticity_dev(const Constitutive_model *m,
                                     double *eFnpa,
                                     double *L,
@@ -55,7 +76,7 @@ class CM_PVP_PARAM: public Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const int compute_stiffness = 0) const;
+                                    const bool compute_stiffness = 0) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,

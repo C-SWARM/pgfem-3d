@@ -995,7 +995,7 @@ Model_parameters::initialization(const HOMMAT *p_hmat, const size_t type)
 
   auto* cm_mat = PGFEM_malloc<MATERIAL_CONSTITUTIVE_MODEL>();
   auto* mat_e = PGFEM_malloc<MATERIAL_ELASTICITY>();
-  auto* elast = PGFEM_malloc<ELASTICITY>();
+  auto* elast = PGFEM_malloc<HyperElasticity>();
 
   set_properties_using_E_and_nu(mat_e,p_hmat->E,p_hmat->nu);
   mat_e->m01 = p_hmat->m01;
@@ -1006,7 +1006,7 @@ Model_parameters::initialization(const HOMMAT *p_hmat, const size_t type)
   mat_e->volPotFlag = p_hmat->volPotFlag;
 
   set_properties_constitutive_model(cm_mat,mat_e,NULL);
-  construct_elasticity(elast, mat_e, 1);
+  elast->construct_elasticity(mat_e, true);
 
   this->cm_mat   = cm_mat;
   this->cm_elast = elast;
@@ -1024,7 +1024,6 @@ Model_parameters::finalization()
   this->p_hmat = NULL;
   delete (this->cm_mat)->mat_e;
   delete this->cm_mat;
-  destruct_elasticity(this->cm_elast);
   delete this->cm_elast;
 
   /* reset counters/flags */
@@ -1135,11 +1134,11 @@ int constitutive_model_default_update_elasticity(const Constitutive_model *m,
                                                  const double *eF,
                                                  double *L,
                                                  double *S,
-                                                 const int compute_stiffness)
+                                                 const bool compute_stiffness)
 {
   int err = 0;
 
-  ELASTICITY *elast = (m->param)->cm_elast; // get elasticity handle
+  HyperElasticity *elast = (m->param)->cm_elast; // get elasticity handle
   double *tempS = elast->S; // temporal pointer to update *L, and *S using elast
   double *tempL = elast->L;
   elast->S = S;
@@ -1151,7 +1150,7 @@ int constitutive_model_default_update_elasticity(const Constitutive_model *m,
   else
     elast->L = NULL;
 
-  elast->update_elasticity(elast,F,compute_stiffness);
+  elast->update_elasticity(F,compute_stiffness);
 
   elast->S = tempS;
   elast->L = tempL;
@@ -1812,7 +1811,7 @@ int constitutive_model_update_output_variables(Grid *grid,
       {
         double *x_ip = (fe.x_ip).m_pdata;
 
-        ELASTICITY *elast = (m->param)->cm_elast;
+        HyperElasticity *elast = (m->param)->cm_elast;
         mat_e_in = elast->mat;
         err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
         elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
@@ -1931,7 +1930,7 @@ int residuals_el_constitutive_model_n_plus_alpha(double *f,
                         hFnp1(hFnp1_in),hFn(hFn_in);
 
 
-  int compute_stiffness = 0;
+  bool compute_stiffness = false;
 
   mid_point_rule(pFnpa.data, pFn.data, pFnp1.data, alpha, nsd*nsd);
   mid_point_rule(hFnpa.data, hFn.data, hFnp1.data, alpha, nsd*nsd);
@@ -2088,7 +2087,7 @@ int stiffness_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
   if(is_it_couple_w_chemical >= 0)
   {}
 
-  int compute_stiffness = 1;
+  bool compute_stiffness = true;
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
@@ -2540,7 +2539,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
   if(is_it_couple_w_chemical >=0)
   {}
 
-  int compute_stiffness = 1;
+  bool compute_stiffness = true;
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
@@ -2658,7 +2657,7 @@ int stiffness_el_constitutive_model_1f(FEMLIB *fe,
     if((m->param)->uqcm)
     {
       double *x_ip = (fe->x_ip).m_pdata;
-      ELASTICITY *elast = (m->param)->cm_elast;
+      HyperElasticity *elast = (m->param)->cm_elast;
       mat_e_in = elast->mat;
       err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
       elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation
@@ -3386,7 +3385,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
   if(is_it_couple_w_chemical >=0)
   {}
 
-  int compute_stiffness = 0;
+  bool compute_stiffness = false;
 
   MATERIAL_ELASTICITY mat_e_new;
   MATERIAL_ELASTICITY *mat_e_in;
@@ -3516,7 +3515,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
     if((m->param)->uqcm)
     {
       double *x_ip = (fe->x_ip).m_pdata;
-      ELASTICITY *elast = (m->param)->cm_elast;
+      HyperElasticity *elast = (m->param)->cm_elast;
       mat_e_in = elast->mat;
       err += material_properties_elasticity_at_ip(mat_e_in, &mat_e_new, x_ip[0], x_ip[1], x_ip[2]);
       elast->mat = &mat_e_new; // should be replaced by original mat_e_in after computation

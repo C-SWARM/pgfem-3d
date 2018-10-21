@@ -330,7 +330,7 @@ int HE_PARAM::update_elasticity(const Constitutive_model *m,
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness)
+                                const bool compute_stiffness)
 const
 {
   int err = 0;

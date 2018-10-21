@@ -742,8 +742,8 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     }
   }
 
-  ELASTICITY *elast = (m->param)->cm_elast;
-  elast->update_elasticity(elast,eFnp1.data, 1);
+  HyperElasticity *elast = (m->param)->cm_elast;
+  elast->update_elasticity(eFnp1.data, 1);
 
   // compute slip system
   SLIP_SYSTEM *slip_in = (((m->param)->cm_mat)->mat_p)->slip;
@@ -816,8 +816,8 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   Mnpa = hFnpaI(i,j)*pFnpa_I(j,k);
   eFnpa = Fnpa(i,j)*Mnpa(j,k);
 
-  ELASTICITY *elast = (m->param)->cm_elast;
-  elast->update_elasticity(elast,eFnpa.data, 1);
+  HyperElasticity *elast = (m->param)->cm_elast;
+  elast->update_elasticity(eFnpa.data, 1);
 
   // compute slip system
   SLIP_SYSTEM *slip_in = (((m->param)->cm_mat)->mat_p)->slip;
@@ -1069,7 +1069,7 @@ int CP_PARAM::update_elasticity(const Constitutive_model *m,
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness)
+                                const bool compute_stiffness)
   const
 {
   int err = 0;
@@ -1159,7 +1159,7 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
 
   // get shorthand
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
-  ELASTICITY *elasticity              = (m->param)->cm_elast;
+  HyperElasticity *elast         = (m->param)->cm_elast;
 
   // compute slip system and rotate orientation  
   SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;
@@ -1211,8 +1211,8 @@ int CP_PARAM::integration_algorithm(Constitutive_model *m,
   
   double g_np1 = state_var[VAR_g_np1];
 
-  elasticity->update_elasticity(elasticity,eFnp1.data, 0);
-  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,C.data, elasticity->S, &slip);
+  elast->update_elasticity(eFnp1.data, 0);
+  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,C.data, elast->S, &slip);
   err += compute_gamma_dots(Fs[TENSOR_gamma_dot].m_pdata, Fs[TENSOR_tau].m_pdata, g_np1, cm_mat->mat_p);
 
   (cm_mat->mat_p)->slip = slip_in;

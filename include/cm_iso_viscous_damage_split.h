@@ -49,7 +49,7 @@ class CM_IVDS_PARAM: public Model_parameters
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const;
+                                const bool compute_stiffness) const;
   virtual int update_elasticity_dev(const Constitutive_model *m,
                                     double *eFnpa,
                                     double *L,
@@ -57,7 +57,7 @@ class CM_IVDS_PARAM: public Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const int compute_stiffness = 0) const;
+                                    const bool compute_stiffness = 0) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,

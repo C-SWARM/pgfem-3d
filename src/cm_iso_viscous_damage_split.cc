@@ -194,7 +194,7 @@ const
   int    *flags      = m->vars_list[0][m->model_id].flags;
 
   // integration algorithm
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   MATERIAL_CONTINUUM_DAMAGE *mat_d = this->cm_mat->mat_d;
       
   // store the deformation gradient
@@ -232,7 +232,7 @@ const
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
   // scale by damage variable 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *dudj = damage_compute_dudj(elasticity, eJ, vars[VAR_vw_np1]);
   
   return err;
@@ -245,7 +245,7 @@ double CM_IVDS_PARAM::compute_dudj(const Constitutive_model *m,
 const 
 {
   double w_npa = ivds_compute_vw_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_dudj(elasticity, theta_e, w_npa);          
 }
 
@@ -268,7 +268,7 @@ const
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
   // scale by damage variable 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *d2udj2 = damage_compute_d2udj2(elasticity, eJ, vars[VAR_vw_np1]);
   
   return err;
@@ -281,7 +281,7 @@ double CM_IVDS_PARAM::compute_d2udj2(const Constitutive_model *m,
 const 
 {
   double w_npa = ivds_compute_vw_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_d2udj2(elasticity, theta_e, w_npa);           
 }
 
@@ -289,7 +289,7 @@ int CM_IVDS_PARAM::update_elasticity(const Constitutive_model *m,
                                      CM_Ctx &cm_ctx,
                                      double *L,
                                      double *S,
-                                     const int compute_stiffness)
+                                     const bool compute_stiffness)
 const
 {
   int err = 0;
@@ -297,7 +297,7 @@ const
   //double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   //int *flags = m->vars_list[0][m->model_id].flags;
   
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   MATERIAL_CONTINUUM_DAMAGE *mat_d = this->cm_mat->mat_d;
   
   double *S_tmp = elasticity->S;
@@ -369,7 +369,7 @@ int CM_IVDS_PARAM::update_elasticity_dev(const Constitutive_model *m,
                                         const int npa,
                                         const double alpha,
                                         const double dt,
-                                        const int compute_stiffness) 
+                                        const bool compute_stiffness) 
 const
 {
   int err = 0;
@@ -377,7 +377,7 @@ const
   //double *vars = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   //int *flags = m->vars_list[0][m->model_id].flags;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   MATERIAL_CONTINUUM_DAMAGE *mat_d = this->cm_mat->mat_d;
   
   double *S_tmp = elasticity->S;

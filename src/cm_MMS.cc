@@ -115,7 +115,7 @@ int CM_MMS_PARAM::update_elasticity(const Constitutive_model *m,
                                     CM_Ctx &cm_ctx,
                                     double *L_in,
                                     double *S,
-                                    const int compute_stiffness)
+                                    const bool compute_stiffness)
 const
 {
   int err = 0;
@@ -480,7 +480,7 @@ void MMS4cm_initial_velocity(double *v, const double X, const double Y, const do
   MMS4cm_velocity(v, 0.0, X, Y, Z, c);
 }
 
-void MMS4cm_pressure_volume(double *P, double *V, ELASTICITY *elast, const double t, const double X, const double Y, const double Z, const double *c)
+void MMS4cm_pressure_volume(double *P, double *V, HyperElasticity *elast, const double t, const double X, const double Y, const double Z, const double *c)
 {
   double c0 = c[0];
   double c1 = c[1];
@@ -497,7 +497,7 @@ void MMS4cm_pressure_volume(double *P, double *V, ELASTICITY *elast, const doubl
   *V = J;
 }
 
-void MMS4cm_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, const double t, const double X, const double Y, const double Z, const double *c)
+void MMS4cm_body_force(double *b, const HOMMAT *hommat, HyperElasticity *elast, const double t, const double X, const double Y, const double Z, const double *c)
 {
   double rho = hommat->density;
   double m10 = hommat->m10;

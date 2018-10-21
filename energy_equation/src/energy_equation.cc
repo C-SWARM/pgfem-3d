@@ -319,7 +319,7 @@ int compute_mechanical_heat_gen(double *Qe,
                                 const int compute_tangent)
 {
   int err = 0;
-  int compute_stiffness = 1;
+  int compute_stiffness = true;
 
   double hJ = 0.0;
   double pJ = 0.0;
@@ -341,7 +341,7 @@ int compute_mechanical_heat_gen(double *Qe,
   // 2. obtain deformation gradient from mechanical part
   Constitutive_model *m = &(fv_m->eps[eid].model[ip]);
   //Model_parameters *func = m->param;
-  ELASTICITY *elast = (m->param)->cm_elast;
+  HyperElasticity *elast = (m->param)->cm_elast;
 
   Tensor<2,DIM_3,double> F,Fn,pF,pFn;
 
@@ -367,7 +367,7 @@ int compute_mechanical_heat_gen(double *Qe,
   double Tdot = deltaT_np1/dt;
 
   // 4. compute stress and elasticity
-  elast->update_elasticity(elast,eF.data,compute_stiffness);
+  elast->update_elasticity(eF.data,compute_stiffness);
 
   const Tensor<2,DIM_3,double*> S{elast->S};
   const Tensor<4,DIM_3,double*> dWdE{elast->L};

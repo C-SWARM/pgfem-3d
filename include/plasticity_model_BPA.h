@@ -45,7 +45,7 @@ class BPA_PARAM: public Model_parameters
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const;
+                                const bool compute_stiffness) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int get_var_info(Model_var_info &info) const;

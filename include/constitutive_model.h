@@ -171,6 +171,7 @@ class CM_Ctx
 };
 
 /// Pre-declare the Model_parameters structure
+
 class Model_parameters
 {
  public:
@@ -182,7 +183,7 @@ class Model_parameters
   bool cm3f;
 
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
-  ELASTICITY *cm_elast;
+  HyperElasticity *cm_elast;
   GcmSolverInfo *gcm_solver_info;
   
   // set members variables to initial values (zeros and NULLs)   
@@ -296,7 +297,7 @@ class Model_parameters
                                  double *S) 
   const 
   {    
-    cm_elast->compute_PK2_dev(eC, cm_elast->mat, S); 
+    cm_elast->compute_PK2_dev(eC, S); 
     return 0; 
   };
                                  
@@ -352,7 +353,7 @@ class Model_parameters
                                   double *L)
   const
   { 
-    cm_elast->compute_tangent_dev(eC, cm_elast->mat, L);
+    cm_elast->compute_tangent_dev(eC, L);
     return 0; 
   };
                                   
@@ -398,7 +399,7 @@ class Model_parameters
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const { return 0; };
+                                const bool compute_stiffness) const { return 0; };
                                 
   /// User defined function to compute the deviatroic part of elastic stiffness tangent
   ///
@@ -409,8 +410,8 @@ class Model_parameters
   /// \param[in]  npa,               mid point index (1 + alpha)
   /// \param[in]  alpha,             mid point alpha
   /// \param[in]  dt,                time step size
-  /// \param[in]  compute_stiffness, if 1 compute elasticity tensor
-  ///                                   0 no compute elasticity tensor
+  /// \param[bool]  compute_stiffness, if true compute elasticity tensor
+  ///                                     false no compute elasticity tensor
   /// \return non-zero on internal error that should be handled by the
   virtual int update_elasticity_dev(const Constitutive_model *m,
                                     double *eFnpa,
@@ -419,7 +420,7 @@ class Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const int compute_stiffness = 0) 
+                                    const bool compute_stiffness = false) 
   const
   {
     int err = 0;
@@ -873,7 +874,7 @@ int constitutive_model_default_update_elasticity(const Constitutive_model *m,
                                                  const double *eF,
                                                  double *L,
                                                  double *S,
-                                                 const int compute_stiffness);
+                                                 const bool compute_stiffness);
 
 /// update values for next time step: variables[tn] = variables[tn+1]
 /// \return non-zero on error.

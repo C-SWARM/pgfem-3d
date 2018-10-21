@@ -26,7 +26,7 @@ class CM_MMS_PARAM: public Model_parameters
                                 CM_Ctx &cm_ctx,
                                 double *L,
                                 double *S,
-                                const int compute_stiffness) const;
+                                const bool compute_stiffness) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,
@@ -71,7 +71,7 @@ void MMS4cm_pF(double *pF, const double t, const double X, const double Y, const
 void MMS4cm_displacement(double *u, const double t, const double X, const double Y, const double Z, const double *c);
 void MMS4cm_velocity(double *v, const double t, const double X, const double Y, const double Z, const double *c);
 void MMS4cm_initial_velocity(double *v, const double X, const double Y, const double Z, const double *c);
-void MMS4cm_pressure_volume(double *P, double *V, ELASTICITY *elast, const double t, const double X, const double Y, const double Z, const double *c);
-void MMS4cm_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, const double t, const double X, const double Y, const double Z, const double *c);
+void MMS4cm_pressure_volume(double *P, double *V, HyperElasticity *elast, const double t, const double X, const double Y, const double Z, const double *c);
+void MMS4cm_body_force(double *b, const HOMMAT *hommat, HyperElasticity *elast, const double t, const double X, const double Y, const double Z, const double *c);
 
 #endif
