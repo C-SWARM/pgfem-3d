@@ -51,9 +51,7 @@ static int create_local_ms_cohe_job_list(const long nce,
                                          MS_COHE_JOB_INFO *job_list,
                                          int *local_buffer_size,
 					 int myrank_macro,
-                                         const int mp_id,
-                                          int *micro_methods,
-                                          int micro_method);
+                                         const int mp_id);
 
 /** update the local job list displacement jumps */
 static int update_loc_ms_cohe_job_list(const int nce,
@@ -88,18 +86,17 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
 
 /*==== API FUNCTION DEFINITIONS ====*/
 
-int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //should really be n_jobs_1 & n_jobs_2
+int create_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
                                   const Node *node,
                                   const PGFem3D_Comm macro_comm,
                                   const PGFem3D_Comm ms_comm,
                                   const int group_id,
-                                  long **n_job_dom,long **n_job_dom_ROM,
+                                  long *Gn_jobs,
+                                  long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
-                                  MS_COHE_JOB_INFO **job_list_ROM,
 				  Network *net,
-                                  const int mp_id,
-                                  const PGFem3D_opt *opts)
+                                  const int mp_id)
 {
   int err = 0;
   int myrank = 0;
@@ -108,26 +105,15 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
   net->comm_rank(ms_comm,&myrank);
   net->comm_size(ms_comm,&nproc);
   net->comm_rank(macro_comm,&macro_rank);
-  int *micro_methods; 
+  
   int *buff_sizes = NULL;
-  int *buff_sizes_ROM = NULL;
   int *buff_starts = NULL;
-  int *buff_starts_ROM = NULL;
   char *buffer = NULL;
-  char *buffer_ROM = NULL;
   long job_id_start = 0;
-  long job_id_start_ROM = 0;
 
   *job_list = NULL;
-  *job_list_ROM = NULL;
-  long jobs_ptee = pde_jobs;
-  long *Gn_jobs = &jobs_ptee;
-  long jobs_ptee_ROM = jobs_ROM;
-  long *Gn_jobs_ROM = &jobs_ptee_ROM;
-  err += compute_loc_job_list_metadata(pde_jobs,coel,node,n_job_dom,
+  err += compute_loc_job_list_metadata(nce,coel,node,n_job_dom,
                                        Gn_jobs,&job_id_start,net,ms_comm);
-  err += compute_loc_job_list_metadata(jobs_ROM,coel,node,n_job_dom_ROM,             // compute a rom list
-                                       Gn_jobs_ROM,&job_id_start_ROM,net,ms_comm);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
@@ -137,50 +123,32 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
 
   /* allocate list */
   *job_list = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs);
-  *job_list_ROM = PGFEM_calloc(MS_COHE_JOB_INFO, *Gn_jobs_ROM);
+
   buff_sizes = PGFEM_calloc(int, nproc);
-  buff_sizes_ROM = PGFEM_calloc(int, nproc);
   buff_sizes[myrank] = 0;
-  buff_sizes_ROM[myrank] = 0;
-  micro_methods = opts->methods;
-  err += create_local_ms_cohe_job_list(pde_jobs,coel,node,group_id,
+  err += create_local_ms_cohe_job_list(nce,coel,node,group_id,
                                        (*n_job_dom)[myrank],
                                        *job_list + job_id_start,
                                        &buff_sizes[myrank],macro_rank,
-				       mp_id,micro_methods,1);
-
-  err += create_local_ms_cohe_job_list(jobs_ROM,coel,node,group_id,
-                                       (*n_job_dom_ROM)[myrank],
-                                       *job_list_ROM + job_id_start_ROM,
-                                       &buff_sizes_ROM[myrank],macro_rank,
-               mp_id,micro_methods,0);
+				       mp_id);
 
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
   /* compute size of global buffer */
   buff_starts = PGFEM_calloc(int, nproc);
-  buff_starts_ROM = PGFEM_calloc(int,nproc);
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes,1,NET_DT_INT,ms_comm);
-  net->allgather(NET_IN_PLACE,1,NET_DT_INT,buff_sizes_ROM,1,NET_DT_INT,ms_comm);
-  if(check_warning(err,myrank)) goto exit_function;
-
   {
     size_t g_buff_size = 0;
-    size_t g_buff_size_ROM = 0;
     for(int i=0; i<nproc; i++){
       buff_starts[i] = g_buff_size;
-      buff_starts_ROM[i] = g_buff_size_ROM;
       g_buff_size += buff_sizes[i];
-      g_buff_size_ROM += buff_sizes_ROM[i];
     }
     buffer = PGFEM_calloc(char, g_buff_size);
-    buffer_ROM = PGFEM_calloc(char, g_buff_size_ROM);
   }
-  if(check_warning(err,myrank)) goto exit_function;
 
   /* pack the local job info */
-  {//pde
+  {
     size_t pos = buff_starts[myrank];
     for(long i=0; i<(*n_job_dom)[myrank]; i++){
       MS_COHE_JOB_INFO *info = *job_list + job_id_start + i;
@@ -189,27 +157,11 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
       pos += len;
     }
   }
-  if(check_warning(err,myrank)) goto exit_function;
-
-  {//rom
-    size_t pos = buff_starts_ROM[myrank];
-    for(long i=0; i<(*n_job_dom_ROM)[myrank]; i++){
-      MS_COHE_JOB_INFO *info = *job_list_ROM + job_id_start_ROM + i;
-      size_t len = compute_MS_COHE_JOB_INFO_size(info);
-      err += pack_MS_COHE_JOB_INFO(info,len,buffer_ROM+pos);
-      pos += len;
-    }
-  }
-
-  if(check_warning(err,myrank)) goto exit_function;
 
   /* gather on all processes in group */
   net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
 		  buffer,buff_sizes,buff_starts,NET_DT_CHAR,ms_comm);
   
-  net->allgatherv(NET_IN_PLACE,buff_sizes[myrank],NET_DT_CHAR,
-      buffer_ROM,buff_sizes,buff_starts_ROM,NET_DT_CHAR,ms_comm);
-
   /* check error status */
   if(check_warning(err,myrank)) goto exit_function;
 
@@ -217,15 +169,11 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
   for(int i=0; i<nproc; i++){
     /* compute start */
     if(i == 0) job_id_start = 0;
-    else { 
-      job_id_start += (*n_job_dom)[i-1];
-      job_id_start_ROM += (*n_job_dom)[i-1];  
-    }
+    else job_id_start += (*n_job_dom)[i-1];
 
     if(i == myrank)continue;
 
     size_t pos = buff_starts[i];
-    size_t pos_ROM = buff_starts_ROM[i];
     for(long j=0; j<(*n_job_dom)[i]; j++){
       MS_COHE_JOB_INFO *info = *job_list + job_id_start + j;
       /* peek the number of nodes from the buffer at pos */
@@ -240,21 +188,6 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
       pos += len_job;
       buff_sizes[i] -= len_job;
     }
-    for(long j=0; j<(*n_job_dom_ROM)[i]; j++){
-      MS_COHE_JOB_INFO *info = *job_list_ROM + job_id_start_ROM + j;
-      /* peek the number of nodes from the buffer at pos */
-      {
-        int nnode = 0;
-        size_t tmp = 0;
-        unpack_data(buffer_ROM+pos_ROM,&nnode,&tmp,1,sizeof(int));
-        err += build_MS_COHE_JOB_INFO(info,nnode);
-      }
-      size_t len_job = compute_MS_COHE_JOB_INFO_size(info);
-      err += unpack_MS_COHE_JOB_INFO(info,len_job,buffer_ROM+pos_ROM);
-      pos += len_job;
-      buff_sizes[i] -= len_job;
-    }
-
     if(buff_sizes[i] != 0) err++;
 
     /* check error status */
@@ -263,10 +196,8 @@ int create_group_ms_cohe_job_list(const int pde_jobs,const int jobs_ROM, //shoul
 
  exit_function:
   free(buffer);
-  free(buffer_ROM);
   free(buff_sizes);
   free(buff_starts);
-  free(buff_starts_ROM);
   return err;
 } /* create_group_ms_cohe_job_list() */
 
@@ -317,7 +248,7 @@ int update_group_ms_cohe_job_list(const long nce,
   return err;
 }/* update_group_ms_cohe_job_list() */
 
-int compute_ms_cohe_tan_res(const int compute_micro_eq,  //deprecated
+int compute_ms_cohe_tan_res(const int compute_micro_eq,
                             const CommunicationStructure *com,
                             MS_COHE_JOB_INFO *job_list,
                             SparseSystem *macro_solver,
@@ -325,7 +256,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,  //deprecated
                             const int mp_id)
 {
   int err = 0;
-  int micro_model = 1;//unused code
+
   MultiscaleCommon         *c = microscale;
   SparseSystem  *micro_solver = c->SOLVER;
   const int            n_sols = microscale->idx_map.size;
@@ -350,7 +281,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,  //deprecated
   /* for each solution, compute job */
   for (int i = 0; i < n_sols; ++i) {
     MS_COHE_JOB_INFO *job = job_list + i;
-    err += compute_ms_cohe_job(i, job, microscale, mp_id,micro_model);
+    err += compute_ms_cohe_job(i, job, microscale, mp_id);
 
     /* assemble tangent if owning process */
     if (macro_rank == job->proc_id) {
@@ -484,9 +415,7 @@ static int create_local_ms_cohe_job_list(const long nce,
                                          MS_COHE_JOB_INFO *job_list,
                                          int *local_buffer_size,
 					 int myrank_macro,
-                                         const int mp_id,
-                                        int* micro_methods,
-                                         int micro_method)
+                                         const int mp_id)
 {
   int err = 0;
   /* exit early if there are no jobs on this domain */
@@ -496,22 +425,10 @@ static int create_local_ms_cohe_job_list(const long nce,
   int job_id = 0;
   double *normal = PGFEM_calloc(double, ndim);
   double *jump = PGFEM_calloc(double, ndim);
-  int j = 0;
-  int found;
+
   for(int i=0; i<nce; i++){
-    const COEL *cel;
-    int global_job_id;
-    found = 0;
-    /*put only jobs from this micro type on this job list*/
-    while(found == 0) {
-      if(micro_methods[j] == micro_method){
-        found = 1;
-        cel = &coel[j];
-        global_job_id = j;
-      }
-      j++;
-    }
     /* information that is constant per element */
+    const COEL *cel = &coel[i];
     const int nne = cel->toe;
     const int nne_2D = nne/2;
     double *shape_2D = PGFEM_calloc(double, nne_2D);
@@ -598,7 +515,6 @@ static int create_local_ms_cohe_job_list(const long nce,
                                   loc_dof_ids,g_dof_ids);
       job->int_wt = wt;
       job->elem_id = i;
-      job->global_job_id = global_job_id;
       job->proc_id = myrank_macro;
       job->int_pt = ip;
       job->job_type = JOB_NO_COMPUTE_EQUILIBRIUM;

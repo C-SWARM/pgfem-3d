@@ -982,9 +982,10 @@ static int bpa_compute_DM_DFe(double * __restrict DM_DFe,
  * Private interface for the model
  */
 int BPA_int_alg(Constitutive_model *m,
-                CM_Ctx &cm_ctx)
+                const void *ctx)
 {
   int err = 0;
+  auto CTX = (BPA_ctx *) ctx;
   const HOMMAT *p_hmat = m->param->p_hmat;
   const double kappa = bpa_compute_bulk_mod(p_hmat);
   const double *Fn = m->vars_list[0][m->model_id].Fs[_F_n].m_pdata;
@@ -998,7 +999,7 @@ int BPA_int_alg(Constitutive_model *m,
   double Fe[tensor] = {};
   double lam = 0;
   double s = 0;
-  err += bpa_int_alg_initial_guess(cm_ctx.F,m,Fe,&s,&lam);
+  err += bpa_int_alg_initial_guess(CTX->F,m,Fe,&s,&lam);
 
   /* internal variables */
   double gdot = 0;
@@ -1010,7 +1011,7 @@ int BPA_int_alg(Constitutive_model *m,
   double Fp[tensor] = {};
   err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
                                  params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
-                                 params[mcCr], params[mcAlpha], s, kappa, cm_ctx.F,
+                                 params[mcCr], params[mcAlpha], s, kappa, CTX->F,
                                  Fe, p_hmat);
 
   /* compute plastic spin */
@@ -1018,7 +1019,7 @@ int BPA_int_alg(Constitutive_model *m,
   double d[tensor] = {};
   double ome[tensor] = {};
   double Wp[tensor] = {};
-  err += bpa_compute_vel_grad(cm_ctx.F,Fn,cm_ctx.dt,L,d,ome);
+  err += bpa_compute_vel_grad(CTX->F,Fn,CTX->dt,L,d,ome);
   err += bpa_compute_Wp(Wp,gdot,normal,ome,d,Fe);
 
   double TAN[tan_row * tan_col] = {};
@@ -1032,15 +1033,15 @@ int BPA_int_alg(Constitutive_model *m,
   static const int maxit = 10;
 
   /* COMPUTE THE RESIDUAL */
-  err += bpa_compute_res_vec(RES,cm_ctx.dt,gdot,lam,Jp,normal,Mn,Wp,cm_ctx.F,Fe);
+  err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
 
   while ((normWp > TOL || norm > TOL) && iterWp < maxit) {
     iter = 0;
     while (norm > TOL  && iter < maxit) {
       /* COMPUTE THE TANGENT */
       err += bpa_compute_tan(TAN, params[mcGdot0], params[mcA], params[mcT], params[mcN],
-                             params[mcCr], params[mcAlpha], cm_ctx.dt, gdot, tau, s_s, lam,
-                             eq_sig_dev, normal, Mn, cm_ctx.F, Fe,
+                             params[mcCr], params[mcAlpha], CTX->dt, gdot, tau, s_s, lam,
+                             eq_sig_dev, normal, Mn, CTX->F, Fe,
                              Fp, p_hmat);
 
       if(BPA_PRINT_LEVEL > 1){
@@ -1061,11 +1062,11 @@ int BPA_int_alg(Constitutive_model *m,
       /* update vars (gdot, s_s, tau, eq_sig_dev, normal) */
       err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
                                      params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
-                                     params[mcCr], params[mcAlpha], s, kappa, cm_ctx.F,
+                                     params[mcCr], params[mcAlpha], s, kappa, CTX->F,
                                      Fe, p_hmat);
 
       /* COMPUTE RESIDUAL */
-      err += bpa_compute_res_vec(RES,cm_ctx.dt,gdot,lam,Jp,normal,Mn,Wp,cm_ctx.F,Fe);
+      err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
       norm = cblas_dnrm2(tan_row,RES,1);
       if (BPA_PRINT_LEVEL > 0) {
         PGFEM_printf("\tR1 = %6e (%d)\n", norm, iter);
@@ -1076,7 +1077,7 @@ int BPA_int_alg(Constitutive_model *m,
     total_it += iter;
 
     double s_k = s;
-    s = (s_n + params[mcH] * gdot * (cm_ctx.dt)) / (1 + params[mcH] * gdot * (cm_ctx.dt)/ params[mcSss]);
+    s = (s_n + params[mcH] * gdot * (CTX->dt)) / (1 + params[mcH] * gdot * (CTX->dt)/ params[mcSss]);
     normWp = pow((s-s_k) / params[mcSss],2);
 
     /* compute updated Wp and residual norm */
@@ -1091,10 +1092,10 @@ int BPA_int_alg(Constitutive_model *m,
     /* COMPUTE NEW RESIDUAL AND NORM */
     err += bpa_compute_step1_terms(&gdot, &s_s, &tau, &Jp, eq_sig_dev, normal, Fp,         /*< out */
                                    params[mcGdot0], params[mcA], params[mcT], params[mcN], /*< in */
-                                   params[mcCr], params[mcAlpha], s, kappa, cm_ctx.F,
+                                   params[mcCr], params[mcAlpha], s, kappa, CTX->F,
                                    Fe, p_hmat);
 
-    err += bpa_compute_res_vec(RES,cm_ctx.dt,gdot,lam,Jp,normal,Mn,Wp,cm_ctx.F,Fe);
+    err += bpa_compute_res_vec(RES,CTX->dt,gdot,lam,Jp,normal,Mn,Wp,CTX->F,Fe);
     norm = cblas_dnrm2(tan_row,RES,1);
     /* output of the iterative procedure */
     if (BPA_PRINT_LEVEL > 0) {
@@ -1110,13 +1111,13 @@ int BPA_int_alg(Constitutive_model *m,
       || normWp > TOL){ err ++;}
 
   /* Update state variables with converged values */
-  err += bpa_update_state_variables(cm_ctx.F,Fe, Fp, s, lam, m);
+  err += bpa_update_state_variables(CTX->F,Fe, Fp, s, lam, m);
  exit_err:
   return err;
 }
 
 int BPA_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                  CM_Ctx &cm_ctx,
+                                  const void *ctx,
                                   double *stress)
 const
 {
@@ -1128,7 +1129,7 @@ const
 }
 
 int BPA_PARAM::compute_dudj(const Constitutive_model *m,
-                            CM_Ctx &cm_ctx,
+                            const void *ctx,
                             double *dudj)
 const 
 {
@@ -1139,7 +1140,7 @@ const
 }
 
 int BPA_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                   CM_Ctx &cm_ctx,
+                                   const void *ctx,
                                    double *L)
 const
 {
@@ -1151,7 +1152,7 @@ const
 }
 
 int BPA_PARAM::compute_d2udj2(const Constitutive_model *m,
-                              CM_Ctx &cm_ctx,
+                              const void *ctx,
                               double *d2udj2)
 const
 {
@@ -1327,7 +1328,7 @@ const
 }
 
 int BPA_PARAM::compute_dMdu(const Constitutive_model *m,
-                            CM_Ctx &cm_ctx,
+                            const void *ctx,
                             const double *Grad_op,
                             const int nne,
                             const int ndofn,
@@ -1335,8 +1336,9 @@ int BPA_PARAM::compute_dMdu(const Constitutive_model *m,
 const
 {
   int err = 0;
-  const double *F = cm_ctx.F;
-  const double dt = cm_ctx.dt;
+  auto CTX = (BPA_ctx *) ctx;
+  const double *F = CTX->F;
+  const double dt = CTX->dt;
   const double *Fe = m->vars_list[0][m->model_id].Fs[_Fe].m_pdata;
   const double *Fp = m->vars_list[0][m->model_id].Fs[_Fp].m_pdata;
   const double *Fp_n = m->vars_list[0][m->model_id].Fs[_Fp_n].m_pdata;
@@ -1510,10 +1512,10 @@ const
 }
 
 int BPA_PARAM::update_elasticity(const Constitutive_model *m,
-                                 CM_Ctx &cm_ctx,
+                                 const void *ctx_in,
                                  double *L,
                                  double *S,
-                                 const bool compute_stiffness)
+                                 const int compute_stiffness)
 const
 {
   int err = 0;
@@ -1534,9 +1536,30 @@ int BPA_PARAM::model_dependent_initialization(void)
   return err;
 }
 
-int BPA_PARAM::integration_algorithm(Constitutive_model *m,
-                                     CM_Ctx &cm_ctx)
+int plasticity_model_BPA_ctx_build(void **ctx,
+                                   const double *F,
+                                   const double dt)
+{
+  int err = 0;
+  BPA_ctx *t_ctx = PGFEM_malloc<BPA_ctx>();
+  *ctx = t_ctx;
+  t_ctx->dt = dt;
+  memcpy(t_ctx->F, F, tensor * sizeof(*F));
+  return err;
+}
+
+int BPA_PARAM::destroy_ctx(void **ctx)
 const
 {
-  return BPA_int_alg(m, cm_ctx);
+  int err = 0;
+  free(*ctx);
+  *ctx = NULL;
+  return err;
+}
+
+int BPA_PARAM::integration_algorithm(Constitutive_model *m,
+                                     const void *ctx)
+const
+{
+  return BPA_int_alg(m, ctx);
 }

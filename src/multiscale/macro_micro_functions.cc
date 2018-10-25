@@ -44,7 +44,7 @@ int compute_n_job_and_job_sizes(const MultiscaleCommon *c,
   return err;
 }
 
-int start_microscale_server(const MultiscaleComm *mscom,//deprecated
+int start_microscale_server(const MultiscaleComm *mscom,
                 const PGFEM_ms_job_intercomm *ic,
                 Microscale *microscale,
                 const int mp_id)
@@ -52,7 +52,7 @@ int start_microscale_server(const MultiscaleComm *mscom,//deprecated
   ISIRNetwork *net = static_cast<ISIRNetwork*>(microscale->net);
   int err = 0;
   /* error check */
-  if(!mscom->valid_micro_1) return ++err;
+  if(!mscom->valid_micro) return ++err;
   if(mscom->valid_mm_inter && ic == NULL) return ++err;
 
   /* begin serving */
@@ -121,7 +121,7 @@ int start_microscale_server(const MultiscaleComm *mscom,//deprecated
   return err;
 }
 
-int micro_job_master(const MultiscaleComm *mscom, //deprecated
+int micro_job_master(const MultiscaleComm *mscom,
 		     const int idx,
 		     const int buff_size,
 		     char *in_buffer,
@@ -132,8 +132,8 @@ int micro_job_master(const MultiscaleComm *mscom, //deprecated
 {
   int err = 0;
   /* exit if not master on microscale */
- int micro_model = 1;//this is unused code anyways
- if(!mscom->valid_micro_1 || mscom->rank_micro != 0) return ++err;
+  if(!mscom->valid_micro || mscom->rank_micro != 0) return ++err;
+
   /* broadcast job information */
   int job_init_info[2] = {0,0};
   job_init_info[0] = idx;
@@ -147,18 +147,18 @@ int micro_job_master(const MultiscaleComm *mscom, //deprecated
   /* compute the job */
   err += microscale_compute_job(idx,buff_size,
 				out_buffer,micro,
-				exit_server,mp_id,micro_model);
+				exit_server,mp_id);
   return err;
 }
 
-int micro_job_slave(const MultiscaleComm *mscom, //deprecated
+int micro_job_slave(const MultiscaleComm *mscom,
 		    Microscale *micro,const int mp_id)
 {
   int err = 0;
   int exit_server = 0;
-  int micro_model = 1;//this is unused code anyways
+
   /* exit if not slave on microscale */
-  if(!mscom->valid_micro_1 && mscom->rank_micro <= 0) return ++err;
+  if(!mscom->valid_micro && mscom->rank_micro <= 0) return ++err;
 
   while(!exit_server){
     /* get job information from master */
@@ -170,7 +170,7 @@ int micro_job_slave(const MultiscaleComm *mscom, //deprecated
     /* compute the job */
     err += microscale_compute_job(job_init_info[0],
 				  job_init_info[1],
-				  buffer,micro,&exit_server,mp_id,micro_model);
+				  buffer,micro,&exit_server,mp_id);
 
     /* cleanup */
     free(buffer);
@@ -183,8 +183,7 @@ int microscale_compute_job(const int idx,
                char *buffer,
                Microscale *micro,
                int *exit_server,
-               const int mp_id,
-                int micro_model)
+               const int mp_id)
 {
   int err = 0;
 
@@ -200,7 +199,7 @@ int microscale_compute_job(const int idx,
   }
 
   /* compute the job */
-  err += compute_ms_cohe_job(idx,job,micro,mp_id,micro_model);
+  err += compute_ms_cohe_job(idx,job,micro,mp_id);
 
   /* pack the job back into buffer */
   err += pack_MS_COHE_JOB_INFO(job,buff_len,buffer);
@@ -212,7 +211,7 @@ int microscale_compute_job(const int idx,
 }
 
 /******** Main Macroscale interface functions *********/
-int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,//deprecated
+int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
 				  const Macroscale *macro,
 				  const int job_type,
 				  const double *loc_sol,
@@ -277,7 +276,7 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,//deprecated
   return err;
 }
 
-int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,//deprecated
+int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
 				   Macroscale *macro,
 				   MultiscaleServerContext *send,
 				   MultiscaleServerContext *recv)
@@ -360,7 +359,7 @@ int macroscale_update_job_info(const Macroscale *macro,
   int err = 0;
   const MultiscaleCommon *c = macro;
   const MULTISCALE_SOLUTION *s = macro->sol;
-  const COEL *cel = c->coel + job->global_job_id;
+  const COEL *cel = c->coel + job->elem_id;
   const int nne = cel->toe;
   const int nne_2D = nne/2;
   double *x = PGFEM_calloc(double, nne);
@@ -431,7 +430,7 @@ int macroscale_update_coel(const MS_COHE_JOB_INFO *job,
                Macroscale *macro)
 {
   int err = 0;
-  COEL *coel = macro->coel + job->global_job_id;  //this particular macroscale cohesive element
+  COEL *coel = macro->coel + job->elem_id;
 
   /* set traction for output */
   memcpy(coel->ti,job->traction_n,ndim*sizeof(double));

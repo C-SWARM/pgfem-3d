@@ -68,110 +68,7 @@ enum integration_frame {
 /// print constitutive model interface infomation
 void print_constitutive_model_info(FILE *out);
 
-/// constitutive model contex class
-class CM_Ctx
-{
-  public:
-    double *F;
-    double dt;    // time step size: t(n+1) - t(n)
-    double dtn;   // time step size: t(n)   - t(n-1)
-    double alpha; // mid point alpha
-    double *eFnpa;
-    double *hFn;
-    double *hFnp1;
-    bool is_coulpled_with_thermal;
-    int npa;      // if npa = 0: do (1-alpha)*value(id_nm1) + alpha*value(id_n)
-                  //    npa = 1: do (1-alpha)*value(id_n)   + alpha*value(id_np1)
-    double x,y,z,t;
-    CM_Ctx(){
-      F = eFnpa = hFn = hFnp1 = NULL;
-      dt = dtn;
-      alpha = -1.0;
-      is_coulpled_with_thermal = false;
-      npa = 1;
-    };
-    
-    /// set tensors
-    void set_tensors(double *F_in,
-                     double *eFnpa_in,
-                     double *hFn_in,
-                     double *hFnp1_in,
-                     const bool is_cpled_with_thermal){
-      F = F_in;
-      eFnpa = eFnpa_in;
-      hFn   = hFn_in;
-      hFnp1 = hFnp1_in;
-      is_coulpled_with_thermal = is_cpled_with_thermal;
-    };
-    
-    /// set tensors without thermal coupling
-    void set_tensors(double *F_in,
-                     double *eFnpa_in){
-      set_tensors(F_in, eFnpa_in, NULL, NULL, false);
-    };
-
-    /// set tensors for steady state
-    void set_tensors_ss(double *F_in,
-                        double *hFn_in,
-                        double *hFnp1_in,
-                        const bool is_cpled_with_thermal){
-      set_tensors(F_in, NULL, hFn_in, hFnp1_in, is_cpled_with_thermal);
-    };
-    
-    /// set tensors for steady state without thermal coupling
-    void set_tensors_ss(double *F_in){
-      set_tensors_ss(F_in, NULL, NULL, false);
-    };    
-
-    /// set time steping values
-    void set_time_steps(const double dt_in,
-                        const double dtn_in,
-                        const double alpha_in,
-                        const int npa_in){
-      dt    = dt_in;
-      dtn   = dtn_in;
-      alpha = alpha_in;
-      npa   = npa_in;
-    };
-    
-    /// set time steping values for steady state
-    void set_time_steps_ss(const double dt_in,
-                           const double dtn_in){
-      set_time_steps(dt_in, dtn_in, 0.5, -1);
-    };
-    
-    void set_time_steps_ss(const double dt_in){
-      set_time_steps(dt_in, dt_in, 0.5, -1);
-    };
-    
-    // print 3x3 matrix with name
-    void print_3x3(const double *F, const char *name){
-      if(F==NULL)
-        printf("%s = NULL\n", name);
-      else{
-        printf("%s = [", name);
-        for(int ia=0; ia<9; ++ia)
-          printf("%e ", F[ia]);
-        printf("\n");
-      }
-    }
-
-    // print member data for debuging purpose
-    void print(void){
-      print_3x3(F,     "F");
-      print_3x3(eFnpa, "eFnpa");
-      print_3x3(hFn,   "hFn");
-      print_3x3(hFnp1, "hFnp1");
-      printf("dt = %e, dtn = %e, alpha = %e, npa = %d\n", dt, dtn, alpha, npa);
-      if(is_coulpled_with_thermal)
-        printf("is_coulpled_with_thermal = true\n");
-      else
-        printf("is_coulpled_with_thermal = false\n");
-    }
-};
-
 /// Pre-declare the Model_parameters structure
-
 class Model_parameters
 {
  public:
@@ -183,7 +80,7 @@ class Model_parameters
   bool cm3f;
 
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
-  HyperElasticity *cm_elast;
+  ELASTICITY *cm_elast;
   GcmSolverInfo *gcm_solver_info;
   
   // set members variables to initial values (zeros and NULLs)   
@@ -258,31 +155,27 @@ class Model_parameters
   /// subsequent calls to get_F functions will return the correct
   /// values without re-integrating the constitutive model.
   ///
-  /// \param[in,out] m,     pointer to a Constitutive_model object.
-  /// \param[in,out] cm_ctx handle to a user defined structure that
-  ///                       controls execution of the user-defined integration algorithm. This
-  ///                       is the mechanism for passing model-specific information into the
-  ///                       general function interface.
-  /// \param[in]     x      material point coordinates, should be 3x1 vector
-  /// \param[in]     t      time
+  /// \param[in,out] m,   pointer to a Constitutive_model object.
+  /// \param[in,out] ctx, handle to a user defined structure that
+  ///                     controls execution of the user-defined integration algorithm. This
+  ///                     is the mechanism for passing model-specific information into the
+  ///                     general function interface.
   /// \return non-zero on internal error that should be handled by the calling function.
   virtual int integration_algorithm(Constitutive_model *m,
-                                    CM_Ctx &cm_ctx,
-                                    const double *x,
-                                    const double t) const { return 0; };
-                                    
-  virtual int integration_algorithm(Constitutive_model *m,
-                                    CM_Ctx &cm_ctx) const { return 0; };
+                                    const void *usr_ctx) const { return 0; };
 
   /// User defined function to compute deviatroic stress tenosr.
   ///
-  /// \param[in]     m,     pointer to Constitutive_model object.
-  /// \param[in,out] cm_ctx Constitiutive_model context
-  /// \param[out]    S,     computed deviatroic 2nd order stress tenosr.
-  ///                       that is populated with values from the constitutive model.
+  /// \param[in]     m,   pointer to Constitutive_model object.
+  /// \param[in,out] ctx, handle to a user defined structure that
+  ///                     controls execution of the user-defined function. This is the
+  ///                     mechanism for passing model-specific information into the general
+  ///                     function interface.
+  /// \param[out]    S,   computed deviatroic 2nd order stress tenosr.
+  ///                     that is populated with values from the constitutive model.
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dev_stress(const Constitutive_model *m,
-                                 CM_Ctx &cm_ctx,
+                                 const void *ctx,
                                  double *S) const { return 0; };
 
   /// User defined function to compute deviatroic stress tenosr.
@@ -297,21 +190,21 @@ class Model_parameters
                                  double *S) 
   const 
   {    
-    cm_elast->compute_PK2_dev(eC, S); 
+    cm_elast->compute_PK2_dev(eC, cm_elast->mat, S); 
     return 0; 
   };
                                  
   /// User defined function to compute volumetric stress contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
-  /// \param[in,out] cm_ctx Constitiutive_model context
+  /// \param[in,out] ctx,   handle to a user defined structure that
   ///                       controls execution of the user-defined function. This is the
   ///                       mechanism for passing model-specific information into the general
   ///                       function interface.
   /// \param[out]    value, computed value (passed by reference)
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dudj(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *value) const { return 0; };
 
   /// User defined function to compute volumetric stress contributions
@@ -332,13 +225,16 @@ class Model_parameters
 
   ///User defined function to compute deviatroic stiffness tenosr.
   ///
-  /// \param[in]     m,      pointer to Constitutive_model object.
-  /// \param[in,out] cm_ctx Constitiutive_model context
-  /// \param[out]    L,     computed deviatroic 4th order stiffness tenosr.
-  ///                       that is populated with values from the constitutive model.
+  /// \param[in]     m,   pointer to Constitutive_model object.
+  /// \param[in,out] ctx, handle to a user defined structure that
+  ///                     controls execution of the user-defined function. This is the
+  ///                     mechanism for passing model-specific information into the general
+  ///                     function interface.
+  /// \param[out]    L,   computed deviatroic 4th order stiffness tenosr.
+  ///                     that is populated with values from the constitutive model.
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dev_tangent(const Constitutive_model *m,
-                                  CM_Ctx &cm_ctx,
+                                  const void *ctx,
                                   double *L) const { return 0; };
 
   ///User defined function to compute deviatroic stiffness tenosr.
@@ -353,21 +249,21 @@ class Model_parameters
                                   double *L)
   const
   { 
-    cm_elast->compute_tangent_dev(eC, L);
+    cm_elast->compute_tangent_dev(eC, cm_elast->mat, L);
     return 0; 
   };
                                   
   /// User defined function to compute volumetric elasticity contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
-  /// \param[in,out] cm_ctx Constitiutive_model context
+  /// \param[in,out] ctx,   handle to a user defined structure that
   ///                       controls execution of the user-defined function. This is the
   ///                       mechanism for passing model-specific information into the general
   ///                       function interface.
   /// \param[out]    value, computed value (passed by reference)
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_d2udj2(const Constitutive_model *m,
-                             CM_Ctx &cm_ctx,
+                             const void *ctx,
                              double *value) const { return 0; };
 
   /// User defined function to compute volumetric elasticity contributions
@@ -389,17 +285,17 @@ class Model_parameters
   /// User defined function to compute the elastic algorithmic stiffness tangent
   ///
   /// \param[in]  m,                 pointer to Constitutive_model object.
-  /// \param[in]  cm_ctx             Constitiutive_model context
+  /// \param[in]  ctx,               a context for the model
   /// \param[out] L,                 4th order elasticity tensor
   /// \param[out] S,                 2nd order PKII tensor
   /// \param[in]  compute_stiffness, if 1 compute elasticity tensor
   ///                                   0 no compute elasticity tensor
   /// \return non-zero on internal error that should be handled by the
   virtual int update_elasticity(const Constitutive_model *m,
-                                CM_Ctx &cm_ctx,
+                                const void *ctx,
                                 double *L,
                                 double *S,
-                                const bool compute_stiffness) const { return 0; };
+                                const int compute_stiffness) const { return 0; };
                                 
   /// User defined function to compute the deviatroic part of elastic stiffness tangent
   ///
@@ -410,8 +306,8 @@ class Model_parameters
   /// \param[in]  npa,               mid point index (1 + alpha)
   /// \param[in]  alpha,             mid point alpha
   /// \param[in]  dt,                time step size
-  /// \param[bool]  compute_stiffness, if true compute elasticity tensor
-  ///                                     false no compute elasticity tensor
+  /// \param[in]  compute_stiffness, if 1 compute elasticity tensor
+  ///                                   0 no compute elasticity tensor
   /// \return non-zero on internal error that should be handled by the
   virtual int update_elasticity_dev(const Constitutive_model *m,
                                     double *eFnpa,
@@ -420,7 +316,7 @@ class Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const bool compute_stiffness = false) 
+                                    const int compute_stiffness = 0) 
   const
   {
     int err = 0;
@@ -626,14 +522,14 @@ class Model_parameters
   /// deformation w.r.t. the displacement variable.
   ///
   /// \param[in]  m,       Constitutive model object
-  /// \param[in]  cm_ctx,  Constitiutive_model context
+  /// \param[in]  ctx,     model specific user context
   /// \param[in]  Grad_op, 4-index FE gradient operator where the 1st two indices are the node followed by the DOF.
   /// \param[in]  nne,     number of nodes on the element (length of idx 1 in Grad_op)
   /// \param[in]  ndofn,   number of dofs on each node (length of idx 2 in Grad_op)
   /// \param[out] dM_du,   4-index FE linearization of M, same dimensions as Grad_op
   /// \return non-zero on internal error
   virtual int compute_dMdu(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *Grad_op,
                            const int nne,
                            const int ndofn,
@@ -651,14 +547,14 @@ class Model_parameters
   /// deformation w.r.t. the volume variable.
   ///
   /// \param[in]  m,       Constitutive model object
-  /// \param[in]  cm_ctx   Constitiutive_model context
+  /// \param[in]  ctx,     model specific user context
   /// \param[in]  Grad_op, 4-index FE gradient operator where the 1st two indices are the node followed by the DOF.
   /// \param[in]  nne,     number of nodes on the element (length of idx 1 in Grad_op)
   /// \param[in]  ndofn,   number of dofs on each node (length of idx 2 in Grad_op)
   /// \param[out] dM_du,   4-index FE linearization of M, same dimensions as Grad_op
   /// \return non-zero on internal error
   virtual int compute_dMdt(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            const double *Grad_op,
                            const int Vno,
                            double *dM_dt)
@@ -804,10 +700,20 @@ class Constitutive_model
   /// the internal state to contain the updated values upon exit, i.e.,
   /// subsequent calls to get_F functions will return the correct
   /// values without re-integrating the constitutive model.
+  ///
+  /// \param[in] *Fnp1  deformation gradient at t(n+1)
+  /// \param[in] *hFn   thermal part of deformation gradient at t(n)
+  /// \param[in] *hFnp1 thermal part of deformation gradient at t(n+1)
+  /// \param[in] dt                     time step size
+  /// \param[in] alpha                  mid point rule alpha
+  /// \param[in] is_it_couple_w_thermal checking coupling with thermal
+  ///                                   if true: apply thermal expansitions
+  /// \param[in] tf_factor              (theta/J)^(1/3) used for computing true Fnp1  
+  /// \return non-zero on internal error that should be handled by the calling function.
   int run_integration_algorithm(double *Fnp1, 
                                 double *hFn,
                                 double *hFnp1,
-                                const double *dts,
+                                double dt,
                                 double alpha,
                                 const double *x,
                                 const double t,                              
@@ -874,7 +780,7 @@ int constitutive_model_default_update_elasticity(const Constitutive_model *m,
                                                  const double *eF,
                                                  double *L,
                                                  double *S,
-                                                 const bool compute_stiffness);
+                                                 const int compute_stiffness);
 
 /// update values for next time step: variables[tn] = variables[tn+1]
 /// \return non-zero on error.
@@ -921,6 +827,15 @@ int cm_get_subdivision_parameter(double *subdiv_param,
                                  const Element *elem,
                                  const EPS *eps,
                                  const double dt);
+
+/// Construct the model context for any model.
+int construct_model_context(void **ctx,
+                            const int type,
+                            double *F,
+                            const double dt,
+                            const double alpha,
+                            double *eFnpa,
+                            const int npa);
 
 struct FEMLIB;
 
@@ -987,6 +902,26 @@ int stiffness_el_constitutive_model(FEMLIB *fe,
                                     double dt);
 
 /// compute element residual vector in transient
+///
+/// \param[in] fe finite element helper object
+/// \param[out] f computed element residual vector
+/// \param[in] re_np1 nodal variables at t(n+1) in the current element
+/// \param[in] re_npa nodal variables at (1-alpha)r(n)   + alpha*r(n+1) in the current element
+/// \param[in] re_nma nodal variables at (1-alpha)r(n-1) + alpha*r(n)   in the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] dts time step size at t(n), t(n+1); dts[DT_N] = t(n) - t(n-1)
+///                                                dts[DT_NP1] = t(n+1) - t(n)
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \param[in] t  time
+/// \return non-zero on internal error
 int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               double *f,
                                               double *re_np1,
@@ -1002,9 +937,25 @@ int residuals_el_constitutive_model_w_inertia(FEMLIB *fe,
                                               const Multiphysics& mp,
                                               const double *dts,
                                               int mp_id,
+                                              double dt,
                                               const double t);
 
 /// compute element residual vector in quasi steady state
+///
+/// \param[in] fe finite element helper object
+/// \param[out] f computed element residual vector
+/// \param[in] r_e nodal variabls(displacements) on the current element
+/// \param[in] grid a mesh object
+/// \param[in] mat a material object
+/// \param[in] fv object for field variables
+/// \param[in] sol object for solution scheme
+/// \param[in] load object for loading
+/// \param[in] crpl object for lagcy crystal plasticity
+/// \param[in] opts structure PGFem3D option
+/// \param[in] mp mutiphysics object
+/// \param[in] mp_id mutiphysics id
+/// \param[in] dt time step size
+/// \return non-zero on internal error
 int residuals_el_constitutive_model(FEMLIB *fe,
                                     double *f,
                                     double *r_e,
@@ -1017,8 +968,7 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const PGFem3D_opt *opts,
                                     const Multiphysics& mp,
                                     int mp_id,
-                                    const double *dts,
-                                    const double t); 
+                                    double dt); 
                                     
 int cm_write_tensor_restart(FILE *fp, const double *tensor);
 

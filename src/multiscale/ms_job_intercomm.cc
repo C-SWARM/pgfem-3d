@@ -17,7 +17,7 @@ static int create_ms_job_intercomm_macro(const int n_jobs,
                      PGFem3D_Comm macro_comm);
 
 /*==== API FUNCTION DEFINITIONS ====*/
-int create_PGFEM_ms_job_intercomm(const int nproc_macro,//deprecated
+int create_PGFEM_ms_job_intercomm(const int nproc_macro,
                   const MultiscaleComm *mscom,
                   const int n_jobs,
                   const int *job_buff_sizes,

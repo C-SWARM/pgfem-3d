@@ -10,7 +10,7 @@
 #endif
 
 static const int ndim = 3;
-//BAD BAD BAD BAD BAD
+
 //inline size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
 {
@@ -23,7 +23,6 @@ size_t compute_MS_COHE_JOB_INFO_size(const MS_COHE_JOB_INFO *info)
            + (info->ndofe*info->ndofe)*sizeof(double)
            + 2*info->ndofe*sizeof(long)
            + sizeof(int)
-//           + sizeof(int)                    //global_job_id
            + 3*sizeof(double)
            + sizeof(int));
   return result;
@@ -41,7 +40,7 @@ int build_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   info->int_pt = -1; /* poisoned value */
   info->job_type = -1; /* poisoned value */
   info->print_flag = 0; /* print output */
-//  info->global_job_id = -1;
+
   info->int_wt = 0.0;
 
   info->max_traction = info->max_jump = -1.0; /* poisoned value */
@@ -143,7 +142,6 @@ int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
   pack_data(&info->n_step,buffer,&pos,1,sizeof(int));
   pack_data(&info->max_traction,buffer,&pos,1,sizeof(double));
   pack_data(&info->max_jump,buffer,&pos,1,sizeof(double));
-//  pack_data(&info->global_job_id,buffer,&pos,1,sizeof(int));
 
   /* pack arrays */
   pack_data(info->jump,buffer,&pos,ndim,sizeof(double));
@@ -196,7 +194,6 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,&info->n_step,&pos,1,sizeof(int));
   unpack_data(buffer,&info->max_traction,&pos,1,sizeof(double));
   unpack_data(buffer,&info->max_jump,&pos,1,sizeof(double));
-//  unpack_data(buffer,&info->global_job_id,&pos,1,sizeof(int));
 
   /* unpack arrays */
   unpack_data(buffer,info->jump,&pos,ndim,sizeof(double));
@@ -211,6 +208,7 @@ int unpack_MS_COHE_JOB_INFO(MS_COHE_JOB_INFO *info,
   unpack_data(buffer,info->loc_dof_ids,&pos,info->ndofe,sizeof(long));
   unpack_data(buffer,info->g_dof_ids,&pos,info->ndofe,sizeof(long));
   unpack_data(buffer,info->times,&pos,3,sizeof(double));
+
   /* error checking */
   if(pos > buffer_len) err++;
   return err;
@@ -273,7 +271,7 @@ int print_MS_COHE_JOB_INFO(FILE *out,
   PGFEM_fprintf(out,"NORMAL:  %3.5e %3.5e %3.5e\n",
         info->normal[0],info->normal[1],info->normal[2]);
   PGFEM_fprintf(out,"INT_WT:  %3.5e\n",info->int_wt);
-//  PGFEM_fprintf(out,"GLOBAL_JOB_ID:  %3.5e\n",info->global_job_id);
+
   PGFEM_fprintf(out,"SHAPE:   ");
   for(int i=0; i<info->nnode; i++){
     PGFEM_fprintf(out,"%3.5e ",info->shape[i]);

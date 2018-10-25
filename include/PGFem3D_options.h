@@ -34,9 +34,8 @@ struct PGFem3D_opt {
   int custom_micro;       //if micro will contain taylor method
   int auto_micro;
   int *methods;           //which micro cells contain taylor method
-  int reduced_order;      //whether or not a micro server will be reduced order
-  int nce_micro_all;
-  int nce_micro_ROM;
+
+
   /* visualization options */
   int vis_format; /* gr2 */
   int ascii;
@@ -103,13 +102,9 @@ void get_macro_micro_option_blocks(int myrank,
                                    int *macro_start,
                                    int *macro_argc,
                                    int *micro_start,
-                                   int *micro2_start,
                                    int *micro_argc,
-                                   int *micro2_argc,
                                    int *macro_nproc,
                                    int *micro_group_size,
-                                   int *micro2_group_size,
-                                   int *full_micro_np,
                                    int *debug,
                                     PGFem3D_opt *options);
 

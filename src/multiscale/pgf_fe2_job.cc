@@ -155,11 +155,8 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
   Status status;
   int msg_waiting = 0;
   pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
-  if (mscom->valid_micro_1) {
-    net->iprobe(proc,job->id,mscom->mm_inter,&msg_waiting,&status);
-  } else {
-    net->iprobe(proc,job->id,mscom->mm_inter_ROM,&msg_waiting,&status);
-  }
+  net->iprobe(proc,job->id,mscom->mm_inter,&msg_waiting,&status);
+  
   /* if there is a message, allocate the comm_buf and post the
      matching receive. */
   if(msg_waiting){
@@ -169,13 +166,8 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 
     /* post blocking receive since we can't move on until we get it
        and the message is for sure there. */
-    if (mscom->valid_micro_1) {
-      net->recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
+    net->recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
 	      NET_DT_CHAR,proc,job->id,mscom->mm_inter,&status);
-    } else {
-      net->recv(job->comm_buf->buffer,job->comm_buf->buffer_len,
-        NET_DT_CHAR,proc,job->id,mscom->mm_inter_ROM,&status);
-    }
 
     /* update the job state */
     switch(job->state){
@@ -194,8 +186,7 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 void pgf_FE2_job_compute_worker(const size_t job_id,
 				const size_t buffer_len,
 				Microscale *micro,
-				const int mp_id,
-        int micro_model)
+				const int mp_id)
 {
   /* allocate and receive job buffer */
   char *buf = static_cast<char*>(malloc(buffer_len));
@@ -204,7 +195,7 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
   /* determine solution index from job id and compute */
   int idx = sol_idx_map_id_get_idx(&(micro->idx_map),job_id);
   int exit_server = 0; /* unused in this implementation */
-  microscale_compute_job(idx,buffer_len,buf,micro,&exit_server,mp_id,micro_model);
+  microscale_compute_job(idx,buffer_len,buf,micro,&exit_server,mp_id);
   assert(exit_server == 0);
   free(buf);
 }
@@ -212,8 +203,7 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
 int pgf_FE2_job_compute(pgf_FE2_job *job,
 			Microscale *micro,
 			const MultiscaleComm *mscom,
-			const int mp_id,
-      int micro_model)
+			const int mp_id)
 {
   /* return immediately if not ready to compute */
   if(job->state != FE2_STATE_COMPUTE_READY) return job->state;
@@ -223,6 +213,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   time(&start);
 
   /* broadcast information to the microscale */
+  assert(mscom->rank_micro == 0);
   static const int n_meta = 2;
   size_t meta[n_meta];
   meta[0] = job->id;
@@ -236,7 +227,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
   assert(idx >= 0);
   int exit_server = 0; /* unused in this implementation */
   microscale_compute_job(idx,meta[1],job->comm_buf->buffer,
-			 micro,&exit_server,mp_id,micro_model);
+			 micro,&exit_server,mp_id);
   assert(exit_server == 0);
 
   /* increment state and post communication to macroscale */
@@ -261,16 +252,10 @@ int pgf_FE2_job_reply(pgf_FE2_job *job,
   /* post non-blocking send of information to the macroscale */
   size_t proc = 0, elem = 0, int_pt = 0;
   pgf_FE2_job_decode_id(job->id,&proc,&elem,&int_pt);
-  if (mscom->valid_micro_1) {
-    net->isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
+  net->isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
 	     NET_DT_CHAR,proc,job->id,mscom->mm_inter,
 	     job->comm_buf->request);
-  } else {
-    net->isend(job->comm_buf->buffer,job->comm_buf->buffer_len,
-       NET_DT_CHAR,proc,job->id,mscom->mm_inter_ROM,
-       job->comm_buf->request);
-  }
-
+  
   job->state = FE2_STATE_REPLY;
   return job->state;
 }

@@ -22,7 +22,6 @@
     int elem_id; /**< macro element id */
     int proc_id; /**< processor ID (in macro communicator) that owns
             the macro element */
-    int global_job_id;
     int int_pt;
     int job_type; /**< flag to guide microscale computation */
     int print_flag; /**< flag to print during update */
@@ -81,7 +80,6 @@
   int pack_MS_COHE_JOB_INFO(const MS_COHE_JOB_INFO *info,
                 const size_t buffer_len,
                 char *buffer);
-
 
   /** unpack the buffer into a job. NOTE: the job must be the same
       size (nnodes) */

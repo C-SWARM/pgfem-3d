@@ -28,7 +28,7 @@ void DISP_resid_body_force_el(double *f,
                               const Node *node, 
                               double dt, 
                               double t,
-                              HyperElasticity *elast,
+                              ELASTICITY *elast,
                               bool is4cm);
 
 struct FEMLIB;

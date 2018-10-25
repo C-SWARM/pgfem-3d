@@ -474,11 +474,13 @@ void re_parse_command_line(const int myrank,
   options->cm = -1; //default: no use of constitutive model
 
   /* print command line to parse */
-    PGFEM_printf("*** rank %d is parsing options from: ",myrank);
+  if (myrank == 0) {
+    PGFEM_printf("*** Parsing options from: ");
     for(int i = start_idx, e = argc; i < e; ++i) {
       PGFEM_printf("%s ", argv[i]);
     }
     PGFEM_printf("***\n");
+  }
 
   int ipath = 0, opath = 0;
 
@@ -772,13 +774,9 @@ void get_macro_micro_option_blocks(int myrank,
                                    int *macro_start,
                                    int *macro_argc,
                                    int *micro_start,
-                                   int *micro2_start,
                                    int *micro_argc,
-                                   int *micro2_argc,
                                    int *macro_nproc,
                                    int *micro_group_size,
-                                   int *micro2_group_size,
-                                   int *full_micro_np,
                                    int *debug,
                                     PGFem3D_opt *options)
 {
@@ -787,12 +785,8 @@ void get_macro_micro_option_blocks(int myrank,
     MACRO_ARGC,
     MICRO_START,
     MICRO_ARGC,
-    MICRO2_START,
-    MICRO2_ARGC,
     MACRO_NPROC,
     MICRO_SIZE,
-    MICRO2_SIZE,
-    MICRO_NPROC,
     N_OPT
   };
 
@@ -840,14 +834,6 @@ void get_macro_micro_option_blocks(int myrank,
       continue;
     }
 
-    /* -micro 1 np */
-    if (!strcmp(arg,"-full-micro-np") and !got_opt[MICRO_NPROC]) {
-      sscanf(argv[++i],"%d",full_micro_np);
-      got_opt[MICRO_NPROC] = 1;
-      continue;
-    }
-
-
     /* -micro-group-size */
     if (!strcmp(arg,"-micro-group-size") and !got_opt[MICRO_SIZE]) {
       sscanf(argv[++i],"%d",micro_group_size);
@@ -855,17 +841,10 @@ void get_macro_micro_option_blocks(int myrank,
       continue;
     }
 
-    if (!strcmp(arg,"-micro2-group-size") and !got_opt[MICRO2_SIZE]) {
-      sscanf(argv[++i],"%d",micro2_group_size);
-      got_opt[MICRO2_SIZE] = 1;
-      continue;
-    }
-
     /* -macro-start */
     if (!strcmp(arg,"-macro-start")
         and !got_opt[MACRO_START] /* have not set option */
-        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])
-        and (got_opt[MICRO2_START] == got_opt[MICRO2_ARGC])) /* not in micro */
+        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in micro */
     {
       got_opt[MACRO_START] = 1;
       *macro_start = i;
@@ -875,8 +854,7 @@ void get_macro_micro_option_blocks(int myrank,
     /* -macro-end */
     if (!strcmp(arg,"-macro-end")
         and (!got_opt[MACRO_ARGC] && got_opt[MACRO_START]) /* in macro */
-        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])
-        and (got_opt[MICRO2_START] == got_opt[MICRO2_ARGC])) /* not in micro */
+        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in micro */
     {
       got_opt[MACRO_ARGC] = 1;
       *macro_argc = i - *macro_start;
@@ -886,8 +864,7 @@ void get_macro_micro_option_blocks(int myrank,
     /* -micro-start */
     if (!strcmp(arg,"-micro-start")
         and !got_opt[MICRO_START] /* have not set option */
-        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])
-        and (got_opt[MICRO2_START] == got_opt[MICRO2_ARGC])) /* not in macro */
+        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])) /* not in macro */
     {
       got_opt[MICRO_START] = 1;
       *micro_start = i;
@@ -897,39 +874,12 @@ void get_macro_micro_option_blocks(int myrank,
     /*  -micro-end */
     if (!strcmp(arg,"-micro-end")
         and (!got_opt[MICRO_ARGC] && got_opt[MICRO_START]) /* in micro */
-        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])
-        and (got_opt[MICRO2_START] == got_opt[MICRO2_ARGC])) /* not in macro */
+        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])) /* not in macro */
     {
       got_opt[MICRO_ARGC] = 1;
       *micro_argc = i - *micro_start;
       continue;
     }
-
-
-    /* -micro2-start */
-    if (!strcmp(arg,"-micro2-start")
-        and !got_opt[MICRO2_START] /* have not set option */
-        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])
-        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in macro */
-    {
-      got_opt[MICRO2_START] = 1;
-      *micro2_start = i;
-      continue;
-    }
-
-    /*  -micro2-end */
-    if (!strcmp(arg,"-micro2-end")
-        and (!got_opt[MICRO2_ARGC] && got_opt[MICRO2_START]) /* in micro 2 */
-        and (got_opt[MACRO_START] == got_opt[MACRO_ARGC])
-        and (got_opt[MICRO_START] == got_opt[MICRO_ARGC])) /* not in macro */
-    {
-      got_opt[MICRO2_ARGC] = 1;
-      *micro2_argc = i - *micro2_start;
-      continue;
-    }
-
-
-
     if (strcmp("-custom_micro",arg) == 0) {
       options->custom_micro = 1;
       if (myrank == 0) {
@@ -944,8 +894,8 @@ void get_macro_micro_option_blocks(int myrank,
   } /* end parse command line */
 
   for (int i = 0, e = N_OPT; i < e; ++i) {
-    if (!got_opt[i] && myrank == 0) {
-      PGFEM_printf("ERROR parsing macro/micro option blocks, look at option %d?\n",i);
+    if (!got_opt[i] && !myrank) {
+      PGFEM_printf("ERROR parsing macro/micro option blocks!\n");
       print_usage(PGFEM_stdout);
       PGFEM_Abort();
     }

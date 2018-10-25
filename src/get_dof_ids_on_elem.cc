@@ -48,8 +48,6 @@ void get_dof_ids_on_elem_nodes(const int global,
   } else {
     for(int i=0; i<n_nodes_on_elem; i++){
       long *ptr_cur = dof_ids + i*n_dof_per_node;
-//      PGFEM_printf("works until node_ids %d \n", node_ids_on_elem[i]); 
-//      PGFEM_printf("works until id_map %d \n",nodes[ node_ids_on_elem[i] ].id_map[mp_id].id);
       memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id_map[mp_id].id,n_copy);
     }
   }

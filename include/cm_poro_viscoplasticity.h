@@ -17,58 +17,37 @@
 class CM_PVP_PARAM: public Model_parameters
 {
   public:
-    
-  PvpElasticity *pvp_elast;
-  
-  void set_nulls(void)
-  {
-    p_hmat            = NULL;
-    mat_id            = -1;
-    uqcm              = 0; 
-    cm3f              = false;
-    cm_mat            = NULL;
-    cm_elast          = NULL;
-    pvp_elast         = NULL;
-    gcm_solver_info   = NULL;   
-    type              = -1;
-    n_param           = 0;
-    model_param       = NULL;
-    n_param_index     = 0;
-    model_param_index = NULL;
-    pF                = NULL;
-    pFI               = NULL;
-  };
-  
+
   virtual int model_dependent_initialization(void);
   virtual int model_dependent_finalization(void);
 
   virtual int integration_algorithm(Constitutive_model *m,
-                                    CM_Ctx &cm_ctx) const;
+                                    const void *usr_ctx) const;
   virtual int compute_dev_stress(const Constitutive_model *m,
-                                 CM_Ctx &cm_ctx,
+                                 const void *ctx,
                                  double *S) const;
   virtual int compute_dudj(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *value) const;
   virtual double compute_dudj(const Constitutive_model *m,
                               double theta_e,
                               const int npa,
                               const double alpha) const;                           
   virtual int compute_dev_tangent(const Constitutive_model *m,
-                                  CM_Ctx &cm_ctx,
+                                  const void *ctx,
                                   double *L) const;
   virtual int compute_d2udj2(const Constitutive_model *m,
-                             CM_Ctx &cm_ctx,
+                             const void *ctx,
                              double *value) const;
   virtual double compute_d2udj2(const Constitutive_model *m,
                                 double theta_e,
                                 const int npa,
                                 const double alpha) const;                             
   virtual int update_elasticity(const Constitutive_model *m,
-                                CM_Ctx &cm_ctx,
+                                const void *ctx,
                                 double *L,
                                 double *S,
-                                const bool compute_stiffness) const;
+                                const int compute_stiffness) const;
   virtual int update_elasticity_dev(const Constitutive_model *m,
                                     double *eFnpa,
                                     double *L,
@@ -76,7 +55,7 @@ class CM_PVP_PARAM: public Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const bool compute_stiffness = 0) const;
+                                    const int compute_stiffness = 0) const;
   virtual int update_state_vars(Constitutive_model *m) const;  
   virtual int reset_state_vars(Constitutive_model *m) const;
   virtual int reset_state_vars_using_temporal(const Constitutive_model *m,
@@ -114,8 +93,9 @@ class CM_PVP_PARAM: public Model_parameters
                             const Constitutive_model *m) const;
   virtual int read_restart(FILE *fp,
                            Constitutive_model *m) const;
+  virtual int destroy_ctx(void **ctx) const;
   virtual int compute_dMdu(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *Grad_op,
                            const int nne,
                            const int ndofn,
@@ -123,5 +103,28 @@ class CM_PVP_PARAM: public Model_parameters
   virtual int read_param(FILE *in) const;
   virtual int set_init_vals(Constitutive_model *m) const;
 };
+
+ 
+/// Construct and initialize the poro-viscoplasticity model context 
+/// for calling functions through the constitutive modeling interface
+/// 
+/// \param[in,out] ctx - handle to an opaque model context object.
+/// \param[in] F The total deformation gradient.
+/// \param[in] dt time increment
+/// \param[in] alpha mid-point alpha
+/// \param[in] eFnpa elastic deformation gradient at t = n + alpha
+/// \param[in] hFn thermal part deformation gradient at t = n
+/// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
+/// \param[in] is_coulpled_with_thermal flag for coupling with thermal
+/// \return non-zero on internal error.
+int poro_viscoplasticity_model_ctx_build(void **ctx,
+                                         double *F,
+                                         const double dt,
+                                         const double alpha,
+                                         double *eFnpa,
+                                         double *hFn,
+                                         double *hFnp1,
+                                         const int is_coulpled_with_thermal,
+                                         const int npa);
 
 #endif

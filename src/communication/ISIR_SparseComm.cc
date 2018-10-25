@@ -167,20 +167,6 @@ namespace pgfem3d {
     }
   }
   
-  void ISIR_SparseComm::print_stiffmat()
-  {
-    /*print stiffness matrix */
-    PGFEM_printf("stiffmat Ns = %d :\n",Ns);
-    for(int i = 0; i < Ns; i++) {
-      size_t idx = Nss[i];
-      PGFEM_printf("idx = %d , AS[idx] = %d \n",idx,AS[idx]);
-      for(int j = 0; j < AS[idx]; j++) {
-        PGFEM_printf("%lf ",send[idx][j]);
-      }
-      PGFEM_printf("\n");
-    }
-  }
-
   void ISIR_SparseComm::finalize_stiffmat()
   {
     net->waitall(Nr, req_r, sta_r);

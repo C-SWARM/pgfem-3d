@@ -118,6 +118,54 @@ enum param_index_names {
 
 int test_cm_poro_viscoplasticity_model(Constitutive_model *m);
 
+/// Private structure for use exclusively with this model and
+// associated functions.
+typedef struct poro_viscoplasticity_ctx {
+  double *F;
+  double dt;    // time increment
+  double alpha; // mid point alpha
+  double *eFnpa;
+  int is_coulpled_with_thermal;
+  double *hFn;
+  double *hFnp1;
+  int npa;  
+} poro_viscoplasticity_ctx;
+
+
+int poro_viscoplasticity_model_ctx_build(void **ctx,
+                                         double *F,
+                                         const double dt,
+                                         const double alpha,
+                                         double *eFnpa,
+                                         double *hFn,
+                                         double *hFnp1,
+                                         const int is_coulpled_with_thermal,
+                                         const int npa)
+{
+  int err = 0;
+  poro_viscoplasticity_ctx *t_ctx = (poro_viscoplasticity_ctx *) malloc(sizeof(poro_viscoplasticity_ctx));
+
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;  
+
+  t_ctx->F = F;
+  t_ctx->eFnpa = eFnpa;
+  t_ctx->npa   = npa;  
+  
+  t_ctx->dt = dt;
+  t_ctx->alpha = alpha;
+  
+  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
+  t_ctx->hFn  = hFn;
+  t_ctx->hFnp1= hFnp1;  
+
+  /* assign handle */
+  *ctx = t_ctx;
+  return err;
+}
+
 double pc_npa(const Constitutive_model *m,
               const int npa,
               const double alpha)
@@ -128,57 +176,60 @@ double pc_npa(const Constitutive_model *m,
 }              
 
 int CM_PVP_PARAM::integration_algorithm(Constitutive_model *m,
-                                        CM_Ctx &cm_ctx)
+                                        const void *ctx)
 const
 {
   int err = 0;
+  auto CTX = (poro_viscoplasticity_ctx *) ctx;
 
+  const double dt = CTX->dt;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   
-  memcpy(Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3*sizeof(double));
+  memcpy(Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3*sizeof(double));
 
   GcmPvpIntegrator integrator;
-  integrator.mat = this->cm_mat->mat_pvp;
-  integrator.elasticity  = this->pvp_elast;
-  integrator.solver_info = this->gcm_solver_info;
+  integrator.mat = (m->param)->cm_mat->mat_pvp;
+  integrator.solver_info = (m->param)->gcm_solver_info;
   integrator.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
                          Fs[TENSOR_Fn].m_pdata,
                          Fs[TENSOR_Fnm1].m_pdata,                         
                          Fs[TENSOR_pFnp1].m_pdata,
                          Fs[TENSOR_pFn].m_pdata,
-                         cm_ctx.hFnp1,
-                         cm_ctx.hFn);
+                         CTX->hFnp1,
+                         CTX->hFn);
   integrator.pc_np1 = vars+VAR_pc_np1;
   integrator.pc_n   = vars[VAR_pc_n];
-  err += integrator.run_integration_algorithm(cm_ctx.dtn, cm_ctx.dt);
+  err += integrator.run_integration_algorithm(dt, dt);
 
   return err;
 }
 
 
 int CM_PVP_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                     CM_Ctx &cm_ctx,
+                                     const void *ctx,
                                      double *stress)
 const
 {
   int err = 0;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
 //  double eC[DIM_3x3] = {};
       
-//  err += cp_compute_eC(cm_ctx.F,eC);
+//  err += cp_compute_eC(CTX->F,eC);
 //  err += cp_dev_stress(eC,m->param->p_hmat,stress->m_pdata);
 
   return err;
 }
 
 int CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
-                               CM_Ctx &cm_ctx,
+                               const void *ctx,
                                double *dudj)
 const
 {
   int err = 0;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
 //  dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
-//  double J = det3x3(cm_ctx.F);
+//  double J = det3x3(CTX->F);
 //  Pressure(J,m->param->p_hmat,dudj);
   return err;
 }
@@ -190,26 +241,36 @@ double CM_PVP_PARAM::compute_dudj(const Constitutive_model *m,
 const 
 {
   double pc = pc_npa(m, npa, alpha);
-  double du = 0.0;
-  this->pvp_elast->set_internal_variable(pc);
-  this->pvp_elast->compute_dudj(&du, theta_e);
-  return du;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;      
+  return poro_visco_plasticity_intf_compute_dudj(theta_e, pc, mat_pvp);           
 }
 
 int CM_PVP_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                      CM_Ctx &cm_ctx,
+                                      const void *ctx,
                                       double *L)
 const
 {
-  return 0;
+  int err = 0;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  double eC[DIM_3x3] = {};
+  
+//  err += cp_compute_eC(CTX->F,eC);
+//  err += cp_dev_tangent(eC,m->param->p_hmat,tangent->m_pdata);
+  return err;
 }
 
 int CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
-                                 CM_Ctx &cm_ctx,
+                                 const void *ctx,
                                  double *d2udj2)
 const
 {
-  return 0;
+  int err = 0;
+//  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+//  double J = det3x3(CTX->F);
+
+//  d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
+//  D_Pressure(J,m->param->p_hmat,d2udj2);
+  return err;
 }
 
 double CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
@@ -218,32 +279,31 @@ double CM_PVP_PARAM::compute_d2udj2(const Constitutive_model *m,
                                     const double alpha)
 const 
 {
-  double pc = pc_npa(m, npa, alpha);
-  double ddu = 0.0;
-  this->pvp_elast->set_internal_variable(pc);
-  this->pvp_elast->compute_dudj(&ddu, theta_e);
-  return ddu;          
+  double pc = pc_npa(m, npa, alpha);  
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  return poro_visco_plasticity_intf_compute_d2udj2(theta_e, pc, mat_pvp);           
 }
 
 int CM_PVP_PARAM::update_elasticity(const Constitutive_model *m,
-                                    CM_Ctx &cm_ctx,
+                                    const void *ctx_in,
                                     double *L_in,
                                     double *S,
-                                    const bool compute_stiffness)
+                                    const int compute_stiffness)
 const
 {
   int err = 0;
-  double pc = pc_npa(m, cm_ctx.npa, cm_ctx.alpha);      
+  auto ctx = (poro_viscoplasticity_ctx *) ctx_in;
+  double pc = pc_npa(m, ctx->npa, ctx->alpha);      
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;    
   
   double *L = NULL;
   if(compute_stiffness)
     L = L_in;
-    
-  this->pvp_elast->set_internal_variable(pc);  
   
-  if(cm_ctx.eFnpa)
+  if(ctx->eFnpa)
   {
-    this->pvp_elast->update_elasticity(S,L,cm_ctx.eFnpa,compute_stiffness);
+    poro_visco_plasticity_update_elasticity(S, L, mat_pvp, 
+                                            ctx->eFnpa, pc, compute_stiffness);
   }    
   else
   {
@@ -253,9 +313,9 @@ const
     TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
     
     err += inv(pFnp1, pFnp1_I);    
-    if(cm_ctx.is_coulpled_with_thermal)
+    if(ctx->is_coulpled_with_thermal)
     {
-      TensorA<2> hFnp1(cm_ctx.hFnp1);
+      TensorA<2> hFnp1(ctx->hFnp1);
       Tensor<2> hFnp1_I;
 
       err += inv(hFnp1, hFnp1_I);
@@ -264,7 +324,8 @@ const
     else
       eF = Fnp1(i,k)*pFnp1_I(k,j);
     
-    this->pvp_elast->update_elasticity(S,L,eF.data,compute_stiffness);
+    poro_visco_plasticity_update_elasticity(S, L, mat_pvp,
+                                            eF.data, pc, compute_stiffness);                                           
   }     
   return err;
 }
@@ -276,18 +337,18 @@ int CM_PVP_PARAM::update_elasticity_dev(const Constitutive_model *m,
                                         const int npa,
                                         const double alpha,
                                         const double dt,
-                                        const bool compute_stiffness) 
+                                        const int compute_stiffness) 
 const
 {
   int err = 0;
   double pc = pc_npa(m, npa, alpha);
-
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;    
+  
   double *L = NULL;
   if(compute_stiffness)
     L = L_in;
   
-  this->pvp_elast->set_internal_variable(pc);
-  this->pvp_elast->update_elasticity_dev(S, L, eFnpa, compute_stiffness);           
+  poro_visco_plasticity_update_elasticity_dev(S, L, mat_pvp, eFnpa, pc, compute_stiffness);           
   return err; 
 }
 
@@ -330,7 +391,7 @@ const
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   GcmSolverInfo *solver_info = m->param->gcm_solver_info;
   
-  MaterialPoroViscoPlasticity *mat_pvp = this->cm_mat->mat_pvp;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
   
   double gamma_d = 0.0;
   double gamma_v = 0.0;  
@@ -640,8 +701,27 @@ const
   return 0;  
 }
 
+int CM_PVP_PARAM::destroy_ctx(void **ctx)
+const
+{
+  int err = 0;
+  poro_viscoplasticity_ctx *t_ctx = (poro_viscoplasticity_ctx *) *ctx;
+  /* invalidate handle */
+  *ctx = NULL;
+
+  // no memory was created
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL; 
+
+  free(t_ctx);
+  return err;
+}
+
+
 int CM_PVP_PARAM::compute_dMdu(const Constitutive_model *m,
-                               CM_Ctx &cm_ctx,
+                               const void *ctx,
                                double *Grad_op,
                                const int nne,
                                const int nsd,
@@ -651,16 +731,17 @@ const
   for(int ia=0; ia<nne*nsd*DIM_3x3; ia++)
     dM_du[ia] = 0.0;
   
-  int err = 0;
-  const double dt = cm_ctx.dt;
+  int err = 0;  
+  auto CTX = (poro_viscoplasticity_ctx *) ctx;
+  const double dt = CTX->dt;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
-  MaterialPoroViscoPlasticity *mat_pvp = this->cm_mat->mat_pvp;
-  GcmSolverInfo *solver_info = this->gcm_solver_info;
+  MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+  GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
 
-  if(cm_ctx.alpha<0){
+  if(CTX->alpha<0){
     poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
-                                       cm_ctx.F,
+                                       CTX->F,
                                        Fs[TENSOR_Fn].m_pdata,
                                        Fs[TENSOR_pFnp1].m_pdata,
                                        Fs[TENSOR_pFn].m_pdata,
@@ -673,12 +754,12 @@ const
     
     Tensor<2> Fnpa,pFnpa,hFnpa;
 
-    mid_point_rule(Fnpa.data,  Fs[TENSOR_Fn].m_pdata,  cm_ctx.F,                   cm_ctx.alpha, DIM_3x3);
-    mid_point_rule(pFnpa.data, Fs[TENSOR_pFn].m_pdata, Fs[TENSOR_pFnp1].m_pdata, cm_ctx.alpha, DIM_3x3);
-    mid_point_rule(&pc_npa,    vars+VAR_pc_n,          vars+VAR_pc_np1,          cm_ctx.alpha, 1);
+    mid_point_rule(Fnpa.data,  Fs[TENSOR_Fn].m_pdata,  CTX->F,                   CTX->alpha, DIM_3x3);
+    mid_point_rule(pFnpa.data, Fs[TENSOR_pFn].m_pdata, Fs[TENSOR_pFnp1].m_pdata, CTX->alpha, DIM_3x3);
+    mid_point_rule(&pc_npa,    vars+VAR_pc_n,          vars+VAR_pc_np1,          CTX->alpha, 1);
             
-    if(cm_ctx.is_coulpled_with_thermal)
-      mid_point_rule(hFnpa.data, cm_ctx.hFn, cm_ctx.hFnp1, cm_ctx.alpha, DIM_3x3);
+    if(CTX->is_coulpled_with_thermal)
+      mid_point_rule(hFnpa.data, CTX->hFn, CTX->hFnp1, CTX->alpha, DIM_3x3);
     
     poro_visco_plasticity_compute_dMdu(dM_du, Grad_op, mat_pvp, solver_info,
                                        Fnpa.data,I,pFnpa.data,I,pc_npa,vars[VAR_pc_n],
@@ -697,7 +778,7 @@ const
   //   calling sequence
   
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
-  double *param      = this->model_param;
+  double *param      = (m->param)->model_param;
   double *vars       = (m->vars_list[0][m->model_id]).state_vars[0].m_pdata;
   double pJ   = param[PARAM_pJ];
   
@@ -708,20 +789,20 @@ const
   F0[0] = F0[4] = F0[8] =  pF11;
 
   vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = param[PARAM_pc_0];
-  if(this->pF != NULL)
+  if((m->param)->pF != NULL)
   {
-    double pJ = det3x3(this->pF);
-    MaterialPoroViscoPlasticity *mat_pvp = this->cm_mat->mat_pvp;
-    GcmSolverInfo *solver_info = this->gcm_solver_info;
+    double pJ = det3x3((m->param)->pF);
+    MaterialPoroViscoPlasticity *mat_pvp = (m->param)->cm_mat->mat_pvp;
+    GcmSolverInfo *solver_info = (m->param)->gcm_solver_info;
     
     double pc = poro_visco_plasticity_compute_pc(pJ, param[PARAM_pc_0], mat_pvp, solver_info);
     vars[VAR_pc_nm1] = vars[VAR_pc_n] = vars[VAR_pc_np1] = pc;      
-    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, this->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_Fn   ].m_pdata, this->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, this->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFnm1].m_pdata, this->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFn  ].m_pdata, this->pF, sizeof(double)*DIM_3x3);
-    memcpy(Fs[TENSOR_pFnp1].m_pdata, this->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnm1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fn   ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_Fnp1 ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnm1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFn  ].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
+    memcpy(Fs[TENSOR_pFnp1].m_pdata, (m->param)->pF, sizeof(double)*DIM_3x3);
   }
   else
   {
@@ -774,8 +855,7 @@ const
                       param_idx[PARAM_max_itr_M],
                       param[PARAM_tol],
                       param[PARAM_tol],
-                      param[PARAM_computer_zero],
-                      param_idx[PARAM_max_subdivision]);
+                      param[PARAM_computer_zero]);
                                                 
   if(match != (PARAM_NO + PARAM_INX_NO))
   {   
@@ -788,6 +868,7 @@ const
   if (feof(in)) err ++;
   assert(!feof(in) && "EOF reached prematurely");
 
+  this->cm_mat->mat_pvp = new MaterialPoroViscoPlasticity;
   set_properties_poro_visco_plasticity(this->cm_mat->mat_pvp,
                                        param[PARAM_yf_M],
                                        param[PARAM_yf_alpha],
@@ -808,8 +889,7 @@ const
                                        param[PARAM_pl_n],
                                        param[PARAM_cf_g0],
                                        param[PARAM_cf_pcinf]);
-
-  this->pvp_elast->construct_elasticity(this->cm_mat->mat_pvp, true);
+  
   return err;
 }
 
@@ -823,9 +903,7 @@ int CM_PVP_PARAM::model_dependent_initialization(void)
   this->model_param       = new double[PARAM_NO]();
   this->n_param_index     = PARAM_INX_NO;
   this->model_param_index = new int [PARAM_INX_NO]();
-  this->gcm_solver_info   = new GcmSolverInfo;
-  this->cm_mat->mat_pvp   = new MaterialPoroViscoPlasticity;
-  this->pvp_elast         = new PvpElasticity;
+  this->gcm_solver_info   = new GcmSolverInfo;  
   
   return err;
 }
@@ -835,6 +913,5 @@ int CM_PVP_PARAM::model_dependent_finalization(void)
   int err = 0;
   delete (this->cm_mat)->mat_pvp;
   delete this->gcm_solver_info;
-  delete this->pvp_elast;
   return err;
 }

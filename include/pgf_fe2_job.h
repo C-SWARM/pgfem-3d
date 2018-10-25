@@ -152,8 +152,7 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
 int pgf_FE2_job_compute(pgf_FE2_job *job,
 			pgfem3d::Microscale *micro,
 			const pgfem3d::MultiscaleComm *mscom,
-			const int mp_id,
-      int micro_model);
+			const int mp_id);
 
 /**
  * Initiates computing a job on a worker process (non-master).
@@ -161,8 +160,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 void pgf_FE2_job_compute_worker(const size_t job_id,
 				const size_t buffer_len,
 				pgfem3d::Microscale *micro,
-				const int mp_id,
-        int micro_model);
+				const int mp_id);
 
 /**
  * Check the job state and reply to the macroscale if

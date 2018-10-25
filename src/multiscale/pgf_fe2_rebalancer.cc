@@ -258,19 +258,14 @@ pgf_FE2_rebalancer(Network *n,
 		   const MultiscaleComm *mscom,
 		   const size_t total_n_jobs,
 		   const size_t max_n_jobs,
-		   const int heuristic,
-        int micro_model)
+		   const int heuristic)
 {
   /* ISIR version */
   ISIRNetwork *net = static_cast<ISIRNetwork*>(n);
   /* get rank and number of macro and micro porcs. */
   int n_macro_proc = 0;
   int n_micro_proc = 0;
-  if (micro_model == 1) {
-    net->comm_size(mscom->mm_inter, &n_micro_proc);
-  } else {
-    net->comm_size(mscom->mm_inter_ROM, &n_micro_proc);
-  }
+  net->comm_size(mscom->mm_inter, &n_micro_proc);
   net->comm_size(mscom->macro, &n_macro_proc);
   n_micro_proc -= n_macro_proc;
 
@@ -282,25 +277,14 @@ pgf_FE2_rebalancer(Network *n,
   /* probe for communication, allocate and post matching receives. */
   /* Can improve asynchrony here with some work. */
   for(int i=0; i<n_micro_proc; i++){
-    if (micro_model == 1) {
-      int src = i + n_macro_proc;
-      net->probe(src,FE2_MICRO_SERVER_REBALANCE,
+    int src = i + n_macro_proc;
+    net->probe(src,FE2_MICRO_SERVER_REBALANCE,
 		       mscom->mm_inter,&stat);
-      int count = 0;
-      net->get_status_count(&stat,NET_DT_CHAR,&count);
-      buf[i] = PGFEM_malloc<char>(count);
-      net->irecv(buf[i],count,NET_DT_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
+    int count = 0;
+    net->get_status_count(&stat,NET_DT_CHAR,&count);
+    buf[i] = PGFEM_malloc<char>(count);
+    net->irecv(buf[i],count,NET_DT_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
 		       mscom->mm_inter,req + i);
-    } else {
-      int src = i + n_macro_proc;
-      net->probe(src,FE2_MICRO_SERVER_REBALANCE,
-           mscom->mm_inter_ROM,&stat);
-      int count = 0;
-      net->get_status_count(&stat,NET_DT_CHAR,&count);
-      buf[i] = PGFEM_malloc<char>(count);
-      net->irecv(buf[i],count,NET_DT_CHAR,src,FE2_MICRO_SERVER_REBALANCE,
-           mscom->mm_inter_ROM,req + i);
-    }
   }
   
   /* build some helper data structures */

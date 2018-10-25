@@ -215,25 +215,19 @@ void ms_cohe_job_tm(MultiscaleCommon *c, MULTISCALE_SOLUTION *s,int myrank) {
 int compute_ms_cohe_job(const int job_id,
                         MS_COHE_JOB_INFO *p_job,
                         Microscale *microscale,
-                        const int mp_id,
-                        int micro_model)
+                        const int mp_id)
 {
   int err = 0;
   const int print_level = 1;
   int high_norm;
   MultiscaleCommon *common = microscale;
-  MULTISCALE_SOLUTION *sol = microscale->sol + job_id;//where some? microscale solutions are held
+  MULTISCALE_SOLUTION *sol = microscale->sol + job_id;
 
   int myrank = 0;
   microscale->net->comm_rank(common->comm,&myrank);
   if(myrank == 0){
-    if(micro_model == 1) {
-      PGFEM_printf("=== Microscale cell %d of %d for micro type 1 ===\n",
-                   job_id+1,microscale->idx_map.size);
-    } else { //ROM
-      PGFEM_printf("=== Microscale cell %d of %d for micro type 2 ===\n",
-                   job_id+1,microscale->idx_map.size);
-    }
+    PGFEM_printf("=== Microscale cell %d of %d ===\n",
+                 job_id+1,microscale->idx_map.size);
   }
 
   /* switch set up job */
@@ -282,10 +276,11 @@ int compute_ms_cohe_job(const int job_id,
 //1 -> nr
 ////0 -> tm
     if(microscale->opts->custom_micro) {
+      int simulation_method = microscale->opts->methods[p_job->elem_id + common->nce*0]; // using 0th time step for now
 
-      if (micro_model == 1){
+      if (simulation_method){
         err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //nr = Newton Raphson
-      } else {//ROM
+      } else {
         ms_cohe_job_tm(common,sol,myrank); //tm = Taylor model
       }
     } else {

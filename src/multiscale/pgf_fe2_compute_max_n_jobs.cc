@@ -13,7 +13,7 @@
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
-int pgf_FE2_compute_max_n_jobs(const Macroscale *macro, //deprecated
+int pgf_FE2_compute_max_n_jobs(const Macroscale *macro,
 			       const Microscale *micro,
 			       const MultiscaleComm *mscom,
 			       int *max_n_jobs)

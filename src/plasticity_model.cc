@@ -5,7 +5,7 @@
  *  Aaron Howell, University of Notre Dame, Notre Dame, IN, <ahowell3@nd.edu>
  */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+# include "config.h"
 #endif
 
 #include "plasticity_model.h"
@@ -138,17 +138,29 @@ int plasticity_model_construct_elem_ip_map(IP_ID_LIST *elm_ip_map, EPS *eps, con
   return cnt;
 }
 
+/// Private structure for use exclusively with this model and
+/// associated functions.
+typedef struct plasticity_ctx {
+  double *F;
+  double dt;    // time increment
+  double alpha; // mid point alpha
+  double *eFnpa;
+  int is_coulpled_with_thermal;
+  double *hFn;
+  double *hFnp1;
+} plasticity_ctx;
+
 int compute_M(double *M_in,
               double *pFn_in,
               double *N_in,
               double *pFnp1_I_in,
-              CM_Ctx &cm_ctx)
+              const plasticity_ctx *ctx)
 {
   int err = 0;
 
   TensorA<2> M(M_in), pFn(pFn_in), N(N_in), pFnp1_I(pFnp1_I_in);
 
-  if(cm_ctx.is_coulpled_with_thermal)
+  if(ctx->is_coulpled_with_thermal)
     M = pFn(i,k)*N(k,l)*pFnp1_I(l,j);
   else
     M = pFn(i,k)*pFnp1_I(k,j);
@@ -159,11 +171,11 @@ int compute_eF(double *eF_in,
                double *F_in,
                double *hF_I_in,
                double *pF_I_in,
-               CM_Ctx &cm_ctx)
+               const plasticity_ctx *ctx)
 {
   int err = 0;
   TensorA<2> eF(eF_in), F(F_in), hF_I(hF_I_in), pF_I(pF_I_in);
-  if(cm_ctx.is_coulpled_with_thermal)
+  if(ctx->is_coulpled_with_thermal)
     eF = F(i,k)*hF_I(k,l)*pF_I(l,j);
   else
     eF = F(i,k)*pF_I(k,j);
@@ -504,13 +516,14 @@ int CP_PARAM::get_hardening(const Constitutive_model *m,
 }
 
 int CP_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                 CM_Ctx &cm_ctx,
+                                 const void *ctx,
                                  double *stress)
   const 
 {
   int err = 0;
+  auto CTX = (plasticity_ctx *) ctx;
 
-  TensorA<2> F(cm_ctx.F);
+  TensorA<2> F(CTX->F);
   Tensor<2> eC = F(k,i)*F(k,j);
 
   devStressFuncPtr Stress = getDevStressFunc(-1, m->param->p_hmat);
@@ -519,25 +532,27 @@ int CP_PARAM::compute_dev_stress(const Constitutive_model *m,
 }
 
 int CP_PARAM::compute_dudj(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *dudj)
   const 
 {
   int err = 0;
+  auto CTX = (plasticity_ctx *) ctx;
   dUdJFuncPtr Pressure = getDUdJFunc(-1,m->param->p_hmat);
-  TensorA<2> F(cm_ctx.F);
+  TensorA<2> F(CTX->F);
   double J = ttl::det(F);
   Pressure(J,m->param->p_hmat,dudj);
   return err;
 }
 
 int CP_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                  CM_Ctx &cm_ctx,
+                                  const void *ctx,
                                   double *L)
   const 
 {
   int err = 0;
-  TensorA<2> F(cm_ctx.F);
+  auto CTX = (plasticity_ctx *) ctx;
+  TensorA<2> F(CTX->F);
   Tensor<2> eC = F(k,i)*F(k,j);
 
   matStiffFuncPtr Tangent = getMatStiffFunc(-1, m->param->p_hmat);
@@ -546,12 +561,13 @@ int CP_PARAM::compute_dev_tangent(const Constitutive_model *m,
 }
 
 int CP_PARAM::compute_d2udj2(const Constitutive_model *m,
-                             CM_Ctx &cm_ctx,
+                             const void *ctx,
                              double *d2udj2)
   const 
 {
   int err = 0;
-  TensorA<2> F(cm_ctx.F);
+  auto CTX = (plasticity_ctx *) ctx;
+  TensorA<2> F(CTX->F);
   double J = ttl::det(F);
 
   d2UdJ2FuncPtr D_Pressure = getD2UdJ2Func(-1,m->param->p_hmat);
@@ -697,7 +713,7 @@ int plasticity_compute_dMdu(const Constitutive_model *con,
 }
 
 static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
-                                       CM_Ctx &cm_ctx,
+                                       const void *ctx,
                                        const double *Grad_op,
                                        const int nne,
                                        const int ndofn,
@@ -709,6 +725,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
   // generate the required inputs for this function and call it
   // alpha*beta times. This should be improved
 
+  auto CTX = (plasticity_ctx *) ctx;
   // shorthand of deformation gradients
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
 
@@ -719,9 +736,9 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), pFn(Fs[TENSOR_pFn].m_pdata);
     err += inv(pFnp1,pFnp1_I);
 
-    if(cm_ctx.is_coulpled_with_thermal)
+    if(CTX->is_coulpled_with_thermal)
     {
-      TensorA<2> hFn(cm_ctx.hFn), hFnp1(cm_ctx.hFnp1);
+      TensorA<2> hFn(CTX->hFn), hFnp1(CTX->hFnp1);
       Tensor<2> hFn_I, hFnp1_I, N = {}, pFn_I;
 
       err += inv(pFn,   pFn_I);
@@ -729,10 +746,10 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
       err += inv(hFnp1, hFnp1_I);
 
       N = hFn(i,k)*hFnp1_I(k,j);
-      err += compute_M(M.data, Fs[TENSOR_Fn].m_pdata, N.data, pFnp1_I.data, cm_ctx);
+      err += compute_M(M.data, Fs[TENSOR_Fn].m_pdata, N.data, pFnp1_I.data, CTX);
 
-      err += compute_eF(eFn.data,  Fs[TENSOR_Fn].m_pdata,  hFn_I.data,   pFn_I.data,   cm_ctx);
-      err += compute_eF(eFnp1.data,Fs[TENSOR_Fnp1].m_pdata,hFnp1_I.data, pFnp1_I.data, cm_ctx);
+      err += compute_eF(eFn.data,  Fs[TENSOR_Fn].m_pdata,  hFn_I.data,   pFn_I.data,   CTX);
+      err += compute_eF(eFnp1.data,Fs[TENSOR_Fnp1].m_pdata,hFnp1_I.data, pFnp1_I.data, CTX);
     }
     else
     {
@@ -742,8 +759,8 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
     }
   }
 
-  HyperElasticity *elast = (m->param)->cm_elast;
-  elast->update_elasticity(eFnp1.data, 1);
+  ELASTICITY *elast = (m->param)->cm_elast;
+  elast->update_elasticity(elast,eFnp1.data, 1);
 
   // compute slip system
   SLIP_SYSTEM *slip_in = (((m->param)->cm_mat)->mat_p)->slip;
@@ -767,7 +784,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
       // call to compute_dMdu
       memcpy(Grad_op_ab,Grad_op+idx_ab,DIM_3x3*sizeof(double));
       err += plasticity_compute_dMdu(m, dM_du+idx_ab,Grad_op_ab, eFn.data, eFnp1.data, M.data,
-                                     elast->S, elast->L, g_n, g_np1, tau, gamma_dots, slip.p_sys, cm_ctx.dt);
+                                     elast->S, elast->L, g_n, g_np1, tau, gamma_dots, slip.p_sys, CTX->dt);
     }
   }
   destruct_slip_system(&slip);
@@ -775,7 +792,7 @@ static int plasticity_compute_dMdu_np1(const Constitutive_model *m,
 }
 
 static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
-                                       CM_Ctx &cm_ctx,
+                                       const void *ctx,
                                        const double *Grad_op,
                                        const int nne,
                                        const int ndofn,
@@ -788,9 +805,10 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   // alpha,beta pair and computes the corresponding dMdu. We will
   // generate the required inputs for this function and call it
   // alpha*beta times. This should be improved
+  auto CTX = (plasticity_ctx *) ctx;
 
   Tensor<2> Fnpa,Fn,eFn = {},eFnpa = {},pFnpa,pFnpa_I,pFnp1,pFn,Mnpa = {},hFnpaI;
-  TensorA<2> Fnp1(cm_ctx.F);
+  TensorA<2> Fnp1(CTX->F);
 
   err += m->param->get_F(m,Fn.data,1);
   eFn = ttl::identity(i,j); // Total Lagrangian
@@ -805,19 +823,19 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
   err += inv(pFnpa, pFnpa_I); // Total Lagrangian
 
   hFnpaI = ttl::identity(i,j);
-  if(cm_ctx.is_coulpled_with_thermal)
+  if(CTX->is_coulpled_with_thermal)
   {
     // double hFnpa[9];
-    // mid_point_rule(hFnpa, cm_ctx.hFn, cm_ctx.hFnp1, alpha, DIM_3x3);
-    TensorA<2> hFnpa(cm_ctx.hFnp1);
+    // mid_point_rule(hFnpa, CTX->hFn, CTX->hFnp1, alpha, DIM_3x3);
+    TensorA<2> hFnpa(CTX->hFnp1);
     err += inv(hFnpa, hFnpaI);
   }
 
   Mnpa = hFnpaI(i,j)*pFnpa_I(j,k);
   eFnpa = Fnpa(i,j)*Mnpa(j,k);
 
-  HyperElasticity *elast = (m->param)->cm_elast;
-  elast->update_elasticity(eFnpa.data, 1);
+  ELASTICITY *elast = (m->param)->cm_elast;
+  elast->update_elasticity(elast,eFnpa.data, 1);
 
   // compute slip system
   SLIP_SYSTEM *slip_in = (((m->param)->cm_mat)->mat_p)->slip;
@@ -852,7 +870,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
       int idx_ab = idx_4_gen(a,b,0,0,nne,ndofn,DIM_3,DIM_3);
       memcpy(Grad_op_ab,Grad_op+idx_ab,DIM_3x3*sizeof(double));
       err += plasticity_compute_dMdu(m, dM_du + idx_ab, Grad_op_ab, eFn.data, eFnpa.data, Mnpa.data,
-                                     elast->S, elast->L, g_n, g_npa, tau, gamma_dots, slip.p_sys, cm_ctx.dt);
+                                     elast->S, elast->L, g_n, g_npa, tau, gamma_dots, slip.p_sys, CTX->dt);
     }
   }
 
@@ -863,7 +881,7 @@ static int plasticity_compute_dMdu_npa(const Constitutive_model *m,
 }
 
 int CP_PARAM::compute_dMdu(const Constitutive_model *m,
-                           CM_Ctx &cm_ctx,
+                           const void *ctx,
                            double *Grad_op,
                            const int nne,
                            const int ndofn,
@@ -871,10 +889,11 @@ int CP_PARAM::compute_dMdu(const Constitutive_model *m,
   const
 {
   int err = 0;
-  if(cm_ctx.alpha<0)
-    err += plasticity_compute_dMdu_np1(m,cm_ctx,Grad_op,nne,ndofn,dM_du);
+  auto CTX = (plasticity_ctx *) ctx;
+  if(CTX->alpha<0)
+    err += plasticity_compute_dMdu_np1(m,ctx,Grad_op,nne,ndofn,dM_du);
   else
-    err += plasticity_compute_dMdu_npa(m,cm_ctx,Grad_op,nne,ndofn,dM_du,cm_ctx.alpha);
+    err += plasticity_compute_dMdu_npa(m,ctx,Grad_op,nne,ndofn,dM_du,CTX->alpha);
   return err;
 }
 
@@ -1016,7 +1035,6 @@ int CP_PARAM::read_param(FILE *in)
 
   if(read_solver_info)
   {
-    
     match = fscanf(in, "%d %d %d %d %lf %lf %lf",
                    param_idx + PARAM_max_itr_stag,
                    param_idx + PARAM_max_itr_hardening,
@@ -1027,15 +1045,6 @@ int CP_PARAM::read_param(FILE *in)
                    param     + PARAM_computer_zero);
     if (match != 7) err++;
     assert(match == 7 && "Did not read expected number of parameters");
-    
-    set_gcm_solver_info(this->gcm_solver_info, 
-                        param_idx[PARAM_max_itr_stag],
-                        param_idx[PARAM_max_itr_hardening],
-                        param_idx[PARAM_max_itr_M],
-                        param[PARAM_tol_hardening],
-                        param[PARAM_tol_M],
-                        param[PARAM_computer_zero],
-                        param[PARAM_max_subdivision]);    
   }
   else // use default
   {
@@ -1066,20 +1075,21 @@ int CP_PARAM::read_param(FILE *in)
 }
 
 int CP_PARAM::update_elasticity(const Constitutive_model *m,
-                                CM_Ctx &cm_ctx,
+                                const void *ctx_in,
                                 double *L,
                                 double *S,
-                                const bool compute_stiffness)
+                                const int compute_stiffness)
   const
 {
   int err = 0;
+  auto ctx = (plasticity_ctx *) ctx_in;
 
   // if transient cases,
   // get_eF is not working because eF needs to be updated using mid-point alpha
-  // below checks whether to use get_eF or give eFnpa in cm_ctx
+  // below checks whether to use get_eF or give eFnpa in ctx
 
-  if(cm_ctx.eFnpa)
-    err += constitutive_model_default_update_elasticity(m, cm_ctx.eFnpa, L, S, compute_stiffness);
+  if(ctx->eFnpa)
+    err += constitutive_model_default_update_elasticity(m, ctx->eFnpa, L, S, compute_stiffness);
   else
   {
     // shorthand of deformation gradients
@@ -1088,13 +1098,13 @@ int CP_PARAM::update_elasticity(const Constitutive_model *m,
     TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
 
     err += inv(pFnp1, pFnp1_I);
-    if(cm_ctx.is_coulpled_with_thermal)
+    if(ctx->is_coulpled_with_thermal)
     {
-      TensorA<2> hFnp1(cm_ctx.hFnp1);
+      TensorA<2> hFnp1(ctx->hFnp1);
       Tensor<2> hFnp1_I;
 
       err += inv(hFnp1, hFnp1_I);
-      err += compute_eF(eF.data, Fnp1.data,hFnp1_I.data, pFnp1_I.data, cm_ctx);
+      err += compute_eF(eF.data, Fnp1.data,hFnp1_I.data, pFnp1_I.data, ctx);
     }
     else
       eF = Fnp1(i,k)*pFnp1_I(k,j);
@@ -1129,7 +1139,6 @@ int CP_PARAM::model_dependent_initialization(void)
   this->model_param       = new double[PARAM_NO]();
   this->n_param_index     = PARAM_INX_NO;
   this->model_param_index = new int [PARAM_INX_NO]();
-  this->gcm_solver_info   = new GcmSolverInfo; 
   return 0;
 }
 
@@ -1139,80 +1148,150 @@ int CP_PARAM::model_dependent_finalization(void)
   destruct_slip_system(((this->cm_mat)->mat_p)->slip);
   free(((this->cm_mat)->mat_p)->slip);
   free((this->cm_mat)->mat_p);
-  delete this->gcm_solver_info;
+  return err;
+}
+
+int plasticity_model_ctx_build(void **ctx,
+                               double *F,
+                               const double dt,
+                               const double alpha,
+                               double *eFnpa,
+                               double *hFn,
+                               double *hFnp1,
+                               const int is_coulpled_with_thermal)
+{
+  int err = 0;
+  plasticity_ctx *t_ctx = (plasticity_ctx *) malloc(sizeof(plasticity_ctx));
+
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;
+
+  t_ctx->F = F;
+  t_ctx->eFnpa = eFnpa;
+
+
+  t_ctx->dt = dt;
+  t_ctx->alpha = alpha;
+
+  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
+  t_ctx->hFn  = hFn;
+  t_ctx->hFnp1= hFnp1;
+
+  // assign handle
+  *ctx = t_ctx;
+  return err;
+}
+
+int CP_PARAM::destroy_ctx(void **ctx)
+  const
+{
+  int err = 0;
+  plasticity_ctx *t_ctx = (plasticity_ctx *) *ctx;
+  // invalidate handle
+  *ctx = NULL;
+
+  // no memory was created
+  t_ctx->F     = NULL;
+  t_ctx->eFnpa = NULL;
+  t_ctx->hFn   = NULL;
+  t_ctx->hFnp1 = NULL;
+
+  free(t_ctx);
   return err;
 }
 
 int CP_PARAM::integration_algorithm(Constitutive_model *m,
-                                    CM_Ctx &cm_ctx)
+                                    const void *ctx)
   const
 {
   int err = 0;
-  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3 * sizeof(*(cm_ctx.F)));
+  auto CTX = (plasticity_ctx *) ctx;
+  memcpy(m->vars_list[0][m->model_id].Fs[TENSOR_Fnp1].m_pdata, CTX->F, DIM_3x3 * sizeof(*(CTX->F)));
+
+  const double dt = CTX->dt;
+  double *param     = (m->param)->model_param;
+  int    *param_idx = (m->param)->model_param_index;
     
+  CRYSTAL_PLASTICITY_SOLVER_INFO solver_info;
+  set_crystal_plasticity_solver_info(&solver_info,param_idx[PARAM_max_itr_stag],
+                                     param_idx[PARAM_max_itr_hardening],
+                                     param_idx[PARAM_max_itr_M],
+                                     param[PARAM_tol_hardening],
+                                     param[PARAM_tol_M],
+                                     param[PARAM_computer_zero]);
+  solver_info.max_subdivision = param_idx[PARAM_max_subdivision];
+
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  double g_n   = state_var[VAR_g_n];
+  double g_np1 = state_var[VAR_g_np1];
+  double L_np1 = state_var[VAR_L_np1];
 
   Tensor<2> eFnp1,C,pFnp1_I;
-  TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
+  TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), pFn(Fs[TENSOR_pFn].m_pdata),
+  Fn( Fs[TENSOR_Fn].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
 
-
-  // get shorthand
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat = (m->param)->cm_mat;
-  HyperElasticity *elast         = (m->param)->cm_elast;
+  ELASTICITY *elasticity = (m->param)->cm_elast;
 
-  // compute slip system and rotate orientation  
+  // compute slip system and rotate orientation
   SLIP_SYSTEM *slip_in = (cm_mat->mat_p)->slip;
   SLIP_SYSTEM slip;
   construct_slip_system(&slip,slip_in->unit_cell);
   rotate_crystal_orientation(&slip, Fs[TENSOR_R].m_pdata, slip_in);
   (cm_mat->mat_p)->slip = &slip;
-    
-  GcmCpIntegrator integrator;
   
-  integrator.mat         = (m->param)->cm_mat;
-  integrator.elasticity  = (m->param)->cm_elast;
-  integrator.solver_info = (m->param)->gcm_solver_info;
+  
+//  GcmCpIntegrator gcm_cp;
+/*  gcm_cp.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
+                     Fs[TENSOR_Fn].m_pdata,
+                     Fs[TENSOR_Fnm1].m_pdata,
+                     Fs[TENSOR_pFnp1].m_pdata,
+                     Fs[TENSOR_pFn].m_pdata,
+                     CTX->hFnp1,
+                     CTX->hFn);
+                     
+  */
 
-  double I[DIM_3x3] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};  
-  double *hFnp1 = I, *hFn = I;
-  if(cm_ctx.is_coulpled_with_thermal){
-    hFnp1 = cm_ctx.hFnp1;
-    hFn   = cm_ctx.hFn;
-  }
-  
-  integrator.set_tensors(Fs[TENSOR_Fnp1].m_pdata,
-                         Fs[TENSOR_Fn].m_pdata,
-                         Fs[TENSOR_Fnm1].m_pdata,
-                         Fs[TENSOR_pFnp1].m_pdata,
-                         Fs[TENSOR_pFn].m_pdata,
-                         hFnp1,
-                         hFn);
-
-  integrator.gnp1   = state_var + VAR_g_np1;
-  integrator.lambda = state_var + VAR_L_np1;
-  integrator.gn     = state_var[VAR_g_n];
-  
   // perform integration algorithm for the crystal plasticity
-  err += integrator.run_integration_algorithm(cm_ctx.dtn, cm_ctx.dt);
+  if(CTX->is_coulpled_with_thermal)
+  {
+    err += staggered_Newton_Rapson_generalized(pFnp1.data,
+                                               &g_np1, &L_np1,
+                                               pFn.data, Fn.data, Fnp1.data,
+                                               CTX->hFn, CTX->hFnp1,
+                                               g_n, dt, cm_mat, elasticity, &solver_info);
+  }
+  else
+  {
+    err += staggered_Newton_Rapson(pFnp1.data,
+                                   &g_np1, &L_np1,
+                                   pFn.data, Fn.data, Fnp1.data,
+                                   g_n, dt, cm_mat, elasticity, &solver_info);
+  }
+
+  // update compute values from integration algorithm
+  state_var[VAR_g_np1] =  g_np1;
+  state_var[VAR_L_np1] =  L_np1;
+
   err += inv(pFnp1,pFnp1_I);
 
-  if(cm_ctx.is_coulpled_with_thermal)
+  if(CTX->is_coulpled_with_thermal)
   {
-    TensorA<2> hFnp1(cm_ctx.hFnp1);
+    TensorA<2> hFnp1(CTX->hFnp1);
     Tensor<2> hFnp1_I;
     inv(hFnp1,hFnp1_I);
-    err += compute_eF(eFnp1.data, Fnp1.data, hFnp1_I.data, pFnp1_I.data, cm_ctx);
+    err += compute_eF(eFnp1.data, Fnp1.data, hFnp1_I.data, pFnp1_I.data, CTX);
   }
   else
     eFnp1 = Fnp1(i,k)*pFnp1_I(k,j);
 
   C = eFnp1(k,i)*eFnp1(k,j);
-  
-  double g_np1 = state_var[VAR_g_np1];
 
-  elast->update_elasticity(eFnp1.data, 0);
-  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,C.data, elast->S, &slip);
+  elasticity->update_elasticity(elasticity,eFnp1.data, 0);
+  err += compute_tau_alphas(Fs[TENSOR_tau].m_pdata,C.data, elasticity->S, &slip);
   err += compute_gamma_dots(Fs[TENSOR_gamma_dot].m_pdata, Fs[TENSOR_tau].m_pdata, g_np1, cm_mat->mat_p);
 
   (cm_mat->mat_p)->slip = slip_in;

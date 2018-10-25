@@ -253,21 +253,14 @@ static int debug_keep_id(const int n_keep,
   ISIRNetwork *net = static_cast<ISIRNetwork*>(n);
   int err = 0;
   int n_servers = -1;
-  if (mscom->valid_micro_1) {
-    net->comm_size(mscom->worker_inter,&n_servers);
-  } else {
-    net->comm_size(mscom->worker_inter_ROM,&n_servers);
-  }
+  net->comm_size(mscom->worker_inter,&n_servers);
+  
   /* get n_keep from each proc on worker_inter */
   int *counts = PGFEM_calloc(int, n_servers);
   int *displ = PGFEM_calloc(int, n_servers + 1);
-  if (mscom->valid_micro_1) {
-    net->allgather(&n_keep,1,NET_DT_INT,counts,1,NET_DT_INT,
+  net->allgather(&n_keep,1,NET_DT_INT,counts,1,NET_DT_INT,
 		 mscom->worker_inter);
-  } else {
-    net->allgather(&n_keep,1,NET_DT_INT,counts,1,NET_DT_INT,
-     mscom->worker_inter_ROM);
-  }
+
   /* allocate buffer for all keep_id */
   int total_n_keep = counts[0];
   displ[0] = 0;
@@ -276,23 +269,16 @@ static int debug_keep_id(const int n_keep,
     total_n_keep += counts[i];
   }
   int *all_keep_id = PGFEM_calloc(int, total_n_keep);
-  int rank_micro = 0;
+
   /* Gather keep_id from all procs */
-  if (mscom->valid_micro_1) {
-    net->allgatherv(keep_id,n_keep,NET_DT_INT,all_keep_id,counts,
+  net->allgatherv(keep_id,n_keep,NET_DT_INT,all_keep_id,counts,
 		  displ,NET_DT_INT,mscom->worker_inter);
-    rank_micro = mscom->rank_micro;
-  } else {
-    net->allgatherv(keep_id,n_keep,NET_DT_INT,all_keep_id,counts,
-      displ,NET_DT_INT,mscom->worker_inter_ROM);  
-    rank_micro = mscom->rank_micro_ROM;
-  }
+  
   /* sort array */
   qsort(all_keep_id,total_n_keep,sizeof(*all_keep_id),dbg_cmp_int);
 
-
   /* linear search for duplicates on master of server 0 */
-  if(mscom->server_id == 0 && rank_micro == 0){
+  if(mscom->server_id == 0 && mscom->rank_micro == 0){
     for(int i = 0; i < n_keep - 1; i++){
       if(all_keep_id[i] == all_keep_id[i+1]){
 	PGFEM_printerr("Found duplicate: %d\n",all_keep_id[i]);
@@ -303,13 +289,8 @@ static int debug_keep_id(const int n_keep,
   }
   
   /* brodcast error value to slaves */
-  if (mscom->valid_micro_1) {
-    net->bcast(&err,1,NET_DT_INT,0,mscom->worker_inter); /* between eq. procs */
-    net->bcast(&err,1,NET_DT_INT,0,mscom->micro); /* master to slaves */
-  } else {
-    net->bcast(&err,1,NET_DT_INT,0,mscom->worker_inter_ROM); /* between eq. procs */
-    net->bcast(&err,1,NET_DT_INT,0,mscom->micro_ROM); /* master to slaves */
-  }
+  net->bcast(&err,1,NET_DT_INT,0,mscom->worker_inter); /* between eq. procs */
+  net->bcast(&err,1,NET_DT_INT,0,mscom->micro); /* master to slaves */
 
   free(counts);
   free(displ);
@@ -383,20 +364,11 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     memcpy(dest,src,buff_size);
 
     /* post non-blocking send of the data */
-    if (mscom->valid_micro_1) {
-      net->isend(t->send_wkspc->buffers[i],
+    net->isend(t->send_wkspc->buffers[i],
 	       buff_size, NET_DT_CHAR,
 	       send_to[i], send_id[i],
 	       mscom->worker_inter,
 	       &(t->send_wkspc->reqs[i]));
-    } else {
-      net->isend(t->send_wkspc->buffers[i],
-         buff_size, NET_DT_CHAR,
-         send_to[i], send_id[i],
-         mscom->worker_inter_ROM,
-         &(t->send_wkspc->reqs[i]));
-
-    }
   }
   
   const int n_recv = pgf_FE2_server_rebalance_n_recv(t);
@@ -415,19 +387,11 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
     t->recv_wkspc->buffers[i] = micro->sol[sol_idx].packed_state_var_n;
     
     /* post non-blocking receive of the data */
-    if (mscom->valid_micro_1) {
-      net->irecv(t->recv_wkspc->buffers[i],
+    net->irecv(t->recv_wkspc->buffers[i],
 	       buff_size,NET_DT_CHAR,
 	       recv_from[i], recv_id[i],
 	       mscom->worker_inter,
 	       &(t->recv_wkspc->reqs[i]));
-    } else {
-      net->irecv(t->recv_wkspc->buffers[i],
-         buff_size,NET_DT_CHAR,
-         recv_from[i], recv_id[i],
-         mscom->worker_inter_ROM,
-         &(t->recv_wkspc->reqs[i]));
-    }
   }
   
   return err;
@@ -468,10 +432,6 @@ pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
 
   /* barrier to ensure that transfer comm is complete on all procs in
      the server. */
-  if (mscom->valid_micro_1) {
-    net->barrier(mscom->micro);
-  } else {
-    net->barrier(mscom->micro_ROM);
-  }
+  net->barrier(mscom->micro);
   return err;
 }

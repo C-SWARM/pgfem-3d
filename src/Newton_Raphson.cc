@@ -513,8 +513,7 @@ double compute_stiffness_for_NR(long *INFO,
   {
     // complete any jobs before assembly
     MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep,1);
-    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep,2);
+    pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,max_substep);
   }
 
   // Matrix assmbly
@@ -975,32 +974,30 @@ long Newton_Raphson_with_LS(double *solve_time,
     double tmp  = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
     com->net->allreduce(&tmp,&Gss_temp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     double LS1 = 1./2.*Gss_temp;
-    
-    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
-    // Pressure and volume change THETA
 
-      switch(opts->analysis_type){
-       case FS_CRPL:
-       case FINITE_STRAIN:
-        press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
-                     mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
-        break;
-       case MINI:
-        MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                           fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-        break;
-       case MINI_3F:
-        MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                              fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-        break;
-       case TF:
-          update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
-        break;
-       case CM3F:
-        constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
-       default:
-        break;
-      }
+    /* Pressure and volume change THETA */
+
+    switch(opts->analysis_type){
+     case FS_CRPL:
+     case FINITE_STRAIN:
+      press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
+                   mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
+      break;
+     case MINI:
+      MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                         fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+      break;
+     case MINI_3F:
+      MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                            fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+      break;
+     case TF:
+        update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
+      break;
+     case CM3F:
+      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
+     default:
+      break;
     }
     
     /*************************/
@@ -1104,10 +1101,7 @@ long Newton_Raphson_with_LS(double *solve_time,
         load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
       }
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_COMPUTE_EQUILIBRIUM,1);
-      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_COMPUTE_EQUILIBRIUM,2);
-
+                                     JOB_COMPUTE_EQUILIBRIUM);
       //gradU needs to be put back afterwards
       for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
        load->sup_defl[mp_id][i] = temp_defl[i];
@@ -1136,8 +1130,7 @@ long Newton_Raphson_with_LS(double *solve_time,
     if(DEBUG_MULTISCALE_SERVER && sol->microscale != NULL){
       /* print_array_d(PGFEM_stdout,f_u,ndofd,1,ndofd); */
       MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,1);
-      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,2);
+      pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
 
       /* determine substep factor */
       alpha_ms = ((double) max_substep) / max_n_micro_substep;
@@ -1568,9 +1561,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       }
       ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
       pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_NO_COMPUTE_EQUILIBRIUM,1);
-      pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                     JOB_NO_COMPUTE_EQUILIBRIUM,2);
+                                     JOB_NO_COMPUTE_EQUILIBRIUM);
 
       for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
        load->sup_defl[mp_id][i] = temp_defl[i];
@@ -1753,10 +1744,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         ctx->macro->sol->times[ctx->macro->sol->tim+1] = NR_t->times[tim] + dt;
 
         pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                       JOB_UPDATE,1);
-        pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
-                                       JOB_UPDATE,2);
-
+                                       JOB_UPDATE);
         for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
          load->sup_defl[mp_id][i] = temp_defl[i];
         }
@@ -1777,8 +1765,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         /* start the microscale jobs */
         int max_substep = 0;
         MS_SERVER_CTX *ctx = (MS_SERVER_CTX *) sol->microscale;
-        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,1);
-        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep,2);
+        pgf_FE2_macro_client_recv_jobs(ctx->client,ctx->macro,&max_substep);
       }
 
       /************* TEST THE UPDATE FROM N TO N+1  *************/
