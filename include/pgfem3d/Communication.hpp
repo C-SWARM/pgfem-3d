@@ -60,7 +60,7 @@ public:
   virtual void send_stiffmat() = 0;
   virtual void finalize_stiffmat() = 0;
   virtual void assemble_nonlocal_stiffmat(pgfem3d::solvers::SparseSystem* system) = 0;
-  virtual void print_stiffmat() = 0;
+
   virtual void LToG(const double *f, double *Gf, const long ndofd,
 		    const long *DomDof, const int GDof) = 0;
   virtual void GToL(const double *Gr, double *r, const long ndofd,

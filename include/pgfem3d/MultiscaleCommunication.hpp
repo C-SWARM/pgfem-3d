@@ -15,7 +15,7 @@ public:
   ~MultiscaleComm();
 
   void MM_split(const int macro_nproc,
-		const int micro_group_size, const int micro2_group_size, const int full_micro_np);
+		const int micro_group_size);
   
   /* communicators */
   net::PGFem3D_Comm world;
@@ -23,23 +23,16 @@ public:
   net::PGFem3D_Comm micro_all;
   net::PGFem3D_Comm micro;
   net::PGFem3D_Comm mm_inter;
-  net::PGFem3D_Comm mm_inter_ROM;
-  net::PGFem3D_Comm micro_ROM; //full micro 2 group
-//  net::PGFem3D_Comm micro_ROM; //work groups within micro 2
   net::PGFem3D_Comm worker_inter; /* equivalent workers on different
 				microscales */
-  net::PGFem3D_Comm worker_inter_ROM;
 
   /* stored ranks on respective communicators */
   int rank_world;
   int rank_macro;
   int rank_micro_all;
   int rank_micro;
-  int rank_micro_1;
-  int rank_micro_ROM;
   /* NOTE: micro procs have rank_mm_inter >= size(macro) */
   int rank_mm_inter;
-  int rank_mm_inter_ROM;
   int server_id; /* rank on worker_inter */
 
   /* boolean valid communicator flag.
@@ -48,9 +41,7 @@ public:
   int valid_micro_all;
   int valid_micro;
   int valid_mm_inter;
-  int valid_mm_inter_ROM;
-  int valid_micro_1;
-  int valid_micro_ROM; 
+  
 private:
   net::Network *net;  // handle to the active network
 };

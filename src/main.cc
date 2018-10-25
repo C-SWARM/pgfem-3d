@@ -905,63 +905,13 @@ int single_scale_main(int argc,char *argv[])
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
-        if (options.analysis_type == CM || options.analysis_type == CM3F) {
-          /* parameter list and initialize const. model at int points.
-           * NOTE: should catch/handle returned error flag...
-           */
-          char *cm_filename = NULL;
-          alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
-          FILE *cm_in = PGFEM_fopen(cm_filename, "r");
-          read_model_parameters_list(mat.nhommat, mat.hommat, cm_in);
-          free(cm_filename);
-          fclose(cm_in);
-          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat,myrank);
-          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1,&options);
-        }
-        else
-          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0,&options);
-
         /* alocation of pressure variables */
         switch(options.analysis_type){
          case TF: // intended not to have break
          case CM3F:
           fv[ia].npres = 1;
           fv[ia].nVol = 1;
-          /*
-            if(fv[ia].ndofn==3) // discontinuous pressure
-            {
-            switch(grid.element[0].toe)
-            {
-            case 8: // P2/P0/V0
-            fv[ia].npres = 8;
-            fv[ia].nVol = 8;
-            break;
-            case 10: // Q1/P0/V0
-            fv[ia].npres = 4;
-            fv[ia].nVol = 4;
-            break;
-            default:
-            fv[ia].npres = 1;
-            fv[ia].nVol = 1;
-            }
-            }
-            else // continuous pressure
-            {
-            switch(grid.element[0].toe)
-            {
-            case 8: // P2/P1/V0
-            fv[ia].npres = 0;
-            fv[ia].nVol = 8;
-            break;
-            case 10: // Q1/P0/V0
-            fv[ia].npres = 0;
-            fv[ia].nVol = 4;
-            break;
-            default:
-            fv[ia].npres = 0;
-            fv[ia].nVol = 1;
-            }
-            }*/
+
           break;
          case STABILIZED: case MINI: case MINI_3F:
           if(fv[ia].npres != 4){
@@ -995,6 +945,22 @@ int single_scale_main(int argc,char *argv[])
         build_pressure_nodes (grid.ne,fv[ia].npres,grid.element,fv[ia].sig,fv[ia].eps,options.analysis_type);
         build_crystal_plast (grid.ne,grid.element,fv[ia].sig,fv[ia].eps,crpl,
                              options.analysis_type,options.plc);
+
+        if (options.analysis_type == CM || options.analysis_type == CM3F) {
+          /* parameter list and initialize const. model at int points.
+           * NOTE: should catch/handle returned error flag...
+           */
+          char *cm_filename = NULL;
+          alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
+          FILE *cm_in = PGFEM_fopen(cm_filename, "r");
+          read_model_parameters_list(mat.nhommat, mat.hommat, cm_in);
+          free(cm_filename);
+          fclose(cm_in);
+          init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat,myrank);
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,1,&options);
+        }
+        else
+          err += prepare_temporal_field_varialbes(&fv[ia],&grid,0,&options);
 
         // \/ initialized element varialbes
         if(options.analysis_type==CM3F || options.analysis_type==TF)
@@ -1122,11 +1088,6 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
-      //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
-      // of the load vector
-      err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
-                                                   &options,mp,ia,&com[ia]);
-
       if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
       {
 
@@ -1202,6 +1163,15 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
+      if(tim==options.restart+1){
+        for(int ia=0; ia<mp.physicsno; ia++){           
+          //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
+          // of the load vector
+          err += compute_load_vector_for_prescribed_BC(&grid,&mat,&fv[ia],&sol[ia],&load,time_steps.dt_np1,crpl,
+                                                     &options,mp,ia,&com[ia]);
+        }
+      }
+
       /*=== NEWTON RAPHSON ===*/
       if(sol[0].FNR == 0 || sol[0].FNR == 1)
       {
@@ -1253,7 +1223,6 @@ int single_scale_main(int argc,char *argv[])
           if(tim>=2)                         // if options.restart==1: tim = 2
             time_steps.times[tim-2] = tnm1[0];
         }
-
 
         //----------------------------------------------------------------------
         // Perform Newton Raphson interation

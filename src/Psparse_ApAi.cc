@@ -1016,6 +1016,8 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
       comm->Nrr[t_count++] = i;
   }
   
+  net->barrier(com->comm);
+
   return 0;
 }
 
@@ -1083,6 +1085,8 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
     if (i != myrank && comm->R[i] > 0)
       comm->Nrr[t_count++] = i;
   }
+
+  net->barrier(com->comm);
   
   return 0;
 }
@@ -1639,6 +1643,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
   }
+
+  net->barrier(com->comm);
 
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {

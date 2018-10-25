@@ -6,7 +6,7 @@
 ///  Sangmin Lee, University of Notre Dame, <slee43@nd.edu>
 
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+#include "config.h"
 #endif
 
 #include "allocation.h"
@@ -21,7 +21,6 @@
 #include "J2_plasticity.h"
 #include "continuum_damage_model.h"
 #include <ttl/ttl.h>
-
 
 // Define constant dimensions. Note cannot use `static const` with
 // initialization list
@@ -98,65 +97,7 @@ namespace {
         PARAM_db,
         PARAM_va,
         PARAM_vb,
-        PARAM_NO};
-        
-  // private context structure 
-  typedef struct {
-    double *F;
-    double dt;    // time increment
-    double alpha; // mid point alpha
-    double *eFnpa;
-    int is_coulpled_with_thermal;
-    double *hFn;
-    double *hFnp1;
-    int npa;
-  } J2dCtx;        
-}
-
-/// Construct and initialize the poro-viscoplasticity model context 
-/// for calling functions through the constitutive modeling interface
-/// 
-/// \param[in,out] ctx - handle to an opaque model context object.
-/// \param[in] F The total deformation gradient.
-/// \param[in] dt time increment
-/// \param[in] alpha mid-point alpha
-/// \param[in] eFnpa elastic deformation gradient at t = n + alpha
-/// \param[in] hFn thermal part deformation gradient at t = n
-/// \param[in] hFnp1 thermal part deformation gradient at t = n + 1
-/// \param[in] is_coulpled_with_thermal flag for coupling with thermal
-/// \return non-zero on internal error.
-int j2d_plasticity_model_ctx_build(void **ctx_in,
-                                   double *F,
-                                   const double dt,
-                                   const double alpha,
-                                   double *eFnpa,
-                                   double *hFn,
-                                   double *hFnp1,
-                                   const int is_coulpled_with_thermal,
-                                   const int npa)
-{
-  int err = 0;
-  J2dCtx *t_ctx = (J2dCtx *) malloc(sizeof(J2dCtx));
-
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-  t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL;  
-
-  t_ctx->F = F;
-  t_ctx->eFnpa = eFnpa;
-  t_ctx->npa   = npa;  
-  
-  t_ctx->dt = dt;
-  t_ctx->alpha = alpha;
-  
-  t_ctx->is_coulpled_with_thermal = is_coulpled_with_thermal;
-  t_ctx->hFn  = hFn;
-  t_ctx->hFnp1= hFnp1;  
-
-  // assign handle
-  *ctx_in = t_ctx;
-  return err;
+        PARAM_NO};      
 }
 
 double j2d_compute_w_npa(const Constitutive_model *m,
@@ -217,7 +158,7 @@ int J2d_determine_damaged_npa(const Constitutive_model *m,
 }
 
 // Y = G/2 *(tr(bbar) - 3) + kU 
-double j2d_compute_Y0(ELASTICITY *elast,
+double j2d_compute_Y0(HyperElasticity *elast,
                       double *F_in)
 {
   Tensor<2> bbar;
@@ -239,18 +180,17 @@ double j2d_compute_Y0(ELASTICITY *elast,
 
 // see box 4 of Simo and Ju (1989)
 int CM_J2P_PARAM::integration_algorithm(Constitutive_model *m,
-                                        const void *ctx_in)
+                                        CM_Ctx &cm_ctx)
 const
 {
   int err = 0;
-  auto ctx = (J2dCtx *) ctx_in;
 
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   double *vars       = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   int    *flags      = m->vars_list[0][m->model_id].flags;
       
   // store the deformation gradient
-  memcpy(Fs[TENSOR_Fnp1].m_pdata, ctx->F, DIM_3x3 * sizeof(double));
+  memcpy(Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3 * sizeof(double));
   
   err += J2_plasticity_integration_alg(Fs[TENSOR_pSnp1].m_pdata,
                                        vars + VAR_ep_np1,
@@ -266,13 +206,13 @@ const
   double Y0 = j2d_compute_Y0(this->cm_elast, Fs[TENSOR_Fnp1].m_pdata);
   err += continuum_damage_integration_alg_public((this->cm_mat)->mat_d,this->cm_elast,
                                                   vars+VAR_w_np1, vars+VAR_X_np1, vars+VAR_H_np1, flags + FLAG_damaged,                                          
-                                                  vars[VAR_w_n], vars[VAR_X_n], ctx->dt, Y0);  
+                                                  vars[VAR_w_n], vars[VAR_X_n], cm_ctx.dt, Y0);  
   
   return err;
 }
 
 int CM_J2P_PARAM::compute_dev_stress(const Constitutive_model *m,
-                                     const void *ctx_in,
+                                     CM_Ctx &cm_ctx,
                                      double *stress)
 const
 {
@@ -280,17 +220,16 @@ const
 }
 
 int CM_J2P_PARAM::compute_dudj(const Constitutive_model *m,
-                               const void *ctx_in,
+                               CM_Ctx &cm_ctx,
                                double *dudj)
 const
 {
   int err = 0;
-  auto ctx = (J2dCtx *) ctx_in;
-  double eJ = det3x3(ctx->F);
+  double eJ = det3x3(cm_ctx.F);
   
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *dudj = damage_compute_dudj(elasticity, eJ, vars[VAR_w_np1]);
   
   return err;
@@ -303,12 +242,12 @@ double CM_J2P_PARAM::compute_dudj(const Constitutive_model *m,
 const 
 {
   double w_npa = j2d_compute_w_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_dudj(elasticity, theta_e, w_npa);          
 }
 
 int CM_J2P_PARAM::compute_dev_tangent(const Constitutive_model *m,
-                                      const void *ctx_in,
+                                      CM_Ctx &cm_ctx,
                                       double *L)
 const
 {
@@ -316,18 +255,17 @@ const
 }
 
 int CM_J2P_PARAM::compute_d2udj2(const Constitutive_model *m,
-                                 const void *ctx_in,
+                                 CM_Ctx &cm_ctx,
                                  double *d2udj2)
 const
 {
   int err = 0;
-  auto ctx = (J2dCtx *) ctx_in;
-  double eJ = det3x3(ctx->F);
+  double eJ = det3x3(cm_ctx.F);
   
   double *vars  = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
 
   // scale by damage variable 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   *d2udj2 = damage_compute_d2udj2(elasticity, eJ, vars[VAR_w_np1]);
   
   return err;
@@ -340,23 +278,22 @@ double CM_J2P_PARAM::compute_d2udj2(const Constitutive_model *m,
 const 
 {
   double w_npa = j2d_compute_w_npa(m,npa,alpha);
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   return damage_compute_d2udj2(elasticity, theta_e, w_npa);           
 }
 
 int CM_J2P_PARAM::update_elasticity(const Constitutive_model *m,
-                                    const void *ctx_in,
+                                    CM_Ctx &cm_ctx,
                                     double *L_in,
                                     double *S,
-                                    const int compute_stiffness)
+                                    const bool compute_stiffness)
 const
 {
   int err = 0;
-  auto ctx = (J2dCtx *) ctx_in;
   
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
   
   double *S_tmp = elasticity->S;
   double *L_tmp = elasticity->L;
@@ -364,25 +301,25 @@ const
   elasticity->S = S;
   elasticity->L = L_in;
   
-  double w_npa = j2d_compute_w_npa(m, ctx->npa, ctx->alpha);
-  double H_npa = j2d_compute_H_npa(m, ctx->npa, ctx->alpha);
-  double g_npa = j2d_compute_gam_npa(m, ctx->npa, ctx->alpha);
+  double w_npa = j2d_compute_w_npa(m, cm_ctx.npa, cm_ctx.alpha);
+  double H_npa = j2d_compute_H_npa(m, cm_ctx.npa, cm_ctx.alpha);
+  double g_npa = j2d_compute_gam_npa(m, cm_ctx.npa, cm_ctx.alpha);
   
-  int is_damaged  = J2d_determine_damaged_npa(m, ctx->npa);
+  int is_damaged  = J2d_determine_damaged_npa(m, cm_ctx.npa);
   
   Tensor<2> sp_npa;
   State_variables *sv = m->vars_list[0] + m->model_id;
-  err += sv->compute_Fs_npa(sp_npa.data, TENSOR_pSnm1, TENSOR_pSnm1, TENSOR_pSnm1,  ctx->npa, ctx->alpha);
+  err += sv->compute_Fs_npa(sp_npa.data, TENSOR_pSnm1, TENSOR_pSnm1, TENSOR_pSnm1,  cm_ctx.npa, cm_ctx.alpha);
   
   double dam = 1.0 - w_npa;
 
   Tensor<2> S0, Sbar;
       
-  if(ctx->eFnpa){
-    err += compute_S0_Sbar_public(S0.data, Sbar.data, ctx->eFnpa, sp_npa.data, elasticity);    
+  if(cm_ctx.eFnpa){
+    err += compute_S0_Sbar_public(S0.data, Sbar.data, cm_ctx.eFnpa, sp_npa.data, elasticity);    
 
     if(compute_stiffness){
-      err += compute_Lbar_public(L_in, ctx->eFnpa, 
+      err += compute_Lbar_public(L_in, cm_ctx.eFnpa, 
                                  Fs[TENSOR_Fn].m_pdata,
                                  Fs[TENSOR_pSn].m_pdata,
                                  g_npa,
@@ -392,9 +329,9 @@ const
   } else {
     Tensor<2> eF = {};
 
-    if(ctx->is_coulpled_with_thermal){
+    if(cm_ctx.is_coulpled_with_thermal){
       TensorA<2> Fnp1(Fs[TENSOR_Fnp1].m_pdata);
-      TensorA<2> hFnp1(ctx->hFnp1);
+      TensorA<2> hFnp1(cm_ctx.hFnp1);
       Tensor<2> hFnp1_I;
 
       err += inv(hFnp1, hFnp1_I);
@@ -430,7 +367,7 @@ const
       L_in[ia] *= dam;
     
     if(is_damaged){
-      double dt_mu = ctx->dt*(this->cm_mat->mat_d->mu);
+      double dt_mu = cm_ctx.dt*(this->cm_mat->mat_d->mu);
       double evo = dt_mu*H_npa/(1.0+dt_mu);        
       TensorA<4> L(L_in);
       L(i,j,k,l) = L(i,j,k,l) - 0.5*evo*(Sbar(i,j)*S0(k,l) + S0(i,j)*Sbar(k,l));
@@ -449,13 +386,13 @@ int CM_J2P_PARAM::update_elasticity_dev(const Constitutive_model *m,
                                         const int npa,
                                         const double alpha,
                                         const double dt,
-                                        const int compute_stiffness)  
+                                        const bool compute_stiffness)  
 const
 {
   int err = 0;  
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
 
-  ELASTICITY *elasticity = this->cm_elast;
+  HyperElasticity *elasticity = this->cm_elast;
     
   double *S_tmp = elasticity->S;
   double *L_tmp = elasticity->L;
@@ -892,24 +829,6 @@ const
   fscanf(in, "%d", flags + FLAG_damaged_n);
 
   err += this->reset_state_vars(m);
-  return err;
-}
-
-int CM_J2P_PARAM::destroy_ctx(void **ctx_in)
-const
-{
-  int err = 0;
-  J2dCtx *t_ctx = (J2dCtx *) *ctx_in;
-  // invalidate handle 
-  *ctx_in = NULL;
-
-  // no memory was created
-  t_ctx->F     = NULL;
-  t_ctx->eFnpa = NULL;
-  t_ctx->hFn   = NULL;
-  t_ctx->hFnp1 = NULL; 
-
-  free(t_ctx);
   return err;
 }
 

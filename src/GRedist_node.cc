@@ -588,6 +588,8 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     rbuffers[i].size = sizeof(long)*JJ;
   }
 
+  net->barrier(com->comm);
+
   /* exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
@@ -673,6 +675,8 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
 
   /* re-sort the nodes by their local number */
   nodes_sort_loc_id(nnode, nodes);
+
+  net->barrier(com->comm);
 
   /* cleanup */
   if(sbuffer_pinned)
