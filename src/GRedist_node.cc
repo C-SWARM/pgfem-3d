@@ -21,13 +21,13 @@
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
-static long fallback_GRedist_node_ISIR(const int nproc,
-				       const int myrank,
-				       const long nn,
-				       const long ndofn,
-				       Node *node,
-				       const CommunicationStructure *com,
-				       const long mp_id)
+static long fallback_GRedist_node(const int nproc,
+				  const int myrank,
+				  const long nn,
+				  const long ndofn,
+				  Node *node,
+				  const CommunicationStructure *com,
+				  const long mp_id)
 {
   long NBN = 0; /* return value */
   
@@ -155,165 +155,6 @@ static long fallback_GRedist_node_ISIR(const int nproc,
   free(displ);
 
   return (NBN);
-}
-
-static long fallback_GRedist_node_PWC(const int nproc,
-				      const int myrank,
-				      const long nn,
-				      const long ndofn,
-				      Node *node,
-				      const CommunicationStructure *com,
-				      const long mp_id)
-{
-  long NBN = 0; /* return value */
-  
-  long GN = 0;
-  long need = 0;
-  for (int i=0;i<nn;i++){
-    /* Number of global nodes OWNED by the domain */
-    if (node[i].Gnn >= 0 && node[i].Dom == myrank && node[i].Pr == -1) GN++;
-
-    /* Number of global nodes NEEDED by the domain */
-    if (node[i].Gnn >= 0 && node[i].Dom != myrank && node[i].Pr == -1) need++;
-  }
-
-  /* allocate buffers which contian information in the following order:
-     own_buf[i] = {Gnn,Gid[1],...,Gid[n]}[i].
-     need_buf[i] = {Gnn,node_idx}[i].
-
-     'own_buf' is condensed across all buffers and sorted by
-     Gnn. 'need_buf' is local and is sorted by Gnn as well. After
-     sorting, dofs are assigned to the local 'need' nodes.
-  */
-  long *own_buf = NULL;
-  long *need_buf = NULL;
-  size_t own_buf_elem_size = (ndofn+1)*sizeof(long);
-  size_t need_buf_elem_size = 2*sizeof(long);
-  if(GN > 0) own_buf = static_cast<long*>(malloc(GN*own_buf_elem_size));
-  if(need > 0) need_buf = static_cast<long*>(malloc(need*need_buf_elem_size));
-
-  {
-    size_t own_idx = 0;
-    size_t need_idx = 0;
-    for (auto i=0;i<nn;i++){
-      if(node[i].Gnn >= 0){
-        /* global node owned by THIS domain */
-        if (node[i].Dom == myrank && node[i].Pr == -1){
-          own_buf[own_idx++] = node[i].Gnn;
-          memcpy(own_buf + own_idx,node[i].id_map[mp_id].Gid,ndofn*sizeof(long));
-          own_idx += ndofn;
-        }
-        /* global node owned by OTHER domain */
-        else if (node[i].Dom != myrank && node[i].Pr == -1){
-          need_buf[need_idx++] = node[i].Gnn;
-          need_buf[need_idx++] = i;
-        }
-      }
-      /* do nothing for purely local nodes (Gnn < 0) */
-    }/* end i < nn */
-  }
-
-  /* Gather number of boundary nodes owned by each domain */
-  long *BN = aloc1l (nproc);
-  com->net->allgather(&GN,1,NET_DT_LONG,BN,1,NET_DT_LONG,com->comm);
-
-  /* Compute recvcount and displ arrays */
-  int *recvcount = PGFEM_calloc(int,nproc);
-  int *displ = PGFEM_calloc(int,nproc);
-  displ[0] = 0;
-  for (auto i=0;i<nproc;i++){
-    recvcount[i] = BN[i]*(ndofn + 1);
-    NBN += BN[i];
-    if(i > 0){
-      displ[i] = displ[i-1] + recvcount[i-1];
-    }
-  }
-
-  /* gather the global nodes and their associated global dof ids */
-  long *Gnn_Gid = NULL;
-  if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
-  com->net->allgatherv(own_buf,recvcount[myrank],NET_DT_LONG,
-		       Gnn_Gid,recvcount,displ,NET_DT_LONG,com->comm);
-
-  /* sort the list of Gnn and their associated Gid by Gnn */
-  if (Gnn_Gid != NULL)
-    qsort(Gnn_Gid,NBN,own_buf_elem_size,compare_long);
-
-  /* sort need_buf by Gnn */
-  if (need_buf) qsort(need_buf,need,need_buf_elem_size,compare_long);
-
-  if (PFEM_DEBUG){
-    /* Check global node numbers, should be ordered and contiguous */
-    long k = 0;
-    for (auto i=0; i<NBN*(ndofn+1); i+=ndofn+1){
-      assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
-      if (Gnn_Gid[i] != k){
-        PGFEM_printf ("Error in global node numbers (%ld)\n",k);
-        //PGFEM_Comm_abort (Comm);
-      } else k++;
-    }
-  }
-
-  /* RENUMBER GLOBAL ID ON DOMAINS */
-  for (int i=0;i<need;i++){
-    const size_t Gnn = need_buf[i*2];
-    const size_t nod = need_buf[i*2+1];
-    const size_t Gnn_Gid_idx = Gnn*(ndofn+1) + 1;
-    for (long j=0;j<ndofn;j++){
-      if(node[nod].id_map[mp_id].id[j] <= 0){
-        /* BC overrides periodicity */
-        node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
-      } else {
-	assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
-        node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
-      }
-    }
-  }
-
-  for (auto i=0;i<nn;i++){
-    if (node[i].Pr == -1) continue;
-    for (auto j=0;j<ndofn;j++){
-      if(node[i].id_map[mp_id].id[j] <= 0){
-        /* BC overrides periodicity */
-        node[i].id_map[mp_id].Gid[j] = node[i].id_map[mp_id].id[j];
-      } else {
-        node[i].id_map[mp_id].Gid[j] = node[node[i].Pr].id_map[mp_id].Gid[j];
-      }
-    }
-  }
-
-  free(BN);
-  if(NBN > 0) free(Gnn_Gid);
-  free(need_buf);
-  free(own_buf);
-  free(recvcount);
-  free(displ);
-
-  return (NBN);
-}
-
-/**
- * Original implementation of GRedist_node
- */
-static long fallback_GRedist_node(const int nproc,
-                                  const int myrank,
-                                  const long nn,
-                                  const long ndofn,
-                                  Node *node,
-                                  const CommunicationStructure *com,
-                                  const long mp_id)
-{
-  switch (com->net->type()) {
-  case NET_ISIR:
-    return fallback_GRedist_node_ISIR(nproc, myrank, nn, ndofn, node, com, mp_id);
-    break;
-  case NET_PWC:
-    return fallback_GRedist_node_PWC(nproc, myrank, nn, ndofn, node, com, mp_id);
-    break;
-  default:
-    PGFEM_Abort();    
-  }
-  return 1;
 }
 
 /**
@@ -544,20 +385,21 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     sbuffer_pinned = true;
   }  
 
-  /* Send allocation information */
-  const int nsend = com->hints->get_nrecv();
-  const int *send = com->hints->get_recv_list();
-  for (int i = 0; i < nsend; i++) {
-    CID rid = (CID)len_owned_Gnn_Gid;
-    net->pwc(send[i], 0, 0, 0, lid, rid);
-  }
-
   /* wait for local PWC completions from above 
      receive the size of recv buffer*/
   const int nrecv = com->hints->get_nsend();
   long *len_recv_Gnn_Gid = PGFEM_calloc (long, nproc);
   for (int i = 0; i < nproc; i++) {
     len_recv_Gnn_Gid[i] = -1;
+  }
+
+  /* Send allocation information */
+  const int nsend = com->hints->get_nrecv();
+  const int *send = com->hints->get_recv_list();
+  for (int i = 0; i < nsend; i++) {
+    CID rid = (CID)len_owned_Gnn_Gid;
+    assert((long)rid);
+    net->pwc(send[i], 0, 0, 0, lid, rid);
   }
 
   net->wait_n_id(nsend, lid);
@@ -572,6 +414,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
       int p = stat.NET_SOURCE;
       /* the long values exchanged are encoded in the PWC RIDs */
       len_recv_Gnn_Gid[p] = (long)val;
+      assert(long(val));
       t_count++;
     }
   }
@@ -605,11 +448,11 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     net->pwc(send[i], sbuffer.size, &sbuffer, &net->getbuffer()[send[i]], lid, rid);
   }
 
-  /* reduce the total number of boundary nodes */
-  net->allreduce(&owned_gnn, &total_gnn, 1, NET_DT_LONG, NET_OP_SUM, com->comm);
-
   /* Wait to complete the communications */
   net->wait_n_id(nsend, lid);
+
+  /* reduce the total number of boundary nodes */
+  net->allreduce(&owned_gnn, &total_gnn, 1, NET_DT_LONG, NET_OP_SUM, com->comm);
 
   /* busy loop: Probe for message, post matching receive, do work --
      NOTE: This is a SCATTER operation. ***Therefore, we use the send
@@ -627,6 +470,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
       int source = stat.NET_SOURCE;
       long *recv_Gnn_Gid = RECI[source];
       long msg_count = len_recv_Gnn_Gid[source];
+      assert(msg_count == (long)val);
 
       /* While waiting for communication to complete, find the range of
          nodes we need to work on that are owned by the current
