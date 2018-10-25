@@ -35,14 +35,14 @@ void MMS_initial_velocity(double *v, double X, double Y, double Z, const bool is
     MMS4cm_initial_velocity(v, X, Y, Z, MMS_HE_c);
   
 }
-void MMS_pressure_volume(double *P, double *V, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
+void MMS_pressure_volume(double *P, double *V, HyperElasticity *elast, double t, double X, double Y, double Z, const bool is4cm){
   if(is4cm)
     MMS4cm_pressure_volume(P, V, elast, t, X, Y, Z, MMS4cm_c);
   else
     MMS4cm_pressure_volume(P, V, elast, t, X, Y, Z, MMS_HE_c);
 }
 
-void MMS_body_force(double *b, const HOMMAT *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm){
+void MMS_body_force(double *b, const HOMMAT *hommat, HyperElasticity *elast, double t, double X, double Y, double Z, const bool is4cm){
   if(t<0.0)
     b[0] = b[1] = b[2] = 0.0;
   if(is4cm)

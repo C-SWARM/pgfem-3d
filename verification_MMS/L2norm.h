@@ -33,7 +33,6 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
 
     const int mat = elem[e].mat[2];
 
-    ELASTICITY elast;
     MATERIAL_ELASTICITY mat_e;
 
     set_properties_using_E_and_nu(&mat_e,hommat[mat].E,hommat[mat].nu);
@@ -43,8 +42,9 @@ void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, doubl
     mat_e.kappa = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
     mat_e.devPotFlag = hommat[mat].devPotFlag;
     mat_e.volPotFlag = hommat[mat].volPotFlag;
-
-    construct_elasticity(&elast, &mat_e, 1);
+    
+    HyperElasticity elast;
+    elast.construct_elasticity(&mat_e, true);
     
     long nne = elem[e].toe;
     long *nod = aloc1l(nne);

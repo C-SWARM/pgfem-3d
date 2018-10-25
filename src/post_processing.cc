@@ -90,7 +90,7 @@ void post_processing_compute_stress_3f_ip(FEMLIB *fe, int e, double *S_in, HOMMA
 void post_processing_compute_stress4CM(FEMLIB *fe, int e, int ip, double *S, double *Jnp1,
                                        HOMMAT *hommat, Element *elem, EPS *eps)
 {
-  int compute_stiffness = 0;
+  bool compute_stiffness = false;
 
   Constitutive_model *m = &(eps[e].model[ip]);
   Tensor<2,3,double> Fnp1, eFnp1;

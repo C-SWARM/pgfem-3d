@@ -16,7 +16,7 @@ using pgfem3d::Solver;
 #ifndef VERIFICATION_USING_MMS
 #define INTG_ORDER 0
 
-void MMS_body_force(double *b, const HOMMAT  *hommat, ELASTICITY *elast, double t, double X, double Y, double Z, const bool is4cm)
+void MMS_body_force(double *b, const HOMMAT  *hommat, HyperElasticity *elast, double t, double X, double Y, double Z, const bool is4cm)
 {
   b[0] = 0.0;
   b[1] = 0.0;
@@ -37,7 +37,7 @@ void DISP_resid_body_force_el(double *f,
                               const Node *node,
                               double dt, 
                               double t,
-                              ELASTICITY *elast,
+                              HyperElasticity *elast,
                               bool is4cm)
 {
   const int mat = elem[ii].mat[2];
@@ -77,7 +77,7 @@ void DISP_resid_w_inertia_el(double *f,
                              const HOMMAT *hommat,
                              const Node *node, const double *dts, double t,
                              double *r_2, double* r_1, double *r_0, double alpha,
-                             ELASTICITY *elast,
+                             HyperElasticity *elast,
                              const bool is4cm)
 {
   const int mat = elem[ii].mat[2];
@@ -87,7 +87,7 @@ void DISP_resid_w_inertia_el(double *f,
   #ifdef VERIFICATION_USING_MMS
     if(!is4cm){
       MATERIAL_ELASTICITY mat_e;
-      elast = new ELASTICITY;
+      elast = new HyperElasticity;
       set_properties_using_E_and_nu(&mat_e,hommat[mat].E,hommat[mat].nu);
       mat_e.m01 = hommat[mat].m01;
       mat_e.m10 = hommat[mat].m10;
@@ -95,8 +95,7 @@ void DISP_resid_w_inertia_el(double *f,
       mat_e.kappa      = hommat[mat].E/(3.0*(1.0-2.0*hommat[mat].nu));
       mat_e.devPotFlag = hommat[mat].devPotFlag;
       mat_e.volPotFlag = hommat[mat].volPotFlag;
-
-      construct_elasticity(elast, &mat_e, 1);
+      elast->construct_elasticity(&mat_e, true);
     }
   #endif    
 
@@ -153,7 +152,6 @@ void DISP_resid_w_inertia_el(double *f,
   
   #ifdef VERIFICATION_USING_MMS
     if(!is4cm){
-      destruct_elasticity(elast);
       delete elast;
     }
   #endif   
@@ -249,7 +247,7 @@ int residual_with_inertia(FEMLIB *fe,
   SUPP sup = load->sups[mp_id];
 
   bool is4cm = false; 
-  ELASTICITY *elast = NULL;
+  HyperElasticity *elast = NULL;
   
   if(opts->analysis_type == CM || opts->analysis_type == CM3F){
     elast = (fv->eps[eid].model[0].param)->cm_elast;
@@ -293,7 +291,7 @@ int residual_with_inertia(FEMLIB *fe,
    case CM:   //intended to flow
    case CM3F:
      {
-       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,dts[DT_NP1],t);
+       err += residuals_el_constitutive_model_w_inertia(fe,be,r_e,r_n_a,r_n_1_a,grid,mat,fv,sol,load,crpl,opts,mp,dts,mp_id,t);
 
        for(long a = 0; a<ndofe; a++)
          be[a] -= f_i[a]; // - (1.0-alpha)*dt and - alpha*dt are included in be[a]

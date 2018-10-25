@@ -975,30 +975,32 @@ long Newton_Raphson_with_LS(double *solve_time,
     double tmp  = ss(fv->BS_f,fv->BS_f,com->DomDof[myrank]);
     com->net->allreduce(&tmp,&Gss_temp,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
     double LS1 = 1./2.*Gss_temp;
+    
+    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
+    // Pressure and volume change THETA
 
-    /* Pressure and volume change THETA */
-
-    switch(opts->analysis_type){
-     case FS_CRPL:
-     case FINITE_STRAIN:
-      press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
-                   mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
-      break;
-     case MINI:
-      MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                         fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-      break;
-     case MINI_3F:
-      MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
-                            fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
-      break;
-     case TF:
-        update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
-      break;
-     case CM3F:
-      constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
-     default:
-      break;
+      switch(opts->analysis_type){
+       case FS_CRPL:
+       case FINITE_STRAIN:
+        press_theta (grid->ne,fv->ndofn,fv->npres,grid->element,grid->node,fv->d_u,fv->dd_u,load->sups[mp_id],mat->matgeom,
+                     mat->hommat,fv->eps,fv->sig,iter,sol->nor_min,dt,crpl,opts,mp_id);
+        break;
+       case MINI:
+        MINI_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                           fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+        break;
+       case MINI_3F:
+        MINI_3f_update_bubble(grid->element,grid->ne,grid->node,fv->ndofn,load->sups[mp_id],
+                              fv->eps,fv->sig,mat->hommat,fv->d_u,fv->dd_u,iter,mp_id);
+        break;
+       case TF:
+          update_3f_NR(grid,mat,fv,load,opts,mp_id,dts,sol->alpha);
+        break;
+       case CM3F:
+        constitutive_model_update_NR(grid, mat, fv, load, opts, mp, mp_id, dts, sol->alpha);
+       default:
+        break;
+      }
     }
     
     /*************************/

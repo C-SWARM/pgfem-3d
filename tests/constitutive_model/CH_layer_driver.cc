@@ -337,7 +337,6 @@ int ch_output_ts(const Constitutive_model *m,
 int main(int argc, char **argv)
 {
   int err = 0;
-  const double alpha = 0.5;
   const int nstep = 20;
 
   /* parse command line */
@@ -363,7 +362,6 @@ int main(int argc, char **argv)
 
   double F0[tensor] = {0};
   double jumpu[tensor] = {0};
-  void *ctx = NULL;
   if (err) goto exit_main;
 
   for (int i = 0; i < nstep; i++) {
@@ -373,11 +371,13 @@ int main(int argc, char **argv)
 
     /* run the integration algorithm */
     assert(p != NULL && "p can't be null");
-    err += construct_model_context(&ctx, p->type, F0, opt->dt, alpha,NULL,-1);
-    err += p->integration_algorithm(&m, ctx);
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(F0);
+    cm_ctx.set_time_steps_ss(opt->dt);
+
+    err += p->integration_algorithm(&m, cm_ctx);
     err += p->update_state_vars(&m);
     err += ch_output_ts(&m, jumpu, opt->normal, F0, opt->dt, out);
-    err += p->destroy_ctx(&ctx);
     if (err) break;
   }
 

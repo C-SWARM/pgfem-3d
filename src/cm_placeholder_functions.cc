@@ -62,7 +62,7 @@ int cm_get_lam_p(const Constitutive_model *m,
 }
 
 int cm_compute_null_dMdu(const Constitutive_model *m,
-                         const void *ctx,
+                         CM_Ctx &cm_ctx,
                          const double *Grad_op,
                          const int nne,
                          const int ndofn,

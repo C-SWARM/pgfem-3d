@@ -11,7 +11,7 @@
  *   Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+#include "config.h"
 #endif
 
 #include "allocation.h"
@@ -95,14 +95,14 @@ static void get_F(const double t,
 }
 
 static int write_data_point(FILE *f,
-                            const void *ctx,
+                            CM_Ctx &cm_ctx,
                             const Constitutive_model *m,
                             const double t)
 {
   int err = 0;
   double sig[9] = {};
   double J = det3x3(m->vars_list[0][m->model_id].Fs[1].m_pdata);
-  err += m->param->update_elasticity(m, ctx, NULL, sig, 0);  
+  err += m->param->update_elasticity(m, cm_ctx, NULL, sig, 0);  
   fprintf(f,"%e\t%e\t%e\n", t, sig[8], J);
   return err;
 }
@@ -148,17 +148,19 @@ int main(int argc, char **argv)
   const double dt = 5.0;
   double t = dt;
   double F[9] = {0};
-  void *ctx = NULL;
   const int n_step = 20;
   for (int i = 0; i < n_step; i++) {
     printf("STEP [%d]=================================\n",i);
     get_F(t,mat.nu, F);
-    err += j2d_plasticity_model_ctx_build(&ctx, F, dt,-1.0, NULL, NULL, NULL, 0, -1);;
-    err += m.param->integration_algorithm(&m, ctx);
+
+    CM_Ctx cm_ctx;
+    cm_ctx.set_tensors_ss(F);
+    cm_ctx.set_time_steps_ss(dt);  
+              
+    err += m.param->integration_algorithm(&m, cm_ctx);
     err += m.param->update_state_vars(&m);
-    //err += write_data_point(stdout,ctx,&m,t);
-    err += write_data_point(out,ctx,&m,t);
-    err += m.param->destroy_ctx(&ctx);
+    //err += write_data_point(stdout,cm_ctx,&m,t);
+    err += write_data_point(out,cm_ctx,&m,t);
     t += dt;
     /* printf("\n"); */
   }
