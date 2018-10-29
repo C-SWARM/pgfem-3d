@@ -85,7 +85,7 @@ class CM_Ctx
     double x,y,z,t;
     CM_Ctx(){
       F = eFnpa = hFn = hFnp1 = NULL;
-      dt = dtn;
+      dt = dtn = {};
       alpha = -1.0;
       is_coulpled_with_thermal = false;
       npa = 1;
