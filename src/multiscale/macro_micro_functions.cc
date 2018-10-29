@@ -44,7 +44,7 @@ int compute_n_job_and_job_sizes(const MultiscaleCommon *c,
   return err;
 }
 
-int start_microscale_server(const MultiscaleComm *mscom,
+int start_microscale_server(const MultiscaleComm *mscom, //deprecated
                 const PGFEM_ms_job_intercomm *ic,
                 Microscale *microscale,
                 const int mp_id)
@@ -121,7 +121,7 @@ int start_microscale_server(const MultiscaleComm *mscom,
   return err;
 }
 
-int micro_job_master(const MultiscaleComm *mscom,
+int micro_job_master(const MultiscaleComm *mscom,//deprecated
 		     const int idx,
 		     const int buff_size,
 		     char *in_buffer,
@@ -151,7 +151,7 @@ int micro_job_master(const MultiscaleComm *mscom,
   return err;
 }
 
-int micro_job_slave(const MultiscaleComm *mscom,
+int micro_job_slave(const MultiscaleComm *mscom, //deprecated
 		    Microscale *micro,const int mp_id)
 {
   int err = 0;
@@ -211,7 +211,7 @@ int microscale_compute_job(const int idx,
 }
 
 /******** Main Macroscale interface functions *********/
-int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
+int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic, //deprecated
 				  const Macroscale *macro,
 				  const int job_type,
 				  const double *loc_sol,
@@ -276,7 +276,7 @@ int start_macroscale_compute_jobs(const PGFEM_ms_job_intercomm *ic,
   return err;
 }
 
-int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list,
+int finish_macroscale_compute_jobs(MS_COHE_JOB_INFO *job_list, //deprecated
 				   Macroscale *macro,
 				   MultiscaleServerContext *send,
 				   MultiscaleServerContext *recv)

@@ -433,6 +433,16 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
   free(job_buf_sizes);
 }
 
+void find_job_sizes_from_map(const Macroscale *macro,int *jobs_ROM, int *pde_jobs) {
+  int i;
+  for (i = 0; i < macro->nce ; i++ ) {
+    if (macro->opts->methods[i] == 1) { pde_jobs++;}
+    else {jobs_ROM++;}
+  }
+
+}
+
+
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 						 const MultiscaleComm *mscom)
 {
