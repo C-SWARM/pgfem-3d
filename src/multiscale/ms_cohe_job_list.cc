@@ -248,7 +248,7 @@ int update_group_ms_cohe_job_list(const long nce,
   return err;
 }/* update_group_ms_cohe_job_list() */
 
-int compute_ms_cohe_tan_res(const int compute_micro_eq,
+int compute_ms_cohe_tan_res(const int compute_micro_eq, //deprecated
                             const CommunicationStructure *com,
                             MS_COHE_JOB_INFO *job_list,
                             SparseSystem *macro_solver,
