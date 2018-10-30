@@ -80,6 +80,9 @@ private:
   }
 
   struct photon_config_t cfg;
+
+  const char *fi_socket = "sockets";
+  const char *fi_psm2 = "psm2";
   
   // Workspace for tracking remote buffer metadata
   Buffer *wbuf;
