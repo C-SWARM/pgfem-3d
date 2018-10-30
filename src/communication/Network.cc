@@ -73,7 +73,9 @@ Network::Create(const PGFem3D_opt& opts)
     char* network_type;
     network_type = std::getenv("PGFEM3D_NET");
     if (network_type != nullptr && strcmp(network_type, "pwc") == 0) {
-      PGFEM_printf("[%d] Trying to use PWC Network from env\n", myrank);
+      if (myrank == 0) {
+	PGFEM_printf("[%d] Trying to use PWC Network from env\n", myrank);
+      }
 #ifdef HAVE_PHOTON
       return new pwc::PhotonNetwork();
 #else
@@ -81,7 +83,9 @@ Network::Create(const PGFem3D_opt& opts)
       PGFEM_Abort();
 #endif
     } else {
-      PGFEM_printf("[%d] Trying to use ISIR Network by default\n", myrank);
+      if (myrank == 0) {
+	PGFEM_printf("[%d] Trying to use ISIR Network by default\n", myrank);
+      }
 #ifdef HAVE_PGFEM_MPI
       return new isir::MPINetwork();
 #else

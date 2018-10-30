@@ -19,12 +19,31 @@ using namespace pgfem3d::net::pwc;
 PhotonNetwork::PhotonNetwork()
   : PWCNetwork()
 {
+  photon_cfg_backend_t backend = PHOTON_BACKEND_DEFAULT;
+  char *fi_provider = (char*)fi_socket;
+  
+  // Lookup some environment variable that affect the Photon init behavior
+  char *env_backend = std::getenv("PGFEM3D_PWC_BACKEND");
+  if (env_backend != nullptr &&
+      !strcmp(env_backend, PHOTON_BACKEND_TO_STRING[PHOTON_BACKEND_VERBS])) {
+    backend = PHOTON_BACKEND_VERBS;
+  }
+  else if (env_backend != nullptr &&
+	   !strcmp(env_backend, PHOTON_BACKEND_TO_STRING[PHOTON_BACKEND_FI])) {
+    backend = PHOTON_BACKEND_FI;
+  }
+  
+  char *env_prov = std::getenv("PGFEM3D_PWC_FI_PROV");
+  if (env_prov != nullptr && !strcmp(env_prov, fi_psm2)) {
+    fi_provider = (char*)fi_psm2;
+  }
+  
   memset(&cfg, 0, sizeof(cfg));
   cfg.ibv.eth_dev        = "mlnx0";
   cfg.ibv.ib_dev         = "mlx4_0+mlx5_0+qib0+hfi1_0";
   cfg.ibv.ud_gid_prefix  = "ff0e::ffff:0000:0000";
   cfg.ugni.bte_thresh    = -1;
-  cfg.fi.provider        = "sockets";
+  cfg.fi.provider        = fi_provider;
   cfg.cap.max_cid_size   = -1;
   cfg.cap.small_msg_size = -1;
   cfg.cap.small_pwc_size = -1;
@@ -38,7 +57,7 @@ PhotonNetwork::PhotonNetwork()
   cfg.cap.use_rcq        =  1;
   cfg.attr.comp_order    = PHOTON_ORDER_DEFAULT;
   cfg.meta_exch          = PHOTON_EXCH_MPI;
-  cfg.backend            = PHOTON_BACKEND_DEFAULT;
+  cfg.backend            = backend;
   cfg.coll               = PHOTON_COLL_IFACE_PWC;
 
   int rc = photon_init(&cfg);
