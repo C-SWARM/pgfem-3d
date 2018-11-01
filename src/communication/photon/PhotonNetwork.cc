@@ -37,13 +37,19 @@ PhotonNetwork::PhotonNetwork()
   if (env_prov != nullptr && !strcmp(env_prov, fi_psm2)) {
     fi_provider = (char*)fi_psm2;
   }
-  
+ 
+  char *env_dev = std::getenv("PGFEM3D_PWC_FI_DEV");
+  if (env_dev != nullptr) {
+    fi_dev = env_dev;
+  }
+ 
   memset(&cfg, 0, sizeof(cfg));
   cfg.ibv.eth_dev        = "mlnx0";
   cfg.ibv.ib_dev         = "mlx4_0+mlx5_0+qib0+hfi1_0";
   cfg.ibv.ud_gid_prefix  = "ff0e::ffff:0000:0000";
   cfg.ugni.bte_thresh    = -1;
   cfg.fi.provider        = fi_provider;
+  cfg.fi.eth_dev         = fi_dev;
   cfg.cap.max_cid_size   = -1;
   cfg.cap.small_msg_size = -1;
   cfg.cap.small_pwc_size = -1;

@@ -83,7 +83,8 @@ private:
 
   const char *fi_socket = "sockets";
   const char *fi_psm2 = "psm2";
-  
+  const char *fi_dev = NULL; 
+ 
   // Workspace for tracking remote buffer metadata
   Buffer *wbuf;
 };
