@@ -560,7 +560,7 @@ int CP_PARAM::compute_d2udj2(const Constitutive_model *m,
 }
 
 /// If drdtau is denormal it is set to zero. Any double precision number (64 bits)
-/// is considered as denormal if it is smaller than ±2.23×10^308 
+/// is considered as denormal if it is smaller than 2.2310^308 
 /// https://software.intel.com/en-us/node/523328 
 inline double compute_drdtau(const double gamma_dot_0,
                              const double mm,
@@ -1035,7 +1035,7 @@ int CP_PARAM::read_param(FILE *in)
                         param[PARAM_tol_hardening],
                         param[PARAM_tol_M],
                         param[PARAM_computer_zero],
-                        param[PARAM_max_subdivision]);    
+                        param_idx[PARAM_max_subdivision]);    
   }
   else // use default
   {
