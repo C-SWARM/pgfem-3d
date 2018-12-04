@@ -1005,6 +1005,8 @@ int single_scale_main(int argc,char *argv[])
     
     // set for surface tractions
     double *nodal_forces = NULL;
+    FILE *fp_rf = NULL;
+
     SURFACE_TRACTION_ELEM *ste = NULL;
     int n_feats = 0;
     int n_sur_trac_elem = 0;
@@ -1032,6 +1034,11 @@ int single_scale_main(int argc,char *argv[])
                                    n_sur_trac_elem,ste,
                                    n_feats,loads,fv[mp_id_M].eps,
                                    nodal_forces, mp_id_M);
+      if(n_feats>0 && myrank ==0){
+        char rf_fname[2048];
+        sprintf(rf_fname, "%s/rf.%d.txt", options.opath, options.restart + 1);
+        fp_rf = fopen(rf_fname, "w");
+      }
 
       double tmp_sum = 0.0;
       for(int i=0; i<fv[mp_id_M].ndofd; i++){
@@ -1297,10 +1304,13 @@ int single_scale_main(int argc,char *argv[])
             com[mp_id_M].net->allreduce(NET_IN_PLACE,sur_forces,n_feats*ndim,
 					NET_DT_DOUBLE,NET_OP_SUM,com[mp_id_M].comm);
             if(myrank == 0){
-              PGFEM_printf("Forces on marked features:\n");
-              print_array_d(PGFEM_stdout, sur_forces, n_feats*ndim,
-                            n_feats,ndim);
-              fflush(PGFEM_stdout);
+              for(int ia=0; ia<n_feats; ia++){
+                PGFEM_fprintf(fp_rf,"%.17e ", time_steps.times[tim]);
+                for(int ib=0; ib<ndim; ib++)
+                  PGFEM_fprintf(fp_rf,"%.17e ", sur_forces[ndim*ia+ib]);
+
+                PGFEM_fprintf(fp_rf,"\n");
+              }
             }
           }
           free(sur_forces);
@@ -1331,6 +1341,8 @@ int single_scale_main(int argc,char *argv[])
     {
       destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
       free(nodal_forces);
+      if(n_feats>0 && myrank==0)
+        fclose(fp_rf);
     }
     if(pmr!=NULL) free(pmr);
   }
