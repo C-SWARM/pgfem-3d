@@ -69,8 +69,10 @@ public:
   void progress(int *flag, CID *comp, Status *status, void (*cb)(CID));
   void wait_n(int count);
   void wait_n_id(int count, const CID& id);
-
+  void probe_n(int count);
+  
   Buffer* getbuffer();
+  Buffer* getmetadata();
   
 private:
   static void Check(int rc) {
@@ -87,6 +89,7 @@ private:
  
   // Workspace for tracking remote buffer metadata
   Buffer *wbuf;
+  Buffer *wmeta;
 };
 
 }

@@ -357,34 +357,63 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
   int **send_id = PGFEM_calloc(int*, nproc);
   double **receive_val = PGFEM_calloc(double*, nproc);
   double **send_val = PGFEM_calloc(double*, nproc);
-
+  Buffer sbuf_id, sbuf_val, rbuf_id, rbuf_val;
+  
   Buffer *rbuffers = PGFEM_calloc (Buffer, nproc*2);
   Buffer *sbuffers = PGFEM_calloc (Buffer, nproc*2);
 
+  /* Determing total backing buffer size for rbuf and sbuf */
+  size_t n_size = 0;
+  for (int i=0; i<nproc; i++) {
+    const int n_val = n_SR[i];
+    if (n_val > 0) {
+      n_size += n_val;
+    }
+  }
+  sbuf_id.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(int, n_size, net,
+							       &sbuf_id.key));
+  sbuf_id.size = sizeof(int)*n_size;
+  sbuf_val.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(double, n_size, net,
+								&sbuf_val.key));
+  sbuf_val.size = sizeof(double)*n_size;
+
+  rbuf_id.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(int, n_size, net,
+							       &rbuf_id.key));
+  rbuf_id.size = sizeof(int)*n_size;
+  rbuf_val.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(double, n_size, net,
+								&rbuf_val.key));
+  rbuf_val.size = sizeof(double)*n_size;
+  
   int *p_src_dest = &src_dest[0];
   int n_proc_comm = 0;
-  for(int i=0; i<nproc; i++){
+  int n_id_offset = 0;
+  int n_val_offset = 0;
+  for (int i=0; i<nproc; i++) {
     const int n_val = n_SR[i];
     if(n_val > 0){ /* I will send & recieve from this process */
       /* allocate space to recieve */
-      receive_id[i] = PGFEM_calloc_pin(int, n_val, net, &rbuffers[2*i].key);
-      receive_val[i] = PGFEM_calloc_pin(double, n_val, net, &rbuffers[2*i+1].key);
+      receive_id[i] = reinterpret_cast<int*> (rbuf_id.addr + n_id_offset);
+      receive_val[i] = reinterpret_cast<double*> (rbuf_val.addr + n_val_offset);
 
       rbuffers[2*i].addr = reinterpret_cast<uintptr_t> (receive_id[i]);
       rbuffers[2*i].size = sizeof(int) * n_val;
-
+      rbuffers[2*i].key = rbuf_id.key;
+      
       rbuffers[2*i+1].addr = reinterpret_cast<uintptr_t> (receive_val[i]);
       rbuffers[2*i+1].size = sizeof(double) * n_val;
-
+      rbuffers[2*i+1].key = rbuf_val.key;
+      
       /* allocate and populate stuff to send */
-      send_id[i] = PGFEM_calloc_pin(int, n_val, net, &sbuffers[2*i].key);
-      send_val[i] = PGFEM_calloc_pin(double, n_val, net, &sbuffers[2*i+1].key);
-
+      send_id[i] = reinterpret_cast<int*> (sbuf_id.addr + n_id_offset);
+      send_val[i] = reinterpret_cast<double*> (sbuf_val.addr + n_val_offset);
+      
       sbuffers[2*i].addr = reinterpret_cast<uintptr_t> (send_id[i]);
       sbuffers[2*i].size = sizeof(int) * n_val;
+      sbuffers[2*i].key = sbuf_id.key;
 
       sbuffers[2*i+1].addr = reinterpret_cast<uintptr_t> (send_val[i]);
       sbuffers[2*i+1].size = sizeof(double) * n_val;
+      sbuffers[2*i+1].key = sbuf_val.key;
 
       int *p_send_id = send_id[i];
       double *p_send_val = send_val[i];
@@ -397,6 +426,8 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
       }
 
       n_proc_comm++;
+      n_id_offset = sizeof(int)*n_val;
+      n_val_offset = sizeof(double)*n_val;
     } else {
       receive_id[i] = NULL;
       receive_val[i] = NULL;
@@ -422,7 +453,7 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[2*i], sizeof(Buffer)*2, NET_DT_BYTE,
-	wbuffers, sizeof(Buffer)*2, NET_DT_BYTE, i, com->comm);
+		wbuffers, sizeof(Buffer)*2, NET_DT_BYTE, i, com->comm);
   }
 
   /* remove myrank from number of comm procs */
@@ -503,13 +534,16 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
   }
   repeat++;
 
-  for (int i = 0; i < 2 * nproc; i++) {
-    if(rbuffers[i].addr != 0)
-      net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
-    if(sbuffers[i].addr != 0)
-      net->unpin(reinterpret_cast<void *> (sbuffers[i].addr), sbuffers[i].size);
-  }
+  net->unpin(reinterpret_cast<void *> (sbuf_id.addr), sbuf_id.size);
+  net->unpin(reinterpret_cast<void *> (sbuf_val.addr), sbuf_val.size);
+  net->unpin(reinterpret_cast<void *> (rbuf_id.addr), rbuf_id.size);
+  net->unpin(reinterpret_cast<void *> (rbuf_val.addr), rbuf_val.size);
 
+  dealoc1l((void*)sbuf_id.addr);
+  dealoc1l((void*)sbuf_val.addr);
+  dealoc1l((void*)rbuf_id.addr);
+  dealoc1l((void*)rbuf_val.addr);
+  
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
 
@@ -518,12 +552,6 @@ static int _bounding_element_communicate_damage_PWC(const int n_be,
   free(n_SR);
   free(src_dest);
 
-  for(int i=0; i<nproc; i++){
-    free(receive_id[i]);
-    free(receive_val[i]);
-    free(send_id[i]);
-    free(send_val[i]);
-  }
   free(receive_id);
   free(receive_val);
   free(send_id);
