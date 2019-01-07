@@ -218,7 +218,7 @@ int multi_scale_main(int argc, char* argv[])
     {
       if (options.custom_micro == 1) {
         char filenameMS[1024];
-        char in_dat[1024];
+        char in_dat[1020];
         sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
         sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
         read_simulation_methods(filenameMS,micro->opts);
