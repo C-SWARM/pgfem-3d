@@ -1596,7 +1596,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
-  Buffer rbuf, sbuf;
+  Buffer rbuf;
   CID lid = 0xcafebabe;
 
   /* clear the number of communication */
@@ -1627,26 +1627,13 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     net->pwc(s_idx, 0, 0, 0, lid, rid);
   }
 
-  /* Determine total space needed for send buffer */
-  size_t s_size = 0;
-  for (int i = 0; i < comm->Ns; i++){
-    int KK = comm-> Nss[i];
-    s_size += comm->AS[KK];
-  }
-  sbuf.addr = reinterpret_cast<uintptr_t>(PGFEM_calloc_pin(long, s_size, net, &sbuf.key));
-  sbuf.size = sizeof(long)*s_size;
-  
   comm->SGRId = PGFEM_calloc (long*, nproc);
   Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
-  int n_send_offset = 0;
   for (int i = 0; i < comm->Ns; i++) {
     int KK = comm-> Nss[i];
-    /* need to duplicate SGRId data, one for computation one pinned for exchange */
-    comm->SGRId[KK] = PGFEM_calloc (long, comm->AS[KK]);
-    sbuffers[KK].addr = sbuf.addr + n_send_offset;
+    comm->SGRId[KK] = PGFEM_calloc_pin (long, comm->AS[KK], net, &sbuffers[KK].key);
+    sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
-    sbuffers[KK].key = sbuf.key;
-    n_send_offset += sizeof(long)*comm->AS[KK];
   }
   
   /* wait for local PWC completions from above */
@@ -1707,7 +1694,6 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     for (int j = 0; j < comm->S[KK]; j++){
       for (int k = 0; k < ap[AA[KK][j]]; k++){
         comm->SGRId[KK][II] = ID[AA[KK][j]][k];
-	((long*)sbuffers[KK].addr)[II] = ID[AA[KK][j]][k];
         II++;
       }
     }
@@ -1767,10 +1753,8 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   net->barrier(com->comm);
   
   net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
-  net->unpin(reinterpret_cast<void *> (sbuf.addr), sbuf.size);
 
   dealoc1l((void*)rbuf.addr);
-  dealoc1l((void*)sbuf.addr);
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
   dealoc1l(RECI);
