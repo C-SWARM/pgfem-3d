@@ -1690,13 +1690,11 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       nor = nor2 = 10.0;
 
       // Newton Raphson iteration with Line search
-      int ART_temp = ART;
       INFO = Newton_Raphson_with_LS(solve_time,stiffmat_loc_time,residuals_loc_time,alpha,
-                                    &NOR,&gam,&ART_temp,&iter,grid,mat,fv,sol,load,com,
+                                    &NOR,&gam,&ART,&iter,grid,mat,fv,sol,load,com,
                                     crpl,opts,mp,mp_id,NR_t->times,dts,
                                     tim,sp.step_size,sp.step_id,&usage,time_steps->tim);
 
-      ART = ART_temp;
       if(INFO!=0)
       {
         is_sub_cvg = 0;
