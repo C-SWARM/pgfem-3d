@@ -85,7 +85,8 @@ enum tensor_names {
 enum param_names {
   PARAM_yf_M,       // Yield function parameters
   PARAM_yf_alpha,   //   :
-  PARAM_flr_m,      // Flow rule parameters
+  PARAM_flr_m_d,    // Flow rule parameters
+  PARAM_flr_m_v,    // Flow rule parameters  
   PARAM_flr_gamma0, //   :
   PARAM_hr_a1,      // Hardening rule parameters
   PARAM_hr_a2,      //   :
@@ -95,6 +96,7 @@ enum param_names {
   PARAM_c_Gamma,    //   :
   PARAM_d_B,        // Transition rule parameters
   PARAM_d_pcb,      //   :
+  PARAM_d_m,        //   :  
   PARAM_mu_0,       // Shear modulus parameters
   PARAM_mu_1,       //   :
   PARAM_K_p0,       // Bulk modulus parameters
@@ -791,7 +793,8 @@ const
   set_properties_poro_visco_plasticity(this->cm_mat->mat_pvp,
                                        param[PARAM_yf_M],
                                        param[PARAM_yf_alpha],
-                                       param[PARAM_flr_m],
+                                       param[PARAM_flr_m_d],
+                                       param[PARAM_flr_m_v],                                       
                                        param[PARAM_flr_gamma0],
                                        param[PARAM_hr_a1],
                                        param[PARAM_hr_a2],
@@ -801,6 +804,7 @@ const
                                        param[PARAM_c_Gamma],
                                        param[PARAM_d_B],
                                        param[PARAM_d_pcb],
+                                       param[PARAM_d_m],
                                        param[PARAM_mu_0],
                                        param[PARAM_mu_1],
                                        param[PARAM_K_p0],
