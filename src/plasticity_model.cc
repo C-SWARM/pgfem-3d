@@ -199,6 +199,8 @@ int CP_PARAM::reset_state_vars(Constitutive_model *m)
   double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
   Fs[TENSOR_Fnp1]  = Fs[TENSOR_Fn];
   Fs[TENSOR_pFnp1] = Fs[TENSOR_pFn];
+  Fs[TENSOR_gamma_dot] = Fs[TENSOR_gamma_dot_n];
+  Fs[TENSOR_tau]       = Fs[TENSOR_tau_n];   
   state_var[VAR_g_np1] = state_var[VAR_g_n];
   state_var[VAR_L_np1] = state_var[VAR_L_n];
   return err;
