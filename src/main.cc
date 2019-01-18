@@ -240,7 +240,7 @@ int print_results(Grid *grid,
   int mp_id_M = -1;
 
   for(int ia = 0; ia<mp.physicsno; ia++)
-    {
+  {
     if(mp.physics_ids[ia] == MULTIPHYSICS_MECHANICAL)
     {
       mp_id_M = ia;
@@ -317,7 +317,7 @@ int print_results(Grid *grid,
     if(opts->vis_format == VIS_VTK)
     {
       if(myrank == 0)
-        err += VTK_write_multiphysics_master(pmr,mp.total_write_no,opts,tim,myrank,com->nproc);
+        err += VTK_write_multiphysics_master(pmr,mp.total_write_no,opts,tim,myrank,COM[0].nproc);
 
       err += VTK_write_multiphysics_vtu(grid,mat,FV,load,pmr,mp.total_write_no,opts,tim,myrank);
 
