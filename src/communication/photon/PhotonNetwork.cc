@@ -52,8 +52,8 @@ PhotonNetwork::PhotonNetwork()
   cfg.fi.eth_dev         = fi_dev;
   cfg.cap.max_cid_size   = -1;
   cfg.cap.small_msg_size = -1;
-  cfg.cap.small_pwc_size = -1;
-  cfg.cap.eager_buf_size = -1;
+  cfg.cap.small_pwc_size =  1024;
+  cfg.cap.eager_buf_size =  8;
   cfg.cap.pwc_buf_size   = -1;
   cfg.cap.ledger_entries =  8; // This can be small as PGFem3D primarily does
                                // simple point-to-point scatter/gather RDMA right now
@@ -91,6 +91,15 @@ PhotonNetwork::PhotonNetwork()
   // Allocate workspace
   assert(cfg.nproc);
   wbuf = new Buffer[cfg.nproc];
+  wmeta = new Buffer[cfg.nproc];
+
+  Buffer buf;
+  pin(wbuf, sizeof(Buffer)*cfg.nproc, &buf.key);
+  buf.addr = reinterpret_cast<uintptr_t>(wbuf);
+  buf.size = sizeof(Buffer)*cfg.nproc;
+
+  allgather(&buf, sizeof(Buffer), NET_DT_BYTE, wmeta,
+	    sizeof(Buffer), NET_DT_BYTE, NET_COMM_WORLD);
 }
 
 PhotonNetwork::~PhotonNetwork()
@@ -337,29 +346,47 @@ void PhotonNetwork::progress(int *flag, CID *comp, Status *status, void (*cb)(CI
 
 void PhotonNetwork::wait_n(int count)
 {
-  do {
+  while (count) {
     photon_cid rid;
     int src, flag;
     Check(photon_probe_completion(PHOTON_ANY_SOURCE, &flag, NULL, &rid, &src, NULL,
 				  PHOTON_PROBE_EVQ));
     if (flag)
       --count;
-  } while (count);
+  }
 }
 
 void PhotonNetwork::wait_n_id(int count, const CID& id)
 {
-  do {
+  while (count) {
     photon_cid rid;
     int src, flag;
     Check(photon_probe_completion(PHOTON_ANY_SOURCE, &flag, NULL, &rid, &src, NULL,
 				  PHOTON_PROBE_EVQ));
     if (flag && rid.u64 == id)
       --count;
-  } while (count);
+  }
 }
 
-Buffer *PhotonNetwork::getbuffer()
+void PhotonNetwork::probe_n(int count)
+{
+  while (count) {
+    int flag;
+    CID val;
+    Status stat;
+    probe(&flag, &val, &stat, 0);
+    if (flag) {
+      --count;
+    }
+  }
+}
+
+Buffer* PhotonNetwork::getbuffer()
 {
   return wbuf;
+}
+
+Buffer* PhotonNetwork::getmetadata()
+{
+  return wmeta;
 }

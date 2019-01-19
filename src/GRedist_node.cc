@@ -335,6 +335,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
 					const long mp_id)
 {
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  Buffer rbuf;
   CID lid = 0xcafebeee;
 
   long owned_gnn = 0;
@@ -419,16 +420,29 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     }
   }
 
-  /* allocate and pin recv buffers */
-  long **RECI = PGFEM_calloc (long*, nproc);
-  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
+  /* Determine how much we will receive */
+  size_t r_size = 0;
   for (int i = 0; i < nproc; i++) {
     long JJ = 0;
     if (len_recv_Gnn_Gid[i] <= 0) JJ = 1; else JJ = len_recv_Gnn_Gid[i];
-    RECI[i] = PGFEM_calloc_pin (long, JJ,
-				net, &rbuffers[i].key);
+    r_size += JJ;
+  }
+  rbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, r_size,
+							    net, &rbuf.key));
+  rbuf.size = sizeof(long)*r_size;
+  
+  /* allocate and pin recv buffers */
+  long **RECI = PGFEM_calloc (long*, nproc);
+  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
+  int n_rec_offset = 0;
+  for (int i = 0; i < nproc; i++) {
+    long JJ = 0;
+    if (len_recv_Gnn_Gid[i] <= 0) JJ = 1; else JJ = len_recv_Gnn_Gid[i];
+    RECI[i] = reinterpret_cast<long*> (rbuf.addr + n_rec_offset);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
+    rbuffers[i].key = rbuf.key;
+    n_rec_offset += sizeof(long)*JJ;
   }
 
   net->barrier(com->comm);
@@ -525,12 +539,11 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   /* cleanup */
   if(sbuffer_pinned)
     net->unpin(reinterpret_cast<void *> (sbuffer.addr), sbuffer.size);
-  for (int i = 0; i < nproc; i++) {
-    net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
-  }
+  net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
 
+  dealoc1((void*)rbuf.addr);
   dealoc1l(rbuffers);
-  dealoc2l(RECI,nproc);
+  dealoc1l(RECI);
   free(owned_Gnn_Gid);
   return total_gnn;
 }

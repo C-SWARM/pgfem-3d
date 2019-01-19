@@ -209,8 +209,10 @@ public:
   virtual void progress(int *flag, CID *comp, Status *status, void (cb)(CID)) = 0;
   virtual void wait_n(int count) = 0;
   virtual void wait_n_id(int count, const CID& id) = 0;
-
+  virtual void probe_n(int count) = 0;
+  
   virtual Buffer* getbuffer() = 0;
+  virtual Buffer* getmetadata() = 0;
 };
 } // namespace net
 } // namespace pgfem3d

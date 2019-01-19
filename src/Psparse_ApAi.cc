@@ -1242,8 +1242,9 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  Buffer rbuf, sbuf, lbuf;
   CID lid = 0xcafebabe;
-
+  
   /* How many numbers I will send */
   for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to
     comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
@@ -1257,40 +1258,77 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   long **SEND = NULL;
   long **RECI = NULL;
 
-  if(comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                       //similar with SEND
-  RECI = PGFEM_calloc (long*, nproc);                                           //and RECI
+  if (comm->Ns > 0) SEND = PGFEM_calloc (long*, comm->Ns);                      //similar with SEND
+  if (comm->Nr > 0) RECI = PGFEM_calloc (long*, comm->Nr);                      //and RECI
 
   /* =======================================================*/
 
-  /* Allocate recieve buffer */
-  Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
-  for (int i = 0; i < nproc; i++) {
-    int n_rec = 0;
-    if (comm->AR[i] == 0) n_rec = 1; else n_rec = comm->AR[i];
-
-    RECI[i] = PGFEM_calloc_pin (long, n_rec,
-				net, &rbuffers[i].key);
+  /* First find out how much recv space we need */
+  size_t r_size = 0;
+  for (int i = 0; i < comm->Nr; i++) {
+    int r_idx = comm->Nrr[i];
+    r_size += comm->AR[r_idx];
+  }
+  rbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, r_size,
+							    net, &rbuf.key));
+  rbuf.size = sizeof(long)*r_size;
+  
+  /* Allocate and set rbuffer offsets */
+  Buffer *rbuffers = PGFEM_calloc_pin (Buffer, comm->Nr, net, &lbuf.key);
+  int n_rec_offset = 0;
+  for (int i = 0; i < comm->Nr; i++) {
+    int r_idx = comm->Nrr[i];
+    int n_rec = comm->AR[r_idx];
+    RECI[i] = reinterpret_cast<long*> (rbuf.addr + n_rec_offset);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*n_rec;
+    rbuffers[i].key = rbuf.key;
+    n_rec_offset += sizeof(long)*n_rec;
   }
 
-  /* Exchange receive buffers */
-  for (int i = 0; i < nproc; i++) {
-    net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-        net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+  /* Exchange receive buffer offsets */
+  for (int i = 0; i < comm->Nr; i++) {
+    int r_idx = comm->Nrr[i];
+    lbuf.addr = reinterpret_cast<uintptr_t>(&rbuffers[i]);
+    lbuf.size = sizeof(Buffer);
+    Buffer rbuf;
+    rbuf.addr = net->getmetadata()[r_idx].addr + sizeof(Buffer)*com->rank;
+    rbuf.size = sizeof(Buffer);
+    rbuf.key = net->getmetadata()[r_idx].key;
+
+    CID rid = (CID)rbuf.addr;
+    net->pwc(r_idx, sizeof(Buffer), &lbuf, &rbuf, lid, rid);
   }
 
+  net->wait_n_id(comm->Nr, lid);
+  
+  /* First find out how much send space we need */
+  size_t s_size = 0;
+  for (int i = 0; i < comm->Ns; i++) {
+    int s_idx = comm->Nss[i];
+    s_size += comm->AS[s_idx];
+  }
+  sbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, s_size,
+							    net, &sbuf.key));
+  sbuf.size = sizeof(long)*s_size;
+
+  /* Wait until we get all remote metadata from our peers */
+  net->probe_n(comm->Ns);
+  net->barrier(com->comm);
+  
   /* Post sends */
-  Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
+  Buffer *sbuffers = PGFEM_calloc (Buffer, comm->Ns);
+  int n_send_offset = 0;
   for (int i = 0; i < comm->Ns; i++){
     int s_idx = comm->Nss[i];                                                   //idx is # being sent to i
     int n_send = comm->AS[s_idx];                                               //send is the amount to send for idx things
 
-    SEND[i] = PGFEM_calloc_pin (long, n_send,
-				net, &sbuffers[s_idx].key);
-    sbuffers[s_idx].addr = reinterpret_cast<uintptr_t> (SEND[i]);
-    sbuffers[s_idx].size = sizeof(long)*n_send;
-
+    SEND[i] = reinterpret_cast<long*> (sbuf.addr + n_send_offset);
+    sbuffers[i].addr = reinterpret_cast<uintptr_t> (SEND[i]);
+    sbuffers[i].size = sizeof(long)*n_send;
+    sbuffers[i].key = sbuf.key;
+    n_send_offset += sizeof(long)*n_send;
+    
     /* populate send buffer */
     for (int j = 0; j < comm->S[s_idx]; j++){
       SEND[i][j] = LG[AA[s_idx][j]]; /* global? row id */                       //write letters
@@ -1298,7 +1336,8 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     }
 
     CID rid = (CID)n_send;
-    net->pwc(s_idx, sbuffers[s_idx].size, &sbuffers[s_idx], &net->getbuffer()[s_idx], lid, rid);
+    net->pwc(s_idx, sbuffers[i].size, &sbuffers[i],
+	     &net->getbuffer()[s_idx], lid, rid);
   }
 
   /* Compute the number of rows to receive */
@@ -1306,68 +1345,50 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     long n_rows_recv = 0;
     for (int i = 0; i < comm->Nr;i++)
       n_rows_recv += comm->R[comm->Nrr[i]];
-
+    
     *NRr = n_rows_recv;
-    if(n_rows_recv > 0){
-      *GNRr = aloc1l (n_rows_recv);
-      *ApRr = aloc1l (n_rows_recv);
-    }
+    *GNRr = aloc1l (n_rows_recv);
+    *ApRr = aloc1l (n_rows_recv);
   }
 
   /* THIS IS BAD! RGID/RAp should only be comm->Nr long, however
      propagating this fix is not trivial */
   comm->RGID = PGFEM_calloc (long*, nproc);
   comm->RAp = PGFEM_calloc (long*, nproc);
-
-  int *Nr_idx = PGFEM_calloc (int, nproc);
-
+  
   for (int i = 0; i < comm->Nr; i++) {
     int KK = comm->Nrr[i];
-    Nr_idx[KK] = i;
     comm->RGID[KK] = PGFEM_calloc (long, comm->R[KK]);
     comm->RAp[KK] = PGFEM_calloc (long, comm->R[KK]);
   }
 
   /* Wait to complete the communications */
   net->wait_n_id(comm->Ns, lid);
+  net->probe_n(comm->Nr);
+  net->barrier(com->comm);
   
   /* Unpack it */
-  int t_count = 0;
-  while (t_count < comm->Nr) {
-    int flag;
-    CID val;
-    Status stat;
-    net->probe(&flag, &val, &stat, 0);
-    if (flag) {
-      int KK = stat.NET_SOURCE;
-      int II = 0;
-      for (int i = 0; i < Nr_idx[KK]; i++)
-        II += comm->R[comm->Nrr[i]];
-      for (int j = 0; j < comm->R[KK]; j++){
-        (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[KK][j];
-        (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[KK][comm->R[KK]+j];
-      }
-      t_count++;
+  int II = 0;
+  for (int i = 0; i < comm->Nr; i++){
+    int KK = comm->Nrr[i];
+    for (int j = 0; j < comm->R[KK]; j++) {
+      (*GNRr)[II+j] = comm->RGID[KK][j] = RECI[i][j];
+      (*ApRr)[II+j] = comm->RAp[KK][j] = RECI[i][comm->R[KK]+j];
     }
+    II += comm->R[KK];
   }
   
-  net->barrier(com->comm);
-
   /* Deallocate */
-  for (int i = 0; i < nproc; i++) {
-    net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
-  }
+  net->unpin(reinterpret_cast<void *> (rbuffers), sizeof(Buffer)*comm->Nr);
+  net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
+  net->unpin(reinterpret_cast<void *> (sbuf.addr), sbuf.size);
 
-  for (int i = 0; i < comm->Ns; i++){
-    int s_idx = comm->Nss[i];
-    net->unpin(reinterpret_cast<void *> (sbuffers[s_idx].addr), sbuffers[s_idx].size);
-  }
-
+  dealoc1l((void*)rbuf.addr);
+  dealoc1l((void*)sbuf.addr);
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
-  dealoc2l(SEND,comm->Ns);
-  dealoc2l(RECI,nproc);
-  dealoc1i(Nr_idx);
+  dealoc1l(SEND);
+  dealoc1l(RECI);
 
   return 0;
 }
@@ -1575,12 +1596,13 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
+  Buffer rbuf;
   CID lid = 0xcafebabe;
 
   /* clear the number of communication */
   memset(comm->AS,0,nproc*sizeof(long));
   memset(comm->AR,0,nproc*sizeof(long));
-
+  
   /* Allocate and compute quantity information to send */
   comm->SAp = PGFEM_calloc (long*, nproc);
   for (int i = 0; i < comm->Ns; i++) {
@@ -1607,14 +1629,13 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
 
   comm->SGRId = PGFEM_calloc (long*, nproc);
   Buffer *sbuffers = PGFEM_calloc (Buffer, nproc);
-  for (int i = 0; i < comm->Ns; i++){
+  for (int i = 0; i < comm->Ns; i++) {
     int KK = comm-> Nss[i];
-    comm->SGRId[KK] = PGFEM_calloc_pin (long, comm->AS[KK],
-				        net, &sbuffers[KK].key);
+    comm->SGRId[KK] = PGFEM_calloc_pin (long, comm->AS[KK], net, &sbuffers[KK].key);
     sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
   }
-
+  
   /* wait for local PWC completions from above */
   net->wait_n_id(comm->Ns, lid);
  
@@ -1631,19 +1652,32 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
       t_count++;
     }
   }
- 
+
   /* Allocate recieve buffer */
+  size_t r_size = 0;
+  for (int i = 0; i < nproc; i++) {
+    if (comm->AR[i] == 0)
+      r_size += 1;
+    else
+      r_size += comm->AR[i];
+  }
+  rbuf.addr = reinterpret_cast<uintptr_t>(PGFEM_calloc_pin(long, r_size, net, &rbuf.key));
+  rbuf.size = sizeof(long)*r_size;
+
+  /* Set receive offsets into backing buffer */
   long **RECI = PGFEM_calloc (long*, nproc);
   Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
+  int n_rec_offset = 0;
   for (int i = 0; i < nproc; i++) {
     int JJ = 0;
     if (comm->AR[i] == 0) JJ = 1; else JJ = comm->AR[i];
-    RECI[i] = PGFEM_calloc_pin (long, JJ,
-				net, &rbuffers[i].key);
+    RECI[i] = reinterpret_cast<long*>(rbuf.addr + n_rec_offset);
     rbuffers[i].addr = reinterpret_cast<uintptr_t> (RECI[i]);
     rbuffers[i].size = sizeof(long)*JJ;
+    rbuffers[i].key = rbuf.key;
+    n_rec_offset += sizeof(long)*JJ;
   }
-
+  
   net->barrier(com->comm);
 
   /* Exchange receive buffers */
@@ -1668,7 +1702,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   }/* end i < comm->Ns */
 
   /****************/
-  /* Recieve data */
+  /* Receive data */
   /****************/
   {
     int KK = 0;
@@ -1718,18 +1752,12 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
 
   net->barrier(com->comm);
   
-  for (int i = 0; i < nproc; i++) {
-    net->unpin(reinterpret_cast<void *> (rbuffers[i].addr), rbuffers[i].size);
-  }
+  net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
 
-  for (int i = 0; i < comm->Ns; i++){
-    int KK = comm->Nss[i];
-    net->unpin(reinterpret_cast<void *> (sbuffers[KK].addr), sbuffers[KK].size);
-  }
-
+  dealoc1l((void*)rbuf.addr);
   dealoc1l(rbuffers);
   dealoc1l(sbuffers);
-  dealoc2l(RECI,nproc);
+  dealoc1l(RECI);
   dealoc1i(Nr_idx);
 
   return 0;
