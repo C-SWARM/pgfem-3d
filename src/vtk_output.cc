@@ -871,7 +871,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
   PGFEM_fprintf(out,"<PPointData>\n");
   for(int ia=0; ia<datano; ia++)
   {
-    if(pD[ia].is_point_data) // point data
+    if(pD[ia].is_point_data == 1) // point data
     {
       PGFEM_fprintf(out,"<PDataArray type=\"%s\" Name=\"%s\""
                     " NumberOfComponents=\"%d\"/>\n", pD[ia].data_type,
@@ -885,7 +885,7 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
   PGFEM_fprintf(out,"<PCellData>\n");
   for(int ia=0; ia<datano; ia++)
   {
-    if(pD[ia].is_point_data != 1) // cell data
+    if(pD[ia].is_point_data == 0) // cell data
     {
       PGFEM_fprintf(out,"<PDataArray type=\"%s\" Name=\"%s\""
                     " NumberOfComponents=\"%d\"/>\n", pD[ia].data_type,
@@ -893,6 +893,10 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                     pD[ia].m_col);
     }
   }
+  
+  PGFEM_fprintf(out,"<PDataArray type=\"Int64\" Name=\"CellProperty\""
+                    " NumberOfComponents=\"1\"/>\n");
+                      
   PGFEM_fprintf(out,"</PCellData>\n");
 
   /* Points */
@@ -908,6 +912,27 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
   return err;
 }
 
+/// write cell data info
+///
+/// \param[in] grid an object containing all mesh data
+/// \param[in] out file pointer for writing vtk file
+/// \return non-zero on internal error
+int VTK_CellProperty(Grid *grid,
+                     FILE *out)
+{
+  int err = 0;
+  Element *elem = grid->element;
+  
+  PGFEM_fprintf(out,"<DataArray type=\"Int64\" Name=\"CellProperty\""
+                    " NumberOfComponents=\"1\" format=\"ascii\">\n");
+                  
+  for (int i=0; i<grid->ne; i++)
+    PGFEM_fprintf(out,"%ld\n",elem[i].pr);
+
+  PGFEM_fprintf(out,"</DataArray>\n");
+
+  return err;
+}
 
 /// write mesh info
 ///
@@ -1017,7 +1042,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
   PGFEM_fprintf(out,"<PointData>\n");
   for(int ia=0; ia<datano; ia++)
   {
-    if(pD[ia].is_point_data) // point data
+    if(pD[ia].is_point_data == 1) // point data
       err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
   }
   PGFEM_fprintf(out,"</PointData>\n");
@@ -1025,9 +1050,12 @@ int VTK_write_multiphysics_vtu(Grid *grid,
   PGFEM_fprintf(out,"<CellData>\n");
   for(int ia=0; ia<datano; ia++)
   {
-    if(pD[ia].is_point_data != 1) // Cell data
+    if(pD[ia].is_point_data == 0) // Cell data
       err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
   }
+  
+  VTK_CellProperty(grid, out);
+  
   PGFEM_fprintf(out,"</CellData>\n");
 
   err += VTK_write_mesh(grid, out);
@@ -1849,9 +1877,10 @@ int VTK_construct_PMR(Grid *grid,
              sprintf(pmr[cnt_pmr].variable_name, "EffectiveStress");
              break;
             case MECHANICAL_Var_CellProperty:
-             pmr[cnt_pmr].write_vtk = VTK_write_data_CellProperty;
-             sprintf(pmr[cnt_pmr].data_type, "Int64");
-             sprintf(pmr[cnt_pmr].variable_name, "CellProperty");
+              pmr[cnt_pmr].is_point_data = -1;
+             //pmr[cnt_pmr].write_vtk = VTK_write_data_CellProperty;
+             //sprintf(pmr[cnt_pmr].data_type, "Int64");
+             //sprintf(pmr[cnt_pmr].variable_name, "CellProperty");
              break;
             case MECHANICAL_Var_Damage:
              pmr[cnt_pmr].write_vtk = VTK_write_data_Damage;
