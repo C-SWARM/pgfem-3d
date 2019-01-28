@@ -20,21 +20,23 @@
 using pgfem3d::net::NetworkObject;
 using pgfem3d::net::Network;
 
-namespace pgfem3d::net {
-  datatype_t datatype_byte;
-  datatype_t datatype_char;
-  datatype_t datatype_int;
-  datatype_t datatype_long;
-  datatype_t datatype_double;
+namespace pgfem3d {
+  namespace net {
+    datatype_t datatype_byte;
+    datatype_t datatype_char;
+    datatype_t datatype_int;
+    datatype_t datatype_long;
+    datatype_t datatype_double;
 
-  op_t op_null;
-  op_t op_min;
-  op_t op_max;
-  op_t op_sum;
-  op_t op_bor;
+    op_t op_null;
+    op_t op_min;
+    op_t op_max;
+    op_t op_sum;
+    op_t op_bor;
 
-  PGFem3D_Comm NET_COMM_WORLD;
-}
+    PGFem3D_Comm NET_COMM_WORLD;
+  } // namespace net
+}   // namespace pgfem3d
 
 NetworkObject::~NetworkObject()
 {
