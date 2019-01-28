@@ -800,9 +800,9 @@ const
   int err = 0;
   // get pointer to parameter data
   double *param     = this->model_param;
-  int    *param_idx = this->model_param_index;
+  //int    *param_idx = this->model_param_index;
   assert(param     != NULL); // check the pointer
-  assert(param_idx != NULL); // check the pointer
+  // assert(param_idx != NULL); // check the pointer
 
   // scan to non-blank/comment line 
   err += scan_for_valid_line(in);
