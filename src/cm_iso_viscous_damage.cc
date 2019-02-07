@@ -260,8 +260,8 @@ const
   {
     err += update_damage_elasticity(mat_d, elasticity, 
                                     w_npa,
-                                    H_npa,
                                     is_damaged,
+                                    H_npa,
                                     cm_ctx.dt, 
                                     cm_ctx.eFnpa, 
                                     compute_stiffness);
@@ -282,8 +282,8 @@ const
   
       err += update_damage_elasticity(mat_d, elasticity, 
                                       w_npa,
-                                      H_npa,
                                       is_damaged,
+                                      H_npa,
                                       cm_ctx.dt, 
                                       eF.data, 
                                       compute_stiffness);
@@ -291,8 +291,8 @@ const
     else{
       err += update_damage_elasticity(mat_d, elasticity, 
                                       w_npa,
-                                      H_npa,
                                       is_damaged,
+                                      H_npa,
                                       cm_ctx.dt, 
                                       Fs[TENSOR_Fnp1].m_pdata, 
                                       compute_stiffness);
