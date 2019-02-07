@@ -832,8 +832,10 @@ const
   assert(!feof(in) && "EOF reached prematurely");
   
   this->cm_mat->mat_d = new MATERIAL_CONTINUUM_DAMAGE;
-  set_damage_parameters(this->cm_mat->mat_d, param[PARAM_P1],  param[PARAM_P2],
-                              param[PARAM_Yin], param[PARAM_mu], param[PARAM_w_max]);                              
+  set_split_damage_parameters(this->cm_mat->mat_d, param[PARAM_P1],  param[PARAM_P2],
+                              param[PARAM_Yin], param[PARAM_mu], param[PARAM_w_max],
+                              param[PARAM_da], param[PARAM_db], param[PARAM_va], param[PARAM_vb]);
+
   return err;
 }
 
