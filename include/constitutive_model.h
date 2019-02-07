@@ -224,6 +224,7 @@ class Model_parameters
       case ISO_VISCOUS_DAMAGE:
       case J2_PLASTICITY_DAMAGE:
       case POROVISCO_PLASTICITY:
+      case ISO_VISCOUS_SPLIT_DAMAGE:
       case MANUFACTURED_SOLUTIONS:
         break; // no action
       default:
