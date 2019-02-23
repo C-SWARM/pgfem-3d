@@ -23,8 +23,8 @@ using pgfem3d::solvers::SparseSystem;
 using namespace pgfem3d::solvers::trilinos;
 
 
-TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
-             const int Ai[], const long rowsPerProc[], long maxit, double err)
+TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const GO Ap[],
+             const GO Ai[], const long rowsPerProc[], long maxit, double err)
     : SparseSystem(),
       _comm(comm),
       _Ai(Ai),
@@ -47,7 +47,7 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[
   
   const auto localrows = rowsPerProc[rank];
 
-  _gRows = new int[localrows];
+  _gRows = new GO[localrows];
   _nCols = new size_t[localrows];
   
   // Prefix sum to find the index of my first row, and then compute the end of
@@ -71,7 +71,7 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[
   Teuchos::RCP<const Map> map =
     Teuchos::RCP<const Map>(new Map(OT::invalid(), localrows, 0, mycomm, node));
 
-  const Teuchos::ArrayView<const int> colids(&Ai[Ap[0]], ourcols);
+  const Teuchos::ArrayView<const GO> colids(&Ai[Ap[0]], ourcols);
   Teuchos::RCP<const Map> colmap =
     Teuchos::RCP<const Map>(new Map(OT::invalid(), colids, 0, mycomm, node));
   
@@ -84,7 +84,7 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[
   _rhs = Teuchos::rcp(new MV(map, numrhs));
   _solution = Teuchos::rcp(new MV(map, numrhs));
 
-  createPreconditioner(opts.trilxml);
+  createPreconditioner();
   createSolver(opts.solver, opts.maxit, err, opts.kdim);
 }
 
@@ -109,12 +109,12 @@ TrilinosWrap::assemble()
 }
 
 void
-TrilinosWrap::add(int nrows, int ncols[], int const rids[], const int cids[],
-           const double vals[])
+TrilinosWrap::add(int nrows, int ncols[], GO const rids[], const GO cids[],
+           const ST vals[])
 {
   int idx=0;
   for (int i = 0; i < nrows; ++i){
-    const Teuchos::ArrayView<const int> _cids(cids + idx, ncols[i]);
+    const Teuchos::ArrayView<const GO> _cids(cids + idx, ncols[i]);
     const Teuchos::ArrayView<const ST> _vals(vals + idx, ncols[i]);
     
     _localk->sumIntoGlobalValues(rids[i], _cids, _vals);
@@ -128,13 +128,13 @@ TrilinosWrap::resetPreconditioner()
 }
 
 bool
-TrilinosWrap::isLocalRow(int i) const
+TrilinosWrap::isLocalRow(GO i) const
 {
   return (_ilower <= i and i < _iupper + 1);
 }
 
 void
-TrilinosWrap::createSolver(int type, int maxit, double err, int kdim)
+TrilinosWrap::createSolver(int type, int maxit, ST err, int kdim)
 {
   // The belos options should probably have their own xml read
   _belosList=Teuchos::rcp(new Teuchos::ParameterList());
@@ -154,25 +154,44 @@ TrilinosWrap::createSolver(int type, int maxit, double err, int kdim)
 }
 
 void
-TrilinosWrap::createPreconditioner(const char *xmlpath)
+TrilinosWrap::createPreconditioner()
 {
   switch(_prectype) {
   case PRECOND_MUELU: {
-    _mueluList = Teuchos::getParametersFromXmlFile(std::string(xmlpath));
+    // Find a way to use the Trilinos xml reader elsewhere in
+    // PGFem3D or have to pass these options in or hardcode
+    _mueluList = Teuchos::rcp(new Teuchos::ParameterList());
+    _mueluList->set("verbosity", "none");
+    _mueluList->set("max levels",4);
+    _mueluList->set("coarse: max size", 10);
+    _mueluList->set("multigrid algorithm", "sa");
+    _mueluList->set("smoother: type", "RELAXATION");
+    _mueluList->sublist("smoother: params").set("relaxation: type", "Symmetric Gauss-Seidel");
+    _mueluList->set("coarse: type", "KLU2");
   }
     break;
     
   case PRECOND_IFPACK2: {
+    // Find a way to use the Trilinos xml reader elsewhere in
+    // PGFem3D or have to pass these options in or hardcode
     _ifpackList = Teuchos::rcp(new Teuchos::ParameterList());
-    _ifpackList = Teuchos::getParametersFromXmlFile(std::string(xmlpath));
-    _ifpacktype = _ifpackList->get<std::string>("Preconditioner");
+    _ifpacktype = "SCHWARZ";
+    _ifpackList->set("inner preconditioner name", "RILUK");
+    _ifpackList->set("schwarz: combine mode", "Zero");
+    _ifpackList->set("schwarz: overlap level", 0);
+    _ifpackList->set("schwarz: use reordering", false);
+    _ifpackList->sublist("schwarz: reordering list").set("order_method","rcm");
 
-    // Ifpack::Relaxation will complain if this is in the parameter
-    // list so remove it.
-    _ifpackList->remove("Preconditioner");
-
+    Teuchos::ParameterList inner = _ifpackList->sublist("inner preconditioner parameters");
+    inner.set("fact: absolute threshold", 0.0);
+    inner.set("fact: relative threshold", 0.0);
+    inner.set("fact: iluk level-of-fill", 1.0);
+    inner.set("fact: relax value", 0.0);
+    
     Ifpack2::Factory factory;
-    _ifpackprec = factory.create(_ifpacktype,_k.getConst());
+    //_ifpackprec = factory.create(_ifpacktype,_k.getConst());
+    const Teuchos::RCP<const TCrsMatrix> dummy = Teuchos::null;
+    _ifpackprec = factory.create(_ifpacktype,dummy);
     _ifpackprec->setParameters(*_ifpackList);
   }
     break;
@@ -186,7 +205,7 @@ TrilinosWrap::zero()
 }
 
 void
-TrilinosWrap::set(double val)
+TrilinosWrap::set(ST val)
 {
   _localk->resumeFill();
 
@@ -197,7 +216,7 @@ TrilinosWrap::set(double val)
   
   int idx = 0;
   for (int i = 0, e = (_iupper - _ilower + 1); i < e; ++i) {
-    const Teuchos::ArrayView<const int> _cids(&_Ai[idx], _nCols[i]);
+    const Teuchos::ArrayView<const GO> _cids(&_Ai[idx], _nCols[i]);
     const Teuchos::ArrayView<const ST> _val(&vals[0], _nCols[i]);
     
     if (_localk->getProfileType() == Tpetra::DynamicProfile) {
@@ -410,7 +429,7 @@ TrilinosWrap::setupSolverEnv()
   }
   
   if (_preconditioner != Teuchos::null) {
-    _problem->setLeftPrec(_preconditioner);
+    _problem->setRightPrec(_preconditioner);
   }
   
   _solver =
@@ -434,4 +453,3 @@ TrilinosWrap::solve(SOLVER_INFO *info)
   
   return err;
 }
-

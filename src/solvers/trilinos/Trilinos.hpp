@@ -28,16 +28,18 @@
 #include <MueLu_TpetraOperator.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
 
+using ST =                                                 double;
+using LO =                                                    int;
+using GO =                                                    int;
+using Node =          KokkosClassic::DefaultNode::DefaultNodeType;
+using TCrsMatrix =               Tpetra::CrsMatrix<ST,LO,GO,Node>;
+using TRowMatrix =               Tpetra::RowMatrix<ST,LO,GO,Node>;
+using Map =                               Tpetra::Map<LO,GO,Node>;
+using MV =                     Tpetra::MultiVector<ST,LO,GO,Node>;
+using OP =                        Tpetra::Operator<ST,LO,GO,Node>;
+using prec_type =          Ifpack2::Preconditioner<ST,LO,GO,Node>;
+using OT =          Teuchos::OrdinalTraits<Tpetra::global_size_t>;
 
-typedef double                                                 ST;
-typedef Tpetra::CrsMatrix<ST,int,int>                  TCrsMatrix;
-typedef Tpetra::RowMatrix<ST,int,int>                  TRowMatrix;
-typedef KokkosClassic::DefaultNode::DefaultNodeType          Node;
-typedef Tpetra::Map<int,int,Node>                             Map;
-typedef Tpetra::MultiVector<ST,int>                            MV;
-typedef Tpetra::Operator<ST,int>                               OP;
-typedef Ifpack2::Preconditioner<ST,int,int>             prec_type;
-typedef Teuchos::OrdinalTraits<Tpetra::global_size_t> OT;
 
 struct SOLVER_INFO;
 
@@ -61,8 +63,8 @@ struct TrilinosWrap : public SparseSystem
   /// @param rowsPerProc The row partitioning for this solver.
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
-  TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const int Ai[], const long rowsPerProc[], long maxit, double err);
+  TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const GO Ap[],
+        const GO Ai[], const long rowsPerProc[], long maxit, double err);
 
   ~TrilinosWrap();
 
@@ -70,8 +72,8 @@ struct TrilinosWrap : public SparseSystem
   void assemble();
 
   /// Add partial sums to values.
-  void add(int nrows, int ncols[], int const rids[], const int cids[],
-           const double vals[]);
+  void add(int nrows, int ncols[], GO const rids[], const GO cids[],
+           const ST vals[]);
 
   /// Reset the prconditioner.
   void resetPreconditioner();
@@ -80,7 +82,7 @@ struct TrilinosWrap : public SparseSystem
   ///
   /// @param i          The global row index to check.
   /// @returns          TRUE if the row is local, FALSE otherwise.
-  bool isLocalRow(int i) const;
+  bool isLocalRow(GO i) const;
   
   /// Zero the underlying matrix data.
   void zero();
@@ -114,13 +116,13 @@ struct TrilinosWrap : public SparseSystem
 
  private:
   /// Encapsulate creation of the solver.
-  void createSolver(int type, int maxit, double err, int kdim);
+  void createSolver(int type, int maxit, ST err, int kdim);
 
   /// Encapsulate the creation of the preconditioner.
-  void createPreconditioner(const char* xmlpath);
+  void createPreconditioner();
 
   /// A utility function that will set all of the values in the matrix to val.
-  void set(double val);
+  void set(ST val);
 
   /** setup the TRILINOS solver environment */
   int setupSolverEnv();
@@ -159,11 +161,11 @@ struct TrilinosWrap : public SparseSystem
   const MPI_Comm _comm;                         //!<
   const int * const _Ai;                        //!< reference to column array
 
-  int *_gRows = nullptr;                        //!< Local row indices
+  GO *_gRows = nullptr;                        //!< Local row indices
   size_t *_nCols = nullptr;                        //!< Number of columns per row
 
-  int _ilower = 0;                              //!< Row lower bound
-  int _iupper = 0;                              //!< Row upper bound
+  GO _ilower = 0;                              //!< Row lower bound
+  GO _iupper = 0;                              //!< Row upper bound
 
   int _prectype;
   std::string _ifpacktype;
