@@ -155,7 +155,8 @@ const Option other_opts[] = {
   {{"exa-metric",no_argument,NULL,'x'},"\n\t\tPrint exascale metric information.\n",0},
   {{"exa-debug",no_argument,NULL,'x'+9999},"\n\t\tPrint more detailed exascale metric information.\n",0},
   {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0},
-  {{"trilxml",required_argument,NULL,'t'},"Path to xml file containing Trilinos preconditioner settings.\n"}
+  {{"tril_prec_xml",required_argument,NULL,'t'},"Path to xml file containing Trilinos preconditioner settings.\n"},
+  {{"tril_sol_xml",required_argument,NULL,'b'},"Path to xml file containing Trilinos solver settings.\n"}
 };
 
 /* these options may no longer be supported/functional. They are kept
@@ -720,7 +721,11 @@ void re_parse_command_line(const int myrank,
       break;
 
      case 't':
-      options->trilxml = optarg;
+      options->tril_prec_xml = optarg;
+      break;
+
+     case 'b':
+      options->tril_sol_xml = optarg;
       break;
       
      default:

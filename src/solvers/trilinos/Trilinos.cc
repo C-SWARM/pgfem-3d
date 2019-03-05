@@ -58,9 +58,9 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const GO Ap[]
   // Generate the rows that we own (dense integer range starting at _ilower)
   std::iota(_gRows, _gRows + localrows, _ilower);
 
-  int ourcols = 0;
+  GO ourcols = 0;
   // Record the number of non-zero columns in each of the rows.
-  for (int i = 0, e = localrows; i < e; ++i) {
+  for (LO i = 0, e = localrows; i < e; ++i) {
     _nCols[i] = Ap[i + 1] - Ap[i];
     ourcols += _nCols[i];
   }
@@ -76,7 +76,7 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const GO Ap[]
     Teuchos::RCP<const Map>(new Map(OT::invalid(), colids, 0, mycomm, node));
   
 
-  const Teuchos::ArrayRCP< size_t > nCols(_nCols, 0, localrows, false); 
+  const Teuchos::ArrayRCP<size_t> nCols(_nCols, 0, localrows, false); 
   _localk =
     Teuchos::rcp(new TCrsMatrix(map, colmap, nCols, Tpetra::DynamicProfile));
   
@@ -84,6 +84,7 @@ TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const GO Ap[]
   _rhs = Teuchos::rcp(new MV(map, numrhs));
   _solution = Teuchos::rcp(new MV(map, numrhs));
 
+  setTeuchosParameters(opts.tril_prec_xml, opts.tril_sol_xml);
   createPreconditioner();
   createSolver(opts.solver, opts.maxit, err, opts.kdim);
 }
@@ -99,7 +100,7 @@ TrilinosWrap::assemble()
 {
   _localk->fillComplete();
 
-  Tpetra::Export<int,int,Node> rowexporter(_localk->getRowMap(),
+  Tpetra::Export<LO,GO,Node> rowexporter(_localk->getRowMap(),
 					   _localk->getRowMap());
   
   _k = Tpetra::exportAndFillCompleteCrsMatrix(_localk.getConst(),
@@ -109,11 +110,11 @@ TrilinosWrap::assemble()
 }
 
 void
-TrilinosWrap::add(int nrows, int ncols[], GO const rids[], const GO cids[],
+TrilinosWrap::add(LO nrows, int ncols[], GO const rids[], const GO cids[],
            const ST vals[])
 {
-  int idx=0;
-  for (int i = 0; i < nrows; ++i){
+  GO idx=0;
+  for (LO i = 0; i < nrows; ++i){
     const Teuchos::ArrayView<const GO> _cids(cids + idx, ncols[i]);
     const Teuchos::ArrayView<const ST> _vals(vals + idx, ncols[i]);
     
@@ -136,20 +137,29 @@ TrilinosWrap::isLocalRow(GO i) const
 void
 TrilinosWrap::createSolver(int type, int maxit, ST err, int kdim)
 {
-  // The belos options should probably have their own xml read
-  _belosList=Teuchos::rcp(new Teuchos::ParameterList());
-  _belosList->set("Maximum Iterations", maxit);
-  _belosList->set( "Convergence Tolerance", err );
-  _belosList->set("Num Blocks", kdim);
-  _belosList->set("Block Size", 1);
+  // If no user parameter list, do something reasonable
+  if(_belosList == Teuchos::null) {
+    _belosList = Teuchos::rcp(new Teuchos::ParameterList());
+    _belosList->set("Maximum Iterations", maxit);
+    _belosList->set("Convergence Tolerance", err );
+    _belosList->set("Num Blocks", kdim);
+    _belosList->set("Block Size", 1);
+    
+    int verbLevel = 0;
+    verbLevel+=Belos::Errors + Belos::Warnings + Belos::TimingDetails
+      + Belos::FinalSummary + Belos::StatusTestDetails + Belos::Debug;
+    
+    _belosList->set("Verbosity", verbLevel );
+    _belosList->set("Output Frequency", -1 );
+    _belosList->set("Maximum Restarts", 30);
+  }
+  else {
+    // Some things will always be overridden by PGFem3D
+    _belosList->set("Maximum Iterations", maxit);
+    _belosList->set("Convergence Tolerance", err );
+    _belosList->set("Num Blocks", kdim);
+  }
 
-  int verbLevel = 0;
-  // verbLevel+=Belos::Errors + Belos::Warnings + Belos::TimingDetails
-  // + Belos::FinalSummary + Belos::StatusTestDetails + Belos::Debug;
-
-  _belosList->set( "Verbosity", verbLevel );
-  _belosList->set( "Output Frequency", -1 );
-  _belosList->set( "Maximum Restarts", 20);
   _problem = Teuchos::rcp(new Belos::LinearProblem<ST,MV,OP>());
 }
 
@@ -158,41 +168,50 @@ TrilinosWrap::createPreconditioner()
 {
   switch(_prectype) {
   case PRECOND_MUELU: {
-    // Find a way to use the Trilinos xml reader elsewhere in
-    // PGFem3D or have to pass these options in or hardcode
-    _mueluList = Teuchos::rcp(new Teuchos::ParameterList());
-    _mueluList->set("verbosity", "none");
-    _mueluList->set("max levels",4);
-    _mueluList->set("coarse: max size", 10);
-    _mueluList->set("multigrid algorithm", "sa");
-    _mueluList->set("smoother: type", "RELAXATION");
-    _mueluList->sublist("smoother: params").set("relaxation: type", "Symmetric Gauss-Seidel");
-    _mueluList->set("coarse: type", "KLU2");
+    if(_precList == Teuchos::null) {
+      _precList = Teuchos::rcp(new Teuchos::ParameterList());
+      _precList->set("verbosity", "none");
+      _precList->set("max levels",4);
+      _precList->set("coarse: max size", 10);
+      _precList->set("multigrid algorithm", "sa");
+      _precList->set("smoother: type", "RELAXATION");
+      _precList->sublist("smoother: params").set("relaxation: type", "Symmetric Gauss-Seidel");
+      _precList->set("coarse: type", "KLU2");
+    }
   }
     break;
     
   case PRECOND_IFPACK2: {
-    // Find a way to use the Trilinos xml reader elsewhere in
-    // PGFem3D or have to pass these options in or hardcode
-    _ifpackList = Teuchos::rcp(new Teuchos::ParameterList());
-    _ifpacktype = "SCHWARZ";
-    _ifpackList->set("inner preconditioner name", "RILUK");
-    _ifpackList->set("schwarz: combine mode", "Zero");
-    _ifpackList->set("schwarz: overlap level", 0);
-    _ifpackList->set("schwarz: use reordering", false);
-    _ifpackList->sublist("schwarz: reordering list").set("order_method","rcm");
+    if(_precList == Teuchos::null) {
+      _precList = Teuchos::rcp(new Teuchos::ParameterList());
+      _ifpacktype = "SCHWARZ";
+      _precList->set("inner preconditioner name", "RILUK");
+      _precList->set("schwarz: combine mode", "Zero");
+      _precList->set("schwarz: overlap level", 0);
+      _precList->set("schwarz: use reordering", false);
+      _precList->sublist("schwarz: reordering list").set("order_method","rcm");
 
-    Teuchos::ParameterList inner = _ifpackList->sublist("inner preconditioner parameters");
-    inner.set("fact: absolute threshold", 0.0);
-    inner.set("fact: relative threshold", 0.0);
-    inner.set("fact: iluk level-of-fill", 1.0);
-    inner.set("fact: relax value", 0.0);
+      Teuchos::ParameterList inner = _precList->sublist("inner preconditioner parameters");
+      inner.set("fact: absolute threshold", 0);
+      inner.set("fact: relative threshold", 1.0);
+      inner.set("fact: iluk level-of-fill", 1.0);
+      inner.set("fact: relax value", 0.0);
+    }
+    
+    else {
+      _ifpacktype = _precList->get<std::string>("Preconditioner");
+
+      // Ifpack::Relaxation will complain if this is in the parameter
+      // list so remove it.
+      _precList->remove("Preconditioner");
+
+    }
     
     Ifpack2::Factory factory;
     //_ifpackprec = factory.create(_ifpacktype,_k.getConst());
     const Teuchos::RCP<const TCrsMatrix> dummy = Teuchos::null;
-    _ifpackprec = factory.create(_ifpacktype,dummy);
-    _ifpackprec->setParameters(*_ifpackList);
+    _ifpackprec = factory.create(_ifpacktype, dummy);
+    _ifpackprec->setParameters(*_precList);
   }
     break;
   }
@@ -210,12 +229,12 @@ TrilinosWrap::set(ST val)
   _localk->resumeFill();
 
   ST *vals = new ST[_iupper - _ilower +1];
-  for (int i = 0; i < (_iupper-_ilower+1) ; ++i) {
+  for (GO i = 0; i < (_iupper-_ilower+1) ; ++i) {
     vals[i] = val;
   }
   
-  int idx = 0;
-  for (int i = 0, e = (_iupper - _ilower + 1); i < e; ++i) {
+  GO idx = 0;
+  for (LO i = 0, e = (_iupper - _ilower + 1); i < e; ++i) {
     const Teuchos::ArrayView<const GO> _cids(&_Ai[idx], _nCols[i]);
     const Teuchos::ArrayView<const ST> _val(&vals[0], _nCols[i]);
     
@@ -375,11 +394,11 @@ TrilinosWrap::setupSolverEnv()
 {
   int err = 0;
   assert(_k->isFillComplete());
-
+  
   switch (_prectype) {
   case PRECOND_MUELU: {
     if (_mueluprec == Teuchos::null)
-      _mueluprec = MueLu::CreateTpetraPreconditioner(_k, *_mueluList);
+      _mueluprec = MueLu::CreateTpetraPreconditioner(_k, *_precList);
     else
       MueLu::ReuseTpetraPreconditioner(_k,*_mueluprec);
     
@@ -390,29 +409,7 @@ TrilinosWrap::setupSolverEnv()
     // This dynamic casting shouldn't be necessary but the
     // Ifpack2::Preconditioner base class does not have member setMatrix().
     // The derived classes inherit this from Ifpack2::Details::CanChangeMatrix.
-    // If other Ifpack2 preconditioners are used, they need to be added here
-    // until a better fix is found (writing our own preconditioner wrapper?).
-
-    if (_ifpacktype == "ILUT") {
-      typedef Ifpack2::ILUT<TRowMatrix> prec_cast;
-      (Teuchos::rcp_dynamic_cast<prec_cast, prec_type> (_ifpackprec))
-	->setMatrix(_k.getConst());
-    }
-    else if (_ifpacktype == "RILUK") {
-      typedef Ifpack2::RILUK<TRowMatrix> prec_cast;
-      (Teuchos::rcp_dynamic_cast<prec_cast, prec_type> (_ifpackprec))
-	->setMatrix(_k.getConst());
-    }
-    else if (_ifpacktype == "SCHWARZ") {
-      typedef Ifpack2::AdditiveSchwarz<TRowMatrix> prec_cast;
-      (Teuchos::rcp_dynamic_cast<prec_cast, prec_type> (_ifpackprec))
-	->setMatrix(_k.getConst());
-    }
-    else if (_ifpacktype == "RELAXATION") {
-      typedef Ifpack2::Relaxation<TRowMatrix> prec_cast;
-      (Teuchos::rcp_dynamic_cast<prec_cast, prec_type> (_ifpackprec))
-	->setMatrix(_k.getConst());
-    }
+    (Teuchos::rcp_dynamic_cast<Ifpack2::Details::CanChangeMatrix<TRowMatrix>, prec_type> (_ifpackprec))->setMatrix(_k.getConst());
     
     _ifpackprec->initialize();
     _ifpackprec->compute();
@@ -422,8 +419,7 @@ TrilinosWrap::setupSolverEnv()
   }
 
   _problem->setOperator(_k);
-  
-  bool set = _problem->setProblem(_solution,_rhs);
+  bool set = _problem->setProblem(_solution, _rhs);
   if (set == false) {
     std::cerr << "ERROR: Belos::LinearProblem failed to set up correctly" << std::endl;
   }
@@ -431,9 +427,11 @@ TrilinosWrap::setupSolverEnv()
   if (_preconditioner != Teuchos::null) {
     _problem->setRightPrec(_preconditioner);
   }
-  
+  else {
+    std::cout << "preconditioner not set" << std::endl;
+  }
   _solver =
-    Teuchos::rcp(new Belos::BlockGmresSolMgr<ST,MV,OP>( _problem, _belosList ));
+    Teuchos::rcp(new Belos::PseudoBlockGmresSolMgr<ST,MV,OP>( _problem, _belosList ));
 
   return err;
 }
@@ -452,4 +450,17 @@ TrilinosWrap::solve(SOLVER_INFO *info)
   }
   
   return err;
+}
+
+void
+TrilinosWrap::setTeuchosParameters(const char *prec_xmlpath, const char *sol_xmlpath)
+{
+  if(prec_xmlpath != NULL)
+    _precList = Teuchos::getParametersFromXmlFile(std::string(prec_xmlpath));
+  else
+    _precList = Teuchos::null;
+  if(sol_xmlpath != NULL)
+    _belosList = Teuchos::getParametersFromXmlFile(std::string(sol_xmlpath));
+  else
+    _belosList = Teuchos::null;
 }

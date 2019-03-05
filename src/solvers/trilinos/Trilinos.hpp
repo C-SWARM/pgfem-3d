@@ -18,6 +18,7 @@
 
 #include <BelosLinearProblem.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
+#include <BelosPseudoBlockGmresSolMgr.hpp>
 #include <BelosConfigDefs.hpp>
 #include <BelosTpetraAdapter.hpp>
 
@@ -27,6 +28,17 @@
 #include <MueLu.hpp>
 #include <MueLu_TpetraOperator.hpp>
 #include <MueLu_CreateTpetraPreconditioner.hpp>
+
+
+
+struct SOLVER_INFO;
+
+/**
+ * @name Structure to contain TRILINOS objects and pass them around easily
+ */
+namespace pgfem3d {
+namespace solvers {
+namespace trilinos {
 
 using ST =                                                 double;
 using LO =                                                    int;
@@ -40,15 +52,6 @@ using OP =                        Tpetra::Operator<ST,LO,GO,Node>;
 using prec_type =          Ifpack2::Preconditioner<ST,LO,GO,Node>;
 using OT =          Teuchos::OrdinalTraits<Tpetra::global_size_t>;
 
-
-struct SOLVER_INFO;
-
-/**
- * @name Structure to contain TRILINOS objects and pass them around easily
- */
-namespace pgfem3d {
-namespace solvers {
-namespace trilinos {
 
 struct TrilinosWrap;
 struct TrilinosWrap : public SparseSystem
@@ -72,7 +75,7 @@ struct TrilinosWrap : public SparseSystem
   void assemble();
 
   /// Add partial sums to values.
-  void add(int nrows, int ncols[], GO const rids[], const GO cids[],
+  void add(LO nrows, int ncols[], GO const rids[], const GO cids[],
            const ST vals[]);
 
   /// Reset the prconditioner.
@@ -95,20 +98,20 @@ struct TrilinosWrap : public SparseSystem
   /// @param rhs        Array of data for the right hand side.
   /// @param ndofd      # of degree freedom of domain
   /// @param myrank     Current process rank.
-  void printWithRHS(std::string&& basename, const double rhs[], int ndofd,
+  void printWithRHS(std::string&& basename, const ST rhs[], int ndofd,
                     int rank) const;
 
   double solveSystem(const PGFem3D_opt *opts,
-                     double *loc_rhs,
-                     double *loc_sol,
+                     ST *loc_rhs,
+                     ST *loc_sol,
                      const int tim,
                      const int iter,
                      const long *DomDof,
                      SOLVER_INFO *info);
 
   double solveSystemNoSetup(const PGFem3D_opt *opts,
-                            double *loc_rhs,
-                            double *loc_sol,
+                            ST *loc_rhs,
+                            ST *loc_sol,
                             const int tim,
                             const int iter,
                             const long *DomDof,
@@ -130,6 +133,9 @@ struct TrilinosWrap : public SparseSystem
   /** solve using the TRILINOS environment */
   int solve(SOLVER_INFO *info);
 
+  /** set preconditioner options */
+  void setTeuchosParameters(const char *prec_xmlpath, const char *sol_xmlpath);
+  
   // Teuchos::RCP is the reference counting smart pointer used throughout
   // Trilinos.
   
@@ -144,22 +150,22 @@ struct TrilinosWrap : public SparseSystem
   Teuchos::RCP<Belos::SolverManager<ST,MV,OP> >  _solver;
   
   // Trilinos parameter lists
-  Teuchos::RCP<Teuchos::ParameterList>  _belosList;
-  Teuchos::RCP<Teuchos::ParameterList> _ifpackList;
-  Teuchos::RCP<Teuchos::ParameterList>  _mueluList;
+  Teuchos::RCP<Teuchos::ParameterList> _belosList;
+  Teuchos::RCP<Teuchos::ParameterList> _precList;
+  //Teuchos::RCP<Teuchos::ParameterList>  _mueluList;
 
   // Ifpack2 Preconditioner
   Teuchos::RCP<prec_type> _ifpackprec;
 
   // MueLu Preconditioner
-  Teuchos::RCP<MueLu::TpetraOperator<ST,int,int> > _mueluprec;
+  Teuchos::RCP<MueLu::TpetraOperator<ST,LO,GO> > _mueluprec;
   
   // Preconditioner operator for either Ifpack2 or MueLu
   Teuchos::RCP<OP> _preconditioner;
 
   // Sparse matrix data relevant to the distribution of data.
   const MPI_Comm _comm;                         //!<
-  const int * const _Ai;                        //!< reference to column array
+  const GO * const _Ai;                        //!< reference to column array
 
   GO *_gRows = nullptr;                        //!< Local row indices
   size_t *_nCols = nullptr;                        //!< Number of columns per row

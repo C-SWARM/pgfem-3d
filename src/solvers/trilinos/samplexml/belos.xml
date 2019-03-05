@@ -1,0 +1,11 @@
+<ParameterList name="Belos">
+  <Parameter name="Block Size" type="int" value="1"/>
+  <Parameter name="Verbosity" type="int" value="4"/>
+  <Parameter name="Output Frequency" type="int" value="-1"/>
+  <Parameter name="Maximum Restarts" type="int" value="20"/>
+  <Parameter name="Explicit Residual Scaling" type="string" value="Norm of Initial Residual"/>
+  <Parameter name="Implicit Residual Scaling" type="string" value="Norm of Initial Residual"/>
+  <Parameter name="Explicit Residual Test" type="bool" value="true"/>
+  <Parameter name="Orthogonalization" type="string" value="DGKS"/>
+</ParameterList>
+      
