@@ -228,13 +228,19 @@ TrilinosWrap::set(ST val)
 {
   _localk->resumeFill();
 
-  ST *vals = new ST[_iupper - _ilower +1];
-  for (GO i = 0; i < (_iupper-_ilower+1) ; ++i) {
+  size_t max_per_col = 0;
+  for (LO i = 0; i < _iupper-_ilower+1; ++i) {
+    if(max_per_col < _nCols[i])
+      max_per_col = _nCols[i];
+  }
+  
+  ST *vals = new ST[max_per_col];
+  for (LO i = 0; i < max_per_col ; ++i) {
     vals[i] = val;
   }
   
   GO idx = 0;
-  for (LO i = 0, e = (_iupper - _ilower + 1); i < e; ++i) {
+  for (LO i = 0; i < (_iupper - _ilower + 1); ++i) {
     const Teuchos::ArrayView<const GO> _cids(&_Ai[idx], _nCols[i]);
     const Teuchos::ArrayView<const ST> _val(&vals[0], _nCols[i]);
     
@@ -256,7 +262,7 @@ TrilinosWrap::printWithRHS(std::string&& basename, const double rhs[], int ndofd
                     int rank) const
 {
   std::stringstream filename;
-  filename.str(basename);
+  filename.str(basename+"_"+std::to_string(rank));
   filename << "k.txt";
   
   std::ofstream os;
@@ -272,6 +278,7 @@ TrilinosWrap::printWithRHS(std::string&& basename, const double rhs[], int ndofd
     os << _ilower + i << " " << rhs[i] << "\n";
   }
   os.close();
+  //Tpetra::MatrixMarket::Writer<TCrsMatrix>::writeSparseFile(basename,_k);
 }
 
 double
@@ -431,7 +438,7 @@ TrilinosWrap::setupSolverEnv()
     std::cout << "preconditioner not set" << std::endl;
   }
   _solver =
-    Teuchos::rcp(new Belos::PseudoBlockGmresSolMgr<ST,MV,OP>( _problem, _belosList ));
+    Teuchos::rcp(new Belos::BlockGmresSolMgr<ST,MV,OP>( _problem, _belosList ));
 
   return err;
 }

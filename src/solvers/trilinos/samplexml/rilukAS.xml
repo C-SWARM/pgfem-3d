@@ -1,0 +1,31 @@
+<ParameterList name="Ifpack2">
+  <Parameter name="Preconditioner" type="string" value="SCHWARZ"/>
+
+  <!-- Subdomain Preconditioner -->
+  <Parameter name="inner preconditioner name" type="string" value="RILUK"/>
+
+  <!-- Rule for handling overlap regions: default Zero -->
+  <Parameter name="schwarz: combine mode" type="string" value="Zero"/>
+
+  <!-- Level of overlap: default 0 -->
+  <Parameter name="schwarz: overlap level" type="int" value="0"/>
+  
+  <!-- Local reordering: default false -->
+  <Parameter name="schwarz: use reordering" type="bool" value="false"/>
+  
+
+  <ParameterList name="schwarz: reordering list">
+    <!-- Local reordering type: default rcm -->
+    <Parameter name="order_method" type="string" value="rcm"/>
+  </ParameterList>
+
+  
+  <ParameterList name="inner preconditioner parameters">
+    <Parameter name="fact: iluk level-of-fill" type="int" value="1.0"/>
+    <Parameter name="fact: absolute threshold" type="double" value="0.0"/>
+    <Parameter name="fact: relative threshold" type="double" value="1.0"/>
+    <Parameter name="fact: relax value" type="double" value="0.0"/>
+  </ParameterList>
+    
+</ParameterList>
+      
