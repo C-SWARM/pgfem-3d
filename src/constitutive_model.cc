@@ -170,7 +170,7 @@ int get_nodal_temperatures(FEMLIB *fe,
     Tnp1_e[ia] = T_n + (T_np1 - T_n)*factor_np1;
   }
 
-  free(cn);
+  PGFEM_free(cn);
   return err;
 }
 

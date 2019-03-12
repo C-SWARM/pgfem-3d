@@ -191,7 +191,7 @@ void reseni_rovnic (double *a,double *x,double *y,long n,long m,long as)
     }
   }
 
-  free (av);
+  PGFEM_free (av);
 }
 
 
@@ -683,7 +683,7 @@ double energie_scr (double *a,double *x,double *b,long *adr,long *ci,long n)
   mv_scr (a,x,p,adr,ci,n);
   e = 0.5*ss(x,p,n) - ss(x,b,n);
 
-  free (p);
+  PGFEM_free (p);
   return e;
 }
 
@@ -804,5 +804,5 @@ void cg_scr (double *a,double *x,double *y,long *adr,long *ci,long n,long ni,dou
 
   /*  fclose (str); */
 
-  free (p);  free (r);  free (d);
+  PGFEM_free (p);  PGFEM_free (r);  PGFEM_free (d);
 }

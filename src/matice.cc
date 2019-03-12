@@ -158,7 +158,7 @@ void inv_I (double **A,double **I,long m)
     }
   }
 
-  free(a);free(e);free(c);
+  PGFEM_free(a);PGFEM_free(e);PGFEM_free(c);
 
 }
 

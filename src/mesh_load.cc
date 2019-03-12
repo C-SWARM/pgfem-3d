@@ -34,9 +34,9 @@ ZATNODE* build_zatnode (long ndofn,long nln)
 void destroy_zatnode(ZATNODE* zn, long nln)
 {
   for(long i=0; i<nln; i++){
-    free(zn[i].load);
+    PGFEM_free(zn[i].load);
   }
-  free(zn);
+  PGFEM_free(zn);
 }
 
 ZATELEM* build_zatelem (long ndofn,long nle)
@@ -65,7 +65,7 @@ ZATELEM* build_zatelem (long ndofn,long nle)
 void destroy_zatelem(ZATELEM* ze, long nle)
 {
   for(long i=0; i<nle; i++){
-    free(ze[i].load);
+    PGFEM_free(ze[i].load);
   }
-  free(ze);
+  PGFEM_free(ze);
 }

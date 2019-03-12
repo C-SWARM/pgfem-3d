@@ -56,37 +56,37 @@ namespace pgfem3d {
     }
     
     for (long i=0; i<nproc; i++) {
-      free(SLID[i]);
-      free(RGID[i]);
-      free(SAp[i]);
-      free(SGRId[i]);
-      free(RAp[i]);
-      free(RGRId[i]);
+      PGFEM_free(SLID[i]);
+      PGFEM_free(RGID[i]);
+      PGFEM_free(SAp[i]);
+      PGFEM_free(SGRId[i]);
+      PGFEM_free(RAp[i]);
+      PGFEM_free(RGRId[i]);
     }
     
-    free(S);
-    free(R);
-    free(AS);
-    free(AR);
-    free(SLID);
-    free(RGID);
-    free(LG);
-    free(GL);
-    free(SAp);
-    free(SGRId);
-    free(RAp);
-    free(RGRId);
-    free(Nss);
-    free(Nrr);
+    PGFEM_free(S);
+    PGFEM_free(R);
+    PGFEM_free(AS);
+    PGFEM_free(AR);
+    PGFEM_free(SLID);
+    PGFEM_free(RGID);
+    PGFEM_free(LG);
+    PGFEM_free(GL);
+    PGFEM_free(SAp);
+    PGFEM_free(SGRId);
+    PGFEM_free(RAp);
+    PGFEM_free(RGRId);
+    PGFEM_free(Nss);
+    PGFEM_free(Nrr);
     
     /* destroy maps */
     if (fast_LG_map != NULL)
-      free(fast_LG_map->maps);
+      PGFEM_free(fast_LG_map->maps);
     if (fast_GL_map != NULL)
-      free(fast_GL_map->maps);
+      PGFEM_free(fast_GL_map->maps);
     
-    free(fast_LG_map);
-    free(fast_GL_map);
+    PGFEM_free(fast_LG_map);
+    PGFEM_free(fast_GL_map);
 
     dealoc1l(send);
     dealoc1l(recv);
@@ -175,12 +175,12 @@ namespace pgfem3d {
     /* free send/recv buffers */
     for (int i = 0; i < Ns; ++i) {
       long p = Nss[i];
-      free(send[p]);
+      PGFEM_free(send[p]);
     }
     
     for (int i = 0; i < Nr; ++i) {
       long p = Nrr[i];
-      free(recv[p]);
+      PGFEM_free(recv[p]);
     }
   }
   
@@ -218,9 +218,9 @@ namespace pgfem3d {
       system->add(nrows, ncols, row_idx, col_idx, recv[proc]);
       
       /* free memory */
-      free(row_idx);
-      free(ncols);
-      free(col_idx);
+      PGFEM_free(row_idx);
+      PGFEM_free(ncols);
+      PGFEM_free(col_idx);
       
       /* increment counter */
       n_received++;
@@ -307,11 +307,11 @@ namespace pgfem3d {
     net->waitall(Ns, req_s, sta_s);
     /* Deallocate snd and rcv */
     for (i=0;i<nproc;i++) {
-      free(snd[i]);
-      free(rcv[i]);
+      PGFEM_free(snd[i]);
+      PGFEM_free(rcv[i]);
     }
-    free(snd);
-    free(rcv);
+    PGFEM_free(snd);
+    PGFEM_free(rcv);
     
     delete[] sta_s;
     delete[] sta_r;
@@ -387,12 +387,12 @@ namespace pgfem3d {
     net->waitall(Nr, req_s, sta_s);
     /* Deallocate snd and rcv */
     for (i=0;i<nproc;i++) {
-      free(snd[i]);
-      free(rcv[i]);
+      PGFEM_free(snd[i]);
+      PGFEM_free(rcv[i]);
     }
     
-    free(snd);
-    free(rcv);
+    PGFEM_free(snd);
+    PGFEM_free(rcv);
     
     delete[] sta_s;
     delete[] sta_r;

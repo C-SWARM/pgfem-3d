@@ -33,14 +33,14 @@ void destroy_sig_el(SIG* sig,
                     const long ne)
 {
   for(long i=0; i<ne; i++){
-    free(sig[i].el.o);
-    free(sig[i].el.f);
-    free(sig[i].el.d);
-    free(sig[i].el.m);
-    free(sig[i].p);
-    free(sig[i].d_p);
+    PGFEM_free(sig[i].el.o);
+    PGFEM_free(sig[i].el.f);
+    PGFEM_free(sig[i].el.d);
+    PGFEM_free(sig[i].el.m);
+    PGFEM_free(sig[i].p);
+    PGFEM_free(sig[i].d_p);
   }
-  free(sig);
+  PGFEM_free(sig);
 }
 
 SIG* build_sig_il (const long ne,
@@ -130,49 +130,49 @@ void destroy_sig_il(SIG* sig,
     switch(analysis){
      default:
       for(long j=0; j<nip; j++){
-        free(sig[i].il[j].o);
+        PGFEM_free(sig[i].il[j].o);
       }
 
-      free(sig[i].el.o);
-      free(sig[i].il);
+      PGFEM_free(sig[i].el.o);
+      PGFEM_free(sig[i].il);
       break;
 
      case ELASTIC:
      case TP_ELASTO_PLASTIC:
       for(long j=0; j<nip; j++){
-        free(sig[i].il[j].o);
+        PGFEM_free(sig[i].il[j].o);
         if(analysis == TP_ELASTO_PLASTIC){
-          free(sig[i].d_il[j].o);
+          PGFEM_free(sig[i].d_il[j].o);
 
-          free(sig[i].il[j].f);
-          free(sig[i].d_il[j].f);
+          PGFEM_free(sig[i].il[j].f);
+          PGFEM_free(sig[i].d_il[j].f);
 
-          free(sig[i].il[j].m);
-          free(sig[i].d_il[j].m);
+          PGFEM_free(sig[i].il[j].m);
+          PGFEM_free(sig[i].d_il[j].m);
 
-          free(sig[i].il[j].d);
-          free(sig[i].d_il[j].d);
+          PGFEM_free(sig[i].il[j].d);
+          PGFEM_free(sig[i].d_il[j].d);
 
-          free(sig[i].il[j].a);
-          free(sig[i].d_il[j].a);
+          PGFEM_free(sig[i].il[j].a);
+          PGFEM_free(sig[i].d_il[j].a);
         }
       }
 
       if(analysis == TP_ELASTO_PLASTIC){
-        free(sig[i].d_il);
-        free(sig[i].el.f);
-        free(sig[i].el.d);
-        free(sig[i].el.m);
+        PGFEM_free(sig[i].d_il);
+        PGFEM_free(sig[i].el.f);
+        PGFEM_free(sig[i].el.d);
+        PGFEM_free(sig[i].el.m);
       }
 
-      free(sig[i].el.o);
-      free(sig[i].il);
+      PGFEM_free(sig[i].el.o);
+      PGFEM_free(sig[i].il);
       break;
     }/* switch(analysis) */
 
-    free(sig[i].p);
-    free(sig[i].d_p);
-    free(sig[i].pn_1);
+    PGFEM_free(sig[i].p);
+    PGFEM_free(sig[i].d_p);
+    PGFEM_free(sig[i].pn_1);
   } /* for each elem */
-  free(sig);
+  PGFEM_free(sig);
 }

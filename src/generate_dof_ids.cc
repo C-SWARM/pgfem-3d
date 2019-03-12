@@ -161,7 +161,7 @@ int generate_local_dof_ids(const int nelem,
   }
 #endif
 
-  free(visited_node_dof);
+  PGFEM_free(visited_node_dof);
   if(err){
     PGFEM_Abort();
   }
@@ -210,7 +210,7 @@ int generate_global_dof_ids(const int nelem,
   }
 #endif
 
-  free(visited_node_dof);
+  PGFEM_free(visited_node_dof);
   ndof --;
 
   /* Abort with message if no global dofs on the domain */
@@ -727,9 +727,9 @@ static void distribute_global_dof_ids_on_bounding_elements(const int n_belem,
     }
   }
 
-  free(NG_bel);
-  free(Gdof_on_dom);
-  free(Gdof_on_all_dom);
-  free(allgatherv_disp);
-  free(allgatherv_count);
+  PGFEM_free(NG_bel);
+  PGFEM_free(Gdof_on_dom);
+  PGFEM_free(Gdof_on_all_dom);
+  PGFEM_free(allgatherv_disp);
+  PGFEM_free(allgatherv_count);
 }

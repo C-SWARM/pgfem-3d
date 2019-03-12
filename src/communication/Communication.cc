@@ -39,9 +39,9 @@ namespace pgfem3d {
     if (filestr)
       free(filestr);
     if (send)
-      free(send);
+      PGFEM_free(send);
     if (recv)
-      free(recv);
+      PGFEM_free(recv);
   }
   
   void CommHints::read_filename(const char* fn) {
@@ -177,8 +177,8 @@ namespace pgfem3d {
       fast_LG_map->maps[2*i+1] = global_idx[local_idx[i]];
     }
 
-    free(local_idx);
-    free(global_idx);
+    PGFEM_free(local_idx);
+    PGFEM_free(global_idx);
 
     return err;
   }
@@ -208,8 +208,8 @@ namespace pgfem3d {
       fast_GL_map->maps[2*i+1] = local_idx[global_idx[i]];
     }
     
-    free(global_idx);
-    free(local_idx);
+    PGFEM_free(global_idx);
+    PGFEM_free(local_idx);
     
     return err;
   }

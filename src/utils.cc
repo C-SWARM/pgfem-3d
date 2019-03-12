@@ -934,7 +934,7 @@ long* list_boundary_el(const long ne,
         break;
       }
     }
-    free(nod);
+    PGFEM_free(nod);
   }
 
 
@@ -960,7 +960,7 @@ long* list_boundary_el(const long ne,
     }
   }
 
-  free(bnd);
+  PGFEM_free(bnd);
 
   if(count != *nbndel){
     PGFEM_printf("WARNING: number stored boundary elements != "
@@ -1026,7 +1026,7 @@ long num_fib (long nmat,
     if (a[i]==1)  n++;
   }
 
-  free (a);
+  PGFEM_free (a);
   return (n);
 }
 
@@ -1048,7 +1048,7 @@ long num_matr (long nmat,
     if (a[i] == 1)  n++;
   }
 
-  free (a);
+  PGFEM_free (a);
   return (n);
 }
 
@@ -1551,8 +1551,8 @@ void list_el_prescribed_def (SUPP sup,
     sup->lbepd = aloc1l(1);
   }
 
-  free(lbnd_el);
-  free(key);
+  PGFEM_free(lbnd_el);
+  PGFEM_free(key);
 }
 
 void fun_eps (double *r_e,
@@ -3155,7 +3155,7 @@ long* sparse_ApAi (long ne,
     Ai[i] = AA[k][j];
   }
 
-  for (i=0;i<ndofd;i++) free (AA[i]); free (AA);
+  for (i=0;i<ndofd;i++) PGFEM_free (AA[i]); PGFEM_free (AA);
   dealoc1l (cn);  dealoc1l (nod); dealoc1l (ap);
 
   return (Ai);
@@ -3276,13 +3276,13 @@ double compute_volumes_from_coordinates(double *x,
       }
     }
   }
-  free(gk);
-  free(ge);
-  free(gz);
-  free(w);
-  free(N_ksi);
-  free(N_eta);
-  free(N_zet);
+  PGFEM_free(gk);
+  PGFEM_free(ge);
+  PGFEM_free(gz);
+  PGFEM_free(w);
+  PGFEM_free(N_ksi);
+  PGFEM_free(N_eta);
+  PGFEM_free(N_zet);
   dealoc2(B_T,nne*nsd);
 
   return V;

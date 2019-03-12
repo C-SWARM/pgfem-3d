@@ -379,7 +379,7 @@ int read_input_file(const PGFem3D_opt *opts,
   if(ferror(in)) err++;
 
   /* free local memory and close file */
-  free(filename);
+  PGFEM_free(filename);
   fclose(in);
   return err;
 }

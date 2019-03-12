@@ -48,9 +48,9 @@ int time_stepping_initialization(TimeStepping *ts)
 int destruct_time_stepping(TimeStepping *ts)
 {
   int err = 0;
-  if(NULL != ts->times) free(ts->times);
-  if(NULL != ts->print) free(ts->print);
-  if(NULL != ts->tns)   free(ts->tns);
+  if(NULL != ts->times) PGFEM_free(ts->times);
+  if(NULL != ts->print) PGFEM_free(ts->print);
+  if(NULL != ts->tns)   PGFEM_free(ts->tns);
   err += time_stepping_initialization(ts);
   return err;
 }
@@ -236,21 +236,21 @@ int destruct_field_varialbe(FieldVariables *fv,
                             int mp_id)
 {
   int err = 0;
-  if(NULL != fv->u_np1)  free(fv->u_np1);
-  if(NULL != fv->u_n)    free(fv->u_n);
-  if(NULL != fv->u_nm1)  free(fv->u_nm1);
-  if(NULL != fv->d_u)    free(fv->d_u);
-  if(NULL != fv->dd_u)   free(fv->dd_u);
-  if(NULL != fv->f)      free(fv->f);
-  if(NULL != fv->R)      free(fv->R);
-  if(NULL != fv->f_defl) free(fv->f_defl);
-  if(NULL != fv->RR)     free(fv->RR);
-  if(NULL != fv->f_u)    free(fv->f_u);
-  if(NULL != fv->RRn)    free(fv->RRn);
-  if(NULL != fv->BS_x)   free(fv->BS_x);
-  if(NULL != fv->BS_f)   free(fv->BS_f);
-  if(NULL != fv->BS_f_u) free(fv->BS_f_u);
-  if(NULL != fv->BS_RR)  free(fv->BS_RR);
+  if(NULL != fv->u_np1)  PGFEM_free(fv->u_np1);
+  if(NULL != fv->u_n)    PGFEM_free(fv->u_n);
+  if(NULL != fv->u_nm1)  PGFEM_free(fv->u_nm1);
+  if(NULL != fv->d_u)    PGFEM_free(fv->d_u);
+  if(NULL != fv->dd_u)   PGFEM_free(fv->dd_u);
+  if(NULL != fv->f)      PGFEM_free(fv->f);
+  if(NULL != fv->R)      PGFEM_free(fv->R);
+  if(NULL != fv->f_defl) PGFEM_free(fv->f_defl);
+  if(NULL != fv->RR)     PGFEM_free(fv->RR);
+  if(NULL != fv->f_u)    PGFEM_free(fv->f_u);
+  if(NULL != fv->RRn)    PGFEM_free(fv->RRn);
+  if(NULL != fv->BS_x)   PGFEM_free(fv->BS_x);
+  if(NULL != fv->BS_f)   PGFEM_free(fv->BS_f);
+  if(NULL != fv->BS_f_u) PGFEM_free(fv->BS_f_u);
+  if(NULL != fv->BS_RR)  PGFEM_free(fv->BS_RR);
   if(NULL != fv->coupled_physics_ids) free(fv->coupled_physics_ids);
   if(NULL != fv->fvs)    free(fv->fvs);
 
@@ -359,8 +359,8 @@ int destory_temporal_field_varialbes(FieldVariables *fv,
                                      const PGFem3D_opt *opts)
 {
   int err =0;
-  free(fv->temporal->u_n);
-  free(fv->temporal->u_nm1);
+  PGFEM_free(fv->temporal->u_n);
+  PGFEM_free(fv->temporal->u_nm1);
   fv->temporal->u_n = NULL;
   fv->temporal->u_nm1 = NULL;
 
@@ -407,7 +407,7 @@ int destruct_material(MaterialProperty *mat, const PGFem3D_opt *opts)
 {
   int err = 0;
   if(NULL != mat->density) free(mat->density);
-  if(NULL != mat->mater)   free(mat->mater);
+  if(NULL != mat->mater)   PGFEM_free(mat->mater);
   delete [] mat->thermal;
   destroy_matgeom(mat->matgeom,mat->n_orient);
   destroy_hommat(mat->hommat,mat->nhommat);
@@ -475,8 +475,8 @@ int destruct_loading_steps(LoadingSteps *load, const Multiphysics& mp)
   for(int ia=0; ia<mp.physicsno; ia++)
   {
     destroy_supp(load->sups[ia]);
-    if(NULL != load->tim_load[ia]) free(load->tim_load[ia]);
-    if(NULL != load->sup_defl[ia]) free(load->sup_defl[ia]);
+    if(NULL != load->tim_load[ia]) PGFEM_free(load->tim_load[ia]);
+    if(NULL != load->sup_defl[ia]) PGFEM_free(load->sup_defl[ia]);
     if(NULL != load->solver_file[ia]) fclose(load->solver_file[ia]);
   }
   free(load->sups);
@@ -520,10 +520,10 @@ int communication_structure_initialization(CommunicationStructure *com)
 int destruct_communication_structure(CommunicationStructure *com)
 {
   int err = 0;
-  if(NULL != com->Ap) free(com->Ap);
-  if(NULL != com->Ai) free(com->Ai);
-  if(NULL != com->DomDof) free(com->DomDof);
-  if(NULL != com->bndel)  free(com->bndel);
+  if(NULL != com->Ap) PGFEM_free(com->Ap);
+  if(NULL != com->Ai) PGFEM_free(com->Ai);
+  if(NULL != com->DomDof) PGFEM_free(com->DomDof);
+  if(NULL != com->bndel)  PGFEM_free(com->bndel);
 
   err += communication_structure_initialization(com);
   return err;

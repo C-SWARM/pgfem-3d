@@ -31,11 +31,11 @@ MATGEOM build_matgeom (long nc,long np)
 void destroy_matgeom(MATGEOM mg, long np)
 {
   for(long i=0; i<np; i++){
-    free(mg->ee[i]);
+    PGFEM_free(mg->ee[i]);
   }
-  free(mg->ee);
-  free(mg->cf);
-  free(mg->cd);
-  free(mg->cm);
-  free(mg);
+  PGFEM_free(mg->ee);
+  PGFEM_free(mg->cf);
+  PGFEM_free(mg->cd);
+  PGFEM_free(mg->cm);
+  PGFEM_free(mg);
 }

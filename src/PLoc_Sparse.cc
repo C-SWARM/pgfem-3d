@@ -132,11 +132,11 @@ void PLoc_Sparse (double **Lk,
   }
 
   /* free unnecessary arrays */
-  free(row_idx);
-  free(col_idx);
-  free(values);
-  free(n_cols);
-  free(rows);
+  PGFEM_free(row_idx);
+  PGFEM_free(col_idx);
+  PGFEM_free(values);
+  PGFEM_free(n_cols);
+  PGFEM_free(rows);
 
   /* Add to the send portion */
   for(int i=0; i<nsend; i++){
@@ -169,9 +169,9 @@ void PLoc_Sparse (double **Lk,
   }
 
   /* free remaining memory */
-  free(cols);
-  free(send);
-  free(gDofID);
+  PGFEM_free(cols);
+  PGFEM_free(send);
+  PGFEM_free(gDofID);
 }
 
 /** PLoc_Sparse_rec for general (non-square) matrices. */
@@ -267,11 +267,11 @@ void PLoc_Sparse_rec (double **Lk,
   }
 
   /* free unnecessary arrays */
-  free(row_idx);
-  free(col_idx);
-  free(values);
-  free(n_cols);
-  free(rows);
+  PGFEM_free(row_idx);
+  PGFEM_free(col_idx);
+  PGFEM_free(values);
+  PGFEM_free(n_cols);
+  PGFEM_free(rows);
 
   /* Add to the send portion */
   for(int i=0; i<nsend; i++){
@@ -304,8 +304,8 @@ void PLoc_Sparse_rec (double **Lk,
   }/* end send loop */
 
   /* free remaining memory */
-  free(cols);
-  free(send);
-  free(G_row_id);
-  free(G_col_id);
+  PGFEM_free(cols);
+  PGFEM_free(send);
+  PGFEM_free(G_row_id);
+  PGFEM_free(G_col_id);
 }

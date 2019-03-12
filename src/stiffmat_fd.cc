@@ -219,7 +219,7 @@ static void coel_stiffmat(int i, /* coel ID */
   dealoc1 (z);
   dealoc1 (r_e);
   dealoc1 (fe);
-  free(sup_def);
+  PGFEM_free(sup_def);
 
 } /* COHESIVE ELEMENT STIFFNESS */
 
@@ -301,7 +301,7 @@ static int bnd_el_stiffmat(int belem_id,
     for (int j=0;j<sup->npd;j++){
       sup->defl_d[j] = sup_def[j];
     }
-    free(sup_def);
+    PGFEM_free(sup_def);
   } else {
     def_elem(cn_ve,ndof_ve,d_r,NULL,NULL,v_disp,sup,0);
   }
@@ -310,7 +310,7 @@ static int bnd_el_stiffmat(int belem_id,
     double *ve_n = aloc1(ndof_ve);
     def_elem(cn_ve,ndof_ve,r,NULL,NULL,ve_n,sup,1);
     vvplus(v_disp,ve_n,ndof_ve);
-    free(ve_n);
+    PGFEM_free(ve_n);
   }
 
   /* compute the local stiffness matrix */
@@ -332,15 +332,15 @@ static int bnd_el_stiffmat(int belem_id,
   }
 
 
-  free(x);
-  free(y);
-  free(z);
+  PGFEM_free(x);
+  PGFEM_free(y);
+  PGFEM_free(z);
 
-  free(cn_ve);
-  free(Gcn_ve);
+  PGFEM_free(cn_ve);
+  PGFEM_free(Gcn_ve);
 
-  free(v_disp);
-  free(lk);
+  PGFEM_free(v_disp);
+  PGFEM_free(lk);
 
   return err;
 } /* Bounding element stiffnes matrix */
@@ -637,11 +637,11 @@ static int el_stiffmat_MP(int eid,
                myrank,com->nproc,com->spc,interior,sol->system,opts->analysis_type);
 
   //  dealocation
-  free (cnL);
-  free (cnG);
-  free (be);
-  free (r_e);
-  free (sup_def);
+  PGFEM_free (cnL);
+  PGFEM_free (cnG);
+  PGFEM_free (be);
+  PGFEM_free (r_e);
+  PGFEM_free (sup_def);
 
   return err;
 

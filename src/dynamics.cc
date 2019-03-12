@@ -272,8 +272,8 @@ int residual_with_inertia(FEMLIB *fe,
        for(long a = 0; a<ndofe; a++)
          be[a] = -f_i[a] - (1.0-(sol->alpha))*dts[DT_NP1]*f_n_a[a] - (sol->alpha)*dts[DT_N]*f_n_1_a[a];
 
-       free(f_n_a);
-       free(f_n_1_a);
+       PGFEM_free(f_n_a);
+       PGFEM_free(f_n_1_a);
 
        break;
      }
@@ -303,11 +303,11 @@ int residual_with_inertia(FEMLIB *fe,
     break;
   }
 
-  free(r_n_a);
-  free(r_n_1_a);
-  free(r0);
-  free(r0_);
-  free(f_i);
+  PGFEM_free(r_n_a);
+  PGFEM_free(r_n_1_a);
+  PGFEM_free(r0);
+  PGFEM_free(r0_);
+  PGFEM_free(f_i);
   return err;
 }
 

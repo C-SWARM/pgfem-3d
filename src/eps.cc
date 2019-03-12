@@ -806,19 +806,19 @@ void unpack_eps_list(EPS *dest,
 
 static void destroy_IL0_eps(IL0_eps *p_il0)
 {
-  free(p_il0->o);
-  free(p_il0->f);
-  free(p_il0->m);
-  free(p_il0->d);
-  free(p_il0->i);
-  free(p_il0->F);
-  free(p_il0->Fp);
-  free(p_il0->UU);
-  free(p_il0->Fe);
-  free(p_il0->Fe1);
-  free(p_il0->GA);
-  free(p_il0->GA1);
-  free(p_il0->PLC_B);
+  PGFEM_free(p_il0->o);
+  PGFEM_free(p_il0->f);
+  PGFEM_free(p_il0->m);
+  PGFEM_free(p_il0->d);
+  PGFEM_free(p_il0->i);
+  PGFEM_free(p_il0->F);
+  PGFEM_free(p_il0->Fp);
+  PGFEM_free(p_il0->UU);
+  PGFEM_free(p_il0->Fe);
+  PGFEM_free(p_il0->Fe1);
+  PGFEM_free(p_il0->GA);
+  PGFEM_free(p_il0->GA1);
+  PGFEM_free(p_il0->PLC_B);
 
   /* multi-dim pointers */
   if(p_il0->dUU_Fr!=NULL) dealoc4(p_il0->dUU_Fr,NDN,NDN,NDN);
@@ -829,16 +829,16 @@ static void destroy_IL0_eps(IL0_eps *p_il0)
 
 static void destroy_IL1_eps(IL1_eps *p_il1)
 {
-  free(p_il1->o);
-  free(p_il1->f);
-  free(p_il1->m);
-  free(p_il1->d);
-  free(p_il1->i);
+  PGFEM_free(p_il1->o);
+  PGFEM_free(p_il1->f);
+  PGFEM_free(p_il1->m);
+  PGFEM_free(p_il1->d);
+  PGFEM_free(p_il1->i);
 }
 
 static void destroy_IL2_eps(IL2_eps *p_il2)
 {
-  free(p_il2->Fpp);
+  PGFEM_free(p_il2->Fpp);
 }
 
 void destroy_eps_il(EPS* eps,
@@ -860,14 +860,14 @@ void destroy_eps_il(EPS* eps,
 
     EPS *p_eps = &eps[i];
     /* elastic */
-    free(p_eps->el.o);
-    free(p_eps->el.f);
-    free(p_eps->el.m);
-    free(p_eps->el.i);
-    free(p_eps->el.d);
+    PGFEM_free(p_eps->el.o);
+    PGFEM_free(p_eps->el.f);
+    PGFEM_free(p_eps->el.m);
+    PGFEM_free(p_eps->el.i);
+    PGFEM_free(p_eps->el.d);
 
     /* plastic ? */
-    free(p_eps->pl.o);
+    PGFEM_free(p_eps->pl.o);
 
     /* inelastic */
     if(p_eps->il != NULL){
@@ -900,12 +900,12 @@ void destroy_eps_il(EPS* eps,
           }
     */
     /* remaining */
-    free(p_eps->il);
-    free(p_eps->d_il);
-    free(p_eps->st);
-    free(p_eps->dam);
-    free(p_eps->T);
-    free(p_eps->d_T);
+    PGFEM_free(p_eps->il);
+    PGFEM_free(p_eps->d_il);
+    PGFEM_free(p_eps->st);
+    PGFEM_free(p_eps->dam);
+    PGFEM_free(p_eps->T);
+    PGFEM_free(p_eps->d_T);
     delete[] p_eps->model;
     if(p_eps->F != NULL) dealoc2(p_eps->F,NDN);
     if(p_eps->Fn != NULL) dealoc2(p_eps->Fn,NDN);
@@ -918,5 +918,5 @@ void destroy_eps_il(EPS* eps,
 
   }/* for each element */
 
-  free(eps);
+  PGFEM_free(eps);
 }

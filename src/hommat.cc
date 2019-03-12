@@ -41,8 +41,8 @@ HOMMAT* build_hommat (long i)
 void destroy_hommat(HOMMAT* hm, long nm)
 {
   for(long i=0; i<nm; i++){
-    free(hm[i].M);
-    free(hm[i].L);
+    PGFEM_free(hm[i].M);
+    PGFEM_free(hm[i].L);
 
     if(hm[i].param==NULL)
       continue;
@@ -53,7 +53,7 @@ void destroy_hommat(HOMMAT* hm, long nm)
       hm[i].param = NULL;
     }    
   }
-  free(hm);
+  PGFEM_free(hm);
 }
 
 double hommat_get_kappa(const HOMMAT *mat)

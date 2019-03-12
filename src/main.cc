@@ -822,7 +822,7 @@ int single_scale_main(int argc,char *argv[])
       PGFEM_printf ("Symmetric skyline (including diagonal)   : %ld\n",sky);
     }
     //<---------------------------------------------------------------------
-    free(dist);
+    PGFEM_free(dist);
   }
 
   dealoc1l (DomNe);
@@ -954,7 +954,7 @@ int single_scale_main(int argc,char *argv[])
           alloc_sprintf(&cm_filename,"%s/model_params.in",options.ipath);
           FILE *cm_in = PGFEM_fopen(cm_filename, "r");
           read_model_parameters_list(mat.nhommat, mat.hommat, cm_in);
-          free(cm_filename);
+          PGFEM_free(cm_filename);
           fclose(cm_in);
           init_all_constitutive_model(fv[ia].eps,grid.ne,grid.element,mat.nhommat,mat.hommat,myrank);
           err += prepare_temporal_field_varialbes(&fv[ia],&grid,1,&options);
@@ -1054,7 +1054,7 @@ int single_scale_main(int argc,char *argv[])
       free(feat_type);
       free(feat_id);
       free(loads);
-      free(trac_fname);
+      PGFEM_free(trac_fname);
       
       /* push nodal_forces to s->R */
       vvplus(fv[mp_id_M].R,nodal_forces,fv[mp_id_M].ndofd);
@@ -1340,7 +1340,7 @@ int single_scale_main(int argc,char *argv[])
     if(mp_id_M >=0)
     {
       destroy_applied_surface_traction_list(n_sur_trac_elem,ste);
-      free(nodal_forces);
+      PGFEM_free(nodal_forces);
       if(n_feats>0 && myrank==0)
         fclose(fp_rf);
     }

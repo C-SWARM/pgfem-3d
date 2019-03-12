@@ -77,7 +77,7 @@ int make_path(const char *path, mode_t mode)
   case 1:
     if (status == 0)
       status = make_dir(path, mode);
-    free(copypath);
+    PGFEM_free(copypath);
     break;
   }
 

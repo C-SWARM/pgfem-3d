@@ -121,19 +121,19 @@ void destroy_elem(Element *elem,
                   const long ne)
 {
   for(long i=0; i<ne; i++){
-    free(elem[i].nod);
-    free(elem[i].mat);
-    free(elem[i].hom);
-    free(elem[i].bnd_type);
-    free(elem[i].bnd_id);
-    free(elem[i].G_dof_ids);
-    free(elem[i].L_dof_ids);
-    free(elem[i].be_ids);
-    free(elem[i].bub_dofs);
-    free(elem[i].d_bub_dofs);
-    free(elem[i].LO);
+    PGFEM_free(elem[i].nod);
+    PGFEM_free(elem[i].mat);
+    PGFEM_free(elem[i].hom);
+    PGFEM_free(elem[i].bnd_type);
+    PGFEM_free(elem[i].bnd_id);
+    PGFEM_free(elem[i].G_dof_ids);
+    PGFEM_free(elem[i].L_dof_ids);
+    PGFEM_free(elem[i].be_ids);
+    PGFEM_free(elem[i].bub_dofs);
+    PGFEM_free(elem[i].d_bub_dofs);
+    PGFEM_free(elem[i].LO);
   }
-  free(elem);
+  PGFEM_free(elem);
 }/* destroy_elem() */
 
 /*=== Declare static read functions ===*/

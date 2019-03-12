@@ -382,8 +382,8 @@ int* Psparse_ApAi (long ne,
 
   /* Free unnecessary constants */
   for (i=0;i<ndofd;i++)
-    free (AA[i]);
-  free (AA);
+    PGFEM_free (AA[i]);
+  PGFEM_free (AA);
   dealoc1l (ap1); ap1 = NULL;
 
   Ddof = aloc1i (nproc);                                                      //a total (global) count of the degrees of freedom
@@ -580,7 +580,7 @@ int* Psparse_ApAi (long ne,
 
     Ap[GNRr[i]-*GDof] = JJ;
 
-    free (ID[GL[GNRr[i]-*GDof]]);
+    PGFEM_free (ID[GL[GNRr[i]-*GDof]]);
     ID[GL[GNRr[i]-*GDof]]= PGFEM_calloc (long, JJ);
 
     JJ = 0;

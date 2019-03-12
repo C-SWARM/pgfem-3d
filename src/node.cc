@@ -69,12 +69,12 @@ int destroy_node_multi_physics(const long nn,
   {
     for(int ib=0; ib<physicsno; ib++)
     {
-      free(node[ia].id_map[ib].id);
-      free(node[ia].id_map[ib].Gid);
+      PGFEM_free(node[ia].id_map[ib].id);
+      PGFEM_free(node[ia].id_map[ib].Gid);
     }
     delete [] node[ia].id_map;
   }
-  free(node);
+  PGFEM_free(node);
   return err;
 }
 

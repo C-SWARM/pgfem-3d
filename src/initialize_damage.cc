@@ -47,5 +47,5 @@ void initialize_damage(const int ne,
     }
 
   }
-  free(dam_params);
+  PGFEM_free(dam_params);
 }

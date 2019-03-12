@@ -1820,7 +1820,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
                                                   com->GDof,com,
                                                   opts->analysis_type,
                                                   res_trac);
-      free(res_trac);
+      PGFEM_free(res_trac);
 
       if(sp.step_size > 2 && sp.step_id == 2)
       {

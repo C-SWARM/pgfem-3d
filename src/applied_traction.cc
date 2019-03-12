@@ -160,10 +160,10 @@ int generate_applied_surface_traction_list(const int ne,
     }/* for each loaded element */
   }
   /* free memory */
-  free(elem_has_trac);
-  free(elem_n_faces);
-  free(n_faces);
-  free(elem_ids);
+  PGFEM_free(elem_has_trac);
+  PGFEM_free(elem_n_faces);
+  PGFEM_free(n_faces);
+  PGFEM_free(elem_ids);
 
   /* exit function */
   return err;
@@ -230,7 +230,7 @@ int compute_applied_traction_res(const int ndofn,
         z[ia] = pF0I[6]*X[ia] + pF0I[7]*Y[ia] + pF0I[8]*Z[ia];
       }
       
-      free(X); free(Y); free(Z);
+      PGFEM_free(X); PGFEM_free(Y); PGFEM_free(Z);
     }
     else
       nodecoord_total(nne_3D,nod_3D,nodes,x,y,z);      
@@ -274,13 +274,13 @@ int compute_applied_traction_res(const int ndofn,
 
       }/* for each integration point */
 
-      free(ksi_3D);
-      free(eta_3D);
-      free(zet_3D);
-      free(ksi_2D);
-      free(eta_2D);
-      free(wt_2D);
-      free(nod_2D);
+      PGFEM_free(ksi_3D);
+      PGFEM_free(eta_3D);
+      PGFEM_free(zet_3D);
+      PGFEM_free(ksi_2D);
+      PGFEM_free(eta_2D);
+      PGFEM_free(wt_2D);
+      PGFEM_free(nod_2D);
     }/* for each face w/ app. trac. */
 
     /* assembly */
@@ -290,12 +290,12 @@ int compute_applied_traction_res(const int ndofn,
       }
     }
 
-    free(x);
-    free(y);
-    free(z);
-    free(N_3D);
-    free(cn);
-    free(res_el);
+    PGFEM_free(x);
+    PGFEM_free(y);
+    PGFEM_free(z);
+    PGFEM_free(N_3D);
+    PGFEM_free(cn);
+    PGFEM_free(res_el);
   }/* for elements */
 
   return err;

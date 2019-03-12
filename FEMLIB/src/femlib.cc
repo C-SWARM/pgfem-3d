@@ -434,5 +434,5 @@ FEMLIB::~FEMLIB()
   if(ST_tensor != NULL)
     dealoc4(ST_tensor,3,3,nsd);
   if(ST != NULL)
-    free(ST);
+    PGFEM_free(ST);
 }

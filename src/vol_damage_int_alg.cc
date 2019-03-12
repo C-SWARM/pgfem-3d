@@ -288,31 +288,31 @@ int vol_damage_int_alg(const int ne,
     /*===================================================*/
    exit_function:
     /* free memory */
-    free(nod);
-    free(cn);
-    free(r_e);
-    free(r_en);
-    free(disp);
-    free(dp);
-    free(x);
-    free(y);
-    free(z);
+    PGFEM_free(nod);
+    PGFEM_free(cn);
+    PGFEM_free(r_e);
+    PGFEM_free(r_en);
+    PGFEM_free(disp);
+    PGFEM_free(dp);
+    PGFEM_free(x);
+    PGFEM_free(y);
+    PGFEM_free(z);
 
-    free(int_pt_ksi);
-    free(int_pt_eta);
-    free(int_pt_zet);
-    free(weights);
-    free(Na);
-    free(N_x);
-    free(N_y);
-    free(N_z);
-    free(ST);
+    PGFEM_free(int_pt_ksi);
+    PGFEM_free(int_pt_eta);
+    PGFEM_free(int_pt_zet);
+    PGFEM_free(weights);
+    PGFEM_free(Na);
+    PGFEM_free(N_x);
+    PGFEM_free(N_y);
+    PGFEM_free(N_z);
+    PGFEM_free(ST);
 
     if(err != 0) break;
   } /* each element */
 
-  free(F);
-  free(C);
+  PGFEM_free(F);
+  PGFEM_free(C);
 
   return err;
 }
@@ -395,7 +395,7 @@ static int integration_help(const int elem_id,
     memcpy(temp,F,9*sizeof(double));
     cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,
                 3,3,3,1.0,temp,3,Fn,3,0.0,F,3);
-    free(temp);
+    PGFEM_free(temp);
   }
 
   cblas_dgemm(CblasRowMajor,CblasTrans,CblasNoTrans,
