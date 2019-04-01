@@ -869,6 +869,7 @@ int read_initial_values_lagcy(Grid *grid,
 /// \param[in] mp mutiphysics object
 /// \param[in] myrank current process rank
 /// \param[in] mp_id mutiphysics id
+/// \param[in] read_from_0 if ture, read information from filebase_0.intial
 /// \return non-zero on internal error
 int read_initial_for_Mechanical(FILE *fp,
                                 Grid *grid,
@@ -880,7 +881,8 @@ int read_initial_for_Mechanical(FILE *fp,
                                 PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int myrank,
-                                int mp_id)
+                                int mp_id,
+                                const bool read_from_0)
 {
   int err = 0;
   char line[1024];
@@ -931,6 +933,9 @@ int read_initial_for_Mechanical(FILE *fp,
   }
 
   free(rho);
+  
+  if(read_from_0)
+    return 0;  
 
   if(opts->restart < 0)
   {
@@ -997,6 +1002,7 @@ int read_initial_for_Mechanical(FILE *fp,
 /// \param[in] opts structure PGFem3D option
 /// \param[in] myrank current process rank
 /// \param[in] mp_id mutiphysics id
+/// \param[in] read_from_0 if ture, read information from filebase_0.intial
 /// \return non-zero on internal error
 int read_initial_for_Thermal(FILE *fp,
                              Grid *grid,
@@ -1006,7 +1012,8 @@ int read_initial_for_Thermal(FILE *fp,
                              TimeStepping *ts,
                              PGFem3D_opt *opts,
                              int myrank,
-                             int mp_id)
+                             int mp_id,
+                             const bool read_from_0)
 {
   int err = 0;
   char line[1024];
@@ -1033,18 +1040,20 @@ int read_initial_for_Thermal(FILE *fp,
       fv->u_nm1[ia] = T0;
       fv->u_n[ia] = T0;
     }
+    
+    if(!read_from_0){
 
-    while(fgets(line, 1024, fp)!=NULL)
-    {
-      if(line[0]=='#')
-        continue;
+      while(fgets(line, 1024, fp)!=NULL){
+        if(line[0]=='#')
+          continue;
 
-      long nid;
-      double u;
-      sscanf(line, "%ld %lf", &nid, &u);
+        long nid;
+        double u;
+        sscanf(line, "%ld %lf", &nid, &u);
 
-      fv->u_n[nid] = u;
-      fv->u_nm1[nid] = u;
+        fv->u_n[nid] = u;
+        fv->u_nm1[nid] = u;
+      }
     }
   }
 
@@ -1100,10 +1109,12 @@ int read_initial_values_IC(Grid *grid,
 
     FILE *fp = NULL;
     fp = fopen(fn, "r");
+    bool read_from_0 = false;
 
     if(fp==NULL)
     {
       fp = fopen(fn_0, "r");
+      read_from_0 = true;
       if(fp==NULL)
       {
         if(myrank==0)
@@ -1115,10 +1126,10 @@ int read_initial_values_IC(Grid *grid,
     switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
-      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,load,ts,opts,mp,myrank,ia);
+      err += read_initial_for_Mechanical(fp,grid,mat,FV+ia,SOL+ia,load,ts,opts,mp,myrank,ia,read_from_0);
       break;
      case MULTIPHYSICS_THERMAL:
-      err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia);
+      err += read_initial_for_Thermal(fp,grid,mat,FV+ia,SOL+ia,ts,opts,myrank,ia,read_from_0);
       break;
      case MULTIPHYSICS_CHEMICAL:
       break;
