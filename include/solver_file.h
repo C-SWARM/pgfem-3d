@@ -24,8 +24,8 @@ struct SOLVER_FILE {
   double *nonlin_method_opts;
   size_t n_step;
   double *times; /**< length of times, # computed steps + 1 */
-  size_t *print_steps; /**< T/F print on step */
-  size_t *load_steps; /**< T/F increment load on step */
+  long   *print_steps; /**< T/F print on step */
+  long   *load_steps; /**< T/F increment load on step */
 };
 
 enum {UNDEFINED_METHOD = -1, /**< gives overflow on assignment to nonlin_method */
@@ -33,25 +33,7 @@ enum {UNDEFINED_METHOD = -1, /**< gives overflow on assignment to nonlin_method 
       ARC_LENGTH_METHOD = 2,
       AUX_ARC_LENGTH_METHOD = 3};
 
-/**
- * Construct a solver file object and open the file.
- *
- * Calls abort w/ diagnostic message if the specified file cannot be
- * opened.
- */
-int solver_file_open(const char *filename,
-             SOLVER_FILE **sf);
-
-/**
- * Destroy the solver file object.
- */
-int solver_file_close(SOLVER_FILE *sf);
-
-/**
- * Read the solver file up to the prescribed loads and store
- * information in SOLVER_FILE object.
- */
-int solver_file_read_header(SOLVER_FILE *sf);
+void solver_file_init_values(SOLVER_FILE *sf);
 
 /**
  * Read a load increment from the solver file.

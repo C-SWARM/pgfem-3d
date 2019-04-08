@@ -673,6 +673,169 @@ int read_solver_file(TimeStepping *ts,
   return err;
 }
 
+int read_solver_file_multiscale(MultiscaleCommon *c,
+                                MULTISCALE_SOLUTION *s,
+                                SOLVER_FILE *solver_file,
+                                const PGFem3D_opt *opts,
+                                const int myrank)
+{
+  int err    = 0;
+  int n_step = 0;  
+  double pores = 0.0;  
+  double *sup_defl = NULL;    
+  CRPL *crpl = NULL;
+  s->tim = 0;
+
+  // initialize and define multiphysics
+  Multiphysics mp;
+
+  int id = MULTIPHYSICS_MECHANICAL;
+  int ndim = c->ndofn;
+  int MECHANICAL_Var_NO = 0;
+  int write_no = MECHANICAL_Var_NO;
+
+  mp.write_ids.resize(MECHANICAL_Var_NO);
+  vector<int> coupled_ids;
+  char *physicsname = (char *) malloc(sizeof(char)*1024);
+  {
+    for(int ia=0; ia<MECHANICAL_Var_NO; ia++)
+      mp.write_ids[ia].push_back(ia); //sets ia as the fist element of each vector
+
+    coupled_ids.push_back(0);
+    sprintf(physicsname, "Mechanical");
+
+    mp.physicsno      = 1;
+    mp.physicsname    = &physicsname;
+    mp.physics_ids    = &id;
+    mp.ndim           = &ndim;
+    mp.write_no       = &write_no;
+    mp.coupled_ids.push_back(coupled_ids);
+    mp.total_write_no = MECHANICAL_Var_NO;
+  }
+
+  // initialize and define mesh object
+  Grid grid;
+  grid_initialization(&grid);
+  {
+    grid.ne          = c->ne;
+    grid.nn          = c->nn;
+    grid.element     = c->elem;
+    grid.b_elems     = NULL;
+    grid.node        = c->node;
+    grid.nce         = c->nce;
+    grid.coel        = c->coel;
+  }
+
+  // initialize and define field variables
+  FieldVariables fv;
+  {
+    field_varialbe_initialization(&fv);
+    fv.ndofn  = c->ndofn;
+    fv.ndofd  = c->ndofd;
+    fv.npres  = c->npres;
+    fv.sig    = s->sig_e;
+    fv.eps    = s->eps;
+    fv.u_np1  = s->r;
+    fv.f      = s->f;
+    fv.d_u    = s->d_r;
+    fv.dd_u   = s->rr;
+    fv.R      = s->R;
+    fv.f_defl = s->f_defl;
+    fv.RR     = s->RR;
+    fv.f_u    = s->f_u;
+    fv.RRn    = s->RRn;
+    fv.pores  = pores;
+    fv.BS_x   = s->BS_x;
+    fv.BS_f   = s->BS_f;
+    fv.BS_RR  = s->BS_RR;
+    fv.BS_f_u = s->BS_f_u;
+    fv.NORM   = s->NORM;
+  }
+
+  /// initialize and define iterative solver object
+  Solver sol{};
+  {
+    if(solver_file==NULL)
+    {
+      sol.nor_min  = c->lin_err;
+      sol.FNR      = 1; // full NR
+      sol.iter_max = c->maxit_nl;
+    }
+    else
+    {
+      sol.nor_min  = solver_file->nonlin_tol;
+      sol.FNR      = solver_file->nonlin_method;
+      sol.iter_max = solver_file->max_nonlin_iter;
+    }
+    sol.n_step     = n_step;
+    sol.system     = c->SOLVER;
+    sol.err        = c->lin_err;
+  }
+
+  // initialize and define loading steps object
+  LoadingSteps load;
+  {
+    loading_steps_initialization(&load);
+    load.sups     = &(c->supports);
+    load.sup_defl = &sup_defl;
+    load.solver_file = &solver_file->file;
+    load.tim_load    = &solver_file->load_steps;
+  }
+
+  // initialize and define material properties
+  MaterialProperty mat;
+  {
+    material_initialization(&mat);
+    mat.hommat  = c->hommat;
+    mat.matgeom = c->matgeom;
+  }
+
+  /// initialize and define time stepping variable
+  TimeStepping ts;
+  {
+    time_stepping_initialization(&ts);
+    if(solver_file==NULL)
+      ts.nt = 1;
+    else
+      ts.nt  = solver_file->n_step;
+
+    ts.tim = s->tim;
+    ts.times = s->times;
+    ts.dt_n   = 0.0;
+    ts.dt_np1 = s->dt;
+    ts.print  = NULL;
+    ts.tns    = NULL;
+  }
+
+  err += read_solver_file(&ts, &mat, &fv, &sol, &load, crpl, mp, opts, myrank);  
+
+  /* assign the returned values */
+  solver_file->nonlin_tol           = sol.nor_min;
+  solver_file->max_nonlin_iter      = sol.iter_max;
+  solver_file->n_pressure_nodes     = fv.npres; 
+  solver_file->nonlin_method        = sol.FNR;  
+  solver_file->n_step               = ts.nt;
+  solver_file->times                = ts.times;  
+  solver_file->print_steps          = ts.print;
+
+  /* nonlinear solving method options  */
+  switch(solver_file->nonlin_method){
+   case NEWTON_METHOD:   
+    break;
+
+   case ARC_LENGTH_METHOD:
+   case AUX_ARC_LENGTH_METHOD:
+    /* additional options */
+    solver_file->nonlin_method_opts[0] = sol.arc->dAL0;
+    //solver_file->nonlin_method_opts[1] = sol.arc->dALMAX;
+    break;
+  }
+
+  free(physicsname);
+
+  return err;  
+}
+
 /// Read initial conditions from lagcy format.
 ///
 /// If no restart, this function reads initial conditions from *.initial files.

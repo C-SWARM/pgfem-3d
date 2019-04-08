@@ -84,6 +84,11 @@ int read_solver_file(TimeStepping *ts,
                      const PGFem3D_opt *opts,
                      int myrank);
 
+int read_solver_file_multiscale(pgfem3d::MultiscaleCommon *c,
+                                pgfem3d::MULTISCALE_SOLUTION *s,
+                                SOLVER_FILE *solver_file,
+                                const PGFem3D_opt *opts,
+                                const int myrank);
 
 /// Read initial conditions.
 ///

@@ -352,22 +352,10 @@ int multi_scale_main(int argc, char* argv[])
     /*=== SOLUTION PROCESS ===*/
     /*=== READ SOLVER FILE ===*/
     SOLVER_FILE *solver_file = NULL;
-    if (macro->opts->override_solver_file) {
-      if (mscom->rank_macro == 0) {
-        PGFEM_printf("Overriding the default solver file with:\n%s\n",
-                     macro->opts->solver_file);
-      }
-      solver_file_open(macro->opts->solver_file, &solver_file);
-    } else {
-      /* use the default file/filename */
-      char *filename = NULL;
-      alloc_sprintf (&filename,"%s/%s%d.in.st",macro->opts->ipath,
-                     macro->opts->ifname,mscom->rank_macro);
-      solver_file_open(filename, &solver_file);
-      free(filename);
-    }
-    s->tim = 0;
-    solver_file_read_header(solver_file);
+    solver_file = PGFEM_malloc<SOLVER_FILE>();
+    solver_file_init_values(solver_file);
+
+    err += read_solver_file_multiscale(c, s, solver_file, macro->opts, myrank);
 
     /* allocate macro_solution times and copy from solver_file */
     if(solver_file->n_step > 2){
