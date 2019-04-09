@@ -18,6 +18,7 @@
 #include "computeMacroF.h"
 #include "computeMacroS.h"
 #include "constitutive_model.h"
+#include "constitutive_model_handle.h"
 #include "dynamics.h"
 #include "element.h"
 #include "enumerations.h"
@@ -56,8 +57,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-
-#include "crystal_plasticity_integration.h"
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -159,15 +158,13 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
 /// \param[in] com Communication Structure
 /// \param[in] myrank current process rank
-void print_EXA_metrics(const CommunicationStructure *com,
+void print_EXA_metrics(const int nproc,
                        const int myrank,
                        std::vector<double> hypre_time,
                        std::vector<double> residuals_time,
                        double total_time,
                        const PGFem3D_opt *opts)
 {
-  int nprocs = com->nproc;
-  
   if (myrank == 0){
     double total_residual_time = 0.0;   //residual time across all physics
     for (auto& n : residuals_time)
@@ -186,11 +183,11 @@ void print_EXA_metrics(const CommunicationStructure *com,
       PGFEM_printf("Total Residual time: %f\n", total_residual_time);
       PGFEM_printf("Total Hypre time: %f\n", total_hypre_time);
       PGFEM_printf("Total number of DOF computations: %ld\n", dof_EXA_metric);
-      PGFEM_printf("Total number of processes: %d\n", nprocs);
+      PGFEM_printf("Total number of processes: %d\n", nproc);
       PGFEM_printf("Final EXA metric numerator: %f\n", EXA_Numerator);
     }
     
-    double EXA_Denominator = total_time * nprocs;
+    double EXA_Denominator = total_time * nproc;
     PGFEM_printf("\nFinal EXA metric: %f\n\n", EXA_Numerator/EXA_Denominator);
   }
 }
@@ -1408,7 +1405,7 @@ int single_scale_main(int argc,char *argv[])
 
   /* print EXA_metrics */
   if (options.print_EXA)
-    print_EXA_metrics(com0, myrank, hypre_time, residuals_time, total_time, &options);
+    print_EXA_metrics(nproc, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();

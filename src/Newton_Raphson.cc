@@ -11,6 +11,7 @@
 #include "bounding_element_utils.h"
 #include "compute_reactions.h"
 #include "constitutive_model.h"
+#include "constitutive_model_handle.h"
 #include "displacement_based_element.h"
 #include "dynamics.h"
 #include "energy_equation.h"
@@ -42,8 +43,6 @@
 #include <sys/resource.h>
 #include <cassert>
 #include <vector>
-
-#include "crystal_plasticity_integration.h"
 
 #ifndef NR_UPDATE
 #define NR_UPDATE 0
@@ -1266,10 +1265,12 @@ long Newton_Raphson_with_LS(double *solve_time,
       long global_ODE_EXA_metric = 0;
       com->net->reduce(&perIter_ODE_EXA_metric,&global_ODE_EXA_metric,1,NET_DT_LONG,NET_OP_SUM,0,com->comm);
       if (myrank == 0){
-        if (opts->print_EXA == 2)
+        if (opts->print_EXA == 2){
           PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
+          PGFEM_printf ("DoFs (fv->Gndof * IT): %d * %d = %ld\n", fv->Gndof, BS_iter, fv->Gndof * BS_iter);
+        }
         perTimestep_EXA_metric += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
-        dof_EXA_metric += fv->Gndof;
+        dof_EXA_metric += fv->Gndof * BS_iter;
       }
     }
     perIter_ODE_EXA_metric = 0;                                 //reset ODE operation counter
