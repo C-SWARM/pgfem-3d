@@ -500,8 +500,7 @@ int multi_scale_main(int argc, char* argv[])
       }
 
       if (mscom->rank_macro == 0) {
-        PGFEM_printf("\nFinite deformations time step %ld) "
-                     " Time %f | dt = %10.10f\n",
+        PGFEM_printf("\nFinite deformations time step %ld)  Time %e | dt = %e\n",
                      s->tim,s->times[s->tim+1],s->dt);
       }
 
