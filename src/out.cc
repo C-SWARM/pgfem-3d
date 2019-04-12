@@ -1923,19 +1923,21 @@ void ASCII_output(const PGFem3D_opt *opts,
   struct rusage usage;
 
   /* compute filename and open file */
-  char *filename = PGFEM_calloc(char, 500);
-  sprintf (filename,"%s/ASCII/STEP_%.5ld",opts->opath,tim);
-  if(make_path(filename,DIR_MODE) != 0){
+  std::string filename = opts->opath;
+  filename = filename + "/ASCII/STEP_%.5ld" + char(tim);     
+
+  if(make_path(filename.c_str(),DIR_MODE) != 0){
     /* could not create, default dir name current directory */
-    sprintf(filename,".");
+    filename=".";
   }
   
-  char *filename2 = PGFEM_calloc(char, 500);  //prevents gcc 8.1 warning
-  sprintf (filename2,"%s/%s_%d.out%ld",
-       filename,opts->ofname,myrank,tim);
-  FILE *out = PGFEM_fopen(filename2,"w");
-  free(filename);
-  free(filename2);
+  char *filename2 = PGFEM_calloc(char, 500);
+  char *filename3 = PGFEM_calloc(char, 500);  //prevents gcc 8.1 warning
+  sprintf (filename3,"%s/%s_%d.out%ld",
+       filename2,opts->ofname,myrank,tim);
+  FILE *out = PGFEM_fopen(filename3,"w");
+  free(filename2); 
+  free(filename3);
 
   /*=== START WRITING ===*/
   logo (out);
