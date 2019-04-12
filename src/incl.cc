@@ -97,7 +97,8 @@ void build_crystal_plast (long ne,
 
 void nulld (double *a,long n)
 {
-  memset(a,0,n*sizeof(double));
+  if(n != 0)                     //avoids null pointer to memset
+    memset(a,0,n*sizeof(double));
 }
 
 void nulld2 (double **a,long m,long n)

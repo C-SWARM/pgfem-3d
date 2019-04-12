@@ -134,7 +134,7 @@ struct CommunicationStructure {
   long *DomDof;             //!< number of global DOFs on each domain
   long nbndel;              //!< number of Element on the communication boundary
   long *bndel;              //!< Element ids on the communication boundary
-  int GDof;                 //!< maximum id of locally owned global DOF
+  long GDof;                //!< maximum id of locally owned global DOF
   long NBN;                 //!< Number of nodes on domain interfaces
   
   net::PGFem3D_Comm comm;   //!< The PGFem3D network communicator handle

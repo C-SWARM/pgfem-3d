@@ -164,7 +164,7 @@ int* Psparse_ApAi (long ne,
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
   long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
-  int *Ddof = NULL;
+  long *Ddof = NULL;
   int *Ai = NULL;
 
   /* pull necessary info from Communication handle */
@@ -172,7 +172,7 @@ int* Psparse_ApAi (long ne,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   long *DomDof = com->DomDof;
-  int *GDof = &(com->GDof);
+  long *GDof = &(com->GDof);
   int *Ap = com->Ap;
   
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
@@ -386,7 +386,7 @@ int* Psparse_ApAi (long ne,
   PGFEM_free (AA);
   dealoc1l (ap1); ap1 = NULL;
 
-  Ddof = aloc1i (nproc);                                                      //a total (global) count of the degrees of freedom
+  Ddof = aloc1l (nproc);                                                      //a total (global) count of the degrees of freedom
   Ddof[0] = DomDof[0];
 
   for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
@@ -711,7 +711,7 @@ int* Psparse_ApAi (long ne,
   dealoc1l (nod);
   dealoc1l (ap);
   dealoc1l (LG);
-  dealoc1i (Ddof);
+  dealoc1l (Ddof);
   dealoc1l (ap1);
   dealoc1l (GL);
   dealoc1l (GNRr);
