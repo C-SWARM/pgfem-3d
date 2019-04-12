@@ -1391,3 +1391,50 @@ void compute_3f_initial_conditions(Grid *grid,
   }
 }
 
+/// determine number of pressures and volumes
+///
+/// \param[in, out] npres   number of pressures for 3f method
+/// \param[in, out] nVol    number of volume for 3f method
+/// \param[in]      options PGFem3D options
+/// \param[in]      myrank  current process rank
+void get_3f_pressure_volume_number(long *npres,
+                                   long *nVol,
+                                   PGFem3D_opt &options,
+                                   const int myrank){
+  switch(options.analysis_type){
+    case TF: // intended not to have break
+    case CM3F:
+     *npres = 1;
+     *nVol = 1;
+    
+     break;
+    case STABILIZED: case MINI: case MINI_3F:
+     if(*npres != 4){
+       *npres = 4;
+       if(myrank == 0){
+         PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
+                      "Re-setting to 4 and continuing...\n");
+       }
+     }
+     break;
+    case DISP: // intended not to have break
+    case CM:
+     if(*npres != 0){
+       *npres = 0;
+       if (myrank == 0) {
+         PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
+                      "Re-setting to 0 and continuing...\n");
+       }
+     }
+     break;
+    default:
+     if(*npres != 1){
+       *npres = 1;
+       if (myrank == 0) {
+         PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
+                      "Re-setting to 1 and continuing...\n");
+       }
+     }
+     break;
+  }/* switch */
+}

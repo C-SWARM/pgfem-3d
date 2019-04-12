@@ -902,43 +902,9 @@ int single_scale_main(int argc,char *argv[])
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
-        /* alocation of pressure variables */
-        switch(options.analysis_type){
-         case TF: // intended not to have break
-         case CM3F:
-          fv[ia].npres = 1;
-          fv[ia].nVol = 1;
+        // alocation of pressure variables
+        get_3f_pressure_volume_number(&(fv[ia].npres), &(fv[ia].nVol), options, myrank);
 
-          break;
-         case STABILIZED: case MINI: case MINI_3F:
-          if(fv[ia].npres != 4){
-            fv[ia].npres = 4;
-            if(myrank == 0){
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
-                           "Re-setting to 4 and continuing...\n");
-            }
-          }
-          break;
-         case DISP: // intended not to have break
-         case CM:
-          if(fv[ia].npres != 0){
-            fv[ia].npres = 0;
-            if (myrank == 0) {
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
-                           "Re-setting to 0 and continuing...\n");
-            }
-          }
-          break;
-         default:
-          if(fv[ia].npres != 1){
-            fv[ia].npres = 1;
-            if (myrank == 0) {
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
-                           "Re-setting to 1 and continuing...\n");
-            }
-          }
-          break;
-        }/* switch */
         build_pressure_nodes (grid.ne,fv[ia].npres,grid.element,fv[ia].sig,fv[ia].eps,options.analysis_type);
         build_crystal_plast (grid.ne,grid.element,fv[ia].sig,fv[ia].eps,crpl,
                              options.analysis_type,options.plc);
