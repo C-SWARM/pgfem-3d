@@ -11,7 +11,7 @@
 #include <cassert>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 Node* build_node(const long nn,
                  const int ndofn)

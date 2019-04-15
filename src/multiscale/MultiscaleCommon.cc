@@ -1,4 +1,9 @@
 /* HEADER */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pgfem3d/MultiscaleCommon.hpp"
 #include "allocation.h"
 #include "constitutive_model.h"
@@ -24,7 +29,7 @@
 #include <stdio.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace pgfem3d {
 
@@ -146,8 +151,8 @@ void MultiscaleCommon::initialize(const int argc,
 }
 
 void MultiscaleCommon::build_common(const CommunicationStructure *com,
-                    const int mp_id,
-            Multiphysics& mp)
+				    const int mp_id,
+				    Multiphysics& mp)
 {
   // save initial communication properties from parent com
   rank = com->rank;    // my rank

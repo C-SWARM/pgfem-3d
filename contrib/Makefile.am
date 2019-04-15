@@ -1,0 +1,7 @@
+SUBDIRS = 
+DIST_SUBDIRS =
+
+if BUILD_MSNET
+SUBDIRS += msnet
+DIST_SUBDIRS += msnet
+endif

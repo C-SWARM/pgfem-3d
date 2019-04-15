@@ -1,7 +1,13 @@
 #ifndef PGFEM3D_SPARSE_SYSTEM_HPP
 #define PGFEM3D_SPARSE_SYSTEM_HPP
 
-#include "pgfem3d/Network.hpp"
+#ifdef HAVE_PGFEM_MPI
+#define HAVE_MPI 1
+#endif
+#include "msnet/Network.hpp"
+#ifdef HAVE_PGFEM_MPI
+#undef HAVE_MPI
+#endif
 #include "PGFem3D_options.h"
 #include "datatype.hpp"
 
@@ -20,8 +26,8 @@ class SparseSystem
   using Index = Ai_t;
 
   static SparseSystem* Create(const PGFem3D_opt& opts,
-                              pgfem3d::net::Network& net,
-                              pgfem3d::net::PGFem3D_Comm comm,
+                              multiscale::net::Network& net,
+                              multiscale::net::MSNET_Comm comm,
                               const int Ap[],
                               const Index Ai[],
                               const long rowsPerProc[],

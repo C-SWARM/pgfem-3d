@@ -49,7 +49,6 @@
 #include "vtk_output.h"
 #include "set_initial_plastic_deformation_gradient.h"
 #include "pgfem3d/Communication.hpp"
-#include "pgfem3d/Boot.hpp"
 
 #include <cstdlib>
 #include <cassert>
@@ -59,7 +58,10 @@
 #include <sys/resource.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
+
+Boot *pgfem3d::gboot;
 
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
@@ -452,9 +454,9 @@ int single_scale_main(int argc,char *argv[])
   /* debug_log = stderr; */
 
   // Start the Boot class to get our PMI info
-  Boot *boot = new Boot();
+  Boot *boot = gboot = Boot::Create(BOOT_DEFAULT);
   int myrank = boot->get_rank();
-  int nproc = boot->get_nproc();
+  int nproc = boot->get_ranks();
 
   /*=== Parse the command line for options ===*/
   PGFem3D_opt options;
@@ -495,7 +497,7 @@ int single_scale_main(int argc,char *argv[])
   err += read_multiphysics_settings(mp,&options,myrank);
 
   // Create the desired network
-  Network *net = pgfem3d::net::Network::Create(options);
+  Network *net = multiscale::net::Network::Create(NET_DEFAULT);
 
   std::vector<FieldVariables> fv(mp.physicsno);
   std::vector<CommunicationStructure> com(mp.physicsno);

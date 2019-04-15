@@ -76,7 +76,7 @@ void pgf_FE2_micro_server_destroy(pgf_FE2_micro_server *server);
  * processes. This function must be called by ALL micro-scale
  * processes.
  */
-int pgf_FE2_micro_server_START(const pgfem3d::MultiscaleComm *mscom,
+int pgf_FE2_micro_server_START(const multiscale::MultiscaleCommunicator *mscom,
 			       pgfem3d::Microscale *micro,
 			       const int mp_id);
 

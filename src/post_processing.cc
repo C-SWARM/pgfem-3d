@@ -12,7 +12,7 @@
 #include "PGFem3D_data_structure.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 //ttl declarations
 namespace {

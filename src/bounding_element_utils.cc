@@ -16,7 +16,7 @@
 #include <cmath>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef DEBUG_BE_UTILS
 #define DEBUG_BE_UTILS 0

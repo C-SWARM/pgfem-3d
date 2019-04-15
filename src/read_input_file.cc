@@ -27,7 +27,7 @@
 #include <limits>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /// read mechanical part of material properties
 ///

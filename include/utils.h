@@ -379,12 +379,12 @@ void GToL (const double *Gr,
        const long ndofd,
        const pgfem3d::CommunicationStructure *com);
 
-pgfem3d::net::PGFem3D_Comm*
+multiscale::net::MSNET_Comm*
 CreateGraph (int nproc,
-         int myrank,
-         long nn,
-         Node *node,
-         pgfem3d::net::PGFem3D_Comm comm);
+	     int myrank,
+	     long nn,
+	     Node *node,
+	     multiscale::net::MSNET_Comm comm);
 
 /** Pause for t seconds */
 void pause_time(int t);

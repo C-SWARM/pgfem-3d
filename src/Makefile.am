@@ -21,7 +21,8 @@ AM_CPPFLAGS = -Wall \
               $(SUITESPARSE_INCLUDE) \
               $(TTL_INCLUDE) \
               $(LIBGCM_CPPFLAGS) \
-              $(LAPACK_INCLUDE)
+              $(LAPACK_INCLUDE)  \
+              $(MSNET_INCLUDE)
 
 libpgfem3d_la_LIBADD = \
   $(builddir)/solvers/libsolvers.la \
@@ -31,7 +32,17 @@ libpgfem3d_la_LIBADD = \
   $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
   $(top_builddir)/energy_equation/src/libenergy_equation.la \
   $(LIBGCM_LIBADD) \
-  $(VTK_LDFLAGS) $(VTK_LIBS)
+  $(VTK_LDFLAGS) $(VTK_LIBS) \
+  $(MSNET_LIBADD)
+
+libpgfem3d_la_DEPENDENCIES = \
+  $(builddir)/solvers/libsolvers.la \
+  $(builddir)/multiscale/libmultiscale.la \
+  $(builddir)/communication/libcommunication.la \
+  $(top_builddir)/FEMLIB/src/libPGFem3D_FEMLIB.la \
+  $(top_builddir)/lib/VTK_IO/src/libPGFem3D_to_VTK.la \
+  $(top_builddir)/energy_equation/src/libenergy_equation.la \
+  $(MSNET_LIBADD)
 
 if HAVE_TRILINOS
 libpgfem3d_la_LIBADD += $(TRILINOS_LIBADD)

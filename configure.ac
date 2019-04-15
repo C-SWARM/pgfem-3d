@@ -31,6 +31,13 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 LT_PREREQ([2.4.2])
 LT_INIT([disable-shared])
 
+# Allow parallel configuration. We do this early so that it shows up before the
+# rest of the 'enable' options. 
+AC_ARG_ENABLE([parallel-config],
+ [AS_HELP_STRING([--enable-parallel-config],
+                 [Enable parallel configuration @<:@default=no@:>@])],
+ [], [enable_parallel_config=no])
+
 CONFIG_LAPACK([have_lapack=yes])
 CONFIG_TTL([have_ttl=yes])
 CONFIG_MTL([have_mtl=yes])
@@ -39,7 +46,7 @@ CONFIG_TRILINOS([have_trilinos=yes])
 CONFIG_SUITESPARSE([have_suitesparse=yes])
 CONFIG_VTK([5.10.1])
 CONFIG_GCM([have_gcm=yes])
-CONFIG_PHOTON([photon])
+CONFIG_MSNET([contrib/msnet],[msnet])
 CONFIG_TESTS()
 
 AC_ARG_WITH(special-link,
@@ -59,17 +66,19 @@ AS_IF([test "x$have_mpicxx" = xyes],
 
 # set automake conditionals that our network build requires
 AM_CONDITIONAL([HAVE_PGFEM_MPI], [test "x$have_mpicxx" == xyes])
-AM_CONDITIONAL([HAVE_PHOTON], [test "x$have_photon" == xyes])
+AM_CONDITIONAL([HAVE_MSNET], [test "x$have_msnet" == xyes])
+AM_CONDITIONAL([BUILD_MSNET], [test "x$build_msnet" == xyes])
 
 AS_IF([test "x$have_trilinos" = xyes],
 	    [AC_DEFINE([HAVE_TRILINOS], [1], [Trilinos solvers avaiable])])
 
- AM_CONDITIONAL([HAVE_TRILINOS], [test "x$have_trilinos" == xyes])
+AM_CONDITIONAL([HAVE_TRILINOS], [test "x$have_trilinos" == xyes])
 
 # https://gitlab-cswarm.crc.nd.edu/Constitutive_Model/Generalizsed_constitutive_model/issues/9
 dnl LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
 
 AC_CONFIG_FILES([Makefile
+		 contrib/Makefile
                  lib/VTK_IO/src/Makefile
                  energy_equation/src/Makefile
                  FEMLIB/src/Makefile

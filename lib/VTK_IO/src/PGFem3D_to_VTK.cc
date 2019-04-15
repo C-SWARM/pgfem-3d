@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include "msnet/Communication.hpp"
 #include "PGFem3D_to_VTK.hpp"
 #include <iostream>
 
@@ -17,6 +18,10 @@
 #include <vtkCellArray.h>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
+
+namespace {
+  using pgfem3d::PGFEM_Abort;
+}
 
 /** Create a vtkUnstructuredGrid object from a PGFem3D mesh and
     associated information. ***CURRENTLY ONLY SUPPORT LINEAR TETRAS
@@ -170,7 +175,7 @@ PGFem3D_to_vtkUnstructuredGrid(const int nnode,
      case 10: type[i] = VTK_QUADRATIC_TETRA; break;
      default:
       std::cerr << "Unsupported element type!\n" << std::endl;
-      MPI_Abort(MPI_COMM_WORLD,0);
+      PGFEM_Abort();
       break;
     }
     conn->InsertNextValue(elems[i].toe);

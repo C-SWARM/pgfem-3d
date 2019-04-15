@@ -50,7 +50,7 @@
 
 static constexpr int periodic = 0;
 
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
   using pgfem3d::CommunicationStructure;

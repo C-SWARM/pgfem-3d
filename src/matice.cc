@@ -13,7 +13,7 @@
 #define SIGN(a,b) ((b)<0 ? -fabs(a) : fabs(a))
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 int compare_val_w_key(const void *a,
               const void *b)

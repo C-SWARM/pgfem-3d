@@ -28,7 +28,7 @@
  */
 int pgf_FE2_compute_max_n_jobs(const pgfem3d::Macroscale *macro,
 			       const pgfem3d::Microscale *micro,
-			       const pgfem3d::MultiscaleComm *mscom,
+			       const multiscale::MultiscaleCommunicator *mscom,
 			       int *max_n_jobs);
 
 #endif /* #ifndef  */

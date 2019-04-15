@@ -15,7 +15,7 @@
 #include <assert.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0

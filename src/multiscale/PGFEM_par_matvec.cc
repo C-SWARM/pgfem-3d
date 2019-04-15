@@ -19,7 +19,7 @@
 #endif
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /*=== ENTRY ===*/
 typedef struct entry{

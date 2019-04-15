@@ -6,7 +6,7 @@ namespace pgfem3d {
   
 class ISIR_SparseComm : public SparseComm {
 public:
-  ISIR_SparseComm(pgfem3d::net::ISIRNetwork *n, pgfem3d::net::PGFem3D_Comm c);
+  ISIR_SparseComm(multiscale::net::ISIRNetwork *n, multiscale::net::MSNET_Comm c);
   ~ISIR_SparseComm();
   
   void initialize();
@@ -20,9 +20,9 @@ public:
   void GToL(const double *Gr, double *r, const long ndofd,
 	    const long GDof);
 private:
-  net::ISIRNetwork *net;
-  net::Request *req_s, *req_r;
-  net::Status *sta_s, *sta_r;
+  multiscale::net::ISIRNetwork *net;
+  multiscale::net::Request *req_s, *req_r;
+  multiscale::net::Status *sta_s, *sta_r;
 };
   
 } // namespace pgfem3d

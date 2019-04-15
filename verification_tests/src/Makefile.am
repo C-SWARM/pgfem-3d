@@ -20,7 +20,8 @@ AM_CPPFLAGS = -Wall -Werror \
               $(TTL_INCLUDE) \
               $(LIBGCM_CPPFLAGS) \
               $(LAPACK_INCLUDE) \
-              $(HYPRE_INCLUDE)
+              $(HYPRE_INCLUDE) \
+	      $(MSNET_INCLUDE)
 
 AM_LDFLAGS  = $(VTK_LDFLAGS)
 LDADD       = $(top_builddir)/src/libpgfem3d.la

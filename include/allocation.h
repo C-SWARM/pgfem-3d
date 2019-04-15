@@ -4,7 +4,7 @@
 #define _PGFEM_ALLOCATION_H_
 #define ALLOCATION_H
 
-#include "pgfem3d/Network.hpp"
+#include "pgfem3d/Communication.hpp"
 #include <stdlib.h>
 
 // Help with legacy malloc.
@@ -48,8 +48,8 @@ void**** PGFEM_CALLOC_4(const long nelem1,
 
 void* PGFEM_CALLOC_PIN(const long nelem,
     const long size,
-    pgfem3d::net::Network *net,
-    pgfem3d::net::Key *key,
+    multiscale::net::Network *net,
+    multiscale::net::Key *key,
     const char *function,
     const char *file,
     const long line);
@@ -66,7 +66,7 @@ void PGFEM_free4(void ****a,
     const long nelem2,
     const long nelem3);
 
-void PGFEM_free_unpin(void *a, long bytes, pgfem3d::net::Network *net);
+void PGFEM_free_unpin(void *a, long bytes, multiscale::net::Network *net);
 
 /* define macro wrappers to pass in function/file/line info */
 /* define macro wrappers to pass in function/file/line info */

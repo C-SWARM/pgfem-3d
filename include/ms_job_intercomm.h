@@ -3,18 +3,18 @@
 #ifndef MS_JOB_INTERCOMM_H
 #define MS_JOB_INTERCOMM_H
 
-#include "pgfem3d/MultiscaleCommunication.hpp"
+#include "pgfem3d/Communication.hpp"
 
 /** Job intercommunicator structure */
 typedef struct PGFEM_ms_job_intercomm{
-  pgfem3d::net::PGFem3D_Comm comm;
-  pgfem3d::MultiscaleCommInfo *send_info;
-  pgfem3d::MultiscaleCommInfo *recv_info;
+  multiscale::net::MSNET_Comm comm;
+  multiscale::MultiscaleCommInfo *send_info;
+  multiscale::MultiscaleCommInfo *recv_info;
 } PGFEM_ms_job_intercomm;
 
 /** create a job intercommunicator structure */
 int create_PGFEM_ms_job_intercomm(const int nproc_macro,
-				  const pgfem3d::MultiscaleComm *mscom,
+				  const multiscale::MultiscaleCommunicator *mscom,
 				  const int n_jobs,
 				  const int *job_buff_sizes,
 				  PGFEM_ms_job_intercomm **intercomm);

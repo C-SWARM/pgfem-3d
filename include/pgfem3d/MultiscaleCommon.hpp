@@ -2,7 +2,7 @@
 #define PGFEM3D_MULTISCALE_COMMON_H
 
 /// @brief This file defines the multiscale common classes
-#include "pgfem3d/MultiscaleCommunication.hpp"
+#include "pgfem3d/Communication.hpp"
 #include "pgfem3d/MultiscaleSolution.hpp"
 #include "PGFem3D_options.h"
 #include "cohesive_element.h"
@@ -87,7 +87,7 @@ public:
 private:
   void build_common(const CommunicationStructure *com,
 		    const int mp_id,
-        Multiphysics& mp);
+		    Multiphysics& mp);
   void destroy_common();
 };
 

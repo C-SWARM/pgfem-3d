@@ -26,7 +26,7 @@
 #include <cmath>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef STAB_DEBUG
 #define STAB_DEBUG 0

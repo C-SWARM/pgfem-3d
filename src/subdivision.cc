@@ -19,7 +19,7 @@ static constexpr int MAX_STEP = 10000;
 static constexpr double MIN_D_TIME = 1.0e-15;
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /// determine time step size based on the previous time step convergence history
 /// and physics based evolution rate.

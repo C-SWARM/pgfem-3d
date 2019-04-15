@@ -21,7 +21,7 @@
 #include <cmath>
 #include <cstring>
 
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
 const constexpr int periodic = 0;

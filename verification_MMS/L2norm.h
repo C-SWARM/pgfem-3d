@@ -10,7 +10,7 @@
 #include "pgfem3d/Communication.hpp"
 #include <cmath>
 
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

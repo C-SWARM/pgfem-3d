@@ -12,7 +12,7 @@
 #include "utils.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /// Fill the B matrix, size of B have to be created before call this function.
 ///

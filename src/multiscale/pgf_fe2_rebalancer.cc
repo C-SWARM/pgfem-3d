@@ -18,7 +18,8 @@
 #include <limits.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 /* turn on/off adaptive rebalancing print statements */
 static const int LOGGING = 1;
@@ -255,7 +256,7 @@ void rebalance_partitions_greedy(const size_t n_parts,
 
 pgf_FE2_server_rebalance**
 pgf_FE2_rebalancer(Network *n,
-		   const MultiscaleComm *mscom,
+		   const MultiscaleCommunicator*mscom,
 		   const size_t total_n_jobs,
 		   const size_t max_n_jobs,
 		   const int heuristic)

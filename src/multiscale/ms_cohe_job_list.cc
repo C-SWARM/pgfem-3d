@@ -13,7 +13,7 @@
 #include "utils.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 using pgfem3d::solvers::SparseSystem;
 
 static constexpr int ndim = 3;
@@ -72,8 +72,8 @@ static int compute_loc_job_list_metadata(const long nce,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,
-                     Network *net,
-                                         PGFem3D_Comm ms_comm);
+					 Network *net,
+                                         MSNET_Comm ms_comm);
 
 /** Distribute the job list to all procs on the communicator. Contains
     collective communication on ms_comm */
@@ -81,21 +81,21 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
                                               const int start_id,
                                               /* const */ int buff_size,
                                               const long *n_job_dom,
-                          Network *net,
-                                              PGFem3D_Comm ms_comm);
+					      Network *net,
+                                              MSNET_Comm ms_comm);
 
 /*==== API FUNCTION DEFINITIONS ====*/
 
 int create_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
                                   const Node *node,
-                                  const PGFem3D_Comm macro_comm,
-                                  const PGFem3D_Comm ms_comm,
+                                  const MSNET_Comm macro_comm,
+                                  const MSNET_Comm ms_comm,
                                   const int group_id,
                                   long *Gn_jobs,
                                   long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
-                  Network *net,
+				  Network *net,
                                   const int mp_id)
 {
   int err = 0;
@@ -206,8 +206,8 @@ int update_group_ms_cohe_job_list(const long nce,
                                   const Node *node,
                                   const SUPP sup,
                                   const double *sol,
-                  Network *net,
-                                  PGFem3D_Comm ms_comm,
+				  Network *net,
+                                  MSNET_Comm ms_comm,
                                   MS_COHE_JOB_INFO *job_list)
 {
   int err = 0;
@@ -346,7 +346,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq, //deprecated
 
 int assemble_ms_cohe_res(const Microscale *micro,
                          const MS_COHE_JOB_INFO *jobs,
-                         const PGFem3D_Comm macro_mpi_comm,
+                         const MSNET_Comm macro_mpi_comm,
                          double *macro_loc_res,
                          const int mp_id)
 {
@@ -621,8 +621,8 @@ static int compute_loc_job_list_metadata(const long nce,
                                          long **n_job_dom,
                                          long *Gn_job,
                                          long *start_id,
-                     Network *net,
-                                         PGFem3D_Comm ms_comm)
+					 Network *net,
+                                         MSNET_Comm ms_comm)
 {
   int err = 0;
   int myrank = 0;
@@ -653,8 +653,8 @@ static int  distribute_group_ms_cohe_job_list(MS_COHE_JOB_INFO *job_list,
                                               const int start_id,
                                               /* const */ int buff_size,
                                               const long *n_job_dom,
-                          Network *net,
-                                              PGFem3D_Comm ms_comm)
+					      Network *net,
+                                              MSNET_Comm ms_comm)
 {
   int err = 0;
   int myrank = 0;

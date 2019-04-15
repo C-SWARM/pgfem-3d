@@ -18,7 +18,7 @@
 #include <cmath>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #define MP_ID 0
 static constexpr int periodic = 0;

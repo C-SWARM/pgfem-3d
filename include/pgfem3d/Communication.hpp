@@ -2,16 +2,27 @@
 #define PGFEM3D_COMMUNICATION_H
 
 /// @brief This file defines the system-wide Communication abstractions
-#include "pgfem3d/Boot.hpp"
-#include "pgfem3d/Network.hpp"
+#ifdef HAVE_PGFEM_MPI
+#define HAVE_MPI 1
+#endif
+#include "msnet/Communication.hpp"
+#include "msnet/Multiscale.hpp"
 #include "pgfem3d/Solver.hpp"
 #include "datatype.hpp"
 #include <cassert>
+
+#ifdef HAVE_PGFEM_MPI
+#undef HAVE_MPI
+#endif
+
 #include <cstdio>
 #include <string>
 #include <vector>
 
 namespace pgfem3d {
+
+// Keep a global handle to the boot instance
+extern multiscale::net::Boot *gboot;
 
 /**
  * Structure for containing an index map.
@@ -77,8 +88,8 @@ class SparseComm {
  public:
   virtual ~SparseComm();
 
-  static SparseComm* Create(net::Network *net, net::PGFem3D_Comm);
-
+  static SparseComm* Create(multiscale::net::Network *net, multiscale::net::MSNET_Comm);
+  
   virtual void initialize() = 0;
   virtual void post_stiffmat(double ***Lk, double ***receive) = 0;
   virtual void send_stiffmat() = 0;
@@ -141,16 +152,18 @@ class SparseComm {
 
   int nproc;                //!< number of processes
   int myrank;               //!< this process rank
-
-  net::Network *net;        //!< Network handle for data exchange
-  net::PGFem3D_Comm comm;   //!< The PGFem3D network communicator handle
+  
+  multiscale::net::Network *net;     //!< MSNET network handle
+  multiscale::net::MSNET_Comm comm;  //!< MSNET communicator handle
 };
 
-
 // The primary Communication structure
-struct CommunicationStructure {
+struct CommunicationStructure : public multiscale::Communication {
   virtual ~CommunicationStructure();
 
+  // any initialization routines go here
+  void init() {}
+  
   int nproc;                //!< number of processes
   int rank;                 //!< this process rank
   int *Ap;                  //!< n_cols in each owned row of global stiffness matrix
@@ -160,11 +173,6 @@ struct CommunicationStructure {
   long *bndel;              //!< Element ids on the communication boundary
   long GDof;                //!< maximum id of locally owned global DOF
   long NBN;                 //!< Number of nodes on domain interfaces
-
-  net::PGFem3D_Comm comm;   //!< The PGFem3D network communicator handle
-
-  net::Network *net;        //!< Network handle for data exchange
-  net::Boot *boot;          //!< Boot handle for PMI info
   SparseComm *spc;          //!< Sparse communication handle
   CommHints *hints;         //!< Communication hints handle
 };

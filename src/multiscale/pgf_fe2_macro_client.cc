@@ -23,7 +23,8 @@
 #include <assert.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 /**
  * Comparator function for array of ints as object. Compares n-th in
@@ -216,7 +217,7 @@ static int pgf_FE2_macro_client_update_send_recv(pgf_FE2_macro_client *client,
  * Initializes client->bcast.
  */
 static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
-					   const MultiscaleComm *mscom)
+					   const MultiscaleCommunicator *mscom)
 {
   int err = 0;
   const size_t rank = mscom->rank_macro;
@@ -270,7 +271,7 @@ static int pgf_FE2_macro_client_bcast_list(pgf_FE2_macro_client *client,
  */
 static int pgf_FE2_macro_client_bcast_rebal_to_servers(pgf_FE2_macro_client *client,
                                pgf_FE2_server_rebalance **rb_list,
-			       const MultiscaleComm *mscom)
+			       const MultiscaleCommunicator *mscom)
 {
   int err = 0;
 
@@ -363,7 +364,7 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client)
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
                       const int n_jobs_max,
                       const Macroscale *macro,
-                      const MultiscaleComm *mscom,
+                      const MultiscaleCommunicator *mscom,
                       const int mp_id)
 {
   /* compute and store number of servers */
@@ -444,7 +445,7 @@ void find_job_sizes_from_map(const Macroscale *macro,int *jobs_ROM, int *pde_job
 
 
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
-						 const MultiscaleComm *mscom)
+						 const MultiscaleCommunicator *mscom)
 {
   /* create initial partition and send to microscale */
   int nproc_macro = 0;
@@ -520,7 +521,7 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
-					    const MultiscaleComm *mscom,
+					    const MultiscaleCommunicator *mscom,
 					    const int heuristic)
 {
   int nproc_macro = 0;
@@ -547,7 +548,7 @@ void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
-                    const MultiscaleComm *mscom,
+                    const MultiscaleCommunicator *mscom,
                     const Macroscale *macro,
                     const int job_type)
 {
@@ -560,7 +561,7 @@ void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
   MS_COHE_JOB_INFO *job_list = client->jobs;
 
   ISIRNetwork *net = static_cast<ISIRNetwork*>(client->net);
-  PGFem3D_Comm comm = mscom->mm_inter;
+  MSNET_Comm comm = mscom->mm_inter;
   /* Wait to complete any pending communcication. The error flag is
      incremented as this should only occur by a logical/programming
      error. Note that buffers may be overwritten. If the communication
@@ -698,7 +699,7 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
 }
 
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
-				    const MultiscaleComm *mscom)
+				    const MultiscaleCommunicator *mscom)
 {
   const size_t n_send = client->bcast.n_comm;
   const int *ranks = client->bcast.ranks;

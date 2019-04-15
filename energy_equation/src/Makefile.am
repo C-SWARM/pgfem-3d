@@ -7,6 +7,7 @@ libenergy_equation_la_CPPFLAGS = -Wall -Werror \
                                  -I$(top_builddir)/include \
                                  $(LIBGCM_CPPFLAGS) \
                                  $(TTL_INCLUDE) \
-                                 $(LAPACK_INCLUDE)
+                                 $(LAPACK_INCLUDE) \
+				 $(MSNET_INCLUDE)
 
 libenergy_equation_la_SOURCES  = energy_equation.cc

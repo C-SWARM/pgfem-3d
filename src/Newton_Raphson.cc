@@ -73,7 +73,7 @@ long total_EXA_metric = 0;
 long dof_EXA_metric = 0;
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
 using pgfem3d::Solver;

@@ -42,7 +42,7 @@
 #define PFEM_DEBUG 0
 #endif
 
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
 using pgfem3d::SparseComm;

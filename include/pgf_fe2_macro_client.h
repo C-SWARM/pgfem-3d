@@ -7,9 +7,9 @@
 #ifndef PGF_FE2_MACRO_CLIENT_H
 #define PGF_FE2_MACRO_CLIENT_H
 
-#include "pgfem3d/Network.hpp"
-#include <stdlib.h>
+#include "pgfem3d/Communication.hpp"
 #include "pgf_fe2_rebalancer.h"
+#include <stdlib.h>
 
 /* fully encapsulate the client */
 struct pgf_FE2_macro_client;
@@ -18,7 +18,7 @@ struct pgf_FE2_macro_client;
  * Initialize a handle to a client.
  */
 void pgf_FE2_macro_client_init(pgf_FE2_macro_client **client,
-			       pgfem3d::net::Network *n);
+			       multiscale::net::Network *n);
 
 /**
  * Destroy a client object. Returns NULL for the client handle.
@@ -34,7 +34,7 @@ void pgf_FE2_macro_client_destroy(pgf_FE2_macro_client *client);
 void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
 					  const int n_jobs_max,
 					  const pgfem3d::Macroscale *macro,
-					  const pgfem3d::MultiscaleComm *mscom,
+					  const multiscale::MultiscaleCommunicator *mscom,
 					  const int mp_id);
 
 /**
@@ -43,7 +43,7 @@ void pgf_FE2_macro_client_create_job_list(pgf_FE2_macro_client *client,
  * Communicates w/ microscale servers
  */
 void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
-					const pgfem3d::MultiscaleComm *mscom);
+					const multiscale::MultiscaleCommunicator *mscom);
 
 /**
  * Reassign jobs to balance load on servers. Send new assignment
@@ -54,14 +54,14 @@ void pgf_FE2_macro_client_assign_initial_servers(pgf_FE2_macro_client *client,
  * pgf_FE2_macro_client_send_jobs can be executed.
  */
 void pgf_FE2_macro_client_rebalance_servers(pgf_FE2_macro_client *client,
-			const pgfem3d::MultiscaleComm *mscom,
+			const multiscale::MultiscaleCommunicator *mscom,
                         const int heuristic);
 
 /**
  * Send jobs to servers to be computed.
  */
 void pgf_FE2_macro_client_send_jobs(pgf_FE2_macro_client *client,
-		    const pgfem3d::MultiscaleComm *mscom,
+		    const multiscale::MultiscaleCommunicator *mscom,
 		    const pgfem3d::Macroscale *macro,
                     const int job_type);
 
@@ -77,6 +77,6 @@ void pgf_FE2_macro_client_recv_jobs(pgf_FE2_macro_client *client,
  * Send signal to servers to exit.
  */
 void pgf_FE2_macro_client_send_exit(pgf_FE2_macro_client *client,
-			   const pgfem3d::MultiscaleComm *mscom);
+			   const multiscale::MultiscaleCommunicator *mscom);
 
 #endif

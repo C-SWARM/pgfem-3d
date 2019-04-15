@@ -22,4 +22,5 @@ libmultiscale_la_CPPFLAGS = -Wall -Werror                  \
                             -I$(top_builddir)/include      \
 	                    -I$(top_srcdir)/FEMLIB/include \
                              $(LIBGCM_CPPFLAGS)            \
-                             $(LAPACK_INCLUDE)
+                             $(LAPACK_INCLUDE)             \
+			     $(MSNET_INCLUDE)

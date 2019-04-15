@@ -24,7 +24,7 @@
 #include <cstring>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef JOB_LOGGING
 #define JOB_LOGGING 1

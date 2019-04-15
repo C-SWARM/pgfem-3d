@@ -52,8 +52,16 @@
 #include "pgfem3d/MultiscaleCommon.hpp"
 #include "read_input_file.h"
 
+#ifdef HAVE_PHOTON
+#include "../communication/photon/PhotonNetwork.hpp"
+namespace {
+  using multiscale::net::pwc::PhotonNetwork;
+}
+#endif
+
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 namespace {
 const constexpr int ndim = 3;
@@ -66,8 +74,8 @@ int multi_scale_main(int argc, char* argv[])
   int mp_id = 0;
 
   // Start the Boot class to get our PMI info
-  Boot *boot = new Boot();
-
+  Boot *boot = Boot::Create(BOOT_DEFAULT);
+  
   /* initialize PGFEM_io */
   PGFEM_initialize_io(NULL,NULL);
 
@@ -124,16 +132,15 @@ int multi_scale_main(int argc, char* argv[])
   //  // create and initialization of PGFem3D objects
   //    //----------------------------------------------------------------------
   //      //---->
-       // Multiphysics setting
+  // Multiphysics setting
   Multiphysics mp;
   err += read_multiphysics_settings(mp,&options,myrank);
 
-
   // Create the desired network
-  Network *net = pgfem3d::net::Network::Create(options);
-
+  Network *net = multiscale::net::Network::Create(NET_ISIR);
+  
   // Create the multiscale communicator object
-  MultiscaleComm *mscom = new MultiscaleComm(NET_COMM_WORLD, net);
+  MultiscaleCommunicator *mscom = new MultiscaleCommunicator(net, NET_COMM_WORLD);
 
   if (myrank == 0) {
     PGFEM_printf("=== COUPLED MULTISCALE ANALYSIS ===\n\n");
@@ -150,6 +157,11 @@ int multi_scale_main(int argc, char* argv[])
 
   //load comm hints, macro/micro class, macro/micro filenames
   if (mscom->valid_macro) {
+#ifdef HAVE_PHOTON
+    PhotonNetwork *pwc = new PhotonNetwork(mscom->macro);
+    (void)pwc;
+#endif
+    
     /*=== MACROSCALE ===*/
     macro = new Macroscale();
     re_parse_command_line(myrank, 1, macro_argc, macro_argv, &options);
@@ -170,13 +182,18 @@ int multi_scale_main(int argc, char* argv[])
     com->nproc = nproc_macro;
     com->boot = boot;
     com->net = net;
-    com->comm = mscom->macro; // MS communicators in mscom
-      PGFEM_redirect_io_null();
+    com->comm = mscom->macro;   // MS communicators in mscom
+    PGFEM_redirect_io_null();
     macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
-      PGFEM_redirect_io_macro();
-
+    macro->build_solutions(1);  // only 1 for macroscale
+    PGFEM_redirect_io_macro();
   }
-  else {
+  else if (mscom->valid_micro) {
+#ifdef HAVE_PHOTON
+    PhotonNetwork *pwc = new PhotonNetwork(mscom->micro);
+    (void)pwc;
+#endif
+
     /*====== MICROSCALE =======*/
     micro = new Microscale();
     re_parse_command_line(myrank, 1, micro_argc, micro_argv, &options);
@@ -198,60 +215,44 @@ int multi_scale_main(int argc, char* argv[])
     com->boot = boot;
     com->net = net;
     com->comm = mscom->micro; // MS communicators in mscom
-      PGFEM_redirect_io_null();
+    PGFEM_redirect_io_null();
     micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
-      PGFEM_redirect_io_micro();
-
-  }
-
-  /*=== INITIALIZE SCALES ===*/
-  if (mscom->valid_macro) {/*=== MACROSCALE ===*/
-    macro->build_solutions(1);  // only 1 for macroscale
-    // XXX not sure why this is done twice
-    macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
-  }
-  else if (mscom->valid_micro) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
-    /*=== REDIRECT MICROSCALE I/O ===*/
-    {
-      if (options.custom_micro == 1) {
-        char filenameMS[1024];
-        char in_dat[1020];
-        sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
-        sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
-        read_simulation_methods(filenameMS,micro->opts);
-      }
-      /* no output */
-      PGFEM_redirect_io_null();
-      parse_command_line(micro_argc, micro_argv, mscom->rank_micro,
-                         micro->opts);
-      PGFEM_redirect_io_micro();
-
-      /* create the directory for log output and set logging
-         filename */
-      int nproc_world;
-      net->comm_size(mscom->world, &nproc_world);
-      int group_id = mscom->rank_micro_all/micro_group_size;
-      int dir_len = snprintf(NULL,0,"%s/log",micro->opts->opath)+1;
-      char *dir_name = PGFEM_calloc(char, dir_len);
-      sprintf(dir_name,"%s/log",micro->opts->opath);
-      make_path(dir_name,DIR_MODE);
-      dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
-      char *fname = PGFEM_calloc(char, dir_len);
-      sprintf(fname,"%s/group_%05d",dir_name,group_id);
-
-      /* reinitialize I/O */
-      PGFEM_finalize_io();
-      PGFEM_initialize_io(NULL,fname);
-      PGFEM_redirect_io_micro();
-      free(dir_name);
-      free(fname);
+    
+    if (options.custom_micro == 1) {
+      char filenameMS[1024];
+      char in_dat[1020];
+      sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
+      sprintf(filenameMS,"%s.msm",in_dat); //micro simulation method
+      read_simulation_methods(filenameMS,micro->opts);
     }
-
-    /*=== BUILD MICROSCALE ===*/
-    // XXX not sure why this is done twice
-    micro->initialize(micro_argc, micro_argv, com, mp_id,mp);
-  } else {
+    /* no output */
+    PGFEM_redirect_io_null();
+    parse_command_line(micro_argc, micro_argv, mscom->rank_micro,
+		       micro->opts);
+    PGFEM_redirect_io_micro();
+    
+    /* create the directory for log output and set logging
+       filename */
+    int nproc_world;
+    net->comm_size(mscom->world, &nproc_world);
+    int group_id = mscom->rank_micro_all/micro_group_size;
+    int dir_len = snprintf(NULL,0,"%s/log",micro->opts->opath)+1;
+    char *dir_name = PGFEM_calloc(char, dir_len);
+    sprintf(dir_name,"%s/log",micro->opts->opath);
+    make_path(dir_name,DIR_MODE);
+    dir_len = snprintf(NULL,0,"%s/group_%05d",dir_name,group_id)+1;
+    char *fname = PGFEM_calloc(char, dir_len);
+    sprintf(fname,"%s/group_%05d",dir_name,group_id);
+    
+    /* reinitialize I/O */
+    PGFEM_finalize_io();
+    PGFEM_initialize_io(NULL,fname);
+    PGFEM_redirect_io_micro();
+    free(dir_name);
+    free(fname);
+  }
+  else {
     PGFEM_printerr("[%d]ERROR: neither macro or microscale!\n%s:%s:%d",
                    mscom->rank_world,__func__,__FILE__,__LINE__);
     PGFEM_Abort();

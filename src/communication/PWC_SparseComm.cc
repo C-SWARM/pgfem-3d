@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "PWC_SparseComm.hpp"
 #include "allocation.h"
 #include "incl.h"
@@ -10,12 +14,12 @@
 #endif
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 using pgfem3d::solvers::SparseSystem;
 
 namespace pgfem3d {
-
-  PWC_SparseComm::PWC_SparseComm(PWCNetwork *n, PGFem3D_Comm c)
+  PWC_SparseComm::PWC_SparseComm(PWCNetwork *n, MSNET_Comm c)
   {
     S = NULL;
     R = NULL;

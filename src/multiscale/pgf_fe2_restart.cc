@@ -27,7 +27,7 @@
 #include <assert.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /**
  * Generate the restart path string and ensure that the path exists,

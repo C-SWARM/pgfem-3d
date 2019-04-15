@@ -24,7 +24,7 @@
 #include <ttl/ttl.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
   static constexpr ttl::Index<'i'> i;
@@ -2940,15 +2940,15 @@ void GToL (const double *Gr,
   com->spc->GToL(Gr, r, ndofd, com->GDof);
 }
 
-PGFem3D_Comm* CreateGraph(int nproc,
-              int myrank,
-              long nn,
-              Node *node,
-              CommunicationStructure *com)
+MSNET_Comm* CreateGraph(int nproc,
+			int myrank,
+			long nn,
+			Node *node,
+			CommunicationStructure *com)
 {
   int *BN,*displ;
   long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom{},II,*CDom;
-  PGFem3D_Comm *GrComm = NULL;
+  MSNET_Comm *GrComm = NULL;
 
   for (i=0;i<nn;i++) if (node[i].Gnn >= 0) NBn++;
 

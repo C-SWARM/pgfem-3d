@@ -11,11 +11,12 @@
 #include <math.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 int pgf_FE2_compute_max_n_jobs(const Macroscale *macro, //deprecated
 			       const Microscale *micro,
-			       const MultiscaleComm *mscom,
+			       const MultiscaleCommunicator *mscom,
 			       int *max_n_jobs)
 {
   int err = 0;

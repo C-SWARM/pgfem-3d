@@ -3,7 +3,7 @@
 #endif
 
 #include "pgfem3d/BlockedRowDistribution.hpp"
-#include "pgfem3d/Network.hpp"
+#include "pgfem3d/Communication.hpp"
 #include "pgfem3d/SparseSystem.hpp"
 #include "hypre/Hypre.hpp"
 
@@ -11,8 +11,8 @@
 # include "trilinos/Trilinos.hpp"
 #endif
 
-using pgfem3d::net::Network;
-using pgfem3d::net::PGFem3D_Comm;
+using multiscale::net::Network;
+using multiscale::net::MSNET_Comm;
 using pgfem3d::solvers::SparseSystem;
 
 SparseSystem::~SparseSystem()
@@ -22,7 +22,7 @@ SparseSystem::~SparseSystem()
 SparseSystem*
 SparseSystem::Create(const PGFem3D_opt& opts,
                      Network& net,
-                     PGFem3D_Comm comm,
+                     const MSNET_Comm comm,
                      const int Ap[],
                      const Index Ai[],
                      const long rowsPerProc[],

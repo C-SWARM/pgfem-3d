@@ -11,7 +11,7 @@
 #include <cstring>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 double* computeMacroS(Element *elem,
                       long ne,

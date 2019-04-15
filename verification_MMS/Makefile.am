@@ -12,6 +12,7 @@ AM_CPPFLAGS = -Wall -Werror \
               -I$(top_builddir)/include \
               $(LIBGCM_CPPFLAGS) \
               $(LAPACK_INCLUDE) \
-              $(HYPRE_INCLUDE)
+              $(HYPRE_INCLUDE)  \
+	      $(MSNET_INCLUDE)
 
 LDADD       = $(top_builddir)/src/libpgfem3d.la

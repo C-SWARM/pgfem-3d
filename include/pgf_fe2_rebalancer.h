@@ -25,8 +25,8 @@ enum pgf_FE2_rebalancer_heuristic {
  * servers. Nominally collective communication on mscom->mm_inter.
  */
 pgf_FE2_server_rebalance** pgf_FE2_rebalancer(
-			  pgfem3d::net::Network *n,
-			  const pgfem3d::MultiscaleComm *mscom,
+			  multiscale::net::Network *n,
+			  const multiscale::MultiscaleCommunicator *mscom,
 			  const size_t total_n_jobs,
 			  const size_t max_n_jobs,
                           const int heuristic);

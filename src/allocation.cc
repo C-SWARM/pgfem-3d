@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifdef NDEBUG
 #define DEBUG_PGFEM_ALLOC 0

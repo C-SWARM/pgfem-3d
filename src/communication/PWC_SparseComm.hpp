@@ -6,7 +6,7 @@ namespace pgfem3d {
   
 class PWC_SparseComm : public SparseComm {
 public:
-  PWC_SparseComm(pgfem3d::net::PWCNetwork *n, pgfem3d::net::PGFem3D_Comm c);
+  PWC_SparseComm(multiscale::net::PWCNetwork *n, multiscale::net::MSNET_Comm c);
   ~PWC_SparseComm();
   
   void initialize();
@@ -28,9 +28,9 @@ private:
   double *backing_s;
   double *backing_r;
 
-  net::Buffer *local_s;
-  net::Buffer *local_r;
-  net::Buffer *remote;
+  multiscale::net::Buffer *local_s;
+  multiscale::net::Buffer *local_r;
+  multiscale::net::Buffer *remote;
   
   // LToG and GToL
   size_t total_lg_ssz;
@@ -42,16 +42,17 @@ private:
   double *backing_lg_S;
   double *backing_lg_R;
 
-  net::Buffer *local_lg_S;
-  net::Buffer *local_lg_R;
-  net::Buffer *remote_lg_S;
-  net::Buffer *remote_lg_R;
+  multiscale::net::Buffer *local_lg_S;
+  multiscale::net::Buffer *local_lg_R;
+  multiscale::net::Buffer *remote_lg_S;
+  multiscale::net::Buffer *remote_lg_R;
   
-  void exchange(net::Buffer *in, net::Buffer *out, long nsend,
-		long nrecv, long *idxs);
+  void exchange(multiscale::net::Buffer *in,
+		multiscale::net::Buffer *out,
+		long nsend, long nrecv, long *idxs);
   
-  net::PWCNetwork *net;
-  static constexpr net::CID LOCAL_ID = 0xcafebabe;
+  multiscale::net::PWCNetwork *net;
+  static constexpr multiscale::net::CID LOCAL_ID = 0xcafebabe;
 };
   
 } // namespace pgfem3d

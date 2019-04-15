@@ -28,7 +28,7 @@
 #include <cstring>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 #ifndef MINI_3F_DEBUG
 #define MINI_3F_DEBUG 0

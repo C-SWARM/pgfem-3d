@@ -14,7 +14,7 @@
 #include <cassert>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 static constexpr int ndn = 3;
 

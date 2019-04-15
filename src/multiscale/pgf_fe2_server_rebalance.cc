@@ -13,7 +13,8 @@
 #include <assert.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 /**
  * Internal data structure
@@ -248,7 +249,7 @@ static int dbg_cmp_int(const void *a, const void *b)
 static int debug_keep_id(const int n_keep,
                          const int *keep_id,
 			 Network *n,
-                         const MultiscaleComm *mscom)
+                         const MultiscaleCommunicator*mscom)
 {
   ISIRNetwork *net = static_cast<ISIRNetwork*>(n);
   int err = 0;
@@ -300,7 +301,7 @@ static int debug_keep_id(const int n_keep,
 
 int
 pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-                                       const MultiscaleComm *mscom,
+                                       const MultiscaleCommunicator*mscom,
                                        Microscale *micro)
 {
   ISIRNetwork *net = static_cast<ISIRNetwork*>(micro->net);
@@ -399,7 +400,7 @@ pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
 
 int
 pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-                                           const MultiscaleComm *mscom,
+                                           const MultiscaleCommunicator*mscom,
 					   const Microscale *micro)
 {
   int err = 0;

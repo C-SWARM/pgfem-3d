@@ -28,7 +28,7 @@
 #include <cmath>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 /* need to update to new_potentials for consistencey. requires change to
    1D pointers */

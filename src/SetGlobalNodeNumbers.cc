@@ -13,7 +13,7 @@
 #include "allocation.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 void SetGlobalNodeNumbers(int nNodesDom, Node *node, CommunicationStructure *com)
 {

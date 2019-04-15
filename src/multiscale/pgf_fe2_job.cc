@@ -11,7 +11,8 @@
 #include <assert.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 /*** FE2_job_comm_buf ***/
 void pgf_FE2_job_comm_buf_init(pgf_FE2_job_comm_buf *buf)
@@ -139,7 +140,7 @@ int pgf_FE2_job_decode_id_proc(const int id)
 }
 
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-			 const MultiscaleComm *mscom,
+			 const MultiscaleCommunicator*mscom,
 			 const Microscale *micro)
 {
   /* Already have the info to compute, return state */
@@ -202,7 +203,7 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
 
 int pgf_FE2_job_compute(pgf_FE2_job *job,
 			Microscale *micro,
-			const MultiscaleComm *mscom,
+			const MultiscaleCommunicator*mscom,
 			const int mp_id)
 {
   /* return immediately if not ready to compute */
@@ -241,7 +242,7 @@ int pgf_FE2_job_compute(pgf_FE2_job *job,
 }
 
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-		      const MultiscaleComm *mscom,
+		      const MultiscaleCommunicator*mscom,
 		      const Microscale *micro)
 {
   /* return immediately if not ready to reply */

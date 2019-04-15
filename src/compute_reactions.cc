@@ -22,7 +22,7 @@
 #include "utils.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 int compute_reactions(long ne,
                       long ndofn,

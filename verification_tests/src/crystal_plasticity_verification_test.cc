@@ -23,7 +23,8 @@
 
 using namespace ttl;
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 namespace {
   const constexpr Index<'i'> i;
@@ -177,9 +178,9 @@ void test_crystal_plasticity_single_crystal(void)
 
 int main(int argc,char *argv[])
 {
-  Boot *boot = new Boot();
+  Boot *boot = Boot::Create(BOOT_DEFAULT);
   int myrank = boot->get_rank();
-  int nproc = boot->get_nproc();
+  int nproc = boot->get_ranks();
 
   PGFem3D_opt options;
   if (argc <= 2){
@@ -192,8 +193,7 @@ int main(int argc,char *argv[])
   re_parse_command_line(myrank,2,argc,argv,&options);
 
   // Create the desired network
-  Network *net = Network::Create(options);
-
+  Network *net = Network::Create(NET_DEFAULT);
   CommunicationStructure *com = new CommunicationStructure();
   com->rank = myrank;
   com->nproc = nproc;
@@ -201,7 +201,7 @@ int main(int argc,char *argv[])
   com->net = net;
   com->comm = NET_COMM_WORLD;
 
-  char processor_name[NET_MAX_PROCESSOR_NAME];
+  char processor_name[MAX_PROCESSOR_NAME];
   int namelen = 0;
   boot->get_processor_name(processor_name, &namelen);
 

@@ -8,7 +8,8 @@
 #include "stiffmat_fd.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 static const int ndim = 3;
 
@@ -44,7 +45,7 @@ int compute_n_job_and_job_sizes(const MultiscaleCommon *c,
   return err;
 }
 
-int start_microscale_server(const MultiscaleComm *mscom, //deprecated
+int start_microscale_server(const MultiscaleCommunicator*mscom, //deprecated
                 const PGFEM_ms_job_intercomm *ic,
                 Microscale *microscale,
                 const int mp_id)
@@ -121,7 +122,7 @@ int start_microscale_server(const MultiscaleComm *mscom, //deprecated
   return err;
 }
 
-int micro_job_master(const MultiscaleComm *mscom,//deprecated
+int micro_job_master(const MultiscaleCommunicator*mscom,//deprecated
 		     const int idx,
 		     const int buff_size,
 		     char *in_buffer,
@@ -151,7 +152,7 @@ int micro_job_master(const MultiscaleComm *mscom,//deprecated
   return err;
 }
 
-int micro_job_slave(const MultiscaleComm *mscom, //deprecated
+int micro_job_slave(const MultiscaleCommunicator*mscom, //deprecated
 		    Microscale *micro,const int mp_id)
 {
   int err = 0;

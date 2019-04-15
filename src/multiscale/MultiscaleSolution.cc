@@ -1,4 +1,4 @@
-#include "pgfem3d/MultiscaleCommunication.hpp"
+#include "msnet/Multiscale.hpp"
 #include "pgfem3d/MultiscaleSolution.hpp"
 #include "pgfem3d/MultiscaleCommon.hpp"
 #include "allocation.h"

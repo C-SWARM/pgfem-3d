@@ -9,7 +9,7 @@
 #include "utils.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 double* computeMacroF(Element *elem,
                       long ne,

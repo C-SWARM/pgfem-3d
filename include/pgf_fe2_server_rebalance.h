@@ -103,7 +103,7 @@ int* pgf_FE2_server_rebalance_recv_src(const pgf_FE2_server_rebalance *t);
  * receive.
  */
 int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
-					   const pgfem3d::MultiscaleComm *mscom,
+					   const multiscale::MultiscaleCommunicator *mscom,
 					   pgfem3d::Microscale *micro);
 /**
  * Finalizes exchange communications and releases internal
@@ -111,7 +111,7 @@ int pgf_FE2_server_rebalance_post_exchange(pgf_FE2_server_rebalance *t,
  * computation.
  */
 int pgf_FE2_server_rebalance_finalize_exchange(pgf_FE2_server_rebalance *t,
-					       const pgfem3d::MultiscaleComm *mscom,
+					       const multiscale::MultiscaleCommunicator *mscom,
 					       const pgfem3d::Microscale *micro);
 
 #endif

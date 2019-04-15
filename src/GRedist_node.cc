@@ -19,7 +19,7 @@
 #define GREDIST_TAG 999
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 static long fallback_GRedist_node(const int nproc,
                   const int myrank,

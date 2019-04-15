@@ -32,7 +32,7 @@
 #include <cmath>
 #include <cstring>
 
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 namespace {
 using pgfem3d::Solver;

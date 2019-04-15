@@ -15,7 +15,8 @@
 #include <limits.h>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 void pgf_FE2_micro_server_stats_print(const pgf_FE2_micro_server *server)
 {
@@ -91,7 +92,7 @@ static int pgf_FE2_micro_server_done(pgf_FE2_micro_server *server,
  * Attempt to get information from the microscale.
  */
 static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
-					  const MultiscaleComm *mscom,
+					  const MultiscaleCommunicator*mscom,
 					  const Microscale *micro)
 {
   pgf_FE2_job *__restrict jobs = server->jobs; /* alias */
@@ -105,7 +106,7 @@ static void pgf_FE2_micro_server_get_info(pgf_FE2_micro_server *server,
  */
 static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
                            Microscale *micro,
-                           const MultiscaleComm *mscom,
+                           const MultiscaleCommunicator*mscom,
                            const int mp_id)
 {
   pgf_FE2_job *__restrict jobs = server->jobs; /* alias */
@@ -118,7 +119,7 @@ static void pgf_FE2_micro_server_compute_ready(pgf_FE2_micro_server *server,
 /**
  * Busy loop looking for message to start the server cycle.
  */
-static void pgf_FE2_micro_server_probe_start(const MultiscaleComm *mscom,
+static void pgf_FE2_micro_server_probe_start(const MultiscaleCommunicator*mscom,
 					     const Microscale *micro,
 					     Status *stat)
 {
@@ -150,7 +151,7 @@ static void pgf_FE2_micro_server_probe_start(const MultiscaleComm *mscom,
  * On the MASTER server process look for info from the macroscale and
  * propogate to the workers.
  */
-static void pgf_FE2_micro_server_start_cycle(const MultiscaleComm *mscom,
+static void pgf_FE2_micro_server_start_cycle(const MultiscaleCommunicator*mscom,
 					     const Microscale *micro,
 					     pgf_FE2_micro_server *server,
 					     pgf_FE2_server_rebalance **rebal,
@@ -283,7 +284,7 @@ static void pgf_FE2_micro_server_pack_summary(pgf_FE2_micro_server *server,
   pack_data(server->jobs,*buf,&pos,n_jobs,size_job);
 }
 
-static void pgf_FE2_micro_server_finish_cycle(const MultiscaleComm *mscom,
+static void pgf_FE2_micro_server_finish_cycle(const MultiscaleCommunicator*mscom,
 					      const Microscale *micro,
 					      pgf_FE2_micro_server *server)
 {
@@ -332,7 +333,7 @@ pgf_FE2_micro_server_unpack_summary(pgf_FE2_micro_server **Server,
 }
 
 static int
-pgf_FE2_micro_server_master(const MultiscaleComm *mscom,
+pgf_FE2_micro_server_master(const MultiscaleCommunicator*mscom,
                             Microscale *micro,
                             const int mp_id)
 {
@@ -393,7 +394,7 @@ pgf_FE2_micro_server_master(const MultiscaleComm *mscom,
 /**
  * Worker busy loop. Some logic as to which jobs to initiate.
  */
-static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
+static int pgf_FE2_micro_server_worker(const MultiscaleCommunicator*mscom,
 				       Microscale *micro,
 				       const int mp_id)
 {
@@ -445,7 +446,7 @@ static int pgf_FE2_micro_server_worker(const MultiscaleComm *mscom,
   return err;
 }
 
-int pgf_FE2_micro_server_START(const MultiscaleComm *mscom,
+int pgf_FE2_micro_server_START(const MultiscaleCommunicator*mscom,
 			       Microscale *micro,
 			       const int mp_id)
 {

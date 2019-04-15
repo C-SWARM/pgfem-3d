@@ -17,8 +17,8 @@
 struct pgf_FE2_job_comm_buf{
   size_t buffer_len;                       /**< length of the buffer in bytes */
   char *buffer;
-  pgfem3d::net::Request *request;
-  pgfem3d::net::Status *status;
+  multiscale::net::Request *request;
+  multiscale::net::Status *status;
 };
 
 /**
@@ -142,7 +142,7 @@ int pgf_FE2_job_compare_id(const void *a,
  * if needed. Returns job state on exit.
  */
 int pgf_FE2_job_get_info(pgf_FE2_job *job,
-			 const pgfem3d::MultiscaleComm *mscom,
+			 const multiscale::MultiscaleCommunicator *mscom,
 			 const pgfem3d::Microscale *micro);
 
 /**
@@ -151,7 +151,7 @@ int pgf_FE2_job_get_info(pgf_FE2_job *job,
  */
 int pgf_FE2_job_compute(pgf_FE2_job *job,
 			pgfem3d::Microscale *micro,
-			const pgfem3d::MultiscaleComm *mscom,
+			const multiscale::MultiscaleCommunicator *mscom,
 			const int mp_id);
 
 /**
@@ -166,7 +166,7 @@ void pgf_FE2_job_compute_worker(const size_t job_id,
  * Check the job state and reply to the macroscale if
  * possible. Returns job state on exit.*/
 int pgf_FE2_job_reply(pgf_FE2_job *job,
-		      const pgfem3d::MultiscaleComm *mscom,
+		      const multiscale::MultiscaleCommunicator *mscom,
 		      const pgfem3d::Microscale *micro);
 
 /**

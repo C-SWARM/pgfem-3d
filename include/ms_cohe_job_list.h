@@ -20,13 +20,13 @@
 int create_group_ms_cohe_job_list(const long nce,
                                   const COEL *coel,
                                   const Node *node,
-                                  const pgfem3d::net::PGFem3D_Comm macro_mpi_comm,
-                                  const pgfem3d::net::PGFem3D_Comm ms_comm,
+                                  const multiscale::net::MSNET_Comm macro_mpi_comm,
+                                  const multiscale::net::MSNET_Comm ms_comm,
                                   const int group_id,
                                   long *Gn_jobs,
                                   long **n_job_dom,
                                   MS_COHE_JOB_INFO **job_list,
-				  pgfem3d::net::Network *net,
+				  multiscale::net::Network *net,
                                   const int mp_id);
 
 /** Update the displacement jump for each job in the list. This is
@@ -36,7 +36,7 @@ int update_group_ms_cohe_job_list(const long nce,
                                   const Node *node,
                                   const SUPP sup,
                                   const double *sol,
-                                  pgfem3d::net::PGFem3D_Comm ms_comm,
+                                  multiscale::net::MSNET_Comm ms_comm,
                                   MS_COHE_JOB_INFO *job_list);
 
 /** Compute the microscale contributions from the list of jobs. The
@@ -45,7 +45,7 @@ int update_group_ms_cohe_job_list(const long nce,
     micro scales */
 int compute_ms_cohe_tan_res(const int compute_micro_eq,
                             const pgfem3d::CommunicationStructure *com,
-                            const pgfem3d::net::PGFem3D_Comm macro_mpi_comm,
+                            const multiscale::net::MSNET_Comm macro_mpi_comm,
                             MS_COHE_JOB_INFO *job_list,
                             pgfem3d::solvers::SparseSystem *macro_solver,
                             pgfem3d::Microscale *microscale,
@@ -55,7 +55,7 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq,
     function name*. No communication */
 int assemble_ms_cohe_res(const pgfem3d::Microscale *micro,
                          const MS_COHE_JOB_INFO *jobs,
-                         const pgfem3d::net::PGFem3D_Comm macro_mpi_comm,
+                         const multiscale::net::MSNET_Comm macro_mpi_comm,
                          double *macro_loc_res,
                          const int mp_id);
 

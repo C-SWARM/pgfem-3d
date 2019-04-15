@@ -5,6 +5,10 @@
  * 2018, Ezra Kissel, Indiana Univerity, ezkissel [at] indiana.edu
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "pgfem3d/Communication.hpp"
 #include "ISIR_SparseComm.hpp"
 #include "PWC_SparseComm.hpp"
@@ -16,7 +20,8 @@
 #include <system_error>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale;
+using namespace multiscale::net;
 
 // const char format[] = "%s/%scomm_hints_%d.in";
 std::string CommHints::BuildFilename(const char *ipath, const char* basefname,
@@ -67,7 +72,7 @@ CommHints::CommHints(const char *ipath, const char* basefname, int rank) {
 SparseComm::~SparseComm() {
 }
 
-SparseComm* SparseComm::Create(net::Network *n, net::PGFem3D_Comm c)
+SparseComm* SparseComm::Create(Network *n, MSNET_Comm c)
 {
   int myrank;
   n->comm_rank(c, &myrank);
@@ -190,7 +195,8 @@ void pgfem3d::PGFEM_Comm_code_abort(const CommunicationStructure *com, int code)
 }
 
 // abort/error methods
-void pgfem3d::PGFEM_Comm_abort(const CommunicationStructure *com) {
+void pgfem3d::PGFEM_Comm_abort(const CommunicationStructure *com)
+{
   PGFEM_Comm_code_abort(com, 0);
 }
 
@@ -199,8 +205,8 @@ void pgfem3d::PGFEM_Abort() {
 }
 
 int pgfem3d::PGFEM_Error_rank(int *rank) {
-  if (net::gboot) {
-    *rank = net::gboot->get_rank();
+  if (pgfem3d::gboot) {
+    *rank = pgfem3d::gboot->get_rank();
   }
   return *rank;
 }
