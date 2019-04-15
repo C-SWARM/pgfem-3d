@@ -303,11 +303,11 @@ const
 {
   // write Fn to file 
   int err = 0;
-  const double *F = m->vars_list[0][m->model_id].Fs[TENSOR_Fn].m_pdata;
-  if (fprintf(out,"%.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e %.17e\n",
-              F[0], F[1], F[2],
-              F[3], F[4], F[5],
-              F[6], F[7], F[8]) < 0) err ++;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
+
+  err += cm_write_tensor_restart(out, Fs[TENSOR_Fn].m_pdata);
+  err += cm_write_tensor_restart(out, Fs[TENSOR_Fnm1].m_pdata);
+
   return err;
 }
 
@@ -317,11 +317,11 @@ const
 {
   // read Fn from file and set Fnp1 = Fn 
   int err = 0;
-  double *FN = m->vars_list[0][m->model_id].Fs[TENSOR_Fn].m_pdata;
-  if(fscanf(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-            FN, FN + 1, FN + 2,
-            FN + 3, FN + 4, FN + 5,
-            FN + 6, FN + 7, FN + 8) != DIM_3x3) err++;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
+
+  cm_read_tensor_restart(in, Fs[TENSOR_Fn].m_pdata);
+  cm_read_tensor_restart(in, Fs[TENSOR_Fnm1].m_pdata);
+  
   err += this->reset_state_vars(m);
   return err;
 }
