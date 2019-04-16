@@ -1399,7 +1399,7 @@ void compute_3f_initial_conditions(Grid *grid,
 /// \param[in]      myrank  current process rank
 void get_3f_pressure_volume_number(long *npres,
                                    long *nVol,
-                                   PGFem3D_opt &options,
+                                   const PGFem3D_opt &options,
                                    const int myrank){
   switch(options.analysis_type){
     case TF: // intended not to have break

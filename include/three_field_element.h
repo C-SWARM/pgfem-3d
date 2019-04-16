@@ -127,7 +127,7 @@ void compute_3f_initial_conditions(Grid *grid,
 /// determine number of pressures and volumes
 void get_3f_pressure_volume_number(long *npres,
                                    long *nVol,
-                                   PGFem3D_opt &options,
+                                   const PGFem3D_opt &options,
                                    const int myrank);
 
                                    
