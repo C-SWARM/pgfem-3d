@@ -9,6 +9,6 @@
       Ap/Ai -- the sparse matrix IMPORTANT: The indicies (values)
       of Ai MUST be in numerical order!\n
       start -- the value of the first index on the domain */
-  long skyline(int ncol, int *Ap, int *Ai, int start);
+  long skyline(long ncol, int *Ap, int *Ai, int start);
 
 #endif /* #ifndef SKYLINE_H */

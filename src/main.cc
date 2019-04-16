@@ -799,9 +799,9 @@ int single_scale_main(int argc,char *argv[])
     int APP  = 0;
     long sky = 0;
     com[ia].net->reduce(&(com[ia].Ap[com[ia].DomDof[myrank]]),&APP,1,NET_DT_INT,NET_OP_SUM,0,com[ia].comm);
-    long temp_int = skyline((int) com[ia].DomDof[myrank],com[ia].Ap,com[ia].Ai,dist[myrank]);
+    long temp_int = skyline(com[ia].DomDof[myrank],com[ia].Ap,com[ia].Ai,dist[myrank]);
     
-    com[ia].net->reduce(&temp_int,&sky,1,NET_DT_INT,NET_OP_SUM,0,com[ia].comm);
+    com[ia].net->reduce(&temp_int,&sky,1,NET_DT_LONG,NET_OP_SUM,0,com[ia].comm);
     
     //----------------------------------------------------------------------
     // print simulation setting info
