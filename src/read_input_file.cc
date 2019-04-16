@@ -1097,11 +1097,7 @@ int read_initial_for_Mechanical(FILE *fp,
 
   free(rho);
   
-  if(read_from_0)
-    return 0;  
-
-  if(opts->restart < 0)
-  {
+  if(!read_from_0 && opts->restart < 0){
     while(fgets(line, 1024, fp)!=NULL)
     {
       if(line[0]=='#')
