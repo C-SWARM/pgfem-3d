@@ -768,7 +768,7 @@ int single_scale_main(int argc,char *argv[])
     
     // Make integer copy of DomDof.  May eventually switch everything to
     // integer since 64 bit
-    int *dist = aloc1i(com[ia].nproc+1);
+    long *dist = aloc1l(com[ia].nproc+1);
     build_distribution(com[ia].DomDof,dist,com[ia].nproc);
 
     for(long ib=0;ib<com[ia].nproc;ib++)

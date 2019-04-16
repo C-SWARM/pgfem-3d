@@ -10,6 +10,6 @@
     only included in this function for generality of determining the
     number of domains. This function should be run on all processors
     and will not require communication. */
-void build_distribution(long *DomDof, int *Dist, int nproc);
+void build_distribution(long *DomDof, long *Dist, int nproc);
 
 #endif /* #ifndef BUILD_DISTRIBUTION_H */

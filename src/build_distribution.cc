@@ -5,12 +5,10 @@
 #endif
 
 /* Create nodal distribution array */
-void build_distribution(long *DomDof, int *Dist, int nproc)
+void build_distribution(long *DomDof, long *Dist, int nproc)
 {
-  int i;
-
   Dist[0] = 0;
-  for(i=1;i<=nproc;i++) Dist[i] = DomDof[i-1] + Dist[i-1];
+  for(int i=1;i<=nproc;i++) Dist[i] = DomDof[i-1] + Dist[i-1];
 
   /*****************************************/
   /*          FUNCTION TESTING             */
