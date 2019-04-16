@@ -30,25 +30,24 @@ int read_restart(Grid *grid,
 
 /// write restart files for mechanical part
 ///
-/// \param[in] grid a mesh object
-/// \param[in, out] fv array of field variable object
-/// \param[in] load object for loading
-/// \param[in] time_steps object for time stepping
-/// \param[in] opts PGFem3D commend line options
-/// \param[in] mp multiphysics object
+/// \param[in] grid   a mesh object
+/// \param[in, out]   fv array of field variable object
+/// \param[in] opts   PGFem3D commend line options
+/// \param[in] mp     multiphysics object
+/// \param[in] tns    times  at n for multiple physics
+/// \param[in] tnm1   times at t(n-1), t(n), t(n+1)
 /// \param[in] myrank current process rank
-/// \param[in] mp_id multiphysics id
 /// \param[in] stepno current time step number
-/// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
 int write_restart(Grid *grid,
                   FieldVariables *fv,
                   LoadingSteps *load,
-                  TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
-                  int stepno,
-                  int myrank);
+                  const double *tns,
+                  const double *tnm1,
+                  int myrank,
+                  int stepno);
 
 int read_initial_from_VTK(PGFem3D_opt *opts, int myrank, int *restart, double *u0, double *u1);
 

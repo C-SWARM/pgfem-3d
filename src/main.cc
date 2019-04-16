@@ -226,8 +226,7 @@ int print_results(Grid *grid,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
                   long tim,
-		  int myrank)
-{
+                  int myrank){
   int err = 0;
 
   Solver                 *sol = NULL;
@@ -382,7 +381,7 @@ int write_restart_files(Grid *grid,
                         PGFem3D_opt *opts,
                         const Multiphysics& mp,
                         long tim,
-			CommunicationStructure *com,
+                        CommunicationStructure *com,
                         double time_step_start,
                         double time_0)
 {
@@ -420,8 +419,17 @@ int write_restart_files(Grid *grid,
     }
   }
 
-  if(SAVE_RESTART_FILE && write_restart_global>0)
-    write_restart(grid,FV,load,time_steps,opts,mp,myrank,tim);
+  if(SAVE_RESTART_FILE && write_restart_global>0){
+    double tnm1[3] = {};
+    tnm1[0] = 0.0;
+    tnm1[1] = time_steps->times[tim];
+    tnm1[2] = time_steps->times[tim+1];    
+
+    if(tim>0)
+      tnm1[0] = time_steps->times[tim-1];
+
+    write_restart(grid,FV,load,opts,mp,time_steps->tns,tnm1,myrank,tim);
+  }
 
   return err;
 }
@@ -949,7 +957,7 @@ int single_scale_main(int argc,char *argv[])
     // read initial conditions
     //----------------------------------------------------------------------
     //---->
-    double tnm1[2] = {-1.0,-1.0};
+    double tnm1[3] = {-1.0,-1.0,-1.0};
     
     for(int ia=0; ia<mp.physicsno; ia++)
     {
