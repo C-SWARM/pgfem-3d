@@ -1,3 +1,14 @@
+/// A util generating restart files from a prior run of different decomposition.
+/// Maps from t3d2psifel are used to map restart file from a mesh decomposition to
+/// another mesh decomposition.
+/// 
+/// How to use: gen_restart_from_NP2NP [np(from)] [np(to)] [PGFem3D options]
+///
+/// Authors:
+/// Sangmin Lee, [1], <slee43@nd.edu>
+///  [1] - University of Notre Dame, Notre Dame, IN
+
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -12,17 +23,19 @@
 #include "constitutive_model.h"
 #include "restart.h"
 #include "elem3d.h"
+#include "three_field_element.h"
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
-// define from t3d2fsifel  
-#define ELM_ID   0 
-#define ELM_Type 1
-#define ELM_Mat  2
+// defined from t3d2fsifel  
+#define ELM_ID   0  // element ID
+#define ELM_Type 1  // element Type
+#define ELM_Mat  2  // element material
 
-#define NODE_ID  0
-  
+#define NODE_ID  0  // node ID
+
+/// maximum function  
 template<class T>  
 T max(Matrix<T> A,
       const int column_id){
@@ -35,6 +48,14 @@ T max(Matrix<T> A,
   return max_num;
 }
 
+/// read a local to global map. This function will re-size
+/// the node and elem to store list of nodes and elements
+///
+/// \param[out] node      list of local node IDs to global IDs
+/// \param[out] elem      list of local element IDs to global IDs
+/// \param[in]  myrank    current process rank (partition ID of the mesh)
+/// \param[in]  processno total number of processes (total number of partitions)
+/// \param[in]  options   PGFem3D option object
 void read_a_map(Matrix<long> &node,
                 Matrix<long> &elem,
                 const int myrank,
@@ -53,6 +74,7 @@ void read_a_map(Matrix<long> &node,
     
   CHECK_SCANF(in, "%ld %ld", &nodeno, &elemno);
   
+  // re-size list of IDs
   node.initialization(nodeno, 1);
   elem.initialization(elemno, 3);
   
@@ -70,116 +92,93 @@ void read_a_map(Matrix<long> &node,
     elem(ia, 0) = eid;
     elem(ia, 1) = mat_id;
     elem(ia, 2) = etype;
-  }  
+  }
   
   fclose(in);
 }
 
+/// Local to global mapping class
 class Locals2Global{
   public:
-    Matrix<Matrix<long>> N, E;
-    long nodeno;
-    long elemno;
-    long matno;
-    int  np_from;
+
+    Matrix<Matrix<long>> N; // list of local to global node IDs. 
+                            // size: {np}x[nodeno x 1]
+    Matrix<Matrix<long>> E; // list of local to global element IDs. 
+                            // size: {np}x[elemno x 3(ELEM_ID, ELEM_type, ELEM_mat)]
+    long nodeno; // total number of nodes
+    long elemno; // total number of elements
+    long matno;  // total number of material
+    int  np;     // number of processes (number partitions)
     
     Locals2Global(){
       nodeno  = 0;
       elemno  = 0;
       matno   = 0;
-      np_from = 0;
+      np = 0;
     }
+    
+    /// get global element ID of local element ID(index) for a process(myrank)
+    long eid(const int myrank,
+             const int index){
+      return E(myrank)(index, ELM_ID) - 1; // ID from partitioner starts from 0
+    }
+    
+    /// get global node ID of local node ID(index) for a process(myrank) 
+    long nid(const int myrank,
+             const int index){
+      return N(myrank)(index, NODE_ID) - 1; // ID from partitioner starts from 0
+    }        
+
 
     // read decomposed global node and element IDs    
     void read_maps(const int np_from_in,
                    const PGFem3D_opt &options){
-      np_from = np_from_in;
-      N.initialization(np_from, 1);
-      E.initialization(np_from, 1);
+      np = np_from_in;
+      // re-size members to number of partitions
+      N.initialization(np, 1);
+      E.initialization(np, 1);
+      
+      // read maps for each decomposed mesh
+      for(int ia=0; ia<np; ++ia){
+        // read a map for (ia)th map
+        read_a_map(N(ia), E(ia), ia, np, options);
 
-      for(int ia=0; ia<np_from; ++ia){
-        read_a_map(N(ia), E(ia), ia, np_from, options);
+        // get total number of nodes
         long max_num = max(N(ia), NODE_ID);
         if(nodeno < max_num)
           nodeno = max_num;
         
-        max_num = max(E(ia), ELM_ID);
-        
+        // get total number of elements
+        max_num = max(E(ia), ELM_ID); 
         if(elemno < max_num)
           elemno = max_num;
         
+        // get total number of materials
         max_num = max(E(ia), ELM_Mat);
         
         if(matno < max_num) // count material IDs
           matno = max_num;        
       }
   
-      ++matno;
+      ++matno; // material ID starts from 0 such that number of materials = mat_id + 1
     }
 };
 
-void read_a_restart_file(Matrix<Matrix<double>> &gU_nm1,
-                         Matrix<Matrix<double>> &gU_n,
-                         Matrix<Matrix<Constitutive_model>> &gM,
-                         Locals2Global &L2G,
-                         const Multiphysics &mp,
-                         int myrank,
-                         const PGFem3D_opt &options){
-
-  double tnm1[2] = {-1.0,-1.0};
-  
-  long nodeno = L2G.N(myrank).m_row;
-  long elemno = L2G.E(myrank).m_row;
-  
-  Grid grid;
-  grid.nn  = nodeno;
-  grid.ne  = elemno;
-  grid.nsd = 3;
-  
-  Matrix<Element> elem(elemno, 1);
-  for(long ia=0; ia<elemno; ++ia)
-    elem(ia).toe = L2G.E.m_pdata[myrank](ia, 2);
-  
-  grid.element = elem.m_pdata;
-  
-  //set fv
-  Matrix<FieldVariables> fv(mp.physicsno, 1);
-  Matrix<Matrix<double>> u_nm1, u_n;
-  EPS *eps = NULL;
-  
-  for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
-    int ndofn = mp.ndim[mp_id];
-    u_nm1(mp_id).initialization(nodeno, ndofn, 0.0);
-      u_n(mp_id).initialization(nodeno, ndofn, 0.0);
-       fv(mp_id).u_nm1 = u_nm1(mp_id).m_pdata;
-       fv(mp_id).u_n   =   u_n(mp_id).m_pdata;
-    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
-      if(options.analysis_type == CM || options.analysis_type == CM3F){
-        eps = (EPS *) malloc(sizeof(EPS)*elemno);
-        for(long eid = 0; eid<elemno; ++eid)
-          eps[eid].model = gM(L2G.E(myrank)(eid, ELM_ID)).m_pdata;
-
-        fv(mp_id).eps;
-      }
-    }
-  }
-  
-  TimeStepping ts;
-  LoadingSteps *load = NULL;
-  read_restart(&grid, fv.m_pdata, &ts, load, &options, mp, tnm1, myrank);
-  
-  if(NULL != eps)
-    free(eps);
-
-}
-
+// global restat values
 class GlobalRestartValues{
   public:
-    Matrix<Matrix<double>> gU_nm1, gU_n;
-    Matrix<Matrix<Constitutive_model>> gM;
-    State_variables *statv_list;
-    Matrix<Model_parameters> params;
-    bool isMechanicalCMActive;
+    Matrix<Matrix<double>> gU_nm1, gU_n; // global nodal values for each physics 
+                                         // at t(n-1) and t(n)
+    Matrix<double> gV_nm1, gV_n;         // global 3f volumes at t(n-1) and t(n)
+    Matrix<double> gP_nm1, gP_n;         // global 3f pressures at t(n-1) and t(n)
+    
+    Matrix<Matrix<Constitutive_model>> gM; // global constitutive models CM or CM3F
+    State_variables *statv_list;           // global state variables for CM or CM3F
+    Matrix<Model_parameters *> params;     // list of model parameters for CM or CM3F
+    bool isMechanicalCMActive;             // identify use of CM or CM3F
+    Matrix<double> tns;  // t(n) for each physics
+    double tnm1[3];      // t(n-1), t(n), t(n+1) at the sychronization 
+    Matrix<double> norm; // norm of residuals saved for each physics
 
     GlobalRestartValues(){
       isMechanicalCMActive = false;
@@ -188,69 +187,307 @@ class GlobalRestartValues{
     ~GlobalRestartValues(){
       if(NULL != statv_list)
         delete[] statv_list;
+      if(isMechanicalCMActive && params.m_row*params.m_col > 0){
+        for(int ia=0; ia<params.m_row*params.m_col; ++ia)
+          params(ia)->finalization();
+      }        
     }
     
-    // initialization. Resize gU_x, and gM
-    void initialization(Locals2Global &L2G,
+    /// initialization of members. re-size to number of physics
+    void initialization(Locals2Global &L2G_from,
                         const Multiphysics &mp,
                         const PGFem3D_opt &options){
 
-      gU_nm1.initialization(mp.physicsno, 1);
-        gU_n.initialization(mp.physicsno, 1);
-                  
+      // re-size to number of physics
+      gU_nm1.initialization(mp.physicsno, 1); // nodal value at t(n-1)
+        gU_n.initialization(mp.physicsno, 1); // nodal value at t(n)
+      
+         tns.initialization(mp.physicsno, 1); // t(n)
+        norm.initialization(mp.physicsno, 1); // norm of residuals
+
+      // re-size variables for each physics 
       for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
-        int ndofn = mp.ndim[mp_id];
-        gU_nm1(mp_id).initialization(L2G.nodeno, ndofn);
-        gU_n(  mp_id).initialization(L2G.nodeno, ndofn);
+        int ndofn = mp.ndim[mp_id]; // degree of freedom of a physics
+        // set nodal values. size : nodeno x ndofn
+        gU_nm1(mp_id).initialization(L2G_from.nodeno, ndofn); 
+        gU_n(  mp_id).initialization(L2G_from.nodeno, ndofn);
         
+        // set only for momentum equation
         if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
+          // build constitutive models if CM or CM3F is used
           if(options.analysis_type == CM || options.analysis_type == CM3F){
             isMechanicalCMActive = true;
-            gM.initialization(L2G.elemno, 1);
-          }          
+            gM.initialization(L2G_from.elemno, 1);
+          }
+          // build 3f members if TF or CM3F is used
+          if(options.analysis_type == TF || options.analysis_type == CM3F){
+            long npres = {}, nVol = {};
+            get_3f_pressure_volume_number(&npres, &nVol, options, 0);
+            gV_nm1.initialization(L2G_from.elemno, nVol);
+              gV_n.initialization(L2G_from.elemno, nVol);
+            gP_nm1.initialization(L2G_from.elemno, npres);
+              gP_n.initialization(L2G_from.elemno, npres);            
+          }
         }
       }
     }
     
-    void read_restart_files(Matrix<int> &model_types,
-                            const PGFem3D_opt &options){
+    /// read restart files (n number of files for individual physics) for a partitioned mesh (myrank)
+    /// 
+    /// \param[in] L2G_from local to global map
+    /// \param[in] mp       mutiphysics information object
+    /// \param[in] myrank   partion ID (current process rank)
+    /// \param[in] options  PGFem3D option object
+    void read_a_restart_file(Locals2Global &L2G_from,
+                             const Multiphysics &mp,
+                             int myrank,
+                             const PGFem3D_opt &options){
       
-    }
-    
-    void construct_model_parameters(Matrix<int> &model_types){
-      params.initialization(model_types.m_row, 1);
-      HOMMAT h = {};
-      h.devPotFlag = 1;
-      h.volPotFlag = 2;
+      // set dummy PGFem3D object in order to used reading restart file function in PGFem3D
+      //--------------------->
+      // mesh object
+      long nodeno = L2G_from.N(myrank).m_row;
+      long elemno = L2G_from.E(myrank).m_row;
+      
+      Grid grid;
+      grid.nn  = nodeno;
+      grid.ne  = elemno;
+      grid.nsd = 3;
+      
+      Matrix<Element> elem(elemno, 1);
+      for(long ia=0; ia<elemno; ++ia)
+        elem(ia).toe = L2G_from.E(myrank)(ia, ELM_Type);
+      
+      grid.element = elem.m_pdata;
+      
+      //set fv
+      Matrix<FieldVariables> fv(mp.physicsno, 1);
+      Matrix<Matrix<double>> u_nm1(mp.physicsno, 1), u_n(mp.physicsno, 1); // temporal nodal values
+      EPS *eps = NULL;
 
-      for(int ia=0; ia<model_types.m_row; ++ia){
-        params(ia).initialization(&h, model_types(ia));
+      if(isMechanicalCMActive){
+        eps = (EPS *) malloc(sizeof(EPS)*elemno);
+        for(long eid = 0; eid<elemno; ++eid)
+          eps[eid].model = gM(L2G_from.eid(myrank, eid)).m_pdata;
       }
-    } 
-    void construct_constitutive_models(Locals2Global &L2G,
+
+      for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
+        int ndofn = mp.ndim[mp_id];
+        u_nm1(mp_id).initialization(nodeno, ndofn, 0.0);
+        u_n(  mp_id).initialization(nodeno, ndofn, 0.0);
+        fv(mp_id).u_nm1 = u_nm1(mp_id).m_pdata;
+        fv(mp_id).u_n   = u_n(  mp_id).m_pdata;
+
+        if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
+          fv(mp_id).eps = eps;
+          // construct 3f variables
+          if(options.analysis_type == TF || options.analysis_type == CM3F){
+            get_3f_pressure_volume_number(&(fv(mp_id).npres), &(fv(mp_id).nVol), options, myrank);
+            fv(mp_id).tf.construct(elemno, fv(mp_id).nVol, fv(mp_id).npres);
+          }
+        }
+      }
+
+      // set time stepping object
+      Matrix<double> tns_tmp(mp.physicsno, 1);
+      TimeStepping ts;
+      ts.tns = tns_tmp.m_pdata;
+      
+      double tnm1_tmp[3] = {};
+      
+      LoadingSteps *load = NULL; // in reading restart, load is not used
+      // set dummy objects
+      //<--------------------- 
+
+      // read restart files using PGFem3D function
+      read_restart(&grid, fv.m_pdata, &ts, load, &options, mp, tnm1, myrank);
+      
+      // save read temporal values into global
+      // NOTE: global constitutive models are alread set because their references are used.
+      for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
+        int ndofn = mp.ndim[mp_id];        
+        for(long ia=0; ia<nodeno; ++ia){
+          for(int ib=0; ib<ndofn; ++ib){
+            gU_nm1(mp_id)(L2G_from.nid(myrank, ia), ib) = u_nm1(mp_id).m_pdata[ia*ndofn + ib];
+            gU_n(  mp_id)(L2G_from.nid(myrank, ia), ib) = u_n(  mp_id).m_pdata[ia*ndofn + ib];
+          }
+        }        
+        if(options.analysis_type == TF || options.analysis_type == CM3F){
+          get_3f_pressure_volume_number(&(fv(mp_id).npres), &(fv(mp_id).nVol), options, myrank);
+          for(long ia=0; ia<elemno; ++ia){
+            for(int ib=0; ib<fv(mp_id).nVol; ++ib){
+              gV_nm1(L2G_from.eid(myrank, ia), ib) = fv(mp_id).tf.V_nm1(ia, ib);
+              gV_n(  L2G_from.eid(myrank, ia), ib) = fv(mp_id).tf.V_n(  ia, ib);
+            }
+            for(int ib=0; ib<fv(mp_id).npres; ++ib){
+              gP_nm1(L2G_from.eid(myrank, ia), ib) = fv(mp_id).tf.P_nm1(ia, ib);
+              gP_n(  L2G_from.eid(myrank, ia), ib) = fv(mp_id).tf.P_n(  ia, ib);
+            }            
+          }
+        }
+      }      
+    
+      if(myrank==0){
+        for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
+          tns(mp_id)  = tns_tmp(mp_id);
+          norm(mp_id) = fv(mp_id).NORM;
+        }
+        tnm1[0] = tnm1_tmp[0];
+        tnm1[1] = tnm1_tmp[1];
+        tnm1[2] = tnm1_tmp[2];
+      }
+        
+      if(NULL != eps)
+        free(eps);
+    
+    }    
+    
+    /// read all restart files
+    ///
+    /// \param[in] L2G_from local to global map
+    /// \param[in] mp       mutiphysics information object
+    /// \param[in] options  PGFem3D option object
+    void read_restart_files(Locals2Global &L2G_from,
+                            const Multiphysics &mp,
+                            const PGFem3D_opt &options){
+
+      for(int ia=0; ia<L2G_from.np; ++ia)
+        read_a_restart_file(L2G_from, mp, ia, options);
+    }
+
+    /// write restart files (n number of files for individual physics) for a partitioned mesh (myrank)
+    /// 
+    /// \param[in] L2G_from local to global map
+    /// \param[in] mp       mutiphysics information object
+    /// \param[in] myrank   partion ID (current process rank)
+    /// \param[in] options  PGFem3D option object
+    void write_a_restart_file(Locals2Global &L2G_from,
+                             const Multiphysics &mp,
+                             int myrank,
+                             const PGFem3D_opt &options){
+      // set dummy PGFem3D object in order to used reading restart file function in PGFem3D
+      //--------------------->
+      // mesh object
+      long nodeno = L2G_from.N(myrank).m_row;
+      long elemno = L2G_from.E(myrank).m_row;
+
+      Grid grid;
+      grid.nn  = nodeno;
+      grid.ne  = elemno;
+      grid.nsd = 3;
+
+      Matrix<Element> elem(elemno, 1);
+      for(long ia=0; ia<elemno; ++ia)
+        elem(ia).toe = L2G_from.E(myrank)(ia, ELM_Type);
+
+      grid.element = elem.m_pdata;
+
+      //set fv
+      Matrix<FieldVariables> fv(mp.physicsno, 1);
+      Matrix<Matrix<double>> u_nm1(mp.physicsno, 1), u_n(mp.physicsno, 1); // temporal nodal values
+      EPS *eps = NULL;
+
+      if(isMechanicalCMActive){
+        eps = (EPS *) malloc(sizeof(EPS)*elemno);
+        for(long eid = 0; eid<elemno; ++eid)
+          eps[eid].model = gM(L2G_from.eid(myrank, eid)).m_pdata;
+      }
+
+      for(int mp_id=0; mp_id<mp.physicsno; ++mp_id){
+        int ndofn = mp.ndim[mp_id];
+        u_nm1(mp_id).initialization(nodeno, ndofn, 0.0);
+        u_n(  mp_id).initialization(nodeno, ndofn, 0.0);
+
+        for(long ia=0; ia<nodeno; ++ia){
+          for(int ib=0; ib<ndofn; ++ib){
+            u_nm1(mp_id).m_pdata[ia*ndofn + ib] = gU_nm1(mp_id)(L2G_from.nid(myrank, ia), ib);
+            u_n(  mp_id).m_pdata[ia*ndofn + ib] = gU_n(  mp_id)(L2G_from.nid(myrank, ia), ib);
+          }
+        }
+
+        fv(mp_id).u_nm1 = u_nm1(mp_id).m_pdata;
+        fv(mp_id).u_n   = u_n(  mp_id).m_pdata;
+
+        if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL){
+          fv(mp_id).eps = eps;
+          // construct 3f variables
+          if(options.analysis_type == TF || options.analysis_type == CM3F){
+            get_3f_pressure_volume_number(&(fv(mp_id).npres), &(fv(mp_id).nVol), options, myrank);
+            fv(mp_id).tf.construct(elemno, fv(mp_id).nVol, fv(mp_id).npres);
+
+            for(long ia=0; ia<elemno; ++ia){
+              for(int ib=0; ib<fv(mp_id).nVol; ++ib){
+                fv(mp_id).tf.V_nm1(ia, ib) = gV_nm1(L2G_from.eid(myrank, ia), ib);
+                fv(mp_id).tf.V_n(  ia, ib) = gV_n(  L2G_from.eid(myrank, ia), ib);
+              }
+              for(int ib=0; ib<fv(mp_id).npres; ++ib){
+                fv(mp_id).tf.P_nm1(ia, ib) = gP_nm1(L2G_from.eid(myrank, ia), ib);
+                fv(mp_id).tf.P_n(  ia, ib) = gP_n(  L2G_from.eid(myrank, ia), ib);
+              }
+            }
+          }
+        }
+      }
+
+      LoadingSteps *load = NULL; // in reading restart, load is not used
+      // set dummy objects
+      //<---------------------
+
+      // writerestart files using PGFem3D function
+      write_restart(&grid,fv.m_pdata,load,&options,mp,tns.m_pdata,tnm1,myrank,options.restart);
+
+      // save read temporal values into global
+
+      if(NULL != eps)
+        free(eps);
+    }    
+    
+    void write_restart_files(Locals2Global &L2G_to,
+                            const Multiphysics &mp,
+                            const PGFem3D_opt &options){
+
+      for(int ia=0; ia<L2G_to.np; ++ia)
+        write_a_restart_file(L2G_to, mp, ia, options);
+    }
+            
+    void construct_model_parameters(Matrix<int> &model_types){
+      if(isMechanicalCMActive){
+        params.initialization(model_types.m_row, 1);
+        HOMMAT h = {};
+        h.devPotFlag = 1;
+        h.volPotFlag = 2;
+
+        for(int ia=0; ia<model_types.m_row; ++ia){
+          construct_Model_parameters(&params(ia), 0, model_types(ia));
+          params(ia)->initialization(&h, model_types(ia));
+        }
+      }
+    }
+         
+    void construct_constitutive_models(Locals2Global &L2G_from,
                                        const Multiphysics &mp){
       if(isMechanicalCMActive){
         long n_state_variables = 0;
-        for(int ia=0; ia<L2G.np_from; ++ia){
-          for(long ib=0; ib<L2G.E(ia).m_row; ++ib){
+        for(int ia=0; ia<L2G_from.np; ++ia){
+          for(long ib=0; ib<L2G_from.E(ia).m_row; ++ib){
             long nint = {};
-            int_point(L2G.E(ia)(ib, ELM_Type), &nint);
+            int_point(L2G_from.E(ia)(ib, ELM_Type), &nint);
             n_state_variables += nint;
           }
         }
         statv_list = new State_variables[n_state_variables];
         long svid = 0;
-        for(int ia=0; ia<L2G.np_from; ++ia){
-          for(long ib=0; ib<L2G.E(ia).m_row; ++ib){
-            long eid = L2G.E(ia)(ib, ELM_ID) - 1; // element ID starts from 1
-            int  mid = L2G.E(ia)(ib, ELM_Mat);
+        for(int ia=0; ia<L2G_from.np; ++ia){
+          for(long ib=0; ib<L2G_from.E(ia).m_row; ++ib){
+            long eid = L2G_from.eid(ia,ib); // element ID starts from 1
+            int  mid = L2G_from.E(ia)(ib, ELM_Mat);
             long nint = {};
-            int_point(L2G.E(ia)(ib, ELM_Type), &nint);
+            int_point(L2G_from.E(ia)(ib, ELM_Type), &nint);
             gM(eid).initialization(nint, 1);
             for(int ic=0; ic<nint; ++ic){
               gM(eid)(ic).model_id = svid;
               gM(eid)(ic).vars_list = &statv_list;              
-              gM(eid)(ic).initialization(&params(mid));              
+              gM(eid)(ic).initialization(params(mid));              
               ++svid;
             }
           }
@@ -280,9 +517,10 @@ int read_model_params(Matrix<int> &model_types,
     err += scan_for_valid_line(in);
     if(feof(in)) break;
     
-    CHECK_SCANF(in, "%d %d", &mat_id, &type);  
+    CHECK_SCANF(in, "%d %d", &mat_id, &type);
+    printf("model params: %d %d\n", mat_id, type);
 
-    if(mat_id>0)
+    if(type>=0)
       model_types(mat_id) = type;
     
     while(fgetc(in) != '}'){
@@ -336,27 +574,28 @@ int main(int argc,char *argv[])
   get_options(argc, argv, np_from, np_to, &options, myrank);  
 
   // read decomposed global node and element IDs
-  Locals2Global L2G;
-  L2G.read_maps(np_from, options);
+  Locals2Global L2G_from, L2G_to;
+  
+  L2G_from.read_maps(np_from, options);
+  L2G_to.read_maps(np_to, options);
   
   // read model parameters
-  Matrix<int> model_types(L2G.matno, 1, 0);
+  Matrix<int> model_types(L2G_from.matno, 1, 0);
   read_model_params(model_types, options);  
   
-  for(int ia=0; ia<L2G.matno; ia++)
+  for(int ia=0; ia<L2G_from.matno; ia++)
     printf("%d -> %d: models(%d}: %d %d\n", np_from, np_to, myrank, ia, model_types(ia));  
      
   Multiphysics mp;
   read_multiphysics_settings(mp,&options,myrank);
   
   GlobalRestartValues grv;
-  grv.initialization(L2G, mp, options);
+  grv.initialization(L2G_from, mp, options);
   grv.construct_model_parameters(model_types);
-  grv.construct_constitutive_models(L2G, mp);
+  grv.construct_constitutive_models(L2G_from, mp);
+  grv.read_restart_files(L2G_from, mp, options);
   
-  // set constitutive models
-//  Matrix<Matrix<State_variables>> sv;
-//  Matrix<Matrix<Constitutive_model>> gM;
+
   
   // Create the desired network
   Network *net = Network::Create(options);
@@ -381,202 +620,14 @@ int main(int argc,char *argv[])
     
   
   net->barrier(com->comm);
-  printf("%ld, %ld %ld\n", L2G.nodeno, L2G.elemno, L2G.matno);
+  printf("%ld, %ld %ld\n", L2G_from.nodeno, L2G_from.elemno, L2G_from.matno);
         
   net->barrier(com->comm);
   
   destruct_multiphysics(mp);
-                      
-  exit(0);
-
-
-  long nn = 0;
-  long Gnn = 0;
-  long ndofn = 0;
-  long ne = 0;
-  long ni = 0;
-  double err = 0.0;
-  double limit = 0.0;
-  long nmat = 0;
-  long nc = 0;
-  long np = 0;
-  Node *node = NULL;
-  Element *elem = NULL;
-  Material *mater = NULL;
-  MATGEOM matgeom = NULL;
-  SUPP sup = NULL;
-  long nln = 0;
-  ZATNODE *znod = NULL;
-  long nle_s = 0;
-  ZATELEM *zele_s = NULL;
-  long nle_v = 0;
-  ZATELEM *zele_v = NULL;
-
-
-  int in_err = 0;
-  int physicsno = 1;
-  int ndim = 3;
-  int fv_ndofn = ndim;
-  
-  char physicsname[1024] = "Mechanical";
-  char *p = physicsname;
-  in_err = read_input_file(&options,com,&nn,&Gnn,&ndofn,
-                           &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
-                           &elem,&mater,&matgeom,&sup,&nln,&znod,
-                           &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,
-			                     physicsno,&ndim,&p);
-  if(in_err){
-    PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
-                   myrank);
-    PGFEM_Abort();
-  }
-
-  HOMMAT *hommat = NULL;
-  Mat_3D_orthotropic (nmat,mater,options.analysis_type);
-
-  long ***a = NULL;
-  a = aloc3l (nmat,nmat,nc);
-  long nhommat = list(a,ne,nmat,nc,elem);
-
-  /*  alocation of the material matrices  */
-  hommat = build_hommat(nhommat);
-
-  hom_matrices(a,ne,nmat,nc,elem,mater,matgeom,
-               hommat,matgeom->SH,options.analysis_type);
-
-  dealoc3l(a,nmat,nmat);
-  free(mater);
-
-  EPS *eps = NULL;
-  eps = build_eps_il(ne,elem,options.analysis_type,NULL);
-
-  // read time steps
-  char filename[2048];
-  char in_dat[1024];
-  FILE *fp = NULL;  
-  double nor_min;
-  long iter_max, npres, FNR, nt;
-  
-  if(options.override_solver_file)
-  {
-    if(myrank == 0)
-      PGFEM_printf("Overriding the default solver file with:\n%s\n", options.solver_file);
-
-    fp = fopen(options.solver_file,"r");
-  }
-  else
-  {
-    // use the default file/filename
-    sprintf(in_dat,"%s/%s",options.ipath,options.ifname);
-    sprintf(filename,"%s%d.in.st",in_dat,myrank);
-    fp = fopen(filename,"r");
-    if(fp==NULL)
-    {
-      sprintf(filename,"%s%d.in.st",in_dat,0);
-      fp = fopen(filename,"r");
-    }
-  }  
-  
-  CHECK_SCANF(fp,"%lf %ld %ld %ld", &nor_min,&iter_max,&npres,&FNR);
-  CHECK_SCANF(fp,"%ld", &nt);
-
-  /* Compute times */
-  double *times = (double *) malloc((nt+1)*sizeof(double));
-  for(int a=0;a<nt+1;a++){
-    CHECK_SCANF(fp,"%lf",times+a);
-  }
-
-  long n_p;
-  /* read times for output */
-  CHECK_SCANF(fp,"%ld",&n_p);
-
-  /* Times for printing */
-  long *print = times_print(fp,nt,n_p);
-
-  fclose(fp);
-
-  const int error_no = 3;
-  double sum_err[error_no] = {};
-  
-  double *u = aloc1(nn*ndofn);
-  double *Ph = aloc1(ne);
-  double *Vh = aloc1(ne);
-
-  bool is4cm = false;
-  
-  if(options.analysis_type == CM || options.analysis_type == CM3F){
-    char cm_filename[2048];
-    sprintf(cm_filename, "%s/model_params.in", options.ipath);
-    FILE *cm_in = PGFEM_fopen(cm_filename, "r"); 
-              
-    int num_entries = -1;
-    in_err += scan_for_valid_line(cm_in);
-    CHECK_SCANF(cm_in, "%d", &num_entries);
-
-    int mat_id = 0;
-    int model_type = -1;
-    err += scan_for_valid_line(cm_in);
-
-    CHECK_SCANF(cm_in, "%d %d", &mat_id, &model_type);
-    fclose(cm_in);
-    
-    if(model_type == MANUFACTURED_SOLUTIONS)
-      is4cm = true;
-  }
-  if(0)
-    printf("%d\n", (int) is4cm);
-  
-  FILE *f = NULL;
-  if(myrank==0)
-    f = fopen("error.txt", "w");
-
-  for(int tim=0; tim<nt; tim++){
-    if(print[tim]){
-      double err[error_no] = {};
-      sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
-      //read_VTK_file4TF(filename, u,Ph,Vh);
-
-      //compute_L2_error(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat, is4cm);
-
-      if(myrank==0)
-      {
-        PGFEM_printf("error = %e, %e, %e\n", sqrt(err[0]), sqrt(err[1]), sqrt(err[2]));
-        PGFEM_fprintf(f, "%e %e %e\n", sqrt(err[0]), sqrt(err[1]), sqrt(err[2]));
-      }
-      for(int ib=0; ib<error_no; ib++)
-        sum_err[ib] += err[ib];
-    }
-  }
-
-  if(myrank==0)
-  {
-    PGFEM_printf("total error = %e, %e, %e\n", sqrt(sum_err[0]), sqrt(sum_err[1]), sqrt(sum_err[2]));
-    PGFEM_fprintf(f, "%e %e %e\n", sqrt(sum_err[0]), sqrt(sum_err[1]), sqrt(sum_err[2]));
-    fclose(f);
-  }
-
-  free(u);
-  free(Ph);
-  free(Vh);
-  free(times);
-  free(print);
-
-  destroy_zatnode(znod,nln);
-  destroy_zatelem(zele_s,nle_s);
-  destroy_zatelem(zele_v,nle_v);
-  destroy_matgeom(matgeom,np);
-  destroy_hommat(hommat,nhommat);
-  destroy_eps_il(eps,elem,ne,options.analysis_type);
-  destroy_supp(sup);
-  destroy_elem(elem,ne);
-  destroy_node_multi_physics(nn,node,physicsno);
-
-  /*=== FINALIZE AND EXIT ===*/
-  PGFEM_finalize_io();
-  net->finalize();
 
   delete com;
-  delete net;
+  //delete net;
   delete boot;
   
   return(0);
