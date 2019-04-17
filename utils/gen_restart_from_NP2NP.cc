@@ -436,12 +436,15 @@ class GlobalRestartValues{
       // writerestart files using PGFem3D function
       write_restart(&grid,fv.m_pdata,load,&options,mp,tns.m_pdata,tnm1,myrank,options.restart);
 
-      // save read temporal values into global
-
       if(NULL != eps)
         free(eps);
-    }    
-    
+    }
+
+    /// write all restart files
+    ///
+    /// \param[in] L2G_from local to global map
+    /// \param[in] mp       mutiphysics information object
+    /// \param[in] options  PGFem3D option object    
     void write_restart_files(Locals2Global &L2G_to,
                             const Multiphysics &mp,
                             const PGFem3D_opt &options){
@@ -449,12 +452,17 @@ class GlobalRestartValues{
       for(int ia=0; ia<L2G_to.np; ++ia)
         write_a_restart_file(L2G_to, mp, ia, options);
     }
-            
+
+    /// build model parameter object
+    /// 
+    /// \param[in] model_types list of model types of materials
     void construct_model_parameters(Matrix<int> &model_types){
+      
+      // do only if momentum equation and CM or CM3F are used
       if(isMechanicalCMActive){
         params.initialization(model_types.m_row, 1);
-        HOMMAT h = {};
-        h.devPotFlag = 1;
+        HOMMAT h = {};    // actual value of hommat is not needed
+        h.devPotFlag = 1; 
         h.volPotFlag = 2;
 
         for(int ia=0; ia<model_types.m_row; ++ia){
@@ -463,10 +471,18 @@ class GlobalRestartValues{
         }
       }
     }
-         
+    
+    /// build list of constitutive models and their state variables
+    /// for every element if momentum equation and CM or CM3F are used
+    ///
+    /// \param[in] L2G_from local to global map
+    /// \param[in] mp       mutiphysics information object 
     void construct_constitutive_models(Locals2Global &L2G_from,
                                        const Multiphysics &mp){
+
+      // do only if momentum equation and CM or CM3F are used
       if(isMechanicalCMActive){
+        // count number of state variables 
         long n_state_variables = 0;
         for(int ia=0; ia<L2G_from.np; ++ia){
           for(long ib=0; ib<L2G_from.E(ia).m_row; ++ib){
@@ -475,19 +491,24 @@ class GlobalRestartValues{
             n_state_variables += nint;
           }
         }
+        // allocate state variables as many as counted
         statv_list = new State_variables[n_state_variables];
         long svid = 0;
+        
+        // create constitutive models for an element 
+        // and assign state variables
         for(int ia=0; ia<L2G_from.np; ++ia){
           for(long ib=0; ib<L2G_from.E(ia).m_row; ++ib){
-            long eid = L2G_from.eid(ia,ib); // element ID starts from 1
+            long eid = L2G_from.eid(ia,ib);
             int  mid = L2G_from.E(ia)(ib, ELM_Mat);
-            long nint = {};
+            long nint = {}; // number of integration point
             int_point(L2G_from.E(ia)(ib, ELM_Type), &nint);
+            // set size of constitutive model as many as nint
             gM(eid).initialization(nint, 1);
             for(int ic=0; ic<nint; ++ic){
               gM(eid)(ic).model_id = svid;
               gM(eid)(ic).vars_list = &statv_list;              
-              gM(eid)(ic).initialization(params(mid));              
+              gM(eid)(ic).initialization(params(mid));
               ++svid;
             }
           }
@@ -496,6 +517,12 @@ class GlobalRestartValues{
     }
 };
 
+/// read model parameters from the model_param.in file
+/// Reading restart file needs only model ID and constitutive model type.
+/// This function skips all other constitutive model parameters.
+/// 
+/// \param[in] model_types list of model types of materials
+/// \param[in] options     PGFem3D option object
 int read_model_params(Matrix<int> &model_types,
                       const PGFem3D_opt &options){
 
@@ -520,10 +547,10 @@ int read_model_params(Matrix<int> &model_types,
     CHECK_SCANF(in, "%d %d", &mat_id, &type);
     printf("model params: %d %d\n", mat_id, type);
 
-    if(type>=0)
+    if(type>=0) // skip intial plasticity
       model_types(mat_id) = type;
     
-    while(fgetc(in) != '}'){
+    while(fgetc(in) != '}'){ // skip all CM parameters
       err += scan_for_valid_line(in);      
       fgets(line, 2048, in);
     }
@@ -538,7 +565,17 @@ int read_model_params(Matrix<int> &model_types,
 }
 
 
-
+/// get runtime options
+/// The option [np_from] and [np_to] are expected first, and
+/// PGFem3D run time options used in the simulation which generated restart
+/// file is expected to be following.
+///
+/// \param[in]  argc    number of arguments
+/// \param[in]  argv    argument values
+/// \param[out] np_from number of parttions mapping local to global to be read
+/// \param[out] np_to   number of parttions mapping local to global to be written
+/// \param[out] options PGFem3D option object
+/// \param[in]  myrank  current process rank   
 void get_options(int argc, 
                  char *argv[],
                  int &np_from,
@@ -559,9 +596,7 @@ void get_options(int argc,
   set_default_options(options);
   re_parse_command_line(myrank, 4, argc, argv, options);
 }
-
-
-                          
+                         
 int main(int argc,char *argv[])
 {  
   Boot *boot = new Boot();
@@ -594,8 +629,6 @@ int main(int argc,char *argv[])
   grv.construct_model_parameters(model_types);
   grv.construct_constitutive_models(L2G_from, mp);
   grv.read_restart_files(L2G_from, mp, options);
-  
-
   
   // Create the desired network
   Network *net = Network::Create(options);
