@@ -1,0 +1,9 @@
+# This tests perform PGFem3D with two cases of decompositions 4 and 12. 
+# The "out.ref" directory generated from PGFem3D includes restuls at time step 4 and 9.
+# Then mapping restart files (at time step 4) from partition 4 to 12 and 12 to 4 will be perfomed.
+# These restat files are used to restat PGFem3D from time step 4. These maping and PGFem3D run are done
+# in "out" directory. The new PGFem3D results (restarted from time step 4) are compared with results in out.ref
+# at time step 9
+
+# to run these test
+./run.tests.sh

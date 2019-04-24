@@ -1,0 +1,9 @@
+{
+  "#": "Only used for momentum equation",
+  "time_integration_rule": 0.5,
+
+  "#": "If <10^-16, quasi-static. Otherwise, transient",
+  "#": "One per material",
+  "#": "inertial_density:[]",
+  "inertial_density": [1.2674e-9, 1.200e-9]
+}

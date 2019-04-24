@@ -1,0 +1,49 @@
+{
+    "#": "general material data",
+    "number_of_materials": 2,
+    "number_of_volume_fraction": 1,
+    "volume_fraction": [1],
+    "density": [1.2674e-9, 1.200e-9],
+
+    "number_of_regions_to_set_material": 2,
+    "#": "material_regions description: [geometry type][geometry id][material ID 1][material ID 2]",
+    "#": "geometry type description: 1=vertex, 2=curve, 3=surface, 4=region, 5=patch, 7=interface",
+    "material_regions": [
+        ["region", 1, 0, 0],
+        ["region", 2, 1, 1]
+    ],
+    "number_of_bases": 1,
+    "basis_vectors": [
+      {
+        "e1": [1, 0, 0],
+        "e2": [0, 1, 0],
+        "e3": [0, 0, 1]
+      }
+    ],
+    "materials": [
+        {
+        "name": "powder",
+        "ID": 0,
+        "youngs_modulus": [70000.0,13000.0,0.0],
+        "shear_modulus": [26000.0,0.0,0.0],
+        "poissons_ratio": [0.3461,0.0,0.0],
+        "coefficient_of_thermal_expansion": [2.4e-5,2.4e-5,2.4e-5],
+        "sig": 1.0e+7,
+        "strain_energy_function_dev": 1,
+        "strain_energy_function_vol": 2,
+        "fraction_of_heat_from_mechanical": 0.0
+        },
+        {
+        "name": "sleeve",
+        "ID": 1,
+        "youngs_modulus": [500.0,84.4595,0.0],
+        "shear_modulus": [168.9189,0.0,0.0],
+        "poissons_ratio": [0.48,0.0,0.0 ],
+        "coefficient_of_thermal_expansion": [64.6e-6,64.6e-6,64.6e-6 ],
+        "sig": 1.0e+7,
+        "strain_energy_function_dev": 1,
+        "strain_energy_function_vol": 2,
+        "fraction_of_heat_from_mechanical": 0.0
+        }
+    ]
+}
