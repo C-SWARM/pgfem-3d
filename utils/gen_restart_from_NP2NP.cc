@@ -196,7 +196,8 @@ class GlobalRestartValues{
     Matrix<double> norm; // norm of residuals saved for each physics
 
     GlobalRestartValues(){
-      isMechanicalCMActive = false;
+      isMechanicalCMActive = false
+      statv_list = NULL;
     }
     
     ~GlobalRestartValues(){
@@ -550,9 +551,7 @@ int read_model_params(Matrix<int> &model_types,
             
   err += scan_for_valid_line(in);
   CHECK_SCANF(in, "%d", &num_entries);
-  
-  char line[FILE_NAME_SIZE];
-  
+    
   for(int ia=0; ia<num_entries; ia++){
     int mat_id = {};
     int type = {};
@@ -562,13 +561,10 @@ int read_model_params(Matrix<int> &model_types,
     CHECK_SCANF(in, "%d %d", &mat_id, &type);
     printf("model params: %d %d\n", mat_id, type);
 
-    if(type>=0) // skip intial plasticity
+    if(type>=0) // skip initial plasticity
       model_types(mat_id) = type;
     
-    while(fgetc(in) != '}'){ // skip all CM parameters
-      err += scan_for_valid_line(in);      
-      fgets(line, 2048, in);
-    }
+    while(fgetc(in) != '}'){} // skip all CM parameters
 
     
     if(feof(in)) break;
