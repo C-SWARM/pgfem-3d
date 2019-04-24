@@ -35,6 +35,8 @@ using namespace pgfem3d::net;
 
 #define NODE_ID  0  // node ID
 
+constexpr const int FILE_NAME_SIZE = 2048;
+
 /// maximum function  
 template<class T>  
 T max(Matrix<T> A,
@@ -48,23 +50,37 @@ T max(Matrix<T> A,
   return max_num;
 }
 
+/// mapping info of number of partitions and mapping filenames
+class MapInfo{
+  public:
+    int np;
+    char filenames[FILE_NAME_SIZE];
+    
+    MapInfo(){
+      np=0;
+    }
+    
+    void print(void){
+      std::cout << "number of partitions: " << np << endl;
+      std::cout << "filebase: " << filenames << endl;
+    }
+};
+
 /// read a local to global map. This function will re-size
 /// the node and elem to store list of nodes and elements
 ///
-/// \param[out] node      list of local node IDs to global IDs
-/// \param[out] elem      list of local element IDs to global IDs
-/// \param[in]  myrank    current process rank (partition ID of the mesh)
-/// \param[in]  processno total number of processes (total number of partitions)
-/// \param[in]  options   PGFem3D option object
+/// \param[out] node    list of local node IDs to global IDs
+/// \param[out] elem    list of local element IDs to global IDs
+/// \param[in]  minfo   mapping file info to read
+/// \param[in]  myrank  current process rank (partition ID of the mesh)
 void read_a_map(Matrix<long> &node,
                 Matrix<long> &elem,
-                const int myrank,
-                const int processno,
-                const PGFem3D_opt &options){
+                const MapInfo &minfo,
+                const int myrank){
   long nodeno;
   long elemno;
-  char filename[2048];
-  sprintf(filename, "%s/map.%d/%s%d.map", options.ipath, processno, options.ifname, myrank);
+  char filename[FILE_NAME_SIZE+1024];
+  sprintf(filename, "%s_%d.map", minfo.filenames, myrank);
   FILE *in = fopen(filename, "r");
   
   if(in==NULL){
@@ -131,17 +147,16 @@ class Locals2Global{
 
 
     // read decomposed global node and element IDs    
-    void read_maps(const int np_from_in,
-                   const PGFem3D_opt &options){
-      np = np_from_in;
+    void read_maps(const MapInfo minfo){
+      np = minfo.np;
       // re-size members to number of partitions
       N.initialization(np, 1);
       E.initialization(np, 1);
       
       // read maps for each decomposed mesh
-      for(int ia=0; ia<np; ++ia){
+      for(int ia=0; ia<minfo.np; ++ia){
         // read a map for (ia)th map
-        read_a_map(N(ia), E(ia), ia, np, options);
+        read_a_map(N(ia), E(ia), minfo, ia);
 
         // get total number of nodes
         long max_num = max(N(ia), NODE_ID);
@@ -185,7 +200,7 @@ class GlobalRestartValues{
     }
     
     ~GlobalRestartValues(){
-      if(NULL != statv_list)
+      if(statv_list != NULL)
         delete[] statv_list;
       if(isMechanicalCMActive && params.m_row*params.m_col > 0){
         for(int ia=0; ia<params.m_row*params.m_col; ++ia)
@@ -337,7 +352,7 @@ class GlobalRestartValues{
         tnm1[2] = tnm1_tmp[2];
       }
         
-      if(NULL != eps)
+      if(eps != NULL)
         free(eps);
     
     }    
@@ -529,14 +544,14 @@ int read_model_params(Matrix<int> &model_types,
   int err = 0;
   int num_entries = {};
   
-  char cm_filename[2048];
+  char cm_filename[FILE_NAME_SIZE];
   sprintf(cm_filename,"%s/model_params.in",options.ipath);
   FILE *in = PGFEM_fopen(cm_filename, "r");
             
   err += scan_for_valid_line(in);
   CHECK_SCANF(in, "%d", &num_entries);
   
-  char line[2048];
+  char line[FILE_NAME_SIZE];
   
   for(int ia=0; ia<num_entries; ia++){
     int mat_id = {};
@@ -572,32 +587,67 @@ int read_model_params(Matrix<int> &model_types,
 ///
 /// \param[in]  argc    number of arguments
 /// \param[in]  argv    argument values
-/// \param[out] np_from number of parttions mapping local to global to be read
-/// \param[out] np_to   number of parttions mapping local to global to be written
+/// \param[out] from    mapping local to global to be read
+/// \param[out] to      mapping local to global to be written
+/// \param[out] out     filebase of restart files to be written
 /// \param[out] options PGFem3D option object
 /// \param[in]  myrank  current process rank   
 void get_options(int argc, 
                  char *argv[],
-                 int &np_from,
-                 int &np_to,
+                 MapInfo &from,
+                 MapInfo &to,
+                 char *out,
                  PGFem3D_opt *options,
-                 const int myrank){
-  if (argc <= 4) {
-    if (myrank == 0) {
-      printf("gen_restart_from_NP2NP [np(from)] [np(to)] [PGFem3D options]\n"); 
-      print_usage(stdout);
-    }
-    exit(0);
+                 const int myrank){                  
+  if (argc <= 3)
+    throw "How to use: gen_restart_from_NP2NP [input_file_path] [PGFem3D options]\n";
+
+  
+  FILE *fp = fopen(argv[1], "r");
+  
+  if(fp==NULL){
+    char err_msg[FILE_NAME_SIZE];
+    sprintf(err_msg, "Error: Cannot open file [%s].\n", argv[1]);
+    throw err_msg;
   }
   
-  sscanf(argv[1], "%d", &np_from);
-  sscanf(argv[2], "%d", &np_to);
+  int err = 0;
+  
+  // map from
+  err += scan_for_valid_line(fp);
+  CHECK_SCANF(fp, "%d", &from.np);
+  err += scan_for_valid_line(fp);
+  CHECK_SCANF(fp, "%s", &from.filenames);  
+  
+  // map to
+  err += scan_for_valid_line(fp);
+  CHECK_SCANF(fp, "%d", &to.np);
+  err += scan_for_valid_line(fp);  
+  CHECK_SCANF(fp, "%s", &to.filenames);  
+  
+  // new restart file base
+  err += scan_for_valid_line(fp);
+  CHECK_SCANF(fp, "%s", out);
+  
+  if(myrank==0){
+    std::cout << "Map info from:" << endl;
+    from.print();
+    std::cout << "Map info to:" << endl;
+    to.print();
+    std::cout << "restart out: " << out << endl;
+  }  
+    
+  if(err>0){
+    char err_msg[FILE_NAME_SIZE];
+    sprintf(err_msg, "Error: Cannot read file [%s].\n", argv[1]);
+    throw err_msg;
+  }    
   
   set_default_options(options);
-  re_parse_command_line(myrank, 4, argc, argv, options);
+  re_parse_command_line(myrank, 3, argc, argv, options);
 }
                          
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {  
   Boot *boot = new Boot();
   int myrank = boot->get_rank();
@@ -605,21 +655,33 @@ int main(int argc,char *argv[])
 
   // read options
   PGFem3D_opt options;
-  int np_from, np_to;
-  get_options(argc, argv, np_from, np_to, &options, myrank);  
+  
+  MapInfo mapF; // map info from
+  MapInfo mapT; // map info to
+  
+  char rs_path[FILE_NAME_SIZE];
+  
+  try{
+    get_options(argc, argv, mapF, mapT, rs_path, &options, myrank);
+  }
+  catch(const char *msg){
+    if(myrank==0)
+      std::cerr << msg;
+    return 0;
+  }
 
   // read decomposed global node and element IDs
   Locals2Global L2G_from, L2G_to;
   
-  L2G_from.read_maps(np_from, options);
-  L2G_to.read_maps(np_to, options);
+  L2G_from.read_maps(mapF);
+  L2G_to.read_maps(mapT);
   
   // read model parameters
   Matrix<int> model_types(L2G_from.matno, 1, 0);
   read_model_params(model_types, options);  
   
   for(int ia=0; ia<L2G_from.matno; ia++)
-    printf("%d -> %d: models(%d}: %d %d\n", np_from, np_to, myrank, ia, model_types(ia));  
+    printf("%d -> %d: models(%d}: %d %d\n", mapF.np, mapT.np, myrank, ia, model_types(ia));  
      
   Multiphysics mp;
   read_multiphysics_settings(mp,&options,myrank);
@@ -629,6 +691,13 @@ int main(int argc,char *argv[])
   grv.construct_model_parameters(model_types);
   grv.construct_constitutive_models(L2G_from, mp);
   grv.read_restart_files(L2G_from, mp, options);
+  
+  const char *tmp = options.opath;
+  options.opath = rs_path;
+  
+  grv.write_restart_files(L2G_to, mp, options);
+  
+  options.opath = tmp;
   
   // Create the desired network
   Network *net = Network::Create(options);
@@ -644,12 +713,9 @@ int main(int argc,char *argv[])
   boot->get_processor_name(processor_name, &namelen);
   
   PGFEM_initialize_io(NULL,NULL);
-  
 
   
   Matrix<Matrix<double>> Un(mp.physicsno, 1), Unm1(mp.physicsno, 1);
-
-//  if(options.analysis == CM || options.analysis == CM3F || options.analysis == TF)
     
   
   net->barrier(com->comm);
