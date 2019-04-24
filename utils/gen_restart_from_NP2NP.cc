@@ -196,7 +196,7 @@ class GlobalRestartValues{
     Matrix<double> norm; // norm of residuals saved for each physics
 
     GlobalRestartValues(){
-      isMechanicalCMActive = false
+      isMechanicalCMActive = false;
       statv_list = NULL;
     }
     
