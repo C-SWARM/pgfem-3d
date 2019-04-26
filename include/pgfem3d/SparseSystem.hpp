@@ -3,6 +3,7 @@
 
 #include "pgfem3d/Network.hpp"
 #include "PGFem3D_options.h"
+#include "datatype.hpp"
 
 /** define the structure for general access to solver information */
 struct SOLVER_INFO {
@@ -19,7 +20,7 @@ class SparseSystem
 
   static SparseSystem* Create(const PGFem3D_opt& opts,
 			      const pgfem3d::net::PGFem3D_Comm comm,
-                              const int Ap[], const int Ai[],
+                              const int Ap[], const Ai_t Ai[],
                               const long rowsPerProc[], long maxit, double err);
 
   virtual ~SparseSystem();

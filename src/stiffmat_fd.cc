@@ -59,7 +59,7 @@ const constexpr int ndn = 3;
 static void coel_stiffmat(int i, /* coel ID */
                           double **Lk,
                           int *Ap,
-                          int *Ai,
+                          Ai_t *Ai,
                           long ndofc,
                           Element *elem,
                           Node *node,
@@ -226,7 +226,7 @@ static void coel_stiffmat(int i, /* coel ID */
 static int bnd_el_stiffmat(int belem_id,
                            double **Lk,
                            int *Ap,
-                           int *Ai,
+                           Ai_t *Ai,
                            long ndofn,
                            Element *elem,
                            BoundingElement *b_elems,

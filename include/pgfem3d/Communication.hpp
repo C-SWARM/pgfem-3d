@@ -5,6 +5,7 @@
 #include "pgfem3d/Boot.hpp"
 #include "pgfem3d/Network.hpp"
 #include "pgfem3d/Solver.hpp"
+#include "datatype.hpp"
 #include <cstdio>
 
 namespace pgfem3d {
@@ -130,7 +131,7 @@ struct CommunicationStructure {
   int nproc;                //!< number of processes
   int rank;                 //!< this process rank
   int *Ap;                  //!< n_cols in each owned row of global stiffness matrix
-  int *Ai;                  //!< column ids for owned rows of global stiffness matrix
+  Ai_t *Ai;                 //!< column ids for owned rows of global stiffness matrix
   long *DomDof;             //!< number of global DOFs on each domain
   long nbndel;              //!< number of Element on the communication boundary
   long *bndel;              //!< Element ids on the communication boundary

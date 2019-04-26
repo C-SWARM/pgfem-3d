@@ -11,6 +11,7 @@
 #include "matice.h"
 #include "string.h"
 #include "utils.h"
+#include <assert.h>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -144,19 +145,19 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
 				    long **AA,
 				    long **ID);
 
-int* Psparse_ApAi (long ne,
-                   long n_be,
-                   long nn,
-                   long ndofn,
-                   long ndofd,
-                   Element *elem,
-                   BoundingElement *b_elems,
-                   Node *node,
-                   long nce,
-                   COEL *coel,
-		   CommunicationStructure *com,
-                   const int cohesive,
-                   const int mp_id)
+Ai_t* Psparse_ApAi (long ne,
+                    long n_be,
+                    long nn,
+                    long ndofn,
+                    long ndofd,
+                    Element *elem,
+                    BoundingElement *b_elems,
+                    Node *node,
+                    long nce,
+                    COEL *coel,
+		    CommunicationStructure *com,
+                    const int cohesive,
+                    const int mp_id)
 {
   char jmeno[200];
   FILE *out=NULL;
@@ -165,7 +166,7 @@ int* Psparse_ApAi (long ne,
   long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   long *Ddof = NULL;
-  int *Ai = NULL;
+  Ai_t *Ai = NULL;
 
   /* pull necessary info from Communication handle */
   int myrank = com->rank;
@@ -402,6 +403,7 @@ int* Psparse_ApAi (long ne,
   for (i=0;i<DomDof[myrank];i++){
     for (j=0;j<ndofd;j++){
       if (i == LG[j] - *GDof) {
+        assert(0 <= ap[j] && (pow(2,31)-1) >= ap[j]);
         Ap[i] = ap[j];                                                              //manually sort ap into Ap
         GL[i] = comm->GL[i] = j;                                                    //also global to local
         break;
@@ -578,6 +580,7 @@ int* Psparse_ApAi (long ne,
     /* GLOBAL number of non-zeros in row */
     JJ = 1; for (j=0;j<II-1;j++) if (send[j] < send[j+1]) JJ++;
 
+    assert(0 <= JJ && (pow(2,31)-1) >= JJ);
     Ap[GNRr[i]-*GDof] = JJ;
 
     PGFEM_free (ID[GL[GNRr[i]-*GDof]]);
@@ -684,15 +687,19 @@ int* Psparse_ApAi (long ne,
   II = 0;
   for (i=0;i<DomDof[myrank];i++)
     II += Ap[i];
-  Ai = aloc1i (II);
+  //Ai = aloc1i (II);
+  Ai = PGFEM_calloc (Ai_t, II);
 
   II = Ap[0]; Ap[0] = 0; k = 0;
   for (i=1;i<DomDof[myrank]+1;i++){
     for (j=0;j<II;j++) {
+      assert(0 <= ID[GL[i-1]][j] && (pow(2,31)-1) >= ID[GL[i-1]][j]);
       Ai[k] = ID[GL[i-1]][j];
       k++;
     }
     JJ = Ap[i];
+    long dum = II + Ap[i-1];
+    assert(0 <= dum && (pow(2,31)-1) >= dum); 
     Ap[i] = II + Ap[i-1];
     II = JJ;
   }

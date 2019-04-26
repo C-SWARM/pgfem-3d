@@ -19,7 +19,7 @@ SparseSystem::~SparseSystem()
 
 SparseSystem*
 SparseSystem::Create(const PGFem3D_opt& opts, const PGFem3D_Comm comm, const int Ap[],
-                     const int Ai[], const long rowsPerProc[], long maxit,
+                     const Ai_t Ai[], const long rowsPerProc[], long maxit,
                      double err)
 {
   SparseSystem* system = NULL;

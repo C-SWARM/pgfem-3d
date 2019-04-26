@@ -15,18 +15,18 @@
 /**
  * Create the global sparsity pattern and commincation structure.
  */
-int* Psparse_ApAi (long ne,
-                   long n_be,
-                   long nn,
-                   long ndofn,
-                   long ndofd,
-                   Element *elem,
-                   BoundingElement *b_elems,
-                   Node *node,
-                   long nce,
-                   COEL *coel,
-                   pgfem3d::CommunicationStructure *com,
-                   const int cohesive,
-                   const int mp_id);
+Ai_t* Psparse_ApAi (long ne,
+                    long n_be,
+                    long nn,
+                    long ndofn,
+                    long ndofd,
+                    Element *elem,
+                    BoundingElement *b_elems,
+                    Node *node,
+                    long nce,
+                    COEL *coel,
+                    pgfem3d::CommunicationStructure *com,
+                    const int cohesive,
+                    const int mp_id);
 
 #endif /* #define PGFEM3D_PSPARSE_APAI_H */

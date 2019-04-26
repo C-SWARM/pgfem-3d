@@ -341,7 +341,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
   // now create a new sparse structure
   spc = pgfem3d::SparseComm::Create(net, comm);
   
-  Ai = Psparse_ApAi(ne,0,nn, ndofn,ndofd,elem,
+  Ai =  Psparse_ApAi(ne,0,nn, ndofn,ndofd,elem,
 		    NULL,node,nce, coel, this,
 		    opts->cohesive,mp_id);
   

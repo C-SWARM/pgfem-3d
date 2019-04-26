@@ -20,7 +20,7 @@
 
 void PLoc_Sparse (double **Lk,
                   double *lk,
-                  int *Ai, /**< UNUSED */
+                  Ai_t *Ai, /**< UNUSED */
                   int *Ap, /**< UNUSED */
                   long *cnL, /**< UNUSED */
                   long *cnG,
@@ -37,7 +37,7 @@ void PLoc_Sparse (double **Lk,
 /** PLoc_Sparse_rec for general (non-square) matrices. */
 void PLoc_Sparse_rec (double **Lk,
                       double *lk,
-                      int *Ai,
+                      Ai_t *Ai,
                       int *Ap,
                       long *cnG_row,
                       long *cnG_col,

@@ -23,7 +23,7 @@ using pgfem3d::solvers::SparseSystem;
 using namespace pgfem3d::solvers::hypre;
 
 Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
-             const int Ai[], const long rowsPerProc[], long maxit, double err)
+             const Ai_t Ai[], const long rowsPerProc[], long maxit, double err)
     : SparseSystem(),
       _comm(comm),
       _Ai(Ai)
@@ -211,7 +211,7 @@ Hypre::set(double val)
 
   for(int i = 0, e = (_iupper - _ilower + 1), n = 0; i < e; ++i) {
     for(int j = 0, e = _nCols[i]; j < e; ++j, ++n) {
-      HYPRE_IJMatrixSetValues(_k, 1, cols, &_gRows[i], &_Ai[n], &val);
+      HYPRE_IJMatrixSetValues(_k, 1, cols, &_gRows[i], (int *) &_Ai[n], &val);
     }
   }
 }

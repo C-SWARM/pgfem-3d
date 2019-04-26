@@ -96,7 +96,7 @@ struct Hypre : public SparseSystem
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
   Hypre(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const int Ai[], const long rowsPerProc[], long maxit, double err);
+        const Ai_t Ai[], const long rowsPerProc[], long maxit, double err);
 
   ~Hypre();
 
@@ -184,7 +184,7 @@ struct Hypre : public SparseSystem
 
   // Sparse matrix data relevant to the distribution of data.
   const MPI_Comm _comm;                         //!<
-  const int * const _Ai;                        //!< reference to column array
+  const Ai_t * const _Ai;                       //!< reference to column array
 
   int *_gRows = nullptr;                        //!< Local row indices
   int *_nCols = nullptr;                        //!< Number of columns per row

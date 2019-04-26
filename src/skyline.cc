@@ -5,7 +5,7 @@
 #endif
 
 
-long skyline(long ncol, int *Ap, int *Ai, long start)
+long skyline(long ncol, int *Ap, Ai_t *Ai, long start)
 {
   long sky;
 
