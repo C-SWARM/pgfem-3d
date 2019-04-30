@@ -15,6 +15,8 @@
 #include "sig.h"
 #include <cstdio>
 
+using pgfem3d::solvers::SparseSystem;
+
 struct EPS;                                     // defined in eps.h
 
 /// Lots of system headers require that the return value from scanf be
@@ -290,7 +292,7 @@ void print_array_d(FILE *out,
 
 /** Print an integer type array to a file in block format. */
 void print_array_i(FILE *out,
-                   const int *array,
+                   const SparseSystem::sp_idx *array,
                    const int length,
                    const int nrow,
                    const int ncol);

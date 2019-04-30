@@ -18,7 +18,7 @@ struct PGFEM_diag_pc {
   double replacement;
 };
 
-int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc)
+HYPRE_t PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc)
 {
   PGFEM_diag_pc **diag_pc = (PGFEM_diag_pc**) vdiag_pc;
   /* if(diag_pc != NULL){ */
@@ -33,17 +33,17 @@ int PGFEM_HYPRE_ScaleDiagCreate(HYPRE_Solver *vdiag_pc)
   return 0;
 }
 
-int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
-                               HYPRE_ParCSRMatrix vA,
-                               HYPRE_ParVector vb,
-                               HYPRE_ParVector vx)
+HYPRE_t PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
+                                   HYPRE_ParCSRMatrix vA,
+                                   HYPRE_ParVector vb,
+                                   HYPRE_ParVector vx)
 {
   /* setup scale vector accounting for zeros on the diagonal */
   PGFEM_diag_pc *diag_pc = (PGFEM_diag_pc*) vdiag_pc;
   hypre_ParCSRMatrix *A = (hypre_ParCSRMatrix *) vA;
   hypre_ParVector    *x = (hypre_ParVector *) vx;
   const double *A_data = hypre_CSRMatrixData(hypre_ParCSRMatrixDiag(A));
-  const int *A_i = hypre_CSRMatrixI(hypre_ParCSRMatrixDiag(A));
+  const HYPRE_t *A_i = hypre_CSRMatrixI(hypre_ParCSRMatrixDiag(A));      // ksaha ???
 
   const int local_size = hypre_VectorSize(hypre_ParVectorLocalVector(x));
   if(diag_pc->setup){
@@ -67,10 +67,10 @@ int PGFEM_HYPRE_ScaleDiagSetup(HYPRE_Solver vdiag_pc,
   return diag_pc->setup;
 }
 
-int PGFEM_HYPRE_ScaleDiagSolve(HYPRE_Solver vdiag_pc,
-                               HYPRE_ParCSRMatrix vA,
-                               HYPRE_ParVector vb,
-                               HYPRE_ParVector vx)
+HYPRE_t PGFEM_HYPRE_ScaleDiagSolve(HYPRE_Solver vdiag_pc,
+                                   HYPRE_ParCSRMatrix vA,
+                                   HYPRE_ParVector vb,
+                                   HYPRE_ParVector vx)
 {
   PGFEM_diag_pc *diag_pc = (PGFEM_diag_pc*) vdiag_pc;
   hypre_ParVector    *x = (hypre_ParVector *) vx;
@@ -83,7 +83,7 @@ int PGFEM_HYPRE_ScaleDiagSolve(HYPRE_Solver vdiag_pc,
   return 0;
 }
 
-int PGFEM_HYPRE_ScaleDiagDestroy(HYPRE_Solver vdiag_pc)
+HYPRE_t PGFEM_HYPRE_ScaleDiagDestroy(HYPRE_Solver vdiag_pc)
 {
   PGFEM_diag_pc *diag_pc = (PGFEM_diag_pc*) vdiag_pc;
   free(diag_pc->data);

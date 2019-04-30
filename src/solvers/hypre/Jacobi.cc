@@ -23,7 +23,7 @@ struct PGFEM_jacobi_pc {
   MPI_Comm comm;
 };
 
-int PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc)
+HYPRE_t PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc)
 {
   PGFEM_jacobi_pc **jacobi_pc = (PGFEM_jacobi_pc **) vjacobi_pc;
   (*jacobi_pc) = PGFEM_calloc(PGFEM_jacobi_pc, 1);
@@ -34,17 +34,17 @@ int PGFEM_HYPRE_JacobiCreate(HYPRE_Solver *vjacobi_pc)
   return 0;
 }
 
-int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
-                            HYPRE_ParCSRMatrix vA,
-                            HYPRE_ParVector vb,
-                            HYPRE_ParVector vx)
+HYPRE_t PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
+                                HYPRE_ParCSRMatrix vA,
+                                HYPRE_ParVector vb,
+                                HYPRE_ParVector vx)
 {
   PGFEM_jacobi_pc *jacobi_pc = (PGFEM_jacobi_pc *) vjacobi_pc;
   hypre_ParCSRMatrix *A = (hypre_ParCSRMatrix *) vA;
   hypre_ParVector    *x = (hypre_ParVector *) vx;
 
   const double *A_data = hypre_CSRMatrixData(hypre_ParCSRMatrixDiag(A));
-  const int *A_i = hypre_CSRMatrixI(hypre_ParCSRMatrixDiag(A));
+  const HYPRE_t *A_i = hypre_CSRMatrixI(hypre_ParCSRMatrixDiag(A));       //ksaha ???
   const int local_size = hypre_VectorSize(hypre_ParVectorLocalVector(x));
 
   jacobi_pc->scale = 0.0;
@@ -68,10 +68,10 @@ int PGFEM_HYPRE_JacobiSetup(HYPRE_Solver vjacobi_pc,
   return 0;
 }
 
-int PGFEM_HYPRE_JacobiSolve(HYPRE_Solver vjacobi_pc,
-                            HYPRE_ParCSRMatrix vA,
-                            HYPRE_ParVector vb,
-                            HYPRE_ParVector vx)
+HYPRE_t PGFEM_HYPRE_JacobiSolve(HYPRE_Solver vjacobi_pc,
+                                HYPRE_ParCSRMatrix vA,
+                                HYPRE_ParVector vb,
+                                HYPRE_ParVector vx)
 {
   PGFEM_jacobi_pc *jacobi_pc = (PGFEM_jacobi_pc *) vjacobi_pc;
   hypre_ParVector    *x = (hypre_ParVector *) vx;

@@ -42,7 +42,7 @@ namespace trilinos {
 
 using ST =                                                 double;
 using LO =                                                    int;
-using GO =                                                    int;
+using GO =                                                   Ai_t;
 using Node =          KokkosClassic::DefaultNode::DefaultNodeType;
 using TCrsMatrix =               Tpetra::CrsMatrix<ST,LO,GO,Node>;
 using TRowMatrix =               Tpetra::RowMatrix<ST,LO,GO,Node>;
@@ -66,7 +66,7 @@ struct TrilinosWrap : public SparseSystem
   /// @param rowsPerProc The row partitioning for this solver.
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
-  TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const GO Ap[],
+  TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
         const GO Ai[], const long rowsPerProc[], long maxit, double err);
 
   ~TrilinosWrap();
@@ -75,7 +75,7 @@ struct TrilinosWrap : public SparseSystem
   void assemble();
 
   /// Add partial sums to values.
-  void add(LO nrows, int ncols[], GO const rids[], const GO cids[],
+  void add(LO nrows, GO ncols[], GO const rids[], const GO cids[],
            const ST vals[]);
 
   /// Reset the prconditioner.
@@ -168,7 +168,7 @@ struct TrilinosWrap : public SparseSystem
   const GO * const _Ai;                        //!< reference to column array
 
   GO *_gRows = nullptr;                        //!< Local row indices
-  size_t *_nCols = nullptr;                        //!< Number of columns per row
+  size_t *_nCols = nullptr;                    //!< Number of columns per row
 
   GO _ilower = 0;                              //!< Row lower bound
   GO _iupper = 0;                              //!< Row upper bound

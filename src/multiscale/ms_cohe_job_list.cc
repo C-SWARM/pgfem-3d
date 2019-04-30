@@ -301,24 +301,24 @@ int compute_ms_cohe_tan_res(const int compute_micro_eq, //deprecated
 
   /* assemble to macro tangent on this process */
   {
-    int *row_idx = nullptr;
-    int   *ncols = nullptr;
-    int *col_idx = nullptr;
-    for (int i = 0; i < com->spc->Nr; ++i) {
+    SparseSystem::sp_idx *row_idx = nullptr;
+    SparseSystem::sp_idx   *ncols = nullptr;
+    SparseSystem::sp_idx *col_idx = nullptr;
+    for (int i = 0; i < com->spc->Nr; ++i) {             //ksaha
       const int proc = com->spc->Nrr[i];
       const int nrows = com->spc->R[proc];
 
       /* allocate rows and cols to receive */
-      row_idx = PGFEM_calloc(int, nrows);
-      ncols   = PGFEM_calloc(int, nrows);
-      col_idx = PGFEM_calloc(int, com->spc->AR[proc]);
+      row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+      ncols   = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+      col_idx = PGFEM_calloc(SparseSystem::sp_idx, com->spc->AR[proc]);
 
       /* get row and column ids */
-      int idx = 0;
+      SparseSystem::sp_idx idx = 0;
       for (int j = 0, e = com->spc->R[proc]; j < e; ++j) {
         row_idx[j] = com->spc->RGID[proc][j];
         ncols[j] = com->spc->RAp[proc][j];
-        for (int k = 0, e = ncols[j]; k < e; ++k) {
+        for (SparseSystem::sp_idx k = 0, e = ncols[j]; k < e; ++k) {
           col_idx[idx] = com->spc->RGRId[proc][idx];
           ++idx;
         }

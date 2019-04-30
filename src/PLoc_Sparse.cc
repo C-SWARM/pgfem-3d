@@ -66,21 +66,21 @@ void PLoc_Sparse (double **Lk,
   }
 
   /* Allocate the rows, columns, and values */
-  int *row_idx, *n_cols, *col_idx;
+  SparseSystem::sp_idx *row_idx, *n_cols, *col_idx;
   double *values;
   if(nrows > 0){
-    row_idx = aloc1i(nrows);
-    n_cols = aloc1i(nrows);
+    row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+    n_cols = PGFEM_calloc(SparseSystem::sp_idx, nrows); 
   } else {
-    row_idx = aloc1i(1);
-    n_cols = aloc1i(1);
+    row_idx = PGFEM_calloc(SparseSystem::sp_idx, 1);
+    n_cols = PGFEM_calloc(SparseSystem::sp_idx, 1);
   }
 
   if((ncols > 0) && (nrows >0)){
-    col_idx = aloc1i(nrows*ncols);
+    col_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows*ncols);
     values = aloc1(nrows*ncols);
   } else {
-    col_idx = aloc1i(1);
+    col_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
     values = aloc1(1);
   }
 
@@ -233,21 +233,21 @@ void PLoc_Sparse_rec (double **Lk,
   /* now we know how many rows/columns to keep/send and what index
      they belong to. Now allocate space for the row and column values
      noting that the local matrix is dense. */
-  int *row_idx, *n_cols, *col_idx;
+  SparseSystem::sp_idx *row_idx, *n_cols, *col_idx;
   double *values;
   if(nrows > 0){
-    row_idx = aloc1i(nrows);
-    n_cols = aloc1i(nrows);
+    row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows); 
+    n_cols = PGFEM_calloc(SparseSystem::sp_idx, nrows);
   } else {
-    row_idx = aloc1i(1);
-    n_cols = aloc1i(1);
+    row_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
+    n_cols = PGFEM_calloc(SparseSystem::sp_idx, 1); 
   }
 
   if( (ncols > 0) && (nrows > 0)){
-    col_idx = aloc1i(nrows*ncols);
+    col_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows*ncols);
     values = aloc1(nrows*ncols);
   } else {
-    col_idx = aloc1i(1);
+    col_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
     values = aloc1(1);
   }
 
@@ -256,7 +256,7 @@ void PLoc_Sparse_rec (double **Lk,
     row_idx[i] = G_row_id[rows[i]];
     n_cols[i] = ncols;
     for(int j=0; j<ncols; j++){
-      int idx = i*ncols+j;
+      int idx = i*ncols+j;                  //ksaha
       col_idx[idx] = G_col_id[cols[j]];
       values[idx] = lk[rows[i]*ncols + cols[j]];
     }

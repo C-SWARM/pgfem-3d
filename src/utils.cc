@@ -807,18 +807,20 @@ void print_array_d(FILE *out,
 }
 
 void print_array_i(FILE *out,
-                   const int *array,
+                   //const SparseSystem::sp_id *array,
+                   const Ai_t *array,
                    const int length,
                    const int nrow,
                    const int ncol)
 {
   int n_block = length/(nrow*ncol);
-  int count = 0;
+  //SparseSystem::sp_id count = 0;
+  Ai_t count = 0;
   assert(n_block*nrow*ncol <= length);
   for (int i=0; i<n_block; i++){
     for (int j=0; j<nrow; j++){
       for (int k=0; k<ncol; k++){
-        PGFEM_fprintf(out,"%5d ",array[count]);
+        PGFEM_fprintf(out,"%5ld ",array[count]);
         count++;
       }
       PGFEM_fprintf(out,"\n");

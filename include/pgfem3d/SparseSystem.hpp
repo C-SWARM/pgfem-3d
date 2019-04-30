@@ -8,7 +8,7 @@
 /** define the structure for general access to solver information */
 struct SOLVER_INFO {
   double res_norm;
-  int n_iter;
+  Ai_t n_iter;
   int err;
 };
 
@@ -17,6 +17,8 @@ namespace solvers {
 class SparseSystem
 {
  public:
+
+  using sp_idx = Ai_t;
 
   static SparseSystem* Create(const PGFem3D_opt& opts,
 			      const pgfem3d::net::PGFem3D_Comm comm,
@@ -27,9 +29,9 @@ class SparseSystem
 
   /// Assemble the matrix.
   virtual void assemble() = 0;
-
+ 
   /// Add partial sums to values.
-  virtual void add(int nrows, int ncols[], int const rids[], const int cids[],
+  virtual void add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
                   const double vals[]) = 0;
 
   /// Reset the preconditioner.
@@ -39,7 +41,7 @@ class SparseSystem
   ///
   /// @param i          The global row index to check.
   /// @returns          TRUE if the row is local, FALSE otherwise.
-  virtual bool isLocalRow(int i) const = 0;
+  virtual bool isLocalRow(Ai_t i) const = 0;
 
   /// Zero the underlying matrix data.
   virtual void zero() = 0;

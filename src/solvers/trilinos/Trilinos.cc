@@ -23,7 +23,7 @@ using pgfem3d::solvers::SparseSystem;
 using namespace pgfem3d::solvers::trilinos;
 
 
-TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const GO Ap[],
+TrilinosWrap::TrilinosWrap(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
              const GO Ai[], const long rowsPerProc[], long maxit, double err)
     : SparseSystem(),
       _comm(comm),
@@ -110,7 +110,7 @@ TrilinosWrap::assemble()
 }
 
 void
-TrilinosWrap::add(LO nrows, int ncols[], GO const rids[], const GO cids[],
+TrilinosWrap::add(LO nrows, GO ncols[], GO const rids[], const GO cids[],
            const ST vals[])
 {
   GO idx=0;

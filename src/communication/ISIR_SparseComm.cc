@@ -9,6 +9,7 @@
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
+using pgfem3d::solvers::SparseSystem;
 
 namespace pgfem3d {
   
@@ -199,16 +200,16 @@ namespace pgfem3d {
       const int nrows = R[proc];
       
       /* allocate rows and cols to receive */
-      int *row_idx = PGFEM_calloc(int, nrows);
-      int *ncols = PGFEM_calloc(int, nrows);
-      int *col_idx = PGFEM_calloc(int, AR[proc]);
+      SparseSystem::sp_idx *row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+      SparseSystem::sp_idx *ncols = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+      SparseSystem::sp_idx *col_idx = PGFEM_calloc(SparseSystem::sp_idx, AR[proc]);
       
       /* get row and column ids */
-      int idx = 0;
+      SparseSystem::sp_idx idx = 0;
       for(int j=0; j<R[proc]; j++){
 	row_idx[j] = RGID[proc][j];
 	ncols[j] = RAp[proc][j];
-	for(int k=0; k<ncols[j]; k++){
+	for(SparseSystem::sp_idx k=0; k<ncols[j]; k++){     //ksaha
 	  col_idx[idx] = RGRId[proc][idx];
 	  ++idx;
 	}

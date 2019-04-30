@@ -28,24 +28,24 @@ struct Hypre;
 /* create aliases for HYPRE functions so we can set and run with fewer
    switches/code */
 
-typedef int (*ptr_solve_t)(HYPRE_Solver solver,
-                           HYPRE_ParCSRMatrix A,
-                           HYPRE_ParVector b,
-                           HYPRE_ParVector x);
+typedef HYPRE_t (*ptr_solve_t)(HYPRE_Solver solver,
+                               HYPRE_ParCSRMatrix A,
+                               HYPRE_ParVector b,
+                               HYPRE_ParVector x);
 
-typedef int (*ptr_set_pre_t)(HYPRE_Solver solver,
-                             ptr_solve_t pre_solve,
-                             ptr_solve_t pre_setup,
-                             HYPRE_Solver precond);
+typedef HYPRE_t (*ptr_set_pre_t)(HYPRE_Solver solver,
+                                 ptr_solve_t pre_solve,
+                                 ptr_solve_t pre_setup,
+                                 HYPRE_Solver precond);
 
-typedef int (*ptr_check_pre_t)(HYPRE_Solver solver,
-                               HYPRE_Solver *precond);
+typedef HYPRE_t (*ptr_check_pre_t)(HYPRE_Solver solver,
+                                   HYPRE_Solver *precond);
 
-typedef int (*ptr_iter_t)(HYPRE_Solver solver,
-                          int *num_it);
+typedef HYPRE_t (*ptr_iter_t)(HYPRE_Solver solver,
+                              HYPRE_t *num_it);
 
-typedef int (*ptr_norm_t)(HYPRE_Solver solver,
-                          double *norm);
+typedef HYPRE_t (*ptr_norm_t)(HYPRE_Solver solver,
+                              double *norm);
 
 class Preconditioner
 {
@@ -104,7 +104,7 @@ struct Hypre : public SparseSystem
   void assemble();
 
   /// Add partial sums to values.
-  void add(int nrows, int ncols[], int const rids[], const int cids[],
+  void add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
            const double vals[]);
 
   /// Reset the prconditioner.
@@ -114,7 +114,7 @@ struct Hypre : public SparseSystem
   ///
   /// @param i          The global row index to check.
   /// @returns          TRUE if the row is local, FALSE otherwise.
-  bool isLocalRow(int i) const;
+  bool isLocalRow(Ai_t i) const;
 
   /// Zero the underlying matrix data.
   void zero();
@@ -162,7 +162,7 @@ struct Hypre : public SparseSystem
   void set(double val);
 
   /** setup the HYPRE solver environment */
-  int setupSolverEnv(ptr_solve_t precond_solve,
+  HYPRE_t setupSolverEnv(ptr_solve_t precond_solve,
                      ptr_solve_t precond_setup,
                      ptr_solve_t solver_solve,
                      ptr_solve_t solver_setup,
@@ -172,7 +172,7 @@ struct Hypre : public SparseSystem
                      const PGFem3D_opt *opts);
 
   /** solve using the HYPRE environment */
-  int solve(ptr_solve_t solver_solve,
+  HYPRE_t solve(ptr_solve_t solver_solve,
             ptr_iter_t get_num_iter,
             ptr_norm_t get_res_norm,
             SOLVER_INFO *info);
@@ -186,11 +186,11 @@ struct Hypre : public SparseSystem
   const MPI_Comm _comm;                         //!<
   const Ai_t * const _Ai;                       //!< reference to column array
 
-  int *_gRows = nullptr;                        //!< Local row indices
-  int *_nCols = nullptr;                        //!< Number of columns per row
+  HYPRE_t *_gRows = nullptr;                    //!< Local row indices
+  HYPRE_t *_nCols = nullptr;                    //!< Number of columns per row
 
-  int _ilower = 0;                              //!< Row lower bound
-  int _iupper = 0;                              //!< Row upper bound
+  HYPRE_t _ilower = 0;                          //!< Row lower bound
+  HYPRE_t _iupper = 0;                          //!< Row upper bound
 
   Preconditioner* _preconditioner = nullptr;
   Solver*                 _solver = nullptr;

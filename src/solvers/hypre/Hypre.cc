@@ -42,8 +42,8 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
   }
 
   const auto rows = rowsPerProc[rank];
-  _gRows = new int[rows];
-  _nCols = new int[rows];
+  _gRows = new HYPRE_t[rows];
+  _nCols = new HYPRE_t[rows];
 
   // Prefix sum to find the index of my first row, and then compute the end of
   // my closed interval range.
@@ -51,10 +51,10 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
   _iupper = _ilower + rows - 1;
 
   // Generate the rows that we own (dense integer range starting at _ilower)
-  std::iota(_gRows, _gRows + rows, _ilower);
+  std::iota(_gRows, _gRows + rows, _ilower);    // ksaha
 
   // Record the number of non-zero columns in each of the rows.
-  for (int i = 0, e = rows; i < e; ++i) {
+  for (long i = 0, e = rows; i < e; ++i) {
     _nCols[i] = Ap[i + 1] - Ap[i];
   }
 
@@ -68,19 +68,20 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
   // not (offd). We compute this by looping through every element we own, and
   // counting the number of diagonal elements (the offd elements are the
   // remainder).
-  auto diag = new int[rows]{};
-  auto offd = new int[rows];
+  auto diag = new HYPRE_t[rows]{};
+  auto offd = new HYPRE_t[rows];
 
   // NB: n tracks the linear offset into Ai where we find the column id and is
   //     incremented in the inner loop.
-  for (int i = 0, n = 0, e = rows; i < e; ++i) {
-    for (int j = 0, e = _nCols[i]; j < e; ++j, ++n) {
+  for (long i = 0, n = 0, e = rows; i < e; ++i) {
+    for (HYPRE_t j = 0, e = _nCols[i]; j < e; ++j, ++n) {
       diag[i] += (isLocalRow(Ai[n])) ? 1 : 0;
     }
     offd[i] = _nCols[i] - diag[i];
   }
 
   HYPRE_IJMatrixSetDiagOffdSizes(_k, diag, offd);
+  //HYPRE_IJMatrixSetDiagOffdSizes(_k, const_cast<long long *> (diag), (HYPRE_t *) offd);
 
   delete [] diag;
   delete [] offd;
@@ -128,10 +129,10 @@ Hypre::assemble()
 }
 
 void
-Hypre::add(int nrows, int ncols[], int const rids[], const int cids[],
+Hypre::add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
            const double vals[])
 {
-  HYPRE_IJMatrixAddToValues(_k, nrows, ncols, rids, cids, vals);
+  HYPRE_IJMatrixAddToValues(_k, nrows, (HYPRE_t *) ncols, (HYPRE_t *) rids, (HYPRE_t *) cids, vals);
 }
 
 void
@@ -142,7 +143,7 @@ Hypre::resetPreconditioner()
 }
 
 bool
-Hypre::isLocalRow(int i) const
+Hypre::isLocalRow(Ai_t i) const
 {
   return (_ilower <= i and i < _iupper + 1);
 }
@@ -210,8 +211,8 @@ Hypre::set(double val)
   HYPRE_Int cols[1] = {1};
 
   for(int i = 0, e = (_iupper - _ilower + 1), n = 0; i < e; ++i) {
-    for(int j = 0, e = _nCols[i]; j < e; ++j, ++n) {
-      HYPRE_IJMatrixSetValues(_k, 1, cols, &_gRows[i], (int *) &_Ai[n], &val);
+    for(HYPRE_t j = 0, e = _nCols[i]; j < e; ++j, ++n) {
+      HYPRE_IJMatrixSetValues(_k, 1, cols, &_gRows[i], (HYPRE_t *) &_Ai[n], &val);
     }
   }
 }
@@ -337,7 +338,7 @@ Hypre::solveSystemNoSetup(const PGFem3D_opt *opts,
   return func_time;
 }
 
-int
+HYPRE_t
 Hypre::setupSolverEnv(ptr_solve_t precond_solve,
                       ptr_solve_t precond_setup,
                       ptr_solve_t solver_solve,
@@ -373,7 +374,7 @@ Hypre::setupSolverEnv(ptr_solve_t precond_solve,
   return err;
 }
 
-int
+HYPRE_t
 Hypre::solve(ptr_solve_t solver_solve,
              ptr_iter_t get_num_iter,
              ptr_norm_t get_res_norm,
@@ -388,7 +389,7 @@ Hypre::solve(ptr_solve_t solver_solve,
   HYPRE_IJVectorGetObject(_solution, reinterpret_cast<void**>(&solution));
   auto solver = _solver->_solver;
   info->err = solver_solve(solver, k, rhs, solution);
-  get_num_iter(solver, &(info->n_iter));
+  get_num_iter(solver, (HYPRE_t *) &(info->n_iter));    //ksaha
   get_res_norm(solver, &(info->res_norm));
 
   /* reset hypre error flag so we can restart cleanly based on OUR
