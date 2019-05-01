@@ -11,6 +11,7 @@
 #include "gen_path.h"
 #include "interface_macro.h"
 #include "utils.h"
+#include "constitutive_model.h"
 #include <mkl_cblas.h>
 #include <cstring>
 #include <cstdlib>
@@ -18,6 +19,28 @@
 static constexpr const char *out_dir = "VTK";
 static constexpr const char *step_dir = "STEP_";
 static constexpr int ndim = 3;
+
+
+/// print output variables for multiphysics problems in PGFem3D help pages
+///
+/// \param[in] out file pointer to be written
+void print_multiphysics_output_variables(FILE *out){
+
+  PGFEM_fprintf(out,"Variables for Momentum equation\n");  
+  for(int ia=0; ia<MECHANICAL_Var_NO; ++ia){
+    PGFEM_fprintf(out,"                %d: %s\n",ia,VtkOutMechancialVariables[ia]);    
+  }
+  
+  PGFEM_fprintf(out,"Variables for Energy equation\n");  
+  for(int ia=0; ia<Thermal_Var_NO; ++ia){
+    PGFEM_fprintf(out,"                %d: %s\n",ia,VtkOutThermalVariables[ia]);    
+  }
+  
+  PGFEM_fprintf(out,"Variables for Chemistry\n");  
+  for(int ia=0; ia<CHEMICAL_Var_NO; ++ia){
+    PGFEM_fprintf(out,"                %d: %s\n",ia,VtkOutChemicalVariables[ia]);    
+  }     
+}
 
 void VTK_print_master(const char *path,
                       const char *base_name,
@@ -1372,15 +1395,46 @@ int VTK_write_data_Damage(FILE *out,
                           const PGFem3D_opt *opts)
 {
   int err = 0;
-  EPS *eps = FV[pmr->mp_id].eps;
+  int total_Lagrangian = 1;
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+      
+  FieldVariables *fv = FV + pmr->mp_id;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
-  for (int i=0; i<grid->ne; i++)
-    PGFEM_fprintf(out,"%12.12e\n",eps[i].dam[0].wn); // supported for Linear element (1 ip)
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F){
+      FEMLIB fe(ia, grid->element, grid->node, 0,total_Lagrangian);
+      
+      double w[2] = {};
+      double V = {};
+      for(int ip = 0; ip<fe.nint; ip++){
+        fe.elem_basis_V(ip);
+        fe.update_shape_tensor();
+
+        const Constitutive_model *m = (fv->eps[ia]).model + ip;
+        double w_ip[2] = {};    
+        err += m->param->get_damage(m, w_ip, 1);
+
+        w[0] += w_ip[0]*fe.detJxW;
+        w[1] += w_ip[1]*fe.detJxW;
+        V += fe.detJxW;
+      }
+      w[0]/=V;
+      w[1]/=V;
+      PGFEM_fprintf(out,"%12.12e %12.12e\n",w[0], w[1]);
+    } else {
+      // print for model not using constitutive model interface
+      PGFEM_fprintf(out,"%12.12e %12.12e\n",fv->eps[ia].dam[0].wn, fv->eps[ia].dam[0].wn);
+    }
+  }
 
   err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
 }
+
 
 /// write softening parameters
 ///
@@ -1393,20 +1447,213 @@ int VTK_write_data_Damage(FILE *out,
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
-int VTK_write_data_Chi(FILE *out,
-                       Grid *grid,
-                       const MaterialProperty *mat,
-                       FieldVariables *FV,
-                       LoadingSteps *load,
-                       PRINT_MULTIPHYSICS_RESULT *pmr,
-                       const PGFem3D_opt *opts)
-{
+int VTK_write_data_Softening(FILE *out,
+                             Grid *grid,
+                             const MaterialProperty *mat,
+                             FieldVariables *FV,
+                             LoadingSteps *load,
+                             PRINT_MULTIPHYSICS_RESULT *pmr,
+                             const PGFem3D_opt *opts){
   int err = 0;
-  EPS *eps = FV[pmr->mp_id].eps;
+  int total_Lagrangian = 1;
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+      
+  FieldVariables *fv = FV + pmr->mp_id;
 
   err += VTK_write_multiphysics_DataArray_header(out, pmr);
-  for (int i=0; i<grid->ne; i++)
-    PGFEM_fprintf(out,"%12.12e\n",eps[i].dam[0].Xn); // supported for Linear element (1 ip)
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double X[2] = {};
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F){
+      FEMLIB fe(ia, grid->element, grid->node, 0,total_Lagrangian);
+      
+      double V = {};
+      for(int ip = 0; ip<fe.nint; ip++){
+        fe.elem_basis_V(ip);
+        fe.update_shape_tensor();
+
+        const Constitutive_model *m = (fv->eps[ia]).model + ip;
+        double X_ip[2] = {};    
+        err += m->param->get_softening(m, X_ip);
+
+        X[0] += X_ip[0]*fe.detJxW;
+        X[1] += X_ip[1]*fe.detJxW;        
+        V += fe.detJxW;
+      }
+      X[0]/=V;
+      X[1]/=V;
+    }
+    PGFEM_fprintf(out,"%12.12e %12.12e\n", X[0], X[1]);
+  }
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
+  return err;
+}
+
+/// write plastic hardening parameters
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+int VTK_write_data_plastic_hardening(FILE *out,
+                                     Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *FV,
+                                     LoadingSteps *load,
+                                     PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const PGFem3D_opt *opts)
+{
+  int err = 0;
+  int total_Lagrangian = 1;
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+      
+  FieldVariables *fv = FV + pmr->mp_id;
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double h = {};
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F){
+      FEMLIB fe(ia, grid->element, grid->node, 0,total_Lagrangian);
+      
+      double V = {};
+      for(int ip = 0; ip<fe.nint; ip++){
+        fe.elem_basis_V(ip);
+        fe.update_shape_tensor();
+
+        const Constitutive_model *m = (fv->eps[ia]).model + ip;
+        double h_ip = {};    
+        err += m->param->get_hardening(m, &h_ip, 1);
+
+        h += h_ip*fe.detJxW;
+        V += fe.detJxW;
+      }
+      h/=V;
+    }
+    PGFEM_fprintf(out,"%12.12e\n", h);
+  }
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
+  return err;
+}
+
+/// write plastic deformation gradient
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+int VTK_write_data_pF(FILE *out,
+                      Grid *grid,
+                      const MaterialProperty *mat,
+                      FieldVariables *FV,
+                      LoadingSteps *load,
+                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                      const PGFem3D_opt *opts){
+  int err = 0;
+  int total_Lagrangian = 1;
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+      
+  FieldVariables *fv = FV + pmr->mp_id;
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double pF[9] = {};
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F){
+      FEMLIB fe(ia, grid->element, grid->node, 0,total_Lagrangian);
+      
+      double V = {};
+      for(int ip = 0; ip<fe.nint; ip++){
+        fe.elem_basis_V(ip);
+        fe.update_shape_tensor();
+
+        const Constitutive_model *m = (fv->eps[ia]).model + ip;
+        double pF_ip[9] = {};    
+        err += m->param->get_pF(m,pF_ip,1);
+        
+        for(int ib=0; ib<9; ++ib)
+          pF[ib] += pF_ip[ib]*fe.detJxW;
+
+        V += fe.detJxW;
+      }
+      for(int ib=0; ib<9; ++ib)
+        pF[ib] /= V;
+    }
+    PGFEM_fprintf(out,"%12.12e %12.12e %12.12e %12.12e "
+                  "%12.12e %12.12e %12.12e %12.12e %12.12e\n",
+                   pF[0], pF[1], pF[2], pF[3], pF[4], pF[5], pF[6], pF[7], pF[8]);
+  }
+
+  err += VTK_write_multiphysics_DataArray_footer(out);
+  return err;
+}
+
+/// write plastic strain stretch
+///
+/// This function is used indirectly through function pointer in pmr->write_vtk
+///
+/// \param[in] out file pointer for writing vtk file
+/// \param[in] grid an object containing all mesh data
+/// \param[in] FV array of field variables
+/// \param[in] load object for loading
+/// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] opts structure PGFem3D option
+/// \return non-zero on internal error
+int VTK_write_data_plastic_strain_stretch(FILE *out,
+                                          Grid *grid,
+                                          const MaterialProperty *mat,
+                                          FieldVariables *FV,
+                                          LoadingSteps *load,
+                                          PRINT_MULTIPHYSICS_RESULT *pmr,
+                                          const PGFem3D_opt *opts){
+  int err = 0;
+  int total_Lagrangian = 1;
+  if(opts->cm==UPDATED_LAGRANGIAN)
+    total_Lagrangian = 0;
+      
+  FieldVariables *fv = FV + pmr->mp_id;
+
+  err += VTK_write_multiphysics_DataArray_header(out, pmr);
+
+  for (int ia=0; ia<grid->ne; ia++)
+  {
+    double l = {};
+    if(opts->analysis_type==CM || opts->analysis_type==CM3F){
+      FEMLIB fe(ia, grid->element, grid->node, 0,total_Lagrangian);
+      
+      double V = {};
+      for(int ip = 0; ip<fe.nint; ip++){
+        fe.elem_basis_V(ip);
+        fe.update_shape_tensor();
+
+        const Constitutive_model *m = (fv->eps[ia]).model + ip;
+        double l_ip = {};    
+        err += m->param->get_plast_strain_var(m, &l_ip);
+
+        l += l_ip*fe.detJxW;
+        V += fe.detJxW;
+      }
+      l/=V;
+    }
+    PGFEM_fprintf(out,"%12.12e\n", l);
+  }
 
   err += VTK_write_multiphysics_DataArray_footer(out);
   return err;
@@ -1883,11 +2130,12 @@ int VTK_construct_PMR(Grid *grid,
              //sprintf(pmr[cnt_pmr].variable_name, "CellProperty");
              break;
             case MECHANICAL_Var_Damage:
+             pmr[cnt_pmr].m_col     = 2;
              pmr[cnt_pmr].write_vtk = VTK_write_data_Damage;
              sprintf(pmr[cnt_pmr].variable_name, "Damage");
              break;
-            case MECHANICAL_Var_Chi:
-             pmr[cnt_pmr].write_vtk = VTK_write_data_Chi;
+            case MECHANICAL_Var_Softening:
+             pmr[cnt_pmr].write_vtk = VTK_write_data_Softening;
              sprintf(pmr[cnt_pmr].variable_name, "Chi");
              break;
             case MECHANICAL_Var_F:
@@ -1921,10 +2169,25 @@ int VTK_construct_PMR(Grid *grid,
              sprintf(pmr[cnt_pmr].variable_name, "HydrostaticStress");
              break;
             case MECHANICAL_Var_PrincipalStress:
-             pmr[cnt_pmr].m_col    = 3;
+             pmr[cnt_pmr].m_col     = 3;
              pmr[cnt_pmr].write_vtk = VTK_write_data_PrincipalStress;
              sprintf(pmr[cnt_pmr].variable_name, "PrincipalStress");
-             break;             
+             break;
+            case MECHANICAL_Var_PlasticHardening:
+             pmr[cnt_pmr].m_col     = 1;
+             pmr[cnt_pmr].write_vtk = VTK_write_data_plastic_hardening;
+             sprintf(pmr[cnt_pmr].variable_name, "PlasticHardening");
+             break;
+            case MECHANICAL_Var_pF:
+             pmr[cnt_pmr].m_col     = 9;
+             pmr[cnt_pmr].write_vtk = VTK_write_data_pF;
+             sprintf(pmr[cnt_pmr].variable_name, "pF");
+             break;
+            case MECHANICAL_Var_PlasticStrainStretch:
+             pmr[cnt_pmr].m_col     = 1;
+             pmr[cnt_pmr].write_vtk = VTK_write_data_plastic_strain_stretch;
+             sprintf(pmr[cnt_pmr].variable_name, "PlasticStrainStretch");
+             break;
             default:
              pmr[cnt_pmr].is_point_data = 1;
              pmr[cnt_pmr].m_row         = grid->nn;

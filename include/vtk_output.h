@@ -71,7 +71,7 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_EffectiveStress,
              MECHANICAL_Var_CellProperty,
              MECHANICAL_Var_Damage,
-             MECHANICAL_Var_Chi,
+             MECHANICAL_Var_Softening,
              MECHANICAL_Var_F,
              MECHANICAL_Var_P,
              MECHANICAL_Var_W,
@@ -80,7 +80,34 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_Density,
              MECHANICAL_Var_HydrostaticStress,
              MECHANICAL_Var_PrincipalStress,
+             MECHANICAL_Var_PlasticHardening,
+             MECHANICAL_Var_pF,
+             MECHANICAL_Var_PlasticStrainStretch,
              MECHANICAL_Var_NO} MECHANICAL_Var;
+
+/// Mechanical Variable names
+const char VtkOutMechancialVariables[MECHANICAL_Var_NO][1024] = {
+             "Displacement",
+             "MacroDisplacement",
+             "NodalPressure",
+             "CauchyStress",
+             "EulerStrain",
+             "EffectiveStrain",
+             "EffectiveStress",
+             "CellProperty",
+             "Damage",
+             "Softening",
+             "F",
+             "P",
+             "W",
+             "ElementPressure",
+             "ElementVolume",
+             "Density",
+             "HydrostaticStress",
+             "PrincipalStress",
+             "PlasticHardening",
+             "PF",
+             "PlasticStrainStretch"};
 
 /// Thermal part of index of output vailabes
 /// for writing simulation resuls
@@ -89,11 +116,21 @@ typedef enum{THERMAL_Var_Temperature,
              THERMAL_Var_HeatGenerations,
              Thermal_Var_NO} THERMAL_Var;
 
+/// Thermal Variable names             
+const char VtkOutThermalVariables[Thermal_Var_NO][1024] = {
+             "Temperature",
+             "HeatFlux",
+             "HeatGenerations"};
+
 /// Chemical part of index of output vailabes
 /// for writing simulation resuls
 typedef enum{CHEMICAL_VAR_SPECIES,
              CHEMICAL_Var_NO} CHEMICAL_Var;
 
+/// Chemical Variable names             
+const char VtkOutChemicalVariables[CHEMICAL_Var_NO][1024] = {
+             "Species"};
+             
 /// function pointer for generalizing writing simulation results
 /// Using this function pointer, different variables can be written
 /// in a one function call using PRINT_MULTIPHYSICS_RESULT.
@@ -106,6 +143,9 @@ typedef int (*write_vtk_t) (FILE *out,
                             LoadingSteps *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
                             const PGFem3D_opt *opts);
+
+/// print output variables for multiphysics problems
+void print_multiphysics_output_variables(FILE *out);
 
 /// structure for writing multiphysics simulation results
 /// In writing vtk outputs, this object is constructed and used

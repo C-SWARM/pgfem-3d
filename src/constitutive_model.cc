@@ -1862,12 +1862,6 @@ int constitutive_model_update_output_variables(Grid *grid,
 
       /* store total deformation */
       memcpy(eps[eid].il[ip].F, F.data, DIM_3x3 * sizeof(double));
-
-      /* store the hardening parameter */
-      err += func->get_hardening(m, &eps[eid].dam[ip].wn,2);
-
-      /* compute/store the plastic strain variable */
-      err += func->get_plast_strain_var(m, &eps[eid].dam[ip].Xn);
     }
     for(int ia=0; ia<6; ia++)
     {

@@ -684,9 +684,9 @@ const
   return err;
 }
 
-int CM_IVDS_PARAM::get_hardening(const Constitutive_model *m,
-                                double *var,
-                                const int stepno)
+int CM_IVDS_PARAM::get_damage(const Constitutive_model *m,
+                              double *var,
+                              const int stepno)
 const
 {
   int err = 0;
@@ -694,13 +694,16 @@ const
   switch(stepno)
   {
     case 0: // n-1
-      *var = 0.5*(vars[VAR_dw_nm1] + vars[VAR_vw_nm1]);
+      var[0] = vars[VAR_dw_nm1];
+      var[1] = vars[VAR_vw_nm1];
       break;
     case 1: // n
-     *var = 0.5*(vars[VAR_dw_n] + vars[VAR_vw_n]);
+      var[0] = vars[VAR_dw_n];
+      var[1] = vars[VAR_vw_n];
       break;
     case 2: // n+1
-     *var = 0.5*(vars[VAR_dw_np1] + vars[VAR_vw_np1]);
+      var[0] = vars[VAR_dw_np1];
+      var[1] = vars[VAR_vw_np1];
       break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
@@ -710,12 +713,13 @@ const
   return err;  
 }
 
-int CM_IVDS_PARAM::get_plast_strain_var(const Constitutive_model *m,
-                                       double *chi)
+int CM_IVDS_PARAM::get_softening(const Constitutive_model *m,
+                                 double *X)
 const                                   
 {
   double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
-  *chi = vars[VAR_dX_n] + vars[VAR_vX_n];
+  X[0] = vars[VAR_dX_n];
+  X[1] = vars[VAR_vX_n];
   return 0;
 }
 

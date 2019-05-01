@@ -572,14 +572,44 @@ class Model_parameters
     *var = 0.0;
     return 0;
   };
+  
+  /// User defined function to return deviatroic and volumetric damages.
+  ///
+  /// \param[in]  m,      constant reference to a Constitiutive_model object.
+  /// \param[out] var,    contains the value of the state variable upon exit.
+  /// \param[in]  stepno, time step id 0: n-1
+  ///                                 1: n
+  ///                                 2: n+1
+  /// \return non-zero on internal error
+  virtual int get_damage(const Constitutive_model *m,
+                         double *var,
+                         const int stepno)
+  const
+  {
+    var[0] = var[1] = 0.0;
+    return 0;
+  };
 
+  /// User defined function to return deviatroic and volumetric softening.
+  ///
+  /// \param[in]  m,      constant reference to a Constitiutive_model object.
+  /// \param[out] X,    contains the value of the state variable upon exit.
+  /// \return non-zero on internal error
+  virtual int get_softening(const Constitutive_model *m,
+                            double *X)
+  const
+  {
+    X[0] = X[1] = 0.0;
+    return 0;
+  };
+  
   virtual int get_plast_strain_var(const Constitutive_model *m,
                                    double *lam_p)
   const
   {
     *lam_p = 0.0;
     return 0;
-  }
+  }  
 
   /// objtaion subdivision parameters
   /// It doese not modify the internal state variables.
