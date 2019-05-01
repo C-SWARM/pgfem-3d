@@ -1840,10 +1840,9 @@ int constitutive_model_update_output_variables(Grid *grid,
       // Elastic Green Lagrange strain
       E = 0.5*(F(k,i)*F(k,j) - delta_ij(i,j));
 
-      // Compute the logarithmic strain e = 1/2(I - inv(FF'))
-      b = F(i,k)*F(j,k);
-      inv(b, bI);
-      Tensor<2> e = 0.5*(delta_ij(i,j) - bI(i,j));
+      // Compute Almansi strain
+      Tensor<2> e;
+      compute_Eulerian_Almansi_strain(e.data, F.data);
 
       for(int ia=0; ia<6; ia++)
       {

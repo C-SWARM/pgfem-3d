@@ -1616,13 +1616,13 @@ int VTK_write_data_pF(FILE *out,
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
-int VTK_write_data_plastic_strain_stretch(FILE *out,
-                                          Grid *grid,
-                                          const MaterialProperty *mat,
-                                          FieldVariables *FV,
-                                          LoadingSteps *load,
-                                          PRINT_MULTIPHYSICS_RESULT *pmr,
-                                          const PGFem3D_opt *opts){
+int VTK_write_data_eq_plastic_strain(FILE *out,
+                                     Grid *grid,
+                                     const MaterialProperty *mat,
+                                     FieldVariables *FV,
+                                     LoadingSteps *load,
+                                     PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const PGFem3D_opt *opts){
   int err = 0;
   int total_Lagrangian = 1;
   if(opts->cm==UPDATED_LAGRANGIAN)
@@ -2183,10 +2183,10 @@ int VTK_construct_PMR(Grid *grid,
              pmr[cnt_pmr].write_vtk = VTK_write_data_pF;
              sprintf(pmr[cnt_pmr].variable_name, "pF");
              break;
-            case MECHANICAL_Var_PlasticStrainStretch:
+            case MECHANICAL_Var_EquivalentPlasticStrain:
              pmr[cnt_pmr].m_col     = 1;
-             pmr[cnt_pmr].write_vtk = VTK_write_data_plastic_strain_stretch;
-             sprintf(pmr[cnt_pmr].variable_name, "PlasticStrainStretch");
+             pmr[cnt_pmr].write_vtk = VTK_write_data_eq_plastic_strain;
+             sprintf(pmr[cnt_pmr].variable_name, "EquivalentPlasticStrain");
              break;
             default:
              pmr[cnt_pmr].is_point_data = 1;

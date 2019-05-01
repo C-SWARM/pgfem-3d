@@ -82,7 +82,7 @@ typedef enum{MECHANICAL_Var_Displacement,
              MECHANICAL_Var_PrincipalStress,
              MECHANICAL_Var_PlasticHardening,
              MECHANICAL_Var_pF,
-             MECHANICAL_Var_PlasticStrainStretch,
+             MECHANICAL_Var_EquivalentPlasticStrain,
              MECHANICAL_Var_NO} MECHANICAL_Var;
 
 /// Mechanical Variable names
@@ -107,7 +107,7 @@ const char VtkOutMechancialVariables[MECHANICAL_Var_NO][1024] = {
              "PrincipalStress",
              "PlasticHardening",
              "PF",
-             "PlasticStrainStretch"};
+             "EquivalentPlasticStrain"};
 
 /// Thermal part of index of output vailabes
 /// for writing simulation resuls
