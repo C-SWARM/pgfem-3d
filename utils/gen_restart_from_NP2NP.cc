@@ -424,6 +424,9 @@ class GlobalRestartValues{
       Matrix<FieldVariables> fv(mp.physicsno, 1);
       Matrix<Matrix<double>> u_nm1(mp.physicsno, 1), u_n(mp.physicsno, 1); // temporal nodal values
       EPS *eps = NULL;
+      
+      for(int mp_id=0; mp_id<mp.physicsno; ++mp_id)
+        fv(mp_id).NORM = norm(mp_id);
 
       if(isMechanicalCMActive){
         eps = (EPS *) malloc(sizeof(EPS)*elemno);
