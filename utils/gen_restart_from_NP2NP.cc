@@ -26,6 +26,8 @@
 #include "three_field_element.h"
 #include "plasticity_model.h"
 
+#include <sstream>
+
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -567,16 +569,16 @@ void read_model_params(GlobalRestartValues &grv,
     FILE *in = PGFEM_fopen(cm_filename, "r");
 
     if(in == NULL){
-      char err_msg[2*FILE_NAME_SIZE];
-      sprintf(err_msg, "Error: Cannot open [%s]\n", cm_filename);
-      throw err_msg;
+      std::stringstream ss;
+      ss << "Error: Cannot open [" << cm_filename << "]\n";
+      throw ss.str();
     }
 
     if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
-      char err_msg[2*FILE_NAME_SIZE];
-      sprintf(err_msg, "Error: Cannot read [%s] properly\n", cm_filename);
       fclose(in);
-      throw err_msg;
+      std::stringstream ss;
+      ss << "Error: Cannot read [" << cm_filename << "] properly\n";
+      throw ss.str();
     }
 
     for(int ia=0; ia<matno; ++ia)
