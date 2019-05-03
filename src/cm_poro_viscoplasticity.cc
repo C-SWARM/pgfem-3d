@@ -596,17 +596,6 @@ const
   return err;  
 }
 
-int CM_PVP_PARAM::get_plast_strain_var(const Constitutive_model *m,
-                                       double *var)
-const 
-{
-  int err = 0;
-  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
-  *var = det3x3(Fs[TENSOR_pFn].m_pdata);
-  return err;  
-}
-
-
 int CM_PVP_PARAM::write_restart(FILE *fp, const Constitutive_model *m)
 const
 {

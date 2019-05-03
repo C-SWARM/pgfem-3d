@@ -3,7 +3,9 @@
  * improve code reuse.
  *
  * Authors:
- *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
+ *  Matt Mosby, [1], <mmosby1@nd.edu>
+ *  Sangmin Lee, [1], <slee43@nd.edu>
+ *  [1] - University of Notre Dame, Notre Dame, IN
  */
 #pragma once
 #ifndef CM_PLACEHOLDER_FUNCTIONS_H
@@ -54,5 +56,9 @@ int cm_compute_null_dMdu(const Constitutive_model *m,
 int cm_no_subdiv(const Constitutive_model *m,
                  double *subdiv_param,
                  const double dt);
+
+/// compute Equivalent (Von Mises) plastic Eulerian Almansi strain                 
+int cm_get_eq_plastic_strain(const Constitutive_model *m,
+                             double *eq);
 
 #endif

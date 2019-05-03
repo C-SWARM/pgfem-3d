@@ -1,0 +1,8 @@
+# number of partitions from
+4
+# filebases of map from
+./map.4/test
+# filebases of map from
+12
+./map.12/test
+./out/test_12CPU

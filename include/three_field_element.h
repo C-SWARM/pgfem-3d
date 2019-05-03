@@ -123,4 +123,12 @@ void compute_3f_initial_conditions(Grid *grid,
                                    MaterialProperty *mat,
                                    FieldVariables *fv);
                                    
+                                   
+/// determine number of pressures and volumes
+void get_3f_pressure_volume_number(long *npres,
+                                   long *nVol,
+                                   const PGFem3D_opt &options,
+                                   const int myrank);
+
+                                   
 #endif // #define PGFEM3D_THREE_FIELD_ELEMENT_H

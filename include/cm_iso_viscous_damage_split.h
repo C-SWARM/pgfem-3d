@@ -83,11 +83,11 @@ class CM_IVDS_PARAM: public Model_parameters
                            double *F, 
                            double *hFI, 
                            const int stepno) const;                     
-  virtual int get_hardening(const Constitutive_model *m,
-                            double *var,
-                            const int stepno) const;
-  virtual int get_plast_strain_var(const Constitutive_model *m,
-                                   double *chi) const;
+  virtual int get_damage(const Constitutive_model *m,
+                         double *var,
+                         const int stepno) const;
+  virtual int get_softening(const Constitutive_model *m,
+                            double *X) const;
 
   virtual int get_subdiv_param(const Constitutive_model *m,
                                double *var,

@@ -11,6 +11,7 @@
 #include "constitutive_model.h"
 #include "enumerations.h"
 #include "utils.h"
+#include "vtk_output.h"
 #include <getopt.h>
 #include <algorithm>
 #include <cstdlib>
@@ -330,6 +331,7 @@ void print_usage(FILE* out)
   for (const auto& opt : precond_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nVisualization Options:\n");
   for (const auto& opt : vis_opts) { opt.print(out); }
+  print_multiphysics_output_variables(out);    
   PGFEM_fprintf(out,"\nOther Options:\n");
   for (const auto& opt : other_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nDepricated (ignored) Options:\n");

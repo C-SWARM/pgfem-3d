@@ -96,9 +96,11 @@ namespace {
         PARAM_P2, 
         PARAM_Yin,
         PARAM_da,
-        PARAM_db,
+        PARAM_db_p,
+        PARAM_db_m,
         PARAM_va,
-        PARAM_vb, 
+        PARAM_vb_p,
+        PARAM_vb_m,
         PARAM_NO};
 }
 
@@ -684,9 +686,9 @@ const
   return err;
 }
 
-int CM_IVDS_PARAM::get_hardening(const Constitutive_model *m,
-                                double *var,
-                                const int stepno)
+int CM_IVDS_PARAM::get_damage(const Constitutive_model *m,
+                              double *var,
+                              const int stepno)
 const
 {
   int err = 0;
@@ -694,13 +696,16 @@ const
   switch(stepno)
   {
     case 0: // n-1
-      *var = 0.5*(vars[VAR_dw_nm1] + vars[VAR_vw_nm1]);
+      var[0] = vars[VAR_dw_nm1];
+      var[1] = vars[VAR_vw_nm1];
       break;
     case 1: // n
-     *var = 0.5*(vars[VAR_dw_n] + vars[VAR_vw_n]);
+      var[0] = vars[VAR_dw_n];
+      var[1] = vars[VAR_vw_n];
       break;
     case 2: // n+1
-     *var = 0.5*(vars[VAR_dw_np1] + vars[VAR_vw_np1]);
+      var[0] = vars[VAR_dw_np1];
+      var[1] = vars[VAR_vw_np1];
       break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
@@ -710,12 +715,13 @@ const
   return err;  
 }
 
-int CM_IVDS_PARAM::get_plast_strain_var(const Constitutive_model *m,
-                                       double *chi)
+int CM_IVDS_PARAM::get_softening(const Constitutive_model *m,
+                                 double *X)
 const                                   
 {
   double *vars = m->vars_list[0][m->model_id].state_vars->m_pdata;
-  *chi = vars[VAR_dX_n] + vars[VAR_vX_n];
+  X[0] = vars[VAR_dX_n];
+  X[1] = vars[VAR_vX_n];
   return 0;
 }
 
@@ -814,9 +820,9 @@ const
 
   err += scan_for_valid_line(in);
   
-  match += fscanf(in, "%lf %lf %lf %lf",
-                  param + PARAM_da, param + PARAM_db, 
-                  param + PARAM_va, param + PARAM_vb);                       
+  match += fscanf(in, "%lf %lf %lf %lf %lf %lf",
+                  param + PARAM_da, param + PARAM_db_p, param + PARAM_db_m, 
+                  param + PARAM_va, param + PARAM_vb_p, param + PARAM_vb_m);                       
                      
   if (match != PARAM_NO) err++;
   assert(match == PARAM_NO && "Did not read expected number of parameters");
@@ -834,7 +840,8 @@ const
   this->cm_mat->mat_d = new MATERIAL_CONTINUUM_DAMAGE;
   set_split_damage_parameters(this->cm_mat->mat_d, param[PARAM_P1],  param[PARAM_P2],
                               param[PARAM_Yin], param[PARAM_mu], param[PARAM_w_max],
-                              param[PARAM_da], param[PARAM_db], param[PARAM_va], param[PARAM_vb]);
+                              param[PARAM_da], param[PARAM_db_p], param[PARAM_db_m], 
+                              param[PARAM_va], param[PARAM_vb_p], param[PARAM_vb_m]);
 
   return err;
 }

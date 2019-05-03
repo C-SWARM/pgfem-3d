@@ -21,15 +21,65 @@
 #include <cstdarg>
 #include <cmath>
 #include <time.h>
+#include <ttl/ttl.h>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
+namespace {
+  static constexpr ttl::Index<'i'> i;
+  static constexpr ttl::Index<'j'> j;
+  static constexpr ttl::Index<'k'> k;
+}
+    
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
 #endif
 
 static const constexpr int periodic = 0;
+
+
+/// compute Eulerian Almansi strain from a given F
+///  e = 1/2(I - inv(FF'))
+///
+/// \param[out] e Almansi strain
+/// \param[in]  F deformation gradient
+void compute_Eulerian_Almansi_strain(double *e_out,
+                                     double *F_in){
+
+  ttl::Tensor<2, 3, double *> e(e_out), F(F_in);
+        
+  ttl::Tensor<2, 3, double> I = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+  ttl::Tensor<2, 3, double> b = F(i,k)*F(j,k);                                          
+  ttl::Tensor<2, 3, double> bI = ttl::inverse(b);
+        
+  e = 0.5*(I(i,j) - bI(i,j));
+}
+
+/// compute Equivalent (Von Mises) Eulerian Almansi strain from a given F
+///  e = 1/2(I - inv(FF'))
+///  e_d = e - 1/3*tr(e)*I
+///  eq  = sqrt(2/3 e_d:e_d)
+///
+/// \param[in]  F deformation gradient
+/// \return     computed equivalant strain
+double compute_Equivalent_strain(double *F_in){
+
+  const double one_third = 1.0/3.0;
+  const ttl::Tensor<2, 3, double> I = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+
+  double e_out[9] = {};
+  
+  compute_Eulerian_Almansi_strain(e_out, F_in);
+   
+  ttl::Tensor<2, 3, double *> e(e_out);
+  ttl::Tensor<2, 3, double  > e_d = {};
+       
+  double tr_e = e(i,i);
+  e_d = e(i,j) - one_third*tr_e*I(i,j);
+  double eq = sqrt(2.0*one_third*e_d(i,j)*e_d(i,j));
+  return eq;
+}
 
 int scan_for_valid_line(FILE *in)
 {

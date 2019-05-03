@@ -16,8 +16,14 @@
 #include <cstdio>
 
 using pgfem3d::solvers::SparseSystem;
-
 struct EPS;                                     // defined in eps.h
+
+/// compute Eulerian Almansi strain from a given F
+void compute_Eulerian_Almansi_strain(double *e,
+                                     double *F);
+                                     
+/// compute Equivalent (Von Mises) Eulerian Almansi strain from a given F
+double compute_Equivalent_strain(double *F_in);
 
 /// Lots of system headers require that the return value from scanf be
 /// checked. This small utility simplifies this process by counting the number

@@ -226,8 +226,7 @@ int print_results(Grid *grid,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
                   long tim,
-		  int myrank)
-{
+                  int myrank){
   int err = 0;
 
   Solver                 *sol = NULL;
@@ -382,7 +381,7 @@ int write_restart_files(Grid *grid,
                         PGFem3D_opt *opts,
                         const Multiphysics& mp,
                         long tim,
-			CommunicationStructure *com,
+                        CommunicationStructure *com,
                         double time_step_start,
                         double time_0)
 {
@@ -420,8 +419,17 @@ int write_restart_files(Grid *grid,
     }
   }
 
-  if(SAVE_RESTART_FILE && write_restart_global>0)
-    write_restart(grid,FV,load,time_steps,opts,mp,myrank,tim);
+  if(SAVE_RESTART_FILE && write_restart_global>0){
+    double tnm1[3] = {};
+    tnm1[0] = 0.0;
+    tnm1[1] = time_steps->times[tim];
+    tnm1[2] = time_steps->times[tim+1];    
+
+    if(tim>0)
+      tnm1[0] = time_steps->times[tim-1];
+
+    write_restart(grid,FV,load,opts,mp,time_steps->tns,tnm1,myrank,tim);
+  }
 
   return err;
 }
@@ -902,43 +910,9 @@ int single_scale_main(int argc,char *argv[])
         /* alocation of the eps vector */
         initialize_damage(grid.ne,grid.element,mat.hommat,fv[ia].eps,options.analysis_type);
 
-        /* alocation of pressure variables */
-        switch(options.analysis_type){
-         case TF: // intended not to have break
-         case CM3F:
-          fv[ia].npres = 1;
-          fv[ia].nVol = 1;
+        // alocation of pressure variables
+        get_3f_pressure_volume_number(&(fv[ia].npres), &(fv[ia].nVol), options, myrank);
 
-          break;
-         case STABILIZED: case MINI: case MINI_3F:
-          if(fv[ia].npres != 4){
-            fv[ia].npres = 4;
-            if(myrank == 0){
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 4.\n"
-                           "Re-setting to 4 and continuing...\n");
-            }
-          }
-          break;
-         case DISP: // intended not to have break
-         case CM:
-          if(fv[ia].npres != 0){
-            fv[ia].npres = 0;
-            if (myrank == 0) {
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 0.\n"
-                           "Re-setting to 0 and continuing...\n");
-            }
-          }
-          break;
-         default:
-          if(fv[ia].npres != 1){
-            fv[ia].npres = 1;
-            if (myrank == 0) {
-              PGFEM_printf("WARNING: Incorrect pressure nodes input, should be 1.\n"
-                           "Re-setting to 1 and continuing...\n");
-            }
-          }
-          break;
-        }/* switch */
         build_pressure_nodes (grid.ne,fv[ia].npres,grid.element,fv[ia].sig,fv[ia].eps,options.analysis_type);
         build_crystal_plast (grid.ne,grid.element,fv[ia].sig,fv[ia].eps,crpl,
                              options.analysis_type,options.plc);
@@ -983,7 +957,7 @@ int single_scale_main(int argc,char *argv[])
     // read initial conditions
     //----------------------------------------------------------------------
     //---->
-    double tnm1[2] = {-1.0,-1.0};
+    double tnm1[3] = {-1.0,-1.0,-1.0};
     
     for(int ia=0; ia<mp.physicsno; ia++)
     {

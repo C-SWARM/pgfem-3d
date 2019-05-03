@@ -76,7 +76,7 @@ static int read_initial_from_VTK(const PGFem3D_opt *opts,
 /// \param[in,out] time_steps object for time stepping, time_steps.tns are updated
 /// \param[in] opts PGFem3D commend line options
 /// \param[in] mp multiphysics object
-/// \param[out] tnm1 times at t(n-1), t(n)
+/// \param[out] tnm1 times at t(n-1), t(n), t(n+1)
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int read_time_step_info(FieldVariables *fv,
@@ -101,6 +101,7 @@ int read_time_step_info(FieldVariables *fv,
     CHECK_SCANF(fp, "%lf %lf %lf", t+0, t+1, t+2);
     tnm1[0] = t[0];
     tnm1[1] = t[1];
+    tnm1[2] = t[2];
 
     if(myrank==0)
       PGFEM_printf("read time stpe info t(n-1)=%e, t(n)=%e, t(n+1) = %e\n", t[0], t[1], t[2]);
@@ -131,50 +132,39 @@ int read_time_step_info(FieldVariables *fv,
 /// using saved restart values at t(n). Otherwise, artificial acceleration will be generated due to
 /// large time step size.
 //
-/// \param[in] fv array of field variable object
-/// \param[in] time_steps object for time stepping
-/// \param[in] opts PGFem3D commend line options
-/// \param[in] mp multiphysics object
-/// \param[in] myrank current process rank
-/// \param[in] stepno current time step number
+/// \param[in] fv     array of field variable object
+/// \param[in] opts   PGFem3D commend line options
+/// \param[in] mp     multiphysics object
+/// \param[in] tns    times  at n for multiple physics
+/// \param[in] tnm1   times at t(n-1), t(n), t(n+1)
 /// \return non-zero on internal error
 int write_time_step_info(FieldVariables *fv,
-                         TimeStepping *time_steps,
                          const PGFem3D_opt *opts,
                          const Multiphysics& mp,
-                         int myrank,
-                         int stepno)
-{
+                         const double *tns,
+                         const double *tnm1,
+                         const int stepno){
   int err = 0;
-  if(myrank==0)
-  {
-    double *times = time_steps->times;
 
-    // write time stepping info
-    char fn[1024];
-    sprintf(fn, "%s/restart/time_step_info_%.6d.res",opts->opath,stepno);
+  // write time stepping info
+  char fn[1024];
+  sprintf(fn, "%s/restart/time_step_info_%.6d.res",opts->opath,stepno);
 
-    FILE *fp = fopen(fn, "w");
-    if(fp==NULL)
-    {
-      PGFEM_printf("Cannot create a file [%s]\n", fn);
-      PGFEM_printf("Anyway continue ...\n");
-    }
-    else
-    {
-      if(stepno>0)
-        fprintf(fp, "%.17e %.17e %.17e ", times[stepno-1], times[stepno], times[stepno+1]);
-      else
-        fprintf(fp, "0.0 %.17e %.17e ", times[stepno], times[stepno+1]);
+  FILE *fp = fopen(fn, "w");
+  if(fp==NULL){
+    PGFEM_printf("Cannot create a file [%s]\n", fn);
+    PGFEM_printf("Anyway continue ...\n");
+  }else{
+    fprintf(fp, "%.17e %.17e %.17e ", tnm1[0], tnm1[1], tnm1[2]);
 
-      for(int ia=0; ia<mp.physicsno; ia++)
-        fprintf(fp, "\n%.17e %.17e",fv[ia].NORM, time_steps->tns[ia]);
+    for(int ia=0; ia<mp.physicsno; ia++)
+      fprintf(fp, "\n%.17e %.17e",fv[ia].NORM, tns[ia]);
 
-      fprintf(fp, "\n");
+    fprintf(fp, "\n");
 
-      fclose(fp);
-    }
+    fclose(fp);
   }
+  
   return err;
 }
 
@@ -500,7 +490,6 @@ int read_restart(Grid *grid,
 /// \param[in] grid a mesh object
 /// \param[in, out] fv array of field variable object
 /// \param[in] load object for loading
-/// \param[in] time_steps object for time stepping
 /// \param[in] opts PGFem3D commend line options
 /// \param[in] mp multiphysics object
 /// \param[in] myrank current process rank
@@ -511,7 +500,6 @@ int read_restart(Grid *grid,
 int write_restart_mechanical(Grid *grid,
                              FieldVariables *fv,
                              LoadingSteps *load,
-                             TimeStepping *time_steps,
                              const PGFem3D_opt *opts,
                              const Multiphysics& mp,
                              int myrank,
@@ -606,23 +594,22 @@ int write_restart_thermal(Grid *grid,
 /// By going through all physics, restart files for multiple physics are written
 /// as many as the number of physics.
 ///
-/// \param[in] grid a mesh object
-/// \param[in, out] fv array of field variable object
-/// \param[in] load object for loading
-/// \param[in] time_steps object for time stepping
-/// \param[in] opts PGFem3D commend line options
-/// \param[in] mp multiphysics object
+/// \param[in] grid   a mesh object
+/// \param[in, out]   fv array of field variable object
+/// \param[in] opts   PGFem3D commend line options
+/// \param[in] mp     multiphysics object
+/// \param[in] tns    times  at n for multiple physics
+/// \param[in] tnm1   times at t(n-1), t(n), t(n+1)
 /// \param[in] myrank current process rank
-/// \param[in] mp_id multiphysics id
 /// \param[in] stepno current time step number
-/// \param[in] rs_path directory path for restart files
 /// \return non-zero on internal error
 int write_restart(Grid *grid,
                   FieldVariables *fv,
                   LoadingSteps *load,
-                  TimeStepping *time_steps,
                   const PGFem3D_opt *opts,
                   const Multiphysics& mp,
+                  const double *tns,
+                  const double *tnm1,
                   int myrank,
                   int stepno)
 
@@ -643,7 +630,7 @@ int write_restart(Grid *grid,
     switch(mp.physics_ids[ia])
     {
      case MULTIPHYSICS_MECHANICAL:
-      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+      err += write_restart_mechanical(grid,fv,load,opts,mp,myrank,ia,stepno,rs_path);
       break;
      case MULTIPHYSICS_THERMAL:
       err += write_restart_thermal(grid,fv,opts,myrank,ia,stepno,rs_path);
@@ -652,10 +639,12 @@ int write_restart(Grid *grid,
       // not yet implemented
       break;
      default:
-      err += write_restart_mechanical(grid,fv,load,time_steps,opts,mp,myrank,ia,stepno,rs_path);
+      err += write_restart_mechanical(grid,fv,load,opts,mp,myrank,ia,stepno,rs_path);
     }
   }
 
-  err += write_time_step_info(fv,time_steps,opts,mp,myrank,stepno);
+  if(myrank == 0)
+    err += write_time_step_info(fv,opts,mp,tns,tnm1,stepno);
+
   return err;
 }

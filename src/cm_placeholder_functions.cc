@@ -6,6 +6,7 @@
  *  Matt Mosby, University of Notre Dame, <mmosby1@nd.edu>
  */
 #include "cm_placeholder_functions.h"
+#include "utils.h"
 #include <ttl/ttl.h>
 
 static const int dim = 3;
@@ -75,3 +76,16 @@ int cm_compute_null_dMdu(const Constitutive_model *m,
 int cm_no_subdiv(const Constitutive_model *m,
                  double *subdiv_param,
                  const double dt) { *subdiv_param = 0.0; return 0; }
+                 
+int cm_get_eq_plastic_strain(const Constitutive_model *m,
+                             double *eq)
+{
+  int err = 0;
+  Tensor<2> Fp = {};
+
+  // get the plastic deformation gradient at (n)
+  m->param->get_pF(m, Fp.data,1);
+
+  *eq = compute_Equivalent_strain(Fp.data);
+  return err;
+}
