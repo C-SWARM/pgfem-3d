@@ -177,7 +177,7 @@ SUPP read_supports(FILE *in,
 
 
 int read_material (FILE *in,
-                   const size_t mat_id,
+                   const long mat_id,
                    Material *mater,
                    const int legacy)
 {
@@ -293,7 +293,7 @@ int override_prescribed_displacements(SUPP sup,
   }
 
   FILE *in = PGFEM_fopen(opt->pre_disp_file,"r");
-  for(int i=0; i<sup->npd; i++){
+  for(long i=0; i<sup->npd; i++){
     CHECK_SCANF(in,"%lf",&sup->defl_d[i]);
   }
   err = ferror(in);
@@ -301,7 +301,7 @@ int override_prescribed_displacements(SUPP sup,
   return err;
 }
 
-int override_material_properties(const size_t nmat,
+int override_material_properties(const long nmat,
                                  const PGFem3D_opt *opt,
                                  Material *mater)
 {
@@ -320,7 +320,7 @@ int override_material_properties(const size_t nmat,
   /* number of materials to override */
   CHECK_SCANF(in,"%d",&n_override);
   assert( n_override >= 0 );
-  assert( (size_t)n_override <= nmat );
+  assert( (long)n_override <= nmat );
 
   for (int i=0; i<n_override; i++){
     /* scan for override data */
@@ -331,7 +331,7 @@ int override_material_properties(const size_t nmat,
     idx = -1; /* poisoned value */
     CHECK_SCANF(in,"%d",&idx);
     assert(idx >= 0);
-    assert( (size_t)idx < nmat );
+    assert( (long)idx < nmat );
     err += read_material(in,idx,mater,opt->legacy);
   }
 

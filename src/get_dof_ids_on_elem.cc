@@ -7,7 +7,7 @@
 
 /* TESTED MM 1/18/2013 */
 void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
-                             const int n_nodes_on_elem,
+                             const long n_nodes_on_elem,
                              const int ndof_on_elem,
                              const int ndof_per_node,
                              const long *node_ids_on_elem,
@@ -17,7 +17,7 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
                              long *dof_ids,
                              const int mp_id)
 {
-  const int ndof_on_elem_nodes = n_nodes_on_elem*ndof_per_node;
+  const long ndof_on_elem_nodes = n_nodes_on_elem*ndof_per_node;
 
   /* node dof ids go in the first part of the dof_ids vector */
   get_dof_ids_on_elem_nodes(global,n_nodes_on_elem,ndof_per_node,
@@ -33,20 +33,21 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
 
 /* TESTED MM 1/18/2013 */
 void get_dof_ids_on_elem_nodes(const int global,
-                               const int n_nodes_on_elem,
-                               const int n_dof_per_node, const long *node_ids_on_elem,
+                               const long n_nodes_on_elem,
+                               const int n_dof_per_node, 
+                               const long *node_ids_on_elem,
                                const Node *nodes,
                                long *dof_ids,
                                const int mp_id)
 {
   const size_t n_copy = n_dof_per_node * sizeof(long);
   if(global){
-    for(int i=0; i<n_nodes_on_elem; i++){
+    for(long i=0; i<n_nodes_on_elem; i++){
       long *ptr_cur = dof_ids + i*n_dof_per_node;
       memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id_map[mp_id].Gid,n_copy);
     }
   } else {
-    for(int i=0; i<n_nodes_on_elem; i++){
+    for(long i=0; i<n_nodes_on_elem; i++){
       long *ptr_cur = dof_ids + i*n_dof_per_node;
       memcpy(ptr_cur,nodes[ node_ids_on_elem[i] ].id_map[mp_id].id,n_copy);
     }

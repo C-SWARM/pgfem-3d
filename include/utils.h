@@ -326,7 +326,7 @@ long* list_boundary_el(const long ne,
                        const Element *elem,
                        const long nn,
                        const Node *node,
-                       const long myrank,
+                       const int myrank,
                        long *nbndel);
 
 /** Get the output times from the input file. */

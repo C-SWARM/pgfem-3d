@@ -20,7 +20,7 @@ static void int_tria_I (double *gk,
             double *w);
 
 /* ==== PUBLIC FUNCTIONS ==== */
-long int_pointC (long nne)
+int int_pointC (long nne)
 {
   switch(nne){
   case 3: return 3;

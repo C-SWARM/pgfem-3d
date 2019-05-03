@@ -8,7 +8,7 @@
 /** Get the id numbers for all degrees of freedom which need to be
     assembled from the element. */
 void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
-                             const int n_nodes_on_elem,
+                             const long n_nodes_on_elem,
                              const int ndof_on_elem,
                              const int ndof_per_node,
                              const long *node_ids_on_elem,
@@ -22,7 +22,7 @@ void get_all_dof_ids_on_elem(const int global,/* this is a boolean flag */
     nodes. This function can replace calls to 'codenum' when the
     element dofs are not needed. */
 void get_dof_ids_on_elem_nodes(const int global,
-                               const int n_nodes_on_elem,
+                               const long n_nodes_on_elem,
                                const int n_dof_per_node,
                                const long *node_ids_on_elem,
                                const Node *nodes,

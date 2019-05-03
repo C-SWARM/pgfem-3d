@@ -63,7 +63,7 @@ SUPP read_supports (FILE *in,
  * \return non-zero on internal error, i.e., I/O errors.
  */
 int read_material (FILE *in,
-                   const size_t mat_id,
+                   const long mat_id,
                    Material *mater,
                    const int legacy);
 
@@ -80,7 +80,7 @@ int read_material (FILE *in,
  *
  * \return non-zero on internal error, i.e., I/O or bounds.
  */
-int override_material_properties(const size_t nmat,
+int override_material_properties(const long nmat,
                                  const PGFem3D_opt *opt,
                                  Material *mater);
 

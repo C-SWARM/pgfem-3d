@@ -36,13 +36,13 @@ int bounding_element_set_local_ids(const int n_be,
 
     const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
     const long *ve_nod = ptr_ve->nod;
-    const int ve_nne = ptr_ve->toe;
+    const long ve_nne = ptr_ve->toe;
 
     /* this is what we are after */
     long *loc_nod = ptr_be->loc_nodes;
 
     for(int j=0; j<be_nne; j++){
-      for(int k=0; k<ve_nne; k++){
+      for(long k=0; k<ve_nne; k++){
         if(be_nod[j] == ve_nod[k]){
           loc_nod[j] = k;
           break;

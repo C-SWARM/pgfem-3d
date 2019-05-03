@@ -913,7 +913,7 @@ long* list_boundary_el(const long ne,
                        const Element *elem,
                        const long nn,
                        const Node *node,
-                       const long myrank,
+                       const int myrank,
                        long *nbndel)
 {
   long *nod;
@@ -925,10 +925,10 @@ long* list_boundary_el(const long ne,
 
   /* Determine the number of COMMUNICATION boundary elements and store
      bool for each element.  1 = boundary element */
-  for(int i=0; i<ne; i++){
+  for(long i=0; i<ne; i++){
     nod = aloc1l(elem[i].toe);
     elemnodes(i,elem[i].toe,nod,elem);
-    for(int j=0; j<elem[i].toe; j++){
+    for(long j=0; j<elem[i].toe; j++){
       /*if(node[nod[j]].Gnn >= 0){*/
       if(node[nod[j]].Dom != myrank){
         bnd[i] = 1;
@@ -955,7 +955,7 @@ long* list_boundary_el(const long ne,
   }
 
   long count = 0;
-  for(int i=0; i<ne; i++){
+  for(long i=0; i<ne; i++){
     if(bnd[i] == 1){
       bndel[count] = i;
       count++;
@@ -967,7 +967,7 @@ long* list_boundary_el(const long ne,
   if(count != *nbndel){
     PGFEM_printf("WARNING: number stored boundary elements != "
                  "number counted boundary elements!\n");
-    PGFEM_printf("[%ld](%ld:%ld)\n", myrank,*nbndel,count);
+    PGFEM_printf("[%d](%ld:%ld)\n", myrank,*nbndel,count);
   }
 
   return bndel;
@@ -1063,16 +1063,14 @@ long list (long ***a,
   function creates list of combinations fiber - matrix - volume fraction
 */
 {
-  long i,j,k,n;
-
-  for (i=0;i<ne;i++){
+  for (long i=0;i<ne;i++){
     a[elem[i].mat[0]][elem[i].mat[1]][elem[i].hom[0]] = 1;
   }
 
-  n=0;
-  for (i=0;i<nmat;i++){
-    for (j=0;j<nmat;j++){
-      for (k=0;k<nc;k++){
+  long n=0;
+  for (long i=0;i<nmat;i++){
+    for (long j=0;j<nmat;j++){
+      for (long k=0;k<nc;k++){
         if (a[i][j][k] == 1) n++;
       }
     }
@@ -1461,7 +1459,7 @@ void nodecoord_updated (const long nne,
                         double *y,
                         double *z)
 {
-  for (int i=0;i<nne;i++){
+  for (long i=0;i<nne;i++){
     x[i] = node[nod[i]].x1;
     y[i] = node[nod[i]].x2;
     z[i] = node[nod[i]].x3;

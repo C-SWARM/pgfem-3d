@@ -7,7 +7,7 @@
 #ifndef COHESIVE_ELEMENT_UTILS_H
 #define COHESIVE_ELEMENT_UTILS_H
 
-  long int_pointC (long nne);
+  int int_pointC (long nne);
 
   void integrateC (long nne,
            long *II,

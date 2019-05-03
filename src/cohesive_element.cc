@@ -653,8 +653,8 @@ int increment_cohesive_elements(const int nce,
 
   for (int i=0;i<nce;i++){
     COEL *cel = &coel[i];
-    const int nne_t = cel->toe;
-    const int ndofe = nne_t*ndofc;
+    const long nne_t = cel->toe;
+    const long ndofe = nne_t*ndofc;
 
     double *r_e = aloc1 (ndofe);
     double *x = aloc1 (nne_t);

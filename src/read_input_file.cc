@@ -37,7 +37,7 @@ int read_material_for_Mechanical(FILE *fp,
                                  const PGFem3D_opt *opts)
 {
   int err = 0;
-  for(int ia=0; ia<mat->nmat; ia++)
+  for(long ia=0; ia<mat->nmat; ia++)
   {
     scan_for_valid_line(fp);
     if(read_material(fp,ia,mat->mater,opts->legacy))
@@ -61,7 +61,7 @@ int read_material_for_Thermal(FILE *fp,
 
   MaterialThermal *thermal = new MaterialThermal[mat->nmat];
 
-  for(int ia=0; ia<mat->nmat; ia++)
+  for(long ia=0; ia<mat->nmat; ia++)
   {
     double cp;
     double k[9];
@@ -147,7 +147,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
 
   mat->density = (double *) malloc(sizeof(double)*(mat->nmat));
   double *d = mat->density;
-  for(int ia=0; ia<mat->nmat; ia++)
+  for(long ia=0; ia<mat->nmat; ia++)
     d[ia] = 0.0;
 
   sprintf(fn,"%s/material.mat",dirname);
@@ -163,7 +163,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
   }
 
   int match = 0;
-  for(int ia=0; ia<mat->nmat; ia++)
+  for(long ia=0; ia<mat->nmat; ia++)
   {
     scan_for_valid_line(fp);
     match += fscanf(fp, "%lf", d+ia);
@@ -343,7 +343,7 @@ int read_input_file(const PGFem3D_opt *opts,
   }
 
   read_elem(in,*ne,*elem,*sup,opts->legacy);
-  for(int i=0, e=*nmat; i<e; i++){
+  for(long i=0, e=*nmat; i<e; i++){
     if ( read_material(in,i,*material,opts->legacy) ){
       PGFEM_Abort();
     }
@@ -464,11 +464,11 @@ int read_mesh_file(Grid *grid,
     for(int iA = 1; iA<mp.physicsno; iA++) // iA = 0 is alreaded accounted in read_elem in read_input_file
     {
       const long *nod = grid->element[ia].nod;
-      const int nne = grid->element[ia].toe;
+      const long nne = grid->element[ia].toe;
       int is_it_supp = 0;
       for(long ja=0; ja<load->sups[iA]->ndn; ja++)
       {
-        for (int ka=0; ka<nne; ka++)
+        for (long ka=0; ka<nne; ka++)
         {
           if(load->sups[iA]->lnpd[ja] == nod[ka])
           {

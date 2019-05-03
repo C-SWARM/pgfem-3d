@@ -389,11 +389,11 @@ int material_initialization(MaterialProperty *mat)
   mat->thermal  = NULL;
   mat->hommat   = NULL;
   mat->matgeom  = NULL;
-  mat->co_props = NULL;
   mat->nhommat    = 0;
   mat->nmat       = 0;
   mat->n_orient   = 0;
   mat->n_co_props = 0;
+  mat->co_props = NULL;
   return err;
 }
 
@@ -499,14 +499,18 @@ int communication_structure_initialization(CommunicationStructure *com)
 {
   int err = 0;
   com->nproc  = 0;
+  com->rank   = 0;
   com->Ap     = NULL;
     com->Ai     = NULL;
   com->DomDof = NULL;
   com->nbndel = 0;
   com->bndel  = NULL;
-  com->comm   = 0;
   com->GDof   = 0;
   com->NBN    = 0;
+  com->comm   = 0;
+  com->net    = NULL;
+  com->boot   = NULL;
+  com->spc    = NULL;
   com->hints  = NULL;
   return err;
 }

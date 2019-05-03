@@ -9,11 +9,10 @@ HOMMAT* build_hommat (long i)
      */
 {
   HOMMAT *pom;
-  long ii;
 
   pom = PGFEM_calloc (HOMMAT, i);
 
-  for (ii=0;ii<i;ii++){
+  for (long ii=0;ii<i;ii++){
     /* internal allocation */
     pom[ii].M = PGFEM_calloc (double, 9);
     pom[ii].L = PGFEM_calloc (double, 9);
@@ -47,7 +46,7 @@ void destroy_hommat(HOMMAT* hm, long nm)
     if(hm[i].param==NULL)
       continue;
       
-    for(int ia = 0; ia < nm; ia++)
+    for(long ia = 0; ia < nm; ia++)
     {
       delete hm[i].param;
       hm[i].param = NULL;
