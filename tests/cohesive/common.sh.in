@@ -24,11 +24,11 @@ indir=@srcdir@/TwoBlocks_${NP}CPU/TwoBlocks_
 outdir=@builddir@/TwoBlocks_${NP}CPU
 
 # cleanup on failure.
-function cleanup {
-    echo "Removing $outdir"
-    rm -rf $outdir
-}
-trap cleanup EXIT
+# function cleanup {
+#     echo "Removing $outdir"
+#     rm -rf $outdir
+# }
+# trap cleanup EXIT
 
 # Run the PGFem3D test
 cmd="mpirun -np $NP $pgfem $opts $indir $outdir/out"
