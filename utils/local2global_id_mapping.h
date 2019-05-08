@@ -24,6 +24,7 @@ using namespace gcm;
 #define NODE_ID  0  // node ID
 
 constexpr const int FILE_NAME_SIZE = 2048;
+constexpr const int STRING_SIZE    = 2048;
 
 /// maximum function  
 template<class T>  
