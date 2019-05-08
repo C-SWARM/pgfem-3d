@@ -19,7 +19,6 @@
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
-constexpr const int STRING_SIZE = 2048;
 
 enum CO_TYPE {
   CO_ELME_BY_ELEM, // set crystal orientation element by element

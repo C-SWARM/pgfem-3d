@@ -416,13 +416,13 @@ void read_model_params(GlobalRestartValues &grv,
     FILE *in = PGFEM_fopen(cm_filename, "r");
     
     if(in == NULL){
-      char err_msg[FILE_NAME_SIZE];
+      char err_msg[STRING_SIZE];
       sprintf(err_msg, "Error: Cannot open [%s]\n", cm_filename);
       throw err_msg;
     }      
     
     if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
-      char err_msg[FILE_NAME_SIZE];
+      char err_msg[STRING_SIZE];
       sprintf(err_msg, "Error: Cannot read [%s] properly\n", cm_filename);
       fclose(in);
       throw err_msg;
@@ -455,14 +455,32 @@ void get_options(int argc,
                  char *out,
                  PGFem3D_opt *options,
                  const int myrank){                  
-  if (argc <= 3)
-    throw "How to use: gen_restart_from_NP2NP [input_file_path] [PGFem3D options]\n";
+  if (argc <= 3){
+    char err_msg[STRING_SIZE*15];
+    sprintf(err_msg, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
+                     "How to use: gen_restart_from_NP2NP [map_info_path] [PGFem3D options]",
+                     "----------------------",
+                     "input_file_path format",
+                     "----------------------",
+                     "# : this is a comment",
+                     "# number of partitions from",
+                     "5040",
+                     "# filebases of map from",
+                     "./map.5040/case_1",
+                     "# number of partitions to",
+                     "192",
+                     "# filebases of map to",
+                     "./map.192/case_1",
+                     "# PGFem3D output directory where mapped restart files are saved.",
+                     "./out/case_1_192CPU");
+    throw err_msg;    
+  }
 
   
   FILE *fp = fopen(argv[1], "r");
   
   if(fp==NULL){
-    char err_msg[FILE_NAME_SIZE];
+    char err_msg[STRING_SIZE];
     sprintf(err_msg, "Error: Cannot open file [%s].\n", argv[1]);
     throw err_msg;
   }
@@ -494,7 +512,7 @@ void get_options(int argc,
   }  
     
   if(err>0){
-    char err_msg[FILE_NAME_SIZE];
+    char err_msg[STRING_SIZE];
     sprintf(err_msg, "Error: Cannot read file [%s].\n", argv[1]);
     throw err_msg;
   }    
