@@ -756,7 +756,8 @@ int single_scale_main(int argc,char *argv[])
   net->reduce(&(com0->nbndel),&(grid.Gnbndel),1,NET_DT_LONG,NET_OP_SUM,0,com0->comm);
 
   /* Total number of bounding elements */
-  net->reduce(&(grid.n_be),&(grid.Gn_be),1,NET_DT_INT,NET_OP_SUM,0,com0->comm);
+  net->reduce(&(grid.n_be),&(grid.Gn_be),1,NET_DT_INT,NET_OP_SUM,0,com0->comm);  // ksaha
+  //net->reduce((long) &(grid.n_be),&(grid.Gn_be),1,NET_DT_LONG,NET_OP_SUM,0,com0->comm);
 
   /* Gather number of nodes from all domains */
   net->gather(&(grid.nn),1,NET_DT_LONG,DomNn,1,NET_DT_LONG,0,com0->comm);
@@ -771,6 +772,7 @@ int single_scale_main(int argc,char *argv[])
 
     com[ia].DomDof[myrank] = generate_global_dof_ids(grid.ne,grid.nce,grid.nn,fv[ia].ndofn,grid.node,
                                                      grid.element,grid.coel,grid.b_elems,&com[ia],ia);
+
     // Gather degrees of freedom from all domains
     com[ia].net->allgather(NET_IN_PLACE,1,NET_DT_LONG,com[ia].DomDof,1,NET_DT_LONG,com[ia].comm);
     
@@ -779,7 +781,7 @@ int single_scale_main(int argc,char *argv[])
     long *dist = aloc1l(com[ia].nproc+1);
     build_distribution(com[ia].DomDof,dist,com[ia].nproc);
 
-    for(long ib=0;ib<com[ia].nproc;ib++)
+    for(int ib=0;ib<com[ia].nproc;ib++)
     {
       fv[ia].Gndof += com[ia].DomDof[ib];
       if(ia==0)

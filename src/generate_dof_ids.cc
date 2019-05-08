@@ -19,45 +19,45 @@ using namespace pgfem3d::net;
 static constexpr int ndn = 3;
 
 /*=== STATIC FUNCTIONS ===*/
-static int generate_local_dof_ids_on_elem(const int nnode,
-                                          const int ndofn,
-                                          const int start_id,
-                                          const int elem_id,
-                                          int *visited_node_dof,
-                                          Node *nodes,
-                                          Element *elems,
-                                          BoundingElement *b_elems,
-                                          const CommunicationStructure *com,
-                                          const int mp_id);
-
-static int generate_local_dof_ids_on_coel(const int nnode,
-                                          const int ndofn,
-                                          const int start_id,
-                                          const int coel_id,
-                                          int *visited_node_dof,
-                                          Node *nodes,
-                                          COEL *coel,
-                                          const CommunicationStructure *com,
-                                          const int mp_id);
-
-static int generate_global_dof_ids_on_elem(const int ndofn,
-                                           const int start_id,
-                                           const int elem_id,
-                                           int *visited_node_dof,
+static long generate_local_dof_ids_on_elem(const long nnode,
+                                           const long ndofn,
+                                           const long start_id,
+                                           const long elem_id,
+                                           long *visited_node_dof,
                                            Node *nodes,
                                            Element *elems,
                                            BoundingElement *b_elems,
                                            const CommunicationStructure *com,
                                            const int mp_id);
 
-static int generate_global_dof_ids_on_coel(const int ndofn,
-                                           const int start_id,
-                                           const int coel_id,
-                                           int *visited_node_dof,
+static long generate_local_dof_ids_on_coel(const long nnode,
+                                           const long ndofn,
+                                           const long start_id,
+                                           const long coel_id,
+                                           long *visited_node_dof,
                                            Node *nodes,
                                            COEL *coel,
                                            const CommunicationStructure *com,
                                            const int mp_id);
+
+static long generate_global_dof_ids_on_elem(const long ndofn,
+                                            const long start_id,
+                                            const long elem_id,
+                                            long *visited_node_dof,
+                                            Node *nodes,
+                                            Element *elems,
+                                            BoundingElement *b_elems,
+                                            const CommunicationStructure *com,
+                                            const int mp_id);
+
+static long generate_global_dof_ids_on_coel(const long ndofn,
+                                            const long start_id,
+                                            const long coel_id,
+                                            long *visited_node_dof,
+                                            Node *nodes,
+                                            COEL *coel,
+                                            const CommunicationStructure *com,
+                                            const int mp_id);
 
 static void distribute_global_dof_ids_on_bounding_elements
 (const int n_belem,
@@ -66,24 +66,24 @@ static void distribute_global_dof_ids_on_bounding_elements
  const CommunicationStructure *com);
 
 /*=== API FUNCTIONS ===*/
-int generate_local_dof_ids(const int nelem,
-                           const int ncoel,
-                           const int nnode,
-                           const int ndofn,
-                           Node *nodes,
-                           Element *elems,
-                           COEL *coel,
-                           BoundingElement *b_elems,
-                           const CommunicationStructure *com,
-                           const int mp_id)
+long generate_local_dof_ids(const long nelem,
+                            const long ncoel,
+                            const long nnode,
+                            const long ndofn,
+                            Node *nodes,
+                            Element *elems,
+                            COEL *coel,
+                            BoundingElement *b_elems,
+                            const CommunicationStructure *com,
+                            const int mp_id)
 {
   int myrank = com->rank;
 
   /* set periodicity */
-  for(int i=0; i<nnode; i++){
+  for(long i=0; i<nnode; i++){
     Node *ptr_node = &nodes[ i ];
     ptr_node->Pr = -1;
-    for(int j=0; j<i; j++){
+    for(long j=0; j<i; j++){
       const Node *ptr_pnode = &nodes[ j ];
       if(i<=j || ptr_node->Gnn == -1 || ptr_pnode->Gnn == -1
          || ptr_node->Gnn != ptr_pnode->Gnn){
@@ -97,10 +97,10 @@ int generate_local_dof_ids(const int nelem,
 
   /* allocate boolean array for whether or not we have assigned the
      node dof id (index = node_id * ndofn + dof_idx */
-  int *visited_node_dof = PGFEM_calloc(int, ndofn*nnode);
+  long *visited_node_dof = PGFEM_calloc(long, ndofn*nnode);
 
-  int ndof = 1;
-  for(int i=0; i<nelem; i++){
+  long ndof = 1;
+  for(long i=0; i<nelem; i++){
     ndof += generate_local_dof_ids_on_elem(nnode,ndofn,ndof,
                                            i,visited_node_dof,
                                            nodes,elems,b_elems,
@@ -111,7 +111,7 @@ int generate_local_dof_ids(const int nelem,
      element coincides with the communication boundary. Note that we
      still need to provide numbers for ndofn on each node if we own
      the element. See similar note in Psparse_ApAi*/
-  for(int i=0; i<ncoel; i++){
+  for(long i=0; i<ncoel; i++){
     ndof += generate_local_dof_ids_on_coel(nnode,ndofn,ndof,
                                            i,visited_node_dof,
                                            nodes,coel,com,mp_id);
@@ -120,9 +120,9 @@ int generate_local_dof_ids(const int nelem,
   /* some periodic nodes may not actually be a part of an element,
      make sure to number them correctly */
   int err = 0;
-  for(int i=0; i<nnode; i++){
-    for(int j=0; j<ndofn; j++){
-      const int idx = i*ndofn+j;
+  for(long i=0; i<nnode; i++){
+    for(long j=0; j<ndofn; j++){
+      const long idx = i*ndofn+j;
       if(!visited_node_dof[idx]){
         /* periodic nodes have different pressure ids! */
         if(j<ndn){
@@ -131,7 +131,7 @@ int generate_local_dof_ids(const int nelem,
             err = 1;
             break;
           } else { /* node is periodic */
-            const int pidx = nodes[i].Pr*ndofn+j;
+            const long pidx = nodes[i].Pr*ndofn+j;
             if(!visited_node_dof[pidx]){
               PGFEM_printerr("[%d] ERROR: master periodic node (%ld)"
                              " has not been numbered!\n",myrank,nodes[i].Pr);
@@ -153,7 +153,7 @@ int generate_local_dof_ids(const int nelem,
 
 #ifndef NDEBUG
   /* sanity check */
-  for(int i=0; i<ndofn*nnode; i++){
+  for(long i=0; i<ndofn*nnode; i++){
     if(!visited_node_dof[i]){
       PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
       PGFEM_Abort();
@@ -170,21 +170,21 @@ int generate_local_dof_ids(const int nelem,
   return ndof;
 }/* generate_local_dof_ids() */
 
-int generate_global_dof_ids(const int nelem,
-                            const int ncoel,
-                            const int nnode,
-                            const int ndofn,
-                            Node *nodes,
-                            Element *elems,
-                            COEL *coel,
-                            BoundingElement *b_elems,
-                            const CommunicationStructure *com,
-                            const int mp_id)
+long generate_global_dof_ids(const long nelem,
+                             const long ncoel,
+                             const long nnode,
+                             const long ndofn,
+                             Node *nodes,
+                             Element *elems,
+                             COEL *coel,
+                             BoundingElement *b_elems,
+                             const CommunicationStructure *com,
+                             const int mp_id)
 {
-  int *visited_node_dof = PGFEM_calloc(int, nnode*ndofn);
-  int ndof = 1;
+  long *visited_node_dof = PGFEM_calloc(long, nnode*ndofn);
+  long ndof = 1;
 
-  for(int i=0; i<nelem; i++){
+  for(long i=0; i<nelem; i++){
     ndof += generate_global_dof_ids_on_elem(ndofn,ndof,i,visited_node_dof,
                                             nodes,elems,b_elems,
                                             com,mp_id);
@@ -194,7 +194,7 @@ int generate_global_dof_ids(const int nelem,
      element coincides with the communication boundary. Note that we
      still need to provide numbers for ndofn on each node if we own
      the element. See similar note in Psparse_ApAi*/
-  for(int i=0; i<ncoel; i++){
+  for(long i=0; i<ncoel; i++){
     ndof += generate_global_dof_ids_on_coel(ndofn,ndof,i,visited_node_dof,
                                             nodes,coel,com,mp_id);
   }
@@ -202,7 +202,7 @@ int generate_global_dof_ids(const int nelem,
   /* sanity check */
 #ifndef NDEBUG
   int myrank = com->rank;
-  for(int i=0; i<ndofn*nnode; i++){
+  for(long i=0; i<ndofn*nnode; i++){
     if(!visited_node_dof[i]){
       PGFEM_printerr("[%d]ERROR: did not visit all dofs!\n",myrank);
       PGFEM_Abort();
@@ -218,11 +218,11 @@ int generate_global_dof_ids(const int nelem,
   return ndof;
 }/* generate_global_dof_ids() */
 
-void renumber_global_dof_ids(const int nelem,
-                             const int ncoel,
+void renumber_global_dof_ids(const long nelem,
+                             const long ncoel,       /* UNUSED */
                              const int n_belem,
-                             const int nnode,
-                             const int ndofn,
+                             const long nnode,
+                             const long ndofn,
                              const long *n_G_dof_on_dom,
                              Node *nodes,
                              Element *elems,
@@ -241,7 +241,7 @@ void renumber_global_dof_ids(const int nelem,
 
   /* loop through each entity and increment Gdofs if I own them */
   /*=== ELEMENTS ===*/
-  for(int i=0; i<nelem; i++){
+  for(long i=0; i<nelem; i++){
     for(int j=0; j<elems[i].n_dofs; j++){
       elems[i].G_dof_ids[j] += dof_id_adder;
     }
@@ -260,9 +260,9 @@ void renumber_global_dof_ids(const int nelem,
   }
 
   /*=== NODES ===*/
-  for(int i=0; i<nnode; i++){
+  for(long i=0; i<nnode; i++){
     if(nodes[i].Dom == myrank){
-      for(int j=0; j<ndofn; j++){
+      for(long j=0; j<ndofn; j++){
         if(nodes[i].id_map[mp_id].Gid[j] > 0){
           nodes[i].id_map[mp_id].Gid[j] += dof_id_adder;
         }
@@ -272,26 +272,26 @@ void renumber_global_dof_ids(const int nelem,
 
 } /* renumber_global_dof_ids */
 
-int distribute_global_dof_ids(const int nelem,
-                              const int ncoel,
-                              const int n_belem,
-                              const int nnode,
-                              const int ndofn,
-                              const int ndof_be,
-                              Node *nodes,
-                              Element *elems,
-                              COEL *coel,
-                              BoundingElement *b_elems,
-                              const CommunicationStructure *com,
-                              const int mp_id)
+long distribute_global_dof_ids(const long nelem,    /* UNUSED */
+                               const long ncoel,    /* UNUSED */
+                               const int n_belem,
+                               const long nnode,
+                               const long ndofn,
+                               const int ndof_be,
+                               Node *nodes,
+                               Element *elems,
+                               COEL *coel,
+                               BoundingElement *b_elems,
+                               const CommunicationStructure *com,
+                               const int mp_id)
 {
   int myrank = com->rank;
   int nproc = com->nproc;
 
   /* Distrubute the global dofs on the nodes and return the number of
      communication boundary nodes */
-  int n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
-                                 ndofn, nodes, com, mp_id);
+  long n_bnd_nodes = GRedist_node(nproc, myrank, nnode,
+                                  ndofn, nodes, com, mp_id);
 
   /* Under current formulation, element dofs are always owned by the
      current domain and no communication is required. */
@@ -303,29 +303,29 @@ int distribute_global_dof_ids(const int nelem,
 } /* distribute_global_dof_ids */
 
 /*=== STATIC FUNCTIONS ===*/
-static int generate_local_dof_ids_on_elem(const int nnode,
-                                          const int ndofn,
-                                          const int start_id,
-                                          const int elem_id,
-                                          int *visited_node_dof,
-                                          Node *nodes,
-                                          Element *elems,
-                                          BoundingElement *b_elems,
-                                          const CommunicationStructure *com,
-                                          const int mp_id)
+static long generate_local_dof_ids_on_elem(const long nnode,
+                                           const long ndofn,
+                                           const long start_id,
+                                           const long elem_id,
+                                           long *visited_node_dof,
+                                           Node *nodes,
+                                           Element *elems,
+                                           BoundingElement *b_elems,
+                                           const CommunicationStructure *com,
+                                           const int mp_id)
 {
   int myrank = com->rank;
 
   Element *ptr_elem = &elems[elem_id];
   const long *elem_nod = ptr_elem->nod;
-  const int nne = ptr_elem->toe;
-  int id_adder = 0;
-  for(int i=0; i<nne; i++){
-    const int node_id = elem_nod[i];
+  const long nne = ptr_elem->toe;
+  long id_adder = 0;
+  for(long i=0; i<nne; i++){
+    const long node_id = elem_nod[i];
     Node *ptr_node = &nodes[node_id];
 
-    for(int j=0; j<ndofn; j++){
-      const int dof_idx = node_id*ndofn + j;
+    for(long j=0; j<ndofn; j++){
+      const long dof_idx = node_id*ndofn + j;
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
@@ -337,7 +337,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
         } else if(ptr_node->id_map[mp_id].id[j] >= 0){
           /* periodic node/dofs. Do not set pressure periodic! */
           if(ptr_node->Pr != -1 && j < ndn){
-            const int pdof_idx = ptr_node->Pr*ndofn + j;
+            const long pdof_idx = ptr_node->Pr*ndofn + j;
             /* if the dof id has not been set yet on the master node,
                set it now */
             if(!visited_node_dof[pdof_idx]){
@@ -367,7 +367,7 @@ static int generate_local_dof_ids_on_elem(const int nnode,
 
   /* Assign dof ids on boundary elements. Currently unassigned if == 0 */
   for(int i=0; i<ptr_elem->n_be; i++){
-    const int be_id = ptr_elem->be_ids[i];
+    const long be_id = ptr_elem->be_ids[i];
     BoundingElement *ptr_be = &b_elems[be_id];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
@@ -411,26 +411,26 @@ static int generate_local_dof_ids_on_elem(const int nnode,
   return id_adder;
 }/* generate_local_dof_ids_on_elem() */
 
-static int generate_local_dof_ids_on_coel(const int nnode,
-                                          const int ndofn,
-                                          const int start_id,
-                                          const int coel_id,
-                                          int *visited_node_dof,
-                                          Node *nodes,
-                                          COEL *coel,
-                                          const CommunicationStructure *com,
-                                          const int mp_id)
+static long generate_local_dof_ids_on_coel(const long nnode,
+                                           const long ndofn,
+                                           const long start_id,
+                                           const long coel_id,
+                                           long *visited_node_dof,
+                                           Node *nodes,
+                                           COEL *coel,
+                                           const CommunicationStructure *com,
+                                           const int mp_id)
 {
   COEL *ptr_coel = &coel[coel_id];
   const long *elem_nod = ptr_coel->nod;
-  const int nne = ptr_coel->toe;
+  const long nne = ptr_coel->toe;
 
-  int id_adder = 0;
-  for(int i=0; i<nne; i++){
-    const int node_id = elem_nod[i];
+  long id_adder = 0;
+  for(long i=0; i<nne; i++){
+    const long node_id = elem_nod[i];
     Node *ptr_node = &nodes[node_id];
-    for(int j=0; j<ndofn; j++){
-      const int dof_idx = node_id*ndofn + j;
+    for(long j=0; j<ndofn; j++){
+      const long dof_idx = node_id*ndofn + j;
 
       /* set dof id only if the dof has not been previously visited */
       if(!visited_node_dof[dof_idx]){
@@ -442,7 +442,7 @@ static int generate_local_dof_ids_on_coel(const int nnode,
         } else if(ptr_node->id_map[mp_id].id[j] >= 0){
           /* periodic node/dofs. Do not set pressure periodic! */
           if(ptr_node->Pr != -1 && j < ndn){
-            const int pdof_idx = ptr_node->Pr*ndofn + j;
+            const long pdof_idx = ptr_node->Pr*ndofn + j;
             /* if the dof id has not been set yet on the master node,
                set it now */
             if(!visited_node_dof[pdof_idx]){
@@ -467,35 +467,35 @@ static int generate_local_dof_ids_on_coel(const int nnode,
   return id_adder;
 } /* generate_local_dof_ids_on_coel */
 
-static int generate_global_dof_ids_on_elem(const int ndofn,
-                                           const int start_id,
-                                           const int elem_id,
-                                           int *visited_node_dof,
-                                           Node *nodes,
-                                           Element *elems,
-                                           BoundingElement *b_elems,
-                                           const CommunicationStructure *com,
-                                           const int mp_id)
+static long generate_global_dof_ids_on_elem(const long ndofn,
+                                            const long start_id,
+                                            const long elem_id,
+                                            long *visited_node_dof,
+                                            Node *nodes,
+                                            Element *elems,
+                                            BoundingElement *b_elems,
+                                            const CommunicationStructure *com,
+                                            const int mp_id)
 {
   int myrank = com->rank;
 
-  int id_adder = 0;
+  long id_adder = 0;
   Element *ptr_elem = &elems[elem_id];
   const long *elem_nod = ptr_elem->nod;
-  const int nne = ptr_elem->toe;
+  const long nne = ptr_elem->toe;
 
-  for(int i=0; i<nne; i++){
-    const int node_id = elem_nod[i];
+  for(long i=0; i<nne; i++){
+    const long node_id = elem_nod[i];
     Node *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
-      for(int j=0; j<ndofn; j++){
-        const int dof_idx = node_id*ndofn + j;
+      for(long j=0; j<ndofn; j++){
+        const long dof_idx = node_id*ndofn + j;
         visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
-      for(int j=0; j<ndofn; j++){
-        const int dof_idx = node_id*ndofn + j;
+      for(long j=0; j<ndofn; j++){
+        const long dof_idx = node_id*ndofn + j;
         if(!visited_node_dof[dof_idx]){
           if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
             ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
@@ -504,7 +504,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
           /* periodic node/dofs. Do not set pressure periodic! */
           else if(ptr_node->Pr != -1 && j < ndn){
             Node *ptr_pnode = &nodes[ptr_node->Pr];
-            const int pdof_idx = ptr_node->Pr*ndofn + j;
+            const long pdof_idx = ptr_node->Pr*ndofn + j;
             if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
               ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
               visited_node_dof[pdof_idx] = 1;
@@ -530,7 +530,7 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
 
   /* number bounding element dofs */
   for(int i=0; i<ptr_elem->n_be; i++){
-    const int be_id = ptr_elem->be_ids[i];
+    const long be_id = ptr_elem->be_ids[i];
     BoundingElement *ptr_be = &b_elems[ be_id ];
     if(!ptr_be->periodic){
       for(int j=0; j<ptr_be->n_dofs; j++){
@@ -574,34 +574,34 @@ static int generate_global_dof_ids_on_elem(const int ndofn,
   return id_adder;
 }/* generate_global_dof_ids_on_elem() */
 
-static int generate_global_dof_ids_on_coel(const int ndofn,
-                                           const int start_id,
-                                           const int coel_id,
-                                           int *visited_node_dof,
-                                           Node *nodes,
-                                           COEL *coel,
-                                           const CommunicationStructure *com,
-                                           const int mp_id)
+static long generate_global_dof_ids_on_coel(const long ndofn,
+                                            const long start_id,
+                                            const long coel_id,
+                                            long *visited_node_dof,
+                                            Node *nodes,
+                                            COEL *coel,
+                                            const CommunicationStructure *com,
+                                            const int mp_id)
 {
   int myrank = com->rank;
 
-  int id_adder = 0;
+  long id_adder = 0;
   COEL *ptr_coel = &coel[coel_id];
   const long *elem_nod = ptr_coel->nod;
-  const int nne = ptr_coel->toe;
+  const long nne = ptr_coel->toe;
 
-  for(int i=0; i<nne; i++){
-    const int node_id = elem_nod[i];
+  for(long i=0; i<nne; i++){
+    const long node_id = elem_nod[i];
     Node *ptr_node = &nodes[node_id];
     if(ptr_node->Dom != myrank){
-      for(int j=0; j<ndofn; j++){
-        const int dof_idx = node_id*ndofn + j;
+      for(long j=0; j<ndofn; j++){
+        const long dof_idx = node_id*ndofn + j;
         visited_node_dof[dof_idx] = 1;
       }
       continue;
     } else {
-      for(int j=0; j<ndofn; j++){
-        const int dof_idx = node_id*ndofn + j;
+      for(long j=0; j<ndofn; j++){
+        const long dof_idx = node_id*ndofn + j;
         if(!visited_node_dof[dof_idx]){
           if(ptr_node->id_map[mp_id].id[j] <= 0){ /* prescribed or supported dof */
             ptr_node->id_map[mp_id].Gid[j] = ptr_node->id_map[mp_id].id[j];
@@ -610,7 +610,7 @@ static int generate_global_dof_ids_on_coel(const int ndofn,
           /* periodic node/dofs. Do not set pressure periodic! */
           else if(ptr_node->Pr != -1 && j < ndn){
             Node *ptr_pnode = &nodes[ptr_node->Pr];
-            const int pdof_idx = ptr_node->Pr*ndofn + j;
+            const long pdof_idx = ptr_node->Pr*ndofn + j;
             if(!visited_node_dof[pdof_idx]){ /* have not numbered master node yet */
               ptr_pnode->id_map[mp_id].Gid[j] = start_id + id_adder;
               visited_node_dof[pdof_idx] = 1;
