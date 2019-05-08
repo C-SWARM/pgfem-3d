@@ -397,9 +397,11 @@ class GlobalRestartValues{
 /// \param[out] grv     object to save global restart values
 /// \param[in]  matno   number of materials
 /// \param[in]  options PGFem3D option object
+/// \param[in] myrank   partion ID (current process rank)
 void read_model_params(GlobalRestartValues &grv,
                        const int matno,
-                       const PGFem3D_opt &options){
+                       const PGFem3D_opt &options,
+                       const int myrank){
   if(grv.isMechanicalCMActive){
 
     // create Model_parameters
@@ -418,18 +420,18 @@ void read_model_params(GlobalRestartValues &grv,
     FILE *in = PGFEM_fopen(cm_filename, "r");
 
     if(in == NULL){
-      char err_msg[STRING_SIZE];
-      sprintf(err_msg, "Error: Cannot open [%s]\n", cm_filename);
-      throw err_msg;
+      if(myrank==0)
+        std::cout  << "Error: Cannot open [" << cm_filename << "]\n";
+      throw 1;
     }      
     
     if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
       char err_msg[STRING_SIZE];
       sprintf(err_msg, "Error: Cannot read [%s] properly\n", cm_filename);
       fclose(in);
-      std::stringstream ss;
-      ss << "Error: Cannot read [" << cm_filename << "] properly\n";
-      throw ss.str();
+      if(myrank==0)
+        std::cout << "Error: Cannot read [" << cm_filename << "] properly\n";
+      throw 1;
     }
 
     for(int ia=0; ia<matno; ++ia)
@@ -460,33 +462,33 @@ void get_options(int argc,
                  PGFem3D_opt *options,
                  const int myrank){                  
   if (argc <= 3){
-    char err_msg[STRING_SIZE*15];
-    sprintf(err_msg, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-                     "How to use: gen_restart_from_NP2NP [map_info_path] [PGFem3D options]",
-                     "----------------------",
-                     "input_file_path format",
-                     "----------------------",
-                     "# : this is a comment",
-                     "# number of partitions from",
-                     "5040",
-                     "# filebases of map from",
-                     "./map.5040/case_1",
-                     "# number of partitions to",
-                     "192",
-                     "# filebases of map to",
-                     "./map.192/case_1",
-                     "# PGFem3D output directory where mapped restart files are saved.",
-                     "./out/case_1_192CPU");
-    throw err_msg;    
+    if(myrank==0){
+      std::cout << "How to use: gen_restart_from_NP2NP [map_info_path] [PGFem3D options]" << endl;
+      std::cout << "----------------------" << endl;
+      std::cout << "input_file_path format" << endl;
+      std::cout << "----------------------" << endl;
+      std::cout << "# : this is a comment" << endl;
+      std::cout << "# number of partitions from" << endl;
+      std::cout << "5040" << endl;
+      std::cout << "# filebases of map from" << endl;
+      std::cout << "./map.5040/case_1",
+      std::cout << "# number of partitions to" << endl;
+      std::cout << "192" << endl;
+      std::cout << "# filebases of map to" << endl;
+      std::cout << "./map.192/case_1" << endl;
+      std::cout << "# PGFem3D output directory where mapped restart files are saved." << endl;
+      std::cout << "./out/case_1_192CPU" << endl;
+    }
+    throw 1;
   }
 
 
   FILE *fp = fopen(argv[1], "r");
 
   if(fp==NULL){
-    char err_msg[STRING_SIZE];
-    sprintf(err_msg, "Error: Cannot open file [%s].\n", argv[1]);
-    throw err_msg;
+    if(myrank==0)
+      std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
+    throw 1;
   }
 
   int err = 0;
@@ -516,9 +518,9 @@ void get_options(int argc,
   }
 
   if(err>0){
-    char err_msg[STRING_SIZE];
-    sprintf(err_msg, "Error: Cannot read file [%s].\n", argv[1]);
-    throw err_msg;
+    if(myrank==0)
+      std::cout << "Error: Cannot read file [" << argv[1] << "]." << endl;
+    throw 1;
   }
 
   set_default_options(options);
@@ -542,9 +544,7 @@ int main(int argc, char *argv[])
   try{
     get_options(argc, argv, mapF, mapT, rs_path, &options, myrank);
   }
-  catch(const char *msg){
-    if(myrank==0)
-      std::cerr << msg;
+  catch(const int ii){
     return 0;
   }
 
@@ -563,10 +563,8 @@ int main(int argc, char *argv[])
 
   // read and build model parameters
   try{
-    read_model_params(grv, L2G_from.matno, options);
-  }catch(const char *msg){
-    if(myrank==0)
-      std::cerr << msg;
+    read_model_params(grv, L2G_from.matno, options, myrank);
+  }catch(const int ii){
     return 0;
   }
 

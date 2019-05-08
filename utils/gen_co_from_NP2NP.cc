@@ -17,6 +17,8 @@
 #include "elem3d.h"
 #include "gen_path.h"
 
+#include <sstream>
+
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -89,9 +91,8 @@ class GlobalCOValues{
       FILE *fp = fopen(fn, "r");
       if(fp==NULL)
       {
-        char err_msg[STRING_SIZE];        
-        sprintf(err_msg, "fail to read [%s]\n", fn);
-        throw err_msg;
+        std::cout << "fail to read [" << fn << "]" << endl;
+        throw 1;
       }
       
       char line[1024];
@@ -175,9 +176,9 @@ class GlobalCOValues{
       FILE *fp = fopen(fn, "w");
       if(fp==NULL)
       {
-        char err_msg[STRING_SIZE];        
-        sprintf(err_msg, "fail to create [%s]\n", fn);
-        throw err_msg;
+        std::stringstream ss;
+        std::cout << "fail to create [" << fn << "]" << endl;
+        throw 1;
       }
       
       // write heads first
@@ -220,9 +221,9 @@ class GlobalCOValues{
                                  const char *co_out_fb){
     // check default CO directory exists
     if(make_path(co_out_dir,DIR_MODE) != 0){
-      char err_msg[STRING_SIZE];
-      sprintf(err_msg, "Cannot create directory [%s].\n", co_out_dir);
-      throw err_msg;
+      std::stringstream ss;
+      std::cout << "Cannot create directory [" << co_out_dir << "]" << endl;
+      throw 1;
     } 
 
     char co_out[FILE_NAME_SIZE];
@@ -253,35 +254,34 @@ void get_options(int argc,
                  char *co_out_dir,
                  char *co_out_fb){                  
   if (argc < 3){
-    char err_msg[STRING_SIZE*17];
-    sprintf(err_msg, "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-                     "How to use: gen_co_from_NP2NP [input_file_path] [CO dir/filebase]",
-                     "----------------------",
-                     "input_file_path format",
-                     "----------------------",
-                     "# : this is a comment",
-                     "# number of partitions from",
-                     "5040",
-                     "# filebases of map from",
-                     "./map.5040/case_1",
-                     "# number of partitions to",
-                     "192",
-                     "# filebases of map to",                     
-                     "./map.192/case_1",                     
-                     "# orientation out directory",
-                     "./CO.192",
-                     "# orientation out filebase",
-                     "co");
-    throw err_msg;    
+    std::stringstream ss;
+    std::cout << "How to use: gen_co_from_NP2NP [input_file_path] [CO dir/filebase]" << endl;
+    std::cout << "----------------------"      << endl;
+    std::cout << "input_file_path format"      << endl;
+    std::cout << "----------------------"      << endl;
+    std::cout << "# : this is a comment"       << endl;
+    std::cout << "# number of partitions from" << endl;
+    std::cout << "5040"                        << endl;
+    std::cout << "# filebases of map from"     << endl;
+    std::cout << "./map.5040/case_1"           << endl;
+    std::cout << "# number of partitions to"   << endl;
+    std::cout << "192"                         << endl;
+    std::cout << "# filebases of map to"       << endl;                     
+    std::cout << "./map.192/case_1"            << endl;                     
+    std::cout << "# orientation out directory" << endl;
+    std::cout << "./CO.192"                    << endl;
+    std::cout << "# orientation out filebase"  << endl;
+    std::cout << "co"                          << endl;
+    throw 1;    
   }
 
   
   FILE *fp = fopen(argv[1], "r");
   
   if(fp==NULL){
-    char err_msg[STRING_SIZE];
-    sprintf(err_msg, "Error: Cannot open file [%s].\n", argv[1]);
-    throw err_msg;
+    std::stringstream ss;
+    std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
+    throw 1;
   }
   
   sprintf(co_in, argv[2]);
@@ -317,9 +317,9 @@ void get_options(int argc,
   std::cout << "Write CO to: " << co_out_dir << "/" << co_out_fb<< endl;    
     
   if(err>0){
-    char err_msg[STRING_SIZE];
-    sprintf(err_msg, "Error: Cannot read file [%s].\n", argv[1]);
-    throw err_msg;
+    std::stringstream ss;
+    std::cout << "Error: Cannot read file [" << argv[1] << "]" << endl;
+    throw 1;
   }    
 }
                         
@@ -334,10 +334,8 @@ int main(int argc, char *argv[])
     
   try{
     get_options(argc, argv, mapF, mapT, co_in, co_out_dir, co_out_fb);
-  }
-  catch(const char *msg){
-    std::cerr << msg;
-    return(0);
+  }catch(const int ii){
+    return 0;
   }
   
   // read decomposed global node and element IDs
@@ -352,17 +350,15 @@ int main(int argc, char *argv[])
   // read orientation files
   try{
     gco.read_orientation_files(L2G_from, co_in);
-  }catch(const char *msg){
-    std::cerr << msg;
-    return(0);
+  }catch(const int ii){
+    return 0;
   }
   
   // write orientation files
   try{
     gco.write_orientation_files(L2G_to, co_out_dir, co_out_fb);
-  }catch(const char *msg){
-    std::cerr << msg;
-    return(0);
+  }catch(const int ii){
+    return 0;
   }  
   
   printf("All files are successfully mapped.\n");
