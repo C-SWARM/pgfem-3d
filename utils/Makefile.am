@@ -1,6 +1,7 @@
-bin_PROGRAMS = gen_restart_from_NP2NP
+bin_PROGRAMS = gen_restart_from_NP2NP gen_co_from_NP2NP
 
 gen_restart_from_NP2NP_SOURCES = gen_restart_from_NP2NP.cc
+gen_co_from_NP2NP_SOURCES = gen_co_from_NP2NP.cc
 
 # Universal flags for all binaries
 AM_CPPFLAGS = -Wall -Werror \

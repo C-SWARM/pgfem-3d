@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -e
+
+NP=$1
+
+if [ "$NP" -gt @TESTS_NPROCS@ ];
+then
+    echo "skipping $NP processes"
+    exit 77
+fi
+
+opts="-SS -disp -coh -V -maxit 3000 -kdim 1000 -isir"
+
+# The pgfem executable is built in the build directory.
+pgfem=@abs_top_builddir@/src/PGFem3D
+
+# Input comes from the inputs directory.
+inputs=@srcdir@/inputs
+indir=$inputs/TwoBlocks_${NP}CPU
+in=$indir/TwoBlocks_
+
+# Output into an outputs directory
+outputs=@builddir@/outputs
+outdir=$outputs/TwoBlocks_${NP}CPU
+out=$outdir/out
+
+# cleanup on failure.
+function cleanup {
+    echo "Removing $outputs"
+    rm -rf $outputs
+}
+trap cleanup EXIT
+
+# Run the PGFem3D test
+cmd="mpirun -np $NP $pgfem $opts $in $out"
+echo $cmd
+$cmd
+
+# And check the results.
+refdir=$indir/reference_output
+
+numdiff --absolute-tolerance=1.0e-11 --relative-tolerance=1.0e-11 $outdir/out_macro.out.0 $refdir/out_macro.out.0
+numdiff --absolute-tolerance=1.0e-11 --relative-tolerance=1.0e-11 $outdir/out_macro.out.1 $refdir/out_macro.out.1
+numdiff --absolute-tolerance=1.0e-11 --relative-tolerance=1.0e-11 $outdir/out_macro.out.2 $refdir/out_macro.out.2

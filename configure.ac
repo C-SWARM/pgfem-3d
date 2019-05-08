@@ -89,6 +89,7 @@ AC_CONFIG_FILES([Makefile
                  tests/box/shear/Makefile
                  tests/box/tension_disp/Makefile
                  tests/box/tension_pressure/Makefile
+                 tests/cohesive/Makefile
                  tests/constitutive_model/Makefile
                  tests/crystal_plasticity/Makefile
                  tests/multiphysics/Makefile
@@ -99,6 +100,7 @@ AC_CONFIG_FILES([Makefile
 # disabled. 
 AC_CONFIG_FILES([tests/box/compression/run.sh
                  tests/box/common.sh
+                 tests/cohesive/common.sh
                  tests/time_stepping/4.cpu.restart.sh
                  tests/time_stepping/4.cpu.different_dt_tr.sh
                  tests/crystal_plasticity/common.sh
@@ -107,6 +109,7 @@ AC_CONFIG_FILES([tests/box/compression/run.sh
                  tests/fe2/run.sh],
                 [chmod +x tests/box/compression/run.sh
                  chmod +x tests/box/common.sh
+                 chmod +x tests/cohesive/common.sh
                  chmod +x tests/time_stepping/4.cpu.restart.sh
                  chmod +x tests/time_stepping/4.cpu.different_dt_tr.sh
                  chmod +x tests/crystal_plasticity/common.sh
