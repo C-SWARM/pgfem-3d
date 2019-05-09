@@ -90,7 +90,7 @@ class GlobalCOValues{
       if(fp==NULL)
       {
         std::cout << "fail to read [" << fn << "]" << endl;
-        throw 1;
+        abort();
       }
       
       char line[1024];
@@ -175,7 +175,7 @@ class GlobalCOValues{
       if(fp==NULL)
       {
         std::cout << "fail to create [" << fn << "]" << endl;
-        throw 1;
+        abort();
       }
       
       // write heads first
@@ -219,7 +219,7 @@ class GlobalCOValues{
     // check default CO directory exists
     if(make_path(co_out_dir,DIR_MODE) != 0){
       std::cout << "Cannot create directory [" << co_out_dir << "]" << endl;
-      throw 1;
+      abort();
     } 
 
     char co_out[FILE_NAME_SIZE];
@@ -267,7 +267,7 @@ void get_options(int argc,
     std::cout << "./CO.192"                    << endl;
     std::cout << "# orientation out filebase"  << endl;
     std::cout << "co"                          << endl;
-    throw 1;    
+    abort();    
   }
 
   
@@ -275,7 +275,7 @@ void get_options(int argc,
   
   if(fp==NULL){
     std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
-    throw 1;
+    abort();
   }
   
   sprintf(co_in, argv[2]);
@@ -312,7 +312,7 @@ void get_options(int argc,
     
   if(err>0){
     std::cout << "Error: Cannot read file [" << argv[1] << "]" << endl;
-    throw 1;
+    abort();
   }    
 }
                         
@@ -325,11 +325,7 @@ int main(int argc, char *argv[])
   char co_out_dir[FILE_NAME_SIZE];
   char co_out_fb[FILE_NAME_SIZE];
     
-  try{
-    get_options(argc, argv, mapF, mapT, co_in, co_out_dir, co_out_fb);
-  }catch(const int ii){
-    return 0;
-  }
+  get_options(argc, argv, mapF, mapT, co_in, co_out_dir, co_out_fb);
   
   // read decomposed global node and element IDs
   Locals2Global L2G_from, L2G_to;  
@@ -341,18 +337,10 @@ int main(int argc, char *argv[])
   gco.initialization(L2G_from);
     
   // read orientation files
-  try{
-    gco.read_orientation_files(L2G_from, co_in);
-  }catch(const int ii){
-    return 0;
-  }
+  gco.read_orientation_files(L2G_from, co_in);
   
   // write orientation files
-  try{
-    gco.write_orientation_files(L2G_to, co_out_dir, co_out_fb);
-  }catch(const int ii){
-    return 0;
-  }  
+  gco.write_orientation_files(L2G_to, co_out_dir, co_out_fb);
   
   printf("All files are successfully mapped.\n");
   return(0);
