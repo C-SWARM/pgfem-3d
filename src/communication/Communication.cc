@@ -154,7 +154,7 @@ namespace pgfem3d {
        local domain and the corresponding number of maps */
     long *local_idx = PGFEM_calloc(long, ndofd);
     long *global_idx = PGFEM_calloc(long, ndofd);
-    for(int i=0; i<ndofd; i++){
+    for(long i=0; i<ndofd; i++){
       global_idx[i] = LG[i] - start_gdof_id;
 
       /* store mapping if I own the global dof */
@@ -194,7 +194,7 @@ namespace pgfem3d {
     long *local_idx = PGFEM_calloc(long, ngdof_owned);
     
     /* NOTE: may be able to replace. Should be identical to comm->GL? */
-    for(int i=0; i< ngdof_owned; i++){
+    for(long i=0; i< ngdof_owned; i++){
       local_idx[i] = GL[i];
       if(local_idx[i]>= 0 && local_idx[i] < ndofd){
 	global_idx[fast_GL_map->n_maps] = i;
