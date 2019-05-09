@@ -17,8 +17,6 @@
 #include "elem3d.h"
 #include "gen_path.h"
 
-#include <sstream>
-
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -176,7 +174,6 @@ class GlobalCOValues{
       FILE *fp = fopen(fn, "w");
       if(fp==NULL)
       {
-        std::stringstream ss;
         std::cout << "fail to create [" << fn << "]" << endl;
         throw 1;
       }
@@ -221,7 +218,6 @@ class GlobalCOValues{
                                  const char *co_out_fb){
     // check default CO directory exists
     if(make_path(co_out_dir,DIR_MODE) != 0){
-      std::stringstream ss;
       std::cout << "Cannot create directory [" << co_out_dir << "]" << endl;
       throw 1;
     } 
@@ -254,7 +250,6 @@ void get_options(int argc,
                  char *co_out_dir,
                  char *co_out_fb){                  
   if (argc < 3){
-    std::stringstream ss;
     std::cout << "How to use: gen_co_from_NP2NP [input_file_path] [CO dir/filebase]" << endl;
     std::cout << "----------------------"      << endl;
     std::cout << "input_file_path format"      << endl;
@@ -279,7 +274,6 @@ void get_options(int argc,
   FILE *fp = fopen(argv[1], "r");
   
   if(fp==NULL){
-    std::stringstream ss;
     std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
     throw 1;
   }
@@ -317,7 +311,6 @@ void get_options(int argc,
   std::cout << "Write CO to: " << co_out_dir << "/" << co_out_fb<< endl;    
     
   if(err>0){
-    std::stringstream ss;
     std::cout << "Error: Cannot read file [" << argv[1] << "]" << endl;
     throw 1;
   }    

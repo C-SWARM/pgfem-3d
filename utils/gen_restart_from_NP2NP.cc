@@ -26,8 +26,6 @@
 #include "three_field_element.h"
 #include "plasticity_model.h"
 
-#include <sstream>
-
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
