@@ -418,22 +418,23 @@ void read_model_params(GlobalRestartValues &grv,
     FILE *in = PGFEM_fopen(cm_filename, "r");
 
     if(in == NULL){
-      if(myrank==0)
+      if(myrank==0) {
         std::cout  << "Error: Cannot open [" << cm_filename << "]\n";
-      abort();
-    }      
-    
-    if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
-      char err_msg[STRING_SIZE];
-      sprintf(err_msg, "Error: Cannot read [%s] properly\n", cm_filename);
-      fclose(in);
-      if(myrank==0)
-        std::cout << "Error: Cannot read [" << cm_filename << "] properly\n";
+      }
       abort();
     }
 
-    for(int ia=0; ia<matno; ++ia)
+    if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
+      fclose(in);
+      if(myrank==0) {
+        std::cout << "Error: Cannot read [" << cm_filename << "] properly\n";
+      }
+      abort();
+    }
+
+    for(int ia=0; ia<matno; ++ia) {
       grv.params.m_pdata[ia] = hmat(ia).param;
+    }
 
     fclose(in);
   }
@@ -458,7 +459,7 @@ void get_options(int argc,
                  MapInfo &to,
                  char *out,
                  PGFem3D_opt *options,
-                 const int myrank){                  
+                 const int myrank){
   if (argc <= 3){
     if(myrank==0){
       std::cout << "How to use: gen_restart_from_NP2NP [map_info_path] [PGFem3D options]" << endl;
