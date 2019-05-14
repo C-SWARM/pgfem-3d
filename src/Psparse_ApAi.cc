@@ -429,20 +429,11 @@ int* Psparse_ApAi (long ne,
     }
   }
 
-
-  //This is it
-
-  /* Determine where to send */
-  for (j=0;j<nproc;j++){                                                      //loop over processes
-    k = 1;
-    if (j == myrank)                                                          //if this is the current process, theres nothing to be sent
-      continue;
-    for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
-      if (rows.owner(LG[ap1[i]]) == j) {
-        comm->S[j] = k;                                                       //write down how many things will be sent there
-        k++;
-      }
-    }
+  /* Determine how much to send to each rank */
+  for (i=0;i<Nrs;i++){
+    auto j = rows.owner(LG[ap1[i]]);
+    assert(j != myrank);
+    comm->S[j]++;
   }
 
   AA = PGFEM_calloc (long*, nproc);
@@ -466,15 +457,14 @@ int* Psparse_ApAi (long ne,
   null_quit((void*) comm->SLID,0);
 
   /* Determine what GID/LID to send */
-  for (j=0;j<nproc;j++){                                                      //loop over nproc
-    k = 0;
-    if (j == myrank)
-      continue;
-    for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
-      if (rows.owner(LG[ap1[i]]) == j) {
-        AA[j][k] = comm->SLID[j][k] = ap1[i];                                       //same as before, but this time fill in
-        k++;                                                                        //the local ID of communicated nodes
-      }
+  {
+    std::vector<GlobalId> ks(nproc);              // insertion point into vectors
+    for (i=0;i<Nrs;i++){
+      auto j = rows.owner(LG[ap1[i]]);
+      assert(j != myrank);
+      auto k = ks[j]++;
+      assert(k < comm->S[j]);
+      AA[j][k] = comm->SLID[j][k] = ap1[i];
     }
   }
 
