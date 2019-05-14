@@ -165,7 +165,6 @@ int* Psparse_ApAi (long ne,
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
   long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
-  long *Ddof = NULL;
   int *Ai = NULL;
 
   /* pull necessary info from Communication handle */
@@ -173,7 +172,6 @@ int* Psparse_ApAi (long ne,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   long *DomDof = com->DomDof;
-  long *GDof = &(com->GDof);
   int *Ap = com->Ap;
 
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
@@ -387,7 +385,7 @@ int* Psparse_ApAi (long ne,
   PGFEM_free (AA);
   dealoc1l (ap1); ap1 = NULL;
 
-  Ddof = aloc1l (nproc);                                                      //a total (global) count of the degrees of freedom
+  auto Ddof = aloc1l (nproc);                                                      //a total (global) count of the degrees of freedom
   Ddof[0] = DomDof[0];
 
   for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
@@ -396,24 +394,21 @@ int* Psparse_ApAi (long ne,
   using GlobalId = std::remove_reference_t<decltype(LG[0])>;
   using RankId = decltype(com->rank);
   BlockedRowDistribution<GlobalId, RankId> rows(com->nproc, com->DomDof);
+  const auto& GDof = com->GDof = rows.min(myrank);
 
-  if (myrank == 0)
-    *GDof = 0;
-  else
-    *GDof = Ddof[myrank-1];
   GL = aloc1l (DomDof[myrank]);
 
   /* Sort Global Dof */
   for (i=0;i<DomDof[myrank];i++){
     for (j=0;j<ndofd;j++){
-      if (i == LG[j] - *GDof) {
+      if (i == LG[j] - GDof) {
         Ap[i] = ap[j];                                                              //manually sort ap into Ap
         GL[i] = comm->GL[i] = j;                                                    //also global to local
         break;
       }
-      if (i != LG[j] - *GDof && j == ndofd - 1 && GL[i] == 0){
+      if (i != LG[j] - GDof && j == ndofd - 1 && GL[i] == 0){
         PGFEM_printf("There is no local mapping for "
-                     "global id %ld on [%d]!\n",i+*GDof,myrank);
+                     "global id %ld on [%d]!\n",i+GDof,myrank);
       }
     }
   }
@@ -570,12 +565,12 @@ int* Psparse_ApAi (long ne,
 
   /* Add recieved rows to Ap and ID */
   for (i=0;i<NRr;i++){
-    II = ApRr[i] + Ap[GNRr[i]-*GDof];
+    II = ApRr[i] + Ap[GNRr[i]-GDof];
 
     send = aloc1l (II);
     JJ = 0;
-    for (j=0;j<Ap[GNRr[i]-*GDof];j++) {
-      send[j] = ID[GL[GNRr[i]-*GDof]][j];
+    for (j=0;j<Ap[GNRr[i]-GDof];j++) {
+      send[j] = ID[GL[GNRr[i]-GDof]][j];
       JJ++;
     }
 
@@ -589,20 +584,20 @@ int* Psparse_ApAi (long ne,
     /* GLOBAL number of non-zeros in row */
     JJ = 1; for (j=0;j<II-1;j++) if (send[j] < send[j+1]) JJ++;
 
-    Ap[GNRr[i]-*GDof] = JJ;
+    Ap[GNRr[i]-GDof] = JJ;
 
-    PGFEM_free (ID[GL[GNRr[i]-*GDof]]);
-    ID[GL[GNRr[i]-*GDof]]= PGFEM_calloc (long, JJ);
+    PGFEM_free (ID[GL[GNRr[i]-GDof]]);
+    ID[GL[GNRr[i]-GDof]]= PGFEM_calloc (long, JJ);
 
     JJ = 0;
     for (j=0;j<II-1;j++) {
       if (send[j] < send[j+1]) {
-        ID[GL[GNRr[i]-*GDof]][JJ] = send[j];
+        ID[GL[GNRr[i]-GDof]][JJ] = send[j];
         JJ++;
       }
     }
 
-    ID[GL[GNRr[i]-*GDof]][JJ] = send[II-1];
+    ID[GL[GNRr[i]-GDof]][JJ] = send[II-1];
 
     dealoc1l (send);
   }/* end i <NRr */
