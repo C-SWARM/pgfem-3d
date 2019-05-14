@@ -163,7 +163,7 @@ int* Psparse_ApAi (long ne,
   FILE *out=NULL;
   long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
-  long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
+  long *cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   int *Ai = NULL;
 
@@ -385,12 +385,6 @@ int* Psparse_ApAi (long ne,
   PGFEM_free (AA);
   dealoc1l (ap1); ap1 = NULL;
 
-  auto Ddof = aloc1l (nproc);                                                      //a total (global) count of the degrees of freedom
-  Ddof[0] = DomDof[0];
-
-  for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
-    Ddof[i] = Ddof[i-1] + DomDof[i];
-
   using GlobalId = std::remove_reference_t<decltype(LG[0])>;
   using RankId = decltype(com->rank);
   BlockedRowDistribution<GlobalId, RankId> rows(com->nproc, com->DomDof);
@@ -417,19 +411,8 @@ int* Psparse_ApAi (long ne,
   /* ASSEMBLE ARRAYS TO BE SENT */
   /******************************/
 
-  if (myrank == 0)
-    LI1 = 0;
-  else
-    LI1 = Ddof[myrank-1];
-  LI2 = Ddof[myrank] - 1;
-
   for (i=0;i<ndofd;i++){/* Number of rows per domain to be sent (Nrs)*/
-    if (LI1 <= LG[i] && LG[i] <= LI2) {         //if this dof belongs here,
-      assert(rows.owns(myrank, LG[i]));
-      continue;                                 //ignore it
-    }
-    else {                                      //else add it to the counter
-      assert(!rows.owns(myrank, LG[i]));
+    if (!rows.owns(myrank, LG[i])) {
       Nrs++;
     }
   }
@@ -439,9 +422,10 @@ int* Psparse_ApAi (long ne,
                                                                             //were not part of this domain
     Nrs = 0;
     for (i=0;i<ndofd;i++){/* Local row indexes on domain to be sent */      //same as before, but this time
-      if (LI1 <= LG[i] && LG[i] <= LI2)                                     //write down which nodes are not
-        continue;                                                                 //in this domain
-      else {ap1[Nrs] = i; Nrs++;}
+      if (!rows.owns(myrank, LG[i])) {
+        ap1[Nrs] = i;
+        Nrs++;
+      }
     }
   }
 
@@ -453,14 +437,8 @@ int* Psparse_ApAi (long ne,
     k = 1;
     if (j == myrank)                                                          //if this is the current process, theres nothing to be sent
       continue;
-    if (j == 0)                                                               //(first) process is special
-      LI1 = 0;
-    else
-      LI1 = Ddof[j-1];                                                        //using the prefix sum, we can categorize which
-    LI2 = Ddof[j] - 1;                                                        //nproc a particular dof is in.
     for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
-      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {                           //if this dof belongs to proc j,
-        assert(rows.owner(LG[ap1[i]]) == j);
+      if (rows.owner(LG[ap1[i]]) == j) {
         comm->S[j] = k;                                                       //write down how many things will be sent there
         k++;
       }
@@ -492,13 +470,8 @@ int* Psparse_ApAi (long ne,
     k = 0;
     if (j == myrank)
       continue;
-    if (j == 0)
-      LI1 = 0;
-    else
-      LI1 = Ddof[j-1];
-    LI2 = Ddof[j] - 1;
-    for (i=0;i<Nrs;i++){
-      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {
+    for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
+      if (rows.owner(LG[ap1[i]]) == j) {
         AA[j][k] = comm->SLID[j][k] = ap1[i];                                       //same as before, but this time fill in
         k++;                                                                        //the local ID of communicated nodes
       }
@@ -717,7 +690,6 @@ int* Psparse_ApAi (long ne,
   dealoc1l (nod);
   dealoc1l (ap);
   dealoc1l (LG);
-  dealoc1l (Ddof);
   dealoc1l (ap1);
   dealoc1l (GL);
   dealoc1l (GNRr);
