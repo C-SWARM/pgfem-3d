@@ -403,7 +403,7 @@ Ai_t* Psparse_ApAi (long ne,
   for (i=0;i<DomDof[myrank];i++){
     for (j=0;j<ndofd;j++){
       if (i == LG[j] - *GDof) {
-        assert(0 <= ap[j] && (pow(2,31)-1) >= ap[j]);
+        //assert(0 <= ap[j] && (pow(2,31)-1) >= ap[j]);                             //ksaha
         Ap[i] = ap[j];                                                              //manually sort ap into Ap
         GL[i] = comm->GL[i] = j;                                                    //also global to local
         break;
@@ -580,7 +580,7 @@ Ai_t* Psparse_ApAi (long ne,
     /* GLOBAL number of non-zeros in row */
     JJ = 1; for (j=0;j<II-1;j++) if (send[j] < send[j+1]) JJ++;
 
-    assert(0 <= JJ && (pow(2,31)-1) >= JJ);
+    //assert(0 <= JJ && (pow(2,31)-1) >= JJ);                            //ksaha
     Ap[GNRr[i]-*GDof] = JJ;
 
     PGFEM_free (ID[GL[GNRr[i]-*GDof]]);
@@ -693,13 +693,13 @@ Ai_t* Psparse_ApAi (long ne,
   II = Ap[0]; Ap[0] = 0; k = 0;
   for (i=1;i<DomDof[myrank]+1;i++){
     for (j=0;j<II;j++) {
-      assert(0 <= ID[GL[i-1]][j] && (pow(2,31)-1) >= ID[GL[i-1]][j]);
+      //assert(0 <= ID[GL[i-1]][j] && (pow(2,31)-1) >= ID[GL[i-1]][j]);      //ksaha
       Ai[k] = ID[GL[i-1]][j];
       k++;
     }
     JJ = Ap[i];
-    long dum = II + Ap[i-1];
-    assert(0 <= dum && (pow(2,31)-1) >= dum); 
+    //long dum = II + Ap[i-1];
+    //assert(0 <= dum && (pow(2,31)-1) >= dum);                              //ksaha
     Ap[i] = II + Ap[i-1];
     II = JJ;
   }
