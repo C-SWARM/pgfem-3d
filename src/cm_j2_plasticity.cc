@@ -94,9 +94,11 @@ namespace {
         PARAM_P2, 
         PARAM_Yin,
         PARAM_da,
-        PARAM_db,
+        PARAM_db_p,
+        PARAM_db_m,
         PARAM_va,
-        PARAM_vb,
+        PARAM_vb_p,
+        PARAM_vb_m,
         PARAM_NO};      
 }
 
@@ -897,9 +899,14 @@ const
   err += scan_for_valid_line(in);
 
   // DAMAGE PROPERTIES 
+  
   match += fscanf(in, "%lf %lf %lf %lf %lf",
                   param + PARAM_mu, param + PARAM_w_max, param + PARAM_P1,
                   param + PARAM_P2, param + PARAM_Yin);
+                  
+  match += fscanf(in, "%lf %lf %lf %lf %lf %lf",
+                  param + PARAM_da, param + PARAM_db_p, param + PARAM_db_m, 
+                  param + PARAM_va, param + PARAM_vb_p, param + PARAM_vb_m);                   
 
   if (match != PARAM_NO) err++;
   assert(match == PARAM_NO && "Did not read expected number of parameters");
