@@ -26,8 +26,6 @@
 #include "three_field_element.h"
 #include "plasticity_model.h"
 
-#include <sstream>
-
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
@@ -420,22 +418,23 @@ void read_model_params(GlobalRestartValues &grv,
     FILE *in = PGFEM_fopen(cm_filename, "r");
 
     if(in == NULL){
-      if(myrank==0)
+      if(myrank==0) {
         std::cout  << "Error: Cannot open [" << cm_filename << "]\n";
-      throw 1;
-    }      
-    
-    if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
-      char err_msg[STRING_SIZE];
-      sprintf(err_msg, "Error: Cannot read [%s] properly\n", cm_filename);
-      fclose(in);
-      if(myrank==0)
-        std::cout << "Error: Cannot read [" << cm_filename << "] properly\n";
-      throw 1;
+      }
+      abort();
     }
 
-    for(int ia=0; ia<matno; ++ia)
+    if(read_model_parameters_list(matno, hmat.m_pdata, in)>0){
+      fclose(in);
+      if(myrank==0) {
+        std::cout << "Error: Cannot read [" << cm_filename << "] properly\n";
+      }
+      abort();
+    }
+
+    for(int ia=0; ia<matno; ++ia) {
       grv.params.m_pdata[ia] = hmat(ia).param;
+    }
 
     fclose(in);
   }
@@ -460,7 +459,7 @@ void get_options(int argc,
                  MapInfo &to,
                  char *out,
                  PGFem3D_opt *options,
-                 const int myrank){                  
+                 const int myrank){
   if (argc <= 3){
     if(myrank==0){
       std::cout << "How to use: gen_restart_from_NP2NP [map_info_path] [PGFem3D options]" << endl;
@@ -479,7 +478,7 @@ void get_options(int argc,
       std::cout << "# PGFem3D output directory where mapped restart files are saved." << endl;
       std::cout << "./out/case_1_192CPU" << endl;
     }
-    throw 1;
+    abort();
   }
 
 
@@ -488,7 +487,7 @@ void get_options(int argc,
   if(fp==NULL){
     if(myrank==0)
       std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
-    throw 1;
+    abort();
   }
 
   int err = 0;
@@ -520,7 +519,7 @@ void get_options(int argc,
   if(err>0){
     if(myrank==0)
       std::cout << "Error: Cannot read file [" << argv[1] << "]." << endl;
-    throw 1;
+    abort();
   }
 
   set_default_options(options);
@@ -541,12 +540,7 @@ int main(int argc, char *argv[])
 
   char rs_path[FILE_NAME_SIZE];
 
-  try{
-    get_options(argc, argv, mapF, mapT, rs_path, &options, myrank);
-  }
-  catch(const int ii){
-    return 0;
-  }
+  get_options(argc, argv, mapF, mapT, rs_path, &options, myrank);
 
   // read Multiphysics info
   Multiphysics mp;
@@ -562,11 +556,7 @@ int main(int argc, char *argv[])
   grv.initialization(L2G_from, mp, options);
 
   // read and build model parameters
-  try{
-    read_model_params(grv, L2G_from.matno, options, myrank);
-  }catch(const int ii){
-    return 0;
-  }
+  read_model_params(grv, L2G_from.matno, options, myrank);
 
   for(int ia=0; ia<L2G_from.matno; ia++){
     std::cout << mapF.np << " -> " << mapT.np << ": models(rank = " << myrank << "): "

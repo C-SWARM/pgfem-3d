@@ -1,7 +1,7 @@
 /// A util generating crystal orientaion (CO)files from inputs for a different decomposition.
 /// Maps from t3d2psifel are used to map CO files from a mesh decomposition to
 /// another mesh decomposition.
-/// 
+///
 /// How to use: gen_co_from_NP2NP [map info file] [CO_path/co_filebase]
 ///
 /// Authors:
@@ -16,8 +16,6 @@
 #include "local2global_id_mapping.h"
 #include "elem3d.h"
 #include "gen_path.h"
-
-#include <sstream>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -39,7 +37,7 @@ class GlobalCOValues{
   public:
     Matrix<Matrix<double>> angles; // global orietation angles
     Matrix<int> isSet;             // identify CO is set for element
-    Matrix<HeaderText> COhead;     // header 
+    Matrix<HeaderText> COhead;     // header
     Matrix<double> mat_angles;     // global CO set material by material
     bool mat_by_mat;               // if true, CO is set material by material
                                    // default is false
@@ -47,26 +45,26 @@ class GlobalCOValues{
     GlobalCOValues(){
       mat_by_mat = false;
     }
-    
+
     ~GlobalCOValues(){
     }
-    
-    /// initialization of members    
+
+    /// initialization of members
     void initialization(Locals2Global &L2G_from){
-      
+
       // re-size members to total number of global elements
       angles.initialization(L2G_from.elemno, 1);
       isSet.initialization(L2G_from.elemno, 1, CO_NO_CO);
       mat_angles.initialization(L2G_from.matno, 1);
-      
-      // prepare each angle of an element as many as number of integration points 
+
+      // prepare each angle of an element as many as number of integration points
       // looping all decomposition
       for(int ia=0; ia<L2G_from.np; ++ia){
         // looping all element in a decomposed mesh
         for(int ib=0; ib<L2G_from.E(ia).m_row; ++ib){
           long nint = {};
           long g_eid = L2G_from.eid(ia, ib);
-          
+
           // get number of integration points
           int_point(L2G_from.E(ia)(ib, ELM_Type), &nint);
           // set angle size
@@ -74,9 +72,9 @@ class GlobalCOValues{
         }
       }
     }
-    
+
     /// read a CO file for a partitioned mesh (myrank)
-    /// 
+    ///
     /// \param[in] L2G_from local to global map
     /// \param[in] co_in    CO_path/co_filebase
     /// \param[in] myrank   partion ID (current process rank)
@@ -84,23 +82,25 @@ class GlobalCOValues{
                                  const char *co_in,
                                  const int myrank){
       // set CO file name for the decomposition_myrank
-      char fn[FILE_NAME_SIZE];
-      sprintf(fn, "%s_%d.in", co_in, myrank);
-      
+      // need enough space for a filename, a 32 signed ascii integer, and the
+      // "_.in" characters
+      char fn[FILE_NAME_SIZE + 4 + 11];
+      sprintf(fn, "%*s_%d.in", FILE_NAME_SIZE, co_in, myrank);
+
       // try to open the CO file
       FILE *fp = fopen(fn, "r");
       if(fp==NULL)
       {
         std::cout << "fail to read [" << fn << "]" << endl;
-        throw 1;
+        abort();
       }
-      
+
       char line[1024];
-      
+
       if(myrank>0){
         // read header from file_base_0.in file
         // when write orientation file, this header will be used for every rank.
-        
+
         // count number of headers
         int headerno = 0;
         while(fgets(line, 1024, fp)!=NULL){
@@ -110,29 +110,29 @@ class GlobalCOValues{
             break;
         }
         rewind(fp); // go back to beginning
-        
+
         // set CO headers by reading file_base_0.in file
         COhead.initialization(headerno, 1);
-        
+
         for(int ia=0; ia<headerno; ia++)
-          fgets(COhead(ia).text, 1024, fp); 
+          fgets(COhead(ia).text, 1024, fp);
 
         rewind(fp); // go back to beginning in order to let file_base_0.in use
                     // same routines as other files [file_base_#.in]
-      }      
+      }
 
       // read COs
       while(fgets(line, 1024, fp)!=NULL){
         // skip comments
         if(line[0]=='#')
           continue;
-    
-        
+
+
         int e, ip;
         double x1, x2, x3;
         sscanf(line, "%d %d %lf %lf %lf", &e, &ip, &x1, &x2, &x3);
-        
-        if(e<0){ 
+
+        if(e<0){
           // orientation is set material by material
           mat_by_mat = true;
           mat_angles(ip, 0) = x1;
@@ -147,88 +147,90 @@ class GlobalCOValues{
           isSet(g_eid) = CO_ELME_BY_ELEM;
         }
       }
-      fclose(fp);      
+      fclose(fp);
     }
-    
+
     /// read all CO files
-    /// 
+    ///
     /// \param[in] L2G_from local to global map
     /// \param[in] co_in    CO_path/co_filebase
     void read_orientation_files(Locals2Global &L2G_from,
                                 const char *co_in){
-                                  
+
       for(int ia=0; ia<L2G_from.np; ++ia)
         read_a_orientation_file(L2G_from, co_in, ia);
 
     }
 
     /// write a CO file for a partitioned mesh (myrank)
-    /// 
+    ///
     /// \param[in] L2G_from local to global map
     /// \param[in] co_out    CO_path_out/co_filebase
-    /// \param[in] myrank   partion ID (current process rank)    
+    /// \param[in] myrank   partion ID (current process rank)
     void write_a_orientation_file(Locals2Global &L2G_to,
                                   const char *co_out,
-                                  const int myrank){                                    
-      char fn[FILE_NAME_SIZE];
-      sprintf(fn, "%s_%d.in", co_out, myrank);
-      
+                                  const int myrank){
+
+      // need enough space for a long filename, a 32 signed ascii integer, and
+      // the "_.in\0" characters
+      char fn[2 * FILE_NAME_SIZE + 2 + 4 + 12];
+      sprintf(fn, "%*s_%d.in", 2 * FILE_NAME_SIZE + 2, co_out, myrank);
+
       FILE *fp = fopen(fn, "w");
       if(fp==NULL)
       {
-        std::stringstream ss;
         std::cout << "fail to create [" << fn << "]" << endl;
-        throw 1;
+        abort();
       }
-      
+
       // write heads first
-      for(int ia=0; ia<COhead.m_row; ++ia)          
+      for(int ia=0; ia<COhead.m_row; ++ia)
         fprintf(fp, "%s", COhead(ia).text);
-      
+
       // write COs if set material by material
-      if(mat_by_mat){  
+      if(mat_by_mat){
         for(int mat_id=0; mat_id<mat_angles.m_row; ++mat_id){
           fprintf(fp, "-1 %d %e %e %e\n", mat_id, mat_angles(mat_id, 0),
                                                   mat_angles(mat_id, 1),
                                                   mat_angles(mat_id, 2));
         }
       }
-      
+
       // looping all element and write angles if CO is set element by element
       for(int eid=0; eid<L2G_to.E(myrank).m_row; ++eid){
         long g_eid = L2G_to.eid(myrank, eid);
-          
+
         if(isSet(g_eid)==CO_ELME_BY_ELEM){
           for(int ip=0; ip<angles(g_eid).m_row; ++ip)
-            fprintf(fp, "%d %d %e %e %e\n", eid, ip, angles(g_eid)(ip, 0), 
-                                                     angles(g_eid)(ip, 1), 
+            fprintf(fp, "%d %d %e %e %e\n", eid, ip, angles(g_eid)(ip, 0),
+                                                     angles(g_eid)(ip, 1),
                                                      angles(g_eid)(ip, 2));
         }
       }
-      
-      fclose(fp);      
+
+      fclose(fp);
     }
 
-    /// write all CO files. 
+    /// write all CO files.
     /// co_out_dir/co_out_fb_#.in file will be ceated
-    /// 
+    ///
     /// \param[in] L2G_from   local to global map
-    /// \param[in] co_out_dir CO out directory path, if not exist, 
+    /// \param[in] co_out_dir CO out directory path, if not exist,
     ///                       this folder will be created
-    /// \param[in] co_out_fb  CO out filebase 
+    /// \param[in] co_out_fb  CO out filebase
     void write_orientation_files(Locals2Global &L2G_to,
                                  const char *co_out_dir,
                                  const char *co_out_fb){
     // check default CO directory exists
     if(make_path(co_out_dir,DIR_MODE) != 0){
-      std::stringstream ss;
       std::cout << "Cannot create directory [" << co_out_dir << "]" << endl;
-      throw 1;
-    } 
+      abort();
+    }
 
-    char co_out[FILE_NAME_SIZE];
-    sprintf(co_out, "%s/%s", co_out_dir, co_out_fb);
-    
+    // need enough space for two filenames and the '/ and \0'
+    char co_out[2 * FILE_NAME_SIZE + 2];
+    sprintf(co_out, "%*s/%*s", FILE_NAME_SIZE, co_out_dir, FILE_NAME_SIZE, co_out_fb);
+
     for(int ia=0; ia<L2G_to.np; ++ia)
       write_a_orientation_file(L2G_to, co_out, ia);
     }
@@ -246,15 +248,14 @@ class GlobalCOValues{
 /// \param[out] co_in      filebase of CO files to be read
 /// \param[out] co_out_dir CO directory path to be written
 /// \param[out] co_out_fb  filebase of CO files to be written
-void get_options(int argc, 
+void get_options(int argc,
                  char *argv[],
                  MapInfo &from,
                  MapInfo &to,
                  char *co_in,
                  char *co_out_dir,
-                 char *co_out_fb){                  
+                 char *co_out_fb){
   if (argc < 3){
-    std::stringstream ss;
     std::cout << "How to use: gen_co_from_NP2NP [input_file_path] [CO dir/filebase]" << endl;
     std::cout << "----------------------"      << endl;
     std::cout << "input_file_path format"      << endl;
@@ -266,63 +267,61 @@ void get_options(int argc,
     std::cout << "./map.5040/case_1"           << endl;
     std::cout << "# number of partitions to"   << endl;
     std::cout << "192"                         << endl;
-    std::cout << "# filebases of map to"       << endl;                     
-    std::cout << "./map.192/case_1"            << endl;                     
+    std::cout << "# filebases of map to"       << endl;
+    std::cout << "./map.192/case_1"            << endl;
     std::cout << "# orientation out directory" << endl;
     std::cout << "./CO.192"                    << endl;
     std::cout << "# orientation out filebase"  << endl;
     std::cout << "co"                          << endl;
-    throw 1;    
+    abort();
   }
 
-  
+
   FILE *fp = fopen(argv[1], "r");
-  
+
   if(fp==NULL){
-    std::stringstream ss;
     std::cout << "Error: Cannot open file [" << argv[1] << "]." << endl;
-    throw 1;
+    abort();
   }
-  
+
   sprintf(co_in, argv[2]);
-  
+
   int err = 0;
-  
+
   // map from
   err += scan_for_valid_line(fp);
   CHECK_SCANF(fp, "%d", &from.np);
   err += scan_for_valid_line(fp);
-  CHECK_SCANF(fp, "%s", &from.filenames);  
-  
+  CHECK_SCANF(fp, "%s", &from.filenames);
+
   // map to
   err += scan_for_valid_line(fp);
   CHECK_SCANF(fp, "%d", &to.np);
-  err += scan_for_valid_line(fp);  
-  CHECK_SCANF(fp, "%s", &to.filenames);  
-  
+  err += scan_for_valid_line(fp);
+  CHECK_SCANF(fp, "%s", &to.filenames);
+
   // new CO directory path
   err += scan_for_valid_line(fp);
   CHECK_SCANF(fp, "%s", co_out_dir);
-  
-  // new CO file base 
+
+  // new CO file base
   err += scan_for_valid_line(fp);
-  CHECK_SCANF(fp, "%s", co_out_fb);  
-  
+  CHECK_SCANF(fp, "%s", co_out_fb);
+
   // print read options
   std::cout << "Map info from:" << endl;
   from.print();
   std::cout << "Map info to:" << endl;
   to.print();
   std::cout << "Read CO from: " << co_in << endl;
-  std::cout << "Write CO to: " << co_out_dir << "/" << co_out_fb<< endl;    
-    
+  std::cout << "Write CO to: " << co_out_dir << "/" << co_out_fb<< endl;
+
   if(err>0){
-    std::stringstream ss;
     std::cout << "Error: Cannot read file [" << argv[1] << "]" << endl;
-    throw 1;
-  }    
+    abort();
+  }
 }
-                        
+
 int main(int argc, char *argv[])
 {
 
@@ -331,36 +330,24 @@ int main(int argc, char *argv[])
   char co_in[FILE_NAME_SIZE];
   char co_out_dir[FILE_NAME_SIZE];
   char co_out_fb[FILE_NAME_SIZE];
-    
-  try{
-    get_options(argc, argv, mapF, mapT, co_in, co_out_dir, co_out_fb);
-  }catch(const int ii){
-    return 0;
-  }
-  
+
+  get_options(argc, argv, mapF, mapT, co_in, co_out_dir, co_out_fb);
+
   // read decomposed global node and element IDs
-  Locals2Global L2G_from, L2G_to;  
+  Locals2Global L2G_from, L2G_to;
   L2G_from.read_maps(mapF);
   L2G_to.read_maps(mapT);
 
   // object to save global crystal orientation values
   GlobalCOValues gco;
   gco.initialization(L2G_from);
-    
+
   // read orientation files
-  try{
-    gco.read_orientation_files(L2G_from, co_in);
-  }catch(const int ii){
-    return 0;
-  }
-  
+  gco.read_orientation_files(L2G_from, co_in);
+
   // write orientation files
-  try{
-    gco.write_orientation_files(L2G_to, co_out_dir, co_out_fb);
-  }catch(const int ii){
-    return 0;
-  }  
-  
+  gco.write_orientation_files(L2G_to, co_out_dir, co_out_fb);
+
   printf("All files are successfully mapped.\n");
   return(0);
 }

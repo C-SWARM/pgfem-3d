@@ -2,6 +2,7 @@
 # include "config.h"
 #endif
 
+#include "pgfem3d/BlockedRowDistribution.hpp"
 #include "PGFEM_io.h"
 #include "Psparse_ApAi.h"
 #include "allocation.h"
@@ -45,10 +46,10 @@ using namespace pgfem3d::net;
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern_ISIR(CommunicationStructure *com,
-				       const int *preSend,
-				       const int *preRecv,
-				       const int nsend,
-				       const int nrecv);
+                       const int *preSend,
+                       const int *preRecv,
+                       const int nsend,
+                       const int nrecv);
 
 static int determine_comm_pattern_ISIR(CommunicationStructure *com);
 
@@ -63,10 +64,10 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com);
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern_PWC(CommunicationStructure *com,
-				       const int *preSend,
-				       const int *preRecv,
-				       const int nsend,
-				       const int nrecv);
+                       const int *preSend,
+                       const int *preRecv,
+                       const int nsend,
+                       const int nrecv);
 
 static int determine_comm_pattern_PWC(CommunicationStructure *com);
 
@@ -83,12 +84,12 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com);
  * Side effects: Non-blocking point-to-point communication based on comm
  */
 static int communicate_number_row_col_ISIR(CommunicationStructure *com,
-					   long *NRr,
-					   long **GNRr,
-					   long **ApRr,
-					   const long *LG,
-					   const long *ap,
-					   long **AA);
+                       long *NRr,
+                       long **GNRr,
+                       long **ApRr,
+                       const long *LG,
+                       const long *ap,
+                       long **AA);
 
 /**
  * Communicate all the row/col numbers. Uses ISIR network pattern.
@@ -101,12 +102,12 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
  * Side-effects: Non-blocking pt2pt communication based on comm
  */
 static int communicate_row_info_ISIR(CommunicationStructure *com,
-				     long ***GIDRr,
-				     const long NRr,
-				     const long *ApRr,
-				     const long *ap,
-				     long **AA,
-				     long **ID);
+                     long ***GIDRr,
+                     const long NRr,
+                     const long *ApRr,
+                     const long *ap,
+                     long **AA,
+                     long **ID);
 
 /**
  * Communicate the number of rows/columns. Uses PWC network pattern.
@@ -120,12 +121,12 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
  * Side effects: Non-blocking point-to-point communication based on comm
  */
 static int communicate_number_row_col_PWC(CommunicationStructure *com,
-					   long *NRr,
-					   long **GNRr,
-					   long **ApRr,
-					   const long *LG,
-					   const long *ap,
-					   long **AA);
+                       long *NRr,
+                       long **GNRr,
+                       long **ApRr,
+                       const long *LG,
+                       const long *ap,
+                       long **AA);
 
 /**
  * Communicate all the row/col numbers. Uses PWC network pattern.
@@ -138,12 +139,12 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
  * Side-effects: Non-blocking pt2pt communication based on comm
  */
 static int communicate_row_info_PWC(CommunicationStructure *com,
-				    long ***GIDRr,
-				    const long NRr,
-				    const long *ApRr,
-				    const long *ap,
-				    long **AA,
-				    long **ID);
+                    long ***GIDRr,
+                    const long NRr,
+                    const long *ApRr,
+                    const long *ap,
+                    long **AA,
+                    long **ID);
 
 Ai_t* Psparse_ApAi (long ne,
                     long n_be,
@@ -163,9 +164,8 @@ Ai_t* Psparse_ApAi (long ne,
   FILE *out=NULL;
   long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
   long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
-  long LI1,LI2,*cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
+  long *cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
-  long *Ddof = NULL;
   Ai_t *Ai = NULL;
 
   /* pull necessary info from Communication handle */
@@ -173,9 +173,8 @@ Ai_t* Psparse_ApAi (long ne,
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   long *DomDof = com->DomDof;
-  long *GDof = &(com->GDof);
   int *Ap = com->Ap;
-  
+
   if (PFEM_DEBUG_ALL || PFEM_PRINT){
     sprintf (jmeno,"%s%d.report","ApAi_",myrank);
     if ((out = fopen(jmeno,"w")) == NULL ){
@@ -387,30 +386,25 @@ Ai_t* Psparse_ApAi (long ne,
   PGFEM_free (AA);
   dealoc1l (ap1); ap1 = NULL;
 
-  Ddof = aloc1l (nproc);                                                      //a total (global) count of the degrees of freedom
-  Ddof[0] = DomDof[0];
+  using GlobalId = std::remove_reference_t<decltype(LG[0])>;
+  using RankId = decltype(com->rank);
+  BlockedRowDistribution<GlobalId, RankId> rows(com->nproc, com->DomDof);
+  const auto& GDof = com->GDof = rows.min(myrank);
 
-  for (i=1;i<nproc;i++)                                                       //Ddof is size nproc
-    Ddof[i] = Ddof[i-1] + DomDof[i];
-
-  if (myrank == 0)
-    *GDof = 0;
-  else
-    *GDof = Ddof[myrank-1];
   GL = aloc1l (DomDof[myrank]);
 
   /* Sort Global Dof */
   for (i=0;i<DomDof[myrank];i++){
     for (j=0;j<ndofd;j++){
-      if (i == LG[j] - *GDof) {
+      if (i == LG[j] - GDof) {
         //assert(0 <= ap[j] && (pow(2,31)-1) >= ap[j]);                             //ksaha
         Ap[i] = ap[j];                                                              //manually sort ap into Ap
         GL[i] = comm->GL[i] = j;                                                    //also global to local
         break;
       }
-      if (i != LG[j] - *GDof && j == ndofd - 1 && GL[i] == 0){
+      if (i != LG[j] - GDof && j == ndofd - 1 && GL[i] == 0){
         PGFEM_printf("There is no local mapping for "
-                     "global id %ld on [%d]!\n",i+*GDof,myrank);
+                     "global id %ld on [%d]!\n",i+GDof,myrank);
       }
     }
   }
@@ -419,16 +413,10 @@ Ai_t* Psparse_ApAi (long ne,
   /* ASSEMBLE ARRAYS TO BE SENT */
   /******************************/
 
-  if (myrank == 0)
-    LI1 = 0;
-  else
-    LI1 = Ddof[myrank-1];
-  LI2 = Ddof[myrank] - 1;
-
-  for (i=0;i<ndofd;i++){/* Number of rows per domain to be sent (Nrs)*/     //loop over domain dof
-    if (LI1 <= LG[i] && LG[i] <= LI2)                                       //if this dof belongs here,
-      continue;                                                             //ignore it
-    else Nrs++;                                                             //else add it to the counter
+  for (i=0;i<ndofd;i++){/* Number of rows per domain to be sent (Nrs)*/
+    if (!rows.owns(myrank, LG[i])) {
+      Nrs++;
+    }
   }
 
   if(Nrs > 0){
@@ -436,31 +424,18 @@ Ai_t* Psparse_ApAi (long ne,
                                                                             //were not part of this domain
     Nrs = 0;
     for (i=0;i<ndofd;i++){/* Local row indexes on domain to be sent */      //same as before, but this time
-      if (LI1 <= LG[i] && LG[i] <= LI2)                                     //write down which nodes are not
-        continue;                                                                 //in this domain
-      else {ap1[Nrs] = i; Nrs++;}
+      if (!rows.owns(myrank, LG[i])) {
+        ap1[Nrs] = i;
+        Nrs++;
+      }
     }
   }
 
-
-  //This is it
-
-  /* Determine where to send */
-  for (j=0;j<nproc;j++){                                                      //loop over processes
-    k = 1;
-    if (j == myrank)                                                          //if this is the current process, theres nothing to be sent
-      continue;
-    if (j == 0)                                                               //(first) process is special
-      LI1 = 0;
-    else
-      LI1 = Ddof[j-1];                                                        //using the prefix sum, we can categorize which
-    LI2 = Ddof[j] - 1;                                                        //nproc a particular dof is in.
-    for (i=0;i<Nrs;i++){                                                      //loop over all rows to be sent
-      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {                           //if this dof belongs to proc j,
-        comm->S[j] = k;                                                       //write down how many things will be sent there
-        k++;
-      }
-    }
+  /* Determine how much to send to each rank */
+  for (i=0;i<Nrs;i++){
+    auto j = rows.owner(LG[ap1[i]]);
+    assert(j != myrank);
+    comm->S[j]++;
   }
 
   AA = PGFEM_calloc (long*, nproc);
@@ -484,20 +459,14 @@ Ai_t* Psparse_ApAi (long ne,
   null_quit((void*) comm->SLID,0);
 
   /* Determine what GID/LID to send */
-  for (j=0;j<nproc;j++){                                                      //loop over nproc
-    k = 0;
-    if (j == myrank)
-      continue;
-    if (j == 0)
-      LI1 = 0;
-    else
-      LI1 = Ddof[j-1];
-    LI2 = Ddof[j] - 1;
+  {
+    std::vector<GlobalId> ks(nproc);              // insertion point into vectors
     for (i=0;i<Nrs;i++){
-      if (LI1 <= LG[ap1[i]] && LG[ap1[i]] <= LI2) {
-        AA[j][k] = comm->SLID[j][k] = ap1[i];                                       //same as before, but this time fill in
-        k++;                                                                        //the local ID of communicated nodes
-      }
+      auto j = rows.owner(LG[ap1[i]]);
+      assert(j != myrank);
+      auto k = ks[j]++;
+      assert(k < comm->S[j]);
+      AA[j][k] = comm->SLID[j][k] = ap1[i];
     }
   }
 
@@ -509,38 +478,38 @@ Ai_t* Psparse_ApAi (long ne,
       determine_comm_pattern_ISIR(com);
     else
       determine_comm_pattern_ISIR(com, preSend, preRecv, nsend, nrecv);
-    
+
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_ISIR(com,&NRr,&GNRr,&ApRr,
-				    LG,ap,AA);
-    
+                    LG,ap,AA);
+
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_ISIR(com,&GIDRr,NRr,ApRr,
-			      ap,AA,ID);
+                  ap,AA,ID);
     break;
   case NET_PWC:
     if (com->hints == NULL)                                          //checks if comm hints weren't provided
       determine_comm_pattern_PWC(com);
     else
       determine_comm_pattern_PWC(com, preSend, preRecv, nsend, nrecv);
-    
+
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_PWC(com,&NRr,&GNRr,&ApRr,
-				    LG,ap,AA);
-    
+                    LG,ap,AA);
+
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_PWC(com,&GIDRr,NRr,ApRr,
-			      ap,AA,ID);
+                  ap,AA,ID);
     break;
   default:
     PGFEM_printerr("[%d]ERROR: Unknown network type", com->rank);
     PGFEM_Abort();
   }
-    
+
   /****************************/
   /* END SEND ALL INFORMATION */
   /****************************/
@@ -561,12 +530,12 @@ Ai_t* Psparse_ApAi (long ne,
 
   /* Add recieved rows to Ap and ID */
   for (i=0;i<NRr;i++){
-    II = ApRr[i] + Ap[GNRr[i]-*GDof];
+    II = ApRr[i] + Ap[GNRr[i]-GDof];
 
     send = aloc1l (II);
     JJ = 0;
-    for (j=0;j<Ap[GNRr[i]-*GDof];j++) {
-      send[j] = ID[GL[GNRr[i]-*GDof]][j];
+    for (j=0;j<Ap[GNRr[i]-GDof];j++) {
+      send[j] = ID[GL[GNRr[i]-GDof]][j];
       JJ++;
     }
 
@@ -581,20 +550,20 @@ Ai_t* Psparse_ApAi (long ne,
     JJ = 1; for (j=0;j<II-1;j++) if (send[j] < send[j+1]) JJ++;
 
     //assert(0 <= JJ && (pow(2,31)-1) >= JJ);                            //ksaha
-    Ap[GNRr[i]-*GDof] = JJ;
+    Ap[GNRr[i]-GDof] = JJ;
 
-    PGFEM_free (ID[GL[GNRr[i]-*GDof]]);
-    ID[GL[GNRr[i]-*GDof]]= PGFEM_calloc (long, JJ);
+    PGFEM_free (ID[GL[GNRr[i]-GDof]]);
+    ID[GL[GNRr[i]-GDof]]= PGFEM_calloc (long, JJ);
 
     JJ = 0;
     for (j=0;j<II-1;j++) {
       if (send[j] < send[j+1]) {
-        ID[GL[GNRr[i]-*GDof]][JJ] = send[j];
+        ID[GL[GNRr[i]-GDof]][JJ] = send[j];
         JJ++;
       }
     }
 
-    ID[GL[GNRr[i]-*GDof]][JJ] = send[II-1];
+    ID[GL[GNRr[i]-GDof]][JJ] = send[II-1];
 
     dealoc1l (send);
   }/* end i <NRr */
@@ -718,7 +687,6 @@ Ai_t* Psparse_ApAi (long ne,
   dealoc1l (nod);
   dealoc1l (ap);
   dealoc1l (LG);
-  dealoc1l (Ddof);
   dealoc1l (ap1);
   dealoc1l (GL);
   dealoc1l (GNRr);
@@ -730,13 +698,13 @@ Ai_t* Psparse_ApAi (long ne,
 
 //If comm hints were provided
 static int determine_comm_pattern_ISIR(CommunicationStructure *com,
-				       const int *preSend,
-				       const int *preRecv,
-				       const int nsend,
-				       const int nrecv)
+                       const int *preSend,
+                       const int *preRecv,
+                       const int nsend,
+                       const int nrecv)
 {
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   int err = 0;
   int myrank = com->rank;
   int nproc = com->nproc;
@@ -747,7 +715,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
   Request *t_req_r = NULL;
 
   SparseComm *comm = com->spc;
-  
+
   if(nproc > 1){
     net->allocStatusArray(nproc-1, &t_sta_s);
     net->allocRequestArray(nproc-1, &t_req_s);
@@ -760,7 +728,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
     recvFrom = preSend[i];
     try {
       net->irecv(&comm->R[recvFrom], 1, NET_DT_LONG, recvFrom, NET_ANY_TAG,  //put received info in comm->R
-		      com->comm, t_req_r+i);                              //save info of proc from which things came
+              com->comm, t_req_r+i);                              //save info of proc from which things came
     } catch(...) {
       err++;
     }
@@ -774,7 +742,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
     int sendTo = preRecv[i];
     try {
       net->isend(&comm->S[sendTo], 1, NET_DT_LONG, sendTo, myrank,
-		      com->comm, &t_req_s[i]);                                         //t_req_s is required for each non-blocking call
+              com->comm, &t_req_s[i]);                                         //t_req_s is required for each non-blocking call
     } catch(...) {
       err++;
     }
@@ -806,12 +774,12 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
     } catch(...) {
       err++;
     }
-      
+
     int source = t_sta_r.NET_SOURCE;
 
     if(comm->R[source]==0)
       comm->Nr--;                                                               //write down how many non-empty letters I received
-    
+
     t_count++;
   }
   delete [] t_req_r;
@@ -853,7 +821,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   Status t_sta_r;
   Status *t_sta_s = NULL;
   Request *t_req_s = NULL;
@@ -871,7 +839,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
       continue;
     try {
       net->irecv(&comm->R[i], 1, NET_DT_LONG, i, NET_ANY_TAG,
-		 com->comm, &t_req_r[t_count]);
+         com->comm, &t_req_r[t_count]);
     } catch(...) {
       err++;
     }
@@ -883,16 +851,16 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
   for (int i = 0; i < nproc; i++){
     if (i != myrank){
       try {
-	net->isend(&comm->S[i], 1, NET_DT_LONG, i, myrank,
-		   com->comm, &t_req_s[t_count]);
+    net->isend(&comm->S[i], 1, NET_DT_LONG, i, myrank,
+           com->comm, &t_req_s[t_count]);
       } catch(...) {
-	err++;
+    err++;
       }
       t_count++;
       if(comm->S[i] > 0) comm->Ns++;
     }
   }
-  
+
   /* Allocate send space and determine the reduced list of procs to
      send to. */
   {
@@ -943,19 +911,19 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
   } catch(...) {
     err++;
   }
-  
+
   /* deallocate */
   delete [] t_req_s;
   delete [] t_sta_s;
-  
+
   return err;
 }
 
 static int determine_comm_pattern_PWC(CommunicationStructure *com,
-				       const int *preSend,
-				       const int *preRecv,
-				       const int nsend,
-				       const int nrecv)
+                       const int *preSend,
+                       const int *preRecv,
+                       const int nsend,
+                       const int nrecv)
 {
   int myrank = com->rank;
   int nproc = com->nproc;
@@ -964,7 +932,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
   CID lid = 0xcafebabe;
 
   comm->Ns = nrecv;
-  
+
   /* send the local S value to each pre-determined rank */
   for (int p = 0; p < nrecv; p++) {
     int sendTo = preRecv[p];
@@ -972,7 +940,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
     net->pwc(sendTo, 0, 0, 0, lid, rid);
     if (comm->S[sendTo] == 0) comm->Ns--;
   }
-  
+
   /* Allocate send space and determine the reduced list of procs to
      send to. */
   {
@@ -989,7 +957,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
 
   /* wait for local PWC completions from above */
   net->wait_n_id(nrecv, lid);
-  
+
   /* Process received message as they arrive */
   t_count = 0;
   comm->Nr = nsend;
@@ -1003,7 +971,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
       /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (comm->R[p] == 0){
-	comm->Nr--;
+    comm->Nr--;
       }
       t_count++;
     }
@@ -1022,7 +990,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
     if (i != myrank && comm->R[i] > 0)
       comm->Nrr[t_count++] = i;
   }
-  
+
   net->barrier(com->comm);
 
   return 0;
@@ -1035,7 +1003,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   CID lid = 0xcafebabe;
-  
+
   /* send the local S[p] value to each associated rank */
   for (int p = 0; p < nproc; p++) {
     if (p == myrank) continue;
@@ -1043,7 +1011,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
     net->pwc(p, 0, 0, 0, lid, rid);
     if(comm->S[p] > 0) comm->Ns++;
   }
-  
+
   /* Allocate send space and determine the reduced list of procs to
      send to. */
   {
@@ -1060,7 +1028,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
 
   /* wait for local PWC completions from above */
   net->wait_n_id(nproc-1, lid);
-  
+
   /* Process received message as they arrive */
   t_count = 0;
   while (t_count < nproc-1) {
@@ -1073,7 +1041,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
       /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (p != myrank && comm->R[p] > 0){
-	comm->Nr++;
+    comm->Nr++;
       }
       t_count++;
     }
@@ -1094,24 +1062,24 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
   }
 
   net->barrier(com->comm);
-  
+
   return 0;
 }
 
 static int communicate_number_row_col_ISIR(CommunicationStructure *com,
-					   long *NRr,
-					   long **GNRr,
-					   long **ApRr,
-					   const long *LG,
-					   const long *ap,
-					   long **AA)
+                       long *NRr,
+                       long **GNRr,
+                       long **ApRr,
+                       const long *LG,
+                       const long *ap,
+                       long **AA)
 {
   int err = 0;
   int myrank = com->rank;
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   /* How many numbers I will send */
   for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to
     comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
@@ -1135,7 +1103,7 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
     if (comm->Ns == 0) KK = 1; else KK = comm->Ns;                              //if number to send is 0 then allocate 1 space
     net->allocStatusArray(KK, &sta_s);
     net->allocRequestArray(KK, &req_s);
-    
+
     if (comm->Nr == 0) KK = 1; else KK = comm->Nr;                              //if number to receive is 0 then allocate 1 space
     net->allocStatusArray(KK, &sta_r);
     net->allocRequestArray(KK, &req_r);
@@ -1155,7 +1123,7 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
 
     try {
       net->irecv(RECI[i], n_rec, NET_DT_LONG, r_idx,                       //post mailboxes
-		      NET_ANY_TAG, com->comm, &req_r[i]);
+              NET_ANY_TAG, com->comm, &req_r[i]);
     } catch(...) {
       err++;
     }
@@ -1215,7 +1183,7 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
   } catch(...) {
     err++;
   }
-  
+
   /* Unpack it */
   int II = 0;
   for (int i = 0; i < comm->Nr; i++){
@@ -1239,19 +1207,19 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
 }
 
 static int communicate_number_row_col_PWC(CommunicationStructure *com,
-					   long *NRr,
-					   long **GNRr,
-					   long **ApRr,
-					   const long *LG,
-					   const long *ap,
-					   long **AA)
+                       long *NRr,
+                       long **GNRr,
+                       long **ApRr,
+                       const long *LG,
+                       const long *ap,
+                       long **AA)
 {
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   Buffer rbuf, sbuf, lbuf;
   CID lid = 0xcafebabe;
-  
+
   /* How many numbers I will send */
   for (int i = 0; i < comm->Ns; i++){                                           //loop over number of procs to send to
     comm->AS[comm->Nss[i]] = 2*comm->S[comm->Nss[i]];                           //number to send was in comm->S
@@ -1277,9 +1245,9 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     r_size += comm->AR[r_idx];
   }
   rbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, r_size,
-							    net, &rbuf.key));
+                                net, &rbuf.key));
   rbuf.size = sizeof(long)*r_size;
-  
+
   /* Allocate and set rbuffer offsets */
   Buffer *rbuffers = PGFEM_calloc_pin (Buffer, comm->Nr, net, &lbuf.key);
   int n_rec_offset = 0;
@@ -1308,7 +1276,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   }
 
   net->wait_n_id(comm->Nr, lid);
-  
+
   /* First find out how much send space we need */
   size_t s_size = 0;
   for (int i = 0; i < comm->Ns; i++) {
@@ -1316,13 +1284,13 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     s_size += comm->AS[s_idx];
   }
   sbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, s_size,
-							    net, &sbuf.key));
+                                net, &sbuf.key));
   sbuf.size = sizeof(long)*s_size;
 
   /* Wait until we get all remote metadata from our peers */
   net->probe_n(comm->Ns);
   net->barrier(com->comm);
-  
+
   /* Post sends */
   Buffer *sbuffers = PGFEM_calloc (Buffer, comm->Ns);
   int n_send_offset = 0;
@@ -1335,7 +1303,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     sbuffers[i].size = sizeof(long)*n_send;
     sbuffers[i].key = sbuf.key;
     n_send_offset += sizeof(long)*n_send;
-    
+
     /* populate send buffer */
     for (int j = 0; j < comm->S[s_idx]; j++){
       SEND[i][j] = LG[AA[s_idx][j]]; /* global? row id */                       //write letters
@@ -1344,7 +1312,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 
     CID rid = (CID)n_send;
     net->pwc(s_idx, sbuffers[i].size, &sbuffers[i],
-	     &net->getbuffer()[s_idx], lid, rid);
+         &net->getbuffer()[s_idx], lid, rid);
   }
 
   /* Compute the number of rows to receive */
@@ -1352,7 +1320,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     long n_rows_recv = 0;
     for (int i = 0; i < comm->Nr;i++)
       n_rows_recv += comm->R[comm->Nrr[i]];
-    
+
     *NRr = n_rows_recv;
     *GNRr = aloc1l (n_rows_recv);
     *ApRr = aloc1l (n_rows_recv);
@@ -1362,7 +1330,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
      propagating this fix is not trivial */
   comm->RGID = PGFEM_calloc (long*, nproc);
   comm->RAp = PGFEM_calloc (long*, nproc);
-  
+
   for (int i = 0; i < comm->Nr; i++) {
     int KK = comm->Nrr[i];
     comm->RGID[KK] = PGFEM_calloc (long, comm->R[KK]);
@@ -1373,7 +1341,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
   net->wait_n_id(comm->Ns, lid);
   net->probe_n(comm->Nr);
   net->barrier(com->comm);
-  
+
   /* Unpack it */
   int II = 0;
   for (int i = 0; i < comm->Nr; i++){
@@ -1384,7 +1352,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     }
     II += comm->R[KK];
   }
-  
+
   /* Deallocate */
   net->unpin(reinterpret_cast<void *> (rbuffers), sizeof(Buffer)*comm->Nr);
   net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
@@ -1401,19 +1369,19 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 }
 
 static int communicate_row_info_ISIR(CommunicationStructure *com,
-				    long ***GIDRr,
-				    const long NRr,
-				    const long *ApRr,
-				    const long *ap,
-				    long **AA,
-				    long **ID)
+                    long ***GIDRr,
+                    const long NRr,
+                    const long *ApRr,
+                    const long *ap,
+                    long **AA,
+                    long **ID)
 {
   int err = 0;
   int myrank = com->rank;
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   Status *sta_s = NULL;
   Status *sta_r = NULL;
   Request *req_s = NULL;
@@ -1440,7 +1408,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     int r_idx = comm->Nrr[i];
     try {
       net->irecv(&comm->AR[r_idx], 1 ,NET_DT_LONG,
-		 r_idx, NET_ANY_TAG, com->comm, &req_r[i]);
+         r_idx, NET_ANY_TAG, com->comm, &req_r[i]);
     } catch (...) {
       err++;
     }
@@ -1468,7 +1436,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     int s_idx = comm->Nss[i];
     try {
       net->isend(&comm->AS[s_idx], 1 ,NET_DT_LONG,
-		 s_idx, myrank, com->comm, &req_s[i]);
+         s_idx, myrank, com->comm, &req_s[i]);
     } catch(...) {
       err++;
     }
@@ -1486,7 +1454,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
   } catch(...) {
     err++;
   }
-  
+
   /* Allocate recieve buffer */
   long **RECI = PGFEM_calloc (long*, nproc);
   for (int i = 0; i < nproc; i++) {
@@ -1523,12 +1491,12 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
   for (int i = 0; i < comm->Nr; i++){
     int KK = comm->Nrr[i];
     net->irecv(RECI[KK], comm->AR[KK], NET_DT_LONG, KK,
-	       NET_ANY_TAG, com->comm, &req_r[i]);
+           NET_ANY_TAG, com->comm, &req_r[i]);
   }
-  
+
   for (int i = 0; i < comm->Ns; i++){
     int KK = comm->Nss[i];
-    
+
     int II = 0;
     for (int j = 0; j < comm->S[KK]; j++){
       for (int k = 0; k < ap[AA[KK][j]]; k++){
@@ -1538,8 +1506,8 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     }
 
     net->isend(comm->SGRId[KK], comm->AS[KK], NET_DT_LONG, KK,
-	       myrank, com->comm, &req_s[i]);
-    
+           myrank, com->comm, &req_s[i]);
+
   }/* end i < comm->Ns */
 
   /****************/
@@ -1592,12 +1560,12 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
 }
 
 static int communicate_row_info_PWC(CommunicationStructure *com,
-				     long ***GIDRr,
-				     const long NRr,
-				     const long *ApRr,
-				     const long *ap,
-				     long **AA,
-				     long **ID)
+                     long ***GIDRr,
+                     const long NRr,
+                     const long *ApRr,
+                     const long *ap,
+                     long **AA,
+                     long **ID)
 {
   int myrank = com->rank;
   int nproc = com->nproc;
@@ -1609,7 +1577,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   /* clear the number of communication */
   memset(comm->AS,0,nproc*sizeof(long));
   memset(comm->AR,0,nproc*sizeof(long));
-  
+
   /* Allocate and compute quantity information to send */
   comm->SAp = PGFEM_calloc (long*, nproc);
   for (int i = 0; i < comm->Ns; i++) {
@@ -1626,7 +1594,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
       comm->AS[i] = ncols;
     }
   }
-  
+
   /* Send allocation information */
   for (int i = 0; i < comm->Ns; i++){
     int s_idx = comm->Nss[i];
@@ -1642,10 +1610,10 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     sbuffers[KK].addr = reinterpret_cast<uintptr_t> (comm->SGRId[KK]);
     sbuffers[KK].size = sizeof(long)*comm->AS[KK];
   }
-  
+
   /* wait for local PWC completions from above */
   net->wait_n_id(comm->Ns, lid);
- 
+
   int t_count = 0;
   while (t_count < comm->Nr) {
     int flag;
@@ -1684,19 +1652,19 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
     rbuffers[i].key = rbuf.key;
     n_rec_offset += sizeof(long)*JJ;
   }
-  
+
   net->barrier(com->comm);
 
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-	net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+    net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* Send data with pwc */
   for (int i = 0; i < comm->Ns; i++){
     int KK = comm->Nss[i];
-    
+
     int II = 0;
     for (int j = 0; j < comm->S[KK]; j++){
       for (int k = 0; k < ap[AA[KK][j]]; k++){
@@ -1758,7 +1726,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   }
 
   net->barrier(com->comm);
-  
+
   net->unpin(reinterpret_cast<void *> (rbuf.addr), rbuf.size);
 
   dealoc1l((void*)rbuf.addr);
