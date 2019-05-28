@@ -103,7 +103,7 @@ void test_crystal_plasticity_single_crystal(void)
   elast.construct_elasticity(&mat_e, true);
 
   // set variables for integration
-  ttl::Tensor<2,DIM_3,double> pFn,pFnp1,pFnp1_I,eFnp1,Fnm1,Fn,Fnp1 = {},sigma,PK2dev,sigma_dev;
+  ttl::Tensor<2,DIM_3,double> pFn,pFnp1,pFnp1_I,eFnp1,Fnm1,Fn,Fnp1 = {};
 
   pFn   = ttl::identity(i,j);
   pFnp1 = ttl::identity(i,j);
@@ -120,26 +120,26 @@ void test_crystal_plasticity_single_crystal(void)
   ttl::Tensor<2,DIM_3,double*> PK2(elast.S);
 
   FILE *fp = fopen("single_crystal_results.txt", "w");
-  
+
   double hF[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
 
   GcmCpIntegrator integrator;
-  
+
   integrator.mat         = &mat;
   integrator.elasticity  = &elast;
-  integrator.solver_info = &solver_info; 
-    
+  integrator.solver_info = &solver_info;
+
   integrator.set_tensors(Fnp1.data,
                          Fn.data,
                          Fnm1.data,
                          pFnp1.data,
                          pFn.data,
-                         hF,hF); 
+                         hF,hF);
 
   integrator.gnp1   = &g_np1;
   integrator.lambda = &lambda;
   integrator.gn     = g_np1 = mat_p.g0;
-  
+
   for(int a = 1; a<=1000; a++)
   {
     lambda = 0.0;
@@ -190,10 +190,10 @@ int main(int argc,char *argv[])
   }
   set_default_options(&options);
   re_parse_command_line(myrank,2,argc,argv,&options);
-  
+
   // Create the desired network
   Network *net = Network::Create(options);
-  
+
   CommunicationStructure *com = new CommunicationStructure();
   com->rank = myrank;
   com->nproc = nproc;
@@ -204,7 +204,7 @@ int main(int argc,char *argv[])
   char processor_name[NET_MAX_PROCESSOR_NAME];
   int namelen = 0;
   boot->get_processor_name(processor_name, &namelen);
-  
+
   PGFEM_initialize_io(NULL,NULL);
 
   long nn = 0;
@@ -238,7 +238,7 @@ int main(int argc,char *argv[])
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
                            &nle_s,&zele_s,&nle_v,&zele_v,&fv_ndofn,
-			   physicsno,&ndim,NULL);
+               physicsno,&ndim,NULL);
   if(in_err){
     PGFEM_printerr("[%d]ERROR: incorrectly formatted input file!\n",
                    myrank);
@@ -311,7 +311,7 @@ int main(int argc,char *argv[])
   double dt = 0.1;
 
   double G_gn = 0.0;
-  Tensor<2, 3, double> I,PK2,sigma,Feff,Eeff,eFeff,E,PK2dev,sigma_dev;
+  Tensor<2, 3, double> I,PK2,sigma,Feff,Eeff,eFeff,PK2dev,sigma_dev;
   I = identity(i,j);
 
   double Err_of_stress = 0.0;
