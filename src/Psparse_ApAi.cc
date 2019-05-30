@@ -169,12 +169,47 @@ static void countDof(Elements&& elements,
   std::vector<long> lids;
   for (auto&& e : elements) {
     e.forEachDof(pid, ndofn, nodes, bounding, [&](auto lid, auto) {
-      if (lid > 0) lids.push_back(lid - 1);
+      if (lid > 0) {
+        lids.push_back(lid - 1);
+      }
     });
     for (auto lid : lids) {
       ncols[lid] += lids.size();
     }
     lids.resize(0);
+  }
+}
+
+template <class Elements>
+static void mapDof(Elements&& elements,
+                   long pid,
+                   long ndofn,
+                   const Node* nodes,
+                   const BoundingElement* bounding,
+                   long **AA,
+                   std::vector<long>& LG,
+                   std::vector<long>& ap)
+{
+  std::vector<long> lids;
+  std::vector<long> gids;
+  for (auto&& e : elements) {
+    e.forEachDof(pid, ndofn, nodes, bounding, [&](auto lid, auto gid) {
+      if (lid > 0) {
+        lids.push_back(lid - 1);
+        gids.push_back(gid - 1);
+        LG[lid - 1] = gid - 1;
+      }
+    });
+
+    for (auto lid : lids) {
+      for (auto gid : gids) {
+        if (gid < 0) continue;
+        AA[lid][ap[lid]++] = gid;
+      }
+    }
+
+    lids.resize(0);
+    gids.resize(0);
   }
 }
 
@@ -220,7 +255,7 @@ Ai_t* Psparse_ApAi (long ne,
 
   char jmeno[200];
   FILE *out=NULL;
-  long i,j,k,II,JJ,nne,ndofe;
+  long i,j,k,II,JJ;
   long **AA=NULL,**ID=NULL,Nrs=0;
   long ndofc = ndofn;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
@@ -251,9 +286,6 @@ Ai_t* Psparse_ApAi (long ne,
   std::vector<long> cncL(30);                   //
   std::vector<long> cncG(30);                   //
   std::vector<long> nodc(10);                   //
-  std::vector<long> ap(ndofd);                  //used in multiple places
-  std::vector<long> ap1(ndofd);                 //used in multiple places
-  std::vector<long> LG(ndofd);                  //local to global
 
   int nsend = 0;
   int nrecv = 0;
@@ -288,69 +320,16 @@ Ai_t* Psparse_ApAi (long ne,
     AA[i]= PGFEM_calloc (long, ncols[i]);                         //AA is ndofd*ap large
   null_quit((void*) AA,0);
 
-  for (i=0;i<ne;i++){/* List of ID number for Aij */                          // loop over elements in one domain
-    /* Number of element nodes */
-    nne = elem[i].toe;                                                        //How many nodes each element is associated with
-    /* Nodes on element */
-    elemnodes (i,nne,nod.data(),elem);                                               //fills nod, an array which contains the ids of the nodes here
-    /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod.data(),node,b_elems,&elem[i],ndofn);
-    /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnL.data(),mp_id); //get local ids for degrees of freedom
-    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnG.data(),mp_id); //get global ids for degrees of freedom
-
-
-    /*
-     * This loop starts the main Aij matrix. It creates a matrix which is
-     * (degrees of freedom for element n)*(degrees of freedom for element n)*(number of elements?) large.
-     * Also where ap1 (addresses for the columns) is created.
-     * This matrix is filled densely thanks to ap1. Once a row has a value in it, ap1, makes AA
-     * go to the next row.
-     */
-    for (j=0;j<ndofe;j++){/* row */
-      II = cnL[j]-1;                                                          //II is the address  (dof ID) for this row (-1). 2 purposes:
-      if (II < 0)  continue;                                                  //1.by using the ID, we only have 1 entry per column for this element
-      LG[II] = cnG[j]-1;                                                      //2.if it is negative (prescribed), skip it.
-      for (k=0;k<ndofe;k++){/* column */                                      //else for each element-friend that also belongs here
-        JJ = cnG[k]-1;                                                        //set JJ to the global dof id - 1
-        if (JJ < 0)  continue;
-        AA[II][ap1[II]] = JJ;                                                 //fills the AA matrix with id's
-        ap1[II]++;                                                            //count how many things have been put in this row
-      }
-    }
-  }/* end i < ne */
-
-
-  /* COHESIVE ELEMENTS */
-  if (cohesive == 1){
-    for (i=0;i<nce;i++){
-
-      ndofe = coel[i].toe*ndofc;
-      for (j=0;j<coel[i].toe;j++)
-        nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc.data(),node,cncL.data(),mp_id);
-      get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nodc.data(),node,cncG.data(),mp_id);
-
-      for (j=0;j<ndofe;j++){/* row */
-        II = cncL[j]-1;
-        if (II < 0)  continue;
-        LG[II] = cncG[j]-1;
-        for (k=0;k<ndofe;k++){/* column */
-          JJ = cncG[k]-1;
-          if (JJ < 0)  continue;
-          AA[II][ap1[II]] = JJ;
-          ap1[II]++;
-        }
-      }
-    }/* end i < nce */
-  }/* end coh == 1 */
+  std::vector<long> ap1(ndofd);
+  std::vector<long> LG(ndofd);
+  mapDof(make_range(elem, ne),  mp_id, ndofn, node, b_elems, AA, LG, ap1);
+  mapDof(make_range(coel, nce), mp_id, ndofn, node, b_elems, AA, LG, ap1);
 
   for (k=0;k<ndofd;k++){/* Sort list of IDs for Aij */
-    ap[k] = 0; /* null ap */                                                  //also reset ap (optimization combined for-loops)
     qsort (AA[k], ap1[k], sizeof(long*), compare_long);                       // sort each row(column?) of (Aij?) with respect to the global dof_ids
   }
 
-  ap[0] = 0;
+  std::vector<long> ap(ndofd);
   for (k=0;k<ndofd;k++){ /* Number of non-zeros in rows */                    //loop over max degrees of freedom
     comm->LG[k] = LG[k];                                                      //move degree of freedom id's to comm
     for (j=0;j<ap1[k]-1;j++)                                                  //loop over number of dofs
