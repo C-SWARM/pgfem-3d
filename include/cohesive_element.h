@@ -50,6 +50,41 @@ struct COEL {
   /** internal cohesive state variables */
   int nvar;
   double **vars; /* variables at each ip */
+
+  enum Space : bool {
+    LOCAL  = false,
+    GLOBAL = true
+  };
+
+  /// Get all the linked DOF IDs for this element.
+  ///
+  /// This only processes the linked nodes. We don't get any ids from the local
+  /// element itself. This is used for coehesive elements.
+  ///
+  /// @param      space The index space we want to access (global or local).
+  /// @param      mp_id The multiphysics id that we're dealing with.
+  /// @param      ndofn The number of degrees of freedom per node (we don't seem
+  ///                   to store this anywhere).
+  /// @param      nodes The array of nodes (we have the nod[] map to access
+  ///                   them).
+  ///
+  /// @param[out]   ids A vector filled with all of the DOF IDs for this element.
+  void getLinkedDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
+                    std::vector<long>& ids) const
+  {
+    ids.clear();
+    ids.reserve(toe * ndofn);
+    for (size_t i = 0, e = toe; i < e; ++i) {
+      for (size_t j = 0, e = ndofn; j < e; ++j) {
+        if (space == GLOBAL) {
+          ids.emplace_back(nodes[nod[i]].id_map[mp_id].Gid[j]);
+        }
+        else {
+          ids.emplace_back(nodes[nod[i]].id_map[mp_id].id[j]);
+        }
+      }
+    }
+  }
 };
 
 void destroy_coel(COEL* coel, long nce);
