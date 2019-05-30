@@ -160,16 +160,19 @@ Ai_t* Psparse_ApAi (long ne,
                     const int cohesive,
                     const int mp_id)
 {
+  using GlobalId = long;
+  using RankId = decltype(com->rank);
+
   char jmeno[200];
   FILE *out=NULL;
-  long i,j,k,II,JJ,*cnL=NULL,*cnG=NULL,nne,ndofe,*nod=NULL,*ap=NULL;
-  long **AA=NULL,*ap1=NULL,**ID=NULL,*LG=NULL,Nrs=0,*GL=NULL;
-  long *cncL=NULL,*cncG=NULL,ndofc{},*nodc=NULL;
+  long i,j,k,II,JJ,nne,ndofe;
+  long **AA=NULL,**ID=NULL,Nrs=0;
+  long ndofc = 0;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   Ai_t *Ai = NULL;
 
   /* pull necessary info from Communication handle */
-  int myrank = com->rank;
+  RankId myrank = com->rank;
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
   long *DomDof = com->DomDof;
@@ -187,15 +190,15 @@ Ai_t* Psparse_ApAi (long ne,
 
   /* Alocation has to be changed for elements with more than 10 nodes
      and 30 degreess of freedom */
-  cnL = aloc1l (30);                                                          //dof_ids
-  cnG = aloc1l (30);
-  nod = aloc1l (10);                                                          //node_ids_on_elem
-  cncL = aloc1l (30);
-  cncG = aloc1l (30);
-  nodc = aloc1l (10);
-  ap = aloc1l (ndofd);                                                        //used in multiple places
-  ap1 = aloc1l (ndofd);                                                       //used in multiple places
-  LG = aloc1l (ndofd);                                                        //local to global
+  std::vector<long> cnL(30);                    //dof_ids
+  std::vector<long> cnG(30);                    //
+  std::vector<long> nod(30);                    //node_ids_on_elem
+  std::vector<long> cncL(30);                   //
+  std::vector<long> cncG(30);                   //
+  std::vector<long> nodc(10);                   //
+  std::vector<long> ap(ndofd);                  //used in multiple places
+  std::vector<long> ap1(ndofd);                 //used in multiple places
+  std::vector<long> LG(ndofd);                  //local to global
 
   int nsend = 0;
   int nrecv = 0;
@@ -221,11 +224,11 @@ Ai_t* Psparse_ApAi (long ne,
     /* Number of element nodes */
     nne = elem[i].toe;                                                        //find out how many nodes are associated with this element
     /* Nodes on element */
-    elemnodes (i,nne,nod,elem);                                               //returns the nodes of this element (array of nodes stored in nod)
+    elemnodes (i,nne,nod.data(),elem);                                               //returns the nodes of this element (array of nodes stored in nod)
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);            //get total degrees of freedom on element, put it into ndofe
+    ndofe = get_total_ndof_on_elem(nne,nod.data(),node,b_elems,&elem[i],ndofn);            //get total degrees of freedom on element, put it into ndofe
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get dof ids for element nodes, elements, and boundary elements
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnL.data(),mp_id); //get dof ids for element nodes, elements, and boundary elements
 
 
     /*
@@ -258,7 +261,7 @@ Ai_t* Psparse_ApAi (long ne,
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
         nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL,mp_id);
+      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc.data(),node,cncL.data(),mp_id);
       for (j=0;j<ndofe;j++){/* row */
         II = cncL[j]-1;
         if (II < 0)
@@ -285,12 +288,12 @@ Ai_t* Psparse_ApAi (long ne,
     /* Number of element nodes */
     nne = elem[i].toe;                                                        //How many nodes each element is associated with
     /* Nodes on element */
-    elemnodes (i,nne,nod,elem);                                               //fills nod, an array which contains the ids of the nodes here
+    elemnodes (i,nne,nod.data(),elem);                                               //fills nod, an array which contains the ids of the nodes here
     /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod,node,b_elems,&elem[i],ndofn);
+    ndofe = get_total_ndof_on_elem(nne,nod.data(),node,b_elems,&elem[i],ndofn);
     /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnL,mp_id); //get local ids for degrees of freedom
-    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod,node,b_elems,&elem[i],cnG,mp_id); //get global ids for degrees of freedom
+    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnL.data(),mp_id); //get local ids for degrees of freedom
+    get_all_dof_ids_on_elem(1,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnG.data(),mp_id); //get global ids for degrees of freedom
 
 
     /*
@@ -321,8 +324,8 @@ Ai_t* Psparse_ApAi (long ne,
       ndofe = coel[i].toe*ndofc;
       for (j=0;j<coel[i].toe;j++)
         nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc,node,cncL,mp_id);
-      get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nodc,node,cncG,mp_id);
+      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc.data(),node,cncL.data(),mp_id);
+      get_dof_ids_on_elem_nodes(1,coel[i].toe,ndofc,nodc.data(),node,cncG.data(),mp_id);
 
       for (j=0;j<ndofe;j++){/* row */
         II = cncL[j]-1;
@@ -384,14 +387,13 @@ Ai_t* Psparse_ApAi (long ne,
   for (i=0;i<ndofd;i++)
     PGFEM_free (AA[i]);
   PGFEM_free (AA);
-  dealoc1l (ap1); ap1 = NULL;
+  ap1.clear();
+  ap1.shrink_to_fit();
 
-  using GlobalId = std::remove_reference_t<decltype(LG[0])>;
-  using RankId = decltype(com->rank);
   BlockedRowDistribution<GlobalId, RankId> rows(com->nproc, com->DomDof);
   const auto& GDof = com->GDof = rows.min(myrank);
 
-  GL = aloc1l (DomDof[myrank]);
+  std::vector<long> GL(DomDof[myrank]);
 
   /* Sort Global Dof */
   for (i=0;i<DomDof[myrank];i++){
@@ -420,7 +422,7 @@ Ai_t* Psparse_ApAi (long ne,
   }
 
   if(Nrs > 0){
-    ap1 = aloc1l (Nrs);                                                     //allocate an array the size of all the dofs which
+    ap1.resize (Nrs);                                                     //allocate an array the size of all the dofs which
                                                                             //were not part of this domain
     Nrs = 0;
     for (i=0;i<ndofd;i++){/* Local row indexes on domain to be sent */      //same as before, but this time
@@ -482,12 +484,12 @@ Ai_t* Psparse_ApAi (long ne,
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_ISIR(com,&NRr,&GNRr,&ApRr,
-                                    LG,ap,AA);
+                                    LG.data(),ap.data(),AA);
 
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_ISIR(com,&GIDRr,NRr,ApRr,
-                              ap,AA,ID);
+                              ap.data(),AA,ID);
     break;
    case NET_PWC:
     if (com->hints == NULL)                                          //checks if comm hints weren't provided
@@ -498,12 +500,12 @@ Ai_t* Psparse_ApAi (long ne,
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_PWC(com,&NRr,&GNRr,&ApRr,
-                                   LG,ap,AA);
+                                   LG.data(),ap.data(),AA);
 
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_PWC(com,&GIDRr,NRr,ApRr,
-                             ap,AA,ID);
+                             ap.data(),AA,ID);
     break;
    default:
     PGFEM_printerr("[%d]ERROR: Unknown network type", com->rank);
@@ -679,16 +681,6 @@ Ai_t* Psparse_ApAi (long ne,
   dealoc2l(ID,ndofd);
   dealoc2l(GIDRr,NRr);
 
-  dealoc1l (cnL);
-  dealoc1l (cnG);
-  dealoc1l (cncL);
-  dealoc1l (cncG);
-  dealoc1l (nodc);
-  dealoc1l (nod);
-  dealoc1l (ap);
-  dealoc1l (LG);
-  dealoc1l (ap1);
-  dealoc1l (GL);
   dealoc1l (GNRr);
   dealoc1l (ApRr);
 
