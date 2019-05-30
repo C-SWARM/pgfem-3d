@@ -5,7 +5,6 @@
 #ifndef PGFEM3D_COHESIVE_ELEMENT_H
 #define PGFEM3D_COHESIVE_ELEMENT_H
 
-#include "pgfem3d/Space.hpp"
 #include "PGFEM_io.h"
 #include "cohesive_potentials.h"
 #include "data_structure.h"
@@ -52,64 +51,33 @@ struct COEL {
   int nvar;
   double **vars; /* variables at each ip */
 
-  using Space = pgfem3d::Space;
-
   /// Apply an operator for each degree of freedom.
   ///
   /// @tparam        Op The type of the operator.
   ///
-  /// @param      space The index space we want to access (global or local).
-  /// @param      mp_id The multiphysics id that we're dealing with.
+  /// @param        pid The multiphysics id that we're dealing with.
   /// @param      ndofn The number of degrees of freedom per node (we don't seem
   ///                   to store this anywhere).
   /// @param      nodes The array of nodes (we have the nod[] map to access
   ///                   them).
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachLinkedDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
-                        Op&& op) const
+  void forEachLinkedDof(int pid, size_t ndofn, const Node* nodes, Op&& op) const
   {
     for (size_t i = 0, e = toe; i < e; ++i) {
       for (size_t j = 0, e = ndofn; j < e; ++j) {
-        if (space == Space::GLOBAL) {
-          op(nodes[nod[i]].id_map[mp_id].Gid[j]);
-        }
-        else {
-          op(nodes[nod[i]].id_map[mp_id].id[j]);
-        }
+        auto lid = nodes[nod[i]].id_map[pid].id[j];
+        auto gid = nodes[nod[i]].id_map[pid].Gid[j];
+        op(lid, gid);
       }
     }
-  }
-
-  /// Get all the linked DOF IDs for this element.
-  ///
-  /// This only processes the linked nodes. We don't get any ids from the local
-  /// element itself. This is used for coehesive elements.
-  ///
-  /// @param      space The index space we want to access (global or local).
-  /// @param      mp_id The multiphysics id that we're dealing with.
-  /// @param      ndofn The number of degrees of freedom per node (we don't seem
-  ///                   to store this anywhere).
-  /// @param      nodes The array of nodes (we have the nod[] map to access
-  ///                   them).
-  ///
-  /// @param[out]   ids A vector filled with all of the DOF IDs for this element.
-  void getLinkedDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
-                    std::vector<long>& ids) const
-  {
-    ids.clear();
-    ids.reserve(toe * ndofn);
-    forEachLinkedDof(space, mp_id, ndofn, nodes, [&](auto id) {
-      ids.emplace_back(id);
-    });
   }
 
   /// Apply the function operator to each DOF ID in the linked
   ///
   /// @tparam        Op The operator type to apply (called with a node id).
   ///
-  /// @param      space The index space we want to access (global or local).
-  /// @param      mp_id The multiphysics id that we're dealing with.
+  /// @param        pid The multiphysics id that we're dealing with.
   /// @param      ndofn The number of degrees of freedom per node (we don't seem
   ///                   to store this anywhere).
   /// @param      nodes The array of nodes (we have the nod[] map to access
@@ -117,10 +85,10 @@ struct COEL {
   /// @param        bes The global array of bounding elements [unused].
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
+  void forEachDof(int pid, size_t ndofn, const Node* nodes,
                   const BoundingElement*, Op&& op) const
   {
-    forEachLinkedDof(space, mp_id, ndofn, nodes, std::forward<Op>(op));
+    forEachLinkedDof(pid, ndofn, nodes, std::forward<Op>(op));
   }
 };
 

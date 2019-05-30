@@ -3,6 +3,7 @@
 #endif
 
 #include "pgfem3d/BlockedRowDistribution.hpp"
+#include "pgfem3d/JaggedArray.hpp"
 #include "PGFEM_io.h"
 #include "Psparse_ApAi.h"
 #include "allocation.h"
@@ -146,6 +147,60 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
                                     long **AA,
                                     long **ID);
 
+/// Count the number of degrees of freedom for a set of elements.
+///
+/// @tparam    Elements A type representing the range of elements to process.
+///
+/// @param     elements The range of elements to process.
+/// @param          pid The multiphysics ID that we're processing.
+/// @param        ndofn The number of degrees of freedom in the graph node.
+/// @param        nodes The array of nodes.
+/// @param     bounding The array of bounding elements.
+///
+/// @param[out]   ncols The column count for every row.
+template <class Elements>
+static void countDof(Elements&& elements,
+                     long pid,
+                     long ndofn,
+                     const Node* nodes,
+                     const BoundingElement* bounding,
+                     std::vector<long>& ncols)
+{
+  std::vector<long> lids;
+  for (auto&& e : elements) {
+    e.forEachDof(pid, ndofn, nodes, bounding, [&](auto lid, auto) {
+      if (lid > 0) lids.push_back(lid - 1);
+    });
+    for (auto lid : lids) {
+      ncols[lid] += lids.size();
+    }
+    lids.resize(0);
+  }
+}
+
+/// Simple object provides begin/end for dynamic arrays.
+///
+/// This can be used to process a dynamically sized array using a range-based
+/// for loop.
+template <class T>
+class Range {
+ public:
+  Range(T* begin, T* end) : begin_(begin), end_(end) {
+  }
+
+  T* begin() const { return begin_; }
+  T* end() const { return end_; }
+
+ private:
+  T* begin_;
+  T* end_;
+};
+
+template <class T>
+static Range<T> make_range(T array[], size_t n) {
+  return { &array[0], &array[n] };
+}
+
 Ai_t* Psparse_ApAi (long ne,
                     long n_be,
                     long nn,
@@ -167,7 +222,7 @@ Ai_t* Psparse_ApAi (long ne,
   FILE *out=NULL;
   long i,j,k,II,JJ,nne,ndofe;
   long **AA=NULL,**ID=NULL,Nrs=0;
-  long ndofc = 0;
+  long ndofc = ndofn;
   long *send=NULL,NRr=0,*GNRr=NULL,*ApRr=NULL,**GIDRr=NULL;
   Ai_t *Ai = NULL;
 
@@ -219,69 +274,18 @@ Ai_t* Psparse_ApAi (long ne,
   comm->LG = PGFEM_calloc (long, ndofd);                       //local to global (ndofd)
   comm->GL = PGFEM_calloc (long, DomDof[myrank]);              //global to local
 
-  for (i=0;i<ne;i++){/* Number of contributions from elements to Aij */       //loop over elements
-
-    /* Number of element nodes */
-    nne = elem[i].toe;                                                        //find out how many nodes are associated with this element
-    /* Nodes on element */
-    elemnodes (i,nne,nod.data(),elem);                                               //returns the nodes of this element (array of nodes stored in nod)
-    /* Element Dof */
-    ndofe = get_total_ndof_on_elem(nne,nod.data(),node,b_elems,&elem[i],ndofn);            //get total degrees of freedom on element, put it into ndofe
-    /* Id numbers */
-    get_all_dof_ids_on_elem(0,nne,ndofe,ndofn,nod.data(),node,b_elems,&elem[i],cnL.data(),mp_id); //get dof ids for element nodes, elements, and boundary elements
-
-
-    /*
-     * This section seems to count the number of non-prescribed neighbors for each element.
-     * The sum continues across elements. Prescribed elements dont get a number (0).
-     */
-    for (j=0;j<ndofe;j++){/* row */
-      II = cnL[j]-1;
-      if (II < 0)                                                             //if this node is part of another domain (prescribed),
-        continue;                                                             //ignore it
-      for (k=0;k<ndofe;k++){/* column */                                      //else, for this degree of freedom, loop through again
-        JJ = cnL[k]-1;
-        if (JJ < 0)                                                           //and count the number of non-prescribed degrees of freedom which are in this element
-          continue;
-        ap[II]++;                                                             //add them to the domain-wide total for this node
-      }
-    }
-  }/* end i < ne */
-
-  /* COHESIVE ELEMENTS */
-  if (cohesive == 1){
-    /* ndofc = ndofn
-       I have two groups of elements and pressure dof is
-       not accounted for (in STABILIZED) in the element loop, when
-       cohesive element lives in the other domain.
-    */
-    ndofc = ndofn;
-    for (i=0;i<nce;i++){
-
-      ndofe = coel[i].toe*ndofc;
-      for (j=0;j<coel[i].toe;j++)
-        nodc[j] = coel[i].nod[j];
-      get_dof_ids_on_elem_nodes(0,coel[i].toe,ndofc,nodc.data(),node,cncL.data(),mp_id);
-      for (j=0;j<ndofe;j++){/* row */
-        II = cncL[j]-1;
-        if (II < 0)
-          continue;
-        for (k=0;k<ndofe;k++){/* column */
-          JJ = cncL[k]-1;
-          if (JJ < 0)
-            continue;
-          ap[II]++;
-        }
-      }
-    }/* end i < nce */
-  }/* end coh == 1 */
-
+  // 1. Count the number of non-prescribed elements for each row, as defined by
+  //    the element/dof graph embedded in the elem and coel arrays. This count
+  //    will be used to allocate a jagged array.
+  std::vector<long> ncols(ndofd);
+  countDof(make_range(elem, ne),  mp_id, ndofn, node, b_elems, ncols);
+  countDof(make_range(coel, nce), mp_id, ndofc, node, b_elems, ncols);
 
   //CREATE AA (Aij) matrix
 
   AA = PGFEM_calloc (long*, ndofd);
   for (i=0;i<ndofd;i++)
-    AA[i]= PGFEM_calloc (long, ap[i]);                         //AA is ndofd*ap large
+    AA[i]= PGFEM_calloc (long, ncols[i]);                         //AA is ndofd*ap large
   null_quit((void*) AA,0);
 
   for (i=0;i<ne;i++){/* List of ID number for Aij */                          // loop over elements in one domain

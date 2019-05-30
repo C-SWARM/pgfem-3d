@@ -3,7 +3,6 @@
 #ifndef PGFEM3D_ELEMENT_H
 #define PGFEM3D_ELEMENT_H
 
-#include "pgfem3d/Space.hpp"
 #include "PGFEM_io.h"
 #include "bounding_element.h"
 #include "node.h"
@@ -53,8 +52,6 @@ struct Element {
   double **L;
   long *LO;
 
-  using Space = pgfem3d::Space;
-
   /// Get the total number of degrees of freedom for this element.
   ///
   /// @param      ndofn The number of degrees of freedom per node.
@@ -74,27 +71,22 @@ struct Element {
   /// Apply the function operator to each ID in nodes as defined by the
   /// element's nod map.
   ///
-  /// @tparam     Space True if we want to use Global ids, false for local.
   /// @tparam        Op The operator type to apply (called with a node id).
   ///
-  /// @param      mp_id The multiphysics id that we're dealing with.
+  /// @param        pid The multiphysics id that we're dealing with.
   /// @param      ndofn The number of degrees of freedom per node (we don't seem
   ///                   to store this anywhere).
   /// @param      nodes The array of nodes (we have the nod[] map to access
   ///                   them).
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachLinkedDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
-                        Op&& op) const
+  void forEachLinkedDof(int pid, size_t ndofn, const Node* nodes, Op&& op) const
   {
     for (size_t i = 0, e = toe; i < e; ++i) {
       for (size_t j = 0, e = ndofn; j < e; ++j) {
-        if (space == Space::GLOBAL) {
-          op(nodes[nod[i]].id_map[mp_id].Gid[j]);
-        }
-        else {
-          op(nodes[nod[i]].id_map[mp_id].id[j]);
-        }
+        auto lid = nodes[nod[i]].id_map[pid].id[j];
+        auto gid = nodes[nod[i]].id_map[pid].Gid[j];
+        op(lid, gid);
       }
     }
   }
@@ -103,18 +95,12 @@ struct Element {
   ///
   /// @tparam        Op The operator type to apply (called with a node id).
   ///
-  /// @param      space The index space we want to access (global or local).
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachDof(Space space, Op&& op) const
+  void forEachDof(Op&& op) const
   {
     for (size_t i = 0, e = n_dofs; i < e; ++i) {
-      if (space == Space::GLOBAL) {
-        op(G_dof_ids[i]);
-      }
-      else {
-        op(L_dof_ids[i]);
-      }
+      op(L_dof_ids[i], G_dof_ids[i]);
     }
   }
 
@@ -123,21 +109,15 @@ struct Element {
   ///
   /// @tparam        Op The operator type to apply (called with a node id).
   ///
-  /// @param      space The index space we want to access (global or local).
   /// @param        bes The global array of bounding elements.
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachBoundingDof(Space space, const BoundingElement* bes, Op&& op) const
+  void forEachBoundingDof(const BoundingElement* bes, Op&& op) const
   {
     for (size_t i = 0, e = n_be; i < e; ++i) {
       auto& be = bes[be_ids[i]];
       for (size_t j = 0, e = be.n_dofs; j < e; ++j) {
-        if (space == Space::GLOBAL) {
-          op(be.G_dof_ids[j]);
-        }
-        else {
-          op(be.L_dof_ids[j]);
-        }
+        op(be.L_dof_ids[j], be.G_dof_ids[j]);
       }
     }
   }
@@ -147,8 +127,7 @@ struct Element {
   ///
   /// @tparam        Op The operator type to apply (called with a node id).
   ///
-  /// @param      space The index space we want to access (global or local).
-  /// @param      mp_id The multiphysics id that we're dealing with.
+  /// @param        pid The multiphysics id that we're dealing with.
   /// @param      ndofn The number of degrees of freedom per node (we don't seem
   ///                   to store this anywhere).
   /// @param      nodes The array of nodes (we have the nod[] map to access
@@ -156,33 +135,12 @@ struct Element {
   /// @param        bes The global array of bounding elements.
   /// @param         op The operator to apply.
   template <class Op>
-  void forEachDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
+  void forEachDof(int pid, size_t ndofn, const Node* nodes,
                   const BoundingElement* bes, Op&& op) const
   {
-    forEachLinkedDof(space, mp_id, ndofn, nodes, std::forward<Op>(op));
-    forEachDof(space, std::forward<Op>(op));
-    forEachBoundingDof(space, bes, std::forward<Op>(op));
-  }
-
-  /// Get all the DOF IDs for this element.
-  ///
-  /// @param      space The index space we want to access (global or local).
-  /// @param      mp_id The multiphysics id that we're dealing with.
-  /// @param      ndofn The number of degrees of freedom per node (we don't seem
-  ///                   to store this anywhere).
-  /// @param      nodes The array of nodes (we have the nod[] map to access
-  ///                   them).
-  /// @param        bes The global array of bounding elements.
-  ///
-  /// @param[out]   ids A vector filled with all of the DOF IDs for this element.
-  void getAllDof(Space space, int mp_id, size_t ndofn, const Node* nodes,
-                 const BoundingElement* bes, std::vector<long>& ids) const
-  {
-    ids.clear();
-    ids.reserve(getNDof(ndofn, bes));
-    forEachDof(space, mp_id, ndofn, nodes, bes, [&ids](auto i) {
-      ids.emplace_back(i);
-    });
+    forEachLinkedDof(pid, ndofn, nodes, std::forward<Op>(op));
+    forEachDof(std::forward<Op>(op));
+    forEachBoundingDof(bes, std::forward<Op>(op));
   }
 };
 
