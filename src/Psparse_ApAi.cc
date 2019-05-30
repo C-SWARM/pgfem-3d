@@ -3,7 +3,6 @@
 #endif
 
 #include "pgfem3d/BlockedRowDistribution.hpp"
-#include "pgfem3d/JaggedArray.hpp"
 #include "PGFEM_io.h"
 #include "Psparse_ApAi.h"
 #include "allocation.h"
