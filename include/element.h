@@ -3,6 +3,7 @@
 #ifndef PGFEM3D_ELEMENT_H
 #define PGFEM3D_ELEMENT_H
 
+#include "pgfem3d/Space.hpp"
 #include "PGFEM_io.h"
 #include "bounding_element.h"
 #include "node.h"
@@ -52,11 +53,7 @@ struct Element {
   double **L;
   long *LO;
 
-  /// Defines an enumeration that clients use to query different index spaces.
-  enum Space : bool {
-    LOCAL  = false,
-    GLOBAL = true
-  };
+  using Space = pgfem3d::Space;
 
   /// Get the total number of degrees of freedom for this element.
   ///
@@ -92,7 +89,7 @@ struct Element {
   {
     for (size_t i = 0, e = toe; i < e; ++i) {
       for (size_t j = 0, e = ndofn; j < e; ++j) {
-        if (space == GLOBAL) {
+        if (space == Space::GLOBAL) {
           op(nodes[nod[i]].id_map[mp_id].Gid[j]);
         }
         else {
@@ -112,7 +109,7 @@ struct Element {
   void forEachDof(Space space, Op&& op) const
   {
     for (size_t i = 0, e = n_dofs; i < e; ++i) {
-      if (space == GLOBAL) {
+      if (space == Space::GLOBAL) {
         op(G_dof_ids[i]);
       }
       else {
@@ -135,7 +132,7 @@ struct Element {
     for (size_t i = 0, e = n_be; i < e; ++i) {
       auto& be = bes[be_ids[i]];
       for (size_t j = 0, e = be.n_dofs; j < e; ++j) {
-        if (space == GLOBAL) {
+        if (space == Space::GLOBAL) {
           op(be.G_dof_ids[j]);
         }
         else {
