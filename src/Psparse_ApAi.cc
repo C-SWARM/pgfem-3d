@@ -46,10 +46,10 @@ using namespace pgfem3d::net;
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern_ISIR(CommunicationStructure *com,
-                       const int *preSend,
-                       const int *preRecv,
-                       const int nsend,
-                       const int nrecv);
+                                       const int *preSend,
+                                       const int *preRecv,
+                                       const int nsend,
+                                       const int nrecv);
 
 static int determine_comm_pattern_ISIR(CommunicationStructure *com);
 
@@ -64,10 +64,10 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com);
  * Side effects: non-blocking communication between all processes.
  */
 static int determine_comm_pattern_PWC(CommunicationStructure *com,
-                       const int *preSend,
-                       const int *preRecv,
-                       const int nsend,
-                       const int nrecv);
+                                      const int *preSend,
+                                      const int *preRecv,
+                                      const int nsend,
+                                      const int nrecv);
 
 static int determine_comm_pattern_PWC(CommunicationStructure *com);
 
@@ -84,12 +84,12 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com);
  * Side effects: Non-blocking point-to-point communication based on comm
  */
 static int communicate_number_row_col_ISIR(CommunicationStructure *com,
-                       long *NRr,
-                       long **GNRr,
-                       long **ApRr,
-                       const long *LG,
-                       const long *ap,
-                       long **AA);
+                                           long *NRr,
+                                           long **GNRr,
+                                           long **ApRr,
+                                           const long *LG,
+                                           const long *ap,
+                                           long **AA);
 
 /**
  * Communicate all the row/col numbers. Uses ISIR network pattern.
@@ -102,12 +102,12 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
  * Side-effects: Non-blocking pt2pt communication based on comm
  */
 static int communicate_row_info_ISIR(CommunicationStructure *com,
-                     long ***GIDRr,
-                     const long NRr,
-                     const long *ApRr,
-                     const long *ap,
-                     long **AA,
-                     long **ID);
+                                     long ***GIDRr,
+                                     const long NRr,
+                                     const long *ApRr,
+                                     const long *ap,
+                                     long **AA,
+                                     long **ID);
 
 /**
  * Communicate the number of rows/columns. Uses PWC network pattern.
@@ -121,12 +121,12 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
  * Side effects: Non-blocking point-to-point communication based on comm
  */
 static int communicate_number_row_col_PWC(CommunicationStructure *com,
-                       long *NRr,
-                       long **GNRr,
-                       long **ApRr,
-                       const long *LG,
-                       const long *ap,
-                       long **AA);
+                                          long *NRr,
+                                          long **GNRr,
+                                          long **ApRr,
+                                          const long *LG,
+                                          const long *ap,
+                                          long **AA);
 
 /**
  * Communicate all the row/col numbers. Uses PWC network pattern.
@@ -139,12 +139,12 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
  * Side-effects: Non-blocking pt2pt communication based on comm
  */
 static int communicate_row_info_PWC(CommunicationStructure *com,
-                    long ***GIDRr,
-                    const long NRr,
-                    const long *ApRr,
-                    const long *ap,
-                    long **AA,
-                    long **ID);
+                                    long ***GIDRr,
+                                    const long NRr,
+                                    const long *ApRr,
+                                    const long *ap,
+                                    long **AA,
+                                    long **ID);
 
 Ai_t* Psparse_ApAi (long ne,
                     long n_be,
@@ -156,7 +156,7 @@ Ai_t* Psparse_ApAi (long ne,
                     Node *node,
                     long nce,
                     COEL *coel,
-		    CommunicationStructure *com,
+                    CommunicationStructure *com,
                     const int cohesive,
                     const int mp_id)
 {
@@ -473,7 +473,7 @@ Ai_t* Psparse_ApAi (long ne,
   /* Communicate who I am communicating with
    *============================================= */
   switch(com->net->type()) {
-  case NET_ISIR:
+   case NET_ISIR:
     if (com->hints == NULL)                                          //checks if comm hints weren't provided
       determine_comm_pattern_ISIR(com);
     else
@@ -482,14 +482,14 @@ Ai_t* Psparse_ApAi (long ne,
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_ISIR(com,&NRr,&GNRr,&ApRr,
-                    LG,ap,AA);
+                                    LG,ap,AA);
 
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_ISIR(com,&GIDRr,NRr,ApRr,
-                  ap,AA,ID);
+                              ap,AA,ID);
     break;
-  case NET_PWC:
+   case NET_PWC:
     if (com->hints == NULL)                                          //checks if comm hints weren't provided
       determine_comm_pattern_PWC(com);
     else
@@ -498,14 +498,14 @@ Ai_t* Psparse_ApAi (long ne,
     /* Communicate how many rows/columns I am sending
      *============================================= */
     communicate_number_row_col_PWC(com,&NRr,&GNRr,&ApRr,
-                    LG,ap,AA);
+                                   LG,ap,AA);
 
     /* Communicate the row/column information
      *============================================= */
     communicate_row_info_PWC(com,&GIDRr,NRr,ApRr,
-                  ap,AA,ID);
+                             ap,AA,ID);
     break;
-  default:
+   default:
     PGFEM_printerr("[%d]ERROR: Unknown network type", com->rank);
     PGFEM_Abort();
   }
@@ -698,10 +698,10 @@ Ai_t* Psparse_ApAi (long ne,
 
 //If comm hints were provided
 static int determine_comm_pattern_ISIR(CommunicationStructure *com,
-                       const int *preSend,
-                       const int *preRecv,
-                       const int nsend,
-                       const int nrecv)
+                                       const int *preSend,
+                                       const int *preRecv,
+                                       const int nsend,
+                                       const int nrecv)
 {
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
 
@@ -728,7 +728,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
     recvFrom = preSend[i];
     try {
       net->irecv(&comm->R[recvFrom], 1, NET_DT_LONG, recvFrom, NET_ANY_TAG,  //put received info in comm->R
-              com->comm, t_req_r+i);                              //save info of proc from which things came
+                 com->comm, t_req_r+i);                              //save info of proc from which things came
     } catch(...) {
       err++;
     }
@@ -742,7 +742,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com,
     int sendTo = preRecv[i];
     try {
       net->isend(&comm->S[sendTo], 1, NET_DT_LONG, sendTo, myrank,
-              com->comm, &t_req_s[i]);                                         //t_req_s is required for each non-blocking call
+                 com->comm, &t_req_s[i]);                                         //t_req_s is required for each non-blocking call
     } catch(...) {
       err++;
     }
@@ -839,7 +839,7 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
       continue;
     try {
       net->irecv(&comm->R[i], 1, NET_DT_LONG, i, NET_ANY_TAG,
-         com->comm, &t_req_r[t_count]);
+                 com->comm, &t_req_r[t_count]);
     } catch(...) {
       err++;
     }
@@ -851,10 +851,10 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
   for (int i = 0; i < nproc; i++){
     if (i != myrank){
       try {
-    net->isend(&comm->S[i], 1, NET_DT_LONG, i, myrank,
-           com->comm, &t_req_s[t_count]);
+        net->isend(&comm->S[i], 1, NET_DT_LONG, i, myrank,
+                   com->comm, &t_req_s[t_count]);
       } catch(...) {
-    err++;
+        err++;
       }
       t_count++;
       if(comm->S[i] > 0) comm->Ns++;
@@ -920,10 +920,10 @@ static int determine_comm_pattern_ISIR(CommunicationStructure *com)
 }
 
 static int determine_comm_pattern_PWC(CommunicationStructure *com,
-                       const int *preSend,
-                       const int *preRecv,
-                       const int nsend,
-                       const int nrecv)
+                                      const int *preSend,
+                                      const int *preRecv,
+                                      const int nsend,
+                                      const int nrecv)
 {
   int myrank = com->rank;
   int nproc = com->nproc;
@@ -971,7 +971,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com,
       /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (comm->R[p] == 0){
-    comm->Nr--;
+        comm->Nr--;
       }
       t_count++;
     }
@@ -1041,7 +1041,7 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
       /* the long values exchanged are encoded in the PWC RIDs */
       comm->R[p] = (long)val;
       if (p != myrank && comm->R[p] > 0){
-    comm->Nr++;
+        comm->Nr++;
       }
       t_count++;
     }
@@ -1067,12 +1067,12 @@ static int determine_comm_pattern_PWC(CommunicationStructure *com)
 }
 
 static int communicate_number_row_col_ISIR(CommunicationStructure *com,
-                       long *NRr,
-                       long **GNRr,
-                       long **ApRr,
-                       const long *LG,
-                       const long *ap,
-                       long **AA)
+                                           long *NRr,
+                                           long **GNRr,
+                                           long **ApRr,
+                                           const long *LG,
+                                           const long *ap,
+                                           long **AA)
 {
   int err = 0;
   int myrank = com->rank;
@@ -1123,7 +1123,7 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
 
     try {
       net->irecv(RECI[i], n_rec, NET_DT_LONG, r_idx,                       //post mailboxes
-              NET_ANY_TAG, com->comm, &req_r[i]);
+                 NET_ANY_TAG, com->comm, &req_r[i]);
     } catch(...) {
       err++;
     }
@@ -1144,7 +1144,7 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
 
     try {
       net->isend(SEND[i], n_send, NET_DT_LONG, s_idx,                      //send letters
-                      myrank, com->comm, &req_s[i]);
+                 myrank, com->comm, &req_s[i]);
     } catch(...) {
       err++;
     }
@@ -1207,12 +1207,12 @@ static int communicate_number_row_col_ISIR(CommunicationStructure *com,
 }
 
 static int communicate_number_row_col_PWC(CommunicationStructure *com,
-                       long *NRr,
-                       long **GNRr,
-                       long **ApRr,
-                       const long *LG,
-                       const long *ap,
-                       long **AA)
+                                          long *NRr,
+                                          long **GNRr,
+                                          long **ApRr,
+                                          const long *LG,
+                                          const long *ap,
+                                          long **AA)
 {
   int nproc = com->nproc;
   SparseComm *comm = com->spc;
@@ -1245,7 +1245,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     r_size += comm->AR[r_idx];
   }
   rbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, r_size,
-                                net, &rbuf.key));
+                                                            net, &rbuf.key));
   rbuf.size = sizeof(long)*r_size;
 
   /* Allocate and set rbuffer offsets */
@@ -1284,7 +1284,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
     s_size += comm->AS[s_idx];
   }
   sbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, s_size,
-                                net, &sbuf.key));
+                                                            net, &sbuf.key));
   sbuf.size = sizeof(long)*s_size;
 
   /* Wait until we get all remote metadata from our peers */
@@ -1312,7 +1312,7 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 
     CID rid = (CID)n_send;
     net->pwc(s_idx, sbuffers[i].size, &sbuffers[i],
-         &net->getbuffer()[s_idx], lid, rid);
+             &net->getbuffer()[s_idx], lid, rid);
   }
 
   /* Compute the number of rows to receive */
@@ -1369,12 +1369,12 @@ static int communicate_number_row_col_PWC(CommunicationStructure *com,
 }
 
 static int communicate_row_info_ISIR(CommunicationStructure *com,
-                    long ***GIDRr,
-                    const long NRr,
-                    const long *ApRr,
-                    const long *ap,
-                    long **AA,
-                    long **ID)
+                                     long ***GIDRr,
+                                     const long NRr,
+                                     const long *ApRr,
+                                     const long *ap,
+                                     long **AA,
+                                     long **ID)
 {
   int err = 0;
   int myrank = com->rank;
@@ -1408,7 +1408,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     int r_idx = comm->Nrr[i];
     try {
       net->irecv(&comm->AR[r_idx], 1 ,NET_DT_LONG,
-         r_idx, NET_ANY_TAG, com->comm, &req_r[i]);
+                 r_idx, NET_ANY_TAG, com->comm, &req_r[i]);
     } catch (...) {
       err++;
     }
@@ -1436,7 +1436,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     int s_idx = comm->Nss[i];
     try {
       net->isend(&comm->AS[s_idx], 1 ,NET_DT_LONG,
-         s_idx, myrank, com->comm, &req_s[i]);
+                 s_idx, myrank, com->comm, &req_s[i]);
     } catch(...) {
       err++;
     }
@@ -1491,7 +1491,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
   for (int i = 0; i < comm->Nr; i++){
     int KK = comm->Nrr[i];
     net->irecv(RECI[KK], comm->AR[KK], NET_DT_LONG, KK,
-           NET_ANY_TAG, com->comm, &req_r[i]);
+               NET_ANY_TAG, com->comm, &req_r[i]);
   }
 
   for (int i = 0; i < comm->Ns; i++){
@@ -1506,7 +1506,7 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
     }
 
     net->isend(comm->SGRId[KK], comm->AS[KK], NET_DT_LONG, KK,
-           myrank, com->comm, &req_s[i]);
+               myrank, com->comm, &req_s[i]);
 
   }/* end i < comm->Ns */
 
@@ -1560,12 +1560,12 @@ static int communicate_row_info_ISIR(CommunicationStructure *com,
 }
 
 static int communicate_row_info_PWC(CommunicationStructure *com,
-                     long ***GIDRr,
-                     const long NRr,
-                     const long *ApRr,
-                     const long *ap,
-                     long **AA,
-                     long **ID)
+                                    long ***GIDRr,
+                                    const long NRr,
+                                    const long *ApRr,
+                                    const long *ap,
+                                    long **AA,
+                                    long **ID)
 {
   int myrank = com->rank;
   int nproc = com->nproc;
@@ -1658,7 +1658,7 @@ static int communicate_row_info_PWC(CommunicationStructure *com,
   /* Exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-    net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+                net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* Send data with pwc */
