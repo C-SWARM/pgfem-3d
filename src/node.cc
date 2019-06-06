@@ -41,17 +41,14 @@ Node* build_node_multi_physics(const long nn,
                                const int physicsno)
 {
   Node *pom = PGFEM_calloc (Node, nn);
-  for(int ia=0;ia<nn;ia++)
-  {
-    pom[ia].id_map = new NodeIDMap[physicsno];
-    for(int ib=0; ib<physicsno; ib++)
-    {
-      pom[ia].id_map[ib].id  = PGFEM_calloc (long, ndofn[ib]);
-      pom[ia].id_map[ib].Gid = PGFEM_calloc (long, ndofn[ib]);
+  for (int i = 0 ; i < nn; ++i) {
+    pom[i].id_map = new NodeIDMap[physicsno];
+    for (int j = 0; j < physicsno; ++j) {
+      pom[i].id_map[j].id  = PGFEM_calloc (long, ndofn[j]);
+      pom[i].id_map[j].Gid = PGFEM_calloc (long, ndofn[j]);
     }
   }
-
-  return (pom);
+  return pom;
 }
 
 /// destroy node array.
@@ -95,25 +92,23 @@ long read_nodes (FILE *in,
 */
 {
   int myrank = com->rank;
-
-  long Gtnn = 0;
   long tnn = nn;
-  Node *p_node = NULL;
+  for (long i = 0; i < nn; ++i) {
+    long id = 0;
+    long Gnn = 0;
+    long Dom = 0;
+    CHECK_SCANF(in,"%ld %ld %ld",&Gnn,&Dom,&id);
 
-  for (long i=0; i<nn; i++){
-    {
-      long id = 0;
-      long Gnn = 0;
-      long Dom = 0;
-      CHECK_SCANF(in,"%ld %ld %ld",&Gnn,&Dom,&id);
-      p_node = &node[id];
-      p_node->loc_id = id;
-      p_node->Gnn = Gnn;
-      p_node->Dom = Dom;
-    }
+    assert(0 <= id and id < nn);
+    assert(0 <= Dom and Dom < com->nproc);
+
+    Node *p_node = &node[id];
+    p_node->loc_id = id;
+    p_node->Gnn = Gnn;
+    p_node->Dom = Dom;
 
     /* Input file error checking */
-    if (p_node->Gnn < 0 && p_node->Dom != myrank){
+    if (p_node->Gnn < 0 && p_node->Dom != myrank) {
       PGFEM_printerr("[%d] ERROR: incorrect node domain info (node %ld)!"
                      " %s:%s:%d\n",myrank,i,__func__,__FILE__,__LINE__);
       PGFEM_Abort();
@@ -121,7 +116,8 @@ long read_nodes (FILE *in,
 
     /* If we get a global node that doesn't live on this domain,
        subtract it from tnn */
-    if ( p_node->Gnn != -1 && p_node->Dom != myrank ){
+    if (p_node->Gnn != -1 && p_node->Dom != myrank) {
+      assert(p_node->Gnn >= 0);
       tnn--;
     }
 
@@ -146,11 +142,13 @@ long read_nodes (FILE *in,
     p_node->x3_fd = p_node->x3;
 
     /* error check read */
-    if(ferror(in)){
+    if (ferror(in)) {
       PGFEM_printerr("[%d]ERROR:fscanf returned error"
                      " reading node %ld!\n",myrank,i);
       PGFEM_Abort();
-    } else if(feof(in)){
+    }
+
+    if (feof(in)) {
       PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
                      myrank);
       PGFEM_Abort();
@@ -158,8 +156,9 @@ long read_nodes (FILE *in,
   }
 
   /* Gather tnn from all domains */
+  long Gtnn = 0;
   com->net->allreduce(&tnn,&Gtnn,1,NET_DT_LONG,NET_OP_SUM,com->comm);
-
+  assert(0 < Gtnn);
   return Gtnn;
 }
 
