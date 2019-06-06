@@ -39,14 +39,13 @@ int read_material_for_Mechanical(FILE *fp,
                                  MaterialProperty *mat,
                                  const PGFem3D_opt *opts)
 {
-  int err = 0;
-  for(long ia=0; ia<mat->nmat; ia++)
-  {
+  for (long i = 0, e = mat->nmat; i < e; ++i) {
     scan_for_valid_line(fp);
-    if(read_material(fp,ia,mat->mater,opts->legacy))
+    if (read_material(fp, mat->mater[i], opts->legacy)) {
       PGFEM_Abort();
+    }
   }
-  return err;
+  return 0;
 }
 
 /// read mechanical part of material properties
@@ -285,69 +284,68 @@ int read_input_file(const PGFem3D_opt *opts,
   CHECK_SCANF (in,"%ld %lf %lf",lin_maxit,lin_err,lim_zero);
   CHECK_SCANF (in,"%ld %ld %ld",nmat,n_concentrations,n_orient);
 
-  (*node) = build_node_multi_physics(*nn,fv_ndofn,physicsno);
-  (*elem) = build_elem(in,*ne,opts->analysis_type);
-  (*material) = PGFEM_calloc(Material, *nmat);
-  (*matgeom) = build_matgeom(*n_concentrations,*n_orient);
+  *node = build_node_multi_physics(*nn,fv_ndofn,physicsno);
+  *elem = build_elem(in,*ne,opts->analysis_type);
+  *material = PGFEM_calloc(Material, *nmat);
+  *matgeom = build_matgeom(*n_concentrations,*n_orient);
 
   *Gnn = read_nodes(in,*nn,*node,opts->legacy,com);
   /* NOTE: Supports assume only ndim supported dofs per node! */
 
   char BC[1024];
-  sprintf(BC,"%s/BC",opts->ipath);
+  sprintf(BC, "%s/BC", opts->ipath);
 
-  if(is_directory_exist(BC))
-  {
-    if(myrank==0)
-      PGFEM_printf("BC exists skip BC from filebase_*.in instead read boundary conditions from BC\n");
+  if (is_directory_exist(BC)) {
+    if (myrank == 0) {
+      PGFEM_printf("BC exists skip BC from filebase_*.in instead read boundary "
+                   "conditions from BC\n");
+    }
 
-    // skip reading support from lagacy inputs
-    int nbc; // temporal, don't need here
+    // skip some input data along this path
+    int nbc;
     int n[4];
     CHECK_SCANF(in, "%d", &nbc);
-    for(int ia=0; ia<nbc; ia++)
-      CHECK_SCANF(in, "%d %d %d %d", n+0,n+1,n+2,n+3);
+    for (int i = 0; i < nbc; ++i) {
+      CHECK_SCANF(in, "%d %d %d %d", n+0, n+1, n+2, n+3);
+    }
 
     CHECK_SCANF(in, "%d", &nbc);
     double v;
-
-    for(int ia=0; ia<nbc; ia++)
+    for (int i = 0; i < nbc; ++i) {
       CHECK_SCANF(in, "%lf", &v);
+    }
 
     // read boundary conditions if BC diretory exists
-    char fn_bc[2048];
-    char fn_bcv[2048];
+    for (int i = 0; i < physicsno; ++i) {
+      char fn_bc[2048];
+      char fn_bcv[2048];
+      sprintf(fn_bc, "%s/%s_%d.bc", BC, physicsnames[i], myrank);
+      sprintf(fn_bcv, "%s/%s.bcv", BC, physicsnames[i]);
 
-    for(int ia=0; ia<physicsno; ia++)
-    {
-      sprintf(fn_bc,"%s/%s_%d.bc",BC,physicsnames[ia],myrank);
-      sprintf(fn_bcv,"%s/%s.bcv",BC,physicsnames[ia]);
+      if (FILE *fp = fopen(fn_bc, "r")) {
+        sup[i] = read_Dirichlet_BCs(fp, *nn, ndim[i], *node, i);
+        fclose(fp);
+      }
 
-      FILE *fp = NULL;
-      fp = fopen(fn_bc, "r");
-      sup[ia] = read_Dirichlet_BCs(fp,*nn,ndim[ia],*node,ia);
-      if(fp!=NULL) fclose(fp);
-
-      fp = NULL;
-      fp = fopen(fn_bcv, "r");
-      if(fp==NULL)
-      {
+      if (FILE *fp = fopen(fn_bcv, "r")) {
+        err += read_Dirichlet_BCs_values(fp, *nn, ndim[i], *node, sup[i], i);
+        fclose(fp);
+      }
+      else {
         PGFEM_printf("ERROR: Cannot open %s file. Exit.\n", fn_bcv);
         PGFEM_Abort();
       }
-      err += read_Dirichlet_BCs_values(fp,*nn,ndim[ia],*node,sup[ia],ia);
-      fclose(fp);
     }
   }
-  else
-  {
-    for(int ia=0; ia<physicsno; ia++)
-      sup[ia] = read_supports(in,*nn,ndim[ia],*node, ia);
+  else {
+    for (int i = 0; i < physicsno; ++i) {
+      sup[i] = read_supports(in, *nn, ndim[i], *node, i);
+    }
   }
 
-  read_elem(in,*ne,*elem,*sup,opts->legacy);
-  for(long i=0, e=*nmat; i<e; i++){
-    if ( read_material(in,i,*material,opts->legacy) ){
+  read_elem(in, *ne, *elem, *sup, opts->legacy);
+  for (long i = 0, e = *nmat; i < e; ++i) {
+    if (read_material(in, (*material)[i], opts->legacy)) {
       PGFEM_Abort();
     }
   }
@@ -358,30 +356,30 @@ int read_input_file(const PGFem3D_opt *opts,
     PGFEM_Abort();
   }
 
-  if ( override_material_properties(*nmat,opts,*material) ) {
+  if (override_material_properties(*nmat, opts, *material)) {
     PGFEM_Abort();
   }
 
-  read_matgeom(in,*n_concentrations,*n_orient,*matgeom);
+  read_matgeom(in, *n_concentrations, *n_orient, *matgeom);
 
   /* NOTE: Node/Element loading assumes forces only in ndim
      directions */
-  /* node */
-  CHECK_SCANF(in,"%ld",nln);
-  *znod = build_zatnode (*ndofn,*nln);
-  read_nodal_load (in,*nln,*ndofn,*znod);
+  CHECK_SCANF(in, "%ld", nln);
+  assert(0 <= nln);
+  *znod = build_zatnode(*ndofn, *nln);
+  read_nodal_load(in, *nln, *ndofn, *znod);
   /* surface */
-  CHECK_SCANF (in,"%ld",nel_s);
-  *zelem_s = build_zatelem (*ndofn,*nel_s);
-  read_elem_surface_load (in,*nel_s,*ndofn,*elem,*zelem_s);
+  CHECK_SCANF (in,"%ld", nel_s);
+  assert(0 <= nel_s);
+  *zelem_s = build_zatelem(*ndofn, *nel_s);
+  read_elem_surface_load(in, *nel_s, *ndofn, *elem, *zelem_s);
+
   /* volume */
-  CHECK_SCANF (in,"%ld",nel_v);
-  *zelem_v = build_zatelem (*ndofn,*nel_v);
+  CHECK_SCANF (in, "%ld", nel_v);
+  assert(0 <= nel_v);
+  *zelem_v = build_zatelem(*ndofn, *nel_v);
 
-  /* check the ferror bit */
-  if(ferror(in)) err++;
-
-  /* free local memory and close file */
+  if (ferror(in)) err++;
   PGFEM_free(filename);
   fclose(in);
   return err;
