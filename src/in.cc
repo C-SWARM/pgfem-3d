@@ -247,21 +247,17 @@ void read_nodal_load (FILE *in,
                       long nln,
                       long ndofn,
                       ZATNODE *znod)
-/*
-
- */
 {
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading nodal loads.\n",1);
-  long i,j;
-
-  for (i=0;i<nln;i++){
-
-    CHECK_SCANF(in,"%ld",&znod[i].nod);
-
-    for (j=0;j<ndofn;j++)
-      CHECK_SCANF(in,"%lf",&znod[i].load[j]);
+  if (PFEM_DEBUG) {
+    PGFEM_printf("[%d] reading nodal loads.\n",1);
   }
 
+  for (long i = 0; i < nln; ++i) {
+    CHECK_SCANF(in, "%ld", &znod[i].nod);
+    for (long j = 0; j < ndofn; ++j) {
+      CHECK_SCANF(in, "%lf", &znod[i].load[j]);
+    }
+  }
 }
 
 void read_elem_surface_load (FILE *in,
@@ -269,24 +265,25 @@ void read_elem_surface_load (FILE *in,
                              long ndofn,
                              Element *elem,
                              ZATELEM *zele_s)
-/*
-
- */
 {
-  long i,j,ii,jj{};
-
-  for (i=0;i<nle_s;i++){
-    CHECK_SCANF(in,"%ld",&zele_s[i].elem);
-    ii = elem[zele_s[i].elem].toe;
-    if (ii == 4)  jj = 3;
-    if (ii == 8)  jj = 4;
-    if (ii == 10) jj = 6;
-    zele_s[i].sur = PGFEM_calloc (long, jj);
-    for (j=0;j<jj;j++){
-      CHECK_SCANF(in,"%ld",&zele_s[i].sur[j]);
+  for (long i = 0; i < nle_s; ++i) {
+    CHECK_SCANF(in, "%ld", &zele_s[i].elem);
+    long jj;
+    switch (elem[zele_s[i].elem].toe) {
+     case 4:  jj = 3; break;
+     case 8:  jj = 4; break;
+     case 10: jj = 6; break;
+     default:
+      PGFEM_printerr("Invalid type of element\n");
+      PGFEM_Abort();
     }
-    for (j=0;j<ndofn;j++){
-      CHECK_SCANF(in,"%lf",&zele_s[i].load[j]);
+
+    zele_s[i].sur = PGFEM_calloc (long, jj);
+    for (long j = 0; j < jj; ++j) {
+      CHECK_SCANF(in, "%ld", &zele_s[i].sur[j]);
+    }
+    for (long j = 0; j < ndofn; ++j) {
+      CHECK_SCANF(in, "%lf", &zele_s[i].load[j]);
     }
   }
 
