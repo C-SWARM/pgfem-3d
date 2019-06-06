@@ -34,41 +34,51 @@ SUPP read_Dirichlet_BCs(FILE *in,
 {
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading supports.\n",err_rank);
-  long n,pom;
+  if (PFEM_DEBUG) {
+    PGFEM_printf("[%d] reading supports.\n", err_rank);
+  }
+
+  // Return 1 if the node with id `n` has a prescribed deflection.
+  auto has_prescribed_deflection = [ndofn,node,mp_id](auto n) {
+    auto& ids = node[n].id_map[mp_id].id;
+    for (int k = 0; k < ndofn; ++k) {
+      if (ids[k] == 1 || ids[k] < 0) {
+        return 1;
+      }
+    }
+    return 0;
+  };
+
   SUPP sup = PGFEM_calloc (SUPP_1, 1);
 
   // read supported nodes
-
-  if(in==NULL)
-    sup->nsn = 0;
-  else
+  if (in) {
     CHECK_SCANF(in, "%ld", &sup->nsn);
+  }
 
-  if(sup->nsn == 0)  sup->supp = PGFEM_calloc (long, 1);
-  else               sup->supp = PGFEM_calloc (long, sup->nsn);
+  if (sup->nsn == 0)  {
+    sup->supp = PGFEM_calloc (long, 1);
+  }
+  else {
+    sup->supp = PGFEM_calloc (long, sup->nsn);
+  }
 
-  for(int i=0; i<sup->nsn; i++)
-  {
-    CHECK_SCANF(in,"%ld",&n);
+  for (int i = 0, e = sup->nsn; i < e; ++i) {
+    long n;
+    CHECK_SCANF(in,"%ld", &n);
     sup->supp[i] = n;
-
-    pom = 0;
-    for(int k=0; k<ndofn; k++)
-    {
-      CHECK_SCANF(in,"%ld",&node[n].id_map[mp_id].id[k]);
-      if((node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) && pom == 0) {
-        sup->ndn++; pom = 1;
-      }
+    for (int k = 0; k < ndofn; ++k) {
+      CHECK_SCANF(in, "%ld", &node[n].id_map[mp_id].id[k]);
     }
-    if(ferror(in))
-    {
-      PGFEM_printerr("[%d]ERROR:fscanf returned error"
-                     " reading support %ld!\n",err_rank,i);
+    sup->ndn += has_prescribed_deflection(n);
+
+    if (ferror(in)) {
+      PGFEM_printerr("[%d]ERROR:fscanf returned error reading support %ld!\n",
+                     err_rank, i);
       PGFEM_Abort();
     }
-    else if(feof(in))
-    {
+
+    if (feof(in)) {
       PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
                      err_rank);
       PGFEM_Abort();
@@ -78,19 +88,20 @@ SUPP read_Dirichlet_BCs(FILE *in,
   /***************************************************/
   /* create list of nodes with prescribed deflection */
   /***************************************************/
+  if (sup->ndn == 0) {
+    sup->lnpd = PGFEM_calloc (long, 1);
+  }
+  else {
+    sup->lnpd = PGFEM_calloc (long, sup->ndn);
+  }
 
-  if (sup->ndn == 0)  sup->lnpd = PGFEM_calloc (long, 1);
-  else                sup->lnpd = PGFEM_calloc (long, sup->ndn);
-
-  int ii = 0;
-  for(int i=0; i<sup->nsn; i++)
-  {
-    for(int k=0; k<ndofn; k++)
-    {
-      if(node[n].id_map[mp_id].id[k] == 1 || node[n].id_map[mp_id].id[k] <= -1) {
-        sup->lnpd[ii] = sup->supp[i];
-        ii++;  break;
-      }
+  // Copy the list of nodes with prescribed deflection from `sup->supp` to
+  // `sup->lnpd`.
+  for (int i = 0, insert = 0, e = sup->nsn; i < e; ++i) {
+    long n = sup->supp[i];
+    if (has_prescribed_deflection(n)) {
+      assert(insert < sup->ndn);
+      sup->lnpd[insert++] = n;
     }
   }
 
@@ -98,7 +109,7 @@ SUPP read_Dirichlet_BCs(FILE *in,
   sup->F0 = PGFEM_calloc(double, 9);
   sup->N0 = PGFEM_calloc(double, 3);
 
-  return (sup);
+  return sup;
 }
 
 /// read Dirichlet boundary condition values
@@ -168,9 +179,11 @@ SUPP read_supports(FILE *in,
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
 */
 {
-  SUPP sup = read_Dirichlet_BCs(in,nn,ndofn,node,mp_id);
-  read_Dirichlet_BCs_values(in,nn,ndofn,node,sup,mp_id);
-
+  SUPP sup = read_Dirichlet_BCs(in, nn, ndofn, node, mp_id);
+  if (read_Dirichlet_BCs_values(in, nn, ndofn, node, sup, mp_id)) {
+    PGFEM_printf("Error reading Dirichlet boundary conditions");
+    PGFEM_Abort();
+  }
   return sup;
 }
 
