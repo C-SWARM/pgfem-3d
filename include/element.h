@@ -52,6 +52,9 @@ struct Element {
   double **L;
   long *LO;
 
+  void init();
+  void fini();
+
   /// Get the total number of degrees of freedom for this element.
   ///
   /// @param      ndofn The number of degrees of freedom per node.

@@ -10,6 +10,27 @@
 
 using namespace pgfem3d;
 
+void Element::init() {
+  pr = -1;
+  toe = -1;
+  nod = nullptr;
+  mat = nullptr;
+  hom = nullptr;
+  bnd_type = nullptr;
+  bnd_id = nullptr;
+  n_dofs = 0;
+  G_dof_ids = nullptr;
+  L_dof_ids = nullptr;
+  n_be = 0;
+  be_ids = nullptr;
+  n_bub = 0;
+  n_bub_dofs = 0;
+  bub_dofs = nullptr;
+  d_bub_dofs = nullptr;
+  L = nullptr;
+  LO = nullptr;
+}
+
 Element* build_elem (FILE *in,
                      const long ne,
                      const int analysis)
@@ -20,41 +41,25 @@ Element* build_elem (FILE *in,
 {
   Element *pom = PGFEM_calloc (Element, ne);
 
-  for (long ii=0;ii<ne;ii++){
+  for (long i = 0; i < ne; ++i) {
     /* initialize all variables for current element. */
-    pom[ii].pr = -1;
-    pom[ii].toe = -1;
-    pom[ii].nod = NULL;
-    pom[ii].mat = NULL;
-    pom[ii].hom = NULL;
-    pom[ii].bnd_type = NULL;
-    pom[ii].bnd_id = NULL;
-    pom[ii].n_dofs = 0;
-    pom[ii].G_dof_ids = NULL;
-    pom[ii].L_dof_ids = NULL;
-    pom[ii].n_be = 0;
-    pom[ii].be_ids = NULL;
-    pom[ii].n_bub = 0;
-    pom[ii].n_bub_dofs = 0;
-    pom[ii].bub_dofs = NULL;
-    pom[ii].d_bub_dofs = NULL;
-    pom[ii].L = NULL;
-    pom[ii].LO = NULL;
+    pom[i].init();
 
     /* Read elem types */
-    CHECK_SCANF (in,"%ld",&pom[ii].toe);
+    CHECK_SCANF (in,"%ld",&pom[i].toe);
 
-    switch(analysis){
+    // Verify toe makes sense.
+    switch (analysis) {
      case STABILIZED:
      case MINI:
      case MINI_3F:
-      if (pom[ii].toe != 4){
-        PGFEM_printf("Incorrect element type in  build_elem\n");
+      if (pom[i].toe != 4) {
+        PGFEM_printf("Incorrect element type in build_elem\n");
         PGFEM_Abort();
       }
       break;
      case DISP:
-      //      if (pom[ii].toe != 4){
+      //      if (pom[i].toe != 4){
       //  PGFEM_printf("This element type has not been tested"
       //         " with this analysis type (yet).\n");
       //  PGFEM_Abort();
@@ -65,23 +70,23 @@ Element* build_elem (FILE *in,
       break;
     }
 
-    pom[ii].nod = PGFEM_calloc (long, pom[ii].toe);
-    pom[ii].mat = PGFEM_calloc (long, 3);
-    // elem[ii].mat[0] -> Matrix
-    // elem[ii].mat[1] -> Fiber
-    // elem[ii].mat[2] -> Homogeneous
-    pom[ii].hom = PGFEM_calloc (long, 2);
+    pom[i].nod = new long[pom[i].toe]{};
+    pom[i].mat = new long[3]{};
+    // elem[i].mat[0] -> Matrix
+    // elem[i].mat[1] -> Fiber
+    // elem[i].mat[2] -> Homogeneous
+    pom[i].hom = new long[2]{};
 
     /* bounding features */
-    switch(pom[ii].toe){
+    switch (pom[i].toe) {
      case 4: /* tets */
      case 10:
-      pom[ii].bnd_type = PGFEM_calloc(int, 4);
-      pom[ii].bnd_id = PGFEM_calloc(int, 4);
+      pom[i].bnd_type = new int[4]{};
+      pom[i].bnd_id = new int[4]{};
       break;
      case 8:
-      pom[ii].bnd_type = PGFEM_calloc(int, 6);
-      pom[ii].bnd_id = PGFEM_calloc(int, 6);
+      pom[i].bnd_type = new int[6]{};
+      pom[i].bnd_id = new int[6]{};
       break;
      default:
       PGFEM_fprintf(stderr,"ERROR: Unsupported element type! %s:%s:%d\n",
@@ -90,48 +95,51 @@ Element* build_elem (FILE *in,
       break;
     }
 
-    switch(analysis){
+    switch (analysis) {
      case MINI:
      case MINI_3F:
-      pom[ii].n_bub_dofs = 3;
-      pom[ii].n_bub = 1;
-      pom[ii].bub_dofs = PGFEM_calloc(double, pom[ii].n_bub*pom[ii].n_bub_dofs);
-      pom[ii].d_bub_dofs = PGFEM_calloc(double, pom[ii].n_bub*pom[ii].n_bub_dofs);
+      pom[i].n_bub_dofs = 3;
+      pom[i].n_bub = 1;
+      pom[i].bub_dofs = new double[pom[i].n_bub * pom[i].n_bub_dofs]{};
+      pom[i].d_bub_dofs = new double[pom[i].n_bub * pom[i].n_bub_dofs]{};
       break;
 
      default:
-      pom[ii].bub_dofs = PGFEM_calloc (double, 1);
-      pom[ii].d_bub_dofs = PGFEM_calloc (double, 1);
+      // pom[i].bub_dofs = new double[1]{};
+      // pom[i].d_bub_dofs = new double[1]{};
       break;
     }
 
     /* GFEM */
     /* if (gem == 1) {
-       pom[ii].gtyp = pom[ii].gfem = pom[ii].gele = -1;
-       pom[ii].gx1 = PGFEM_calloc (double, 2);
-       pom[ii].gx2 = PGFEM_calloc (double, 2);
-       pom[ii].gx3 = PGFEM_calloc (double, 2);
+       pom[i].gtyp = pom[i].gfem = pom[i].gele = -1;
+       pom[i].gx1 = new double[2]{};
+       pom[i].gx2 = new double[2]{};
+       pom[i].gx3 = new double[2]{});
        } */
   }/* for each element */
 
-  return (pom);
+  return pom;
 } /* build_elem() */
 
-void destroy_elem(Element *elem,
-                  const long ne)
+void Element::fini() {
+  delete [] nod;
+  delete [] mat;
+  delete [] hom;
+  delete [] bnd_type;
+  delete [] bnd_id;
+  delete [] G_dof_ids;
+  delete [] L_dof_ids;
+  delete [] be_ids;
+  delete [] bub_dofs;
+  delete [] d_bub_dofs;
+  delete [] LO;
+}
+
+void destroy_elem(Element *elem, const long ne)
 {
-  for(long i=0; i<ne; i++){
-    PGFEM_free(elem[i].nod);
-    PGFEM_free(elem[i].mat);
-    PGFEM_free(elem[i].hom);
-    PGFEM_free(elem[i].bnd_type);
-    PGFEM_free(elem[i].bnd_id);
-    PGFEM_free(elem[i].G_dof_ids);
-    PGFEM_free(elem[i].L_dof_ids);
-    PGFEM_free(elem[i].be_ids);
-    PGFEM_free(elem[i].bub_dofs);
-    PGFEM_free(elem[i].d_bub_dofs);
-    PGFEM_free(elem[i].LO);
+  for (long i = 0; i < ne; ++i) {
+    elem[i].fini();
   }
   PGFEM_free(elem);
 }/* destroy_elem() */
