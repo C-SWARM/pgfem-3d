@@ -9,6 +9,7 @@
 #endif
 
 #include "read_input_file.h"
+
 #include "Arc_length.h"
 #include "PGFem3D_data_structure.h"
 #include "allocation.h"
@@ -19,9 +20,11 @@
 #include "load.h"
 #include "read_cryst_plast.h"
 #include "restart.h"
-#include "utils.h"
-#include <cstring>
 #include "three_field_element.h"
+#include "utils.h"
+
+#include <cstring>
+#include <limits>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -106,7 +109,7 @@ int read_material_for_Thermal(FILE *fp,
 int read_multiphysics_material_properties(MaterialProperty *mat,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
-					  int myrank)
+                      int myrank)
 {
   int err = 0;
   char dirname[1024], fn[2048];
@@ -242,7 +245,7 @@ int interpret_ranges(double *ranges, char str_in[])
 }
 
 int read_input_file(const PGFem3D_opt *opts,
-		    const CommunicationStructure *com,
+                    const CommunicationStructure *com,
                     long *nn,
                     long *Gnn,
                     long *ndofn,
@@ -405,17 +408,17 @@ int read_mesh_file(Grid *grid,
                    Solver *SOL,
                    LoadingSteps *load,
                    const Multiphysics& mp,
-		   const CommunicationStructure *com,
+                   const CommunicationStructure *com,
                    const PGFem3D_opt *opts)
 {
-  long ndofn;
-  int myrank = com->rank;
+  // Copies the ndofn from each multiphysics structure into a continuous array.
+  std::vector<int> fv_ndofn(mp.physicsno);
+  for (int i = 0, e = mp.physicsno; i < e; ++i) {
+    assert(0 < FV[i].ndofn and FV[i].ndofn < std::numeric_limits<int>::max());
+    fv_ndofn[i] = FV[i].ndofn;
+  }
 
-  int *fv_ndofn = (int *) malloc(mp.physicsno*sizeof(int));
-
-  for(int iA=0; iA<mp.physicsno; iA++)
-    fv_ndofn[iA] = FV[iA].ndofn;
-
+  long ndofn = 0;                               // output from read_input_file
   int err = read_input_file(opts,
                             com,
                             &(grid->nn),
@@ -439,13 +442,13 @@ int read_mesh_file(Grid *grid,
                             &(load->zele_s),
                             &(load->nle_v),
                             &(load->zele_v),
-                            fv_ndofn,
+                            &fv_ndofn[0],
                             mp.physicsno,
                             mp.ndim,
                             mp.physicsname);
-  free(fv_ndofn);
 
   // read multiphysics material properties
+  int myrank = com->rank;
   err += read_multiphysics_material_properties(mat,opts,mp,myrank);
 
   // update numerical solution scheme parameters
@@ -680,9 +683,9 @@ int read_solver_file_multiscale(MultiscaleCommon *c,
                                 const int myrank)
 {
   int err    = 0;
-  int n_step = 0;  
-  double pores = 0.0;  
-  double *sup_defl = NULL;    
+  int n_step = 0;
+  double pores = 0.0;
+  double *sup_defl = NULL;
   CRPL *crpl = NULL;
   s->tim = 0;
 
@@ -807,20 +810,20 @@ int read_solver_file_multiscale(MultiscaleCommon *c,
     ts.tns    = NULL;
   }
 
-  err += read_solver_file(&ts, &mat, &fv, &sol, &load, crpl, mp, opts, myrank);  
+  err += read_solver_file(&ts, &mat, &fv, &sol, &load, crpl, mp, opts, myrank);
 
   /* assign the returned values */
   solver_file->nonlin_tol           = sol.nor_min;
   solver_file->max_nonlin_iter      = sol.iter_max;
-  solver_file->n_pressure_nodes     = fv.npres; 
-  solver_file->nonlin_method        = sol.FNR;  
+  solver_file->n_pressure_nodes     = fv.npres;
+  solver_file->nonlin_method        = sol.FNR;
   solver_file->n_step               = ts.nt;
-  solver_file->times                = ts.times;  
+  solver_file->times                = ts.times;
   solver_file->print_steps          = ts.print;
 
   /* nonlinear solving method options  */
   switch(solver_file->nonlin_method){
-   case NEWTON_METHOD:   
+   case NEWTON_METHOD:
     break;
 
    case ARC_LENGTH_METHOD:
@@ -833,7 +836,7 @@ int read_solver_file_multiscale(MultiscaleCommon *c,
 
   free(physicsname);
 
-  return err;  
+  return err;
 }
 
 /// Read initial conditions from lagcy format.
@@ -1096,7 +1099,7 @@ int read_initial_for_Mechanical(FILE *fp,
   }
 
   free(rho);
-  
+
   if(!read_from_0 && opts->restart < 0){
     while(fgets(line, 1024, fp)!=NULL)
     {
@@ -1199,7 +1202,7 @@ int read_initial_for_Thermal(FILE *fp,
       fv->u_nm1[ia] = T0;
       fv->u_n[ia] = T0;
     }
-    
+
     if(!read_from_0){
 
       while(fgets(line, 1024, fp)!=NULL){
@@ -1389,11 +1392,11 @@ int read_and_apply_load_increments(Grid *grid,
                                    LoadingSteps *load,
                                    const Multiphysics& mp,
                                    long tim,
-				   const CommunicationStructure *com)
+                   const CommunicationStructure *com)
 {
   int err = 0;
   int myrank = com->rank;
-  
+
   //  read nodal prescribed boundary values
   for(int mp_id=0; mp_id<mp.physicsno; mp_id++)
   {
