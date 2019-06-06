@@ -126,7 +126,6 @@ libpgfem3d_la_SOURCES = ALM.cc \
                         sig.cc \
                         supp.cc \
                         mesh_load.cc \
-                        material.cc \
                         eps.cc \
                         matgeom.cc \
                         crpl.cc \
