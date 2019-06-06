@@ -131,31 +131,33 @@ int read_Dirichlet_BCs_values(FILE *in,
 {
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading BCs_values.\n",err_rank);
+  if (PFEM_DEBUG) {
+    PGFEM_printf("[%d] reading BCs_values.\n", err_rank);
+  }
 
   // read nodes with prescribed deflection
-  CHECK_SCANF(in,"%ld",&sup->npd);
+  CHECK_SCANF(in, "%ld", &sup->npd);
+  assert(0 <= sup->npd);
 
-  if (sup->npd == 0)
-  {
+  if (sup->npd == 0) {
     sup->defl   = PGFEM_calloc (double, 1);
     sup->defl_d = PGFEM_calloc (double, 1);
   }
-  else
-  {
+  else {
     sup->defl   = PGFEM_calloc (double, sup->npd);
     sup->defl_d = PGFEM_calloc (double, sup->npd);
   }
 
-  for (int i=0; i<sup->npd; i++) {
-    CHECK_SCANF(in,"%lf",&sup->defl_d[i]);
+  for (long i = 0; i < sup->npd; ++i) {
+    CHECK_SCANF(in, "%lf", &sup->defl_d[i]);
   }
 
   if (ferror(in)) {
     PGFEM_printerr("[%d]ERROR:fscanf returned error"
                    " reading prescribed deflections!\n",err_rank);
     PGFEM_Abort();
-  } else if(feof(in)){
+  }
+  if (feof(in)) {
     PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
                    err_rank);
     PGFEM_Abort();
@@ -190,59 +192,55 @@ SUPP read_supports(FILE *in,
 
 
 int read_material (FILE *in,
-                   const long mat_id,
-                   Material *mater,
+                   Material& mater,
                    const int legacy)
 {
-  int err = 0;
   if (legacy) {
+    mater.devPotFlag = 0;
+    mater.volPotFlag = 0;
     CHECK_SCANF(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
-                &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
-                &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
-                &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
-                &mater[mat_id].sig);
-
-    mater[mat_id].devPotFlag = mater[mat_id].volPotFlag = 0;
+                &mater.Ex,  &mater.Ey,  &mater.Ez,
+                &mater.Gyz, &mater.Gxz, &mater.Gxy,
+                &mater.nyz, &mater.nxz, &mater.nxy,
+                &mater.ax,  &mater.ay,  &mater.az,
+                &mater.sig);
   } else {
     CHECK_SCANF(in,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %d %d",
-                &mater[mat_id].Ex,&mater[mat_id].Ey,&mater[mat_id].Ez,
-                &mater[mat_id].Gyz,&mater[mat_id].Gxz,&mater[mat_id].Gxy,
-                &mater[mat_id].nyz,&mater[mat_id].nxz,&mater[mat_id].nxy,
-                &mater[mat_id].ax,&mater[mat_id].ay,&mater[mat_id].az,
-                &mater[mat_id].sig,&mater[mat_id].devPotFlag,&mater[mat_id].volPotFlag);
+                &mater.Ex,  &mater.Ey,         &mater.Ez,
+                &mater.Gyz, &mater.Gxz,        &mater.Gxy,
+                &mater.nyz, &mater.nxz,        &mater.nxy,
+                &mater.ax,  &mater.ay,         &mater.az,
+                &mater.sig, &mater.devPotFlag, &mater.volPotFlag);
   }
 
-  if(ferror(in)){
+  if (ferror(in)) {
     PGFEM_printerr("ERROR: fscanf returned error in: %s(%s)\n",__func__,__FILE__);
-    err++;
+    return 1;
   }
-  return err;
+
+  return 0;
 }
 
 void read_matgeom (FILE *in,
                    long nc,
                    long np,
                    MATGEOM matgeom)
-/*
-
- */
 {
-  if (PFEM_DEBUG) PGFEM_printf("[%d] reading material geom.\n",1);
-  long i,j;
+  if (PFEM_DEBUG) {
+    PGFEM_printf("[%d] reading material geom.\n", 1);
+  }
 
-  for (i=0;i<nc;i++){
-    CHECK_SCANF(in,"%lf",&matgeom->cf[i]);
+  for (long i = 0; i < nc; ++i) {
+    CHECK_SCANF(in,"%lf", &matgeom->cf[i]);
     matgeom->cm[i] = 1.0 - matgeom->cf[i];
     matgeom->cd[i] = 0.0;
   }
-  for (i=0;i<np;i++){
-    for (j=0;j<9;j++){
-      CHECK_SCANF(in,"%lf",&matgeom->ee[i][j]);
+  for (long i = 0; i < np; ++i) {
+    for (int j = 0; j < 9; ++j) {
+      CHECK_SCANF(in,"%lf", &matgeom->ee[i][j]);
     }
   }
-  CHECK_SCANF(in,"%ld %lf %lf",&matgeom->SH,&matgeom->a1,&matgeom->a2);
-
+  CHECK_SCANF(in,"%ld %lf %lf", &matgeom->SH, &matgeom->a1, &matgeom->a2);
 }
 
 void read_nodal_load (FILE *in,
@@ -318,38 +316,40 @@ int override_material_properties(const long nmat,
                                  const PGFem3D_opt *opt,
                                  Material *mater)
 {
-  int err = 0;
-  int n_override = 0;
-  int idx = -1;
-
   /* exit early if no override file is specified */
-  if ( opt->override_material_props == NULL ) return err;
+  if (opt->override_material_props == nullptr) {
+    return 0;
+  }
 
-  /* else */
   FILE *in = PGFEM_fopen(opt->override_material_props,"r");
-  err += scan_for_valid_line(in);
-  if (err) goto exit_err;
+  if (in == nullptr) {
+    std::cerr << "Could not open " << opt->override_material_props << "\n";
+    return 1;
+  }
 
   /* number of materials to override */
-  CHECK_SCANF(in,"%d",&n_override);
-  assert( n_override >= 0 );
-  assert( (long)n_override <= nmat );
+  int n_override = 0;
+  if (scan_for_valid_line(in)) {
+    goto exit_err;
+  }
+  CHECK_SCANF(in, "%d", &n_override);
+  assert(0 <= n_override and n_override < nmat);
 
-  for (int i=0; i<n_override; i++){
-    /* scan for override data */
-    err += scan_for_valid_line(in);
-    if (err) goto exit_err;
+  for (int i = 0, e = n_override; i < e; ++i) {
+    if (scan_for_valid_line(in)) {
+      goto exit_err;
+    }
 
-    /* read override data */
-    idx = -1; /* poisoned value */
-    CHECK_SCANF(in,"%d",&idx);
-    assert(idx >= 0);
-    assert( (long)idx < nmat );
-    err += read_material(in,idx,mater,opt->legacy);
+    int idx = -1;
+    CHECK_SCANF(in, "%d", &idx);
+    assert(0 <= idx and idx < nmat);
+    if (read_material(in, mater[idx], opt->legacy)) {
+      goto exit_err;
+    }
   }
 
  exit_err:
-  if( ferror(in) ) err ++;
+  int err = (ferror(in)) ? 2 : 1;
   PGFEM_fclose(in);
   return err;
 }

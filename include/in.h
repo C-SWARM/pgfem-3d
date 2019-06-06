@@ -56,15 +56,13 @@ SUPP read_supports (FILE *in,
  * Read material property listing for material mat_id [0,nmat).
  *
  * \param[in] in, File to read from
- * \param[in] mat_id, Index to 'mater'
- * \param[in,out] mater, Allocated material list
+ * \param[in,out] mater, The material structure to fill.
  * \param[in] legacy, format flag for how to read the listing
  *
  * \return non-zero on internal error, i.e., I/O errors.
  */
 int read_material (FILE *in,
-                   const long mat_id,
-                   Material *mater,
+                   Material& mater,
                    const int legacy);
 
 /**
