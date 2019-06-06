@@ -15,7 +15,7 @@ struct SUPP_1 {
   long     *supp;             //!< list of supported nodes
   long     *lnpd;             //!< list of nodes with prescribed deflection
   long     *lepd;             //!< list of elements w/ pre. def
-  logn    *lbepd;             //!< list of bounding elements
+  long    *lbepd;             //!< list of bounding elements
   double   *defl;             //!< value of deflection at the node.
   double *defl_d;
 
