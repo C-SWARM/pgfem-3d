@@ -376,7 +376,7 @@ int read_input_file(const PGFem3D_opt *opts,
 
   /* volume */
   CHECK_SCANF (in, "%ld", nel_v);
-  assert(0 <= nel_v);
+  assert(0 <= *nel_v);
   *zelem_v = build_zatelem(*ndofn, *nel_v);
 
   if (ferror(in)) err++;
