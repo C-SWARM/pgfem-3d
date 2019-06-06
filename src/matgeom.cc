@@ -1,9 +1,5 @@
 #include "matgeom.h"
-
-#ifndef ALLOCATION_H
-#include "allocation.h"
-#endif
-
+#include <cassert>
 
 MATGEOM build_matgeom (long nc,long np)
      /*
@@ -11,31 +7,28 @@ MATGEOM build_matgeom (long nc,long np)
        np - number of psi angle
      */
 {
-  MATGEOM pom;
-  long i;
+  MATGEOM pom = new MATGEOM_1{};
+  pom->cf = new double[nc]{};
+  pom->cd = new double[nc]{};
+  pom->cm = new double[nc]{};
+  pom->ee = new double*[np]{};
 
-  pom = PGFEM_calloc (MATGEOM_1, 1);
-
-  pom->cf = PGFEM_calloc (double, nc);
-  pom->cd = PGFEM_calloc (double, nc);
-  pom->cm = PGFEM_calloc (double, nc);
-  pom->ee = PGFEM_calloc (double*, np);
-
-  for (i=0;i<np;i++) {
-    pom->ee[i] = PGFEM_calloc (double, 9);
+  for (long i = 0; i < np; ++i) {
+    pom->ee[i] = new double[9]{};
   }
 
-  return (pom);
+  return pom;
 }
 
 void destroy_matgeom(MATGEOM mg, long np)
 {
-  for(long i=0; i<np; i++){
-    PGFEM_free(mg->ee[i]);
+  assert(mg);
+  for(long i = 0; i < np; ++i) {
+    delete [] mg->ee[i];
   }
-  PGFEM_free(mg->ee);
-  PGFEM_free(mg->cf);
-  PGFEM_free(mg->cd);
-  PGFEM_free(mg->cm);
-  PGFEM_free(mg);
+  delete [] mg->ee;
+  delete [] mg->cf;
+  delete [] mg->cd;
+  delete [] mg->cm;
+  delete [] mg;
 }
