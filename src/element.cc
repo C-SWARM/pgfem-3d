@@ -144,23 +144,106 @@ void destroy_elem(Element *elem, const long ne)
   PGFEM_free(elem);
 }/* destroy_elem() */
 
-/*=== Declare static read functions ===*/
-static int read_tet_conn_legacy(FILE *in,Element *elem);
-static int read_qtet_conn_legacy(FILE *in,Element *elem);
-static int read_hex_conn_legacy(FILE *in,Element *elem);
-static int read_tet_conn(FILE *in,Element *elem);
-static int read_qtet_conn(FILE *in,Element *elem);
-static int read_hex_conn(FILE *in,Element *elem);
-static int read_assign_elem_material(FILE *in,Element *elem);
-static int is_elem_supported(const Element *p_elem,
-                             const long nsup_node,
-                             const long *sup_node_id);
+/*=== Declare static helper functions ===*/
+static void read_assign_elem_material(FILE *in, Element& elem) {
+  long *mat = elem.mat;
+  long *hom = elem.hom;
 
-void read_elem (FILE *in,
-                long ne,
-                Element *elem,
-                SUPP sup,
-                const int legacy)
+  /* matrix || fiber || volume fraction (cf) || fibre orientation (psi) */
+  CHECK_SCANF (in,"%ld %ld %ld %ld",
+               mat,mat+1,hom,hom+1);
+}
+
+static int is_elem_supported(const Element& elem, const SUPP_1& sup) {
+  for (long j = 0; j < sup.ndn; ++j) {
+    for (int k = 0; k < elem.toe; ++k) {
+      if (sup.lnpd[j] == elem.nod[k]) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+static void read_tet_conn(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long     *nod = elem.nod;
+  long      *pr = &elem.pr;
+  int *bnd_type = elem.bnd_type;
+  int   *bnd_id = elem.bnd_id;
+  long    ftype = 0;
+  long      fid = 0;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld "
+               "%d %d %d %d %d %d %d %d",
+               nod,nod+1,nod+2,nod+3,&ftype,&fid,pr,
+               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
+}
+
+static void read_qtet_conn(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long     *nod = elem.nod;
+  long      *pr = &elem.pr;
+  int *bnd_type = elem.bnd_type;
+  int   *bnd_id = elem.bnd_id;
+  long    ftype = 0;
+  long      fid = 0;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
+               "%ld %ld %ld  %d %d %d %d "
+               "%d %d %d %d",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,
+               &ftype,&fid,pr,bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
+}
+
+static void read_hex_conn(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long     *nod = elem.nod;
+  long      *pr = &elem.pr;
+  int *bnd_type = elem.bnd_type;
+  int   *bnd_id = elem.bnd_id;
+  long    ftype = 0;
+  long      fid = 0;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
+               "%d %d %d %d %d %d "
+               "%d %d %d %d %d %d",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,&ftype,&fid,pr,
+               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,bnd_id+4,bnd_id+5,
+               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3,bnd_type+4,
+               bnd_type+5);
+}
+
+/*=== LEGACY FILE FORMAT ===*/
+static void read_tet_conn_legacy(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long *nod = elem.nod;
+  long  *pr = &elem.pr;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld",
+               nod,nod+1,nod+2,nod+3,pr);
+}
+
+static void read_qtet_conn_legacy(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long *nod = elem.nod;
+  long  *pr = &elem.pr;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,pr);
+}
+
+static void read_hex_conn_legacy(FILE *in, Element& elem) {
+  /* get pointers to element data */
+  long *nod = elem.nod;
+  long  *pr = &elem.pr;
+
+  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld",
+               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,pr);
+}
+
 /*
   in   - Input file
   ne   - Number of elements
@@ -170,55 +253,75 @@ void read_elem (FILE *in,
 
   %%%%%%%%%%%%%%%% TESTED 6.12.99 %%%%%%%%%%%%%%%%%
 */
-
+void read_elem (FILE *in,
+                long ne,
+                Element *elem,
+                SUPP sup,
+                const int legacy)
 {
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
 
-  int err = 0;
+  for (long i = 0; i < ne ; ++i) {
+    int err = 0;
 
-  for (long i=0;i<ne;i++){
-    if(legacy){
-      switch(elem[i].toe){
-       case 4: read_tet_conn_legacy(in,elem); break;
-       case 10: read_qtet_conn_legacy(in,elem); break;
-       case 8: read_hex_conn_legacy(in,elem); break;
-       default: err = 1; break;
+    /* get elem id */
+    long id = 0;
+    CHECK_SCANF (in,"%ld",&id);
+    assert(0 <= id and id < ne);
+
+    if (legacy) {
+      switch (elem[i].toe) {
+       case 4:  read_tet_conn_legacy (in, elem[id]); break;
+       case 10: read_qtet_conn_legacy(in, elem[id]); break;
+       case 8:  read_hex_conn_legacy (in, elem[id]); break;
+       default:
+        err = 1;
+        break;
       }
     } else {
-      switch(elem[i].toe){
-       case 4: read_tet_conn(in,elem); break;
-       case 10: read_qtet_conn(in,elem); break;
-       case 8: read_hex_conn(in,elem); break;
-       default: err = 1; break;
+      switch (elem[i].toe) {
+       case 4:  read_tet_conn (in, elem[id]); break;
+       case 10: read_qtet_conn(in, elem[id]); break;
+       case 8:  read_hex_conn (in, elem[id]); break;
+       default:
+        err = 1;
+        break;
       }
     } /* not legacy format */
 
-    if(ferror(in)){
+    if (ferror(in)) {
       PGFEM_printerr("[%d]ERROR:CHECK_SCANF returned error"
                      " reading element %ld!\n",err_rank,i);
       PGFEM_Abort();
-    } else if(feof(in)){
+    }
+
+    if (feof(in)) {
       PGFEM_printerr("[%d]ERROR:prematurely reached end of input file!\n",
                      err_rank);
       PGFEM_Abort();
-    } else if(err){
-      PGFEM_printerr("[%d]ERROR: element %ld is of"
-                     " unrecognized type (%ld)!\n",err_rank,i,elem[i].toe);
+    }
+
+    if (err) {
+      PGFEM_printerr("[%d]ERROR: element %ld is of unrecognized type (%ld)!\n",
+                     err_rank, i, elem[i].toe);
       PGFEM_Abort();
     }
   }
 
-  for (long i=0;i<ne;i++){
-    err = read_assign_elem_material(in,elem);
-    if(err){
-      PGFEM_printerr("[%d]ERROR: CHECK_SCANF error assigning "
-                     "element material!\n",err_rank);
+  for (long i = 0; i < ne; ++i) {
+    long id;
+    CHECK_SCANF (in, "%ld", &id);
+    assert(0 <= id and id < ne);
+    read_assign_elem_material(in, elem[id]);
+    if (ferror(in) || feof(in)) {
+      PGFEM_printerr("[%d]ERROR: CHECK_SCANF error assigning element "
+                     "material!\n", err_rank);
       PGFEM_Abort();
     }
 
-    /* check if element is supproted */
-    sup->nde += is_elem_supported(&elem[i],sup->ndn,sup->lnpd);
+    /* check if element is supported */
+    sup->nde += is_elem_supported(elem[i], *sup);
   }/* end i<ne */
 }/* read_elem() */
 
@@ -274,200 +377,4 @@ void write_element(FILE *ofile,
   }
 }
 
-static int read_assign_elem_material(FILE *in,
-                                     Element *elem)
-{
-  int err = 0;
-  long id;
-  CHECK_SCANF (in,"%ld",&id);
-  long *mat = elem[id].mat;
-  long *hom = elem[id].hom;
-
-  /* matrix || fiber || volume fraction (cf) || fibre orientation (psi) */
-  CHECK_SCANF (in,"%ld %ld %ld %ld",mat,mat+1,hom,hom+1);
-
-  if(ferror(in) || feof(in)) err = 1;
-  return err;
-}/* read_assign_elem_material */
-
-static int is_elem_supported(const Element *p_elem,
-                             const long nsup_node,
-                             const long *sup_node_id)
-{
-  const long *nod = p_elem->nod;
-  const int nne = p_elem->toe;
-
-  for (long j=0; j<nsup_node; j++){
-    for (int k=0; k<nne; k++){
-      if (sup_node_id[j] == nod[k]){
-        return 1;
-      }
-    }
-  }
-
-  return 0;
-}
-
-static int read_tet_conn(FILE *in,
-                         Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-  int *bnd_type = elem[id].bnd_type;
-  int *bnd_id = elem[id].bnd_id;
-  long ftype = 0;
-  long fid = 0;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld "
-               "%d %d %d %d %d %d %d %d",
-               nod,nod+1,nod+2,nod+3,&ftype,&fid,pr,
-               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
-               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_tet_conn() */
-
-static int read_qtet_conn(FILE *in,
-                          Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-  int *bnd_type = elem[id].bnd_type;
-  int *bnd_id = elem[id].bnd_id;
-  long ftype = 0;
-  long fid = 0;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
-               "%ld %ld %ld  %d %d %d %d "
-               "%d %d %d %d",
-               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,
-               &ftype,&fid,pr,bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,
-               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_qtet_conn() */
-
-static int read_hex_conn(FILE *in,
-                         Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-  int *bnd_type = elem[id].bnd_type;
-  int *bnd_id = elem[id].bnd_id;
-  long ftype = 0;
-  long fid = 0;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld "
-               "%d %d %d %d %d %d "
-               "%d %d %d %d %d %d",
-               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,&ftype,&fid,pr,
-               bnd_id,bnd_id+1,bnd_id+2,bnd_id+3,bnd_id+4,bnd_id+5,
-               bnd_type,bnd_type+1,bnd_type+2,bnd_type+3,bnd_type+4,
-               bnd_type+5);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_hex_conn() */
-
-
-/*=== LEGACY FILE FORMAT ===*/
-static int read_tet_conn_legacy(FILE *in,
-                                Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld",nod,nod+1,nod+2,nod+3,pr);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_tet_conn_legacy() */
-
-static int read_qtet_conn_legacy(FILE *in,
-                                 Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",
-               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,nod+8,nod+9,pr);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_qtet_conn_legacy() */
-
-static int read_hex_conn_legacy(FILE *in,
-                                Element *elem)
-{
-  int err = 0;
-
-  /* get elem id */
-  long id = 0;
-  CHECK_SCANF (in,"%ld",&id);
-
-  /* get pointers to element data */
-  long *nod = elem[id].nod;
-  long *pr = &elem[id].pr;
-
-  /* read data */
-  CHECK_SCANF (in,"%ld %ld %ld %ld %ld %ld %ld %ld %ld",
-               nod,nod+1,nod+2,nod+3,nod+4,nod+5,nod+6,nod+7,pr);
-
-  /* check for file error */
-  if(ferror(in) != 0) err = 1;
-
-  return err;
-}/* read_hex_conn_legacy() */
 
