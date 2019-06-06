@@ -108,7 +108,7 @@ int read_material_for_Thermal(FILE *fp,
 int read_multiphysics_material_properties(MaterialProperty *mat,
                                           const PGFem3D_opt *opts,
                                           const Multiphysics& mp,
-                      int myrank)
+                                          int myrank)
 {
   int err = 0;
   char dirname[1024], fn[2048];
@@ -365,12 +365,12 @@ int read_input_file(const PGFem3D_opt *opts,
   /* NOTE: Node/Element loading assumes forces only in ndim
      directions */
   CHECK_SCANF(in, "%ld", nln);
-  assert(0 <= nln);
+  assert(0 <= *nln);
   *znod = build_zatnode(*ndofn, *nln);
   read_nodal_load(in, *nln, *ndofn, *znod);
   /* surface */
   CHECK_SCANF (in,"%ld", nel_s);
-  assert(0 <= nel_s);
+  assert(0 <= *nel_s);
   *zelem_s = build_zatelem(*ndofn, *nel_s);
   read_elem_surface_load(in, *nel_s, *ndofn, *elem, *zelem_s);
 
@@ -447,7 +447,7 @@ int read_mesh_file(Grid *grid,
 
   // read multiphysics material properties
   int myrank = com->rank;
-  err += read_multiphysics_material_properties(mat,opts,mp,myrank);
+  err += read_multiphysics_material_properties(mat, opts, mp, myrank);
 
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
