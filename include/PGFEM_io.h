@@ -13,6 +13,7 @@
 #define PGFEM_IO_H
 
 #include <stdio.h>
+#include <string>
 
 /* FILE pointers that get switched about */
 extern FILE *PGFEM_stdout;
@@ -83,6 +84,10 @@ class ScopedFile {
 
 static inline ScopedFile scoped_fopen(const char* fn, const char* mode) {
   return { fn, mode };
+}
+
+static inline ScopedFile scoped_fopen(std::string fn, const char* mode) {
+  return { fn.c_str(), mode };
 }
 }
 #endif /* #ifndef  */
