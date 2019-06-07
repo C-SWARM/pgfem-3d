@@ -25,13 +25,13 @@ void compute_Eulerian_Almansi_strain(double *e,
 /// compute Equivalent (Von Mises) Eulerian Almansi strain from a given F
 double compute_Equivalent_strain(double *F_in);
 
+/// Lots of system headers require that the return value from scanf be
+/// checked. This small utility simplifies this process by counting the number
+/// of arguments that are expected automatically.
 #define CHECK_SCANF(stream, ...) do {                                   \
     check_scanf(__FILE__, __LINE__, __func__, (stream), __VA_ARGS__);   \
   } while (0)
 
-/// Lots of system headers require that the return value from scanf be
-/// checked. This small utility simplifies this process by counting the number
-/// of arguments that are expected automatically.
 template <class... Args>
 static inline void check_scanf(const char* file, int line, const char* func,
                                FILE *stream, Args... args)
