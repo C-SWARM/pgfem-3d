@@ -35,9 +35,8 @@ using namespace pgfem3d::net;
 /// \param[in,out] mat material property object
 /// \param[in] opts PGFem3D options
 /// \return non-zero on interal error
-int read_material_for_Mechanical(FILE *fp,
-                                 MaterialProperty *mat,
-                                 const PGFem3D_opt *opts)
+static int read_material_for_Mechanical(FILE *fp, MaterialProperty *mat,
+                                        const PGFem3D_opt *opts)
 {
   for (long i = 0, e = mat->nmat; i < e; ++i) {
     scan_for_valid_line(fp);
@@ -54,49 +53,27 @@ int read_material_for_Mechanical(FILE *fp,
 /// \param[in,out] mat material property object
 /// \param[in] opts PGFem3D options
 /// \return non-zero on interal error
-int read_material_for_Thermal(FILE *fp,
-                              MaterialProperty *mat,
-                              const PGFem3D_opt *opts)
+static int read_material_for_Thermal(FILE *fp, MaterialProperty *mat,
+                                     const PGFem3D_opt *opts)
 {
-  int err = 0;
-  int param_in = 10;
+  auto thermal = mat->thermal = new MaterialThermal[mat->nmat];
 
-  MaterialThermal *thermal = new MaterialThermal[mat->nmat];
-
-  for(long ia=0; ia<mat->nmat; ia++)
-  {
-    double cp;
-    double k[9];
-    double FHS_MW = 1.0;
-
-    int match = 0;
+  for (long i = 0, e = mat->nmat; i < e; ++i) {
     scan_for_valid_line(fp);
-    match += fscanf(fp, "%lf", &cp);
+    CHECK_SCANF(fp, "%lf", &thermal[i].cp);
 
     scan_for_valid_line(fp);
-    match += fscanf(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf", k+0, k+1, k+2
-                    , k+3, k+4, k+5
-                    , k+6, k+7, k+8);
-
-    if(match != param_in)
-      PGFEM_Abort();
-
-    thermal[ia].cp = cp;
-    for(int ib=0; ib<9; ib++)
-      thermal[ia].k[ib] = k[ib];
+    auto k = thermal[i].k;
+    CHECK_SCANF(fp, "%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                &k[0], &k[1], &k[2], &k[3], &k[4], &k[5], &k[6], &k[7], &k[8]);
 
     // read optional value (fraction of heat source from mechanical work)
     scan_for_valid_line(fp);
-    int read_no = fscanf(fp, "%lf", &FHS_MW);
-
-    if(read_no == 1)
-      thermal[ia].FHS_MW = FHS_MW;
-    else
-      thermal[ia].FHS_MW = 1.0;
+    thermal[i].FHS_MW = 1.0;                    // default
+    fscanf(fp, "%lf", &thermal[i].FHS_MW);      // conditionally overwrite
   }
 
-  mat->thermal = thermal;
-  return err;
+  return 0;
 }
 
 /// read material properties for multiphysics problem
@@ -112,84 +89,70 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
 {
   int err = 0;
   char dirname[1024], fn[2048];
-  sprintf(dirname,"%s/Material",opts->ipath);
+  sprintf(dirname, "%s/Material", opts->ipath);
 
-  for(int ia=0; ia<mp.physicsno; ia++)
-  {
-    sprintf(fn,"%s/%s.mat",dirname,mp.physicsname[ia]);
+  for(int i = 0, e = mp.physicsno; i < e; ++i) {
+    sprintf(fn, "%s/%s.mat", dirname, mp.physicsname[i]);
 
-    FILE *fp = NULL;
-    fp = fopen(fn, "r");
-
-    if(fp==NULL)
-    {
-      if(myrank==0)
-        PGFEM_printf("No [%s] exists.\n", fn);
-
-      continue;
+    if (FILE *fp = fopen(fn, "r")) {
+      switch(mp.physics_ids[i]) {
+       case MULTIPHYSICS_MECHANICAL:
+        err += read_material_for_Mechanical(fp, mat, opts);
+        break;
+       case MULTIPHYSICS_THERMAL:
+        err += read_material_for_Thermal(fp, mat, opts);
+        break;
+       case MULTIPHYSICS_CHEMICAL:
+        break;
+       default:
+        break;
+      }
+      fclose(fp);
     }
-
-    switch(mp.physics_ids[ia])
-    {
-     case MULTIPHYSICS_MECHANICAL:
-      err += read_material_for_Mechanical(fp,mat,opts);
-      break;
-     case MULTIPHYSICS_THERMAL:
-      err += read_material_for_Thermal(fp,mat,opts);
-      break;
-     case MULTIPHYSICS_CHEMICAL:
-      break;
-     default:
-      break;
+    else if (myrank == 0) {
+      PGFEM_printf("No [%s] exists.\n", fn);
     }
-    fclose(fp);
   }
 
   // read and set general material properties e.g. density
+  auto* d = mat->density = PGFEM_malloc<double>(mat->nmat);
+  for (long i = 0, e = mat->nmat; i < e; ++i) {
+    d[i] = 0.0;
+  }
 
-  mat->density = (double *) malloc(sizeof(double)*(mat->nmat));
-  double *d = mat->density;
-  for(long ia=0; ia<mat->nmat; ia++)
-    d[ia] = 0.0;
-
-  sprintf(fn,"%s/material.mat",dirname);
-  FILE *fp = NULL;
-  fp = fopen(fn, "r");
-
-  if(fp == NULL)
-  {
-    if(myrank==0)
+  int match = 0;
+  sprintf(fn, "%s/material.mat", dirname);
+  if (FILE *fp = fopen(fn, "r")) {
+    for (long i = 0, e = mat->nmat; i < e; ++i) {
+      scan_for_valid_line(fp);
+      match += fscanf(fp, "%lf", &d[i]);
+    }
+    fclose(fp);
+  }
+  else {
+    if (myrank == 0) {
       PGFEM_printf("No [%s] exists. \nDensity is set to zero.\n", fn);
+    }
 
     return err;
   }
 
-  int match = 0;
-  for(long ia=0; ia<mat->nmat; ia++)
-  {
-    scan_for_valid_line(fp);
-    match += fscanf(fp, "%lf", d+ia);
-  }
-
-  fclose(fp);
-
   // check number of densities that is read.
-  if(match != mat->nmat)
-  {
-    if(myrank==0)
-      PGFEM_printf("Material density is not read as many as number of materials.\n");
-
+  if (match != mat->nmat) {
+    if (myrank == 0) {
+      PGFEM_printf("Material density is not read as many as number of "
+                   "materials.\n");
+    }
     PGFEM_Abort();
   }
-  else
-  {
-    for(int ia = 0; ia<mat->nhommat; ia++)
-    {
-      (mat->hommat[ia]).density = d[(mat->hommat[ia]).mat_id];
-      if(myrank==0)
-        PGFEM_printf("Density(%d), %e\n", ia, (mat->hommat[ia]).density);
+
+  for(int i = 0, e = mat->nhommat; i < e; ++i) {
+    mat->hommat[i].density = d[mat->hommat[i].mat_id];
+    if (myrank == 0) {
+      PGFEM_printf("Density(%d), %e\n", i, mat->hommat[i].density);
     }
   }
+
   return err;
 }
 
@@ -1313,12 +1276,12 @@ void read_simulation_methods(char *filenameMS, PGFem3D_opt *opts) {
   {
       PGFEM_printf("Failed to open file [%s]. \n", filenameMS);
   }
-  fscanf(fpms,"%d",&Ne);                                    //number of cohesive elements
-  fscanf(fpms,"%d",&Nt);                                    //number of time steps
+  CHECK_SCANF(fpms,"%d",&Ne);                   //number of cohesive elements
+  CHECK_SCANF(fpms,"%d",&Nt);                   //number of time steps
   opts->methods = (int*) PGFEM_calloc (int,Nt*Ne);
       for(t = 0; t < Nt; t++) {
         for(e = 0; e < Ne; e++) {
-          fscanf(fpms,"%d",&temp);
+          CHECK_SCANF(fpms,"%d",&temp);
           opts->methods[e + Ne*t] = temp;
         }
       }
