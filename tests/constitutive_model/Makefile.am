@@ -28,3 +28,4 @@ J2D_driver_SOURCES          = cm_j2_plasticity_driver.cc
 CH_layer_driver_SOURCES     = CH_layer_driver.cc
 unit_test_43_driver_SOURCES = unit_test_43_driver.cc
 
+TESTS = comm_hints_driver

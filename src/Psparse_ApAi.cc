@@ -292,8 +292,8 @@ Ai_t* Psparse_ApAi (long ne,
   const int *preRecv = NULL;
 
   if (com->hints != NULL){                                                         //check if comm hints were provided
-    nsend = com->hints->get_nrecv();
-    nrecv = com->hints->get_nsend();
+    nsend = com->hints->nRecv();
+    nrecv = com->hints->nSend();
     preSend = com->hints->get_recv_list();                                    //returns hints->recv
     preRecv = com->hints->get_send_list();
   }

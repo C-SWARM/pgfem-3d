@@ -67,7 +67,7 @@ int multi_scale_main(int argc, char* argv[])
 
   // Start the Boot class to get our PMI info
   Boot *boot = new Boot();
-  
+
   /* initialize PGFEM_io */
   PGFEM_initialize_io(NULL,NULL);
 
@@ -98,7 +98,7 @@ int multi_scale_main(int argc, char* argv[])
   if (macro_argc+micro_argc > argc) {
     if (argc <= 2) {
       if (myrank == 0) {
-	print_usage(stdout);
+    print_usage(stdout);
       }
       exit(0);
     }
@@ -108,7 +108,7 @@ int multi_scale_main(int argc, char* argv[])
   if (myrank == 0) {
     print_options(stdout, &options);
   }
-  */  
+  */
 
   /* re-adjust for macro/micro options */
   macro_argv = argv + macro_start;
@@ -119,7 +119,7 @@ int multi_scale_main(int argc, char* argv[])
   sprintf(micro_argv[1],"-ms");
 
   while(debug);
-  
+
   //----------------------------------------------------------------------
   //  // create and initialization of PGFem3D objects
   //    //----------------------------------------------------------------------
@@ -127,7 +127,7 @@ int multi_scale_main(int argc, char* argv[])
        // Multiphysics setting
   Multiphysics mp;
   err += read_multiphysics_settings(mp,&options,myrank);
-              
+
 
   // Create the desired network
   Network *net = pgfem3d::net::Network::Create(options);
@@ -141,24 +141,23 @@ int multi_scale_main(int argc, char* argv[])
 
   // split multiscale communicators
   mscom->MM_split(nproc_macro, micro_group_size);
-  
+
   /*=== READ COMM HINTS ===*/
   //allocate memory
   CommunicationStructure *com = new CommunicationStructure{};
   Macroscale *macro = NULL;
   Microscale *micro = NULL;
-  
+
   //load comm hints, macro/micro class, macro/micro filenames
   if (mscom->valid_macro) {
     /*=== MACROSCALE ===*/
     macro = new Macroscale();
     re_parse_command_line(myrank, 1, macro_argc, macro_argv, &options);
-    
+
     int macro_rank;
     net->comm_rank(mscom->macro, &macro_rank);
-    com->hints = new CommHints(options.ipath, options.ifname, myrank);
     try {
-      (com->hints)->read_filename(NULL);
+      com->hints = new CommHints(options.ipath, options.ifname, myrank);
     } catch(...) {
       if (myrank == 0) {
         PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
@@ -184,9 +183,8 @@ int multi_scale_main(int argc, char* argv[])
 
     int micro_rank;
     net->comm_rank(mscom->micro, &micro_rank);
-    com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
     try {
-      (com->hints)->read_filename(NULL);
+      com->hints = new CommHints(options.ipath, options.ifname, micro_rank);
     } catch(...) {
       if (myrank == 0) {
         PGFEM_printerr("WARNING: One or more procs could not load communication hints.\n"
@@ -205,12 +203,12 @@ int multi_scale_main(int argc, char* argv[])
       PGFEM_redirect_io_micro();
 
   }
-  
+
   /*=== INITIALIZE SCALES ===*/
   if (mscom->valid_macro) {/*=== MACROSCALE ===*/
     macro->build_solutions(1);  // only 1 for macroscale
     // XXX not sure why this is done twice
-    macro->initialize(macro_argc, macro_argv, com, mp_id,mp); 
+    macro->initialize(macro_argc, macro_argv, com, mp_id,mp);
   }
   else if (mscom->valid_micro) {/*=== MICROSCALE ===*/
     PGFEM_redirect_io_micro();
@@ -286,8 +284,8 @@ int multi_scale_main(int argc, char* argv[])
 
     /* create the list of jobs */
     pgf_FE2_macro_client_create_job_list(client, n_jobs_max, macro,
-					 mscom, mp_id);
-    
+                     mscom, mp_id);
+
     /* determine the initial job assignment*/
     pgf_FE2_macro_client_assign_initial_servers(client, mscom);
 
@@ -296,7 +294,7 @@ int multi_scale_main(int argc, char* argv[])
     int nproc_macro = 0;
     char filename[500];
     net->comm_size(mscom->macro, &nproc_macro);
-    
+
     /* Create a context for passing stuff to Newton Raphson */
     MS_SERVER_CTX *ctx = PGFEM_calloc(MS_SERVER_CTX, 1);
     ctx->client = client;
@@ -317,7 +315,7 @@ int multi_scale_main(int argc, char* argv[])
 
       read_applied_surface_tractions_fname(trac_fname,&n_feats,
                                            &feat_type,&feat_id,&loads,
-					   myrank);
+                       myrank);
 
       generate_applied_surface_traction_list(c->ne,c->elem,
                                              n_feats,feat_type,
@@ -334,7 +332,7 @@ int multi_scale_main(int argc, char* argv[])
         tmp_sum += nodal_forces[i];
       }
       net->allreduce(NET_IN_PLACE, &tmp_sum, 1, NET_DT_DOUBLE,
-		     NET_OP_SUM, mscom->macro);
+             NET_OP_SUM, mscom->macro);
 
       if(mscom->rank_macro == 0){
         PGFEM_printf("Total load from surface tractions: %.8e\n\n",tmp_sum);
@@ -345,7 +343,7 @@ int multi_scale_main(int argc, char* argv[])
       free(loads);
       free(trac_fname);
     }
-    
+
     /* push nodal_forces to s->R */
     vvplus  (s->R,nodal_forces,c->ndofd);
 
@@ -419,7 +417,7 @@ int multi_scale_main(int argc, char* argv[])
                                   ste,c->node,c->elem,
                                   s->sig_e,s->eps,sur_forces);
           net->allreduce(NET_IN_PLACE, sur_forces, n_feats*ndim,
-			 NET_DT_DOUBLE, NET_OP_SUM, mscom->macro);
+             NET_DT_DOUBLE, NET_OP_SUM, mscom->macro);
           if(mscom->rank_macro == 0){
             PGFEM_printf("RESTART: Forces on marked features:\n");
             print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
@@ -450,7 +448,7 @@ int multi_scale_main(int argc, char* argv[])
       }
 
       compute_load_vector_for_prescribed_BC_multiscale(c,s,macro->opts,
-						       solver_file->nonlin_tol,
+                               solver_file->nonlin_tol,
                                                        mscom->rank_macro);
 
       /*=== do not support node/surf loads ===*/
@@ -579,7 +577,7 @@ int multi_scale_main(int argc, char* argv[])
                                   ste,c->node,c->elem,
                                   s->sig_e,s->eps,sur_forces);
           net->allreduce(NET_IN_PLACE,sur_forces,n_feats*ndim,
-			 NET_DT_DOUBLE,NET_OP_SUM,mscom->macro);
+             NET_DT_DOUBLE,NET_OP_SUM,mscom->macro);
           if(mscom->rank_macro == 0){
             PGFEM_printf("Forces on marked features:\n");
             print_array_d(PGFEM_stdout,sur_forces,n_feats*ndim,
@@ -617,7 +615,7 @@ int multi_scale_main(int argc, char* argv[])
             int Gnn = 0;
             ASCII_output(macro->opts,c,s->tim,s->times,
                          Gnn,c->nn,c->ne,c->nce,c->ndofd,
-			 solver_file->nonlin_method,
+             solver_file->nonlin_method,
                          lm,pores,c->VVolume,
                          c->node,c->elem,c->supports,
                          s->r,s->eps,s->sig_e,s->sig_n,c->coel);
@@ -715,12 +713,12 @@ int multi_scale_main(int argc, char* argv[])
   }
 
   err += PGFEM_finalize_io();
-  
+
   delete mscom;
   delete com;
 
   net->finalize();
-  
+
   delete net;
   delete boot;
   /* finalize and exit */

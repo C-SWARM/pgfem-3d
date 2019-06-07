@@ -631,8 +631,7 @@ int single_scale_main(int argc,char *argv[])
     int ch_err = 0;
     try {
       com0->hints = new CommHints(options.ipath, options.ifname, myrank);
-      com0->hints->read_filename(NULL);
-    } catch(...) {
+    } catch (...) {
       ch_err = 1;
     }
     net->allreduce(NET_IN_PLACE, &ch_err, 1, NET_DT_INT, NET_OP_SUM, com0->comm);

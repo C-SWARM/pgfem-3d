@@ -22,15 +22,15 @@ using namespace pgfem3d;
 using namespace pgfem3d::net;
 
 static long fallback_GRedist_node(const int nproc,
-				  const int myrank,
-				  const long nn,
-				  const long ndofn,
-				  Node *node,
-				  const CommunicationStructure *com,
-				  const long mp_id)
+                  const int myrank,
+                  const long nn,
+                  const long ndofn,
+                  Node *node,
+                  const CommunicationStructure *com,
+                  const long mp_id)
 {
   long NBN = 0; /* return value */
-  
+
   long GN = 0;
   long need = 0;
   for (int i=0;i<nn;i++){
@@ -98,7 +98,7 @@ static long fallback_GRedist_node(const int nproc,
   //assert(NBN > 0 && "NBN must be > 0");
   if(NBN > 0) Gnn_Gid = static_cast<long*>(malloc(NBN*own_buf_elem_size));
   com->net->allgatherv(own_buf,recvcount[myrank],NET_DT_LONG,
-		       Gnn_Gid,recvcount,displ,NET_DT_LONG,com->comm);
+               Gnn_Gid,recvcount,displ,NET_DT_LONG,com->comm);
 
   /* sort the list of Gnn and their associated Gid by Gnn */
   if (Gnn_Gid != NULL)
@@ -129,7 +129,7 @@ static long fallback_GRedist_node(const int nproc,
         /* BC overrides periodicity */
         node[nod].id_map[mp_id].Gid[j] = node[nod].id_map[mp_id].id[j];
       } else {
-	assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
+    assert(Gnn_Gid != NULL && "Gnn_Gid can't be NULL");
         node[nod].id_map[mp_id].Gid[j] = Gnn_Gid[Gnn_Gid_idx + j];
       }
     }
@@ -163,15 +163,15 @@ static long fallback_GRedist_node(const int nproc,
  * \return total number of global nodes
  */
 static long comm_hints_GRedist_node_ISIR(const int nproc,
-					 const int myrank,
-					 const long nnode,
-					 const long ndofn,
-					 Node *nodes,
-					 const CommunicationStructure *com,
-					 const long mp_id)
+                     const int myrank,
+                     const long nnode,
+                     const long ndofn,
+                     Node *nodes,
+                     const CommunicationStructure *com,
+                     const long mp_id)
 {
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   long owned_gnn = 0;
   long total_gnn = 0;
   int owned_range[2] = {0};
@@ -216,13 +216,13 @@ static long comm_hints_GRedist_node_ISIR(const int nproc,
      the communication hints -- NOTE: This is a SCATTER
      operation. ***Therefore, we use the receive hints to post
      sends.*** */
-  const int nsend = com->hints->get_nrecv();
-  const int *send = com->hints->get_recv_list();
+  const size_t nsend = com->hints->nRecv();
+  auto send = com->hints->get_recv_list();
   Request *req;
   net->allocRequestArray(nsend, &req);
-  for (int i = 0; i < nsend; i++) {
+  for (size_t i = 0; i < nsend; i++) {
     net->isend(owned_Gnn_Gid, len_owned_Gnn_Gid, NET_DT_LONG,
-		    send[i], GREDIST_TAG, com->comm, &req[i]);
+            send[i], GREDIST_TAG, com->comm, &req[i]);
   }
 
   /* reduce the total number of boundary nodes */
@@ -231,12 +231,12 @@ static long comm_hints_GRedist_node_ISIR(const int nproc,
   /* busy loop: Probe for message, post matching receive, do work --
      NOTE: This is a SCATTER operation. ***Therefore, we use the send
      hints to post receives.*** */
-  const int nrecv = com->hints->get_nsend();
+  const size_t nrecv = com->hints->nSend();
   const int *recv = com->hints->get_send_list();
   int *finished = static_cast<int*>(calloc(nrecv, sizeof(*finished)));
   int remaining = nrecv;
   while (remaining > 0) {
-    int idx = 0;
+    size_t idx = 0;
     int msg_waiting = 0;
     Status stat;
     /* Probe for waiting message */
@@ -260,7 +260,7 @@ static long comm_hints_GRedist_node_ISIR(const int nproc,
        matching* receive, so we use an explicit tag */
     Request breq;
     net->irecv(recv_Gnn_Gid, msg_count, NET_DT_LONG,
-	       recv[idx], stat.NET_TAG, com->comm, &breq);
+           recv[idx], stat.NET_TAG, com->comm, &breq);
 
     /* While waiting for communication to complete, find the range of
        nodes we need to work on that are owned by the current
@@ -274,7 +274,7 @@ static long comm_hints_GRedist_node_ISIR(const int nproc,
 
     /* complete the receive communication */
     net->wait(&breq, NET_STATUS_IGNORE);
-    
+
     /*
       Now we loop through the nodes that need information from the
       other domain and search for matches. We take advantage of the
@@ -327,12 +327,12 @@ static long comm_hints_GRedist_node_ISIR(const int nproc,
 }
 
 static long comm_hints_GRedist_node_PWC(const int nproc,
-					const int myrank,
-					const long nnode,
-					const long ndofn,
-					Node *nodes,
-					const CommunicationStructure *com,
-					const long mp_id)
+                    const int myrank,
+                    const long nnode,
+                    const long ndofn,
+                    Node *nodes,
+                    const CommunicationStructure *com,
+                    const long mp_id)
 {
   PWCNetwork *net = static_cast<PWCNetwork*>(com->net);
   Buffer rbuf;
@@ -378,26 +378,26 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     }
     owned_Gnn_Gid[idx++] = shared[i].Gnn;
     memcpy(owned_Gnn_Gid + idx, shared[i].id_map[mp_id].Gid, ndofn * sizeof(*owned_Gnn_Gid));
-  
+
     /* pin send buffer */
     sbuffer.addr = reinterpret_cast<uintptr_t> (owned_Gnn_Gid);
     sbuffer.size = len_owned_Gnn_Gid * sizeof(*owned_Gnn_Gid);
     net->pin(reinterpret_cast<void *>(sbuffer.addr), sbuffer.size, &sbuffer.key);
     sbuffer_pinned = true;
-  }  
+  }
 
-  /* wait for local PWC completions from above 
+  /* wait for local PWC completions from above
      receive the size of recv buffer*/
-  const int nrecv = com->hints->get_nsend();
+  const size_t nrecv = com->hints->nSend();
   long *len_recv_Gnn_Gid = PGFEM_calloc (long, nproc);
   for (int i = 0; i < nproc; i++) {
     len_recv_Gnn_Gid[i] = -1;
   }
 
   /* Send allocation information */
-  const int nsend = com->hints->get_nrecv();
-  const int *send = com->hints->get_recv_list();
-  for (int i = 0; i < nsend; i++) {
+  const size_t nsend = com->hints->nRecv();
+  const    int *send = com->hints->get_recv_list();
+  for (size_t i = 0; i < nsend; i++) {
     CID rid = (CID)len_owned_Gnn_Gid;
     assert((long)rid);
     net->pwc(send[i], 0, 0, 0, lid, rid);
@@ -405,7 +405,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
 
   net->wait_n_id(nsend, lid);
 
-  int t_count = 0;
+  size_t t_count = 0;
   while (t_count < nrecv) {
     int flag;
     CID val;
@@ -428,9 +428,9 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
     r_size += JJ;
   }
   rbuf.addr = reinterpret_cast<uintptr_t> (PGFEM_calloc_pin(long, r_size,
-							    net, &rbuf.key));
+                                net, &rbuf.key));
   rbuf.size = sizeof(long)*r_size;
-  
+
   /* allocate and pin recv buffers */
   long **RECI = PGFEM_calloc (long*, nproc);
   Buffer *rbuffers = PGFEM_calloc (Buffer, nproc);
@@ -450,14 +450,14 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   /* exchange receive buffers */
   for (int i = 0; i < nproc; i++) {
     net->gather(&rbuffers[i], sizeof(Buffer), NET_DT_BYTE,
-	net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
+    net->getbuffer(), sizeof(Buffer), NET_DT_BYTE, i, com->comm);
   }
 
   /* initialize communication of the owned node information based on
      the communication hints -- NOTE: This is a SCATTER
      operation. ***Therefore, we use the receive hints to post
      sends.*** */
-  for (int i = 0; i < nsend; i++) {
+  for (size_t i = 0; i < nsend; i++) {
     CID rid = (CID)len_owned_Gnn_Gid;
     net->pwc(send[i], sbuffer.size, &sbuffer, &net->getbuffer()[send[i]], lid, rid);
   }
@@ -547,7 +547,7 @@ static long comm_hints_GRedist_node_PWC(const int nproc,
   free(owned_Gnn_Gid);
   return total_gnn;
 }
-  
+
 /**
  * New implementation of GRedist_node that avoids global communication
  *
@@ -558,7 +558,7 @@ static long comm_hints_GRedist_node(const int nproc,
                                     const long nnode,
                                     const long ndofn,
                                     Node *nodes,
-				    const CommunicationStructure *com,
+                    const CommunicationStructure *com,
                                     const long mp_id)
 {
   switch (com->net->type()) {
@@ -569,7 +569,7 @@ static long comm_hints_GRedist_node(const int nproc,
     return comm_hints_GRedist_node_PWC(nproc, myrank, nnode, ndofn, nodes, com, mp_id);
     break;
   default:
-    PGFEM_Abort();    
+    PGFEM_Abort();
   }
   return 1;
 }
@@ -579,7 +579,7 @@ long GRedist_node (const int nproc,
                    const long nn,
                    const long ndofn,
                    Node *node,
-		   const CommunicationStructure *com,
+           const CommunicationStructure *com,
                    const int mp_id)
 {
   if (!(com->hints)) return fallback_GRedist_node(nproc, myrank, nn, ndofn, node, com, mp_id);
