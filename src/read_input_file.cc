@@ -414,37 +414,36 @@ int read_mesh_file(Grid *grid,
 
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
-  for(int iA=0; iA<mp.physicsno; iA++)
-  {
-    SOL[iA].iter_max_sol  = SOL[0].iter_max_sol;
-    SOL[iA].err           = SOL[0].err;
-    SOL[iA].computer_zero = SOL[0].computer_zero;
-    FV[iA].n_concentrations = FV[0].n_concentrations;
-    FV[iA].NORM             = FV[0].NORM;
+  for (int i = 0, e = mp.physicsno; i < e; ++i) {
+    SOL[i].iter_max_sol    = SOL[0].iter_max_sol;
+    SOL[i].err             = SOL[0].err;
+    SOL[i].computer_zero   = SOL[0].computer_zero;
+    FV[i].n_concentrations = FV[0].n_concentrations;
+    FV[i].NORM             = FV[0].NORM;
   }
+
   // need to update number of elements that have prescribed BCs (supported)
-  for (long ia=0;ia<grid->ne;ia++)
-  {
-    for(int iA = 1; iA<mp.physicsno; iA++) // iA = 0 is alreaded accounted in read_elem in read_input_file
-    {
-      const long *nod = grid->element[ia].nod;
-      const long nne = grid->element[ia].toe;
-      int is_it_supp = 0;
-      for(long ja=0; ja<load->sups[iA]->ndn; ja++)
-      {
-        for (long ka=0; ka<nne; ka++)
-        {
-          if(load->sups[iA]->lnpd[ja] == nod[ka])
-          {
-            is_it_supp = 1;
-            break;
+  for (long i = 0, e = grid->ne; i < e; ++i) {
+    auto nod = grid->element[i].nod;
+    auto nne = grid->element[i].toe;
+
+    // @todo[ld] This isn't really ideal. In reality, it would be nice to
+    //           provide some functionality in the element and/or SUPP to do
+    //           this operation, rather than embedding it as a lambda.
+    auto is_supported = [&](const SUPP_1& s) {
+      for (long i = 0, e = s.ndn; i < e; ++i) {
+        for (long j = 0, e = nne; j < e; ++j) {
+          if (s.lnpd[i] == nod[j]) {
+            return 1;
           }
         }
-        if(is_it_supp)
-          break;
       }
-      if(is_it_supp)
-        (load->sups[iA]->nde)++;
+      return 0;
+    };
+
+    // j = 0 is alreaded accounted in read_elem in read_input_file
+    for (int j = 1, e = mp.physicsno; j < e; ++j) {
+      load->sups[j]->nde += is_supported(*load->sups[j]);
     }
   }
   return err;
