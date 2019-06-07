@@ -36,7 +36,7 @@ MultiscaleCommon::MultiscaleCommon()
   sol = NULL;
 
   set_default_options(opts);
-  
+
   /* options /solver information */
   SOLVER = NULL;
   Ap = NULL;
@@ -80,15 +80,15 @@ MultiscaleCommon::~MultiscaleCommon()
   for(int i = 0, e = idx_map.size;
       i < e; i++){
     destroy_MULTISCALE_SOLUTION(sol+i,
-				this,
-				opts->analysis_type);
+                this,
+                opts->analysis_type);
   }
   free(sol);
   free(opts);
   destroy_common();
   sol_idx_map_destroy(&(idx_map));
 }
-  
+
 void MultiscaleCommon::build_solutions(const int n_solutions)
 {
   /*=== BUILD SOLUTIONS ===*/
@@ -101,15 +101,15 @@ void MultiscaleCommon::build_solutions(const int n_solutions)
 }
 
 void MultiscaleCommon::initialize(const int argc,
-				  char **argv,
-				  const CommunicationStructure *com,
-				  const int mp_id,
+                  char **argv,
+                  const CommunicationStructure *com,
+                  const int mp_id,
           Multiphysics& mp)
 {
   int myrank = com->rank;
   /* parse the command-line-style options */
   parse_command_line(argc, argv, myrank, opts);
-  
+
   /* error check the command line */
   if (opts->solverpackage != HYPRE && opts->solverpackage != TRILINOS){
     if(myrank == 0)
@@ -117,7 +117,7 @@ void MultiscaleCommon::initialize(const int argc,
                      "%s:%s:%d\n",__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(com, 0);
   }
-  
+
   switch (opts->analysis_type) {
   case DISP: break;
   case CM:
@@ -130,7 +130,7 @@ void MultiscaleCommon::initialize(const int argc,
     PGFEM_Comm_code_abort(com, 0);
     break;
   }
-  
+
   /* attempt to write to output directory */
   if (make_path(opts->opath,DIR_MODE) != 0){
     if (myrank == 0){
@@ -139,14 +139,14 @@ void MultiscaleCommon::initialize(const int argc,
     }
     PGFEM_Comm_code_abort(com, 0);
   }
-  
+
   /*=== BUILD COMMON ===*/
   build_common(com, mp_id,mp);
   supports->multi_scale = opts->multi_scale;
 }
 
 void MultiscaleCommon::build_common(const CommunicationStructure *com,
-				    const int mp_id,
+                    const int mp_id,
             Multiphysics& mp)
 {
   // save initial communication properties from parent com
@@ -156,11 +156,11 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
   net = com->net;      // network handle
   comm = com->comm;    // communicator
   hints = com->hints;  // communication hints
-  
+
   /* initialize the solver information */
   SOLVER = nullptr;
   maxit_nl = 5;
-  
+
   switch(opts->vis_format){
    case VIS_ENSIGHT: case VIS_VTK:
     ensight = new Ensight{};
@@ -231,7 +231,8 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
 
     /* override prescribed displacements */
     if(opts->override_pre_disp){
-      if(override_prescribed_displacements(supports,opts) != 0){
+      auto fn = opts->pre_disp_file;
+      if (override_prescribed_displacements(*supports, fn) != 0) {
         PGFEM_printerr("[%d]ERROR: an error was encountered when"
                        " reading the displacement override file.\n"
                        "Be sure that there are enough prescribed"
@@ -263,7 +264,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
 
     dealoc3l(a,nmat,nmat);
     free(mater);
-    
+
     if (opts->analysis_type == CM) {
       char *cm_filename = NULL;
       alloc_sprintf(&cm_filename,"%s/model_params.in",opts->ipath);
@@ -274,7 +275,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
       fclose(cm_in);
     }
   }/* end reading *.in */
-  
+
   /* read cohesive stuff */
   if (opts->cohesive){
     char *filename = PGFEM_calloc(char, 500);
@@ -295,9 +296,9 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
 
     /* read the cohesive element info */
     coel = read_cohe_elem (in1,ncom,ndim,nn,node,
-			   &nce,comat,ensight,
-			   opts->vis_format,rank,
-			   co_props);
+               &nce,comat,ensight,
+               opts->vis_format,rank,
+               co_props);
     dealoc2 (comat,ncom);
     PGFEM_fclose (in1);
     free(filename);
@@ -308,14 +309,14 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
                          NULL,ne,0,nn);
 
   bndel = list_boundary_el(ne,elem,nn,
-			   node,rank,&nbndel);
+               node,rank,&nbndel);
 
   DomDof = PGFEM_calloc(long, nproc);
 
   ndofd = generate_local_dof_ids(ne,nce,nn,
-				 ndofn,node,
-				 elem,coel,NULL,
-				 this,mp_id);
+                 ndofn,node,
+                 elem,coel,NULL,
+                 this,mp_id);
 
   DomDof[rank] =
   generate_global_dof_ids(ne,nce,nn,
@@ -323,7 +324,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
                           coel,NULL,this,mp_id);
 
   net->allgather(NET_IN_PLACE,1,NET_DT_LONG,DomDof,
-		 1,NET_DT_LONG,comm);
+         1,NET_DT_LONG,comm);
 
   renumber_global_dof_ids(ne,nce,0,nn,
                           ndofn,DomDof,node,
@@ -337,40 +338,40 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
 
   /* global stiffness pattern and communication structure */
   Ap = PGFEM_calloc(int, DomDof[rank]+1);
-  
+
   // now create a new sparse structure
   spc = pgfem3d::SparseComm::Create(net, comm);
-  
+
   Ai =  Psparse_ApAi(ne,0,nn, ndofn,ndofd,elem,
-		    NULL,node,nce, coel, this,
-		    opts->cohesive,mp_id);
-  
+            NULL,node,nce, coel, this,
+            opts->cohesive,mp_id);
+
   // initialize SparseComm buffers after pattern determined
   spc->initialize();
   spc->build_fast_maps(ndofd, DomDof[rank], GDof);
-  
+
   SOLVER = pgfem3d::solvers::SparseSystem::Create(*opts,
-						  comm,
-						  Ap,
-						  Ai,
-						  DomDof,
-						  opts->maxit,
-						  lin_err);
-  
+                          comm,
+                          Ap,
+                          Ai,
+                          DomDof,
+                          opts->maxit,
+                          lin_err);
+
   if (!supports->multi_scale) {
     VVolume = T_VOLUME (ne,ndim,elem,node);
     net->allreduce(NET_IN_PLACE, &VVolume, 1, NET_DT_DOUBLE,
-		   NET_OP_SUM, comm);
+           NET_OP_SUM, comm);
   } else {
     VVolume = supports->v0;
   }
-  
+
   /* allocate solution_buffers */
   build_MULTISCALE_SOLUTION_BUFFERS(&solution_buffer,
                                     ndofd, DomDof[rank]);
-  
+
   free(in_fname);
-  
+
   /* compute/print summary information */
   long mesh_info[7];
   mesh_info[0] = Gnn;
@@ -381,7 +382,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
   mesh_info[5] = DomDof[rank];
   mesh_info[6] = Ap[DomDof[rank]];
   net->allreduce(NET_IN_PLACE, mesh_info+2, 5, NET_DT_LONG, NET_OP_SUM, comm);
-  
+
   if (rank == 0) {
     print_interpreted_options(opts);
     if (opts->multi_scale) {

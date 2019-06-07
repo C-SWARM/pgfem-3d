@@ -289,24 +289,20 @@ void read_elem_surface_load (FILE *in,
 
 }
 
-int override_prescribed_displacements(SUPP sup,
-                                      const PGFem3D_opt *opt)
-{
-  int err = 0;
+int override_prescribed_displacements(SUPP_1& sup, const char* fn) {
   int err_rank = 0;
   PGFEM_Error_rank(&err_rank);
-  if(err_rank == 0){
-    PGFEM_printf("Overriding the prescribed displacements with:\n"
-                 "%s\n",opt->pre_disp_file);
+  if (err_rank == 0) {
+    PGFEM_printf("Overriding the prescribed displacements with:\n%s\n", fn);
   }
 
-  FILE *in = PGFEM_fopen(opt->pre_disp_file,"r");
-  for(long i=0; i<sup->npd; i++){
-    CHECK_SCANF(in,"%lf",&sup->defl_d[i]);
+  if (auto in = scoped_fopen(fn, "r")) {
+    for (long i = 0, e = sup.npd; i < e; ++i) {
+      CHECK_SCANF(in, "%lf", &sup.defl_d[i]);
+    }
+    return 0;
   }
-  err = ferror(in);
-  PGFEM_fclose(in);
-  return err;
+  return 1;
 }
 
 int override_material_properties(const long nmat,

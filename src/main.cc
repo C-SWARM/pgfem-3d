@@ -627,7 +627,6 @@ int single_scale_main(int argc,char *argv[])
 
   /*=== READ COMM HINTS ===*/
   {
-
     int ch_err = 0;
     try {
       com0->hints = new CommHints(options.ipath, options.ifname, myrank);
@@ -645,37 +644,37 @@ int single_scale_main(int argc,char *argv[])
     }
   }
 
-  // use communication hints build at 0 for other physics (>0)
-  // memory will be deallocated once by checking is it NULL
-  for(int ia=1; ia<mp.physicsno; ia++)
-    com[ia].hints = com0->hints;
+  // Share communication hints build at 0 for other physics (>0)
+  for (int i = 1, e = mp.physicsno; i < e; ++i) {
+    com[i].hints = com0->hints;
+  }
 
-  for(int ia=0; ia<mp.physicsno; ia++)
-  {
-    if(mp.physics_ids[ia]!=MULTIPHYSICS_MECHANICAL)
+  for (int i = 0, e = mp.physicsno; i < e; ++i) {
+    if (mp.physics_ids[i] != MULTIPHYSICS_MECHANICAL) {
       continue;
+    }
 
     /*=== OVERRIDE PRESCRIBED DISPLACEMENTS ===*/
-    if(options.override_pre_disp){
-      if(override_prescribed_displacements(load.sups[ia],&options) != 0){
-        PGFEM_printerr("[%d]ERROR: an error was encountered when"
-                       " reading the displacement override file.\n"
-                       "Be sure that there are enough prescribed"
-                       " displacements in the file.\n",myrank);
+    if (options.override_pre_disp) {
+      auto& s = *(load.sups[i]);
+      auto fn = options.pre_disp_file;
+      if (override_prescribed_displacements(s, fn) != 0) {
+        PGFEM_printerr("[%d]ERROR: an error was encountered when reading the "
+                       "displacement override file.\n"
+                       "Be sure that there are enough prescribed displacements "
+                       "in the file.\n", myrank);
         PGFEM_Abort();
       }
     }
 
     /*=== MULTISCALE INFORMATION ===*/
-    if(options.multi_scale && (mp_id_M >=0))
-    {
-      (load.sups[mp_id_M])->multi_scale = options.multi_scale;
-      int ms_err = read_interface_macro_normal_lc(options.ipath,load.sups[ia]);
-      if(ms_err != 0){
+    if (options.multi_scale && (mp_id_M >= 0)) {
+      load.sups[mp_id_M]->multi_scale = options.multi_scale;
+      if (read_interface_macro_normal_lc(options.ipath, load.sups[i])) {
         PGFEM_printerr("[%d] ERROR: could not read normal from file!\n"
                        "Check that the file \"%s/normal.in\""
                        " exists and try again.\n",
-                       myrank,options.ipath);
+                       myrank, options.ipath);
         PGFEM_Abort();
       }
     }

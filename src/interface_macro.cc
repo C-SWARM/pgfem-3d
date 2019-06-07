@@ -5,51 +5,39 @@
 #include "interface_macro.h"
 #include "allocation.h"
 #include "enumerations.h"
+#include "utils.h"
 #include <mkl_cblas.h>
 #include <cmath>
 #include <cstring>
 
-int read_interface_macro_normal_lc(const char *in_dir, SUPP sup)
-{
-  int err = 0;
-  const char *filename = "normal.in";
-  int s_len = strlen(in_dir) + strlen(filename) + 3 /* 2 terminantion chars + / */;
-  char *in_name = PGFEM_calloc (char, s_len);
-  if(sprintf(in_name,"%s/%s",in_dir,filename) >= s_len){
-    PGFEM_printerr("Need to allocate more space for filename in %s\n",__func__);
-    err++;
-  }
+int read_interface_macro_normal_lc(const char *in_dir, SUPP sup) {
+  std::string fn = in_dir;
+  fn += "/normal.in";
 
   /* open file and read */
-  FILE *in = PGFEM_fopen(in_name,"r");
-  if(in == NULL){
-    err++;
-  } else {
-    int n_matched = fscanf(in,"%lf %lf %lf %lf %lf",
-                           &sup->v0,&sup->lc,
-                           &sup->N0[0],&sup->N0[1],&sup->N0[2]);
-    if(n_matched != 5){
-      PGFEM_printerr("Error reading file! (%s)\n",in_name);
-      err++;
-    }
-    if(sup->v0 == 0.0){
-      PGFEM_printerr("ERROR: specified 0.0 volume! (%s)\n",in_name);
-      err++;
-    }
+  if (FILE *in = PGFEM_fopen(fn.c_str(), "r")) {
+    CHECK_SCANF(in, "%lf %lf %lf %lf %lf",
+                &sup->v0, &sup->lc,
+                &sup->N0[0], &sup->N0[1], &sup->N0[2]);
+    fclose(in);
+  }
+  else {
+    return 1;
   }
 
-  if(err == 0){/* no problems reading the normal, normalize it */
-    double mag = sqrt(sup->N0[0]*sup->N0[0]
-                      + sup->N0[1]*sup->N0[1]
-                      + sup->N0[2]*sup->N0[2]);
-    sup->N0[0] /= mag;
-    sup->N0[1] /= mag;
-    sup->N0[2] /= mag;
+  if (sup->v0 == 0.0) {
+    PGFEM_printerr("ERROR: specified 0.0 volume! (%s)\n", fn.c_str());
+    return 1;
   }
 
-  free(in_name);
-  fclose(in);
-  return err;
+  /* no problems reading the normal, normalize it */
+  double mag = sqrt(sup->N0[0] * sup->N0[0] +
+                    sup->N0[1] * sup->N0[1] +
+                    sup->N0[2] * sup->N0[2]);
+  sup->N0[0] /= mag;
+  sup->N0[1] /= mag;
+  sup->N0[2] /= mag;
+  return 0;
 }
 
 int compute_interface_macro_jump_u(double *jump_u,
