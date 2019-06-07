@@ -61,12 +61,12 @@ FILE* PGFEM_FOPEN(const char *filename,
 namespace pgfem3d {
 class ScopedFile {
  public:
-  ScopedFile(const char* fn, const char* mode) : fp_(PGFEM_fopen(fn, mode)) {
+  ScopedFile(const char* fn, const char* mode) : fp_(fopen(fn, mode)) {
   }
 
   ~ScopedFile() {
     if (fp_) {
-      PGFEM_fclose(fp_);
+      fclose(fp_);
     }
   }
 
