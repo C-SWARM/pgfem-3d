@@ -106,7 +106,7 @@ void read_elem_surface_load (FILE *in,
     override the prescribed displacements used on the first step of
     the simulation. A non-zero value is returned if there is an error
     reading the file. */
-int override_prescribed_displacements(SUPP sup,
-                                      const PGFem3D_opt *opt);
+int override_prescribed_displacements(SUPP_1& sup,
+                                      const char* fn);
 
 #endif // #define PGFEM3D_IN_H

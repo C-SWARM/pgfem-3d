@@ -57,4 +57,32 @@ FILE* PGFEM_FOPEN(const char *filename,
 
 #define PGFEM_fclose(a) fclose(a)
 
+namespace pgfem3d {
+class ScopedFile {
+ public:
+  ScopedFile(const char* fn, const char* mode) : fp_(PGFEM_fopen(fn, mode)) {
+  }
+
+  ~ScopedFile() {
+    if (fp_) {
+      PGFEM_fclose(fp_);
+    }
+  }
+
+  operator bool() const {
+    return fp_ != nullptr;
+  }
+
+  operator FILE*() {
+    return fp_;
+  }
+
+ private:
+  FILE *fp_;
+};
+
+static inline ScopedFile scoped_fopen(const char* fn, const char* mode) {
+  return { fn, mode };
+}
+}
 #endif /* #ifndef  */
