@@ -21,19 +21,33 @@ struct EPS;                                     // defined in eps.h
 /// compute Eulerian Almansi strain from a given F
 void compute_Eulerian_Almansi_strain(double *e,
                                      double *F);
-                                     
+
 /// compute Equivalent (Von Mises) Eulerian Almansi strain from a given F
 double compute_Equivalent_strain(double *F_in);
+
+#define CHECK_SCANF(stream, ...) do {                                   \
+    check_scanf(__FILE__, __LINE__, __func__, (stream), __VA_ARGS__);   \
+  } while (0)
 
 /// Lots of system headers require that the return value from scanf be
 /// checked. This small utility simplifies this process by counting the number
 /// of arguments that are expected automatically.
 template <class... Args>
-static inline void CHECK_SCANF(FILE *stream, Args... args) {
+static inline void check_scanf(const char* file, int line, const char* func,
+                               FILE *stream, Args... args)
+{
   constexpr int N = (sizeof...(args) - 1);   // the number of expected arguments
   const int n = fscanf(stream, args...);     // the number of actual arguments
   if (n != N) {
-    throw n;
+    std::string e;
+    e += file;
+    e += ":";
+    e += line;
+    e += " (";
+    e += func;
+    e += ") ";
+    e += "Expected " + std::to_string(N) + "args, saw " + std::to_string(n);
+    throw std::runtime_error(std::move(e));
   }
 }
 
@@ -349,8 +363,8 @@ long* times_print (FILE *in1,
  */
 void LToG (const double *f,
            double *Gf,
-	   const long ndofd,
-	   const pgfem3d::CommunicationStructure *com);
+       const long ndofd,
+       const pgfem3d::CommunicationStructure *com);
 
 /**
  * Get the local part (r) of the global data (Gr).
@@ -362,15 +376,15 @@ void LToG (const double *f,
  */
 void GToL (const double *Gr,
            double *r,
-	   const long ndofd,
-	   const pgfem3d::CommunicationStructure *com);
+       const long ndofd,
+       const pgfem3d::CommunicationStructure *com);
 
 pgfem3d::net::PGFem3D_Comm*
 CreateGraph (int nproc,
-	     int myrank,
-	     long nn,
-	     Node *node,
-	     pgfem3d::net::PGFem3D_Comm comm);
+         int myrank,
+         long nn,
+         Node *node,
+         pgfem3d::net::PGFem3D_Comm comm);
 
 /** Pause for t seconds */
 void pause_time(int t);
@@ -732,7 +746,7 @@ double compute_volumes_from_coordinates(double *x,
                                         double *z,
                                         long nne);
 
-/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically. 
+/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically.
 void compute_root_of_cubic_euqation(double *x,
                                     double a,
                                     double b,
