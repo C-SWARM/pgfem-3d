@@ -326,7 +326,7 @@ int override_material_properties(const long nmat,
     goto exit_err;
   }
   CHECK_SCANF(in, "%d", &n_override);
-  assert(0 <= n_override and n_override < nmat);
+  assert(0 <= n_override and n_override <= nmat);
 
   for (int i = 0, e = n_override; i < e; ++i) {
     if (scan_for_valid_line(in)) {
@@ -341,8 +341,9 @@ int override_material_properties(const long nmat,
     }
   }
 
- exit_err:
-  int err = (ferror(in)) ? 2 : 1;
+  exit_err:
+    int err = (ferror(in)) ? 1 : 0;
+
   PGFEM_fclose(in);
   return err;
 }
