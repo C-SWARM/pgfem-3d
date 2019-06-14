@@ -67,7 +67,7 @@ struct TrilinosWrap : public SparseSystem
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
   TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const GO Ai[], const long rowsPerProc[], long maxit, double err);
+        const GO Ai[], const long rowsPerProc[], int maxit, double err);
 
   ~TrilinosWrap();
 

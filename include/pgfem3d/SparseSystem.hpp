@@ -23,7 +23,7 @@ class SparseSystem
   static SparseSystem* Create(const PGFem3D_opt& opts,
 			      const pgfem3d::net::PGFem3D_Comm comm,
                               const int Ap[], const Ai_t Ai[],
-                              const long rowsPerProc[], long maxit, double err);
+                              const long rowsPerProc[], int maxit, double err);
 
   virtual ~SparseSystem();
 
